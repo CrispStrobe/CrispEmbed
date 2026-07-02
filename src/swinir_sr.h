@@ -29,10 +29,8 @@ int swinir_sr_scale(const swinir_sr_context * ctx);
 // tile_size: 0 = auto (64). tile_overlap: 0 = auto (8).
 // Caller frees with swinir_sr_free_image().
 // Returns 0 on success, -1 on error.
-int swinir_sr_process(swinir_sr_context * ctx,
-                      const uint8_t * input, int width, int height,
-                      int tile_size, int tile_overlap,
-                      uint8_t ** output, int * out_width, int * out_height);
+int swinir_sr_process(swinir_sr_context * ctx, const uint8_t * input, int width, int height, int tile_size,
+                      int tile_overlap, uint8_t ** output, int * out_width, int * out_height);
 
 void swinir_sr_free_image(uint8_t * pixels);
 

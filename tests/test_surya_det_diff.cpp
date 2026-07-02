@@ -15,7 +15,7 @@
 #include <cstdio>
 #include <vector>
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <surya-det.gguf> <reference.gguf>\n", argv[0]);
         fprintf(stderr, "\nGenerate reference with:\n");
@@ -40,8 +40,7 @@ int main(int argc, char** argv) {
     // preserves this byte order. So input_data is already [C, H, W].
     int C = 3, H = 1200, W = 1200;
     if (input_n != (size_t)(C * H * W)) {
-        fprintf(stderr, "Unexpected input size: %zu (expected %d)\n",
-                input_n, C * H * W);
+        fprintf(stderr, "Unexpected input size: %zu (expected %d)\n", input_n, C * H * W);
         return 1;
     }
     printf("Input: [%d, %d, %d] (%zu floats)\n", C, H, W, input_n);
@@ -55,14 +54,14 @@ int main(int argc, char** argv) {
             if (input_data[i] > mx) mx = input_data[i];
             sum += input_data[i];
         }
-        printf("  Input stats: min=%.4f max=%.4f mean=%.4f\n", mn, mx, (float)(sum/input_n));
+        printf("  Input stats: min=%.4f max=%.4f mean=%.4f\n", mn, mx, (float)(sum / input_n));
         // Channel 0 starts at offset 0, should be ~2.249 for white background
-        printf("  First values: [%.4f, %.4f, %.4f] (expect ~2.25, ~2.43, ~2.64 for white)\n",
-               input_data[0], input_data[H*W], input_data[2*H*W]);
+        printf("  First values: [%.4f, %.4f, %.4f] (expect ~2.25, ~2.43, ~2.64 for white)\n", input_data[0],
+               input_data[H * W], input_data[2 * H * W]);
     }
 
     // Load model
-    surya_det_context* ctx = surya_det_init(argv[1], 4);
+    surya_det_context * ctx = surya_det_init(argv[1], 4);
     if (!ctx) return 1;
 
     // Run forward pass with reference input (bypasses preprocessing)
@@ -70,7 +69,7 @@ int main(int argc, char** argv) {
     printf("(This takes ~15 min with CPU-scalar. Set SURYA_DET_DUMP=1 for progress.)\n\n");
 
     int out_h = 0, out_w = 0;
-    const float* heatmap = surya_det_detect_raw(ctx, input_data, H, W, &out_h, &out_w);
+    const float * heatmap = surya_det_detect_raw(ctx, input_data, H, W, &out_h, &out_w);
     if (!heatmap) {
         fprintf(stderr, "Forward pass failed\n");
         surya_det_free(ctx);
@@ -83,8 +82,7 @@ int main(int argc, char** argv) {
     printf("=== Heatmap parity ===\n");
     auto r = ref.compare("heatmap", heatmap, 2 * out_h * out_w);
     if (r.found) {
-        printf("  cos_min=%.6f max_abs=%.4e mean_abs=%.4e  %s\n",
-               r.cos_min, r.max_abs, r.mean_abs,
+        printf("  cos_min=%.6f max_abs=%.4e mean_abs=%.4e  %s\n", r.cos_min, r.max_abs, r.mean_abs,
                r.is_pass(0.99f) ? "PASS" : "FAIL");
     } else {
         printf("  (reference 'heatmap' not found)\n");
@@ -122,11 +120,9 @@ int main(int argc, char** argv) {
                 ref_sum += rv;
             }
         }
-        printf("  Ch%d C++: min=%.4f max=%.4f mean=%.4f\n",
-               c, cpp_min, cpp_max, (float)(cpp_sum / n));
+        printf("  Ch%d C++: min=%.4f max=%.4f mean=%.4f\n", c, cpp_min, cpp_max, (float)(cpp_sum / n));
         if (ref_hm) {
-            printf("  Ch%d Ref: min=%.4f max=%.4f mean=%.4f\n",
-                   c, ref_min, ref_max, (float)(ref_sum / n));
+            printf("  Ch%d Ref: min=%.4f max=%.4f mean=%.4f\n", c, ref_min, ref_max, (float)(ref_sum / n));
         }
     }
 

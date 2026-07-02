@@ -17,7 +17,10 @@ int main(int argc, char ** argv) {
     dec_ref.load(argv[3]);
 
     pix2struct_context * ctx = pix2struct_init(argv[1], 1);
-    if (!ctx) { printf("Load failed\n"); return 1; }
+    if (!ctx) {
+        printf("Load failed\n");
+        return 1;
+    }
 
     // Encode patches (proven correct)
     auto [patches, pn] = enc_ref.get_f32("flattened_patches");

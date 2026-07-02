@@ -18,20 +18,26 @@
 
 static int n_pass = 0, n_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (cond) { printf("  PASS: %s\n", msg); n_pass++; } \
-    else      { printf("  FAIL: %s\n", msg); n_fail++; } \
-} while(0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (cond) {                                                                                                    \
+            printf("  PASS: %s\n", msg);                                                                               \
+            n_pass++;                                                                                                  \
+        } else {                                                                                                       \
+            printf("  FAIL: %s\n", msg);                                                                               \
+            n_fail++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
 // Generate a synthetic grayscale image with horizontal text-like lines
 static std::vector<uint8_t> make_text_image(int w, int h) {
-    std::vector<uint8_t> img(w * h, 255);  // white background
+    std::vector<uint8_t> img(w * h, 255); // white background
     // Draw dark horizontal lines (simulating text)
     for (int y = 20; y < h - 20; y += 30) {
         for (int x = 30; x < w - 30; x++) {
             if (y + 5 < h) {
                 for (int dy = 0; dy < 3; dy++) {
-                    img[(y + dy) * w + x] = 30;  // dark text
+                    img[(y + dy) * w + x] = 30; // dark text
                 }
             }
         }
@@ -41,7 +47,7 @@ static std::vector<uint8_t> make_text_image(int w, int h) {
 
 // Generate an image with dark borders (simulating scanner border)
 static std::vector<uint8_t> make_bordered_image(int w, int h, int border) {
-    std::vector<uint8_t> img(w * h, 200);  // light gray content
+    std::vector<uint8_t> img(w * h, 200); // light gray content
     // Add text lines
     for (int y = border + 20; y < h - border - 20; y += 25) {
         for (int x = border + 20; x < w - border - 20; x++) {
@@ -52,7 +58,7 @@ static std::vector<uint8_t> make_bordered_image(int w, int h, int border) {
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             if (y < border || y >= h - border || x < border || x >= w - border) {
-                img[y * w + x] = 10;  // very dark
+                img[y * w + x] = 10; // very dark
             }
         }
     }
@@ -93,14 +99,13 @@ static std::vector<uint8_t> make_uneven_bg_image(int w, int h) {
     for (int y = 0; y < h; y++) {
         for (int x = 0; x < w; x++) {
             // Gradient background (simulating uneven lighting)
-            float bg = 180.0f + 60.0f * sinf((float)x / w * 3.14f)
-                              + 40.0f * cosf((float)y / h * 3.14f);
+            float bg = 180.0f + 60.0f * sinf((float)x / w * 3.14f) + 40.0f * cosf((float)y / h * 3.14f);
             bg = std::min(255.0f, std::max(0.0f, bg));
 
             // Add text lines
             int line_pos = (y - 20) % 30;
             if (line_pos < 3 && x > 20 && x < w - 20 && y > 20 && y < h - 20) {
-                img[y * w + x] = (uint8_t)(bg * 0.15f);  // text is dark relative to bg
+                img[y * w + x] = (uint8_t)(bg * 0.15f); // text is dark relative to bg
             } else {
                 img[y * w + x] = (uint8_t)bg;
             }
@@ -143,7 +148,10 @@ static void test_sauvola() {
     // Count black and white pixels
     int n_black = 0, n_white = 0;
     for (int i = 0; i < w * h; i++) {
-        if (bin[i] < 0.5f) n_black++; else n_white++;
+        if (bin[i] < 0.5f)
+            n_black++;
+        else
+            n_white++;
     }
     printf("  Sauvola: %d black, %d white pixels\n", n_black, n_white);
     CHECK(n_black > 0 && n_white > 0, "both black and white pixels present");

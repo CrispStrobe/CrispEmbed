@@ -11,14 +11,14 @@
 #include <cstdio>
 #include <cmath>
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <dbnet.gguf> <ref.gguf> [image.png]\n", argv[0]);
         return 1;
     }
 
-    const char* model_path = argv[1];
-    const char* ref_path = argv[2];
+    const char * model_path = argv[1];
+    const char * ref_path = argv[2];
 
     // Load reference
     crispembed_diff::Ref ref;
@@ -30,7 +30,7 @@ int main(int argc, char** argv) {
     // Print available reference tensors
     printf("Reference tensors:\n");
     auto names = ref.tensor_names();
-    for (auto& n : names) {
+    for (auto & n : names) {
         auto shape = ref.shape(n);
         printf("  %s: [", n.c_str());
         for (size_t i = 0; i < shape.size(); i++) {
@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     printf("\nInput: C=%d H=%d W=%d (%zu elements)\n", C, H, W, input_n);
 
     // Load model
-    ocr_detect::context* ctx = nullptr;
+    ocr_detect::context * ctx = nullptr;
     if (!ocr_detect::load(&ctx, model_path, 4)) {
         fprintf(stderr, "Failed to load model: %s\n", model_path);
         return 1;
@@ -73,7 +73,7 @@ int main(int argc, char** argv) {
 
     // Get the probability map
     int prob_h, prob_w;
-    const float* prob = ocr_detect::get_prob_map(ctx, &prob_h, &prob_w);
+    const float * prob = ocr_detect::get_prob_map(ctx, &prob_h, &prob_w);
     if (!prob) {
         fprintf(stderr, "No probability map available\n");
         ocr_detect::free(ctx);
@@ -85,8 +85,7 @@ int main(int argc, char** argv) {
     printf("\n--- Probability map comparison ---\n");
     auto r = ref.compare("prob_map_sigmoid", prob, prob_h * prob_w);
     if (r.found) {
-        printf("  cos_min=%.6f cos_mean=%.6f max_abs=%.2e rms=%.2e  %s\n",
-               r.cos_min, r.cos_mean, r.max_abs, r.rms,
+        printf("  cos_min=%.6f cos_mean=%.6f max_abs=%.2e rms=%.2e  %s\n", r.cos_min, r.cos_mean, r.max_abs, r.rms,
                r.is_pass(0.95f) ? "PASS" : "FAIL");
     } else {
         printf("  prob_map_sigmoid not found in reference\n");
@@ -114,10 +113,8 @@ int main(int argc, char** argv) {
         }
         float ref_mean = ref_sum / ref_n;
 
-        printf("\n  C++:    min=%.6f max=%.6f mean=%.6f (%d elements)\n",
-               cpp_min, cpp_max, cpp_mean, prob_h * prob_w);
-        printf("  Python: min=%.6f max=%.6f mean=%.6f (%zu elements)\n",
-               ref_min, ref_max, ref_mean, ref_n);
+        printf("\n  C++:    min=%.6f max=%.6f mean=%.6f (%d elements)\n", cpp_min, cpp_max, cpp_mean, prob_h * prob_w);
+        printf("  Python: min=%.6f max=%.6f mean=%.6f (%zu elements)\n", ref_min, ref_max, ref_mean, ref_n);
     }
 
     ocr_detect::free(ctx);

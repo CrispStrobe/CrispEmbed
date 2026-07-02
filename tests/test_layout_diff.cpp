@@ -12,23 +12,23 @@
 #include <cmath>
 #include <algorithm>
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <layout.gguf> <ref.gguf> [image.png]\n", argv[0]);
         return 1;
     }
 
-    const char* image_path = (argc > 3) ? argv[3] : "/tmp/test_layout.png";
+    const char * image_path = (argc > 3) ? argv[3] : "/tmp/test_layout.png";
 
     // Load reference
     crispembed_diff::Ref ref;
     if (!ref.load(argv[2])) return 1;
 
     printf("Reference tensors:\n");
-    for (auto& name : ref.tensor_names()) {
+    for (auto & name : ref.tensor_names()) {
         auto s = ref.shape(name);
         printf("  %s [", name.c_str());
-        for (size_t i = 0; i < s.size(); i++) printf("%s%lld", i?",":"", (long long)s[i]);
+        for (size_t i = 0; i < s.size(); i++) printf("%s%lld", i ? "," : "", (long long)s[i]);
         printf("]\n");
     }
 
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Load model
-    layout_detect::context* ctx = nullptr;
+    layout_detect::context * ctx = nullptr;
     if (!layout_detect::load(&ctx, argv[1], 4)) {
         fprintf(stderr, "Failed to load model\n");
         return 1;
@@ -67,32 +67,36 @@ int main(int argc, char** argv) {
     // CPU-side bilinear-sampling floor (~0.977 cos_min on one boundary query,
     // cos_mean ~0.999) — a pre-existing parity gap unrelated to the encoder path,
     // so it gates lower. A real decoder crater still trips it (goes negative).
-    struct StageFile { const char* ref_name; const char* cpp_file; float threshold; };
+    struct StageFile {
+        const char * ref_name;
+        const char * cpp_file;
+        float threshold;
+    };
     StageFile stages[] = {
-        {"ip3", "/tmp/cpp_ip3.bin", 0.99f},
-        {"ip4", "/tmp/cpp_ip4.bin", 0.99f},
-        {"ip5", "/tmp/cpp_ip5.bin", 0.99f},
-        {"s3",  "/tmp/cpp_s3.bin", 0.99f},
-        {"s4",  "/tmp/cpp_s4.bin", 0.99f},
-        {"s5",  "/tmp/cpp_s5.bin", 0.99f},
-        {"enc_output", "/tmp/cpp_enc_output.bin", 0.99f},
-        {"dec_0_cross_out", "/tmp/cpp_cross_out.bin", 0.97f},
+        { "ip3", "/tmp/cpp_ip3.bin", 0.99f },
+        { "ip4", "/tmp/cpp_ip4.bin", 0.99f },
+        { "ip5", "/tmp/cpp_ip5.bin", 0.99f },
+        { "s3", "/tmp/cpp_s3.bin", 0.99f },
+        { "s4", "/tmp/cpp_s4.bin", 0.99f },
+        { "s5", "/tmp/cpp_s5.bin", 0.99f },
+        { "enc_output", "/tmp/cpp_enc_output.bin", 0.99f },
+        { "dec_0_cross_out", "/tmp/cpp_cross_out.bin", 0.97f },
     };
 
     int n_fail = 0;
     int n_compared = 0;
 
-    for (auto& st : stages) {
+    for (auto & st : stages) {
         auto [ref_data, ref_n] = ref.get_f32(st.ref_name);
         if (!ref_data || ref_n == 0) {
             printf("%-15s %s\n", st.ref_name, "NOT IN REF");
             continue;
         }
 
-        FILE* fp = fopen(st.cpp_file, "rb");
+        FILE * fp = fopen(st.cpp_file, "rb");
         if (!fp) {
             printf("%-15s %s\n", st.ref_name, "NO DUMP FILE");
-            n_fail++;  // an expected stage produced no dump → regression
+            n_fail++; // an expected stage produced no dump → regression
             continue;
         }
 
@@ -108,28 +112,24 @@ int main(int argc, char** argv) {
 
         auto r = ref.compare(st.ref_name, cpp_data.data(), ref_n);
         bool pass = r.is_pass(st.threshold);
-        printf("%-15s %10.6f %10.6f %10.4f %s\n",
-               st.ref_name, r.cos_min, r.cos_mean, r.max_abs,
+        printf("%-15s %10.6f %10.6f %10.4f %s\n", st.ref_name, r.cos_min, r.cos_mean, r.max_abs,
                pass ? "PASS" : "FAIL");
         // Canonical line consumed by tests/regression/run_one.py (applies the
         // manifest's per-stage thresholds to cos_min).
-        printf("%s: cos_min=%.6f max_abs=%.6e %s\n",
-               st.ref_name, r.cos_min, r.max_abs, pass ? "PASS" : "FAIL");
+        printf("%s: cos_min=%.6f max_abs=%.6e %s\n", st.ref_name, r.cos_min, r.max_abs, pass ? "PASS" : "FAIL");
         n_compared++;
         if (!pass) n_fail++;
     }
 
     printf("\nDetected %zu regions (threshold 0.1)\n", regions.size());
     for (size_t i = 0; i < std::min(regions.size(), (size_t)5); i++) {
-        printf("  [%zu] %s score=%.3f [%.0f,%.0f,%.0f,%.0f]\n",
-               i, regions[i].label_name, regions[i].score,
+        printf("  [%zu] %s score=%.3f [%.0f,%.0f,%.0f,%.0f]\n", i, regions[i].label_name, regions[i].score,
                regions[i].x1, regions[i].y1, regions[i].x2, regions[i].y2);
     }
 
     layout_detect::free(ctx);
 
-    printf("\n%d/%d stages passed (per-stage cos_min thresholds)\n",
-           n_compared - n_fail, n_compared);
+    printf("\n%d/%d stages passed (per-stage cos_min thresholds)\n", n_compared - n_fail, n_compared);
     if (n_fail > 0) {
         printf("DIFF FAILED: %d stage(s) below threshold\n", n_fail);
         return 1;

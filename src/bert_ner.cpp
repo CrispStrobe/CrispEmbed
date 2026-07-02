@@ -18,13 +18,13 @@
 namespace bert_ner {
 
 struct context {
-    crispembed_context* enc = nullptr;  // existing encoder
+    crispembed_context * enc = nullptr; // existing encoder
 
     // Classifier head weights (loaded from GGUF separately)
     int n_labels = 0;
-    std::vector<std::string> labels;        // [n_labels] label names
-    std::vector<float> cls_weight;          // [n_labels * hidden_dim]
-    std::vector<float> cls_bias;            // [n_labels]
+    std::vector<std::string> labels; // [n_labels] label names
+    std::vector<float> cls_weight;   // [n_labels * hidden_dim]
+    std::vector<float> cls_bias;     // [n_labels]
     int hidden_dim = 0;
 
     // Last result storage
@@ -33,10 +33,10 @@ struct context {
     bool bench = false;
 };
 
-bool load(context** out, const char* model_path, int n_threads) {
+bool load(context ** out, const char * model_path, int n_threads) {
     if (!out || !model_path) return false;
 
-    auto* ctx = new context;
+    auto * ctx = new context;
     ctx->bench = (std::getenv("CRISPEMBED_BERT_NER_BENCH") != nullptr);
 
     // Load encoder via existing CrispEmbed API.
@@ -50,7 +50,7 @@ bool load(context** out, const char* model_path, int n_threads) {
     ctx->hidden_dim = crispembed_get_hparams(ctx->enc)->n_embd;
 
     // Read NER classifier weights from the GGUF separately.
-    gguf_context* gctx = core_gguf::open_metadata(model_path);
+    gguf_context * gctx = core_gguf::open_metadata(model_path);
     if (!gctx) {
         crispembed_free(ctx->enc);
         delete ctx;
@@ -84,16 +84,15 @@ bool load(context** out, const char* model_path, int n_threads) {
     bool force_cpu = (getenv("BERT_NER_FORCE_CPU") && atoi(getenv("BERT_NER_FORCE_CPU")));
     ggml_backend_t cls_backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!cls_backend) cls_backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(cls_backend))
-        ggml_backend_cpu_set_n_threads(cls_backend, n_threads);
+    if (ggml_backend_is_cpu(cls_backend)) ggml_backend_cpu_set_n_threads(cls_backend, n_threads);
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, cls_backend, "bert_ner", wl)) {
         fprintf(stderr, "bert_ner: warning: could not load weight tensors\n");
         ggml_backend_free(cls_backend);
     }
 
-    auto read_tensor_f32 = [&](const char* name, std::vector<float>& dst, size_t expected) -> bool {
-        ggml_tensor* t = core_gguf::try_get(wl.tensors, name);
+    auto read_tensor_f32 = [&](const char * name, std::vector<float> & dst, size_t expected) -> bool {
+        ggml_tensor * t = core_gguf::try_get(wl.tensors, name);
         if (!t) return false;
         size_t n = ggml_nelements(t);
         if (n != expected) {
@@ -107,8 +106,7 @@ bool load(context** out, const char* model_path, int n_threads) {
         } else if (t->type == GGML_TYPE_F16) {
             std::vector<uint16_t> f16(n);
             ggml_backend_tensor_get(t, f16.data(), 0, n * sizeof(uint16_t));
-            for (size_t i = 0; i < n; i++)
-                dst[i] = ggml_fp16_to_fp32(f16[i]);
+            for (size_t i = 0; i < n; i++) dst[i] = ggml_fp16_to_fp32(f16[i]);
         } else {
             fprintf(stderr, "bert_ner: %s: unsupported type %d\n", name, t->type);
             return false;
@@ -134,8 +132,7 @@ bool load(context** out, const char* model_path, int n_threads) {
     if (cls_backend) ggml_backend_free(cls_backend);
 
     fprintf(stderr, "bert_ner: loaded %d labels, hidden=%d\n", ctx->n_labels, ctx->hidden_dim);
-    for (int i = 0; i < ctx->n_labels; i++)
-        fprintf(stderr, "  label[%d] = %s\n", i, ctx->labels[i].c_str());
+    for (int i = 0; i < ctx->n_labels; i++) fprintf(stderr, "  label[%d] = %s\n", i, ctx->labels[i].c_str());
 
     *out = ctx;
     return true;
@@ -145,7 +142,7 @@ bool load(context** out, const char* model_path, int n_threads) {
 // Inference
 // ---------------------------------------------------------------------------
 
-std::vector<entity> extract(context* ctx, const char* text) {
+std::vector<entity> extract(context * ctx, const char * text) {
     ctx->last_entities.clear();
     if (!ctx || !text || !text[0]) return ctx->last_entities;
 
@@ -167,7 +164,7 @@ std::vector<entity> extract(context* ctx, const char* text) {
 
     auto t_enc0 = std::chrono::steady_clock::now();
     int n_tokens = 0, dim = 0;
-    const float* hidden = crispembed_encode_tokens_raw(ctx->enc, text, &n_tokens, &dim);
+    const float * hidden = crispembed_encode_tokens_raw(ctx->enc, text, &n_tokens, &dim);
     if (bench) {
         auto t_enc1 = std::chrono::steady_clock::now();
         fprintf(stderr, "[bert_ner-bench] encoder: %.3f ms\n",
@@ -184,12 +181,11 @@ std::vector<entity> extract(context* ctx, const char* text) {
     // cls_weight is [n_labels, hidden_dim] row-major (from PyTorch)
     std::vector<float> logits(n_tokens * L);
     for (int t = 0; t < n_tokens; t++) {
-        const float* h = hidden + t * H;
+        const float * h = hidden + t * H;
         for (int l = 0; l < L; l++) {
             float sum = ctx->cls_bias[l];
-            const float* w = ctx->cls_weight.data() + l * H;
-            for (int d = 0; d < H; d++)
-                sum += w[d] * h[d];
+            const float * w = ctx->cls_weight.data() + l * H;
+            for (int d = 0; d < H; d++) sum += w[d] * h[d];
             logits[t * L + l] = sum;
         }
     }
@@ -201,7 +197,7 @@ std::vector<entity> extract(context* ctx, const char* text) {
     };
     std::vector<token_pred> preds(n_tokens);
     for (int t = 0; t < n_tokens; t++) {
-        const float* row = logits.data() + t * L;
+        const float * row = logits.data() + t * L;
         int best = 0;
         for (int l = 1; l < L; l++)
             if (row[l] > row[best]) best = l;
@@ -212,13 +208,13 @@ std::vector<entity> extract(context* ctx, const char* text) {
         for (int l = 0; l < L; l++) sum += expf(row[l] - max_val);
         float score = expf(row[best] - max_val) / sum;
 
-        preds[t] = {best, score};
+        preds[t] = { best, score };
     }
 
     // Step 4: BIO decode — merge consecutive B-X / I-X tokens into spans.
     // Get token-to-character mapping from the tokenizer.
-    const int32_t* token_ids = crispembed_last_token_ids(ctx->enc);
-    int tok_kind = crispembed_tokenizer_kind(ctx->enc);  // 1=WordPiece, 2=SentencePiece
+    const int32_t * token_ids = crispembed_last_token_ids(ctx->enc);
+    int tok_kind = crispembed_tokenizer_kind(ctx->enc); // 1=WordPiece, 2=SentencePiece
 
     // Reconstruct character offsets from tokens.
     // For WordPiece: tokens starting with "##" continue the previous word.
@@ -229,13 +225,12 @@ std::vector<entity> extract(context* ctx, const char* text) {
 
     int char_pos = 0;
     for (int t = 0; t < n_tokens; t++) {
-        const char* tok_str = crispembed_token_str(ctx->enc, token_ids[t]);
+        const char * tok_str = crispembed_token_str(ctx->enc, token_ids[t]);
         if (!tok_str || !tok_str[0]) continue;
 
         std::string ts(tok_str);
         // Skip special tokens ([CLS], [SEP], <s>, </s>)
-        if (ts == "[CLS]" || ts == "[SEP]" || ts == "<s>" || ts == "</s>" ||
-            ts == "[PAD]" || ts == "<pad>") continue;
+        if (ts == "[CLS]" || ts == "[SEP]" || ts == "<s>" || ts == "</s>" || ts == "[PAD]" || ts == "<pad>") continue;
 
         // WordPiece: strip "##" prefix
         bool is_continuation = false;
@@ -244,8 +239,8 @@ std::vector<entity> extract(context* ctx, const char* text) {
             is_continuation = true;
         }
         // SentencePiece: strip "▁" prefix (U+2581, 3 bytes in UTF-8)
-        if (tok_kind == 2 && ts.size() >= 3 &&
-            (uint8_t)ts[0] == 0xE2 && (uint8_t)ts[1] == 0x96 && (uint8_t)ts[2] == 0x81) {
+        if (tok_kind == 2 && ts.size() >= 3 && (uint8_t)ts[0] == 0xE2 && (uint8_t)ts[1] == 0x96 &&
+            (uint8_t)ts[2] == 0x81) {
             ts = ts.substr(3);
             is_continuation = false;
         }
@@ -253,8 +248,7 @@ std::vector<entity> extract(context* ctx, const char* text) {
         // Find this token's text in the input, starting from char_pos
         if (!is_continuation) {
             // Skip whitespace to find next word start
-            while (char_pos < (int)input_text.size() && input_text[char_pos] == ' ')
-                char_pos++;
+            while (char_pos < (int)input_text.size() && input_text[char_pos] == ' ') char_pos++;
         }
 
         // Match the token text (case-insensitive for BERT uncased models)
@@ -286,9 +280,9 @@ std::vector<entity> extract(context* ctx, const char* text) {
     };
 
     for (int t = 0; t < n_tokens; t++) {
-        if (tok_char_start[t] < 0) continue;  // skip special tokens
+        if (tok_char_start[t] < 0) continue; // skip special tokens
 
-        const std::string& label = ctx->labels[preds[t].label_id];
+        const std::string & label = ctx->labels[preds[t].label_id];
 
         bool is_begin = label.size() > 2 && label[0] == 'B' && label[1] == '-';
         bool is_inside = label.size() > 2 && label[0] == 'I' && label[1] == '-';
@@ -326,16 +320,16 @@ std::vector<entity> extract(context* ctx, const char* text) {
     return ctx->last_entities;
 }
 
-int num_labels(context* ctx) {
+int num_labels(context * ctx) {
     return ctx ? ctx->n_labels : 0;
 }
 
-const char* label_name(context* ctx, int label_id) {
+const char * label_name(context * ctx, int label_id) {
     if (!ctx || label_id < 0 || label_id >= ctx->n_labels) return "";
     return ctx->labels[label_id].c_str();
 }
 
-void free(context* ctx) {
+void free(context * ctx) {
     if (!ctx) return;
     if (ctx->enc) crispembed_free(ctx->enc);
     delete ctx;

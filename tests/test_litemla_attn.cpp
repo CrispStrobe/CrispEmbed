@@ -26,12 +26,15 @@
 static int g_pass = 0;
 static int g_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (!(cond)) { \
-        fprintf(stderr, "  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__); \
-        g_fail++; \
-    } else { g_pass++; } \
-} while (0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            fprintf(stderr, "  FAIL: %s (%s:%d)\n", msg, __FILE__, __LINE__);                                          \
+            g_fail++;                                                                                                  \
+        } else {                                                                                                       \
+            g_pass++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
 #define CHECK_CLOSE(a, b, tol, msg) CHECK(fabsf((a) - (b)) < (tol), msg)
 
@@ -40,36 +43,30 @@ static int g_fail = 0;
 // Q, K, V: each [HW, head_dim] (row-major).
 // Returns out: [HW, head_dim].
 // ---------------------------------------------------------------------------
-static std::vector<float> linear_attn_scalar(
-    const float* Q, const float* K, const float* V,
-    int HW, int D, float eps = 1e-5f)
-{
+static std::vector<float> linear_attn_scalar(const float * Q, const float * K, const float * V, int HW, int D,
+                                             float eps = 1e-5f) {
     // KTV[d, dv] = sum_hw K[hw,d] * V[hw,dv]
     std::vector<float> KTV(D * D, 0.0f);
     for (int d = 0; d < D; d++)
         for (int dv = 0; dv < D; dv++)
-            for (int hw = 0; hw < HW; hw++)
-                KTV[d * D + dv] += K[hw * D + d] * V[hw * D + dv];
+            for (int hw = 0; hw < HW; hw++) KTV[d * D + dv] += K[hw * D + d] * V[hw * D + dv];
 
     // K_sum[d] = sum_hw K[hw, d]
     std::vector<float> K_sum(D, 0.0f);
     for (int hw = 0; hw < HW; hw++)
-        for (int d = 0; d < D; d++)
-            K_sum[d] += K[hw * D + d];
+        for (int d = 0; d < D; d++) K_sum[d] += K[hw * D + d];
 
     // out[hw, dv] = sum_d Q[hw,d] * KTV[d,dv]
     // norm[hw]    = sum_d Q[hw,d] * K_sum[d]
     std::vector<float> out(HW * D, 0.0f);
     for (int hw = 0; hw < HW; hw++) {
         float norm = 0.0f;
-        for (int d = 0; d < D; d++)
-            norm += Q[hw * D + d] * K_sum[d];
+        for (int d = 0; d < D; d++) norm += Q[hw * D + d] * K_sum[d];
         norm = std::max(norm, eps);
 
         for (int dv = 0; dv < D; dv++) {
             float val = 0.0f;
-            for (int d = 0; d < D; d++)
-                val += Q[hw * D + d] * KTV[d * D + dv];
+            for (int d = 0; d < D; d++) val += Q[hw * D + d] * KTV[d * D + dv];
             out[hw * D + dv] = val / norm;
         }
     }
@@ -81,61 +78,62 @@ static std::vector<float> linear_attn_scalar(
 // Inputs Q, K, V are [HW, D, n_groups] contiguous F32 tensors.
 // Returns result: [D, HW, n_groups] (transpose from scalar [HW, D, n_groups]).
 // ---------------------------------------------------------------------------
-static std::vector<float> linear_attn_ggml(
-    const float* Qdata, const float* Kdata, const float* Vdata,
-    int HW, int D, int n_groups)
-{
+static std::vector<float> linear_attn_ggml(const float * Qdata, const float * Kdata, const float * Vdata, int HW, int D,
+                                           int n_groups) {
     ggml_backend_t backend = ggml_backend_cpu_init();
 
     struct ggml_init_params params = { 16 * 1024 * 1024, nullptr, true };
-    ggml_context* ctx = ggml_init(params);
+    ggml_context * ctx = ggml_init(params);
 
     // Input tensors: [HW, D, n_groups] (ne[0]=HW, ne[1]=D, ne[2]=n_groups)
-    ggml_tensor* Q = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, HW, D, n_groups);
-    ggml_tensor* K = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, HW, D, n_groups);
-    ggml_tensor* V = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, HW, D, n_groups);
-    ggml_set_name(Q, "Q"); ggml_set_input(Q);
-    ggml_set_name(K, "K"); ggml_set_input(K);
-    ggml_set_name(V, "V"); ggml_set_input(V);
+    ggml_tensor * Q = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, HW, D, n_groups);
+    ggml_tensor * K = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, HW, D, n_groups);
+    ggml_tensor * V = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, HW, D, n_groups);
+    ggml_set_name(Q, "Q");
+    ggml_set_input(Q);
+    ggml_set_name(K, "K");
+    ggml_set_input(K);
+    ggml_set_name(V, "V");
+    ggml_set_input(V);
 
     // KTV = ggml_mul_mat(K, V): K=[HW=K, D=M, n_g], V=[HW=K, D=N, n_g] → [D, D, n_g]
-    ggml_tensor* KTV = ggml_mul_mat(ctx, K, V);
+    ggml_tensor * KTV = ggml_mul_mat(ctx, K, V);
 
     // K_sum = ggml_sum_rows(K): sums ne[0]=HW → [1, D, n_g]
-    ggml_tensor* K_sum = ggml_sum_rows(ctx, K);
+    ggml_tensor * K_sum = ggml_sum_rows(ctx, K);
 
     // Q_T = permute Q [HW, D, n_g] → [D, HW, n_g] (swap ne[0] and ne[1])
-    ggml_tensor* Q_T = ggml_cont(ctx, ggml_permute(ctx, Q, 1, 0, 2, 3));
+    ggml_tensor * Q_T = ggml_cont(ctx, ggml_permute(ctx, Q, 1, 0, 2, 3));
 
     // out_unnorm = ggml_mul_mat(KTV, Q_T):
     //   KTV=[D=K, D=M, n_g], Q_T=[D=K, HW=N, n_g] → [D, HW, n_g]
-    ggml_tensor* out_unnorm = ggml_mul_mat(ctx, KTV, Q_T);
+    ggml_tensor * out_unnorm = ggml_mul_mat(ctx, KTV, Q_T);
 
     // K_sum_T = permute K_sum [1, D, n_g] → [D, 1, n_g]
-    ggml_tensor* K_sum_T = ggml_cont(ctx, ggml_permute(ctx, K_sum, 1, 0, 2, 3));
+    ggml_tensor * K_sum_T = ggml_cont(ctx, ggml_permute(ctx, K_sum, 1, 0, 2, 3));
 
     // norm = ggml_mul_mat(K_sum_T, Q_T):
     //   K_sum_T=[D=K, 1=M, n_g], Q_T=[D=K, HW=N, n_g] → [1, HW, n_g]
-    ggml_tensor* norm = ggml_mul_mat(ctx, K_sum_T, Q_T);
+    ggml_tensor * norm = ggml_mul_mat(ctx, K_sum_T, Q_T);
 
     // Clamp norm, broadcast-divide
-    ggml_tensor* norm_c   = ggml_clamp(ctx, norm, 1e-5f, 1e30f);
-    ggml_tensor* norm_rep = ggml_repeat(ctx, norm_c, out_unnorm);
-    ggml_tensor* result   = ggml_div(ctx, out_unnorm, norm_rep);
+    ggml_tensor * norm_c = ggml_clamp(ctx, norm, 1e-5f, 1e30f);
+    ggml_tensor * norm_rep = ggml_repeat(ctx, norm_c, out_unnorm);
+    ggml_tensor * result = ggml_div(ctx, out_unnorm, norm_rep);
     ggml_set_name(result, "result");
     ggml_set_output(result);
 
     // Build and run
-    ggml_cgraph* gf = ggml_new_graph(ctx);
+    ggml_cgraph * gf = ggml_new_graph(ctx);
     ggml_build_forward_expand(gf, result);
 
     ggml_gallocr_t galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
     ggml_gallocr_alloc_graph(galloc, gf);
 
     // Set inputs
-    ggml_tensor* Q_t = ggml_graph_get_tensor(gf, "Q");
-    ggml_tensor* K_t = ggml_graph_get_tensor(gf, "K");
-    ggml_tensor* V_t = ggml_graph_get_tensor(gf, "V");
+    ggml_tensor * Q_t = ggml_graph_get_tensor(gf, "Q");
+    ggml_tensor * K_t = ggml_graph_get_tensor(gf, "K");
+    ggml_tensor * V_t = ggml_graph_get_tensor(gf, "V");
     size_t nb = (size_t)(HW * D * n_groups) * sizeof(float);
     ggml_backend_tensor_set(Q_t, Qdata, 0, nb);
     ggml_backend_tensor_set(K_t, Kdata, 0, nb);
@@ -144,7 +142,7 @@ static std::vector<float> linear_attn_ggml(
     ggml_backend_graph_compute(backend, gf);
 
     // Read result [D, HW, n_groups]
-    ggml_tensor* res_t = ggml_graph_get_tensor(gf, "result");
+    ggml_tensor * res_t = ggml_graph_get_tensor(gf, "result");
     std::vector<float> out(D * HW * n_groups);
     ggml_backend_tensor_get(res_t, out.data(), 0, out.size() * sizeof(float));
 
@@ -166,16 +164,16 @@ static void test_linear_attn_tiny() {
 
     // Per-group [HW, D] data stored as [g][hw][d]
     float Q_raw[2][3][2] = {
-        {{0.5f, 0.3f}, {0.8f, 0.1f}, {0.2f, 0.9f}},
-        {{0.4f, 0.6f}, {0.7f, 0.2f}, {0.1f, 0.5f}},
+        { { 0.5f, 0.3f }, { 0.8f, 0.1f }, { 0.2f, 0.9f } },
+        { { 0.4f, 0.6f }, { 0.7f, 0.2f }, { 0.1f, 0.5f } },
     };
     float K_raw[2][3][2] = {
-        {{0.6f, 0.2f}, {0.3f, 0.7f}, {0.1f, 0.4f}},
-        {{0.5f, 0.3f}, {0.2f, 0.8f}, {0.6f, 0.1f}},
+        { { 0.6f, 0.2f }, { 0.3f, 0.7f }, { 0.1f, 0.4f } },
+        { { 0.5f, 0.3f }, { 0.2f, 0.8f }, { 0.6f, 0.1f } },
     };
     float V_raw[2][3][2] = {
-        {{0.1f, 0.9f}, {0.4f, 0.6f}, {0.7f, 0.3f}},
-        {{0.2f, 0.8f}, {0.5f, 0.5f}, {0.3f, 0.7f}},
+        { { 0.1f, 0.9f }, { 0.4f, 0.6f }, { 0.7f, 0.3f } },
+        { { 0.2f, 0.8f }, { 0.5f, 0.5f }, { 0.3f, 0.7f } },
     };
 
     // Compute scalar reference for each group: out_scalar[g][hw][dv]
@@ -183,12 +181,11 @@ static void test_linear_attn_tiny() {
     for (int g = 0; g < n_groups; g++) {
         auto r = linear_attn_scalar(&Q_raw[g][0][0], &K_raw[g][0][0], &V_raw[g][0][0], HW, D);
         for (int hw = 0; hw < HW; hw++)
-            for (int dv = 0; dv < D; dv++)
-                sc[g][hw][dv] = r[hw * D + dv];
+            for (int dv = 0; dv < D; dv++) sc[g][hw][dv] = r[hw * D + dv];
     }
 
     // Build ggml input as [HW, D, n_groups]: element (hw, d, g) = hw + HW*d + HW*D*g
-    std::vector<float> Qg(HW*D*n_groups), Kg(HW*D*n_groups), Vg(HW*D*n_groups);
+    std::vector<float> Qg(HW * D * n_groups), Kg(HW * D * n_groups), Vg(HW * D * n_groups);
     for (int g = 0; g < n_groups; g++)
         for (int hw = 0; hw < HW; hw++)
             for (int d = 0; d < D; d++) {
@@ -221,9 +218,9 @@ static void test_linear_attn_single_pixel() {
     // More precisely: KTV = K[0]^T * V[0] (outer product), norm = Q[0] dot K[0]
     // out = (Q[0] dot KTV) / norm
     int HW = 1, D = 2, n_groups = 1;
-    float Q1[2] = {1.0f, 0.0f};  // e_0
-    float K1[2] = {1.0f, 0.0f};  // e_0
-    float V1[2] = {3.0f, 7.0f};
+    float Q1[2] = { 1.0f, 0.0f }; // e_0
+    float K1[2] = { 1.0f, 0.0f }; // e_0
+    float V1[2] = { 3.0f, 7.0f };
 
     auto sc = linear_attn_scalar(Q1, K1, V1, HW, D);
     // KTV[d, dv] = K[0,d] * V[0,dv]:
@@ -236,9 +233,12 @@ static void test_linear_attn_single_pixel() {
 
     // Also verify ggml path
     std::vector<float> Qg(2), Kg(2), Vg(2);
-    Qg[0] = Q1[0]; Qg[1] = Q1[1];
-    Kg[0] = K1[0]; Kg[1] = K1[1];
-    Vg[0] = V1[0]; Vg[1] = V1[1];
+    Qg[0] = Q1[0];
+    Qg[1] = Q1[1];
+    Kg[0] = K1[0];
+    Kg[1] = K1[1];
+    Vg[0] = V1[0];
+    Vg[1] = V1[1];
     auto gg = linear_attn_ggml(Qg.data(), Kg.data(), Vg.data(), HW, D, n_groups);
     // ggml result [D, HW, n_groups] = [2, 1, 1], element (dv, hw=0, g=0) = dv
     CHECK_CLOSE(gg[0], 3.0f, 1e-5f, "single_pixel ggml: out[0] == V[0]");
@@ -262,7 +262,7 @@ static void test_linear_attn_uniform() {
         for (int d = 0; d < D; d++) {
             Q[hw * D + d] = 1.0f;
             K[hw * D + d] = kval;
-            V[hw * D + d] = (float)(hw * D + d);  // distinct values
+            V[hw * D + d] = (float)(hw * D + d); // distinct values
         }
 
     auto sc = linear_attn_scalar(Q.data(), K.data(), V.data(), HW, D);

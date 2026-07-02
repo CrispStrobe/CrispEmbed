@@ -5,14 +5,19 @@
 #include <string>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 static bool contains(const char * haystack, const char * needle) {
@@ -20,30 +25,28 @@ static bool contains(const char * haystack, const char * needle) {
 }
 
 // Build a sample 2-page document for testing
-static void make_test_pages(ocr_render_page pages[2],
-                             ocr_render_line lines[4],
-                             ocr_render_word words[8]) {
+static void make_test_pages(ocr_render_page pages[2], ocr_render_line lines[4], ocr_render_word words[8]) {
     // Page 1: 2 lines, 2 words each
-    words[0] = {"Hello", 10, 20, 50, 15, 0.99f};
-    words[1] = {"World", 70, 20, 55, 15, 0.95f};
-    words[2] = {"Line", 10, 50, 40, 15, 0.92f};
-    words[3] = {"two", 60, 50, 35, 15, 0.88f};
+    words[0] = { "Hello", 10, 20, 50, 15, 0.99f };
+    words[1] = { "World", 70, 20, 55, 15, 0.95f };
+    words[2] = { "Line", 10, 50, 40, 15, 0.92f };
+    words[3] = { "two", 60, 50, 35, 15, 0.88f };
 
-    lines[0] = {&words[0], 2, 10, 20, 115, 15};
-    lines[1] = {&words[2], 2, 10, 50, 85, 15};
+    lines[0] = { &words[0], 2, 10, 20, 115, 15 };
+    lines[1] = { &words[2], 2, 10, 50, 85, 15 };
 
-    pages[0] = {&lines[0], 2, 400, 300, "page1.png"};
+    pages[0] = { &lines[0], 2, 400, 300, "page1.png" };
 
     // Page 2: 2 lines
-    words[4] = {"Second", 15, 25, 65, 14, 0.97f};
-    words[5] = {"page", 90, 25, 42, 14, 0.93f};
-    words[6] = {"Last", 15, 55, 40, 14, 0.91f};
-    words[7] = {"line.", 65, 55, 45, 14, 0.89f};
+    words[4] = { "Second", 15, 25, 65, 14, 0.97f };
+    words[5] = { "page", 90, 25, 42, 14, 0.93f };
+    words[6] = { "Last", 15, 55, 40, 14, 0.91f };
+    words[7] = { "line.", 65, 55, 45, 14, 0.89f };
 
-    lines[2] = {&words[4], 2, 15, 25, 117, 14};
-    lines[3] = {&words[6], 2, 15, 55, 95, 14};
+    lines[2] = { &words[4], 2, 15, 25, 117, 14 };
+    lines[3] = { &words[6], 2, 15, 55, 95, 14 };
 
-    pages[1] = {&lines[2], 2, 400, 300, "page2.png"};
+    pages[1] = { &lines[2], 2, 400, 300, "page2.png" };
 }
 
 static void test_text_renderer() {
@@ -150,10 +153,10 @@ static void test_pdf_renderer() {
     ocr_render_line lines[2];
     ocr_render_word words[4];
     // Reuse page 1 only
-    words[0] = {"Hello", 10, 20, 50, 15, 0.99f};
-    words[1] = {"World", 70, 20, 55, 15, 0.95f};
-    lines[0] = {&words[0], 2, 10, 20, 115, 15};
-    pages[0] = {&lines[0], 1, 400, 300, nullptr};
+    words[0] = { "Hello", 10, 20, 50, 15, 0.99f };
+    words[1] = { "World", 70, 20, 55, 15, 0.95f };
+    lines[0] = { &words[0], 2, 10, 20, 115, 15 };
+    pages[0] = { &lines[0], 1, 400, 300, nullptr };
 
     ocr_renderer * r = ocr_render_create(OCR_RENDER_PDF);
     ocr_render_begin(r);
@@ -175,9 +178,9 @@ static void test_pdf_renderer() {
 static void test_xml_escaping() {
     printf("\n=== XML escaping ===\n");
 
-    ocr_render_word w = {"<b>Bold</b> & \"quoted\"", 0, 0, 100, 20, 1.0f};
-    ocr_render_line l = {&w, 1, 0, 0, 100, 20};
-    ocr_render_page p = {&l, 1, 200, 100, nullptr};
+    ocr_render_word w = { "<b>Bold</b> & \"quoted\"", 0, 0, 100, 20, 1.0f };
+    ocr_render_line l = { &w, 1, 0, 0, 100, 20 };
+    ocr_render_page p = { &l, 1, 200, 100, nullptr };
 
     ocr_renderer * r = ocr_render_create(OCR_RENDER_HOCR);
     ocr_render_begin(r);

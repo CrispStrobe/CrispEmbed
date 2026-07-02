@@ -7,14 +7,19 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -28,14 +33,13 @@ static void test_identity() {
     std::vector<uint8_t> src(W * H);
     // Gradient pattern: pixel value = x
     for (int y = 0; y < H; y++)
-        for (int x = 0; x < W; x++)
-            src[y * W + x] = (uint8_t)(x * 255 / W);
+        for (int x = 0; x < W; x++) src[y * W + x] = (uint8_t)(x * 255 / W);
 
     // 4 corner control points, identity mapping
-    float sx[] = { 0, (float)(W-1), 0,         (float)(W-1) };
-    float sy[] = { 0, 0,            (float)(H-1), (float)(H-1) };
-    float dx[] = { 0, (float)(W-1), 0,         (float)(W-1) };
-    float dy[] = { 0, 0,            (float)(H-1), (float)(H-1) };
+    float sx[] = { 0, (float)(W - 1), 0, (float)(W - 1) };
+    float sy[] = { 0, 0, (float)(H - 1), (float)(H - 1) };
+    float dx[] = { 0, (float)(W - 1), 0, (float)(W - 1) };
+    float dy[] = { 0, 0, (float)(H - 1), (float)(H - 1) };
 
     tps_model * model = tps_solve(sx, sy, dx, dy, 4);
     check("tps_solve succeeds", model != nullptr);
@@ -45,8 +49,7 @@ static void test_identity() {
         for (int i = 0; i < 4; i++) {
             float ox, oy;
             tps_map_point(model, sx[i], sy[i], &ox, &oy);
-            float err = std::sqrt((ox - dx[i]) * (ox - dx[i]) +
-                                  (oy - dy[i]) * (oy - dy[i]));
+            float err = std::sqrt((ox - dx[i]) * (ox - dx[i]) + (oy - dy[i]) * (oy - dy[i]));
             char msg[128];
             snprintf(msg, sizeof(msg), "control point %d maps correctly (err=%.6f)", i, err);
             check(msg, err < 0.01f);
@@ -77,10 +80,10 @@ static void test_translation() {
     // Map output coords to input coords: output (x,y) → input (x+10, y+5)
     // So control points: src=(corners+offset), dst=(corners)
     const float tx = 10.0f, ty = 5.0f;
-    float sx[] = { 0+tx, 99+tx, 0+tx,  99+tx };
-    float sy[] = { 0+ty, 0+ty,  79+ty, 79+ty };
-    float dx[] = { 0,    99,    0,     99    };
-    float dy[] = { 0,    0,     79,    79    };
+    float sx[] = { 0 + tx, 99 + tx, 0 + tx, 99 + tx };
+    float sy[] = { 0 + ty, 0 + ty, 79 + ty, 79 + ty };
+    float dx[] = { 0, 99, 0, 99 };
+    float dy[] = { 0, 0, 79, 79 };
 
     tps_model * model = tps_solve(dx, dy, sx, sy, 4);
     check("tps_solve succeeds", model != nullptr);
@@ -140,8 +143,7 @@ static void test_nonlinear_warp() {
         for (int i = 0; i < n; i++) {
             float ox, oy;
             tps_map_point(model, sx[i], sy[i], &ox, &oy);
-            float err = std::sqrt((ox - dx[i]) * (ox - dx[i]) +
-                                  (oy - dy[i]) * (oy - dy[i]));
+            float err = std::sqrt((ox - dx[i]) * (ox - dx[i]) + (oy - dy[i]) * (oy - dy[i]));
             if (err > max_ctrl_err) max_ctrl_err = err;
         }
         printf("  Max control point error: %.6f\n", max_ctrl_err);
@@ -152,13 +154,13 @@ static void test_nonlinear_warp() {
         float ox1, oy1, ox2, oy2, ox_mid, oy_mid;
         tps_map_point(model, sx[0], sy[0], &ox1, &oy1);
         tps_map_point(model, sx[1], sy[1], &ox2, &oy2);
-        tps_map_point(model, (sx[0]+sx[1])/2, (sy[0]+sy[1])/2, &ox_mid, &oy_mid);
+        tps_map_point(model, (sx[0] + sx[1]) / 2, (sy[0] + sy[1]) / 2, &ox_mid, &oy_mid);
 
         // Midpoint output should be roughly between the two endpoint outputs
         float expected_x = (ox1 + ox2) / 2.0f;
         float expected_y = (oy1 + oy2) / 2.0f;
-        float mid_err = std::sqrt((ox_mid - expected_x) * (ox_mid - expected_x) +
-                                  (oy_mid - expected_y) * (oy_mid - expected_y));
+        float mid_err =
+            std::sqrt((ox_mid - expected_x) * (ox_mid - expected_x) + (oy_mid - expected_y) * (oy_mid - expected_y));
         printf("  Midpoint deviation from linear: %.2f px\n", mid_err);
         check("midpoint interpolation is smooth (deviation < 10px)", mid_err < 10.0f);
 
@@ -166,8 +168,7 @@ static void test_nonlinear_warp() {
         const int W = 100, H = 100;
         std::vector<uint8_t> img(W * H);
         for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-                img[y * W + x] = (uint8_t)(x * 255 / W);
+            for (int x = 0; x < W; x++) img[y * W + x] = (uint8_t)(x * 255 / W);
 
         std::vector<uint8_t> out(W * H, 0);
         tps_warp(img.data(), W, H, model, out.data(), W, H, 128);
@@ -191,7 +192,7 @@ static void test_edge_cases() {
     printf("\n=== Edge cases ===\n");
 
     // Too few points
-    float x[] = {0, 1}, y[] = {0, 1};
+    float x[] = { 0, 1 }, y[] = { 0, 1 };
     tps_model * m = tps_solve(x, y, x, y, 2);
     check("tps_solve returns NULL for n < 3", m == nullptr);
 
@@ -200,8 +201,7 @@ static void test_edge_cases() {
 
     // tps_warp_points with bad inputs
     uint8_t buf[100] = {};
-    int ret = tps_warp_points(buf, 10, 10, nullptr, nullptr,
-                              nullptr, nullptr, 0, buf, 10, 10, 255);
+    int ret = tps_warp_points(buf, 10, 10, nullptr, nullptr, nullptr, nullptr, 0, buf, 10, 10, 255);
     check("tps_warp_points returns 1 for bad inputs", ret == 1);
 
     // tps_free(NULL) should not crash
@@ -222,18 +222,14 @@ static void test_tps_dewarp_api() {
     std::vector<uint8_t> out(W * H, 0);
 
     // Identity control points — should succeed and copy
-    float sx[] = { 0, 99, 0,  99 };
-    float sy[] = { 0, 0,  79, 79 };
+    float sx[] = { 0, 99, 0, 99 };
+    float sy[] = { 0, 0, 79, 79 };
 
-    int ret = tps_dewarp(img.data(), W, H,
-                         sx, sy, sx, sy, 4,
-                         out.data());
+    int ret = tps_dewarp(img.data(), W, H, sx, sy, sx, sy, 4, out.data());
     check("tps_dewarp returns 0", ret == 0);
 
     // Too few points
-    ret = tps_dewarp(img.data(), W, H,
-                     sx, sy, sx, sy, 2,
-                     out.data());
+    ret = tps_dewarp(img.data(), W, H, sx, sy, sx, sy, 2, out.data());
     check("tps_dewarp returns 1 for n < 3", ret == 1);
 }
 

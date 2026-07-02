@@ -9,16 +9,24 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 static int n_pass = 0, n_fail = 0;
 static void check(const char * n, bool c) {
-    if (c) { printf("  %s[PASS]%s %s\n", GREEN, RESET, n); n_pass++; }
-    else   { printf("  %s[FAIL]%s %s\n", RED, RESET, n); n_fail++; }
+    if (c) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, n);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, n);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
-    if (argc < 3) { fprintf(stderr, "Usage: %s model.gguf ref.gguf\n", argv[0]); return 1; }
+    if (argc < 3) {
+        fprintf(stderr, "Usage: %s model.gguf ref.gguf\n", argv[0]);
+        return 1;
+    }
     printf("Pix2Struct -- encoder parity test\n");
     printf("  Model: %s\n  Ref: %s\n\n", argv[1], argv[2]);
 
@@ -34,7 +42,8 @@ int main(int argc, char ** argv) {
     auto patches_shape = ref.shape("flattened_patches");
     if (!patches || patches_n == 0) {
         fprintf(stderr, "Reference missing flattened_patches\n");
-        pix2struct_free(ctx); return 1;
+        pix2struct_free(ctx);
+        return 1;
     }
     int n_patches = (int)patches_shape[1]; // ggml: ne[0]=770, ne[1]=n_patches
     int patch_dim = (int)patches_shape[0]; // 770
@@ -53,8 +62,7 @@ int main(int argc, char ** argv) {
     // Compare encoder output
     printf("=== Encoder output ===\n");
     auto r = ref.compare("encoder_output", enc_out, n_patches * out_dim);
-    printf("  encoder_output: cos=%.6f max_abs=%.6f  %s\n",
-           r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
+    printf("  encoder_output: cos=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs, r.is_pass(0.999f) ? "PASS" : "FAIL");
     check("encoder cos >= 0.999", r.is_pass(0.999f));
 
     char msg[128];
@@ -71,8 +79,8 @@ int main(int argc, char ** argv) {
             check("decode_step0 returns 0", ret2 == 0);
 
             auto r2 = dec_ref.compare("logits_step0", logits.data(), 50244);
-            printf("  logits: cos=%.6f max_abs=%.6f  %s\n",
-                   r2.cos_min, r2.max_abs, r2.is_pass(0.999f) ? "PASS" : "FAIL");
+            printf("  logits: cos=%.6f max_abs=%.6f  %s\n", r2.cos_min, r2.max_abs,
+                   r2.is_pass(0.999f) ? "PASS" : "FAIL");
             check("logits cos >= 0.999", r2.is_pass(0.999f));
 
             // Check argmax

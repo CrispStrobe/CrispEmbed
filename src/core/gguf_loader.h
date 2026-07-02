@@ -69,25 +69,25 @@ namespace core_gguf {
 // Open the GGUF for metadata-only reading. Returns a gguf_context owned
 // by the caller — free with free_metadata() when done reading keys.
 // Returns nullptr and prints an error to stderr on failure.
-gguf_context* open_metadata(const char* path);
+gguf_context * open_metadata(const char * path);
 
 // Free a gguf_context obtained from open_metadata().
-void free_metadata(gguf_context* gctx);
+void free_metadata(gguf_context * gctx);
 
 // Scalar key readers with defaults. All return the default value when
 // the key is absent or the type doesn't match.
-uint32_t kv_u32(gguf_context* gctx, const char* key, uint32_t default_val);
-int32_t kv_i32(gguf_context* gctx, const char* key, int32_t default_val);
-float kv_f32(gguf_context* gctx, const char* key, float default_val);
-bool kv_bool(gguf_context* gctx, const char* key, bool default_val);
-std::string kv_str(gguf_context* gctx, const char* key, const char* default_val);
+uint32_t kv_u32(gguf_context * gctx, const char * key, uint32_t default_val);
+int32_t kv_i32(gguf_context * gctx, const char * key, int32_t default_val);
+float kv_f32(gguf_context * gctx, const char * key, float default_val);
+bool kv_bool(gguf_context * gctx, const char * key, bool default_val);
+std::string kv_str(gguf_context * gctx, const char * key, const char * default_val);
 
 // Read a string array (e.g. tokenizer.ggml.tokens). Returns an empty
 // vector when the key is missing or has the wrong type.
-std::vector<std::string> kv_str_array(gguf_context* gctx, const char* key);
+std::vector<std::string> kv_str_array(gguf_context * gctx, const char * key);
 
 // Read an int32 array. Returns empty vector when missing.
-std::vector<int> kv_i32_array(gguf_context* gctx, const char* key);
+std::vector<int> kv_i32_array(gguf_context * gctx, const char * key);
 
 // ---------------------------------------------------------------------------
 // Pass 2: tensor allocation + weight data copy.
@@ -112,17 +112,17 @@ std::vector<int> kv_i32_array(gguf_context* gctx, const char* key);
 // crisp_lid/lid_cld3) declare their field as `core_gguf::tensor_map tensors;`
 // so it AUTOMATICALLY matches whichever gguf_loader.h is compiled. Do not
 // hard-code std::map / std::unordered_map in those consumer structs again.
-using tensor_map = std::unordered_map<std::string, ggml_tensor*>;
+using tensor_map = std::unordered_map<std::string, ggml_tensor *>;
 
 struct WeightLoad {
-    ggml_context* ctx = nullptr;
+    ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
     tensor_map tensors;
     // Set only on the no-copy mmap path: the file stays mapped for the buffer's
     // lifetime (the buffer points directly at these pages). free_weights() unmaps.
-    void* mmap_addr = nullptr;
+    void * mmap_addr = nullptr;
     size_t mmap_len = 0;
-    bool used_mmap = false;  // true if the no-copy path was actually taken
+    bool used_mmap = false; // true if the no-copy path was actually taken
 };
 
 // Load all tensor metadata + weights into a new ggml_context backed by
@@ -138,12 +138,12 @@ struct WeightLoad {
 // copying 2.x GB into it — halving resident memory and skipping the copy.
 // Falls back to the copy path automatically if unsupported. Behaviour is
 // otherwise identical (validated by tests/test_gguf_loader_mmap).
-bool load_weights(const char* path, ggml_backend_t backend, const char* model_tag,
-                  WeightLoad& out, bool try_mmap = false);
+bool load_weights(const char * path, ggml_backend_t backend, const char * model_tag, WeightLoad & out,
+                  bool try_mmap = false);
 
 // Free a WeightLoad's resources. Call when the model is being destroyed
 // and the buffer/context are not held elsewhere.
-void free_weights(WeightLoad& wl);
+void free_weights(WeightLoad & wl);
 
 // ---------------------------------------------------------------------------
 // Tensor lookup helpers.
@@ -152,17 +152,17 @@ void free_weights(WeightLoad& wl);
 // Look up a tensor by name. Returns nullptr (silently) if missing.
 // Uses `tensor_map` (see the cross-repo contract note above) so the signature
 // tracks the per-repo map choice automatically.
-ggml_tensor* try_get(const tensor_map& tensors, const char* name);
+ggml_tensor * try_get(const tensor_map & tensors, const char * name);
 
 // Look up a tensor by name. Prints an error to stderr if missing but
 // still returns nullptr — the caller decides whether a missing tensor
 // is fatal.
-ggml_tensor* require(const tensor_map& tensors, const char* name, const char* model_tag);
+ggml_tensor * require(const tensor_map & tensors, const char * name, const char * model_tag);
 
 // Build a shell command that produces the formatted tensor name for a
 // per-layer lookup. Avoids the snprintf(buf, sizeof(buf), "...", i) line
 // that every loader repeats.
-std::string format_layer_name(const char* fmt, int i);
-std::string format_layer_name(const char* fmt, int i, int j);
+std::string format_layer_name(const char * fmt, int i);
+std::string format_layer_name(const char * fmt, int i, int j);
 
 } // namespace core_gguf

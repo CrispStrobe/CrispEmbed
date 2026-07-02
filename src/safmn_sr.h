@@ -26,16 +26,12 @@ int safmn_get_scale(const safmn_context * ctx);
 /// Input: uint8 RGB [h, w, 3]. Output: uint8 RGB [h*scale, w*scale, 3].
 /// Caller allocates output (w*scale * h*scale * 3 bytes).
 /// Returns 0 on success, -1 on error.
-int safmn_process(safmn_context * ctx,
-                  const uint8_t * input, int width, int height,
-                  uint8_t * output);
+int safmn_process(safmn_context * ctx, const uint8_t * input, int width, int height, uint8_t * output);
 
 /// Super-resolve and return float output [3, H*scale, W*scale] (CHW, [0,1]).
 /// Caller allocates (3 * w*scale * h*scale) floats.
 /// For parity testing — avoids uint8 clamping.
-int safmn_process_float(safmn_context * ctx,
-                        const float * input_chw, int width, int height,
-                        float * output_chw);
+int safmn_process_float(safmn_context * ctx, const float * input_chw, int width, int height, float * output_chw);
 
 #ifdef __cplusplus
 }

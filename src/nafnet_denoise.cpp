@@ -54,10 +54,8 @@ static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
 
 // Conv2d: [OC, IC, KH, KW] weights, [OC] bias (optional)
 // Input/output are [C, H, W] planar float
-static void conv2d_cpu(const float * input, int ic, int ih, int iw,
-                       const float * weight, const float * bias,
-                       int oc, int kh, int kw, int stride, int pad,
-                       int groups, float * output) {
+static void conv2d_cpu(const float * input, int ic, int ih, int iw, const float * weight, const float * bias, int oc,
+                       int kh, int kw, int stride, int pad, int groups, float * output) {
     int oh = (ih + 2 * pad - kh) / stride + 1;
     int ow = (iw + 2 * pad - kw) / stride + 1;
     int ic_per_group = ic / groups;
@@ -78,8 +76,7 @@ static void conv2d_cpu(const float * input, int ic, int ih, int iw,
                                 int ix = ox * stride + kx - pad;
                                 if (iy < 0 || iy >= ih || ix < 0 || ix >= iw) continue;
                                 float v = input[ic_abs * ih * iw + iy * iw + ix];
-                                float w = weight[oc_abs * ic_per_group * kh * kw +
-                                                  ic_i * kh * kw + ky * kw + kx];
+                                float w = weight[oc_abs * ic_per_group * kh * kw + ic_i * kh * kw + ky * kw + kx];
                                 sum += v * w;
                             }
                         }
@@ -93,8 +90,7 @@ static void conv2d_cpu(const float * input, int ic, int ih, int iw,
 
 // LayerNorm2d: normalize over C dimension for each spatial position
 // Input: [C, H, W], output: [C, H, W]
-static void layernorm2d(const float * input, int c, int h, int w,
-                        const float * weight, const float * bias,
+static void layernorm2d(const float * input, int c, int h, int w, const float * weight, const float * bias,
                         float * output) {
     float eps = 1e-6f;
     for (int y = 0; y < h; y++) {
@@ -135,8 +131,7 @@ static void simple_gate(const float * input, int c2, int h, int w, float * outpu
 }
 
 // Simplified Channel Attention: global avg pool → 1x1 conv → multiply
-static void sca(const float * input, int c, int h, int w,
-                const float * sca_weight, const float * sca_bias,
+static void sca(const float * input, int c, int h, int w, const float * sca_weight, const float * sca_bias,
                 float * output) {
     int hw = h * w;
     // Global average pooling → [C, 1, 1]
@@ -164,8 +159,7 @@ static void sca(const float * input, int c, int h, int w,
 }
 
 // PixelShuffle: [C*r*r, H, W] → [C, H*r, W*r]
-static void pixel_shuffle(const float * input, int c_in, int h, int w,
-                          int r, float * output) {
+static void pixel_shuffle(const float * input, int c_in, int h, int w, int r, float * output) {
     int c_out = c_in / (r * r);
     int oh = h * r, ow = w * r;
     for (int c = 0; c < c_out; c++) {
@@ -181,43 +175,36 @@ static void pixel_shuffle(const float * input, int c_in, int h, int w,
 }
 
 // conv2d_ggml: defined after nafnet_context (needs struct members)
-static void conv2d_ggml(nafnet_context * ctx,
-                         const float * input, int ic, int ih, int iw,
-                         ggml_tensor * weight_t, ggml_tensor * bias_t,
-                         int oc, int kh, int kw, int stride, int pad,
-                         int groups, float * output);
+static void conv2d_ggml(nafnet_context * ctx, const float * input, int ic, int ih, int iw, ggml_tensor * weight_t,
+                        ggml_tensor * bias_t, int oc, int kh, int kw, int stride, int pad, int groups, float * output);
 
 // ── NAFBlock ────────────────────────────────────────────────────────
 
 struct nafblock_weights {
-    const float * beta;       // [1, C, 1, 1] → flatten to [C]
+    const float * beta; // [1, C, 1, 1] → flatten to [C]
     const float * gamma;
-    const float * norm1_w;    // [C]
+    const float * norm1_w; // [C]
     const float * norm1_b;
     const float * norm2_w;
     const float * norm2_b;
-    const float * sca_w_f;    // dequantized SCA weight for scalar path
+    const float * sca_w_f; // dequantized SCA weight for scalar path
     const float * sca_b_f;
     // ggml tensor pointers for conv2d_ggml
-    ggml_tensor * conv1_wt;   // [2C, C, 1, 1]
+    ggml_tensor * conv1_wt; // [2C, C, 1, 1]
     ggml_tensor * conv1_bt;
-    ggml_tensor * conv2_wt;   // [2C, 1, 3, 3] (depthwise)
+    ggml_tensor * conv2_wt; // [2C, 1, 3, 3] (depthwise)
     ggml_tensor * conv2_bt;
-    ggml_tensor * conv3_wt;   // [C, C, 1, 1]
+    ggml_tensor * conv3_wt; // [C, C, 1, 1]
     ggml_tensor * conv3_bt;
-    ggml_tensor * conv4_wt;   // [2C, C, 1, 1]
+    ggml_tensor * conv4_wt; // [2C, C, 1, 1]
     ggml_tensor * conv4_bt;
-    ggml_tensor * conv5_wt;   // [C, C, 1, 1]
+    ggml_tensor * conv5_wt; // [C, C, 1, 1]
     ggml_tensor * conv5_bt;
 };
 
-static void nafblock_forward(nafnet_context * ctx,
-                             const float * input, int c, int h, int w,
-                             const nafblock_weights & wt,
-                             float * output,
-                             std::vector<float> & tmp1,
-                             std::vector<float> & tmp2,
-                             std::vector<float> & tmp3) {
+static void nafblock_forward(nafnet_context * ctx, const float * input, int c, int h, int w,
+                             const nafblock_weights & wt, float * output, std::vector<float> & tmp1,
+                             std::vector<float> & tmp2, std::vector<float> & tmp3) {
     int hw = h * w;
     int c2 = c * 2;
 
@@ -249,8 +236,7 @@ static void nafblock_forward(nafnet_context * ctx,
     tmp2.resize(c * hw);
     for (int ch = 0; ch < c; ch++) {
         float b = wt.beta[ch];
-        for (int i = 0; i < hw; i++)
-            tmp2[ch * hw + i] = input[ch * hw + i] + tmp1[ch * hw + i] * b;
+        for (int i = 0; i < hw; i++) tmp2[ch * hw + i] = input[ch * hw + i] + tmp1[ch * hw + i] * b;
     }
 
     // Part 2: channel mixing
@@ -272,8 +258,7 @@ static void nafblock_forward(nafnet_context * ctx,
     // Residual: tmp2 + tmp3 * gamma
     for (int ch = 0; ch < c; ch++) {
         float g = wt.gamma[ch];
-        for (int i = 0; i < hw; i++)
-            output[ch * hw + i] = tmp2[ch * hw + i] + tmp3[ch * hw + i] * g;
+        for (int i = 0; i < hw; i++) output[ch * hw + i] = tmp2[ch * hw + i] + tmp3[ch * hw + i] * g;
     }
 }
 
@@ -292,8 +277,8 @@ struct nafnet_context {
     ggml_backend_t backend = nullptr;
 
     // ggml graph infrastructure for batched matmuls
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_meta;
 
     // Cache of conv kernels/biases dequantized to ggml order and made resident on
@@ -350,8 +335,7 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     bool force_cpu = (getenv("NAFNET_FORCE_CPU") && atoi(getenv("NAFNET_FORCE_CPU")));
     ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(ctx->backend))
-        ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(model_path, ctx->backend, "nafnet", ctx->wl)) {
         fprintf(stderr, "nafnet: failed to load weights\n");
         ggml_backend_free(ctx->backend);
@@ -360,11 +344,9 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     }
 
     fprintf(stderr, "nafnet: width=%d, enc=[", ctx->width);
-    for (int i = 0; i < (int)ctx->enc_blk_nums.size(); i++)
-        fprintf(stderr, "%s%d", i ? "," : "", ctx->enc_blk_nums[i]);
+    for (int i = 0; i < (int)ctx->enc_blk_nums.size(); i++) fprintf(stderr, "%s%d", i ? "," : "", ctx->enc_blk_nums[i]);
     fprintf(stderr, "], mid=%d, dec=[", ctx->middle_blk_num);
-    for (int i = 0; i < (int)ctx->dec_blk_nums.size(); i++)
-        fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
+    for (int i = 0; i < (int)ctx->dec_blk_nums.size(); i++) fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
     ctx->bench = (std::getenv("CRISPEMBED_NAFNET_BENCH") != nullptr);
@@ -434,11 +416,8 @@ static ggml_tensor * nafnet_resident(nafnet_context * ctx, const ggml_tensor * s
     return t;
 }
 
-static void conv2d_ggml(nafnet_context * ctx,
-                         const float * input, int ic, int ih, int iw,
-                         ggml_tensor * weight_t, ggml_tensor * bias_t,
-                         int oc, int kh, int kw, int stride, int pad,
-                         int groups, float * output) {
+static void conv2d_ggml(nafnet_context * ctx, const float * input, int ic, int ih, int iw, ggml_tensor * weight_t,
+                        ggml_tensor * bias_t, int oc, int kh, int kw, int stride, int pad, int groups, float * output) {
     if (!ctx->enc_sched || !weight_t || nafnet_scalar_conv()) {
         // fallback to scalar
         std::vector<float> wf_buf, bf_buf;
@@ -449,8 +428,7 @@ static void conv2d_ggml(nafnet_context * ctx,
     }
 
     int max_nodes = 32;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> meta(buf_size);
     ggml_init_params ip = { buf_size, meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -499,16 +477,15 @@ static void conv2d_ggml(nafnet_context * ctx,
         fprintf(stderr, "nafnet: conv2d_ggml alloc failed\n");
         return;
     }
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0,
-                             ic * ih * iw * sizeof(float));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, ic * ih * iw * sizeof(float));
 
     for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
         ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
@@ -516,15 +493,12 @@ static void conv2d_ggml(nafnet_context * ctx,
 
     int oh = (ih + 2 * pad - kh) / stride + 1;
     int ow = (iw + 2 * pad - kw) / stride + 1;
-    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0,
-                             oc * oh * ow * sizeof(float));
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, oc * oh * ow * sizeof(float));
 }
 
 // ── Forward pass (single tile) ──────────────────────────────────────
 
-static int nafnet_process_tile(nafnet_context * ctx,
-                               const uint8_t * input, int width, int height,
-                               uint8_t * output) {
+static int nafnet_process_tile(nafnet_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
     const bool bench = ctx->bench;
@@ -535,7 +509,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
     int ns = ctx->n_stages;
 
     // Pad to multiple of 2^n_stages
-    int pad_mult = 1 << ns;  // 16 for 4 stages
+    int pad_mult = 1 << ns; // 16 for 4 stages
     int ph = ((height + pad_mult - 1) / pad_mult) * pad_mult;
     int pw = ((width + pad_mult - 1) / pad_mult) * pad_mult;
 
@@ -577,8 +551,8 @@ static int nafnet_process_tile(nafnet_context * ctx,
     // Helper to load a NAFBlock's weights
     auto load_block = [&](const std::string & prefix, int c) -> nafblock_weights {
         nafblock_weights wt;
-        wt.beta    = ctx->get_tensor(prefix + ".beta");
-        wt.gamma   = ctx->get_tensor(prefix + ".gamma");
+        wt.beta = ctx->get_tensor(prefix + ".beta");
+        wt.gamma = ctx->get_tensor(prefix + ".gamma");
         wt.norm1_w = ctx->get_tensor(prefix + ".norm1.weight");
         wt.norm1_b = ctx->get_tensor(prefix + ".norm1.bias");
         wt.norm2_w = ctx->get_tensor(prefix + ".norm2.weight");
@@ -605,17 +579,15 @@ static int nafnet_process_tile(nafnet_context * ctx,
     // Intro conv: 3 → W (ggml)
     {
         std::vector<float> after_intro(W * cur_h * cur_w);
-        conv2d_ggml(ctx, img.data(), 3, cur_h, cur_w,
-                     get_raw("intro.weight"), get_raw("intro.bias"),
-                     W, 3, 3, 1, 1, 1, after_intro.data());
+        conv2d_ggml(ctx, img.data(), 3, cur_h, cur_w, get_raw("intro.weight"), get_raw("intro.bias"), W, 3, 3, 1, 1, 1,
+                    after_intro.data());
         img = std::move(after_intro);
         cur_c = W;
     }
 
     if (bench) {
         auto t_pre_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[nafnet-bench] preprocess+intro: %.1f ms\n",
-                ms_f(t_pre_end - t_pre).count());
+        fprintf(stderr, "[nafnet-bench] preprocess+intro: %.1f ms\n", ms_f(t_pre_end - t_pre).count());
     }
     fprintf(stderr, "nafnet: intro done (%dx%d, %d ch)\n", cur_w, cur_h, cur_c);
 
@@ -623,7 +595,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
     std::vector<std::vector<float>> skip_connections;
     for (int s = 0; s < ns; s++) {
         auto t_enc = std::chrono::steady_clock::now();
-        int c = W * (1 << s);  // 32, 64, 128, 256
+        int c = W * (1 << s); // 32, 64, 128, 256
 
         // Run NAFBlocks
         for (int b = 0; b < ctx->enc_blk_nums[s]; b++) {
@@ -646,9 +618,8 @@ static int nafnet_process_tile(nafnet_context * ctx,
             snprintf(name_w, sizeof(name_w), "downs.%d.weight", s);
             snprintf(name_b, sizeof(name_b), "downs.%d.bias", s);
             std::vector<float> down_out(next_c * next_h * next_w);
-            conv2d_ggml(ctx, img.data(), c, cur_h, cur_w,
-                         get_raw(name_w), get_raw(name_b),
-                         next_c, 2, 2, 2, 0, 1, down_out.data());
+            conv2d_ggml(ctx, img.data(), c, cur_h, cur_w, get_raw(name_w), get_raw(name_b), next_c, 2, 2, 2, 0, 1,
+                        down_out.data());
             img = std::move(down_out);
         }
         cur_c = next_c;
@@ -657,8 +628,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
 
         if (bench) {
             auto t_enc_end = std::chrono::steady_clock::now();
-            fprintf(stderr, "[nafnet-bench] enc stage %d: %.1f ms\n",
-                    s, ms_f(t_enc_end - t_enc).count());
+            fprintf(stderr, "[nafnet-bench] enc stage %d: %.1f ms\n", s, ms_f(t_enc_end - t_enc).count());
         }
         fprintf(stderr, "nafnet: enc stage %d done (%dx%d, %d ch)\n", s, cur_w, cur_h, cur_c);
     }
@@ -675,8 +645,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
     }
     if (bench) {
         auto t_mid_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[nafnet-bench] middle: %.1f ms\n",
-                ms_f(t_mid_end - t_mid).count());
+        fprintf(stderr, "[nafnet-bench] middle: %.1f ms\n", ms_f(t_mid_end - t_mid).count());
     }
     fprintf(stderr, "nafnet: middle done (%d blocks)\n", ctx->middle_blk_num);
 
@@ -691,9 +660,8 @@ static int nafnet_process_tile(nafnet_context * ctx,
             snprintf(name_w, sizeof(name_w), "ups.%d.weight", s);
             int up_oc = cur_c * 2;
             std::vector<float> up_tmp(up_oc * cur_h * cur_w);
-            conv2d_ggml(ctx, img.data(), cur_c, cur_h, cur_w,
-                         get_raw(name_w), nullptr,
-                         up_oc, 1, 1, 1, 0, 1, up_tmp.data());
+            conv2d_ggml(ctx, img.data(), cur_c, cur_h, cur_w, get_raw(name_w), nullptr, up_oc, 1, 1, 1, 0, 1,
+                        up_tmp.data());
 
             std::vector<float> ps_out(next_c * next_h * next_w);
             pixel_shuffle(up_tmp.data(), up_oc, cur_h, cur_w, 2, ps_out.data());
@@ -722,8 +690,7 @@ static int nafnet_process_tile(nafnet_context * ctx,
 
         if (bench) {
             auto t_dec_end = std::chrono::steady_clock::now();
-            fprintf(stderr, "[nafnet-bench] dec stage %d: %.1f ms\n",
-                    s, ms_f(t_dec_end - t_dec).count());
+            fprintf(stderr, "[nafnet-bench] dec stage %d: %.1f ms\n", s, ms_f(t_dec_end - t_dec).count());
         }
         fprintf(stderr, "nafnet: dec stage %d done (%dx%d, %d ch)\n", s, cur_w, cur_h, cur_c);
     }
@@ -732,9 +699,8 @@ static int nafnet_process_tile(nafnet_context * ctx,
     auto t_end_phase = std::chrono::steady_clock::now();
     {
         std::vector<float> ending(3 * cur_h * cur_w);
-        conv2d_ggml(ctx, img.data(), W, cur_h, cur_w,
-                     get_raw("ending.weight"), get_raw("ending.bias"),
-                     3, 3, 3, 1, 1, 1, ending.data());
+        conv2d_ggml(ctx, img.data(), W, cur_h, cur_w, get_raw("ending.weight"), get_raw("ending.bias"), 3, 3, 3, 1, 1,
+                    1, ending.data());
         img = std::move(ending);
     }
 
@@ -759,10 +725,8 @@ static int nafnet_process_tile(nafnet_context * ctx,
 
     if (bench) {
         auto t_fin = std::chrono::steady_clock::now();
-        fprintf(stderr, "[nafnet-bench] ending: %.1f ms\n",
-                ms_f(t_fin - t_end_phase).count());
-        fprintf(stderr, "[nafnet-bench] total: %.1f ms\n",
-                ms_f(t_fin - t_total).count());
+        fprintf(stderr, "[nafnet-bench] ending: %.1f ms\n", ms_f(t_fin - t_end_phase).count());
+        fprintf(stderr, "[nafnet-bench] total: %.1f ms\n", ms_f(t_fin - t_total).count());
     }
     fprintf(stderr, "nafnet: done (%dx%d)\n", width, height);
     return 0;
@@ -789,9 +753,7 @@ static void build_blend_window_1x(int tile_size, int overlap, std::vector<float>
     }
 }
 
-int nafnet_process(nafnet_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output) {
+int nafnet_process(nafnet_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
     // Tile size must be multiple of pad_mult (16 for 4-stage U-Net)
@@ -805,8 +767,7 @@ int nafnet_process(nafnet_context * ctx,
     tile_overlap = std::min(tile_overlap, tile_size / 4);
 
     // Small image: single-shot
-    if (width <= tile_size && height <= tile_size)
-        return nafnet_process_tile(ctx, input, width, height, output);
+    if (width <= tile_size && height <= tile_size) return nafnet_process_tile(ctx, input, width, height, output);
 
     // Tiled processing (1:1 denoising, no upscale)
     std::vector<float> accum(3 * height * width, 0.0f);
@@ -818,8 +779,8 @@ int nafnet_process(nafnet_context * ctx,
     int n_tiles_x = std::max(1, (width + step - 1) / step);
     int n_tiles_y = std::max(1, (height + step - 1) / step);
 
-    fprintf(stderr, "nafnet: %dx%d, tiles=%dx%d (size=%d, overlap=%d)\n",
-            width, height, n_tiles_x, n_tiles_y, tile_size, tile_overlap);
+    fprintf(stderr, "nafnet: %dx%d, tiles=%dx%d (size=%d, overlap=%d)\n", width, height, n_tiles_x, n_tiles_y,
+            tile_size, tile_overlap);
 
     for (int ty = 0; ty < n_tiles_y; ty++) {
         for (int tx = 0; tx < n_tiles_x; tx++) {
@@ -831,8 +792,7 @@ int nafnet_process(nafnet_context * ctx,
             // Extract tile (HWC uint8)
             std::vector<uint8_t> tile_in(tw * th * 3);
             for (int y = 0; y < th; y++)
-                memcpy(tile_in.data() + y * tw * 3,
-                       input + ((y0 + y) * width + x0) * 3, tw * 3);
+                memcpy(tile_in.data() + y * tw * 3, input + ((y0 + y) * width + x0) * 3, tw * 3);
 
             std::vector<uint8_t> tile_out(tw * th * 3);
             int ret = nafnet_process_tile(ctx, tile_in.data(), tw, th, tile_out.data());
@@ -845,15 +805,12 @@ int nafnet_process(nafnet_context * ctx,
                     if (tw == tile_size && th == tile_size)
                         w = blend_win[y * tile_size + x];
                     else {
-                        if (x0 > 0 && x < tile_overlap)
-                            w *= 0.5f - 0.5f * cosf((float)M_PI * x / tile_overlap);
-                        if (y0 > 0 && y < tile_overlap)
-                            w *= 0.5f - 0.5f * cosf((float)M_PI * y / tile_overlap);
+                        if (x0 > 0 && x < tile_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * x / tile_overlap);
+                        if (y0 > 0 && y < tile_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * y / tile_overlap);
                     }
                     int dy = y0 + y, dx = x0 + x;
                     for (int c = 0; c < 3; c++)
-                        accum[c * height * width + dy * width + dx] +=
-                            tile_out[(y * tw + x) * 3 + c] * w;
+                        accum[c * height * width + dy * width + dx] += tile_out[(y * tw + x) * 3 + c] * w;
                     weight_map[dy * width + dx] += w;
                 }
             }
@@ -867,8 +824,7 @@ int nafnet_process(nafnet_context * ctx,
             if (wt <= 0.0f) wt = 1.0f;
             for (int c = 0; c < 3; c++) {
                 float v = accum[c * height * width + y * width + x] / wt;
-                output[(y * width + x) * 3 + c] =
-                    (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+                output[(y * width + x) * 3 + c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
             }
         }
     return 0;

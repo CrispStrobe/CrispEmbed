@@ -26,8 +26,12 @@
 // Helpers
 // ---------------------------------------------------------------------------
 
-static inline int wpl_for(int w) { return (w + 31) >> 5; }
-static inline int buf_size(int wpl, int h) { return wpl * h; }
+static inline int wpl_for(int w) {
+    return (w + 31) >> 5;
+}
+static inline int buf_size(int wpl, int h) {
+    return wpl * h;
+}
 
 static uint32_t * alloc_bits(int wpl, int h) {
     int n = wpl * h;
@@ -52,8 +56,7 @@ static inline void set_bit(uint32_t * line, int x) {
 // 1-bit ↔ float/u8 conversion
 // ---------------------------------------------------------------------------
 
-uint32_t * morph_float_to_1bit(const float * gray, int w, int h,
-                                float threshold, int * out_wpl) {
+uint32_t * morph_float_to_1bit(const float * gray, int w, int h, float threshold, int * out_wpl) {
     int wpl = wpl_for(w);
     if (out_wpl) *out_wpl = wpl;
     uint32_t * bits = alloc_bits(wpl, h);
@@ -68,8 +71,7 @@ uint32_t * morph_float_to_1bit(const float * gray, int w, int h,
     return bits;
 }
 
-void morph_1bit_to_float(const uint32_t * bits, int w, int h, int wpl,
-                          float * out_gray) {
+void morph_1bit_to_float(const uint32_t * bits, int w, int h, int wpl, float * out_gray) {
     for (int y = 0; y < h; y++) {
         const uint32_t * line = bits + y * wpl;
         float * row = out_gray + y * w;
@@ -79,8 +81,7 @@ void morph_1bit_to_float(const uint32_t * bits, int w, int h, int wpl,
     }
 }
 
-uint32_t * morph_u8_to_1bit(const uint8_t * gray, int w, int h,
-                             uint8_t threshold, int * out_wpl) {
+uint32_t * morph_u8_to_1bit(const uint8_t * gray, int w, int h, uint8_t threshold, int * out_wpl) {
     int wpl = wpl_for(w);
     if (out_wpl) *out_wpl = wpl;
     uint32_t * bits = alloc_bits(wpl, h);
@@ -134,9 +135,7 @@ static void or_shift_left(uint32_t * dst, const uint32_t * src, int wpl, int s) 
 // into dst using ceil(log2(half+1)) build passes + popcount(half+1) OR passes.
 // tmpbufs: array of at least ceil(log2(half+1))+1 row buffers of length wpl.
 // dir > 0 = expand right; dir < 0 = expand left.
-static void expand_one_dir(uint32_t * dst, const uint32_t * src, int wpl,
-                            int half, int dir, uint32_t ** tmpbufs)
-{
+static void expand_one_dir(uint32_t * dst, const uint32_t * src, int wpl, int half, int dir, uint32_t ** tmpbufs) {
     // Build power-of-2 tables: tmpbufs[k] covers {0..2^k - 1}
     memcpy(tmpbufs[0], src, wpl * sizeof(uint32_t));
     int max_k = 0;
@@ -170,9 +169,11 @@ static void expand_one_dir(uint32_t * dst, const uint32_t * src, int wpl,
 
 static constexpr int MORPH_NAIVE_THRESH = 16;
 
-static void dilate_horiz(const uint32_t * src, uint32_t * dst,
-                          int w, int h, int wpl, int hsize) {
-    if (hsize <= 1) { copy_bits(dst, src, wpl, h); return; }
+static void dilate_horiz(const uint32_t * src, uint32_t * dst, int w, int h, int wpl, int hsize) {
+    if (hsize <= 1) {
+        copy_bits(dst, src, wpl, h);
+        return;
+    }
     int half = hsize / 2;
 
     if (hsize <= MORPH_NAIVE_THRESH) {
@@ -194,7 +195,7 @@ static void dilate_horiz(const uint32_t * src, uint32_t * dst,
     // Allocate per-row temp buffers once and reuse across all rows.
     int max_k = 0;
     while ((1 << (max_k + 1)) <= half + 1) max_k++;
-    int n_bufs = max_k + 1;  // tmpbufs[0..max_k]
+    int n_bufs = max_k + 1; // tmpbufs[0..max_k]
     // Allocate a contiguous block: 2 * n_bufs buffers (right and left dirs share alloc)
     std::vector<uint32_t> buf_storage((size_t)(2 * n_bufs) * wpl, 0u);
     std::vector<uint32_t *> rbufs(n_bufs), lbufs(n_bufs);
@@ -218,9 +219,11 @@ static void dilate_horiz(const uint32_t * src, uint32_t * dst,
 // Vertical dilation: OR consecutive rows
 // ---------------------------------------------------------------------------
 
-static void dilate_vert(const uint32_t * src, uint32_t * dst,
-                         int w, int h, int wpl, int vsize) {
-    if (vsize <= 1) { copy_bits(dst, src, wpl, h); return; }
+static void dilate_vert(const uint32_t * src, uint32_t * dst, int w, int h, int wpl, int vsize) {
+    if (vsize <= 1) {
+        copy_bits(dst, src, wpl, h);
+        return;
+    }
     int half = vsize / 2;
 
     for (int y = 0; y < h; y++) {
@@ -231,8 +234,7 @@ static void dilate_vert(const uint32_t * src, uint32_t * dst,
         int y1 = std::min(h - 1, y + half);
         for (int yy = y0; yy <= y1; yy++) {
             const uint32_t * sline = src + yy * wpl;
-            for (int i = 0; i < wpl; i++)
-                dline[i] |= sline[i];
+            for (int i = 0; i < wpl; i++) dline[i] |= sline[i];
         }
     }
 }
@@ -250,15 +252,18 @@ static void complement(const uint32_t * src, uint32_t * dst, int wpl, int h) {
 // Public API
 // ---------------------------------------------------------------------------
 
-uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl,
-                               int hsize, int vsize) {
+uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize) {
     if (!src || w <= 0 || h <= 0) return nullptr;
     if (hsize < 1) hsize = 1;
     if (vsize < 1) vsize = 1;
 
     uint32_t * tmp = alloc_bits(wpl, h);
     uint32_t * dst = alloc_bits(wpl, h);
-    if (!tmp || !dst) { free(tmp); free(dst); return nullptr; }
+    if (!tmp || !dst) {
+        free(tmp);
+        free(dst);
+        return nullptr;
+    }
 
     // Separable: horiz then vert
     dilate_horiz(src, tmp, w, h, wpl, hsize);
@@ -268,8 +273,7 @@ uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl,
     return dst;
 }
 
-uint32_t * morph_erode_brick(const uint32_t * src, int w, int h, int wpl,
-                              int hsize, int vsize) {
+uint32_t * morph_erode_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize) {
     if (!src || w <= 0 || h <= 0) return nullptr;
     if (hsize < 1) hsize = 1;
     if (vsize < 1) vsize = 1;
@@ -285,15 +289,17 @@ uint32_t * morph_erode_brick(const uint32_t * src, int w, int h, int wpl,
     if (!dilated) return nullptr;
 
     uint32_t * dst = alloc_bits(wpl, h);
-    if (!dst) { free(dilated); return nullptr; }
+    if (!dst) {
+        free(dilated);
+        return nullptr;
+    }
     complement(dilated, dst, wpl, h);
     free(dilated);
 
     return dst;
 }
 
-uint32_t * morph_open_brick(const uint32_t * src, int w, int h, int wpl,
-                             int hsize, int vsize) {
+uint32_t * morph_open_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize) {
     uint32_t * eroded = morph_erode_brick(src, w, h, wpl, hsize, vsize);
     if (!eroded) return nullptr;
     uint32_t * opened = morph_dilate_brick(eroded, w, h, wpl, hsize, vsize);
@@ -301,8 +307,7 @@ uint32_t * morph_open_brick(const uint32_t * src, int w, int h, int wpl,
     return opened;
 }
 
-uint32_t * morph_close_brick(const uint32_t * src, int w, int h, int wpl,
-                              int hsize, int vsize) {
+uint32_t * morph_close_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize) {
     uint32_t * dilated = morph_dilate_brick(src, w, h, wpl, hsize, vsize);
     if (!dilated) return nullptr;
     uint32_t * closed = morph_erode_brick(dilated, w, h, wpl, hsize, vsize);
@@ -318,8 +323,7 @@ void morph_free(uint32_t * bits) {
 // High-level: background whitening using fast 1-bit morphological open
 // ---------------------------------------------------------------------------
 
-void morph_whiten_fast(const float * gray, int w, int h,
-                        int kernel_size, float * dst) {
+void morph_whiten_fast(const float * gray, int w, int h, int kernel_size, float * dst) {
     if (kernel_size % 2 == 0) kernel_size++;
     int n = w * h;
 

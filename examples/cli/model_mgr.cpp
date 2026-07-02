@@ -38,7 +38,7 @@ bool download_supported() {
 #endif
 }
 
-}  // namespace
+} // namespace
 
 struct ModelEntry {
     const char * name;
@@ -46,10 +46,10 @@ struct ModelEntry {
     const char * url;
     const char * desc;
     const char * approx_size;
-    const char * license;          // SPDX-style tag from the upstream model
-                                    // card (NOT from the cstr/* re-host).
-                                    // Verified by tests/check_registry_licenses.py.
-    const char * model_card_url;   // upstream HuggingFace model card
+    const char * license;        // SPDX-style tag from the upstream model
+                                 // card (NOT from the cstr/* re-host).
+                                 // Verified by tests/check_registry_licenses.py.
+    const char * model_card_url; // upstream HuggingFace model card
 };
 
 // Prompt prefixes for models that need them for optimal retrieval.
@@ -61,17 +61,14 @@ static const char * query_prefix(const char * model) {
     if (strstr(model, "bge-") && !strstr(model, "reranker") && !strstr(model, "m3"))
         return "Represent this sentence for searching relevant passages: ";
     // E5 models
-    if (strstr(model, "-e5-"))
-        return "query: ";
+    if (strstr(model, "-e5-")) return "query: ";
     // Nomic
-    if (strstr(model, "nomic-embed"))
-        return "search_query: ";
+    if (strstr(model, "nomic-embed")) return "search_query: ";
     // Jina v5
-    if (strstr(model, "jina-v5"))
-        return "Query: ";
+    if (strstr(model, "jina-v5")) return "Query: ";
     // LFM2.5 Embedding / ColBERT
-    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") ||
-        strstr(model, "lfm2-colbert") || strstr(model, "lfm2.5-colbert"))
+    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") || strstr(model, "lfm2-colbert") ||
+        strstr(model, "lfm2.5-colbert"))
         return "query: ";
     return nullptr;
 }
@@ -79,994 +76,788 @@ static const char * query_prefix(const char * model) {
 static const char * passage_prefix(const char * model) {
     if (!model) return nullptr;
     // E5 models
-    if (strstr(model, "-e5-"))
-        return "passage: ";
+    if (strstr(model, "-e5-")) return "passage: ";
     // Nomic
-    if (strstr(model, "nomic-embed"))
-        return "search_document: ";
+    if (strstr(model, "nomic-embed")) return "search_document: ";
     // Jina v5
-    if (strstr(model, "jina-v5"))
-        return "Passage: ";
+    if (strstr(model, "jina-v5")) return "Passage: ";
     // LFM2.5 Embedding / ColBERT
-    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") ||
-        strstr(model, "lfm2-colbert") || strstr(model, "lfm2.5-colbert"))
+    if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") || strstr(model, "lfm2-colbert") ||
+        strstr(model, "lfm2.5-colbert"))
         return "document: ";
     return nullptr;
 }
 
 static const ModelEntry k_registry[] = {
-    {"all-MiniLM-L6-v2",
-     "all-MiniLM-L6-v2.gguf",
-     "https://huggingface.co/cstr/all-MiniLM-L6-v2-GGUF/resolve/main/all-MiniLM-L6-v2.gguf",
-     "BERT 384d English (22M)", "87 MB", "apache-2.0",
-     "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2"},
+    { "all-MiniLM-L6-v2", "all-MiniLM-L6-v2.gguf",
+      "https://huggingface.co/cstr/all-MiniLM-L6-v2-GGUF/resolve/main/all-MiniLM-L6-v2.gguf", "BERT 384d English (22M)",
+      "87 MB", "apache-2.0", "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2" },
 
-    {"gte-small",
-     "gte-small.gguf",
-     "https://huggingface.co/cstr/gte-small-GGUF/resolve/main/gte-small.gguf",
-     "BERT 384d English (33M)", "128 MB", "mit",
-     "https://huggingface.co/thenlper/gte-small"},
+    { "gte-small", "gte-small.gguf", "https://huggingface.co/cstr/gte-small-GGUF/resolve/main/gte-small.gguf",
+      "BERT 384d English (33M)", "128 MB", "mit", "https://huggingface.co/thenlper/gte-small" },
 
-    {"arctic-embed-xs",
-     "arctic-embed-xs.gguf",
-     "https://huggingface.co/cstr/arctic-embed-xs-GGUF/resolve/main/arctic-embed-xs.gguf",
-     "BERT 384d CLS English (22M)", "87 MB", "apache-2.0",
-     "https://huggingface.co/Snowflake/snowflake-arctic-embed-xs"},
+    { "arctic-embed-xs", "arctic-embed-xs.gguf",
+      "https://huggingface.co/cstr/arctic-embed-xs-GGUF/resolve/main/arctic-embed-xs.gguf",
+      "BERT 384d CLS English (22M)", "87 MB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-xs" },
 
-    {"multilingual-e5-small",
-     "multilingual-e5-small.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-small-GGUF/resolve/main/multilingual-e5-small.gguf",
-     "XLM-R 384d multilingual (118M)", "454 MB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-small"},
+    { "multilingual-e5-small", "multilingual-e5-small.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-small-GGUF/resolve/main/multilingual-e5-small.gguf",
+      "XLM-R 384d multilingual (118M)", "454 MB", "mit", "https://huggingface.co/intfloat/multilingual-e5-small" },
 
-    {"pixie-rune-v1",
-     "pixie-rune-v1.gguf",
-     "https://huggingface.co/cstr/pixie-rune-v1-GGUF/resolve/main/pixie-rune-v1.gguf",
-     "XLM-R 1024d 74-lang CLS (560M)", "2.2 GB", "apache-2.0",
-     "https://huggingface.co/telepix/PIXIE-Rune-v1.0"},
+    { "pixie-rune-v1", "pixie-rune-v1.gguf",
+      "https://huggingface.co/cstr/pixie-rune-v1-GGUF/resolve/main/pixie-rune-v1.gguf",
+      "XLM-R 1024d 74-lang CLS (560M)", "2.2 GB", "apache-2.0", "https://huggingface.co/telepix/PIXIE-Rune-v1.0" },
 
-    {"arctic-embed-l-v2",
-     "arctic-embed-l-v2.gguf",
-     "https://huggingface.co/cstr/arctic-embed-l-v2-GGUF/resolve/main/arctic-embed-l-v2.gguf",
-     "XLM-R 1024d CLS English (560M)", "2.2 GB", "apache-2.0",
-     "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0"},
+    { "arctic-embed-l-v2", "arctic-embed-l-v2.gguf",
+      "https://huggingface.co/cstr/arctic-embed-l-v2-GGUF/resolve/main/arctic-embed-l-v2.gguf",
+      "XLM-R 1024d CLS English (560M)", "2.2 GB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0" },
 
-    {"octen-0.6b",
-     "octen-0.6b-q8_0.gguf",
-     "https://huggingface.co/cstr/octen-0.6b-GGUF/resolve/main/octen-0.6b-q8_0.gguf",
-     "Qwen3 1024d multilingual (600M)", "609 MB", "apache-2.0",
-     "https://huggingface.co/Octen/Octen-Embedding-0.6B"},
+    { "octen-0.6b", "octen-0.6b-q8_0.gguf",
+      "https://huggingface.co/cstr/octen-0.6b-GGUF/resolve/main/octen-0.6b-q8_0.gguf",
+      "Qwen3 1024d multilingual (600M)", "609 MB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-0.6B" },
 
-    {"octen-4b",
-     "octen-4b-q4_k.gguf",
-     "https://huggingface.co/cstr/octen-4b-GGUF/resolve/main/octen-4b-q4_k.gguf",
-     "Qwen3 2560d multilingual (4B)", "2.3 GB", "apache-2.0",
-     "https://huggingface.co/Octen/Octen-Embedding-4B"},
+    { "octen-4b", "octen-4b-q4_k.gguf", "https://huggingface.co/cstr/octen-4b-GGUF/resolve/main/octen-4b-q4_k.gguf",
+      "Qwen3 2560d multilingual (4B)", "2.3 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-4B" },
 
-    {"octen-8b",
-     "octen-8b-q4_k.gguf",
-     "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q4_k.gguf",
-     "Qwen3 4096d multilingual (8B)", "4.4 GB", "apache-2.0",
-     "https://huggingface.co/Octen/Octen-Embedding-8B"},
+    { "octen-8b", "octen-8b-q4_k.gguf", "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q4_k.gguf",
+      "Qwen3 4096d multilingual (8B)", "4.4 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-8B" },
 
-    {"f2llm-v2-0.6b",
-     "f2llm-v2-0.6b-q8_0.gguf",
-     "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
-     "Qwen3 1024d multilingual (600M)", "609 MB", "apache-2.0",
-     "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B"},
+    { "f2llm-v2-0.6b", "f2llm-v2-0.6b-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
+      "Qwen3 1024d multilingual (600M)", "609 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
 
     // Default = best flavor (Q4_K+imatrix, A/B winner). -q4k serves the imatrix
     // build (same size, strictly better); -iq4xs and -q8 select other flavors.
-    {"jina-v5-nano",
-     "jina-v5-nano-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q4_k-imatrix.gguf",
-     "Qwen3 1024d compact (210M, Q4_K+imatrix)", "176 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano"},
-    {"jina-v5-nano-q4k",
-     "jina-v5-nano-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q4_k-imatrix.gguf",
-     "Qwen3 1024d compact (210M, Q4_K+imatrix)", "176 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano"},
-    {"jina-v5-nano-iq4xs",
-     "jina-v5-nano-iq4_xs.gguf",
-     "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-iq4_xs.gguf",
-     "Qwen3 1024d compact (210M, IQ4_XS+imatrix)", "173 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano"},
-    {"jina-v5-nano-q8",
-     "jina-v5-nano-q8_0.gguf",
-     "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q8_0.gguf",
-     "Qwen3 1024d compact (210M, Q8_0)", "233 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano"},
+    { "jina-v5-nano", "jina-v5-nano-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q4_k-imatrix.gguf",
+      "Qwen3 1024d compact (210M, Q4_K+imatrix)", "176 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano" },
+    { "jina-v5-nano-q4k", "jina-v5-nano-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q4_k-imatrix.gguf",
+      "Qwen3 1024d compact (210M, Q4_K+imatrix)", "176 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano" },
+    { "jina-v5-nano-iq4xs", "jina-v5-nano-iq4_xs.gguf",
+      "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-iq4_xs.gguf",
+      "Qwen3 1024d compact (210M, IQ4_XS+imatrix)", "173 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano" },
+    { "jina-v5-nano-q8", "jina-v5-nano-q8_0.gguf",
+      "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q8_0.gguf",
+      "Qwen3 1024d compact (210M, Q8_0)", "233 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-nano" },
 
-    {"jina-v5-small",
-     "jina-v5-small-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q4_k-imatrix.gguf",
-     "Qwen3 1024d multilingual (600M, Q4_K+imatrix)", "419 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-small"},
-    {"jina-v5-small-q4k",
-     "jina-v5-small-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q4_k-imatrix.gguf",
-     "Qwen3 1024d multilingual (600M, Q4_K+imatrix)", "419 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-small"},
-    {"jina-v5-small-iq4xs",
-     "jina-v5-small-iq4_xs.gguf",
-     "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-iq4_xs.gguf",
-     "Qwen3 1024d multilingual (600M, IQ4_XS+imatrix)", "406 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-small"},
-    {"jina-v5-small-q8",
-     "jina-v5-small-q8_0.gguf",
-     "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q8_0.gguf",
-     "Qwen3 1024d multilingual (600M, Q8_0)", "639 MB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-embeddings-v5-text-small"},
+    { "jina-v5-small", "jina-v5-small-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q4_k-imatrix.gguf",
+      "Qwen3 1024d multilingual (600M, Q4_K+imatrix)", "419 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-small" },
+    { "jina-v5-small-q4k", "jina-v5-small-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q4_k-imatrix.gguf",
+      "Qwen3 1024d multilingual (600M, Q4_K+imatrix)", "419 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-small" },
+    { "jina-v5-small-iq4xs", "jina-v5-small-iq4_xs.gguf",
+      "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-iq4_xs.gguf",
+      "Qwen3 1024d multilingual (600M, IQ4_XS+imatrix)", "406 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-small" },
+    { "jina-v5-small-q8", "jina-v5-small-q8_0.gguf",
+      "https://huggingface.co/cstr/jina-v5-small-GGUF/resolve/main/jina-v5-small-q8_0.gguf",
+      "Qwen3 1024d multilingual (600M, Q8_0)", "639 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-embeddings-v5-text-small" },
 
-    {"harrier-0.6b",
-     "harrier-0.6b-q8_0.gguf",
-     "https://huggingface.co/cstr/harrier-0.6b-GGUF/resolve/main/harrier-0.6b-q8_0.gguf",
-     "Qwen3 1024d SOTA (600M)", "609 MB", "mit",
-     "https://huggingface.co/microsoft/harrier-oss-v1-0.6b"},
+    { "harrier-0.6b", "harrier-0.6b-q8_0.gguf",
+      "https://huggingface.co/cstr/harrier-0.6b-GGUF/resolve/main/harrier-0.6b-q8_0.gguf", "Qwen3 1024d SOTA (600M)",
+      "609 MB", "mit", "https://huggingface.co/microsoft/harrier-oss-v1-0.6b" },
 
-    {"harrier-270m",
-     "harrier-270m-q8_0.gguf",
-     "https://huggingface.co/cstr/harrier-270m-GGUF/resolve/main/harrier-270m-q8_0.gguf",
-     "Gemma3 640d compact (270M)", "755 MB", "mit",
-     "https://huggingface.co/microsoft/harrier-oss-v1-270m"},
+    { "harrier-270m", "harrier-270m-q8_0.gguf",
+      "https://huggingface.co/cstr/harrier-270m-GGUF/resolve/main/harrier-270m-q8_0.gguf", "Gemma3 640d compact (270M)",
+      "755 MB", "mit", "https://huggingface.co/microsoft/harrier-oss-v1-270m" },
 
-    {"qwen3-embed-0.6b",
-     "qwen3-embed-0.6b-q8_0.gguf",
-     "https://huggingface.co/cstr/qwen3-embed-0.6b-GGUF/resolve/main/qwen3-embed-0.6b-q8_0.gguf",
-     "Qwen3 1024d official (600M)", "1.0 GB", "apache-2.0",
-     "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B"},
+    { "qwen3-embed-0.6b", "qwen3-embed-0.6b-q8_0.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-0.6b-GGUF/resolve/main/qwen3-embed-0.6b-q8_0.gguf",
+      "Qwen3 1024d official (600M)", "1.0 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B" },
 
-    {"qwen3-embed-4b",
-     "qwen3-embed-4b-q4_k.gguf",
-     "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-q4_k.gguf",
-     "Qwen3 2560d official (4B)", "2.3 GB", "apache-2.0",
-     "https://huggingface.co/Qwen/Qwen3-Embedding-4B"},
+    { "qwen3-embed-4b", "qwen3-embed-4b-q4_k.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-q4_k.gguf",
+      "Qwen3 2560d official (4B)", "2.3 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-4B" },
 
-    {"qwen3-embed-8b",
-     "qwen3-embed-8b-q4_k.gguf",
-     "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q4_k.gguf",
-     "Qwen3 4096d official (8B)", "4.4 GB", "apache-2.0",
-     "https://huggingface.co/Qwen/Qwen3-Embedding-8B"},
+    { "qwen3-embed-8b", "qwen3-embed-8b-q4_k.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q4_k.gguf",
+      "Qwen3 4096d official (8B)", "4.4 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-8B" },
 
     // BidirLM-Omni — bidirectional Qwen3 (text) + Whisper-shape audio tower (cross-modal).
     // Two repos: -textonly is the smaller text-only variant; without suffix includes audio.
-    {"bidirlm-omni-2.5b",
-     "bidirlm-omni-2.5b-q8_0.gguf",
-     "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q8_0.gguf",
-     "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB", "apache-2.0",
-     "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding"},
-    {"bidirlm-omni-2.5b-textonly",
-     "bidirlm-omni-2.5b-textonly-q8_0.gguf",
-     "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
-     "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB", "apache-2.0",
-     "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding"},
+    { "bidirlm-omni-2.5b", "bidirlm-omni-2.5b-q8_0.gguf",
+      "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q8_0.gguf",
+      "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB", "apache-2.0",
+      "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
+    { "bidirlm-omni-2.5b-textonly", "bidirlm-omni-2.5b-textonly-q8_0.gguf",
+      "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
+      "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB", "apache-2.0",
+      "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
 
     // --- RAG-critical models (Phase 3) ---
 
-    {"bge-small-en-v1.5",
-     "bge-small-en-v1.5.gguf",
-     "https://huggingface.co/cstr/bge-small-en-v1.5-GGUF/resolve/main/bge-small-en-v1.5.gguf",
-     "BERT 384d English (33M)", "128 MB", "mit",
-     "https://huggingface.co/BAAI/bge-small-en-v1.5"},
+    { "bge-small-en-v1.5", "bge-small-en-v1.5.gguf",
+      "https://huggingface.co/cstr/bge-small-en-v1.5-GGUF/resolve/main/bge-small-en-v1.5.gguf",
+      "BERT 384d English (33M)", "128 MB", "mit", "https://huggingface.co/BAAI/bge-small-en-v1.5" },
 
-    {"bge-base-en-v1.5",
-     "bge-base-en-v1.5.gguf",
-     "https://huggingface.co/cstr/bge-base-en-v1.5-GGUF/resolve/main/bge-base-en-v1.5.gguf",
-     "BERT 768d English (109M)", "418 MB", "mit",
-     "https://huggingface.co/BAAI/bge-base-en-v1.5"},
+    { "bge-base-en-v1.5", "bge-base-en-v1.5.gguf",
+      "https://huggingface.co/cstr/bge-base-en-v1.5-GGUF/resolve/main/bge-base-en-v1.5.gguf",
+      "BERT 768d English (109M)", "418 MB", "mit", "https://huggingface.co/BAAI/bge-base-en-v1.5" },
 
-    {"bge-large-en-v1.5",
-     "bge-large-en-v1.5.gguf",
-     "https://huggingface.co/cstr/bge-large-en-v1.5-GGUF/resolve/main/bge-large-en-v1.5.gguf",
-     "BERT 1024d English (335M)", "1.3 GB", "mit",
-     "https://huggingface.co/BAAI/bge-large-en-v1.5"},
+    { "bge-large-en-v1.5", "bge-large-en-v1.5.gguf",
+      "https://huggingface.co/cstr/bge-large-en-v1.5-GGUF/resolve/main/bge-large-en-v1.5.gguf",
+      "BERT 1024d English (335M)", "1.3 GB", "mit", "https://huggingface.co/BAAI/bge-large-en-v1.5" },
 
-    {"nomic-embed-text-v1.5",
-     "nomic-embed-text-v1.5.gguf",
-     "https://huggingface.co/cstr/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.gguf",
-     "BERT 768d 8K context Matryoshka (137M)", "523 MB", "apache-2.0",
-     "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5"},
+    { "nomic-embed-text-v1.5", "nomic-embed-text-v1.5.gguf",
+      "https://huggingface.co/cstr/nomic-embed-text-v1.5-GGUF/resolve/main/nomic-embed-text-v1.5.gguf",
+      "BERT 768d 8K context Matryoshka (137M)", "523 MB", "apache-2.0",
+      "https://huggingface.co/nomic-ai/nomic-embed-text-v1.5" },
 
-    {"nomic-embed-text-v2-moe",
-     "nomic-v2-moe-q8_0.gguf",
-     "https://huggingface.co/cstr/nomic-embed-text-v2-moe-GGUF/resolve/main/nomic-v2-moe-q8_0.gguf",
-     "NomicBERT MoE 768d 8-expert top-2 (475M)", "487 MB", "apache-2.0",
-     "https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe"},
+    { "nomic-embed-text-v2-moe", "nomic-v2-moe-q8_0.gguf",
+      "https://huggingface.co/cstr/nomic-embed-text-v2-moe-GGUF/resolve/main/nomic-v2-moe-q8_0.gguf",
+      "NomicBERT MoE 768d 8-expert top-2 (475M)", "487 MB", "apache-2.0",
+      "https://huggingface.co/nomic-ai/nomic-embed-text-v2-moe" },
 
-    {"all-MiniLM-L12-v2",
-     "all-MiniLM-L12-v2.gguf",
-     "https://huggingface.co/cstr/all-MiniLM-L12-v2-GGUF/resolve/main/all-MiniLM-L12-v2.gguf",
-     "BERT 384d English (33M)", "128 MB", "apache-2.0",
-     "https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2"},
+    { "all-MiniLM-L12-v2", "all-MiniLM-L12-v2.gguf",
+      "https://huggingface.co/cstr/all-MiniLM-L12-v2-GGUF/resolve/main/all-MiniLM-L12-v2.gguf",
+      "BERT 384d English (33M)", "128 MB", "apache-2.0",
+      "https://huggingface.co/sentence-transformers/all-MiniLM-L12-v2" },
 
-    {"paraphrase-multilingual-MiniLM-L12-v2",
-     "paraphrase-multilingual-MiniLM-L12-v2.gguf",
-     "https://huggingface.co/cstr/paraphrase-multilingual-MiniLM-L12-v2-GGUF/resolve/main/paraphrase-multilingual-MiniLM-L12-v2.gguf",
-     "BERT 384d 50+ langs (118M, SentencePiece, mean-pool)", "454 MB", "apache-2.0",
-     "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"},
+    { "paraphrase-multilingual-MiniLM-L12-v2", "paraphrase-multilingual-MiniLM-L12-v2.gguf",
+      "https://huggingface.co/cstr/paraphrase-multilingual-MiniLM-L12-v2-GGUF/resolve/main/"
+      "paraphrase-multilingual-MiniLM-L12-v2.gguf",
+      "BERT 384d 50+ langs (118M, SentencePiece, mean-pool)", "454 MB", "apache-2.0",
+      "https://huggingface.co/sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2" },
 
-    {"all-mpnet-base-v2",
-     "all-mpnet-base-v2.gguf",
-     "https://huggingface.co/cstr/all-mpnet-base-v2-GGUF/resolve/main/all-mpnet-base-v2.gguf",
-     "BERT 768d English (109M)", "418 MB", "apache-2.0",
-     "https://huggingface.co/sentence-transformers/all-mpnet-base-v2"},
+    { "all-mpnet-base-v2", "all-mpnet-base-v2.gguf",
+      "https://huggingface.co/cstr/all-mpnet-base-v2-GGUF/resolve/main/all-mpnet-base-v2.gguf",
+      "BERT 768d English (109M)", "418 MB", "apache-2.0",
+      "https://huggingface.co/sentence-transformers/all-mpnet-base-v2" },
 
-    {"mxbai-embed-large-v1",
-     "mxbai-embed-large-v1.gguf",
-     "https://huggingface.co/cstr/mxbai-embed-large-v1-GGUF/resolve/main/mxbai-embed-large-v1.gguf",
-     "BERT 1024d English (335M)", "1.3 GB", "apache-2.0",
-     "https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1"},
+    { "mxbai-embed-large-v1", "mxbai-embed-large-v1.gguf",
+      "https://huggingface.co/cstr/mxbai-embed-large-v1-GGUF/resolve/main/mxbai-embed-large-v1.gguf",
+      "BERT 1024d English (335M)", "1.3 GB", "apache-2.0",
+      "https://huggingface.co/mixedbread-ai/mxbai-embed-large-v1" },
 
-    {"snowflake-arctic-embed-m",
-     "snowflake-arctic-embed-m.gguf",
-     "https://huggingface.co/cstr/snowflake-arctic-embed-m-GGUF/resolve/main/snowflake-arctic-embed-m.gguf",
-     "BERT 768d CLS English (109M)", "418 MB", "apache-2.0",
-     "https://huggingface.co/Snowflake/snowflake-arctic-embed-m"},
+    { "snowflake-arctic-embed-m", "snowflake-arctic-embed-m.gguf",
+      "https://huggingface.co/cstr/snowflake-arctic-embed-m-GGUF/resolve/main/snowflake-arctic-embed-m.gguf",
+      "BERT 768d CLS English (109M)", "418 MB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-m" },
 
-    {"snowflake-arctic-embed-l",
-     "snowflake-arctic-embed-l.gguf",
-     "https://huggingface.co/cstr/snowflake-arctic-embed-l-GGUF/resolve/main/snowflake-arctic-embed-l.gguf",
-     "XLM-R 1024d CLS English (335M)", "1.3 GB", "apache-2.0",
-     "https://huggingface.co/Snowflake/snowflake-arctic-embed-l"},
+    { "snowflake-arctic-embed-l", "snowflake-arctic-embed-l.gguf",
+      "https://huggingface.co/cstr/snowflake-arctic-embed-l-GGUF/resolve/main/snowflake-arctic-embed-l.gguf",
+      "XLM-R 1024d CLS English (335M)", "1.3 GB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-l" },
 
     // Default = best flavor (IQ4_XS+imatrix, A/B winner: smaller AND higher cos
     // than Q4_K here). -q4k serves the Q4_K+imatrix build; -iq4xs/-q8 explicit.
-    {"bge-m3",
-     "bge-m3-iq4_xs.gguf",
-     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-iq4_xs.gguf",
-     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
-     "https://huggingface.co/BAAI/bge-m3"},
-    {"bge-m3-iq4xs",
-     "bge-m3-iq4_xs.gguf",
-     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-iq4_xs.gguf",
-     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
-     "https://huggingface.co/BAAI/bge-m3"},
-    {"bge-m3-q4k",
-     "bge-m3-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q4_k-imatrix.gguf",
-     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q4_K+imatrix)", "459 MB", "mit",
-     "https://huggingface.co/BAAI/bge-m3"},
-    {"bge-m3-q8",
-     "bge-m3-q8_0.gguf",
-     "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q8_0.gguf",
-     "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q8_0)", "610 MB", "mit",
-     "https://huggingface.co/BAAI/bge-m3"},
+    { "bge-m3", "bge-m3-iq4_xs.gguf", "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-iq4_xs.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
+      "https://huggingface.co/BAAI/bge-m3" },
+    { "bge-m3-iq4xs", "bge-m3-iq4_xs.gguf", "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-iq4_xs.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
+      "https://huggingface.co/BAAI/bge-m3" },
+    { "bge-m3-q4k", "bge-m3-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q4_k-imatrix.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q4_K+imatrix)", "459 MB", "mit",
+      "https://huggingface.co/BAAI/bge-m3" },
+    { "bge-m3-q8", "bge-m3-q8_0.gguf", "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q8_0.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q8_0)", "610 MB", "mit",
+      "https://huggingface.co/BAAI/bge-m3" },
 
     // --- Reranker models (Phase 4) ---
 
-    {"bge-reranker-v2-m3",
-     "bge-reranker-v2-m3.gguf",
-     "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3.gguf",
-     "XLM-R reranker multilingual (568M)", "2.2 GB", "apache-2.0",
-     "https://huggingface.co/BAAI/bge-reranker-v2-m3"},
+    { "bge-reranker-v2-m3", "bge-reranker-v2-m3.gguf",
+      "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3.gguf",
+      "XLM-R reranker multilingual (568M)", "2.2 GB", "apache-2.0", "https://huggingface.co/BAAI/bge-reranker-v2-m3" },
 
-    {"bge-reranker-base",
-     "bge-reranker-base.gguf",
-     "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base.gguf",
-     "BERT reranker EN+ZH (278M)", "1.1 GB", "mit",
-     "https://huggingface.co/BAAI/bge-reranker-base"},
+    { "bge-reranker-base", "bge-reranker-base.gguf",
+      "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base.gguf",
+      "BERT reranker EN+ZH (278M)", "1.1 GB", "mit", "https://huggingface.co/BAAI/bge-reranker-base" },
 
-    {"ms-marco-MiniLM-L-6-v2",
-     "ms-marco-MiniLM-L-6-v2.gguf",
-     "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2.gguf",
-     "BERT reranker English fast (22M)", "87 MB", "apache-2.0",
-     "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2"},
+    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2.gguf",
+      "BERT reranker English fast (22M)", "87 MB", "apache-2.0",
+      "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2" },
 
-    {"ms-marco-MiniLM-L-12-v2",
-     "ms-marco-MiniLM-L-12-v2.gguf",
-     "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2.gguf",
-     "BERT reranker English (33M)", "128 MB", "apache-2.0",
-     "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2"},
+    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2.gguf",
+      "BERT reranker English (33M)", "128 MB", "apache-2.0",
+      "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2" },
 
-    {"jina-reranker-v2-base-multilingual",
-     "jina-reranker-v2-base-multilingual.gguf",
-     "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual.gguf",
-     "XLM-R reranker multilingual (278M)", "1.1 GB", "cc-by-nc-4.0",
-     "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual"},
+    { "jina-reranker-v2-base-multilingual", "jina-reranker-v2-base-multilingual.gguf",
+      "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/"
+      "jina-reranker-v2-base-multilingual.gguf",
+      "XLM-R reranker multilingual (278M)", "1.1 GB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
 
-    {"mxbai-rerank-xsmall-v1",
-     "mxbai-rerank-xsmall-v1.gguf",
-     "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1.gguf",
-     "BERT reranker English fast (33M)", "128 MB", "apache-2.0",
-     "https://huggingface.co/mixedbread-ai/mxbai-rerank-xsmall-v1"},
+    { "mxbai-rerank-xsmall-v1", "mxbai-rerank-xsmall-v1.gguf",
+      "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1.gguf",
+      "BERT reranker English fast (33M)", "128 MB", "apache-2.0",
+      "https://huggingface.co/mixedbread-ai/mxbai-rerank-xsmall-v1" },
 
-    {"mxbai-rerank-base-v1",
-     "mxbai-rerank-base-v1.gguf",
-     "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1.gguf",
-     "BERT reranker English (86M)", "330 MB", "apache-2.0",
-     "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1"},
+    { "mxbai-rerank-base-v1", "mxbai-rerank-base-v1.gguf",
+      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1.gguf",
+      "BERT reranker English (86M)", "330 MB", "apache-2.0",
+      "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1" },
 
     // --- MTEB top multilingual models ---
 
-    {"multilingual-e5-base",
-     "multilingual-e5-base.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base.gguf",
-     "XLM-R 768d 100+ languages (278M)", "1.1 GB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-base"},
+    { "multilingual-e5-base", "multilingual-e5-base.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base.gguf",
+      "XLM-R 768d 100+ languages (278M)", "1.1 GB", "mit", "https://huggingface.co/intfloat/multilingual-e5-base" },
 
     // Default = best flavor (IQ4_XS+imatrix, A/B winner) — was defaulting to the
     // 2.2 GB F32 (now the -f32 variant). -q4k/-iq4xs/-q8 select flavors.
-    {"multilingual-e5-large",
-     "multilingual-e5-large-iq4_xs.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-iq4_xs.gguf",
-     "XLM-R 1024d 100+ languages (560M, IQ4_XS+imatrix)", "441 MB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-large"},
-    {"multilingual-e5-large-iq4xs",
-     "multilingual-e5-large-iq4_xs.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-iq4_xs.gguf",
-     "XLM-R 1024d 100+ languages (560M, IQ4_XS+imatrix)", "441 MB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-large"},
-    {"multilingual-e5-large-q4k",
-     "multilingual-e5-large-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-q4_k-imatrix.gguf",
-     "XLM-R 1024d 100+ languages (560M, Q4_K+imatrix)", "450 MB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-large"},
-    {"multilingual-e5-large-q8",
-     "multilingual-e5-large-q8_0.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-q8_0.gguf",
-     "XLM-R 1024d 100+ languages (560M, Q8_0)", "601 MB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-large"},
-    {"multilingual-e5-large-f32",
-     "multilingual-e5-large.gguf",
-     "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large.gguf",
-     "XLM-R 1024d 100+ languages (560M, F32)", "2.2 GB", "mit",
-     "https://huggingface.co/intfloat/multilingual-e5-large"},
+    { "multilingual-e5-large", "multilingual-e5-large-iq4_xs.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-iq4_xs.gguf",
+      "XLM-R 1024d 100+ languages (560M, IQ4_XS+imatrix)", "441 MB", "mit",
+      "https://huggingface.co/intfloat/multilingual-e5-large" },
+    { "multilingual-e5-large-iq4xs", "multilingual-e5-large-iq4_xs.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-iq4_xs.gguf",
+      "XLM-R 1024d 100+ languages (560M, IQ4_XS+imatrix)", "441 MB", "mit",
+      "https://huggingface.co/intfloat/multilingual-e5-large" },
+    { "multilingual-e5-large-q4k", "multilingual-e5-large-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-q4_k-imatrix.gguf",
+      "XLM-R 1024d 100+ languages (560M, Q4_K+imatrix)", "450 MB", "mit",
+      "https://huggingface.co/intfloat/multilingual-e5-large" },
+    { "multilingual-e5-large-q8", "multilingual-e5-large-q8_0.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large-q8_0.gguf",
+      "XLM-R 1024d 100+ languages (560M, Q8_0)", "601 MB", "mit",
+      "https://huggingface.co/intfloat/multilingual-e5-large" },
+    { "multilingual-e5-large-f32", "multilingual-e5-large.gguf",
+      "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large.gguf",
+      "XLM-R 1024d 100+ languages (560M, F32)", "2.2 GB", "mit",
+      "https://huggingface.co/intfloat/multilingual-e5-large" },
 
-    {"granite-embedding-278m",
-     "granite-embedding-278m-multilingual.gguf",
-     "https://huggingface.co/cstr/granite-embedding-278m-multilingual-GGUF/resolve/main/granite-embedding-278m-multilingual.gguf",
-     "XLM-R 768d IBM multilingual (278M)", "1.1 GB", "apache-2.0",
-     "https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual"},
+    { "granite-embedding-278m", "granite-embedding-278m-multilingual.gguf",
+      "https://huggingface.co/cstr/granite-embedding-278m-multilingual-GGUF/resolve/main/"
+      "granite-embedding-278m-multilingual.gguf",
+      "XLM-R 768d IBM multilingual (278M)", "1.1 GB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual" },
 
-    {"granite-embedding-107m",
-     "granite-embedding-107m-multilingual.gguf",
-     "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/granite-embedding-107m-multilingual.gguf",
-     "XLM-R 384d IBM multilingual (107M)", "418 MB", "apache-2.0",
-     "https://huggingface.co/ibm-granite/granite-embedding-107m-multilingual"},
+    { "granite-embedding-107m", "granite-embedding-107m-multilingual.gguf",
+      "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/"
+      "granite-embedding-107m-multilingual.gguf",
+      "XLM-R 384d IBM multilingual (107M)", "418 MB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-107m-multilingual" },
 
     // --- Sparse models ---
 
-    {"splade-pp-en-v1",
-     "splade-pp-en-v1.gguf",
-     "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1.gguf",
-     "BERT sparse (SPLADE) English (109M)", "418 MB", "apache-2.0",
-     "https://huggingface.co/prithivida/Splade_PP_en_v1"},
+    { "splade-pp-en-v1", "splade-pp-en-v1.gguf",
+      "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1.gguf",
+      "BERT sparse (SPLADE) English (109M)", "418 MB", "apache-2.0",
+      "https://huggingface.co/prithivida/Splade_PP_en_v1" },
 
     // --- GTE v1.5 (new BERT) ---
 
-    {"gte-base-en-v1.5",
-     "gte-base-en-v1.5.gguf",
-     "https://huggingface.co/cstr/gte-base-en-v1.5-GGUF/resolve/main/gte-base-en-v1.5.gguf",
-     "GTE 768d English pre-LN+RoPE+GeGLU (109M)", "522 MB", "apache-2.0",
-     "https://huggingface.co/Alibaba-NLP/gte-base-en-v1.5"},
+    { "gte-base-en-v1.5", "gte-base-en-v1.5.gguf",
+      "https://huggingface.co/cstr/gte-base-en-v1.5-GGUF/resolve/main/gte-base-en-v1.5.gguf",
+      "GTE 768d English pre-LN+RoPE+GeGLU (109M)", "522 MB", "apache-2.0",
+      "https://huggingface.co/Alibaba-NLP/gte-base-en-v1.5" },
 
-    {"gte-large-en-v1.5",
-     "gte-large-en-v1.5.gguf",
-     "https://huggingface.co/cstr/gte-large-en-v1.5-GGUF/resolve/main/gte-large-en-v1.5.gguf",
-     "GTE 1024d English pre-LN+RoPE+GeGLU (335M)", "1.7 GB", "apache-2.0",
-     "https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5"},
+    { "gte-large-en-v1.5", "gte-large-en-v1.5.gguf",
+      "https://huggingface.co/cstr/gte-large-en-v1.5-GGUF/resolve/main/gte-large-en-v1.5.gguf",
+      "GTE 1024d English pre-LN+RoPE+GeGLU (335M)", "1.7 GB", "apache-2.0",
+      "https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5" },
 
-    {"embeddinggemma-300m",
-     "embeddinggemma-300m.gguf",
-     "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m.gguf",
-     "Gemma3 768d 24-layer last-token (300M)", "741 MB", "gemma",
-     "https://huggingface.co/google/embeddinggemma-300m"},
+    { "embeddinggemma-300m", "embeddinggemma-300m.gguf",
+      "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m.gguf",
+      "Gemma3 768d 24-layer last-token (300M)", "741 MB", "gemma",
+      "https://huggingface.co/google/embeddinggemma-300m" },
 
-    {"yunet",
-     "yunet.gguf",
-     "https://huggingface.co/cstr/yunet-GGUF/resolve/main/yunet.gguf",
-     "YuNet face detection (ShuffleNetV2 640x640, 75K)", "0.2 MB", "apache-2.0",
-     "https://huggingface.co/cstr/yunet-GGUF"},
+    { "yunet", "yunet.gguf", "https://huggingface.co/cstr/yunet-GGUF/resolve/main/yunet.gguf",
+      "YuNet face detection (ShuffleNetV2 640x640, 75K)", "0.2 MB", "apache-2.0",
+      "https://huggingface.co/cstr/yunet-GGUF" },
 
-    {"clip-vit-base-patch16",
-     "clip-vit-base-patch16.gguf",
-     "https://huggingface.co/cstr/clip-vit-base-patch16-GGUF/resolve/main/clip-vit-base-patch16.gguf",
-     "CLIP ViT-B/16 vision encoder (86M)", "329 MB", "mit",
-     "https://huggingface.co/openai/clip-vit-base-patch16"},
+    { "clip-vit-base-patch16", "clip-vit-base-patch16.gguf",
+      "https://huggingface.co/cstr/clip-vit-base-patch16-GGUF/resolve/main/clip-vit-base-patch16.gguf",
+      "CLIP ViT-B/16 vision encoder (86M)", "329 MB", "mit", "https://huggingface.co/openai/clip-vit-base-patch16" },
 
-    {"clip-vit-large-patch14",
-     "clip-vit-large-patch14.gguf",
-     "https://huggingface.co/cstr/clip-vit-large-patch14-GGUF/resolve/main/clip-vit-large-patch14.gguf",
-     "CLIP ViT-L/14 vision encoder (304M)", "1.2 GB", "mit",
-     "https://huggingface.co/openai/clip-vit-large-patch14"},
+    { "clip-vit-large-patch14", "clip-vit-large-patch14.gguf",
+      "https://huggingface.co/cstr/clip-vit-large-patch14-GGUF/resolve/main/clip-vit-large-patch14.gguf",
+      "CLIP ViT-L/14 vision encoder (304M)", "1.2 GB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
 
-    {"clip-text-base",
-     "clip-text-base.gguf",
-     "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base.gguf",
-     "CLIP text encoder base (63M, 512d)", "244 MB", "mit",
-     "https://huggingface.co/openai/clip-vit-base-patch16"},
+    { "clip-text-base", "clip-text-base.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base.gguf",
+      "CLIP text encoder base (63M, 512d)", "244 MB", "mit", "https://huggingface.co/openai/clip-vit-base-patch16" },
 
-    {"clip-text-large",
-     "clip-text-large.gguf",
-     "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large.gguf",
-     "CLIP text encoder large (124M, 768d)", "480 MB", "mit",
-     "https://huggingface.co/openai/clip-vit-large-patch14"},
+    { "clip-text-large", "clip-text-large.gguf",
+      "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large.gguf",
+      "CLIP text encoder large (124M, 768d)", "480 MB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
 
-    {"siglip-large-256",
-     "siglip-large-256.gguf",
-     "https://huggingface.co/cstr/siglip-large-256-GGUF/resolve/main/siglip-large-256.gguf",
-     "SigLIP ViT-L/16 vision encoder 256x256 (304M)", "1.2 GB", "apache-2.0",
-     "https://huggingface.co/google/siglip-large-patch16-256"},
+    { "siglip-large-256", "siglip-large-256.gguf",
+      "https://huggingface.co/cstr/siglip-large-256-GGUF/resolve/main/siglip-large-256.gguf",
+      "SigLIP ViT-L/16 vision encoder 256x256 (304M)", "1.2 GB", "apache-2.0",
+      "https://huggingface.co/google/siglip-large-patch16-256" },
 
-    {"siglip-so400m-patch14-384",
-     "siglip-so400m-patch14-384.gguf",
-     "https://huggingface.co/cstr/siglip-so400m-patch14-384-GGUF/resolve/main/siglip-so400m-patch14-384.gguf",
-     "SigLIP SoViT-400M/14 vision encoder 384x384 (428M)", "1.6 GB", "apache-2.0",
-     "https://huggingface.co/google/siglip-so400m-patch14-384"},
+    { "siglip-so400m-patch14-384", "siglip-so400m-patch14-384.gguf",
+      "https://huggingface.co/cstr/siglip-so400m-patch14-384-GGUF/resolve/main/siglip-so400m-patch14-384.gguf",
+      "SigLIP SoViT-400M/14 vision encoder 384x384 (428M)", "1.6 GB", "apache-2.0",
+      "https://huggingface.co/google/siglip-so400m-patch14-384" },
 
-    {"clip-vit-large-patch14-336",
-     "clip-vit-large-patch14-336.gguf",
-     "https://huggingface.co/cstr/clip-vit-large-patch14-336-GGUF/resolve/main/clip-vit-large-patch14-336.gguf",
-     "CLIP ViT-L/14@336px vision encoder (304M)", "1.2 GB", "mit",
-     "https://huggingface.co/openai/clip-vit-large-patch14-336"},
+    { "clip-vit-large-patch14-336", "clip-vit-large-patch14-336.gguf",
+      "https://huggingface.co/cstr/clip-vit-large-patch14-336-GGUF/resolve/main/clip-vit-large-patch14-336.gguf",
+      "CLIP ViT-L/14@336px vision encoder (304M)", "1.2 GB", "mit",
+      "https://huggingface.co/openai/clip-vit-large-patch14-336" },
 
-    {"siglip-base",
-     "siglip-base.gguf",
-     "https://huggingface.co/cstr/siglip-base-GGUF/resolve/main/siglip-base.gguf",
-     "SigLIP ViT-B/16 vision encoder 384x384 (93M)", "354 MB", "apache-2.0",
-     "https://huggingface.co/google/siglip-base-patch16-384"},
+    { "siglip-base", "siglip-base.gguf", "https://huggingface.co/cstr/siglip-base-GGUF/resolve/main/siglip-base.gguf",
+      "SigLIP ViT-B/16 vision encoder 384x384 (93M)", "354 MB", "apache-2.0",
+      "https://huggingface.co/google/siglip-base-patch16-384" },
 
-    {"siglip-text-base",
-     "siglip-text-base.gguf",
-     "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base.gguf",
-     "SigLIP text encoder base (93M, 768d)", "421 MB", "apache-2.0",
-     "https://huggingface.co/google/siglip-base-patch16-224"},
+    { "siglip-text-base", "siglip-text-base.gguf",
+      "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base.gguf",
+      "SigLIP text encoder base (93M, 768d)", "421 MB", "apache-2.0",
+      "https://huggingface.co/google/siglip-base-patch16-224" },
 
-    {"scrfd-det-10g",
-     "scrfd-det-10g.gguf",
-     "https://huggingface.co/cstr/scrfd-det-10g-GGUF/resolve/main/scrfd-det-10g.gguf",
-     "SCRFD face detection (ResNet-50 FPN, 640x640)", "16 MB", "apache-2.0",
-     "https://huggingface.co/cstr/scrfd-det-10g-GGUF"},
+    { "scrfd-det-10g", "scrfd-det-10g.gguf",
+      "https://huggingface.co/cstr/scrfd-det-10g-GGUF/resolve/main/scrfd-det-10g.gguf",
+      "SCRFD face detection (ResNet-50 FPN, 640x640)", "16 MB", "apache-2.0",
+      "https://huggingface.co/cstr/scrfd-det-10g-GGUF" },
 
-    {"auraface-v1",
-     "auraface-v1.gguf",
-     "https://huggingface.co/cstr/auraface-v1-GGUF/resolve/main/auraface-v1.gguf",
-     "AuraFace face recognition (ResNet-100, 512d)", "249 MB", "apache-2.0",
-     "https://huggingface.co/cstr/auraface-v1-GGUF"},
+    { "auraface-v1", "auraface-v1.gguf", "https://huggingface.co/cstr/auraface-v1-GGUF/resolve/main/auraface-v1.gguf",
+      "AuraFace face recognition (ResNet-100, 512d)", "249 MB", "apache-2.0",
+      "https://huggingface.co/cstr/auraface-v1-GGUF" },
 
-    {"sface",
-     "sface.gguf",
-     "https://huggingface.co/cstr/sface-GGUF/resolve/main/sface.gguf",
-     "SFace face recognition (MobileFaceNet, 128d)", "37 MB", "apache-2.0",
-     "https://huggingface.co/cstr/sface-GGUF"},
+    { "sface", "sface.gguf", "https://huggingface.co/cstr/sface-GGUF/resolve/main/sface.gguf",
+      "SFace face recognition (MobileFaceNet, 128d)", "37 MB", "apache-2.0", "https://huggingface.co/cstr/sface-GGUF" },
 
-    {"hmer-hw",
-     "hmer-hw-q4_k.gguf",
-     "https://huggingface.co/cstr/hmer-handwritten-math-gguf/resolve/main/hmer-hw-q4_k.gguf",
-     "HMER handwritten math OCR (DenseNet-121+GRU, 112 tokens)", "5 MB", "mit",
-     "https://huggingface.co/cstr/hmer-handwritten-math-gguf"},
+    { "hmer-hw", "hmer-hw-q4_k.gguf",
+      "https://huggingface.co/cstr/hmer-handwritten-math-gguf/resolve/main/hmer-hw-q4_k.gguf",
+      "HMER handwritten math OCR (DenseNet-121+GRU, 112 tokens)", "5 MB", "mit",
+      "https://huggingface.co/cstr/hmer-handwritten-math-gguf" },
 
-    {"bttr-hw",
-     "bttr-hw-q4_k.gguf",
-     "https://huggingface.co/cstr/bttr-handwritten-math-gguf/resolve/main/bttr-hw-q4_k.gguf",
-     "BTTR handwritten math OCR (DenseNet+Transformer, 113 tokens)", "5 MB", "mit",
-     "https://huggingface.co/cstr/bttr-handwritten-math-gguf"},
+    { "bttr-hw", "bttr-hw-q4_k.gguf",
+      "https://huggingface.co/cstr/bttr-handwritten-math-gguf/resolve/main/bttr-hw-q4_k.gguf",
+      "BTTR handwritten math OCR (DenseNet+Transformer, 113 tokens)", "5 MB", "mit",
+      "https://huggingface.co/cstr/bttr-handwritten-math-gguf" },
 
-    {"ppformulanet-l",
-     "ppformulanet-l-q8_0.gguf",
-     "https://huggingface.co/cstr/ppformulanet-l-gguf/resolve/main/ppformulanet-l-q8_0.gguf",
-     "PP-FormulaNet-L printed math OCR (SAM-ViT+MBart, 181M)", "180 MB", "apache-2.0",
-     "https://huggingface.co/cstr/ppformulanet-l-gguf"},
+    { "ppformulanet-l", "ppformulanet-l-q8_0.gguf",
+      "https://huggingface.co/cstr/ppformulanet-l-gguf/resolve/main/ppformulanet-l-q8_0.gguf",
+      "PP-FormulaNet-L printed math OCR (SAM-ViT+MBart, 181M)", "180 MB", "apache-2.0",
+      "https://huggingface.co/cstr/ppformulanet-l-gguf" },
 
-    {"posformer-crohme",
-     "posformer-crohme-q8_0.gguf",
-     "https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/main/posformer-crohme-q8_0.gguf",
-     "PosFormer handwritten math OCR (DenseNet+Transformer+ARM, 57% CROHME)", "12 MB", "cc-by-nc-sa-3.0",
-     "https://huggingface.co/cstr/posformer-crohme-GGUF"},
+    { "posformer-crohme", "posformer-crohme-q8_0.gguf",
+      "https://huggingface.co/cstr/posformer-crohme-GGUF/resolve/main/posformer-crohme-q8_0.gguf",
+      "PosFormer handwritten math OCR (DenseNet+Transformer+ARM, 57% CROHME)", "12 MB", "cc-by-nc-sa-3.0",
+      "https://huggingface.co/cstr/posformer-crohme-GGUF" },
 
-    {"pix2tex-mfr",
-     "pix2tex-mfr-q4_k.gguf",
-     "https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf",
-     "pix2tex printed math OCR (DeiT+TrOCR, 28M)", "17 MB", "mit",
-     "https://huggingface.co/cstr/pix2tex-mfr-gguf"},
+    { "pix2tex-mfr", "pix2tex-mfr-q4_k.gguf",
+      "https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf",
+      "pix2tex printed math OCR (DeiT+TrOCR, 28M)", "17 MB", "mit", "https://huggingface.co/cstr/pix2tex-mfr-gguf" },
 
-    {"texo-distill",
-     "texo-distill-q8_0.gguf",
-     "https://huggingface.co/cstr/texo-distill-gguf/resolve/main/texo-distill-q8_0.gguf",
-     "Texo-Distill printed math OCR (HGNetv2+MBart, 20M, BLEU 0.90)", "22 MB", "agpl-3.0",
-     "https://huggingface.co/cstr/texo-distill-gguf"},
+    { "texo-distill", "texo-distill-q8_0.gguf",
+      "https://huggingface.co/cstr/texo-distill-gguf/resolve/main/texo-distill-q8_0.gguf",
+      "Texo-Distill printed math OCR (HGNetv2+MBart, 20M, BLEU 0.90)", "22 MB", "agpl-3.0",
+      "https://huggingface.co/cstr/texo-distill-gguf" },
 
-    {"parseq",
-     "parseq-q8_0.gguf",
-     "https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-q8_0.gguf",
-     "PARSeq scene text OCR (ViT+Transformer, 24M, ECCV 2022)", "24 MB", "apache-2.0",
-     "https://huggingface.co/cstr/parseq-GGUF"},
+    { "parseq", "parseq-q8_0.gguf", "https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-q8_0.gguf",
+      "PARSeq scene text OCR (ViT+Transformer, 24M, ECCV 2022)", "24 MB", "apache-2.0",
+      "https://huggingface.co/cstr/parseq-GGUF" },
 
-    {"parseq-tiny",
-     "parseq-tiny-q8_0.gguf",
-     "https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-tiny-q8_0.gguf",
-     "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "6 MB", "apache-2.0",
-     "https://huggingface.co/cstr/parseq-GGUF"},
+    { "parseq-tiny", "parseq-tiny-q8_0.gguf",
+      "https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-tiny-q8_0.gguf",
+      "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "6 MB", "apache-2.0",
+      "https://huggingface.co/cstr/parseq-GGUF" },
 
-    {"dbnet-det",
-     "dbnet-ic15-q4_k.gguf",
-     "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
-     "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
-     "https://huggingface.co/cstr/dbnet-ic15-GGUF"},
+    { "dbnet-det", "dbnet-ic15-q4_k.gguf",
+      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
+      "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
+      "https://huggingface.co/cstr/dbnet-ic15-GGUF" },
 
-    {"surya-det",
-     "surya-det-f16.gguf",
-     "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",
-     "surya-ocr-2 text detection (EfficientViT segformer, 38M, 91 langs)", "73 MB", "openrail-m",
-     "https://huggingface.co/cstr/surya-det-GGUF"},
+    { "surya-det", "surya-det-f16.gguf", "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",
+      "surya-ocr-2 text detection (EfficientViT segformer, 38M, 91 langs)", "73 MB", "openrail-m",
+      "https://huggingface.co/cstr/surya-det-GGUF" },
 
-    {"mixtex-zhen",
-     "mixtex-zhen-f16.gguf",
-     "",
-     "MixTex Chinese+English LaTeX OCR (Swin-Tiny+RoBERTa, 86M)", "165 MB", "apache-2.0",
-     ""},
+    { "mixtex-zhen", "mixtex-zhen-f16.gguf", "", "MixTex Chinese+English LaTeX OCR (Swin-Tiny+RoBERTa, 86M)", "165 MB",
+      "apache-2.0", "" },
 
-    {"trocr-printed",
-     "trocr-small-printed-q8_0.gguf",
-     "https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf",
-     "TrOCR text recognition (DeiT+Transformer, printed)", "63 MB", "mit",
-     "https://huggingface.co/cstr/trocr-small-printed-GGUF"},
+    { "trocr-printed", "trocr-small-printed-q8_0.gguf",
+      "https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf",
+      "TrOCR text recognition (DeiT+Transformer, printed)", "63 MB", "mit",
+      "https://huggingface.co/cstr/trocr-small-printed-GGUF" },
 
-    {"layout-heron",
-     "layout-heron-f32.gguf",
-     "https://huggingface.co/cstr/layout-heron-gguf/resolve/main/layout-heron-f32.gguf",
-     "RT-DETRv2 document layout detection (ResNet-50+Transformer, 17 classes)", "161 MB", "apache-2.0",
-     "https://huggingface.co/cstr/layout-heron-gguf"},
+    { "layout-heron", "layout-heron-f32.gguf",
+      "https://huggingface.co/cstr/layout-heron-gguf/resolve/main/layout-heron-f32.gguf",
+      "RT-DETRv2 document layout detection (ResNet-50+Transformer, 17 classes)", "161 MB", "apache-2.0",
+      "https://huggingface.co/cstr/layout-heron-gguf" },
 
-    {"qari-ocr",
-     "qari-ocr-2b-q4_k.gguf",
-     "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF/resolve/main/qari-ocr-2b-q4_k.gguf",
-     "Qari Arabic OCR with diacritics (Qwen2-VL-2B fine-tune)", "1300 MB", "apache-2.0",
-     "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF"},
+    { "qari-ocr", "qari-ocr-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF/resolve/main/qari-ocr-2b-q4_k.gguf",
+      "Qari Arabic OCR with diacritics (Qwen2-VL-2B fine-tune)", "1300 MB", "apache-2.0",
+      "https://huggingface.co/cstr/qari-ocr-crispembed-GGUF" },
 
-    {"granite-vision",
-     "granite-vision-3.3-2b-q8_0.gguf",
-     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-q8_0.gguf",
-     "Granite Vision 3.3-2B OCR (SigLIP+Granite LLM, OCRBench 852)", "3212 MB", "apache-2.0",
-     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
+    { "granite-vision", "granite-vision-3.3-2b-q8_0.gguf",
+      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-q8_0.gguf",
+      "Granite Vision 3.3-2B OCR (SigLIP+Granite LLM, OCRBench 852)", "3212 MB", "apache-2.0",
+      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF" },
 
-    {"granite-vision-q4k",
-     "granite-vision-3.3-2b-q4_k.gguf",
-     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-q4_k.gguf",
-     "Granite Vision 3.3-2B OCR Q4_K (LLM Q4_K, vision F16)", "1913 MB", "apache-2.0",
-     "https://huggingface.co/cstr/granite-vision-crispembed-GGUF"},
+    { "granite-vision-q4k", "granite-vision-3.3-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF/resolve/main/granite-vision-3.3-2b-q4_k.gguf",
+      "Granite Vision 3.3-2B OCR Q4_K (LLM Q4_K, vision F16)", "1913 MB", "apache-2.0",
+      "https://huggingface.co/cstr/granite-vision-crispembed-GGUF" },
 
     // dots.ocr removed — license is NOT pure MIT (supplemental PRC agreement
     // with unilateral amendment clause, mandatory attribution, use restrictions).
     // Code kept in feat/dots-ocr branch only.
 
-    {"firered-ocr",
-     "firered-ocr-q8_0.gguf",
-     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q8_0.gguf",
-     "FireRed-OCR (Qwen3-VL 2B, GRPO, tables+LaTeX)", "2249 MB", "apache-2.0",
-     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF"},
+    { "firered-ocr", "firered-ocr-q8_0.gguf",
+      "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q8_0.gguf",
+      "FireRed-OCR (Qwen3-VL 2B, GRPO, tables+LaTeX)", "2249 MB", "apache-2.0",
+      "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF" },
 
-    {"firered-ocr-q4k",
-     "firered-ocr-q4_k.gguf",
-     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q4_k.gguf",
-     "FireRed-OCR Q4_K (Qwen3-VL 2B)", "1577 MB", "apache-2.0",
-     "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF"},
+    { "firered-ocr-q4k", "firered-ocr-q4_k.gguf",
+      "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF/resolve/main/firered-ocr-q4_k.gguf",
+      "FireRed-OCR Q4_K (Qwen3-VL 2B)", "1577 MB", "apache-2.0",
+      "https://huggingface.co/cstr/firered-ocr-crispembed-GGUF" },
 
-    {"nafnet-denoise",
-     "nafnet-sidd-w32-q8_0.gguf",
-     "https://huggingface.co/cstr/nafnet-sidd-GGUF/resolve/main/nafnet-sidd-w32-q8_0.gguf",
-     "NAFNet image denoising (U-Net, 29M params, SIDD-trained)", "30 MB", "mit",
-     "https://huggingface.co/cstr/nafnet-sidd-GGUF"},
+    { "nafnet-denoise", "nafnet-sidd-w32-q8_0.gguf",
+      "https://huggingface.co/cstr/nafnet-sidd-GGUF/resolve/main/nafnet-sidd-w32-q8_0.gguf",
+      "NAFNet image denoising (U-Net, 29M params, SIDD-trained)", "30 MB", "mit",
+      "https://huggingface.co/cstr/nafnet-sidd-GGUF" },
 
-    {"safmn-x4",
-     "safmn-x4-f32.gguf",
-     "https://huggingface.co/cstr/safmn-sr-GGUF/resolve/main/safmn-x4-f32.gguf",
-     "SAFMN 4x super-resolution (228K params, ICCV 2023)", "0.9 MB", "apache-2.0",
-     "https://huggingface.co/cstr/safmn-sr-GGUF"},
+    { "safmn-x4", "safmn-x4-f32.gguf", "https://huggingface.co/cstr/safmn-sr-GGUF/resolve/main/safmn-x4-f32.gguf",
+      "SAFMN 4x super-resolution (228K params, ICCV 2023)", "0.9 MB", "apache-2.0",
+      "https://huggingface.co/cstr/safmn-sr-GGUF" },
 
-    {"esrgan-x4",
-     "esrgan-x4-f32.gguf",
-     "https://huggingface.co/cstr/esrgan-sr-GGUF/resolve/main/esrgan-x4-f32.gguf",
-     "Real-ESRGAN 4x SR (SRVGGNetCompact, 620K params, BSD-3)", "2.4 MB", "bsd-3-clause",
-     "https://huggingface.co/cstr/esrgan-sr-GGUF"},
+    { "esrgan-x4", "esrgan-x4-f32.gguf", "https://huggingface.co/cstr/esrgan-sr-GGUF/resolve/main/esrgan-x4-f32.gguf",
+      "Real-ESRGAN 4x SR (SRVGGNetCompact, 620K params, BSD-3)", "2.4 MB", "bsd-3-clause",
+      "https://huggingface.co/cstr/esrgan-sr-GGUF" },
 
-    {"tps-loc",
-     "tps-loc-f32.gguf",
-     "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
-     "TPS localization CNN for document dewarping (108K params, 20 control points)", "0.4 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tps-loc-GGUF"},
+    { "tps-loc", "tps-loc-f32.gguf", "https://huggingface.co/cstr/tps-loc-GGUF/resolve/main/tps-loc-f32.gguf",
+      "TPS localization CNN for document dewarping (108K params, 20 control points)", "0.4 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tps-loc-GGUF" },
 
     // --- Text super-resolution ---
 
-    {"tbsrn-telescope",
-     "tbsrn-telescope-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/tbsrn-telescope-f16.gguf",
-     "TBSRN text-line SR (1.1M params, PaddleOCR Telescope)", "2.2 MB", "Apache-2.0",
-     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+    { "tbsrn-telescope", "tbsrn-telescope-f16.gguf",
+      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/tbsrn-telescope-f16.gguf",
+      "TBSRN text-line SR (1.1M params, PaddleOCR Telescope)", "2.2 MB", "Apache-2.0",
+      "https://huggingface.co/cstr/text-super-resolution-gguf" },
 
-    {"pan-x4",
-     "pan-x4-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/pan-x4-f16.gguf",
-     "PAN 4x image SR (272K params, PaddleGAN)", "0.5 MB", "Apache-2.0",
-     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+    { "pan-x4", "pan-x4-f16.gguf",
+      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/pan-x4-f16.gguf",
+      "PAN 4x image SR (272K params, PaddleGAN)", "0.5 MB", "Apache-2.0",
+      "https://huggingface.co/cstr/text-super-resolution-gguf" },
 
-    {"hat-sr-x4",
-     "hat-sr-x4-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/hat-sr-x4-f16.gguf",
-     "HAT 4x SR (21M params, CVPR 2023 SOTA)", "40 MB", "MIT",
-     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+    { "hat-sr-x4", "hat-sr-x4-f16.gguf",
+      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/hat-sr-x4-f16.gguf",
+      "HAT 4x SR (21M params, CVPR 2023 SOTA)", "40 MB", "MIT",
+      "https://huggingface.co/cstr/text-super-resolution-gguf" },
 
-    {"swinir-sr-x4",
-     "swinir-light-x4-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/swinir-light-x4-f16.gguf",
-     "SwinIR-light 4x SR (930K params)", "15 MB", "Apache-2.0",
-     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+    { "swinir-sr-x4", "swinir-light-x4-f16.gguf",
+      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/swinir-light-x4-f16.gguf",
+      "SwinIR-light 4x SR (930K params)", "15 MB", "Apache-2.0",
+      "https://huggingface.co/cstr/text-super-resolution-gguf" },
 
-    {"dat-sr-x2",
-     "dat-light-x2-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/dat-light-x2-f16.gguf",
-     "DAT-light 2x SR (830K params, ICCV 2023, dual attention)", "38 MB", "Apache-2.0",
-     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+    { "dat-sr-x2", "dat-light-x2-f16.gguf",
+      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/dat-light-x2-f16.gguf",
+      "DAT-light 2x SR (830K params, ICCV 2023, dual attention)", "38 MB", "Apache-2.0",
+      "https://huggingface.co/cstr/text-super-resolution-gguf" },
 
-    {"restormer-denoise",
-     "restormer-denoise-f16.gguf",
-     "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/restormer-denoise-f16.gguf",
-     "Restormer image restoration (26M params, CVPR 2022)", "50 MB", "Apache-2.0",
-     "https://huggingface.co/cstr/text-super-resolution-gguf"},
+    { "restormer-denoise", "restormer-denoise-f16.gguf",
+      "https://huggingface.co/cstr/text-super-resolution-gguf/resolve/main/restormer-denoise-f16.gguf",
+      "Restormer image restoration (26M params, CVPR 2022)", "50 MB", "Apache-2.0",
+      "https://huggingface.co/cstr/text-super-resolution-gguf" },
 
-    {"scunet-color",
-     "scunet-color-f32.gguf",
-     "https://huggingface.co/cstr/scunet-GGUF/resolve/main/scunet-color-f32.gguf",
-     "SCUNet color denoising (Swin-Conv-UNet, 18M params, SIDD)", "69 MB", "apache-2.0",
-     "https://huggingface.co/cstr/scunet-GGUF"},
+    { "scunet-color", "scunet-color-f32.gguf",
+      "https://huggingface.co/cstr/scunet-GGUF/resolve/main/scunet-color-f32.gguf",
+      "SCUNet color denoising (Swin-Conv-UNet, 18M params, SIDD)", "69 MB", "apache-2.0",
+      "https://huggingface.co/cstr/scunet-GGUF" },
 
-    {"instructir",
-     "instructir-f16.gguf",
-     "https://huggingface.co/cstr/InstructIR-GGUF/resolve/main/instructir-f16.gguf",
-     "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
-     "https://huggingface.co/cstr/InstructIR-GGUF"},
+    { "instructir", "instructir-f16.gguf",
+      "https://huggingface.co/cstr/InstructIR-GGUF/resolve/main/instructir-f16.gguf",
+      "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
+      "https://huggingface.co/cstr/InstructIR-GGUF" },
 
-    {"adair-5d",
-     "adair-5d-f16.gguf",
-     "https://huggingface.co/cstr/AdaIR-GGUF/resolve/main/adair-5d-f16.gguf",
-     "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "57 MB", "MIT",
-     "https://huggingface.co/cstr/AdaIR-GGUF"},
+    { "adair-5d", "adair-5d-f16.gguf", "https://huggingface.co/cstr/AdaIR-GGUF/resolve/main/adair-5d-f16.gguf",
+      "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "57 MB", "MIT",
+      "https://huggingface.co/cstr/AdaIR-GGUF" },
 
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
-    {"text-sr",
-     "text-sr-nafnet.gguf",
-     "",
-     "NAFNet-SR text super-resolution engine (custom trained model required)", "", "apache-2.0",
-     ""},
+    { "text-sr", "text-sr-nafnet.gguf", "", "NAFNet-SR text super-resolution engine (custom trained model required)",
+      "", "apache-2.0", "" },
 
-    {"qwen2vl-3b",
-     "qwen2.5-vl-3b-q4_k.gguf",
-     "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
-     "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
-     "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF"},
+    { "qwen2vl-3b", "qwen2.5-vl-3b-q4_k.gguf",
+      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
+      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
+      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF" },
 
-    {"qwen3vl-2b",
-     "qwen3-vl-2b-q4_k.gguf",
-     "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
-     "Qwen3-VL-2B VLM OCR (24-layer ViT + 28-layer Qwen3, DeepStack, IMROPE)", "1590 MB", "apache-2.0",
-     "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf"},
+    { "qwen3vl-2b", "qwen3-vl-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
+      "Qwen3-VL-2B VLM OCR (24-layer ViT + 28-layer Qwen3, DeepStack, IMROPE)", "1590 MB", "apache-2.0",
+      "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf" },
 
-    {"german-ocr-3.1",
-     "german-ocr-3.1-q4_k.gguf",
-     "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
-     "German-OCR-3.1 VLM (Qwen2.5-VL fine-tune, German invoices/forms/receipts)", "1301 MB", "apache-2.0",
-     "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF"},
+    { "german-ocr-3.1", "german-ocr-3.1-q4_k.gguf",
+      "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
+      "German-OCR-3.1 VLM (Qwen2.5-VL fine-tune, German invoices/forms/receipts)", "1301 MB", "apache-2.0",
+      "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF" },
 
-    {"nanonets-ocr-s",
-     "nanonets-ocr-s-q4_k.gguf",
-     "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",
-     "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages)", "2610 MB", "apache-2.0",
-     "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF"},
+    { "nanonets-ocr-s", "nanonets-ocr-s-q4_k.gguf",
+      "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",
+      "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages)", "2610 MB", "apache-2.0",
+      "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF" },
 
-    {"nanonets-ocr2-1.5b",
-     "nanonets-ocr2-1.5b-q4_k.gguf",
-     "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF/resolve/main/nanonets-ocr2-1.5b-q4_k.gguf",
-     "Nanonets-OCR2-1.5B VLM OCR (Qwen2-VL pruned 16L, 12+ languages incl. German)", "1346 MB", "apache-2.0",
-     "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF"},
+    { "nanonets-ocr2-1.5b", "nanonets-ocr2-1.5b-q4_k.gguf",
+      "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF/resolve/main/nanonets-ocr2-1.5b-q4_k.gguf",
+      "Nanonets-OCR2-1.5B VLM OCR (Qwen2-VL pruned 16L, 12+ languages incl. German)", "1346 MB", "apache-2.0",
+      "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF" },
 
-    {"h2ovl-mississippi-2b",
-     "h2ovl-mississippi-2b-q4_k.gguf",
-     "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf",
-     "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "457 MB", "apache-2.0",
-     "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF"},
+    { "h2ovl-mississippi-2b", "h2ovl-mississippi-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf",
+      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "457 MB", "apache-2.0",
+      "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF" },
 
-    {"h2ovl-mississippi-800m",
-     "h2ovl-800m-q4_k.gguf",
-     "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf",
-     "H2OVL-Mississippi-0.8B VLM OCR (InternViT-300M + Danube-3-0.5B, OCRBench 751, edge)", "398 MB", "apache-2.0",
-     "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF"},
+    { "h2ovl-mississippi-800m", "h2ovl-800m-q4_k.gguf",
+      "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf",
+      "H2OVL-Mississippi-0.8B VLM OCR (InternViT-300M + Danube-3-0.5B, OCRBench 751, edge)", "398 MB", "apache-2.0",
+      "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF" },
 
-    {"internvl2-2b",
-     "internvl2.5-2b-q4_k.gguf",
-     "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF/resolve/main/internvl2.5-2b-q4_k.gguf",
-     "InternVL2.5-2B VLM OCR (InternViT-300M + InternLM2.5-1.8B, EN+DE, OCRBench ~830)", "1400 MB", "mit",
-     "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF"},
+    { "internvl2-2b", "internvl2.5-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF/resolve/main/internvl2.5-2b-q4_k.gguf",
+      "InternVL2.5-2B VLM OCR (InternViT-300M + InternLM2.5-1.8B, EN+DE, OCRBench ~830)", "1400 MB", "mit",
+      "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF" },
 
-    {"internvl2-1b",
-     "internvl2-1b-q4_k.gguf",
-     "https://huggingface.co/cstr/internvl2-1b-crispembed-GGUF/resolve/main/internvl2-1b-q4_k.gguf",
-     "InternVL2-1B VLM OCR (InternViT-300M + Qwen2-0.5B, 0.9B, edge/WASM, OCRBench 779)", "600 MB", "mit",
-     "https://huggingface.co/cstr/internvl2-1b-crispembed-GGUF"},
+    { "internvl2-1b", "internvl2-1b-q4_k.gguf",
+      "https://huggingface.co/cstr/internvl2-1b-crispembed-GGUF/resolve/main/internvl2-1b-q4_k.gguf",
+      "InternVL2-1B VLM OCR (InternViT-300M + Qwen2-0.5B, 0.9B, edge/WASM, OCRBench 779)", "600 MB", "mit",
+      "https://huggingface.co/cstr/internvl2-1b-crispembed-GGUF" },
 
-    {"glm-ocr",
-     "glm-ocr-q8_0.gguf",
-     "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF/resolve/main/glm-ocr-q8_0.gguf",
-     "GLM-OCR document OCR (CogViT + GLM-0.5B, 0.9B, 8 languages, OmniDocBench #1)", "950 MB", "mit",
-     "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF"},
+    { "glm-ocr", "glm-ocr-q8_0.gguf",
+      "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF/resolve/main/glm-ocr-q8_0.gguf",
+      "GLM-OCR document OCR (CogViT + GLM-0.5B, 0.9B, 8 languages, OmniDocBench #1)", "950 MB", "mit",
+      "https://huggingface.co/cstr/glm-ocr-crispembed-GGUF" },
 
-    {"got-ocr2",
-     "got-ocr2-q4_k.gguf",
-     "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
-     "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "445 MB", "apache-2.0",
-     "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF"},
+    { "got-ocr2", "got-ocr2-q4_k.gguf",
+      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
+      "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "445 MB", "apache-2.0",
+      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
 
-    {"pix2struct-base",
-     "pix2struct-base-q8_0.gguf",
-     "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
-     "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "300 MB", "apache-2.0",
-     "https://huggingface.co/cstr/pix2struct-GGUF"},
+    { "pix2struct-base", "pix2struct-base-q8_0.gguf",
+      "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
+      "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "300 MB", "apache-2.0",
+      "https://huggingface.co/cstr/pix2struct-GGUF" },
 
-    {"deepseek-ocr2",
-     "deepseek-ocr2-f16.gguf",
-     "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-f16.gguf",
-     "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
-     "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF"},
+    { "deepseek-ocr2", "deepseek-ocr2-f16.gguf",
+      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-f16.gguf",
+      "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
+      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF" },
 
-    {"unlimited-ocr",
-     "unlimited-ocr-q4_k.gguf",
-     "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k.gguf",
-     "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "2.0 GB", "mit",
-     "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF"},
+    { "unlimited-ocr", "unlimited-ocr-q4_k.gguf",
+      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k.gguf",
+      "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "2.0 GB", "mit",
+      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
     // License: Apache-2.0
-    {"paddleocr-vl",
-     "paddleocr-vl-0.9b-q8_0.gguf",
-     "https://huggingface.co/cstr/paddleocr-vl-0.9b-GGUF/resolve/main/paddleocr-vl-0.9b-q8_0.gguf",
-     "PaddleOCR-VL 0.9B NaViT+ERNIE-4.5 109-lang OCR", "1.4 GB", "apache-2.0",
-     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL"},
+    { "paddleocr-vl", "paddleocr-vl-0.9b-q8_0.gguf",
+      "https://huggingface.co/cstr/paddleocr-vl-0.9b-GGUF/resolve/main/paddleocr-vl-0.9b-q8_0.gguf",
+      "PaddleOCR-VL 0.9B NaViT+ERNIE-4.5 109-lang OCR", "1.4 GB", "apache-2.0",
+      "https://huggingface.co/PaddlePaddle/PaddleOCR-VL" },
 
-    {"paddleocr-vl-q4k",
-     "paddleocr-vl-0.9b-q4_k.gguf",
-     "https://huggingface.co/cstr/paddleocr-vl-0.9b-GGUF/resolve/main/paddleocr-vl-0.9b-q4_k.gguf",
-     "PaddleOCR-VL 0.9B NaViT+ERNIE-4.5 Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
-     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL"},
+    { "paddleocr-vl-q4k", "paddleocr-vl-0.9b-q4_k.gguf",
+      "https://huggingface.co/cstr/paddleocr-vl-0.9b-GGUF/resolve/main/paddleocr-vl-0.9b-q4_k.gguf",
+      "PaddleOCR-VL 0.9B NaViT+ERNIE-4.5 Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
+      "https://huggingface.co/PaddlePaddle/PaddleOCR-VL" },
 
     // PaddleOCR-VL-1.6 — same arch as 0.9B, improved training (96.3% OmniDocBench)
-    {"paddleocr-vl-1.6",
-     "paddleocr-vl-1.6-q8_0.gguf",
-     "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q8_0.gguf",
-     "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA 109-lang OCR", "1.4 GB", "apache-2.0",
-     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6"},
+    { "paddleocr-vl-1.6", "paddleocr-vl-1.6-q8_0.gguf",
+      "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q8_0.gguf",
+      "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA 109-lang OCR", "1.4 GB", "apache-2.0",
+      "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6" },
 
-    {"paddleocr-vl-1.6-q4k",
-     "paddleocr-vl-1.6-q4_k.gguf",
-     "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q4_k.gguf",
-     "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
-     "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6"},
+    { "paddleocr-vl-1.6-q4k", "paddleocr-vl-1.6-q4_k.gguf",
+      "https://huggingface.co/cstr/paddleocr-vl-1.6-GGUF/resolve/main/paddleocr-vl-1.6-q4_k.gguf",
+      "PaddleOCR-VL 1.6 NaViT+ERNIE-4.5 SOTA Q4_K 109-lang OCR", "1.3 GB", "apache-2.0",
+      "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6" },
 
     // LFM2.5-Embedding-350M — LiquidAI bidirectional hybrid (10 ShortConv + 6 GQA)
     // 1024-dim CLS pooling, 11 languages (EN/ES/DE/FR/IT/PT/AR/SV/NO/JA/KO)
     // License: LFM Open License v1.0 (commercial use requires separate agreement)
     // Default = best flavor (Q4_K+imatrix, A/B winner). -q4k now serves the
     // imatrix build (same size, strictly better than the old plain Q4_K).
-    {"lfm2-embed",
-     "lfm2-embed-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k-imatrix.gguf",
-     "LFM2.5 1024d 11-lang CLS hybrid (350M, Q4_K+imatrix)", "235 MB", "lfm1.0",
-     "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
+    { "lfm2-embed", "lfm2-embed-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k-imatrix.gguf",
+      "LFM2.5 1024d 11-lang CLS hybrid (350M, Q4_K+imatrix)", "235 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M" },
 
-    {"lfm2-embed-q4k",
-     "lfm2-embed-q4_k-imatrix.gguf",
-     "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k-imatrix.gguf",
-     "LFM2.5 1024d 11-lang CLS hybrid Q4_K+imatrix (350M)", "235 MB", "lfm1.0",
-     "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
+    { "lfm2-embed-q4k", "lfm2-embed-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q4_k-imatrix.gguf",
+      "LFM2.5 1024d 11-lang CLS hybrid Q4_K+imatrix (350M)", "235 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M" },
 
-    {"lfm2-embed-iq4xs",
-     "lfm2-embed-iq4_xs.gguf",
-     "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-iq4_xs.gguf",
-     "LFM2.5 1024d 11-lang CLS hybrid IQ4_XS+imatrix (350M)", "226 MB", "lfm1.0",
-     "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
+    { "lfm2-embed-iq4xs", "lfm2-embed-iq4_xs.gguf",
+      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-iq4_xs.gguf",
+      "LFM2.5 1024d 11-lang CLS hybrid IQ4_XS+imatrix (350M)", "226 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M" },
 
-    {"lfm2-embed-q8",
-     "lfm2-embed-q8_0.gguf",
-     "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q8_0.gguf",
-     "LFM2.5 1024d 11-lang CLS hybrid Q8_0 (350M)", "379 MB", "lfm1.0",
-     "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M"},
+    { "lfm2-embed-q8", "lfm2-embed-q8_0.gguf",
+      "https://huggingface.co/cstr/lfm2-embed-GGUF/resolve/main/lfm2-embed-q8_0.gguf",
+      "LFM2.5 1024d 11-lang CLS hybrid Q8_0 (350M)", "379 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M" },
 
     // LFM2.5-ColBERT-350M — LiquidAI ColBERT multi-vector (per-token 128d)
     // Same backbone as LFM2.5-Embedding + Dense projection head
     // License: LFM Open License v1.0
-    {"lfm2-colbert",
-     "lfm2-colbert-q8_0.gguf",
-     "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q8_0.gguf",
-     "LFM2.5 ColBERT 128d multi-vector hybrid (350M)", "419 MB", "lfm1.0",
-     "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M"},
+    { "lfm2-colbert", "lfm2-colbert-q8_0.gguf",
+      "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q8_0.gguf",
+      "LFM2.5 ColBERT 128d multi-vector hybrid (350M)", "419 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M" },
 
-    {"lfm2-colbert-q4k",
-     "lfm2-colbert-q4_k.gguf",
-     "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q4_k.gguf",
-     "LFM2.5 ColBERT 128d multi-vector Q4_K (350M)", "254 MB", "lfm1.0",
-     "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M"},
+    { "lfm2-colbert-q4k", "lfm2-colbert-q4_k.gguf",
+      "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q4_k.gguf",
+      "LFM2.5 ColBERT 128d multi-vector Q4_K (350M)", "254 MB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M" },
 
-    {"gliner-lfm",
-     "gliner-lfm-q8_0.gguf",
-     "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q8_0.gguf",
-     "GLiNER zero-shot NER (LFM2.5-350M bidirectional, 5 languages)", "419 MB", "lfm1.0",
-     "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF"},
+    { "gliner-lfm", "gliner-lfm-q8_0.gguf",
+      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q8_0.gguf",
+      "GLiNER zero-shot NER (LFM2.5-350M bidirectional, 5 languages)", "419 MB", "lfm1.0",
+      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF" },
 
-    {"gliner-lfm-q4k",
-     "gliner-lfm-q4_k.gguf",
-     "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q4_k.gguf",
-     "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0",
-     "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF"},
+    { "gliner-lfm-q4k", "gliner-lfm-q4_k.gguf",
+      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF/resolve/main/gliner-lfm-q4_k.gguf",
+      "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0",
+      "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF" },
 
-    {"gliner-deberta",
-     "gliner-deberta-q8_0.gguf",
-     "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q8_0.gguf",
-     "GLiNER zero-shot NER (DeBERTa-v3-base, 209M, Apache-2.0)", "198 MB", "apache-2.0",
-     "https://huggingface.co/cstr/gliner-deberta-GGUF"},
+    { "gliner-deberta", "gliner-deberta-q8_0.gguf",
+      "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q8_0.gguf",
+      "GLiNER zero-shot NER (DeBERTa-v3-base, 209M, Apache-2.0)", "198 MB", "apache-2.0",
+      "https://huggingface.co/cstr/gliner-deberta-GGUF" },
 
-    {"gliner-deberta-q4k",
-     "gliner-deberta-q4_k.gguf",
-     "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q4_k.gguf",
-     "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
-     "https://huggingface.co/cstr/gliner-deberta-GGUF"},
+    { "gliner-deberta-q4k", "gliner-deberta-q4_k.gguf",
+      "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q4_k.gguf",
+      "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
+      "https://huggingface.co/cstr/gliner-deberta-GGUF" },
 
-    {"lilt-funsd",
-     "lilt-funsd-f32.gguf",
-     "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-f32.gguf",
-     "LiLT FUNSD form understanding (130M params, MIT)", "497 MB", "mit",
-     "https://huggingface.co/cstr/lilt-funsd-GGUF"},
+    { "lilt-funsd", "lilt-funsd-f32.gguf",
+      "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-f32.gguf",
+      "LiLT FUNSD form understanding (130M params, MIT)", "497 MB", "mit",
+      "https://huggingface.co/cstr/lilt-funsd-GGUF" },
 
-    {"lilt-base",
-     "lilt-base-f32.gguf",
-     "https://huggingface.co/cstr/lilt-base-GGUF/resolve/main/lilt-base-f32.gguf",
-     "LiLT base encoder (130M params, MIT)", "497 MB", "mit",
-     "https://huggingface.co/cstr/lilt-base-GGUF"},
+    { "lilt-base", "lilt-base-f32.gguf", "https://huggingface.co/cstr/lilt-base-GGUF/resolve/main/lilt-base-f32.gguf",
+      "LiLT base encoder (130M params, MIT)", "497 MB", "mit", "https://huggingface.co/cstr/lilt-base-GGUF" },
 
     // BERT fixed-label NER (CoNLL-03: PER/LOC/ORG/MISC)
-    {"bert-base-ner",
-     "bert-base-ner-q8_0.gguf",
-     "https://huggingface.co/cstr/bert-base-NER-GGUF/resolve/main/bert-base-ner-q8_0.gguf",
-     "BERT NER (110M, CoNLL-03, 9 labels, MIT)", "111 MB", "mit",
-     "https://huggingface.co/cstr/bert-base-NER-GGUF"},
+    { "bert-base-ner", "bert-base-ner-q8_0.gguf",
+      "https://huggingface.co/cstr/bert-base-NER-GGUF/resolve/main/bert-base-ner-q8_0.gguf",
+      "BERT NER (110M, CoNLL-03, 9 labels, MIT)", "111 MB", "mit", "https://huggingface.co/cstr/bert-base-NER-GGUF" },
 
-    {"xlmr-ner-hrl",
-     "xlmr-ner-hrl-q8_0.gguf",
-     "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-q8_0.gguf",
-     "XLM-R multilingual NER (278M, 10 langs, 9 labels, CoNLL-2003 trained*)", "281 MB", "other*",
-     "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF"},
+    { "xlmr-ner-hrl", "xlmr-ner-hrl-q8_0.gguf",
+      "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-q8_0.gguf",
+      "XLM-R multilingual NER (278M, 10 langs, 9 labels, CoNLL-2003 trained*)", "281 MB", "other*",
+      "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF" },
 
     // Text language identification
-    {"cld3",
-     "cld3-f16.gguf",
-     "https://huggingface.co/cstr/cld3-GGUF/resolve/main/cld3-f16.gguf",
-     "Google CLD3 text LID (109 languages, Apache-2.0)", "1.2 MB", "apache-2.0",
-     "https://huggingface.co/cstr/cld3-GGUF"},
+    { "cld3", "cld3-f16.gguf", "https://huggingface.co/cstr/cld3-GGUF/resolve/main/cld3-f16.gguf",
+      "Google CLD3 text LID (109 languages, Apache-2.0)", "1.2 MB", "apache-2.0",
+      "https://huggingface.co/cstr/cld3-GGUF" },
 
-    {"glotlid",
-     "lid-glotlid-f16.gguf",
-     "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/lid-glotlid-f16.gguf",
-     "GlotLID-V3 text LID (2102 ISO 639-3 languages)", "3.3 MB", "apache-2.0",
-     "https://huggingface.co/cstr/glotlid-GGUF"},
+    { "glotlid", "lid-glotlid-f16.gguf", "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/lid-glotlid-f16.gguf",
+      "GlotLID-V3 text LID (2102 ISO 639-3 languages)", "3.3 MB", "apache-2.0",
+      "https://huggingface.co/cstr/glotlid-GGUF" },
 
     // LightOnOCR-2-1B — Pixtral ViT + Qwen3 decoder (OCR Arena #2)
-    {"lightonocr",
-     "lightonocr-1b-q4_k.gguf",
-     "https://huggingface.co/cstr/lightonocr-GGUF/resolve/main/lightonocr-1b-q4_k.gguf",
-     "LightOnOCR-2-1B (1B, Pixtral+Qwen3, Apache-2.0)", "622 MB", "apache-2.0",
-     "https://huggingface.co/cstr/lightonocr-GGUF"},
+    { "lightonocr", "lightonocr-1b-q4_k.gguf",
+      "https://huggingface.co/cstr/lightonocr-GGUF/resolve/main/lightonocr-1b-q4_k.gguf",
+      "LightOnOCR-2-1B (1B, Pixtral+Qwen3, Apache-2.0)", "622 MB", "apache-2.0",
+      "https://huggingface.co/cstr/lightonocr-GGUF" },
 
     // Tesseract LSTM line OCR — lightweight multilingual (from tessdata_best)
-    {"tesseract-eng",
-     "tesseract-eng-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-q8_0.gguf",
-     "Tesseract LSTM English line OCR (1.5M, CTC, 126-lang family)", "1.5 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-eng", "tesseract-eng-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-q8_0.gguf",
+      "Tesseract LSTM English line OCR (1.5M, CTC, 126-lang family)", "1.5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-deu",
-     "tesseract-deu-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-deu-q8_0.gguf",
-     "Tesseract LSTM German line OCR (940K, CTC)", "976 KB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-deu", "tesseract-deu-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-deu-q8_0.gguf",
+      "Tesseract LSTM German line OCR (940K, CTC)", "976 KB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-fra",
-     "tesseract-fra-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-fra-q8_0.gguf",
-     "Tesseract LSTM French line OCR (391K, CTC)", "435 KB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-fra", "tesseract-fra-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-fra-q8_0.gguf",
+      "Tesseract LSTM French line OCR (391K, CTC)", "435 KB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-spa",
-     "tesseract-spa-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-spa-q8_0.gguf",
-     "Tesseract LSTM Spanish line OCR (1.5M, CTC)", "1.5 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-spa", "tesseract-spa-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-spa-q8_0.gguf",
+      "Tesseract LSTM Spanish line OCR (1.5M, CTC)", "1.5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-ita",
-     "tesseract-ita-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ita-q8_0.gguf",
-     "Tesseract LSTM Italian line OCR (822K, CTC)", "860 KB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-ita", "tesseract-ita-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ita-q8_0.gguf",
+      "Tesseract LSTM Italian line OCR (822K, CTC)", "860 KB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-por",
-     "tesseract-por-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-por-q8_0.gguf",
-     "Tesseract LSTM Portuguese line OCR (822K, CTC)", "860 KB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-por", "tesseract-por-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-por-q8_0.gguf",
+      "Tesseract LSTM Portuguese line OCR (822K, CTC)", "860 KB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-nld",
-     "tesseract-nld-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-nld-q8_0.gguf",
-     "Tesseract LSTM Dutch line OCR (408K, CTC)", "449 KB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-nld", "tesseract-nld-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-nld-q8_0.gguf",
+      "Tesseract LSTM Dutch line OCR (408K, CTC)", "449 KB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-rus",
-     "tesseract-rus-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-rus-q8_0.gguf",
-     "Tesseract LSTM Russian line OCR (1.5M, CTC, Cyrillic)", "1.5 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-rus", "tesseract-rus-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-rus-q8_0.gguf",
+      "Tesseract LSTM Russian line OCR (1.5M, CTC, Cyrillic)", "1.5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-ara",
-     "tesseract-ara-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ara-q8_0.gguf",
-     "Tesseract LSTM Arabic line OCR (1.4M, CTC, RTL)", "1.5 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-ara", "tesseract-ara-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ara-q8_0.gguf",
+      "Tesseract LSTM Arabic line OCR (1.4M, CTC, RTL)", "1.5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-chi-sim",
-     "tesseract-chi_sim-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-chi_sim-q8_0.gguf",
-     "Tesseract LSTM Chinese Simplified line OCR (1.5M, CTC, CJK)", "1.6 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-chi-sim", "tesseract-chi_sim-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-chi_sim-q8_0.gguf",
+      "Tesseract LSTM Chinese Simplified line OCR (1.5M, CTC, CJK)", "1.6 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-jpn",
-     "tesseract-jpn-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-jpn-q8_0.gguf",
-     "Tesseract LSTM Japanese line OCR (1.6M, CTC, CJK+Kana)", "1.7 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-jpn", "tesseract-jpn-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-jpn-q8_0.gguf",
+      "Tesseract LSTM Japanese line OCR (1.6M, CTC, CJK+Kana)", "1.7 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
-    {"tesseract-kor",
-     "tesseract-kor-q8_0.gguf",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-kor-q8_0.gguf",
-     "Tesseract LSTM Korean line OCR (1.5M, CTC, Hangul)", "1.5 MB", "apache-2.0",
-     "https://huggingface.co/cstr/tesseract-lstm-GGUF"},
+    { "tesseract-kor", "tesseract-kor-q8_0.gguf",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-kor-q8_0.gguf",
+      "Tesseract LSTM Korean line OCR (1.5M, CTC, Hangul)", "1.5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
     // Punctuation restoration models
-    {"fireredpunc",
-     "fireredpunc-q4_k.gguf",
-     "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k.gguf",
-     "FireRedPunc punctuation restoration (BERT chinese-bert-wwm-ext, 5 classes)", "84 MB", "apache-2.0",
-     "https://huggingface.co/cstr/fireredpunc-GGUF"},
+    { "fireredpunc", "fireredpunc-q4_k.gguf",
+      "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k.gguf",
+      "FireRedPunc punctuation restoration (BERT chinese-bert-wwm-ext, 5 classes)", "84 MB", "apache-2.0",
+      "https://huggingface.co/cstr/fireredpunc-GGUF" },
 
-    {"fullstop-punc",
-     "fullstop-punc-q4_k.gguf",
-     "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q4_k.gguf",
-     "Fullstop punctuation restoration (XLM-R, multilingual)", "180 MB", "mit",
-     "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF"},
+    { "fullstop-punc", "fullstop-punc-q4_k.gguf",
+      "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q4_k.gguf",
+      "Fullstop punctuation restoration (XLM-R, multilingual)", "180 MB", "mit",
+      "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF" },
 
-    {"pcs",
-     "pcs-xlmr-base-q4_k.gguf",
-     "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k.gguf",
-     "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
-     "https://huggingface.co/cstr/pcs-xlmr-base-GGUF"},
+    { "pcs", "pcs-xlmr-base-q4_k.gguf",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k.gguf",
+      "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF" },
 
     // Uni-MuMER handwritten math OCR (Qwen3-VL / Qwen2.5-VL fine-tunes)
-    {"uni-mumer-qwen3-vl-2b",
-     "uni-mumer-qwen3-vl-2b-q4_k.gguf",
-     "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/main/uni-mumer-qwen3-vl-2b-q4_k.gguf",
-     "Uni-MuMER handwritten math→LaTeX (Qwen3-VL-2B, 82% CROHME)", "1509 MB", "apache-2.0",
-     "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF"},
+    { "uni-mumer-qwen3-vl-2b", "uni-mumer-qwen3-vl-2b-q4_k.gguf",
+      "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF/resolve/main/uni-mumer-qwen3-vl-2b-q4_k.gguf",
+      "Uni-MuMER handwritten math→LaTeX (Qwen3-VL-2B, 82% CROHME)", "1509 MB", "apache-2.0",
+      "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF" },
 
-    {"uni-mumer-qwen2.5-vl-3b",
-     "uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
-     "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF/resolve/main/uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
-     "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME)", "2614 MB", "apache-2.0",
-     "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF"},
+    { "uni-mumer-qwen2.5-vl-3b", "uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
+      "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF/resolve/main/uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
+      "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME)", "2614 MB", "apache-2.0",
+      "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF" },
 
     // TexTeller 3.0 math OCR (ViT + TrOCR, 310M, printed + handwritten)
-    {"texteller-3",
-     "texteller-3-q8_0.gguf",
-     "https://huggingface.co/cstr/texteller-3-GGUF/resolve/main/texteller-3-q8_0.gguf",
-     "TexTeller 3.0 math→LaTeX (ViT+TrOCR, 310M, EN+CN)", "302 MB", "apache-2.0",
-     "https://huggingface.co/cstr/texteller-3-GGUF"},
+    { "texteller-3", "texteller-3-q8_0.gguf",
+      "https://huggingface.co/cstr/texteller-3-GGUF/resolve/main/texteller-3-q8_0.gguf",
+      "TexTeller 3.0 math→LaTeX (ViT+TrOCR, 310M, EN+CN)", "302 MB", "apache-2.0",
+      "https://huggingface.co/cstr/texteller-3-GGUF" },
 
-    {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr}
+    { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 
 std::string cache_dir() {
@@ -1152,8 +943,7 @@ static bool download_file(const std::string & source_url, const std::string & de
     // KEEP the .tmp so the next attempt can resume rather than redo.
     long long resume_from = file_size(tmp);
     if (resume_from > 0) {
-        fprintf(stderr, "Resuming download from %.1f MB...\n",
-                resume_from / (1024.0 * 1024.0));
+        fprintf(stderr, "Resuming download from %.1f MB...\n", resume_from / (1024.0 * 1024.0));
     }
 
     // `-C -` (curl) and `-c` (wget) tell the client to ask for HTTP Range
@@ -1161,11 +951,9 @@ static bool download_file(const std::string & source_url, const std::string & de
     // already-complete case (HTTP 416) gracefully.
 #ifdef _WIN32
     // Windows 10+ bundles curl.exe — supports -C -.
-    std::string cmd = "curl.exe -fL -C - --progress-bar -o \"" + tmp +
-                      "\" \"" + source_url + "\"";
+    std::string cmd = "curl.exe -fL -C - --progress-bar -o \"" + tmp + "\" \"" + source_url + "\"";
 #else
-    std::string cmd = "curl -fL -C - --progress-bar -o \"" + tmp +
-                      "\" \"" + source_url + "\"";
+    std::string cmd = "curl -fL -C - --progress-bar -o \"" + tmp + "\" \"" + source_url + "\"";
 #endif
     // NOLINTNEXTLINE(bugprone-command-processor)
     int ret = system(cmd.c_str());
@@ -1191,8 +979,7 @@ static bool download_file(const std::string & source_url, const std::string & de
     // manually — bandwidth-cheap to lose, expensive to redo from zero.
     long long partial = file_size(tmp);
     if (partial > 0) {
-        fprintf(stderr,
-                "Download failed; partial %.1f MB kept at %s — re-run to resume.\n",
+        fprintf(stderr, "Download failed; partial %.1f MB kept at %s — re-run to resume.\n",
                 partial / (1024.0 * 1024.0), tmp.c_str());
     }
     return false;
@@ -1205,8 +992,10 @@ bool license_requires_acceptance(const char * spdx) {
     if (strncmp(spdx, "cc-by-nc", 8) == 0) return true;
     // Vendor licenses with use-restriction policies the user must accept.
     static const char * restricted[] = {
-        "gemma", "llama2", "llama3", "llama3.1", "llama3.2", "llama3.3",
-        "llama4", "qwen-research", "mistral-ai-research", "lfm1.0", "other", nullptr,
+        "gemma",    "llama2",        "llama3",
+        "llama3.1", "llama3.2",      "llama3.3",
+        "llama4",   "qwen-research", "mistral-ai-research",
+        "lfm1.0",   "other",         nullptr,
     };
     for (const char ** p = restricted; *p; ++p) {
         if (strcmp(spdx, *p) == 0) return true;
@@ -1214,8 +1003,7 @@ bool license_requires_acceptance(const char * spdx) {
     return false;
 }
 
-static bool license_accepted(const char * spdx,
-                              const std::string & accepted_arg) {
+static bool license_accepted(const char * spdx, const std::string & accepted_arg) {
     auto matches = [&](const std::string & accepted) {
         if (accepted.empty()) return false;
         if (accepted == "all" || accepted == "*") return true;
@@ -1227,8 +1015,7 @@ static bool license_accepted(const char * spdx,
     return false;
 }
 
-std::string resolve_model(const std::string & arg, bool auto_download,
-                          const std::string & accepted_license) {
+std::string resolve_model(const std::string & arg, bool auto_download, const std::string & accepted_license) {
     // If it's already a file path, use it directly
     if (file_exists(arg)) return arg;
 
@@ -1266,8 +1053,8 @@ std::string resolve_model(const std::string & arg, bool auto_download,
     }
 
     const bool restricted = license_requires_acceptance(entry->license);
-    const bool accepted   = license_accepted(entry->license, accepted_license);
-    const bool is_tty     = isatty(fileno(stdin));
+    const bool accepted = license_accepted(entry->license, accepted_license);
+    const bool is_tty = isatty(fileno(stdin));
 
     // Download flow:
     //   - For permissive licenses: existing behaviour (auto_download or
@@ -1280,12 +1067,9 @@ std::string resolve_model(const std::string & arg, bool auto_download,
     if (restricted) {
         if (!accepted) {
             if (is_tty) {
-                fprintf(stderr,
-                        "Model '%s' is released under a restricted license:\n",
-                        entry->name);
+                fprintf(stderr, "Model '%s' is released under a restricted license:\n", entry->name);
                 fprintf(stderr, "  License:    %s\n", entry->license);
-                fprintf(stderr, "  Model card: %s\n",
-                        entry->model_card_url ? entry->model_card_url : "(unknown)");
+                fprintf(stderr, "  Model card: %s\n", entry->model_card_url ? entry->model_card_url : "(unknown)");
                 if (strncmp(entry->license, "cc-by-nc", 8) == 0) {
                     fprintf(stderr, "  Notice:     non-commercial use only — see upstream model card for terms.\n");
                 } else if (strcmp(entry->license, "gemma") == 0) {
@@ -1293,16 +1077,15 @@ std::string resolve_model(const std::string & arg, bool auto_download,
                 } else {
                     fprintf(stderr, "  Notice:     review the upstream model card for the full license terms.\n");
                 }
-                fprintf(stderr, "Download %s (%s) and accept this license? [y/N] ",
-                        entry->filename, entry->approx_size);
+                fprintf(stderr, "Download %s (%s) and accept this license? [y/N] ", entry->filename,
+                        entry->approx_size);
                 char c = 0;
                 if (scanf(" %c", &c) != 1 || (c != 'y' && c != 'Y')) {
                     return "";
                 }
             } else {
-                fprintf(stderr,
-                        "error: model '%s' is released under '%s' (restricted).\n",
-                        entry->name, entry->license);
+                fprintf(stderr, "error: model '%s' is released under '%s' (restricted).\n", entry->name,
+                        entry->license);
                 fprintf(stderr,
                         "       Pass --accept-license %s (or set "
                         "CRISPEMBED_ACCEPT_LICENSE=%s) to acknowledge.\n",
@@ -1316,32 +1099,26 @@ std::string resolve_model(const std::string & arg, bool auto_download,
     } else if (!auto_download) {
         if (is_tty) {
             fprintf(stderr, "Model '%s' not found locally.\n", entry->name);
-            fprintf(stderr, "  License: %s   (%s)\n",
-                    entry->license ? entry->license : "?",
+            fprintf(stderr, "  License: %s   (%s)\n", entry->license ? entry->license : "?",
                     entry->model_card_url ? entry->model_card_url : "");
-            fprintf(stderr, "Download %s (%s) from HuggingFace? [y/N] ",
-                    entry->filename, entry->approx_size);
+            fprintf(stderr, "Download %s (%s) from HuggingFace? [y/N] ", entry->filename, entry->approx_size);
             char c = 0;
             if (scanf(" %c", &c) != 1 || (c != 'y' && c != 'Y')) {
                 return "";
             }
         } else {
-            fprintf(stderr, "Model '%s' not found. Use --auto-download to download automatically.\n",
-                    entry->name);
+            fprintf(stderr, "Model '%s' not found. Use --auto-download to download automatically.\n", entry->name);
             return "";
         }
     }
 
     if (!download_supported()) {
-        fprintf(stderr,
-                "Model '%s' is not cached, and auto-download is unavailable on iOS builds.\n",
-                entry->name);
+        fprintf(stderr, "Model '%s' is not cached, and auto-download is unavailable on iOS builds.\n", entry->name);
         return "";
     }
 
     mkdirs(dir);
-    fprintf(stderr, "Downloading %s (%s, license: %s)...\n",
-            entry->filename, entry->approx_size,
+    fprintf(stderr, "Downloading %s (%s, license: %s)...\n", entry->filename, entry->approx_size,
             entry->license ? entry->license : "?");
     if (download_file(entry->url, cached)) {
         fprintf(stderr, "Downloaded to %s\n", cached.c_str());
@@ -1354,21 +1131,17 @@ std::string resolve_model(const std::string & arg, bool auto_download,
 
 void list_models() {
     fprintf(stderr, "Available models:\n");
-    fprintf(stderr, "  %-40s %-14s %-9s %s\n",
-            "Name", "License", "Size", "Description");
-    fprintf(stderr, "  %-40s %-14s %-9s %s\n",
-            "----", "-------", "----", "-----------");
+    fprintf(stderr, "  %-40s %-14s %-9s %s\n", "Name", "License", "Size", "Description");
+    fprintf(stderr, "  %-40s %-14s %-9s %s\n", "----", "-------", "----", "-----------");
     for (const ModelEntry * e = k_registry; e->name; e++) {
         std::string cached = cache_dir() + "/" + e->filename;
         const char * status = file_exists(cached) ? " [cached]" : "";
         const char * license = e->license ? e->license : "?";
-        const char * marker  = license_requires_acceptance(e->license) ? "*" : " ";
-        fprintf(stderr, " %s%-40s %-14s %-9s %s%s\n",
-                marker, e->name, license, e->approx_size, e->desc, status);
+        const char * marker = license_requires_acceptance(e->license) ? "*" : " ";
+        fprintf(stderr, " %s%-40s %-14s %-9s %s%s\n", marker, e->name, license, e->approx_size, e->desc, status);
     }
-    fprintf(stderr,
-            "\n  * = restricted license (non-commercial or vendor terms); "
-            "requires --accept-license <spdx> or interactive consent.\n");
+    fprintf(stderr, "\n  * = restricted license (non-commercial or vendor terms); "
+                    "requires --accept-license <spdx> or interactive consent.\n");
 }
 
 int n_models() {
@@ -1419,7 +1192,11 @@ const char * model_card_url(int i) {
     return nullptr;
 }
 
-const char * get_query_prefix(const char * model) { return query_prefix(model); }
-const char * get_passage_prefix(const char * model) { return passage_prefix(model); }
+const char * get_query_prefix(const char * model) {
+    return query_prefix(model);
+}
+const char * get_passage_prefix(const char * model) {
+    return passage_prefix(model);
+}
 
-}  // namespace crispembed_mgr
+} // namespace crispembed_mgr

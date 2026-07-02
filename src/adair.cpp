@@ -40,16 +40,11 @@
 // tensor so it doubles as the persistent-kernel cache key. When the ggml path
 // is disabled (ctx==nullptr or scalar opt-out) it falls back to scalar conv2d.
 struct adair_context;
-static void adair_conv(adair_context * ctx,
-                       const float * in, int ic, int h, int w,
-                       const float * wt, const float * bi,
-                       int oc, int kh, int kw, int pad, int stride, int groups,
-                       float * out);
+static void adair_conv(adair_context * ctx, const float * in, int ic, int h, int w, const float * wt, const float * bi,
+                       int oc, int kh, int kw, int pad, int stride, int groups, float * out);
 
-static void conv2d(const float * in, int ic, int h, int w,
-                   const float * wt, const float * bi,
-                   int oc, int kh, int kw, int pad, int stride, int groups,
-                   float * out) {
+static void conv2d(const float * in, int ic, int h, int w, const float * wt, const float * bi, int oc, int kh, int kw,
+                   int pad, int stride, int groups, float * out) {
     int oh = (h + 2 * pad - kh) / stride + 1;
     int ow = (w + 2 * pad - kw) / stride + 1;
     int ic_pg = ic / groups, oc_pg = oc / groups;
@@ -66,8 +61,8 @@ static void conv2d(const float * in, int ic, int h, int w,
                             for (int kx = 0; kx < kw; kx++) {
                                 int iy = oy * stride + ky - pad, ix = ox * stride + kx - pad;
                                 if (iy >= 0 && iy < h && ix >= 0 && ix < w)
-                                    sum += in[ia * h * w + iy * w + ix]
-                                         * wt[oa * ic_pg * kh * kw + c * kh * kw + ky * kw + kx];
+                                    sum += in[ia * h * w + iy * w + ix] *
+                                           wt[oa * ic_pg * kh * kw + c * kh * kw + ky * kw + kx];
                             }
                     }
                     out[oa * oh * ow + oy * ow + ox] = sum;
@@ -75,8 +70,7 @@ static void conv2d(const float * in, int ic, int h, int w,
         }
 }
 
-static void layernorm2d(const float * in, int c, int h, int w,
-                        const float * wt, const float * bi, float * out) {
+static void layernorm2d(const float * in, int c, int h, int w, const float * wt, const float * bi, float * out) {
     int hw = h * w;
     for (int y = 0; y < h; y++)
         for (int x = 0; x < w; x++) {
@@ -85,28 +79,26 @@ static void layernorm2d(const float * in, int c, int h, int w,
             mean /= c;
             float var = 0;
             for (int ch = 0; ch < c; ch++) {
-                float d = in[ch * hw + y * w + x] - mean; var += d * d;
+                float d = in[ch * hw + y * w + x] - mean;
+                var += d * d;
             }
             var /= c;
             float inv = 1.0f / sqrtf(var + 1e-5f);
             for (int ch = 0; ch < c; ch++)
-                out[ch * hw + y * w + x] =
-                    (in[ch * hw + y * w + x] - mean) * inv * wt[ch] + bi[ch];
+                out[ch * hw + y * w + x] = (in[ch * hw + y * w + x] - mean) * inv * wt[ch] + bi[ch];
         }
 }
 
 // ── MDTA: Multi-DConv Head Transposed Attention ──
 
 struct mdta_wt {
-    ggml_tensor * qkv_w, * qkv_dw; // fused QKV: Conv1x1(C→3C) + DWConv3x3(3C)
+    ggml_tensor *qkv_w, *qkv_dw; // fused QKV: Conv1x1(C→3C) + DWConv3x3(3C)
     ggml_tensor * proj_w;
     ggml_tensor * temp; // [n_heads, 1, 1]
 };
 
-static void mdta_forward(adair_context * ctx, const float * x, int C, int H, int W,
-                          const mdta_wt & wt, int n_heads,
-                          float * out,
-                          core_cpu::DequantCache & dqc) {
+static void mdta_forward(adair_context * ctx, const float * x, int C, int H, int W, const mdta_wt & wt, int n_heads,
+                         float * out, core_cpu::DequantCache & dqc) {
     int hw = H * W, hd = C / n_heads;
 
     // Fused QKV: Conv1x1(C→3C) + DWConv3x3(3C), then split
@@ -146,8 +138,7 @@ static void mdta_forward(adair_context * ctx, const float * x, int C, int H, int
         for (int i = 0; i < hd; i++)
             for (int j = 0; j < hd; j++) {
                 float dot = 0;
-                for (int p = 0; p < hw; p++)
-                    dot += q[(co + i) * hw + p] * k[(co + j) * hw + p];
+                for (int p = 0; p < hw; p++) dot += q[(co + i) * hw + p] * k[(co + j) * hw + p];
                 attn[i * hd + j] = dot * t_val;
             }
         // Softmax per row
@@ -165,15 +156,13 @@ static void mdta_forward(adair_context * ctx, const float * x, int C, int H, int
         for (int i = 0; i < hd; i++)
             for (int p = 0; p < hw; p++) {
                 float sum = 0;
-                for (int j = 0; j < hd; j++)
-                    sum += attn[i * hd + j] * v[(co + j) * hw + p];
+                for (int j = 0; j < hd; j++) sum += attn[i * hd + j] * v[(co + j) * hw + p];
                 attn_out[(co + i) * hw + p] = sum;
             }
     }
 
     // Project out
-    adair_conv(ctx, attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
-           C, 1, 1, 0, 1, 1, out);
+    adair_conv(ctx, attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr, C, 1, 1, 0, 1, 1, out);
 }
 
 // ── GDFN: Gated-DConv Feed-Forward ──
@@ -184,23 +173,19 @@ struct gdfn_wt {
     ggml_tensor * proj2_w; // Conv1x1(hidden/2→C) — no bias
 };
 
-static void gdfn_forward(adair_context * ctx, const float * x, int C, int H, int W,
-                          const gdfn_wt & wt,
-                          float * out,
-                          core_cpu::DequantCache & dqc) {
+static void gdfn_forward(adair_context * ctx, const float * x, int C, int H, int W, const gdfn_wt & wt, float * out,
+                         core_cpu::DequantCache & dqc) {
     int hw = H * W;
     // Infer hidden dim from proj1 weight: ne[3] = hidden (output channels)
     int hidden = (int)wt.proj1_w->ne[3];
 
     // Conv1x1 expand (no bias)
     std::vector<float> h1(hidden * hw);
-    adair_conv(ctx, x, C, H, W, dqc.get(wt.proj1_w), nullptr,
-           hidden, 1, 1, 0, 1, 1, h1.data());
+    adair_conv(ctx, x, C, H, W, dqc.get(wt.proj1_w), nullptr, hidden, 1, 1, 0, 1, 1, h1.data());
 
     // DWConv3x3 (no bias)
     std::vector<float> h2(hidden * hw);
-    adair_conv(ctx, h1.data(), hidden, H, W, dqc.get(wt.dw_w), nullptr,
-           hidden, 3, 3, 1, 1, hidden, h2.data());
+    adair_conv(ctx, h1.data(), hidden, H, W, dqc.get(wt.dw_w), nullptr, hidden, 3, 3, 1, 1, hidden, h2.data());
 
     // Gated: split in half, GELU(x1) * x2
     int half = hidden / 2;
@@ -213,22 +198,20 @@ static void gdfn_forward(adair_context * ctx, const float * x, int C, int H, int
         }
 
     // Conv1x1 project (no bias)
-    adair_conv(ctx, gated.data(), half, H, W, dqc.get(wt.proj2_w), nullptr,
-           C, 1, 1, 0, 1, 1, out);
+    adair_conv(ctx, gated.data(), half, H, W, dqc.get(wt.proj2_w), nullptr, C, 1, 1, 0, 1, 1, out);
 }
 
 // ── TransformerBlock ──
 
 struct tb_wt {
-    ggml_tensor * norm1_w, * norm1_b;
+    ggml_tensor *norm1_w, *norm1_b;
     mdta_wt attn;
-    ggml_tensor * norm2_w, * norm2_b;
+    ggml_tensor *norm2_w, *norm2_b;
     gdfn_wt ffn;
 };
 
-static void tb_forward(adair_context * ctx, float * x, int C, int H, int W, int n_heads,
-                        const tb_wt & wt,
-                        core_cpu::DequantCache & dqc) {
+static void tb_forward(adair_context * ctx, float * x, int C, int H, int W, int n_heads, const tb_wt & wt,
+                       core_cpu::DequantCache & dqc) {
     int hw = H * W;
     std::vector<float> normed(C * hw), out(C * hw);
 
@@ -246,7 +229,11 @@ static void tb_forward(adair_context * ctx, float * x, int C, int H, int W, int 
 // ── FreModule (AFLB): FFT decomposition + cross-attention ──
 
 // 2D FFT via row-wise + column-wise 1D FFT (radix-2)
-static int next_pow2(int n) { int p = 1; while (p < n) p <<= 1; return p; }
+static int next_pow2(int n) {
+    int p = 1;
+    while (p < n) p <<= 1;
+    return p;
+}
 
 static void fft1d(float * re, float * im, int n, bool inverse) {
     // Bit-reversal permutation
@@ -254,7 +241,10 @@ static void fft1d(float * re, float * im, int n, bool inverse) {
         int bit = n >> 1;
         for (; j & bit; bit >>= 1) j ^= bit;
         j ^= bit;
-        if (i < j) { std::swap(re[i], re[j]); std::swap(im[i], im[j]); }
+        if (i < j) {
+            std::swap(re[i], re[j]);
+            std::swap(im[i], im[j]);
+        }
     }
     for (int len = 2; len <= n; len <<= 1) {
         float ang = 2.0f * (float)M_PI / len * (inverse ? -1 : 1);
@@ -265,8 +255,10 @@ static void fft1d(float * re, float * im, int n, bool inverse) {
                 float uR = re[i + j], uI = im[i + j];
                 float vR = re[i + j + len / 2] * curR - im[i + j + len / 2] * curI;
                 float vI = re[i + j + len / 2] * curI + im[i + j + len / 2] * curR;
-                re[i + j] = uR + vR; im[i + j] = uI + vI;
-                re[i + j + len / 2] = uR - vR; im[i + j + len / 2] = uI - vI;
+                re[i + j] = uR + vR;
+                im[i + j] = uI + vI;
+                re[i + j + len / 2] = uR - vR;
+                im[i + j + len / 2] = uI - vI;
                 float nR = curR * wR - curI * wI;
                 curI = curR * wI + curI * wR;
                 curR = nR;
@@ -277,8 +269,7 @@ static void fft1d(float * re, float * im, int n, bool inverse) {
     // PyTorch norm='forward' means: FFT divides by N, IFFT does not.
 }
 
-static void fft2d(const float * input, int C, int H, int W,
-                   float * out_re, float * out_im) {
+static void fft2d(const float * input, int C, int H, int W, float * out_re, float * out_im) {
     int pH = next_pow2(H), pW = next_pow2(W);
     int phw = pH * pW;
     // Row-wise FFT
@@ -327,23 +318,19 @@ static void ifft2d(float * re, float * im, int C, int pH, int pW) {
         }
     // Row-wise IFFT
     for (int c = 0; c < C; c++)
-        for (int y = 0; y < pH; y++)
-            fft1d(&re[c * pH * pW + y * pW], &im[c * pH * pW + y * pW], pW, true);
+        for (int y = 0; y < pH; y++) fft1d(&re[c * pH * pW + y * pW], &im[c * pH * pW + y * pW], pW, true);
 }
 
 // Channel cross-attention (MDTA variant for cross-attention between two inputs)
 struct cross_attn_wt {
-    ggml_tensor * q_w, * q_dw;
-    ggml_tensor * kv_w, * kv_dw;
+    ggml_tensor *q_w, *q_dw;
+    ggml_tensor *kv_w, *kv_dw;
     ggml_tensor * proj_w;
     ggml_tensor * temp;
 };
 
-static void cross_attn_forward(adair_context * ctx, const float * q_in, const float * kv_in,
-                                int C, int H, int W, int n_heads,
-                                const cross_attn_wt & wt,
-                                float * out,
-                                core_cpu::DequantCache & dqc) {
+static void cross_attn_forward(adair_context * ctx, const float * q_in, const float * kv_in, int C, int H, int W,
+                               int n_heads, const cross_attn_wt & wt, float * out, core_cpu::DequantCache & dqc) {
     int hw = H * W, hd = C / n_heads;
 
     std::vector<float> q(C * hw), q_tmp(C * hw), k(C * hw), v(C * hw);
@@ -366,7 +353,8 @@ static void cross_attn_forward(adair_context * ctx, const float * q_in, const fl
             for (int i = 0; i < hw; i++) t[ch * hw + i] *= n;
         }
     };
-    l2norm(q.data()); l2norm(k.data());
+    l2norm(q.data());
+    l2norm(k.data());
 
     const float * temp = dqc.get(wt.temp);
     std::vector<float> attn_out(C * hw, 0.0f);
@@ -377,15 +365,17 @@ static void cross_attn_forward(adair_context * ctx, const float * q_in, const fl
         for (int i = 0; i < hd; i++)
             for (int j = 0; j < hd; j++) {
                 float dot = 0;
-                for (int p = 0; p < hw; p++)
-                    dot += q[(co + i) * hw + p] * k[(co + j) * hw + p];
+                for (int p = 0; p < hw; p++) dot += q[(co + i) * hw + p] * k[(co + j) * hw + p];
                 attn[i * hd + j] = dot * t_val;
             }
         for (int i = 0; i < hd; i++) {
             float mx = -1e30f;
             for (int j = 0; j < hd; j++) mx = std::max(mx, attn[i * hd + j]);
             float sum = 0;
-            for (int j = 0; j < hd; j++) { attn[i * hd + j] = expf(attn[i * hd + j] - mx); sum += attn[i * hd + j]; }
+            for (int j = 0; j < hd; j++) {
+                attn[i * hd + j] = expf(attn[i * hd + j] - mx);
+                sum += attn[i * hd + j];
+            }
             for (int j = 0; j < hd; j++) attn[i * hd + j] /= sum;
         }
         for (int i = 0; i < hd; i++)
@@ -395,32 +385,29 @@ static void cross_attn_forward(adair_context * ctx, const float * q_in, const fl
                 attn_out[(co + i) * hw + p] = s;
             }
     }
-    adair_conv(ctx, attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr,
-           C, 1, 1, 0, 1, 1, out);
+    adair_conv(ctx, attn_out.data(), C, H, W, dqc.get(wt.proj_w), nullptr, C, 1, 1, 0, 1, 1, out);
 }
 
 // FreModule weights
 struct fre_wt {
-    ggml_tensor * para1, * para2;                 // [C, 1, 1]
-    ggml_tensor * conv_w, * conv1_w;              // Conv3x3 for reconstructing from FFT
-    cross_attn_wt cross_l, cross_h, cross_agg;    // 3 cross-attentions
+    ggml_tensor *para1, *para2;                // [C, 1, 1]
+    ggml_tensor *conv_w, *conv1_w;             // Conv3x3 for reconstructing from FFT
+    cross_attn_wt cross_l, cross_h, cross_agg; // 3 cross-attentions
     // FreRefine
-    ggml_tensor * sg_w;                           // SpatialGate: [1, 2, 7, 7]
-    ggml_tensor * cg_w1, * cg_w2;                // ChannelGate MLP: [C/16, C] + [C, C/16]
-    ggml_tensor * proj_w, * proj_b;               // final projection
+    ggml_tensor * sg_w;           // SpatialGate: [1, 2, 7, 7]
+    ggml_tensor *cg_w1, *cg_w2;   // ChannelGate MLP: [C/16, C] + [C, C/16]
+    ggml_tensor *proj_w, *proj_b; // final projection
     // Rate/score
-    ggml_tensor * rate_w1, * rate_w2;             // [C/8, C] + [2, C/8]
-    ggml_tensor * score_w, * score_b;             // Conv7x7: [2, 2, 7, 7]
+    ggml_tensor *rate_w1, *rate_w2; // [C/8, C] + [2, C/8]
+    ggml_tensor *score_w, *score_b; // Conv7x7: [2, 2, 7, 7]
 };
 
 // fre_forward: inp_img (3ch) + decoder feature → refined feature
 // The FFT operates on inp_img projected to C channels, not on intermediate features.
-static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_h, int img_w,
-                         const float * dec_feat, int C, int H, int W,
-                         int n_heads,
-                         const fre_wt & wt,
-                         float * out, // [C, H, W]
-                         core_cpu::DequantCache & dqc) {
+static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_h, int img_w, const float * dec_feat,
+                        int C, int H, int W, int n_heads, const fre_wt & wt,
+                        float * out, // [C, H, W]
+                        core_cpu::DequantCache & dqc) {
     int hw = H * W;
 
     // Save dec_feat in case out aliases it (caller passes x.data() for both)
@@ -441,10 +428,10 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
                     int y1 = std::min(y0 + 1, img_h - 1), x1 = std::min(x0 + 1, img_w - 1);
                     float fy = sy - y0, fx = sx - x0;
                     img_resized[c * hw + y * W + x] =
-                        (1-fy)*((1-fx)*inp_img_3ch[c*img_h*img_w + y0*img_w + x0] +
-                                fx*inp_img_3ch[c*img_h*img_w + y0*img_w + x1]) +
-                        fy*((1-fx)*inp_img_3ch[c*img_h*img_w + y1*img_w + x0] +
-                            fx*inp_img_3ch[c*img_h*img_w + y1*img_w + x1]);
+                        (1 - fy) * ((1 - fx) * inp_img_3ch[c * img_h * img_w + y0 * img_w + x0] +
+                                    fx * inp_img_3ch[c * img_h * img_w + y0 * img_w + x1]) +
+                        fy * ((1 - fx) * inp_img_3ch[c * img_h * img_w + y1 * img_w + x0] +
+                              fx * inp_img_3ch[c * img_h * img_w + y1 * img_w + x1]);
                 }
     } else {
         memcpy(img_resized.data(), inp_img_3ch, 3 * hw * sizeof(float));
@@ -452,8 +439,7 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
 
     // Project img to C channels: conv1(3→C)
     std::vector<float> projected(C * hw);
-    adair_conv(ctx, img_resized.data(), 3, H, W, dqc.get(wt.conv1_w), nullptr,
-           C, 3, 3, 1, 1, 1, projected.data());
+    adair_conv(ctx, img_resized.data(), 3, H, W, dqc.get(wt.conv1_w), nullptr, C, 3, 3, 1, 1, 1, projected.data());
 
     // FFT on projected features
     int pH = next_pow2(H), pW = next_pow2(W);
@@ -529,9 +515,11 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
                     tmp_re[c * phw + y * pW + x] = re[c * phw + sy * pW + sx];
                     tmp_im[c * phw + y * pW + x] = im[c * phw + sy * pW + sx];
                 }
-        re = std::move(tmp_re); im = std::move(tmp_im);
+        re = std::move(tmp_re);
+        im = std::move(tmp_im);
     };
-    unshift(lo_re, lo_im); unshift(hi_re, hi_im);
+    unshift(lo_re, lo_im);
+    unshift(hi_re, hi_im);
     ifft2d(lo_re.data(), lo_im.data(), C, pH, pW);
     ifft2d(hi_re.data(), hi_im.data(), C, pH, pW);
 
@@ -555,9 +543,12 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
     for (int i = 0; i < hw; i++) {
         float mx = -1e30f, mn = 0;
         for (int c = 0; c < C; c++) {
-            float v = ca_h[c * hw + i]; mx = std::max(mx, v); mn += v;
+            float v = ca_h[c * hw + i];
+            mx = std::max(mx, v);
+            mn += v;
         }
-        sg_in[i] = mx; sg_in[hw + i] = mn / C;
+        sg_in[i] = mx;
+        sg_in[hw + i] = mn / C;
     }
     std::vector<float> sg_out(hw);
     adair_conv(ctx, sg_in.data(), 2, H, W, dqc.get(wt.sg_w), nullptr, 1, 7, 7, 3, 1, 1, sg_out.data());
@@ -593,8 +584,7 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
     // Sum and project
     std::vector<float> refined(C * hw);
     for (int i = 0; i < C * hw; i++) refined[i] = lo_gated[i] + hi_gated[i];
-    adair_conv(ctx, refined.data(), C, H, W, dqc.get(wt.proj_w), dqc.get(wt.proj_b),
-           C, 1, 1, 0, 1, 1, out);
+    adair_conv(ctx, refined.data(), C, H, W, dqc.get(wt.proj_w), dqc.get(wt.proj_b), C, 1, 1, 0, 1, 1, out);
 
     // Aggregate cross-attention of dec_feat with refined
     std::vector<float> ca_agg(C * hw);
@@ -604,8 +594,7 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
     const float * p1 = dqc.get(wt.para1);
     const float * p2 = dqc.get(wt.para2);
     for (int c = 0; c < C; c++)
-        for (int i = 0; i < hw; i++)
-            out[c * hw + i] = ca_agg[c * hw + i] * p1[c] + dec_feat[c * hw + i] * p2[c];
+        for (int i = 0; i < hw; i++) out[c * hw + i] = ca_agg[c * hw + i] * p1[c] + dec_feat[c * hw + i] * p2[c];
 }
 
 // ── Downsample / Upsample ──
@@ -618,8 +607,7 @@ static void pixel_unshuffle(const float * in, int C, int H, int W, int r, float 
                 for (int ry = 0; ry < r; ry++)
                     for (int rx = 0; rx < r; rx++) {
                         int oc = c * r * r + ry * r + rx;
-                        out[oc * oH * oW + y * oW + x] =
-                            in[c * H * W + (y * r + ry) * W + (x * r + rx)];
+                        out[oc * oH * oW + y * oW + x] = in[c * H * W + (y * r + ry) * W + (x * r + rx)];
                     }
 }
 
@@ -641,21 +629,25 @@ struct adair_context {
     ggml_backend_buffer_t gguf_buf;
 
     bool bench;
-    ggml_tensor * patch_embed_w, * patch_embed_b;
-    ggml_tensor * output_w, * output_b;
+    ggml_tensor *patch_embed_w, *patch_embed_b;
+    ggml_tensor *output_w, *output_b;
 
-    std::vector<tb_wt> enc1, enc2, enc3;       // 4, 6, 6 blocks
-    std::vector<tb_wt> latent;                  // 8 blocks
-    std::vector<tb_wt> dec3, dec2, dec1;        // 6, 6, 4 blocks
-    std::vector<tb_wt> refinement;              // 4 blocks
+    std::vector<tb_wt> enc1, enc2, enc3; // 4, 6, 6 blocks
+    std::vector<tb_wt> latent;           // 8 blocks
+    std::vector<tb_wt> dec3, dec2, dec1; // 6, 6, 4 blocks
+    std::vector<tb_wt> refinement;       // 4 blocks
 
     // Downsample: Conv3x3 + PixelUnshuffle
-    struct down_wt { ggml_tensor * w, * b; } down12, down23, down34;
+    struct down_wt {
+        ggml_tensor *w, *b;
+    } down12, down23, down34;
     // Upsample: Conv3x3 + PixelShuffle
-    struct up_wt { ggml_tensor * w, * b; } up43, up32, up21;
+    struct up_wt {
+        ggml_tensor *w, *b;
+    } up43, up32, up21;
     // Channel reduce
-    ggml_tensor * reduce3_w, * reduce3_b;
-    ggml_tensor * reduce2_w, * reduce2_b;
+    ggml_tensor *reduce3_w, *reduce3_b;
+    ggml_tensor *reduce2_w, *reduce2_b;
 
     // FreModules
     fre_wt fre1, fre2, fre3;
@@ -670,9 +662,9 @@ struct adair_context {
     // tensor), and F16-cast in-graph (conv = im2col(F16)+mul_mat; the CPU sched
     // can't place a mul_mat with an F32 kernel).
     bool use_ggml_conv = false;
-    ggml_backend_t       enc_backend = nullptr;
-    ggml_backend_sched_t enc_sched   = nullptr;
-    std::unordered_map<const void *, ggml_tensor *> gw;  // persistent kernels by weight ptr
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
+    std::unordered_map<const void *, ggml_tensor *> gw; // persistent kernels by weight ptr
     std::vector<ggml_context *> gw_ctxs;
     std::vector<ggml_backend_buffer_t> gw_bufs;
     std::vector<uint8_t> graph_meta;
@@ -687,8 +679,7 @@ struct adair_context {
 // dims. Depthwise (groups==oc) uses ggml_conv_2d_dw with kernel ne=[KW,KH,1,OC]
 // and OC*KH*KW data; regular uses ne=[KW,KH,IC,OC] with OC*IC*KH*KW. The kernel
 // is F16-cast in-graph. Bias is added on the host afterward.
-static ggml_tensor * adair_kernel(adair_context * ctx, const float * wptr,
-                                  int ic, int oc, int kh, int kw, bool dw) {
+static ggml_tensor * adair_kernel(adair_context * ctx, const float * wptr, int ic, int oc, int kh, int kw, bool dw) {
     auto it = ctx->gw.find((const void *)wptr);
     if (it != ctx->gw.end()) return it->second;
     int64_t kic = dw ? 1 : ic;
@@ -704,11 +695,8 @@ static ggml_tensor * adair_kernel(adair_context * ctx, const float * wptr,
     return k;
 }
 
-static void adair_conv(adair_context * ctx,
-                       const float * in, int ic, int h, int w,
-                       const float * wt, const float * bi,
-                       int oc, int kh, int kw, int pad, int stride, int groups,
-                       float * out) {
+static void adair_conv(adair_context * ctx, const float * in, int ic, int h, int w, const float * wt, const float * bi,
+                       int oc, int kh, int kw, int pad, int stride, int groups, float * out) {
     if (!ctx || !ctx->use_ggml_conv) {
         conv2d(in, ic, h, w, wt, bi, oc, kh, kw, pad, stride, groups, out);
         return;
@@ -717,19 +705,20 @@ static void adair_conv(adair_context * ctx,
     ggml_tensor * k = adair_kernel(ctx, wt, ic, oc, kh, kw, dw);
 
     const int max_nodes = 16;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ctx->graph_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
 
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, w, h, ic);
-    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
     ggml_tensor * kf = ggml_cast(g, k, GGML_TYPE_F16);
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, kf, x, stride, stride, pad, pad, 1, 1)
-                         : ggml_conv_2d   (g, kf, x, stride, stride, pad, pad, 1, 1);
-    ggml_set_name(y, "out"); ggml_set_output(y);
+                         : ggml_conv_2d(g, kf, x, stride, stride, pad, pad, 1, 1);
+    ggml_set_name(y, "out");
+    ggml_set_output(y);
     ggml_build_forward_expand(gf, y);
 
     ggml_backend_sched_reset(ctx->enc_sched);
@@ -748,46 +737,73 @@ static void adair_conv(adair_context * ctx,
     ggml_free(g);
 
     // Bias (host add).
-    if (bi) for (int o = 0; o < oc; o++) { float bo = bi[o]; for (int i = 0; i < oh * ow; i++) out[(size_t)o*oh*ow + i] += bo; }
+    if (bi)
+        for (int o = 0; o < oc; o++) {
+            float bo = bi[o];
+            for (int i = 0; i < oh * ow; i++) out[(size_t)o * oh * ow + i] += bo;
+        }
 }
 
 static void load_cross_attn(core_gguf::WeightLoad & wl, const char * pfx, cross_attn_wt & ca) {
-    auto g = [&](const char * s) { char b[256]; snprintf(b, sizeof(b), "%s.%s", pfx, s); return core_gguf::try_get(wl.tensors, b); };
-    ca.q_w = g("q.weight"); ca.q_dw = g("q_dwconv.weight");
-    ca.kv_w = g("kv.weight"); ca.kv_dw = g("kv_dwconv.weight");
+    auto g = [&](const char * s) {
+        char b[256];
+        snprintf(b, sizeof(b), "%s.%s", pfx, s);
+        return core_gguf::try_get(wl.tensors, b);
+    };
+    ca.q_w = g("q.weight");
+    ca.q_dw = g("q_dwconv.weight");
+    ca.kv_w = g("kv.weight");
+    ca.kv_dw = g("kv_dwconv.weight");
     ca.proj_w = g("project_out.weight");
     ca.temp = g("temperature");
 }
 
 static void load_tb(core_gguf::WeightLoad & wl, const char * pfx, tb_wt & t) {
-    auto g = [&](const char * s) { char b[256]; snprintf(b, sizeof(b), "%s.%s", pfx, s); return core_gguf::try_get(wl.tensors, b); };
+    auto g = [&](const char * s) {
+        char b[256];
+        snprintf(b, sizeof(b), "%s.%s", pfx, s);
+        return core_gguf::try_get(wl.tensors, b);
+    };
     // AdaIR uses WithBias_LayerNorm which wraps nn.LayerNorm in .body
-    t.norm1_w = g("norm1.body.weight"); t.norm1_b = g("norm1.body.bias");
+    t.norm1_w = g("norm1.body.weight");
+    t.norm1_b = g("norm1.body.bias");
     t.attn.qkv_w = g("attn.qkv.weight");
     t.attn.qkv_dw = g("attn.qkv_dwconv.weight");
     t.attn.proj_w = g("attn.project_out.weight");
     t.attn.temp = g("attn.temperature");
-    t.norm2_w = g("norm2.body.weight"); t.norm2_b = g("norm2.body.bias");
+    t.norm2_w = g("norm2.body.weight");
+    t.norm2_b = g("norm2.body.bias");
     t.ffn.proj1_w = g("ffn.project_in.weight");
     t.ffn.dw_w = g("ffn.dwconv.weight");
     t.ffn.proj2_w = g("ffn.project_out.weight");
 }
 
 static void load_fre(core_gguf::WeightLoad & wl, const char * pfx, fre_wt & f) {
-    auto g = [&](const char * s) { char b[256]; snprintf(b, sizeof(b), "%s.%s", pfx, s); return core_gguf::try_get(wl.tensors, b); };
-    f.para1 = g("para1"); f.para2 = g("para2");
-    f.conv_w = g("conv.weight"); f.conv1_w = g("conv1.weight");
+    auto g = [&](const char * s) {
+        char b[256];
+        snprintf(b, sizeof(b), "%s.%s", pfx, s);
+        return core_gguf::try_get(wl.tensors, b);
+    };
+    f.para1 = g("para1");
+    f.para2 = g("para2");
+    f.conv_w = g("conv.weight");
+    f.conv1_w = g("conv1.weight");
     char ca[256];
-    snprintf(ca, sizeof(ca), "%s.channel_cross_l", pfx); load_cross_attn(wl, ca, f.cross_l);
-    snprintf(ca, sizeof(ca), "%s.channel_cross_h", pfx); load_cross_attn(wl, ca, f.cross_h);
-    snprintf(ca, sizeof(ca), "%s.channel_cross_agg", pfx); load_cross_attn(wl, ca, f.cross_agg);
+    snprintf(ca, sizeof(ca), "%s.channel_cross_l", pfx);
+    load_cross_attn(wl, ca, f.cross_l);
+    snprintf(ca, sizeof(ca), "%s.channel_cross_h", pfx);
+    load_cross_attn(wl, ca, f.cross_h);
+    snprintf(ca, sizeof(ca), "%s.channel_cross_agg", pfx);
+    load_cross_attn(wl, ca, f.cross_agg);
     f.sg_w = g("frequency_refine.SpatialGate.spatial.weight");
     f.cg_w1 = g("frequency_refine.ChannelGate.mlp.0.weight");
     f.cg_w2 = g("frequency_refine.ChannelGate.mlp.2.weight");
     f.proj_w = g("frequency_refine.proj.weight");
     f.proj_b = g("frequency_refine.proj.bias");
-    f.rate_w1 = g("rate_conv.0.weight"); f.rate_w2 = g("rate_conv.2.weight");
-    f.score_w = g("score_gen.weight"); f.score_b = g("score_gen.bias");
+    f.rate_w1 = g("rate_conv.0.weight");
+    f.rate_w2 = g("rate_conv.2.weight");
+    f.score_w = g("score_gen.weight");
+    f.score_b = g("score_gen.bias");
 }
 
 adair_context * adair_init(const char * model_path, int n_threads) {
@@ -799,23 +815,27 @@ adair_context * adair_init(const char * model_path, int n_threads) {
     if (!backend) return nullptr;
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "adair", wl)) {
-        ggml_backend_free(backend); return nullptr;
+        ggml_backend_free(backend);
+        return nullptr;
     }
 
     auto * ctx = new adair_context;
     ctx->backend = backend;
-    ctx->gguf_ctx = wl.ctx; ctx->gguf_buf = wl.buf;
+    ctx->gguf_ctx = wl.ctx;
+    ctx->gguf_buf = wl.buf;
 
     auto g = [&](const char * s) { return core_gguf::try_get(wl.tensors, s); };
 
     ctx->patch_embed_w = g("net.patch_embed.proj.weight");
     ctx->patch_embed_b = g("net.patch_embed.proj.bias");
-    ctx->output_w = g("net.output.weight"); ctx->output_b = g("net.output.bias");
+    ctx->output_w = g("net.output.weight");
+    ctx->output_b = g("net.output.bias");
 
     auto load_blocks = [&](const char * stage, int n, std::vector<tb_wt> & vec) {
         vec.resize(n);
         for (int i = 0; i < n; i++) {
-            char pfx[128]; snprintf(pfx, sizeof(pfx), "net.%s.%d", stage, i);
+            char pfx[128];
+            snprintf(pfx, sizeof(pfx), "net.%s.%d", stage, i);
             load_tb(wl, pfx, vec[i]);
         }
     };
@@ -832,7 +852,8 @@ adair_context * adair_init(const char * model_path, int n_threads) {
         char w[128], b[128];
         snprintf(w, sizeof(w), "net.%s.body.0.weight", name);
         snprintf(b, sizeof(b), "net.%s.body.0.bias", name);
-        d.w = g(w); d.b = g(b);
+        d.w = g(w);
+        d.b = g(b);
     };
     load_down("down1_2", ctx->down12);
     load_down("down2_3", ctx->down23);
@@ -842,7 +863,8 @@ adair_context * adair_init(const char * model_path, int n_threads) {
         char w[128], b[128];
         snprintf(w, sizeof(w), "net.%s.body.0.weight", name);
         snprintf(b, sizeof(b), "net.%s.body.0.bias", name);
-        u.w = g(w); u.b = g(b);
+        u.w = g(w);
+        u.b = g(b);
     };
     load_up("up4_3", ctx->up43);
     load_up("up3_2", ctx->up32);
@@ -873,27 +895,27 @@ adair_context * adair_init(const char * model_path, int n_threads) {
             ctx->use_ggml_conv = (ctx->enc_sched != nullptr);
         }
     }
-    fprintf(stderr, "adair: conv path = %s\n",
-            ctx->use_ggml_conv ? "ggml_conv_2d (CPU sched)" : "scalar");
+    fprintf(stderr, "adair: conv path = %s\n", ctx->use_ggml_conv ? "ggml_conv_2d (CPU sched)" : "scalar");
     return ctx;
 }
 
 void adair_free(adair_context * ctx) {
     if (!ctx) return;
-    for (auto * b : ctx->gw_bufs) if (b) ggml_backend_buffer_free(b);
-    for (auto * c : ctx->gw_ctxs) if (c) ggml_free(c);
+    for (auto * b : ctx->gw_bufs)
+        if (b) ggml_backend_buffer_free(b);
+    for (auto * c : ctx->gw_ctxs)
+        if (c) ggml_free(c);
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::WeightLoad wl;
-    wl.ctx = ctx->gguf_ctx; wl.buf = ctx->gguf_buf;
+    wl.ctx = ctx->gguf_ctx;
+    wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     delete ctx;
 }
 
-int adair_process_float(adair_context * ctx,
-                        const float * input_chw, int width, int height,
-                        float * output_chw) {
+int adair_process_float(adair_context * ctx, const float * input_chw, int width, int height, float * output_chw) {
     if (!ctx || !input_chw || !output_chw) return -1;
 
     const bool bench = ctx->bench;
@@ -906,26 +928,27 @@ int adair_process_float(adair_context * ctx,
     // Patch embed: Conv3x3(3→48)
     int ch = 48;
     std::vector<float> x(ch * H * W);
-    adair_conv(ctx, input_chw, 3, H, W, dqc.get(ctx->patch_embed_w),
-           dqc.get(ctx->patch_embed_b), ch, 3, 3, 1, 1, 1, x.data());
+    adair_conv(ctx, input_chw, 3, H, W, dqc.get(ctx->patch_embed_w), dqc.get(ctx->patch_embed_b), ch, 3, 3, 1, 1, 1,
+               x.data());
 
     // Encoder level 1: 4 TB at 48ch
-    int heads[] = {1, 2, 4, 8};
+    int heads[] = { 1, 2, 4, 8 };
     int cur_h = H, cur_w = W;
     auto t_enc1 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->enc1) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
     std::vector<float> skip1(x.begin(), x.end());
     if (bench) {
         auto t_enc1_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] enc1: %.1f ms\n",
-                ms_f(t_enc1_end - t_enc1).count());
+        fprintf(stderr, "[adair-bench] enc1: %.1f ms\n", ms_f(t_enc1_end - t_enc1).count());
     }
 
     // Downsample 1→2: Conv3x3 + PixelUnshuffle(2)
     std::vector<float> ds(ch / 2 * cur_h * cur_w);
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down12.w), dqc.get(ctx->down12.b),
-           ch / 2, 3, 3, 1, 1, 1, ds.data());
-    ch = ch * 2; cur_h /= 2; cur_w /= 2; // after pixel_unshuffle: ch/2 * 4 = ch*2
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down12.w), dqc.get(ctx->down12.b), ch / 2, 3, 3, 1, 1, 1,
+               ds.data());
+    ch = ch * 2;
+    cur_h /= 2;
+    cur_w /= 2; // after pixel_unshuffle: ch/2 * 4 = ch*2
     x.resize(ch * cur_h * cur_w);
     pixel_unshuffle(ds.data(), ch / 4, cur_h * 2, cur_w * 2, 2, x.data());
 
@@ -935,15 +958,16 @@ int adair_process_float(adair_context * ctx,
     std::vector<float> skip2(x.begin(), x.end());
     if (bench) {
         auto t_enc2_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] enc2: %.1f ms\n",
-                ms_f(t_enc2_end - t_enc2).count());
+        fprintf(stderr, "[adair-bench] enc2: %.1f ms\n", ms_f(t_enc2_end - t_enc2).count());
     }
 
     // Downsample 2→3
     ds.resize(ch / 2 * cur_h * cur_w);
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down23.w), dqc.get(ctx->down23.b),
-           ch / 2, 3, 3, 1, 1, 1, ds.data());
-    ch *= 2; cur_h /= 2; cur_w /= 2;
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down23.w), dqc.get(ctx->down23.b), ch / 2, 3, 3, 1, 1, 1,
+               ds.data());
+    ch *= 2;
+    cur_h /= 2;
+    cur_w /= 2;
     x.resize(ch * cur_h * cur_w);
     pixel_unshuffle(ds.data(), ch / 4, cur_h * 2, cur_w * 2, 2, x.data());
 
@@ -953,15 +977,16 @@ int adair_process_float(adair_context * ctx,
     std::vector<float> skip3(x.begin(), x.end());
     if (bench) {
         auto t_enc3_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] enc3: %.1f ms\n",
-                ms_f(t_enc3_end - t_enc3).count());
+        fprintf(stderr, "[adair-bench] enc3: %.1f ms\n", ms_f(t_enc3_end - t_enc3).count());
     }
 
     // Downsample 3→4
     ds.resize(ch / 2 * cur_h * cur_w);
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down34.w), dqc.get(ctx->down34.b),
-           ch / 2, 3, 3, 1, 1, 1, ds.data());
-    ch *= 2; cur_h /= 2; cur_w /= 2;
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->down34.w), dqc.get(ctx->down34.b), ch / 2, 3, 3, 1, 1, 1,
+               ds.data());
+    ch *= 2;
+    cur_h /= 2;
+    cur_w /= 2;
     x.resize(ch * cur_h * cur_w);
     pixel_unshuffle(ds.data(), ch / 4, cur_h * 2, cur_w * 2, 2, x.data());
 
@@ -972,81 +997,80 @@ int adair_process_float(adair_context * ctx,
     }
     if (bench) {
         auto t_latent_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] latent: %.1f ms\n",
-                ms_f(t_latent_end - t_latent).count());
+        fprintf(stderr, "[adair-bench] latent: %.1f ms\n", ms_f(t_latent_end - t_latent).count());
     }
 
     // fre1(inp_img, latent): refine latent BEFORE upsample
     auto t_fre1 = std::chrono::steady_clock::now();
-    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
-                ctx->fre1, x.data(), dqc);
+    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2], ctx->fre1, x.data(), dqc);
     if (bench) {
         auto t_fre1_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] fre1: %.1f ms\n",
-                ms_f(t_fre1_end - t_fre1).count());
+        fprintf(stderr, "[adair-bench] fre1: %.1f ms\n", ms_f(t_fre1_end - t_fre1).count());
     }
 
     // Upsample 4→3 + cat(skip3) + reduce
     int up_ch = ch * 2;
     std::vector<float> us(up_ch * cur_h * cur_w);
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up43.w), dqc.get(ctx->up43.b),
-           up_ch, 3, 3, 1, 1, 1, us.data());
-    ch /= 2; cur_h *= 2; cur_w *= 2;
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up43.w), dqc.get(ctx->up43.b), up_ch, 3, 3, 1, 1, 1,
+               us.data());
+    ch /= 2;
+    cur_h *= 2;
+    cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
     pixel_shuffle(us.data(), up_ch, cur_h / 2, cur_w / 2, 2, x.data());
     // Cat with skip3 → 2*ch, reduce to ch
     std::vector<float> cat(2 * ch * cur_h * cur_w);
     memcpy(cat.data(), x.data(), ch * cur_h * cur_w * sizeof(float));
     memcpy(cat.data() + ch * cur_h * cur_w, skip3.data(), ch * cur_h * cur_w * sizeof(float));
-    adair_conv(ctx, cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce3_w), dqc.get(ctx->reduce3_b),
-           ch, 1, 1, 0, 1, 1, x.data());
+    adair_conv(ctx, cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce3_w), dqc.get(ctx->reduce3_b), ch, 1, 1, 0, 1,
+               1, x.data());
 
     // Decoder level 3: 6 TB
     auto t_dec3 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->dec3) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[2], tb, dqc);
 
     // fre2(inp_img, out_dec3): replace dec3 output
-    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
-                ctx->fre2, x.data(), dqc);
+    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2], ctx->fre2, x.data(), dqc);
     if (bench) {
         auto t_dec3_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] dec3+fre2: %.1f ms\n",
-                ms_f(t_dec3_end - t_dec3).count());
+        fprintf(stderr, "[adair-bench] dec3+fre2: %.1f ms\n", ms_f(t_dec3_end - t_dec3).count());
     }
 
     // Upsample 3→2 + cat(skip2) + reduce
     up_ch = ch * 2;
     us.resize(up_ch * cur_h * cur_w);
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up32.w), dqc.get(ctx->up32.b),
-           up_ch, 3, 3, 1, 1, 1, us.data());
-    ch /= 2; cur_h *= 2; cur_w *= 2;
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up32.w), dqc.get(ctx->up32.b), up_ch, 3, 3, 1, 1, 1,
+               us.data());
+    ch /= 2;
+    cur_h *= 2;
+    cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
     pixel_shuffle(us.data(), up_ch, cur_h / 2, cur_w / 2, 2, x.data());
     cat.resize(2 * ch * cur_h * cur_w);
     memcpy(cat.data(), x.data(), ch * cur_h * cur_w * sizeof(float));
     memcpy(cat.data() + ch * cur_h * cur_w, skip2.data(), ch * cur_h * cur_w * sizeof(float));
-    adair_conv(ctx, cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce2_w), dqc.get(ctx->reduce2_b),
-           ch, 1, 1, 0, 1, 1, x.data());
+    adair_conv(ctx, cat.data(), 2 * ch, cur_h, cur_w, dqc.get(ctx->reduce2_w), dqc.get(ctx->reduce2_b), ch, 1, 1, 0, 1,
+               1, x.data());
 
     // Decoder level 2: 6 TB
     auto t_dec2 = std::chrono::steady_clock::now();
     for (auto & tb : ctx->dec2) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[1], tb, dqc);
 
     // fre3(inp_img, out_dec2): replace dec2 output
-    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2],
-                ctx->fre3, x.data(), dqc);
+    fre_forward(ctx, input_chw, H, W, x.data(), ch, cur_h, cur_w, heads[2], ctx->fre3, x.data(), dqc);
     if (bench) {
         auto t_dec2_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] dec2+fre3: %.1f ms\n",
-                ms_f(t_dec2_end - t_dec2).count());
+        fprintf(stderr, "[adair-bench] dec2+fre3: %.1f ms\n", ms_f(t_dec2_end - t_dec2).count());
     }
 
     // Upsample 2→1 + cat(skip1) → 96ch (no reduce, dec1 is 96ch)
     up_ch = ch * 2;
     us.resize(up_ch * cur_h * cur_w);
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up21.w), dqc.get(ctx->up21.b),
-           up_ch, 3, 3, 1, 1, 1, us.data());
-    ch /= 2; cur_h *= 2; cur_w *= 2;
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->up21.w), dqc.get(ctx->up21.b), up_ch, 3, 3, 1, 1, 1,
+               us.data());
+    ch /= 2;
+    cur_h *= 2;
+    cur_w *= 2;
     x.resize(ch * cur_h * cur_w);
     pixel_shuffle(us.data(), up_ch, cur_h / 2, cur_w / 2, 2, x.data());
     cat.resize(2 * ch * cur_h * cur_w);
@@ -1063,29 +1087,24 @@ int adair_process_float(adair_context * ctx,
     for (auto & tb : ctx->refinement) tb_forward(ctx, x.data(), ch, cur_h, cur_w, heads[0], tb, dqc);
 
     // Output: Conv3x3(96→3) + residual
-    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->output_w), dqc.get(ctx->output_b),
-           3, 3, 3, 1, 1, 1, output_chw);
+    adair_conv(ctx, x.data(), ch, cur_h, cur_w, dqc.get(ctx->output_w), dqc.get(ctx->output_b), 3, 3, 3, 1, 1, 1,
+               output_chw);
     for (int i = 0; i < 3 * H * W; i++) output_chw[i] += input_chw[i];
 
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[adair-bench] dec1+refine+output: %.1f ms\n",
-                ms_f(t_end - t_dec1).count());
-        fprintf(stderr, "[adair-bench] total: %.1f ms\n",
-                ms_f(t_end - t_total).count());
+        fprintf(stderr, "[adair-bench] dec1+refine+output: %.1f ms\n", ms_f(t_end - t_dec1).count());
+        fprintf(stderr, "[adair-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
     return 0;
 }
 
-static int adair_process_tile(adair_context * ctx,
-                              const uint8_t * input, int width, int height,
-                              uint8_t * output) {
+static int adair_process_tile(adair_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     int hw = width * height;
     std::vector<float> in_chw(3 * hw);
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
-            for (int c = 0; c < 3; c++)
-                in_chw[c * hw + y * width + x] = (float)input[(y * width + x) * 3 + c] / 255.0f;
+            for (int c = 0; c < 3; c++) in_chw[c * hw + y * width + x] = (float)input[(y * width + x) * 3 + c] / 255.0f;
     std::vector<float> out_chw(3 * hw);
     int ret = adair_process_float(ctx, in_chw.data(), width, height, out_chw.data());
     if (ret != 0) return ret;
@@ -1102,20 +1121,22 @@ static void adair_blend_win(int ts, int ov, std::vector<float> & w) {
     w.resize(ts * ts);
     for (int y = 0; y < ts; y++) {
         float wy = 1.0f;
-        if (y < ov) wy = 0.5f - 0.5f * cosf((float)M_PI * y / ov);
-        else if (y >= ts - ov) wy = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - y) / ov);
+        if (y < ov)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * y / ov);
+        else if (y >= ts - ov)
+            wy = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - y) / ov);
         for (int x = 0; x < ts; x++) {
             float wx = 1.0f;
-            if (x < ov) wx = 0.5f - 0.5f * cosf((float)M_PI * x / ov);
-            else if (x >= ts - ov) wx = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - x) / ov);
+            if (x < ov)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * x / ov);
+            else if (x >= ts - ov)
+                wx = 0.5f - 0.5f * cosf((float)M_PI * (ts - 1 - x) / ov);
             w[y * ts + x] = wy * wx;
         }
     }
 }
 
-int adair_process(adair_context * ctx,
-                  const uint8_t * input, int width, int height,
-                  uint8_t * output) {
+int adair_process(adair_context * ctx, const uint8_t * input, int width, int height, uint8_t * output) {
     if (!ctx || !input || !output) return -1;
     // AdaIR U-Net needs tile_size multiple of 8 (3 downsample levels)
     int tile_size = 256;
@@ -1124,8 +1145,7 @@ int adair_process(adair_context * ctx,
     if (ts_env) tile_size = std::max(64, (atoi(ts_env) / 8) * 8);
     tile_overlap = std::min(tile_overlap, tile_size / 4);
 
-    if (width <= tile_size && height <= tile_size)
-        return adair_process_tile(ctx, input, width, height, output);
+    if (width <= tile_size && height <= tile_size) return adair_process_tile(ctx, input, width, height, output);
 
     std::vector<float> accum(3 * height * width, 0.0f);
     std::vector<float> wmap(height * width, 0.0f);
@@ -1137,30 +1157,32 @@ int adair_process(adair_context * ctx,
     fprintf(stderr, "adair: %dx%d, tiles=%dx%d (size=%d)\n", width, height, ntx, nty, tile_size);
     for (int ty = 0; ty < nty; ty++)
         for (int tx = 0; tx < ntx; tx++) {
-            int x0 = std::min(tx*step, std::max(0, width-tile_size));
-            int y0 = std::min(ty*step, std::max(0, height-tile_size));
-            int tw = std::min(tile_size, width-x0), th = std::min(tile_size, height-y0);
-            std::vector<uint8_t> ti(tw*th*3), to(tw*th*3);
-            for (int y=0;y<th;y++) memcpy(ti.data()+y*tw*3, input+((y0+y)*width+x0)*3, tw*3);
+            int x0 = std::min(tx * step, std::max(0, width - tile_size));
+            int y0 = std::min(ty * step, std::max(0, height - tile_size));
+            int tw = std::min(tile_size, width - x0), th = std::min(tile_size, height - y0);
+            std::vector<uint8_t> ti(tw * th * 3), to(tw * th * 3);
+            for (int y = 0; y < th; y++) memcpy(ti.data() + y * tw * 3, input + ((y0 + y) * width + x0) * 3, tw * 3);
             if (adair_process_tile(ctx, ti.data(), tw, th, to.data()) != 0) return -1;
-            for (int y=0;y<th;y++)
-                for (int x=0;x<tw;x++) {
-                    float w = (tw==tile_size&&th==tile_size) ? bwin[y*tile_size+x] : 1.0f;
-                    if (tw!=tile_size||th!=tile_size) {
-                        if (x0>0&&x<tile_overlap) w*=0.5f-0.5f*cosf((float)M_PI*x/tile_overlap);
-                        if (y0>0&&y<tile_overlap) w*=0.5f-0.5f*cosf((float)M_PI*y/tile_overlap);
+            for (int y = 0; y < th; y++)
+                for (int x = 0; x < tw; x++) {
+                    float w = (tw == tile_size && th == tile_size) ? bwin[y * tile_size + x] : 1.0f;
+                    if (tw != tile_size || th != tile_size) {
+                        if (x0 > 0 && x < tile_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * x / tile_overlap);
+                        if (y0 > 0 && y < tile_overlap) w *= 0.5f - 0.5f * cosf((float)M_PI * y / tile_overlap);
                     }
-                    int dy=y0+y, dx=x0+x;
-                    for (int c=0;c<3;c++) accum[c*height*width+dy*width+dx]+=to[(y*tw+x)*3+c]*w;
-                    wmap[dy*width+dx]+=w;
+                    int dy = y0 + y, dx = x0 + x;
+                    for (int c = 0; c < 3; c++)
+                        accum[c * height * width + dy * width + dx] += to[(y * tw + x) * 3 + c] * w;
+                    wmap[dy * width + dx] += w;
                 }
         }
-    for (int y=0;y<height;y++)
-        for (int x=0;x<width;x++) {
-            float wt=wmap[y*width+x]; if(wt<=0)wt=1;
-            for (int c=0;c<3;c++) {
-                float v=accum[c*height*width+y*width+x]/wt;
-                output[(y*width+x)*3+c]=(uint8_t)std::max(0.f,std::min(255.f,v+0.5f));
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++) {
+            float wt = wmap[y * width + x];
+            if (wt <= 0) wt = 1;
+            for (int c = 0; c < 3; c++) {
+                float v = accum[c * height * width + y * width + x] / wt;
+                output[(y * width + x) * 3 + c] = (uint8_t)std::max(0.f, std::min(255.f, v + 0.5f));
             }
         }
     return 0;

@@ -21,14 +21,10 @@ void adair_free(adair_context * ctx);
 
 /// Restore RGB image (same resolution, denoising-style).
 /// Input/output: uint8 RGB [h, w, 3].
-int adair_process(adair_context * ctx,
-                  const uint8_t * input, int width, int height,
-                  uint8_t * output);
+int adair_process(adair_context * ctx, const uint8_t * input, int width, int height, uint8_t * output);
 
 /// Float CHW [0,1] in/out (for parity testing).
-int adair_process_float(adair_context * ctx,
-                        const float * input_chw, int width, int height,
-                        float * output_chw);
+int adair_process_float(adair_context * ctx, const float * input_chw, int width, int height, float * output_chw);
 
 #ifdef __cplusplus
 }

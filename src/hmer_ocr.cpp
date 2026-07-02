@@ -35,78 +35,78 @@
 
 struct dense_layer {
     // Pre-activation BN (precomputed scale+offset)
-    struct ggml_tensor * bn1_scale;   // (in_ch,)
-    struct ggml_tensor * bn1_offset;  // (in_ch,)
-    struct ggml_tensor * conv1_w;     // (128, in_ch, 1, 1)
+    struct ggml_tensor * bn1_scale;  // (in_ch,)
+    struct ggml_tensor * bn1_offset; // (in_ch,)
+    struct ggml_tensor * conv1_w;    // (128, in_ch, 1, 1)
 
-    struct ggml_tensor * bn2_scale;   // (128,)
-    struct ggml_tensor * bn2_offset;  // (128,)
-    struct ggml_tensor * conv2_w;     // (32, 128, 3, 3)
+    struct ggml_tensor * bn2_scale;  // (128,)
+    struct ggml_tensor * bn2_offset; // (128,)
+    struct ggml_tensor * conv2_w;    // (32, 128, 3, 3)
 };
 
 struct transition_layer {
-    struct ggml_tensor * bn_scale;    // (in_ch,)
-    struct ggml_tensor * bn_offset;   // (in_ch,)
-    struct ggml_tensor * conv_w;      // (out_ch, in_ch, 1, 1)
+    struct ggml_tensor * bn_scale;  // (in_ch,)
+    struct ggml_tensor * bn_offset; // (in_ch,)
+    struct ggml_tensor * conv_w;    // (out_ch, in_ch, 1, 1)
 };
 
 struct hmer_ocr_context {
     hmer_ocr_hparams hparams;
 
     // Encoder: stem (conv0_m + norm0 folded)
-    struct ggml_tensor * stem_conv_w;  // (64, 2, 7, 7) — BN folded in
-    struct ggml_tensor * stem_conv_b;  // (64,)
+    struct ggml_tensor * stem_conv_w; // (64, 2, 7, 7) — BN folded in
+    struct ggml_tensor * stem_conv_b; // (64,)
 
     // Encoder: dense blocks
-    std::vector<dense_layer> block1;  // 6 layers
-    std::vector<dense_layer> block2;  // 12 layers
-    std::vector<dense_layer> block3;  // 24 layers
+    std::vector<dense_layer> block1; // 6 layers
+    std::vector<dense_layer> block2; // 12 layers
+    std::vector<dense_layer> block3; // 24 layers
 
     // Encoder: transitions
     transition_layer trans1;
     transition_layer trans2;
 
     // Encoder: final BN (precomputed scale+offset)
-    struct ggml_tensor * final_bn_scale;   // (1024,)
-    struct ggml_tensor * final_bn_offset;  // (1024,)
+    struct ggml_tensor * final_bn_scale;  // (1024,)
+    struct ggml_tensor * final_bn_offset; // (1024,)
 
     // Decoder
-    struct ggml_tensor * embedding_w;      // (112, 256)
+    struct ggml_tensor * embedding_w; // (112, 256)
 
-    struct ggml_tensor * gru1_w_ih;        // (768, 256)
-    struct ggml_tensor * gru1_w_hh;        // (768, 256)
-    struct ggml_tensor * gru1_b_ih;        // (768,)
-    struct ggml_tensor * gru1_b_hh;        // (768,)
+    struct ggml_tensor * gru1_w_ih; // (768, 256)
+    struct ggml_tensor * gru1_w_hh; // (768, 256)
+    struct ggml_tensor * gru1_b_ih; // (768,)
+    struct ggml_tensor * gru1_b_hh; // (768,)
 
-    struct ggml_tensor * gru_w_ih;         // (768, 1024)
-    struct ggml_tensor * gru_w_hh;         // (768, 256)
-    struct ggml_tensor * gru_b_ih;         // (768,)
-    struct ggml_tensor * gru_b_hh;         // (768,)
+    struct ggml_tensor * gru_w_ih; // (768, 1024)
+    struct ggml_tensor * gru_w_hh; // (768, 256)
+    struct ggml_tensor * gru_b_ih; // (768,)
+    struct ggml_tensor * gru_b_hh; // (768,)
 
-    struct ggml_tensor * hidden_w;         // (256, 256) — query projection
-    struct ggml_tensor * hidden_b;         // (256,)
-    struct ggml_tensor * hidden2_w;        // (128, 256)
-    struct ggml_tensor * hidden2_b;        // (128,)
-    struct ggml_tensor * emb2_w;           // (128, 256)
-    struct ggml_tensor * emb2_b;           // (128,)
+    struct ggml_tensor * hidden_w;  // (256, 256) — query projection
+    struct ggml_tensor * hidden_b;  // (256,)
+    struct ggml_tensor * hidden2_w; // (128, 256)
+    struct ggml_tensor * hidden2_b; // (128,)
+    struct ggml_tensor * emb2_w;    // (128, 256)
+    struct ggml_tensor * emb2_b;    // (128,)
 
-    struct ggml_tensor * ua_w;             // (256, 1024) — encoder key proj
-    struct ggml_tensor * ua_b;             // (256,)
-    struct ggml_tensor * uf_w;             // (256, 1) — coverage proj
-    struct ggml_tensor * uf_b;             // (256,)
-    struct ggml_tensor * v_w;              // (1, 256) — energy scalar
-    struct ggml_tensor * v_b;              // (1,)
-    struct ggml_tensor * wc_w;             // (128, 1024) — context proj
-    struct ggml_tensor * wc_b;             // (128,)
-    struct ggml_tensor * out_w;            // (112, 128) — output logits
-    struct ggml_tensor * out_b;            // (112,)
+    struct ggml_tensor * ua_w;  // (256, 1024) — encoder key proj
+    struct ggml_tensor * ua_b;  // (256,)
+    struct ggml_tensor * uf_w;  // (256, 1) — coverage proj
+    struct ggml_tensor * uf_b;  // (256,)
+    struct ggml_tensor * v_w;   // (1, 256) — energy scalar
+    struct ggml_tensor * v_b;   // (1,)
+    struct ggml_tensor * wc_w;  // (128, 1024) — context proj
+    struct ggml_tensor * wc_b;  // (128,)
+    struct ggml_tensor * out_w; // (112, 128) — output logits
+    struct ggml_tensor * out_b; // (112,)
 
-    struct ggml_tensor * conv1_w;          // (1, 1, 3, 3) — coverage conv
-    struct ggml_tensor * conv1_b;          // (1,)
-    struct ggml_tensor * conv_tan_w;       // (256, 256, 3, 3) — attention conv
-    struct ggml_tensor * conv_tan_b;       // (256,)
-    struct ggml_tensor * bn1_scale;        // (256,) — attention BN
-    struct ggml_tensor * bn1_offset;       // (256,)
+    struct ggml_tensor * conv1_w;    // (1, 1, 3, 3) — coverage conv
+    struct ggml_tensor * conv1_b;    // (1,)
+    struct ggml_tensor * conv_tan_w; // (256, 256, 3, 3) — attention conv
+    struct ggml_tensor * conv_tan_b; // (256,)
+    struct ggml_tensor * bn1_scale;  // (256,) — attention BN
+    struct ggml_tensor * bn1_offset; // (256,)
 
     // Tokenizer
     std::vector<std::string> vocab;
@@ -119,9 +119,9 @@ struct hmer_ocr_context {
     core_cpu::DequantCache dequant_cache;
 
     // ggml graph encoder infrastructure
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
-    std::vector<uint8_t> enc_compute_meta;  // graph metadata buffer
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
+    std::vector<uint8_t> enc_compute_meta; // graph metadata buffer
 
     // Inference state
     std::string result_buf;
@@ -129,8 +129,8 @@ struct hmer_ocr_context {
 
     // Cached encoder output: (enc_h * enc_w, 1024)
     std::vector<float> encoder_output;
-    int enc_h;  // spatial height after encoder
-    int enc_w;  // spatial width after encoder
+    int enc_h; // spatial height after encoder
+    int enc_w; // spatial width after encoder
 
     // Pre-allocated decoder scratch (avoids per-step heap allocs)
     struct dec_scratch {
@@ -149,11 +149,9 @@ struct hmer_ocr_context {
 // Tensor mapping
 // ---------------------------------------------------------------------------
 
-static struct ggml_tensor * find(
-    const std::unordered_map<std::string, ggml_tensor *> & m,
+static struct ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor *> & m,
 
-    const char * name
-) {
+                                 const char * name) {
     auto it = m.find(name);
     return it != m.end() ? it->second : nullptr;
 }
@@ -179,12 +177,12 @@ static bool map_tensors(hmer_ocr_context * ctx) {
                 snprintf(buf, sizeof(buf), "enc.block%d.layer%d.%s", bi, li + 1, suffix);
                 return find(m, buf);
             };
-            l.bn1_scale  = T("bn1.scale");
+            l.bn1_scale = T("bn1.scale");
             l.bn1_offset = T("bn1.offset");
-            l.conv1_w    = T("conv1.weight");
-            l.bn2_scale  = T("bn2.scale");
+            l.conv1_w = T("conv1.weight");
+            l.bn2_scale = T("bn2.scale");
             l.bn2_offset = T("bn2.offset");
-            l.conv2_w    = T("conv2.weight");
+            l.conv2_w = T("conv2.weight");
         }
     };
 
@@ -204,41 +202,41 @@ static bool map_tensors(hmer_ocr_context * ctx) {
     map_trans(1, ctx->trans1);
     map_trans(2, ctx->trans2);
 
-    ctx->final_bn_scale  = find(m, "enc.final_bn.scale");
+    ctx->final_bn_scale = find(m, "enc.final_bn.scale");
     ctx->final_bn_offset = find(m, "enc.final_bn.offset");
 
     // Decoder
     ctx->embedding_w = find(m, "dec.embedding.weight");
-    ctx->gru1_w_ih   = find(m, "dec.gru1.weight_ih");
-    ctx->gru1_w_hh   = find(m, "dec.gru1.weight_hh");
-    ctx->gru1_b_ih   = find(m, "dec.gru1.bias_ih");
-    ctx->gru1_b_hh   = find(m, "dec.gru1.bias_hh");
-    ctx->gru_w_ih    = find(m, "dec.gru.weight_ih");
-    ctx->gru_w_hh    = find(m, "dec.gru.weight_hh");
-    ctx->gru_b_ih    = find(m, "dec.gru.bias_ih");
-    ctx->gru_b_hh    = find(m, "dec.gru.bias_hh");
-    ctx->hidden_w    = find(m, "dec.hidden.weight");
-    ctx->hidden_b    = find(m, "dec.hidden.bias");
-    ctx->hidden2_w   = find(m, "dec.hidden2.weight");
-    ctx->hidden2_b   = find(m, "dec.hidden2.bias");
-    ctx->emb2_w      = find(m, "dec.emb2.weight");
-    ctx->emb2_b      = find(m, "dec.emb2.bias");
-    ctx->ua_w        = find(m, "dec.ua.weight");
-    ctx->ua_b        = find(m, "dec.ua.bias");
-    ctx->uf_w        = find(m, "dec.uf.weight");
-    ctx->uf_b        = find(m, "dec.uf.bias");
-    ctx->v_w         = find(m, "dec.v.weight");
-    ctx->v_b         = find(m, "dec.v.bias");
-    ctx->wc_w        = find(m, "dec.wc.weight");
-    ctx->wc_b        = find(m, "dec.wc.bias");
-    ctx->out_w       = find(m, "dec.out.weight");
-    ctx->out_b       = find(m, "dec.out.bias");
-    ctx->conv1_w     = find(m, "dec.conv1.weight");
-    ctx->conv1_b     = find(m, "dec.conv1.bias");
-    ctx->conv_tan_w  = find(m, "dec.conv_tan.weight");
-    ctx->conv_tan_b  = find(m, "dec.conv_tan.bias");
-    ctx->bn1_scale   = find(m, "dec.bn1.scale");
-    ctx->bn1_offset  = find(m, "dec.bn1.offset");
+    ctx->gru1_w_ih = find(m, "dec.gru1.weight_ih");
+    ctx->gru1_w_hh = find(m, "dec.gru1.weight_hh");
+    ctx->gru1_b_ih = find(m, "dec.gru1.bias_ih");
+    ctx->gru1_b_hh = find(m, "dec.gru1.bias_hh");
+    ctx->gru_w_ih = find(m, "dec.gru.weight_ih");
+    ctx->gru_w_hh = find(m, "dec.gru.weight_hh");
+    ctx->gru_b_ih = find(m, "dec.gru.bias_ih");
+    ctx->gru_b_hh = find(m, "dec.gru.bias_hh");
+    ctx->hidden_w = find(m, "dec.hidden.weight");
+    ctx->hidden_b = find(m, "dec.hidden.bias");
+    ctx->hidden2_w = find(m, "dec.hidden2.weight");
+    ctx->hidden2_b = find(m, "dec.hidden2.bias");
+    ctx->emb2_w = find(m, "dec.emb2.weight");
+    ctx->emb2_b = find(m, "dec.emb2.bias");
+    ctx->ua_w = find(m, "dec.ua.weight");
+    ctx->ua_b = find(m, "dec.ua.bias");
+    ctx->uf_w = find(m, "dec.uf.weight");
+    ctx->uf_b = find(m, "dec.uf.bias");
+    ctx->v_w = find(m, "dec.v.weight");
+    ctx->v_b = find(m, "dec.v.bias");
+    ctx->wc_w = find(m, "dec.wc.weight");
+    ctx->wc_b = find(m, "dec.wc.bias");
+    ctx->out_w = find(m, "dec.out.weight");
+    ctx->out_b = find(m, "dec.out.bias");
+    ctx->conv1_w = find(m, "dec.conv1.weight");
+    ctx->conv1_b = find(m, "dec.conv1.bias");
+    ctx->conv_tan_w = find(m, "dec.conv_tan.weight");
+    ctx->conv_tan_b = find(m, "dec.conv_tan.bias");
+    ctx->bn1_scale = find(m, "dec.bn1.scale");
+    ctx->bn1_offset = find(m, "dec.bn1.offset");
 
     if (!ctx->embedding_w || !ctx->gru1_w_ih || !ctx->gru_w_ih) {
         fprintf(stderr, "hmer_ocr: missing critical decoder tensors\n");
@@ -264,14 +262,14 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
 
     auto & hp = ctx->hparams;
     hp.num_init_features = core_gguf::kv_u32(gctx, "hmer.encoder.num_init_features", 64);
-    hp.growth_rate       = core_gguf::kv_u32(gctx, "hmer.encoder.growth_rate", 32);
-    hp.input_channels    = core_gguf::kv_u32(gctx, "hmer.encoder.input_channels", 2);
-    hp.output_channels   = core_gguf::kv_u32(gctx, "hmer.encoder.output_channels", 1024);
-    hp.hidden_size       = core_gguf::kv_u32(gctx, "hmer.decoder.hidden_size", 256);
-    hp.output_size       = core_gguf::kv_u32(gctx, "hmer.decoder.output_size", 112);
-    hp.sos_token         = core_gguf::kv_u32(gctx, "hmer.decoder.sos_token", 111);
-    hp.eol_token         = core_gguf::kv_u32(gctx, "hmer.decoder.eol_token", 0);
-    hp.max_seq_len       = core_gguf::kv_u32(gctx, "hmer.decoder.max_seq_len", 48);
+    hp.growth_rate = core_gguf::kv_u32(gctx, "hmer.encoder.growth_rate", 32);
+    hp.input_channels = core_gguf::kv_u32(gctx, "hmer.encoder.input_channels", 2);
+    hp.output_channels = core_gguf::kv_u32(gctx, "hmer.encoder.output_channels", 1024);
+    hp.hidden_size = core_gguf::kv_u32(gctx, "hmer.decoder.hidden_size", 256);
+    hp.output_size = core_gguf::kv_u32(gctx, "hmer.decoder.output_size", 112);
+    hp.sos_token = core_gguf::kv_u32(gctx, "hmer.decoder.sos_token", 111);
+    hp.eol_token = core_gguf::kv_u32(gctx, "hmer.decoder.eol_token", 0);
+    hp.max_seq_len = core_gguf::kv_u32(gctx, "hmer.decoder.max_seq_len", 48);
 
     // block_config array — read from GGUF or use defaults
     hp.block_config[0] = 6;
@@ -284,9 +282,8 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
 
     core_gguf::free_metadata(gctx);
 
-    fprintf(stderr, "hmer_ocr: blocks=[%d,%d,%d] hidden=%d vocab=%d(%zu)\n",
-            hp.block_config[0], hp.block_config[1], hp.block_config[2],
-            hp.hidden_size, hp.output_size, ctx->vocab.size());
+    fprintf(stderr, "hmer_ocr: blocks=[%d,%d,%d] hidden=%d vocab=%d(%zu)\n", hp.block_config[0], hp.block_config[1],
+            hp.block_config[2], hp.hidden_size, hp.output_size, ctx->vocab.size());
 
     // Phase 2: load weights — prefer GPU backend (weights read via ggml_backend_tensor_get)
     // Residency: all compute runs on the CPU enc_sched; ctx->backend only holds
@@ -305,11 +302,13 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
     if (!map_tensors(ctx.get())) return nullptr;
 
     int mapped = 0;
-    for (const auto & l : ctx->block1) if (l.conv1_w) mapped++;
-    for (const auto & l : ctx->block2) if (l.conv1_w) mapped++;
-    for (const auto & l : ctx->block3) if (l.conv1_w) mapped++;
-    fprintf(stderr, "hmer_ocr: mapped %d/42 dense layers, %zu vocab tokens\n",
-            mapped, ctx->vocab.size());
+    for (const auto & l : ctx->block1)
+        if (l.conv1_w) mapped++;
+    for (const auto & l : ctx->block2)
+        if (l.conv1_w) mapped++;
+    for (const auto & l : ctx->block3)
+        if (l.conv1_w) mapped++;
+    fprintf(stderr, "hmer_ocr: mapped %d/42 dense layers, %zu vocab tokens\n", mapped, ctx->vocab.size());
 
     ctx->bench = (std::getenv("CRISPEMBED_HMER_BENCH") != nullptr);
 
@@ -344,15 +343,12 @@ static const float * tensor_f32(hmer_ocr_context * ctx, struct ggml_tensor * t) 
     return ctx->dequant_cache.get(t);
 }
 
-static void linear(const float * x, int in_dim,
-                   const float * W, const float * B, int out_dim,
-                   float * out) {
+static void linear(const float * x, int in_dim, const float * W, const float * B, int out_dim, float * out) {
     core_cpu::linear_cpu(x, out, in_dim, out_dim, W, B);
 }
 
 // BN scale+offset (unique — not in core_cpu)
-static void apply_bn_scale(float * data, int channels, int spatial,
-                           const float * scale, const float * offset) {
+static void apply_bn_scale(float * data, int channels, int spatial, const float * scale, const float * offset) {
     for (int c = 0; c < channels; c++) {
         float s = scale[c], o = offset[c];
         float * row = data + c * spatial;
@@ -360,12 +356,12 @@ static void apply_bn_scale(float * data, int channels, int spatial,
     }
 }
 
-static void relu_inplace(float * data, int n) { core_cpu::relu_inplace(data, n); }
+static void relu_inplace(float * data, int n) {
+    core_cpu::relu_inplace(data, n);
+}
 
-static void conv2d(const float * input, int in_ch, int in_h, int in_w,
-                   const float * weight, const float * bias,
-                   int out_ch, int kH, int kW, int stride, int pad,
-                   float * output, int /*out_h*/, int /*out_w*/) {
+static void conv2d(const float * input, int in_ch, int in_h, int in_w, const float * weight, const float * bias,
+                   int out_ch, int kH, int kW, int stride, int pad, float * output, int /*out_h*/, int /*out_w*/) {
     core_cpu::conv2d_cpu(input, output, weight, bias, in_ch, out_ch, in_h, in_w, kH, kW, stride, pad);
 }
 
@@ -373,9 +369,8 @@ static void conv2d(const float * input, int in_ch, int in_h, int in_w,
 // Helper: MaxPool2d
 // ---------------------------------------------------------------------------
 
-static void maxpool2d(const float * input, int ch, int in_h, int in_w,
-                      int ksize, int stride, int pad,
-                      float * output, int out_h, int out_w) {
+static void maxpool2d(const float * input, int ch, int in_h, int in_w, int ksize, int stride, int pad, float * output,
+                      int out_h, int out_w) {
     for (int c = 0; c < ch; c++) {
         for (int oh = 0; oh < out_h; oh++) {
             for (int ow = 0; ow < out_w; ow++) {
@@ -400,9 +395,8 @@ static void maxpool2d(const float * input, int ch, int in_h, int in_w,
 // Helper: AvgPool2d
 // ---------------------------------------------------------------------------
 
-static void avgpool2d(const float * input, int ch, int in_h, int in_w,
-                      int ksize, int stride,
-                      float * output, int out_h, int out_w) {
+static void avgpool2d(const float * input, int ch, int in_h, int in_w, int ksize, int stride, float * output, int out_h,
+                      int out_w) {
     float inv_k2 = 1.0f / (ksize * ksize);
     for (int c = 0; c < ch; c++) {
         for (int oh = 0; oh < out_h; oh++) {
@@ -428,25 +422,21 @@ static void avgpool2d(const float * input, int ch, int in_h, int in_w,
 // ---------------------------------------------------------------------------
 
 // Prepare conv weight: reshape 2D→4D if needed, cast to F16 for ggml_conv_2d.
-static ggml_tensor * enc_prep_conv(ggml_context * g, ggml_tensor * w,
-                                    int IC, int KH, int KW) {
+static ggml_tensor * enc_prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         int64_t OC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
     }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
     return w;
 }
 
 // BN scale+offset: x = x * scale + offset  (per-channel, broadcast over spatial)
-static ggml_tensor * enc_bn(ggml_context * g, ggml_tensor * x,
-                             ggml_tensor * scale, ggml_tensor * offset) {
+static ggml_tensor * enc_bn(ggml_context * g, ggml_tensor * x, ggml_tensor * scale, ggml_tensor * offset) {
     // x shape: (W, H, C) in ggml convention — scale/offset are (C,)
-    ggml_tensor * s = ggml_reshape_3d(g, scale,  1, 1, scale->ne[0]);
+    ggml_tensor * s = ggml_reshape_3d(g, scale, 1, 1, scale->ne[0]);
     ggml_tensor * o = ggml_reshape_3d(g, offset, 1, 1, offset->ne[0]);
     x = ggml_mul(g, x, s);
     x = ggml_add(g, x, o);
@@ -454,10 +444,8 @@ static ggml_tensor * enc_bn(ggml_context * g, ggml_tensor * x,
 }
 
 // Conv2D + optional bias
-static ggml_tensor * enc_conv2d(ggml_context * g, ggml_tensor * x,
-                                 ggml_tensor * w, ggml_tensor * bias,
-                                 int IC, int KH, int KW,
-                                 int stride, int pad) {
+static ggml_tensor * enc_conv2d(ggml_context * g, ggml_tensor * x, ggml_tensor * w, ggml_tensor * bias, int IC, int KH,
+                                int KW, int stride, int pad) {
     w = enc_prep_conv(g, w, IC, KH, KW);
     x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     if (bias) {
@@ -478,8 +466,7 @@ static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
     // Quantized models need extra cast nodes (Q→F32→reshape→F16 per conv weight)
     // DenseNet concat graph has deep dependency tree, needs generous allocation
     int graph_size = 42 * 40 + 600;
-    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
-                    + ggml_graph_overhead_custom(graph_size, false);
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_compute_meta.resize(buf_size);
 
     ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
@@ -492,7 +479,7 @@ static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
     ggml_set_input(x);
 
     // Stem: Conv2d(2→64, 7×7, stride=2, pad=3) + bias (BN folded) + ReLU
-    int ch = (int)hp.num_init_features;  // 64
+    int ch = (int)hp.num_init_features; // 64
     x = enc_conv2d(g, x, ctx->stem_conv_w, ctx->stem_conv_b, 2, 7, 7, 2, 3);
     x = ggml_relu(g, x);
 
@@ -510,8 +497,7 @@ static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
 
             // Conv1: 1×1 bottleneck → 128
             int bn_ch = 128;
-            ggml_tensor * bottleneck = enc_conv2d(g, normed, l.conv1_w, nullptr,
-                                                   cur_ch, 1, 1, 1, 0);
+            ggml_tensor * bottleneck = enc_conv2d(g, normed, l.conv1_w, nullptr, cur_ch, 1, 1, 1, 0);
 
             // BN2 + ReLU
             bottleneck = enc_bn(g, bottleneck, l.bn2_scale, l.bn2_offset);
@@ -519,8 +505,7 @@ static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
 
             // Conv2: 3×3 → growth_rate (32)
             int gr = (int)hp.growth_rate;
-            ggml_tensor * new_feat = enc_conv2d(g, bottleneck, l.conv2_w, nullptr,
-                                                 bn_ch, 3, 3, 1, 1);
+            ggml_tensor * new_feat = enc_conv2d(g, bottleneck, l.conv2_w, nullptr, bn_ch, 3, 3, 1, 1);
 
             // Concat along channel dimension (dim=2 in ggml's W,H,C layout)
             x = ggml_concat(g, x, new_feat, 2);
@@ -546,11 +531,11 @@ static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
 
     // Block 1 (6 layers): 64 → 64+6*32 = 256
     dense_block(ctx->block1, cur_ch);
-    transition(ctx->trans1, cur_ch);  // 256 → 128, spatial /2
+    transition(ctx->trans1, cur_ch); // 256 → 128, spatial /2
 
     // Block 2 (12 layers): 128 → 128+12*32 = 512
     dense_block(ctx->block2, cur_ch);
-    transition(ctx->trans2, cur_ch);  // 512 → 256, spatial /2
+    transition(ctx->trans2, cur_ch); // 512 → 256, spatial /2
 
     // Block 3 (24 layers): 256 → 256+24*32 = 1024
     dense_block(ctx->block3, cur_ch);
@@ -574,8 +559,7 @@ static ggml_cgraph * build_encoder_graph(hmer_ocr_context * ctx, int W, int H) {
 }
 
 // Run encoder via ggml graph
-static void run_encoder_ggml(hmer_ocr_context * ctx,
-                              const float * gray, int W, int H) {
+static void run_encoder_ggml(hmer_ocr_context * ctx, const float * gray, int W, int H) {
     auto t0 = std::chrono::steady_clock::now();
 
     // Build graph
@@ -615,8 +599,8 @@ static void run_encoder_ggml(hmer_ocr_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
@@ -648,21 +632,18 @@ static void run_encoder_ggml(hmer_ocr_context * ctx,
     }
 
     if (ctx->bench) {
-        double ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t0).count();
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         fprintf(stderr, "[hmer-bench] encoder (ggml): %.1f ms\n", ms);
     }
 
-    fprintf(stderr, "hmer_ocr: encoder output: (%d, %d, %d) = %d positions\n",
-            out_c, out_h, out_w, n_positions);
+    fprintf(stderr, "hmer_ocr: encoder output: (%d, %d, %d) = %d positions\n", out_c, out_h, out_w, n_positions);
 }
 
 // ---------------------------------------------------------------------------
 // DenseNet-121 encoder forward pass (scalar fallback)
 // ---------------------------------------------------------------------------
 
-static void run_encoder(hmer_ocr_context * ctx,
-                        const float * gray, int W, int H) {
+static void run_encoder(hmer_ocr_context * ctx, const float * gray, int W, int H) {
     // Input: 2-channel (gray + mask), CHW layout
     // Channel 0 = gray [0,1], Channel 1 = mask (all 1.0)
     int spatial = W * H;
@@ -675,9 +656,8 @@ static void run_encoder(hmer_ocr_context * ctx,
     int w1 = (W + 2 * 3 - 7) / 2 + 1;
     int ch1 = 64;
     std::vector<float> stem(ch1 * h1 * w1);
-    conv2d(input.data(), 2, H, W,
-           tensor_f32(ctx, ctx->stem_conv_w), tensor_f32(ctx, ctx->stem_conv_b),
-           ch1, 7, 7, 2, 3, stem.data(), h1, w1);
+    conv2d(input.data(), 2, H, W, tensor_f32(ctx, ctx->stem_conv_w), tensor_f32(ctx, ctx->stem_conv_b), ch1, 7, 7, 2, 3,
+           stem.data(), h1, w1);
     relu_inplace(stem.data(), ch1 * h1 * w1);
 
     // MaxPool(3, stride=2, pad=1)
@@ -700,33 +680,29 @@ static void run_encoder(hmer_ocr_context * ctx,
             // BN1 + ReLU on current features
             std::vector<float> normed(cur_ch * spatial);
             memcpy(normed.data(), features.data(), cur_ch * spatial * sizeof(float));
-            apply_bn_scale(normed.data(), cur_ch, spatial,
-                           tensor_f32(ctx, l.bn1_scale), tensor_f32(ctx, l.bn1_offset));
+            apply_bn_scale(normed.data(), cur_ch, spatial, tensor_f32(ctx, l.bn1_scale), tensor_f32(ctx, l.bn1_offset));
             relu_inplace(normed.data(), cur_ch * spatial);
 
             // Conv1: 1×1 bottleneck → 128 channels
             int bn_ch = 128;
             std::vector<float> bottleneck(bn_ch * spatial);
-            conv2d(normed.data(), cur_ch, cur_h, cur_w,
-                   tensor_f32(ctx, l.conv1_w), nullptr,
-                   bn_ch, 1, 1, 1, 0, bottleneck.data(), cur_h, cur_w);
+            conv2d(normed.data(), cur_ch, cur_h, cur_w, tensor_f32(ctx, l.conv1_w), nullptr, bn_ch, 1, 1, 1, 0,
+                   bottleneck.data(), cur_h, cur_w);
 
             // BN2 + ReLU
-            apply_bn_scale(bottleneck.data(), bn_ch, spatial,
-                           tensor_f32(ctx, l.bn2_scale), tensor_f32(ctx, l.bn2_offset));
+            apply_bn_scale(bottleneck.data(), bn_ch, spatial, tensor_f32(ctx, l.bn2_scale),
+                           tensor_f32(ctx, l.bn2_offset));
             relu_inplace(bottleneck.data(), bn_ch * spatial);
 
             // Conv2: 3×3 → growth_rate (32) channels
             int gr = ctx->hparams.growth_rate;
             std::vector<float> new_features(gr * spatial);
-            conv2d(bottleneck.data(), bn_ch, cur_h, cur_w,
-                   tensor_f32(ctx, l.conv2_w), nullptr,
-                   gr, 3, 3, 1, 1, new_features.data(), cur_h, cur_w);
+            conv2d(bottleneck.data(), bn_ch, cur_h, cur_w, tensor_f32(ctx, l.conv2_w), nullptr, gr, 3, 3, 1, 1,
+                   new_features.data(), cur_h, cur_w);
 
             // Concat: features = cat(features, new_features) along channel dim
             features.resize((cur_ch + gr) * spatial);
-            memcpy(features.data() + cur_ch * spatial,
-                   new_features.data(), gr * spatial * sizeof(float));
+            memcpy(features.data() + cur_ch * spatial, new_features.data(), gr * spatial * sizeof(float));
             cur_ch += gr;
         }
     };
@@ -735,22 +711,19 @@ static void run_encoder(hmer_ocr_context * ctx,
         int spatial = cur_h * cur_w;
 
         // BN + ReLU
-        apply_bn_scale(features.data(), cur_ch, spatial,
-                       tensor_f32(ctx, t.bn_scale), tensor_f32(ctx, t.bn_offset));
+        apply_bn_scale(features.data(), cur_ch, spatial, tensor_f32(ctx, t.bn_scale), tensor_f32(ctx, t.bn_offset));
         relu_inplace(features.data(), cur_ch * spatial);
 
         // Conv 1×1: cur_ch → cur_ch/2
         int out_ch = cur_ch / 2;
         std::vector<float> conv_out(out_ch * spatial);
-        conv2d(features.data(), cur_ch, cur_h, cur_w,
-               tensor_f32(ctx, t.conv_w), nullptr,
-               out_ch, 1, 1, 1, 0, conv_out.data(), cur_h, cur_w);
+        conv2d(features.data(), cur_ch, cur_h, cur_w, tensor_f32(ctx, t.conv_w), nullptr, out_ch, 1, 1, 1, 0,
+               conv_out.data(), cur_h, cur_w);
 
         // AvgPool 2×2
         int oh = cur_h / 2, ow = cur_w / 2;
         std::vector<float> pool_out(out_ch * oh * ow);
-        avgpool2d(conv_out.data(), out_ch, cur_h, cur_w,
-                  2, 2, pool_out.data(), oh, ow);
+        avgpool2d(conv_out.data(), out_ch, cur_h, cur_w, 2, 2, pool_out.data(), oh, ow);
 
         features = std::move(pool_out);
         cur_ch = out_ch;
@@ -760,19 +733,18 @@ static void run_encoder(hmer_ocr_context * ctx,
 
     // Block 1 (6 layers): 64 → 64+6*32 = 256
     run_dense_block(ctx->block1);
-    run_transition(ctx->trans1);  // 256 → 128, spatial /2
+    run_transition(ctx->trans1); // 256 → 128, spatial /2
 
     // Block 2 (12 layers): 128 → 128+12*32 = 512
     run_dense_block(ctx->block2);
-    run_transition(ctx->trans2);  // 512 → 256, spatial /2
+    run_transition(ctx->trans2); // 512 → 256, spatial /2
 
     // Block 3 (24 layers): 256 → 256+24*32 = 1024
     run_dense_block(ctx->block3);
 
     // Final BN + ReLU
     int final_spatial = cur_h * cur_w;
-    apply_bn_scale(features.data(), cur_ch, final_spatial,
-                   tensor_f32(ctx, ctx->final_bn_scale),
+    apply_bn_scale(features.data(), cur_ch, final_spatial, tensor_f32(ctx, ctx->final_bn_scale),
                    tensor_f32(ctx, ctx->final_bn_offset));
     relu_inplace(features.data(), cur_ch * final_spatial);
 
@@ -788,20 +760,15 @@ static void run_encoder(hmer_ocr_context * ctx,
         }
     }
 
-    fprintf(stderr, "hmer_ocr: encoder output: (%d, %d, %d) = %d positions\n",
-            cur_ch, cur_h, cur_w, n_positions);
-
+    fprintf(stderr, "hmer_ocr: encoder output: (%d, %d, %d) = %d positions\n", cur_ch, cur_h, cur_w, n_positions);
 }
 
 // ---------------------------------------------------------------------------
 // GRU cell
 // ---------------------------------------------------------------------------
 
-static void gru_cell(const float * x, int x_dim,
-                     const float * h, int h_dim,
-                     const float * W_ih, const float * W_hh,
-                     const float * b_ih, const float * b_hh,
-                     float * h_out) {
+static void gru_cell(const float * x, int x_dim, const float * h, int h_dim, const float * W_ih, const float * W_hh,
+                     const float * b_ih, const float * b_hh, float * h_out) {
     // W_ih: (3*h_dim, x_dim), W_hh: (3*h_dim, h_dim)
     // Gates: z (update), r (reset), n (new)
     std::vector<float> gates_ih(3 * h_dim), gates_hh(3 * h_dim);
@@ -842,19 +809,17 @@ static void gru_cell(const float * x, int x_dim,
 // ---------------------------------------------------------------------------
 
 struct decoder_state {
-    std::vector<float> hidden;           // (256,)
-    std::vector<float> attention_sum;    // (enc_h * enc_w,)  cumulative coverage
+    std::vector<float> hidden;            // (256,)
+    std::vector<float> attention_sum;     // (enc_h * enc_w,)  cumulative coverage
     std::vector<float> decoder_attention; // (enc_h * enc_w,) prev step attention
 
     // Precomputed once from encoder output
-    std::vector<float> enc_ua;           // (enc_h * enc_w, 256) = ua(encoder)
+    std::vector<float> enc_ua; // (enc_h * enc_w, 256) = ua(encoder)
 };
 
-static int decoder_step(hmer_ocr_context * ctx,
-                        int prev_token,
-                        decoder_state & state) {
-    const int H = ctx->hparams.hidden_size;  // 256
-    const int V = ctx->hparams.output_size;  // 112
+static int decoder_step(hmer_ocr_context * ctx, int prev_token, decoder_state & state) {
+    const int H = ctx->hparams.hidden_size; // 256
+    const int V = ctx->hparams.output_size; // 112
     const int enc_n = ctx->enc_h * ctx->enc_w;
     const int enc_ch = ctx->hparams.output_channels; // 1024
 
@@ -868,29 +833,23 @@ static int decoder_step(hmer_ocr_context * ctx,
     }
 
     // 2. GRU1: st = gru1(embedded, hidden) → (256,)
-    gru_cell(ds.embedded.data(), H,
-             state.hidden.data(), H,
-             tensor_f32(ctx, ctx->gru1_w_ih), tensor_f32(ctx, ctx->gru1_w_hh),
-             tensor_f32(ctx, ctx->gru1_b_ih), tensor_f32(ctx, ctx->gru1_b_hh),
+    gru_cell(ds.embedded.data(), H, state.hidden.data(), H, tensor_f32(ctx, ctx->gru1_w_ih),
+             tensor_f32(ctx, ctx->gru1_w_hh), tensor_f32(ctx, ctx->gru1_b_ih), tensor_f32(ctx, ctx->gru1_b_hh),
              ds.st.data());
 
     // 3. Query projection: hidden1 = Linear_hidden(st) → (256,)
-    linear(ds.st.data(), H,
-           tensor_f32(ctx, ctx->hidden_w), tensor_f32(ctx, ctx->hidden_b), H,
-           ds.hidden1.data());
+    linear(ds.st.data(), H, tensor_f32(ctx, ctx->hidden_w), tensor_f32(ctx, ctx->hidden_b), H, ds.hidden1.data());
 
     // 4. Coverage conv: decoder_attention = conv1(prev_attention)
     {
         // Use alpha buffer as temp (will be overwritten later)
-        conv2d(state.decoder_attention.data(), 1, ctx->enc_h, ctx->enc_w,
-               tensor_f32(ctx, ctx->conv1_w), tensor_f32(ctx, ctx->conv1_b),
-               1, 3, 3, 1, 1, ds.alpha.data(), ctx->enc_h, ctx->enc_w);
+        conv2d(state.decoder_attention.data(), 1, ctx->enc_h, ctx->enc_w, tensor_f32(ctx, ctx->conv1_w),
+               tensor_f32(ctx, ctx->conv1_b), 1, 3, 3, 1, 1, ds.alpha.data(), ctx->enc_h, ctx->enc_w);
         memcpy(state.decoder_attention.data(), ds.alpha.data(), enc_n * sizeof(float));
     }
 
     // 5. attention_sum += decoder_attention
-    for (int i = 0; i < enc_n; i++)
-        state.attention_sum[i] += state.decoder_attention[i];
+    for (int i = 0; i < enc_n; i++) state.attention_sum[i] += state.decoder_attention[i];
 
     // 6. Compute attention energy
     {
@@ -909,31 +868,25 @@ static int decoder_step(hmer_ocr_context * ctx,
 
     // Transpose et to CHW for conv_tan
     for (int c = 0; c < H; c++)
-        for (int i = 0; i < enc_n; i++)
-            ds.et_chw[c * enc_n + i] = ds.et[i * H + c];
+        for (int i = 0; i < enc_n; i++) ds.et_chw[c * enc_n + i] = ds.et[i * H + c];
 
     // conv_tan: (256, 256, 3, 3)
-    conv2d(ds.et_chw.data(), H, ctx->enc_h, ctx->enc_w,
-           tensor_f32(ctx, ctx->conv_tan_w), tensor_f32(ctx, ctx->conv_tan_b),
-           H, 3, 3, 1, 1, ds.ct_out.data(), ctx->enc_h, ctx->enc_w);
+    conv2d(ds.et_chw.data(), H, ctx->enc_h, ctx->enc_w, tensor_f32(ctx, ctx->conv_tan_w),
+           tensor_f32(ctx, ctx->conv_tan_b), H, 3, 3, 1, 1, ds.ct_out.data(), ctx->enc_h, ctx->enc_w);
 
     // BN1 + tanh
-    apply_bn_scale(ds.ct_out.data(), H, enc_n,
-                   tensor_f32(ctx, ctx->bn1_scale), tensor_f32(ctx, ctx->bn1_offset));
-    for (int i = 0; i < H * enc_n; i++)
-        ds.ct_out[i] = tanhf(ds.ct_out[i]);
+    apply_bn_scale(ds.ct_out.data(), H, enc_n, tensor_f32(ctx, ctx->bn1_scale), tensor_f32(ctx, ctx->bn1_offset));
+    for (int i = 0; i < H * enc_n; i++) ds.ct_out[i] = tanhf(ds.ct_out[i]);
 
     // Transpose back to (enc_n, 256)
     for (int c = 0; c < H; c++)
-        for (int i = 0; i < enc_n; i++)
-            ds.ct_hwc[i * H + c] = ds.ct_out[c * enc_n + i];
+        for (int i = 0; i < enc_n; i++) ds.ct_hwc[i * H + c] = ds.ct_out[c * enc_n + i];
 
     // v: Linear(256, 1) → energy per position (SIMD dot product)
     {
         const float * v_W = tensor_f32(ctx, ctx->v_w);
         float v_B = tensor_f32(ctx, ctx->v_b)[0];
-        for (int p = 0; p < enc_n; p++)
-            ds.energy[p] = core_cpu::dot_product(&ds.ct_hwc[p * H], v_W, H) + v_B;
+        for (int p = 0; p < enc_n; p++) ds.energy[p] = core_cpu::dot_product(&ds.ct_hwc[p * H], v_W, H) + v_B;
     }
 
     // Softmax → attention weights
@@ -946,8 +899,7 @@ static int decoder_step(hmer_ocr_context * ctx,
         sum_exp += ds.alpha[i];
     }
     float inv_sum = 1.0f / (sum_exp + 1e-8f);
-    for (int i = 0; i < enc_n; i++)
-        ds.alpha[i] *= inv_sum;
+    for (int i = 0; i < enc_n; i++) ds.alpha[i] *= inv_sum;
 
     // Store attention for next step's coverage
     memcpy(state.decoder_attention.data(), ds.alpha.data(), enc_n * sizeof(float));
@@ -957,40 +909,30 @@ static int decoder_step(hmer_ocr_context * ctx,
     for (int p = 0; p < enc_n; p++) {
         float a = ds.alpha[p];
         const float * enc = ctx->encoder_output.data() + p * enc_ch;
-        for (int c = 0; c < enc_ch; c++)
-            ds.context[c] += a * enc[c];
+        for (int c = 0; c < enc_ch; c++) ds.context[c] += a * enc[c];
     }
 
     // GRU2: hidden_next = gru(context, st)
-    gru_cell(ds.context.data(), enc_ch,
-             ds.st.data(), H,
-             tensor_f32(ctx, ctx->gru_w_ih), tensor_f32(ctx, ctx->gru_w_hh),
-             tensor_f32(ctx, ctx->gru_b_ih), tensor_f32(ctx, ctx->gru_b_hh),
-             state.hidden.data());
+    gru_cell(ds.context.data(), enc_ch, ds.st.data(), H, tensor_f32(ctx, ctx->gru_w_ih), tensor_f32(ctx, ctx->gru_w_hh),
+             tensor_f32(ctx, ctx->gru_b_ih), tensor_f32(ctx, ctx->gru_b_hh), state.hidden.data());
 
     // Output: out(hidden2 + embedded2 + ct2)
-    linear(state.hidden.data(), H,
-           tensor_f32(ctx, ctx->hidden2_w), tensor_f32(ctx, ctx->hidden2_b), 128,
-           ds.h2.data());
-    linear(ds.embedded.data(), H,
-           tensor_f32(ctx, ctx->emb2_w), tensor_f32(ctx, ctx->emb2_b), 128,
-           ds.e2.data());
-    linear(ds.context.data(), enc_ch,
-           tensor_f32(ctx, ctx->wc_w), tensor_f32(ctx, ctx->wc_b), 128,
-           ds.c2.data());
+    linear(state.hidden.data(), H, tensor_f32(ctx, ctx->hidden2_w), tensor_f32(ctx, ctx->hidden2_b), 128, ds.h2.data());
+    linear(ds.embedded.data(), H, tensor_f32(ctx, ctx->emb2_w), tensor_f32(ctx, ctx->emb2_b), 128, ds.e2.data());
+    linear(ds.context.data(), enc_ch, tensor_f32(ctx, ctx->wc_w), tensor_f32(ctx, ctx->wc_b), 128, ds.c2.data());
 
-    for (int i = 0; i < 128; i++)
-        ds.combined[i] = ds.h2[i] + ds.e2[i] + ds.c2[i];
+    for (int i = 0; i < 128; i++) ds.combined[i] = ds.h2[i] + ds.e2[i] + ds.c2[i];
 
-    linear(ds.combined.data(), 128,
-           tensor_f32(ctx, ctx->out_w), tensor_f32(ctx, ctx->out_b), V,
-           ds.logits.data());
+    linear(ds.combined.data(), 128, tensor_f32(ctx, ctx->out_w), tensor_f32(ctx, ctx->out_b), V, ds.logits.data());
 
     // Argmax
     int best = 0;
     float best_score = ds.logits[0];
     for (int v = 1; v < V; v++)
-        if (ds.logits[v] > best_score) { best_score = ds.logits[v]; best = v; }
+        if (ds.logits[v] > best_score) {
+            best_score = ds.logits[v];
+            best = v;
+        }
 
     // Confidence
     {
@@ -1008,8 +950,8 @@ static int decoder_step(hmer_ocr_context * ctx,
 
 static void ensure_dec_scratch(hmer_ocr_context * ctx) {
     if (ctx->ds.allocated) return;
-    const int H = ctx->hparams.hidden_size;  // 256
-    const int V = ctx->hparams.output_size;  // 112
+    const int H = ctx->hparams.hidden_size; // 256
+    const int V = ctx->hparams.output_size; // 112
     const int enc_n = ctx->enc_h * ctx->enc_w;
     const int enc_ch = ctx->hparams.output_channels; // 1024
 
@@ -1044,7 +986,7 @@ static std::string greedy_decode(hmer_ocr_context * ctx) {
 
     // Initialize decoder state
     decoder_state state;
-    state.hidden.assign(H, 0.0f);  // zeros for inference
+    state.hidden.assign(H, 0.0f); // zeros for inference
     state.attention_sum.assign(enc_n, 0.0f);
     state.decoder_attention.assign(enc_n, 0.0f);
 
@@ -1058,9 +1000,8 @@ static std::string greedy_decode(hmer_ocr_context * ctx) {
         const float * ua_W = tensor_f32(ctx, ctx->ua_w);
         const float * ua_B = tensor_f32(ctx, ctx->ua_b);
         for (int p = 0; p < enc_n; p++) {
-            core_cpu::linear_cpu(ctx->encoder_output.data() + p * enc_ch,
-                                 state.enc_ua.data() + p * H,
-                                 enc_ch, H, ua_W, ua_B);
+            core_cpu::linear_cpu(ctx->encoder_output.data() + p * enc_ch, state.enc_ua.data() + p * H, enc_ch, H, ua_W,
+                                 ua_B);
         }
     }
 
@@ -1071,8 +1012,7 @@ static std::string greedy_decode(hmer_ocr_context * ctx) {
         int tok = decoder_step(ctx, prev_token, state);
         if (tok == hp.eol_token) {
             // Pop the EOL confidence pushed inside decoder_step
-            if (!ctx->char_confidences.empty())
-                ctx->char_confidences.pop_back();
+            if (!ctx->char_confidences.empty()) ctx->char_confidences.pop_back();
             break;
         }
         tokens.push_back(tok);
@@ -1096,8 +1036,7 @@ static std::string greedy_decode(hmer_ocr_context * ctx) {
 // ---------------------------------------------------------------------------
 
 // Scale image to fit within max_pixels, preserving aspect ratio (bilinear).
-static bool hmer_scale_to_fit(const float * src, int sw, int sh,
-                              std::vector<float> & dst, int & dw, int & dh,
+static bool hmer_scale_to_fit(const float * src, int sw, int sh, std::vector<float> & dst, int & dw, int & dh,
                               int max_pixels = 100000) {
     if (sw * sh <= max_pixels) return false;
     float ratio = sqrtf((float)max_pixels / (sw * sh));
@@ -1114,19 +1053,14 @@ static bool hmer_scale_to_fit(const float * src, int sw, int sh,
             int x0 = std::max(0, std::min((int)sx, sw - 1));
             int x1 = std::min(x0 + 1, sw - 1);
             float fx = sx - x0;
-            dst[y * dw + x] =
-                src[y0*sw+x0]*(1-fx)*(1-fy) + src[y0*sw+x1]*fx*(1-fy) +
-                src[y1*sw+x0]*(1-fx)*fy     + src[y1*sw+x1]*fx*fy;
+            dst[y * dw + x] = src[y0 * sw + x0] * (1 - fx) * (1 - fy) + src[y0 * sw + x1] * fx * (1 - fy) +
+                              src[y1 * sw + x0] * (1 - fx) * fy + src[y1 * sw + x1] * fx * fy;
         }
     }
     return true;
 }
 
-const char * hmer_ocr_recognize(
-    hmer_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len
-) {
+const char * hmer_ocr_recognize(hmer_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
     const bool bench = ctx->bench;
@@ -1155,8 +1089,9 @@ const char * hmer_ocr_recognize(
         input = scaled.data();
         fprintf(stderr, "hmer_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
-    if (bench) fprintf(stderr, "[hmer-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[hmer-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     // Run encoder (ggml graph path, fallback to scalar if scheduler not set up or env override)
     t0 = std::chrono::steady_clock::now();
@@ -1166,27 +1101,27 @@ const char * hmer_ocr_recognize(
     } else {
         run_encoder(ctx, input, w, h);
     }
-    if (bench) fprintf(stderr, "[hmer-bench] encoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[hmer-bench] encoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     // Run decoder
     t0 = std::chrono::steady_clock::now();
     ctx->result_buf = greedy_decode(ctx);
-    if (bench) fprintf(stderr, "[hmer-bench] decoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[hmer-bench] decoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[hmer-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[hmer-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const char * hmer_ocr_recognize_raw(
-    hmer_ocr_context * ctx,
-    const uint8_t * pixel_bytes, int width, int height, int channels,
-    int * out_len
-) {
+const char * hmer_ocr_recognize_raw(hmer_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
+                                    int channels, int * out_len) {
     if (!ctx || !pixel_bytes || width <= 0 || height <= 0) return nullptr;
 
     std::vector<float> gray(width * height);
@@ -1195,9 +1130,8 @@ const char * hmer_ocr_recognize_raw(
             gray[i] = pixel_bytes[i] / 255.0f;
         } else if (channels >= 3) {
             int base = i * channels;
-            gray[i] = (0.299f * pixel_bytes[base] +
-                        0.587f * pixel_bytes[base + 1] +
-                        0.114f * pixel_bytes[base + 2]) / 255.0f;
+            gray[i] =
+                (0.299f * pixel_bytes[base] + 0.587f * pixel_bytes[base + 1] + 0.114f * pixel_bytes[base + 2]) / 255.0f;
         }
     }
     return hmer_ocr_recognize(ctx, gray.data(), width, height, out_len);

@@ -10,16 +10,16 @@
 #include <cstring>
 #include <vector>
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <model.gguf> <image.png> [max_tokens] [prompt]\n", argv[0]);
         return 1;
     }
 
-    const char *model_path = argv[1];
-    const char *image_path = argv[2];
+    const char * model_path = argv[1];
+    const char * image_path = argv[2];
     int max_tokens = (argc > 3) ? atoi(argv[3]) : 200;
-    const char *user_prompt = (argc > 4) ? argv[4] : "Describe this image in detail.";
+    const char * user_prompt = (argc > 4) ? argv[4] : "Describe this image in detail.";
 
     // Load model
     printf("Loading model: %s\n", model_path);
@@ -67,11 +67,11 @@ int main(int argc, char **argv) {
     std::vector<int32_t> prompt;
 
     // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
-    int32_t sys_tokens[] = {92543, 9081, 364, 2770, 657, 395, 11100, 17993, 281, 92542, 364};
+    int32_t sys_tokens[] = { 92543, 9081, 364, 2770, 657, 395, 11100, 17993, 281, 92542, 364 };
     prompt.insert(prompt.end(), sys_tokens, sys_tokens + 11);
 
     // <|im_start|>user\n
-    int32_t user_start[] = {92543, 1404, 364};
+    int32_t user_start[] = { 92543, 1404, 364 };
     prompt.insert(prompt.end(), user_start, user_start + 3);
 
     // <IMG_CONTEXT> * n_image_tokens
@@ -81,11 +81,11 @@ int main(int argc, char **argv) {
 
     // \n + user prompt tokens (hardcoded for "Describe this image in detail.")
     // TODO: use proper tokenizer encode
-    int32_t user_text[] = {364, 3471, 2321, 435, 7856, 281, 92542, 364};
+    int32_t user_text[] = { 364, 3471, 2321, 435, 7856, 281, 92542, 364 };
     prompt.insert(prompt.end(), user_text, user_text + 8);
 
     // <|im_start|>assistant\n
-    int32_t asst_start[] = {92543, 525, 11353, 364};
+    int32_t asst_start[] = { 92543, 525, 11353, 364 };
     prompt.insert(prompt.end(), asst_start, asst_start + 4);
 
     printf("Prompt: %zu tokens (%d image)\n", prompt.size(), vpr.n_image_tokens);
@@ -93,17 +93,15 @@ int main(int argc, char **argv) {
     // Generate
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
     internvl2_ocr::generate_result gen;
-    if (!internvl2_ocr::generate(ctx,
-            vpr.image_embeds, vpr.n_image_tokens, vpr.embed_dim,
-            prompt.data(), (int)prompt.size(), max_tokens, gen)) {
+    if (!internvl2_ocr::generate(ctx, vpr.image_embeds, vpr.n_image_tokens, vpr.embed_dim, prompt.data(),
+                                 (int)prompt.size(), max_tokens, gen)) {
         fprintf(stderr, "Generation failed\n");
         free(vpr.image_embeds);
         internvl2_ocr::free_(ctx);
         return 1;
     }
 
-    printf("\n=== Output (%zu tokens) ===\n%s\n=== End ===\n",
-           gen.token_ids.size(), gen.text.c_str());
+    printf("\n=== Output (%zu tokens) ===\n%s\n=== End ===\n", gen.token_ids.size(), gen.text.c_str());
 
     free(vpr.image_embeds);
     internvl2_ocr::free_(ctx);

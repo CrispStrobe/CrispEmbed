@@ -13,14 +13,19 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -33,32 +38,25 @@ static void check(const char * name, bool cond) {
 //   - CTM in content stream (display size in points)
 // ---------------------------------------------------------------------------
 
-static std::string make_test_pdf(int img_w, int img_h,
-                                  float page_w_pt, float page_h_pt,
-                                  float display_w_pt, float display_h_pt) {
+static std::string make_test_pdf(int img_w, int img_h, float page_w_pt, float page_h_pt, float display_w_pt,
+                                 float display_h_pt) {
     std::string pdf;
     char buf[512];
 
     // Minimal JPEG: 1x1 white pixel (but we set /Width /Height in the dict)
     // This is a valid 1x1 JPEG (SOI, APP0, SOF0, SOS, EOI)
-    static const uint8_t mini_jpeg[] = {
-        0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46,
-        0x49, 0x46, 0x00, 0x01, 0x01, 0x00, 0x00, 0x01,
-        0x00, 0x01, 0x00, 0x00, 0xFF, 0xC0, 0x00, 0x0B,
-        0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11,
-        0x00, 0xFF, 0xC4, 0x00, 0x1F, 0x00, 0x00, 0x01,
-        0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
-        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
-        0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09,
-        0x0A, 0x0B, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01,
-        0x00, 0x00, 0x3F, 0x00, 0x7B, 0x40, 0xFF, 0xD9
-    };
+    static const uint8_t mini_jpeg[] = { 0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46, 0x49, 0x46, 0x00, 0x01,
+                                         0x01, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x00, 0xFF, 0xC0, 0x00, 0x0B,
+                                         0x08, 0x00, 0x01, 0x00, 0x01, 0x01, 0x01, 0x11, 0x00, 0xFF, 0xC4, 0x00,
+                                         0x1F, 0x00, 0x00, 0x01, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00,
+                                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
+                                         0x06, 0x07, 0x08, 0x09, 0x0A, 0x0B, 0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01,
+                                         0x00, 0x00, 0x3F, 0x00, 0x7B, 0x40, 0xFF, 0xD9 };
     int jpeg_len = sizeof(mini_jpeg);
 
     // Content stream: CTM + image paint
     std::string content;
-    snprintf(buf, sizeof(buf), "q\n%.2f 0 0 %.2f 0 0 cm\n/Im1 Do\nQ\n",
-             display_w_pt, display_h_pt);
+    snprintf(buf, sizeof(buf), "q\n%.2f 0 0 %.2f 0 0 cm\n/Im1 Do\nQ\n", display_w_pt, display_h_pt);
     content = buf;
 
     // Object layout:
@@ -68,46 +66,53 @@ static std::string make_test_pdf(int img_w, int img_h,
     //   4: Image XObject
     //   5: Content stream
 
-    struct { int id; long offset; } objs[5];
+    struct {
+        int id;
+        long offset;
+    } objs[5];
     int n_obj = 0;
 
     pdf = "%PDF-1.4\n";
 
     // Obj 1: Catalog
-    objs[n_obj] = {1, (long)pdf.size()}; n_obj++;
+    objs[n_obj] = { 1, (long)pdf.size() };
+    n_obj++;
     pdf += "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
 
     // Obj 2: Pages
-    objs[n_obj] = {2, (long)pdf.size()}; n_obj++;
+    objs[n_obj] = { 2, (long)pdf.size() };
+    n_obj++;
     pdf += "2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n";
 
     // Obj 3: Page
-    objs[n_obj] = {3, (long)pdf.size()}; n_obj++;
+    objs[n_obj] = { 3, (long)pdf.size() };
+    n_obj++;
     snprintf(buf, sizeof(buf),
-        "3 0 obj\n<< /Type /Page /Parent 2 0 R\n"
-        "   /MediaBox [0 0 %.2f %.2f]\n"
-        "   /Contents 5 0 R\n"
-        "   /Resources << /XObject << /Im1 4 0 R >> >>\n"
-        ">>\nendobj\n",
-        page_w_pt, page_h_pt);
+             "3 0 obj\n<< /Type /Page /Parent 2 0 R\n"
+             "   /MediaBox [0 0 %.2f %.2f]\n"
+             "   /Contents 5 0 R\n"
+             "   /Resources << /XObject << /Im1 4 0 R >> >>\n"
+             ">>\nendobj\n",
+             page_w_pt, page_h_pt);
     pdf += buf;
 
     // Obj 4: Image XObject
-    objs[n_obj] = {4, (long)pdf.size()}; n_obj++;
+    objs[n_obj] = { 4, (long)pdf.size() };
+    n_obj++;
     snprintf(buf, sizeof(buf),
-        "4 0 obj\n<< /Type /XObject /Subtype /Image\n"
-        "   /Width %d /Height %d\n"
-        "   /ColorSpace /DeviceRGB /BitsPerComponent 8\n"
-        "   /Filter /DCTDecode /Length %d >>\nstream\n",
-        img_w, img_h, jpeg_len);
+             "4 0 obj\n<< /Type /XObject /Subtype /Image\n"
+             "   /Width %d /Height %d\n"
+             "   /ColorSpace /DeviceRGB /BitsPerComponent 8\n"
+             "   /Filter /DCTDecode /Length %d >>\nstream\n",
+             img_w, img_h, jpeg_len);
     pdf += buf;
     pdf.append((const char *)mini_jpeg, jpeg_len);
     pdf += "\nendstream\nendobj\n";
 
     // Obj 5: Content stream
-    objs[n_obj] = {5, (long)pdf.size()}; n_obj++;
-    snprintf(buf, sizeof(buf),
-        "5 0 obj\n<< /Length %d >>\nstream\n", (int)content.size());
+    objs[n_obj] = { 5, (long)pdf.size() };
+    n_obj++;
+    snprintf(buf, sizeof(buf), "5 0 obj\n<< /Length %d >>\nstream\n", (int)content.size());
     pdf += buf;
     pdf += content;
     pdf += "endstream\nendobj\n";
@@ -125,9 +130,9 @@ static std::string make_test_pdf(int img_w, int img_h,
 
     // Trailer
     snprintf(buf, sizeof(buf),
-        "trailer\n<< /Size %d /Root 1 0 R >>\n"
-        "startxref\n%ld\n%%%%EOF\n",
-        n_obj + 1, xref_offset);
+             "trailer\n<< /Size %d /Root 1 0 R >>\n"
+             "startxref\n%ld\n%%%%EOF\n",
+             n_obj + 1, xref_offset);
     pdf += buf;
 
     return pdf;
@@ -146,14 +151,11 @@ static std::string write_test_pdf(const std::string & content, const char * name
 // Tests
 // ---------------------------------------------------------------------------
 
-static void test_known_dpi(const char * label, int img_w, int img_h,
-                            float page_w_pt, float page_h_pt,
-                            float display_w_pt, float display_h_pt,
-                            float expected_dpi) {
+static void test_known_dpi(const char * label, int img_w, int img_h, float page_w_pt, float page_h_pt,
+                           float display_w_pt, float display_h_pt, float expected_dpi) {
     printf("\n=== %s (expected %.0f DPI) ===\n", label, expected_dpi);
 
-    std::string content = make_test_pdf(img_w, img_h, page_w_pt, page_h_pt,
-                                         display_w_pt, display_h_pt);
+    std::string content = make_test_pdf(img_w, img_h, page_w_pt, page_h_pt, display_w_pt, display_h_pt);
     std::string path = write_test_pdf(content, label);
     check("PDF file created", !path.empty());
 
@@ -162,15 +164,14 @@ static void test_known_dpi(const char * label, int img_w, int img_h,
     check("pdf_page_dpi returns 0", ret == 0);
 
     if (ret == 0) {
-        printf("  Computed: %.1f DPI (min=%.1f, max=%.1f, n_images=%d)\n",
-               result.dpi, result.dpi_min, result.dpi_max, result.n_images);
+        printf("  Computed: %.1f DPI (min=%.1f, max=%.1f, n_images=%d)\n", result.dpi, result.dpi_min, result.dpi_max,
+               result.n_images);
         printf("  Page size: %.0f x %.0f pt\n", result.page_width_pt, result.page_height_pt);
 
         float tolerance = expected_dpi * 0.05f; // 5%
         float diff = std::abs(result.dpi - expected_dpi);
         char msg[128];
-        snprintf(msg, sizeof(msg), "DPI within 5%% (%.1f vs expected %.1f, diff=%.1f)",
-                 result.dpi, expected_dpi, diff);
+        snprintf(msg, sizeof(msg), "DPI within 5%% (%.1f vs expected %.1f, diff=%.1f)", result.dpi, expected_dpi, diff);
         check(msg, diff <= tolerance);
         check("n_images == 1", result.n_images == 1);
     }
@@ -201,9 +202,12 @@ static void test_no_images() {
     long xo = (long)real_pdf.size();
     real_pdf += "xref\n0 4\n";
     real_pdf += "0000000000 65535 f \n";
-    snprintf(buf, sizeof(buf), "%010ld 00000 n \n", off1); real_pdf += buf;
-    snprintf(buf, sizeof(buf), "%010ld 00000 n \n", off2); real_pdf += buf;
-    snprintf(buf, sizeof(buf), "%010ld 00000 n \n", off3); real_pdf += buf;
+    snprintf(buf, sizeof(buf), "%010ld 00000 n \n", off1);
+    real_pdf += buf;
+    snprintf(buf, sizeof(buf), "%010ld 00000 n \n", off2);
+    real_pdf += buf;
+    snprintf(buf, sizeof(buf), "%010ld 00000 n \n", off3);
+    real_pdf += buf;
     snprintf(buf, sizeof(buf), "trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n%ld\n%%%%EOF\n", xo);
     real_pdf += buf;
 
@@ -230,7 +234,10 @@ static void test_bad_input() {
     // Non-PDF file
     std::string path = "/tmp/test_not_pdf.txt";
     FILE * f = fopen(path.c_str(), "w");
-    if (f) { fprintf(f, "Hello world\n"); fclose(f); }
+    if (f) {
+        fprintf(f, "Hello world\n");
+        fclose(f);
+    }
     check("non-PDF file returns 1", pdf_page_dpi(path.c_str(), 0, &result) == 1);
     remove(path.c_str());
 
