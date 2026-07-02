@@ -192,11 +192,18 @@
     {
       "name": "deepseek-ocr2",
       "engine": "deepseek-ocr2",
-      "gguf": {"repo": "cstr/deepseek-ocr2-crispembed-GGUF", "file": "deepseek-ocr2-q4_k.gguf", "revision": "a465ab6cf4b5", "approx_size_mb": 2225},
+      "gguf": {
+        "repo": "cstr/deepseek-ocr2-crispembed-GGUF",
+        "file": "deepseek-ocr2-q4_k.gguf",
+        "revision": "a465ab6cf4b5",
+        "approx_size_mb": 2225
+      },
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
-      "expected_text_source": "captured 2026-07-02 on M4 Metal at q4_k after reverting the Jun-20 perf-sweep regression (restored deepseek_ocr2.cpp to c58913c). Revision pinned to a465ab6cf4b5 — the character-perfect Jun-19 q4_k (the newer 04:00 HF q4_k has lm_head→Q8_0 but was not re-verified against the fixed engine). Guards the perf-sweep regression class: any flash_attn_ext / graph-restructure that garbles the Qwen2 vision encoder makes this crater.",
-      "match": {"max_cer": 0.12}
+      "expected_text_source": "captured 2026-07-02 on M4 Metal at q4_k after reverting the Jun-20 perf-sweep regression (restored deepseek_ocr2.cpp to c58913c). Revision pinned to a465ab6cf4b5 \u2014 the character-perfect Jun-19 q4_k (the newer 04:00 HF q4_k has lm_head\u2192Q8_0 but was not re-verified against the fixed engine). Guards the perf-sweep regression class: any flash_attn_ext / graph-restructure that garbles the Qwen2 vision encoder makes this crater.",
+      "match": {
+        "max_cer": 0.12
+      }
     },
     {
       "name": "restormer",
@@ -436,7 +443,7 @@
       "name": "nafnet",
       "engine": "nafnet",
       "diff_only": true,
-      "_comment": "NAFNet-SIDD denoise engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave — the conv2d_ggml port had scrambled every kernel (declared ne=[OC,IC,KH,KW] but PyTorch-row-major bytes) so output cratered to cos 0.538; fixed by building [KW,KH,IC,OC] kernels from the dequant bytes unchanged (like swinir) + backend-resident kernels so Metal/CUDA weights don't abort the CPU conv sched. Ref = tools/dump_nafnet_reference.py on NAFNet-SIDD-width32.pth; scalar and ggml paths both cos 0.999998 vs it on Metal+CPU.",
+      "_comment": "NAFNet-SIDD denoise engine (no --ocr): diff harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave \u2014 the conv2d_ggml port had scrambled every kernel (declared ne=[OC,IC,KH,KW] but PyTorch-row-major bytes) so output cratered to cos 0.538; fixed by building [KW,KH,IC,OC] kernels from the dequant bytes unchanged (like swinir) + backend-resident kernels so Metal/CUDA weights don't abort the CPU conv sched. Ref = tools/dump_nafnet_reference.py on NAFNet-SIDD-width32.pth; scalar and ggml paths both cos 0.999998 vs it on Metal+CPU.",
       "gguf": {
         "repo": "cstr/nafnet-sidd-GGUF",
         "file": "nafnet-sidd-w32-f16.gguf",
@@ -530,6 +537,27 @@
       "run_check": {
         "binary": "test-gliner-diff",
         "expect_exit": 0
+      }
+    },
+    {
+      "name": "lfm2_colbert",
+      "engine": "lfm2_colbert",
+      "diff_only": true,
+      "_comment": "LFM2.5-ColBERT multi-vector guardrail. Ref via AutoModel backbone + 1_Dense head (the old manual-forward dumper was wrong: hidden cos -0.54). q8_0 model vs f32 ref -> colbert_output ~0.998, floor 0.99.",
+      "gguf": {
+        "repo": "cstr/lfm2-colbert-GGUF",
+        "file": "lfm2-colbert-q8_0.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-lfm2-colbert-diff",
+        "ref": {
+          "repo": "cstr/lfm2-colbert-GGUF",
+          "file": "lfm2-colbert-ref.gguf"
+        },
+        "thresholds": {
+          "colbert_output": 0.99
+        }
       }
     }
   ]
