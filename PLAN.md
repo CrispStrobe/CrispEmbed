@@ -589,11 +589,16 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   Thanks." (correct, deterministic). Wired; run_one PASS. Impl in CrispASR/crisp_punc.
 - **pcs — REGRESSION, shipped-broken (Gap 4).** See triage above — q4_k crashes on inference
   (Q4_K FC-head weights read as F32). Handover written; fix is in CrispASR/crisp_punc. Not wired.
-- **clip_text — DEFERRED (Gap 4, unresolved).** Engine vs HF `get_text_features` ref cos=0.79 —
-  NOT a scramble (that's ~0) but too low for a match; classic single-stage dumper-vs-engine
-  ambiguity (likely a text_projection or BPE-tokenization difference). Harness + dumper written
-  (`test_clip_text_diff.cpp`, `dump_clip_text_reference.py`) but NOT wired/merged — needs a
-  multi-stage per-layer localizer to disambiguate before pinning a threshold.
+- **clip_text — BUG FOUND (tokenizer), not a wave regression.** Engine vs HF `get_text_features`
+  cos=0.79. Localized: the projection IS applied (cos 0.79 to post-`text_proj`, −0.02 to
+  pre-projection), so the error is upstream in **tokenization**. `CLIP_TEXT_DEBUG` token dump on
+  "a photo of a fox": engine emits 11 GPT-2-style ids with `220` (space `Ġ`) between words
+  `[49406,64,220,1153,220,684,220,64,220,5007,49407]` vs HF's 7 CLIP ids
+  `[49406,320,1125,539,320,3240,49407]` — the engine's BPE never applies CLIP's `</w>`
+  word-boundary convention, so every token is wrong → wrong EOS hidden. Pre-existing (wave only
+  touched threading). Handover: `handover-prompts/clip-text-bpe-word-boundary-tokenizer-bug.md`.
+  Harness+dumper kept as WIP on the branch, NOT wired (cos 0.79 fails). Fix the CLIP BPE (`</w>`)
+  then wire.
 
 **Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
 bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
