@@ -37,6 +37,8 @@ typedef struct {
     int morph_kernel;       // background whitening kernel size, default 51
     float border_threshold; // border darkness threshold 0..1, default 0.15
     float deskew_max_angle; // max correction angle in degrees, default 15.0
+    int despeckle;          // 1 = remove isolated dark specks/dust (default: 1)
+    float despeckle_thresh; // speck vs local-median darkness gap 0..1, default 0.25
 } scan_cleanup_params;
 
 // Returns default params (deskew + crop + whiten enabled, binarize disabled)
