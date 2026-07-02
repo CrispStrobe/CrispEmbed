@@ -32,8 +32,10 @@ Runs under the **chr1str** account (CrispEmbed convention; it owns both datasets
 cross-account attach is blocked, see kaggle_usage.md #13). Attaches **both**
 (in `kernel-metadata.json`): `chr1str/crispasr-hf-token` (token) and
 `chr1str/crispasr-ccache` (ccache seed — warms the shared ggml-cuda build).
-GPU build by default (`enable_gpu:true`, `-DGGML_CUDA=ON`; set `CRISP_GPU=0` to
-force CPU). `kaggle_harness.py` is bundled (also cloned from CrispASR at runtime).
+CPU build by default (`-DGGML_CUDA=OFF`) — a CUDA build compiles ggml-cuda's
+~254 template TUs (~15 min) these small embedders never use. `enable_gpu:true`
+stays ONLY because Kaggle CPU workers get no internet (usage #3); the GPU
+provides internet, not the build. Set `CRISP_GPU=1` for large models (BidirLM). `kaggle_harness.py` is bundled (also cloned from CrispASR at runtime).
 
 Push (chr1str is the active CLI account):
 ```
