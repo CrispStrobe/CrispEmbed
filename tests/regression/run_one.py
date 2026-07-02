@@ -273,6 +273,12 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
     g = entry["gguf"]
     gguf = hf_download(g["repo"], g["file"], g.get("revision", "main"), work_dir)
 
+    # Restoration/SR engines (restormer, scunet, …) have no --ocr path: their only
+    # regression signal is the diff harness (golden output vs a PyTorch reference).
+    # Such entries set "diff_only": true and skip the OCR/garbage/text steps.
+    if entry.get("diff_only"):
+        return _run_diff_block(name, entry, gguf, work_dir, g)
+
     sample = REPO_ROOT / entry["sample"]
     if not sample.exists():
         # allow fixtures to live in an HF fixtures repo
@@ -316,7 +322,18 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
             print(f"  expected: {expected[:160]!r}\n  actual:   {text[:160]!r}")
 
     # 3) optional diff harness (opt-in by ref presence on HF)
+    failures += _run_diff_block(name, entry, gguf, work_dir, g, count_only=True)
+
+    print(f"[{name}] {'PASS' if failures == 0 else f'FAIL ({failures})'}")
+    return failures
+
+
+def _run_diff_block(name: str, entry: dict, gguf: Path, work_dir: Path,
+                    g: dict, count_only: bool = False) -> int:
+    """Run the optional diff harness. Returns failure count. When count_only is
+    False (diff-only entries) it also prints the final PASS/FAIL banner."""
     diff = entry.get("diff")
+    failures = 0
     if diff:
         ref_spec = diff["ref"]
         ref = hf_download(ref_spec["repo"], ref_spec["file"],
@@ -339,8 +356,11 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
                 worst = min(stages.values())
                 print(f"[{name}] PASS diff-harness ({len(stages)} stages, "
                       f"worst cos_min={worst:.6f})")
+    elif not count_only:
+        die(f"diff_only entry '{name}' has no diff block")
 
-    print(f"[{name}] {'PASS' if failures == 0 else f'FAIL ({failures})'}")
+    if not count_only:
+        print(f"[{name}] {'PASS' if failures == 0 else f'FAIL ({failures})'}")
     return failures
 
 

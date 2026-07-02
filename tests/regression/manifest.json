@@ -92,6 +92,14 @@
       "expected_text": "The quick brown fox jumps over the lazy dog.",
       "match": {"max_cer": 0.12},
       "diff": {"binary": "test-paddleocr-vl-diff", "ref": {"repo": "cstr/paddleocr-vl-0.9b-GGUF", "file": "paddleocr-vl-ref.gguf"}, "thresholds": {"*": 0.995}}
+    },
+    {
+      "name": "restormer",
+      "engine": "restormer",
+      "diff_only": true,
+      "_comment": "Restoration/denoise engine: no --ocr path, so the only regression signal is the diff harness (golden 64x64 output vs a PyTorch reference reconstructed from the GGUF via tools/dump_restormer_reference_from_gguf.py). Catches the 2026-07 conv-weight-layout + MDTA scramble class that a std>1 non-degenerate guard passes.",
+      "gguf": {"repo": "cstr/text-super-resolution-gguf", "file": "restormer-denoise-f16.gguf", "revision": "main", "approx_size_mb": 50},
+      "diff": {"binary": "test-restormer-diff", "ref": {"repo": "cstr/text-super-resolution-gguf", "file": "restormer-ref.gguf"}, "thresholds": {"output": 0.99}}
     }
   ]
 }

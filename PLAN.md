@@ -657,12 +657,17 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
     Also rewrote the ggml MDTA block graph (per-head + temperature + real L2-norm)
     and fixed BiasFree LN. Validated: gray σ=25 denoise 19.84→2.15, CPU==Metal,
     ggml==scalar, fox clean. See LEARNINGS / HISTORY 2026-07-02.
-    - [ ] **Guardrail (open):** no `restormer-ref.gguf` on HF yet — the fix was
-      caught only by looking at pixels (a std>1 "non-degenerate" guard passes the
-      garbage). Generate via `tools/dump_restormer_reference.py` (must include the
-      *output* stage), upload to `cstr/text-super-resolution-gguf`, add a
-      `restormer` entry to `tests/regression/manifest.json` (golden/PSNR, not the
-      numeric non-degenerate check) so it can't silently regress again.
+    - [x] **Guardrail — built & verified 2026-07-02** (`test/restormer-regression`).
+      `tools/dump_restormer_reference_from_gguf.py` reconstructs the PyTorch
+      Restormer from the GGUF (no `.pth` needed; canonical ffn_factor=2.66 — the
+      GGUF's derived 2.64583 floors `int(dim*f)` short) and dumps input+output.
+      `test-restormer-diff` vs that ref: **cos_min=0.999997, max_abs=2.4e-3 PASS**
+      (erf-gelu vs C++ tanh-gelu). Added a `restormer` `diff_only` entry to
+      `tests/regression/manifest.json` (threshold `output`≥0.99) and a `diff_only`
+      branch to `run_one.py` (SR engines have no `--ocr` path). Runner verified
+      end-to-end (takes diff-only path, no OCR). `restormer-ref.gguf` (98 KB)
+      uploaded to `cstr/text-super-resolution-gguf`; the full runner now fetches
+      model+ref from HF and PASSes the diff-harness (worst cos_min=0.999997).
   - [x] `instructir.cpp` — **DONE**. All 8 conv sites (intro/down/up/ending +
     5 per NAFBlock incl. DW conv) → per-conv `conv2d_ggml` (nafnet hybrid:
     convs on ggml, SimpleGate/SCA/ICB/PixelShuffle stay scalar). Verified
