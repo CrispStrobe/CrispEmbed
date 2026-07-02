@@ -205,16 +205,35 @@ def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
 # ── diff harness ─────────────────────────────────────────────────────
 # CrispEmbed test-*-diff lines look like:
 #   llm_layer_0: cos_min=0.999960 max_abs=0.173531 PASS
-_DIFF_LINE = re.compile(
-    r"^\s*(\S+):\s+cos_min=([-+0-9.eE]+)\s+max_abs=[-+0-9.eE]+\s+(PASS|FAIL)")
+# Diff binaries print per-stage cosines in several bespoke formats. Match all of
+# them, else a numerically-correct engine gets a false "no parseable stage lines"
+# FAIL (this masked ~7 correct engines in the 2026-07 Kaggle CUDA run).
+_DIFF_PATTERNS = [
+    # nafnet / restormer / got-ocr: "stage: cos_min=0.999 max_abs=... PASS"
+    #   and esrgan / safmn:         "output: cos=1.000 max_abs=... PASS"  (cos, no _min)
+    re.compile(r"^\s*(\S+):\s+cos(?:_min)?=([-+0-9.eE]+)\s+max_abs="),
+    # swinir / hat / dat:           "output   cos=0.998  cos_ch_min=... max_abs=..."
+    re.compile(r"^\s*(\S+)\s+cos=([-+0-9.eE]+)\s+cos_ch_min="),
+    # lfm2 / lilt (assertion form):  "[PASS] layer_15    cos=0.999714  (thr=0.999)"
+    re.compile(r"^\s*\[(?:PASS|FAIL)\]\s+(\S+)\s+cos=([-+0-9.eE]+)"),
+    # bert_ner (bare columns):       "final_hidden   0.995906   6.60e-02 PASS"
+    re.compile(r"^\s*(\S+)\s+([01]\.\d+)\s+[-+0-9.eE]+\s+(?:PASS|FAIL)\s*$"),
+]
+# kept for back-compat references
+_DIFF_LINE = _DIFF_PATTERNS[0]
 
 
 def parse_diff_stdout(stdout: str) -> dict[str, float]:
     stages: dict[str, float] = {}
     for line in stdout.splitlines():
-        m = _DIFF_LINE.match(line)
-        if m:
-            stages[m.group(1)] = float(m.group(2))
+        for pat in _DIFF_PATTERNS:
+            m = pat.match(line)
+            if m:
+                try:
+                    stages[m.group(1)] = float(m.group(2))
+                except ValueError:
+                    pass
+                break
     return stages
 
 
