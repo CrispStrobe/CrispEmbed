@@ -564,11 +564,9 @@ static ggml_tensor* aifi_self_attn(ggml_context* g, ggml_tensor* x,
     // Permute to [head_dim, N, N_heads] → compatible with flash_attn
     // ggml flash_attn_ext expects q[D,N,H], k[D,N,H], v[D,N,H]
     auto* attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f / sqrtf(head_dim), 0, 0);
-    // attn: [head_dim, N, N_heads]
-
-    // Permute heads to be contiguous: [hd, N, nh] → [hd, nh, N] → reshape [D, N]
-    // Without this permute, the head features are interleaved with spatial positions.
-    attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));  // [hd, nh, N]
+    // flash_attn_ext already applies permute(0,2,1,3): output is [hd, nh, N].
+    // Reshape straight to [D, N]; the old manual-path permute scrambled it.
+    // (NB: this helper is currently unused — encoder_forward inlines its own AIFI block.)
     attn = ggml_reshape_2d(g, attn, D, N);                    // [D=hd*nh, N]
 
     // Output projection
