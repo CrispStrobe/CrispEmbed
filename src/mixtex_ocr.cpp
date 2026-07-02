@@ -320,8 +320,12 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
             hp.vocab_size, ctx->vocab.size());
 
     // Pass 2: weights — prefer GPU backend (weights read via ggml_backend_tensor_get)
-    bool force_cpu = (getenv("MIXTEX_OCR_FORCE_CPU") && atoi(getenv("MIXTEX_OCR_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    // Residency: all compute runs on the CPU enc_sched; ctx->backend only holds
+    // weights (load + dcache reads). init_best (Metal/CUDA) left them in a GPU buffer
+    // the CPU conv sched can't read → abort on Metal / segfault on CUDA. Convs run on
+    // CPU regardless, so load on CPU. (Same class as nafnet/restormer; MIXTEX_OCR_FORCE_CPU
+    // is now a no-op.)
+    ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend))
         ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
