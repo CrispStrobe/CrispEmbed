@@ -3,6 +3,7 @@
 #include "crispembed.h"
 #include "model_mgr.h"
 #include "tokenizer.h"
+#include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "imatrix.h"
 
@@ -2486,14 +2487,16 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx, const char * t
         std::vector<float> raw = run_encoder_raw(ctx, tokens, 0, &raw_T);
         if (raw.empty() || raw_T == 0) return 0;
 
-        // Read MLM head weights from GPU/CPU backend
-        std::vector<float> tw(H * H), tb(H), lnw(H), lnb(H);
-        ggml_backend_tensor_get(ctx->model.mlm_transform_w, tw.data(), 0, H * H * sizeof(float));
+        // Read MLM head weights from GPU/CPU backend. mlm_transform_w and token_embd
+        // are 2-D weight matrices that the quantizer may store as Q8_0/F16/Q4_K, so
+        // read them via to_f32 (dequant-safe) — a raw n*sizeof(float) get would overrun
+        // ggml_nbytes and abort. The 1-D norm/bias tensors stay F32.
+        std::vector<float> tb(H), lnw(H), lnb(H);
+        std::vector<float> tw = core_cpu::to_f32(ctx->model.mlm_transform_w);
         ggml_backend_tensor_get(ctx->model.mlm_transform_b, tb.data(), 0, H * sizeof(float));
         ggml_backend_tensor_get(ctx->model.mlm_ln_w, lnw.data(), 0, H * sizeof(float));
         ggml_backend_tensor_get(ctx->model.mlm_ln_b, lnb.data(), 0, H * sizeof(float));
-        std::vector<float> emb_w(V * H);
-        ggml_backend_tensor_get(ctx->model.token_embd, emb_w.data(), 0, V * H * sizeof(float));
+        std::vector<float> emb_w = core_cpu::to_f32(ctx->model.token_embd);
         std::vector<float> mlm_b(V, 0.0f);
         if (ctx->model.mlm_bias) ggml_backend_tensor_get(ctx->model.mlm_bias, mlm_b.data(), 0, V * sizeof(float));
 

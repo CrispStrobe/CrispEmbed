@@ -1138,7 +1138,12 @@ static const ModelEntry k_registry[] = {
 
     { "fullstop-punc", "fullstop-punc-q4_k.gguf",
       "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q4_k.gguf",
-      "Fullstop punctuation restoration (XLM-R, multilingual)", "180 MB", "mit",
+      "Fullstop punctuation restoration (XLM-R-large, multilingual)", "321 MB", "mit",
+      "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF" },
+
+    { "fullstop-punc-q8", "fullstop-punc-q8_0.gguf",
+      "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q8_0.gguf",
+      "Fullstop punctuation restoration (XLM-R-large, q8_0 — exact HF parity)", "567 MB", "mit",
       "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF" },
 
     { "pcs", "pcs-xlmr-base-q4_k.gguf",

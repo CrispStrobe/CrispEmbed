@@ -559,6 +559,22 @@
       }
     },
     {
+      "name": "fullstop-punc",
+      "engine": "fireredpunc",
+      "_comment": "Fullstop multilingual punctuation (oliverguhr/fullstop-punctuation-multilang-large, XLM-R-large) via the fireredpunc engine's SentencePiece path. Golden text-match on q4_k: this path had the full pcs bug set (greedy tokenizer, LN eps 1e-12, tanh GELU) — now Unigram Viterbi (needs tokenizer.ggml.scores), eps 1e-5, erf GELU. Engine reproduces the HF reference exactly on this sentence at q4_k/q8_0/f32 (verified vs AutoModelForTokenClassification); backend-robust (Metal==CPU). q8_0 matches HF on more borderline sentences (q4_k has occasional quant-floor punctuation flips). Requires re-converted GGUFs with scores.",
+      "gguf": {
+        "repo": "cstr/fullstop-punc-multilang-GGUF",
+        "file": "fullstop-punc-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 321
+      },
+      "run_check": {
+        "binary": "test-punct-diff",
+        "args": ["she asked why are you late the bus was delayed unexpectedly", "She asked: why are you late? The bus was delayed unexpectedly."],
+        "expect_exit": 0
+      }
+    },
+    {
       "name": "decoder_embed",
       "engine": "decoder_embed",
       "diff_only": true,

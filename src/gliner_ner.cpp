@@ -725,9 +725,9 @@ static ggml_tensor * gliner_build_deberta_encoder(ggml_context * g, const gliner
         cur = ggml_mul(g, cur, L.ln1_w);
         cur = ggml_add(g, cur, L.ln1_b);
 
-        // FFN: GELU
+        // FFN: GELU. DeBERTa-v3 hidden_act="gelu" = exact (erf), not the tanh approx.
         ggml_tensor * ffn = ggml_add(g, ggml_mul_mat(g, L.fc1_w, cur), L.fc1_b);
-        ffn = ggml_gelu(g, ffn);
+        ffn = ggml_gelu_erf(g, ffn);
         ffn = ggml_add(g, ggml_mul_mat(g, L.fc2_w, ffn), L.fc2_b);
 
         // Post-FFN LN
