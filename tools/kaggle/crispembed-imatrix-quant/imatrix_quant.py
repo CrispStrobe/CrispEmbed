@@ -13,7 +13,8 @@ Attach BOTH datasets in kernel-metadata.json:
 Runs ONE model per invocation (the C1 rollout: run → upload → rm → next model).
 Select the model with the MODEL constant below or the MODEL env var. Per run it:
   1. builds crispembed-cli + crispembed-quantize from origin/main (C1 merged),
-  2. downloads the HF source and converts it to an f16 GGUF,
+  2. downloads the existing full-precision GGUF from the target repo (or, if
+     none, converts from HF),
   3. calibration pass (CRISPEMBED_IMATRIX_OUT) over calib_corpus.txt,
   4. for each quant spec: quantize (+imatrix where flagged) → A/B cosine vs the
      f16 gold on eval_corpus.txt → upload → rm the quant,
@@ -66,35 +67,35 @@ MODELS = {
         hf_src="LiquidAI/LFM2.5-Embedding-350M",
         converter="models/convert-lfm2-embed-to-gguf.py",
         conv_args=["--dtype", "f16"],
-        hf_out="cstr/lfm2-embed-GGUF", prefix="lfm2-embed",
+        hf_out="cstr/lfm2-embed-GGUF", prefix="lfm2-embed", src_gguf="lfm2-embed-f16.gguf",
         quants=QSPECS,
     ),
     "jina-v5-nano": dict(
         hf_src="jinaai/jina-embeddings-v5-text-nano",
         converter="models/convert-decoder-embed-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/jina-v5-nano-GGUF", prefix="jina-v5-nano",
+        hf_out="cstr/jina-v5-nano-GGUF", prefix="jina-v5-nano", src_gguf="jina-v5-nano.gguf",
         quants=QSPECS,
     ),
     "jina-v5-small": dict(
         hf_src="jinaai/jina-embeddings-v5-text-small",
         converter="models/convert-decoder-embed-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/jina-v5-small-GGUF", prefix="jina-v5-small",
+        hf_out="cstr/jina-v5-small-GGUF", prefix="jina-v5-small", src_gguf="jina-v5-small.gguf",
         quants=QSPECS,
     ),
     "bge-m3": dict(
         hf_src="BAAI/bge-m3",
         converter="models/convert-bert-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/bge-m3-GGUF", prefix="bge-m3",
+        hf_out="cstr/bge-m3-GGUF", prefix="bge-m3", src_gguf="bge-m3.gguf",
         quants=QSPECS,
     ),
     "e5-large": dict(
         hf_src="intfloat/multilingual-e5-large",
         converter="models/convert-bert-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/multilingual-e5-large-GGUF", prefix="multilingual-e5-large",
+        hf_out="cstr/multilingual-e5-large-GGUF", prefix="multilingual-e5-large", src_gguf="multilingual-e5-large.gguf",
         quants=QSPECS,
     ),
     # BidirLM-Omni: multimodal, no single-file converter in models/ yet — TODO.
@@ -196,16 +197,27 @@ def main():
     quant = build / "crispembed-quantize"
     kh.step("built")
 
-    # 2. download + convert to f16
-    from huggingface_hub import snapshot_download, HfApi
-    with kh.build_heartbeat("download.model"):
-        src = snapshot_download(repo_id=cfg["hf_src"], token=token,
-                                cache_dir=str(WORK / "hf-cache"))
-    f16 = WORK / f"{cfg['prefix']}-f16.gguf"
-    with kh.build_heartbeat("convert.f16"):
-        subprocess.check_call([sys.executable, str(repo / cfg["converter"]),
-            "--model", str(src), "--output", str(f16), *cfg["conv_args"]])
-    kh.step("f16_done", size_mb=round(f16.stat().st_size / 1e6, 1))
+    # 2. acquire the full-precision source.
+    #    PREFER the existing validated GGUF in the target repo (cfg["src_gguf"]) —
+    #    it's the exact artifact users run, already-correct, and sidesteps HF
+    #    re-conversion (critical for LoRA models like jina-v5, whose HF repo has
+    #    task adapters). Fall back to snapshot_download + converter only if unset.
+    from huggingface_hub import hf_hub_download, snapshot_download, HfApi
+    if cfg.get("src_gguf"):
+        with kh.build_heartbeat("download.src_gguf"):
+            f16 = Path(hf_hub_download(cfg["hf_out"], cfg["src_gguf"], token=token,
+                                       local_dir=str(WORK / "src")))
+        src_desc = f"{cfg['hf_out']}/{cfg['src_gguf']}"
+    else:
+        with kh.build_heartbeat("download.model"):
+            src = snapshot_download(repo_id=cfg["hf_src"], token=token,
+                                    cache_dir=str(WORK / "hf-cache"))
+        f16 = WORK / f"{cfg['prefix']}-f16.gguf"
+        with kh.build_heartbeat("convert.f16"):
+            subprocess.check_call([sys.executable, str(repo / cfg["converter"]),
+                "--model", str(src), "--output", str(f16), *cfg["conv_args"]])
+        src_desc = f"converted from {cfg['hf_src']}"
+    kh.step("source_ready", src=src_desc, size_mb=round(f16.stat().st_size / 1e6, 1))
 
     # 3. calibration -> imatrix
     imat = WORK / f"{cfg['prefix']}.imatrix"
