@@ -59,6 +59,15 @@
       "diff": {"binary": "test-qwen2vl-diff", "ref": {"repo": "cstr/qwen2.5-vl-3b-crispembed-GGUF", "file": "qwen2.5-vl-3b-ref.gguf"}, "thresholds": {"*": 0.995}}
     },
     {
+      "name": "qwen3vl-2b",
+      "engine": "qwen2vl",
+      "gguf": {"repo": "cstr/qwen3-vl-2b-crispembed-gguf", "file": "qwen3-vl-2b-q4_k.gguf", "revision": "main", "approx_size_mb": 1590},
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "expected_text_source": "captured 2026-07-02 on M4 Metal + CPU (CRISPEMBED_FORCE_CPU=1) at q4_k. Guards the Qwen3-VL vision preprocessing-order path (shared qwen2vl_ocr engine, is_qwen2_vl=true + deepstack): rope + merger grouping must be unconditional merge-block/consecutive. A gate keyed off is_qwen2_vl or deepstack re-garbles this (T11123456789…).",
+      "match": {"max_cer": 0.12}
+    },
+    {
       "name": "granite-vision",
       "engine": "granite-vision",
       "gguf": {"repo": "cstr/granite-vision-crispembed-GGUF", "file": "granite-vision-3.3-2b-q8_0.gguf", "revision": "main", "approx_size_mb": 1800},
