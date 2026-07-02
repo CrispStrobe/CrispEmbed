@@ -706,14 +706,29 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   parity ref possible. Mitigant: text_sr is a NAFNet variant sharing the conv paths that are
   now guarded by the `nafnet` entry; the PixelShuffle/bicubic tail remains unguarded. Blocked
   until a checkpoint exists.
-- **pcs — REGRESSION FOUND, shipped-broken.** `4a498d1 perf(pcs): cache FC head weights at init`
-  was the exact wave commit at fault. The shipped default `pcs-xlmr-base-q4_k.gguf` **crashes on
-  every inference** (`ggml-backend.cpp:349 tensor read out of bounds`): pcs reads its Q4_K/Q4_0
-  FC-head weights via raw `ggml_backend_tensor_get` into F32 buffers (`n_elem*4` >> `ggml_nbytes`
-  of a quantized tensor). Impl is in the SIBLING repo **CrispASR/crisp_punc/src/pcs.cpp** (shared
-  lib replaces the local copy). Handover:
-  `handover-prompts/pcs-q4k-head-weight-tensor-get-crash.md`. Not wired (a guard would be red until
-  fixed). fireredpunc is unaffected (F16 cls head, in-graph mul_mat).
+- **pcs — REGRESSION FIXED, CLOSED.** `4a498d1 perf(pcs): cache FC head weights at init` was the
+  wave commit at fault. The shipped default `pcs-xlmr-base-q4_k.gguf` **crashed on every inference**
+  (`ggml-backend.cpp:349 tensor read out of bounds`): pcs read its Q4_K/Q4_0 FC-head weights via raw
+  `ggml_backend_tensor_get` into F32 buffers (`n_elem*4` >> `ggml_nbytes` of a quantized tensor).
+  **Fix:** dequantize head weights per row via the type's `to_float` trait, sized by `ggml_nbytes`
+  (never `n_elem*4`) — engine-side, so it repairs the already-shipped GGUF with no re-download. Landed
+  in the SIBLING repo **CrispASR/crisp_punc/src/pcs.cpp** (per-call `pcs_read_tensor_f32`, the linked
+  copy) and mirrored into the local **CrispEmbed/src/pcs.cpp** (`cache_tensor`, the at-init cache path
+  — the two copies had diverged: CrispEmbed already carried `4a498d1`'s caching, CrispASR still did
+  per-call reads). Both paths verified on q4_k -> byte-identical output and exit 0. **Parity vs the
+  ONNX source** (diff harness `tools/dump_pcs_reference.py`, identical tokenization): post-punct and
+  pre-punct heads match the reference **11/11**; reference decodes to "Hello world, how are you
+  today? I am fine, thanks." The q4_k engine over-capitalizes "World"/"Today" -- a **quant floor** on
+  the tiny 128->16 truecase head (correct at f32), not a code bug. Wired regression guard `pcs` (crash
+  guard: run a sentence, assert exit 0; truecase text not pinned -- its per-char argmax is
+  quant/backend-sensitive, unlike fireredpunc's punct-only head). fireredpunc was unaffected (F16 cls
+  head, in-graph mul_mat).
+  - **Follow-up (pre-existing, NOT from this fix):** at f32-on-CPU the truecase head still flips one
+    borderline char ("thanks"->"Thanks") and the sbd head misses one boundary ("today?"), vs the ONNX
+    reference -- the f32 read path is byte-identical to pre-fix code, so these predate the crash fix.
+    Localised with `PCS_DEBUG=1`/`PCS_FORCE_CPU=1`. Punctuation parity is perfect; the gap is confined
+    to the two conditioned CPU heads. Needs a logit-level compare (expose ONNX intermediate logits) to
+    decide borderline-vs-structural.
 - **decoder_embed — CLEAN, CLOSED.** Added a compiled guardrail: `test_decoder_embed_diff.cpp`
   (crispembed_encode → final last-token-pooled embedding) vs an independent Qwen3-Embedding-0.6B
   HF ref (`dump_decoder_embed_reference.py`). Engine (q8_0) matches cos 0.9993; wired `diff_only`,
@@ -801,8 +816,9 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
   "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
   Thanks." (correct, deterministic). Wired; run_one PASS. Impl in CrispASR/crisp_punc.
-- **pcs — REGRESSION, shipped-broken (Gap 4).** See triage above — q4_k crashes on inference
-  (Q4_K FC-head weights read as F32). Handover written; fix is in CrispASR/crisp_punc. Not wired.
+- **pcs — REGRESSION FIXED, CLOSED (Gap 4).** See triage above — q4_k crashed on inference
+  (Q4_K/Q4_0 FC-head weights read as F32). Fixed by per-row dequant of the head weights in
+  CrispASR/crisp_punc/src/pcs.cpp (+ CrispEmbed/src/pcs.cpp mirror); wired crash guard `pcs`.
 - **clip_text — BUG FOUND (tokenizer), not a wave regression.** Engine vs HF `get_text_features`
   cos=0.79. Localized: the projection IS applied (cos 0.79 to post-`text_proj`, −0.02 to
   pre-projection), so the error is upstream in **tokenization**. `CLIP_TEXT_DEBUG` token dump on

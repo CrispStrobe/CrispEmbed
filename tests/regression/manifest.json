@@ -543,6 +543,22 @@
       }
     },
     {
+      "name": "pcs",
+      "engine": "pcs",
+      "_comment": "PCS punctuation+capitalization+segmentation (XLM-RoBERTa-base + 4 CPU heads). Crash guard: the shipped-default q4_k build quantizes the SBD/truecase FC-head weights (Q4_0/Q4_K), which the CPU heads read via raw ggml_backend_tensor_get; assuming F32 overran ggml_nbytes and aborted every inference ('tensor read out of bounds'). Fixed by dequantizing head weights per row via the type's to_float trait (CrispASR/crisp_punc/src/pcs.cpp pcs_read_tensor_f32 + the CrispEmbed cache_tensor mirror). This guard runs a sentence and asserts exit 0 — a regression that re-breaks the quantized-weight read aborts (nonzero). Output text is NOT pinned: the truecase head's per-char argmax is borderline and can differ across CI backends (Metal vs CPU), unlike fireredpunc's punct-only head. Deterministic given a backend. Impl lives in CrispASR/crisp_punc (shared lib replaces the local src copy).",
+      "gguf": {
+        "repo": "cstr/pcs-xlmr-base-GGUF",
+        "file": "pcs-xlmr-base-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 154
+      },
+      "run_check": {
+        "binary": "test-punct-diff",
+        "args": ["hello world how are you today i am fine thanks"],
+        "expect_exit": 0
+      }
+    },
+    {
       "name": "decoder_embed",
       "engine": "decoder_embed",
       "diff_only": true,
