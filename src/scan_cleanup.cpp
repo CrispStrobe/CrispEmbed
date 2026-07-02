@@ -538,6 +538,41 @@ int scan_cleanup_detect_page_split(const uint8_t * pixels, int w, int h, int cha
     return gx;
 }
 
+// ── Content bbox (Port 6 of the unpaper feature set) ────────────────
+// Tight bounding box of the printed content (text/ink), trimming blank margins of
+// any colour — for centering / border alignment / normalized output geometry.
+// Clean-room: per-row and per-column dark-pixel projection profiles; a row/column
+// counts as "content" once its dark-pixel count exceeds a small floor, and the box
+// is the first/last such row/column (with a tiny pad). OCR-neutral (tesseract
+// ignores margins); this is a geometry helper for the caller.
+int scan_cleanup_content_bbox(const uint8_t * pixels, int w, int h, int channels, int * x0, int * y0, int * x1,
+                              int * y1) {
+    if (w <= 0 || h <= 0) return -1;
+    std::vector<float> gray = to_gray_f32(pixels, w, h, channels);
+    const float text_thresh = 0.5f;
+    std::vector<int> rowc(h, 0), colc(w, 0);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++)
+            if (gray[(size_t)y * w + x] < text_thresh) {
+                rowc[y]++;
+                colc[x]++;
+            }
+    const int row_floor = std::max(1, (int)(0.003f * w)); // > ~0.3% of the row is ink
+    const int col_floor = std::max(1, (int)(0.003f * h));
+    int ry0 = 0, ry1 = h - 1, cx0 = 0, cx1 = w - 1;
+    while (ry0 < h && rowc[ry0] < row_floor) ry0++;
+    while (ry1 > ry0 && rowc[ry1] < row_floor) ry1--;
+    while (cx0 < w && colc[cx0] < col_floor) cx0++;
+    while (cx1 > cx0 && colc[cx1] < col_floor) cx1--;
+    if (ry0 > ry1 || cx0 > cx1) return -1; // blank
+    const int pad = 2;
+    *x0 = std::max(0, cx0 - pad);
+    *y0 = std::max(0, ry0 - pad);
+    *x1 = std::min(w, cx1 + 1 + pad);
+    *y1 = std::min(h, ry1 + 1 + pad);
+    return 0;
+}
+
 // ── Despeckle (Port 1 of the unpaper feature set) ───────────────────
 // Remove isolated dark specks (scanner dust, salt-and-pepper) with a
 // decision-based 3x3 median: a pixel is replaced by its local median ONLY when it

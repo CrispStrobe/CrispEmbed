@@ -316,8 +316,18 @@ code expression is. Never read/paste unpaper's code into ours.
   false-split on portrait single pages or a wide gutterless image (astronaut).
   Biggest win for book scans. BiblioForge: call `--detect-split`, crop at
   `split_x`, then `--cleanup-only` each half.
-- [ ] **6. content-mask detection + centering / border alignment** — normalize page
-  geometry (detect printed area, center, align borders).
+- [x] **6. content-mask detection — DONE** (clean-room row/column dark-pixel
+  projection profile; `scan_cleanup_content_bbox()` + CLI `--detect-content FILE`
+  → JSON `{x0,y0,x1,y1}`). A/B: on a page with large blank margins the detected
+  bbox is exact (60,38,668,1042 vs true 60,40,666,1040 incl. 2px pad); and it is
+  NOT OCR-neutral as feared — the padded page FAILS OCR (CER **1.000**, tesseract
+  layout analysis confused by the margins) while cropping to the content bbox gives
+  CER **0.001**. Exposed as a detection helper (not a forced pipeline crop, to
+  avoid ever cutting text on a mis-detect); the caller crops/centers.
+
+All six evaluated. Implemented: despeckle (1), blackfilter (2), page-split (5),
+content-bbox (6). Verified-already-covered / deliberately-skipped with evidence:
+deskew fill (3, already correct), grayfilter (4, subsumed by our whitening).
 
 Harness: `tools/scan_cleanup_bench.py --image clean.png --bin build/crispembed`.
 
