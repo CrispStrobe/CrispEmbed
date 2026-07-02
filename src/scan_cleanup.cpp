@@ -1,7 +1,7 @@
 // scan_cleanup.cpp — document scan preprocessing (tier 1: classical)
 //
 // Implements deskew, binarization (Otsu + Sauvola), border crop,
-// and background whitening via morphological open. All pure C++,
+// and background whitening via morphological closing. All pure C++,
 // no external dependencies beyond stdlib + math.
 
 #include "scan_cleanup.h"
@@ -462,12 +462,21 @@ void scan_cleanup_whiten(const float * gray, int w, int h,
     if (kernel_size % 2 == 0) kernel_size++;
 
     int n = w * h;
-    std::vector<float> eroded(n);
+    std::vector<float> dilated(n);
     std::vector<float> background(n);
 
-    // Morphological open = erode then dilate
-    min_pool_2d(gray, w, h, kernel_size, eroded.data());
-    max_pool_2d(eroded.data(), w, h, kernel_size, background.data());
+    // Estimate the paper illumination with a morphological CLOSING (dilate then
+    // erode). A document is DARK text on a BRIGHT background, so the background is
+    // recovered by removing the dark text: dilation (max-pool) floods paper over
+    // text strokes narrower than the kernel, then erosion (min-pool) restores the
+    // paper geometry. Dividing by this closing flattens uneven lighting while
+    // KEEPING the text (text/paper ≈ 0.1 stays dark).
+    //
+    // The previous OPENING (erode→dilate) estimated the wrong thing: on dense text
+    // it has no kernel-sized text-free region, so the "background" collapsed to the
+    // dark text level and gray/bg saturated to white — erasing the text.
+    max_pool_2d(gray, w, h, kernel_size, dilated.data());
+    min_pool_2d(dilated.data(), w, h, kernel_size, background.data());
 
     // Divide source by background estimate, scale to [0, 1]
     for (int i = 0; i < n; i++) {
