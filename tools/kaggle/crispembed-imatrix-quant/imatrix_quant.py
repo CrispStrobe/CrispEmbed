@@ -120,16 +120,25 @@ def mean_cos(a, b):
 
 
 _QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf16|imatrix)', re.I)
+# LoRA / task-adapter variants (jina-v5 ships these at the SAME size as the base
+# retrieval model, so "largest non-quant" alone would wrongly pick one).
+_TASK_RE  = re.compile(r'-(classification|clustering|text-matching|retrieval|separation|code|sts)$', re.I)
 
-def pick_base_gguf(api, repo):
-    """Full-precision source = largest .gguf whose stem has no quant token
-    (falls back to the largest .gguf). Returns (filename, prefix)."""
+def pick_base_gguf(api, repo, name):
+    """Full-precision source. Prefer the exact base name ({name}.gguf /
+    -f16 / -f32); else the largest .gguf that is neither a quant nor a LoRA
+    task-adapter variant. Returns (filename, prefix)."""
     info = api.repo_info(repo, files_metadata=True)
     ggs = {s.rfilename: (s.size or 0) for s in info.siblings if s.rfilename.endswith(".gguf")}
     if not ggs:
         raise RuntimeError(f"no .gguf in {repo}")
-    base = {f: sz for f, sz in ggs.items() if not _QUANT_RE.search(f[:-5])}
-    pool = base or ggs
+    for cand in (f"{name}.gguf", f"{name}-f16.gguf", f"{name}-f32.gguf"):
+        if cand in ggs:
+            return cand, name
+    def ok(stem):
+        return not _QUANT_RE.search(stem) and not _TASK_RE.search(stem)
+    base = {f: sz for f, sz in ggs.items() if ok(f[:-5])}
+    pool = base or {f: sz for f, sz in ggs.items() if not _QUANT_RE.search(f[:-5])} or ggs
     fn = max(pool, key=pool.get)
     prefix = fn[:-5]
     for suf in ("-f16", "-f32", ".f16", ".f32"):
@@ -145,7 +154,7 @@ def process(name, cli, quant, api, calib, eval_):
     kh.step("model.start", model=name, repo=hf_out)
 
     with kh.build_heartbeat(f"{name}.download_src"):
-        base_fn, prefix = pick_base_gguf(api, hf_out)
+        base_fn, prefix = pick_base_gguf(api, hf_out, name)
         from huggingface_hub import hf_hub_download
         f16 = Path(hf_hub_download(hf_out, base_fn, token=api.token,
                                    local_dir=str(WORK / "src" / name)))
@@ -224,23 +233,30 @@ def main():
     from huggingface_hub import HfApi
     api = HfApi(token=token)
 
+    import traceback
     results, failures = [], []
     for name in RUN:
         try:
             results.append(process(name, cli, quant, api, calib, eval_))
         except Exception as e:
-            print(f"[FAIL] {name}: {type(e).__name__}: {e}", flush=True)
-            kh.step("model.fail", model=name, error=f"{type(e).__name__}: {e}"[:300])
-            failures.append(name)
+            err = f"{type(e).__name__}: {e}"
+            print(f"[FAIL] {name}: {err}\n{traceback.format_exc()[-1500:]}", flush=True)
+            kh.step("model.fail", model=name, error=err[:300])
+            failures.append((name, err))
 
-    kh.step("all_done", ok=len(results), failed=len(failures), failures=",".join(failures))
-    print("\n===== BATCH SUMMARY =====")
+    # Downloadable batch summary (kernels stdout is not captured; kaggle_usage #15).
+    lines = ["===== BATCH SUMMARY ====="]
     for name, rep in results:
-        print(f"\n## {name}")
-        for r in rep:
-            print("  " + r)
+        lines.append(f"\n## {name}")
+        lines += ["  " + r for r in rep]
     if failures:
-        print("\nFAILED:", ", ".join(failures))
+        lines.append("\nFAILED:")
+        lines += [f"  {n}: {e}" for n, e in failures]
+    text = "\n".join(lines) + "\n"
+    (WORK / "batch_summary.txt").write_text(text)   # kept in working dir → downloadable
+    print("\n" + text, flush=True)
+    kh.step("all_done", ok=len(results), failed=len(failures),
+            failures=",".join(n for n, _ in failures))
     print("[DONE]", flush=True)
 
 
