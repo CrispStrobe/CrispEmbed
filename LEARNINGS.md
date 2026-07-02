@@ -1,5 +1,23 @@
 # CrispEmbed — Technical Learnings
 
+## bidirlm-vision parity: gate on per-token MEAN cosine, not worst-row min (massive-activation deepstack) (2026-07)
+
+Building the bidirlm vision `-ref.gguf` guard surfaced a metric trap. The vision
+tower's **deepstack** slabs carry a few "massive-activation" rows (`max_abs ~5` vs
+~0.1 typical). At q8_0 those quantize imperfectly, so the **worst-row** cosine
+(`cos_min`) of `deepstack.1` is **0.43** while the **per-token mean** is **0.9938** —
+the model is correct, but a min-over-rows metric reads as a catastrophic FAIL. The
+validated Python parity (`test_bidirlm_vision.py`) gates on the mean, so the C++
+diff must too: `crispembed_diff::Ref::compare` returns both `cos_min` and `cos_mean`
+— gate on `cos_mean`. A graph-scramble regression still craters the mean to ~0, so
+the guard keeps its teeth. Emit `<stage>: cos=<mean> max_abs=…` (the esrgan/safmn
+`cos=` convention `run_one.py` parses; `cos_min=` would make it gate the worst row).
+The same heavy tail is why **q4_k image_embeds sits at 0.97, not a bug** — the
+massive dims exceed 4-bit range. Corollary for any vision-tower diff: check whether
+the tensor has heavy-tailed rows before choosing min vs mean, and derive
+`n_patches` from `grid_thw` (Σ t·h·w), not `pixel_values`' shape — GGUF stores dims
+column-major, so a naive `shape[0]` reads the patch dim, not the count.
+
 ## Encoder batching: packed block-diagonal is O(T_total²); rectangular 4D per-item mask is O(B·T²) (2026-07)
 
 Two ways to batch B bidirectional-encoder sequences into one graph, with very different
