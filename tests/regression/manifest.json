@@ -526,6 +526,51 @@
       }
     },
     {
+      "name": "vit_embed",
+      "engine": "vit_embed",
+      "diff_only": true,
+      "_comment": "SigLIP/CLIP ViT vision encoder (no --ocr): final image-embedding parity is the regression signal. Ref = tools/dump_vit_reference.py on google/siglip-base-patch16-384 (independent HF AutoModel, get_image_features). Single-stage (C API exposes only the final embedding); cosine is scale-invariant so an L2-norm mismatch is harmless, a graph scramble craters cos to ~0. Engine vs f32 HF ref = cos 0.9915 on CPU (f16 GGUF + slow-vs-engine image preprocessing); floor 0.98 absorbs backend FP variance.",
+      "gguf": {
+        "repo": "cstr/siglip-base-GGUF",
+        "file": "siglip-base.gguf",
+        "revision": "main",
+        "approx_size_mb": 355
+      },
+      "diff": {
+        "binary": "test-vit-embed-diff",
+        "args": ["tests/regression/images/fox.png"],
+        "ref": {
+          "repo": "cstr/siglip-base-GGUF",
+          "file": "vit-ref.gguf"
+        },
+        "thresholds": {
+          "final_embedding": 0.98
+        }
+      }
+    },
+    {
+      "name": "tps_locnet",
+      "engine": "tps_locnet",
+      "diff_only": true,
+      "_comment": "TPS document-dewarp localization CNN (no --ocr): parity harness is the only regression signal. Guards the 2026-06 scalar->ggml conv wave. Ref = tools/dump_tps_reference_from_gguf.py (independent pure-numpy forward over the shipped BN-folded GGUF weights; the PaddleOCR source .pdparams is geo-blocked on bcebos, so from_gguf like the SR engines — catches graph-scramble regressions, not conversion bugs). C++ engine matches numpy cos 1.000000 (points_pixel + fc2_out) on CPU.",
+      "gguf": {
+        "repo": "cstr/tps-loc-GGUF",
+        "file": "tps-loc-f32.gguf",
+        "revision": "main",
+        "approx_size_mb": 1
+      },
+      "diff": {
+        "binary": "test-tps-parity",
+        "ref": {
+          "repo": "cstr/tps-loc-GGUF",
+          "file": "tps-ref.gguf"
+        },
+        "thresholds": {
+          "*": 0.999
+        }
+      }
+    },
+    {
       "name": "lilt",
       "engine": "lilt",
       "diff_only": true,
