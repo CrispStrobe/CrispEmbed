@@ -1,0 +1,69 @@
+name: Lint
+
+# clang-format style check (the CI analogue of black/ruff --check). Ported from
+# CrispASR. Pins clang-format-18 so the verdict matches `tools/format.sh` run
+# locally — v14/18/20/22 silently flip wrapping and cause "passed on my machine"
+# drift. Scope is defined ONCE in tools/format.sh (src + examples + tests, never
+# the vendored ggml/ submodule or bundled single-header libs); CI just calls it.
+#
+# Runs on every branch push and every PR so a feature branch is checked before
+# it merges. (clang-tidy / cppcheck like CrispASR's fuller lint can be added
+# later — they need a CMake tidy preset and are noisy on the not-yet-fully-clean
+# tree; this starts with the format gate.)
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.c'
+      - '.clang-format'
+      - 'tools/format.sh'
+      - '.github/workflows/lint.yml'
+  pull_request:
+    branches: [main, master]
+    paths:
+      - '**.cpp'
+      - '**.h'
+      - '**.hpp'
+      - '**.c'
+      - '.clang-format'
+      - 'tools/format.sh'
+      - '.github/workflows/lint.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  clang-format:
+    name: clang-format (style)
+    # Run on macOS, NOT ubuntu. clang-format's line-wrapping for a few long
+    # lines in examples/server/server.cpp differs between the LINUX and macOS
+    # builds of the SAME version (18.1.8) — pinning the patch level (tried apt
+    # 18.1.3 and pip 18.1.8) does not close it. This project's dev environment
+    # is macOS (`brew install llvm@18` per the dev guide), so the tree is
+    # macOS-formatted; matching the runner to the dev platform is the only way
+    # CI and `tools/format.sh` agree exactly. The job is tiny (checkout + pip +
+    # check), so the macOS-runner cost is negligible.
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        # No submodules: the format scope never touches ggml/, so skip the
+        # (slow) recursive checkout.
+
+      - name: Install clang-format 18.1.8 (pinned, macOS wheel)
+        # The macOS clang-format wheel matches `brew install llvm@18` (18.1.8),
+        # which is what format.sh uses locally — verified identical output.
+        run: |
+          python3 -m pip install --quiet --user --break-system-packages 'clang-format==18.1.8'
+          CF_BIN="$(python3 -m site --user-base)/bin"
+          echo "$CF_BIN" >> "$GITHUB_PATH"   # for the next step
+          "$CF_BIN/clang-format" --version    # $GITHUB_PATH isn't live in THIS step
+
+      - name: Check formatting (tools/format.sh --check)
+        # Single source of truth for scope + version pinning. Exits non-zero and
+        # prints file:line locations if any in-scope file would be reformatted.
+        run: ./tools/format.sh --check
