@@ -20,6 +20,7 @@
 // set.
 
 #include "qwen2vl_ocr.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "image_preprocess.h"
@@ -3020,78 +3021,15 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
 
 namespace {
 
-// Build the inverse of GPT-2's bytes_to_unicode() table.
-// Maps unicode codepoints back to byte values [0..255].
-std::unordered_map<int, uint8_t> build_byte_decoder() {
-  std::unordered_map<int, uint8_t> dec;
-  // The standard GPT-2 byte_encoder: printable ASCII + Latin-1 supplement
-  // map to themselves; other bytes map to 256+ codepoints.
-  int n = 0;
-  for (int b = 0; b < 256; b++) {
-    if ((b >= 33 && b <= 126) || (b >= 161 && b <= 172) ||
-        (b >= 174 && b <= 255)) {
-      dec[b] = (uint8_t)b;
-    }
-  }
-  n = 0;
-  for (int b = 0; b < 256; b++) {
-    if (dec.find(b) == dec.end()) {
-      dec[256 + n] = (uint8_t)b;
-      n++;
-    }
-  }
-  return dec;
-}
-
-// Decode a sequence of GPT-2 BPE token IDs to UTF-8 text.
+// Decode a sequence of GPT-2 BPE token IDs to UTF-8 text via the shared
+// core_bpe decoder (inverse of byte_encoder(); 'Ġ' -> space, etc.).
 std::string gpt2_bpe_decode(const std::vector<int32_t> &ids,
                             const std::vector<std::string> &vocab) {
-  static auto byte_dec = build_byte_decoder();
-
   std::string merged;
-  for (int32_t id : ids) {
-    if (id >= 0 && id < (int32_t)vocab.size()) {
+  for (int32_t id : ids)
+    if (id >= 0 && id < (int32_t)vocab.size())
       merged += vocab[id];
-    }
-  }
-
-  // Convert GPT-2 unicode codepoints back to bytes
-  std::string result;
-  size_t i = 0;
-  while (i < merged.size()) {
-    // Decode one UTF-8 codepoint
-    uint32_t cp = 0;
-    int len = 1;
-    uint8_t c = (uint8_t)merged[i];
-    if (c < 0x80) {
-      cp = c;
-      len = 1;
-    } else if (c < 0xE0) {
-      cp = c & 0x1F;
-      len = 2;
-    } else if (c < 0xF0) {
-      cp = c & 0x0F;
-      len = 3;
-    } else {
-      cp = c & 0x07;
-      len = 4;
-    }
-    for (int j = 1; j < len && i + j < merged.size(); j++) {
-      cp = (cp << 6) | ((uint8_t)merged[i + j] & 0x3F);
-    }
-    i += len;
-
-    auto it = byte_dec.find((int)cp);
-    if (it != byte_dec.end()) {
-      result += (char)it->second;
-    } else {
-      // Unknown codepoint — pass through as UTF-8
-      for (int j = 0; j < len && i - len + j < merged.size(); j++) {
-        result += merged[i - len + j];
-      }
-    }
-  }
-  return result;
+  return core_bpe::unicode_to_bytes(merged);
 }
 
 // SentencePiece-style decode (ERNIE-4.5 / PaddleOCR-VL). Tokens are raw UTF-8

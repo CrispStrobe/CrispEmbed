@@ -520,4 +520,12 @@ bool preprocess_internvl_file(const char *path, const internvl_config &cfg,
     return ok;
 }
 
+// Public wrapper exposing the file-local separable bicubic resampler (see the
+// anonymous-namespace bicubic_resize_u8_to_f32 above) for reuse by other
+// fixed-size preprocessors (e.g. mixtex_ocr's 400x500 ViTImageProcessor path).
+void resize_bicubic_u8_hwc(const uint8_t * src, int src_h, int src_w,
+                           float * dst, int dst_h, int dst_w, int channels) {
+    bicubic_resize_u8_to_f32(src, src_h, src_w, dst, dst_h, dst_w, channels);
+}
+
 }  // namespace image_preproc
