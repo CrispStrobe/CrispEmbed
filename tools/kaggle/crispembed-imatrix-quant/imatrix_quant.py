@@ -1,31 +1,26 @@
 #!/usr/bin/env python3
-"""CrispEmbed — per-model imatrix quantization + A/B + upload (Kaggle kernel).
+"""CrispEmbed — batch imatrix quantization + A/B + upload (Kaggle kernel).
 
 Follows the standard CrispEmbed Kaggle regime (kaggle_harness = kh):
   * kh.init_progress()      — line-buffered I/O + JSONL progress, pushed to HF
   * kh.resolve_hf_token()   — env → Kaggle Secret → mounted DATASET (hf_token.txt)
   * kh.install_build_toolchain() + ccache warmed from the crispasr-ccache dataset
-  * kh.build_heartbeat(...)  — 30 s heartbeat around every long step (build,
-    download, convert, calibrate, quantize, upload) so the kernel never idles out
+  * kh.build_heartbeat(...)  — 30 s heartbeat around every long step
 Attach BOTH datasets in kernel-metadata.json:
     "dataset_sources": ["chr1str/crispasr-hf-token", "chr1str/crispasr-ccache"]
 
-Runs ONE model per invocation (the C1 rollout: run → upload → rm → next model).
-Select the model with the MODEL constant below or the MODEL env var. Per run it:
-  1. builds crispembed-cli + crispembed-quantize from origin/main (C1 merged),
-  2. downloads the existing full-precision GGUF from the target repo (or, if
-     none, converts from HF),
-  3. calibration pass (CRISPEMBED_IMATRIX_OUT) over calib_corpus.txt,
-  4. for each quant spec: quantize (+imatrix where flagged) → A/B cosine vs the
-     f16 gold on eval_corpus.txt → upload → rm the quant,
-  5. uploads imatrix variants under DISTINCT names (never overwriting the
-     canonical q8_0/q4_k baselines) + the .imatrix artifact, then cleans up.
-"""
-import os, sys, json, math, time, subprocess
-from pathlib import Path
+Processes a LIST of models in ONE kernel run (build once, then per model:
+download source → calibrate → quantize (+imatrix) → A/B → upload → rm → next) —
+the "rm, next" loop. Select with the MODELS env var (comma list) or DEFAULT_BATCH
+below. Per-model failures are isolated (logged, skipped).
 
-# ── which model to process this run (edit, or set MODEL=… env) ────────────────
-MODEL = os.environ.get("MODEL", "lfm2-embed")
+For each model the source is the existing full-precision GGUF ALREADY in its
+cstr/<name>-GGUF repo (auto-detected: largest non-quant .gguf) — no HF
+re-conversion, so LoRA models (jina-v5) and odd namings just work. Imatrix
+outputs use DISTINCT names and NEVER overwrite the canonical q8_0/q4_k baselines.
+"""
+import os, re, sys, json, math, time, shutil, subprocess
+from pathlib import Path
 
 WORK = Path("/kaggle/working")
 if not WORK.exists():
@@ -46,67 +41,35 @@ if not CRISPASR_DIR.exists():
 sys.path.insert(0, str(Path(__file__).resolve().parent))   # bundled fallback
 import kaggle_harness as kh
 
-# ── model registry (converters take --model <dir> --output <f16> --dtype f16) ──
-# hf_src + hf_out (existing GGUF repos) + filename prefixes are the canonical
-# values from examples/cli/model_mgr.cpp k_registry[]. Imatrix quants upload into
-# the SAME repos users already download from.
-#
-# QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None
-# means DO NOT upload (a baseline of that type already exists in the repo — never
-# overwrite it). imatrix variants get DISTINCT names so they never clobber the
-# canonical q8_0/q4_k baselines: q4_k+imatrix → *-q4_k-imatrix.gguf, iq4_xs → *-iq4_xs.gguf.
-QSPECS = [
-    ("q8_0",   False, None),                          # A/B reference only; baseline exists
-    ("q4_k",   False, None),                          # A/B baseline (no imatrix) — shows the delta; not uploaded
-    ("q4_k",   True,  "{prefix}-q4_k-imatrix.gguf"),  # new file, does not touch *-q4_k.gguf
-    ("iq4_xs", True,  "{prefix}-iq4_xs.gguf"),         # new file
+# ── models to process (each maps to repo cstr/<name>-GGUF) ────────────────────
+# The first three re-run to backfill their A/B summary (added after their initial
+# run). The rest extend imatrix coverage across the embedding roster.
+DEFAULT_BATCH = [
+    # backfill summaries:
+    "lfm2-embed", "jina-v5-nano", "bge-m3",
+    # (e5-large, jina-v5-small already have summaries)
+    # new coverage:
+    "bge-large-en-v1.5", "bge-base-en-v1.5", "bge-small-en-v1.5",
+    "mxbai-embed-large-v1", "multilingual-e5-base", "multilingual-e5-small",
+    "nomic-embed-text-v1.5", "nomic-embed-text-v2-moe", "arctic-embed-l-v2",
+    "gte-base-en-v1.5", "gte-large-en-v1.5", "octen-0.6b", "f2llm-v2-0.6b",
+    "qwen3-embed-0.6b", "embeddinggemma-300m", "pixie-rune-v1",
 ]
+RUN = [m.strip() for m in os.environ.get("MODELS", "").split(",") if m.strip()] or DEFAULT_BATCH
 
-MODELS = {
-    "lfm2-embed": dict(
-        hf_src="LiquidAI/LFM2.5-Embedding-350M",
-        converter="models/convert-lfm2-embed-to-gguf.py",
-        conv_args=["--dtype", "f16"],
-        hf_out="cstr/lfm2-embed-GGUF", prefix="lfm2-embed", src_gguf="lfm2-embed-f16.gguf",
-        quants=QSPECS,
-    ),
-    "jina-v5-nano": dict(
-        hf_src="jinaai/jina-embeddings-v5-text-nano",
-        converter="models/convert-decoder-embed-to-gguf.py",
-        conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/jina-v5-nano-GGUF", prefix="jina-v5-nano", src_gguf="jina-v5-nano.gguf",
-        quants=QSPECS,
-    ),
-    "jina-v5-small": dict(
-        hf_src="jinaai/jina-embeddings-v5-text-small",
-        converter="models/convert-decoder-embed-to-gguf.py",
-        conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/jina-v5-small-GGUF", prefix="jina-v5-small", src_gguf="jina-v5-small.gguf",
-        quants=QSPECS,
-    ),
-    "bge-m3": dict(
-        hf_src="BAAI/bge-m3",
-        converter="models/convert-bert-to-gguf.py",
-        conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/bge-m3-GGUF", prefix="bge-m3", src_gguf="bge-m3.gguf",
-        quants=QSPECS,
-    ),
-    "e5-large": dict(
-        hf_src="intfloat/multilingual-e5-large",
-        converter="models/convert-bert-to-gguf.py",
-        conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/multilingual-e5-large-GGUF", prefix="multilingual-e5-large", src_gguf="multilingual-e5-large.gguf",
-        quants=QSPECS,
-    ),
-    # BidirLM-Omni: multimodal, no single-file converter in models/ yet — TODO.
-}
+# Optional per-model overrides: {name: {"hf_out":..., "quants":...}}.
+# Default hf_out = cstr/<name>-GGUF; default quants = QSPECS.
+OVERRIDES = {}
 
-
-def read_corpus(name, fallback):
-    p = Path(__file__).resolve().parent / name
-    if p.exists():
-        return [l.strip() for l in p.read_text().splitlines() if l.strip()]
-    return fallback
+# QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None =
+# A/B reference only (never uploaded — don't clobber baselines). imatrix variants
+# get DISTINCT names: q4_k+imatrix -> *-q4_k-imatrix.gguf, iq4_xs -> *-iq4_xs.gguf.
+QSPECS = [
+    ("q8_0",   False, None),                          # A/B reference (baseline exists)
+    ("q4_k",   False, None),                          # A/B baseline (no imatrix) — shows the delta
+    ("q4_k",   True,  "{prefix}-q4_k-imatrix.gguf"),
+    ("iq4_xs", True,  "{prefix}-iq4_xs.gguf"),
+]
 
 _CALIB_FB = [
     "The quick brown fox jumps over the lazy dog.",
@@ -129,13 +92,20 @@ _EVAL_FB = [
 ]
 
 
+def read_corpus(name, fallback):
+    p = Path(__file__).resolve().parent / name
+    if p.exists():
+        return [l.strip() for l in p.read_text().splitlines() if l.strip()]
+    return fallback
+
+
 def embed(cli, model, texts):
     t0 = time.time()
     r = subprocess.run([str(cli), "-m", str(model), "--json", *texts],
                        capture_output=True, text=True)
     dt = time.time() - t0
     if r.returncode != 0:
-        raise RuntimeError(f"embed failed for {model}:\n{r.stderr[-2000:]}")
+        raise RuntimeError(f"embed failed for {model}:\n{r.stderr[-1500:]}")
     data = json.loads(r.stdout)
     return [[float(x) for x in o["embedding"]] for o in data if o.get("embedding")], dt
 
@@ -149,146 +119,128 @@ def mean_cos(a, b):
     return (sum(cos(a[i], b[i]) for i in range(n)) / n if n else float("nan")), n
 
 
-def main():
-    kh.init_progress()
-    token = kh.resolve_hf_token()
-    if MODEL not in MODELS:
-        sys.exit(f"unknown MODEL={MODEL!r}; choices: {sorted(MODELS)}")
-    cfg = MODELS[MODEL]
-    kh.step("harness_ready", model=MODEL, hf_token_ok=bool(token))
+_QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf16|imatrix)', re.I)
 
-    calib = read_corpus("calib_corpus.txt", _CALIB_FB)
-    eval_ = read_corpus("eval_corpus.txt", _EVAL_FB)
+def pick_base_gguf(api, repo):
+    """Full-precision source = largest .gguf whose stem has no quant token
+    (falls back to the largest .gguf). Returns (filename, prefix)."""
+    info = api.repo_info(repo, files_metadata=True)
+    ggs = {s.rfilename: (s.size or 0) for s in info.siblings if s.rfilename.endswith(".gguf")}
+    if not ggs:
+        raise RuntimeError(f"no .gguf in {repo}")
+    base = {f: sz for f, sz in ggs.items() if not _QUANT_RE.search(f[:-5])}
+    pool = base or ggs
+    fn = max(pool, key=pool.get)
+    prefix = fn[:-5]
+    for suf in ("-f16", "-f32", ".f16", ".f32"):
+        if prefix.endswith(suf):
+            prefix = prefix[: -len(suf)]
+    return fn, prefix
 
-    # 1. deps + clone + build (crispembed-cli for calibration/A/B, quantize tool)
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
-        "safetensors", "gguf", "huggingface_hub", "hf_transfer", "transformers",
-        "sentencepiece"])
-    kh.step("deps_installed")
 
-    repo = WORK / "CrispEmbed"
-    if not repo.exists():
-        subprocess.check_call(["git", "clone", "--depth", "1", "--branch", BRANCH,
-                               REPO_URL, str(repo)])
-        subprocess.check_call(["git", "-C", str(repo), "submodule", "update",
-                               "--init", "--recursive"])
-    kh.step("cloned")
+def process(name, cli, quant, api, calib, eval_):
+    ov = OVERRIDES.get(name, {})
+    hf_out = ov.get("hf_out", f"cstr/{name}-GGUF")
+    quants = ov.get("quants", QSPECS)
+    kh.step("model.start", model=name, repo=hf_out)
 
-    kh.install_build_toolchain()
-    build = repo / "build"; build.mkdir(exist_ok=True)
-    # CPU build by DEFAULT. These embedders (<=600M) calibrate + quantize fine on
-    # CPU, and a CUDA build compiles ggml-cuda's ~254 template-instance TUs
-    # (~15 min of nvcc; the CrispASR ccache seed barely hits them and the arch
-    # pin differs). We keep enable_gpu:true in kernel-metadata ONLY because
-    # Kaggle CPU workers get no internet (kaggle_usage.md #3) — the GPU is used
-    # for internet (clone/download/upload), NOT for the build. Set CRISP_GPU=1
-    # for large models (e.g. BidirLM-Omni) where GPU calibration is worth it.
-    GPU = os.environ.get("CRISP_GPU", "0") != "0"
-    flags = (kh.cuda_build_flags(kh.detect_cuda_arch()) if GPU else ["-DGGML_CUDA=OFF"])
-    flags += kh.cache_and_link_flags()
-    cfg_cmd = (f"cmake -G Ninja -S {repo} -B {build} -DCMAKE_BUILD_TYPE=Release "
-               + " ".join(flags))
-    kh.sh_with_progress(cfg_cmd)
-    with kh.build_heartbeat("cmake.build"):
-        kh.sh_with_progress(f"cmake --build {build} "
-                            f"--target crispembed-cli crispembed-quantize "
-                            f"-j{kh.safe_build_jobs(gpu=GPU)}")
-    cli   = build / "crispembed"
-    quant = build / "crispembed-quantize"
-    kh.step("built")
+    with kh.build_heartbeat(f"{name}.download_src"):
+        base_fn, prefix = pick_base_gguf(api, hf_out)
+        from huggingface_hub import hf_hub_download
+        f16 = Path(hf_hub_download(hf_out, base_fn, token=api.token,
+                                   local_dir=str(WORK / "src" / name)))
+    kh.step("model.source", model=name, src=f"{hf_out}/{base_fn}",
+            prefix=prefix, size_mb=round(f16.stat().st_size / 1e6, 1))
 
-    # 2. acquire the full-precision source.
-    #    PREFER the existing validated GGUF in the target repo (cfg["src_gguf"]) —
-    #    it's the exact artifact users run, already-correct, and sidesteps HF
-    #    re-conversion (critical for LoRA models like jina-v5, whose HF repo has
-    #    task adapters). Fall back to snapshot_download + converter only if unset.
-    from huggingface_hub import hf_hub_download, snapshot_download, HfApi
-    if cfg.get("src_gguf"):
-        with kh.build_heartbeat("download.src_gguf"):
-            f16 = Path(hf_hub_download(cfg["hf_out"], cfg["src_gguf"], token=token,
-                                       local_dir=str(WORK / "src")))
-        src_desc = f"{cfg['hf_out']}/{cfg['src_gguf']}"
-    else:
-        with kh.build_heartbeat("download.model"):
-            src = snapshot_download(repo_id=cfg["hf_src"], token=token,
-                                    cache_dir=str(WORK / "hf-cache"))
-        f16 = WORK / f"{cfg['prefix']}-f16.gguf"
-        with kh.build_heartbeat("convert.f16"):
-            subprocess.check_call([sys.executable, str(repo / cfg["converter"]),
-                "--model", str(src), "--output", str(f16), *cfg["conv_args"]])
-        src_desc = f"converted from {cfg['hf_src']}"
-    kh.step("source_ready", src=src_desc, size_mb=round(f16.stat().st_size / 1e6, 1))
-
-    # 3. calibration -> imatrix
-    imat = WORK / f"{cfg['prefix']}.imatrix"
+    imat = WORK / f"{prefix}.imatrix"
     imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
-    with kh.build_heartbeat("calibrate"):
+    with kh.build_heartbeat(f"{name}.calibrate"):
         subprocess.run([str(cli), "-m", str(f16), "--json", *calib],
                        env=env, check=True, capture_output=True, text=True)
-    kh.step("calibrated", n_texts=len(calib), imatrix_kb=imat.stat().st_size // 1024)
 
-    gold, _ = embed(cli, f16, eval_)   # f16 gold, once
+    gold, _ = embed(cli, f16, eval_)
 
-    api = HfApi(token=token) if token else None
-    if api:
-        try:
-            api.create_repo(cfg["hf_out"], repo_type="model", exist_ok=True)
-        except Exception as e:
-            print(f"repo: {e}", flush=True)
-
-    # 4. per-quant: quantize -> A/B -> upload -> rm
     report = []
-    for qtype, use_im, up_tmpl in cfg["quants"]:
+    for qtype, use_im, up_tmpl in quants:
         tag = f"{qtype}{'-im' if use_im else ''}"
-        out = WORK / f"{cfg['prefix']}-{tag}.gguf"         # distinct local temp name
-        cmd = [str(quant), str(f16), str(out), qtype]
-        if use_im:
-            cmd += ["--imatrix", str(imat)]
-        with kh.build_heartbeat(f"quantize.{tag}"):
+        out = WORK / f"{prefix}-{tag}.gguf"
+        cmd = [str(quant), str(f16), str(out), qtype] + (["--imatrix", str(imat)] if use_im else [])
+        with kh.build_heartbeat(f"{name}.quant.{tag}"):
             subprocess.check_call(cmd)
         vecs, dt = embed(cli, out, eval_)
         cos, n = mean_cos(vecs, gold)
         mb = out.stat().st_size / 1e6
-        upname = up_tmpl.format(prefix=cfg["prefix"]) if up_tmpl else "(A/B only, not uploaded)"
-        kh.step(f"ab.{tag}", imatrix=use_im, cos_vs_f16=round(cos, 6),
-                size_mb=round(mb, 1), embed_s=round(dt, 2), n=n, upload=upname)
+        upname = up_tmpl.format(prefix=prefix) if up_tmpl else "(A/B only)"
+        kh.step(f"{name}.ab.{tag}", imatrix=use_im, cos_vs_f16=round(cos, 6),
+                size_mb=round(mb, 1), upload=upname)
         report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_f16={cos:.6f}  {mb:7.1f}MB  -> {upname}")
-        # Upload ONLY imatrix variants, under DISTINCT names — never overwrite the
-        # canonical q8_0/q4_k baselines already in the repo (up_tmpl is None for those).
-        if api and up_tmpl:
-            with kh.build_heartbeat(f"upload.{qtype}"):
+        if up_tmpl:
+            with kh.build_heartbeat(f"{name}.upload.{tag}"):
                 api.upload_file(path_or_fileobj=str(out), path_in_repo=upname,
-                    repo_id=cfg["hf_out"], repo_type="model",
+                    repo_id=hf_out, repo_type="model",
                     commit_message=f"{qtype} +imatrix (cos_vs_f16={cos:.4f})")
-            print(f"[upload] {upname}", flush=True)
-        out.unlink(missing_ok=True)   # free space before next quant
+        out.unlink(missing_ok=True)
 
-    # 5. write the A/B summary, then upload it + the imatrix artifact (small; for
-    #    reproducibility and so the baseline-vs-imatrix delta is retrievable — the
-    #    Kaggle stdout log is not captured and kernels_output only has .ccache).
-    #    Do NOT upload f16 (large, and would risk clobbering). Then rm local.
-    summary = (f"imatrix A/B — {MODEL} ({cfg['hf_out']}), cos vs f{'16/32'} gold, "
+    summary = (f"imatrix A/B — {name} ({hf_out}), cos vs full-precision gold, "
                f"n={len(eval_)}, calib={len(calib)}\n" + "\n".join(report) + "\n")
-    summ_path = WORK / f"{cfg['prefix']}-imatrix-ab.txt"
-    try:
-        summ_path.write_text(summary)
-    except Exception as e:
-        print(f"summary write failed: {e}", flush=True)
-    if api:
-        for p, msg in [(summ_path, "A/B summary (cos vs gold)"),
-                       (imat, "importance matrix (calibration)")]:
-            if p.exists():
-                with kh.build_heartbeat(f"upload.{p.name}"):
-                    api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
-                        repo_id=cfg["hf_out"], repo_type="model", commit_message=msg)
-                print(f"[upload] {p.name}", flush=True)
-    f16.unlink(missing_ok=True); imat.unlink(missing_ok=True)
+    summ = WORK / f"{prefix}-imatrix-ab.txt"
+    summ.write_text(summary)
+    for p, msg in [(summ, "A/B summary (cos vs gold)"), (imat, "importance matrix (calibration)")]:
+        with kh.build_heartbeat(f"{name}.upload.meta"):
+            api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
+                repo_id=hf_out, repo_type="model", commit_message=msg)
+    f16.unlink(missing_ok=True); imat.unlink(missing_ok=True); summ.unlink(missing_ok=True)
+    shutil.rmtree(WORK / "src" / name, ignore_errors=True)  # free the multi-GB source
+    kh.step("model.done", model=name)
+    return name, report
 
-    kh.step("all_done", **{f"q{i}": r for i, r in enumerate(report)})
-    print("\n===== A/B SUMMARY (" + MODEL + ", cos vs f16 gold) =====")
-    for r in report:
-        print("  " + r, flush=True)
+
+def main():
+    kh.init_progress()
+    token = kh.resolve_hf_token()
+    kh.step("harness_ready", n_models=len(RUN), hf_token_ok=bool(token))
+    calib = read_corpus("calib_corpus.txt", _CALIB_FB)
+    eval_ = read_corpus("eval_corpus.txt", _EVAL_FB)
+
+    # build crispembed-cli + crispembed-quantize (CPU; GPU attached only for internet)
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
+        "huggingface_hub", "hf_transfer", "gguf"])
+    repo = WORK / "CrispEmbed"
+    if not repo.exists():
+        subprocess.check_call(["git", "clone", "--depth", "1", "--branch", BRANCH, REPO_URL, str(repo)])
+        subprocess.check_call(["git", "-C", str(repo), "submodule", "update", "--init", "--recursive"])
+    kh.install_build_toolchain()
+    build = repo / "build"; build.mkdir(exist_ok=True)
+    GPU = os.environ.get("CRISP_GPU", "0") != "0"
+    flags = (kh.cuda_build_flags(kh.detect_cuda_arch()) if GPU else ["-DGGML_CUDA=OFF"]) + kh.cache_and_link_flags()
+    kh.sh_with_progress(f"cmake -S {repo} -B {build} -DCMAKE_BUILD_TYPE=Release " + " ".join(flags))
+    with kh.build_heartbeat("cmake.build"):
+        kh.sh_with_progress(f"cmake --build {build} --target crispembed-cli crispembed-quantize "
+                            f"-j{kh.safe_build_jobs(gpu=GPU)}")
+    cli, quant = build / "crispembed", build / "crispembed-quantize"
+    kh.step("built")
+
+    from huggingface_hub import HfApi
+    api = HfApi(token=token)
+
+    results, failures = [], []
+    for name in RUN:
+        try:
+            results.append(process(name, cli, quant, api, calib, eval_))
+        except Exception as e:
+            print(f"[FAIL] {name}: {type(e).__name__}: {e}", flush=True)
+            kh.step("model.fail", model=name, error=f"{type(e).__name__}: {e}"[:300])
+            failures.append(name)
+
+    kh.step("all_done", ok=len(results), failed=len(failures), failures=",".join(failures))
+    print("\n===== BATCH SUMMARY =====")
+    for name, rep in results:
+        print(f"\n## {name}")
+        for r in rep:
+            print("  " + r)
+    if failures:
+        print("\nFAILED:", ", ".join(failures))
     print("[DONE]", flush=True)
 
 
