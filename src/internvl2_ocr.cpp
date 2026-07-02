@@ -53,54 +53,10 @@ static int hex_val(char c) {
     return -1;
 }
 
-// GPT-2 byte_decoder: inverse of bytes_to_unicode().
-// Maps each Unicode codepoint used in GPT-2 BPE tokens back to the
-// original byte value. Built lazily on first call.
-static const std::vector<int> &gpt2_byte_decoder() {
-    static std::vector<int> table;
-    if (!table.empty()) return table;
-    table.assign(65536, -1);
-    // Build forward map (byte → unicode) then invert
-    auto fwd = core_bpe::byte_encoder();
-    for (int b = 0; b < 256; b++) {
-        int cp = fwd[b];
-        if (cp >= 0 && cp < (int)table.size()) {
-            table[cp] = b;
-        }
-    }
-    return table;
-}
-
-// Decode a GPT-2 BPE token string to raw bytes.
-// Each character in the token is a Unicode codepoint that maps to a byte.
+// Decode a GPT-2 BPE token string (byte-encoded utf-8 codepoints) to raw
+// bytes via the shared core_bpe decoder (inverse of byte_encoder()).
 static std::string gpt2_token_to_bytes(const std::string &token) {
-    const auto &dec = gpt2_byte_decoder();
-    std::string result;
-    // Parse UTF-8 codepoints from the token string
-    const uint8_t *p = (const uint8_t *)token.data();
-    const uint8_t *end = p + token.size();
-    while (p < end) {
-        uint32_t cp;
-        if (*p < 0x80) {
-            cp = *p++;
-        } else if (*p < 0xE0) {
-            cp = (*p++ & 0x1F) << 6;
-            if (p < end) cp |= (*p++ & 0x3F);
-        } else if (*p < 0xF0) {
-            cp = (*p++ & 0x0F) << 12;
-            if (p < end) cp |= (*p++ & 0x3F) << 6;
-            if (p < end) cp |= (*p++ & 0x3F);
-        } else {
-            cp = (*p++ & 0x07) << 18;
-            if (p < end) cp |= (*p++ & 0x3F) << 12;
-            if (p < end) cp |= (*p++ & 0x3F) << 6;
-            if (p < end) cp |= (*p++ & 0x3F);
-        }
-        if (cp < dec.size() && dec[cp] >= 0) {
-            result += (char)dec[cp];
-        }
-    }
-    return result;
+    return core_bpe::unicode_to_bytes(token);
 }
 
 std::string tokenizer::decode(const int32_t *ids, int n) const {

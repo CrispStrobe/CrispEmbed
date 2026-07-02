@@ -8,9 +8,12 @@
 // is identical down to the byte-permutation table and the greedy
 // lowest-rank merge loop.
 //
-// The decode side (id -> text) lives in each model already because the
-// merging-space → utf-8 conversion can in principle differ between
-// tokenizers; this header only covers encode for now.
+// The decode side (piece -> raw bytes) is the mechanical inverse of the
+// byte_encoder() permutation and is identical across every GPT-2 byte-level
+// model, so it lives here too (byte_decoder() + unicode_to_bytes()). What
+// stays in each model is only the *policy* of which special tokens to skip
+// (<s>, <|...|>, [UNUSED_*], <0xXX> byte-fallbacks, …) — that genuinely
+// varies per tokenizer and is not a byte-transform concern.
 //
 // Header-only: each consumer compiles its own copy. The byte_encoder
 // table and the per-call BPE merge work are tiny enough that the
@@ -90,6 +93,62 @@ inline std::string bytes_to_unicode(const char* bytes, size_t n) {
     for (size_t i = 0; i < n; i++) {
         utf8_encode((uint32_t)enc[(unsigned char)bytes[i]], out);
     }
+    return out;
+}
+
+// Inverse of byte_encoder(): unicode codepoint -> raw byte. Built lazily
+// once. This is the exact reverse permutation used by every GPT-2
+// byte-level tokenizer, so decode is model-agnostic (see unicode_to_bytes).
+inline const std::unordered_map<uint32_t, uint8_t>& byte_decoder() {
+    static const std::unordered_map<uint32_t, uint8_t> dec = [] {
+        std::unordered_map<uint32_t, uint8_t> m;
+        const auto& enc = byte_encoder();
+        for (int b = 0; b < 256; b++)
+            m[(uint32_t)enc[b]] = (uint8_t)b;
+        return m;
+    }();
+    return dec;
+}
+
+// Decode the utf-8 length of the byte at `s[i]` (1..4). Malformed leading
+// bytes decode as length 1 so callers always make forward progress.
+inline size_t utf8_len(unsigned char c) {
+    if (c < 0x80) return 1;
+    if ((c & 0xE0) == 0xC0) return 2;
+    if ((c & 0xF0) == 0xE0) return 3;
+    if ((c & 0xF8) == 0xF0) return 4;
+    return 1;
+}
+
+// Decode one byte-encoded BPE piece (a string of utf-8 codepoints, e.g.
+// "Ġx" for " x") back to the raw bytes it represents. Each codepoint is
+// mapped through byte_decoder(); codepoints not in the table (shouldn't
+// happen for well-formed vocab pieces) are kept verbatim as their original
+// utf-8 bytes. Appends to `out`.
+inline void unicode_to_bytes(const std::string& piece, std::string& out) {
+    const auto& dec = byte_decoder();
+    size_t i = 0;
+    while (i < piece.size()) {
+        unsigned char c = (unsigned char)piece[i];
+        size_t len = utf8_len(c);
+        if (i + len > piece.size()) len = 1;
+        uint32_t cp = 0;
+        if (len == 1) cp = c;
+        else if (len == 2) cp = ((c & 0x1F) << 6) | (piece[i+1] & 0x3F);
+        else if (len == 3) cp = ((c & 0x0F) << 12) | ((piece[i+1] & 0x3F) << 6) | (piece[i+2] & 0x3F);
+        else cp = ((c & 0x07) << 18) | ((piece[i+1] & 0x3F) << 12) | ((piece[i+2] & 0x3F) << 6) | (piece[i+3] & 0x3F);
+        auto it = dec.find(cp);
+        if (it != dec.end()) out.push_back((char)it->second);
+        else out.append(piece, i, len);
+        i += len;
+    }
+}
+
+// Convenience overload returning the decoded bytes for a single piece.
+inline std::string unicode_to_bytes(const std::string& piece) {
+    std::string out;
+    out.reserve(piece.size());
+    unicode_to_bytes(piece, out);
     return out;
 }
 

@@ -580,6 +580,22 @@
           "final_hidden": 0.99
         }
       }
+    },
+    {
+      "name": "mixtex",
+      "engine": "mixtex",
+      "gguf": {
+        "repo": "cstr/mixtex-zhen-gguf",
+        "file": "mixtex-zhen-f16.gguf",
+        "revision": "main",
+        "approx_size_mb": 165
+      },
+      "sample": "tests/regression/images/mixtex_pow.png",
+      "expected_text": "\\[\\displaystyle\\mathcal{X}^{2}\\ \\mathrm{+~}\\mathcal{Y}^{2}\\ =\\ \\underline{{2}}\\]",
+      "expected_text_source": "captured 2026-07-02 (f16, Metal) with the HF-parity bicubic preprocessing default, after the byte-level detok fix (core_bpe::unicode_to_bytes) and the vocab_size 25678->25681 EOS fix. Guards: a detok regression leaks Ġ/Ċ; a vocab_size regression makes decode never emit EOS (runs to max_len); a preprocessing regression (e.g. reverting to bilinear via MIXTEX_BILINEAR) flips the reading.",
+      "match": {
+        "max_cer": 0.12
+      }
     }
   ]
 }
