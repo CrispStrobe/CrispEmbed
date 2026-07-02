@@ -801,17 +801,29 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **decoder_embed — CLEAN, CLOSED (Gap 4).** `test_decoder_embed_diff.cpp` (crispembed_encode,
   last-token pool) vs independent Qwen3-Embedding-0.6B HF ref: cos 0.9993 (q8_0-vs-f32). Ref
   uploaded to `cstr/qwen3-embed-0.6b-GGUF`, wired `diff_only`, run_one PASS. Added to Kaggle kernel.
-- **bidirlm (text) — BLOCKED by a Kaggle-image transformers bug (Gap 4).** 2.5B; added to
-  `crispembed_ref_gen.py` reusing test-decoder-embed-diff (--pooling mean). Three GPU runs (chr1s4
-  v5/v6/v7): v5 blocked on the `run custom code? [y/N]` prompt → added `trust_remote_code=True`;
-  v6/v7 then hit a hard transformers bug in the Kaggle image loading BidirLM's Qwen2 tokenizer —
-  `TokenizersBackend._patch_mistral_regex() got multiple values for keyword argument
-  'fix_mistral_regex'` (both fast AND `use_fast=False` route through it). NOT our code/engine;
-  decoder_embed (also Qwen2-family) passes on the same image, so it's BidirLM-tokenizer-config +
-  this transformers build. Fix options: pin transformers in the kernel (risks a torch reinstall the
-  regime avoids), or dump bidirlm LOCALLY (local transformers 4.57.6 is unaffected) — 2.7GB gguf +
-  ~5GB HF model, borderline-local. Kaggle ref-gen infra is set up + committed; bidirlm left queued.
-  (Same runs: decoder_embed dumped+verified+uploaded OK on CUDA — double-confirms local cos 0.9993.)
+- **bidirlm (text) — BLOCKED: stale GGUF + multimodal pooling mismatch (Gap 4).** 2.5B; added to
+  `crispembed_ref_gen.py` reusing test-decoder-embed-diff (--pooling mean). Runs v5→v7 were blocked
+  in the dumper by the Kaggle image (custom-code prompt → `trust_remote_code`; then a transformers
+  tokenizer bug `_patch_mistral_regex`); **pinning transformers==4.57.6 in the kernel (v8) fixed the
+  dump**. But v8 then verify_failed with `cos 0.044` (orthogonal): the engine logs "**stale GGUF —
+  re-export with the latest converter**" and guesses `mrope_section=[24,20,20]`, image_token_id, etc.
+  BidirLM-Omni is a vision-language model (mrope, pool=mean, bidirectional) — the shipped
+  `bidirlm-omni-2.5b-textonly-q8_0.gguf` predates the current converter, and a plain HF mean-pool
+  doesn't match the engine's guessed-metadata forward. To close: re-export the GGUF with explicit
+  metadata, then match BidirLM-Omni-Embedding's actual text-embedding method (not a naive mean).
+  Low priority (instrumentation-only wave touch). decoder_embed dumped+verified+uploaded OK on CUDA
+  in the same runs — double-confirms local cos 0.9993.
+- **Kaggle ref-gen kernel drift (investigated 2026-07, run v8):** the batch re-runs pre-closed
+  engines too; findings — **lfm2 = ok** (was a FALSE verify_failed: it prints `PASS: 20 FAIL: 0`
+  which tripped the kernel's `"FAIL" in out` heuristic; fixed to accept `fail: 0`). **lfm2_colbert =
+  cos 0.57 on CUDA** (0.998 on CPU/Metal) — a REAL CUDA bug in the ColBERT multivec tail (base lfm2
+  passes 20/20 on the same CUDA); handover `handover-prompts/lfm2-colbert-cuda-multivec-divergence.md`
+  — note the wired guardrail (0.99) would fail on CUDA CI. **lilt** = FALSE verify_failed (encoder
+  6 PASS/0 FAIL; the "Label match 0/16" untrained-head red herring trips the harness exit + kernel
+  heuristic). **layout** = dump_failed on `RTDetrV2 embed_dim 256 not divisible by num_heads 12`
+  (model-config, not transformers-version). **gliner** = known dead reference. All of these have LIVE
+  manifest refs from prior sessions, so their guardrails still work — only the kernel's regeneration
+  is affected.
 - **fireredpunc — CLEAN, CLOSED (Gap 4).** No hidden/logits accessor in the punct C API → golden
   text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
   "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
