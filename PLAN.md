@@ -648,7 +648,21 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - [x] `nafnet_denoise.cpp` — **DONE** (`b580e5c`). conv2d_ggml replaces all scalar convs.
   - [x] `esrgan_sr.cpp` — **DONE** (`4f1d052`). Full conv chain ggml graph, 6x speedup.
   - [x] `safmn_sr.cpp` — **DONE** (`09a6e02`). All 8 conv2d calls → conv2d_ggml.
-  - [x] `restormer.cpp` — **DONE** (`69be268`). 10 U-Net convs → rst_conv2d_ggml.
+  - [x] `restormer.cpp` — **DONE** (`69be268`); **output correctness fixed 2026-07-02**
+    (`d54b304`, merged `67bbbb6`). The `69be268` wave shipped a *scrambled* conv
+    weight layout (garbage output on both backends). Unlike instructir (official
+    `gguf.GGUFWriter` → ggml `[KW,KH,IC,OC]`), restormer's custom converter writes
+    conv weights raw as numpy `(OC,IC,KH,KW)`, so the correct kernel is a **plain
+    reshape** of the raw bytes to `[KW,KH,IC,OC]` (no permute); pre-permute deleted.
+    Also rewrote the ggml MDTA block graph (per-head + temperature + real L2-norm)
+    and fixed BiasFree LN. Validated: gray σ=25 denoise 19.84→2.15, CPU==Metal,
+    ggml==scalar, fox clean. See LEARNINGS / HISTORY 2026-07-02.
+    - [ ] **Guardrail (open):** no `restormer-ref.gguf` on HF yet — the fix was
+      caught only by looking at pixels (a std>1 "non-degenerate" guard passes the
+      garbage). Generate via `tools/dump_restormer_reference.py` (must include the
+      *output* stage), upload to `cstr/text-super-resolution-gguf`, add a
+      `restormer` entry to `tests/regression/manifest.json` (golden/PSNR, not the
+      numeric non-degenerate check) so it can't silently regress again.
   - [x] `instructir.cpp` — **DONE**. All 8 conv sites (intro/down/up/ending +
     5 per NAFBlock incl. DW conv) → per-conv `conv2d_ggml` (nafnet hybrid:
     convs on ggml, SimpleGate/SCA/ICB/PixelShuffle stay scalar). Verified
