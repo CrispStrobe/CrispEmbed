@@ -545,16 +545,16 @@
     {
       "name": "pcs",
       "engine": "pcs",
-      "_comment": "PCS punctuation+capitalization+segmentation (XLM-RoBERTa-base + 4 CPU heads). Crash guard: the shipped-default q4_k build quantizes the SBD/truecase FC-head weights (Q4_0/Q4_K), which the CPU heads read via raw ggml_backend_tensor_get; assuming F32 overran ggml_nbytes and aborted every inference ('tensor read out of bounds'). Fixed by dequantizing head weights per row via the type's to_float trait (CrispASR/crisp_punc/src/pcs.cpp pcs_read_tensor_f32 + the CrispEmbed cache_tensor mirror). This guard runs a sentence and asserts exit 0 — a regression that re-breaks the quantized-weight read aborts (nonzero). Output text is NOT pinned: the truecase head's per-char argmax is borderline and can differ across CI backends (Metal vs CPU), unlike fireredpunc's punct-only head. Deterministic given a backend. Impl lives in CrispASR/crisp_punc (shared lib replaces the local src copy).",
+      "_comment": "PCS punctuation+capitalization+segmentation (XLM-RoBERTa-base + 4 heads). Golden text-match on q8_0, which reproduces the ONNX source model EXACTLY (verified via tools/dump_pcs_reference.py: tok+post+pre+seg predictions match 11/11, encoder hidden cos 0.999997). Root causes fixed to reach parity: (1) q4_k FC-head dequant crash; (2) Unigram Viterbi tokenizer (was greedy longest-match — mis-split multi-subword words, the dominant error; needs tokenizer.ggml.scores in the GGUF); (3) decode subtoken count from actual token_ids (▁ boundaries); (4) SBD softmax P>0.05 threshold (was argmax); (5) truecase shifted is-sentence-initial conditioning; (6) exact erf GELU + LayerNorm eps 1e-5. Pinned on q8_0 (not q4_k) because q4_k's tiny truecase head has a 1-char quant-floor flip ('World'); q8_0 is exact and backend-robust at cos 0.999997. Impl in CrispASR/crisp_punc (shared lib replaces the local src copy). Deterministic (argmax/threshold, no sampling).",
       "gguf": {
         "repo": "cstr/pcs-xlmr-base-GGUF",
-        "file": "pcs-xlmr-base-q4_k.gguf",
+        "file": "pcs-xlmr-base-q8_0.gguf",
         "revision": "main",
-        "approx_size_mb": 154
+        "approx_size_mb": 287
       },
       "run_check": {
         "binary": "test-punct-diff",
-        "args": ["hello world how are you today i am fine thanks"],
+        "args": ["hello world how are you today i am fine thanks", "Hello world, how are you today? I am fine, thanks."],
         "expect_exit": 0
       }
     },
