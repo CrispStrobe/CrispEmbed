@@ -47,33 +47,43 @@ import kaggle_harness as kh
 # ── model registry (converters take --model <dir> --output <f16> --dtype f16) ──
 # quants: (qtype, use_imatrix). q8_0 barely benefits; 4-bit types do. The tool
 # auto-keeps vision/lm-head/embedding tensors at Q8_0.
+# hf_src + hf_out (existing GGUF repos) + filename prefixes are the canonical
+# values from examples/cli/model_mgr.cpp k_registry[]. Imatrix quants upload into
+# the SAME repos users already download from (registry URLs stay valid).
 MODELS = {
     "lfm2-embed": dict(
         hf_src="LiquidAI/LFM2.5-Embedding-350M",
         converter="models/convert-lfm2-embed-to-gguf.py",
         conv_args=["--dtype", "f16"],
-        hf_out="cstr/lfm2.5-embedding-350m-crispembed-GGUF", prefix="lfm2-embed",
+        hf_out="cstr/lfm2-embed-GGUF", prefix="lfm2-embed",
         quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
     ),
     "jina-v5-nano": dict(
-        hf_src="jinaai/jina-embeddings-v5-nano",   # verify exact repo id + LoRA
+        hf_src="jinaai/jina-embeddings-v5-text-nano",
         converter="models/convert-decoder-embed-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/jina-v5-nano-crispembed-GGUF", prefix="jina-v5-nano",
+        hf_out="cstr/jina-v5-nano-GGUF", prefix="jina-v5-nano",
+        quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
+    ),
+    "jina-v5-small": dict(
+        hf_src="jinaai/jina-embeddings-v5-text-small",
+        converter="models/convert-decoder-embed-to-gguf.py",
+        conv_args=["--dtype", "f16", "--crisp"],
+        hf_out="cstr/jina-v5-small-GGUF", prefix="jina-v5-small",
         quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
     ),
     "bge-m3": dict(
         hf_src="BAAI/bge-m3",
         converter="models/convert-bert-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/bge-m3-crispembed-GGUF", prefix="bge-m3",
+        hf_out="cstr/bge-m3-GGUF", prefix="bge-m3",
         quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
     ),
     "e5-large": dict(
         hf_src="intfloat/multilingual-e5-large",
         converter="models/convert-bert-to-gguf.py",
         conv_args=["--dtype", "f16", "--crisp"],
-        hf_out="cstr/multilingual-e5-large-crispembed-GGUF", prefix="multilingual-e5-large",
+        hf_out="cstr/multilingual-e5-large-GGUF", prefix="multilingual-e5-large",
         quants=[("q8_0", False), ("q4_k", True), ("iq4_xs", True)],
     ),
     # BidirLM-Omni: multimodal, no single-file converter in models/ yet — TODO.
