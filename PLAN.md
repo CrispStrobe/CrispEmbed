@@ -263,11 +263,24 @@ destructively, whereas unpaper's default mask/blackfilter **blanked a whole page
 on an out-of-domain dark-shadow input — but unpaper has real features we lack.
 Port them, each **behind an OCR-CER A/B with saved output images** for visual
 review (run `scan_cleanup_bench.py` before/after every step; never merge a step
-that regresses CER or looks worse by eye):
+that regresses CER or looks worse by eye).
 
-- [ ] **1. noisefilter / despeckle** — remove isolated multi-pixel dark blobs
-  (dust, punch-hole marks); add a median pass for salt-pepper (which unpaper does
-  NOT handle). New `p.despeckle` param.
+**LICENSING (hard constraint): unpaper is GPL-2.0-or-later; CrispEmbed is MIT.**
+Do NOT copy any unpaper source — GPL copyleft is incompatible with MIT. These are
+**clean-room reimplementations** of standard, long-predating classical
+image-processing techniques (median/impulse despeckle, morphological open/close,
+Hough deskew, connected-component blob removal, projection-profile page splitting)
+written from the general concept only. Algorithms are not copyrightable; only
+code expression is. Never read/paste unpaper's code into ours.
+
+- [x] **1. noisefilter / despeckle — DONE** (clean-room decision-based 3x3 median:
+  replace a pixel by its local median only when it differs by > `despeckle_thresh`,
+  so isolated specks lift to paper while text strokes — dark median — are kept).
+  A/B (tools/scan_cleanup_bench.py): heavy-speckle CER **0.580 → 0.032** (was 0.436
+  before despeckle; unpaper stuck at 0.580), mild speckle 0.042 → 0.011; uneven/
+  shadow unaffected. Visual: speckle gone, text intact. `p.despeckle` (default on),
+  `p.despeckle_thresh` (0.25). Runs first (before deskew/whiten). Salt-pepper is a
+  case unpaper's cluster noisefilter does NOT handle.
 - [ ] **2. blackfilter** — clear large dark regions/edges (scanner-bed shadow,
   photocopy edges) beyond the rectangular crop — with a **guard so it can never
   blank the page** (unpaper's failure mode).
