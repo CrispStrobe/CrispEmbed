@@ -510,17 +510,16 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   output check. Do NOT wire this ref; fix the dumper's bidirectional replacement, or use
   entity-output as the guardrail. (Also fixed 3 dumper bugs to make it run: TFPreTrainedModel
   shim, VPS `/mnt` tmp/cache paths, duplicate `general.architecture`.)
-- **lfm2_colbert — NOT a regression; the DUMPER is wrong** (confirmed via a hidden_states
-  localizer added to `lfm2_embed.cpp`, LFM2_COLBERT_DIFF_REF). The engine's ColBERT backbone is
-  the SAME `lfm2_layer_fwd`+final-norm that passes 20/20 in the lfm2 embedding path, yet the ref's
-  `hidden_states` diffs cos=−0.54 → the reference is wrong. Cause: `dump_lfm2_colbert_reference.py`
-  does a MANUAL safetensors backbone forward (vs the lfm2 embedding dumper which uses `AutoModel`
-  and passes). FIX: rewrite the colbert dumper's backbone to `AutoModel(trust_remote_code)` + the
-  `1_Dense` projection, then re-diff; or guard with an independent ColBERT-similarity output check.
-- **bert_ner — dumper written** (`tools/dump_bert_ner_reference.py`, input_ids + final_hidden),
-  but the local dump **crashes (exit 138 / SIGBUS)** after loading dslim/bert-base-NER (no
-  captured traceback). Investigate (AutoModel load / output_hidden_states), then generate+wire.
-  Pre-wave BERT encoder — not a regression.
+- **lfm2_colbert — CLOSED (was a dumper bug, not a regression).** A hidden_states localizer
+  (`lfm2_embed.cpp`, LFM2_COLBERT_DIFF_REF) proved the engine backbone is fine (same as lfm2's
+  20/20) and the old dumper's MANUAL forward was wrong (hidden cos −0.54). Rewrote
+  `dump_lfm2_colbert_reference.py` to use `AutoModel` → hidden 0.982, colbert_output 0.998.
+  Ref uploaded; wired `diff_only` (colbert_output floor 0.99 for q8_0-vs-f32). 4/0 PASS.
+- **bert_ner — CLOSED (was a text + safetensors-mmap issue, not a regression).** Dump crashed
+  (SIGBUS on dslim/bert-base-NER's model.safetensors mmap) → load `.bin`. The −0.806 diff was a
+  TEXT mismatch (dumper used a different sentence than the harness's hardcoded "Barack Obama…").
+  Aligned the text → all token ids match, final_hidden cos 0.995. Ref uploaded; wired `diff_only`
+  (final_hidden floor 0.99 for q8_0-vs-f32). PASS.
 
 **Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
 bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
