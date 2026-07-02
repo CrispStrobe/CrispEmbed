@@ -42,7 +42,12 @@ def main():
     tok = AutoTokenizer.from_pretrained(args.model)
     # AutoModel -> the BERT encoder (no classifier head); we want the encoder's
     # last_hidden_state, which is what the C++ bert_ner encoder produces.
-    model = AutoModel.from_pretrained(args.model)
+    # use_safetensors=False: dslim/bert-base-NER's model.safetensors SIGBUSes on mmap on
+    # some systems (macOS/M1); the pytorch_model.bin loads cleanly.
+    try:
+        model = AutoModel.from_pretrained(args.model, use_safetensors=False, dtype=torch.float32)
+    except Exception:
+        model = AutoModel.from_pretrained(args.model, dtype=torch.float32)
     model.eval()
 
     enc = tok(args.text, return_tensors="pt")
