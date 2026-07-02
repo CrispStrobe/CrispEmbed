@@ -50,8 +50,16 @@ static std::string unescape(const std::string & s) {
     std::string out;
     for (size_t i = 0; i < s.size(); i++) {
         if (s[i] == '\\' && i + 1 < s.size()) {
-            if (s[i + 1] == 'n') { out.push_back('\n'); i++; continue; }
-            if (s[i + 1] == 't') { out.push_back('\t'); i++; continue; }
+            if (s[i + 1] == 'n') {
+                out.push_back('\n');
+                i++;
+                continue;
+            }
+            if (s[i + 1] == 't') {
+                out.push_back('\t');
+                i++;
+                continue;
+            }
         }
         out.push_back(s[i]);
     }
