@@ -157,6 +157,8 @@ bool load_hparams(context &ctx, const char *path) {
   lhp.num_key_value_heads =
       u32("qwen2vl.num_key_value_heads",
           u32("qwen2vl.attention.head_count_kv", lhp.num_key_value_heads));
+  lhp.head_dim = u32("qwen2vl.attention.head_dim",
+                     u32("qwen2vl.attention.key_length", lhp.head_dim));
   lhp.max_position_embeddings =
       u32("qwen2vl.max_position_embeddings",
           u32("qwen2vl.context_length", lhp.max_position_embeddings));
@@ -228,6 +230,8 @@ bool load_hparams(context &ctx, const char *path) {
       u32_3("qwen3vl.num_attention_heads", lhp.num_attention_heads);
   lhp.num_key_value_heads =
       u32_3("qwen3vl.num_key_value_heads", lhp.num_key_value_heads);
+  lhp.head_dim = u32_3("qwen3vl.attention.head_dim",
+                       u32_3("qwen3vl.attention.key_length", lhp.head_dim));
   lhp.image_token_id = u32_3("qwen3vl.image_token_id", lhp.image_token_id);
 
   auto f32_3 = [&](const char *k, float d) {
@@ -522,6 +526,20 @@ bool load_tensors(context &ctx, const char *path) {
     fix_ne(m.embed_tokens);
     if (m.lm_head_w && m.lm_head_w != m.embed_tokens) fix_ne(m.lm_head_w);
   }
+
+  // Derive per-head dim from the q_proj output width when the GGUF omits an
+  // explicit head_dim/key_length key. After fix_ne, q_w is (in=hidden, out) so
+  // ne[1] is the total query width = num_attention_heads * head_dim. ERNIE-4.5
+  // (PaddleOCR-VL) has head_dim=128 while hidden/heads=64 — assuming the latter
+  // reshapes the wrong element count and crashes (SIGSEGV in Release, a reshape
+  // assert in a debug build).
+  if (m.lhp.head_dim == 0 && m.lhp.num_hidden_layers > 0 &&
+      m.llm_layers[0].q_w && m.lhp.num_attention_heads > 0) {
+    m.lhp.head_dim = (uint32_t)(m.llm_layers[0].q_w->ne[1] /
+                                (int64_t)m.lhp.num_attention_heads);
+  }
+  if (m.lhp.head_dim == 0)
+    m.lhp.head_dim = m.lhp.hidden_size / m.lhp.num_attention_heads;
 
   return true;
 }
@@ -1104,7 +1122,7 @@ static bool alloc_kv_cache(context &ctx, int max_seq) {
   const auto &lhp = ctx.m.lhp;
   const int n_layers = (int)lhp.num_hidden_layers;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = (int)lhp.hidden_size / (int)lhp.num_attention_heads;
+  const int head_dim = (int)lhp.head_dim;
   const int kv_dim = head_dim * n_kv_heads;
 
   ggml_init_params ip{2 * ggml_tensor_overhead() + 256, nullptr, true};
@@ -1738,7 +1756,10 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = D / n_heads;
+  const int head_dim = (int)lhp.head_dim;
+  // Total attention width = n_heads * head_dim. Equals D for standard Qwen but
+  // NOT for ERNIE-4.5 (PaddleOCR-VL): head_dim=128 -> q_dim=2048 while D=1024.
+  const int q_dim = head_dim * n_heads;
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
@@ -1954,7 +1975,7 @@ bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
     ggml_tensor *attn_out =
         ggml_flash_attn_ext(g, Q, K, V, causal_mask, attn_scale, 0.0f, 0.0f);
     ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
-    attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
+    attn_out = ggml_reshape_2d(g, attn_out, q_dim, n_tokens);
 
     // Output projection
     attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
@@ -2390,7 +2411,8 @@ static ggml_cgraph *build_decode_step_graph(context &ctx, ggml_context *g,
   const int D = (int)lhp.hidden_size;
   const int n_heads = (int)lhp.num_attention_heads;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = D / n_heads;
+  const int head_dim = (int)lhp.head_dim;
+  const int q_dim = head_dim * n_heads; // != D when head_dim != D/n_heads
   const int n_layers = (int)lhp.num_hidden_layers;
   const float rms_eps = lhp.rms_norm_eps;
   const float attn_scale = 1.0f / std::sqrt((float)head_dim);
@@ -2510,7 +2532,7 @@ static ggml_cgraph *build_decode_step_graph(context &ctx, ggml_context *g,
     ggml_tensor *attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full, kv_mask,
                                                 attn_scale, 0.0f, 0.0f);
     ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
-    attn_out = ggml_reshape_2d(g, attn_out, D, 1);
+    attn_out = ggml_reshape_2d(g, attn_out, q_dim, 1);
 
     attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
     if (ly.o_b)
@@ -2599,7 +2621,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
   const int V = (int)lhp.vocab_size;
   const int n_layers = (int)lhp.num_hidden_layers;
   const int n_kv_heads = (int)lhp.num_key_value_heads;
-  const int head_dim = D / (int)lhp.num_attention_heads;
+  const int head_dim = (int)lhp.head_dim;
   const int kv_dim = head_dim * n_kv_heads;
 
   // ── Step 1: Prefill — full forward pass to get logits + KV cache ──
@@ -2721,7 +2743,7 @@ bool generate(context &ctx, const float *image_embeds, int n_image_tokens,
             best_score);
   }
 
-  int eos_id = 151645;
+  int eos_id = ctx.eos_token_id;
   if (best_id == eos_id || max_new_tokens <= 1)
     return true;
 
@@ -2964,6 +2986,43 @@ std::string gpt2_bpe_decode(const std::vector<int32_t> &ids,
   return result;
 }
 
+// SentencePiece-style decode (ERNIE-4.5 / PaddleOCR-VL). Tokens are raw UTF-8
+// with ▁ (U+2581) as the space marker and <0xXX> byte tokens for raw bytes.
+std::string spm_decode(const std::vector<int32_t> &ids,
+                       const std::vector<std::string> &vocab) {
+  std::string merged;
+  for (int32_t id : ids) {
+    if (id < 0 || id >= (int32_t)vocab.size()) continue;
+    const std::string &t = vocab[id];
+    // <0xXX> byte token -> the raw byte
+    if (t.size() == 6 && t[0] == '<' && t[1] == '0' && t[2] == 'x' &&
+        t[5] == '>') {
+      int hi = t[3], lo = t[4];
+      auto hexv = [](int c) -> int {
+        if (c >= '0' && c <= '9') return c - '0';
+        if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+        if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+        return 0;
+      };
+      merged += (char)((hexv(hi) << 4) | hexv(lo));
+    } else {
+      merged += t;
+    }
+  }
+  // Replace ▁ (U+2581, bytes e2 96 81) with a space.
+  std::string out;
+  for (size_t i = 0; i < merged.size();) {
+    if (i + 3 <= merged.size() && (uint8_t)merged[i] == 0xe2 &&
+        (uint8_t)merged[i + 1] == 0x96 && (uint8_t)merged[i + 2] == 0x81) {
+      out += ' ';
+      i += 3;
+    } else {
+      out += merged[i++];
+    }
+  }
+  return out;
+}
+
 } // namespace
 
 // ── C ABI wrapper ────────────────────────────────────────────────────
@@ -2991,6 +3050,12 @@ struct qwen2vl_ocr_context {
   int32_t image_pad_id = 151655;
   int32_t vision_end_id = 151653;
 
+  // PaddleOCR-VL (ERNIE-4.5) uses a different chat template with no <|im_*|>
+  // tokens; it wraps the turn as "<|begin_of_sentence|>User: <image>\nOCR:\n
+  // Assistant:". Detected at load time from general.name / image token.
+  bool is_paddleocr = false;
+  int32_t begin_of_sentence_id = 100273; // <|begin_of_sentence|>
+
   // Tokenize a text string via BPE. Falls back to hardcoded IDs if no
   // tokenizer.
   std::vector<int32_t> tokenize(const std::string &text) {
@@ -3007,6 +3072,28 @@ struct qwen2vl_ocr_context {
   // Build full chat-format token sequence with image placeholders
   std::vector<int32_t> build_token_ids(int n_image_tokens) {
     std::vector<int32_t> ids;
+
+    // PaddleOCR-VL (ERNIE-4.5) template:
+    //   <|begin_of_sentence|>User: <|IMAGE_START|><|IMAGE_PLACEHOLDER|>...
+    //   <|IMAGE_END|>\nOCR:\nAssistant:
+    // The <|im_*|> ids (151644/151645) are out of range for the 103424-row
+    // ERNIE embedding table, so this path must NOT use the Qwen chat format.
+    if (is_paddleocr) {
+      ids.push_back(begin_of_sentence_id);
+      auto up = tokenize("User: ");
+      ids.insert(ids.end(), up.begin(), up.end());
+      ids.push_back(vision_start_id);
+      for (int i = 0; i < n_image_tokens; i++)
+        ids.push_back(image_pad_id);
+      ids.push_back(vision_end_id);
+      // Faithful to chat_template.jinja: the image block is immediately
+      // followed by the user text ("OCR:"), a newline, then the generation
+      // prompt "Assistant: " (WITH a trailing space — dropping it makes the
+      // model emit </s> before any text). All one BPE segment.
+      auto tail = tokenize(prompt + "\nAssistant: ");
+      ids.insert(ids.end(), tail.begin(), tail.end());
+      return ids;
+    }
 
     // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
     // Qari-OCR is used WITHOUT a system message (just the user turn with
@@ -3119,8 +3206,19 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
       int pad_id = (int)core_gguf::kv_u32(g, "tokenizer.ggml.padding_token_id",
                                           ctx->im_end_id);
 
-      // GPT-2 BPE: no BOS, no suffix, not SPM style
-      ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, false, 8192);
+      // Detect a SentencePiece-style vocab (ERNIE-4.5 / PaddleOCR-VL uses ▁
+      // for spaces, not GPT-2's Ġ). Loading such a vocab as byte-level BPE
+      // silently drops all prompt whitespace, corrupting the chat template.
+      bool spm_vocab = false;
+      for (const auto &t : vocab) {
+        if (t == "\xe2\x96\x81" || t == "\xe2\x96\x81The") {
+          spm_vocab = true;
+          break;
+        }
+      }
+      // GPT-2 BPE for Qwen (Ġ); SentencePiece BPE + add_dummy_prefix for ERNIE.
+      ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, spm_vocab, 8192,
+                          /*spm_dummy_prefix=*/spm_vocab);
       ctx->has_tokenizer = true;
       ctx->tokenizer_can_encode = !merges.empty();
       fprintf(stderr,
@@ -3173,6 +3271,19 @@ static void post_load_init(qwen2vl_ocr_context *ctx, const char *gguf_path) {
             "Output only the transcribed text, nothing else.";
         if (ctx->inner.verbosity >= 1)
           fprintf(stderr, "qwen2vl_ocr: detected Qari-OCR from general.name, using OCR prompt\n");
+      }
+      // PaddleOCR-VL: ERNIE-4.5 text decoder. Its chat tokens differ from
+      // Qwen's (which are out of range for the 103424-row embed table), so
+      // switch the template, stop token and default OCR prompt.
+      if (name_lc.find("paddleocr") != std::string::npos ||
+          ctx->image_pad_id == 100295) {
+        ctx->is_paddleocr = true;
+        ctx->inner.eos_token_id = 2; // </s> (PaddleOCR-VL generation_config)
+        if (!getenv("CRISPEMBED_PADDLEOCR_STD_PROMPT"))
+          ctx->prompt = "OCR:";
+        if (ctx->inner.verbosity >= 1)
+          fprintf(stderr, "qwen2vl_ocr: detected PaddleOCR-VL (ERNIE-4.5), "
+                          "using ERNIE chat template + OCR prompt\n");
       }
       if (!is_unimumer &&
           (name_lc.find("uni-mumer") != std::string::npos ||
@@ -3323,13 +3434,16 @@ static const char *run_pipeline(qwen2vl_ocr_context *ctx,
   std::vector<int32_t> decode_ids;
   decode_ids.reserve(gen.token_ids.size());
   for (int32_t id : gen.token_ids) {
-    if (id == ctx->im_end_id || id == ctx->im_start_id)
+    if (id == ctx->im_end_id || id == ctx->im_start_id ||
+        id == ctx->inner.eos_token_id || id == ctx->begin_of_sentence_id)
       continue;
     decode_ids.push_back(id);
   }
   if (ctx->has_tokenizer) {
     ctx->last_result =
-        gpt2_bpe_decode(decode_ids, ctx->tokenizer.get_vocab());
+        ctx->is_paddleocr
+            ? spm_decode(decode_ids, ctx->tokenizer.get_vocab())
+            : gpt2_bpe_decode(decode_ids, ctx->tokenizer.get_vocab());
   } else {
     // Fallback: raw token IDs as comma-separated string
     ctx->last_result.clear();
