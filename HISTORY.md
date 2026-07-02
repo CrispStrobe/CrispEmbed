@@ -4,6 +4,44 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — Gap-4 embedding/face/tail-engine regression guardrails + 3 real bugs
+
+Closed the June-wave audit's "Gap 4" (engines with no standing diff test) and, in the
+process, surfaced three genuine shipped bugs. All parity work done in a separate worktree,
+`tools/format.sh`'d, merged to main. See `LEARNINGS.md` for the transferable lessons.
+
+**Guardrails added (5 engines, each vs an INDEPENDENT reference, wired in
+`tests/regression/manifest.json`, verified end-to-end via `run_one.py`):**
+- **tps_locnet** — `test-tps-parity` vs an independent numpy forward over the shipped
+  BN-folded GGUF (`dump_tps_reference_from_gguf.py`; PaddleOCR `.pdparams` is geo-blocked on
+  bcebos). cos **1.000000**. Aligned the harness to `cos_min=` for the run_one parser.
+- **vit_embed** — new `test-vit-embed-diff` vs HF SigLIP `get_image_features`. cos **0.9915**
+  (fixed the dumper's SigLIP path for transformers 4.57). Ref → `cstr/siglip-base-GGUF`.
+- **face_detect (cnn_embed / SCRFD)** — new `test-face-diff` vs an independent
+  **insightface-SCRFD** run over `det_10g.onnx` (`dump_face_reference.py`). Matches within
+  **2.45 px** on a FLUX-generated synthetic face fixture. Ref → `cstr/scrfd-det-10g-GGUF`.
+- **fireredpunc** — new generic `test-punct-diff` golden text-match (the punct C API exposes
+  only restored text). Wired `run_check`.
+- **decoder_embed** — new `test-decoder-embed-diff` vs HF Qwen3-Embedding-0.6B (last-token
+  pool). cos **0.9993**; also confirmed on Kaggle CUDA. Ref → `cstr/qwen3-embed-0.6b-GGUF`.
+
+**Bugs found (handovers written; not wired — a guard would be red until fixed):**
+- **pcs** — the shipped `pcs-xlmr-base-q4_k.gguf` **crashes on every inference**: it reads
+  Q4_K/Q4_0 FC-head weights via raw `ggml_backend_tensor_get` into F32 buffers. In sibling
+  repo `CrispASR/crisp_punc`. Wave commit `4a498d1`.
+- **clip_text** — embeddings only cos 0.79 vs HF: the CLIP BPE tokenizer never applies the
+  `</w>` word-boundary convention (emits GPT-2-style tokens). Pre-existing, not a wave regression.
+- **lfm2_colbert** — ColBERT multivec diverges on **CUDA** (cos 0.57 vs 0.998 CPU/Metal); the
+  backbone `cur` is computed wrong under the ColBERT graph while the dense graph's identical
+  backbone is fine. First fix hypothesis (set_output-on-live-intermediate) was **empirically
+  disproven** and reverted — real cause is graph-structural, needs per-layer CUDA localization.
+
+**Kaggle ref-gen kernel (`tools/kaggle/crispembed-ref-gen`) hardened:** added decoder_embed +
+bidirlm entries; pinned `transformers==4.57.6` (the Kaggle image's build crashed BidirLM's Qwen2
+tokenizer + drifted LiLT/DiT); fixed the verify heuristic that false-flagged lfm2's
+`PASS: 20 FAIL: 0`. bidirlm text remains blocked (stale GGUF → cos 0.04; needs a re-export).
+text_sr stays blocked (no checkpoint anywhere).
+
 ## July 2, 2026 — ggml v0.10.0 GPU-teardown regressions fixed + bidirlm-vision parity harness
 
 A ggml submodule bump to **v0.10.0 (`8be60f83`)** silently changed two runtime
