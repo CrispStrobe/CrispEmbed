@@ -113,6 +113,7 @@ static int lfm2_bucket_seq_len(int T) {
 struct lfm2_embed_ctx {
     lfm2_embed_model model;
     ggml_backend_t backend = nullptr;
+    ggml_backend_t backend_cpu = nullptr; // CPU fallback for the sched (issue #68)
     ggml_backend_sched_t sched = nullptr;
     int reserved_T = 0;         // dense encode path bucket
     int reserved_T_colbert = 0; // ColBERT path bucket
@@ -242,7 +243,16 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
         fprintf(stderr, "[lfm2_embed] ColBERT head: %d → %d\n", hp.hidden_size, ctx->model.colbert_dim);
     }
 
-    ctx->sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 4096, false, false);
+    // Issue #68 / ggml v0.10.0: ggml_backend_sched_new asserts the LAST backend
+    // is CPU. When the caller hands us a GPU backend (Metal/CUDA), append a CPU
+    // fallback so the scheduler has a valid host backend instead of aborting.
+    ggml_backend_t sched_backends[2] = { ctx->backend, nullptr };
+    int n_sched_backends = 1;
+    if (!ggml_backend_is_cpu(ctx->backend)) {
+        ctx->backend_cpu = ggml_backend_cpu_init();
+        if (ctx->backend_cpu) sched_backends[n_sched_backends++] = ctx->backend_cpu;
+    }
+    ctx->sched = ggml_backend_sched_new(sched_backends, nullptr, n_sched_backends, 4096, false, false);
     crispembed_imatrix_install(ctx->sched);
     if (!ctx->sched) {
         fprintf(stderr, "[lfm2_embed] failed to create backend scheduler\n");
@@ -265,7 +275,9 @@ void lfm2_embed_free(lfm2_embed_ctx * ctx) {
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->model.buf) ggml_backend_buffer_free(ctx->model.buf);
     if (ctx->model.ctx) ggml_free(ctx->model.ctx);
-    // backend is owned by crispembed_context — do not free here
+    // backend is owned by crispembed_context — do not free here; backend_cpu is
+    // ours (the sched fallback we created), so free it.
+    if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     delete ctx;
 }
 

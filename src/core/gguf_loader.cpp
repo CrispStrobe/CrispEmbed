@@ -18,6 +18,31 @@
 #include <unistd.h>
 #endif
 
+// ── Metal residency-set teardown guard (ggml v0.10.0 regression) ────────────
+// ggml v0.10.0 (submodule bump 8be60f83) added Metal "residency sets": a GPU
+// keep-alive cache (default 180 s, background heartbeat thread) plus a hard
+// teardown assert `GGML_ASSERT([rsets->data count] == 0)` in
+// ggml_metal_device_free(). The device is a process-global freed by a C++ static
+// destructor at exit; any Metal buffer still registered then aborts the process
+// (SIGABRT / exit 134) AFTER results are already printed — turning passing
+// one-shot CLI and test-*-diff runs into spurious "signal 6" failures.
+//
+// The residency cache only benefits a long-lived process (the server); a
+// one-shot CLI/test run is a fresh process, so it buys nothing there while
+// adding this crash. Disable it by default via ggml's own kill-switch so no
+// entry point can abort at exit; a long-lived host opts back in with
+// CRISPEMBED_METAL_RESIDENCY=1. This constructor runs at library load, before
+// main() and thus before any ggml Metal device init. (The complementary
+// "free every Metal backend before exit" fixes let residency be re-enabled
+// safely.) See memory ggml-8be60f-sched-teardown-asserts.
+#if defined(__APPLE__)
+__attribute__((constructor)) static void crispembed_metal_residency_default(void) {
+    if (!getenv("CRISPEMBED_METAL_RESIDENCY")) {
+        setenv("GGML_METAL_NO_RESIDENCY", "1", /*overwrite=*/0);
+    }
+}
+#endif
+
 namespace core_gguf {
 
 // ---------------------------------------------------------------------------
