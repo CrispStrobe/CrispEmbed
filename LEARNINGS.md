@@ -111,6 +111,50 @@ Verified end-to-end: `crispembed --ocr --denoise` (got-ocr2 q4_k + nafnet q4_k) 
 Metal reads the fox line cleanly; `run_one.py --name nafnet` passes with the diff
 live (worst cos 0.999998).
 
+## Metal/CUDA residency-abort class: init_best weights + a CPU enc_sched = crash on every GPU build (2026-07-02)
+
+Auditing whether nafnet's residency abort was shared, I found it is a **systemic
+pattern** across the conv-front-end engines, independent of the layout bug. Shape:
+
+```
+ctx->backend = init_best();      // Metal/CUDA — used ONLY to load weights (often freed right after)
+ctx->enc_backend = cpu_init();   // the conv/graph scheduler is CPU
+... conv graph references the GGUF weight *leaf* (w = weight_t / get_raw) ...
+ggml_backend_sched_alloc_graph(enc_sched, gf);   // ← ABORTS
+```
+
+The CPU sched can't run an op whose input tensor lives in a Metal (`MTL0`) buffer:
+`pre-allocated tensor (<name>) in a buffer (MTL0) that cannot run the operation` →
+`ggml_abort` on Metal, SIGSEGV on CUDA. These engines do **no** GPU compute (the
+Metal backend is pure weight storage), so `<ENGINE>_FORCE_CPU=1` / a CPU-only build
+hid it — which is exactly how every one of them passed its "audit."
+
+**Two fixes, pick by whether the main backend does GPU compute:**
+- *Pure-CPU engines* (all of these): load weights on CPU (`ggml_backend_cpu_init()`).
+  Behavior-preserving — the convs already ran on the CPU sched; only the weight
+  buffer moves. This is what restormer/esrgan/safmn/bttr/hmer/posformer/mixtex/
+  ppformulanet now do.
+- *Engines whose conv sched must stay CPU but that DO use the GPU elsewhere*:
+  dequantize each conv weight once into an `enc_backend`-resident tensor (swinir/hat
+  preload; nafnet caches via `nafnet_resident`). Don't force the whole model to CPU.
+
+**Affected + fixed (2026-07-02):** nafnet, restormer, esrgan, safmn, bttr_ocr,
+hmer_ocr, posformer_ocr, mixtex_ocr, ppformulanet_ocr. **Safe (verified):** swinir,
+dat, hat, pan, tbsrn, adair, scunet (preload conv weights onto enc_backend);
+instructir (CPU weights); text_sr (fully scalar convs, enc_sched is vestigial/unused).
+
+**Lesson: audit conv→ggml engines on the DEFAULT (GPU) backend, not just CPU.** A
+diff harness run under FORCE_CPU is blind to this entire class. The math-OCR engines
+(bttr/hmer/posformer/mixtex/ppformulanet) had **zero** regression coverage, so the
+abort shipped unseen — same coverage-gap story as nafnet.
+
+**Caveat — mixtex_ocr has a *separate*, pre-existing decode bug:** it now runs on
+Metal, and its encoder is correct (recovers `\frac{-b\pm\sqrt{b^2-4ac}}{2a}` from a
+rendered formula), but greedy decode degenerates into runaway repetition (never hits
+EOS; raw `Ġ`/`Ċ` BPE markers leak) on both a formula and a document page. That is NOT
+the residency fix (residency can't change numerics) and NOT input-OOD — it's an
+unvalidated decode path (no repetition handling / detok). Tracked separately.
+
 ## June-2026 scalar→ggml wave audit: 3 new regressions, all invisible to numerical guards (2026-07)
 
 Systematic re-audit of the ~15-engine June scalar→`ggml_conv_2d` refactor wave

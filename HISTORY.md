@@ -4,6 +4,25 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — Metal residency-abort swept across all conv-front-end engines (9 fixed)
+
+Generalized the nafnet/restormer residency finding into a full audit and found the
+same crash in **7 more** engines: esrgan, safmn (SR) and bttr, hmer, posformer,
+mixtex, ppformulanet (math-OCR). All load weights on `init_best` (Metal/CUDA) but run
+every graph on a CPU `enc_sched`, so referencing the GPU-buffer weight leaves aborts
+graph alloc on Metal (`pre-allocated tensor … buffer (MTL0) that cannot run`) and
+segfaults on CUDA. Since these engines do no GPU compute, loading weights on CPU is
+behavior-preserving — fixed all 9 (nafnet, restormer, esrgan, safmn, bttr, hmer,
+posformer, mixtex, ppformulanet). Verified on the default Metal build: SR diffs pass
+(esrgan/safmn cos 0.987); math-OCR reads a rendered quadratic formula correctly
+(bttr/ppformulanet exact `\frac{-b\pm\sqrt{b^2-4ac}}{2a}`, posformer near-exact, hmer
+structurally right). The rest of the family is Metal-safe (swinir/dat/hat/pan/tbsrn/
+adair/scunet preload conv weights; instructir CPU weights; text_sr fully scalar).
+Key lesson: **audit conv→ggml engines on the default GPU backend** — a FORCE_CPU diff
+is blind to this whole class, which is why it shipped unseen (the math-OCR engines
+have no regression coverage at all). Separately noted: mixtex_ocr now runs but has a
+pre-existing decode-degeneration bug (unrelated to residency) — tracked for follow-up.
+
 ## July 2, 2026 — nafnet denoise fixed (conv→ggml scramble + residency); restormer's Metal abort closed
 
 Closed the last two conv→ggml-wave regressions. **nafnet** was the coverage gap
