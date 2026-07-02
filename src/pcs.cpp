@@ -227,8 +227,9 @@ static bool pcs_load(pcs_context & ctx, const char * path) {
     fprintf(stderr, "pcs: %dL, d=%d, ffn=%d, heads=%d, vocab=%d, post=%d, pre=%d\n", ctx.n_layers, ctx.d_model,
             ctx.d_ffn, ctx.n_heads, ctx.vocab_size, ctx.n_post_labels, ctx.n_pre_labels);
 
-    // Load weights
-    ctx.backend = ggml_backend_init_best();
+    // Load weights. PCS_FORCE_CPU pins the CPU backend (diff-harness parity: match
+    // the ONNX/onnxruntime CPU reference without GPU float-noise on borderline logits).
+    ctx.backend = std::getenv("PCS_FORCE_CPU") ? nullptr : ggml_backend_init_best();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     ctx.backend_cpu = ggml_backend_cpu_init();
 
@@ -679,6 +680,22 @@ char * pcs_process(pcs_context * ctx, const char * text) {
         all_result.pre_preds.insert(all_result.pre_preds.end(), r.pre_preds.begin(), r.pre_preds.end());
         all_result.sbd_preds.insert(all_result.sbd_preds.end(), r.sbd_preds.begin(), r.sbd_preds.end());
         all_result.cap_preds.insert(all_result.cap_preds.end(), r.cap_preds.begin(), r.cap_preds.end());
+    }
+
+    // Diff-harness dump: PCS_DEBUG=1 prints tokenization + per-token head predictions
+    // so they can be compared against the ONNX reference (tools/dump_pcs_reference.py).
+    if (std::getenv("PCS_DEBUG")) {
+        fprintf(stderr, "[pcs-debug] %zu tokens\n", token_ids.size());
+        fprintf(stderr, "[pcs-debug] token_ids:");
+        for (int id : token_ids) fprintf(stderr, " %d", id);
+        fprintf(stderr, "\n[pcs-debug] idx tok_id post pre sbd cap[0:6]\n");
+        for (size_t t = 0; t < token_ids.size(); t++) {
+            fprintf(stderr, "[pcs-debug] %2zu %6d %4d %3d %3d  ", t, token_ids[t], all_result.post_preds[t],
+                    all_result.pre_preds[t], (int)all_result.sbd_preds[t]);
+            for (int c = 0; c < 6 && c < (int)all_result.cap_preds[t].size(); c++)
+                fprintf(stderr, "%d", (int)all_result.cap_preds[t][c]);
+            fprintf(stderr, "\n");
+        }
     }
 
     // Reconstruct text: map subtokens back to words, apply punc + case
