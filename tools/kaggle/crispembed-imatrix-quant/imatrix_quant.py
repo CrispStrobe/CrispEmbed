@@ -54,6 +54,12 @@ DEFAULT_BATCH = [
     "nomic-embed-text-v1.5", "nomic-embed-text-v2-moe", "arctic-embed-l-v2",
     "gte-base-en-v1.5", "gte-large-en-v1.5", "octen-0.6b", "f2llm-v2-0.6b",
     "qwen3-embed-0.6b", "pixie-rune-v1",
+    # group 2 (<=2.4GB, fit Kaggle CPU RAM):
+    "all-MiniLM-L6-v2", "all-MiniLM-L12-v2", "all-mpnet-base-v2", "gte-small",
+    "arctic-embed-xs", "snowflake-arctic-embed-m", "snowflake-arctic-embed-l",
+    "paraphrase-multilingual-MiniLM-L12-v2", "harrier-270m", "harrier-0.6b",
+    # DEFERRED (f32 base 16-30GB > Kaggle ~13GB RAM for calibration; need a
+    # calibrate-on-q8 / quantize-from-f16 path): octen-4b/8b, qwen3-embed-4b/8b.
     # embeddinggemma-300m EXCLUDED: crispembed-quantize corrupts its ST Dense
     # projection (dense.0/dense.1 → q8_0) so the output GGUF fails to load
     # ("tensor read out of bounds" in load_decoder_model). Needs a keep-F32 guard
@@ -237,9 +243,24 @@ def main():
     from huggingface_hub import HfApi
     api = HfApi(token=token)
 
+    # Idempotent: skip models whose repo already has imatrix quants (unless FORCE=1),
+    # so re-running the batch only processes newly-added models.
+    force = os.environ.get("FORCE", "0") != "0"
+    def is_done(hf_out):
+        try:
+            fs = api.list_repo_files(hf_out)
+        except Exception:
+            return False
+        return (any(f.endswith("-iq4_xs.gguf") for f in fs)
+                and any(f.endswith("-imatrix-ab.txt") for f in fs))
+
     import traceback
-    results, failures = [], []
+    results, failures, skipped = [], [], []
     for name in RUN:
+        hf_out = OVERRIDES.get(name, {}).get("hf_out", f"cstr/{name}-GGUF")
+        if not force and is_done(hf_out):
+            print(f"[skip] {name} — already has imatrix quants", flush=True)
+            kh.step("model.skip", model=name); skipped.append(name); continue
         try:
             results.append(process(name, cli, quant, api, calib, eval_))
         except Exception as e:
@@ -259,9 +280,9 @@ def main():
     text = "\n".join(lines) + "\n"
     (WORK / "batch_summary.txt").write_text(text)   # kept in working dir → downloadable
     print("\n" + text, flush=True)
-    kh.step("all_done", ok=len(results), failed=len(failures),
+    kh.step("all_done", ok=len(results), skipped=len(skipped), failed=len(failures),
             failures=",".join(n for n, _ in failures))
-    print("[DONE]", flush=True)
+    print(f"[DONE] ok={len(results)} skipped={len(skipped)} failed={len(failures)}", flush=True)
 
 
 if __name__ == "__main__":
