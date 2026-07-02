@@ -181,7 +181,8 @@ bool load(context ** out, const char * path, int n_threads) {
         ctx->sp_tokenizer.load(vocab, scores, -1, ctx->eos_id, 2, 0, ctx->max_pos);
         fprintf(stderr, "clip_text: SentencePiece tokenizer loaded (%zu vocab)\n", vocab.size());
     } else if (!vocab.empty() && !merges.empty()) {
-        ctx->bpe_tokenizer.load(vocab, merges, ctx->eos_id, ctx->eos_id, -1, ctx->bos_id, false, ctx->max_pos);
+        ctx->bpe_tokenizer.load(vocab, merges, ctx->eos_id, ctx->eos_id, -1, ctx->bos_id, false, ctx->max_pos,
+                                /*spm_dummy_prefix=*/false, /*clip_style=*/true);
         fprintf(stderr, "clip_text: BPE tokenizer loaded (%zu vocab, %zu merges)\n", vocab.size(), merges.size());
     } else {
         fprintf(stderr, "clip_text: WARNING — no tokenizer in GGUF\n");
