@@ -1422,6 +1422,26 @@ int gliner_ner_extract(void * ptr,
             fprintf(stderr, "[gliner-bench] layer fusion: %.3f ms\n",
                     std::chrono::duration<double, std::milli>(t_fuse1 - t_fuse0).count());
         }
+        // Per-stage diff (LFM2 path) — the DeBERTa branch had this but the LFM2 branch
+        // did not, leaving it single-stage (only lstm_out downstream). Compare every
+        // backbone layer + the fused output so a FAIL localizes the first diverging stage.
+        if (diff_ref_path) {
+            crispembed_diff::Ref ref;
+            if (ref.load(diff_ref_path)) {
+                for (int l = 0; l < NL; l++) {
+                    char nm[32]; snprintf(nm, sizeof(nm), "layer_%d", l);
+                    if (!ref.has(nm)) continue;
+                    auto r = ref.compare(nm, all_layer_outs[l].data(), (size_t)T * enc_hidden);
+                    fprintf(stderr, "[gliner-diff] %s: cos=%.6f max_abs=%.2e %s\n",
+                            nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                }
+                if (ref.has("fused")) {
+                    auto r = ref.compare("fused", fused.data(), (size_t)T * enc_hidden);
+                    fprintf(stderr, "[gliner-diff] fused: cos=%.6f max_abs=%.2e %s\n",
+                            r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+        }
     }
 
     // -----------------------------------------------------------------------

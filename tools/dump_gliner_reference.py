@@ -43,6 +43,13 @@ def main():
     parser.add_argument("--cache-dir", default="/mnt/akademie_storage/huggingface/hub")
     args = parser.parse_args()
 
+    # transformers>=4.45 removed TFPreTrainedModel; `from gliner import GLiNER` pulls in
+    # gliner.training -> transformers.trainer -> integrations, which imports it. Inference
+    # needs no TF, so inject a stub to keep the import working on newer transformers.
+    import transformers as _tf
+    if not hasattr(_tf, "TFPreTrainedModel"):
+        _tf.TFPreTrainedModel = type("TFPreTrainedModel", (object,), {})
+
     # Load model — work around tokenizer class issue by patching config
     import json, os, shutil, tempfile
     model_dir = args.model
@@ -175,7 +182,7 @@ def main():
     writer = gguf.GGUFWriter(args.output, arch="gliner_ref")
 
     # Metadata
-    writer.add_string("general.architecture", "gliner_ref")
+    # (general.architecture is already set by GGUFWriter(arch=) — re-adding raises "Duplicated key")
     writer.add_string("ref.text", args.text)
     writer.add_array("ref.labels", args.labels)
     writer.add_uint32("ref.n_entities", len(entities))
