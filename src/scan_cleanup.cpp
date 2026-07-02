@@ -43,6 +43,8 @@ scan_cleanup_params scan_cleanup_defaults(void) {
     p.deskew_max_angle = 15.0f;
     p.despeckle = 1;
     p.despeckle_thresh = 0.25f;
+    p.blackfilter = 1;
+    p.blackfilter_thresh = 0.20f;
     return p;
 }
 
@@ -514,6 +516,75 @@ static void scan_cleanup_despeckle(std::vector<float> & gray, int w, int h, floa
     gray.swap(out);
 }
 
+// ── Blackfilter (Port 2 of the unpaper feature set) ─────────────────
+// Clear large SOLID dark regions that are not text — scanner-bed / lifted-page
+// shadows, dark photocopy edges, big blobs/pinholes — which the rectangular
+// border-crop can't reach. Clean-room: label 8-connected components of "very
+// dark" pixels, then whiten a component only when it is both LARGE (bigger than
+// any glyph) and SOLID (bounding-box fill ratio high). Text glyphs/lines are
+// small or low-fill (thin strokes in their bbox), so they are kept.
+//
+// Hard guard against unpaper's failure mode (it blanked whole pages): never clear
+// more than 40% of the page — if that much is "dark solid", it is probably a dark
+// scan or an inverted image, not a shadow, so leave it alone.
+static void scan_cleanup_blackfilter(std::vector<float> & gray, int w, int h, float thresh) {
+    const int n = w * h;
+    if (n < 64) return;
+    std::vector<uint8_t> dark(n);
+    for (int i = 0; i < n; i++) dark[i] = gray[i] < thresh ? 1 : 0;
+
+    const int64_t min_area = std::max<int64_t>(64, (int64_t)(0.0008 * n)); // > a glyph
+    const float min_fill = 0.50f;                                          // solid, not strokes
+    const int64_t max_clear = (int64_t)(0.40 * n);                         // page-blank guard
+
+    std::vector<int> label(n, 0);
+    std::vector<int> stack;
+    std::vector<int> to_clear; // pixel indices queued for whitening
+    int64_t clear_total = 0;
+    int cur = 0;
+    const int dx[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+    const int dy[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+    for (int s = 0; s < n; s++) {
+        if (!dark[s] || label[s]) continue;
+        cur++;
+        stack.clear();
+        stack.push_back(s);
+        label[s] = cur;
+        std::vector<int> comp;
+        int minx = w, maxx = 0, miny = h, maxy = 0;
+        while (!stack.empty()) {
+            int p = stack.back();
+            stack.pop_back();
+            comp.push_back(p);
+            int px = p % w, py = p / w;
+            if (px < minx) minx = px;
+            if (px > maxx) maxx = px;
+            if (py < miny) miny = py;
+            if (py > maxy) maxy = py;
+            for (int k = 0; k < 8; k++) {
+                int nx = px + dx[k], ny = py + dy[k];
+                if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+                int q = ny * w + nx;
+                if (dark[q] && !label[q]) {
+                    label[q] = cur;
+                    stack.push_back(q);
+                }
+            }
+        }
+        int64_t area = (int64_t)comp.size();
+        if (area < min_area) continue;
+        int64_t bbox = (int64_t)(maxx - minx + 1) * (maxy - miny + 1);
+        float fill = bbox > 0 ? (float)area / (float)bbox : 0.0f;
+        if (fill < min_fill) continue; // strokes/text, keep
+        clear_total += area;
+        for (int p : comp) to_clear.push_back(p);
+    }
+
+    if (clear_total == 0 || clear_total > max_clear) return; // nothing, or guard tripped
+    for (int p : to_clear) gray[p] = 1.0f;                   // whiten the shadow/blob
+}
+
 // ── Pipeline ────────────────────────────────────────────────────────
 
 int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int width, int height, int channels,
@@ -537,6 +608,17 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int wid
         if (bench) {
             double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
             fprintf(stderr, "[scan_cleanup-bench] despeckle: %.1f ms\n", ms);
+        }
+    }
+
+    // 0b. Blackfilter: clear large solid dark shadows/blobs before deskew (a dark
+    //     edge otherwise biases the Hough angle) and before whiten.
+    if (params.blackfilter) {
+        auto t0 = std::chrono::steady_clock::now();
+        scan_cleanup_blackfilter(gray, w, h, params.blackfilter_thresh);
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] blackfilter: %.1f ms\n", ms);
         }
     }
 
