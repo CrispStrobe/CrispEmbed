@@ -753,6 +753,27 @@
       }
     },
     {
+      "name": "modernbert",
+      "engine": "modernbert",
+      "diff_only": true,
+      "_comment": "ModernBERT (gte-modernbert-base) encoder guardrail. Ref = dump_modernbert_reference.py (AutoModel) on a ~113-token text; span >64 so the local sliding-window layers (radius local_attention/2=64) restrict attention, guarding the SWA mask (swa_mask). q8_0 model vs f32 ref -> final_hidden 0.9919 on CPU; floor 0.99. Disabling SWA (CRISPEMBED_ENCODER_NO_SWA=1) craters cos to ~-0.87, so this catches an SWA regression.",
+      "gguf": {
+        "repo": "cstr/gte-modernbert-base-GGUF",
+        "file": "gte-modernbert-base-q8_0.gguf",
+        "revision": "main"
+      },
+      "diff": {
+        "binary": "test-modernbert-diff",
+        "ref": {
+          "repo": "cstr/gte-modernbert-base-GGUF",
+          "file": "modernbert-ref.gguf"
+        },
+        "thresholds": {
+          "final_hidden": 0.99
+        }
+      }
+    },
+    {
       "name": "mixtex",
       "engine": "mixtex",
       "gguf": {
