@@ -526,6 +526,22 @@
       }
     },
     {
+      "name": "fireredpunc",
+      "engine": "fireredpunc",
+      "_comment": "FireRedPunc punctuation restoration (BERT chinese-bert-wwm-ext, 5 classes). No hidden/logits accessor in the punct C API, so the guardrail is a golden text match (run_check): a graph-scramble regression turns correct punctuation into garbage. Golden captured on the shipped q4_k (its cls head is F16 and computed in-graph via mul_mat, so weight quant is fine — unlike pcs, whose q4_k FC-head weights crash a raw tensor_get). Impl lives in CrispASR/crisp_punc (shared lib replaces the local src copy). Deterministic (argmax, no sampling).",
+      "gguf": {
+        "repo": "cstr/fireredpunc-GGUF",
+        "file": "fireredpunc-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 55
+      },
+      "run_check": {
+        "binary": "test-punct-diff",
+        "args": ["hello world how are you today i am fine thanks", "Hello world. How are you today? I am fine. Thanks."],
+        "expect_exit": 0
+      }
+    },
+    {
       "name": "vit_embed",
       "engine": "vit_embed",
       "diff_only": true,

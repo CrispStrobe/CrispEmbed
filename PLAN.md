@@ -493,8 +493,14 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   parity ref possible. Mitigant: text_sr is a NAFNet variant sharing the conv paths that are
   now guarded by the `nafnet` entry; the PixelShuffle/bicubic tail remains unguarded. Blocked
   until a checkpoint exists.
-- **pcs — MEDIUM.** `4a498d1 perf(pcs): cache FC head weights at init` (caching refactor).
-  XLM-R-base; GGUF `cstr/pcs-xlmr-base-GGUF` + HF source available → closeable.
+- **pcs — REGRESSION FOUND, shipped-broken.** `4a498d1 perf(pcs): cache FC head weights at init`
+  was the exact wave commit at fault. The shipped default `pcs-xlmr-base-q4_k.gguf` **crashes on
+  every inference** (`ggml-backend.cpp:349 tensor read out of bounds`): pcs reads its Q4_K/Q4_0
+  FC-head weights via raw `ggml_backend_tensor_get` into F32 buffers (`n_elem*4` >> `ggml_nbytes`
+  of a quantized tensor). Impl is in the SIBLING repo **CrispASR/crisp_punc/src/pcs.cpp** (shared
+  lib replaces the local copy). Handover:
+  `handover-prompts/pcs-q4k-head-weight-tensor-get-crash.md`. Not wired (a guard would be red until
+  fixed). fireredpunc is unaffected (F16 cls head, in-graph mul_mat).
 - **decoder_embed — MEDIUM, believed covered.** 5 wave commits incl. flash_attn; PLAN marks
   the flash_attn work DONE/verified (`29d8a08`). Only `tests/test_decoder_batch.py` (python),
   no compiled guardrail. Assess / add standing test (large model → Kaggle).
@@ -546,6 +552,23 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   wrote `dump_tps_reference_from_gguf.py` (source .pdparams geo-blocked on bcebos → from_gguf like
   the SR engines), uploaded `tps-ref.gguf` to `cstr/tps-loc-GGUF`, wired `diff_only`. End-to-end
   `run_one --name tps_locnet` → 2 stages worst cos_min=1.000000 PASS.
+- **vit_embed — CLEAN, CLOSED (Gap 4).** SigLIP ViT final image-embedding matches an independent
+  HF-AutoModel ref (`dump_vit_reference.py` on siglip-base-patch16-384, `get_image_features`) at
+  cos 0.9915 on CPU (f16 GGUF + preprocessing diff; a scramble → ~0). New `test_vit_embed_diff.cpp`
+  (single-stage, image via `diff.args`); floor 0.98 for backend variance. Fixed the dumper's SigLIP
+  path (transformers 4.57 needs get_image_features; full SiglipModel.forward requires both towers).
+  Ref uploaded to `cstr/siglip-base-GGUF`, wired `diff_only`. run_one PASS.
+- **fireredpunc — CLEAN, CLOSED (Gap 4).** No hidden/logits accessor in the punct C API → golden
+  text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
+  "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
+  Thanks." (correct, deterministic). Wired; run_one PASS. Impl in CrispASR/crisp_punc.
+- **pcs — REGRESSION, shipped-broken (Gap 4).** See triage above — q4_k crashes on inference
+  (Q4_K FC-head weights read as F32). Handover written; fix is in CrispASR/crisp_punc. Not wired.
+- **clip_text — DEFERRED (Gap 4, unresolved).** Engine vs HF `get_text_features` ref cos=0.79 —
+  NOT a scramble (that's ~0) but too low for a match; classic single-stage dumper-vs-engine
+  ambiguity (likely a text_projection or BPE-tokenization difference). Harness + dumper written
+  (`test_clip_text_diff.cpp`, `dump_clip_text_reference.py`) but NOT wired/merged — needs a
+  multi-stage per-layer localizer to disambiguate before pinning a threshold.
 
 **Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
 bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
