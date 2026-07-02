@@ -328,8 +328,12 @@ posformer_ocr_context * posformer_ocr_init(const char * model_path, int n_thread
             hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size(), hp.arm_dc);
 
     // Prefer GPU backend — weights read via ggml_backend_tensor_get (GPU-safe).
-    bool force_cpu = (getenv("POSFORMER_OCR_FORCE_CPU") && atoi(getenv("POSFORMER_OCR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    // Residency: all compute runs on the CPU enc_sched; ctx->backend only holds
+    // weights. init_best (Metal/CUDA) left them in a GPU buffer the CPU conv sched
+    // can't read → abort on Metal ("pre-allocated tensor ... cannot run") / segfault
+    // on CUDA. Convs run on CPU regardless, so load on CPU. (Same class as the
+    // nafnet/restormer fixes; POSFORMER_OCR_FORCE_CPU is now a no-op.)
+    ggml_backend_t backend = ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "posformer_ocr", ctx->wl)) {
         ggml_backend_free(backend);
