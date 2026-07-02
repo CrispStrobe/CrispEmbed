@@ -87,6 +87,12 @@ void scan_cleanup_find_content_rect(const float * gray, int w, int h, float bord
 // dst must be pre-allocated (w * h floats).
 void scan_cleanup_whiten(const float * gray, int w, int h, int kernel_size, float * dst);
 
+// Detect a two-up (double-page) book spread and return the gutter column to split
+// at (0..w), or -1 for a single page. Input: uint8 RGB/grayscale (channels 1/3).
+// Clean-room: wide aspect + a near-empty vertical gutter in the central band with
+// substantial text content on both sides (column dark-pixel projection profile).
+int scan_cleanup_detect_page_split(const uint8_t * pixels, int w, int h, int channels);
+
 #ifdef __cplusplus
 }
 #endif
