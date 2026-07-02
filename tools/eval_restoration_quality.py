@@ -30,6 +30,26 @@ Examples:
         --model restormer-denoise-f16.gguf --builtin astronaut --sigmas 15,25,50
     $PY tools/eval_restoration_quality.py --engine esrgan \
         --model esrgan-x4.gguf --builtin chelsea --mode sr --scale 4
+    # book-scan OCR benefit (synthetic clean GT):
+    $PY tools/eval_restoration_quality.py --engine restormer \
+        --model restormer-denoise-f16.gguf --builtin bookpage --sigmas 50 --ocr tesseract
+
+Real public-domain scan (archive.org, US-PD pre-1929 — e.g. the 1895 Pride and
+Prejudice, item prideprejudice0002jane). Fetch a page via the IIIF endpoint, crop
+a body-text block, size it for CPU, take tesseract's read of the CLEAN crop as the
+OCR reference, then let the tool add noise + denoise + re-OCR:
+    ID=prideprejudice0002jane
+    curl -sL "https://iiif.archive.org/iiif/$ID\$46/full/full/0/default.jpg" -o page.jpg
+    $PY - <<'PY'
+    from PIL import Image; import pytesseract
+    c=Image.open('page.jpg').convert('RGB').crop((110,180,1250,760))
+    w=520; h=c.height*w//c.width; c=c.resize((w-w%8,h-h%8), Image.LANCZOS)
+    c.save('pp_clean.png'); open('pp_gt.txt','w').write(pytesseract.image_to_string(c))
+    PY
+    $PY tools/eval_restoration_quality.py --engine restormer \
+        --model restormer-denoise-f16.gguf --image pp_clean.png --gt-text pp_gt.txt \
+        --sigmas 50 --ocr tesseract
+    # measured: noisy CER 1.000 (OCR fails) -> denoised CER 0.021; PSNR +14 dB.
 """
 
 import argparse
