@@ -1066,21 +1066,28 @@ single-threaded, must not OOM.
   fox jumps over the lazy dog. 12345", CPU AND Metal, q4_k. Four bugs:
   1. Vision 2D RoPE built in raster order while the preprocessor always emits
      patches in merge-block order (HF `rot_pos_emb` permutes ids identically) —
-     the `merge_order` flag keyed off `is_qwen2_vl` (false for the RMSNorm 2.5
-     variant). Now gated on `deepstack_indexes.empty()`. Dominant bug.
+     the `merge_order` flag keyed off `is_qwen2_vl`. Now **unconditional**
+     merge-block (see the gate-correction note below). Dominant bug.
   2. CPU spatial merge grouped patches via the raster else-branch for Qwen2.5-VL
-     (mis-groups merge-block data; deepstack already assumed consecutive). Same gate.
+     (mis-groups merge-block data; deepstack already assumed consecutive). Now
+     unconditional consecutive.
   3. Windowed attention was unimplemented — `window_size`/`fullatt_block_indexes`
      loaded but never used. Added as an in-place additive mask (0 within a window,
      -inf across) via `soft_max_ext` on non-fullatt blocks; full blocks keep
-     flash_attn. Opt-out `QWEN2VL_OCR_NO_WINDOW=1`.
+     flash_attn. Opt-out `QWEN2VL_OCR_NO_WINDOW=1`. (Qwen3-VL is full-attention —
+     correctly excluded via `is_qwen2_vl=true`.)
   4. arch `qwen2vl` got no OCR prompt (only `qwen3vl` did) → default "Describe this
      image." → verbose prose. OCR prompt now applied to both archs.
-  - Blast radius = Qwen2.5-VL only; every gate preserves prior behavior for
-    Qwen2-VL / PaddleOCR-VL (`is_qwen2_vl`) and Qwen3-VL (deepstack).
+  - **Gate correction (same day):** the first fix (`86d0830`) gated rope order +
+    merger grouping on `deepstack_indexes.empty()`, assuming Qwen3-VL was
+    `is_qwen2_vl=false`. It's `is_qwen2_vl=true` (LayerNorm ViT) *with* deepstack,
+    so that gate flipped it from the correct merge-block path to raster →
+    **regressed Qwen3-VL to garbage OCR**. `patchify_qwen_layout` emits merge-block
+    order for every family member, so rope order + merger grouping are now
+    **unconditional**. Verified `qwen3-vl-2b` AND `qwen2.5-vl-3b` read the fox line
+    on CPU and Metal.
   - Per-stage HF ref (`qwen2.5-vl-3b-ref.gguf`) not yet regenerated/uploaded —
-    verified end-to-end transcript on both backends. Latent qwen3vl merger/deepstack
-    grouping inconsistency (raster merger vs consecutive deepstack) left untouched.
+    verified end-to-end transcript on both backends.
   - History: HISTORY.md (July 2, 2026). Deep-dive: LEARNINGS "qwen2vl-3b
     hallucinated OCR — RESOLVED".
 
