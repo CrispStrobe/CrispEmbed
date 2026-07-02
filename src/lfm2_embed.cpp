@@ -14,6 +14,7 @@
 
 #include "core/gguf_loader.h"
 #include "core/bpe.h"
+#include "crispembed_diff.h"
 
 #include <cassert>
 #include <chrono>
@@ -599,6 +600,9 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
 
     // Final norm
     cur = lfm2_rms_norm(g, cur, ctx->model.embedding_norm_w, eps);
+    ggml_tensor * hidden = cur;                 // pre-projection backbone hidden
+    ggml_set_name(hidden, "hidden_states");
+    ggml_set_output(hidden);
 
     // ColBERT projection: [H, T] → matmul with proj [cd, H] → [cd, T]
     ggml_tensor * projected = ggml_mul_mat(g, ctx->model.colbert_proj_w, cur);
@@ -607,6 +611,7 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, projected);
+    ggml_build_forward_expand(gf, hidden);
 
     // Reserve scheduler for ColBERT bucket
     const int T_bucket = lfm2_bucket_seq_len(T);
@@ -636,6 +641,21 @@ int lfm2_embed_encode_multivec(lfm2_embed_ctx * ctx, const char * text,
     // Read projected output: [cd, T] in ggml → read as [T, cd] row-major
     std::vector<float> raw(cd * T);
     ggml_backend_tensor_get(projected, raw.data(), 0, cd * T * sizeof(float));
+
+    // Optional localizer diff: compare the pre-projection backbone hidden against a
+    // reference (LFM2_COLBERT_DIFF_REF). The harness already checks colbert_output; if
+    // hidden_states PASSES here but colbert_output FAILs, the discrepancy is the
+    // ColBERT projection head, not the backbone.
+    if (const char * dref = std::getenv("LFM2_COLBERT_DIFF_REF")) {
+        crispembed_diff::Ref ref;
+        if (ref.load(dref) && ref.has("hidden_states")) {
+            std::vector<float> hbuf((size_t)H * T);
+            ggml_backend_tensor_get(hidden, hbuf.data(), 0, (size_t)H * T * sizeof(float));
+            auto r = ref.compare("hidden_states", hbuf.data(), (size_t)H * T);
+            fprintf(stderr, "[lfm2-colbert-diff] hidden_states: cos=%.6f max_abs=%.2e %s\n",
+                    r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
 
     ggml_free(g);
 
