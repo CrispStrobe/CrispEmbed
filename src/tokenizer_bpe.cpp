@@ -18,7 +18,7 @@ bool BPETokenizer::load(const std::vector<std::string> & vocab,
                          const std::vector<std::string> & merges,
                          int eos_id, int pad_id, int suffix_id,
                          int bos_id, bool spm_style,
-                         int max_length) {
+                         int max_length, bool spm_dummy_prefix) {
     id_to_token_ = vocab;
     token_to_id_.clear();
     token_to_id_.reserve(vocab.size());
@@ -37,6 +37,7 @@ bool BPETokenizer::load(const std::vector<std::string> & vocab,
     suffix_id_ = suffix_id;
     bos_id_ = bos_id;
     spm_style_ = spm_style;
+    spm_dummy_prefix_ = spm_dummy_prefix;
     max_length_ = max_length;
     return !vocab.empty();
 }
@@ -127,21 +128,16 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
     std::vector<int32_t> ids;
 
     if (spm_style_) {
-        // SentencePiece BPE (Gemma): prepend space, replace spaces with ▁
+        // SentencePiece normalization: optional add_dummy_prefix (a leading
+        // space → ▁ at the very start, used by ERNIE-4.5/PaddleOCR-VL), then
+        // every space → ▁ (U+2581). Newlines and other bytes fall through to
+        // bpe_merge's byte fallback (e.g. \n → <0x0A>). With dummy_prefix=false
+        // this reproduces the prior Gemma behavior (no leading ▁).
+        std::string src = spm_dummy_prefix_ ? (" " + text) : text;
         std::string processed;
-        // Note: Gemma prepends ▁ to the text (space → ▁)
-        for (size_t i = 0; i < text.size(); i++) {
-            if (text[i] == ' ' || i == 0) {
-                if (i == 0 && text[i] != ' ') {
-                    // No leading space in input — still don't prepend ▁ for Gemma
-                    // Gemma's tokenizer does NOT prepend space like XLM-R
-                    processed += text[i];
-                } else if (text[i] == ' ') {
-                    processed += "\xe2\x96\x81";  // ▁ (U+2581)
-                }
-            } else {
-                processed += text[i];
-            }
+        for (char c : src) {
+            if (c == ' ') processed += "\xe2\x96\x81";  // ▁ (U+2581)
+            else processed += c;
         }
         ids = bpe_merge(processed);
 
