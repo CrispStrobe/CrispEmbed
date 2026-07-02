@@ -36,37 +36,37 @@
 // ---------------------------------------------------------------------------
 
 struct dense_layer_bttr {
-    struct ggml_tensor * conv1_w;  // (bottleneck, in_ch) — BN folded, flattened 2D
+    struct ggml_tensor * conv1_w; // (bottleneck, in_ch) — BN folded, flattened 2D
     struct ggml_tensor * conv1_b;
-    struct ggml_tensor * conv2_w;  // (growth, bottleneck*9) — BN folded, flattened 2D
+    struct ggml_tensor * conv2_w; // (growth, bottleneck*9) — BN folded, flattened 2D
     struct ggml_tensor * conv2_b;
 };
 
 struct transition_bttr {
-    struct ggml_tensor * conv_w;   // BN folded
+    struct ggml_tensor * conv_w; // BN folded
     struct ggml_tensor * conv_b;
 };
 
 struct decoder_layer_bttr {
     // Self-attention (fused QKV)
-    struct ggml_tensor * sa_qkv_w;   // (768, 256) — Q,K,V packed
-    struct ggml_tensor * sa_qkv_b;   // (768,)
-    struct ggml_tensor * sa_out_w;   // (256, 256)
+    struct ggml_tensor * sa_qkv_w; // (768, 256) — Q,K,V packed
+    struct ggml_tensor * sa_qkv_b; // (768,)
+    struct ggml_tensor * sa_out_w; // (256, 256)
     struct ggml_tensor * sa_out_b;
     // Cross-attention (fused QKV)
-    struct ggml_tensor * ca_qkv_w;   // (768, 256)
+    struct ggml_tensor * ca_qkv_w; // (768, 256)
     struct ggml_tensor * ca_qkv_b;
     struct ggml_tensor * ca_out_w;
     struct ggml_tensor * ca_out_b;
     // FFN
-    struct ggml_tensor * ff_up_w;    // (1024, 256)
+    struct ggml_tensor * ff_up_w; // (1024, 256)
     struct ggml_tensor * ff_up_b;
-    struct ggml_tensor * ff_down_w;  // (256, 1024)
+    struct ggml_tensor * ff_down_w; // (256, 1024)
     struct ggml_tensor * ff_down_b;
     // LayerNorms (post-LN)
-    struct ggml_tensor * ln1_w, * ln1_b;  // after self-attn
-    struct ggml_tensor * ln2_w, * ln2_b;  // after cross-attn
-    struct ggml_tensor * ln3_w, * ln3_b;  // after FFN
+    struct ggml_tensor *ln1_w, *ln1_b; // after self-attn
+    struct ggml_tensor *ln2_w, *ln2_b; // after cross-attn
+    struct ggml_tensor *ln3_w, *ln3_b; // after FFN
 };
 
 struct bttr_ocr_context {
@@ -83,17 +83,17 @@ struct bttr_ocr_context {
     struct ggml_tensor * post_norm_offset;
 
     // Feature projection
-    struct ggml_tensor * feat_proj_w;  // (256, 684)
+    struct ggml_tensor * feat_proj_w; // (256, 684)
     struct ggml_tensor * feat_proj_b;
-    struct ggml_tensor * enc_ln_w;     // LayerNorm after projection
+    struct ggml_tensor * enc_ln_w; // LayerNorm after projection
     struct ggml_tensor * enc_ln_b;
 
     // Decoder
     struct ggml_tensor * word_embed_w;
     struct ggml_tensor * word_embed_ln_w;
     struct ggml_tensor * word_embed_ln_b;
-    struct ggml_tensor * pos_enc;       // (500, 256) sinusoidal
-    struct ggml_tensor * proj_w;        // (113, 256) output projection
+    struct ggml_tensor * pos_enc; // (500, 256) sinusoidal
+    struct ggml_tensor * proj_w;  // (113, 256) output projection
     struct ggml_tensor * proj_b;
 
     std::vector<decoder_layer_bttr> dec_layers;
@@ -102,15 +102,15 @@ struct bttr_ocr_context {
     std::vector<std::string> vocab;
 
     // 2D positional encoding cache
-    std::vector<float> pe_cache;  // (n_pos * D) — PE values to add to encoder output
+    std::vector<float> pe_cache; // (n_pos * D) — PE values to add to encoder output
     int pe_cache_h = 0, pe_cache_w = 0;
 
     // Dequant cache (scalar fallback)
     core_cpu::DequantCache dequant_cache;
 
     // ggml graph encoder
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_compute_meta;
 
     // GGUF state
@@ -120,7 +120,7 @@ struct bttr_ocr_context {
     // Inference state
     std::string result_buf;
     std::vector<float> char_confidences; // per-token softmax probabilities
-    std::vector<float> encoder_output; // (n_pos, d_model)
+    std::vector<float> encoder_output;   // (n_pos, d_model)
     int n_enc_pos;
 
     // Pre-allocated decoder scratch (avoids per-step/per-layer heap allocs)
@@ -128,7 +128,7 @@ struct bttr_ocr_context {
         std::vector<float> x, qkv, attn_out, sa_proj;
         std::vector<float> cq, ca_out, ca_proj;
         std::vector<float> ffn_up, ffn_down;
-        std::vector<float> scores;  // max(n_enc, max_seq)
+        std::vector<float> scores; // max(n_enc, max_seq)
         std::vector<float> logits;
         bool allocated = false;
     } ds;
@@ -146,56 +146,54 @@ static const float * tf32(bttr_ocr_context * ctx, struct ggml_tensor * t) {
 }
 
 // conv2d, relu, linear, layernorm → delegate to core_cpu (SIMD-accelerated)
-static void conv2d(const float * in, int ic, int ih, int iw,
-                   const float * W, const float * B,
-                   int oc, int kH, int kW, int stride, int pad,
-                   float * out, int /*oh*/, int /*ow*/) {
+static void conv2d(const float * in, int ic, int ih, int iw, const float * W, const float * B, int oc, int kH, int kW,
+                   int stride, int pad, float * out, int /*oh*/, int /*ow*/) {
     core_cpu::conv2d_cpu(in, out, W, B, ic, oc, ih, iw, kH, kW, stride, pad);
 }
 
-static void relu_ip(float * d, int n) { core_cpu::relu_inplace(d, n); }
+static void relu_ip(float * d, int n) {
+    core_cpu::relu_inplace(d, n);
+}
 
-static void maxpool2d_ceil(const float * in, int ch, int ih, int iw,
-                           int k, int s, float * out, int oh, int ow) {
+static void maxpool2d_ceil(const float * in, int ch, int ih, int iw, int k, int s, float * out, int oh, int ow) {
     for (int c = 0; c < ch; c++)
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++) {
                 float mx = -1e30f;
                 for (int ky = 0; ky < k; ky++)
                     for (int kx = 0; kx < k; kx++) {
-                        int iy = y*s + ky, ix = x*s + kx;
+                        int iy = y * s + ky, ix = x * s + kx;
                         if (iy < ih && ix < iw) {
-                            float v = in[c*ih*iw + iy*iw + ix];
+                            float v = in[c * ih * iw + iy * iw + ix];
                             if (v > mx) mx = v;
                         }
                     }
-                out[c*oh*ow + y*ow + x] = mx;
+                out[c * oh * ow + y * ow + x] = mx;
             }
 }
 
-static void avgpool2d_ceil(const float * in, int ch, int ih, int iw,
-                           int k, int s, float * out, int oh, int ow) {
+static void avgpool2d_ceil(const float * in, int ch, int ih, int iw, int k, int s, float * out, int oh, int ow) {
     for (int c = 0; c < ch; c++)
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++) {
-                float sum = 0; int cnt = 0;
+                float sum = 0;
+                int cnt = 0;
                 for (int ky = 0; ky < k; ky++)
                     for (int kx = 0; kx < k; kx++) {
-                        int iy = y*s + ky, ix = x*s + kx;
+                        int iy = y * s + ky, ix = x * s + kx;
                         if (iy < ih && ix < iw) {
-                            sum += in[c*ih*iw + iy*iw + ix];
+                            sum += in[c * ih * iw + iy * iw + ix];
                             cnt++;
                         }
                     }
-                out[c*oh*ow + y*ow + x] = cnt > 0 ? sum / cnt : 0;
+                out[c * oh * ow + y * ow + x] = cnt > 0 ? sum / cnt : 0;
             }
 }
 
-static void apply_bn(float * d, int ch, int sp,
-                     const float * scale, const float * offset) {
+static void apply_bn(float * d, int ch, int sp, const float * scale, const float * offset) {
     for (int c = 0; c < ch; c++) {
         float s = scale[c], o = offset[c];
-        for (int i = 0; i < sp; i++) d[c*sp + i] = d[c*sp + i] * s + o;
+        for (int i = 0; i < sp; i++) d[c * sp + i] = d[c * sp + i] * s + o;
     }
 }
 
@@ -204,9 +202,7 @@ static void layernorm(float * x, int d, const float * w, const float * b) {
     core_cpu::layernorm_cpu(x, x, d, w, b, 1e-5f);
 }
 
-static void linear(const float * x, int in_d,
-                   const float * W, const float * B, int out_d,
-                   float * out) {
+static void linear(const float * x, int in_d, const float * W, const float * B, int out_d, float * out) {
     core_cpu::linear_cpu(x, out, in_d, out_d, W, B);
 }
 
@@ -214,8 +210,7 @@ static void linear(const float * x, int in_d,
 // Tensor mapping
 // ---------------------------------------------------------------------------
 
-static struct ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor*> & m,
-                                 const char * name) {
+static struct ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor *> & m, const char * name) {
     auto it = m.find(name);
     return it != m.end() ? it->second : nullptr;
 }
@@ -236,8 +231,10 @@ static bool map_tensors(bttr_ocr_context * ctx) {
                 snprintf(buf, sizeof(buf), "enc.block%d.layer%d.%s", bi, li, s);
                 return find(m, buf);
             };
-            l.conv1_w = T("conv1.weight"); l.conv1_b = T("conv1.bias");
-            l.conv2_w = T("conv2.weight"); l.conv2_b = T("conv2.bias");
+            l.conv1_w = T("conv1.weight");
+            l.conv1_b = T("conv1.bias");
+            l.conv2_w = T("conv2.weight");
+            l.conv2_b = T("conv2.bias");
         }
     };
     map_block(1, ctx->block1);
@@ -249,21 +246,21 @@ static bool map_tensors(bttr_ocr_context * ctx) {
     ctx->trans2.conv_w = find(m, "enc.trans2.conv.weight");
     ctx->trans2.conv_b = find(m, "enc.trans2.conv.bias");
 
-    ctx->post_norm_scale  = find(m, "enc.post_norm.scale");
+    ctx->post_norm_scale = find(m, "enc.post_norm.scale");
     ctx->post_norm_offset = find(m, "enc.post_norm.offset");
 
     ctx->feat_proj_w = find(m, "enc.feature_proj.weight");
     ctx->feat_proj_b = find(m, "enc.feature_proj.bias");
-    ctx->enc_ln_w    = find(m, "enc.norm.weight");
-    ctx->enc_ln_b    = find(m, "enc.norm.bias");
+    ctx->enc_ln_w = find(m, "enc.norm.weight");
+    ctx->enc_ln_b = find(m, "enc.norm.bias");
 
     // Decoder
-    ctx->word_embed_w    = find(m, "dec.word_embed.weight");
+    ctx->word_embed_w = find(m, "dec.word_embed.weight");
     ctx->word_embed_ln_w = find(m, "dec.word_embed_ln.weight");
     ctx->word_embed_ln_b = find(m, "dec.word_embed_ln.bias");
-    ctx->pos_enc         = find(m, "dec.pos_enc");
-    ctx->proj_w          = find(m, "dec.proj.weight");
-    ctx->proj_b          = find(m, "dec.proj.bias");
+    ctx->pos_enc = find(m, "dec.pos_enc");
+    ctx->proj_w = find(m, "dec.proj.weight");
+    ctx->proj_b = find(m, "dec.proj.bias");
 
     ctx->dec_layers.resize(hp.num_decoder_layers);
     for (int li = 0; li < hp.num_decoder_layers; li++) {
@@ -280,11 +277,16 @@ static bool map_tensors(bttr_ocr_context * ctx) {
         l.ca_qkv_b = T("cross_attn.in_proj_bias");
         l.ca_out_w = T("cross_attn.out_proj.weight");
         l.ca_out_b = T("cross_attn.out_proj.bias");
-        l.ff_up_w  = T("ffn.up.weight");  l.ff_up_b  = T("ffn.up.bias");
-        l.ff_down_w = T("ffn.down.weight"); l.ff_down_b = T("ffn.down.bias");
-        l.ln1_w = T("norm1.weight"); l.ln1_b = T("norm1.bias");
-        l.ln2_w = T("norm2.weight"); l.ln2_b = T("norm2.bias");
-        l.ln3_w = T("norm3.weight"); l.ln3_b = T("norm3.bias");
+        l.ff_up_w = T("ffn.up.weight");
+        l.ff_up_b = T("ffn.up.bias");
+        l.ff_down_w = T("ffn.down.weight");
+        l.ff_down_b = T("ffn.down.bias");
+        l.ln1_w = T("norm1.weight");
+        l.ln1_b = T("norm1.bias");
+        l.ln2_w = T("norm2.weight");
+        l.ln2_b = T("norm2.bias");
+        l.ln3_w = T("norm3.weight");
+        l.ln3_b = T("norm3.bias");
     }
 
     if (!ctx->stem_conv_w || !ctx->word_embed_w || !ctx->proj_w) {
@@ -306,25 +308,24 @@ bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads) {
     if (!gctx) return nullptr;
 
     auto & hp = ctx->hparams;
-    hp.growth_rate        = core_gguf::kv_u32(gctx, "bttr.encoder.growth_rate", 24);
-    hp.num_layers         = core_gguf::kv_u32(gctx, "bttr.encoder.num_layers", 16);
-    hp.input_channels     = core_gguf::kv_u32(gctx, "bttr.encoder.input_channels", 1);
-    hp.d_model            = core_gguf::kv_u32(gctx, "bttr.decoder.d_model", 256);
-    hp.nhead              = core_gguf::kv_u32(gctx, "bttr.decoder.nhead", 8);
+    hp.growth_rate = core_gguf::kv_u32(gctx, "bttr.encoder.growth_rate", 24);
+    hp.num_layers = core_gguf::kv_u32(gctx, "bttr.encoder.num_layers", 16);
+    hp.input_channels = core_gguf::kv_u32(gctx, "bttr.encoder.input_channels", 1);
+    hp.d_model = core_gguf::kv_u32(gctx, "bttr.decoder.d_model", 256);
+    hp.nhead = core_gguf::kv_u32(gctx, "bttr.decoder.nhead", 8);
     hp.num_decoder_layers = core_gguf::kv_u32(gctx, "bttr.decoder.num_layers", 3);
-    hp.dim_feedforward    = core_gguf::kv_u32(gctx, "bttr.decoder.dim_feedforward", 1024);
-    hp.vocab_size         = core_gguf::kv_u32(gctx, "bttr.decoder.vocab_size", 113);
-    hp.max_len            = core_gguf::kv_u32(gctx, "bttr.decoder.max_len", 200);
-    hp.pad_token          = core_gguf::kv_u32(gctx, "bttr.decoder.pad_token", 0);
-    hp.sos_token          = core_gguf::kv_u32(gctx, "bttr.decoder.sos_token", 1);
-    hp.eos_token          = core_gguf::kv_u32(gctx, "bttr.decoder.eos_token", 2);
+    hp.dim_feedforward = core_gguf::kv_u32(gctx, "bttr.decoder.dim_feedforward", 1024);
+    hp.vocab_size = core_gguf::kv_u32(gctx, "bttr.decoder.vocab_size", 113);
+    hp.max_len = core_gguf::kv_u32(gctx, "bttr.decoder.max_len", 200);
+    hp.pad_token = core_gguf::kv_u32(gctx, "bttr.decoder.pad_token", 0);
+    hp.sos_token = core_gguf::kv_u32(gctx, "bttr.decoder.sos_token", 1);
+    hp.eos_token = core_gguf::kv_u32(gctx, "bttr.decoder.eos_token", 2);
 
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
 
-    fprintf(stderr, "bttr_ocr: growth=%d layers=%d d=%d heads=%d dec=%d vocab=%d(%zu)\n",
-            hp.growth_rate, hp.num_layers, hp.d_model, hp.nhead,
-            hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size());
+    fprintf(stderr, "bttr_ocr: growth=%d layers=%d d=%d heads=%d dec=%d vocab=%d(%zu)\n", hp.growth_rate, hp.num_layers,
+            hp.d_model, hp.nhead, hp.num_decoder_layers, hp.vocab_size, ctx->vocab.size());
 
     // Prefer GPU backend — weights read via ggml_backend_tensor_get (GPU-safe).
     // Residency: all compute runs on the CPU enc_sched; ctx->backend only holds
@@ -370,25 +371,20 @@ const bttr_ocr_hparams * bttr_ocr_get_hparams(const bttr_ocr_context * ctx) {
 // ---------------------------------------------------------------------------
 
 // Prepare conv weight: reshape 2D→4D if needed, cast to F16.
-static ggml_tensor * bttr_prep_conv(ggml_context * g, ggml_tensor * w,
-                                     int IC, int KH, int KW) {
+static ggml_tensor * bttr_prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
-        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16)
-            w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
+        if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) w = ggml_cont(g, ggml_cast(g, w, GGML_TYPE_F32));
         int64_t OC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
     }
-    if (w->type != GGML_TYPE_F16)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
     return w;
 }
 
 // Conv2D + bias (BN folded into weights)
-static ggml_tensor * bttr_conv(ggml_context * g, ggml_tensor * x,
-                                ggml_tensor * w, ggml_tensor * bias,
-                                int IC, int KH, int KW,
-                                int stride, int pad) {
+static ggml_tensor * bttr_conv(ggml_context * g, ggml_tensor * x, ggml_tensor * w, ggml_tensor * bias, int IC, int KH,
+                               int KW, int stride, int pad) {
     w = bttr_prep_conv(g, w, IC, KH, KW);
     x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     if (bias) {
@@ -399,9 +395,8 @@ static ggml_tensor * bttr_conv(ggml_context * g, ggml_tensor * x,
 }
 
 // BN scale+offset (post_norm: separate scale/offset tensors, not folded)
-static ggml_tensor * bttr_bn(ggml_context * g, ggml_tensor * x,
-                              ggml_tensor * scale, ggml_tensor * offset) {
-    ggml_tensor * s = ggml_reshape_3d(g, scale,  1, 1, scale->ne[0]);
+static ggml_tensor * bttr_bn(ggml_context * g, ggml_tensor * x, ggml_tensor * scale, ggml_tensor * offset) {
+    ggml_tensor * s = ggml_reshape_3d(g, scale, 1, 1, scale->ne[0]);
     ggml_tensor * o = ggml_reshape_3d(g, offset, 1, 1, offset->ne[0]);
     x = ggml_mul(g, x, s);
     x = ggml_add(g, x, o);
@@ -410,14 +405,13 @@ static ggml_tensor * bttr_bn(ggml_context * g, ggml_tensor * x,
 
 static ggml_cgraph * build_bttr_encoder_graph(bttr_ocr_context * ctx, int W, int H) {
     const auto & hp = ctx->hparams;
-    const int gr = hp.growth_rate;     // 24
-    const int bn_size = 4;             // bottleneck multiplier
-    const int init_ch = 2 * gr;        // 48
+    const int gr = hp.growth_rate; // 24
+    const int bn_size = 4;         // bottleneck multiplier
+    const int init_ch = 2 * gr;    // 48
 
     // Graph size: 48 layers × ~30 nodes + overhead
     int graph_size = 48 * 40 + 600;
-    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200)
-                    + ggml_graph_overhead_custom(graph_size, false);
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 200) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_compute_meta.resize(buf_size);
 
     ggml_init_params ip = { buf_size, ctx->enc_compute_meta.data(), true };
@@ -454,16 +448,14 @@ static ggml_cgraph * build_bttr_encoder_graph(bttr_ocr_context * ctx, int W, int
     auto dense_block = [&](const std::vector<dense_layer_bttr> & layers) {
         for (const auto & l : layers) {
             if (!l.conv1_w) continue;
-            int bn_ch = bn_size * gr;  // 96
+            int bn_ch = bn_size * gr; // 96
 
             // Conv1(cur_ch→96, 1×1) + bias (BN folded) + ReLU
-            ggml_tensor * bot = bttr_conv(g, x, l.conv1_w, l.conv1_b,
-                                           cur_ch, 1, 1, 1, 0);
+            ggml_tensor * bot = bttr_conv(g, x, l.conv1_w, l.conv1_b, cur_ch, 1, 1, 1, 0);
             bot = ggml_relu(g, bot);
 
             // Conv2(96→24, 3×3) + bias (BN folded) + ReLU
-            ggml_tensor * nf = bttr_conv(g, bot, l.conv2_w, l.conv2_b,
-                                          bn_ch, 3, 3, 1, 1);
+            ggml_tensor * nf = bttr_conv(g, bot, l.conv2_w, l.conv2_b, bn_ch, 3, 3, 1, 1);
             nf = ggml_relu(g, nf);
 
             // Concat along channel dim (dim=2 in ggml WHC)
@@ -484,11 +476,11 @@ static ggml_cgraph * build_bttr_encoder_graph(bttr_ocr_context * ctx, int W, int
 
     // Block 1: 48 → 48+16*24 = 432
     dense_block(ctx->block1);
-    transition(ctx->trans1);  // 432 → 216
+    transition(ctx->trans1); // 432 → 216
 
     // Block 2: 216 → 216+16*24 = 600
     dense_block(ctx->block2);
-    transition(ctx->trans2);  // 600 → 300
+    transition(ctx->trans2); // 600 → 300
 
     // Block 3: 300 → 300+16*24 = 684
     dense_block(ctx->block3);
@@ -497,8 +489,7 @@ static ggml_cgraph * build_bttr_encoder_graph(bttr_ocr_context * ctx, int W, int
     x = bttr_bn(g, x, ctx->post_norm_scale, ctx->post_norm_offset);
 
     // Feature projection: Conv1×1(684→256) + ReLU
-    x = bttr_conv(g, x, ctx->feat_proj_w, ctx->feat_proj_b,
-                   cur_ch, 1, 1, 1, 0);
+    x = bttr_conv(g, x, ctx->feat_proj_w, ctx->feat_proj_b, cur_ch, 1, 1, 1, 0);
     x = ggml_relu(g, x);
 
     ggml_set_name(x, "encoder_out");
@@ -507,8 +498,7 @@ static ggml_cgraph * build_bttr_encoder_graph(bttr_ocr_context * ctx, int W, int
     return gf;
 }
 
-static void run_encoder_ggml(bttr_ocr_context * ctx,
-                              const float * gray, int W, int H) {
+static void run_encoder_ggml(bttr_ocr_context * ctx, const float * gray, int W, int H) {
     ggml_cgraph * gf = build_bttr_encoder_graph(ctx, W, H);
 
     ggml_backend_sched_reset(ctx->enc_sched);
@@ -527,8 +517,8 @@ static void run_encoder_ggml(bttr_ocr_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
@@ -548,14 +538,12 @@ static void run_encoder_ggml(bttr_ocr_context * ctx,
     // Transpose CHW → HW×D
     ctx->encoder_output.resize(n_pos * D);
     for (int c = 0; c < D; c++)
-        for (int i = 0; i < n_pos; i++)
-            ctx->encoder_output[i * D + c] = chw[c * n_pos + i];
+        for (int i = 0; i < n_pos; i++) ctx->encoder_output[i * D + c] = chw[c * n_pos + i];
 
     // LayerNorm per position
     const float * ln_w = tf32(ctx, ctx->enc_ln_w);
     const float * ln_b = tf32(ctx, ctx->enc_ln_b);
-    for (int i = 0; i < n_pos; i++)
-        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
+    for (int i = 0; i < n_pos; i++) layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
 
     // 2D PE (keep from scalar path — trivial compute, position-dependent)
     {
@@ -565,8 +553,7 @@ static void run_encoder_ggml(bttr_ocr_context * ctx,
             const int quarter_d = half_d / 2;
             const float scale = 2.0f * (float)M_PI;
             std::vector<float> inv_freq(half_d);
-            for (int i = 0; i < half_d; i++)
-                inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
+            for (int i = 0; i < half_d; i++) inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
             ctx->pe_cache.assign(n_pos * D, 0.0f);
             for (int y = 0; y < cur_h; y++)
                 for (int x = 0; x < cur_w; x++) {
@@ -574,24 +561,23 @@ static void run_encoder_ggml(bttr_ocr_context * ctx,
                     float x_norm = scale * (float)(x + 1) / (float)cur_w;
                     float * pe = ctx->pe_cache.data() + (y * cur_w + x) * D;
                     for (int i = 0; i < quarter_d; i++) {
-                        pe[2*i]     = sinf(x_norm * inv_freq[2*i]);
-                        pe[2*i + 1] = cosf(x_norm * inv_freq[2*i + 1]);
+                        pe[2 * i] = sinf(x_norm * inv_freq[2 * i]);
+                        pe[2 * i + 1] = cosf(x_norm * inv_freq[2 * i + 1]);
                     }
                     for (int i = 0; i < quarter_d; i++) {
-                        pe[half_d + 2*i]     = sinf(y_norm * inv_freq[2*i]);
-                        pe[half_d + 2*i + 1] = cosf(y_norm * inv_freq[2*i + 1]);
+                        pe[half_d + 2 * i] = sinf(y_norm * inv_freq[2 * i]);
+                        pe[half_d + 2 * i + 1] = cosf(y_norm * inv_freq[2 * i + 1]);
                     }
                 }
             ctx->pe_cache_h = cur_h;
             ctx->pe_cache_w = cur_w;
         }
-        for (int i = 0; i < n_pos * D; i++)
-            ctx->encoder_output[i] += ctx->pe_cache[i];
+        for (int i = 0; i < n_pos * D; i++) ctx->encoder_output[i] += ctx->pe_cache[i];
     }
 
     ctx->n_enc_pos = n_pos;
-    fprintf(stderr, "bttr_ocr: encoder (ggml): (%d, %d, %d) → %d positions × %d\n",
-            (int)enc_out->ne[2], out_h, out_w, n_pos, D);
+    fprintf(stderr, "bttr_ocr: encoder (ggml): (%d, %d, %d) → %d positions × %d\n", (int)enc_out->ne[2], out_h, out_w,
+            n_pos, D);
 }
 
 // ---------------------------------------------------------------------------
@@ -600,19 +586,19 @@ static void run_encoder_ggml(bttr_ocr_context * ctx,
 
 static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H) {
     const auto & hp = ctx->hparams;
-    const int gr = hp.growth_rate;     // 24
-    const int bn_size = 4;             // bottleneck multiplier
-    const int init_ch = 2 * gr;        // 48
+    const int gr = hp.growth_rate; // 24
+    const int bn_size = 4;         // bottleneck multiplier
+    const int init_ch = 2 * gr;    // 48
 
     // Stem: Conv(1→48, 7×7, s=2, p=3) + BN(folded) + ReLU
-    int h1 = (H + 2*3 - 7) / 2 + 1, w1 = (W + 2*3 - 7) / 2 + 1;
+    int h1 = (H + 2 * 3 - 7) / 2 + 1, w1 = (W + 2 * 3 - 7) / 2 + 1;
     std::vector<float> feat(init_ch * h1 * w1);
-    conv2d(gray, 1, H, W, tf32(ctx, ctx->stem_conv_w), tf32(ctx, ctx->stem_conv_b),
-           init_ch, 7, 7, 2, 3, feat.data(), h1, w1);
+    conv2d(gray, 1, H, W, tf32(ctx, ctx->stem_conv_w), tf32(ctx, ctx->stem_conv_b), init_ch, 7, 7, 2, 3, feat.data(),
+           h1, w1);
     relu_ip(feat.data(), init_ch * h1 * w1);
 
     // MaxPool(2, s=2, ceil_mode=True)
-    int h2 = (h1 + 1) / 2, w2 = (w1 + 1) / 2;  // ceil_mode
+    int h2 = (h1 + 1) / 2, w2 = (w1 + 1) / 2; // ceil_mode
     std::vector<float> pooled(init_ch * h2 * w2);
     maxpool2d_ceil(feat.data(), init_ch, h1, w1, 2, 2, pooled.data(), h2, w2);
 
@@ -624,21 +610,19 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
         int sp = cur_h * cur_w;
         for (const auto & l : layers) {
             if (!l.conv1_w) continue;
-            int bn_ch = bn_size * gr;  // 96
+            int bn_ch = bn_size * gr; // 96
 
             // Conv1(cur_ch→96, 1×1) + BN(folded) + ReLU
             std::vector<float> bot(bn_ch * sp);
             // conv1_w is flattened to (96, cur_ch) — treat as 1×1 conv
-            conv2d(features.data(), cur_ch, cur_h, cur_w,
-                   tf32(ctx, l.conv1_w), tf32(ctx, l.conv1_b),
-                   bn_ch, 1, 1, 1, 0, bot.data(), cur_h, cur_w);
+            conv2d(features.data(), cur_ch, cur_h, cur_w, tf32(ctx, l.conv1_w), tf32(ctx, l.conv1_b), bn_ch, 1, 1, 1, 0,
+                   bot.data(), cur_h, cur_w);
             relu_ip(bot.data(), bn_ch * sp);
 
             // Conv2(96→24, 3×3) + BN(folded) + ReLU
             std::vector<float> nf(gr * sp);
-            conv2d(bot.data(), bn_ch, cur_h, cur_w,
-                   tf32(ctx, l.conv2_w), tf32(ctx, l.conv2_b),
-                   gr, 3, 3, 1, 1, nf.data(), cur_h, cur_w);
+            conv2d(bot.data(), bn_ch, cur_h, cur_w, tf32(ctx, l.conv2_w), tf32(ctx, l.conv2_b), gr, 3, 3, 1, 1,
+                   nf.data(), cur_h, cur_w);
             relu_ip(nf.data(), gr * sp);
 
             // Concat
@@ -650,61 +634,57 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
 
     auto run_trans = [&](const transition_bttr & t) {
         int sp = cur_h * cur_w;
-        int out_ch = cur_ch / 2;  // reduction=0.5
+        int out_ch = cur_ch / 2; // reduction=0.5
 
         // Conv1×1(cur_ch→out_ch) + BN(folded) + ReLU
         std::vector<float> conv_out(out_ch * sp);
-        conv2d(features.data(), cur_ch, cur_h, cur_w,
-               tf32(ctx, t.conv_w), tf32(ctx, t.conv_b),
-               out_ch, 1, 1, 1, 0, conv_out.data(), cur_h, cur_w);
+        conv2d(features.data(), cur_ch, cur_h, cur_w, tf32(ctx, t.conv_w), tf32(ctx, t.conv_b), out_ch, 1, 1, 1, 0,
+               conv_out.data(), cur_h, cur_w);
         relu_ip(conv_out.data(), out_ch * sp);
 
         // AvgPool(2, s=2, ceil_mode=True)
         int oh = (cur_h + 1) / 2, ow = (cur_w + 1) / 2;
         std::vector<float> pool_out(out_ch * oh * ow);
-        avgpool2d_ceil(conv_out.data(), out_ch, cur_h, cur_w,
-                       2, 2, pool_out.data(), oh, ow);
+        avgpool2d_ceil(conv_out.data(), out_ch, cur_h, cur_w, 2, 2, pool_out.data(), oh, ow);
 
         features = std::move(pool_out);
-        cur_ch = out_ch; cur_h = oh; cur_w = ow;
+        cur_ch = out_ch;
+        cur_h = oh;
+        cur_w = ow;
     };
 
     // Block 1: 48 → 48+16*24 = 432
     run_block(ctx->block1);
-    run_trans(ctx->trans1);  // 432 → 216
+    run_trans(ctx->trans1); // 432 → 216
 
     // Block 2: 216 → 216+16*24 = 600
     run_block(ctx->block2);
-    run_trans(ctx->trans2);  // 600 → 300
+    run_trans(ctx->trans2); // 600 → 300
 
     // Block 3: 300 → 300+16*24 = 684
     run_block(ctx->block3);
 
     // Post-norm (BN as scale+offset)
     int sp = cur_h * cur_w;
-    apply_bn(features.data(), cur_ch, sp,
-             tf32(ctx, ctx->post_norm_scale), tf32(ctx, ctx->post_norm_offset));
+    apply_bn(features.data(), cur_ch, sp, tf32(ctx, ctx->post_norm_scale), tf32(ctx, ctx->post_norm_offset));
 
     // Feature projection: Conv1×1(684→256) + ReLU
     const int D = hp.d_model;
     std::vector<float> proj(D * sp);
-    conv2d(features.data(), cur_ch, cur_h, cur_w,
-           tf32(ctx, ctx->feat_proj_w), tf32(ctx, ctx->feat_proj_b),
-           D, 1, 1, 1, 0, proj.data(), cur_h, cur_w);
+    conv2d(features.data(), cur_ch, cur_h, cur_w, tf32(ctx, ctx->feat_proj_w), tf32(ctx, ctx->feat_proj_b), D, 1, 1, 1,
+           0, proj.data(), cur_h, cur_w);
     relu_ip(proj.data(), D * sp);
 
     // Transpose CHW → HW×D
     int n_pos = cur_h * cur_w;
     ctx->encoder_output.resize(n_pos * D);
     for (int c = 0; c < D; c++)
-        for (int i = 0; i < n_pos; i++)
-            ctx->encoder_output[i * D + c] = proj[c * n_pos + i];
+        for (int i = 0; i < n_pos; i++) ctx->encoder_output[i * D + c] = proj[c * n_pos + i];
 
     // LayerNorm per position
     const float * ln_w = tf32(ctx, ctx->enc_ln_w);
     const float * ln_b = tf32(ctx, ctx->enc_ln_b);
-    for (int i = 0; i < n_pos; i++)
-        layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
+    for (int i = 0; i < n_pos; i++) layernorm(ctx->encoder_output.data() + i * D, D, ln_w, ln_b);
 
     // 2D positional encoding (DETR-style, computed on-the-fly)
     // Matches PyTorch ImgPosEnc with normalize=True, scale=2*pi:
@@ -716,14 +696,13 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
     {
         if (cur_h != ctx->pe_cache_h || cur_w != ctx->pe_cache_w) {
             // Recompute and store PE into cache.
-            const int half_d = D / 2;           // 128
-            const int quarter_d = half_d / 2;   // 64
+            const int half_d = D / 2;         // 128
+            const int quarter_d = half_d / 2; // 64
             const float scale = 2.0f * (float)M_PI;
 
             // Precompute inv_freq: (half_d,) = 1/10000^(i/half_d)
             std::vector<float> inv_freq(half_d);
-            for (int i = 0; i < half_d; i++)
-                inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
+            for (int i = 0; i < half_d; i++) inv_freq[i] = 1.0f / powf(10000.0f, (float)i / (float)half_d);
 
             ctx->pe_cache.assign(n_pos * D, 0.0f);
             for (int y = 0; y < cur_h; y++) {
@@ -740,16 +719,16 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
                     // flatten of stack([A0,A1,...A63], [B0,B1,...B63], dim=-1)
                     // = [A0,B0, A1,B1, ..., A63,B63]
                     for (int i = 0; i < quarter_d; i++) {
-                        float sx = x_norm * inv_freq[2 * i];      // even inv_freq → sin
-                        float cx = x_norm * inv_freq[2 * i + 1];  // odd inv_freq → cos
-                        pe[2 * i]     = sinf(sx);
+                        float sx = x_norm * inv_freq[2 * i];     // even inv_freq → sin
+                        float cx = x_norm * inv_freq[2 * i + 1]; // odd inv_freq → cos
+                        pe[2 * i] = sinf(sx);
                         pe[2 * i + 1] = cosf(cx);
                     }
                     // pos_y occupies pe[half_d..D-1]
                     for (int i = 0; i < quarter_d; i++) {
                         float sy = y_norm * inv_freq[2 * i];
                         float cy = y_norm * inv_freq[2 * i + 1];
-                        pe[half_d + 2 * i]     = sinf(sy);
+                        pe[half_d + 2 * i] = sinf(sy);
                         pe[half_d + 2 * i + 1] = cosf(cy);
                     }
                 }
@@ -759,14 +738,11 @@ static void run_encoder(bttr_ocr_context * ctx, const float * gray, int W, int H
         }
 
         // Add cached PE to encoder output.
-        for (int i = 0; i < n_pos * D; i++)
-            ctx->encoder_output[i] += ctx->pe_cache[i];
+        for (int i = 0; i < n_pos * D; i++) ctx->encoder_output[i] += ctx->pe_cache[i];
     }
 
     ctx->n_enc_pos = n_pos;
-    fprintf(stderr, "bttr_ocr: encoder: (%d, %d, %d) → %d positions × %d\n",
-            cur_ch, cur_h, cur_w, n_pos, D);
-
+    fprintf(stderr, "bttr_ocr: encoder: (%d, %d, %d) → %d positions × %d\n", cur_ch, cur_h, cur_w, n_pos, D);
 }
 
 // ---------------------------------------------------------------------------
@@ -834,10 +810,8 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
         ca_ck[li].resize(n_enc * D);
         ca_cv[li].resize(n_enc * D);
         for (int p = 0; p < n_enc; p++) {
-            linear(ctx->encoder_output.data() + p * D, D,
-                   Wk, Bk, D, ca_ck[li].data() + p * D);
-            linear(ctx->encoder_output.data() + p * D, D,
-                   Wv, Bv, D, ca_cv[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D, Wk, Bk, D, ca_ck[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D, Wv, Bv, D, ca_cv[li].data() + p * D);
         }
     }
 
@@ -851,9 +825,7 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
             const float * emb = tf32(ctx, ctx->word_embed_w);
             memcpy(ds.x.data(), emb + prev_token * D, D * sizeof(float));
         }
-        layernorm(ds.x.data(), D,
-                  tf32(ctx, ctx->word_embed_ln_w),
-                  tf32(ctx, ctx->word_embed_ln_b));
+        layernorm(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w), tf32(ctx, ctx->word_embed_ln_b));
 
         if (ctx->pos_enc && step < 500) {
             const float * pe = tf32(ctx, ctx->pos_enc);
@@ -864,9 +836,8 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
             const auto & l = ctx->dec_layers[li];
 
             // --- Causal self-attention ---
-            linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
-                   3*D, ds.qkv.data());
-            float * q = ds.qkv.data(), * k = ds.qkv.data() + D, * v = ds.qkv.data() + 2*D;
+            linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b), 3 * D, ds.qkv.data());
+            float *q = ds.qkv.data(), *k = ds.qkv.data() + D, *v = ds.qkv.data() + 2 * D;
 
             // Write K/V to pre-allocated cache
             memcpy(&kv_k[li][step * D], k, D * sizeof(float));
@@ -879,8 +850,7 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
                 int off = h * head_dim;
                 float max_s = -1e9f;
                 for (int ki = 0; ki < n_past; ki++) {
-                    ds.scores[ki] = core_cpu::dot_product(
-                        q + off, &kv_k[li][ki * D + off], head_dim) * scale;
+                    ds.scores[ki] = core_cpu::dot_product(q + off, &kv_k[li][ki * D + off], head_dim) * scale;
                     if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                 }
                 float sum_exp = 0;
@@ -892,13 +862,11 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
                 for (int ki = 0; ki < n_past; ki++) ds.scores[ki] *= inv;
                 for (int d = 0; d < head_dim; d++) {
                     float s = 0;
-                    for (int ki = 0; ki < n_past; ki++)
-                        s += ds.scores[ki] * kv_v[li][ki*D + off + d];
+                    for (int ki = 0; ki < n_past; ki++) s += ds.scores[ki] * kv_v[li][ki * D + off + d];
                     ds.attn_out[off + d] = s;
                 }
             }
-            linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w),
-                   tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
+            linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w), tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
             for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
             layernorm(ds.x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
 
@@ -916,8 +884,7 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
                     int off = h * head_dim;
                     float max_s = -1e9f;
                     for (int ki = 0; ki < n_enc; ki++) {
-                        ds.scores[ki] = core_cpu::dot_product(
-                            ds.cq.data() + off, &ck[ki * D + off], head_dim) * scale;
+                        ds.scores[ki] = core_cpu::dot_product(ds.cq.data() + off, &ck[ki * D + off], head_dim) * scale;
                         if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                     }
                     float sum_exp = 0;
@@ -929,13 +896,11 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
                     for (int ki = 0; ki < n_enc; ki++) ds.scores[ki] *= inv;
                     for (int d = 0; d < head_dim; d++) {
                         float s = 0;
-                        for (int ki = 0; ki < n_enc; ki++)
-                            s += ds.scores[ki] * cv[ki*D + off + d];
+                        for (int ki = 0; ki < n_enc; ki++) s += ds.scores[ki] * cv[ki * D + off + d];
                         ds.ca_out[off + d] = s;
                     }
                 }
-                linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w),
-                       tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
+                linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w), tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
                 for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
                 layernorm(ds.x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
             }
@@ -943,25 +908,25 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
             // --- FFN ---
             {
                 const int F = hp.dim_feedforward;
-                linear(ds.x.data(), D, tf32(ctx, l.ff_up_w),
-                       tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
+                linear(ds.x.data(), D, tf32(ctx, l.ff_up_w), tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
                 relu_ip(ds.ffn_up.data(), F);
-                linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w),
-                       tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
+                linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w), tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
                 for (int i = 0; i < D; i++) ds.x[i] += ds.ffn_down[i];
                 layernorm(ds.x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
             }
         }
 
         // Output projection
-        linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
-               V, ds.logits.data());
+        linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b), V, ds.logits.data());
 
         // Argmax
         int best = 0;
         float best_score = ds.logits[0];
         for (int v = 1; v < V; v++)
-            if (ds.logits[v] > best_score) { best_score = ds.logits[v]; best = v; }
+            if (ds.logits[v] > best_score) {
+                best_score = ds.logits[v];
+                best = v;
+            }
 
         if (best == hp.eos_token || best == hp.pad_token) break;
 
@@ -993,7 +958,7 @@ static std::string greedy_decode(bttr_ocr_context * ctx) {
 
 struct Beam {
     std::vector<int> tokens;
-    float score;      // log-probability sum
+    float score; // log-probability sum
     int prev_token;
     bool finished;
     // Per-layer self-attention KV caches
@@ -1003,11 +968,8 @@ struct Beam {
 
 // Run one decoder step for a single beam, returning logits.
 // Modifies beam's KV caches in place.
-static void decode_step(bttr_ocr_context * ctx,
-                        Beam & beam, int step,
-                        const std::vector<std::vector<float>> & ca_ck,
-                        const std::vector<std::vector<float>> & ca_cv,
-                        std::vector<float> & logits_out) {
+static void decode_step(bttr_ocr_context * ctx, Beam & beam, int step, const std::vector<std::vector<float>> & ca_ck,
+                        const std::vector<std::vector<float>> & ca_cv, std::vector<float> & logits_out) {
     const auto & hp = ctx->hparams;
     const int D = hp.d_model;
     const int V = hp.vocab_size;
@@ -1023,8 +985,7 @@ static void decode_step(bttr_ocr_context * ctx,
         const float * emb = tf32(ctx, ctx->word_embed_w);
         memcpy(ds.x.data(), emb + beam.prev_token * D, D * sizeof(float));
     }
-    layernorm(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w),
-              tf32(ctx, ctx->word_embed_ln_b));
+    layernorm(ds.x.data(), D, tf32(ctx, ctx->word_embed_ln_w), tf32(ctx, ctx->word_embed_ln_b));
 
     if (ctx->pos_enc && step < 500) {
         const float * pe = tf32(ctx, ctx->pos_enc);
@@ -1035,9 +996,8 @@ static void decode_step(bttr_ocr_context * ctx,
         const auto & l = ctx->dec_layers[li];
 
         // Self-attention
-        linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b),
-               3 * D, ds.qkv.data());
-        float * q = ds.qkv.data(), * k = ds.qkv.data() + D, * v = ds.qkv.data() + 2*D;
+        linear(ds.x.data(), D, tf32(ctx, l.sa_qkv_w), tf32(ctx, l.sa_qkv_b), 3 * D, ds.qkv.data());
+        float *q = ds.qkv.data(), *k = ds.qkv.data() + D, *v = ds.qkv.data() + 2 * D;
 
         beam.kv_k[li].insert(beam.kv_k[li].end(), k, k + D);
         beam.kv_v[li].insert(beam.kv_v[li].end(), v, v + D);
@@ -1048,8 +1008,7 @@ static void decode_step(bttr_ocr_context * ctx,
             int off = h * head_dim;
             float max_s = -1e9f;
             for (int ki = 0; ki < n_past; ki++) {
-                ds.scores[ki] = core_cpu::dot_product(
-                    q + off, &beam.kv_k[li][ki*D + off], head_dim) * scale;
+                ds.scores[ki] = core_cpu::dot_product(q + off, &beam.kv_k[li][ki * D + off], head_dim) * scale;
                 if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
             }
             float sum_exp = 0;
@@ -1061,13 +1020,11 @@ static void decode_step(bttr_ocr_context * ctx,
             for (int ki = 0; ki < n_past; ki++) ds.scores[ki] *= inv;
             for (int d = 0; d < head_dim; d++) {
                 float s = 0;
-                for (int ki = 0; ki < n_past; ki++)
-                    s += ds.scores[ki] * beam.kv_v[li][ki*D + off + d];
+                for (int ki = 0; ki < n_past; ki++) s += ds.scores[ki] * beam.kv_v[li][ki * D + off + d];
                 ds.attn_out[off + d] = s;
             }
         }
-        linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w),
-               tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
+        linear(ds.attn_out.data(), D, tf32(ctx, l.sa_out_w), tf32(ctx, l.sa_out_b), D, ds.sa_proj.data());
         for (int i = 0; i < D; i++) ds.x[i] += ds.sa_proj[i];
         layernorm(ds.x.data(), D, tf32(ctx, l.ln1_w), tf32(ctx, l.ln1_b));
 
@@ -1083,8 +1040,7 @@ static void decode_step(bttr_ocr_context * ctx,
                 int off = h * head_dim;
                 float max_s = -1e9f;
                 for (int ki = 0; ki < n_enc; ki++) {
-                    ds.scores[ki] = core_cpu::dot_product(
-                        ds.cq.data() + off, &ck[ki*D + off], head_dim) * scale;
+                    ds.scores[ki] = core_cpu::dot_product(ds.cq.data() + off, &ck[ki * D + off], head_dim) * scale;
                     if (ds.scores[ki] > max_s) max_s = ds.scores[ki];
                 }
                 float sum_exp = 0;
@@ -1096,13 +1052,11 @@ static void decode_step(bttr_ocr_context * ctx,
                 for (int ki = 0; ki < n_enc; ki++) ds.scores[ki] *= inv;
                 for (int d = 0; d < head_dim; d++) {
                     float s = 0;
-                    for (int ki = 0; ki < n_enc; ki++)
-                        s += ds.scores[ki] * cv[ki*D + off + d];
+                    for (int ki = 0; ki < n_enc; ki++) s += ds.scores[ki] * cv[ki * D + off + d];
                     ds.ca_out[off + d] = s;
                 }
             }
-            linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w),
-                   tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
+            linear(ds.ca_out.data(), D, tf32(ctx, l.ca_out_w), tf32(ctx, l.ca_out_b), D, ds.ca_proj.data());
             for (int i = 0; i < D; i++) ds.x[i] += ds.ca_proj[i];
             layernorm(ds.x.data(), D, tf32(ctx, l.ln2_w), tf32(ctx, l.ln2_b));
         }
@@ -1110,19 +1064,16 @@ static void decode_step(bttr_ocr_context * ctx,
         // FFN
         {
             const int F = hp.dim_feedforward;
-            linear(ds.x.data(), D, tf32(ctx, l.ff_up_w),
-                   tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
+            linear(ds.x.data(), D, tf32(ctx, l.ff_up_w), tf32(ctx, l.ff_up_b), F, ds.ffn_up.data());
             relu_ip(ds.ffn_up.data(), F);
-            linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w),
-                   tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
+            linear(ds.ffn_up.data(), F, tf32(ctx, l.ff_down_w), tf32(ctx, l.ff_down_b), D, ds.ffn_down.data());
             for (int i = 0; i < D; i++) ds.x[i] += ds.ffn_down[i];
             layernorm(ds.x.data(), D, tf32(ctx, l.ln3_w), tf32(ctx, l.ln3_b));
         }
     }
 
     logits_out.resize(V);
-    linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b),
-           V, logits_out.data());
+    linear(ds.x.data(), D, tf32(ctx, ctx->proj_w), tf32(ctx, ctx->proj_b), V, logits_out.data());
 }
 
 static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
@@ -1148,10 +1099,8 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
         ca_ck[li].resize(n_enc * D);
         ca_cv[li].resize(n_enc * D);
         for (int p = 0; p < n_enc; p++) {
-            linear(ctx->encoder_output.data() + p * D, D,
-                   Wk, Bk, D, ca_ck[li].data() + p * D);
-            linear(ctx->encoder_output.data() + p * D, D,
-                   Wv, Bv, D, ca_cv[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D, Wk, Bk, D, ca_ck[li].data() + p * D);
+            linear(ctx->encoder_output.data() + p * D, D, Wv, Bv, D, ca_cv[li].data() + p * D);
         }
     }
 
@@ -1182,11 +1131,14 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
             // Log-softmax
             float max_l = *std::max_element(logits.begin(), logits.end());
             float sum_exp = 0;
-            for (auto & l : logits) { l = expf(l - max_l); sum_exp += l; }
+            for (auto & l : logits) {
+                l = expf(l - max_l);
+                sum_exp += l;
+            }
             float log_sum = logf(sum_exp) + max_l;
             for (int v = 0; v < hp.vocab_size; v++) {
                 float log_p = logits[v] > 0 ? logf(logits[v]) + max_l - log_sum : -100.0f;
-                candidates.push_back({bi, v, beams[bi].score + log_p});
+                candidates.push_back({ bi, v, beams[bi].score + log_p });
             }
         }
 
@@ -1195,9 +1147,7 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
         // Top-K by score descending (partial_sort for O(N·log(K)) vs O(N·log(N)))
         int keep = std::min(beam_width, (int)candidates.size());
         std::partial_sort(candidates.begin(), candidates.begin() + keep, candidates.end(),
-                          [](const Candidate & a, const Candidate & b) {
-                              return a.score > b.score;
-                          });
+                          [](const Candidate & a, const Candidate & b) { return a.score > b.score; });
         std::vector<Beam> new_beams;
         new_beams.reserve(keep);
 
@@ -1239,7 +1189,7 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
     // Pick best completed beam
     if (completed.empty()) return "";
     auto best = std::max_element(completed.begin(), completed.end(),
-        [](const Beam & a, const Beam & b) { return a.score < b.score; });
+                                 [](const Beam & a, const Beam & b) { return a.score < b.score; });
 
     std::string result;
     for (int tok : best->tokens) {
@@ -1257,8 +1207,7 @@ static std::string beam_decode(bttr_ocr_context * ctx, int beam_width) {
 
 // Scale image down to fit within max_pixels, preserving aspect ratio.
 // Uses bilinear interpolation. Returns true if scaling was applied.
-static bool scale_to_fit(const float * src, int sw, int sh,
-                         std::vector<float> & dst, int & dw, int & dh,
+static bool scale_to_fit(const float * src, int sw, int sh, std::vector<float> & dst, int & dw, int & dh,
                          int max_pixels = 100000) {
     if (sw * sh <= max_pixels) return false;
     float ratio = sqrtf((float)max_pixels / (sw * sh));
@@ -1275,19 +1224,14 @@ static bool scale_to_fit(const float * src, int sw, int sh,
             int x0 = std::max(0, std::min((int)sx, sw - 1));
             int x1 = std::min(x0 + 1, sw - 1);
             float fx = sx - x0;
-            dst[y * dw + x] =
-                src[y0*sw+x0]*(1-fx)*(1-fy) + src[y0*sw+x1]*fx*(1-fy) +
-                src[y1*sw+x0]*(1-fx)*fy     + src[y1*sw+x1]*fx*fy;
+            dst[y * dw + x] = src[y0 * sw + x0] * (1 - fx) * (1 - fy) + src[y0 * sw + x1] * fx * (1 - fy) +
+                              src[y1 * sw + x0] * (1 - fx) * fy + src[y1 * sw + x1] * fx * fy;
         }
     }
     return true;
 }
 
-const char * bttr_ocr_recognize(
-    bttr_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len
-) {
+const char * bttr_ocr_recognize(bttr_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
 
     const bool bench = ctx->bench;
@@ -1316,35 +1260,35 @@ const char * bttr_ocr_recognize(
         input = scaled.data();
         fprintf(stderr, "bttr_ocr: scaled %dx%d → %dx%d\n", width, height, w, h);
     }
-    if (bench) fprintf(stderr, "[bttr-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     if (ctx->enc_sched && !std::getenv("BTTR_OCR_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, input, w, h);
     else
         run_encoder(ctx, input, w, h);
-    if (bench) fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     ctx->result_buf = greedy_decode(ctx);
-    if (bench) fprintf(stderr, "[bttr-bench] decoder greedy: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] decoder greedy: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[bttr-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const char * bttr_ocr_recognize_beam(
-    bttr_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int beam_width,
-    int * out_len
-) {
+const char * bttr_ocr_recognize_beam(bttr_ocr_context * ctx, const float * pixels, int width, int height,
+                                     int beam_width, int * out_len) {
     if (!ctx || !pixels || width <= 0 || height <= 0) return nullptr;
     if (beam_width <= 1) return bttr_ocr_recognize(ctx, pixels, width, height, out_len);
 
@@ -1370,41 +1314,43 @@ const char * bttr_ocr_recognize_beam(
     if (scale_to_fit(input, width, height, scaled, w, h)) {
         input = scaled.data();
     }
-    if (bench) fprintf(stderr, "[bttr-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     if (ctx->enc_sched && !std::getenv("BTTR_OCR_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, input, w, h);
     else
         run_encoder(ctx, input, w, h);
-    if (bench) fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] encoder: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     ctx->result_buf = beam_decode(ctx, beam_width);
-    if (bench) fprintf(stderr, "[bttr-bench] decoder beam: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] decoder beam: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[bttr-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[bttr-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const char * bttr_ocr_recognize_raw(
-    bttr_ocr_context * ctx,
-    const uint8_t * pixel_bytes, int width, int height, int channels,
-    int * out_len
-) {
+const char * bttr_ocr_recognize_raw(bttr_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
+                                    int channels, int * out_len) {
     if (!ctx || !pixel_bytes || width <= 0 || height <= 0) return nullptr;
     std::vector<float> gray(width * height);
     for (int i = 0; i < width * height; i++) {
-        if (channels == 1) gray[i] = pixel_bytes[i] / 255.0f;
+        if (channels == 1)
+            gray[i] = pixel_bytes[i] / 255.0f;
         else if (channels >= 3) {
             int b = i * channels;
-            gray[i] = (0.299f*pixel_bytes[b] + 0.587f*pixel_bytes[b+1] + 0.114f*pixel_bytes[b+2]) / 255.0f;
+            gray[i] = (0.299f * pixel_bytes[b] + 0.587f * pixel_bytes[b + 1] + 0.114f * pixel_bytes[b + 2]) / 255.0f;
         }
     }
     return bttr_ocr_recognize(ctx, gray.data(), width, height, out_len);

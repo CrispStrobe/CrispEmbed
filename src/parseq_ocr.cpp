@@ -35,43 +35,43 @@
 // ---------------------------------------------------------------------------
 
 struct enc_layer {
-    ggml_tensor * ln1_w, * ln1_b;
-    ggml_tensor * qkv_w, * qkv_b;
-    ggml_tensor * proj_w, * proj_b;
-    ggml_tensor * ln2_w, * ln2_b;
-    ggml_tensor * fc1_w, * fc1_b;
-    ggml_tensor * fc2_w, * fc2_b;
+    ggml_tensor *ln1_w, *ln1_b;
+    ggml_tensor *qkv_w, *qkv_b;
+    ggml_tensor *proj_w, *proj_b;
+    ggml_tensor *ln2_w, *ln2_b;
+    ggml_tensor *fc1_w, *fc1_b;
+    ggml_tensor *fc2_w, *fc2_b;
 };
 
 struct parseq_ocr_context {
     parseq_ocr_hparams hp;
 
     // Encoder
-    ggml_tensor * patch_proj_w;  // [D, 3*ph*pw] (flattened from [D, 3, ph, pw])
-    ggml_tensor * patch_proj_b;  // [D]
-    ggml_tensor * pos_embed;     // [D, 128] (ggml: [ne0=D, ne1=N])
-    ggml_tensor * enc_norm_w, * enc_norm_b;
+    ggml_tensor * patch_proj_w; // [D, 3*ph*pw] (flattened from [D, 3, ph, pw])
+    ggml_tensor * patch_proj_b; // [D]
+    ggml_tensor * pos_embed;    // [D, 128] (ggml: [ne0=D, ne1=N])
+    ggml_tensor *enc_norm_w, *enc_norm_b;
     std::vector<enc_layer> enc_layers;
 
     // Decoder
-    ggml_tensor * pos_queries;   // [D, 26] (ggml: ne0=D, ne1=max_label_len)
-    ggml_tensor * text_embed_w;  // [D, 97] (ggml: ne0=D, ne1=n_tokens)
+    ggml_tensor * pos_queries;  // [D, 26] (ggml: ne0=D, ne1=max_label_len)
+    ggml_tensor * text_embed_w; // [D, 97] (ggml: ne0=D, ne1=n_tokens)
     // Self-attention (in_proj fused QKV)
-    ggml_tensor * sa_in_proj_w, * sa_in_proj_b;
-    ggml_tensor * sa_out_proj_w, * sa_out_proj_b;
-    ggml_tensor * norm_q_w, * norm_q_b;
-    ggml_tensor * norm_c_w, * norm_c_b;
+    ggml_tensor *sa_in_proj_w, *sa_in_proj_b;
+    ggml_tensor *sa_out_proj_w, *sa_out_proj_b;
+    ggml_tensor *norm_q_w, *norm_q_b;
+    ggml_tensor *norm_c_w, *norm_c_b;
     // Cross-attention
-    ggml_tensor * ca_in_proj_w, * ca_in_proj_b;
-    ggml_tensor * ca_out_proj_w, * ca_out_proj_b;
-    ggml_tensor * norm1_w, * norm1_b;
+    ggml_tensor *ca_in_proj_w, *ca_in_proj_b;
+    ggml_tensor *ca_out_proj_w, *ca_out_proj_b;
+    ggml_tensor *norm1_w, *norm1_b;
     // FFN
-    ggml_tensor * linear1_w, * linear1_b;
-    ggml_tensor * linear2_w, * linear2_b;
-    ggml_tensor * norm2_w, * norm2_b;
+    ggml_tensor *linear1_w, *linear1_b;
+    ggml_tensor *linear2_w, *linear2_b;
+    ggml_tensor *norm2_w, *norm2_b;
     // Final norm + head
-    ggml_tensor * dec_norm_w, * dec_norm_b;
-    ggml_tensor * head_w, * head_b;
+    ggml_tensor *dec_norm_w, *dec_norm_b;
+    ggml_tensor *head_w, *head_b;
 
     // Charset (94 printable ASCII)
     std::vector<std::string> charset;
@@ -81,7 +81,7 @@ struct parseq_ocr_context {
     int n_threads;
 
     std::string result_buf;
-    std::vector<float> encoder_output;  // [N * D]
+    std::vector<float> encoder_output;   // [N * D]
     std::vector<float> char_confidences; // per-character softmax probabilities
 
     // Dequant cache for quantized weights
@@ -89,13 +89,13 @@ struct parseq_ocr_context {
 
     // Pre-allocated decoder scratch (avoids per-step heap allocs)
     struct dec_scratch {
-        std::vector<float> ctx_emb, ctx_norm;      // [max_T * D]
-        std::vector<float> pq, pq_norm;             // [D]
-        std::vector<float> sa_Q, sa_K, sa_V;        // Q=[D], K/V=[max_T * D]
-        std::vector<float> sa_out, sa_proj, h;      // [D]
+        std::vector<float> ctx_emb, ctx_norm;             // [max_T * D]
+        std::vector<float> pq, pq_norm;                   // [D]
+        std::vector<float> sa_Q, sa_K, sa_V;              // Q=[D], K/V=[max_T * D]
+        std::vector<float> sa_out, sa_proj, h;            // [D]
         std::vector<float> h_norm, ca_Q, ca_out, ca_proj; // [D]
-        std::vector<float> h_norm2, ff_up, ff_down; // ff_up=[ffn]
-        std::vector<float> h_final, logits;         // logits=[V]
+        std::vector<float> h_norm2, ff_up, ff_down;       // ff_up=[ffn]
+        std::vector<float> h_final, logits;               // logits=[V]
         bool allocated = false;
     } ds;
 
@@ -122,24 +122,28 @@ static const float * tf32(parseq_ocr_context * ctx, ggml_tensor * t) {
     auto & buf = ctx->dequant_cache[t->data];
     buf.resize(n);
     const auto * traits = ggml_get_type_traits(t->type);
-    if (traits->to_float) traits->to_float(t->data, buf.data(), n);
-    else std::fill(buf.begin(), buf.end(), 0.0f);
+    if (traits->to_float)
+        traits->to_float(t->data, buf.data(), n);
+    else
+        std::fill(buf.begin(), buf.end(), 0.0f);
     return buf.data();
 }
 
-static void layer_norm(const float * x, const float * w, const float * b,
-                       int D, int T, float * out, float eps = 1e-6f) {
+static void layer_norm(const float * x, const float * w, const float * b, int D, int T, float * out,
+                       float eps = 1e-6f) {
     for (int t = 0; t < T; t++) {
         const float * xt = x + t * D;
         float * ot = out + t * D;
         float mean = 0, var = 0;
         for (int d = 0; d < D; d++) mean += xt[d];
         mean /= D;
-        for (int d = 0; d < D; d++) { float v = xt[d] - mean; var += v * v; }
+        for (int d = 0; d < D; d++) {
+            float v = xt[d] - mean;
+            var += v * v;
+        }
         var /= D;
         float inv = 1.0f / std::sqrt(var + eps);
-        for (int d = 0; d < D; d++)
-            ot[d] = (xt[d] - mean) * inv * w[d] + b[d];
+        for (int d = 0; d < D; d++) ot[d] = (xt[d] - mean) * inv * w[d] + b[d];
     }
 }
 
@@ -149,15 +153,18 @@ static float gelu_scalar(float x) {
 
 static void softmax_row(float * x, int n) {
     float mx = x[0];
-    for (int i = 1; i < n; i++) if (x[i] > mx) mx = x[i];
+    for (int i = 1; i < n; i++)
+        if (x[i] > mx) mx = x[i];
     float sum = 0;
-    for (int i = 0; i < n; i++) { x[i] = std::exp(x[i] - mx); sum += x[i]; }
+    for (int i = 0; i < n; i++) {
+        x[i] = std::exp(x[i] - mx);
+        sum += x[i];
+    }
     for (int i = 0; i < n; i++) x[i] /= sum;
 }
 
 // mat_vec: out[M] = W[M,K] @ x[K] + b[M]
-static void mat_vec(const float * W, const float * x, const float * b,
-                    int M, int K, float * out) {
+static void mat_vec(const float * W, const float * x, const float * b, int M, int K, float * out) {
     for (int m = 0; m < M; m++) {
         float s = b ? b[m] : 0.0f;
         for (int k = 0; k < K; k++) s += W[m * K + k] * x[k];
@@ -166,8 +173,7 @@ static void mat_vec(const float * W, const float * x, const float * b,
 }
 
 // matmul: C[M,N] = A[M,K] @ B[K,N]
-static void matmul(const float * A, const float * B, float * C,
-                   int M, int K, int N) {
+static void matmul(const float * A, const float * B, float * C, int M, int K, int N) {
     for (int m = 0; m < M; m++)
         for (int n = 0; n < N; n++) {
             float s = 0;
@@ -177,8 +183,7 @@ static void matmul(const float * A, const float * B, float * C,
 }
 
 // Multi-head attention: Q[Tq,D] K[Tk,D] V[Tk,D] → out[Tq,D]
-static void mha_cpu(const float * Q, const float * K, const float * V,
-                    int Tq, int Tk, int D, int n_heads,
+static void mha_cpu(const float * Q, const float * K, const float * V, int Tq, int Tk, int D, int n_heads,
                     const float * mask, // [Tq, Tk] or null, additive
                     float * out) {
     int hd = D / n_heads;
@@ -191,31 +196,27 @@ static void mha_cpu(const float * Q, const float * K, const float * V,
         for (int qi = 0; qi < Tq; qi++)
             for (int ki = 0; ki < Tk; ki++) {
                 float s = 0;
-                for (int d = 0; d < hd; d++)
-                    s += Q[qi * D + h * hd + d] * K[ki * D + h * hd + d];
+                for (int d = 0; d < hd; d++) s += Q[qi * D + h * hd + d] * K[ki * D + h * hd + d];
                 s *= scale;
                 if (mask) s += mask[qi * Tk + ki];
                 scores[qi * Tk + ki] = s;
             }
 
         // Softmax per query
-        for (int qi = 0; qi < Tq; qi++)
-            softmax_row(&scores[qi * Tk], Tk);
+        for (int qi = 0; qi < Tq; qi++) softmax_row(&scores[qi * Tk], Tk);
 
         // Weighted sum of V
         for (int qi = 0; qi < Tq; qi++)
             for (int d = 0; d < hd; d++) {
                 float s = 0;
-                for (int ki = 0; ki < Tk; ki++)
-                    s += scores[qi * Tk + ki] * V[ki * D + h * hd + d];
+                for (int ki = 0; ki < Tk; ki++) s += scores[qi * Tk + ki] * V[ki * D + h * hd + d];
                 out[qi * D + h * hd + d] = s;
             }
     }
 }
 
 // Linear: out[T,M] = x[T,K] @ W^T[K,M] + b[M] (W stored as [M,K])
-static void linear_batch(const float * x, const float * W, const float * b,
-                         int T, int K, int M, float * out) {
+static void linear_batch(const float * x, const float * W, const float * b, int T, int K, int M, float * out) {
     for (int t = 0; t < T; t++) {
         for (int m = 0; m < M; m++) {
             float s = b ? b[m] : 0.0f;
@@ -235,8 +236,7 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     bool force_cpu = (getenv("PARSEQ_OCR_FORCE_CPU") && atoi(getenv("PARSEQ_OCR_FORCE_CPU")));
     ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(ctx->backend))
-        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     // Pass 1: read metadata
     gguf_context * meta = core_gguf::open_metadata(model_path);
@@ -247,28 +247,29 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     }
 
     auto & hp = ctx->hp;
-    hp.embed_dim     = core_gguf::kv_i32(meta, "parseq.encoder.embed_dim", 384);
-    hp.enc_layers    = core_gguf::kv_i32(meta, "parseq.encoder.num_layers", 12);
-    hp.enc_heads     = core_gguf::kv_i32(meta, "parseq.encoder.num_heads", 6);
-    hp.ffn_dim       = core_gguf::kv_i32(meta, "parseq.encoder.ffn_dim", 1536);
-    hp.patch_h       = core_gguf::kv_i32(meta, "parseq.encoder.patch_h", 4);
-    hp.patch_w       = core_gguf::kv_i32(meta, "parseq.encoder.patch_w", 8);
-    hp.img_h         = core_gguf::kv_i32(meta, "parseq.encoder.img_h", 32);
-    hp.img_w         = core_gguf::kv_i32(meta, "parseq.encoder.img_w", 128);
-    hp.n_patches     = core_gguf::kv_i32(meta, "parseq.encoder.n_patches", 128);
-    hp.dec_heads     = core_gguf::kv_i32(meta, "parseq.decoder.num_heads", 12);
-    hp.dec_ffn       = core_gguf::kv_i32(meta, "parseq.decoder.ffn_dim", 1536);
+    hp.embed_dim = core_gguf::kv_i32(meta, "parseq.encoder.embed_dim", 384);
+    hp.enc_layers = core_gguf::kv_i32(meta, "parseq.encoder.num_layers", 12);
+    hp.enc_heads = core_gguf::kv_i32(meta, "parseq.encoder.num_heads", 6);
+    hp.ffn_dim = core_gguf::kv_i32(meta, "parseq.encoder.ffn_dim", 1536);
+    hp.patch_h = core_gguf::kv_i32(meta, "parseq.encoder.patch_h", 4);
+    hp.patch_w = core_gguf::kv_i32(meta, "parseq.encoder.patch_w", 8);
+    hp.img_h = core_gguf::kv_i32(meta, "parseq.encoder.img_h", 32);
+    hp.img_w = core_gguf::kv_i32(meta, "parseq.encoder.img_w", 128);
+    hp.n_patches = core_gguf::kv_i32(meta, "parseq.encoder.n_patches", 128);
+    hp.dec_heads = core_gguf::kv_i32(meta, "parseq.decoder.num_heads", 12);
+    hp.dec_ffn = core_gguf::kv_i32(meta, "parseq.decoder.ffn_dim", 1536);
     hp.max_label_len = core_gguf::kv_i32(meta, "parseq.decoder.max_label_len", 26);
-    hp.vocab_size    = core_gguf::kv_i32(meta, "parseq.vocab_size", 95);
-    hp.n_tokens      = core_gguf::kv_i32(meta, "parseq.n_tokens", 97);
-    hp.bos_token     = core_gguf::kv_i32(meta, "parseq.bos_token", 0);
-    hp.eos_token     = core_gguf::kv_i32(meta, "parseq.eos_token", 95);
-    hp.pad_token     = core_gguf::kv_i32(meta, "parseq.pad_token", 96);
+    hp.vocab_size = core_gguf::kv_i32(meta, "parseq.vocab_size", 95);
+    hp.n_tokens = core_gguf::kv_i32(meta, "parseq.n_tokens", 97);
+    hp.bos_token = core_gguf::kv_i32(meta, "parseq.bos_token", 0);
+    hp.eos_token = core_gguf::kv_i32(meta, "parseq.eos_token", 95);
+    hp.pad_token = core_gguf::kv_i32(meta, "parseq.pad_token", 96);
 
-    fprintf(stderr, "parseq: embed=%d enc_layers=%d heads=%d ffn=%d patch=[%d,%d] "
+    fprintf(stderr,
+            "parseq: embed=%d enc_layers=%d heads=%d ffn=%d patch=[%d,%d] "
             "img=[%d,%d] patches=%d\n",
-            hp.embed_dim, hp.enc_layers, hp.enc_heads, hp.ffn_dim,
-            hp.patch_h, hp.patch_w, hp.img_h, hp.img_w, hp.n_patches);
+            hp.embed_dim, hp.enc_layers, hp.enc_heads, hp.ffn_dim, hp.patch_h, hp.patch_w, hp.img_h, hp.img_w,
+            hp.n_patches);
 
     // Load tokenizer
     {
@@ -297,16 +298,14 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     }
 
     // Map tensors
-    auto T = [&](const char * name) -> ggml_tensor * {
-        return core_gguf::try_get(ctx->wl.tensors, name);
-    };
+    auto T = [&](const char * name) -> ggml_tensor * { return core_gguf::try_get(ctx->wl.tensors, name); };
 
     // Encoder
     ctx->patch_proj_w = T("encoder.patch_embed.proj.weight");
     ctx->patch_proj_b = T("encoder.patch_embed.proj.bias");
-    ctx->pos_embed    = T("encoder.pos_embed");
-    ctx->enc_norm_w   = T("encoder.norm.weight");
-    ctx->enc_norm_b   = T("encoder.norm.bias");
+    ctx->pos_embed = T("encoder.pos_embed");
+    ctx->enc_norm_w = T("encoder.norm.weight");
+    ctx->enc_norm_b = T("encoder.norm.bias");
 
     ctx->enc_layers.resize(hp.enc_layers);
     for (int i = 0; i < hp.enc_layers; i++) {
@@ -316,41 +315,47 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
             return T(buf);
         };
         auto & L = ctx->enc_layers[i];
-        L.ln1_w  = P("norm1.weight");  L.ln1_b  = P("norm1.bias");
-        L.qkv_w  = P("attn.qkv.weight"); L.qkv_b = P("attn.qkv.bias");
-        L.proj_w = P("attn.proj.weight"); L.proj_b = P("attn.proj.bias");
-        L.ln2_w  = P("norm2.weight");  L.ln2_b  = P("norm2.bias");
-        L.fc1_w  = P("mlp.fc1.weight"); L.fc1_b = P("mlp.fc1.bias");
-        L.fc2_w  = P("mlp.fc2.weight"); L.fc2_b = P("mlp.fc2.bias");
+        L.ln1_w = P("norm1.weight");
+        L.ln1_b = P("norm1.bias");
+        L.qkv_w = P("attn.qkv.weight");
+        L.qkv_b = P("attn.qkv.bias");
+        L.proj_w = P("attn.proj.weight");
+        L.proj_b = P("attn.proj.bias");
+        L.ln2_w = P("norm2.weight");
+        L.ln2_b = P("norm2.bias");
+        L.fc1_w = P("mlp.fc1.weight");
+        L.fc1_b = P("mlp.fc1.bias");
+        L.fc2_w = P("mlp.fc2.weight");
+        L.fc2_b = P("mlp.fc2.bias");
     }
 
     // Decoder
-    ctx->pos_queries    = T("pos_queries");
-    ctx->text_embed_w   = T("text_embed.embedding.weight");
-    ctx->sa_in_proj_w   = T("decoder.layers.0.self_attn.in_proj_weight");
-    ctx->sa_in_proj_b   = T("decoder.layers.0.self_attn.in_proj_bias");
-    ctx->sa_out_proj_w  = T("decoder.layers.0.self_attn.out_proj.weight");
-    ctx->sa_out_proj_b  = T("decoder.layers.0.self_attn.out_proj.bias");
-    ctx->norm_q_w       = T("decoder.layers.0.norm_q.weight");
-    ctx->norm_q_b       = T("decoder.layers.0.norm_q.bias");
-    ctx->norm_c_w       = T("decoder.layers.0.norm_c.weight");
-    ctx->norm_c_b       = T("decoder.layers.0.norm_c.bias");
-    ctx->ca_in_proj_w   = T("decoder.layers.0.cross_attn.in_proj_weight");
-    ctx->ca_in_proj_b   = T("decoder.layers.0.cross_attn.in_proj_bias");
-    ctx->ca_out_proj_w  = T("decoder.layers.0.cross_attn.out_proj.weight");
-    ctx->ca_out_proj_b  = T("decoder.layers.0.cross_attn.out_proj.bias");
-    ctx->norm1_w        = T("decoder.layers.0.norm1.weight");
-    ctx->norm1_b        = T("decoder.layers.0.norm1.bias");
-    ctx->linear1_w      = T("decoder.layers.0.linear1.weight");
-    ctx->linear1_b      = T("decoder.layers.0.linear1.bias");
-    ctx->linear2_w      = T("decoder.layers.0.linear2.weight");
-    ctx->linear2_b      = T("decoder.layers.0.linear2.bias");
-    ctx->norm2_w        = T("decoder.layers.0.norm2.weight");
-    ctx->norm2_b        = T("decoder.layers.0.norm2.bias");
-    ctx->dec_norm_w     = T("decoder.norm.weight");
-    ctx->dec_norm_b     = T("decoder.norm.bias");
-    ctx->head_w         = T("head.weight");
-    ctx->head_b         = T("head.bias");
+    ctx->pos_queries = T("pos_queries");
+    ctx->text_embed_w = T("text_embed.embedding.weight");
+    ctx->sa_in_proj_w = T("decoder.layers.0.self_attn.in_proj_weight");
+    ctx->sa_in_proj_b = T("decoder.layers.0.self_attn.in_proj_bias");
+    ctx->sa_out_proj_w = T("decoder.layers.0.self_attn.out_proj.weight");
+    ctx->sa_out_proj_b = T("decoder.layers.0.self_attn.out_proj.bias");
+    ctx->norm_q_w = T("decoder.layers.0.norm_q.weight");
+    ctx->norm_q_b = T("decoder.layers.0.norm_q.bias");
+    ctx->norm_c_w = T("decoder.layers.0.norm_c.weight");
+    ctx->norm_c_b = T("decoder.layers.0.norm_c.bias");
+    ctx->ca_in_proj_w = T("decoder.layers.0.cross_attn.in_proj_weight");
+    ctx->ca_in_proj_b = T("decoder.layers.0.cross_attn.in_proj_bias");
+    ctx->ca_out_proj_w = T("decoder.layers.0.cross_attn.out_proj.weight");
+    ctx->ca_out_proj_b = T("decoder.layers.0.cross_attn.out_proj.bias");
+    ctx->norm1_w = T("decoder.layers.0.norm1.weight");
+    ctx->norm1_b = T("decoder.layers.0.norm1.bias");
+    ctx->linear1_w = T("decoder.layers.0.linear1.weight");
+    ctx->linear1_b = T("decoder.layers.0.linear1.bias");
+    ctx->linear2_w = T("decoder.layers.0.linear2.weight");
+    ctx->linear2_b = T("decoder.layers.0.linear2.bias");
+    ctx->norm2_w = T("decoder.layers.0.norm2.weight");
+    ctx->norm2_b = T("decoder.layers.0.norm2.bias");
+    ctx->dec_norm_w = T("decoder.norm.weight");
+    ctx->dec_norm_b = T("decoder.norm.bias");
+    ctx->head_w = T("head.weight");
+    ctx->head_b = T("head.bias");
 
     ctx->bench = (std::getenv("CRISPEMBED_PARSEQ_BENCH") != nullptr);
 
@@ -379,7 +384,7 @@ const parseq_ocr_hparams * parseq_ocr_get_hparams(const parseq_ocr_context * ctx
 static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     const auto & hp = ctx->hp;
     const int D = hp.embed_dim;
-    const int N = hp.n_patches;  // 128
+    const int N = hp.n_patches; // 128
     const int nh = hp.enc_heads;
     const int hd = D / nh;
     const float eps = 1e-6f;
@@ -388,34 +393,32 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     // by ggml_conv_2d (square only). Run it CPU-side, then use ggml graph
     // for the 12 transformer layers.
     const int ph = hp.patch_h, pw = hp.patch_w;
-    const int oh = hp.img_h / ph;  // 8
-    const int ow = hp.img_w / pw;  // 16
+    const int oh = hp.img_h / ph; // 8
+    const int ow = hp.img_w / pw; // 16
     const int ic = 3;
 
     // patch_proj_w is stored as [D, ic*ph*pw] (flattened from [D, 3, 4, 8])
     const float * pw_data = tf32(ctx, ctx->patch_proj_w);
     const float * pb_data = tf32(ctx, ctx->patch_proj_b);
-    const int patch_len = ic * ph * pw;  // 3*4*8 = 96
+    const int patch_len = ic * ph * pw; // 3*4*8 = 96
 
     // CPU patch embedding: extract patches, matmul with weight
-    std::vector<float> patch_out(N * D);  // [N, D] row-major
+    std::vector<float> patch_out(N * D); // [N, D] row-major
     for (int py = 0; py < oh; py++) {
         for (int px = 0; px < ow; px++) {
             int tok = py * ow + px;
             // Extract patch [ic, ph, pw] → flat [ic*ph*pw]
-            float patch[96 * 4];  // max patch_len
+            float patch[96 * 4]; // max patch_len
             for (int c = 0; c < ic; c++)
                 for (int y = 0; y < ph; y++)
                     for (int x = 0; x < pw; x++)
                         patch[c * ph * pw + y * pw + x] =
-                            pixels[c * hp.img_h * hp.img_w +
-                                   (py * ph + y) * hp.img_w + (px * pw + x)];
+                            pixels[c * hp.img_h * hp.img_w + (py * ph + y) * hp.img_w + (px * pw + x)];
 
             // dot product with weight: out[d] = sum_k(W[d,k] * patch[k]) + b[d]
             for (int d = 0; d < D; d++) {
                 float s = pb_data[d];
-                for (int k = 0; k < patch_len; k++)
-                    s += pw_data[d * patch_len + k] * patch[k];
+                for (int k = 0; k < patch_len; k++) s += pw_data[d * patch_len + k] * patch[k];
                 patch_out[tok * D + d] = s;
             }
         }
@@ -427,14 +430,13 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     // In GGUF: stored as [1, 128, 384] → ggml ne=[384, 128, 1] → data is [N * D]
     // Row t of pos_embed = pe[t*D .. (t+1)*D]
     for (int t = 0; t < N; t++)
-        for (int d = 0; d < D; d++)
-            patch_out[t * D + d] += pe[t * D + d];
+        for (int d = 0; d < D; d++) patch_out[t * D + d] += pe[t * D + d];
 
     // Build encoder graph once, reuse on subsequent calls (fixed input dimensions)
     if (!ctx->enc_graph_allocated) {
         const int n_tensors = hp.enc_layers * 30 + 20;
         const size_t buf_sz = n_tensors * ggml_tensor_overhead() + ggml_graph_overhead_custom(4096, false);
-        ggml_init_params ip = {buf_sz, nullptr, true};
+        ggml_init_params ip = { buf_sz, nullptr, true };
         ggml_context * g = ggml_init(ip);
 
         ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, N);
@@ -518,50 +520,50 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
     const auto & hp = ctx->hp;
     const int D = hp.embed_dim;
     const int N = hp.n_patches;
-    const int num_steps = hp.max_label_len;  // 26 (max_label_length + 1 for EOS)
+    const int num_steps = hp.max_label_len; // 26 (max_label_length + 1 for EOS)
     const int dec_heads = hp.dec_heads;
     const float embed_scale = std::sqrt((float)D);
 
     // Dequant all decoder weights upfront
-    const float * pos_q     = tf32(ctx, ctx->pos_queries);
-    const float * embed_w   = tf32(ctx, ctx->text_embed_w);
-    const float * sa_w      = tf32(ctx, ctx->sa_in_proj_w);
-    const float * sa_b      = tf32(ctx, ctx->sa_in_proj_b);
-    const float * sa_ow     = tf32(ctx, ctx->sa_out_proj_w);
-    const float * sa_ob     = tf32(ctx, ctx->sa_out_proj_b);
-    const float * nq_w      = tf32(ctx, ctx->norm_q_w);
-    const float * nq_b      = tf32(ctx, ctx->norm_q_b);
-    const float * nc_w      = tf32(ctx, ctx->norm_c_w);
-    const float * nc_b      = tf32(ctx, ctx->norm_c_b);
-    const float * ca_w      = tf32(ctx, ctx->ca_in_proj_w);
-    const float * ca_b      = tf32(ctx, ctx->ca_in_proj_b);
-    const float * ca_ow     = tf32(ctx, ctx->ca_out_proj_w);
-    const float * ca_ob     = tf32(ctx, ctx->ca_out_proj_b);
-    const float * n1_w      = tf32(ctx, ctx->norm1_w);
-    const float * n1_b      = tf32(ctx, ctx->norm1_b);
-    const float * ff1_w     = tf32(ctx, ctx->linear1_w);
-    const float * ff1_b     = tf32(ctx, ctx->linear1_b);
-    const float * ff2_w     = tf32(ctx, ctx->linear2_w);
-    const float * ff2_b     = tf32(ctx, ctx->linear2_b);
-    const float * n2_w      = tf32(ctx, ctx->norm2_w);
-    const float * n2_b      = tf32(ctx, ctx->norm2_b);
-    const float * dn_w      = tf32(ctx, ctx->dec_norm_w);
-    const float * dn_b      = tf32(ctx, ctx->dec_norm_b);
-    const float * hd_w      = tf32(ctx, ctx->head_w);
-    const float * hd_b      = tf32(ctx, ctx->head_b);
-    const float * memory    = ctx->encoder_output.data();
+    const float * pos_q = tf32(ctx, ctx->pos_queries);
+    const float * embed_w = tf32(ctx, ctx->text_embed_w);
+    const float * sa_w = tf32(ctx, ctx->sa_in_proj_w);
+    const float * sa_b = tf32(ctx, ctx->sa_in_proj_b);
+    const float * sa_ow = tf32(ctx, ctx->sa_out_proj_w);
+    const float * sa_ob = tf32(ctx, ctx->sa_out_proj_b);
+    const float * nq_w = tf32(ctx, ctx->norm_q_w);
+    const float * nq_b = tf32(ctx, ctx->norm_q_b);
+    const float * nc_w = tf32(ctx, ctx->norm_c_w);
+    const float * nc_b = tf32(ctx, ctx->norm_c_b);
+    const float * ca_w = tf32(ctx, ctx->ca_in_proj_w);
+    const float * ca_b = tf32(ctx, ctx->ca_in_proj_b);
+    const float * ca_ow = tf32(ctx, ctx->ca_out_proj_w);
+    const float * ca_ob = tf32(ctx, ctx->ca_out_proj_b);
+    const float * n1_w = tf32(ctx, ctx->norm1_w);
+    const float * n1_b = tf32(ctx, ctx->norm1_b);
+    const float * ff1_w = tf32(ctx, ctx->linear1_w);
+    const float * ff1_b = tf32(ctx, ctx->linear1_b);
+    const float * ff2_w = tf32(ctx, ctx->linear2_w);
+    const float * ff2_b = tf32(ctx, ctx->linear2_b);
+    const float * n2_w = tf32(ctx, ctx->norm2_w);
+    const float * n2_b = tf32(ctx, ctx->norm2_b);
+    const float * dn_w = tf32(ctx, ctx->dec_norm_w);
+    const float * dn_b = tf32(ctx, ctx->dec_norm_b);
+    const float * hd_w = tf32(ctx, ctx->head_w);
+    const float * hd_b = tf32(ctx, ctx->head_b);
+    const float * memory = ctx->encoder_output.data();
 
     // PARSeq token ordering: EOS=0, chars=1..94, BOS=95, PAD=96
     // Head outputs 95 classes (0..94): class 0=EOS, classes 1..94=chars
-    const int eos_head = 0;  // EOS is index 0 in head output
-    const int bos_id = hp.bos_token;  // 95
+    const int eos_head = 0;          // EOS is index 0 in head output
+    const int bos_id = hp.bos_token; // 95
     const int ffn = hp.dec_ffn;
 
     std::string result;
 
     // tgt_in stores token IDs in embedding space (0..96)
     std::vector<int> tgt_in(num_steps, hp.pad_token);
-    tgt_in[0] = bos_id;  // 95
+    tgt_in[0] = bos_id; // 95
 
     // Pre-allocate decoder scratch buffers
     {
@@ -595,8 +597,9 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
     std::vector<float> ca_K(N * D), ca_V(N * D);
     linear_batch(memory, ca_w + D * D, ca_b + D, N, D, D, ca_K.data());
     linear_batch(memory, ca_w + 2 * D * D, ca_b + 2 * D, N, D, D, ca_V.data());
-    if (bench) fprintf(stderr, "[parseq-bench] decoder CA K/V: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_dec_kv).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] decoder CA K/V: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_dec_kv).count());
 
     for (int i = 0; i < num_steps; i++) {
         const int j = i + 1;
@@ -613,8 +616,7 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         }
 
         // Query: position i
-        for (int d = 0; d < D; d++)
-            ds.pq[d] = pos_q[i * D + d];
+        for (int d = 0; d < D; d++) ds.pq[d] = pos_q[i * D + d];
 
         // Self-attention: Q from norm_q(pq), K/V from norm_c(ctx_emb)
         layer_norm(ds.pq.data(), nq_w, nq_b, D, 1, ds.pq_norm.data());
@@ -624,8 +626,7 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         linear_batch(ds.ctx_norm.data(), sa_w + D * D, sa_b + D, T, D, D, ds.sa_K.data());
         linear_batch(ds.ctx_norm.data(), sa_w + 2 * D * D, sa_b + 2 * D, T, D, D, ds.sa_V.data());
 
-        mha_cpu(ds.sa_Q.data(), ds.sa_K.data(), ds.sa_V.data(), 1, T, D, dec_heads,
-                nullptr, ds.sa_out.data());
+        mha_cpu(ds.sa_Q.data(), ds.sa_K.data(), ds.sa_V.data(), 1, T, D, dec_heads, nullptr, ds.sa_out.data());
 
         linear_batch(ds.sa_out.data(), sa_ow, sa_ob, 1, D, D, ds.sa_proj.data());
 
@@ -636,8 +637,7 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         layer_norm(ds.h.data(), n1_w, n1_b, D, 1, ds.h_norm.data());
         linear_batch(ds.h_norm.data(), ca_w, ca_b, 1, D, D, ds.ca_Q.data());
 
-        mha_cpu(ds.ca_Q.data(), ca_K.data(), ca_V.data(), 1, N, D, dec_heads,
-                nullptr, ds.ca_out.data());
+        mha_cpu(ds.ca_Q.data(), ca_K.data(), ca_V.data(), 1, N, D, dec_heads, nullptr, ds.ca_out.data());
 
         linear_batch(ds.ca_out.data(), ca_ow, ca_ob, 1, D, D, ds.ca_proj.data());
         for (int d = 0; d < D; d++) ds.h[d] += ds.ca_proj[d];
@@ -667,7 +667,10 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
         int pred = 0;
         float best_prob = ds.logits[0];
         for (int k = 1; k < hp.vocab_size; k++) {
-            if (ds.logits[k] > best_prob) { best_prob = ds.logits[k]; pred = k; }
+            if (ds.logits[k] > best_prob) {
+                best_prob = ds.logits[k];
+                pred = k;
+            }
         }
 
         // Head output: 0=EOS, 1..94=chars
@@ -694,8 +697,7 @@ static std::string run_decoder_ar(parseq_ocr_context * ctx) {
 // Image preprocessing
 // ---------------------------------------------------------------------------
 
-static void preprocess_rgb_to_input(const uint8_t * rgb, int w, int h, int ch,
-                                    int target_w, int target_h,
+static void preprocess_rgb_to_input(const uint8_t * rgb, int w, int h, int ch, int target_w, int target_h,
                                     std::vector<float> & out) {
     // Bilinear resize + normalize to [-1, 1]
     out.resize(3 * target_h * target_w);
@@ -715,16 +717,15 @@ static void preprocess_rgb_to_input(const uint8_t * rgb, int w, int h, int ch,
                     if (ch == 4) return rgb[(y * w + x) * 4 + c] / 255.0f;
                     return 128.0f / 255.0f;
                 };
-                float f = (1 - wy) * ((1 - wx) * pix(y0, x0) + wx * pix(y0, x1))
-                        +      wy  * ((1 - wx) * pix(y1, x0) + wx * pix(y1, x1));
+                float f = (1 - wy) * ((1 - wx) * pix(y0, x0) + wx * pix(y0, x1)) +
+                          wy * ((1 - wx) * pix(y1, x0) + wx * pix(y1, x1));
                 out[c * target_h * target_w + ty * target_w + tx] = f * 2.0f - 1.0f;
             }
         }
     }
 }
 
-static void preprocess_gray_to_input(const float * gray, int w, int h,
-                                     int target_w, int target_h,
+static void preprocess_gray_to_input(const float * gray, int w, int h, int target_w, int target_h,
                                      std::vector<float> & out) {
     // Bilinear resize, replicate to 3 channels, normalize to [-1, 1].
     out.resize(3 * target_h * target_w);
@@ -736,11 +737,10 @@ static void preprocess_gray_to_input(const float * gray, int w, int h,
             float fx = (float)tx * w / target_w;
             int x0 = (int)fx, x1 = std::min(x0 + 1, w - 1);
             float wx = fx - x0;
-            float val = (1 - wy) * ((1 - wx) * gray[y0*w+x0] + wx * gray[y0*w+x1])
-                      +      wy  * ((1 - wx) * gray[y1*w+x0] + wx * gray[y1*w+x1]);
+            float val = (1 - wy) * ((1 - wx) * gray[y0 * w + x0] + wx * gray[y0 * w + x1]) +
+                        wy * ((1 - wx) * gray[y1 * w + x0] + wx * gray[y1 * w + x1]);
             float f = val * 2.0f - 1.0f;
-            for (int c = 0; c < 3; c++)
-                out[c * target_h * target_w + ty * target_w + tx] = f;
+            for (int c = 0; c < 3; c++) out[c * target_h * target_w + ty * target_w + tx] = f;
         }
     }
 }
@@ -749,11 +749,8 @@ static void preprocess_gray_to_input(const float * gray, int w, int h,
 // Public API
 // ---------------------------------------------------------------------------
 
-const char * parseq_ocr_recognize(
-    parseq_ocr_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len
-) {
+const char * parseq_ocr_recognize(parseq_ocr_context * ctx, const float * pixels, int width, int height,
+                                  int * out_len) {
     if (!ctx || !pixels) return nullptr;
 
     const bool bench = ctx->bench;
@@ -761,33 +758,33 @@ const char * parseq_ocr_recognize(
 
     auto t0 = std::chrono::steady_clock::now();
     std::vector<float> input;
-    preprocess_gray_to_input(pixels, width, height,
-                             ctx->hp.img_w, ctx->hp.img_h, input);
-    if (bench) fprintf(stderr, "[parseq-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    preprocess_gray_to_input(pixels, width, height, ctx->hp.img_w, ctx->hp.img_h, input);
+    if (bench)
+        fprintf(stderr, "[parseq-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     if (!run_encoder(ctx, input.data())) return nullptr;
-    if (bench) fprintf(stderr, "[parseq-bench] encoder graph: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] encoder graph: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     ctx->result_buf = run_decoder_ar(ctx);
-    if (bench) fprintf(stderr, "[parseq-bench] decoder total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] decoder total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[parseq-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const char * parseq_ocr_recognize_raw(
-    parseq_ocr_context * ctx,
-    const uint8_t * pixel_bytes, int width, int height, int channels,
-    int * out_len
-) {
+const char * parseq_ocr_recognize_raw(parseq_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
+                                      int channels, int * out_len) {
     if (!ctx || !pixel_bytes) return nullptr;
 
     const bool bench = ctx->bench;
@@ -795,23 +792,26 @@ const char * parseq_ocr_recognize_raw(
 
     auto t0 = std::chrono::steady_clock::now();
     std::vector<float> input;
-    preprocess_rgb_to_input(pixel_bytes, width, height, channels,
-                            ctx->hp.img_w, ctx->hp.img_h, input);
-    if (bench) fprintf(stderr, "[parseq-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    preprocess_rgb_to_input(pixel_bytes, width, height, channels, ctx->hp.img_w, ctx->hp.img_h, input);
+    if (bench)
+        fprintf(stderr, "[parseq-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     if (!run_encoder(ctx, input.data())) return nullptr;
-    if (bench) fprintf(stderr, "[parseq-bench] encoder graph: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] encoder graph: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
     ctx->result_buf = run_decoder_ar(ctx);
-    if (bench) fprintf(stderr, "[parseq-bench] decoder total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] decoder total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[parseq-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[parseq-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();

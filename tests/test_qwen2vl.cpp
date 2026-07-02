@@ -16,12 +16,18 @@
 
 static int n_pass = 0, n_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (cond) { n_pass++; printf("  PASS: %s\n", msg); } \
-    else { n_fail++; printf("  FAIL: %s\n", msg); } \
-} while(0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (cond) {                                                                                                    \
+            n_pass++;                                                                                                  \
+            printf("  PASS: %s\n", msg);                                                                               \
+        } else {                                                                                                       \
+            n_fail++;                                                                                                  \
+            printf("  FAIL: %s\n", msg);                                                                               \
+        }                                                                                                              \
+    } while (0)
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     printf("=== Qwen2.5-VL unit tests ===\n\n");
 
     // Unit test 1: C ABI symbols link correctly
@@ -35,7 +41,7 @@ int main(int argc, char **argv) {
 
     // Unit test 2: init with NULL path returns NULL
     printf("\n[2] NULL path handling\n");
-    qwen2vl_ocr_context *ctx = qwen2vl_ocr_init(nullptr, 4);
+    qwen2vl_ocr_context * ctx = qwen2vl_ocr_init(nullptr, 4);
     CHECK(ctx == nullptr, "init(NULL) returns NULL");
 
     // Unit test 3: init with invalid path returns NULL
@@ -56,20 +62,18 @@ int main(int argc, char **argv) {
 
     // Smoke test: load actual model
     // Usage: test-qwen2vl <model.gguf> [image.png] [--mmproj mmproj.gguf]
-    const char *mmproj = nullptr;
-    const char *image = (argc >= 3 && argv[2][0] != '-') ? argv[2] : nullptr;
+    const char * mmproj = nullptr;
+    const char * image = (argc >= 3 && argv[2][0] != '-') ? argv[2] : nullptr;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--mmproj") == 0 && i + 1 < argc) {
             mmproj = argv[++i];
         }
     }
 
-    printf("\n=== Smoke tests (model: %s%s%s) ===\n\n", argv[1],
-           mmproj ? ", mmproj: " : "", mmproj ? mmproj : "");
+    printf("\n=== Smoke tests (model: %s%s%s) ===\n\n", argv[1], mmproj ? ", mmproj: " : "", mmproj ? mmproj : "");
 
     printf("[5] Load model\n");
-    ctx = mmproj ? qwen2vl_ocr_init_split(argv[1], mmproj, 4)
-                 : qwen2vl_ocr_init(argv[1], 4);
+    ctx = mmproj ? qwen2vl_ocr_init_split(argv[1], mmproj, 4) : qwen2vl_ocr_init(argv[1], 4);
     CHECK(ctx != nullptr, "model loaded successfully");
     if (!ctx) {
         printf("\n=== Tests: %d pass, %d fail ===\n", n_pass, n_fail);
@@ -86,25 +90,25 @@ int main(int argc, char **argv) {
     // Test recognize with NULL pixels (should return NULL gracefully)
     printf("\n[7] NULL pixel handling\n");
     int out_len = -1;
-    const char *result = qwen2vl_ocr_recognize_raw(ctx, nullptr, 100, 100, 3, &out_len);
+    const char * result = qwen2vl_ocr_recognize_raw(ctx, nullptr, 100, 100, 3, &out_len);
     CHECK(result == nullptr, "recognize_raw(NULL pixels) returns NULL");
 
     // Live test: run full pipeline on a test image
     if (argc >= 3) {
-        const char *image_path = argv[2];
+        const char * image_path = argv[2];
         printf("\n[8] Live OCR test (image: %s)\n", image_path);
 
         // Load image via stb_image
-        FILE *fp = fopen(image_path, "rb");
+        FILE * fp = fopen(image_path, "rb");
         if (fp) {
             fclose(fp);
             int w = 0, h = 0, ch = 0;
-            unsigned char *img = stbi_load(image_path, &w, &h, &ch, 3);
+            unsigned char * img = stbi_load(image_path, &w, &h, &ch, 3);
             if (img) {
                 printf("  Image: %dx%d (%d ch)\n", w, h, ch);
-                qwen2vl_ocr_set_max_tokens(ctx, 8);  // short for testing
+                qwen2vl_ocr_set_max_tokens(ctx, 8); // short for testing
                 int out_len = 0;
-                const char *result = qwen2vl_ocr_recognize_raw(ctx, img, w, h, 3, &out_len);
+                const char * result = qwen2vl_ocr_recognize_raw(ctx, img, w, h, 3, &out_len);
                 stbi_image_free(img);
                 CHECK(result != nullptr, "recognize_raw returned non-NULL");
                 if (result) {

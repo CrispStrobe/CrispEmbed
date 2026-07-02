@@ -12,16 +12,15 @@
 
 struct embed_tokens {
     std::vector<int32_t> ids;
-    std::vector<int32_t> type_ids;    // 0 for single-sentence
-    std::vector<int32_t> attn_mask;   // 1 for real tokens, 0 for padding
+    std::vector<int32_t> type_ids;  // 0 for single-sentence
+    std::vector<int32_t> attn_mask; // 1 for real tokens, 0 for padding
 };
 
 class WordPieceTokenizer {
 public:
     // Load vocab from a list of tokens (index = token id).
     // Special tokens: [CLS]=cls_id, [SEP]=sep_id, [UNK]=unk_id, [PAD]=pad_id.
-    bool load(const std::vector<std::string> & vocab,
-              int cls_id, int sep_id, int unk_id, int pad_id,
+    bool load(const std::vector<std::string> & vocab, int cls_id, int sep_id, int unk_id, int pad_id,
               int max_length = 512, bool do_lower_case = true);
 
     // Tokenize a single text: [CLS] + tokens + [SEP], padded to max_length.
@@ -29,8 +28,7 @@ public:
 
     // Tokenize a sentence pair for cross-encoders/rerankers:
     // [CLS] text_a [SEP] text_b [SEP], type_ids 0/1, padded to max_length.
-    embed_tokens encode_pair(const std::string & text_a,
-                              const std::string & text_b) const;
+    embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
@@ -57,12 +55,12 @@ private:
     // Trie for O(len) longest-match WordPiece lookup.
     // Two roots: trie_root_ for first pieces, trie_cont_ for ## continuations.
     struct TrieNode {
-        int token_id = -1;  // -1 = no token ends here
-        std::unordered_map<char, int> children;  // char → index in trie_nodes_
+        int token_id = -1;                      // -1 = no token ends here
+        std::unordered_map<char, int> children; // char → index in trie_nodes_
     };
     std::vector<TrieNode> trie_nodes_;
-    int trie_root_ = -1;  // index of root for first-piece tokens
-    int trie_cont_ = -1;  // index of root for continuation (##) tokens
+    int trie_root_ = -1; // index of root for first-piece tokens
+    int trie_cont_ = -1; // index of root for continuation (##) tokens
     bool trie_built_ = false;
 
     void build_trie();
@@ -75,16 +73,13 @@ private:
 // Uses unigram (greedy longest-match) from vocab + optional scores.
 class SentencePieceTokenizer {
 public:
-    bool load(const std::vector<std::string> & vocab,
-              const std::vector<float> & scores,
-              int bos_id, int eos_id, int unk_id, int pad_id,
-              int max_length = 512);
+    bool load(const std::vector<std::string> & vocab, const std::vector<float> & scores, int bos_id, int eos_id,
+              int unk_id, int pad_id, int max_length = 512);
 
     embed_tokens encode(const std::string & text) const;
 
     // Tokenize a sentence pair: <s> text_a </s> text_b </s>, type_ids all 0.
-    embed_tokens encode_pair(const std::string & text_a,
-                              const std::string & text_b) const;
+    embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
@@ -108,7 +103,7 @@ private:
     int unk_id_ = 3;
     int pad_id_ = 1;
     int max_length_ = 512;
-    int max_token_len_ = 64;  // max byte length of any vocab token
+    int max_token_len_ = 64; // max byte length of any vocab token
 
     std::vector<int> tokenize_text(const std::string & text) const;
 };
@@ -119,11 +114,10 @@ private:
 //   SentencePiece style (Gemma): ▁ space marker, BOS/EOS tokens
 class BPETokenizer {
 public:
-    bool load(const std::vector<std::string> & vocab,
-              const std::vector<std::string> & merges,
-              int eos_id, int pad_id, int suffix_id,
-              int bos_id = -1,  // -1 = no BOS
-              bool spm_style = false,  // true for SentencePiece BPE (Gemma)
+    bool load(const std::vector<std::string> & vocab, const std::vector<std::string> & merges, int eos_id, int pad_id,
+              int suffix_id,
+              int bos_id = -1,        // -1 = no BOS
+              bool spm_style = false, // true for SentencePiece BPE (Gemma)
               int max_length = 8192,
               bool spm_dummy_prefix = false); // add_dummy_prefix (ERNIE/SPM)
 
@@ -141,9 +135,9 @@ private:
     std::vector<std::string> id_to_token_;
     int eos_id_ = 151645;
     int pad_id_ = 151643;
-    int suffix_id_ = 151643;  // token appended after text (model-specific)
-    int bos_id_ = -1;         // BOS token (-1 = none)
-    bool spm_style_ = false;  // SentencePiece BPE mode
+    int suffix_id_ = 151643;        // token appended after text (model-specific)
+    int bos_id_ = -1;               // BOS token (-1 = none)
+    bool spm_style_ = false;        // SentencePiece BPE mode
     bool spm_dummy_prefix_ = false; // SentencePiece add_dummy_prefix
     int max_length_ = 8192;
 

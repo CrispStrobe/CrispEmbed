@@ -14,7 +14,7 @@
 #include <fstream>
 #include <vector>
 
-static std::vector<float> read_f32(const char* path, size_t expected = 0) {
+static std::vector<float> read_f32(const char * path, size_t expected = 0) {
     std::ifstream f(path, std::ios::binary);
     if (!f) return {};
     f.seekg(0, std::ios::end);
@@ -25,11 +25,11 @@ static std::vector<float> read_f32(const char* path, size_t expected = 0) {
         fprintf(stderr, "read_f32: %s has %zu floats, expected %zu\n", path, n, expected);
     }
     std::vector<float> data(n);
-    f.read(reinterpret_cast<char*>(data.data()), bytes);
+    f.read(reinterpret_cast<char *>(data.data()), bytes);
     return data;
 }
 
-static float cosine(const float* a, const float* b, int n) {
+static float cosine(const float * a, const float * b, int n) {
     double dot = 0, na = 0, nb = 0;
     for (int i = 0; i < n; i++) {
         dot += (double)a[i] * b[i];
@@ -39,18 +39,18 @@ static float cosine(const float* a, const float* b, int n) {
     return (na > 1e-18 && nb > 1e-18) ? (float)(dot / (sqrt(na) * sqrt(nb))) : 0.0f;
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <gguf> <pixels.bin> [ref.bin]\n", argv[0]);
         return 1;
     }
 
-    const char* gguf_path = argv[1];
-    const char* pixel_path = argv[2];
-    const char* ref_path = argc > 3 ? argv[3] : nullptr;
+    const char * gguf_path = argv[1];
+    const char * pixel_path = argv[2];
+    const char * ref_path = argc > 3 ? argv[3] : nullptr;
 
     // Load model
-    vit_embed::context* ctx = nullptr;
+    vit_embed::context * ctx = nullptr;
     if (!vit_embed::load(&ctx, gguf_path, 4)) {
         fprintf(stderr, "Failed to load %s\n", gguf_path);
         return 1;
@@ -64,8 +64,7 @@ int main(int argc, char** argv) {
     size_t expected_pixels = 3 * sz * sz;
     auto pixels = read_f32(pixel_path, expected_pixels);
     if (pixels.size() != expected_pixels) {
-        fprintf(stderr, "Pixel file size mismatch: %zu vs expected %zu\n",
-                pixels.size(), expected_pixels);
+        fprintf(stderr, "Pixel file size mismatch: %zu vs expected %zu\n", pixels.size(), expected_pixels);
         vit_embed::free(ctx);
         return 1;
     }
@@ -81,8 +80,7 @@ int main(int argc, char** argv) {
 
     fprintf(stderr, "Output dim: %zu\n", emb.size());
     fprintf(stderr, "First 8: ");
-    for (int i = 0; i < 8 && i < (int)emb.size(); i++)
-        fprintf(stderr, "%.6f ", emb[i]);
+    for (int i = 0; i < 8 && i < (int)emb.size(); i++) fprintf(stderr, "%.6f ", emb[i]);
     fprintf(stderr, "\n");
 
     // Check norm
@@ -96,8 +94,7 @@ int main(int argc, char** argv) {
         auto ref = read_f32(ref_path, d);
         if ((int)ref.size() == d) {
             float cos = cosine(emb.data(), ref.data(), d);
-            fprintf(stderr, "Cosine vs reference: %.6f  [%s]\n",
-                    cos, cos > 0.95f ? "PASS" : "FAIL");
+            fprintf(stderr, "Cosine vs reference: %.6f  [%s]\n", cos, cos > 0.95f ? "PASS" : "FAIL");
         }
     }
 

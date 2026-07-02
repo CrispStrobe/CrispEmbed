@@ -34,14 +34,18 @@
 
 static int n_pass = 0, n_fail = 0;
 
-#define CHECK(cond, msg) do { \
-    if (cond) { n_pass++; } \
-    else { printf("  FAIL: %s\n", msg); n_fail++; } \
-} while(0)
+#define CHECK(cond, msg)                                                                                               \
+    do {                                                                                                               \
+        if (cond) {                                                                                                    \
+            n_pass++;                                                                                                  \
+        } else {                                                                                                       \
+            printf("  FAIL: %s\n", msg);                                                                               \
+            n_fail++;                                                                                                  \
+        }                                                                                                              \
+    } while (0)
 
 // Verify confidence array: all values in [0,1], length > 0, mean > 0
-static bool verify_confidences(const float* conf, int n, const char* engine,
-                                const char* text, int text_len) {
+static bool verify_confidences(const float * conf, int n, const char * engine, const char * text, int text_len) {
     printf("  %s: %d confidences for %d-char text\n", engine, n, text_len);
     if (!conf || n <= 0) {
         printf("    FAIL: no confidences returned\n");
@@ -76,10 +80,9 @@ static bool verify_confidences(const float* conf, int n, const char* engine,
 static std::vector<uint8_t> make_text_image(int w, int h) {
     std::vector<uint8_t> img(w * h * 3, 240);
     // Draw dark horizontal lines (text-like)
-    for (int y = h/4; y < 3*h/4; y += 5) {
-        for (int x = w/8; x < 7*w/8; x++) {
-            for (int c = 0; c < 3; c++)
-                img[(y * w + x) * 3 + c] = 30;
+    for (int y = h / 4; y < 3 * h / 4; y += 5) {
+        for (int x = w / 8; x < 7 * w / 8; x++) {
+            for (int c = 0; c < 3; c++) img[(y * w + x) * 3 + c] = 30;
         }
     }
     return img;
@@ -87,9 +90,8 @@ static std::vector<uint8_t> make_text_image(int w, int h) {
 
 static std::vector<uint8_t> make_gray_image(int w, int h) {
     std::vector<uint8_t> img(w * h, 240);
-    for (int y = h/4; y < 3*h/4; y += 5)
-        for (int x = w/8; x < 7*w/8; x++)
-            img[y * w + x] = 30;
+    for (int y = h / 4; y < 3 * h / 4; y += 5)
+        for (int x = w / 8; x < 7 * w / 8; x++) img[y * w + x] = 30;
     return img;
 }
 
@@ -156,19 +158,19 @@ static void test_null_safety() {
 
 // ── Live tests (with models) ────────────────────────────────────────
 
-static void test_parseq_live(const char* model_path) {
+static void test_parseq_live(const char * model_path) {
     printf("=== PARSeq live confidence test ===\n");
-    auto* ctx = parseq_ocr_init(model_path, 2);
+    auto * ctx = parseq_ocr_init(model_path, 2);
     CHECK(ctx != nullptr, "parseq init");
     if (!ctx) return;
 
     auto img = make_text_image(128, 32);
     int len = 0;
-    const char* text = parseq_ocr_recognize_raw(ctx, img.data(), 128, 32, 3, &len);
+    const char * text = parseq_ocr_recognize_raw(ctx, img.data(), 128, 32, 3, &len);
     printf("  text: '%s' (%d chars)\n", text ? text : "(null)", len);
 
     int n_conf = 0;
-    const float* conf = parseq_ocr_confidences(ctx, &n_conf);
+    const float * conf = parseq_ocr_confidences(ctx, &n_conf);
     verify_confidences(conf, n_conf, "parseq", text, len);
 
     float mean = parseq_ocr_mean_confidence(ctx);
@@ -185,19 +187,19 @@ static void test_parseq_live(const char* model_path) {
     parseq_ocr_free(ctx);
 }
 
-static void test_tesseract_live(const char* model_path) {
+static void test_tesseract_live(const char * model_path) {
     printf("=== Tesseract LSTM live confidence test ===\n");
-    auto* ctx = tesseract_lstm_init(model_path, 2);
+    auto * ctx = tesseract_lstm_init(model_path, 2);
     CHECK(ctx != nullptr, "tesseract init");
     if (!ctx) return;
 
     auto img = make_gray_image(200, 32);
     int len = 0;
-    const char* text = tesseract_lstm_recognize(ctx, img.data(), 200, 32, &len);
+    const char * text = tesseract_lstm_recognize(ctx, img.data(), 200, 32, &len);
     printf("  text: '%s' (%d chars)\n", text ? text : "(null)", len);
 
     int n_conf = 0;
-    const float* conf = tesseract_lstm_confidences(ctx, &n_conf);
+    const float * conf = tesseract_lstm_confidences(ctx, &n_conf);
     if (conf && n_conf > 0) {
         verify_confidences(conf, n_conf, "tesseract", text, len);
     } else {
@@ -207,9 +209,9 @@ static void test_tesseract_live(const char* model_path) {
     tesseract_lstm_free(ctx);
 }
 
-static void test_hmer_live(const char* model_path) {
+static void test_hmer_live(const char * model_path) {
     printf("=== HMER live confidence test ===\n");
-    auto* ctx = hmer_ocr_init(model_path, 2);
+    auto * ctx = hmer_ocr_init(model_path, 2);
     CHECK(ctx != nullptr, "hmer init");
     if (!ctx) return;
 
@@ -219,19 +221,19 @@ static void test_hmer_live(const char* model_path) {
     for (int i = 0; i < 128 * 64; i++) fimg[i] = img[i] / 255.0f;
 
     int len = 0;
-    const char* text = hmer_ocr_recognize(ctx, fimg.data(), 128, 64, &len);
+    const char * text = hmer_ocr_recognize(ctx, fimg.data(), 128, 64, &len);
     printf("  text: '%s' (%d chars)\n", text ? text : "(null)", len);
 
     int n_conf = 0;
-    const float* conf = hmer_ocr_confidences(ctx, &n_conf);
+    const float * conf = hmer_ocr_confidences(ctx, &n_conf);
     verify_confidences(conf, n_conf, "hmer", text, len);
     printf("  mean: %.4f\n", hmer_ocr_mean_confidence(ctx));
     hmer_ocr_free(ctx);
 }
 
-static void test_bttr_live(const char* model_path) {
+static void test_bttr_live(const char * model_path) {
     printf("=== BTTR live confidence test ===\n");
-    auto* ctx = bttr_ocr_init(model_path, 2);
+    auto * ctx = bttr_ocr_init(model_path, 2);
     CHECK(ctx != nullptr, "bttr init");
     if (!ctx) return;
 
@@ -240,19 +242,19 @@ static void test_bttr_live(const char* model_path) {
     for (int i = 0; i < 76 * 56; i++) fimg[i] = img[i] / 255.0f;
 
     int len = 0;
-    const char* text = bttr_ocr_recognize(ctx, fimg.data(), 76, 56, &len);
+    const char * text = bttr_ocr_recognize(ctx, fimg.data(), 76, 56, &len);
     printf("  text: '%s' (%d chars)\n", text ? text : "(null)", len);
 
     int n_conf = 0;
-    const float* conf = bttr_ocr_confidences(ctx, &n_conf);
+    const float * conf = bttr_ocr_confidences(ctx, &n_conf);
     verify_confidences(conf, n_conf, "bttr", text, len);
     printf("  mean: %.4f\n", bttr_ocr_mean_confidence(ctx));
     bttr_ocr_free(ctx);
 }
 
-static void test_posformer_live(const char* model_path) {
+static void test_posformer_live(const char * model_path) {
     printf("=== PosFormer live confidence test ===\n");
-    auto* ctx = posformer_ocr_init(model_path, 2);
+    auto * ctx = posformer_ocr_init(model_path, 2);
     CHECK(ctx != nullptr, "posformer init");
     if (!ctx) return;
 
@@ -261,36 +263,36 @@ static void test_posformer_live(const char* model_path) {
     for (int i = 0; i < 76 * 56; i++) fimg[i] = img[i] / 255.0f;
 
     int len = 0;
-    const char* text = posformer_ocr_recognize(ctx, fimg.data(), 76, 56, &len);
+    const char * text = posformer_ocr_recognize(ctx, fimg.data(), 76, 56, &len);
     printf("  text: '%s' (%d chars)\n", text ? text : "(null)", len);
 
     int n_conf = 0;
-    const float* conf = posformer_ocr_confidences(ctx, &n_conf);
+    const float * conf = posformer_ocr_confidences(ctx, &n_conf);
     verify_confidences(conf, n_conf, "posformer", text, len);
     printf("  mean: %.4f\n", posformer_ocr_mean_confidence(ctx));
     posformer_ocr_free(ctx);
 }
 
-static void test_mixtex_live(const char* model_path) {
+static void test_mixtex_live(const char * model_path) {
     printf("=== MixTex live confidence test ===\n");
-    auto* ctx = mixtex_ocr_init(model_path, 2);
+    auto * ctx = mixtex_ocr_init(model_path, 2);
     CHECK(ctx != nullptr, "mixtex init");
     if (!ctx) return;
 
     auto img = make_gray_image(500, 400);
 
     int len = 0;
-    const char* text = mixtex_ocr_recognize(ctx, img.data(), 500, 400, 1, &len);
+    const char * text = mixtex_ocr_recognize(ctx, img.data(), 500, 400, 1, &len);
     printf("  text: '%.60s%s' (%d chars)\n", text ? text : "(null)", len > 60 ? "..." : "", len);
 
     int n_conf = 0;
-    const float* conf = mixtex_ocr_confidences(ctx, &n_conf);
+    const float * conf = mixtex_ocr_confidences(ctx, &n_conf);
     verify_confidences(conf, n_conf, "mixtex", text, len);
     printf("  mean: %.4f\n", mixtex_ocr_mean_confidence(ctx));
     mixtex_ocr_free(ctx);
 }
 
-int main(int argc, char** argv) {
+int main(int argc, char ** argv) {
     // Always run unit tests
     test_null_safety();
 

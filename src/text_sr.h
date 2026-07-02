@@ -34,10 +34,8 @@ int text_sr_upscale_factor(const text_sr_context * ctx);
 // tile_size: processing tile size (0 = auto, typically 256).
 // tile_overlap: overlap between tiles in pixels (0 = auto, typically 32).
 // Returns 0 on success, -1 on error.
-int text_sr_process(text_sr_context * ctx,
-                    const uint8_t * input, int width, int height,
-                    int tile_size, int tile_overlap,
-                    uint8_t ** output, int * out_width, int * out_height);
+int text_sr_process(text_sr_context * ctx, const uint8_t * input, int width, int height, int tile_size,
+                    int tile_overlap, uint8_t ** output, int * out_width, int * out_height);
 
 void text_sr_free_image(uint8_t * pixels);
 

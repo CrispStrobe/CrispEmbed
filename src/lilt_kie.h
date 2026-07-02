@@ -24,25 +24,24 @@
 namespace lilt_kie {
 
 struct token_result {
-    int         token_id;
-    int         label_id;   // argmax of logits
-    std::string label;      // label string from id2label
-    float       score;      // softmax probability of predicted label
+    int token_id;
+    int label_id;      // argmax of logits
+    std::string label; // label string from id2label
+    float score;       // softmax probability of predicted label
 };
 
 struct context;
 
 // Load LiLT GGUF model. Returns true on success.
-bool load(context** ctx, const char* model_path, int n_threads = 1);
+bool load(context ** ctx, const char * model_path, int n_threads = 1);
 
 // Run token classification. Returns per-token predictions.
 // input_ids: [n_tokens] token ids (including BOS/EOS)
 // bbox: [n_tokens][4] bounding boxes (x0, y0, x1, y1), each in [0, 1000]
 // n_tokens: sequence length
-std::vector<token_result> classify(context* ctx,
-                                    const int32_t* input_ids,
-                                    const int32_t* bbox,  // flat [n_tokens * 4]
-                                    int n_tokens);
+std::vector<token_result> classify(context * ctx, const int32_t * input_ids,
+                                   const int32_t * bbox, // flat [n_tokens * 4]
+                                   int n_tokens);
 
 // Run with dump mode: returns named per-layer intermediates for parity testing.
 struct dump_tensor {
@@ -50,18 +49,15 @@ struct dump_tensor {
     std::vector<float> data;
     int n_elem;
 };
-std::vector<dump_tensor> classify_dump(context* ctx,
-                                        const int32_t* input_ids,
-                                        const int32_t* bbox,
-                                        int n_tokens);
+std::vector<dump_tensor> classify_dump(context * ctx, const int32_t * input_ids, const int32_t * bbox, int n_tokens);
 
 // Get label name by id.
-const char* label_name(context* ctx, int label_id);
+const char * label_name(context * ctx, int label_id);
 
 // Get number of labels.
-int num_labels(context* ctx);
+int num_labels(context * ctx);
 
 // Free all resources.
-void free(context* ctx);
+void free(context * ctx);
 
 } // namespace lilt_kie

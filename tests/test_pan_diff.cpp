@@ -11,13 +11,14 @@
 
 static int n_pass = 0, n_fail = 0;
 
-static void check(crispembed_diff::Ref & ref, const char * name,
-                  const float * data, size_t n_elem) {
+static void check(crispembed_diff::Ref & ref, const char * name, const float * data, size_t n_elem) {
     auto r = ref.compare(name, data, n_elem);
     const char * status = r.is_pass() ? "PASS" : "FAIL";
-    printf("  %-25s  cos_min=%.6f  max_abs=%.2e  %s\n",
-           name, r.cos_min, r.max_abs, status);
-    if (r.is_pass()) n_pass++; else n_fail++;
+    printf("  %-25s  cos_min=%.6f  max_abs=%.2e  %s\n", name, r.cos_min, r.max_abs, status);
+    if (r.is_pass())
+        n_pass++;
+    else
+        n_fail++;
 }
 
 int main(int argc, char ** argv) {
@@ -27,13 +28,23 @@ int main(int argc, char ** argv) {
     }
 
     crispembed_diff::Ref ref;
-    if (!ref.load(argv[2])) { printf("Failed to load ref\n"); return 1; }
+    if (!ref.load(argv[2])) {
+        printf("Failed to load ref\n");
+        return 1;
+    }
 
     pan_sr_context * ctx = pan_sr_init(argv[1], 2);
-    if (!ctx) { printf("Failed to load model\n"); return 1; }
+    if (!ctx) {
+        printf("Failed to load model\n");
+        return 1;
+    }
 
     auto [ref_input, ref_n] = ref.get_f32("input");
-    if (!ref_input) { printf("No 'input' in ref\n"); pan_sr_free(ctx); return 1; }
+    if (!ref_input) {
+        printf("No 'input' in ref\n");
+        pan_sr_free(ctx);
+        return 1;
+    }
 
     int W = 32, H = 32, scale = pan_sr_scale(ctx);
     int ow = W * scale, oh = H * scale;
@@ -43,14 +54,17 @@ int main(int argc, char ** argv) {
     for (int y = 0; y < H; y++)
         for (int x = 0; x < W; x++)
             for (int c = 0; c < 3; c++)
-                input_u8[(y * W + x) * 3 + c] =
-                    (uint8_t)(ref_input[c * H * W + y * W + x] * 255.0f + 0.5f);
+                input_u8[(y * W + x) * 3 + c] = (uint8_t)(ref_input[c * H * W + y * W + x] * 255.0f + 0.5f);
 
     uint8_t * output_u8 = nullptr;
     int rw = 0, rh = 0;
     // Single tile (no tiling) to match reference
     int rc = pan_sr_process(ctx, input_u8.data(), W, H, 256, 0, &output_u8, &rw, &rh);
-    if (rc != 0 || !output_u8) { printf("pan_sr_process failed\n"); pan_sr_free(ctx); return 1; }
+    if (rc != 0 || !output_u8) {
+        printf("pan_sr_process failed\n");
+        pan_sr_free(ctx);
+        return 1;
+    }
     printf("Output: %dx%d (scale=%d)\n", rw, rh, scale);
 
     // Compare clamped output: ref stores output clamped to [0,1], we convert
@@ -60,8 +74,7 @@ int main(int argc, char ** argv) {
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++)
                 for (int c = 0; c < 3; c++)
-                    cpp_out[c * oh * ow + y * ow + x] =
-                        output_u8[(y * ow + x) * 3 + c] / 255.0f;
+                    cpp_out[c * oh * ow + y * ow + x] = output_u8[(y * ow + x) * 3 + c] / 255.0f;
         check(ref, "output", cpp_out.data(), cpp_out.size());
     }
 

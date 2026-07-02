@@ -8,29 +8,41 @@
 #include <vector>
 
 // Float-based morph from scan_cleanup (copy for comparison)
-static void min_pool_2d(const float *src, int w, int h, int k, float *dst) {
-    int half = k/2;
-    std::vector<float> tmp(w*h);
-    for (int y=0;y<h;y++) for (int x=0;x<w;x++) {
-        float mn=1.0f; int x0=std::max(0,x-half),x1=std::min(w-1,x+half);
-        for (int xx=x0;xx<=x1;xx++) mn=std::min(mn,src[y*w+xx]); tmp[y*w+x]=mn;
-    }
-    for (int y=0;y<h;y++) for (int x=0;x<w;x++) {
-        float mn=1.0f; int y0=std::max(0,y-half),y1=std::min(h-1,y+half);
-        for (int yy=y0;yy<=y1;yy++) mn=std::min(mn,tmp[yy*w+x]); dst[y*w+x]=mn;
-    }
+static void min_pool_2d(const float * src, int w, int h, int k, float * dst) {
+    int half = k / 2;
+    std::vector<float> tmp(w * h);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            float mn = 1.0f;
+            int x0 = std::max(0, x - half), x1 = std::min(w - 1, x + half);
+            for (int xx = x0; xx <= x1; xx++) mn = std::min(mn, src[y * w + xx]);
+            tmp[y * w + x] = mn;
+        }
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            float mn = 1.0f;
+            int y0 = std::max(0, y - half), y1 = std::min(h - 1, y + half);
+            for (int yy = y0; yy <= y1; yy++) mn = std::min(mn, tmp[yy * w + x]);
+            dst[y * w + x] = mn;
+        }
 }
-static void max_pool_2d(const float *src, int w, int h, int k, float *dst) {
-    int half = k/2;
-    std::vector<float> tmp(w*h);
-    for (int y=0;y<h;y++) for (int x=0;x<w;x++) {
-        float mx=0.0f; int x0=std::max(0,x-half),x1=std::min(w-1,x+half);
-        for (int xx=x0;xx<=x1;xx++) mx=std::max(mx,src[y*w+xx]); tmp[y*w+x]=mx;
-    }
-    for (int y=0;y<h;y++) for (int x=0;x<w;x++) {
-        float mx=0.0f; int y0=std::max(0,y-half),y1=std::min(h-1,y+half);
-        for (int yy=y0;yy<=y1;yy++) mx=std::max(mx,tmp[yy*w+x]); dst[y*w+x]=mx;
-    }
+static void max_pool_2d(const float * src, int w, int h, int k, float * dst) {
+    int half = k / 2;
+    std::vector<float> tmp(w * h);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            float mx = 0.0f;
+            int x0 = std::max(0, x - half), x1 = std::min(w - 1, x + half);
+            for (int xx = x0; xx <= x1; xx++) mx = std::max(mx, src[y * w + xx]);
+            tmp[y * w + x] = mx;
+        }
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) {
+            float mx = 0.0f;
+            int y0 = std::max(0, y - half), y1 = std::min(h - 1, y + half);
+            for (int yy = y0; yy <= y1; yy++) mx = std::max(mx, tmp[yy * w + x]);
+            dst[y * w + x] = mx;
+        }
 }
 
 int main() {
@@ -43,8 +55,7 @@ int main() {
     // Create synthetic image: white background with some dark text
     std::vector<float> gray(W * H, 1.0f);
     for (int y = 100; y < 130; y++)
-        for (int x = 200; x < 1800; x++)
-            gray[y * W + x] = 0.1f; // dark text line
+        for (int x = 200; x < 1800; x++) gray[y * W + x] = 0.1f; // dark text line
 
     // ── Float morph (current scan_cleanup approach) ──
     std::vector<float> eroded(W * H), background(W * H);
@@ -67,11 +78,10 @@ int main() {
     printf("\nSpeedup: %.1fx\n", float_ms / bit_ms);
 
     // Memory comparison
-    size_t float_mem = 2 * W * H * sizeof(float); // eroded + background
+    size_t float_mem = 2 * W * H * sizeof(float);    // eroded + background
     size_t bit_mem = 2 * wpl * H * sizeof(uint32_t); // bits + opened
     printf("Float memory: %.1f MB\n", float_mem / 1e6);
-    printf("1-bit memory: %.1f MB (%.1fx less)\n", bit_mem / 1e6,
-           (double)float_mem / bit_mem);
+    printf("1-bit memory: %.1f MB (%.1fx less)\n", bit_mem / 1e6, (double)float_mem / bit_mem);
 
     // Verify correctness: check that opened mask matches expected
     // (text region should be eroded away by large kernel)
@@ -82,8 +92,7 @@ int main() {
             if ((line[x >> 5] >> (31 - (x & 31))) & 1) fg_count++;
         }
     }
-    printf("\nForeground pixels after open: %d (expect 0 for K=%d > text height 30)\n",
-           fg_count, K);
+    printf("\nForeground pixels after open: %d (expect 0 for K=%d > text height 30)\n", fg_count, K);
 
     morph_free(bits);
     morph_free(opened);

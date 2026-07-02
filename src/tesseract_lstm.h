@@ -34,21 +34,14 @@ void tesseract_lstm_free(tesseract_lstm_context * ctx);
 /// Valid until the next call to tesseract_lstm_recognize or tesseract_lstm_free.
 /// Spaces are NOT produced by the LSTM — they come from Tesseract's word
 /// segmentation which is not part of this engine.
-const char * tesseract_lstm_recognize(
-    tesseract_lstm_context * ctx,
-    const uint8_t * pixels,
-    int width, int height,
-    int * out_len
-);
+const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_t * pixels, int width, int height,
+                                      int * out_len);
 
 /// Get per-character confidence scores from the last recognition.
 /// Returns a float array of length *n_chars, or NULL if no recognition
 /// has been performed. Each value is the softmax probability of the
 /// winning character class at its CTC timestep.
-const float * tesseract_lstm_confidences(
-    const tesseract_lstm_context * ctx,
-    int * n_chars
-);
+const float * tesseract_lstm_confidences(const tesseract_lstm_context * ctx, int * n_chars);
 
 /// Get model info.
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx);
@@ -61,11 +54,7 @@ void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);
 /// Get a captured intermediate buffer by name (e.g. "after_conv_fc").
 /// Returns NULL if dump mode is off or the name is unknown.
 /// Valid until the next call to tesseract_lstm_recognize.
-const float * tesseract_lstm_get_capture(
-    const tesseract_lstm_context * ctx,
-    const char * name,
-    int * n_elem
-);
+const float * tesseract_lstm_get_capture(const tesseract_lstm_context * ctx, const char * name, int * n_elem);
 
 #ifdef __cplusplus
 }

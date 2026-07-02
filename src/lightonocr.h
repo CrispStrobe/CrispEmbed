@@ -21,17 +21,15 @@ namespace lightonocr {
 
 struct context;
 
-bool load(context &ctx, const char *gguf_path, int n_threads = 1);
-void free_(context &ctx);
+bool load(context & ctx, const char * gguf_path, int n_threads = 1);
+void free_(context & ctx);
 
 // Recognize text from a raw RGB image (uint8, row-major).
-std::string recognize_raw(context &ctx,
-                           const uint8_t *pixels, int width, int height, int channels,
-                           int max_tokens = 2048);
+std::string recognize_raw(context & ctx, const uint8_t * pixels, int width, int height, int channels,
+                          int max_tokens = 2048);
 
 // Recognize text from an image file (JPG/PNG/BMP).
-std::string recognize_file(context &ctx, const char *image_path,
-                            int max_tokens = 2048);
+std::string recognize_file(context & ctx, const char * image_path, int max_tokens = 2048);
 
 } // namespace lightonocr
 
@@ -47,15 +45,10 @@ void lightonocr_free(lightonocr_context * ctx);
 
 void lightonocr_set_max_tokens(lightonocr_context * ctx, int max_tokens);
 
-const char * lightonocr_recognize_raw(
-    lightonocr_context * ctx,
-    const uint8_t * pixels, int width, int height, int channels,
-    int * out_len);
+const char * lightonocr_recognize_raw(lightonocr_context * ctx, const uint8_t * pixels, int width, int height,
+                                      int channels, int * out_len);
 
-const char * lightonocr_recognize_file(
-    lightonocr_context * ctx,
-    const char * image_path,
-    int * out_len);
+const char * lightonocr_recognize_file(lightonocr_context * ctx, const char * image_path, int * out_len);
 
 const float * lightonocr_confidences(const lightonocr_context * ctx, int * n_tokens);
 float lightonocr_mean_confidence(const lightonocr_context * ctx);

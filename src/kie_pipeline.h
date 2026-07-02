@@ -30,41 +30,39 @@ namespace kie_pipeline {
 
 // A single extracted field: label + value + confidence + spatial position.
 struct field {
-    std::string label;       // entity type (e.g. "total", "date")
-    std::string value;       // extracted text span
-    float       score;       // NER confidence [0, 1]
-    float       x, y, w, h; // bounding box in original image coordinates
+    std::string label; // entity type (e.g. "total", "date")
+    std::string value; // extracted text span
+    float score;       // NER confidence [0, 1]
+    float x, y, w, h;  // bounding box in original image coordinates
 };
 
 struct result {
-    std::vector<field> fields;           // extracted key-value pairs
-    std::string        ocr_full_text;    // raw OCR text (for debugging)
-    float              ocr_confidence;   // mean OCR confidence
-    int                n_ocr_regions;    // number of OCR regions detected
+    std::vector<field> fields; // extracted key-value pairs
+    std::string ocr_full_text; // raw OCR text (for debugging)
+    float ocr_confidence;      // mean OCR confidence
+    int n_ocr_regions;         // number of OCR regions detected
 };
 
 struct config {
-    ocr_orchestrator::config ocr;       // OCR pipeline configuration
-    std::string              ner_model; // GLiNER GGUF model path (Phase 1)
-    std::string              lilt_model; // LiLT GGUF model path (Phase 2, optional)
-    float                    threshold; // NER confidence threshold (default 0.5)
+    ocr_orchestrator::config ocr; // OCR pipeline configuration
+    std::string ner_model;        // GLiNER GGUF model path (Phase 1)
+    std::string lilt_model;       // LiLT GGUF model path (Phase 2, optional)
+    float threshold;              // NER confidence threshold (default 0.5)
 };
 
 struct context;
 
 // Build a KIE context. Loads OCR pipeline + NER model.
 // Returns false on failure (missing models, etc.).
-bool load(context** ctx, const config& cfg, int n_threads = 1);
+bool load(context ** ctx, const config & cfg, int n_threads = 1);
 
 // Extract fields from a document image.
 // labels: array of field names to extract (e.g. "total", "date", "vendor")
 // n_labels: number of labels
 // threshold: NER confidence threshold (0 = use config default)
-result extract(context* ctx, const char* image_path,
-               const char** labels, int n_labels,
-               float threshold = 0.0f);
+result extract(context * ctx, const char * image_path, const char ** labels, int n_labels, float threshold = 0.0f);
 
 // Free all resources.
-void free(context* ctx);
+void free(context * ctx);
 
 } // namespace kie_pipeline
