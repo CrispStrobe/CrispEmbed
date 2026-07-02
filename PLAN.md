@@ -713,29 +713,32 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   parity ref possible. Mitigant: text_sr is a NAFNet variant sharing the conv paths that are
   now guarded by the `nafnet` entry; the PixelShuffle/bicubic tail remains unguarded. Blocked
   until a checkpoint exists.
-- **pcs — REGRESSION FIXED, CLOSED.** `4a498d1 perf(pcs): cache FC head weights at init` was the
-  wave commit at fault. The shipped default `pcs-xlmr-base-q4_k.gguf` **crashed on every inference**
-  (`ggml-backend.cpp:349 tensor read out of bounds`): pcs read its Q4_K/Q4_0 FC-head weights via raw
-  `ggml_backend_tensor_get` into F32 buffers (`n_elem*4` >> `ggml_nbytes` of a quantized tensor).
-  **Fix:** dequantize head weights per row via the type's `to_float` trait, sized by `ggml_nbytes`
-  (never `n_elem*4`) — engine-side, so it repairs the already-shipped GGUF with no re-download. Landed
-  in the SIBLING repo **CrispASR/crisp_punc/src/pcs.cpp** (per-call `pcs_read_tensor_f32`, the linked
-  copy) and mirrored into the local **CrispEmbed/src/pcs.cpp** (`cache_tensor`, the at-init cache path
-  — the two copies had diverged: CrispEmbed already carried `4a498d1`'s caching, CrispASR still did
-  per-call reads). Both paths verified on q4_k -> byte-identical output and exit 0. **Parity vs the
-  ONNX source** (diff harness `tools/dump_pcs_reference.py`, identical tokenization): post-punct and
-  pre-punct heads match the reference **11/11**; reference decodes to "Hello world, how are you
-  today? I am fine, thanks." The q4_k engine over-capitalizes "World"/"Today" -- a **quant floor** on
-  the tiny 128->16 truecase head (correct at f32), not a code bug. Wired regression guard `pcs` (crash
-  guard: run a sentence, assert exit 0; truecase text not pinned -- its per-char argmax is
-  quant/backend-sensitive, unlike fireredpunc's punct-only head). fireredpunc was unaffected (F16 cls
-  head, in-graph mul_mat).
-  - **Follow-up (pre-existing, NOT from this fix):** at f32-on-CPU the truecase head still flips one
-    borderline char ("thanks"->"Thanks") and the sbd head misses one boundary ("today?"), vs the ONNX
-    reference -- the f32 read path is byte-identical to pre-fix code, so these predate the crash fix.
-    Localised with `PCS_DEBUG=1`/`PCS_FORCE_CPU=1`. Punctuation parity is perfect; the gap is confined
-    to the two conditioned CPU heads. Needs a logit-level compare (expose ONNX intermediate logits) to
-    decide borderline-vs-structural.
+- **pcs — FULL ONNX PARITY, CLOSED.** Started as a q4_k crash (`ggml-backend.cpp:349 tensor read out
+  of bounds`: Q4_K/Q4_0 FC-head weights read via raw `ggml_backend_tensor_get` into F32 buffers);
+  fixed by per-row dequant (`to_float` trait, sized by `ggml_nbytes`). Then a full diff-harness pass
+  vs the source ONNX model (`tools/dump_pcs_reference.py` + `PCS_DEBUG`/`PCS_FORCE_CPU`/
+  `PCS_DUMP_HIDDEN`/`PCS_DUMP_LAYER`) found **six** root causes of engine-vs-reference deviation and
+  fixed all. After: tok+post+pre+seg predictions match the reference **11/11** on every test
+  sentence, encoder hidden cos **0.999997** (was 0.996), and q8_0/f32 reproduce the ONNX output
+  exactly — "Hello world, how are you today? I am fine, thanks." (q4_k: 1 truecase char off, genuine
+  4-bit quant floor). The two `pcs.cpp` copies are now **unified** (CrispEmbed = CrispASR modulo the
+  `pcs.h` include; the unproven `fc_cache`/`bench` scaffolding was dropped to end the divergence).
+  Root causes:
+  1. **Tokenizer (dominant):** XLM-R's SP model is **Unigram** → needs Viterbi max-score
+     segmentation. Greedy longest-match mis-split multi-subword words ("delayed"), corrupting
+     embeddings (per-token cos 0.13). Added Viterbi using new `tokenizer.ggml.scores` (converter
+     emits `sp.GetScore`; new `core_gguf::kv_f32_array`); greedy kept as scores-absent fallback.
+     **Requires re-converted GGUFs** (re-uploaded to `cstr/pcs-xlmr-base-GGUF` with scores; added q8_0).
+  2. **Decode** re-counted subtokens greedily → dropped final punctuation on multi-subword words;
+     now partitions the actual token_ids by the ▁ word-start boundary.
+  3. **SBD/seg** used argmax; ONNX thresholds `softmax P(boundary) > 0.05`.
+  4. **Truecase** conditioning used the current token's sbd; ONNX feeds the SHIFTED
+     is-sentence-initial flag (`argmax(seg[t-1])`, token 0 = initial).
+  5. **FFN GELU** was `ggml_gelu` (tanh approx); ONNX uses exact **erf** GELU (`ggml_gelu_erf`).
+  6. **LayerNorm eps** was `1e-12`; XLM-R/ONNX use `1e-5`.
+  Also: manual F32 attention (`PCS_FLASH_ATTN=1` restores flash). Guard `pcs` now pins the exact
+  golden on **q8_0** (exact + backend-robust; q4_k has the 1-char quant flip). Registry adds `pcs-q8`.
+  fireredpunc was unaffected (WordPiece + F16 cls head, in-graph mul_mat).
 - **decoder_embed — CLEAN, CLOSED.** Added a compiled guardrail: `test_decoder_embed_diff.cpp`
   (crispembed_encode → final last-token-pooled embedding) vs an independent Qwen3-Embedding-0.6B
   HF ref (`dump_decoder_embed_reference.py`). Engine (q8_0) matches cos 0.9993; wired `diff_only`,
