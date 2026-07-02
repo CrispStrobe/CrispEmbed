@@ -120,4 +120,12 @@ bool preprocess_internvl_rgb(const uint8_t * rgb,
                              const internvl_config & cfg,
                              internvl_result & out);
 
+// Standalone separable bicubic resize (a = -0.5 Catmull-Rom) with antialiasing
+// on downscale, matching PIL's uint8 resize (round + clamp) — i.e. the resample
+// used by HF ViTImageProcessor / torchvision. `src` is HWC uint8 (src_h, src_w,
+// channels); `dst` is HWC float32 (dst_h, dst_w, channels) in [0, 255].
+// Reusable by any fixed-size preprocessor that needs HF-parity resizing.
+void resize_bicubic_u8_hwc(const uint8_t * src, int src_h, int src_w,
+                           float * dst, int dst_h, int dst_w, int channels);
+
 }  // namespace image_preproc

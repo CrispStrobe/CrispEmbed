@@ -3,6 +3,7 @@
 
 #include "glm_ocr.h"
 #include "crispembed_diff.h"
+#include "core/bpe.h"
 #include "core/gguf_loader.h"
 
 #include "ggml.h"
@@ -906,36 +907,10 @@ bool encode_vision(context &ctx, const float *pixels, int H, int W,
 
 std::string tokenizer::decode(const int32_t *ids, int n) const {
     // GLM-OCR uses GPT-2 byte-level BPE: token pieces store each raw byte as a
-    // printable Unicode codepoint (bytes_to_unicode). Decode reverses that map:
-    // gather codepoints across pieces, translate each back to its byte, then the
-    // byte stream is the UTF-8 output text.
-    static const std::unordered_map<uint32_t, uint8_t> byte_decoder = [] {
-        std::unordered_map<uint32_t, uint8_t> m;
-        auto in_kept = [](int b) {
-            return (b >= '!' && b <= '~') || (b >= 0xA1 && b <= 0xAC) || (b >= 0xAE && b <= 0xFF);
-        };
-        int n_extra = 0;
-        for (int b = 0; b < 256; b++) {
-            if (in_kept(b)) m[(uint32_t)b] = (uint8_t)b;
-            else m[(uint32_t)(256 + n_extra++)] = (uint8_t)b;
-        }
-        return m;
-    }();
-
-    auto decode_utf8_cp = [](const std::string &s, size_t &i) -> uint32_t {
-        unsigned char c = s[i];
-        uint32_t cp; int extra;
-        if (c < 0x80) { cp = c; extra = 0; }
-        else if ((c >> 5) == 0x6) { cp = c & 0x1F; extra = 1; }
-        else if ((c >> 4) == 0xE) { cp = c & 0x0F; extra = 2; }
-        else if ((c >> 3) == 0x1E) { cp = c & 0x07; extra = 3; }
-        else { cp = c; extra = 0; }
-        for (int k = 0; k < extra && i + 1 < s.size(); k++) cp = (cp << 6) | (s[++i] & 0x3F);
-        i++;
-        return cp;
-    };
-
-    std::string result;
+    // printable Unicode codepoint (bytes_to_unicode). Concatenate the kept
+    // pieces, then map the utf-8 codepoints back to raw bytes via the shared
+    // core_bpe decoder (inverse of byte_encoder()).
+    std::string merged;
     for (int i = 0; i < n; i++) {
         int id = ids[i];
         if (id < 0 || id >= vocab_size) continue;
@@ -945,14 +920,9 @@ std::string tokenizer::decode(const int32_t *ids, int n) const {
         // Skip special/control tokens (<|...|>, [gMASK], <sop>, ...).
         if (piece[0] == '<' && piece.back() == '>' && piece.find("0x") == std::string::npos) continue;
         if (piece[0] == '[' && piece.back() == ']') continue;
-        for (size_t j = 0; j < piece.size(); ) {
-            uint32_t cp = decode_utf8_cp(piece, j);
-            auto it = byte_decoder.find(cp);
-            if (it != byte_decoder.end()) result += (char)it->second;
-            else result += (char)cp;  // fallback
-        }
+        merged += piece;
     }
-    return result;
+    return core_bpe::unicode_to_bytes(merged);
 }
 
 // ── KV cache ────────────────────────────────────────────────────────
