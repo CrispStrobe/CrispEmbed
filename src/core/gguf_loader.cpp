@@ -149,6 +149,18 @@ std::vector<std::string> kv_str_array(gguf_context * gctx, const char * key) {
     return out;
 }
 
+std::vector<float> kv_f32_array(gguf_context * gctx, const char * key) {
+    std::vector<float> out;
+    const int k = gguf_find_key(gctx, key);
+    if (k < 0) return out;
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY) return out;
+    if (gguf_get_arr_type(gctx, k) != GGUF_TYPE_FLOAT32) return out;
+    const size_t n = gguf_get_arr_n(gctx, k);
+    const float * data = (const float *)gguf_get_arr_data(gctx, k);
+    out.assign(data, data + n);
+    return out;
+}
+
 std::vector<int> kv_i32_array(gguf_context * gctx, const char * key) {
     std::vector<int> out;
     const int k = gguf_find_key(gctx, key);
