@@ -202,9 +202,15 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
     int n_levels = (int)core_gguf::kv_u32(meta, "safmn.n_levels", 4);
     core_gguf::free_metadata(meta);
 
-    bool force_cpu = (getenv("SAFMN_SR_FORCE_CPU") && atoi(getenv("SAFMN_SR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
-    if (!backend) backend = ggml_backend_cpu_init();
+    // SAFMN runs all compute on the CPU enc_sched (below); ctx->backend only holds
+    // weights and is freed right after load. Loading them on a GPU backend
+    // (init_best) leaves them in a Metal/CUDA buffer the CPU conv sched cannot read —
+    // aborting graph alloc on Metal ("pre-allocated tensor ... buffer ... cannot run")
+    // and segfaulting on CUDA. The convs run on CPU regardless, so load on CPU.
+    // (Same residency class as the nafnet/restormer conv→ggml fixes; the official
+    // GGUFWriter already fixes the *layout*, but not this. SAFMN_SR_FORCE_CPU is now
+    // a no-op.)
+    ggml_backend_t backend = ggml_backend_cpu_init();
 
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "safmn", wl)) {
