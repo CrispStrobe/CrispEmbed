@@ -16,8 +16,8 @@ static void check(crispembed_diff::Ref & ref, const char * name,
                   const float * data, size_t n_elem) {
     auto r = ref.compare(name, data, n_elem);
     const char * status = r.is_pass() ? "PASS" : "FAIL";
-    printf("  %-25s  cos_min=%.6f  max_abs=%.2e  %s\n",
-           name, r.cos_min, r.max_abs, status);
+    // Format matches the regression runner's parser: "<stage>: cos_min=.. max_abs=.. PASS"
+    printf("%s: cos_min=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs, status);
     if (r.is_pass()) n_pass++; else n_fail++;
 }
 
@@ -75,8 +75,9 @@ int main(int argc, char ** argv) {
         auto r = ref.compare("output", cpp_out.data(), cpp_out.size());
         // Use lower threshold (0.99) because uint8 quantization + clamp loses precision
         bool pass = r.cos_min >= 0.99f;
-        printf("  %-25s  cos_min=%.6f  max_abs=%.2e  %s\n",
-               "output (clamped)", r.cos_min, r.max_abs, pass ? "PASS" : "FAIL");
+        // Format matches the regression runner's parser (stage name = "output").
+        printf("output: cos_min=%.6f max_abs=%.2e %s\n",
+               r.cos_min, r.max_abs, pass ? "PASS" : "FAIL");
         if (pass) n_pass++; else n_fail++;
     }
 
