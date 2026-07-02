@@ -91,7 +91,12 @@ struct tesseract_lstm_context {
 // ---------------------------------------------------------------------------
 
 static const float * tensor_f32(tesseract_lstm_context * ctx, struct ggml_tensor * t) {
-    if (t->type == GGML_TYPE_F32) {
+    // Weights resident on CUDA/Vulkan/SYCL/HIP have a DEVICE pointer in t->data
+    // that must not be returned/read on the host. Keep the zero-copy fast path
+    // only for host-visible buffers (CPU / Metal); otherwise dequant through the
+    // backend buffer via ggml_backend_tensor_get.
+    const bool host = !t->buffer || ggml_backend_buffer_is_host(t->buffer);
+    if (t->type == GGML_TYPE_F32 && host) {
         return (const float *)t->data;
     }
     auto it = ctx->dequant_cache.find(t->data);
@@ -101,12 +106,25 @@ static const float * tensor_f32(tesseract_lstm_context * ctx, struct ggml_tensor
     const int64_t n = ggml_nelements(t);
     auto & buf = ctx->dequant_cache[t->data];
     buf.resize(n);
-    const auto * traits = ggml_get_type_traits(t->type);
-    if (traits->to_float) {
-        traits->to_float(t->data, buf.data(), n);
+    std::vector<uint8_t> raw;
+    const void * src_bytes;
+    if (t->buffer) {
+        raw.resize(ggml_nbytes(t));
+        ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+        src_bytes = raw.data();
     } else {
-        fprintf(stderr, "tesseract_lstm: cannot dequantize type %d\n", t->type);
-        std::fill(buf.begin(), buf.end(), 0.0f);
+        src_bytes = t->data;
+    }
+    if (t->type == GGML_TYPE_F32) {
+        memcpy(buf.data(), src_bytes, n * sizeof(float));
+    } else {
+        const auto * traits = ggml_get_type_traits(t->type);
+        if (traits->to_float) {
+            traits->to_float(src_bytes, buf.data(), n);
+        } else {
+            fprintf(stderr, "tesseract_lstm: cannot dequantize type %d\n", t->type);
+            std::fill(buf.begin(), buf.end(), 0.0f);
+        }
     }
     return buf.data();
 }

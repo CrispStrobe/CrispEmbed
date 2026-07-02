@@ -181,15 +181,29 @@ static std::vector<float> to_f32(const ggml_tensor * t) {
     if (!t) return {};
     int n = (int)ggml_nelements(t);
     std::vector<float> out(n);
+    // A weight tensor resident on CUDA/Vulkan/SYCL/HIP has a DEVICE pointer in
+    // t->data that segfaults if dereferenced on the host. Read through the
+    // tensor's backend buffer (device->host copy) whenever it has one; only fall
+    // back to a direct read for buffer-less host tensors. (CPU/Metal buffers are
+    // host-visible so both paths agree there.)
+    size_t nb = ggml_nbytes(t);
+    std::vector<uint8_t> raw(nb);
+    const void * src_bytes;
+    if (t->buffer) {
+        ggml_backend_tensor_get(t, raw.data(), 0, nb);
+        src_bytes = raw.data();
+    } else {
+        src_bytes = t->data;
+    }
     if (t->type == GGML_TYPE_F32) {
-        memcpy(out.data(), t->data, n * sizeof(float));
+        memcpy(out.data(), src_bytes, n * sizeof(float));
     } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
+        const ggml_fp16_t * src = (const ggml_fp16_t *) src_bytes;
         for (int i = 0; i < n; i++) out[i] = ggml_fp16_to_fp32(src[i]);
     } else {
         const auto * traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float)
-            traits->to_float(t->data, out.data(), n);
+            traits->to_float(src_bytes, out.data(), n);
         else
             memset(out.data(), 0, n * sizeof(float));
     }
