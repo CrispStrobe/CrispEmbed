@@ -41,6 +41,8 @@ scan_cleanup_params scan_cleanup_defaults(void) {
     p.morph_kernel = 51;
     p.border_threshold = 0.15f;
     p.deskew_max_angle = 15.0f;
+    p.despeckle = 1;
+    p.despeckle_thresh = 0.25f;
     return p;
 }
 
@@ -486,6 +488,32 @@ void scan_cleanup_whiten(const float * gray, int w, int h, int kernel_size, floa
     }
 }
 
+// ── Despeckle (Port 1 of the unpaper feature set) ───────────────────
+// Remove isolated dark specks (scanner dust, salt-and-pepper) with a
+// decision-based 3x3 median: a pixel is replaced by its local median ONLY when it
+// differs from that median by more than `thresh`. An isolated speck sits on light
+// paper so its neighbourhood median is light → it is lifted; a text-stroke pixel
+// has dark neighbours so its median ≈ itself → it is preserved. This keeps text
+// intact while clearing impulse noise (which unpaper's cluster noisefilter, tuned
+// for larger blobs, does not remove). Symmetric, so it also drops bright pinholes
+// inside dark regions. Grayscale [0,1], in place.
+static void scan_cleanup_despeckle(std::vector<float> & gray, int w, int h, float thresh) {
+    if (w < 3 || h < 3) return;
+    std::vector<float> out(gray);
+    for (int y = 1; y < h - 1; y++) {
+        for (int x = 1; x < w - 1; x++) {
+            float win[9];
+            int k = 0;
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++) win[k++] = gray[(y + dy) * w + (x + dx)];
+            std::nth_element(win, win + 4, win + 9);
+            float med = win[4];
+            if (fabsf(gray[y * w + x] - med) > thresh) out[y * w + x] = med;
+        }
+    }
+    gray.swap(out);
+}
+
 // ── Pipeline ────────────────────────────────────────────────────────
 
 int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int width, int height, int channels,
@@ -500,6 +528,17 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int wid
     // Convert to grayscale float [0,1]
     std::vector<float> gray = to_gray_f32(pixels, width, height, channels);
     int w = width, h = height;
+
+    // 0. Despeckle (before deskew/whiten so specks don't skew angle detection
+    //    or corrupt the morphological background estimate).
+    if (params.despeckle) {
+        auto t0 = std::chrono::steady_clock::now();
+        scan_cleanup_despeckle(gray, w, h, params.despeckle_thresh);
+        if (bench) {
+            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+            fprintf(stderr, "[scan_cleanup-bench] despeckle: %.1f ms\n", ms);
+        }
+    }
 
     // 1. Deskew
     if (params.deskew) {
