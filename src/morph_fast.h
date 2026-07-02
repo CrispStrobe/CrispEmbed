@@ -28,35 +28,28 @@ extern "C" {
 /// Convert a float grayscale image [0,1] to 1-bit packed representation.
 /// Pixels < threshold → 1 (foreground), >= threshold → 0 (background).
 /// Caller must free the returned buffer with morph_free().
-uint32_t * morph_float_to_1bit(const float * gray, int w, int h,
-                                float threshold, int * out_wpl);
+uint32_t * morph_float_to_1bit(const float * gray, int w, int h, float threshold, int * out_wpl);
 
 /// Convert 1-bit packed image back to float [0,1].
 /// Foreground (1) → 0.0, background (0) → 1.0.
-void morph_1bit_to_float(const uint32_t * bits, int w, int h, int wpl,
-                          float * out_gray);
+void morph_1bit_to_float(const uint32_t * bits, int w, int h, int wpl, float * out_gray);
 
 /// Convert uint8 grayscale to 1-bit. Pixels < threshold → 1.
-uint32_t * morph_u8_to_1bit(const uint8_t * gray, int w, int h,
-                             uint8_t threshold, int * out_wpl);
+uint32_t * morph_u8_to_1bit(const uint8_t * gray, int w, int h, uint8_t threshold, int * out_wpl);
 
 /// Binary erosion with brick (rectangular) structuring element.
 /// hsize, vsize: SE dimensions (must be odd). Separable: horiz then vert.
 /// Returns new allocated image. Caller frees with morph_free().
-uint32_t * morph_erode_brick(const uint32_t * src, int w, int h, int wpl,
-                              int hsize, int vsize);
+uint32_t * morph_erode_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize);
 
 /// Binary dilation with brick SE. Returns new allocated image.
-uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl,
-                               int hsize, int vsize);
+uint32_t * morph_dilate_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize);
 
 /// Morphological opening (erode then dilate). Returns new allocated image.
-uint32_t * morph_open_brick(const uint32_t * src, int w, int h, int wpl,
-                             int hsize, int vsize);
+uint32_t * morph_open_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize);
 
 /// Morphological closing (dilate then erode). Returns new allocated image.
-uint32_t * morph_close_brick(const uint32_t * src, int w, int h, int wpl,
-                              int hsize, int vsize);
+uint32_t * morph_close_brick(const uint32_t * src, int w, int h, int wpl, int hsize, int vsize);
 
 /// Free a 1-bit image buffer returned by the above functions.
 void morph_free(uint32_t * bits);
@@ -64,8 +57,7 @@ void morph_free(uint32_t * bits);
 /// High-level: background whitening on float [0,1] grayscale.
 /// Uses fast 1-bit morphological open internally. Equivalent to
 /// scan_cleanup_whiten() but 5-6x faster for large kernels.
-void morph_whiten_fast(const float * gray, int w, int h,
-                        int kernel_size, float * dst);
+void morph_whiten_fast(const float * gray, int w, int h, int kernel_size, float * dst);
 
 #ifdef __cplusplus
 }

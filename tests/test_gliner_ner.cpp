@@ -17,8 +17,8 @@ int main(int argc, char ** argv) {
     }
 
     const char * model_path = argv[1];
-    const char * text = argc > 2 ? argv[2]
-        : "Maria Schmidt arbeitet bei Siemens in München, E-Mail: maria.schmidt@siemens.com";
+    const char * text =
+        argc > 2 ? argv[2] : "Maria Schmidt arbeitet bei Siemens in München, E-Mail: maria.schmidt@siemens.com";
 
     printf("Loading model: %s\n", model_path);
     void * ctx = crispembed_ner_init(model_path, 4);
@@ -27,7 +27,7 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
-    const char * labels[] = {"person", "organization", "location", "email"};
+    const char * labels[] = { "person", "organization", "location", "email" };
     int n_labels = 4;
     float threshold = 0.5f;
 
@@ -40,9 +40,8 @@ int main(int argc, char ** argv) {
 
     printf("Found %d entities:\n", n);
     for (int i = 0; i < n; i++) {
-        printf("  [%d-%d] \"%s\" => %s (%.3f)\n",
-               entities[i].start_char, entities[i].end_char,
-               entities[i].text, entities[i].label, entities[i].score);
+        printf("  [%d-%d] \"%s\" => %s (%.3f)\n", entities[i].start_char, entities[i].end_char, entities[i].text,
+               entities[i].label, entities[i].score);
     }
 
     crispembed_ner_free(ctx);

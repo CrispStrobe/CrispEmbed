@@ -39,10 +39,8 @@
 // ── Helpers ────────────────────────────────────────────────────────────
 
 // Conv2D: weight [OC, IC, KH, KW], groups=1
-static void hat_conv2d(const float * input, int ic, int h, int w,
-                       const float * weight, const float * bias,
-                       int oc, int kh, int kw, int pad,
-                       float * output) {
+static void hat_conv2d(const float * input, int ic, int h, int w, const float * weight, const float * bias, int oc,
+                       int kh, int kw, int pad, float * output) {
     int oh = h + 2 * pad - kh + 1, ow = w + 2 * pad - kw + 1;
     for (int o = 0; o < oc; o++) {
         float b = bias ? bias[o] : 0.0f;
@@ -54,8 +52,8 @@ static void hat_conv2d(const float * input, int ic, int h, int w,
                         for (int kx = 0; kx < kw; kx++) {
                             int iy = oy + ky - pad, ix = ox + kx - pad;
                             if (iy >= 0 && iy < h && ix >= 0 && ix < w)
-                                sum += input[c * h * w + iy * w + ix]
-                                     * weight[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
+                                sum += input[c * h * w + iy * w + ix] *
+                                       weight[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
                         }
                 output[o * oh * ow + oy * ow + ox] = sum;
             }
@@ -63,26 +61,26 @@ static void hat_conv2d(const float * input, int ic, int h, int w,
 }
 
 // Linear: out[..., OD] = in[..., ID] @ W^T + b, W=[OD, ID]
-static void hat_linear(const float * input, int n, int id, int od,
-                       const float * weight, const float * bias,
+static void hat_linear(const float * input, int n, int id, int od, const float * weight, const float * bias,
                        float * output) {
     core_cpu::linear_batch_cpu(input, output, n, id, od, weight, bias);
 }
 
 // LayerNorm on last dim: data[N, D] in-place
-static void hat_layernorm(float * data, int N, int D,
-                          const float * weight, const float * bias) {
+static void hat_layernorm(float * data, int N, int D, const float * weight, const float * bias) {
     for (int n = 0; n < N; n++) {
         float * row = data + n * D;
         float mean = 0;
         for (int d = 0; d < D; d++) mean += row[d];
         mean /= D;
         float var = 0;
-        for (int d = 0; d < D; d++) { float x = row[d] - mean; var += x * x; }
+        for (int d = 0; d < D; d++) {
+            float x = row[d] - mean;
+            var += x * x;
+        }
         var /= D;
         float inv = 1.0f / sqrtf(var + 1e-5f);
-        for (int d = 0; d < D; d++)
-            row[d] = (row[d] - mean) * inv * weight[d] + bias[d];
+        for (int d = 0; d < D; d++) row[d] = (row[d] - mean) * inv * weight[d] + bias[d];
     }
 }
 
@@ -91,8 +89,7 @@ static float hat_gelu(float x) {
     return x * 0.5f * (1.0f + erff(x * 0.7071067811865476f));
 }
 
-static void hat_pixel_shuffle(const float * input, int c_in, int h, int w,
-                              int r, float * output) {
+static void hat_pixel_shuffle(const float * input, int c_in, int h, int w, int r, float * output) {
     int c_out = c_in / (r * r), oh = h * r, ow = w * r;
     for (int c = 0; c < c_out; c++)
         for (int y = 0; y < oh; y++)
@@ -105,8 +102,7 @@ static void hat_pixel_shuffle(const float * input, int c_in, int h, int w,
 
 // window_partition: [B, H, W, C] → [(B*nH*nW), ws, ws, C]
 // Data is in [HW, C] layout (sequence format). H and W are spatial dims.
-static void hat_window_partition(const float * input, int H, int W, int C, int ws,
-                                 float * output) {
+static void hat_window_partition(const float * input, int H, int W, int C, int ws, float * output) {
     int nH = H / ws, nW = W / ws;
     // input layout: [H*W, C] row-major
     // output layout: [nH*nW, ws*ws, C]
@@ -116,14 +112,12 @@ static void hat_window_partition(const float * input, int H, int W, int C, int w
                 for (int x = 0; x < ws; x++) {
                     int src_idx = (wh * ws + y) * W + (ww * ws + x);
                     int dst_idx = (wh * nW + ww) * ws * ws + y * ws + x;
-                    for (int c = 0; c < C; c++)
-                        output[dst_idx * C + c] = input[src_idx * C + c];
+                    for (int c = 0; c < C; c++) output[dst_idx * C + c] = input[src_idx * C + c];
                 }
 }
 
 // window_reverse: [(nH*nW), ws*ws, C] → [H*W, C]
-static void hat_window_reverse(const float * input, int H, int W, int C, int ws,
-                               float * output) {
+static void hat_window_reverse(const float * input, int H, int W, int C, int ws, float * output) {
     int nH = H / ws, nW = W / ws;
     for (int wh = 0; wh < nH; wh++)
         for (int ww = 0; ww < nW; ww++)
@@ -131,32 +125,25 @@ static void hat_window_reverse(const float * input, int H, int W, int C, int ws,
                 for (int x = 0; x < ws; x++) {
                     int src_idx = (wh * nW + ww) * ws * ws + y * ws + x;
                     int dst_idx = (wh * ws + y) * W + (ww * ws + x);
-                    for (int c = 0; c < C; c++)
-                        output[dst_idx * C + c] = input[src_idx * C + c];
+                    for (int c = 0; c < C; c++) output[dst_idx * C + c] = input[src_idx * C + c];
                 }
 }
 
 // Cyclic shift: [H, W, C] → shifted by (-sh, -sh) with wrap-around
-static void hat_cyclic_shift(const float * input, int H, int W, int C, int sh,
-                             float * output) {
+static void hat_cyclic_shift(const float * input, int H, int W, int C, int sh, float * output) {
     for (int y = 0; y < H; y++)
         for (int x = 0; x < W; x++) {
             int sy = ((y + sh) % H + H) % H;
             int sx = ((x + sh) % W + W) % W;
-            for (int c = 0; c < C; c++)
-                output[(sy * W + sx) * C + c] = input[(y * W + x) * C + c];
+            for (int c = 0; c < C; c++) output[(sy * W + sx) * C + c] = input[(y * W + x) * C + c];
         }
 }
 
 // ── Window Attention ───────────────────────────────────────────────────
 
-static void hat_window_attn(const float * x, int nw, int ws2, int C, int n_heads,
-                            const float * qkv_w, const float * qkv_b,
-                            const float * proj_w, const float * proj_b,
-                            const float * rpb_table, const int * rpi,
-                            const float * attn_mask, int n_mask_windows,
-                            float scale,
-                            float * output) {
+static void hat_window_attn(const float * x, int nw, int ws2, int C, int n_heads, const float * qkv_w,
+                            const float * qkv_b, const float * proj_w, const float * proj_b, const float * rpb_table,
+                            const int * rpi, const float * attn_mask, int n_mask_windows, float scale, float * output) {
     int d = C / n_heads;
     // x: [nw, ws2, C] → QKV: [nw, ws2, 3*C]
     std::vector<float> qkv(nw * ws2 * 3 * C);
@@ -232,12 +219,9 @@ static void hat_window_attn(const float * x, int nw, int ws2, int C, int n_heads
 
 // ── CAB (Channel Attention Block) ──────────────────────────────────────
 
-static void hat_cab(const float * input, int C, int H, int W,
-                    const float * conv1_w, const float * conv1_b,
-                    const float * conv2_w, const float * conv2_b,
-                    const float * ca_down_w, const float * ca_down_b,
-                    const float * ca_up_w, const float * ca_up_b,
-                    int compress_ratio, int squeeze_factor,
+static void hat_cab(const float * input, int C, int H, int W, const float * conv1_w, const float * conv1_b,
+                    const float * conv2_w, const float * conv2_b, const float * ca_down_w, const float * ca_down_b,
+                    const float * ca_up_w, const float * ca_up_b, int compress_ratio, int squeeze_factor,
                     float * output) {
     int HW = H * W;
     int mid_c = C / compress_ratio;
@@ -267,22 +251,16 @@ static void hat_cab(const float * input, int C, int H, int W,
     for (int o = 0; o < C; o++) ca_out[o] = 1.0f / (1.0f + expf(-ca_out[o])); // Sigmoid
     // Multiply
     for (int c = 0; c < C; c++)
-        for (int i = 0; i < HW; i++)
-            output[c * HW + i] = tmp2[c * HW + i] * ca_out[c];
+        for (int i = 0; i < HW; i++) output[c * HW + i] = tmp2[c * HW + i] * ca_out[c];
 }
 
 // ── OCAB (Overlapping Cross-Attention Block) ───────────────────────────
 
-static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads,
-                     int overlap_ws,
-                     const float * qkv_w, const float * qkv_b,
-                     const float * proj_w, const float * proj_b,
-                     const float * rpb_table, const int * rpi,
-                     const float * norm1_w, const float * norm1_b,
-                     const float * norm2_w, const float * norm2_b,
-                     const float * mlp_fc1_w, const float * mlp_fc1_b,
-                     const float * mlp_fc2_w, const float * mlp_fc2_b,
-                     int mlp_hidden) {
+static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads, int overlap_ws, const float * qkv_w,
+                     const float * qkv_b, const float * proj_w, const float * proj_b, const float * rpb_table,
+                     const int * rpi, const float * norm1_w, const float * norm1_b, const float * norm2_w,
+                     const float * norm2_b, const float * mlp_fc1_w, const float * mlp_fc1_b, const float * mlp_fc2_w,
+                     const float * mlp_fc2_b, int mlp_hidden) {
     int ws2 = ws * ws;
     int ows2 = overlap_ws * overlap_ws;
     int nH = H / ws, nW = W / ws;
@@ -318,8 +296,7 @@ static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads
     std::vector<float> q_spatial(H * W * C);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++)
-            for (int c = 0; c < C; c++)
-                q_spatial[(y * W + xi) * C + c] = qkv[(y * W + xi) * 3 * C + c];
+            for (int c = 0; c < C; c++) q_spatial[(y * W + xi) * C + c] = qkv[(y * W + xi) * 3 * C + c];
 
     std::vector<float> q_windows(nw * ws2 * C);
     hat_window_partition(q_spatial.data(), H, W, C, ws, q_windows.data());
@@ -330,8 +307,7 @@ static void hat_ocab(float * x, int HW, int C, int H, int W, int ws, int n_heads
     std::vector<float> kv_spatial(H * W * 2 * C);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++)
-            for (int c = 0; c < 2 * C; c++)
-                kv_spatial[(y * W + xi) * 2 * C + c] = qkv[(y * W + xi) * 3 * C + C + c];
+            for (int c = 0; c < 2 * C; c++) kv_spatial[(y * W + xi) * 2 * C + c] = qkv[(y * W + xi) * 3 * C + C + c];
 
     // For each window, extract the overlapping KV region
     std::vector<float> attn_out(nw * ws2 * C, 0.0f);
@@ -431,9 +407,9 @@ struct hat_sr_context {
 
     // ggml conv infrastructure (top-level convs on a CPU sched; attention/CAB scalar).
     bool use_ggml_conv = false;
-    ggml_backend_t       enc_backend = nullptr;
-    ggml_backend_sched_t enc_sched   = nullptr;
-    std::unordered_map<std::string, ggml_tensor *> gw;   // persistent F32 kernels by name
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
+    std::unordered_map<std::string, ggml_tensor *> gw; // persistent F32 kernels by name
     std::vector<ggml_context *> gw_ctxs;
     std::vector<ggml_backend_buffer_t> gw_bufs;
     std::vector<uint8_t> graph_meta;
@@ -466,8 +442,7 @@ struct hat_sr_context {
 // kernel is F16-cast in-graph (conv = im2col(F16)+mul_mat; the CPU sched can't
 // place a mul_mat with an F32 kernel). Window/OCAB attention and the small CAB
 // convs stay SIMD-scalar.
-static ggml_tensor * hat_kernel(hat_sr_context * ctx, const std::string & base,
-                                int ic, int oc, int kh, int kw) {
+static ggml_tensor * hat_kernel(hat_sr_context * ctx, const std::string & base, int ic, int oc, int kh, int kw) {
     std::string wn = base + ".weight";
     auto it = ctx->gw.find(wn);
     if (it != ctx->gw.end()) return it->second;
@@ -484,39 +459,44 @@ static ggml_tensor * hat_kernel(hat_sr_context * ctx, const std::string & base,
     return k;
 }
 
-static void hat_conv(hat_sr_context * ctx, const float * in, int ic, int ih, int iw,
-                     const std::string & base, int oc, int kh, int kw, int pad, float * out) {
+static void hat_conv(hat_sr_context * ctx, const float * in, int ic, int ih, int iw, const std::string & base, int oc,
+                     int kh, int kw, int pad, float * out) {
     if (!ctx->use_ggml_conv) {
-        hat_conv2d(in, ic, ih, iw, ctx->get(base + ".weight"), ctx->get(base + ".bias"),
-                   oc, kh, kw, pad, out);
+        hat_conv2d(in, ic, ih, iw, ctx->get(base + ".weight"), ctx->get(base + ".bias"), oc, kh, kw, pad, out);
         return;
     }
     ggml_tensor * k = hat_kernel(ctx, base, ic, oc, kh, kw);
     const int max_nodes = 16;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     ctx->graph_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->graph_meta.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, iw, ih, ic);
-    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
     ggml_tensor * kf = ggml_cast(g, k, GGML_TYPE_F16);
     ggml_tensor * y = ggml_conv_2d(g, kf, x, 1, 1, pad, pad, 1, 1);
-    ggml_set_name(y, "out"); ggml_set_output(y);
+    ggml_set_name(y, "out");
+    ggml_set_output(y);
     ggml_build_forward_expand(gf, y);
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
         fprintf(stderr, "hat_sr: conv alloc failed (%s)\n", base.c_str());
-        ggml_free(g); return;
+        ggml_free(g);
+        return;
     }
     ggml_backend_tensor_set(x, in, 0, (size_t)ic * ih * iw * sizeof(float));
     ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
-    int oh = ih + 2*pad - kh + 1, ow = iw + 2*pad - kw + 1;
+    int oh = ih + 2 * pad - kh + 1, ow = iw + 2 * pad - kw + 1;
     ggml_backend_tensor_get(y, out, 0, (size_t)oc * oh * ow * sizeof(float));
     ggml_free(g);
     const float * b = ctx->get(base + ".bias");
-    if (b) for (int o = 0; o < oc; o++) { float bo = b[o]; for (int i = 0; i < oh*ow; i++) out[(size_t)o*oh*ow + i] += bo; }
+    if (b)
+        for (int o = 0; o < oc; o++) {
+            float bo = b[o];
+            for (int i = 0; i < oh * ow; i++) out[(size_t)o * oh * ow + i] += bo;
+        }
 }
 
 hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
@@ -525,16 +505,20 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
     ctx->conv_scale = 0.01f;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
-    if (!meta) { fprintf(stderr, "hat_sr: failed to open %s\n", model_path); delete ctx; return nullptr; }
+    if (!meta) {
+        fprintf(stderr, "hat_sr: failed to open %s\n", model_path);
+        delete ctx;
+        return nullptr;
+    }
 
-    ctx->embed_dim      = core_gguf::kv_u32(meta, "hat.embed_dim", 180);
-    ctx->window_size     = core_gguf::kv_u32(meta, "hat.window_size", 16);
-    ctx->upscale         = core_gguf::kv_u32(meta, "hat.upscale", 4);
-    ctx->num_feat        = core_gguf::kv_u32(meta, "hat.num_feat", 64);
-    ctx->compress_ratio  = core_gguf::kv_u32(meta, "hat.compress_ratio", 3);
-    ctx->squeeze_factor  = core_gguf::kv_u32(meta, "hat.squeeze_factor", 30);
+    ctx->embed_dim = core_gguf::kv_u32(meta, "hat.embed_dim", 180);
+    ctx->window_size = core_gguf::kv_u32(meta, "hat.window_size", 16);
+    ctx->upscale = core_gguf::kv_u32(meta, "hat.upscale", 4);
+    ctx->num_feat = core_gguf::kv_u32(meta, "hat.num_feat", 64);
+    ctx->compress_ratio = core_gguf::kv_u32(meta, "hat.compress_ratio", 3);
+    ctx->squeeze_factor = core_gguf::kv_u32(meta, "hat.squeeze_factor", 30);
     ctx->depths = core_gguf::kv_i32_array(meta, "hat.depths");
-    ctx->heads  = core_gguf::kv_i32_array(meta, "hat.heads");
+    ctx->heads = core_gguf::kv_i32_array(meta, "hat.heads");
     ctx->n_layers = (int)ctx->depths.size();
 
     int idx = gguf_find_key(meta, "hat.overlap_ratio");
@@ -547,12 +531,13 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, ctx->backend, "hat", ctx->wl)) {
         fprintf(stderr, "hat_sr: failed to load weights\n");
-        ggml_backend_free(ctx->backend); delete ctx; return nullptr;
+        ggml_backend_free(ctx->backend);
+        delete ctx;
+        return nullptr;
     }
 
-    fprintf(stderr, "hat_sr: embed=%d, ws=%d, upscale=%dx, layers=%d, %d tensors\n",
-            ctx->embed_dim, ctx->window_size, ctx->upscale, ctx->n_layers,
-            (int)ctx->wl.tensors.size());
+    fprintf(stderr, "hat_sr: embed=%d, ws=%d, upscale=%dx, layers=%d, %d tensors\n", ctx->embed_dim, ctx->window_size,
+            ctx->upscale, ctx->n_layers, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_HAT_SR_BENCH") != nullptr);
 
     // ggml conv path for the top-level convs (conv_first, per-layer .conv,
@@ -575,8 +560,10 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
 
 void hat_sr_free(hat_sr_context * ctx) {
     if (!ctx) return;
-    for (auto * b : ctx->gw_bufs) if (b) ggml_backend_buffer_free(b);
-    for (auto * c : ctx->gw_ctxs) if (c) ggml_free(c);
+    for (auto * b : ctx->gw_bufs)
+        if (b) ggml_backend_buffer_free(b);
+    for (auto * c : ctx->gw_ctxs)
+        if (c) ggml_free(c);
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
     core_gguf::free_weights(ctx->wl);
@@ -584,14 +571,15 @@ void hat_sr_free(hat_sr_context * ctx) {
     delete ctx;
 }
 
-int hat_sr_scale(const hat_sr_context * ctx) { return ctx ? ctx->upscale : 0; }
+int hat_sr_scale(const hat_sr_context * ctx) {
+    return ctx ? ctx->upscale : 0;
+}
 
 // ── HAB forward ────────────────────────────────────────────────────────
 
-static void hat_hab_forward(hat_sr_context * ctx, float * x, int HW, int C,
-                            int H, int W, const std::string & prefix,
-                            int n_heads, int shift_size,
-                            const int * rpi_sa, const float * attn_mask, int n_mask_windows) {
+static void hat_hab_forward(hat_sr_context * ctx, float * x, int HW, int C, int H, int W, const std::string & prefix,
+                            int n_heads, int shift_size, const int * rpi_sa, const float * attn_mask,
+                            int n_mask_windows) {
     int ws = ctx->window_size;
     int ws2 = ws * ws;
     int nw = (H / ws) * (W / ws);
@@ -602,30 +590,26 @@ static void hat_hab_forward(hat_sr_context * ctx, float * x, int HW, int C,
     std::vector<float> shortcut(x, x + HW * C);
 
     // LN1
-    hat_layernorm(x, HW, C, ctx->get(prefix + ".norm1.weight"),
-                  ctx->get(prefix + ".norm1.bias"));
+    hat_layernorm(x, HW, C, ctx->get(prefix + ".norm1.weight"), ctx->get(prefix + ".norm1.bias"));
 
     // Conv_X (CAB) — operates on [C, H, W] layout
     std::vector<float> x_chw(C * HW);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++)
-            for (int c = 0; c < C; c++)
-                x_chw[c * HW + y * W + xi] = x[(y * W + xi) * C + c];
+            for (int c = 0; c < C; c++) x_chw[c * HW + y * W + xi] = x[(y * W + xi) * C + c];
 
     std::vector<float> conv_x_chw(C * HW);
-    hat_cab(x_chw.data(), C, H, W,
-            ctx->get(prefix + ".cab.conv1.weight"), ctx->get(prefix + ".cab.conv1.bias"),
+    hat_cab(x_chw.data(), C, H, W, ctx->get(prefix + ".cab.conv1.weight"), ctx->get(prefix + ".cab.conv1.bias"),
             ctx->get(prefix + ".cab.conv2.weight"), ctx->get(prefix + ".cab.conv2.bias"),
             ctx->get(prefix + ".cab.ca_down.weight"), ctx->get(prefix + ".cab.ca_down.bias"),
-            ctx->get(prefix + ".cab.ca_up.weight"), ctx->get(prefix + ".cab.ca_up.bias"),
-            ctx->compress_ratio, ctx->squeeze_factor, conv_x_chw.data());
+            ctx->get(prefix + ".cab.ca_up.weight"), ctx->get(prefix + ".cab.ca_up.bias"), ctx->compress_ratio,
+            ctx->squeeze_factor, conv_x_chw.data());
 
     // Convert CAB output back to [HW, C]
     std::vector<float> conv_x(HW * C);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++)
-            for (int c = 0; c < C; c++)
-                conv_x[(y * W + xi) * C + c] = conv_x_chw[c * HW + y * W + xi];
+            for (int c = 0; c < C; c++) conv_x[(y * W + xi) * C + c] = conv_x_chw[c * HW + y * W + xi];
 
     // Reshape x from [HW, C] to [H, W, C] for window ops
     // Cyclic shift if needed
@@ -641,15 +625,11 @@ static void hat_hab_forward(hat_sr_context * ctx, float * x, int HW, int C,
 
     // Window attention
     std::vector<float> attn_windows(nw * ws2 * C);
-    hat_window_attn(x_windows.data(), nw, ws2, C, n_heads,
-                    ctx->get(prefix + ".attn.qkv.weight"),
-                    ctx->get(prefix + ".attn.qkv.bias"),
-                    ctx->get(prefix + ".attn.proj.weight"),
-                    ctx->get(prefix + ".attn.proj.bias"),
-                    ctx->get(prefix + ".attn.rpb"), rpi_sa,
-                    shift_size > 0 ? attn_mask : nullptr,
-                    shift_size > 0 ? n_mask_windows : 0,
-                    scale, attn_windows.data());
+    hat_window_attn(x_windows.data(), nw, ws2, C, n_heads, ctx->get(prefix + ".attn.qkv.weight"),
+                    ctx->get(prefix + ".attn.qkv.bias"), ctx->get(prefix + ".attn.proj.weight"),
+                    ctx->get(prefix + ".attn.proj.bias"), ctx->get(prefix + ".attn.rpb"), rpi_sa,
+                    shift_size > 0 ? attn_mask : nullptr, shift_size > 0 ? n_mask_windows : 0, scale,
+                    attn_windows.data());
 
     // Window reverse
     std::vector<float> attn_x(HW * C);
@@ -664,21 +644,19 @@ static void hat_hab_forward(hat_sr_context * ctx, float * x, int HW, int C,
 
     // x = shortcut + attn_x + conv_scale * conv_x
     float cs = ctx->conv_scale;
-    for (int i = 0; i < HW * C; i++)
-        x[i] = shortcut[i] + attn_x[i] + cs * conv_x[i];
+    for (int i = 0; i < HW * C; i++) x[i] = shortcut[i] + attn_x[i] + cs * conv_x[i];
 
     // LN2 + MLP
     std::vector<float> shortcut2(x, x + HW * C);
-    hat_layernorm(x, HW, C, ctx->get(prefix + ".norm2.weight"),
-                  ctx->get(prefix + ".norm2.bias"));
-    int mlp_hidden = (int)(C * 4);  // mlp_ratio = 4 by default...
+    hat_layernorm(x, HW, C, ctx->get(prefix + ".norm2.weight"), ctx->get(prefix + ".norm2.bias"));
+    int mlp_hidden = (int)(C * 4); // mlp_ratio = 4 by default...
     // Actually check from weight shape
     auto * fc1_t = core_gguf::try_get(ctx->wl.tensors, (prefix + ".mlp.fc1.weight").c_str());
     if (fc1_t) mlp_hidden = fc1_t->ne[0];
 
     std::vector<float> mlp_mid(HW * mlp_hidden);
-    hat_linear(x, HW, C, mlp_hidden, ctx->get(prefix + ".mlp.fc1.weight"),
-               ctx->get(prefix + ".mlp.fc1.bias"), mlp_mid.data());
+    hat_linear(x, HW, C, mlp_hidden, ctx->get(prefix + ".mlp.fc1.weight"), ctx->get(prefix + ".mlp.fc1.bias"),
+               mlp_mid.data());
     for (int i = 0; i < HW * mlp_hidden; i++) mlp_mid[i] = hat_gelu(mlp_mid[i]);
     hat_linear(mlp_mid.data(), HW, mlp_hidden, C, ctx->get(prefix + ".mlp.fc2.weight"),
                ctx->get(prefix + ".mlp.fc2.bias"), x);
@@ -687,9 +665,7 @@ static void hat_hab_forward(hat_sr_context * ctx, float * x, int HW, int C,
 
 // ── Forward pass (single tile) ─────────────────────────────────────────
 
-static void hat_forward_tile(hat_sr_context * ctx,
-                             const float * input, int W, int H,
-                             float * output) {
+static void hat_forward_tile(hat_sr_context * ctx, const float * input, int W, int H, float * output) {
     int C = ctx->embed_dim;
     int ws = ctx->window_size;
     int scale = ctx->upscale;
@@ -718,14 +694,12 @@ static void hat_forward_tile(hat_sr_context * ctx,
     std::vector<float> x(HW * C);
     for (int y = 0; y < pH; y++)
         for (int xi = 0; xi < pW; xi++)
-            for (int c = 0; c < C; c++)
-                x[(y * pW + xi) * C + c] = shallow[c * pH * pW + y * pW + xi];
+            for (int c = 0; c < C; c++) x[(y * pW + xi) * C + c] = shallow[c * pH * pW + y * pW + xi];
 
     // Patch embed norm (when patch_norm=True)
     const float * pe_norm_w = ctx->get("patch_embed.norm.weight");
     const float * pe_norm_b = ctx->get("patch_embed.norm.bias");
-    if (pe_norm_w && pe_norm_b)
-        hat_layernorm(x.data(), HW, C, pe_norm_w, pe_norm_b);
+    if (pe_norm_w && pe_norm_b) hat_layernorm(x.data(), HW, C, pe_norm_w, pe_norm_b);
 
     // Build SW-MSA attention mask (cache by pH×pW — reused across tiles of same size)
     int nH = pH / ws, nW = pW / ws;
@@ -737,13 +711,12 @@ static void hat_forward_tile(hat_sr_context * ctx,
         ctx->mask_cache.assign(n_mask_windows * ws2 * ws2, 0.0f);
         std::vector<int> img_mask(pH * pW, 0);
         int cnt = 0;
-        int h_slices[] = {0, pH - ws, pH - shift_size, pH};
-        int w_slices[] = {0, pW - ws, pW - shift_size, pW};
+        int h_slices[] = { 0, pH - ws, pH - shift_size, pH };
+        int w_slices[] = { 0, pW - ws, pW - shift_size, pW };
         for (int hi = 0; hi < 3; hi++)
             for (int wi = 0; wi < 3; wi++) {
                 for (int y = h_slices[hi]; y < h_slices[hi + 1]; y++)
-                    for (int xi = w_slices[wi]; xi < w_slices[wi + 1]; xi++)
-                        img_mask[y * pW + xi] = cnt;
+                    for (int xi = w_slices[wi]; xi < w_slices[wi + 1]; xi++) img_mask[y * pW + xi] = cnt;
                 cnt++;
             }
         std::vector<int> mask_windows(n_mask_windows * ws2);
@@ -771,13 +744,15 @@ static void hat_forward_tile(hat_sr_context * ctx,
     // Actually they were stored from PyTorch int64 tensors as float — need to convert
     int rpi_sa_n = ws2 * ws2;
     std::vector<int> rpi_sa(rpi_sa_n);
-    if (rpi_sa_f) for (int i = 0; i < rpi_sa_n; i++) rpi_sa[i] = (int)rpi_sa_f[i];
+    if (rpi_sa_f)
+        for (int i = 0; i < rpi_sa_n; i++) rpi_sa[i] = (int)rpi_sa_f[i];
 
     int overlap_ws = (int)(ws * ctx->overlap_ratio) + ws;
     int ows2 = overlap_ws * overlap_ws;
     int rpi_oca_n = ws2 * ows2;
     std::vector<int> rpi_oca(rpi_oca_n);
-    if (rpi_oca_f) for (int i = 0; i < rpi_oca_n; i++) rpi_oca[i] = (int)rpi_oca_f[i];
+    if (rpi_oca_f)
+        for (int i = 0; i < rpi_oca_n; i++) rpi_oca[i] = (int)rpi_oca_f[i];
 
     fprintf(stderr, "hat_sr: conv_first done, starting RHAG layers\n");
 
@@ -792,33 +767,23 @@ static void hat_forward_tile(hat_sr_context * ctx,
             snprintf(buf, sizeof(buf), "layer.%d.hab.%d", li, bi);
             fprintf(stderr, "  HAB %d/%d %s\n", bi, ctx->depths[li], buf);
             int shift = (bi % 2 == 0) ? 0 : shift_size;
-            hat_hab_forward(ctx, x.data(), HW, C, pH, pW, buf,
-                           ctx->heads[li], shift,
-                           rpi_sa.data(), attn_mask.data(), n_mask_windows);
+            hat_hab_forward(ctx, x.data(), HW, C, pH, pW, buf, ctx->heads[li], shift, rpi_sa.data(), attn_mask.data(),
+                            n_mask_windows);
         }
 
         // OCAB
         snprintf(buf, sizeof(buf), "layer.%d.ocab", li);
-        int mlp_hidden_ocab = C * 2;  // mlp_ratio=2 for OCAB
-        auto * fc1_t = core_gguf::try_get(ctx->wl.tensors,
-            (std::string(buf) + ".mlp.fc1.weight").c_str());
+        int mlp_hidden_ocab = C * 2; // mlp_ratio=2 for OCAB
+        auto * fc1_t = core_gguf::try_get(ctx->wl.tensors, (std::string(buf) + ".mlp.fc1.weight").c_str());
         if (fc1_t) mlp_hidden_ocab = fc1_t->ne[0];
 
-        hat_ocab(x.data(), HW, C, pH, pW, ws, ctx->heads[li], overlap_ws,
-                 ctx->get(std::string(buf) + ".qkv.weight"),
-                 ctx->get(std::string(buf) + ".qkv.bias"),
-                 ctx->get(std::string(buf) + ".proj.weight"),
-                 ctx->get(std::string(buf) + ".proj.bias"),
-                 ctx->get(std::string(buf) + ".rpb"),
-                 rpi_oca.data(),
-                 ctx->get(std::string(buf) + ".norm1.weight"),
-                 ctx->get(std::string(buf) + ".norm1.bias"),
-                 ctx->get(std::string(buf) + ".norm2.weight"),
-                 ctx->get(std::string(buf) + ".norm2.bias"),
-                 ctx->get(std::string(buf) + ".mlp.fc1.weight"),
-                 ctx->get(std::string(buf) + ".mlp.fc1.bias"),
-                 ctx->get(std::string(buf) + ".mlp.fc2.weight"),
-                 ctx->get(std::string(buf) + ".mlp.fc2.bias"),
+        hat_ocab(x.data(), HW, C, pH, pW, ws, ctx->heads[li], overlap_ws, ctx->get(std::string(buf) + ".qkv.weight"),
+                 ctx->get(std::string(buf) + ".qkv.bias"), ctx->get(std::string(buf) + ".proj.weight"),
+                 ctx->get(std::string(buf) + ".proj.bias"), ctx->get(std::string(buf) + ".rpb"), rpi_oca.data(),
+                 ctx->get(std::string(buf) + ".norm1.weight"), ctx->get(std::string(buf) + ".norm1.bias"),
+                 ctx->get(std::string(buf) + ".norm2.weight"), ctx->get(std::string(buf) + ".norm2.bias"),
+                 ctx->get(std::string(buf) + ".mlp.fc1.weight"), ctx->get(std::string(buf) + ".mlp.fc1.bias"),
+                 ctx->get(std::string(buf) + ".mlp.fc2.weight"), ctx->get(std::string(buf) + ".mlp.fc2.bias"),
                  mlp_hidden_ocab);
 
         // RHAG: patch_unembed → conv → patch_embed → + residual
@@ -826,8 +791,7 @@ static void hat_forward_tile(hat_sr_context * ctx,
         std::vector<float> x_chw(C * pH * pW);
         for (int y = 0; y < pH; y++)
             for (int xi = 0; xi < pW; xi++)
-                for (int c = 0; c < C; c++)
-                    x_chw[c * pH * pW + y * pW + xi] = x[(y * pW + xi) * C + c];
+                for (int c = 0; c < C; c++) x_chw[c * pH * pW + y * pW + xi] = x[(y * pW + xi) * C + c];
 
         // Conv3(C→C)
         snprintf(buf, sizeof(buf), "layer.%d", li);
@@ -848,8 +812,7 @@ static void hat_forward_tile(hat_sr_context * ctx,
     std::vector<float> deep_chw(C * pH * pW);
     for (int y = 0; y < pH; y++)
         for (int xi = 0; xi < pW; xi++)
-            for (int c = 0; c < C; c++)
-                deep_chw[c * pH * pW + y * pW + xi] = x[(y * pW + xi) * C + c];
+            for (int c = 0; c < C; c++) deep_chw[c * pH * pW + y * pW + xi] = x[(y * pW + xi) * C + c];
 
     std::vector<float> after_body(C * pH * pW);
     hat_conv(ctx, deep_chw.data(), C, pH, pW, "conv_after_body", C, 3, 3, 1, after_body.data());
@@ -860,7 +823,7 @@ static void hat_forward_tile(hat_sr_context * ctx,
     std::vector<float> pre_up(nf * pH * pW);
     hat_conv(ctx, after_body.data(), C, pH, pW, "conv_before_upsample", nf, 3, 3, 1, pre_up.data());
     for (int i = 0; i < nf * pH * pW; i++)
-        pre_up[i] = pre_up[i] > 0 ? pre_up[i] : pre_up[i] * 0.01f;  // LeakyReLU (negative_slope=0.01)
+        pre_up[i] = pre_up[i] > 0 ? pre_up[i] : pre_up[i] * 0.01f; // LeakyReLU (negative_slope=0.01)
 
     // PixelShuffle upsample (2x per step)
     int cur_h = pH, cur_w = pW, cur_c = nf;
@@ -869,13 +832,15 @@ static void hat_forward_tile(hat_sr_context * ctx,
     for (int i = 0; i < n_ups; i++) {
         int up_oc = 4 * cur_c;
         std::vector<float> up_conv(up_oc * cur_h * cur_w);
-        char buf2[32]; snprintf(buf2, sizeof(buf2), "upsample.%d", i);
+        char buf2[32];
+        snprintf(buf2, sizeof(buf2), "upsample.%d", i);
         hat_conv(ctx, cur.data(), cur_c, cur_h, cur_w, buf2, up_oc, 3, 3, 1, up_conv.data());
         int nh = cur_h * 2, nw2 = cur_w * 2;
         std::vector<float> ps_out(cur_c * nh * nw2);
         hat_pixel_shuffle(up_conv.data(), up_oc, cur_h, cur_w, 2, ps_out.data());
         cur = std::move(ps_out);
-        cur_h = nh; cur_w = nw2;
+        cur_h = nh;
+        cur_w = nw2;
     }
 
     // conv_last
@@ -888,16 +853,13 @@ static void hat_forward_tile(hat_sr_context * ctx,
         float m = (c == 0) ? mean_r : (c == 1) ? mean_g : mean_b;
         for (int y = 0; y < oH; y++)
             for (int xi = 0; xi < oW; xi++)
-                output[c * oH * oW + y * oW + xi] =
-                    final_out[c * cur_h * cur_w + y * cur_w + xi] + m;
+                output[c * oH * oW + y * oW + xi] = final_out[c * cur_h * cur_w + y * cur_w + xi] + m;
     }
 }
 
 // ── Tiled processing ──────────────────────────────────────────────────
 
-int hat_sr_process(hat_sr_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   int tile_size, int tile_overlap,
+int hat_sr_process(hat_sr_context * ctx, const uint8_t * input, int width, int height, int tile_size, int tile_overlap,
                    uint8_t ** output, int * out_width, int * out_height) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
@@ -919,12 +881,10 @@ int hat_sr_process(hat_sr_context * ctx,
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
-                full[c * height * width + y * width + x] =
-                    input[(y * width + x) * 3 + c] / 255.0f;
+                full[c * height * width + y * width + x] = input[(y * width + x) * 3 + c] / 255.0f;
     if (bench) {
         auto t_pre_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[hat_sr-bench] preprocess: %.1f ms\n",
-                ms_f(t_pre_end - t_pre).count());
+        fprintf(stderr, "[hat_sr-bench] preprocess: %.1f ms\n", ms_f(t_pre_end - t_pre).count());
     }
 
     std::vector<float> accum(3 * oh * ow, 0.0f);
@@ -934,8 +894,7 @@ int hat_sr_process(hat_sr_context * ctx,
     int ntx = std::max(1, (width + step - 1) / step);
     int nty = std::max(1, (height + step - 1) / step);
 
-    fprintf(stderr, "hat_sr: %dx%d → %dx%d (%dx), tiles=%dx%d\n",
-            width, height, ow, oh, scale, ntx, nty);
+    fprintf(stderr, "hat_sr: %dx%d → %dx%d (%dx), tiles=%dx%d\n", width, height, ow, oh, scale, ntx, nty);
 
     for (int ty = 0; ty < nty; ty++) {
         for (int tx = 0; tx < ntx; tx++) {
@@ -948,8 +907,7 @@ int hat_sr_process(hat_sr_context * ctx,
             for (int c = 0; c < 3; c++)
                 for (int y = 0; y < th; y++)
                     for (int x = 0; x < tw; x++)
-                        tile_in[c * th * tw + y * tw + x] =
-                            full[c * height * width + (y0 + y) * width + (x0 + x)];
+                        tile_in[c * th * tw + y * tw + x] = full[c * height * width + (y0 + y) * width + (x0 + x)];
 
             int otw = tw * scale, oth = th * scale;
             std::vector<float> tile_out(3 * oth * otw);
@@ -957,22 +915,19 @@ int hat_sr_process(hat_sr_context * ctx,
             hat_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
             if (bench) {
                 auto t_tile_end = std::chrono::steady_clock::now();
-                fprintf(stderr, "[hat_sr-bench] tile %d,%d: %.1f ms\n",
-                        ty, tx, ms_f(t_tile_end - t_tile).count());
+                fprintf(stderr, "[hat_sr-bench] tile %d,%d: %.1f ms\n", ty, tx, ms_f(t_tile_end - t_tile).count());
             }
 
             // Blend
             int ox0 = x0 * scale, oy0 = y0 * scale;
             for (int y = 0; y < oth; y++) {
                 float wy = 1.0f;
-                if (y0 > 0 && y < out_overlap)
-                    wy = 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
+                if (y0 > 0 && y < out_overlap) wy = 0.5f - 0.5f * cosf((float)M_PI * y / out_overlap);
                 if (y0 + th < height && y >= oth - out_overlap)
                     wy = 0.5f - 0.5f * cosf((float)M_PI * (oth - 1 - y) / out_overlap);
                 for (int x = 0; x < otw; x++) {
                     float wx = 1.0f;
-                    if (x0 > 0 && x < out_overlap)
-                        wx = 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
+                    if (x0 > 0 && x < out_overlap) wx = 0.5f - 0.5f * cosf((float)M_PI * x / out_overlap);
                     if (x0 + tw < width && x >= otw - out_overlap)
                         wx = 0.5f - 0.5f * cosf((float)M_PI * (otw - 1 - x) / out_overlap);
                     float w = wy * wx;
@@ -1006,12 +961,12 @@ int hat_sr_process(hat_sr_context * ctx,
     fprintf(stderr, "hat_sr: done %dx%d\n", ow, oh);
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[hat_sr-bench] postprocess: %.1f ms\n",
-                ms_f(t_end - t_post).count());
-        fprintf(stderr, "[hat_sr-bench] total: %.1f ms\n",
-                ms_f(t_end - t_total).count());
+        fprintf(stderr, "[hat_sr-bench] postprocess: %.1f ms\n", ms_f(t_end - t_post).count());
+        fprintf(stderr, "[hat_sr-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
     return 0;
 }
 
-void hat_sr_free_image(uint8_t * pixels) { free(pixels); }
+void hat_sr_free_image(uint8_t * pixels) {
+    free(pixels);
+}

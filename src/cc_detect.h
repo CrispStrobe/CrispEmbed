@@ -34,17 +34,15 @@ typedef struct cc_text_region {
 ///
 /// Returns an array of cc_text_region, caller must free with cc_detect_free().
 /// Regions are sorted top-to-bottom, left-to-right.
-cc_text_region * cc_detect_lines(
-    const uint8_t * gray, int width, int height,
-    int * out_n);
+cc_text_region * cc_detect_lines(const uint8_t * gray, int width, int height, int * out_n);
 
 /// Parameters for tuning the detection.
 typedef struct cc_detect_params {
-    int close_hsize;     // horizontal close SE width (default 30)
-    int close_vsize;     // horizontal close SE height (default 1)
-    int open_size;       // noise removal open kernel (default 3)
-    int min_width;       // minimum region width (default 10)
-    int min_height;      // minimum region height (default 5)
+    int close_hsize;            // horizontal close SE width (default 30)
+    int close_vsize;            // horizontal close SE height (default 1)
+    int open_size;              // noise removal open kernel (default 3)
+    int min_width;              // minimum region width (default 10)
+    int min_height;             // minimum region height (default 5)
     uint8_t binarize_threshold; // 0 = auto (Otsu) (default 0)
 } cc_detect_params;
 
@@ -52,9 +50,8 @@ typedef struct cc_detect_params {
 cc_detect_params cc_detect_defaults(void);
 
 /// Detect with custom parameters.
-cc_text_region * cc_detect_lines_params(
-    const uint8_t * gray, int width, int height,
-    cc_detect_params params, int * out_n);
+cc_text_region * cc_detect_lines_params(const uint8_t * gray, int width, int height, cc_detect_params params,
+                                        int * out_n);
 
 /// Free a region array returned by cc_detect_lines.
 void cc_detect_free(cc_text_region * regions);

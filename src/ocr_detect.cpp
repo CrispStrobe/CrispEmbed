@@ -25,9 +25,9 @@
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
-    typedef unsigned char stbi_uc;
-    stbi_uc *stbi_load(char const *filename, int *x, int *y, int *channels_in_file, int desired_channels);
-    void stbi_image_free(void *retval_from_stbi_load);
+typedef unsigned char stbi_uc;
+stbi_uc * stbi_load(char const * filename, int * x, int * y, int * channels_in_file, int desired_channels);
+void stbi_image_free(void * retval_from_stbi_load);
 }
 
 #include <algorithm>
@@ -46,20 +46,20 @@ namespace ocr_detect {
 // ---------------------------------------------------------------------------
 
 struct conv_layer {
-    ggml_tensor *w = nullptr;  // [KW, KH, IC, OC] in ggml layout
-    ggml_tensor *b = nullptr;  // [OC]
+    ggml_tensor * w = nullptr; // [KW, KH, IC, OC] in ggml layout
+    ggml_tensor * b = nullptr; // [OC]
 };
 
 struct basic_block {
-    conv_layer conv1;  // 3×3
-    conv_layer conv2;  // 3×3
-    conv_layer downsample;  // 1×1 (only if stride > 1 or channel change)
+    conv_layer conv1;      // 3×3
+    conv_layer conv2;      // 3×3
+    conv_layer downsample; // 1×1 (only if stride > 1 or channel change)
 };
 
 struct context {
     // Backbone: ResNet-18
-    conv_layer stem;  // 7×7, stride 2
-    basic_block stages[4][2];  // 4 stages × 2 blocks
+    conv_layer stem;          // 7×7, stride 2
+    basic_block stages[4][2]; // 4 stages × 2 blocks
 
     // Neck: FPNC
     conv_layer lateral[4];  // 1×1 convs
@@ -72,13 +72,13 @@ struct context {
     conv_layer head_deconv2; // ConvTranspose2d (64→1, k=2, s=2)
 
     // Preprocessing constants
-    float img_mean[3] = {123.675f, 116.28f, 103.53f};
-    float img_std[3]  = {58.395f, 57.12f, 57.375f};
+    float img_mean[3] = { 123.675f, 116.28f, 103.53f };
+    float img_std[3] = { 58.395f, 57.12f, 57.375f };
     int pad_divisor = 32;
 
     // Post-processing defaults
     float prob_thresh = 0.3f;
-    float box_thresh  = 0.5f;
+    float box_thresh = 0.5f;
     float unclip_ratio = 1.5f;
     int min_area = 10;
 
@@ -99,36 +99,39 @@ struct context {
 // Loading
 // ---------------------------------------------------------------------------
 
-bool load(context** out, const char* path, int n_threads) {
-    auto* ctx = new context();
+bool load(context ** out, const char * path, int n_threads) {
+    auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
 
     // Read metadata
-    gguf_context* g = core_gguf::open_metadata(path);
-    if (!g) { fprintf(stderr, "ocr_detect: cannot open %s\n", path); return false; }
+    gguf_context * g = core_gguf::open_metadata(path);
+    if (!g) {
+        fprintf(stderr, "ocr_detect: cannot open %s\n", path);
+        return false;
+    }
 
-    auto f32_val = [&](const char* k, float d) -> float {
+    auto f32_val = [&](const char * k, float d) -> float {
         int64_t i = gguf_find_key(g, k);
         return i >= 0 ? gguf_get_val_f32(g, i) : d;
     };
-    auto u32_val = [&](const char* k, int d) -> int {
+    auto u32_val = [&](const char * k, int d) -> int {
         int64_t i = gguf_find_key(g, k);
         return i >= 0 ? (int)gguf_get_val_u32(g, i) : d;
     };
 
     ctx->pad_divisor = u32_val("dbnet.pad_divisor", 32);
     ctx->prob_thresh = f32_val("dbnet.prob_threshold", 0.3f);
-    ctx->box_thresh  = f32_val("dbnet.box_threshold", 0.5f);
+    ctx->box_thresh = f32_val("dbnet.box_threshold", 0.5f);
     ctx->unclip_ratio = f32_val("dbnet.unclip_ratio", 1.5f);
     ctx->min_area = u32_val("dbnet.min_area", 10);
 
     // Read image mean/std arrays if present
-    auto read_f32_array = [&](const char* k, float* dst, int n) {
+    auto read_f32_array = [&](const char * k, float * dst, int n) {
         int64_t i = gguf_find_key(g, k);
         if (i < 0) return;
         int arr_n = (int)gguf_get_arr_n(g, i);
-        const float* data = (const float*)gguf_get_arr_data(g, i);
+        const float * data = (const float *)gguf_get_arr_data(g, i);
         for (int j = 0; j < std::min(arr_n, n); j++) {
             dst[j] = data[j];
         }
@@ -139,8 +142,8 @@ bool load(context** out, const char* path, int n_threads) {
     core_gguf::free_metadata(g);
 
     fprintf(stderr, "ocr_detect: loading %s\n", path);
-    fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n",
-            ctx->prob_thresh, ctx->box_thresh, ctx->unclip_ratio);
+    fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n", ctx->prob_thresh, ctx->box_thresh,
+            ctx->unclip_ratio);
 
     // Backend selection. DBNet is a tiny (~7 MB) but conv-heavy net: its
     // forward is dominated by Conv2d / ConvTranspose2d at large spatial
@@ -155,23 +158,22 @@ bool load(context** out, const char* path, int n_threads) {
     // into with OCR_DETECT_USE_GPU=1, e.g. for benchmarking or a future faster
     // conv-transpose kernel. OCR_DETECT_FORCE_CPU=1 forces CPU and overrides it.
     bool force_cpu = (getenv("OCR_DETECT_FORCE_CPU") && atoi(getenv("OCR_DETECT_FORCE_CPU")));
-    bool use_gpu   = (getenv("OCR_DETECT_USE_GPU") && atoi(getenv("OCR_DETECT_USE_GPU")));
+    bool use_gpu = (getenv("OCR_DETECT_USE_GPU") && atoi(getenv("OCR_DETECT_USE_GPU")));
     ctx->backend = (use_gpu && !force_cpu) ? ggml_backend_init_best() : ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
-    if (ggml_backend_is_cpu(ctx->backend))
-        ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
     if (!core_gguf::load_weights(path, ctx->backend, "det", ctx->wl)) {
         fprintf(stderr, "ocr_detect: failed to load weights\n");
         return false;
     }
 
-    auto get = [&](const std::string& name) -> ggml_tensor* {
+    auto get = [&](const std::string & name) -> ggml_tensor * {
         auto it = ctx->wl.tensors.find(name);
         return it != ctx->wl.tensors.end() ? it->second : nullptr;
     };
 
-    auto load_conv = [&](conv_layer& cl, const std::string& prefix) {
+    auto load_conv = [&](conv_layer & cl, const std::string & prefix) {
         // Tensor names in GGUF include "det." prefix from converter
         cl.w = get("det." + prefix + ".weight");
         cl.b = get("det." + prefix + ".bias");
@@ -203,8 +205,14 @@ bool load(context** out, const char* path, int n_threads) {
     load_conv(ctx->head_deconv2, "head.deconv2");
 
     // Verify critical weights
-    if (!ctx->stem.w) { fprintf(stderr, "ocr_detect: missing stem conv\n"); return false; }
-    if (!ctx->head_deconv2.w) { fprintf(stderr, "ocr_detect: missing head deconv2\n"); return false; }
+    if (!ctx->stem.w) {
+        fprintf(stderr, "ocr_detect: missing stem conv\n");
+        return false;
+    }
+    if (!ctx->head_deconv2.w) {
+        fprintf(stderr, "ocr_detect: missing head deconv2\n");
+        return false;
+    }
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
@@ -227,17 +235,15 @@ bool load(context** out, const char* path, int n_threads) {
 // order (identity dequant) using an index vector generated in-graph via
 // arange+cast (F32->I32 cpy is Metal-supported), so no extra graph input is
 // needed. On CPU this path is equally correct.
-static ggml_tensor* dequant_rows_f32(ggml_context* g, ggml_tensor* w) {
-    int64_t n_rows = w->ne[1];  // ne[1] = number of rows get_rows selects along
-    ggml_tensor* idx = ggml_cast(g, ggml_arange(g, 0.0f, (float)n_rows, 1.0f),
-                                 GGML_TYPE_I32);
-    return ggml_get_rows(g, w, idx);  // -> contiguous F32 [w->ne[0], n_rows]
+static ggml_tensor * dequant_rows_f32(ggml_context * g, ggml_tensor * w) {
+    int64_t n_rows = w->ne[1]; // ne[1] = number of rows get_rows selects along
+    ggml_tensor * idx = ggml_cast(g, ggml_arange(g, 0.0f, (float)n_rows, 1.0f), GGML_TYPE_I32);
+    return ggml_get_rows(g, w, idx); // -> contiguous F32 [w->ne[0], n_rows]
 }
 
 // Prepare a conv weight for ggml_conv_2d: handle 2D-flattened quantized
 // weights and cast to F16 (required by ggml_conv_2d).
-static ggml_tensor* prep_conv_weight(ggml_context* g, ggml_tensor* w,
-                                      int IC, int KH, int KW) {
+static ggml_tensor * prep_conv_weight(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
         // Flattened: [IC*KH*KW, OC] — dequant + reshape
@@ -254,17 +260,14 @@ static ggml_tensor* prep_conv_weight(ggml_context* g, ggml_tensor* w,
 }
 
 // Conv2D + optional bias + ReLU
-static ggml_tensor* conv_bias_relu(ggml_context* g, ggml_tensor* x,
-                                    const conv_layer& cl,
-                                    int IC, int KH, int KW,
-                                    int stride, int pad,
-                                    bool relu = true) {
-    ggml_tensor* w = prep_conv_weight(g, cl.w, IC, KH, KW);
+static ggml_tensor * conv_bias_relu(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int IC, int KH, int KW,
+                                    int stride, int pad, bool relu = true) {
+    ggml_tensor * w = prep_conv_weight(g, cl.w, IC, KH, KW);
     x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
 
     if (cl.b) {
         int OC = (int)cl.b->ne[0];
-        ggml_tensor* bias = ggml_reshape_3d(g, cl.b, 1, 1, OC);
+        ggml_tensor * bias = ggml_reshape_3d(g, cl.b, 1, 1, OC);
         x = ggml_add(g, x, bias);
     }
 
@@ -276,23 +279,19 @@ static ggml_tensor* conv_bias_relu(ggml_context* g, ggml_tensor* x,
 }
 
 // ResNet BasicBlock: conv1(3×3) + relu + conv2(3×3) + shortcut + relu
-static ggml_tensor* basic_block_fwd(ggml_context* g, ggml_tensor* x,
-                                     const basic_block& blk,
-                                     int in_ch, int out_ch, int stride) {
-    ggml_tensor* identity = x;
+static ggml_tensor * basic_block_fwd(ggml_context * g, ggml_tensor * x, const basic_block & blk, int in_ch, int out_ch,
+                                     int stride) {
+    ggml_tensor * identity = x;
 
     // conv1: 3×3, stride, pad=1
-    ggml_tensor* out = conv_bias_relu(g, x, blk.conv1, in_ch, 3, 3,
-                                       stride, 1, /*relu=*/true);
+    ggml_tensor * out = conv_bias_relu(g, x, blk.conv1, in_ch, 3, 3, stride, 1, /*relu=*/true);
 
     // conv2: 3×3, stride=1, pad=1, NO relu (applied after residual)
-    out = conv_bias_relu(g, out, blk.conv2, out_ch, 3, 3,
-                          1, 1, /*relu=*/false);
+    out = conv_bias_relu(g, out, blk.conv2, out_ch, 3, 3, 1, 1, /*relu=*/false);
 
     // Downsample shortcut if present
     if (blk.downsample.w) {
-        identity = conv_bias_relu(g, x, blk.downsample, in_ch, 1, 1,
-                                   stride, 0, /*relu=*/false);
+        identity = conv_bias_relu(g, x, blk.downsample, in_ch, 1, 1, stride, 0, /*relu=*/false);
     }
 
     // Residual + ReLU
@@ -305,8 +304,7 @@ static ggml_tensor* basic_block_fwd(ggml_context* g, ggml_tensor* x,
 // ggml has ggml_upscale which does nearest-neighbor. For bilinear, we'd
 // need ggml_interpolate or manual implementation. For now, use upscale
 // (nearest) which is acceptable for detection quality.
-static ggml_tensor* upsample_to(ggml_context* g, ggml_tensor* x,
-                                 int target_w, int target_h) {
+static ggml_tensor * upsample_to(ggml_context * g, ggml_tensor * x, int target_w, int target_h) {
     // x is [W, H, C] in ggml layout
     int cur_w = (int)x->ne[0];
     int cur_h = (int)x->ne[1];
@@ -314,20 +312,18 @@ static ggml_tensor* upsample_to(ggml_context* g, ggml_tensor* x,
 
     // Use ggml_interpolate (bilinear to match PyTorch's F.interpolate)
     int C = (int)x->ne[2];
-    return ggml_interpolate(g, x, target_w, target_h, C, 1,
-                            GGML_SCALE_MODE_BILINEAR);
+    return ggml_interpolate(g, x, target_w, target_h, C, 1, GGML_SCALE_MODE_BILINEAR);
 }
 
 // Prepare a ConvTranspose2d weight for ggml_conv_transpose_2d_p0.
 // PyTorch layout: (IC, OC, KH, KW) → flattened (IC, OC*KH*KW)
 // ggml expects: [KW, KH, OC, IC] (ne[3]=IC, ne[2]=OC)
-static ggml_tensor* prep_deconv_weight(ggml_context* g, ggml_tensor* w,
-                                        int OC, int KH, int KW) {
+static ggml_tensor * prep_deconv_weight(ggml_context * g, ggml_tensor * w, int OC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
         // Flattened: ne[0]=OC*KH*KW, ne[1]=IC
         if (w->type != GGML_TYPE_F32 && w->type != GGML_TYPE_F16) {
-            w = dequant_rows_f32(g, w);  // get_rows: Metal-safe k-quant dequant
+            w = dequant_rows_f32(g, w); // get_rows: Metal-safe k-quant dequant
         }
         int64_t IC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, OC, IC);
@@ -340,18 +336,16 @@ static ggml_tensor* prep_deconv_weight(ggml_context* g, ggml_tensor* w,
 
 // ConvTranspose2d: implemented as ggml_conv_transpose_2d_p0
 // OC = output channels of the deconv (= ne[2] of the kernel in ggml)
-static ggml_tensor* conv_transpose_bias_relu(ggml_context* g, ggml_tensor* x,
-                                              const conv_layer& cl,
-                                              int OC, int KH, int KW,
-                                              int stride, bool relu) {
-    ggml_tensor* w = prep_deconv_weight(g, cl.w, OC, KH, KW);
+static ggml_tensor * conv_transpose_bias_relu(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int OC, int KH,
+                                              int KW, int stride, bool relu) {
+    ggml_tensor * w = prep_deconv_weight(g, cl.w, OC, KH, KW);
     // ggml_conv_transpose_2d_p0(kernel, input, stride)
     // kernel: [KW, KH, OC, IC], input: [W, H, IC, 1]
     x = ggml_conv_transpose_2d_p0(g, w, x, stride);
 
     if (cl.b) {
         int OC = (int)cl.b->ne[0];
-        ggml_tensor* bias = ggml_reshape_3d(g, cl.b, 1, 1, OC);
+        ggml_tensor * bias = ggml_reshape_3d(g, cl.b, 1, 1, OC);
         x = ggml_add(g, x, bias);
     }
 
@@ -363,7 +357,7 @@ static ggml_tensor* conv_transpose_bias_relu(ggml_context* g, ggml_tensor* x,
 }
 
 // Sigmoid: 1 / (1 + exp(-x))
-static ggml_tensor* sigmoid_op(ggml_context* g, ggml_tensor* x) {
+static ggml_tensor * sigmoid_op(ggml_context * g, ggml_tensor * x) {
     return ggml_sigmoid(g, x);
 }
 
@@ -374,18 +368,17 @@ static ggml_tensor* sigmoid_op(ggml_context* g, ggml_tensor* x) {
 // Run the full detection graph and return the probability map.
 // pixels: [3, H, W] CHW float32, already preprocessed.
 // Returns prob_map as [H, W] in [0, 1].
-static std::vector<float> forward(context* ctx, const float* pixels, int H, int W) {
+static std::vector<float> forward(context * ctx, const float * pixels, int H, int W) {
     // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head, plus up to
     // ~3 extra nodes (arange + cast + get_rows) per quantized weight dequant.
     int max_nodes = 1024;
-    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100)
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100) + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> buf(buf_size);
     struct ggml_init_params p = { buf_size, buf.data(), true };
-    ggml_context* g = ggml_init(p);
+    ggml_context * g = ggml_init(p);
 
     // Input: [W, H, 3] in ggml layout (column-major: ne[0]=W, ne[1]=H, ne[2]=3)
-    ggml_tensor* x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
     ggml_set_name(x, "input");
     ggml_set_input(x);
 
@@ -396,8 +389,8 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
     x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 2, 2, 1, 1);
 
     // Stage outputs for FPN
-    ggml_tensor* stage_out[4];
-    int stage_ch[4] = {64, 128, 256, 512};
+    ggml_tensor * stage_out[4];
+    int stage_ch[4] = { 64, 128, 256, 512 };
 
     // Stage 0: 2 blocks, 64ch, no stride change
     x = basic_block_fwd(g, x, ctx->stages[0][0], 64, 64, 1);
@@ -422,35 +415,34 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
     // --- Neck: FPNC ---
 
     // Lateral 1×1 convs (no bias, no relu in FPNC default)
-    ggml_tensor* lat[4];
+    ggml_tensor * lat[4];
     for (int i = 0; i < 4; i++) {
-        ggml_tensor* w = prep_conv_weight(g, ctx->lateral[i].w,
-                                           stage_ch[i], 1, 1);
+        ggml_tensor * w = prep_conv_weight(g, ctx->lateral[i].w, stage_ch[i], 1, 1);
         lat[i] = ggml_conv_2d(g, w, stage_out[i], 1, 1, 0, 0, 1, 1);
         // Add bias if present
         if (ctx->lateral[i].b) {
             int OC = (int)ctx->lateral[i].b->ne[0];
-            ggml_tensor* bias = ggml_reshape_3d(g, ctx->lateral[i].b, 1, 1, OC);
+            ggml_tensor * bias = ggml_reshape_3d(g, ctx->lateral[i].b, 1, 1, OC);
             lat[i] = ggml_add(g, lat[i], bias);
         }
     }
 
     // Top-down: add upsampled higher level to lower level
     for (int i = 3; i > 0; i--) {
-        int target_w = (int)lat[i-1]->ne[0];
-        int target_h = (int)lat[i-1]->ne[1];
-        ggml_tensor* up = upsample_to(g, lat[i], target_w, target_h);
-        lat[i-1] = ggml_add(g, lat[i-1], up);
+        int target_w = (int)lat[i - 1]->ne[0];
+        int target_h = (int)lat[i - 1]->ne[1];
+        ggml_tensor * up = upsample_to(g, lat[i], target_w, target_h);
+        lat[i - 1] = ggml_add(g, lat[i - 1], up);
     }
 
     // Smooth 3×3 convs (256→64, no relu in FPNC default)
-    ggml_tensor* smoothed[4];
+    ggml_tensor * smoothed[4];
     for (int i = 0; i < 4; i++) {
-        ggml_tensor* w = prep_conv_weight(g, ctx->smooth[i].w, 256, 3, 3);
+        ggml_tensor * w = prep_conv_weight(g, ctx->smooth[i].w, 256, 3, 3);
         smoothed[i] = ggml_conv_2d(g, w, lat[i], 1, 1, 1, 1, 1, 1);
         if (ctx->smooth[i].b) {
             int OC = (int)ctx->smooth[i].b->ne[0];
-            ggml_tensor* bias = ggml_reshape_3d(g, ctx->smooth[i].b, 1, 1, OC);
+            ggml_tensor * bias = ggml_reshape_3d(g, ctx->smooth[i].b, 1, 1, OC);
             smoothed[i] = ggml_add(g, smoothed[i], bias);
         }
     }
@@ -462,23 +454,21 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
         smoothed[i] = upsample_to(g, smoothed[i], target_w, target_h);
     }
     // Concat along channel dim: 4 × 64 = 256
-    ggml_tensor* fused = ggml_concat(g, smoothed[0], smoothed[1], 2);
+    ggml_tensor * fused = ggml_concat(g, smoothed[0], smoothed[1], 2);
     fused = ggml_concat(g, fused, smoothed[2], 2);
     fused = ggml_concat(g, fused, smoothed[3], 2);
 
     // Optional output conv (if present in model)
     if (ctx->neck_output.w) {
         int fused_ch = (int)fused->ne[2];
-        fused = conv_bias_relu(g, fused, ctx->neck_output, fused_ch, 3, 3,
-                                1, 1, true);
+        fused = conv_bias_relu(g, fused, ctx->neck_output, fused_ch, 3, 3, 1, 1, true);
     }
 
     // --- Head: probability branch ---
 
     // conv1: 3×3 (256→64) + relu (BN folded)
     int fused_ch = (int)fused->ne[2];
-    x = conv_bias_relu(g, fused, ctx->head_conv1, fused_ch, 3, 3,
-                        1, 1, true);
+    x = conv_bias_relu(g, fused, ctx->head_conv1, fused_ch, 3, 3, 1, 1, true);
 
     // deconv1: ConvTranspose2d (64→64, k=2, s=2) + relu (BN folded)
     // OC=64 (output channels of the deconv)
@@ -495,7 +485,7 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
     ggml_set_output(x);
 
     // Build and compute graph
-    ggml_cgraph* gf = ggml_new_graph_custom(g, max_nodes, false);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_build_forward_expand(gf, x);
 
     if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
@@ -505,21 +495,20 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
     }
 
     // Set input
-    ggml_tensor* inp = ggml_graph_get_tensor(gf, "input");
+    ggml_tensor * inp = ggml_graph_get_tensor(gf, "input");
     ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
     ggml_backend_graph_compute(ctx->backend, gf);
 
     // Read probability map
-    ggml_tensor* prob = ggml_graph_get_tensor(gf, "prob_map");
+    ggml_tensor * prob = ggml_graph_get_tensor(gf, "prob_map");
     int prob_w = (int)prob->ne[0];
     int prob_h = (int)prob->ne[1];
     // prob shape: [W, H, 1] in ggml — read as flat [W*H]
     int prob_total = prob_w * prob_h;
     std::vector<float> prob_map(prob_total);
-    ggml_backend_tensor_get(prob, prob_map.data(), 0,
-                            prob_total * sizeof(float));
+    ggml_backend_tensor_get(prob, prob_map.data(), 0, prob_total * sizeof(float));
 
     // Store for debugging
     ctx->last_prob_map = prob_map;
@@ -536,14 +525,12 @@ static std::vector<float> forward(context* ctx, const float* pixels, int H, int 
 
 // Contour tracing: extract the boundary pixels of a connected component
 // using Moore neighborhood tracing (8-connected boundary following).
-static std::vector<std::pair<int,int>> trace_contour(
-    const uint8_t * binary, int w, int h,
-    const int * labels, int label, int start_x, int start_y)
-{
-    std::vector<std::pair<int,int>> contour;
+static std::vector<std::pair<int, int>> trace_contour(const uint8_t * binary, int w, int h, const int * labels,
+                                                      int label, int start_x, int start_y) {
+    std::vector<std::pair<int, int>> contour;
     // Moore neighborhood: 8 directions, starting from right
-    const int dx[] = {1, 1, 0, -1, -1, -1, 0, 1};
-    const int dy[] = {0, 1, 1, 1, 0, -1, -1, -1};
+    const int dx[] = { 1, 1, 0, -1, -1, -1, 0, 1 };
+    const int dy[] = { 0, 1, 1, 1, 0, -1, -1, -1 };
 
     int cx = start_x, cy = start_y;
     int dir = 0; // start looking right
@@ -557,14 +544,15 @@ static std::vector<std::pair<int,int>> trace_contour(
     // (already provided as start_x, start_y)
     int max_steps = w * h * 2; // safety limit
     do {
-        contour.push_back({cx, cy});
+        contour.push_back({ cx, cy });
         // Look for next boundary pixel
         bool found = false;
         for (int i = 0; i < 8; i++) {
             int d = (dir + 6 + i) % 8; // start from dir-2 (backtrack)
             int nx = cx + dx[d], ny = cy + dy[d];
             if (is_fg(nx, ny)) {
-                cx = nx; cy = ny;
+                cx = nx;
+                cy = ny;
                 dir = d;
                 found = true;
                 break;
@@ -584,8 +572,8 @@ struct min_rect {
     float cx, cy, w, h, angle;
 };
 
-static min_rect min_area_rect(const std::vector<std::pair<int,int>> & pts) {
-    min_rect r = {0, 0, 0, 0, 0};
+static min_rect min_area_rect(const std::vector<std::pair<int, int>> & pts) {
+    min_rect r = { 0, 0, 0, 0, 0 };
     if (pts.size() < 3) {
         if (!pts.empty()) {
             int mnx = pts[0].first, mxx = mnx, mny = pts[0].second, mxy = mny;
@@ -606,28 +594,34 @@ static min_rect min_area_rect(const std::vector<std::pair<int,int>> & pts) {
     // Convex hull (Andrew's monotone chain)
     auto pts_sorted = pts;
     std::sort(pts_sorted.begin(), pts_sorted.end());
-    std::vector<std::pair<int,int>> hull;
+    std::vector<std::pair<int, int>> hull;
     // Lower hull
     for (auto & p : pts_sorted) {
         while (hull.size() >= 2) {
-            auto & a = hull[hull.size()-2];
-            auto & b = hull[hull.size()-1];
-            long cross = (long)(b.first-a.first)*(p.second-a.second)
-                       - (long)(b.second-a.second)*(p.first-a.first);
-            if (cross <= 0) hull.pop_back(); else break;
+            auto & a = hull[hull.size() - 2];
+            auto & b = hull[hull.size() - 1];
+            long cross =
+                (long)(b.first - a.first) * (p.second - a.second) - (long)(b.second - a.second) * (p.first - a.first);
+            if (cross <= 0)
+                hull.pop_back();
+            else
+                break;
         }
         hull.push_back(p);
     }
     // Upper hull
     int lower_size = (int)hull.size();
-    for (int i = (int)pts_sorted.size()-2; i >= 0; i--) {
+    for (int i = (int)pts_sorted.size() - 2; i >= 0; i--) {
         auto & p = pts_sorted[i];
         while ((int)hull.size() > lower_size) {
-            auto & a = hull[hull.size()-2];
-            auto & b = hull[hull.size()-1];
-            long cross = (long)(b.first-a.first)*(p.second-a.second)
-                       - (long)(b.second-a.second)*(p.first-a.first);
-            if (cross <= 0) hull.pop_back(); else break;
+            auto & a = hull[hull.size() - 2];
+            auto & b = hull[hull.size() - 1];
+            long cross =
+                (long)(b.first - a.first) * (p.second - a.second) - (long)(b.second - a.second) * (p.first - a.first);
+            if (cross <= 0)
+                hull.pop_back();
+            else
+                break;
         }
         hull.push_back(p);
     }
@@ -642,8 +636,10 @@ static min_rect min_area_rect(const std::vector<std::pair<int,int>> & pts) {
             if (p.second < mny) mny = p.second;
             if (p.second > mxy) mxy = p.second;
         }
-        r.cx = (mnx + mxx) / 2.0f; r.cy = (mny + mxy) / 2.0f;
-        r.w = (float)(mxx - mnx + 1); r.h = (float)(mxy - mny + 1);
+        r.cx = (mnx + mxx) / 2.0f;
+        r.cy = (mny + mxy) / 2.0f;
+        r.w = (float)(mxx - mnx + 1);
+        r.h = (float)(mxy - mny + 1);
         return r;
     }
 
@@ -654,9 +650,10 @@ static min_rect min_area_rect(const std::vector<std::pair<int,int>> & pts) {
         int j = (i + 1) % n;
         float ex = (float)(hull[j].first - hull[i].first);
         float ey = (float)(hull[j].second - hull[i].second);
-        float len = sqrtf(ex*ex + ey*ey);
+        float len = sqrtf(ex * ex + ey * ey);
         if (len < 1e-6f) continue;
-        ex /= len; ey /= len;
+        ex /= len;
+        ey /= len;
         // Project all hull points onto this edge direction and its perpendicular
         float min_proj = 1e30f, max_proj = -1e30f;
         float min_perp = 1e30f, max_perp = -1e30f;
@@ -697,8 +694,8 @@ static min_rect min_area_rect(const std::vector<std::pair<int,int>> & pts) {
 // More accurate than scoring the entire bounding box (which includes
 // background pixels between text and bbox edges).
 static float score_polygon(const float * prob_map, int map_w, int map_h,
-                            const std::vector<std::pair<int,int>> & contour,
-                            int min_x, int min_y, int max_x, int max_y) {
+                           const std::vector<std::pair<int, int>> & contour, int min_x, int min_y, int max_x,
+                           int max_y) {
     if (contour.empty()) return 0;
     float sum = 0;
     int count = 0;
@@ -709,7 +706,7 @@ static float score_polygon(const float * prob_map, int map_w, int map_h,
             // Ray casting: count crossings to the right
             int crossings = 0;
             int n = (int)contour.size();
-            for (int i = 0, j = n-1; i < n; j = i++) {
+            for (int i = 0, j = n - 1; i < n; j = i++) {
                 int yi = contour[i].second, yj = contour[j].second;
                 int xi = contour[i].first, xj = contour[j].first;
                 if ((yi <= y && yj > y) || (yj <= y && yi > y)) {
@@ -727,13 +724,9 @@ static float score_polygon(const float * prob_map, int map_w, int map_h,
 }
 
 // Connected-component labeling + contour-based bounding box extraction.
-static std::vector<text_box> extract_boxes(const float* prob_map,
-                                            int map_w, int map_h,
-                                            float prob_threshold,
-                                            float box_threshold,
-                                            float unclip_ratio,
-                                            int min_area,
-                                            float scale_x, float scale_y) {
+static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, int map_h, float prob_threshold,
+                                           float box_threshold, float unclip_ratio, int min_area, float scale_x,
+                                           float scale_y) {
     std::vector<text_box> results;
 
     // Binarize
@@ -776,8 +769,8 @@ static std::vector<text_box> extract_boxes(const float* prob_map,
                     if (cy > max_y) max_y = cy;
 
                     // 4-connected neighbors
-                    int dx[] = {-1, 1, 0, 0};
-                    int dy[] = {0, 0, -1, 1};
+                    int dx[] = { -1, 1, 0, 0 };
+                    int dy[] = { 0, 0, -1, 1 };
                     for (int d = 0; d < 4; d++) {
                         int nx = cx + dx[d], ny = cy + dy[d];
                         if (nx >= 0 && nx < map_w && ny >= 0 && ny < map_h) {
@@ -798,12 +791,10 @@ static std::vector<text_box> extract_boxes(const float* prob_map,
                 if (mean_score < box_threshold) continue;
 
                 // Trace contour of this component
-                auto contour = trace_contour(binary.data(), map_w, map_h,
-                                              labels.data(), label, min_x, min_y);
+                auto contour = trace_contour(binary.data(), map_w, map_h, labels.data(), label, min_x, min_y);
 
                 // Score against probability map (polygon interior only)
-                float poly_score = score_polygon(prob_map, map_w, map_h,
-                                                  contour, min_x, min_y, max_x, max_y);
+                float poly_score = score_polygon(prob_map, map_w, map_h, contour, min_x, min_y, max_x, max_y);
                 if (poly_score < box_threshold) continue;
 
                 // Compute minimum-area rotated rectangle
@@ -835,12 +826,11 @@ static std::vector<text_box> extract_boxes(const float* prob_map,
 
                 // Quad corners of the rotated rectangle
                 float corners[4][2] = {
-                    {-half_w, -half_h}, { half_w, -half_h},
-                    { half_w,  half_h}, {-half_w,  half_h}
+                    { -half_w, -half_h }, { half_w, -half_h }, { half_w, half_h }, { -half_w, half_h }
                 };
                 for (int c = 0; c < 4; c++) {
-                    tb.qx[c] = (mr.cx + corners[c][0]*cos_a - corners[c][1]*sin_a) * scale_x;
-                    tb.qy[c] = (mr.cy + corners[c][0]*sin_a + corners[c][1]*cos_a) * scale_y;
+                    tb.qx[c] = (mr.cx + corners[c][0] * cos_a - corners[c][1] * sin_a) * scale_x;
+                    tb.qy[c] = (mr.cy + corners[c][0] * sin_a + corners[c][1] * cos_a) * scale_y;
                 }
 
                 results.push_back(tb);
@@ -849,7 +839,7 @@ static std::vector<text_box> extract_boxes(const float* prob_map,
     }
 
     // Sort by y then x (reading order)
-    std::sort(results.begin(), results.end(), [](const text_box& a, const text_box& b) {
+    std::sort(results.begin(), results.end(), [](const text_box & a, const text_box & b) {
         if (std::abs(a.y - b.y) > std::min(a.h, b.h) * 0.5f) return a.y < b.y;
         return a.x < b.x;
     });
@@ -861,9 +851,8 @@ static std::vector<text_box> extract_boxes(const float* prob_map,
 // Public API
 // ---------------------------------------------------------------------------
 
-std::vector<text_box> detect(context* ctx, const float* pixels, int H, int W,
-                              float prob_threshold, float box_threshold,
-                              float unclip_ratio) {
+std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, float prob_threshold,
+                             float box_threshold, float unclip_ratio) {
     if (!ctx || !pixels) return {};
 
     const bool bench = ctx->bench;
@@ -871,8 +860,9 @@ std::vector<text_box> detect(context* ctx, const float* pixels, int H, int W,
 
     auto t0 = std::chrono::steady_clock::now();
     std::vector<float> prob_map = forward(ctx, pixels, H, W);
-    if (bench) fprintf(stderr, "[ocr-detect-bench] graph compute: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[ocr-detect-bench] graph compute: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
     if (prob_map.empty()) return {};
 
     // The prob map may be at a different resolution than the input
@@ -882,26 +872,26 @@ std::vector<text_box> detect(context* ctx, const float* pixels, int H, int W,
     float scale_y = (float)H / ctx->last_prob_h;
 
     t0 = std::chrono::steady_clock::now();
-    auto result = extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h,
-                         prob_threshold, box_threshold, unclip_ratio,
-                         ctx->min_area, scale_x, scale_y);
-    if (bench) fprintf(stderr, "[ocr-detect-bench] postprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    auto result = extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h, prob_threshold, box_threshold,
+                                unclip_ratio, ctx->min_area, scale_x, scale_y);
+    if (bench)
+        fprintf(stderr, "[ocr-detect-bench] postprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[ocr-detect-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[ocr-detect-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     return result;
 }
 
-std::vector<text_box> detect_file(context* ctx, const char* path,
-                                   float prob_threshold, float box_threshold,
-                                   float unclip_ratio, int target_short_side) {
+std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold, float box_threshold,
+                                  float unclip_ratio, int target_short_side) {
     if (!ctx || !path) return {};
 
     // Load image
     int img_w, img_h, img_c;
-    unsigned char* raw = stbi_load(path, &img_w, &img_h, &img_c, 3);
+    unsigned char * raw = stbi_load(path, &img_w, &img_h, &img_c, 3);
     if (!raw) {
         fprintf(stderr, "ocr_detect: cannot load image: %s\n", path);
         return {};
@@ -939,8 +929,7 @@ std::vector<text_box> detect_file(context* ctx, const char* path,
                 float v01 = raw[(sy0 * img_w + sx1) * 3 + c];
                 float v10 = raw[(sy1 * img_w + sx0) * 3 + c];
                 float v11 = raw[(sy1 * img_w + sx1) * 3 + c];
-                float val = v00 * (1-fx) * (1-fy) + v01 * fx * (1-fy)
-                          + v10 * (1-fx) * fy + v11 * fx * fy;
+                float val = v00 * (1 - fx) * (1 - fy) + v01 * fx * (1 - fy) + v10 * (1 - fx) * fy + v11 * fx * fy;
 
                 // Normalize: (pixel - mean) / std
                 val = (val - ctx->img_mean[c]) / ctx->img_std[c];
@@ -953,16 +942,16 @@ std::vector<text_box> detect_file(context* ctx, const char* path,
 
     stbi_image_free(raw);
 
-    if (ctx->bench) fprintf(stderr, "ocr_detect: %s %dx%d → %dx%d (padded %dx%d)\n",
-            path, img_w, img_h, new_w, new_h, padded_w, padded_h);
+    if (ctx->bench)
+        fprintf(stderr, "ocr_detect: %s %dx%d → %dx%d (padded %dx%d)\n", path, img_w, img_h, new_w, new_h, padded_w,
+                padded_h);
 
     // Run detection
-    auto boxes = detect(ctx, pixels.data(), padded_h, padded_w,
-                        prob_threshold, box_threshold, unclip_ratio);
+    auto boxes = detect(ctx, pixels.data(), padded_h, padded_w, prob_threshold, box_threshold, unclip_ratio);
 
     // Scale coordinates back to original image space
     float inv_scale = 1.0f / scale;
-    for (auto& b : boxes) {
+    for (auto & b : boxes) {
         b.x *= inv_scale;
         b.y *= inv_scale;
         b.w *= inv_scale;
@@ -976,14 +965,14 @@ std::vector<text_box> detect_file(context* ctx, const char* path,
     return boxes;
 }
 
-const float* get_prob_map(const context* ctx, int* out_h, int* out_w) {
+const float * get_prob_map(const context * ctx, int * out_h, int * out_w) {
     if (!ctx || ctx->last_prob_map.empty()) return nullptr;
     if (out_h) *out_h = ctx->last_prob_h;
     if (out_w) *out_w = ctx->last_prob_w;
     return ctx->last_prob_map.data();
 }
 
-void free(context* ctx) {
+void free(context * ctx) {
     if (!ctx) return;
     if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->backend) ggml_backend_free(ctx->backend);

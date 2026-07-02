@@ -34,13 +34,11 @@ int instructir_get_n_tasks(const instructir_context * ctx);
 
 /// Restore an RGB image with the specified task.
 /// Input/output: uint8 RGB [h, w, 3] (same dimensions, denoising task).
-int instructir_process(instructir_context * ctx, int task,
-                       const uint8_t * input, int width, int height,
+int instructir_process(instructir_context * ctx, int task, const uint8_t * input, int width, int height,
                        uint8_t * output);
 
 /// Float CHW [0,1] in/out (for parity testing).
-int instructir_process_float(instructir_context * ctx, int task,
-                             const float * input_chw, int width, int height,
+int instructir_process_float(instructir_context * ctx, int task, const float * input_chw, int width, int height,
                              float * output_chw);
 
 #ifdef __cplusplus

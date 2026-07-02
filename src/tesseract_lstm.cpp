@@ -30,11 +30,11 @@
 // ---------------------------------------------------------------------------
 
 struct lstm_weights {
-    std::vector<float> W_ih;   // (4*ns, ni)
-    std::vector<float> W_hh;   // (4*ns, ns)
-    std::vector<float> bias;   // (4*ns,)
+    std::vector<float> W_ih; // (4*ns, ni)
+    std::vector<float> W_hh; // (4*ns, ns)
+    std::vector<float> bias; // (4*ns,)
     int ni;
-    int ns;  // hidden size
+    int ns; // hidden size
 };
 
 // ---------------------------------------------------------------------------
@@ -50,19 +50,19 @@ struct tesseract_lstm_context {
     std::string vgsl_spec;
 
     // Conv FC weights
-    std::vector<float> conv_w;   // (16, 9)  — [out][in] row-major
-    std::vector<float> conv_b;   // (16,)
-    int conv_out;                // 16
+    std::vector<float> conv_w; // (16, 9)  — [out][in] row-major
+    std::vector<float> conv_b; // (16,)
+    int conv_out;              // 16
 
     // LSTM layers
     std::vector<lstm_weights> lstm;
 
     // Output FC weights
-    std::vector<float> out_w;    // (n_classes, last_lstm_ns)
-    std::vector<float> out_b;    // (n_classes,)
+    std::vector<float> out_w; // (n_classes, last_lstm_ns)
+    std::vector<float> out_b; // (n_classes,)
 
     // Per-LSTM metadata
-    std::vector<std::string> lstm_types;  // "y_sum", "fwd", "rev"
+    std::vector<std::string> lstm_types; // "y_sum", "fwd", "rev"
 
     // Reverse recoder: output_class → unichar_id (-1 if unmapped)
     std::vector<int> output_to_unichar;
@@ -121,10 +121,10 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     if (!meta) return false;
 
     ctx->input_height = (int)core_gguf::kv_u32(meta, "tesseract_lstm.input_height", 36);
-    ctx->num_classes   = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_classes", 111);
-    ctx->null_char     = (int)core_gguf::kv_u32(meta, "tesseract_lstm.null_char", 110);
+    ctx->num_classes = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_classes", 111);
+    ctx->null_char = (int)core_gguf::kv_u32(meta, "tesseract_lstm.null_char", 110);
     ctx->num_lstm_layers = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_lstm_layers", 4);
-    ctx->vgsl_spec     = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
+    ctx->vgsl_spec = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
 
     // Tokens
     ctx->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");
@@ -153,9 +153,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ggml_backend_free(backend);
 
     const auto & T = ctx->wl.tensors;
-    auto req = [&](const char * name) -> ggml_tensor * {
-        return core_gguf::require(T, name, "tesseract_lstm");
-    };
+    auto req = [&](const char * name) -> ggml_tensor * { return core_gguf::require(T, name, "tesseract_lstm"); };
 
     // Conv FC
     ggml_tensor * cw = req("conv.weight");
@@ -163,7 +161,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     if (!cw || !cb) return false;
     const float * cw_f = tensor_f32(ctx, cw);
     const float * cb_f = tensor_f32(ctx, cb);
-    int conv_ni = (int)cw->ne[0];  // 9
+    int conv_ni = (int)cw->ne[0];   // 9
     ctx->conv_out = (int)cw->ne[1]; // 16
     ctx->conv_w.assign(cw_f, cw_f + conv_ni * ctx->conv_out);
     ctx->conv_b.assign(cb_f, cb_f + ctx->conv_out);
@@ -186,7 +184,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
 
         const float * wih_f = tensor_f32(ctx, wih);
         const float * whh_f = tensor_f32(ctx, whh);
-        const float * b_f   = tensor_f32(ctx, b);
+        const float * b_f = tensor_f32(ctx, b);
 
         int gate_size = 4 * lw.ns;
         lw.W_ih.assign(wih_f, wih_f + gate_size * lw.ni);
@@ -208,8 +206,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
 
-    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d)\n",
-            ctx->vgsl_spec.c_str(), ctx->num_lstm_layers, ctx->num_classes, ctx->input_height);
+    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d)\n", ctx->vgsl_spec.c_str(),
+            ctx->num_lstm_layers, ctx->num_classes, ctx->input_height);
 
     return true;
 }
@@ -218,15 +216,13 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
 // LSTM forward (single direction)
 // ---------------------------------------------------------------------------
 
-static void lstm_forward(
-    const float * input,   // (T, ni)
-    float * output,        // (T, ns)
-    int T, int ni, int ns,
-    const float * W_ih,    // (4*ns, ni)
-    const float * W_hh,    // (4*ns, ns)
-    const float * bias,    // (4*ns,)
-    bool reverse)
-{
+static void lstm_forward(const float * input, // (T, ni)
+                         float * output,      // (T, ns)
+                         int T, int ni, int ns,
+                         const float * W_ih, // (4*ns, ni)
+                         const float * W_hh, // (4*ns, ns)
+                         const float * bias, // (4*ns,)
+                         bool reverse) {
     // Gate order (PyTorch): i, f, g, o
     const int gs = 4 * ns;
     std::vector<float> h(ns, 0.0f);
@@ -239,16 +235,15 @@ static void lstm_forward(
 
         // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
         for (int g = 0; g < gs; g++) {
-            gates[g] = bias[g]
-                     + core_cpu::dot_product(W_ih + g * ni, xt, ni)
-                     + core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
+            gates[g] = bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
+                       core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
         }
 
         for (int j = 0; j < ns; j++) {
-            float i_gate = 1.0f / (1.0f + expf(-gates[0*ns + j]));
-            float f_gate = 1.0f / (1.0f + expf(-gates[1*ns + j]));
-            float g_gate = tanhf(gates[2*ns + j]);
-            float o_gate = 1.0f / (1.0f + expf(-gates[3*ns + j]));
+            float i_gate = 1.0f / (1.0f + expf(-gates[0 * ns + j]));
+            float f_gate = 1.0f / (1.0f + expf(-gates[1 * ns + j]));
+            float g_gate = tanhf(gates[2 * ns + j]);
+            float o_gate = 1.0f / (1.0f + expf(-gates[3 * ns + j]));
 
             c[j] = f_gate * c[j] + i_gate * g_gate;
             if (c[j] > 100.0f) c[j] = 100.0f;
@@ -264,13 +259,12 @@ static void lstm_forward(
 // SummLSTM: run LSTM over height dimension, keep last hidden state per column
 // ---------------------------------------------------------------------------
 
-static void summ_lstm_forward(
-    const float * input,   // (height, width, channels) — row-major after XYTranspose
-    float * output,        // (width, ns) — one hidden state per column
-    int height, int width, int channels, int ns,
-    const float * W_ih,    // (4*ns, channels)
-    const float * W_hh,    // (4*ns, ns)
-    const float * bias)    // (4*ns,)
+static void summ_lstm_forward(const float * input, // (height, width, channels) — row-major after XYTranspose
+                              float * output,      // (width, ns) — one hidden state per column
+                              int height, int width, int channels, int ns,
+                              const float * W_ih, // (4*ns, channels)
+                              const float * W_hh, // (4*ns, ns)
+                              const float * bias) // (4*ns,)
 {
     // After XYTranspose: height = original_width, width = original_height
     // For each row (height position), run LSTM across the width (original height).
@@ -290,16 +284,15 @@ static void summ_lstm_forward(
 
             // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
-                gates[g] = bias[g]
-                         + core_cpu::dot_product(W_ih + g * channels, xt, channels)
-                         + core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
+                gates[g] = bias[g] + core_cpu::dot_product(W_ih + g * channels, xt, channels) +
+                           core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
             }
 
             for (int j = 0; j < ns; j++) {
-                float i_gate = 1.0f / (1.0f + expf(-gates[0*ns + j]));
-                float f_gate = 1.0f / (1.0f + expf(-gates[1*ns + j]));
-                float g_gate = tanhf(gates[2*ns + j]);
-                float o_gate = 1.0f / (1.0f + expf(-gates[3*ns + j]));
+                float i_gate = 1.0f / (1.0f + expf(-gates[0 * ns + j]));
+                float f_gate = 1.0f / (1.0f + expf(-gates[1 * ns + j]));
+                float g_gate = tanhf(gates[2 * ns + j]);
+                float o_gate = 1.0f / (1.0f + expf(-gates[3 * ns + j]));
 
                 c[j] = f_gate * c[j] + i_gate * g_gate;
                 if (c[j] > 100.0f) c[j] = 100.0f;
@@ -317,9 +310,8 @@ static void summ_lstm_forward(
 // Image normalization (matches Tesseract's ComputeBlackWhite + SetPixel)
 // ---------------------------------------------------------------------------
 
-static void normalize_image(
-    const uint8_t * pixels, int width, int height,
-    float * out)  // (height, width)
+static void normalize_image(const uint8_t * pixels, int width, int height,
+                            float * out) // (height, width)
 {
     // ComputeBlackWhite: scan middle row for local min/max
     int mid_y = height / 2;
@@ -330,10 +322,8 @@ static void normalize_image(
         float curr = (float)pixels[mid_y * width + 1];
         for (int x = 1; x + 1 < width; x++) {
             float next = (float)pixels[mid_y * width + x + 1];
-            if ((curr < prev && curr <= next) || (curr <= prev && curr < next))
-                mins.push_back(curr);
-            if ((curr > prev && curr >= next) || (curr >= prev && curr > next))
-                maxes.push_back(curr);
+            if ((curr < prev && curr <= next) || (curr <= prev && curr < next)) mins.push_back(curr);
+            if ((curr > prev && curr >= next) || (curr >= prev && curr > next)) maxes.push_back(curr);
             prev = curr;
             curr = next;
         }
@@ -359,18 +349,15 @@ static void normalize_image(
 // ---------------------------------------------------------------------------
 
 // Helper: capture a buffer for diff comparison
-static void capture(tesseract_lstm_context * ctx, const char * name,
-                    const float * data, size_t n) {
-    if (ctx->dump_mode)
-        ctx->captures[name].assign(data, data + n);
+static void capture(tesseract_lstm_context * ctx, const char * name, const float * data, size_t n) {
+    if (ctx->dump_mode) ctx->captures[name].assign(data, data + n);
 }
 
 static void forward(tesseract_lstm_context * ctx,
-                    const float * image,  // (H, W) normalized
-                    int H, int W)
-{
+                    const float * image, // (H, W) normalized
+                    int H, int W) {
     ctx->captures.clear();
-    const int conv_out = ctx->conv_out;  // 16
+    const int conv_out = ctx->conv_out; // 16
 
     capture(ctx, "input_image", image, H * W);
 
@@ -386,8 +373,7 @@ static void forward(tesseract_lstm_context * ctx,
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dy = -1; dy <= 1; dy++) {
                         int sx = x + dx, sy = y + dy;
-                        stacked[idx++] = (sx >= 0 && sx < W && sy >= 0 && sy < H)
-                                         ? image[sy * W + sx] : 0.0f;
+                        stacked[idx++] = (sx >= 0 && sx < W && sy >= 0 && sy < H) ? image[sy * W + sx] : 0.0f;
                     }
                 }
                 // FC: tanh(W @ stacked + bias)
@@ -395,8 +381,7 @@ static void forward(tesseract_lstm_context * ctx,
                 for (int o = 0; o < conv_out; o++) {
                     float val = ctx->conv_b[o];
                     const float * w_row = ctx->conv_w.data() + o * 9;
-                    for (int j = 0; j < 9; j++)
-                        val += w_row[j] * stacked[j];
+                    for (int j = 0; j < 9; j++) val += w_row[j] * stacked[j];
                     dst[o] = tanhf(val);
                 }
             }
@@ -413,11 +398,10 @@ static void forward(tesseract_lstm_context * ctx,
             float * dst = mp_out.data() + (y * W2 + x) * conv_out;
             for (int dy = 0; dy < 3; dy++) {
                 for (int dx = 0; dx < 3; dx++) {
-                    int sy = y*3+dy, sx = x*3+dx;
+                    int sy = y * 3 + dy, sx = x * 3 + dx;
                     if (sy < H && sx < W) {
                         const float * src = fc_out.data() + (sy * W + sx) * conv_out;
-                        for (int c = 0; c < conv_out; c++)
-                            dst[c] = std::max(dst[c], src[c]);
+                        for (int c = 0; c < conv_out; c++) dst[c] = std::max(dst[c], src[c]);
                     }
                 }
             }
@@ -431,8 +415,7 @@ static void forward(tesseract_lstm_context * ctx,
     std::vector<float> transposed(H2 * W2 * conv_out);
     for (int y = 0; y < H2; y++)
         for (int x = 0; x < W2; x++)
-            memcpy(transposed.data() + (x * H2 + y) * conv_out,
-                   mp_out.data() + (y * W2 + x) * conv_out,
+            memcpy(transposed.data() + (x * H2 + y) * conv_out, mp_out.data() + (y * W2 + x) * conv_out,
                    conv_out * sizeof(float));
 
     // Find SummLSTM layer (first one, type "y_sum")
@@ -442,26 +425,23 @@ static void forward(tesseract_lstm_context * ctx,
     int ns0 = lw0.ns;
 
     std::vector<float> summ_out(W2 * ns0);
-    summ_lstm_forward(transposed.data(), summ_out.data(),
-                      W2, H2, conv_out, ns0,
-                      lw0.W_ih.data(), lw0.W_hh.data(), lw0.bias.data());
+    summ_lstm_forward(transposed.data(), summ_out.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
+                      lw0.bias.data());
     lstm_idx++;
     capture(ctx, "after_lstm_0", summ_out.data(), summ_out.size());
 
     // 4. Remaining LSTM layers (1-D over the time axis = W2)
     int T = W2;
-    std::vector<float> cur_seq = std::move(summ_out);  // (T, ns0)
+    std::vector<float> cur_seq = std::move(summ_out); // (T, ns0)
     int cur_dim = ns0;
 
     while (lstm_idx < ctx->num_lstm_layers) {
         const auto & lw = ctx->lstm[lstm_idx];
-        bool rev = (lstm_idx < (int)ctx->lstm_types.size() &&
-                    ctx->lstm_types[lstm_idx] == "rev");
+        bool rev = (lstm_idx < (int)ctx->lstm_types.size() && ctx->lstm_types[lstm_idx] == "rev");
 
         std::vector<float> next_seq(T * lw.ns);
-        lstm_forward(cur_seq.data(), next_seq.data(),
-                     T, cur_dim, lw.ns,
-                     lw.W_ih.data(), lw.W_hh.data(), lw.bias.data(), rev);
+        lstm_forward(cur_seq.data(), next_seq.data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(), lw.bias.data(),
+                     rev);
 
         cur_seq = std::move(next_seq);
         cur_dim = lw.ns;
@@ -483,8 +463,7 @@ static void forward(tesseract_lstm_context * ctx,
         for (int c = 0; c < n_classes; c++) {
             float val = ctx->out_b[c];
             const float * w_row = ctx->out_w.data() + c * cur_dim;
-            for (int j = 0; j < cur_dim; j++)
-                val += w_row[j] * x[j];
+            for (int j = 0; j < cur_dim; j++) val += w_row[j] * x[j];
             dst[c] = val;
             if (val > max_val) max_val = val;
         }
@@ -494,8 +473,7 @@ static void forward(tesseract_lstm_context * ctx,
             dst[c] = expf(dst[c] - max_val);
             sum += dst[c];
         }
-        for (int c = 0; c < n_classes; c++)
-            dst[c] /= sum;
+        for (int c = 0; c < n_classes; c++) dst[c] /= sum;
     }
 
     capture(ctx, "logits", logits.data(), logits.size());
@@ -517,8 +495,7 @@ static void forward(tesseract_lstm_context * ctx,
         if (best != ctx->null_char && best != prev) {
             // Map output class → unichar via reverse recoder
             int uid = -1;
-            if (best < (int)ctx->output_to_unichar.size())
-                uid = ctx->output_to_unichar[best];
+            if (best < (int)ctx->output_to_unichar.size()) uid = ctx->output_to_unichar[best];
             if (uid >= 0 && uid < (int)ctx->tokens.size()) {
                 ctx->result_buf += ctx->tokens[uid];
                 ctx->char_confs.push_back(best_p);
@@ -533,7 +510,7 @@ static void forward(tesseract_lstm_context * ctx,
 // ---------------------------------------------------------------------------
 
 tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_threads) {
-    (void)n_threads;  // all CPU-side, single-threaded for now
+    (void)n_threads; // all CPU-side, single-threaded for now
 
     auto * ctx = new tesseract_lstm_context();
     if (!load_model(ctx, model_path)) {
@@ -551,12 +528,8 @@ void tesseract_lstm_free(tesseract_lstm_context * ctx) {
     }
 }
 
-const char * tesseract_lstm_recognize(
-    tesseract_lstm_context * ctx,
-    const uint8_t * pixels,
-    int width, int height,
-    int * out_len)
-{
+const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_t * pixels, int width, int height,
+                                      int * out_len) {
     if (!ctx || !pixels || width <= 0 || height <= 0) {
         if (out_len) *out_len = 0;
         return "";
@@ -608,26 +581,26 @@ const char * tesseract_lstm_recognize(
     // Normalize image (Tesseract-style ComputeBlackWhite + SetPixel)
     std::vector<float> normalized((size_t)W * H);
     normalize_image(src, W, H, normalized.data());
-    if (bench) fprintf(stderr, "[tesseract-bench] preprocess: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[tesseract-bench] preprocess: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     // Run forward pass (LSTM layers + softmax)
     t0 = std::chrono::steady_clock::now();
     forward(ctx, normalized.data(), H, W);
-    if (bench) fprintf(stderr, "[tesseract-bench] LSTM layers: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t0).count());
+    if (bench)
+        fprintf(stderr, "[tesseract-bench] LSTM layers: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
-    if (bench) fprintf(stderr, "[tesseract-bench] total: %.1f ms\n",
-        std::chrono::duration<double,std::milli>(std::chrono::steady_clock::now()-t_total).count());
+    if (bench)
+        fprintf(stderr, "[tesseract-bench] total: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count());
 
     if (out_len) *out_len = (int)ctx->result_buf.size();
     return ctx->result_buf.c_str();
 }
 
-const float * tesseract_lstm_confidences(
-    const tesseract_lstm_context * ctx,
-    int * n_chars)
-{
+const float * tesseract_lstm_confidences(const tesseract_lstm_context * ctx, int * n_chars) {
     if (!ctx || ctx->char_confs.empty()) {
         if (n_chars) *n_chars = 0;
         return nullptr;
@@ -652,11 +625,7 @@ void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled) {
     if (ctx) ctx->dump_mode = (enabled != 0);
 }
 
-const float * tesseract_lstm_get_capture(
-    const tesseract_lstm_context * ctx,
-    const char * name,
-    int * n_elem)
-{
+const float * tesseract_lstm_get_capture(const tesseract_lstm_context * ctx, const char * name, int * n_elem) {
     if (!ctx || !name) {
         if (n_elem) *n_elem = 0;
         return nullptr;

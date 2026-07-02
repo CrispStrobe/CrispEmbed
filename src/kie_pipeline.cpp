@@ -16,17 +16,17 @@
 namespace kie_pipeline {
 
 struct context {
-    ocr_orchestrator::context* ocr_ctx = nullptr;
-    void*                      ner_ctx = nullptr;    // Phase 1: GLiNER
-    lilt_kie::context*         lilt_ctx = nullptr;   // Phase 2: LiLT
-    float                      threshold = 0.5f;
-    bool                       bench = false;
+    ocr_orchestrator::context * ocr_ctx = nullptr;
+    void * ner_ctx = nullptr;               // Phase 1: GLiNER
+    lilt_kie::context * lilt_ctx = nullptr; // Phase 2: LiLT
+    float threshold = 0.5f;
+    bool bench = false;
 };
 
-bool load(context** out, const config& cfg, int n_threads) {
+bool load(context ** out, const config & cfg, int n_threads) {
     if (!out) return false;
 
-    auto* ctx = new context;
+    auto * ctx = new context;
     ctx->threshold = cfg.threshold > 0.0f ? cfg.threshold : 0.5f;
     ctx->bench = (std::getenv("CRISPEMBED_KIE_PIPELINE_BENCH") != nullptr);
 
@@ -40,8 +40,7 @@ bool load(context** out, const config& cfg, int n_threads) {
     // Phase 2: try LiLT first (layout-aware, higher quality).
     if (!cfg.lilt_model.empty()) {
         if (lilt_kie::load(&ctx->lilt_ctx, cfg.lilt_model.c_str(), n_threads)) {
-            fprintf(stderr, "kie_pipeline: using LiLT backend (%d labels)\n",
-                    lilt_kie::num_labels(ctx->lilt_ctx));
+            fprintf(stderr, "kie_pipeline: using LiLT backend (%d labels)\n", lilt_kie::num_labels(ctx->lilt_ctx));
         } else {
             fprintf(stderr, "kie_pipeline: failed to load LiLT model: %s (falling back to NER)\n",
                     cfg.lilt_model.c_str());
@@ -52,8 +51,7 @@ bool load(context** out, const config& cfg, int n_threads) {
     if (!ctx->lilt_ctx && !cfg.ner_model.empty()) {
         ctx->ner_ctx = gliner_ner_init(cfg.ner_model.c_str(), n_threads);
         if (!ctx->ner_ctx) {
-            fprintf(stderr, "kie_pipeline: failed to load NER model: %s\n",
-                    cfg.ner_model.c_str());
+            fprintf(stderr, "kie_pipeline: failed to load NER model: %s\n", cfg.ner_model.c_str());
             ocr_orchestrator::free(ctx->ocr_ctx);
             delete ctx;
             return false;
@@ -79,16 +77,15 @@ struct region_span {
 };
 
 // Phase 1: extract via GLiNER NER (text-only).
-static void extract_ner(context* ctx, const ocr_orchestrator::result& ocr_res,
-                         const char** labels, int n_labels, float threshold,
-                         result& res) {
+static void extract_ner(context * ctx, const ocr_orchestrator::result & ocr_res, const char ** labels, int n_labels,
+                        float threshold, result & res) {
     // Build concatenated text with per-region offset tracking.
     std::string combined;
     std::vector<region_span> spans;
     spans.reserve(ocr_res.regions.size());
 
     for (int i = 0; i < (int)ocr_res.regions.size(); i++) {
-        const auto& r = ocr_res.regions[i];
+        const auto & r = ocr_res.regions[i];
         if (r.text.empty()) continue;
 
         region_span sp;
@@ -102,18 +99,16 @@ static void extract_ner(context* ctx, const ocr_orchestrator::result& ocr_res,
 
     if (combined.empty()) return;
 
-    gliner_ner_entity* entities = nullptr;
-    int n_entities = gliner_ner_extract(
-        ctx->ner_ctx, combined.c_str(),
-        labels, n_labels, threshold, &entities);
+    gliner_ner_entity * entities = nullptr;
+    int n_entities = gliner_ner_extract(ctx->ner_ctx, combined.c_str(), labels, n_labels, threshold, &entities);
 
     if (n_entities <= 0 || !entities) return;
 
     for (int i = 0; i < n_entities; i++) {
-        const auto& ent = entities[i];
+        const auto & ent = entities[i];
         int ent_mid = (ent.start_char + ent.end_char) / 2;
         int best_region = -1;
-        for (const auto& sp : spans) {
+        for (const auto & sp : spans) {
             if (ent_mid >= sp.char_start && ent_mid < sp.char_end) {
                 best_region = sp.region_idx;
                 break;
@@ -122,12 +117,15 @@ static void extract_ner(context* ctx, const ocr_orchestrator::result& ocr_res,
 
         field f;
         f.label = ent.label ? ent.label : "";
-        f.value = ent.text  ? ent.text  : "";
+        f.value = ent.text ? ent.text : "";
         f.score = ent.score;
 
         if (best_region >= 0) {
-            const auto& box = ocr_res.regions[best_region].box;
-            f.x = box.x; f.y = box.y; f.w = box.w; f.h = box.h;
+            const auto & box = ocr_res.regions[best_region].box;
+            f.x = box.x;
+            f.y = box.y;
+            f.w = box.w;
+            f.h = box.h;
         } else {
             f.x = f.y = f.w = f.h = 0.0f;
         }
@@ -138,8 +136,7 @@ static void extract_ner(context* ctx, const ocr_orchestrator::result& ocr_res,
 // Phase 2: extract via LiLT (layout-aware token classification).
 // LiLT takes pre-tokenized words + bboxes and outputs per-token labels.
 // We use OCR regions as "words" and their bboxes as spatial input.
-static void extract_lilt(context* ctx, const ocr_orchestrator::result& ocr_res,
-                          result& res) {
+static void extract_lilt(context * ctx, const ocr_orchestrator::result & ocr_res, result & res) {
     if (ocr_res.regions.empty()) return;
 
     // Build token sequence from OCR regions.
@@ -157,7 +154,7 @@ static void extract_lilt(context* ctx, const ocr_orchestrator::result& ocr_res,
     std::vector<word_info> words;
 
     for (int i = 0; i < (int)ocr_res.regions.size(); i++) {
-        const auto& r = ocr_res.regions[i];
+        const auto & r = ocr_res.regions[i];
         if (r.text.empty()) continue;
 
         // Split region text into words
@@ -208,8 +205,8 @@ static void extract_lilt(context* ctx, const ocr_orchestrator::result& ocr_res,
     std::vector<int32_t> ids(T);
     std::vector<int32_t> bbox(T * 4, 0);
 
-    ids[0] = 0;        // BOS
-    ids[T - 1] = 2;    // EOS
+    ids[0] = 0;     // BOS
+    ids[T - 1] = 2; // EOS
     for (int i = 0; i < n_words; i++) {
         ids[i + 1] = 3; // UNK token — placeholder since we lack tokenizer
         bbox[(i + 1) * 4 + 0] = (int)words[i].x0;
@@ -232,22 +229,24 @@ static void extract_lilt(context* ctx, const ocr_orchestrator::result& ocr_res,
         if (current_label.empty() || current_label == "O") return;
         // Strip B-/I- prefix
         std::string label = current_label;
-        if (label.size() > 2 && (label[0] == 'B' || label[0] == 'I') && label[1] == '-')
-            label = label.substr(2);
+        if (label.size() > 2 && (label[0] == 'B' || label[0] == 'I') && label[1] == '-') label = label.substr(2);
 
         field f;
         f.label = label;
         f.value = current_value;
         f.score = current_score / std::max(span_count, 1);
         if (current_region >= 0) {
-            const auto& box = ocr_res.regions[current_region].box;
-            f.x = box.x; f.y = box.y; f.w = box.w; f.h = box.h;
+            const auto & box = ocr_res.regions[current_region].box;
+            f.x = box.x;
+            f.y = box.y;
+            f.w = box.w;
+            f.h = box.h;
         }
         res.fields.push_back(std::move(f));
     };
 
     for (int i = 1; i < T - 1; i++) { // skip BOS/EOS
-        const auto& tok = results[i];
+        const auto & tok = results[i];
         int word_idx = i - 1;
 
         bool is_begin = tok.label.substr(0, 2) == "B-";
@@ -278,9 +277,7 @@ static void extract_lilt(context* ctx, const ocr_orchestrator::result& ocr_res,
     flush_span();
 }
 
-result extract(context* ctx, const char* image_path,
-               const char** labels, int n_labels,
-               float threshold) {
+result extract(context * ctx, const char * image_path, const char ** labels, int n_labels, float threshold) {
     result res;
     if (!ctx || !image_path) return res;
 
@@ -291,14 +288,12 @@ result extract(context* ctx, const char* image_path,
     auto t_ocr = std::chrono::steady_clock::now();
     auto ocr_res = ocr_orchestrator::run_file(ctx->ocr_ctx, image_path);
     if (bench) {
-        double ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_ocr).count();
-        fprintf(stderr, "[kie_pipeline-bench] OCR phase: %.1f ms (%zu regions)\n",
-                ms, ocr_res.regions.size());
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_ocr).count();
+        fprintf(stderr, "[kie_pipeline-bench] OCR phase: %.1f ms (%zu regions)\n", ms, ocr_res.regions.size());
     }
-    res.ocr_full_text  = ocr_res.full_text;
+    res.ocr_full_text = ocr_res.full_text;
     res.ocr_confidence = ocr_res.mean_confidence;
-    res.n_ocr_regions  = (int)ocr_res.regions.size();
+    res.n_ocr_regions = (int)ocr_res.regions.size();
 
     if (ocr_res.regions.empty()) return res;
 
@@ -310,8 +305,7 @@ result extract(context* ctx, const char* image_path,
         // Phase 2: LiLT layout-aware extraction (ignores labels param)
         extract_lilt(ctx, ocr_res, res);
         if (bench) {
-            double ms = std::chrono::duration<double, std::milli>(
-                std::chrono::steady_clock::now() - t_ner).count();
+            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_ner).count();
             fprintf(stderr, "[kie_pipeline-bench] LiLT/NER phase: %.1f ms\n", ms);
         }
     } else if (ctx->ner_ctx) {
@@ -320,22 +314,20 @@ result extract(context* ctx, const char* image_path,
             extract_ner(ctx, ocr_res, labels, n_labels, thr, res);
         }
         if (bench) {
-            double ms = std::chrono::duration<double, std::milli>(
-                std::chrono::steady_clock::now() - t_ner).count();
+            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_ner).count();
             fprintf(stderr, "[kie_pipeline-bench] LiLT/NER phase: %.1f ms\n", ms);
         }
     }
 
     if (bench) {
-        double total_ms = std::chrono::duration<double, std::milli>(
-            std::chrono::steady_clock::now() - t_total).count();
+        double total_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_total).count();
         fprintf(stderr, "[kie_pipeline-bench] total: %.1f ms\n", total_ms);
     }
 
     return res;
 }
 
-void free(context* ctx) {
+void free(context * ctx) {
     if (!ctx) return;
     if (ctx->ocr_ctx) ocr_orchestrator::free(ctx->ocr_ctx);
     if (ctx->ner_ctx) gliner_ner_free(ctx->ner_ctx);

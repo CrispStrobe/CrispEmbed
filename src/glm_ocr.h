@@ -30,15 +30,15 @@ struct vision_hparams {
     uint32_t hidden_size = 1024;
     uint32_t intermediate_size = 4096;
     uint32_t num_heads = 16;
-    uint32_t head_dim = 64;           // = hidden_size / num_heads
+    uint32_t head_dim = 64; // = hidden_size / num_heads
     uint32_t patch_size = 14;
     uint32_t image_size = 336;
     uint32_t temporal_patch_size = 2;
     uint32_t spatial_merge_size = 2;
     uint32_t out_hidden_size = 1536;
     float rms_norm_eps = 1e-5f;
-    float image_mean[3] = {0.48145466f, 0.4578275f, 0.40821073f};
-    float image_std[3]  = {0.26862954f, 0.26130258f, 0.27577711f};
+    float image_mean[3] = { 0.48145466f, 0.4578275f, 0.40821073f };
+    float image_std[3] = { 0.26862954f, 0.26130258f, 0.27577711f };
 };
 
 struct llm_hparams {
@@ -52,15 +52,15 @@ struct llm_hparams {
     uint32_t max_position_embeddings = 131072;
     float rms_norm_eps = 1e-5f;
     float rope_theta = 10000.0f;
-    int rope_sections[3] = {16, 24, 24};
+    int rope_sections[3] = { 16, 24, 24 };
     uint32_t image_token_id = 59280;
     uint32_t eos_token_id = 59246;
 };
 
 // Vision block weights
 struct vision_block {
-    ggml_tensor *norm1_w = nullptr;
-    ggml_tensor *norm2_w = nullptr;
+    ggml_tensor * norm1_w = nullptr;
+    ggml_tensor * norm2_w = nullptr;
     ggml_tensor *qkv_w = nullptr, *qkv_b = nullptr;
     ggml_tensor *proj_w = nullptr, *proj_b = nullptr;
     ggml_tensor *q_norm_w = nullptr, *k_norm_w = nullptr;
@@ -71,26 +71,26 @@ struct vision_block {
 };
 
 struct vision_merger {
-    ggml_tensor *proj_w = nullptr;
-    ggml_tensor *gate_w = nullptr;
-    ggml_tensor *up_w = nullptr;
-    ggml_tensor *down_w = nullptr;
+    ggml_tensor * proj_w = nullptr;
+    ggml_tensor * gate_w = nullptr;
+    ggml_tensor * up_w = nullptr;
+    ggml_tensor * down_w = nullptr;
     ggml_tensor *norm_w = nullptr, *norm_b = nullptr;
 };
 
 // LLM layer weights (post-norm with 4 norms)
 struct llm_layer {
-    ggml_tensor *input_layernorm_w = nullptr;
-    ggml_tensor *post_self_attn_layernorm_w = nullptr;
-    ggml_tensor *post_attention_layernorm_w = nullptr;
-    ggml_tensor *post_mlp_layernorm_w = nullptr;
-    ggml_tensor *q_w = nullptr;
-    ggml_tensor *k_w = nullptr;
-    ggml_tensor *v_w = nullptr;
-    ggml_tensor *o_w = nullptr;
-    ggml_tensor *ffn_gate_w = nullptr;
-    ggml_tensor *ffn_up_w = nullptr;
-    ggml_tensor *ffn_down_w = nullptr;
+    ggml_tensor * input_layernorm_w = nullptr;
+    ggml_tensor * post_self_attn_layernorm_w = nullptr;
+    ggml_tensor * post_attention_layernorm_w = nullptr;
+    ggml_tensor * post_mlp_layernorm_w = nullptr;
+    ggml_tensor * q_w = nullptr;
+    ggml_tensor * k_w = nullptr;
+    ggml_tensor * v_w = nullptr;
+    ggml_tensor * o_w = nullptr;
+    ggml_tensor * ffn_gate_w = nullptr;
+    ggml_tensor * ffn_up_w = nullptr;
+    ggml_tensor * ffn_down_w = nullptr;
 };
 
 struct model {
@@ -100,20 +100,20 @@ struct model {
     // Vision
     ggml_tensor *patch_embed_w = nullptr, *patch_embed_b = nullptr;
     std::vector<vision_block> vis_blocks;
-    ggml_tensor *post_layernorm_w = nullptr;
+    ggml_tensor * post_layernorm_w = nullptr;
     ggml_tensor *downsample_w = nullptr, *downsample_b = nullptr;
     vision_merger merger;
 
     // LLM
-    ggml_tensor *embed_tokens = nullptr;
+    ggml_tensor * embed_tokens = nullptr;
     std::vector<llm_layer> llm_layers;
-    ggml_tensor *output_norm_w = nullptr;
-    ggml_tensor *lm_head_w = nullptr;
+    ggml_tensor * output_norm_w = nullptr;
+    ggml_tensor * lm_head_w = nullptr;
 };
 
 struct kv_cache {
     ggml_tensor *k = nullptr, *v = nullptr;
-    ggml_context *ctx = nullptr;
+    ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
     int max_seq = 0;
     int n_past = 0;
@@ -124,12 +124,12 @@ struct tokenizer {
     std::vector<std::string> id_to_piece;
     int vocab_size = 0;
     int eos_id = 59246;
-    std::string decode(const int32_t *ids, int n) const;
+    std::string decode(const int32_t * ids, int n) const;
 };
 
 struct context {
     model m;
-    ggml_context *model_ctx = nullptr;
+    ggml_context * model_ctx = nullptr;
     ggml_backend_buffer_t model_buf = nullptr;
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
@@ -150,32 +150,30 @@ struct context {
     int img_grid_w = 0;
 };
 
-bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
-void free_(context &ctx);
+bool load(context & ctx, const char * gguf_path, int n_threads = 1, int verbosity = 1);
+void free_(context & ctx);
 
 struct vision_result {
-    float *hidden = nullptr;
+    float * hidden = nullptr;
     int n_tokens = 0;
     int hidden_dim = 0;
-    int grid_h = 0;   // merged-grid height (n_ph / spatial_merge)
-    int grid_w = 0;   // merged-grid width  (n_pw / spatial_merge)
+    int grid_h = 0; // merged-grid height (n_ph / spatial_merge)
+    int grid_w = 0; // merged-grid width  (n_pw / spatial_merge)
 };
 
 // pixels: (3, H, W) CLIP-normalized. H, W must be multiples of patch_size
 // (dynamic resolution via Qwen2VL-style smart resize done by the caller).
-bool encode_vision(context &ctx, const float *pixels, int H, int W,
-                   vision_result &out);
+bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_result & out);
 
 struct llm_result {
-    float *hidden = nullptr;
-    float *logits = nullptr;
+    float * hidden = nullptr;
+    float * logits = nullptr;
     int n_tokens = 0;
     int hidden_dim = 0;
     int vocab_size = 0;
 };
 
-bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
-                     llm_result &out);
+bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm_result & out);
 
 struct generate_result {
     std::vector<int32_t> token_ids;
@@ -183,13 +181,10 @@ struct generate_result {
     std::vector<float> token_confidences;
 };
 
-bool generate(context &ctx,
-              const float *image_embeds, int n_image_tokens, int embed_dim,
-              const int32_t *prompt_ids, int n_prompt,
-              int max_new_tokens,
-              generate_result &out);
+bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim, const int32_t * prompt_ids,
+              int n_prompt, int max_new_tokens, generate_result & out);
 
-}  // namespace glm_ocr
+} // namespace glm_ocr
 
 #ifdef __cplusplus
 extern "C" {
@@ -198,10 +193,8 @@ extern "C" {
 typedef struct glm_ocr_context glm_ocr_context;
 glm_ocr_context * glm_ocr_init(const char * model_path, int n_threads);
 void glm_ocr_free(glm_ocr_context * ctx);
-const char * glm_ocr_recognize_raw(glm_ocr_context * ctx,
-    const uint8_t * px, int w, int h, int ch, int * out_len);
-const char * glm_ocr_recognize(glm_ocr_context * ctx,
-    const float * px, int w, int h, int * out_len);
+const char * glm_ocr_recognize_raw(glm_ocr_context * ctx, const uint8_t * px, int w, int h, int ch, int * out_len);
+const char * glm_ocr_recognize(glm_ocr_context * ctx, const float * px, int w, int h, int * out_len);
 
 const float * glm_ocr_confidences(const glm_ocr_context * ctx, int * n_tokens);
 float glm_ocr_mean_confidence(const glm_ocr_context * ctx);

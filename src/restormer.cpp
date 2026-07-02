@@ -52,24 +52,21 @@ static const float * rst_to_f32(const ggml_tensor * t, std::vector<float> & buf)
         std::vector<uint8_t> raw(raw_sz);
         ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), buf.data(), n);
+        else
+            memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
 }
 
 // Conv2D: weight [OC, IC, KH, KW] (or [OC, 1, KH, KW] for depthwise)
-struct restormer_context;  // forward decl
-static void rst_conv2d_ggml(restormer_context * ctx,
-                             const float * input, int ic, int h, int w,
-                             ggml_tensor * wt, ggml_tensor * bt,
-                             int oc, int kh, int kw, int pad, int groups,
-                             float * output);
+struct restormer_context; // forward decl
+static void rst_conv2d_ggml(restormer_context * ctx, const float * input, int ic, int h, int w, ggml_tensor * wt,
+                            ggml_tensor * bt, int oc, int kh, int kw, int pad, int groups, float * output);
 
-static void rst_conv2d(const float * input, int ic, int h, int w,
-                       const float * weight, const float * bias,
-                       int oc, int kh, int kw, int pad, int groups,
-                       float * output) {
+static void rst_conv2d(const float * input, int ic, int h, int w, const float * weight, const float * bias, int oc,
+                       int kh, int kw, int pad, int groups, float * output) {
     int oh = h + 2 * pad - kh + 1, ow = w + 2 * pad - kw + 1;
     int ic_g = ic / groups, oc_g = oc / groups;
     for (int g = 0; g < groups; g++) {
@@ -87,8 +84,8 @@ static void rst_conv2d(const float * input, int ic, int h, int w,
                             for (int kx = 0; kx < kw; kx++) {
                                 int ix = ox + kx - pad;
                                 if (ix < 0 || ix >= w) continue;
-                                sum += input[ic_abs * h * w + iy * w + ix]
-                                     * weight[oc_abs * ic_g * kh * kw + c * kh * kw + ky * kw + kx];
+                                sum += input[ic_abs * h * w + iy * w + ix] *
+                                       weight[oc_abs * ic_g * kh * kw + c * kh * kw + ky * kw + kx];
                             }
                         }
                     }
@@ -101,8 +98,7 @@ static void rst_conv2d(const float * input, int ic, int h, int w,
 
 // BiasFree LayerNorm: x=[C,H,W], normalize over C at each spatial position
 // Reshape to [HW, C], var over C, scale by weight
-static void rst_layernorm_bf(float * data, int c, int h, int w,
-                              const float * weight) {
+static void rst_layernorm_bf(float * data, int c, int h, int w, const float * weight) {
     int hw = h * w;
     for (int i = 0; i < hw; i++) {
         // Compute variance over channels: var(-1, unbiased=False) = mean((x - mean)²)
@@ -116,14 +112,12 @@ static void rst_layernorm_bf(float * data, int c, int h, int w,
         }
         var /= c;
         float inv = 1.0f / sqrtf(var + 1e-5f);
-        for (int ch = 0; ch < c; ch++)
-            data[ch * hw + i] = data[ch * hw + i] * inv * weight[ch];
+        for (int ch = 0; ch < c; ch++) data[ch * hw + i] = data[ch * hw + i] * inv * weight[ch];
     }
 }
 
 // WithBias LayerNorm: x=[C,H,W], normalize and shift
-static void rst_layernorm_wb(float * data, int c, int h, int w,
-                              const float * weight, const float * bias) {
+static void rst_layernorm_wb(float * data, int c, int h, int w, const float * weight, const float * bias) {
     int hw = h * w;
     for (int i = 0; i < hw; i++) {
         float mean = 0;
@@ -136,8 +130,7 @@ static void rst_layernorm_wb(float * data, int c, int h, int w,
         }
         var /= c;
         float inv = 1.0f / sqrtf(var + 1e-5f);
-        for (int ch = 0; ch < c; ch++)
-            data[ch * hw + i] = (data[ch * hw + i] - mean) * inv * weight[ch] + bias[ch];
+        for (int ch = 0; ch < c; ch++) data[ch * hw + i] = (data[ch * hw + i] - mean) * inv * weight[ch] + bias[ch];
     }
 }
 
@@ -146,8 +139,7 @@ static float rst_gelu(float x) {
 }
 
 // PixelShuffle: [C*r*r, H, W] → [C, H*r, W*r]
-static void rst_pixel_shuffle(const float * input, int c_in, int h, int w,
-                               int r, float * output) {
+static void rst_pixel_shuffle(const float * input, int c_in, int h, int w, int r, float * output) {
     int c_out = c_in / (r * r), oh = h * r, ow = w * r;
     for (int c = 0; c < c_out; c++)
         for (int y = 0; y < oh; y++)
@@ -157,8 +149,7 @@ static void rst_pixel_shuffle(const float * input, int c_in, int h, int w,
 }
 
 // PixelUnshuffle: [C, H, W] → [C*r*r, H/r, W/r]
-static void rst_pixel_unshuffle(const float * input, int c, int h, int w,
-                                 int r, float * output) {
+static void rst_pixel_unshuffle(const float * input, int c, int h, int w, int r, float * output) {
     int oh = h / r, ow = w / r, c_out = c * r * r;
     for (int oc = 0; oc < c_out; oc++) {
         int ic = oc / (r * r);
@@ -166,18 +157,14 @@ static void rst_pixel_unshuffle(const float * input, int c, int h, int w,
         int rx = oc % r;
         for (int y = 0; y < oh; y++)
             for (int x = 0; x < ow; x++)
-                output[oc * oh * ow + y * ow + x] =
-                    input[ic * h * w + (y * r + ry) * w + (x * r + rx)];
+                output[oc * oh * ow + y * ow + x] = input[ic * h * w + (y * r + ry) * w + (x * r + rx)];
     }
 }
 
 // ── MDTA (Multi-DConv Head Transposed Attention) ───────────────────────
 
-static void rst_mdta(const float * x, int C, int H, int W, int n_heads,
-                     const float * qkv_w, const float * qkv_dw_w,
-                     const float * proj_w, const float * temperature,
-                     float * output,
-                     std::vector<float> & scratch) {
+static void rst_mdta(const float * x, int C, int H, int W, int n_heads, const float * qkv_w, const float * qkv_dw_w,
+                     const float * proj_w, const float * temperature, float * output, std::vector<float> & scratch) {
     int HW = H * W;
     int C3 = C * 3;
     int d_k = C / n_heads;
@@ -223,8 +210,7 @@ static void rst_mdta(const float * x, int C, int H, int W, int n_heads,
         for (int i = 0; i < d_k; i++) {
             for (int j = 0; j < d_k; j++) {
                 float s = 0;
-                for (int hw = 0; hw < HW; hw++)
-                    s += Q[(off + i) * HW + hw] * K[(off + j) * HW + hw];
+                for (int hw = 0; hw < HW; hw++) s += Q[(off + i) * HW + hw] * K[(off + j) * HW + hw];
                 attn[i * d_k + j] = s * temp;
             }
             // Softmax over j
@@ -236,16 +222,14 @@ static void rst_mdta(const float * x, int C, int H, int W, int n_heads,
                 attn[i * d_k + j] = expf(attn[i * d_k + j] - maxv);
                 sumexp += attn[i * d_k + j];
             }
-            for (int j = 0; j < d_k; j++)
-                attn[i * d_k + j] /= sumexp;
+            for (int j = 0; j < d_k; j++) attn[i * d_k + j] /= sumexp;
         }
 
         // out[i, hw] = sum_j attn[i,j] * V[off+j, hw]
         for (int i = 0; i < d_k; i++) {
             for (int hw = 0; hw < HW; hw++) {
                 float s = 0;
-                for (int j = 0; j < d_k; j++)
-                    s += attn[i * d_k + j] * V[(off + j) * HW + hw];
+                for (int j = 0; j < d_k; j++) s += attn[i * d_k + j] * V[(off + j) * HW + hw];
                 attn_out[(off + i) * HW + hw] = s;
             }
         }
@@ -258,10 +242,8 @@ static void rst_mdta(const float * x, int C, int H, int W, int n_heads,
 // (rst_gdfn stub removed — dead code, unused)
 
 // GDFN with explicit hidden size
-static void rst_gdfn_ex(const float * x, int C, int H, int W, int hidden2,
-                        const float * in_w, const float * dw_w, const float * out_w,
-                        float * output,
-                        std::vector<float> & tmp) {
+static void rst_gdfn_ex(const float * x, int C, int H, int W, int hidden2, const float * in_w, const float * dw_w,
+                        const float * out_w, float * output, std::vector<float> & tmp) {
     int HW = H * W;
     int hidden = hidden2 / 2;
 
@@ -276,8 +258,7 @@ static void rst_gdfn_ex(const float * x, int C, int H, int W, int hidden2,
     // chunk into x1, x2 → GELU(x1) * x2
     std::vector<float> gated(hidden * HW);
     for (int c = 0; c < hidden; c++)
-        for (int i = 0; i < HW; i++)
-            gated[c * HW + i] = rst_gelu(dw_out[c * HW + i]) * dw_out[(c + hidden) * HW + i];
+        for (int i = 0; i < HW; i++) gated[c * HW + i] = rst_gelu(dw_out[c * HW + i]) * dw_out[(c + hidden) * HW + i];
 
     // project_out: Conv1x1(hidden → C)
     rst_conv2d(gated.data(), hidden, H, W, out_w, nullptr, C, 1, 1, 0, 1, output);
@@ -287,23 +268,22 @@ static void rst_gdfn_ex(const float * x, int C, int H, int W, int hidden2,
 
 struct rst_block_weights {
     const float * norm1_w;
-    const float * norm1_b;  // null for BiasFree
+    const float * norm1_b; // null for BiasFree
     const float * attn_qkv_w;
     const float * attn_qkv_dw_w;
     const float * attn_proj_w;
     const float * attn_temp;
     const float * norm2_w;
-    const float * norm2_b;  // null for BiasFree
+    const float * norm2_b; // null for BiasFree
     const float * ffn_in_w;
     const float * ffn_dw_w;
     const float * ffn_out_w;
     int n_heads;
-    int hidden2;  // ffn hidden*2
+    int hidden2; // ffn hidden*2
 };
 
-static void rst_transformer_block(float * x, int C, int H, int W,
-                                   const rst_block_weights & wt,
-                                   std::vector<float> & scratch) {
+static void rst_transformer_block(float * x, int C, int H, int W, const rst_block_weights & wt,
+                                  std::vector<float> & scratch) {
     int n = C * H * W;
 
     // LN1 → MDTA → residual
@@ -315,8 +295,7 @@ static void rst_transformer_block(float * x, int C, int H, int W,
         rst_layernorm_bf(normed.data(), C, H, W, wt.norm1_w);
 
     std::vector<float> attn_out(n);
-    rst_mdta(normed.data(), C, H, W, wt.n_heads,
-             wt.attn_qkv_w, wt.attn_qkv_dw_w, wt.attn_proj_w, wt.attn_temp,
+    rst_mdta(normed.data(), C, H, W, wt.n_heads, wt.attn_qkv_w, wt.attn_qkv_dw_w, wt.attn_proj_w, wt.attn_temp,
              attn_out.data(), scratch);
     for (int i = 0; i < n; i++) x[i] += attn_out[i];
 
@@ -328,9 +307,7 @@ static void rst_transformer_block(float * x, int C, int H, int W,
         rst_layernorm_bf(normed.data(), C, H, W, wt.norm2_w);
 
     std::vector<float> ffn_out(n);
-    rst_gdfn_ex(normed.data(), C, H, W, wt.hidden2,
-                wt.ffn_in_w, wt.ffn_dw_w, wt.ffn_out_w,
-                ffn_out.data(), scratch);
+    rst_gdfn_ex(normed.data(), C, H, W, wt.hidden2, wt.ffn_in_w, wt.ffn_dw_w, wt.ffn_out_w, ffn_out.data(), scratch);
     for (int i = 0; i < n; i++) x[i] += ffn_out[i];
 }
 
@@ -338,10 +315,10 @@ static void rst_transformer_block(float * x, int C, int H, int W,
 
 // Raw tensor version of block weights for ggml graph
 struct rst_block_raw {
-    ggml_tensor * norm1_w, * norm1_b;
-    ggml_tensor * qkv_w, * qkv_dw_w, * proj_w, * temperature;
-    ggml_tensor * norm2_w, * norm2_b;
-    ggml_tensor * ffn_in_w, * ffn_dw_w, * ffn_out_w;
+    ggml_tensor *norm1_w, *norm1_b;
+    ggml_tensor *qkv_w, *qkv_dw_w, *proj_w, *temperature;
+    ggml_tensor *norm2_w, *norm2_b;
+    ggml_tensor *ffn_in_w, *ffn_dw_w, *ffn_out_w;
     int n_heads, hidden2;
 };
 
@@ -353,8 +330,7 @@ struct restormer_context;
 // matches Restormer's BiasFree_LayerNorm and the scalar rst_layernorm_bf path.
 // Using ggml_norm() here would be WRONG for the BiasFree case: it subtracts the
 // per-position channel mean, which the trained model never does.
-static ggml_tensor * rst_ln2d_ggml(ggml_context * g, ggml_tensor * x,
-                                    ggml_tensor * w, ggml_tensor * b) {
+static ggml_tensor * rst_ln2d_ggml(ggml_context * g, ggml_tensor * x, ggml_tensor * w, ggml_tensor * b) {
     // x: [W, H, C]. Permute so C is ne[0]
     ggml_tensor * t = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3)); // [C, H, W]
     if (w && w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
@@ -365,13 +341,13 @@ static ggml_tensor * rst_ln2d_ggml(ggml_context * g, ggml_tensor * x,
         t = ggml_add(g, t, b);
     } else {
         // BiasFree: variance uses the mean, but x itself is NOT mean-centered.
-        const float C = (float) t->ne[0];
-        ggml_tensor * mean = ggml_scale(g, ggml_sum_rows(g, t), 1.0f / C);          // [1,H,W]
-        ggml_tensor * dt   = ggml_sub(g, t, mean);                                  // broadcast
-        ggml_tensor * var  = ggml_scale(g, ggml_sum_rows(g, ggml_sqr(g, dt)), 1.0f / C);
-        ggml_tensor * sd   = ggml_sqrt(g, ggml_scale_bias(g, var, 1.0f, 1e-5f));    // sqrt(var+eps), [1,H,W]
-        if (w) t = ggml_mul(g, t, w);                                               // broadcast [C]
-        t = ggml_div(g, t, sd);                                                     // broadcast [1,H,W]
+        const float C = (float)t->ne[0];
+        ggml_tensor * mean = ggml_scale(g, ggml_sum_rows(g, t), 1.0f / C); // [1,H,W]
+        ggml_tensor * dt = ggml_sub(g, t, mean);                           // broadcast
+        ggml_tensor * var = ggml_scale(g, ggml_sum_rows(g, ggml_sqr(g, dt)), 1.0f / C);
+        ggml_tensor * sd = ggml_sqrt(g, ggml_scale_bias(g, var, 1.0f, 1e-5f)); // sqrt(var+eps), [1,H,W]
+        if (w) t = ggml_mul(g, t, w);                                          // broadcast [C]
+        t = ggml_div(g, t, sd);                                                // broadcast [1,H,W]
     }
     t = ggml_cont(g, ggml_permute(g, t, 2, 1, 0, 3)); // back to [W, H, C]
     return t;
@@ -387,21 +363,17 @@ static ggml_tensor * rst_ln2d_ggml(ggml_context * g, ggml_tensor * x,
 // reshape of the contiguous bytes to [KW,KH,IC,OC], with NO permute/transpose.
 // (The old pre-permute + transpose heuristics scrambled every kernel — verified
 // against the PyTorch reference: patch_embed[0,0,0] ground truth 0.645721.)
-static ggml_tensor * rst_prep_w(ggml_context * g, ggml_tensor * w,
-                                 int IC, int KH, int KW) {
-    int64_t OC = ggml_nelements(w) / ((int64_t) IC * KH * KW);
+static ggml_tensor * rst_prep_w(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
+    int64_t OC = ggml_nelements(w) / ((int64_t)IC * KH * KW);
     if (!ggml_is_contiguous(w)) w = ggml_cont(g, w);
     w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
     return ggml_cast(g, w, GGML_TYPE_F16);
 }
 
 // Forward declarations — implementations after restormer_free
-static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
-                                            const rst_block_raw & bw,
-                                            int C, int H, int W);
-static void rst_transformer_block_ggml(restormer_context * ctx,
-                                        float * x, int C, int H, int W,
-                                        const rst_block_raw & bw);
+static ggml_cgraph * rst_build_block_graph(restormer_context * ctx, const rst_block_raw & bw, int C, int H, int W);
+static void rst_transformer_block_ggml(restormer_context * ctx, float * x, int C, int H, int W,
+                                       const rst_block_raw & bw);
 
 
 // ── Context ────────────────────────────────────────────────────────────
@@ -420,9 +392,9 @@ struct restormer_context {
     core_cpu::DequantCache dcache;
 
     // ggml conv infrastructure
-    ggml_backend_t       enc_backend  = nullptr;
-    ggml_backend_sched_t enc_sched    = nullptr;
-    std::vector<uint8_t> enc_meta_block;  // graph metadata for per-block graphs
+    ggml_backend_t enc_backend = nullptr;
+    ggml_backend_sched_t enc_sched = nullptr;
+    std::vector<uint8_t> enc_meta_block; // graph metadata for per-block graphs
 
     // Pre-permuted conv weights: 4D PyTorch→2D ggml [IC*KH*KW, OC] F32
     // Stored per tensor name to avoid per-call permute overhead.
@@ -454,13 +426,17 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
-    if (!meta) { fprintf(stderr, "restormer: failed to open %s\n", model_path); delete ctx; return nullptr; }
+    if (!meta) {
+        fprintf(stderr, "restormer: failed to open %s\n", model_path);
+        delete ctx;
+        return nullptr;
+    }
 
-    ctx->dim        = core_gguf::kv_u32(meta, "restormer.dim", 48);
-    ctx->n_refine   = core_gguf::kv_u32(meta, "restormer.num_refinement_blocks", 4);
-    ctx->has_bias   = core_gguf::kv_u32(meta, "restormer.bias", 0) != 0;
+    ctx->dim = core_gguf::kv_u32(meta, "restormer.dim", 48);
+    ctx->n_refine = core_gguf::kv_u32(meta, "restormer.num_refinement_blocks", 4);
+    ctx->has_bias = core_gguf::kv_u32(meta, "restormer.bias", 0) != 0;
     ctx->num_blocks = core_gguf::kv_i32_array(meta, "restormer.num_blocks");
-    ctx->heads      = core_gguf::kv_i32_array(meta, "restormer.heads");
+    ctx->heads = core_gguf::kv_i32_array(meta, "restormer.heads");
 
     // Read ffn_factor — stored as f32 KV
     int idx = gguf_find_key(meta, "restormer.ffn_expansion_factor");
@@ -478,16 +454,17 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
     ggml_backend_t backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "restormer", ctx->wl)) {
         fprintf(stderr, "restormer: failed to load weights\n");
-        ggml_backend_free(backend); delete ctx; return nullptr;
+        ggml_backend_free(backend);
+        delete ctx;
+        return nullptr;
     }
     ggml_backend_free(backend);
 
-    fprintf(stderr, "restormer: dim=%d, blocks=[%d,%d,%d,%d], heads=[%d,%d,%d,%d], "
+    fprintf(stderr,
+            "restormer: dim=%d, blocks=[%d,%d,%d,%d], heads=[%d,%d,%d,%d], "
             "ffn=%.2f, refine=%d, %d tensors\n",
-            ctx->dim,
-            ctx->num_blocks[0], ctx->num_blocks[1], ctx->num_blocks[2], ctx->num_blocks[3],
-            ctx->heads[0], ctx->heads[1], ctx->heads[2], ctx->heads[3],
-            ctx->ffn_factor, ctx->n_refine, (int)ctx->wl.tensors.size());
+            ctx->dim, ctx->num_blocks[0], ctx->num_blocks[1], ctx->num_blocks[2], ctx->num_blocks[3], ctx->heads[0],
+            ctx->heads[1], ctx->heads[2], ctx->heads[3], ctx->ffn_factor, ctx->n_refine, (int)ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_RESTORMER_BENCH") != nullptr);
 
     ctx->enc_backend = ggml_backend_cpu_init();
@@ -520,22 +497,20 @@ void restormer_free(restormer_context * ctx) {
 
 // ── Deferred implementations of full-graph block ──────────────────────
 
-static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
-                                            const rst_block_raw & bw,
-                                            int C, int H, int W) {
+static ggml_cgraph * rst_build_block_graph(restormer_context * ctx, const rst_block_raw & bw, int C, int H, int W) {
     int HW = H * W;
     int hidden2 = bw.hidden2, hidden = hidden2 / 2;
 
     int graph_size = 1024;
-    size_t buf_size = ggml_tensor_overhead() * (graph_size + 500)
-                    + ggml_graph_overhead_custom(graph_size, false);
+    size_t buf_size = ggml_tensor_overhead() * (graph_size + 500) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_meta_block.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->enc_meta_block.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
 
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, C);
-    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
 
     // ---- LN1 + MDTA + residual ----
     ggml_tensor * normed = rst_ln2d_ggml(g, x, bw.norm1_w, bw.norm1_b);
@@ -555,7 +530,7 @@ static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
     // Multi-head transposed attention (MDTA). Channels form contiguous head
     // blocks: c = h*d_k + dk. Reshape [W,H,C] → [HW, d_k, n_heads] (head = ne[2]).
     const int n_heads = bw.n_heads;
-    const int d_k     = C / n_heads;
+    const int d_k = C / n_heads;
     ggml_tensor * Q_h = ggml_reshape_3d(g, Q, HW, d_k, n_heads);
     ggml_tensor * K_h = ggml_reshape_3d(g, K, HW, d_k, n_heads);
     ggml_tensor * V_h = ggml_reshape_3d(g, V, HW, d_k, n_heads);
@@ -573,9 +548,9 @@ static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
     // Scale by temperature[h]/HW (per-head; 1/HW undoes rms_norm's sqrt(HW)² factor)
     ggml_tensor * temp = bw.temperature;
     if (temp->type != GGML_TYPE_F32) temp = ggml_cast(g, temp, GGML_TYPE_F32);
-    temp = ggml_scale(g, ggml_reshape_3d(g, temp, 1, 1, n_heads), 1.0f / (float) HW);
-    attn = ggml_mul(g, attn, temp);                 // broadcast [1,1,n_heads]
-    attn = ggml_soft_max(g, attn);                  // over ne[0] = key channel
+    temp = ggml_scale(g, ggml_reshape_3d(g, temp, 1, 1, n_heads), 1.0f / (float)HW);
+    attn = ggml_mul(g, attn, temp); // broadcast [1,1,n_heads]
+    attn = ggml_soft_max(g, attn);  // over ne[0] = key channel
 
     // out[q,hw,h] = Σ_k attn[k,q,h]·V[k,hw,h]; V reshaped to [d_k, HW, n_heads]
     ggml_tensor * V_t = ggml_cont(g, ggml_permute(g, V_h, 1, 0, 2, 3)); // [d_k, HW, n_heads]
@@ -607,18 +582,19 @@ static ggml_cgraph * rst_build_block_graph(restormer_context * ctx,
     ggml_tensor * ffn_out = ggml_conv_2d(g, ffn_out_w, gated, 1, 1, 0, 0, 1, 1);
 
     ggml_tensor * result = ggml_add(g, res1, ffn_out);
-    ggml_set_name(result, "out"); ggml_set_output(result);
+    ggml_set_name(result, "out");
+    ggml_set_output(result);
     ggml_build_forward_expand(gf, result);
     return gf;
 }
 
-static void rst_transformer_block_ggml(restormer_context * ctx,
-                                        float * x, int C, int H, int W,
-                                        const rst_block_raw & bw) {
+static void rst_transformer_block_ggml(restormer_context * ctx, float * x, int C, int H, int W,
+                                       const rst_block_raw & bw) {
     ggml_cgraph * gf = rst_build_block_graph(ctx, bw, C, H, W);
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
-        fprintf(stderr, "restormer: block graph alloc failed\n"); return;
+        fprintf(stderr, "restormer: block graph alloc failed\n");
+        return;
     }
     int n = C * H * W;
     ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), x, 0, n * sizeof(float));
@@ -627,41 +603,38 @@ static void rst_transformer_block_ggml(restormer_context * ctx,
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
     if (ggml_backend_sched_graph_compute(ctx->enc_sched, gf) != GGML_STATUS_SUCCESS) {
-        fprintf(stderr, "restormer: block graph compute failed\n"); return;
+        fprintf(stderr, "restormer: block graph compute failed\n");
+        return;
     }
     ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), x, 0, n * sizeof(float));
 }
 
 // ── ggml conv2d (per-call, for U-Net level convs) ────────────────────
 
-static void rst_conv2d_ggml(restormer_context * ctx,
-                             const float * input, int ic, int h, int w,
-                             ggml_tensor * wt, ggml_tensor * bt,
-                             int oc, int kh, int kw, int pad, int groups,
-                             float * output) {
+static void rst_conv2d_ggml(restormer_context * ctx, const float * input, int ic, int h, int w, ggml_tensor * wt,
+                            ggml_tensor * bt, int oc, int kh, int kw, int pad, int groups, float * output) {
     if (!ctx->enc_sched || !wt) {
         // scalar fallback via dequant (per-call ggml overhead too high for U-Net)
-        rst_conv2d(input, ic, h, w,
-                   ctx->dcache.get(wt), bt ? ctx->dcache.get(bt) : nullptr,
-                   oc, kh, kw, pad, groups, output);
+        rst_conv2d(input, ic, h, w, ctx->dcache.get(wt), bt ? ctx->dcache.get(bt) : nullptr, oc, kh, kw, pad, groups,
+                   output);
         return;
     }
     int max_nodes = 32;
-    size_t buf_size = ggml_tensor_overhead() * max_nodes
-                    + ggml_graph_overhead_custom(max_nodes, false);
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
     std::vector<uint8_t> meta(buf_size);
     ggml_init_params ip = { buf_size, meta.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
 
     ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, w, h, ic);
-    ggml_set_name(x, "x"); ggml_set_input(x);
+    ggml_set_name(x, "x");
+    ggml_set_input(x);
 
     // Raw numpy (OC,IC,KH,KW) C-order buffer → ggml [KW,KH,IC,OC] via plain
     // reshape (see rst_prep_w). Depthwise convs store (C,1,KH,KW) → [KW,KH,1,C].
@@ -679,37 +652,37 @@ static void rst_conv2d_ggml(restormer_context * ctx,
         ggml_tensor * b = ggml_reshape_3d(g, bt, 1, 1, oc);
         x = ggml_add(g, x, b);
     }
-    ggml_set_name(x, "out"); ggml_set_output(x);
+    ggml_set_name(x, "out");
+    ggml_set_output(x);
     ggml_build_forward_expand(gf, x);
 
     ggml_backend_sched_reset(ctx->enc_sched);
     if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) return;
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, ic*h*w*sizeof(float));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "x"), input, 0, ic * h * w * sizeof(float));
     for (int i = 0; i < ggml_backend_sched_get_n_backends(ctx->enc_sched); i++) {
         ggml_backend_t be = ggml_backend_sched_get_backend(ctx->enc_sched, i);
         ggml_backend_dev_t dev = ggml_backend_get_device(be);
         ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
         if (reg) {
-            auto * fn = (ggml_backend_set_n_threads_t)
-                ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
+            auto * fn =
+                (ggml_backend_set_n_threads_t)ggml_backend_reg_get_proc_address(reg, "ggml_backend_set_n_threads");
             if (fn) fn(be, ctx->n_threads);
         }
     }
     ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
-    int oh = h + 2*pad - kh + 1, ow = w + 2*pad - kw + 1;
-    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, oc*oh*ow*sizeof(float));
+    int oh = h + 2 * pad - kh + 1, ow = w + 2 * pad - kw + 1;
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, oc * oh * ow * sizeof(float));
 }
 
 // ── Forward pass (single tile) ─────────────────────────────────────────
 
-static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int W,
-                           const std::string & prefix, int n_blocks, int n_heads,
-                           std::vector<float> & scratch) {
+static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int W, const std::string & prefix,
+                           int n_blocks, int n_heads, std::vector<float> & scratch) {
     // Read hidden*2 from the actual weight shape (avoids ffn_factor rounding issues)
     char ffn_key[128];
     snprintf(ffn_key, sizeof(ffn_key), "%s.0.ffn.in.weight", prefix.c_str());
     int hidden2 = (int)ctx->dim0(ffn_key);
-    if (hidden2 <= 0) hidden2 = (int)(C * ctx->ffn_factor) * 2;  // fallback
+    if (hidden2 <= 0) hidden2 = (int)(C * ctx->ffn_factor) * 2; // fallback
     for (int b = 0; b < n_blocks; b++) {
         char buf[64];
         snprintf(buf, sizeof(buf), "%s.%d", prefix.c_str(), b);
@@ -717,35 +690,35 @@ static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int
 
         if (ctx->enc_sched && !std::getenv("RESTORMER_SCALAR")) {
             rst_block_raw bw = {};
-            bw.norm1_w  = ctx->get_raw(p + ".norm1.weight");
-            bw.norm1_b  = ctx->has_bias ? ctx->get_raw(p + ".norm1.bias") : nullptr;
-            bw.qkv_w    = ctx->get_raw(p + ".attn.qkv.weight");
+            bw.norm1_w = ctx->get_raw(p + ".norm1.weight");
+            bw.norm1_b = ctx->has_bias ? ctx->get_raw(p + ".norm1.bias") : nullptr;
+            bw.qkv_w = ctx->get_raw(p + ".attn.qkv.weight");
             bw.qkv_dw_w = ctx->get_raw(p + ".attn.qkv_dw.weight");
-            bw.proj_w   = ctx->get_raw(p + ".attn.proj.weight");
+            bw.proj_w = ctx->get_raw(p + ".attn.proj.weight");
             bw.temperature = ctx->get_raw(p + ".attn.temperature");
-            bw.norm2_w  = ctx->get_raw(p + ".norm2.weight");
-            bw.norm2_b  = ctx->has_bias ? ctx->get_raw(p + ".norm2.bias") : nullptr;
+            bw.norm2_w = ctx->get_raw(p + ".norm2.weight");
+            bw.norm2_b = ctx->has_bias ? ctx->get_raw(p + ".norm2.bias") : nullptr;
             bw.ffn_in_w = ctx->get_raw(p + ".ffn.in.weight");
             bw.ffn_dw_w = ctx->get_raw(p + ".ffn.dw.weight");
             bw.ffn_out_w = ctx->get_raw(p + ".ffn.out.weight");
-            bw.n_heads  = n_heads;
-            bw.hidden2  = hidden2;
+            bw.n_heads = n_heads;
+            bw.hidden2 = hidden2;
             rst_transformer_block_ggml(ctx, x, C, H, W, bw);
         } else {
             rst_block_weights wt = {};
-            wt.norm1_w      = ctx->get(p + ".norm1.weight");
-            wt.norm1_b      = ctx->has_bias ? ctx->get(p + ".norm1.bias") : nullptr;
-            wt.attn_qkv_w   = ctx->get(p + ".attn.qkv.weight");
+            wt.norm1_w = ctx->get(p + ".norm1.weight");
+            wt.norm1_b = ctx->has_bias ? ctx->get(p + ".norm1.bias") : nullptr;
+            wt.attn_qkv_w = ctx->get(p + ".attn.qkv.weight");
             wt.attn_qkv_dw_w = ctx->get(p + ".attn.qkv_dw.weight");
-            wt.attn_proj_w  = ctx->get(p + ".attn.proj.weight");
-            wt.attn_temp    = ctx->get(p + ".attn.temperature");
-            wt.norm2_w      = ctx->get(p + ".norm2.weight");
-            wt.norm2_b      = ctx->has_bias ? ctx->get(p + ".norm2.bias") : nullptr;
-            wt.ffn_in_w     = ctx->get(p + ".ffn.in.weight");
-            wt.ffn_dw_w     = ctx->get(p + ".ffn.dw.weight");
-            wt.ffn_out_w    = ctx->get(p + ".ffn.out.weight");
-            wt.n_heads      = n_heads;
-            wt.hidden2      = hidden2;
+            wt.attn_proj_w = ctx->get(p + ".attn.proj.weight");
+            wt.attn_temp = ctx->get(p + ".attn.temperature");
+            wt.norm2_w = ctx->get(p + ".norm2.weight");
+            wt.norm2_b = ctx->has_bias ? ctx->get(p + ".norm2.bias") : nullptr;
+            wt.ffn_in_w = ctx->get(p + ".ffn.in.weight");
+            wt.ffn_dw_w = ctx->get(p + ".ffn.dw.weight");
+            wt.ffn_out_w = ctx->get(p + ".ffn.out.weight");
+            wt.n_heads = n_heads;
+            wt.hidden2 = hidden2;
             rst_transformer_block(x, C, H, W, wt, scratch);
         }
     }
@@ -757,17 +730,12 @@ static void rst_debug_dump(const char * name, const float * data, int n) {
     float mean = 0;
     for (int i = 0; i < n; i++) mean += data[i];
     mean /= n;
-    fprintf(stderr, "  [DBG] %-20s  n=%d  first8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]  mean=%.6f\n",
-            name, n,
-            n > 0 ? data[0] : 0, n > 1 ? data[1] : 0,
-            n > 2 ? data[2] : 0, n > 3 ? data[3] : 0,
-            n > 4 ? data[4] : 0, n > 5 ? data[5] : 0,
-            n > 6 ? data[6] : 0, n > 7 ? data[7] : 0, mean);
+    fprintf(stderr, "  [DBG] %-20s  n=%d  first8=[%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f,%.6f]  mean=%.6f\n", name, n,
+            n > 0 ? data[0] : 0, n > 1 ? data[1] : 0, n > 2 ? data[2] : 0, n > 3 ? data[3] : 0, n > 4 ? data[4] : 0,
+            n > 5 ? data[5] : 0, n > 6 ? data[6] : 0, n > 7 ? data[7] : 0, mean);
 }
 
-static void rst_forward_tile(restormer_context * ctx,
-                             const float * input, int W, int H,
-                             float * output) {
+static void rst_forward_tile(restormer_context * ctx, const float * input, int W, int H, float * output) {
     int dim = ctx->dim;
     std::vector<float> scratch;
 
@@ -778,8 +746,7 @@ static void rst_forward_tile(restormer_context * ctx,
     for (int c = 0; c < 3; c++)
         for (int y = 0; y < pad_h; y++)
             for (int x = 0; x < pad_w; x++)
-                img[c * pad_h * pad_w + y * pad_w + x] =
-                    input[c * H * W + std::min(y, H - 1) * W + std::min(x, W - 1)];
+                img[c * pad_h * pad_w + y * pad_w + x] = input[c * H * W + std::min(y, H - 1) * W + std::min(x, W - 1)];
 
     int cH = pad_h, cW = pad_w;
 
@@ -788,15 +755,14 @@ static void rst_forward_tile(restormer_context * ctx,
     std::vector<float> x(C1 * cH * cW);
     rst_debug_dump("img_input", img.data(), 8);
     const float * pe_w = ctx->get("patch_embed.weight");
-    if (!pe_w) fprintf(stderr, "restormer: ERROR: patch_embed.weight not found!\n");
+    if (!pe_w)
+        fprintf(stderr, "restormer: ERROR: patch_embed.weight not found!\n");
     else {
         // Check first few weight values
         rst_debug_dump("pe_weight", pe_w, 8);
     }
-    rst_conv2d_ggml(ctx, img.data(), 3, cH, cW,
-               ctx->get_raw("patch_embed.weight"),
-               ctx->has_bias ? ctx->get_raw("patch_embed.bias") : nullptr,
-               C1, 3, 3, 1, 1, x.data());
+    rst_conv2d_ggml(ctx, img.data(), 3, cH, cW, ctx->get_raw("patch_embed.weight"),
+                    ctx->has_bias ? ctx->get_raw("patch_embed.bias") : nullptr, C1, 3, 3, 1, 1, x.data());
     rst_debug_dump("patch_embed", x.data(), C1 * cH * cW);
     // Manual check: output[0,0,0] should be sum of 3x3 weighted patches
     if (std::getenv("CRISPEMBED_RESTORMER_DEBUG")) {
@@ -806,11 +772,9 @@ static void rst_forward_tile(restormer_context * ctx,
                 for (int kx = 0; kx < 3; kx++) {
                     int iy = 0 + ky - 1, ix = 0 + kx - 1;
                     if (iy < 0 || iy >= cH || ix < 0 || ix >= cW) continue;
-                    manual += img[ic * cH * cW + iy * cW + ix]
-                            * pe_w[0 * 3 * 3 * 3 + ic * 3 * 3 + ky * 3 + kx];
+                    manual += img[ic * cH * cW + iy * cW + ix] * pe_w[0 * 3 * 3 * 3 + ic * 3 * 3 + ky * 3 + kx];
                 }
-        fprintf(stderr, "  [DBG] manual_pe[0,0,0] = %.6f (conv output[0] = %.6f)\n",
-                manual, x[0]);
+        fprintf(stderr, "  [DBG] manual_pe[0,0,0] = %.6f (conv output[0] = %.6f)\n", manual, x[0]);
         // Also check oc=1
         float manual1 = 0;
         for (int ic = 0; ic < 3; ic++)
@@ -818,11 +782,9 @@ static void rst_forward_tile(restormer_context * ctx,
                 for (int kx = 0; kx < 3; kx++) {
                     int iy = 0 + ky - 1, ix = 0 + kx - 1;
                     if (iy < 0 || iy >= cH || ix < 0 || ix >= cW) continue;
-                    manual1 += img[ic * cH * cW + iy * cW + ix]
-                             * pe_w[1 * 3 * 3 * 3 + ic * 3 * 3 + ky * 3 + kx];
+                    manual1 += img[ic * cH * cW + iy * cW + ix] * pe_w[1 * 3 * 3 * 3 + ic * 3 * 3 + ky * 3 + kx];
                 }
-        fprintf(stderr, "  [DBG] manual_pe[1,0,0] = %.6f (conv x[1*HW] = %.6f)\n",
-                manual1, x[1 * cH * cW]);
+        fprintf(stderr, "  [DBG] manual_pe[1,0,0] = %.6f (conv x[1*HW] = %.6f)\n", manual1, x[1 * cH * cW]);
         // Print pe_w[27..30] (first 3 values of oc=1)
         fprintf(stderr, "  [DBG] pe_w[27..29] = %.6f, %.6f, %.6f\n", pe_w[27], pe_w[28], pe_w[29]);
     }
@@ -837,10 +799,12 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int half = dim / 2;
         std::vector<float> down_conv(half * cH * cW);
-        rst_conv2d_ggml(ctx, x.data(), C1, cH, cW, ctx->get_raw("down.0.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C1, cH, cW, ctx->get_raw("down.0.weight"), nullptr, half, 3, 3, 1, 1,
+                        down_conv.data());
         x.resize(C2 * (cH / 2) * (cW / 2));
         rst_pixel_unshuffle(down_conv.data(), half, cH, cW, 2, x.data());
-        cH /= 2; cW /= 2;
+        cH /= 2;
+        cW /= 2;
     }
 
     // Encoder level 2
@@ -852,10 +816,12 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int half = dim;
         std::vector<float> down_conv(half * cH * cW);
-        rst_conv2d_ggml(ctx, x.data(), C2, cH, cW, ctx->get_raw("down.1.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C2, cH, cW, ctx->get_raw("down.1.weight"), nullptr, half, 3, 3, 1, 1,
+                        down_conv.data());
         x.resize(C3 * (cH / 2) * (cW / 2));
         rst_pixel_unshuffle(down_conv.data(), half, cH, cW, 2, x.data());
-        cH /= 2; cW /= 2;
+        cH /= 2;
+        cW /= 2;
     }
 
     // Encoder level 3
@@ -867,10 +833,12 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int half = dim * 2;
         std::vector<float> down_conv(half * cH * cW);
-        rst_conv2d_ggml(ctx, x.data(), C3, cH, cW, ctx->get_raw("down.2.weight"), nullptr, half, 3, 3, 1, 1, down_conv.data());
+        rst_conv2d_ggml(ctx, x.data(), C3, cH, cW, ctx->get_raw("down.2.weight"), nullptr, half, 3, 3, 1, 1,
+                        down_conv.data());
         x.resize(C4 * (cH / 2) * (cW / 2));
         rst_pixel_unshuffle(down_conv.data(), half, cH, cW, 2, x.data());
-        cH /= 2; cW /= 2;
+        cH /= 2;
+        cW /= 2;
     }
 
     // Latent
@@ -880,22 +848,22 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int up_oc = C4 * 2;
         std::vector<float> up_conv(up_oc * cH * cW);
-        rst_conv2d_ggml(ctx, x.data(), C4, cH, cW, ctx->get_raw("up.0.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
-        cH *= 2; cW *= 2;
+        rst_conv2d_ggml(ctx, x.data(), C4, cH, cW, ctx->get_raw("up.0.weight"), nullptr, up_oc, 3, 3, 1, 1,
+                        up_conv.data());
+        cH *= 2;
+        cW *= 2;
         x.resize(C3 * cH * cW);
         rst_pixel_shuffle(up_conv.data(), up_oc, cH / 2, cW / 2, 2, x.data());
     }
 
     // Cat + reduce + decoder 3
     {
-        int cat_c = C3 * 2;  // C3 + C3
+        int cat_c = C3 * 2; // C3 + C3
         std::vector<float> cat(cat_c * cH * cW);
         memcpy(cat.data(), x.data(), C3 * cH * cW * sizeof(float));
         memcpy(cat.data() + C3 * cH * cW, enc3.data(), C3 * cH * cW * sizeof(float));
-        rst_conv2d_ggml(ctx, cat.data(), cat_c, cH, cW,
-                   ctx->get_raw("reduce.2.weight"),
-                   ctx->has_bias ? ctx->get_raw("reduce.2.bias") : nullptr,
-                   C3, 1, 1, 0, 1, x.data());
+        rst_conv2d_ggml(ctx, cat.data(), cat_c, cH, cW, ctx->get_raw("reduce.2.weight"),
+                        ctx->has_bias ? ctx->get_raw("reduce.2.bias") : nullptr, C3, 1, 1, 0, 1, x.data());
     }
     rst_run_blocks(ctx, x.data(), C3, cH, cW, "dec.2", ctx->num_blocks[2], ctx->heads[2], scratch);
 
@@ -903,8 +871,10 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int up_oc = C3 * 2;
         std::vector<float> up_conv(up_oc * cH * cW);
-        rst_conv2d_ggml(ctx, x.data(), C3, cH, cW, ctx->get_raw("up.1.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
-        cH *= 2; cW *= 2;
+        rst_conv2d_ggml(ctx, x.data(), C3, cH, cW, ctx->get_raw("up.1.weight"), nullptr, up_oc, 3, 3, 1, 1,
+                        up_conv.data());
+        cH *= 2;
+        cW *= 2;
         x.resize(C2 * cH * cW);
         rst_pixel_shuffle(up_conv.data(), up_oc, cH / 2, cW / 2, 2, x.data());
     }
@@ -915,10 +885,8 @@ static void rst_forward_tile(restormer_context * ctx,
         std::vector<float> cat(cat_c * cH * cW);
         memcpy(cat.data(), x.data(), C2 * cH * cW * sizeof(float));
         memcpy(cat.data() + C2 * cH * cW, enc2.data(), C2 * cH * cW * sizeof(float));
-        rst_conv2d_ggml(ctx, cat.data(), cat_c, cH, cW,
-                   ctx->get_raw("reduce.1.weight"),
-                   ctx->has_bias ? ctx->get_raw("reduce.1.bias") : nullptr,
-                   C2, 1, 1, 0, 1, x.data());
+        rst_conv2d_ggml(ctx, cat.data(), cat_c, cH, cW, ctx->get_raw("reduce.1.weight"),
+                        ctx->has_bias ? ctx->get_raw("reduce.1.bias") : nullptr, C2, 1, 1, 0, 1, x.data());
     }
     rst_run_blocks(ctx, x.data(), C2, cH, cW, "dec.1", ctx->num_blocks[1], ctx->heads[1], scratch);
 
@@ -926,21 +894,23 @@ static void rst_forward_tile(restormer_context * ctx,
     {
         int up_oc = C2 * 2;
         std::vector<float> up_conv(up_oc * cH * cW);
-        rst_conv2d_ggml(ctx, x.data(), C2, cH, cW, ctx->get_raw("up.2.weight"), nullptr, up_oc, 3, 3, 1, 1, up_conv.data());
-        cH *= 2; cW *= 2;
+        rst_conv2d_ggml(ctx, x.data(), C2, cH, cW, ctx->get_raw("up.2.weight"), nullptr, up_oc, 3, 3, 1, 1,
+                        up_conv.data());
+        cH *= 2;
+        cW *= 2;
         x.resize(C1 * cH * cW);
         rst_pixel_shuffle(up_conv.data(), up_oc, cH / 2, cW / 2, 2, x.data());
     }
 
     // Cat (enc1) — no reduce for level 1, decoder uses dim*2
     {
-        int dec1_c = C1 * 2;  // 96
+        int dec1_c = C1 * 2; // 96
         std::vector<float> cat(dec1_c * cH * cW);
         memcpy(cat.data(), x.data(), C1 * cH * cW * sizeof(float));
         memcpy(cat.data() + C1 * cH * cW, enc1.data(), C1 * cH * cW * sizeof(float));
         x = std::move(cat);
     }
-    int dec1_c = C1 * 2;  // 96
+    int dec1_c = C1 * 2; // 96
     rst_run_blocks(ctx, x.data(), dec1_c, cH, cW, "dec.0", ctx->num_blocks[0], ctx->heads[0], scratch);
 
     // Refinement
@@ -948,10 +918,8 @@ static void rst_forward_tile(restormer_context * ctx,
 
     // Output: Conv3(96→3) + input residual
     std::vector<float> out(3 * cH * cW);
-    rst_conv2d_ggml(ctx, x.data(), dec1_c, cH, cW,
-               ctx->get_raw("output.weight"),
-               ctx->has_bias ? ctx->get_raw("output.bias") : nullptr,
-               3, 3, 3, 1, 1, out.data());
+    rst_conv2d_ggml(ctx, x.data(), dec1_c, cH, cW, ctx->get_raw("output.weight"),
+                    ctx->has_bias ? ctx->get_raw("output.bias") : nullptr, 3, 3, 3, 1, 1, out.data());
     for (int c = 0; c < 3; c++)
         for (int y = 0; y < H; y++)
             for (int xi = 0; xi < W; xi++)
@@ -960,10 +928,8 @@ static void rst_forward_tile(restormer_context * ctx,
 
 // ── Tiled processing ──────────────────────────────────────────────────
 
-int restormer_process(restormer_context * ctx,
-                      const uint8_t * input, int width, int height,
-                      int tile_size, int tile_overlap,
-                      uint8_t ** output) {
+int restormer_process(restormer_context * ctx, const uint8_t * input, int width, int height, int tile_size,
+                      int tile_overlap, uint8_t ** output) {
     if (!ctx || !input || !output || width <= 0 || height <= 0) return -1;
 
     const bool bench = ctx->bench;
@@ -978,8 +944,7 @@ int restormer_process(restormer_context * ctx,
     for (int y = 0; y < height; y++)
         for (int x = 0; x < width; x++)
             for (int c = 0; c < 3; c++)
-                full[c * height * width + y * width + x] =
-                    input[(y * width + x) * 3 + c] / 255.0f;
+                full[c * height * width + y * width + x] = input[(y * width + x) * 3 + c] / 255.0f;
 
     std::vector<float> accum(3 * height * width, 0.0f);
     std::vector<float> wmap(height * width, 0.0f);
@@ -988,8 +953,8 @@ int restormer_process(restormer_context * ctx,
     int ntx = std::max(1, (width + step - 1) / step);
     int nty = std::max(1, (height + step - 1) / step);
 
-    fprintf(stderr, "restormer: %dx%d, tiles=%dx%d (size=%d, overlap=%d)\n",
-            width, height, ntx, nty, tile_size, tile_overlap);
+    fprintf(stderr, "restormer: %dx%d, tiles=%dx%d (size=%d, overlap=%d)\n", width, height, ntx, nty, tile_size,
+            tile_overlap);
 
     for (int ty = 0; ty < nty; ty++) {
         for (int tx = 0; tx < ntx; tx++) {
@@ -1002,16 +967,14 @@ int restormer_process(restormer_context * ctx,
             for (int c = 0; c < 3; c++)
                 for (int y = 0; y < th; y++)
                     for (int x = 0; x < tw; x++)
-                        tile_in[c * th * tw + y * tw + x] =
-                            full[c * height * width + (y0 + y) * width + (x0 + x)];
+                        tile_in[c * th * tw + y * tw + x] = full[c * height * width + (y0 + y) * width + (x0 + x)];
 
             std::vector<float> tile_out(3 * th * tw);
             auto t_tile = std::chrono::steady_clock::now();
             rst_forward_tile(ctx, tile_in.data(), tw, th, tile_out.data());
             if (bench) {
                 auto t_tile_end = std::chrono::steady_clock::now();
-                fprintf(stderr, "[restormer-bench] tile %d,%d: %.1f ms\n",
-                        ty, tx, ms_f(t_tile_end - t_tile).count());
+                fprintf(stderr, "[restormer-bench] tile %d,%d: %.1f ms\n", ty, tx, ms_f(t_tile_end - t_tile).count());
             }
 
             // Blend with Hann ramp
@@ -1050,10 +1013,11 @@ int restormer_process(restormer_context * ctx,
     fprintf(stderr, "restormer: done %dx%d\n", width, height);
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[restormer-bench] total: %.1f ms\n",
-                ms_f(t_end - t_total).count());
+        fprintf(stderr, "[restormer-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
     return 0;
 }
 
-void restormer_free_image(uint8_t * pixels) { free(pixels); }
+void restormer_free_image(uint8_t * pixels) {
+    free(pixels);
+}

@@ -33,7 +33,7 @@ namespace core_mel {
 // Real-to-complex FFT callback signature. N is always a power of two.
 // Output layout: interleaved (re, im) pairs, length 2*N floats.
 // Each model passes its own FFT so we don't disturb numerical paths.
-using FftR2C = void (*)(const float* in, int N, float* out);
+using FftR2C = void (*)(const float * in, int N, float * out);
 
 enum class LogBase { Ln, Log10 };
 
@@ -164,10 +164,10 @@ struct Params {
 //   T_out [out]  : number of output frames
 //
 // Returns the flat log-mel buffer in the layout specified by params.layout.
-std::vector<float> compute(const float* samples, int n_samples,
-                           const float* window, // length win_length (we center-pad inside to n_fft)
+std::vector<float> compute(const float * samples, int n_samples,
+                           const float * window, // length win_length (we center-pad inside to n_fft)
                            int win_length,
-                           const float* mel_fb, // [n_mels, n_freqs]
-                           int n_freqs, FftR2C fft, const Params& params, int& T_out);
+                           const float * mel_fb, // [n_mels, n_freqs]
+                           int n_freqs, FftR2C fft, const Params & params, int & T_out);
 
 } // namespace core_mel

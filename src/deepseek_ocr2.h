@@ -26,16 +26,12 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
 
 /// Recognize text from raw RGB pixels.
 /// Returns pointer to UTF-8 text (owned by ctx, valid until next call).
-const char * deepseek_ocr2_recognize_raw(
-    deepseek_ocr2_context * ctx,
-    const uint8_t * pixels, int width, int height, int channels,
-    int * out_len);
+const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint8_t * pixels, int width, int height,
+                                         int channels, int * out_len);
 
 /// Recognize from pre-normalized float pixels (grayscale, [0,1]).
-const char * deepseek_ocr2_recognize(
-    deepseek_ocr2_context * ctx,
-    const float * pixels, int width, int height,
-    int * out_len);
+const char * deepseek_ocr2_recognize(deepseek_ocr2_context * ctx, const float * pixels, int width, int height,
+                                     int * out_len);
 
 /// Get per-token confidence scores from the last recognition.
 const float * deepseek_ocr2_confidences(const deepseek_ocr2_context * ctx, int * n_tokens);

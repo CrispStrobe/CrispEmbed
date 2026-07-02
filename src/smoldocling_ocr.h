@@ -23,27 +23,20 @@ void smoldocling_free(smoldocling_context * ctx);
 
 // Recognize text from an image file (JPEG/PNG). Returns UTF-8 DocTags
 // (owned by ctx, valid until next call or free).
-const char * smoldocling_recognize(smoldocling_context * ctx,
-                                   const char * image_path, int * out_len);
+const char * smoldocling_recognize(smoldocling_context * ctx, const char * image_path, int * out_len);
 
 // Recognize from raw pixel bytes (RGB/RGBA/gray).
-const char * smoldocling_recognize_raw(smoldocling_context * ctx,
-                                       const uint8_t * pixels,
-                                       int w, int h, int ch,
+const char * smoldocling_recognize_raw(smoldocling_context * ctx, const uint8_t * pixels, int w, int h, int ch,
                                        int * out_len);
 
 // Debug: run vision encoder only, return [n_tokens * vis_dim] floats.
 // Caller must free() the returned pointer.
-float * smoldocling_debug_vision(smoldocling_context * ctx,
-                                 const uint8_t * pixels,
-                                 int w, int h, int ch,
+float * smoldocling_debug_vision(smoldocling_context * ctx, const uint8_t * pixels, int w, int h, int ch,
                                  int * out_n_tokens, int * out_dim);
 
 // Debug: run vision + connector, return [n_tokens * llm_dim] floats.
-float * smoldocling_debug_connector(smoldocling_context * ctx,
-                                     const uint8_t * pixels,
-                                     int w, int h, int ch,
-                                     int * out_n_tokens, int * out_dim);
+float * smoldocling_debug_connector(smoldocling_context * ctx, const uint8_t * pixels, int w, int h, int ch,
+                                    int * out_n_tokens, int * out_dim);
 
 #ifdef __cplusplus
 }

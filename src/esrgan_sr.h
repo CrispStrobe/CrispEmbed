@@ -19,14 +19,10 @@ void esrgan_free(esrgan_context * ctx);
 int esrgan_get_scale(const esrgan_context * ctx);
 
 /// Super-resolve: uint8 RGB HWC in → uint8 RGB HWC out (caller allocates).
-int esrgan_process(esrgan_context * ctx,
-                   const uint8_t * input, int width, int height,
-                   uint8_t * output);
+int esrgan_process(esrgan_context * ctx, const uint8_t * input, int width, int height, uint8_t * output);
 
 /// Float CHW [0,1] in/out (for parity testing).
-int esrgan_process_float(esrgan_context * ctx,
-                         const float * input_chw, int width, int height,
-                         float * output_chw);
+int esrgan_process_float(esrgan_context * ctx, const float * input_chw, int width, int height, float * output_chw);
 
 #ifdef __cplusplus
 }

@@ -15,19 +15,19 @@
 // - CRISPEMBED_SHARED: defined when consuming the shared library (imports)
 // - neither:           static library use (empty, no attribute)
 #if defined(_WIN32) || defined(__CYGWIN__)
-#  if defined(CRISPEMBED_BUILD)
-#    define CRISPEMBED_API __declspec(dllexport)
-#  elif defined(CRISPEMBED_SHARED)
-#    define CRISPEMBED_API __declspec(dllimport)
-#  else
-#    define CRISPEMBED_API
-#  endif
+#if defined(CRISPEMBED_BUILD)
+#define CRISPEMBED_API __declspec(dllexport)
+#elif defined(CRISPEMBED_SHARED)
+#define CRISPEMBED_API __declspec(dllimport)
 #else
-#  if defined(CRISPEMBED_BUILD)
-#    define CRISPEMBED_API __attribute__((visibility("default")))
-#  else
-#    define CRISPEMBED_API
-#  endif
+#define CRISPEMBED_API
+#endif
+#else
+#if defined(CRISPEMBED_BUILD)
+#define CRISPEMBED_API __attribute__((visibility("default")))
+#else
+#define CRISPEMBED_API
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -44,15 +44,15 @@ typedef struct crispembed_context crispembed_context;
 // Model hyperparameters (read-only after init)
 typedef struct crispembed_hparams {
     int32_t n_vocab;
-    int32_t n_max_tokens;    // max sequence length
-    int32_t n_embd;          // embedding dimension (hidden size)
-    int32_t n_head;          // attention heads
-    int32_t n_layer;         // transformer layers
-    int32_t n_intermediate;  // FFN intermediate size
-    int32_t n_output;        // output embedding dimension (may differ from n_embd)
-    float   layer_norm_eps;
-    int32_t n_experts;           // MoE: total number of experts (0 = dense FFN)
-    int32_t n_experts_per_tok;   // MoE: top-K routing (e.g. 2)
+    int32_t n_max_tokens;   // max sequence length
+    int32_t n_embd;         // embedding dimension (hidden size)
+    int32_t n_head;         // attention heads
+    int32_t n_layer;        // transformer layers
+    int32_t n_intermediate; // FFN intermediate size
+    int32_t n_output;       // output embedding dimension (may differ from n_embd)
+    float layer_norm_eps;
+    int32_t n_experts;         // MoE: total number of experts (0 = dense FFN)
+    int32_t n_experts_per_tok; // MoE: top-K routing (e.g. 2)
 } crispembed_hparams;
 
 // Initialize: load GGUF model, allocate ggml backends.
@@ -87,9 +87,7 @@ CRISPEMBED_API const char * crispembed_get_lora(const crispembed_context * ctx);
 // of strings and *out_count to the number of adapters. The pointers are
 // owned by the context and valid until crispembed_free().
 // Returns 0 if no LoRA adapters are available.
-CRISPEMBED_API int crispembed_list_lora(const crispembed_context * ctx,
-                                         const char *** out_names,
-                                         int * out_count);
+CRISPEMBED_API int crispembed_list_lora(const crispembed_context * ctx, const char *** out_names, int * out_count);
 
 // Get model hyperparameters.
 CRISPEMBED_API const crispembed_hparams * crispembed_get_hparams(const crispembed_context * ctx);
@@ -118,16 +116,12 @@ CRISPEMBED_API const char * crispembed_model_card_url(int index);
 // length *out_n_dim (the model's output embedding dimension). The
 // returned pointer is valid until the next encode() call or free().
 // The embedding is L2-normalized.
-CRISPEMBED_API const float * crispembed_encode(crispembed_context * ctx,
-                                                const char * text,
-                                                int * out_n_dim);
+CRISPEMBED_API const float * crispembed_encode(crispembed_context * ctx, const char * text, int * out_n_dim);
 
 // Encode a batch of texts. Returns embeddings as a flat array
 // [n_texts * dim]. Pointer valid until next call or free().
-CRISPEMBED_API const float * crispembed_encode_batch(crispembed_context * ctx,
-                                                      const char ** texts,
-                                                      int n_texts,
-                                                      int * out_n_dim);
+CRISPEMBED_API const float * crispembed_encode_batch(crispembed_context * ctx, const char ** texts, int n_texts,
+                                                     int * out_n_dim);
 
 // ---------------------------------------------------------------------------
 // Sparse retrieval (BGE-M3 sparse head, SPLADE-style)
@@ -140,10 +134,8 @@ CRISPEMBED_API int crispembed_has_sparse(const crispembed_context * ctx);
 // On success: *out_indices[i] = vocab token id, *out_values[i] = weight (> 0).
 // Buffers are owned by ctx and valid until the next call on this ctx.
 // Returns the number of non-zero entries (0 on failure or no non-zeros).
-CRISPEMBED_API int crispembed_encode_sparse(crispembed_context * ctx,
-                                             const char        * text,
-                                             const int32_t    ** out_indices,
-                                             const float      ** out_values);
+CRISPEMBED_API int crispembed_encode_sparse(crispembed_context * ctx, const char * text, const int32_t ** out_indices,
+                                            const float ** out_values);
 
 // ---------------------------------------------------------------------------
 // Multi-vector retrieval (ColBERT-style)
@@ -154,27 +146,20 @@ CRISPEMBED_API int crispembed_has_colbert(const crispembed_context * ctx);
 
 // Encode text to per-token L2-normalized embeddings.
 // Returns flat [*out_n_tokens * *out_dim] array. Valid until next call or free().
-CRISPEMBED_API const float * crispembed_encode_multivec(crispembed_context * ctx,
-                                                         const char         * text,
-                                                         int                * out_n_tokens,
-                                                         int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_multivec(crispembed_context * ctx, const char * text, int * out_n_tokens,
+                                                        int * out_dim);
 
 // ColBERT MaxSim scoring: score = sum_i(max_j(dot(Q[i], D[j])))
 // Q and D must be L2-normalized per-token embeddings.
 // Returns the late interaction score (higher = more relevant).
-CRISPEMBED_API float crispembed_colbert_score(
-    const float * query_vecs,  int n_query,
-    const float * doc_vecs,    int n_doc,
-    int dim);
+CRISPEMBED_API float crispembed_colbert_score(const float * query_vecs, int n_query, const float * doc_vecs, int n_doc,
+                                              int dim);
 
 // Batch ColBERT scoring: score K documents against one query.
 // doc_vecs_list[k] points to [doc_n_tokens[k] * dim] float arrays.
 // Writes K scores to out_scores. Returns 0 on success.
-CRISPEMBED_API int crispembed_colbert_score_batch(
-    const float * query_vecs,  int n_query,
-    const float ** doc_vecs_list, const int * doc_n_tokens,
-    int n_docs, int dim,
-    float * out_scores);
+CRISPEMBED_API int crispembed_colbert_score_batch(const float * query_vecs, int n_query, const float ** doc_vecs_list,
+                                                  const int * doc_n_tokens, int n_docs, int dim, float * out_scores);
 
 // ---------------------------------------------------------------------------
 // Per-token contextual embeddings (any encoder model)
@@ -188,18 +173,14 @@ CRISPEMBED_API int crispembed_colbert_score_batch(
 //
 // Returns a flat [*out_n_tokens × *out_dim] array valid until the next
 // encode_* call. NULL on decoder models or tokenisation failure.
-CRISPEMBED_API const float * crispembed_encode_tokens(crispembed_context * ctx,
-                                                       const char         * text,
-                                                       int                * out_n_tokens,
-                                                       int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_tokens(crispembed_context * ctx, const char * text, int * out_n_tokens,
+                                                      int * out_dim);
 
 // Same as encode_tokens but returns RAW (unnormalized) hidden states.
 // Required for token classification (NER) where the classifier head was
 // trained on unnormalized encoder output.
-CRISPEMBED_API const float * crispembed_encode_tokens_raw(crispembed_context * ctx,
-                                                           const char         * text,
-                                                           int                * out_n_tokens,
-                                                           int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_tokens_raw(crispembed_context * ctx, const char * text,
+                                                          int * out_n_tokens, int * out_dim);
 
 // After encode_tokens, returns a pointer to the [n_tokens] vocab IDs of the
 // returned embeddings. Valid until the next encode_* call.
@@ -207,8 +188,7 @@ CRISPEMBED_API const int32_t * crispembed_last_token_ids(const crispembed_contex
 
 // Look up the surface form of a vocab token by id. Returns "" (empty) for
 // out-of-range ids. Pointer is owned by the context.
-CRISPEMBED_API const char * crispembed_token_str(const crispembed_context * ctx,
-                                                  int32_t id);
+CRISPEMBED_API const char * crispembed_token_str(const crispembed_context * ctx, int32_t id);
 
 // Tokenizer family. Callers use this to interpret subword markers:
 //   1 = WordPiece (## prefix continues a word)
@@ -226,18 +206,13 @@ CRISPEMBED_API int crispembed_is_reranker(const crispembed_context * ctx);
 
 // Score a (query, document) pair. Returns raw logit (higher = more relevant).
 // The model must be a cross-encoder (crispembed_is_reranker() == 1).
-CRISPEMBED_API float crispembed_rerank(crispembed_context * ctx,
-                                        const char         * query,
-                                        const char         * document);
+CRISPEMBED_API float crispembed_rerank(crispembed_context * ctx, const char * query, const char * document);
 
 // Batch rerank: score multiple documents against the same query in one call.
 // Classifier weights are cached after the first call (avoids 4MB GPU→CPU
 // transfer per document). Returns number of documents scored.
-CRISPEMBED_API int crispembed_rerank_batch(crispembed_context * ctx,
-                                            const char         * query,
-                                            const char        ** documents,
-                                            int                  n_docs,
-                                            float              * out_scores);
+CRISPEMBED_API int crispembed_rerank_batch(crispembed_context * ctx, const char * query, const char ** documents,
+                                           int n_docs, float * out_scores);
 
 // ---------------------------------------------------------------------------
 // Audio encoding (omnimodal embedding models)
@@ -256,10 +231,8 @@ CRISPEMBED_API int crispembed_has_audio(const crispembed_context * ctx);
 // On success returns a buffer of *out_dim floats, owned by ctx and valid
 // until the next call on this ctx (or crispembed_free). Returns NULL on
 // failure (no audio tower, malformed input, etc.).
-CRISPEMBED_API const float * crispembed_encode_audio(crispembed_context * ctx,
-                                                      const float        * pcm_samples,
-                                                      int                  n_samples,
-                                                      int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_audio(crispembed_context * ctx, const float * pcm_samples, int n_samples,
+                                                     int * out_dim);
 
 // ---------------------------------------------------------------------------
 // Image encoding (omnimodal embedding models)
@@ -279,12 +252,9 @@ CRISPEMBED_API int crispembed_has_vision(const crispembed_context * ctx);
 //
 // Returns a buffer of *out_dim floats, owned by ctx and valid until the next
 // call. Returns NULL on failure (no vision tower, malformed input).
-CRISPEMBED_API const float * crispembed_encode_image(crispembed_context * ctx,
-                                                      const float        * pixel_patches,
-                                                      int                  n_patches,
-                                                      const int32_t      * grid_thw,
-                                                      int                  n_images,
-                                                      int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_image(crispembed_context * ctx, const float * pixel_patches,
+                                                     int n_patches, const int32_t * grid_thw, int n_images,
+                                                     int * out_dim);
 
 // Raw (un-pooled, un-normalized) vision tower output. Returns a single
 // concatenated buffer of layout:
@@ -298,14 +268,9 @@ CRISPEMBED_API const float * crispembed_encode_image(crispembed_context * ctx,
 // HF's BidirLMOmniVisionModel(...) tuple output.
 //
 // Buffer owned by ctx and valid until the next call.
-CRISPEMBED_API const float * crispembed_encode_image_raw(crispembed_context * ctx,
-                                                          const float        * pixel_patches,
-                                                          int                  n_patches,
-                                                          const int32_t      * grid_thw,
-                                                          int                  n_images,
-                                                          int                * out_n_merged,
-                                                          int                * out_dim,
-                                                          int                * out_n_deepstack);
+CRISPEMBED_API const float * crispembed_encode_image_raw(crispembed_context * ctx, const float * pixel_patches,
+                                                         int n_patches, const int32_t * grid_thw, int n_images,
+                                                         int * out_n_merged, int * out_dim, int * out_n_deepstack);
 
 // Text-conditioned multimodal embedding. The decoder runs over `text` with
 // the vision tower's `image_embeds` rows spliced into `inputs_embeds` at
@@ -321,14 +286,9 @@ CRISPEMBED_API const float * crispembed_encode_image_raw(crispembed_context * ct
 //
 // Returns NULL if the model has no vision tower, no MRoPE metadata, or if
 // the placeholder count does not match the merged-token count.
-CRISPEMBED_API const float * crispembed_encode_text_with_image(
-        crispembed_context * ctx,
-        const char         * text,
-        const float        * pixel_patches,
-        int                  n_patches,
-        const int32_t      * grid_thw,
-        int                  n_images,
-        int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_text_with_image(crispembed_context * ctx, const char * text,
+                                                               const float * pixel_patches, int n_patches,
+                                                               const int32_t * grid_thw, int n_images, int * out_dim);
 
 // Lower-level variant that takes pre-tokenized int32 token ids instead of a
 // text string. Use this when you need byte-identical parity with the HF
@@ -338,15 +298,9 @@ CRISPEMBED_API const float * crispembed_encode_text_with_image(
 // Same multimodal semantics as `crispembed_encode_text_with_image` (image
 // splice + DeepStack injection + 3D MRoPE). Returns L2-normalized vector,
 // owned by ctx, valid until the next call.
-CRISPEMBED_API const float * crispembed_encode_with_image_ids(
-        crispembed_context * ctx,
-        const int32_t      * token_ids,
-        int                  n_tokens,
-        const float        * pixel_patches,
-        int                  n_patches,
-        const int32_t      * grid_thw,
-        int                  n_images,
-        int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_with_image_ids(crispembed_context * ctx, const int32_t * token_ids,
+                                                              int n_tokens, const float * pixel_patches, int n_patches,
+                                                              const int32_t * grid_thw, int n_images, int * out_dim);
 
 // In-process file-based image embedding. Loads the image (JPG/PNG/BMP/…)
 // from disk via stb_image, runs CrispEmbed's C++ preprocessor (smart_resize
@@ -362,21 +316,16 @@ CRISPEMBED_API const float * crispembed_encode_with_image_ids(
 //
 // Returns NULL on disk read / decode failure or if the model has no vision
 // tower.
-CRISPEMBED_API const float * crispembed_encode_image_file(
-        crispembed_context * ctx,
-        const char         * image_path,
-        int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_image_file(crispembed_context * ctx, const char * image_path,
+                                                          int * out_dim);
 
 // In-process file-based image-conditioned text embedding. Same parity
 // caveat as crispembed_encode_image_file. `text` must contain the right
 // number of `image_token_id` placeholders for the (resized) grid that
 // smart_resize will produce — easiest is to call crispembed_preprocess_image
 // first to learn `grid_thw`, then build the text template.
-CRISPEMBED_API const float * crispembed_encode_text_with_image_file(
-        crispembed_context * ctx,
-        const char         * text,
-        const char         * image_path,
-        int                * out_dim);
+CRISPEMBED_API const float * crispembed_encode_text_with_image_file(crispembed_context * ctx, const char * text,
+                                                                    const char * image_path, int * out_dim);
 
 // Standalone preprocessor (no inference): runs the C++ image preprocessor
 // on `image_path` and returns the flat (n_patches, 1536) float buffer plus
@@ -385,12 +334,9 @@ CRISPEMBED_API const float * crispembed_encode_text_with_image_file(
 //
 // Useful for building text templates before calling
 // crispembed_encode_with_image_ids: count = (h * w) / spatial_merge_size².
-CRISPEMBED_API const float * crispembed_preprocess_image(
-        crispembed_context * ctx,
-        const char         * image_path,
-        int                * out_n_patches,
-        int                * out_row_dim,
-        int32_t              out_grid_thw[3]);
+CRISPEMBED_API const float * crispembed_preprocess_image(crispembed_context * ctx, const char * image_path,
+                                                         int * out_n_patches, int * out_row_dim,
+                                                         int32_t out_grid_thw[3]);
 
 // Preprocess an already-decoded interleaved uint8 RGB(A) buffer. Skips the
 // stb_image JPEG/PNG decode step — useful when the caller has already
@@ -403,15 +349,9 @@ CRISPEMBED_API const float * crispembed_preprocess_image(
 //
 // Same output contract as crispembed_preprocess_image. Buffers owned by
 // ctx, valid until the next preprocessor call.
-CRISPEMBED_API const float * crispembed_preprocess_image_rgb(
-        crispembed_context * ctx,
-        const uint8_t      * rgb,
-        int                  height,
-        int                  width,
-        int                  channels,
-        int                * out_n_patches,
-        int                * out_row_dim,
-        int32_t              out_grid_thw[3]);
+CRISPEMBED_API const float * crispembed_preprocess_image_rgb(crispembed_context * ctx, const uint8_t * rgb, int height,
+                                                             int width, int channels, int * out_n_patches,
+                                                             int * out_row_dim, int32_t out_grid_thw[3]);
 
 // ---------------------------------------------------------------------------
 // Standalone ViT image embedding (SigLIP, CLIP)
@@ -420,18 +360,15 @@ CRISPEMBED_API const float * crispembed_preprocess_image_rgb(
 typedef struct crispembed_vit_context crispembed_vit_context;
 
 // Load a ViT model from GGUF. Returns NULL on failure.
-CRISPEMBED_API crispembed_vit_context * crispembed_vit_init(
-        const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_vit_context * crispembed_vit_init(const char * model_path, int n_threads);
 
 // Get embedding dimension.
 CRISPEMBED_API int crispembed_vit_dim(const crispembed_vit_context * ctx);
 
 // Encode an image file. Returns pointer to *out_dim floats,
 // owned by ctx, valid until next call. Returns NULL on failure.
-CRISPEMBED_API const float * crispembed_vit_encode_file(
-        crispembed_vit_context * ctx,
-        const char * image_path,
-        int * out_dim);
+CRISPEMBED_API const float * crispembed_vit_encode_file(crispembed_vit_context * ctx, const char * image_path,
+                                                        int * out_dim);
 
 // Free ViT context.
 CRISPEMBED_API void crispembed_vit_free(crispembed_vit_context * ctx);
@@ -443,18 +380,15 @@ CRISPEMBED_API void crispembed_vit_free(crispembed_vit_context * ctx);
 typedef struct crispembed_clip_text_context crispembed_clip_text_context;
 
 // Load a CLIP text encoder from GGUF. Returns NULL on failure.
-CRISPEMBED_API crispembed_clip_text_context * crispembed_clip_text_init(
-        const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_clip_text_context * crispembed_clip_text_init(const char * model_path, int n_threads);
 
 // Get embedding dimension.
 CRISPEMBED_API int crispembed_clip_text_dim(const crispembed_clip_text_context * ctx);
 
 // Encode text. Returns pointer to *out_dim floats,
 // owned by ctx, valid until next call. Returns NULL on failure.
-CRISPEMBED_API const float * crispembed_clip_text_encode(
-        crispembed_clip_text_context * ctx,
-        const char * text,
-        int * out_dim);
+CRISPEMBED_API const float * crispembed_clip_text_encode(crispembed_clip_text_context * ctx, const char * text,
+                                                         int * out_dim);
 
 // Free CLIP text context.
 CRISPEMBED_API void crispembed_clip_text_free(crispembed_clip_text_context * ctx);
@@ -468,21 +402,20 @@ typedef struct crispembed_face_context crispembed_face_context;
 
 // Detected face bounding box + landmarks.
 typedef struct crispembed_face_detection {
-    float x, y, w, h;        // bounding box in original image coordinates
+    float x, y, w, h; // bounding box in original image coordinates
     float confidence;
-    float landmarks[10];     // 5 points × (x, y)
+    float landmarks[10]; // 5 points × (x, y)
 } crispembed_face_detection;
 
 // Face with embedding.
 typedef struct crispembed_face_result {
     crispembed_face_detection det;
-    const float * embedding;  // L2-normalized, dim = crispembed_face_dim()
+    const float * embedding; // L2-normalized, dim = crispembed_face_dim()
     int embedding_dim;
 } crispembed_face_result;
 
 // Load a CNN face model (detection or recognition). Returns NULL on failure.
-CRISPEMBED_API crispembed_face_context * crispembed_face_init(
-        const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_face_context * crispembed_face_init(const char * model_path, int n_threads);
 
 // Get embedding dimension (recognition models).
 CRISPEMBED_API int crispembed_face_dim(const crispembed_face_context * ctx);
@@ -495,34 +428,25 @@ CRISPEMBED_API const char * crispembed_face_type(const crispembed_face_context *
 // *out_n_faces is set to the number of detected faces.
 // Returns array of detections (owned by ctx, valid until next call).
 // det_size: detection input resolution (0 = default 640).
-CRISPEMBED_API const crispembed_face_detection * crispembed_detect_faces(
-        crispembed_face_context * ctx,
-        const char * image_path,
-        float conf_threshold,
-        int det_size,
-        int * out_n_faces);
+CRISPEMBED_API const crispembed_face_detection * crispembed_detect_faces(crispembed_face_context * ctx,
+                                                                         const char * image_path, float conf_threshold,
+                                                                         int det_size, int * out_n_faces);
 
 // Encode a face from image + 5-point landmarks (from detection).
 // Performs similarity-transform alignment to 112×112 and encodes.
 // Returns L2-normalized embedding (owned by ctx, valid until next call).
-CRISPEMBED_API const float * crispembed_encode_face(
-        crispembed_face_context * ctx,
-        const char * image_path,
-        const float * landmarks_10,
-        int * out_dim);
+CRISPEMBED_API const float * crispembed_encode_face(crispembed_face_context * ctx, const char * image_path,
+                                                    const float * landmarks_10, int * out_dim);
 
 // Full pipeline: detect → align → encode. Takes separate detector and
 // recognizer contexts. Returns array of face results with embeddings.
 // *out_n_faces is set to the number of detected faces.
 // Returns array (owned by det_ctx, valid until next call).
 // det_size: detection input resolution (0 = default 640).
-CRISPEMBED_API const crispembed_face_result * crispembed_face_pipeline(
-        crispembed_face_context * det_ctx,
-        crispembed_face_context * rec_ctx,
-        const char * image_path,
-        float conf_threshold,
-        int det_size,
-        int * out_n_faces);
+CRISPEMBED_API const crispembed_face_result * crispembed_face_pipeline(crispembed_face_context * det_ctx,
+                                                                       crispembed_face_context * rec_ctx,
+                                                                       const char * image_path, float conf_threshold,
+                                                                       int det_size, int * out_n_faces);
 
 // Free face context.
 CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
@@ -535,35 +459,29 @@ CRISPEMBED_API void crispembed_face_free(crispembed_face_context * ctx);
 typedef struct crispembed_pix2struct_context crispembed_pix2struct_context;
 
 // Load a Pix2Struct GGUF model. Returns NULL on failure.
-CRISPEMBED_API crispembed_pix2struct_context * crispembed_pix2struct_init(
-        const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_pix2struct_context * crispembed_pix2struct_init(const char * model_path, int n_threads);
 
 // Free all Pix2Struct resources. Safe to call with NULL.
 CRISPEMBED_API void crispembed_pix2struct_free(crispembed_pix2struct_context * ctx);
 
 // Generate text from an image. Returns a malloc'd string; caller must free
 // with crispembed_pix2struct_free_text(). Returns NULL on failure.
-CRISPEMBED_API const char * crispembed_pix2struct_generate(
-        crispembed_pix2struct_context * ctx,
-        const uint8_t * image, int width, int height,
-        int max_tokens);
+CRISPEMBED_API const char * crispembed_pix2struct_generate(crispembed_pix2struct_context * ctx, const uint8_t * image,
+                                                           int width, int height, int max_tokens);
 
 // Free a string returned by crispembed_pix2struct_generate().
 CRISPEMBED_API void crispembed_pix2struct_free_text(const char * text);
 
 // Per-token softmax confidence from the last generate call.
-CRISPEMBED_API const float * crispembed_pix2struct_confidences(
-        const crispembed_pix2struct_context * ctx, int * n_tokens);
-CRISPEMBED_API float crispembed_pix2struct_mean_confidence(
-        const crispembed_pix2struct_context * ctx);
+CRISPEMBED_API const float * crispembed_pix2struct_confidences(const crispembed_pix2struct_context * ctx,
+                                                               int * n_tokens);
+CRISPEMBED_API float crispembed_pix2struct_mean_confidence(const crispembed_pix2struct_context * ctx);
 
 // Encode image patches to hidden-state embeddings.
 // Returns a pointer to (*out_dim) floats, owned by ctx, valid until the
 // next call. Returns NULL on failure.
-CRISPEMBED_API const float * crispembed_pix2struct_encode_patches(
-        crispembed_pix2struct_context * ctx,
-        const float * patches, int n_patches,
-        int * out_dim);
+CRISPEMBED_API const float * crispembed_pix2struct_encode_patches(crispembed_pix2struct_context * ctx,
+                                                                  const float * patches, int n_patches, int * out_dim);
 
 // ---------------------------------------------------------------------------
 // Granite Vision OCR — LLaVA-Next architecture (SigLIP ViT + Granite-3.1-2B).
@@ -573,8 +491,8 @@ CRISPEMBED_API const float * crispembed_pix2struct_encode_patches(
 typedef struct crispembed_granite_vision_context crispembed_granite_vision_context;
 
 /// Load a Granite Vision GGUF model. Returns NULL on failure.
-CRISPEMBED_API crispembed_granite_vision_context * crispembed_granite_vision_init(
-        const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_granite_vision_context * crispembed_granite_vision_init(const char * model_path,
+                                                                                  int n_threads);
 
 /// Free Granite Vision context. Safe to call with NULL.
 CRISPEMBED_API void crispembed_granite_vision_free(crispembed_granite_vision_context * ctx);
@@ -582,10 +500,9 @@ CRISPEMBED_API void crispembed_granite_vision_free(crispembed_granite_vision_con
 /// Recognize text from raw pixel bytes. prompt may be NULL for default OCR prompt.
 /// Returns UTF-8 text (owned by ctx, valid until next call or free).
 /// *out_len receives the byte length of the returned string.
-CRISPEMBED_API const char * crispembed_granite_vision_recognize(
-        crispembed_granite_vision_context * ctx,
-        const uint8_t * pixels, int width, int height, int channels,
-        const char * prompt, int * out_len);
+CRISPEMBED_API const char * crispembed_granite_vision_recognize(crispembed_granite_vision_context * ctx,
+                                                                const uint8_t * pixels, int width, int height,
+                                                                int channels, const char * prompt, int * out_len);
 
 // ---------------------------------------------------------------------------
 // LightOnOCR — Pixtral ViT + Qwen3 decoder (2-1B).
@@ -594,8 +511,7 @@ CRISPEMBED_API const char * crispembed_granite_vision_recognize(
 typedef struct crispembed_lightonocr_context crispembed_lightonocr_context;
 
 /// Load a LightOnOCR GGUF model. Returns NULL on failure.
-CRISPEMBED_API crispembed_lightonocr_context * crispembed_lightonocr_init(
-        const char * model_path, int n_threads);
+CRISPEMBED_API crispembed_lightonocr_context * crispembed_lightonocr_init(const char * model_path, int n_threads);
 
 /// Free LightOnOCR context. Safe to call with NULL.
 CRISPEMBED_API void crispembed_lightonocr_free(crispembed_lightonocr_context * ctx);
@@ -603,10 +519,8 @@ CRISPEMBED_API void crispembed_lightonocr_free(crispembed_lightonocr_context * c
 /// Recognize text from raw pixel bytes (RGB/RGBA).
 /// Returns UTF-8 text (owned by ctx, valid until next call or free).
 /// *out_len receives the byte length of the returned string.
-CRISPEMBED_API const char * crispembed_lightonocr_recognize(
-        crispembed_lightonocr_context * ctx,
-        const uint8_t * pixels, int width, int height, int channels,
-        int * out_len);
+CRISPEMBED_API const char * crispembed_lightonocr_recognize(crispembed_lightonocr_context * ctx, const uint8_t * pixels,
+                                                            int width, int height, int channels, int * out_len);
 
 // ---------------------------------------------------------------------------
 // Lifecycle
@@ -635,20 +549,17 @@ CRISPEMBED_API void * crispembed_ocr_model_init(const char * model_path, int n_t
 CRISPEMBED_API void crispembed_ocr_model_free(void * ctx);
 
 // Recognize from raw pixel bytes (RGB/RGBA/grayscale).
-CRISPEMBED_API const char * crispembed_ocr_model_recognize(
-    void * ctx, const uint8_t * pixel_bytes,
-    int width, int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t * pixel_bytes, int width,
+                                                           int height, int channels, int * out_len);
 
 // Recognize from grayscale float pixels [0..1].
-CRISPEMBED_API const char * crispembed_ocr_model_recognize_gray(
-    void * ctx, const float * pixels,
-    int width, int height, int * out_len);
+CRISPEMBED_API const char * crispembed_ocr_model_recognize_gray(void * ctx, const float * pixels, int width, int height,
+                                                                int * out_len);
 
 /// Per-token confidence from the last recognition. Returns array of length
 /// *n_tokens (one per decode step). Valid until next recognize call.
 /// Works for all auto-dispatched architectures (TrOCR, HMER, BTTR, PARSeq, etc.).
-CRISPEMBED_API const float * crispembed_ocr_model_confidences(
-    const void * ctx, int * n_tokens);
+CRISPEMBED_API const float * crispembed_ocr_model_confidences(const void * ctx, int * n_tokens);
 
 /// Mean confidence across all tokens from the last recognition.
 CRISPEMBED_API float crispembed_ocr_model_mean_confidence(const void * ctx);
@@ -662,14 +573,11 @@ CRISPEMBED_API void crispembed_ocr_model_set_max_tokens(void * ctx, int max_toke
 // Kept for ABI compatibility; prefer the crispembed_ocr_model_* names above.
 CRISPEMBED_API void * crispembed_math_ocr_init(const char * model_path, int n_threads);
 CRISPEMBED_API void crispembed_math_ocr_free(void * ctx);
-CRISPEMBED_API const char * crispembed_math_ocr_recognize(
-    void * ctx, const uint8_t * pixel_bytes,
-    int width, int height, int channels, int * out_len);
-CRISPEMBED_API const char * crispembed_math_ocr_recognize_gray(
-    void * ctx, const float * pixels,
-    int width, int height, int * out_len);
-CRISPEMBED_API const float * crispembed_math_ocr_confidences(
-    const void * ctx, int * n_tokens);
+CRISPEMBED_API const char * crispembed_math_ocr_recognize(void * ctx, const uint8_t * pixel_bytes, int width,
+                                                          int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_math_ocr_recognize_gray(void * ctx, const float * pixels, int width, int height,
+                                                               int * out_len);
+CRISPEMBED_API const float * crispembed_math_ocr_confidences(const void * ctx, int * n_tokens);
 CRISPEMBED_API float crispembed_math_ocr_mean_confidence(const void * ctx);
 
 // ---------------------------------------------------------------------------
@@ -678,10 +586,10 @@ CRISPEMBED_API float crispembed_math_ocr_mean_confidence(const void * ctx);
 
 CRISPEMBED_API void * crispembed_hmer_ocr_init(const char * model_path, int n_threads);
 CRISPEMBED_API void crispembed_hmer_ocr_free(void * ctx);
-CRISPEMBED_API const char * crispembed_hmer_ocr_recognize(
-    void * ctx, const uint8_t * pixel_bytes, int width, int height, int channels, int * out_len);
-CRISPEMBED_API const char * crispembed_hmer_ocr_recognize_gray(
-    void * ctx, const float * pixels, int width, int height, int * out_len);
+CRISPEMBED_API const char * crispembed_hmer_ocr_recognize(void * ctx, const uint8_t * pixel_bytes, int width,
+                                                          int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_hmer_ocr_recognize_gray(void * ctx, const float * pixels, int width, int height,
+                                                               int * out_len);
 
 // ---------------------------------------------------------------------------
 // Handwritten Math OCR — BTTR (DenseNet + Transformer decoder)
@@ -689,10 +597,10 @@ CRISPEMBED_API const char * crispembed_hmer_ocr_recognize_gray(
 
 CRISPEMBED_API void * crispembed_bttr_ocr_init(const char * model_path, int n_threads);
 CRISPEMBED_API void crispembed_bttr_ocr_free(void * ctx);
-CRISPEMBED_API const char * crispembed_bttr_ocr_recognize(
-    void * ctx, const uint8_t * pixel_bytes, int width, int height, int channels, int * out_len);
-CRISPEMBED_API const char * crispembed_bttr_ocr_recognize_gray(
-    void * ctx, const float * pixels, int width, int height, int * out_len);
+CRISPEMBED_API const char * crispembed_bttr_ocr_recognize(void * ctx, const uint8_t * pixel_bytes, int width,
+                                                          int height, int channels, int * out_len);
+CRISPEMBED_API const char * crispembed_bttr_ocr_recognize_gray(void * ctx, const float * pixels, int width, int height,
+                                                               int * out_len);
 
 // ---------------------------------------------------------------------------
 // General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
@@ -700,18 +608,15 @@ CRISPEMBED_API const char * crispembed_bttr_ocr_recognize_gray(
 
 /// OCR result for a single detected text region.
 typedef struct crispembed_ocr_result {
-    float x, y, w, h;       // bounding box in original image coordinates
-    float confidence;        // detection confidence
-    const char * text;       // recognized text (owned by pipeline ctx)
+    float x, y, w, h;  // bounding box in original image coordinates
+    float confidence;  // detection confidence
+    const char * text; // recognized text (owned by pipeline ctx)
     int text_len;
 } crispembed_ocr_result;
 
 /// Load OCR pipeline (detection + recognition models).
 /// Returns opaque context, or NULL on failure.
-CRISPEMBED_API void * crispembed_ocr_init(
-    const char * det_model_path,
-    const char * rec_model_path,
-    int n_threads);
+CRISPEMBED_API void * crispembed_ocr_init(const char * det_model_path, const char * rec_model_path, int n_threads);
 
 /// Free OCR pipeline context.
 CRISPEMBED_API void crispembed_ocr_free(void * ctx);
@@ -719,17 +624,11 @@ CRISPEMBED_API void crispembed_ocr_free(void * ctx);
 /// Run full OCR on an image file. Returns array of results sorted in
 /// reading order (top-to-bottom, left-to-right). Array is owned by ctx
 /// and valid until the next call to crispembed_ocr or crispembed_ocr_free.
-CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr(
-    void * ctx,
-    const char * image_path,
-    int * out_n_results);
+CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr(void * ctx, const char * image_path, int * out_n_results);
 
 /// Run text recognition only on a single image crop (no detection).
 /// Returns recognized text string (owned by ctx, valid until next call).
-CRISPEMBED_API const char * crispembed_ocr_recognize(
-    void * ctx,
-    const char * image_path,
-    int * out_len);
+CRISPEMBED_API const char * crispembed_ocr_recognize(void * ctx, const char * image_path, int * out_len);
 
 // ---------------------------------------------------------------------------
 // OCR Pipeline (orchestrator) — source-type routing + per-stage image cleanup
@@ -739,18 +638,18 @@ CRISPEMBED_API const char * crispembed_ocr_recognize(
 
 /// Flat configuration for the OCR pipeline (slice A: single DBNet+TrOCR engine).
 typedef struct crispembed_ocr_pipeline_params {
-    int   router;            // 1 = classify source-type (screenshot/scan/photo) and route
-    int   cleanup_enabled;   // 1 = run per-stage scan cleanup before OCR
-    int   min_chars;         // accept-gate: minimum recognized characters
-    float min_confidence;    // accept-gate: minimum mean region confidence (0 = ignore)
-    const char * det_model;     // DBNet detection GGUF
-    const char * rec_model;     // TrOCR recognition GGUF
-    const char * nafnet_model;  // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
-    const char * sr_model;      // text SR GGUF for low-DPI upscaling (NULL/"" = off)
-    const char * vlm_model;     // optional single-shot VLM escalation GGUF (NULL/"" = none)
-    int          vlm_engine;    // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2 4=Qwen3-VL
-    const char * punct_model;   // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
-    const char * lid_model;     // optional text LID GGUF for language detection (NULL/"" = off)
+    int router;                  // 1 = classify source-type (screenshot/scan/photo) and route
+    int cleanup_enabled;         // 1 = run per-stage scan cleanup before OCR
+    int min_chars;               // accept-gate: minimum recognized characters
+    float min_confidence;        // accept-gate: minimum mean region confidence (0 = ignore)
+    const char * det_model;      // DBNet detection GGUF
+    const char * rec_model;      // TrOCR recognition GGUF
+    const char * nafnet_model;   // NAFNet denoise GGUF for tier-2 (NULL/"" = classical only)
+    const char * sr_model;       // text SR GGUF for low-DPI upscaling (NULL/"" = off)
+    const char * vlm_model;      // optional single-shot VLM escalation GGUF (NULL/"" = none)
+    int vlm_engine;              // VLM engine when vlm_model set: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2 4=Qwen3-VL
+    const char * punct_model;    // optional post-OCR punctuation/spacing restorer (FireRedPunc/PCS); NULL/"" = off
+    const char * lid_model;      // optional text LID GGUF for language detection (NULL/"" = off)
     const char * truecase_model; // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
     const char * tess_model_dir; // directory of tesseract-{lang}-q8_0.gguf for LID auto-select (NULL/"" = off)
 } crispembed_ocr_pipeline_params;
@@ -758,31 +657,28 @@ typedef struct crispembed_ocr_pipeline_params {
 CRISPEMBED_API crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void);
 
 /// Build a pipeline context from `params`. Returns opaque context or NULL.
-CRISPEMBED_API void * crispembed_ocr_pipeline_init(
-    const crispembed_ocr_pipeline_params * params, int n_threads);
+CRISPEMBED_API void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline_params * params, int n_threads);
 
 /// Run the full pipeline on an image. Returns the per-region results array
 /// (owned by ctx, valid until the next run/free) and, via out-params, the
 /// joined reading-order `full_text` (owned by ctx) and mean confidence.
-CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(
-    void * ctx, const char * image_path, int * out_n_results,
-    const char ** out_full_text, float * out_mean_confidence);
+CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx, const char * image_path,
+                                                                         int * out_n_results,
+                                                                         const char ** out_full_text,
+                                                                         float * out_mean_confidence);
 
 /// Get the detected language from the last pipeline run (via LID).
 /// Returns ISO 639-1 code (e.g. "en", "de") or "" if LID not configured.
 /// confidence is written to *out_confidence if non-NULL.
-CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(
-    void * ctx, float * out_confidence);
+CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float * out_confidence);
 
 /// Per-region recognition confidence (mean per-char softmax) from the last run.
-CRISPEMBED_API float crispembed_ocr_pipeline_region_rec_confidence(
-    void * ctx, int region_idx);
+CRISPEMBED_API float crispembed_ocr_pipeline_region_rec_confidence(void * ctx, int region_idx);
 
 /// Per-character confidence for a region from the last run. Returns a pointer to
 /// `*out_len` floats (owned by ctx, valid until the next run/free), or NULL when
 /// the recognizer doesn't expose per-character confidence (e.g. VLM engines).
-CRISPEMBED_API const float * crispembed_ocr_pipeline_region_char_conf(
-    void * ctx, int region_idx, int * out_len);
+CRISPEMBED_API const float * crispembed_ocr_pipeline_region_char_conf(void * ctx, int region_idx, int * out_len);
 
 CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
 
@@ -794,19 +690,17 @@ CRISPEMBED_API void crispembed_ocr_pipeline_free(void * ctx);
 
 /// Load a text LID model from GGUF. Returns opaque context or NULL.
 CRISPEMBED_API void * crispembed_lid_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_lid_free(void * ctx);
+CRISPEMBED_API void crispembed_lid_free(void * ctx);
 
 /// Predict the language of a UTF-8 text string.
 /// Returns ISO 639-1 code (e.g. "en", "de", "fr"). Owned by ctx.
 /// *out_confidence receives the prediction confidence [0,1].
-CRISPEMBED_API const char * crispembed_lid_predict(
-    void * ctx, const char * text, float * out_confidence);
+CRISPEMBED_API const char * crispembed_lid_predict(void * ctx, const char * text, float * out_confidence);
 
 /// Predict top-k languages. Returns number of results (≤ k).
 /// out_labels and out_confidences are caller-allocated arrays of size k.
-CRISPEMBED_API int crispembed_lid_predict_topk(
-    void * ctx, const char * text, int k,
-    const char ** out_labels, float * out_confidences);
+CRISPEMBED_API int crispembed_lid_predict_topk(void * ctx, const char * text, int k, const char ** out_labels,
+                                               float * out_confidences);
 
 /// Number of languages the model can detect.
 CRISPEMBED_API int crispembed_lid_n_labels(const void * ctx);
@@ -822,7 +716,7 @@ CRISPEMBED_API int crispembed_lid_n_labels(const void * ctx);
 // ---------------------------------------------------------------------------
 
 typedef struct crispembed_layout_region {
-    float x1, y1, x2, y2;   // bbox in original image coordinates
+    float x1, y1, x2, y2;    // bbox in original image coordinates
     float score;             // detection confidence
     int label;               // class index (0..16)
     const char * label_name; // static string, do not free
@@ -833,8 +727,8 @@ CRISPEMBED_API void crispembed_layout_free(void * ctx);
 
 /// Detect layout regions in an image file. Returns array of regions
 /// (owned by ctx, valid until next call). Sets *out_n to count.
-CRISPEMBED_API const crispembed_layout_region * crispembed_layout_detect(
-    void * ctx, const char * image_path, float score_threshold, int * out_n);
+CRISPEMBED_API const crispembed_layout_region * crispembed_layout_detect(void * ctx, const char * image_path,
+                                                                         float score_threshold, int * out_n);
 
 // ---------------------------------------------------------------------------
 // Surya Text Detection — EfficientViT segformer (91 languages).
@@ -843,7 +737,7 @@ CRISPEMBED_API const crispembed_layout_region * crispembed_layout_detect(
 // ---------------------------------------------------------------------------
 
 typedef struct crispembed_text_det_result {
-    float x0, y0, x1, y1;   // bbox in original image coordinates
+    float x0, y0, x1, y1; // bbox in original image coordinates
     float confidence;
 } crispembed_text_det_result;
 
@@ -852,13 +746,12 @@ CRISPEMBED_API void crispembed_text_det_free(void * ctx);
 
 /// Detect text lines in an image (from raw pixel bytes).
 /// Returns array of text regions (owned by ctx, valid until next call).
-CRISPEMBED_API const crispembed_text_det_result * crispembed_text_det(
-    void * ctx, const uint8_t * pixels, int width, int height, int channels,
-    float text_threshold, float low_threshold, int * out_n);
+CRISPEMBED_API const crispembed_text_det_result * crispembed_text_det(void * ctx, const uint8_t * pixels, int width,
+                                                                      int height, int channels, float text_threshold,
+                                                                      float low_threshold, int * out_n);
 
 /// Get raw heatmap from last detection. Returns [2, out_h, out_w] float array.
-CRISPEMBED_API const float * crispembed_text_det_heatmap(
-    void * ctx, int * out_h, int * out_w);
+CRISPEMBED_API const float * crispembed_text_det_heatmap(void * ctx, int * out_h, int * out_w);
 
 // ---------------------------------------------------------------------------
 // Named Entity Recognition — GLiNER zero-shot NER.
@@ -867,11 +760,11 @@ CRISPEMBED_API const float * crispembed_text_det_heatmap(
 // ---------------------------------------------------------------------------
 
 typedef struct crispembed_ner_entity {
-    int start_char;      // character offset in input text
-    int end_char;        // character offset (exclusive)
-    const char * text;   // extracted span (owned by ctx, valid until next call)
-    const char * label;  // entity label (owned by ctx, valid until next call)
-    float score;         // confidence [0, 1]
+    int start_char;     // character offset in input text
+    int end_char;       // character offset (exclusive)
+    const char * text;  // extracted span (owned by ctx, valid until next call)
+    const char * label; // entity label (owned by ctx, valid until next call)
+    float score;        // confidence [0, 1]
 } crispembed_ner_entity;
 
 /// Load NER model from GGUF. Auto-detects architecture.
@@ -885,11 +778,8 @@ CRISPEMBED_API void crispembed_ner_free(void * ctx);
 /// n_labels: number of entity types
 /// threshold: confidence threshold (0.0-1.0, recommended 0.5)
 /// Returns entity count; sets *out_entities to result array (owned by ctx).
-CRISPEMBED_API int crispembed_ner_extract(
-    void * ctx, const char * text,
-    const char ** labels, int n_labels,
-    float threshold,
-    crispembed_ner_entity ** out_entities);
+CRISPEMBED_API int crispembed_ner_extract(void * ctx, const char * text, const char ** labels, int n_labels,
+                                          float threshold, crispembed_ner_entity ** out_entities);
 
 // ---------------------------------------------------------------------------
 // LiLT — Language-independent Layout Transformer for document understanding.
@@ -900,8 +790,8 @@ CRISPEMBED_API int crispembed_ner_extract(
 typedef struct crispembed_lilt_token {
     int token_id;
     int label_id;
-    const char * label;   // label string — owned by ctx
-    float score;          // softmax confidence
+    const char * label; // label string — owned by ctx
+    float score;        // softmax confidence
 } crispembed_lilt_token;
 
 /// Load LiLT model from GGUF. Returns opaque context or NULL.
@@ -914,9 +804,8 @@ CRISPEMBED_API void crispembed_lilt_free(void * ctx);
 /// input_ids: [n_tokens] token ids (including BOS/EOS).
 /// bbox: [n_tokens * 4] bounding boxes (x0, y0, x1, y1) in [0, 1000].
 /// Returns array of token results (owned by ctx, valid until next call).
-CRISPEMBED_API const crispembed_lilt_token * crispembed_lilt_classify(
-    void * ctx, const int32_t * input_ids, const int32_t * bbox,
-    int n_tokens, int * out_n);
+CRISPEMBED_API const crispembed_lilt_token * crispembed_lilt_classify(void * ctx, const int32_t * input_ids,
+                                                                      const int32_t * bbox, int n_tokens, int * out_n);
 
 /// Get number of labels.
 CRISPEMBED_API int crispembed_lilt_num_labels(void * ctx);
@@ -932,10 +821,10 @@ CRISPEMBED_API const char * crispembed_lilt_label_name(void * ctx, int label_id)
 // ---------------------------------------------------------------------------
 
 typedef struct crispembed_kie_field {
-    const char * label;   // field name (e.g. "total", "date") — owned by ctx
-    const char * value;   // extracted text — owned by ctx
-    float score;          // NER confidence [0, 1]
-    float x, y, w, h;    // bounding box in original image coordinates
+    const char * label; // field name (e.g. "total", "date") — owned by ctx
+    const char * value; // extracted text — owned by ctx
+    float score;        // NER confidence [0, 1]
+    float x, y, w, h;   // bounding box in original image coordinates
 } crispembed_kie_field;
 
 typedef struct crispembed_kie_result {
@@ -948,30 +837,23 @@ typedef struct crispembed_kie_result {
 
 /// Initialize KIE pipeline. Requires OCR models (det + rec) and a NER model.
 /// Returns opaque context, or NULL on failure.
-CRISPEMBED_API void * crispembed_kie_init(
-    const char * ocr_det_model,   // text detection GGUF (DBNet)
-    const char * ocr_rec_model,   // text recognition GGUF (TrOCR/VLM)
-    const char * ner_model,       // GLiNER NER GGUF
-    int n_threads);
+CRISPEMBED_API void * crispembed_kie_init(const char * ocr_det_model, // text detection GGUF (DBNet)
+                                          const char * ocr_rec_model, // text recognition GGUF (TrOCR/VLM)
+                                          const char * ner_model,     // GLiNER NER GGUF
+                                          int n_threads);
 
 /// Like crispembed_kie_init but also wires a LiLT GGUF for layout-aware token
 /// classification (Phase 2). ner_model / lilt_model may be "" / NULL.
-CRISPEMBED_API void * crispembed_kie_init_lilt(
-    const char * ocr_det_model,
-    const char * ocr_rec_model,
-    const char * ner_model,
-    const char * lilt_model,
-    int n_threads);
+CRISPEMBED_API void * crispembed_kie_init_lilt(const char * ocr_det_model, const char * ocr_rec_model,
+                                               const char * ner_model, const char * lilt_model, int n_threads);
 
 /// Extract structured fields from a document image.
 /// labels: array of field names to extract (e.g. "total", "date", "vendor")
 /// n_labels: number of labels
 /// threshold: NER confidence threshold (0.0-1.0, recommended 0.5)
 /// Returns result struct (owned by ctx, valid until next call or free).
-CRISPEMBED_API crispembed_kie_result crispembed_kie_extract(
-    void * ctx, const char * image_path,
-    const char ** labels, int n_labels,
-    float threshold);
+CRISPEMBED_API crispembed_kie_result crispembed_kie_extract(void * ctx, const char * image_path, const char ** labels,
+                                                            int n_labels, float threshold);
 
 /// Free KIE pipeline context.
 CRISPEMBED_API void crispembed_kie_free(void * ctx);
@@ -983,14 +865,14 @@ CRISPEMBED_API void crispembed_kie_free(void * ctx);
 // ---------------------------------------------------------------------------
 
 typedef struct {
-    int   deskew;
-    int   crop_borders;
-    int   whiten_background;
-    int   binarize;
-    int   binarize_method;     // 0 = Otsu, 1 = Sauvola
+    int deskew;
+    int crop_borders;
+    int whiten_background;
+    int binarize;
+    int binarize_method; // 0 = Otsu, 1 = Sauvola
     float sauvola_k;
-    int   sauvola_window;
-    int   morph_kernel;
+    int sauvola_window;
+    int morph_kernel;
     float border_threshold;
     float deskew_max_angle;
 } crispembed_scan_cleanup_params;
@@ -998,17 +880,15 @@ typedef struct {
 CRISPEMBED_API crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void);
 
 CRISPEMBED_API void * crispembed_scan_cleanup_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_scan_cleanup_free(void * ctx);
+CRISPEMBED_API void crispembed_scan_cleanup_free(void * ctx);
 
 /// Process a scan image. Input: uint8 RGB or grayscale.
 /// Allocates output buffer (*out_pixels, RGB uint8). Caller frees via
 /// crispembed_scan_cleanup_free_image().
 /// Returns 0 on success, -1 on error.
-CRISPEMBED_API int crispembed_scan_cleanup_process(
-    void * ctx,
-    const uint8_t * pixels, int width, int height, int channels,
-    crispembed_scan_cleanup_params params,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_scan_cleanup_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                                   int channels, crispembed_scan_cleanup_params params,
+                                                   uint8_t ** out_pixels, int * out_width, int * out_height);
 
 CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
 
@@ -1019,7 +899,7 @@ CRISPEMBED_API void crispembed_scan_cleanup_free_image(uint8_t * pixels);
 
 /// Initialize text SR from a GGUF model. Returns opaque context (NULL on error).
 CRISPEMBED_API void * crispembed_text_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_text_sr_free(void * ctx);
+CRISPEMBED_API void crispembed_text_sr_free(void * ctx);
 
 /// Query upscale factor (2 or 4) from the loaded model.
 CRISPEMBED_API int crispembed_text_sr_upscale_factor(const void * ctx);
@@ -1027,11 +907,9 @@ CRISPEMBED_API int crispembed_text_sr_upscale_factor(const void * ctx);
 /// Upscale an RGB image. Allocates output buffer (*out_pixels, RGB uint8).
 /// tile_size/tile_overlap: 0 = auto. Caller frees with crispembed_text_sr_free_image().
 /// Returns 0 on success, -1 on error.
-CRISPEMBED_API int crispembed_text_sr_process(
-    void * ctx,
-    const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_text_sr_process(void * ctx, const uint8_t * pixels, int width, int height, int tile_size,
+                                              int tile_overlap, uint8_t ** out_pixels, int * out_width,
+                                              int * out_height);
 
 CRISPEMBED_API void crispembed_text_sr_free_image(uint8_t * pixels);
 
@@ -1042,14 +920,12 @@ CRISPEMBED_API void crispembed_text_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_tbsrn_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_tbsrn_sr_free(void * ctx);
+CRISPEMBED_API void crispembed_tbsrn_sr_free(void * ctx);
 
 /// Upscale a text-line crop. Input resized to 16×64, output is 32×128.
 /// Caller frees with crispembed_tbsrn_sr_free_image().
-CRISPEMBED_API int crispembed_tbsrn_sr_process(
-    void * ctx,
-    const uint8_t * pixels, int width, int height,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_tbsrn_sr_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                               uint8_t ** out_pixels, int * out_width, int * out_height);
 
 CRISPEMBED_API void crispembed_tbsrn_sr_free_image(uint8_t * pixels);
 
@@ -1059,13 +935,12 @@ CRISPEMBED_API void crispembed_tbsrn_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_pan_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_pan_sr_free(void * ctx);
-CRISPEMBED_API int    crispembed_pan_sr_scale(const void * ctx);
+CRISPEMBED_API void crispembed_pan_sr_free(void * ctx);
+CRISPEMBED_API int crispembed_pan_sr_scale(const void * ctx);
 
-CRISPEMBED_API int crispembed_pan_sr_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_pan_sr_process(void * ctx, const uint8_t * pixels, int width, int height, int tile_size,
+                                             int tile_overlap, uint8_t ** out_pixels, int * out_width,
+                                             int * out_height);
 
 CRISPEMBED_API void crispembed_pan_sr_free_image(uint8_t * pixels);
 
@@ -1075,12 +950,10 @@ CRISPEMBED_API void crispembed_pan_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_dat_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_dat_sr_free(void * ctx);
+CRISPEMBED_API void crispembed_dat_sr_free(void * ctx);
 
-CRISPEMBED_API int crispembed_dat_sr_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_w, int tile_h,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_dat_sr_process(void * ctx, const uint8_t * pixels, int width, int height, int tile_w,
+                                             int tile_h, uint8_t ** out_pixels, int * out_width, int * out_height);
 
 CRISPEMBED_API void crispembed_dat_sr_free_image(uint8_t * pixels);
 
@@ -1090,13 +963,12 @@ CRISPEMBED_API void crispembed_dat_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_safmn_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_safmn_sr_free(void * ctx);
-CRISPEMBED_API int    crispembed_safmn_sr_scale(const void * ctx);
+CRISPEMBED_API void crispembed_safmn_sr_free(void * ctx);
+CRISPEMBED_API int crispembed_safmn_sr_scale(const void * ctx);
 
-CRISPEMBED_API int crispembed_safmn_sr_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_safmn_sr_process(void * ctx, const uint8_t * pixels, int width, int height, int tile_size,
+                                               int tile_overlap, uint8_t ** out_pixels, int * out_width,
+                                               int * out_height);
 
 CRISPEMBED_API void crispembed_safmn_sr_free_image(uint8_t * pixels);
 
@@ -1108,13 +980,12 @@ CRISPEMBED_API void crispembed_safmn_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_swinir_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_swinir_sr_free(void * ctx);
-CRISPEMBED_API int    crispembed_swinir_sr_scale(const void * ctx);
+CRISPEMBED_API void crispembed_swinir_sr_free(void * ctx);
+CRISPEMBED_API int crispembed_swinir_sr_scale(const void * ctx);
 
-CRISPEMBED_API int crispembed_swinir_sr_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_swinir_sr_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                                int tile_size, int tile_overlap, uint8_t ** out_pixels, int * out_width,
+                                                int * out_height);
 
 CRISPEMBED_API void crispembed_swinir_sr_free_image(uint8_t * pixels);
 
@@ -1124,13 +995,12 @@ CRISPEMBED_API void crispembed_swinir_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_esrgan_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_esrgan_sr_free(void * ctx);
-CRISPEMBED_API int    crispembed_esrgan_sr_scale(const void * ctx);
+CRISPEMBED_API void crispembed_esrgan_sr_free(void * ctx);
+CRISPEMBED_API int crispembed_esrgan_sr_scale(const void * ctx);
 
-CRISPEMBED_API int crispembed_esrgan_sr_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_esrgan_sr_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                                int tile_size, int tile_overlap, uint8_t ** out_pixels, int * out_width,
+                                                int * out_height);
 
 CRISPEMBED_API void crispembed_esrgan_sr_free_image(uint8_t * pixels);
 
@@ -1140,12 +1010,10 @@ CRISPEMBED_API void crispembed_esrgan_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_restormer_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_restormer_free(void * ctx);
+CRISPEMBED_API void crispembed_restormer_free(void * ctx);
 
-CRISPEMBED_API int crispembed_restormer_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels);
+CRISPEMBED_API int crispembed_restormer_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                                int tile_size, int tile_overlap, uint8_t ** out_pixels);
 
 CRISPEMBED_API void crispembed_restormer_free_image(uint8_t * pixels);
 
@@ -1155,11 +1023,10 @@ CRISPEMBED_API void crispembed_restormer_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_scunet_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_scunet_free(void * ctx);
+CRISPEMBED_API void crispembed_scunet_free(void * ctx);
 
-CRISPEMBED_API int crispembed_scunet_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    uint8_t ** out_pixels);
+CRISPEMBED_API int crispembed_scunet_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                             uint8_t ** out_pixels);
 
 CRISPEMBED_API void crispembed_scunet_free_image(uint8_t * pixels);
 
@@ -1169,13 +1036,12 @@ CRISPEMBED_API void crispembed_scunet_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_hat_sr_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_hat_sr_free(void * ctx);
-CRISPEMBED_API int    crispembed_hat_sr_scale(const void * ctx);
+CRISPEMBED_API void crispembed_hat_sr_free(void * ctx);
+CRISPEMBED_API int crispembed_hat_sr_scale(const void * ctx);
 
-CRISPEMBED_API int crispembed_hat_sr_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    int tile_size, int tile_overlap,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_hat_sr_process(void * ctx, const uint8_t * pixels, int width, int height, int tile_size,
+                                             int tile_overlap, uint8_t ** out_pixels, int * out_width,
+                                             int * out_height);
 
 CRISPEMBED_API void crispembed_hat_sr_free_image(uint8_t * pixels);
 // InstructIR — All-in-one image restoration (NAFNet+ICB, ECCV 2024).
@@ -1184,13 +1050,11 @@ CRISPEMBED_API void crispembed_hat_sr_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_instructir_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_instructir_free(void * ctx);
-CRISPEMBED_API int    crispembed_instructir_n_tasks(const void * ctx);
+CRISPEMBED_API void crispembed_instructir_free(void * ctx);
+CRISPEMBED_API int crispembed_instructir_n_tasks(const void * ctx);
 
-CRISPEMBED_API int crispembed_instructir_process(
-    void * ctx, int task,
-    const uint8_t * pixels, int width, int height,
-    uint8_t ** out_pixels);
+CRISPEMBED_API int crispembed_instructir_process(void * ctx, int task, const uint8_t * pixels, int width, int height,
+                                                 uint8_t ** out_pixels);
 
 CRISPEMBED_API void crispembed_instructir_free_image(uint8_t * pixels);
 
@@ -1201,20 +1065,18 @@ CRISPEMBED_API void crispembed_instructir_free_image(uint8_t * pixels);
 // ---------------------------------------------------------------------------
 
 CRISPEMBED_API void * crispembed_adair_init(const char * model_path, int n_threads);
-CRISPEMBED_API void   crispembed_adair_free(void * ctx);
+CRISPEMBED_API void crispembed_adair_free(void * ctx);
 
-CRISPEMBED_API int crispembed_adair_process(
-    void * ctx, const uint8_t * pixels, int width, int height,
-    uint8_t ** out_pixels);
+CRISPEMBED_API int crispembed_adair_process(void * ctx, const uint8_t * pixels, int width, int height,
+                                            uint8_t ** out_pixels);
 
 CRISPEMBED_API void crispembed_adair_free_image(uint8_t * pixels);
 
 /// Variant with individual params (for FFI bindings that can't pass structs by value).
-CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
-    void * ctx,
-    const uint8_t * pixels, int width, int height, int channels,
-    int deskew, int crop_borders, int whiten_background, int binarize,
-    uint8_t ** out_pixels, int * out_width, int * out_height);
+CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint8_t * pixels, int width, int height,
+                                                          int channels, int deskew, int crop_borders,
+                                                          int whiten_background, int binarize, uint8_t ** out_pixels,
+                                                          int * out_width, int * out_height);
 
 // ── OCR pipeline: full per-stage builder ────────────────────────────────────
 // For complete user control: a flat array of stages (grouped into per-source-
@@ -1225,37 +1087,34 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(
 
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
-    int   source_type;   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int   engine;        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr (matches map_engine)
+    int source_type; // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    int engine; // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
-    int   cleanup_enabled;
-    int   denoise;        // NAFNet tier-2 for this stage
-    crispembed_scan_cleanup_params cleanup;  // the 10 classical knobs
+    int cleanup_enabled;
+    int denoise;                            // NAFNet tier-2 for this stage
+    crispembed_scan_cleanup_params cleanup; // the 10 classical knobs
     // Engine params (only the relevant ones are used per engine):
     float det_prob_threshold;
     float det_box_threshold;
-    int   det_target_short;
-    int   vlm_max_tokens;     // 0 = engine default
-    const char * vlm_prompt;  // NULL/"" = engine default
+    int det_target_short;
+    int vlm_max_tokens;      // 0 = engine default
+    const char * vlm_prompt; // NULL/"" = engine default
     // Accept-gate:
-    int   min_chars;
+    int min_chars;
     float min_confidence;
 } crispembed_ocr_stage;
 
 /// Build a pipeline from an explicit ordered stage array (full tweakability).
 /// Stages with the same `source_type` form that type's chain, in array order.
 CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
-    int router,
-    const char * nafnet_model,
-    const char * sr_model,      // optional text SR GGUF for low-DPI upscaling (NULL/"" = off)
-    const char * punct_model,   // optional post-OCR punctuation/spacing restorer (NULL/"" = off)
-    const char * lid_model,        // optional text LID GGUF for language detection (NULL/"" = off)
-    const char * truecase_model,   // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
-    const char * tess_model_dir,   // dir of tesseract-{lang} GGUFs for LID auto-select (NULL/"" = off)
-    const crispembed_ocr_stage * stages,
-    int n_stages,
-    int n_threads);
+    int router, const char * nafnet_model,
+    const char * sr_model,       // optional text SR GGUF for low-DPI upscaling (NULL/"" = off)
+    const char * punct_model,    // optional post-OCR punctuation/spacing restorer (NULL/"" = off)
+    const char * lid_model,      // optional text LID GGUF for language detection (NULL/"" = off)
+    const char * truecase_model, // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
+    const char * tess_model_dir, // dir of tesseract-{lang} GGUFs for LID auto-select (NULL/"" = off)
+    const crispembed_ocr_stage * stages, int n_stages, int n_threads);
 
 // ---------------------------------------------------------------------------
 // Punctuation Restoration — FireRedPunc / PCS
@@ -1269,7 +1128,7 @@ CRISPEMBED_API void * crispembed_ocr_pipeline_init_stages(
 /// Load a punctuation model (auto-detects FireRedPunc vs PCS from GGUF arch).
 CRISPEMBED_API void * crispembed_punct_init(const char * model_path, int n_threads);
 /// Free punct context.
-CRISPEMBED_API void   crispembed_punct_free(void * ctx);
+CRISPEMBED_API void crispembed_punct_free(void * ctx);
 /// Add punctuation/spaces to text. Returns string owned by context,
 /// valid until next call or free.
 CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * text);
@@ -1285,10 +1144,8 @@ CRISPEMBED_API const char * crispembed_punct_process(void * ctx, const char * te
 /// format: "text" | "hocr" | "alto" | "pdf"
 /// Returns newly allocated string (caller frees with free()).
 /// For multi-page: call repeatedly and concatenate, or use ocr_render.h directly.
-CRISPEMBED_API char * crispembed_ocr_render(
-    const crispembed_ocr_result * results, int n_results,
-    int page_width, int page_height,
-    const char * format);
+CRISPEMBED_API char * crispembed_ocr_render(const crispembed_ocr_result * results, int n_results, int page_width,
+                                            int page_height, const char * format);
 
 // ---------------------------------------------------------------------------
 // Classical Preprocessing — dewarp, CC detect, deskew, adaptive binarize
@@ -1298,57 +1155,42 @@ CRISPEMBED_API char * crispembed_ocr_render(
 /// PDF DPI profiling — analyse embedded images in a PDF page.
 /// Returns 0 on success, -1 on error. Sets *out_dpi to the mean DPI
 /// across all raster images on the page, and *out_n_images to the count.
-CRISPEMBED_API int crispembed_pdf_page_dpi(
-    const char * pdf_path, int page,
-    float * out_dpi, int * out_n_images);
+CRISPEMBED_API int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * out_dpi, int * out_n_images);
 
 /// Dewarp a grayscale page (straighten curved text lines).
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
-CRISPEMBED_API int crispembed_dewarp(
-    const uint8_t * gray, int w, int h,
-    uint8_t * out, int * out_w, int * out_h);
+CRISPEMBED_API int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h);
 
 /// TPS-based dewarp with explicit control points.
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
-CRISPEMBED_API int crispembed_tps_dewarp(
-    const uint8_t * gray, int w, int h,
-    const float * src_x, const float * src_y,
-    const float * dst_x, const float * dst_y, int n,
-    uint8_t * out);
+CRISPEMBED_API int crispembed_tps_dewarp(const uint8_t * gray, int w, int h, const float * src_x, const float * src_y,
+                                         const float * dst_x, const float * dst_y, int n, uint8_t * out);
 
 /// TPS auto-dewarp using a learned localizer model (GGUF).
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
-CRISPEMBED_API int crispembed_tps_auto_dewarp(
-    const uint8_t * gray, int w, int h,
-    const char * model_path,
-    uint8_t * out);
+CRISPEMBED_API int crispembed_tps_auto_dewarp(const uint8_t * gray, int w, int h, const char * model_path,
+                                              uint8_t * out);
 
 /// Detect text line regions using connected components (model-free).
 /// Returns array of {x,y,w,h} regions, caller frees with free().
-CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(
-    const uint8_t * gray, int w, int h, int * out_n);
+CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, int w, int h, int * out_n);
 
 /// Find skew angle (degrees) of a document image.
 /// Returns 0 on success; *angle is the rotation needed to deskew.
-CRISPEMBED_API int crispembed_find_skew(
-    const uint8_t * gray, int w, int h,
-    float * angle, float * confidence);
+CRISPEMBED_API int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence);
 
 /// Adaptive Otsu binarization (handles uneven lighting).
 /// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
-CRISPEMBED_API void crispembed_adaptive_binarize(
-    const uint8_t * gray, int w, int h, uint8_t * out);
+CRISPEMBED_API void crispembed_adaptive_binarize(const uint8_t * gray, int w, int h, uint8_t * out);
 
 /// Background normalization (handles gradients/shadows).
 /// [out] must be pre-allocated (w*h bytes).
-CRISPEMBED_API void crispembed_background_norm(
-    const uint8_t * gray, int w, int h, uint8_t * out);
+CRISPEMBED_API void crispembed_background_norm(const uint8_t * gray, int w, int h, uint8_t * out);
 
 /// Despeckle: remove small noise components from a binary image.
 /// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
-CRISPEMBED_API void crispembed_despeckle(
-    const uint8_t * gray, int w, int h,
-    int max_speckle_w, int max_speckle_h, uint8_t * out);
+CRISPEMBED_API void crispembed_despeckle(const uint8_t * gray, int w, int h, int max_speckle_w, int max_speckle_h,
+                                         uint8_t * out);
 
 // ---------------------------------------------------------------------------
 // Table Structure Recognition — rule-based grid detection + per-cell OCR.
@@ -1360,8 +1202,7 @@ CRISPEMBED_API void crispembed_despeckle(
 /// ocr_model_path: Tesseract LSTM GGUF for built-in cell OCR (NULL = no OCR,
 ///                 cells will be empty in the returned HTML).
 /// n_threads: CPU threads for OCR. Returns NULL on failure.
-CRISPEMBED_API void * crispembed_table_parse_init(
-    const char * ocr_model_path, int n_threads);
+CRISPEMBED_API void * crispembed_table_parse_init(const char * ocr_model_path, int n_threads);
 
 /// Free table parser context. Safe to call with NULL.
 CRISPEMBED_API void crispembed_table_parse_free(void * ctx);
@@ -1370,8 +1211,7 @@ CRISPEMBED_API void crispembed_table_parse_free(void * ctx);
 /// gray: uint8 grayscale pixels, row-major [height × width].
 /// Returns a newly allocated HTML string — caller must free with
 /// crispembed_table_parse_free_string(). Returns NULL on failure.
-CRISPEMBED_API char * crispembed_table_parse_to_html(
-    void * ctx, const uint8_t * gray, int width, int height);
+CRISPEMBED_API char * crispembed_table_parse_to_html(void * ctx, const uint8_t * gray, int width, int height);
 
 /// Free a string returned by crispembed_table_parse_to_html().
 CRISPEMBED_API void crispembed_table_parse_free_string(char * str);
@@ -1379,9 +1219,8 @@ CRISPEMBED_API void crispembed_table_parse_free_string(char * str);
 /// Detect the grid structure of a table image without running OCR.
 /// Sets *out_n_rows and *out_n_cols to the number of rows and columns found.
 /// Returns the total number of cells (rows * cols), or 0 on failure.
-CRISPEMBED_API int crispembed_table_parse_detect_grid(
-    const uint8_t * gray, int width, int height,
-    int * out_n_rows, int * out_n_cols);
+CRISPEMBED_API int crispembed_table_parse_detect_grid(const uint8_t * gray, int width, int height, int * out_n_rows,
+                                                      int * out_n_cols);
 
 #ifdef __cplusplus
 }

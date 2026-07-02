@@ -27,23 +27,23 @@ typedef struct ppformulanet_l_ocr_context ppformulanet_l_ocr_context;
 
 typedef struct ppformulanet_l_ocr_hparams {
     // Encoder (SAM ViT)
-    int32_t image_size;       // 768
-    int32_t patch_size;       // 16
-    int32_t enc_hidden;       // 768
-    int32_t enc_layers;       // 12
-    int32_t enc_heads;        // 12
-    int32_t enc_mlp_dim;      // 3072
-    int32_t window_size;      // 14
-    int32_t n_patches;        // 48 (image_size / patch_size)
-    int32_t output_channels;  // 256 (neck output)
+    int32_t image_size;      // 768
+    int32_t patch_size;      // 16
+    int32_t enc_hidden;      // 768
+    int32_t enc_layers;      // 12
+    int32_t enc_heads;       // 12
+    int32_t enc_mlp_dim;     // 3072
+    int32_t window_size;     // 14
+    int32_t n_patches;       // 48 (image_size / patch_size)
+    int32_t output_channels; // 256 (neck output)
 
     // Decoder (MBart)
-    int32_t dec_layers;       // 8
-    int32_t dec_heads;        // 16
-    int32_t dec_d_model;      // 512
-    int32_t dec_ffn_dim;      // 2048
-    int32_t vocab_size;       // 50000
-    int32_t max_seq_len;      // 1024
+    int32_t dec_layers;  // 8
+    int32_t dec_heads;   // 16
+    int32_t dec_d_model; // 512
+    int32_t dec_ffn_dim; // 2048
+    int32_t vocab_size;  // 50000
+    int32_t max_seq_len; // 1024
 
     // Special tokens
     int32_t bos_token;
@@ -63,52 +63,27 @@ const ppformulanet_l_ocr_hparams * ppformulanet_l_ocr_get_hparams(const ppformul
 
 /// Run OCR on a grayscale image.
 /// [pixels] — row-major grayscale float array, values in [0, 1].
-const char * ppformulanet_l_ocr_recognize(
-    ppformulanet_l_ocr_context * ctx,
-    const float * pixels,
-    int width, int height,
-    int * out_len
-);
+const char * ppformulanet_l_ocr_recognize(ppformulanet_l_ocr_context * ctx, const float * pixels, int width, int height,
+                                          int * out_len);
 
 /// Run OCR on raw pixel bytes (RGB or RGBA).
-const char * ppformulanet_l_ocr_recognize_raw(
-    ppformulanet_l_ocr_context * ctx,
-    const uint8_t * pixel_bytes,
-    int width, int height, int channels,
-    int * out_len
-);
+const char * ppformulanet_l_ocr_recognize_raw(ppformulanet_l_ocr_context * ctx, const uint8_t * pixel_bytes, int width,
+                                              int height, int channels, int * out_len);
 
 /// Beam search decoding (beam_width > 1) or greedy (beam_width <= 1).
-const char * ppformulanet_l_ocr_recognize_beam(
-    ppformulanet_l_ocr_context * ctx,
-    const float * pixels,
-    int width, int height,
-    int beam_width,
-    int * out_len
-);
+const char * ppformulanet_l_ocr_recognize_beam(ppformulanet_l_ocr_context * ctx, const float * pixels, int width,
+                                               int height, int beam_width, int * out_len);
 
-const char * ppformulanet_l_ocr_recognize_raw_beam(
-    ppformulanet_l_ocr_context * ctx,
-    const uint8_t * pixel_bytes,
-    int width, int height, int channels,
-    int beam_width,
-    int * out_len
-);
+const char * ppformulanet_l_ocr_recognize_raw_beam(ppformulanet_l_ocr_context * ctx, const uint8_t * pixel_bytes,
+                                                   int width, int height, int channels, int beam_width, int * out_len);
 
 /// Run OCR on pre-processed CHW float tensor.
-const char * ppformulanet_l_ocr_recognize_chw(
-    ppformulanet_l_ocr_context * ctx,
-    const float * chw_data,
-    int * out_len
-);
+const char * ppformulanet_l_ocr_recognize_chw(ppformulanet_l_ocr_context * ctx, const float * chw_data, int * out_len);
 
 /// After a successful recognize call, returns the projected encoder output.
 /// Shape: (*out_n_tokens, *out_hidden). Valid until the next call.
-const float * ppformulanet_l_ocr_get_encoder_output(
-    const ppformulanet_l_ocr_context * ctx,
-    int * out_n_tokens,
-    int * out_hidden
-);
+const float * ppformulanet_l_ocr_get_encoder_output(const ppformulanet_l_ocr_context * ctx, int * out_n_tokens,
+                                                    int * out_hidden);
 
 /// Get per-character confidence scores from the last recognition.
 /// Returns array of length *n_chars (one per output token).

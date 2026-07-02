@@ -14,14 +14,19 @@
 #include <vector>
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 
 static int n_pass = 0, n_fail = 0;
 
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
@@ -58,8 +63,7 @@ int main(int argc, char ** argv) {
     // We need the same data — read it from the reference GGUF instead
     auto [ref_input, ref_input_n] = ref.get_f32("input");
     if (!ref_input || ref_input_n != 3 * H * W) {
-        fprintf(stderr, "Reference missing 'input' tensor (need %d, got %zu)\n",
-                3 * H * W, ref_input_n);
+        fprintf(stderr, "Reference missing 'input' tensor (need %d, got %zu)\n", 3 * H * W, ref_input_n);
         safmn_free(ctx);
         return 1;
     }
@@ -83,8 +87,7 @@ int main(int argc, char ** argv) {
     // 0.95 floor: engine has float parity 1.0 (docs), but this harness compares the
     // uint8-clamped 4x SR output vs a float ref -> ~0.987 on Metal/CPU (uint8 loss +
     // backend variance; ~0.99 on CUDA). A scramble regression still craters to ~0.
-    printf("  output: cos=%.6f max_abs=%.6f  %s\n",
-           r_out.cos_min, r_out.max_abs,
+    printf("  output: cos=%.6f max_abs=%.6f  %s\n", r_out.cos_min, r_out.max_abs,
            r_out.is_pass(0.95f) ? "PASS" : "FAIL");
     check("output cos >= 0.95", r_out.is_pass(0.95f));
 

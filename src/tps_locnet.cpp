@@ -47,18 +47,18 @@ static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
         std::vector<uint8_t> raw(raw_sz);
         ggml_backend_tensor_get(t, raw.data(), 0, raw_sz);
         const auto * traits = ggml_get_type_traits(t->type);
-        if (traits && traits->to_float) traits->to_float(raw.data(), buf.data(), n);
-        else memset(buf.data(), 0, n * sizeof(float));
+        if (traits && traits->to_float)
+            traits->to_float(raw.data(), buf.data(), n);
+        else
+            memset(buf.data(), 0, n * sizeof(float));
     }
     return buf.data();
 }
 
 // Conv2d: [OC, IC, KH, KW] weights, [OC] bias
 // Input/output are [C, H, W] planar float
-static void conv2d(const float * input, int ic, int ih, int iw,
-                   const float * weight, const float * bias,
-                   int oc, int kh, int kw, int pad,
-                   float * output) {
+static void conv2d(const float * input, int ic, int ih, int iw, const float * weight, const float * bias, int oc,
+                   int kh, int kw, int pad, float * output) {
     int oh = ih + 2 * pad - kh + 1;
     int ow = iw + 2 * pad - kw + 1;
 
@@ -73,8 +73,8 @@ static void conv2d(const float * input, int ic, int ih, int iw,
                             int iy = oy + ky - pad;
                             int ix = ox + kx - pad;
                             if (iy < 0 || iy >= ih || ix < 0 || ix >= iw) continue;
-                            sum += input[c * ih * iw + iy * iw + ix]
-                                 * weight[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
+                            sum += input[c * ih * iw + iy * iw + ix] *
+                                   weight[o * ic * kh * kw + c * kh * kw + ky * kw + kx];
                         }
                     }
                 }
@@ -91,8 +91,7 @@ static void relu_inplace(float * data, int n) {
 }
 
 // MaxPool2x2 stride 2: [C, H, W] → [C, H/2, W/2]
-static void maxpool2x2(const float * input, int c, int h, int w,
-                       float * output) {
+static void maxpool2x2(const float * input, int c, int h, int w, float * output) {
     int oh = h / 2, ow = w / 2;
     for (int ch = 0; ch < c; ch++) {
         for (int oy = 0; oy < oh; oy++) {
@@ -114,8 +113,7 @@ static void maxpool2x2(const float * input, int c, int h, int w,
 }
 
 // Adaptive average pooling to (1, 1): [C, H, W] → [C]
-static void adaptive_avg_pool_1x1(const float * input, int c, int h, int w,
-                                   float * output) {
+static void adaptive_avg_pool_1x1(const float * input, int c, int h, int w, float * output) {
     int hw = h * w;
     for (int ch = 0; ch < c; ch++) {
         float sum = 0;
@@ -125,13 +123,10 @@ static void adaptive_avg_pool_1x1(const float * input, int c, int h, int w,
 }
 
 // FC: output[o] = bias[o] + sum_i(weight[o*ic + i] * input[i])
-static void fc_forward(const float * input, int ic,
-                       const float * weight, const float * bias, int oc,
-                       float * output) {
+static void fc_forward(const float * input, int ic, const float * weight, const float * bias, int oc, float * output) {
     for (int o = 0; o < oc; o++) {
         float sum = bias ? bias[o] : 0.0f;
-        for (int i = 0; i < ic; i++)
-            sum += weight[o * ic + i] * input[i];
+        for (int i = 0; i < ic; i++) sum += weight[o * ic + i] * input[i];
         output[o] = sum;
     }
 }
@@ -227,9 +222,7 @@ int tps_locnet_num_fiducial(const tps_locnet * net) {
     return net ? net->num_fiducial : 0;
 }
 
-int tps_locnet_predict(tps_locnet * net,
-                       const uint8_t * gray, int w, int h,
-                       float * out_x, float * out_y) {
+int tps_locnet_predict(tps_locnet * net, const uint8_t * gray, int w, int h, float * out_x, float * out_y) {
     if (!net || !gray || !out_x || !out_y || w <= 0 || h <= 0) return 0;
 
     const bool bench = net->bench;
@@ -245,8 +238,7 @@ int tps_locnet_predict(tps_locnet * net,
     for (int c = 0; c < 3; c++) {
         for (int y = 0; y < cur_h; y++) {
             for (int x = 0; x < cur_w; x++) {
-                buf_a[c * cur_h * cur_w + y * cur_w + x] =
-                    (float)gray[y * w + x] / 255.0f;
+                buf_a[c * cur_h * cur_w + y * cur_w + x] = (float)gray[y * w + x] / 255.0f;
             }
         }
     }
@@ -273,9 +265,7 @@ int tps_locnet_predict(tps_locnet * net,
         // GGUF data is in numpy row-major order: [OC, IC, KH, KW].
         // Our conv2d() expects the same layout — use directly.
         buf_b.resize(oc * oh * ow);
-        conv2d(buf_a.data(), ic, cur_h, cur_w,
-               wptr, bptr, oc, 3, 3, 1,
-               buf_b.data());
+        conv2d(buf_a.data(), ic, cur_h, cur_w, wptr, bptr, oc, 3, 3, 1, buf_b.data());
 
         // ReLU
         relu_inplace(buf_b.data(), oc * oh * ow);
@@ -313,8 +303,7 @@ int tps_locnet_predict(tps_locnet * net,
     // ggml stores FC as [ic, oc] — transpose to [oc, ic]
     std::vector<float> fc1_wt(net->fc_dim * ic);
     for (int o = 0; o < net->fc_dim; o++)
-        for (int i = 0; i < ic; i++)
-            fc1_wt[o * ic + i] = fc1_w[i * net->fc_dim + o];
+        for (int i = 0; i < ic; i++) fc1_wt[o * ic + i] = fc1_w[i * net->fc_dim + o];
 
     buf_b.resize(net->fc_dim);
     fc_forward(buf_a.data(), ic, fc1_wt.data(), fc1_b, net->fc_dim, buf_b.data());
@@ -326,8 +315,7 @@ int tps_locnet_predict(tps_locnet * net,
 
     std::vector<float> fc2_wt(F * 2 * net->fc_dim);
     for (int o = 0; o < F * 2; o++)
-        for (int i = 0; i < net->fc_dim; i++)
-            fc2_wt[o * net->fc_dim + i] = fc2_w[i * F * 2 + o];
+        for (int i = 0; i < net->fc_dim; i++) fc2_wt[o * net->fc_dim + i] = fc2_w[i * F * 2 + o];
 
     std::vector<float> raw_pts(F * 2);
     fc_forward(buf_b.data(), net->fc_dim, fc2_wt.data(), fc2_b, F * 2, raw_pts.data());
@@ -363,9 +351,7 @@ void tps_locnet_free(tps_locnet * net) {
 // Full auto-dewarp pipeline
 // ---------------------------------------------------------------------------
 
-int tps_auto_dewarp(const uint8_t * gray, int w, int h,
-                    const char * gguf_path,
-                    uint8_t * out) {
+int tps_auto_dewarp(const uint8_t * gray, int w, int h, const char * gguf_path, uint8_t * out) {
     if (!gray || !out || !gguf_path || w <= 0 || h <= 0) return 1;
 
     tps_locnet * net = tps_locnet_load(gguf_path);
@@ -393,8 +379,5 @@ int tps_auto_dewarp(const uint8_t * gray, int w, int h,
         dst_y[half + i] = (float)(h - 1);
     }
 
-    return tps_warp_points(gray, w, h,
-                           dst_x.data(), dst_y.data(),
-                           src_x.data(), src_y.data(),
-                           F, out, w, h, 255);
+    return tps_warp_points(gray, w, h, dst_x.data(), dst_y.data(), src_x.data(), src_y.data(), F, out, w, h, 255);
 }

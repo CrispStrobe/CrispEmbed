@@ -16,21 +16,24 @@
 #include <cstring>
 #include <vector>
 
-int main(int argc, char **argv) {
+int main(int argc, char ** argv) {
     if (argc < 4) {
         fprintf(stderr, "Usage: %s <model.gguf> <tokens.bin> <image.png>\n", argv[0]);
         return 1;
     }
 
-    const char *model_path = argv[0 + 1];
-    const char *tokens_path = argv[1 + 1];
-    const char *image_path = argv[2 + 1];
+    const char * model_path = argv[0 + 1];
+    const char * tokens_path = argv[1 + 1];
+    const char * image_path = argv[2 + 1];
     int max_tokens = (argc > 4) ? atoi(argv[4]) : 128;
 
     // ── Load token IDs from binary file ─────────────────────────
     printf("Loading tokens: %s\n", tokens_path);
-    FILE *tf = fopen(tokens_path, "rb");
-    if (!tf) { fprintf(stderr, "Cannot open %s\n", tokens_path); return 1; }
+    FILE * tf = fopen(tokens_path, "rb");
+    if (!tf) {
+        fprintf(stderr, "Cannot open %s\n", tokens_path);
+        return 1;
+    }
 
     uint32_t n_tokens = 0;
     fread(&n_tokens, sizeof(uint32_t), 1, tf);
@@ -68,8 +71,8 @@ int main(int argc, char **argv) {
 
     // For end-to-end test without C++ preprocessing, we need patches.
     // Let's check if we have a reference GGUF with input_patches:
-    const char *ref_path = "/tmp/qwen2vl-ref-full.gguf";
-    FILE *check = fopen(ref_path, "rb");
+    const char * ref_path = "/tmp/qwen2vl-ref-full.gguf";
+    FILE * check = fopen(ref_path, "rb");
     if (!check) {
         fprintf(stderr, "Need %s with input_patches for image data\n", ref_path);
         fprintf(stderr, "Run: python tools/dump_qwen2vl_reference.py first\n");
@@ -99,7 +102,7 @@ int main(int argc, char **argv) {
     auto merger_shape = ref.shape("vis_merger_output");
     int n_merged = (merger_shape.size() >= 2) ? (int)merger_shape[1] : 0;
 
-    int32_t grid_thw[3] = {1, 0, 0};
+    int32_t grid_thw[3] = { 1, 0, 0 };
     for (int h = 2; h * h <= n_patches * 2; h += 2) {
         if (n_patches % h == 0) {
             int w = n_patches / h;
@@ -111,19 +114,16 @@ int main(int argc, char **argv) {
             }
         }
     }
-    printf("  Grid: %dx%d, %d patches, %d merged\n",
-           grid_thw[1], grid_thw[2], n_patches, n_merged);
+    printf("  Grid: %dx%d, %d patches, %d merged\n", grid_thw[1], grid_thw[2], n_patches, n_merged);
 
     if (n_image_pad != n_merged) {
-        fprintf(stderr, "WARNING: token image_pad count (%d) != merged tokens (%d)\n",
-                n_image_pad, n_merged);
+        fprintf(stderr, "WARNING: token image_pad count (%d) != merged tokens (%d)\n", n_image_pad, n_merged);
     }
 
     // ── Run vision encoder ──────────────────────────────────────
     printf("\nRunning vision encoder...\n");
     qwen2vl_ocr::vision_result vis_result;
-    if (!qwen2vl_ocr::encode_vision(ctx, patches_data, n_patches,
-                                     grid_thw, vis_result)) {
+    if (!qwen2vl_ocr::encode_vision(ctx, patches_data, n_patches, grid_thw, vis_result)) {
         fprintf(stderr, "Vision encoder failed\n");
         qwen2vl_ocr::free_(ctx);
         return 1;
@@ -133,11 +133,9 @@ int main(int argc, char **argv) {
     // ── Generate text ───────────────────────────────────────────
     printf("\nGenerating (max %d tokens)...\n", max_tokens);
     qwen2vl_ocr::generate_result gen_result;
-    if (!qwen2vl_ocr::generate(ctx, vis_result.image_embeds,
-                                vis_result.n_merged, vis_result.embed_dim,
-                                grid_thw,  // actual image grid for mRoPE
-                                token_ids.data(), (int)n_tokens,
-                                max_tokens, gen_result)) {
+    if (!qwen2vl_ocr::generate(ctx, vis_result.image_embeds, vis_result.n_merged, vis_result.embed_dim,
+                               grid_thw, // actual image grid for mRoPE
+                               token_ids.data(), (int)n_tokens, max_tokens, gen_result)) {
         fprintf(stderr, "Generation failed\n");
         qwen2vl_ocr::vision_result_free(vis_result);
         qwen2vl_ocr::free_(ctx);

@@ -33,14 +33,14 @@ struct vision_hparams {
     uint32_t hidden_size = 768;
     uint32_t intermediate_size = 3072;
     uint32_t num_heads = 12;
-    uint32_t head_dim = 64;           // = hidden_size / num_heads
+    uint32_t head_dim = 64; // = hidden_size / num_heads
     uint32_t patch_size = 16;
     uint32_t image_size = 1024;
     uint32_t window_size = 14;
     uint32_t neck_out_channels = 256;
-    std::vector<int> global_attn_indexes;  // [2, 5, 8, 11]
-    float image_mean[3] = {0.48145466f, 0.4578275f, 0.40821073f};
-    float image_std[3]  = {0.26862954f, 0.26130258f, 0.27577711f};
+    std::vector<int> global_attn_indexes; // [2, 5, 8, 11]
+    float image_mean[3] = { 0.48145466f, 0.4578275f, 0.40821073f };
+    float image_std[3] = { 0.26862954f, 0.26130258f, 0.27577711f };
 };
 
 struct llm_hparams {
@@ -76,17 +76,17 @@ struct vision_block {
 
 // LLM layer weights (standard Qwen2 pre-norm)
 struct llm_layer {
-    ggml_tensor *input_layernorm_w = nullptr;
-    ggml_tensor *post_attention_layernorm_w = nullptr;
+    ggml_tensor * input_layernorm_w = nullptr;
+    ggml_tensor * post_attention_layernorm_w = nullptr;
     // Separate Q/K/V with bias
     ggml_tensor *q_w = nullptr, *q_b = nullptr;
     ggml_tensor *k_w = nullptr, *k_b = nullptr;
     ggml_tensor *v_w = nullptr, *v_b = nullptr;
-    ggml_tensor *o_w = nullptr;
+    ggml_tensor * o_w = nullptr;
     // SwiGLU FFN (separate gate/up/down)
-    ggml_tensor *ffn_gate_w = nullptr;
-    ggml_tensor *ffn_up_w = nullptr;
-    ggml_tensor *ffn_down_w = nullptr;
+    ggml_tensor * ffn_gate_w = nullptr;
+    ggml_tensor * ffn_up_w = nullptr;
+    ggml_tensor * ffn_down_w = nullptr;
 };
 
 struct model {
@@ -95,29 +95,29 @@ struct model {
 
     // Vision: patch embed + pos embed
     ggml_tensor *patch_embed_w = nullptr, *patch_embed_b = nullptr;
-    ggml_tensor *pos_embed = nullptr;
+    ggml_tensor * pos_embed = nullptr;
     std::vector<vision_block> vis_blocks;
     // Neck
-    ggml_tensor *neck_conv1_w = nullptr;
+    ggml_tensor * neck_conv1_w = nullptr;
     ggml_tensor *neck_ln1_w = nullptr, *neck_ln1_b = nullptr;
-    ggml_tensor *neck_conv2_w = nullptr;
+    ggml_tensor * neck_conv2_w = nullptr;
     ggml_tensor *neck_ln2_w = nullptr, *neck_ln2_b = nullptr;
     // Downsample
-    ggml_tensor *net_2_w = nullptr;
-    ggml_tensor *net_3_w = nullptr;
+    ggml_tensor * net_2_w = nullptr;
+    ggml_tensor * net_3_w = nullptr;
     // Projector
     ggml_tensor *projector_w = nullptr, *projector_b = nullptr;
 
     // LLM
-    ggml_tensor *embed_tokens = nullptr;
+    ggml_tensor * embed_tokens = nullptr;
     std::vector<llm_layer> llm_layers;
-    ggml_tensor *output_norm_w = nullptr;
-    ggml_tensor *lm_head_w = nullptr;  // nullptr if tied
+    ggml_tensor * output_norm_w = nullptr;
+    ggml_tensor * lm_head_w = nullptr; // nullptr if tied
 };
 
 struct kv_cache {
     ggml_tensor *k = nullptr, *v = nullptr;
-    ggml_context *ctx = nullptr;
+    ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
     int max_seq = 0;
     int n_past = 0;
@@ -128,15 +128,15 @@ struct tokenizer {
     std::vector<std::string> id_to_piece;
     int vocab_size = 0;
     int eos_id = 151643;
-    std::string decode(const int32_t *ids, int n) const;
+    std::string decode(const int32_t * ids, int n) const;
 };
 
 struct context {
     model m;
-    ggml_context *model_ctx = nullptr;
+    ggml_context * model_ctx = nullptr;
     ggml_backend_buffer_t model_buf = nullptr;
     ggml_backend_t backend = nullptr;
-    ggml_backend_t backend_cpu = nullptr;  // CPU fallback (sched requires CPU last)
+    ggml_backend_t backend_cpu = nullptr; // CPU fallback (sched requires CPU last)
     ggml_backend_sched_t sched = nullptr;
     std::vector<uint8_t> compute_meta;
     kv_cache kvc;
@@ -150,27 +150,26 @@ struct context {
     std::vector<std::vector<float>> rp_w_per_layer;
 };
 
-bool load(context &ctx, const char *gguf_path, int n_threads = 1, int verbosity = 1);
-void free_(context &ctx);
+bool load(context & ctx, const char * gguf_path, int n_threads = 1, int verbosity = 1);
+void free_(context & ctx);
 
 struct vision_result {
-    float *hidden = nullptr;
+    float * hidden = nullptr;
     int n_tokens = 0;
     int hidden_dim = 0;
 };
 
-bool encode_vision(context &ctx, const float *pixels, vision_result &out);
+bool encode_vision(context & ctx, const float * pixels, vision_result & out);
 
 struct llm_result {
-    float *hidden = nullptr;
-    float *logits = nullptr;
+    float * hidden = nullptr;
+    float * logits = nullptr;
     int n_tokens = 0;
     int hidden_dim = 0;
     int vocab_size = 0;
 };
 
-bool run_llm_forward(context &ctx, const int32_t *token_ids, int n_tokens,
-                     llm_result &out);
+bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm_result & out);
 
 struct generate_result {
     std::vector<int32_t> token_ids;
@@ -178,13 +177,10 @@ struct generate_result {
     std::vector<float> token_confidences;
 };
 
-bool generate(context &ctx,
-              const float *image_embeds, int n_image_tokens, int embed_dim,
-              const int32_t *prompt_ids, int n_prompt,
-              int max_new_tokens,
-              generate_result &out);
+bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim, const int32_t * prompt_ids,
+              int n_prompt, int max_new_tokens, generate_result & out);
 
-}  // namespace got_ocr
+} // namespace got_ocr
 
 #ifdef __cplusplus
 extern "C" {
@@ -193,10 +189,8 @@ extern "C" {
 typedef struct got_ocr_context got_ocr_context;
 got_ocr_context * got_ocr_init(const char * model_path, int n_threads);
 void got_ocr_free(got_ocr_context * ctx);
-const char * got_ocr_recognize_raw(got_ocr_context * ctx,
-    const uint8_t * px, int w, int h, int ch, int * out_len);
-const char * got_ocr_recognize(got_ocr_context * ctx,
-    const float * px, int w, int h, int * out_len);
+const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, int w, int h, int ch, int * out_len);
+const char * got_ocr_recognize(got_ocr_context * ctx, const float * px, int w, int h, int * out_len);
 
 const float * got_ocr_confidences(const got_ocr_context * ctx, int * n_tokens);
 float got_ocr_mean_confidence(const got_ocr_context * ctx);

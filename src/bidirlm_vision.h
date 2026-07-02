@@ -34,8 +34,8 @@ struct hparams {
     uint32_t spatial_merge_size = 2;
     uint32_t temporal_patch_size = 2;
     uint32_t out_hidden_size = 2048;
-    uint32_t num_position_embeddings = 2304;  // 48² grid
-    std::vector<int> deepstack_indexes = {8, 16, 24};
+    uint32_t num_position_embeddings = 2304; // 48² grid
+    std::vector<int> deepstack_indexes = { 8, 16, 24 };
 };
 
 struct block {
@@ -57,7 +57,7 @@ struct model {
     hparams hp;
 
     ggml_tensor *patch_embed_w = nullptr, *patch_embed_b = nullptr;
-    ggml_tensor *pos_embed_w = nullptr;
+    ggml_tensor * pos_embed_w = nullptr;
 
     std::vector<block> blocks;
 
@@ -84,10 +84,9 @@ struct context {
 // model lives in. Returns false if the file does not contain a vision tower
 // (e.g. text-only GGUFs). Existing backends from the parent context can be
 // shared in via `shared_backend` to avoid double-allocating on the GPU.
-bool load(context& ctx, const char* gguf_path, ggml_backend_t shared_backend,
-          int n_threads, int verbosity);
+bool load(context & ctx, const char * gguf_path, ggml_backend_t shared_backend, int n_threads, int verbosity);
 
-void free_(context& ctx);
+void free_(context & ctx);
 
 // Run the vision tower forward on a flat (n_patches, in_channels,
 // temporal_patch_size, patch_size, patch_size) tensor — caller pre-flattens
@@ -101,19 +100,16 @@ void free_(context& ctx);
 //
 // On failure returns nullptr and frees nothing it didn't allocate.
 struct encode_result {
-    float* image_embeds = nullptr;     // (n_merged, output_dim)
-    float* deepstack    = nullptr;     // (n_deepstack, n_merged, output_dim)
+    float * image_embeds = nullptr; // (n_merged, output_dim)
+    float * deepstack = nullptr;    // (n_deepstack, n_merged, output_dim)
     int n_merged = 0;
     int output_dim = 0;
     int n_deepstack = 0;
 };
 
-bool encode(context& ctx,
-            const float* pixel_patches, int n_patches,
-            const int32_t* grid_thw, int n_images,
-            encode_result& out,
-            bool include_deepstack = true);
+bool encode(context & ctx, const float * pixel_patches, int n_patches, const int32_t * grid_thw, int n_images,
+            encode_result & out, bool include_deepstack = true);
 
-void encode_result_free(encode_result& r);
+void encode_result_free(encode_result & r);
 
-}  // namespace bidirlm_vision
+} // namespace bidirlm_vision

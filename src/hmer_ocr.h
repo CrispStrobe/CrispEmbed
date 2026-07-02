@@ -18,18 +18,18 @@ typedef struct hmer_ocr_context hmer_ocr_context;
 
 typedef struct hmer_ocr_hparams {
     // Encoder (DenseNet-121)
-    int32_t num_init_features;  // 64
-    int32_t growth_rate;        // 32
-    int32_t block_config[3];    // {6, 12, 24}
-    int32_t input_channels;     // 2 (grayscale + mask)
-    int32_t output_channels;    // 1024
+    int32_t num_init_features; // 64
+    int32_t growth_rate;       // 32
+    int32_t block_config[3];   // {6, 12, 24}
+    int32_t input_channels;    // 2 (grayscale + mask)
+    int32_t output_channels;   // 1024
 
     // Decoder (GRU + attention)
-    int32_t hidden_size;        // 256
-    int32_t output_size;        // 112 (vocab)
-    int32_t sos_token;          // 111
-    int32_t eol_token;          // 0
-    int32_t max_seq_len;        // 48
+    int32_t hidden_size; // 256
+    int32_t output_size; // 112 (vocab)
+    int32_t sos_token;   // 111
+    int32_t eol_token;   // 0
+    int32_t max_seq_len; // 48
 } hmer_ocr_hparams;
 
 /// Load an HMER GGUF model. Returns NULL on failure.
@@ -50,21 +50,12 @@ const hmer_ocr_hparams * hmer_ocr_get_hparams(const hmer_ocr_context * ctx);
 ///
 /// Returns a null-terminated LaTeX string owned by the context.
 /// Valid until the next call to hmer_ocr_recognize or hmer_ocr_free.
-const char * hmer_ocr_recognize(
-    hmer_ocr_context * ctx,
-    const float * pixels,
-    int width, int height,
-    int * out_len
-);
+const char * hmer_ocr_recognize(hmer_ocr_context * ctx, const float * pixels, int width, int height, int * out_len);
 
 /// Run handwritten math OCR on raw pixel bytes.
 /// [channels] — 1 (gray), 3 (RGB), or 4 (RGBA).
-const char * hmer_ocr_recognize_raw(
-    hmer_ocr_context * ctx,
-    const uint8_t * pixel_bytes,
-    int width, int height, int channels,
-    int * out_len
-);
+const char * hmer_ocr_recognize_raw(hmer_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
+                                    int channels, int * out_len);
 
 /// Get per-character confidence scores from the last recognition.
 /// Returns array of length *n_chars (one per output token).

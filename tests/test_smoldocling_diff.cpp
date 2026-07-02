@@ -11,17 +11,22 @@
 #include <vector>
 
 extern "C" {
-    unsigned char * stbi_load(const char *, int *, int *, int *, int);
-    void stbi_image_free(void *);
+unsigned char * stbi_load(const char *, int *, int *, int *, int);
+void stbi_image_free(void *);
 }
 
 #define GREEN "\033[32m"
-#define RED   "\033[31m"
+#define RED "\033[31m"
 #define RESET "\033[0m"
 static int n_pass = 0, n_fail = 0;
 static void check(const char * name, bool cond) {
-    if (cond) { printf("  %s[PASS]%s %s\n", GREEN, RESET, name); n_pass++; }
-    else      { printf("  %s[FAIL]%s %s\n", RED, RESET, name); n_fail++; }
+    if (cond) {
+        printf("  %s[PASS]%s %s\n", GREEN, RESET, name);
+        n_pass++;
+    } else {
+        printf("  %s[FAIL]%s %s\n", RED, RESET, name);
+        n_fail++;
+    }
 }
 
 int main(int argc, char ** argv) {
@@ -45,7 +50,10 @@ int main(int argc, char ** argv) {
     int w, h, c;
     unsigned char * img = stbi_load(argv[3], &w, &h, &c, 3);
     check("image loads", img != nullptr);
-    if (!img) { smoldocling_free(ctx); return 1; }
+    if (!img) {
+        smoldocling_free(ctx);
+        return 1;
+    }
 
     // Stage 1: Vision encoder output (after post_layernorm)
     printf("\n--- Vision encoder ---\n");
@@ -54,13 +62,11 @@ int main(int argc, char ** argv) {
     check("vision returns data", vis_out != nullptr);
     printf("  Tokens: %d, Dim: %d\n", vis_tokens, vis_dim);
     if (vis_out) {
-        printf("  C++ first4: [%.4f, %.4f, %.4f, %.4f]\n",
-               vis_out[0], vis_out[1], vis_out[2], vis_out[3]);
+        printf("  C++ first4: [%.4f, %.4f, %.4f, %.4f]\n", vis_out[0], vis_out[1], vis_out[2], vis_out[3]);
 
         // Compare against vis_post_ln reference
         auto r = ref.compare("vis_post_ln", vis_out, vis_tokens * vis_dim);
-        printf("  vis_post_ln: cos=%.6f max_abs=%.6f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.99f) ? "PASS" : "FAIL");
+        printf("  vis_post_ln: cos=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs, r.is_pass(0.99f) ? "PASS" : "FAIL");
         check("vis_post_ln cos >= 0.99", r.is_pass(0.99f));
 
         free(vis_out);
@@ -73,12 +79,11 @@ int main(int argc, char ** argv) {
     check("connector returns data", conn_out != nullptr);
     printf("  Tokens: %d, Dim: %d\n", conn_tokens, conn_dim);
     if (conn_out) {
-        printf("  C++ first4: [%.4f, %.4f, %.4f, %.4f]\n",
-               conn_out[0], conn_out[1], conn_out[2], conn_out[3]);
+        printf("  C++ first4: [%.4f, %.4f, %.4f, %.4f]\n", conn_out[0], conn_out[1], conn_out[2], conn_out[3]);
 
         auto r = ref.compare("connector_output", conn_out, conn_tokens * conn_dim);
-        printf("  connector_output: cos=%.6f max_abs=%.6f  %s\n",
-               r.cos_min, r.max_abs, r.is_pass(0.99f) ? "PASS" : "FAIL");
+        printf("  connector_output: cos=%.6f max_abs=%.6f  %s\n", r.cos_min, r.max_abs,
+               r.is_pass(0.99f) ? "PASS" : "FAIL");
         check("connector cos >= 0.99", r.is_pass(0.99f));
 
         free(conn_out);

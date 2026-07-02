@@ -21,10 +21,12 @@ static void dump_cb(const char * name, const float * data, int n, void * ud) {
     printf("  C++ stage: %s (%d elements)\n", name, n);
     if (g_ref && g_ref->has(name)) {
         auto r = g_ref->compare(name, data, n);
-        bool pass = r.cos_min >= 0.99f;  // lower threshold for Q4_K
-        printf("    cos_min=%.6f  max_abs=%.2e  %s\n",
-               r.cos_min, r.max_abs, pass ? "PASS" : "FAIL");
-        if (pass) g_pass++; else g_fail++;
+        bool pass = r.cos_min >= 0.99f; // lower threshold for Q4_K
+        printf("    cos_min=%.6f  max_abs=%.2e  %s\n", r.cos_min, r.max_abs, pass ? "PASS" : "FAIL");
+        if (pass)
+            g_pass++;
+        else
+            g_fail++;
     } else {
         printf("    (no reference for this stage)\n");
     }
@@ -37,20 +39,25 @@ int main(int argc, char ** argv) {
     }
 
     crispembed_diff::Ref ref;
-    if (!ref.load(argv[2])) { printf("Failed to load ref\n"); return 1; }
+    if (!ref.load(argv[2])) {
+        printf("Failed to load ref\n");
+        return 1;
+    }
     g_ref = &ref;
 
     printf("Reference stages:\n");
     for (auto & name : ref.tensor_names()) {
         auto shape = ref.shape(name);
         printf("  %s: [", name.c_str());
-        for (size_t i = 0; i < shape.size(); i++)
-            printf("%s%lld", i ? "," : "", (long long)shape[i]);
+        for (size_t i = 0; i < shape.size(); i++) printf("%s%lld", i ? "," : "", (long long)shape[i]);
         printf("]\n");
     }
 
     granite_vision_context * ctx = granite_vision_init(argv[1], 2);
-    if (!ctx) { printf("Failed to load model\n"); return 1; }
+    if (!ctx) {
+        printf("Failed to load model\n");
+        return 1;
+    }
 
     // Vision encoder + projector parity (ref must contain "input").
     auto [ref_input, ref_n] = ref.get_f32("input");
@@ -63,9 +70,8 @@ int main(int argc, char ** argv) {
     // MUST match tools/dump_granite_llm_reference.py.
     if (ref.has("llm_logits")) {
         printf("\nRunning LLM decode (fixed token sequence)...\n");
-        const int tokens[] = {12, 345, 678, 901, 234, 56, 789};
-        granite_vision_dump_llm(ctx, tokens, (int)(sizeof(tokens) / sizeof(tokens[0])),
-                                dump_cb, nullptr);
+        const int tokens[] = { 12, 345, 678, 901, 234, 56, 789 };
+        granite_vision_dump_llm(ctx, tokens, (int)(sizeof(tokens) / sizeof(tokens[0])), dump_cb, nullptr);
     }
 
     printf("\n%d passed, %d failed\n", g_pass, g_fail);
