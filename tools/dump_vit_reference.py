@@ -70,20 +70,18 @@ def main():
     if hasattr(vision, 'post_layernorm') and vision.post_layernorm is not None:
         hooks.append(vision.post_layernorm.register_forward_hook(make_hook("post_ln")))
 
-    # Run forward pass
+    # Run forward pass. Use get_image_features for both CLIP and SigLIP: the full
+    # SiglipModel.forward requires BOTH towers (input_ids), but get_image_features runs
+    # only the vision tower (our hooks still fire via the internal vision_model call).
     with torch.no_grad():
-        if is_clip:
-            out = model.get_image_features(**inputs)
-            out = out / out.norm(dim=-1, keepdim=True)
+        if hasattr(model, "get_image_features"):
+            final = model.get_image_features(**inputs)
         else:
-            out = model(**inputs)
-            if hasattr(out, 'image_embeds'):
-                final = out.image_embeds
-            elif hasattr(out, 'pooler_output'):
-                final = out.pooler_output
-            else:
+            out = model.vision_model(**inputs)
+            final = getattr(out, "pooler_output", None)
+            if final is None:
                 final = out.last_hidden_state.mean(dim=1)
-            out = final / final.norm(dim=-1, keepdim=True)
+        out = final / final.norm(dim=-1, keepdim=True)
 
     captures["final_embedding"] = out.detach().float().cpu().numpy().flatten()
 
