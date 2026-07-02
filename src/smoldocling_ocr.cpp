@@ -36,16 +36,32 @@ void stbi_image_free(void * retval_from_stbi_load);
 // ── Helpers ───────────────────────────────────────────────────────────
 
 static const float * sd_to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
+    // A weight resident on CUDA/Vulkan/SYCL/HIP has a DEVICE pointer in t->data:
+    // it must NOT be returned/dereferenced on the host. Keep the zero-copy fast
+    // path only for host-visible buffers (CPU / Metal unified memory); otherwise
+    // copy through the backend buffer via ggml_backend_tensor_get.
+    const bool host = !t->buffer || ggml_backend_buffer_is_host(t->buffer);
+    if (t->type == GGML_TYPE_F32 && host) return (const float *)t->data;
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
+    std::vector<uint8_t> raw;
+    const void * src_bytes;
+    if (t->buffer) {
+        raw.resize(ggml_nbytes(t));
+        ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+        src_bytes = raw.data();
+    } else {
+        src_bytes = t->data;
+    }
+    if (t->type == GGML_TYPE_F32) {
+        memcpy(buf.data(), src_bytes, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        const ggml_fp16_t * src = (const ggml_fp16_t *) src_bytes;
         for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
     } else {
         const auto * traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float)
-            traits->to_float(t->data, buf.data(), n);
+            traits->to_float(src_bytes, buf.data(), n);
         else
             memset(buf.data(), 0, n * sizeof(float));
     }
