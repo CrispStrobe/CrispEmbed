@@ -37,7 +37,12 @@ def main():
     # trust_remote_code: BidirLM-Omni ships custom modeling code and otherwise blocks on an
     # interactive "run custom code? [y/N]" prompt in headless (Kaggle) runs. Qwen3-Embedding
     # doesn't need it but is unaffected.
-    tok = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    try:
+        tok = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    except TypeError:
+        # Some transformers builds crash in the fast TokenizersBackend for Qwen2-based
+        # tokenizers (_patch_mistral_regex kwarg clash); the slow tokenizer avoids it.
+        tok = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True, use_fast=False)
     model = AutoModel.from_pretrained(args.model, dtype=torch.float32, trust_remote_code=True).eval()
 
     # Qwen3-Embedding pools the LAST token; the tokenizer appends the EOS the model
