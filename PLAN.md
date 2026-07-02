@@ -558,6 +558,12 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
   (single-stage, image via `diff.args`); floor 0.98 for backend variance. Fixed the dumper's SigLIP
   path (transformers 4.57 needs get_image_features; full SiglipModel.forward requires both towers).
   Ref uploaded to `cstr/siglip-base-GGUF`, wired `diff_only`. run_one PASS.
+- **cnn_embed/face (SCRFD) — CLEAN, CLOSED (Gap 4).** C++ `crispembed_detect_faces` matches an
+  independent insightface-SCRFD reference (`dump_face_reference.py` over det_10g.onnx) to within
+  2.45 px on a FLUX-generated synthetic face fixture (1 face, conf err 0.003). New
+  `test_face_diff.cpp` emits a synthetic detection cos_min (1.0/0.0) at a 12px tolerance; ref
+  uploaded to `cstr/scrfd-det-10g-GGUF`, wired `diff_only` (`face_detect`). run_one PASS. (Face
+  recognition arcface/sface not guarded — no local rec GGUF; detection is the wave-touched path.)
 - **fireredpunc — CLEAN, CLOSED (Gap 4).** No hidden/logits accessor in the punct C API → golden
   text-match `run_check` (new generic `test_punct_diff.cpp`). q4_k engine restores
   "hello world how are you today i am fine thanks" → "Hello world. How are you today? I am fine.
