@@ -451,12 +451,15 @@ cos, upload refs, wire. `dump_layout_reference.py` source id was likely wrong
 (`cmarkea/dit-base-layout-detection`) — find the correct one (layout-heron / RT-DETR).
 
 **Gap 2 — verify mismatch: nafnet + lfm2 (engine-regression SUSPECTS).**
-Ref generated but ggml output ≠ ref. **nafnet**: created 06-14 scalar, **conv→ggml on
-06-20 (`b580e5c`) + 4D/transposed-conv fix `bf26905` 06-20 — inside the wave — and it
-NEVER had a diff harness**, so the conversion was never verified. Local `test-nafnet-diff`
-= **cos 0.538** (reproduced). Prime wave-regression suspect (same shape as restormer),
-BUT confirm `dump_nafnet_reference.py` faithfully rebuilds NAFNet-width32 first (rule
-out a stale dumper). **lfm2/lfm2_colbert**: created 06-18, heavily changed in the wave
+Ref generated but ggml output ≠ ref. **nafnet — RESOLVED 2026-07-02** (was cos
+0.538). It was a real conv→ggml-wave regression, same shape as restormer: scrambled
+kernels (`permute(3,2,1,0)` instead of a `[KW,KH,IC,OC]` reinterpret; 1×1 convs also
+hit a wrong 2D branch via `ggml_n_dims()` collapse), plus a depthwise-F16 sched-assert
+and a Metal/CUDA residency abort. Dumper confirmed faithful via a `NAFNET_SCALAR=1`
+A/B (scalar 0.999998 vs ref). Now ggml==scalar==ref cos 0.999998 on Metal+CPU;
+`test-nafnet-diff` + ref (`cstr/nafnet-sidd-GGUF/nafnet-ref.gguf`) wired into the
+regression manifest. The same audit found **restormer still aborted on Metal**
+(residency) and fixed it (weights → CPU). **lfm2/lfm2_colbert**: created 06-18, heavily changed in the wave
 (gallocr→backend_sched `29176a0`, multivec segfault fix `a091283`, both 06-20).
 Disambiguate dumper vs engine; if engine, bisect against the pre-wave state.
 **layout**: wave-touched (`dc0861b` 06-20 replaced manual attention with

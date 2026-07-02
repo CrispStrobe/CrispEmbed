@@ -4,6 +4,32 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 2, 2026 — nafnet denoise fixed (conv→ggml scramble + residency); restormer's Metal abort closed
+
+Closed the last two conv→ggml-wave regressions. **nafnet** was the coverage gap
+(no diff harness, only reachable via `--denoise`): added `test-nafnet-diff` + a
+`diff_only` regression entry (ref uploaded to `cstr/nafnet-sidd-GGUF/nafnet-ref.gguf`)
++ a `NAFNET_SCALAR=1` A/B gate. The A/B proved the engine, not the dumper: scalar
+conv path cos **0.999998** vs ref, ggml path **0.538**. Fixed three sub-bugs in
+`conv2d_ggml` — (1) the kernel-layout scramble (hand-rolled converter writes numpy
+`[OC,IC,KH,KW]`; the old `permute(3,2,1,0)` physically reordered the bytes instead
+of reinterpreting them as ggml `[KW,KH,IC,OC]`; 1×1 convs also hit a second wrong
+branch via `ggml_n_dims()==2` collapse), (2) depthwise kernels must be F16 to match
+`ggml_conv_2d_dw`'s hardcoded-F16 im2col, (3) a Metal/CUDA residency abort (weights
+on init_best referenced from the CPU conv sched). Result: ggml==scalar==ref, cos
+**0.999998 on Metal AND CPU**; `--ocr --denoise` reads the fox line end-to-end.
+
+While auditing whether sibling runtimes shared the bug, found **restormer still
+aborted on Metal** — its earlier "CPU==Metal fixed" was CPU-only. The layout fix was
+real, but a separate residency bug (weights on the freed init_best backend,
+referenced from the CPU conv sched) aborted at `patch_embed` on Metal and segfaulted
+on CUDA; it only ever passed under `RESTORMER_FORCE_CPU=1`. Fixed by loading
+restormer's weights on CPU (all its compute is on the CPU enc_sched anyway) —
+`test-restormer-diff` now passes on Metal (cos 0.999997, was an abort). All other SR
+engines (swinir/hat/pan/tbsrn/dat/adair/scunet preload kernels onto enc_backend;
+instructir/safmn/esrgan via official GGUFWriter or CPU weights) verified Metal-safe.
+See `LEARNINGS.md → "nafnet_denoise — RESOLVED"` + the restormer Fix-notes correction.
+
 ## July 2, 2026 — DeepSeek-OCR-2: perf-sweep regression fixed (restore c58913c), + mandatory A/B rule
 
 deepseek_ocr2 OCR produced garbled output (`章的 flix Bailly …` / `&# &#`
