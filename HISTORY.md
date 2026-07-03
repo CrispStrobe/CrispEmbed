@@ -29,6 +29,14 @@ gliner-deberta could not run on ANY quantized GGUF. My earlier "it runs" was a `
 Fix: dequant-safe `core_cpu::to_f32`; verified mxbai reranks + collects imatrix. Same class as the
 granite / pcs-q4k / MLM quant-read bugs.
 
+**Fixed-label NER (C1c).** Added a `ner` harness MODE (micro span-F1 A/B vs full-precision gold);
+bert-base-NER and xlmr-ner-hrl quantized, both → iq4_xs (span-F1 1.0). Their BERT-NER encoder is a
+shared crispembed_context, so the collector fired on `--ner` unchanged. First needed a `bert_ner`
+classifier-dequant fix (commit 85feaeb) — the Q8_0/Q4_K `ner.classifier.weight` was read as raw F32
+(`unsupported type 8`), so both **failed to load on any quant** (a third quant-read-crash instance this
+session, after DeBERTa rel_embd and the rerankers). GLiNER (gliner-deberta/lfm) stays uncovered: its
+`ggml_gallocr` compute path has no eval-callback hook for the collector.
+
 ## July 3, 2026 — lfm2_colbert ColBERT multivec: CUDA-only graph-reuse corruption fixed + P100-verified
 
 `crispembed_encode_multivec` produced garbage on CUDA only: `colbert_output` cos **0.571643**
