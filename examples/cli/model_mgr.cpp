@@ -1086,13 +1086,13 @@ static const ModelEntry k_registry[] = {
       "LiLT base encoder (130M params, MIT)", "497 MB", "mit", "https://huggingface.co/cstr/lilt-base-GGUF" },
 
     // BERT fixed-label NER (CoNLL-03: PER/LOC/ORG/MISC)
-    { "bert-base-ner", "bert-base-ner-q8_0.gguf",
-      "https://huggingface.co/cstr/bert-base-NER-GGUF/resolve/main/bert-base-ner-q8_0.gguf",
-      "BERT NER (110M, CoNLL-03, 9 labels, MIT)", "111 MB", "mit", "https://huggingface.co/cstr/bert-base-NER-GGUF" },
+    { "bert-base-ner", "bert-base-ner-iq4_xs.gguf",
+      "https://huggingface.co/cstr/bert-base-NER-GGUF/resolve/main/bert-base-ner-iq4_xs.gguf",
+      "BERT NER 110M CoNLL-03 9 labels (IQ4_XS+imatrix, span-F1 1.0)", "70 MB", "mit", "https://huggingface.co/cstr/bert-base-NER-GGUF" },
 
-    { "xlmr-ner-hrl", "xlmr-ner-hrl-q8_0.gguf",
-      "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-q8_0.gguf",
-      "XLM-R multilingual NER (278M, 10 langs, 9 labels, CoNLL-2003 trained*)", "281 MB", "other*",
+    { "xlmr-ner-hrl", "xlmr-ner-hrl-iq4_xs.gguf",
+      "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-iq4_xs.gguf",
+      "XLM-R multilingual NER 278M 10 langs 9 labels (IQ4_XS+imatrix, span-F1 1.0)", "256 MB", "other*",
       "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF" },
 
     // Text language identification
