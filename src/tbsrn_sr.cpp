@@ -288,6 +288,8 @@ struct tbsrn_sr_context {
     core_cpu::DequantCache dcache;
 
     // ggml conv infrastructure (convs on a CPU sched; attention stays scalar).
+    ggml_backend_t wl_backend = nullptr; // weight-load backend; freed AFTER
+                                         // free_weights() so wl.buf outlives it (Gap-5)
     ggml_backend_t enc_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
     bool use_ggml_conv = false;
@@ -347,7 +349,10 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
         delete ctx;
         return nullptr;
     }
-    ggml_backend_free(backend);
+    // Keep the weight-load backend alive: wl.buf lives on it and is freed by
+    // free_weights() in tbsrn_sr_free. Freeing it here strands the buffer on a
+    // dead CUDA device → teardown SIGSEGV on Turing/Pascal (Gap 5).
+    ctx->wl_backend = backend;
 
     int C = 2 * ctx->hidden_units;
 
@@ -360,7 +365,8 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
             int64_t n = ggml_nelements(t);
             std::vector<float> buf(n);
             if (t->type == GGML_TYPE_F32)
-                memcpy(buf.data(), t->data, n * sizeof(float));
+                // NOT memcpy(t->data): on CUDA t->data is a device pointer.
+                ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
             else {
                 // Use the static helper already in this file
                 std::vector<float> tmp;
@@ -492,6 +498,7 @@ void tbsrn_sr_free(tbsrn_sr_context * ctx) {
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
+        if (ctx->wl_backend) ggml_backend_free(ctx->wl_backend); // AFTER free_weights (Gap-5)
         delete ctx;
     }
 }
