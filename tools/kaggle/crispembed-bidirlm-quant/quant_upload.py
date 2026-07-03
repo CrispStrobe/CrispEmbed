@@ -58,7 +58,7 @@ kh.step("harness_ready", hf_token_ok=bool(hf_token))
 #     tokenizer (_patch_mistral_regex). Don't reinstall torch OR huggingface_hub/hf_transfer
 #     (reinstalling hf_hub mismatched its constants module -> snapshot_download AttributeError). ---
 subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
-                       "safetensors", "gguf", "transformers==4.57.6"])
+                       "safetensors", "gguf", "transformers==4.57.6", "hf_transfer"])
 kh.step("deps_installed")
 
 # --- clone CrispEmbed main (has --text-only converter + crispembed-quantize) ---
@@ -119,9 +119,14 @@ for flags, repo, prefix in VARIANTS:
         try: api.create_repo(repo, repo_type="model", exist_ok=True)
         except Exception as e: print(f"[repo] {e}", flush=True)
     f16 = scratch / f"{prefix}-f16.gguf"
+    # Explicit env so the converter subprocess reliably gets the token + HF cache/transfer settings.
+    cenv = {**os.environ}
+    if hf_token:
+        cenv["HF_TOKEN"] = hf_token
+        cenv["HUGGING_FACE_HUB_TOKEN"] = hf_token
     with kh.build_heartbeat(f"convert.{prefix}.f16"):
         subprocess.check_call([sys.executable, CONVERTER, "--model", str(src),
-                               "--output", str(f16), "--dtype", "f16"] + flags)
+                               "--output", str(f16), "--dtype", "f16"] + flags, env=cenv)
     print(f"[convert] {prefix}-f16.gguf = {f16.stat().st_size/(1024**3):.2f} GiB", flush=True)
     kh.step(f"{prefix}_f16_done")
 
