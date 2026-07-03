@@ -49,4 +49,5 @@ jobs:
           path: |
             build-wasm/crispembed_ocr.js
             build-wasm/crispembed_ocr.wasm
+            wasm/crispembed-ocr.js
           retention-days: 30
