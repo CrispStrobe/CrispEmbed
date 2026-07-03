@@ -25,6 +25,7 @@
 
 #include "core/gguf_loader.h"
 #include "core/ggml_metal_guard.h"
+#include "imatrix.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -529,6 +530,11 @@ bool load(context & ctx, const char * gguf_path, ggml_backend_t shared_backend, 
     if (ctx.backend_cpu) backends.push_back(ctx.backend_cpu);
     ctx.sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), kGraphCapacity, false, false);
 
+    // Wire the imatrix collector so a MULTIMODAL calibration run (image inputs)
+    // exercises the vision-tower tensors — text-only calibration leaves them
+    // uncalibrated. No-op unless CRISPEMBED_IMATRIX_OUT is set.
+    crispembed_imatrix_install(ctx.sched);
+
     if (ctx.verbosity >= 1) {
         fprintf(stderr,
                 "bidirlm_vision: loaded depth=%u hidden=%u out=%u "
@@ -544,6 +550,7 @@ bool load(context & ctx, const char * gguf_path, ggml_backend_t shared_backend, 
 }
 
 void free_(context & ctx) {
+    crispembed_imatrix_flush(); // one-shot binaries exit past atexit
     if (ctx.sched) {
         ggml_backend_sched_free(ctx.sched);
         ctx.sched = nullptr;
