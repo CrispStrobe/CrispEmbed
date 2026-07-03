@@ -131,8 +131,15 @@ process, surfaced three genuine shipped bugs. All parity work done in a separate
 **Kaggle ref-gen kernel (`tools/kaggle/crispembed-ref-gen`) hardened:** added decoder_embed +
 bidirlm entries; pinned `transformers==4.57.6` (the Kaggle image's build crashed BidirLM's Qwen2
 tokenizer + drifted LiLT/DiT); fixed the verify heuristic that false-flagged lfm2's
-`PASS: 20 FAIL: 0`. bidirlm text remains blocked (stale GGUF → cos 0.04; needs a re-export).
-text_sr stays blocked (no checkpoint anywhere).
+`PASS: 20 FAIL: 0`. text_sr stays blocked (no checkpoint anywhere).
+
+**Update (July 3): bidirlm-text CLOSED — it was a SHIPPED-GGUF converter bug.** The
+`bidirlm-omni-2.5b*` GGUFs cratered the text tower to cos 0.047 (vision fine at 0.997). Not
+pooling/mrope: a fresh re-export with the current `convert-decoder-embed-to-gguf.py` gives text
+cos 1.000000 (f16) / 0.9992 (q8_0) and still passes vision (0.9966). Re-quantized + uploaded the
+corrected `bidirlm-omni-2.5b-q8_0.gguf` + `bidirlm-text-ref.gguf` to `cstr/bidirlm-omni-2.5b-GGUF`;
+wired `bidirlm-text`. (The repo's f16 / imatrix quants + the `-textonly` repo still need the same
+fresh conversion.)
 
 ## July 2, 2026 — ggml v0.10.0 GPU-teardown regressions fixed + bidirlm-vision parity harness
 
