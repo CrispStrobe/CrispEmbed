@@ -35,9 +35,10 @@ hf_token = kh.resolve_hf_token()
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
 # --- deps. Pin transformers==4.57.6: the Kaggle image's build crashes BidirLM's Qwen2
-#     tokenizer (_patch_mistral_regex). Don't reinstall torch. ---
+#     tokenizer (_patch_mistral_regex). Don't reinstall torch OR huggingface_hub/hf_transfer
+#     (reinstalling hf_hub mismatched its constants module -> snapshot_download AttributeError). ---
 subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
-                       "safetensors", "gguf", "huggingface_hub", "hf_transfer", "transformers==4.57.6"])
+                       "safetensors", "gguf", "transformers==4.57.6"])
 kh.step("deps_installed")
 
 # --- clone CrispEmbed main (has --text-only converter + crispembed-quantize) ---
@@ -50,7 +51,6 @@ kh.step("cloned")
 
 # --- download the model once (trust_remote_code files come with the snapshot) ---
 from huggingface_hub import snapshot_download, HfApi
-os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "1"
 scratch = Path("/tmp") / "bidirlm-work"
 scratch.mkdir(parents=True, exist_ok=True)
 with kh.build_heartbeat("download.model"):
