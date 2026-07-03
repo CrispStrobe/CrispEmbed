@@ -32,5 +32,9 @@ build-embed-wasm/
 .models-tmp/
 .ds-blueprints/
 
+# scratch/temp dir — was accidentally committed once (Tesseract tessdata,
+# ~113 MB of pack bloat purged from history); never track it again
+tmp/
+
 # scan_cleanup benchmark output
 scan-bench/
