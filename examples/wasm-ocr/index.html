@@ -9,7 +9,7 @@
   body {
     font-family: system-ui, -apple-system, sans-serif;
     background: #f5f5f5; color: #333;
-    max-width: 720px; margin: 0 auto; padding: 24px;
+    max-width: 800px; margin: 0 auto; padding: 24px;
   }
   h1 { font-size: 1.4rem; margin-bottom: 4px; }
   .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
@@ -18,10 +18,18 @@
     box-shadow: 0 1px 3px rgba(0,0,0,.12); margin-bottom: 16px;
   }
   label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
-  input[type="text"], input[type="number"] {
+  input[type="text"], input[type="number"], select {
     width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
     font-size: 0.9rem; margin-bottom: 12px;
   }
+  .tabs { display: flex; gap: 0; margin-bottom: 16px; }
+  .tab {
+    padding: 8px 16px; cursor: pointer; border: 1px solid #ccc;
+    background: #f8fafc; font-size: 0.85rem;
+  }
+  .tab:first-child { border-radius: 6px 0 0 6px; }
+  .tab:last-child { border-radius: 0 6px 6px 0; }
+  .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
   button {
     background: #2563eb; color: #fff; border: none; border-radius: 6px;
     padding: 10px 20px; font-size: 0.95rem; cursor: pointer;
@@ -31,10 +39,10 @@
   .drop-zone {
     border: 2px dashed #cbd5e1; border-radius: 8px; padding: 40px 20px;
     text-align: center; color: #64748b; cursor: pointer;
-    transition: border-color .15s, background .15s;
+    transition: border-color .15s, background .15s; position: relative;
   }
   .drop-zone.dragover { border-color: #2563eb; background: #eff6ff; }
-  .drop-zone img {
+  .drop-zone img, .drop-zone canvas {
     max-width: 100%; max-height: 300px; margin-top: 12px; border-radius: 4px;
   }
   .progress-bar {
@@ -51,10 +59,22 @@
     background: #f8fafc; padding: 12px; border-radius: 4px;
     white-space: pre-wrap; word-break: break-all;
     border: 1px solid #e2e8f0; min-height: 40px;
+    max-height: 400px; overflow-y: auto;
   }
   .meta { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
   .row { display: flex; gap: 12px; align-items: flex-end; }
   .row > * { flex: 1; }
+  .hidden { display: none; }
+  .region-box {
+    position: absolute; border: 2px solid #ef4444;
+    background: rgba(239,68,68,0.08); pointer-events: none;
+  }
+  .region-label {
+    position: absolute; top: -18px; left: 0; background: #ef4444;
+    color: #fff; font-size: 0.65rem; padding: 1px 4px; border-radius: 2px;
+    white-space: nowrap;
+  }
+  small { color: #94a3b8; }
 </style>
 </head>
 <body>
@@ -62,23 +82,59 @@
 <h1>CrispEmbed OCR</h1>
 <p class="subtitle">Client-side OCR powered by WebAssembly — no server needed.</p>
 
-<!-- Setup -->
+<!-- Mode selector -->
 <div class="card">
-  <label for="model-url">Model URL (GGUF)</label>
-  <input type="text" id="model-url"
-    value="https://huggingface.co/cstr/pix2tex-GGUF/resolve/main/pix2tex-q4_k.gguf"
-    placeholder="https://...model.gguf">
-  <div class="row">
+  <label>Mode</label>
+  <div class="tabs">
+    <div class="tab active" onclick="setMode('single')" id="tab-single">Single Model</div>
+    <div class="tab" onclick="setMode('pipeline')" id="tab-pipeline">Pipeline (Det+Rec)</div>
+    <div class="tab" onclick="setMode('cleanup')" id="tab-cleanup">Scan Cleanup</div>
+  </div>
+
+  <!-- Single model config -->
+  <div id="cfg-single">
+    <label for="model-url">Recognition Model URL (GGUF)</label>
+    <input type="text" id="model-url"
+      value="https://huggingface.co/cstr/pix2tex-GGUF/resolve/main/pix2tex-q4_k.gguf"
+      placeholder="https://...model.gguf">
+  </div>
+
+  <!-- Pipeline config -->
+  <div id="cfg-pipeline" class="hidden">
+    <label for="det-url">Detection Model (DBNet GGUF)</label>
+    <input type="text" id="det-url"
+      value="https://huggingface.co/cstr/DBNet-text-detect-GGUF/resolve/main/dbnet-ic15-q4_k.gguf"
+      placeholder="https://...det.gguf">
+    <label for="rec-url">Recognition Model (TrOCR GGUF)</label>
+    <input type="text" id="rec-url"
+      value="https://huggingface.co/cstr/TrOCR-small-GGUF/resolve/main/trocr-small-q4_k.gguf"
+      placeholder="https://...rec.gguf">
+  </div>
+
+  <!-- Cleanup config -->
+  <div id="cfg-cleanup" class="hidden">
+    <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">
+      Classical scan cleanup: deskew, binarize, denoise, crop. No model needed.
+    </p>
+    <div class="row">
+      <div><label><input type="checkbox" id="opt-deskew" checked> Deskew</label></div>
+      <div><label><input type="checkbox" id="opt-crop" checked> Crop borders</label></div>
+      <div><label><input type="checkbox" id="opt-whiten"> Whiten bg</label></div>
+      <div><label><input type="checkbox" id="opt-binarize"> Binarize</label></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:12px;">
     <div>
       <label for="n-threads">Threads</label>
       <input type="number" id="n-threads" value="1" min="1" max="8">
     </div>
     <div style="flex:0 0 auto">
-      <button id="btn-init" onclick="initOCR()">Load Model</button>
+      <button id="btn-init" onclick="init()">Load</button>
     </div>
   </div>
   <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
-  <div id="status">Ready — enter a model URL and click "Load Model".</div>
+  <div id="status">Select a mode and click "Load".</div>
 </div>
 
 <!-- Image input -->
@@ -102,47 +158,66 @@
   <div class="meta" id="result-meta"></div>
 </div>
 
-<!--
-  Load the Emscripten-generated loader first, then the high-level wrapper.
-  In production, these files sit next to your index.html.
-  For this example, they come from ../../wasm/ or from a CDN.
--->
 <script src="crispembed_ocr.js"></script>
 <script src="crispembed-ocr.js"></script>
 <script>
 
-let ocr = null;
+let engine = null;
+let currentMode = 'single';
+let lastFile = null;
 
-async function initOCR() {
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + mode).classList.add('active');
+  document.getElementById('cfg-single').classList.toggle('hidden', mode !== 'single');
+  document.getElementById('cfg-pipeline').classList.toggle('hidden', mode !== 'pipeline');
+  document.getElementById('cfg-cleanup').classList.toggle('hidden', mode !== 'cleanup');
+  // Dispose previous engine
+  if (engine) { engine.dispose(); engine = null; }
+  document.getElementById('btn-init').textContent = 'Load';
+  document.getElementById('status').textContent = 'Select a mode and click "Load".';
+}
+
+async function init() {
   const btn = document.getElementById('btn-init');
   const status = document.getElementById('status');
   const fill = document.getElementById('progress-fill');
-  const modelUrl = document.getElementById('model-url').value.trim();
   const nThreads = parseInt(document.getElementById('n-threads').value) || 1;
 
-  if (!modelUrl) { status.textContent = 'Please enter a model URL.'; return; }
-
   btn.disabled = true;
-  status.textContent = 'Initializing WASM module...';
+  fill.style.width = '0%';
+
+  function onProgress(p) {
+    fill.style.width = (p * 100).toFixed(0) + '%';
+    if (p < 0.05)      status.textContent = 'Initializing WASM module...';
+    else if (p < 0.80) status.textContent = 'Downloading model(s)... ' + (p * 100).toFixed(0) + '%';
+    else if (p < 0.95) status.textContent = 'Loading into WASM memory...';
+    else               status.textContent = 'Ready!';
+  }
 
   try {
-    // Dispose previous instance if any
-    if (ocr) { ocr.dispose(); ocr = null; }
+    if (engine) { engine.dispose(); engine = null; }
 
-    ocr = await CrispEmbedOCRWrapper.create({
-      modelUrl,
-      nThreads,
-      onProgress(p) {
-        fill.style.width = (p * 100).toFixed(0) + '%';
-        if (p < 0.05)      status.textContent = 'Initializing WASM module...';
-        else if (p < 0.80) status.textContent = 'Downloading model... ' + (p * 100).toFixed(0) + '%';
-        else if (p < 0.95) status.textContent = 'Loading model into WASM memory...';
-        else               status.textContent = 'Ready!';
-      },
-    });
+    if (currentMode === 'single') {
+      const modelUrl = document.getElementById('model-url').value.trim();
+      if (!modelUrl) { status.textContent = 'Enter a model URL.'; return; }
+      engine = await CrispEmbedOCRWrapper.create({ modelUrl, nThreads, onProgress });
+      status.textContent = `Model loaded (${engine.version}). Drop or select an image.`;
 
-    status.textContent = `Model loaded (${ocr.version}). Drop or select an image.`;
-    btn.textContent = 'Reload Model';
+    } else if (currentMode === 'pipeline') {
+      const detUrl = document.getElementById('det-url').value.trim();
+      const recUrl = document.getElementById('rec-url').value.trim();
+      if (!detUrl || !recUrl) { status.textContent = 'Enter both model URLs.'; return; }
+      engine = await CrispEmbedOCRPipeline.create({ detModelUrl: detUrl, recModelUrl: recUrl, nThreads, onProgress });
+      status.textContent = 'Pipeline loaded. Drop or select an image.';
+
+    } else if (currentMode === 'cleanup') {
+      engine = await CrispEmbedScanCleanup.create({ nThreads, onProgress });
+      status.textContent = 'Scan cleanup ready. Drop or select an image.';
+    }
+
+    btn.textContent = 'Reload';
   } catch (e) {
     status.textContent = 'Error: ' + e.message;
     console.error(e);
@@ -154,29 +229,24 @@ async function initOCR() {
 function handleDrop(e) {
   e.preventDefault();
   e.currentTarget.classList.remove('dragover');
-  const file = e.dataTransfer.files[0];
-  if (file) handleFile(file);
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 }
 
 async function handleFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
+  lastFile = file;
 
-  // Show preview
   const zone = document.getElementById('drop-zone');
   const reader = new FileReader();
-  reader.onload = () => {
-    zone.innerHTML = `<img src="${reader.result}" alt="preview">`;
-  };
+  reader.onload = () => { zone.innerHTML = `<img src="${reader.result}" alt="preview">`; };
   reader.readAsDataURL(file);
 
-  // Run OCR
-  await runOCR(file);
+  await runEngine(file);
 }
 
-async function runOCR(source) {
-  if (!ocr) {
-    document.getElementById('status').textContent =
-      'Load a model first!';
+async function runEngine(source) {
+  if (!engine) {
+    document.getElementById('status').textContent = 'Load a model first!';
     return;
   }
 
@@ -185,25 +255,59 @@ async function runOCR(source) {
   const resultText = document.getElementById('result-text');
   const resultMeta = document.getElementById('result-meta');
 
-  status.textContent = 'Recognizing...';
+  status.textContent = 'Processing...';
   resultCard.style.display = 'block';
   resultText.textContent = '...';
   resultMeta.textContent = '';
 
-  // Yield to UI before blocking on WASM compute
   await new Promise(r => setTimeout(r, 50));
 
   const t0 = performance.now();
   try {
-    const { text, confidence } = await ocr.recognize(source);
-    const ms = (performance.now() - t0).toFixed(0);
+    if (currentMode === 'single') {
+      const { text, confidence } = await engine.recognize(source);
+      const ms = (performance.now() - t0).toFixed(0);
+      resultText.textContent = text || '(no text detected)';
+      resultMeta.textContent = `Confidence: ${(confidence * 100).toFixed(1)}% | Time: ${ms} ms`;
 
-    resultText.textContent = text || '(no text detected)';
-    resultMeta.textContent = `Confidence: ${(confidence * 100).toFixed(1)}% | Time: ${ms} ms`;
+    } else if (currentMode === 'pipeline') {
+      const result = await engine.run(source);
+      const ms = (performance.now() - t0).toFixed(0);
+      const regions = result.regions || [];
+      const lines = regions.map((r, i) =>
+        `[${i+1}] (${r.x.toFixed(0)},${r.y.toFixed(0)} ${r.w.toFixed(0)}x${r.h.toFixed(0)}) ` +
+        `conf=${(r.confidence*100).toFixed(1)}% "${r.text}"`
+      );
+      resultText.textContent = lines.join('\n') || '(no text detected)';
+      resultMeta.textContent = `${regions.length} region(s) | Time: ${ms} ms`;
+
+    } else if (currentMode === 'cleanup') {
+      const opts = {
+        deskew: document.getElementById('opt-deskew').checked,
+        cropBorders: document.getElementById('opt-crop').checked,
+        whitenBackground: document.getElementById('opt-whiten').checked,
+        binarize: document.getElementById('opt-binarize').checked,
+      };
+      const cleanedData = await engine.process(source, opts);
+      const ms = (performance.now() - t0).toFixed(0);
+
+      // Show cleaned image
+      const canvas = document.createElement('canvas');
+      canvas.width = cleanedData.width;
+      canvas.height = cleanedData.height;
+      canvas.getContext('2d').putImageData(cleanedData, 0, 0);
+      const zone = document.getElementById('drop-zone');
+      zone.innerHTML = '';
+      zone.appendChild(canvas);
+
+      resultText.textContent = `Cleaned: ${cleanedData.width}x${cleanedData.height}`;
+      resultMeta.textContent = `Time: ${ms} ms`;
+    }
+
     status.textContent = 'Done.';
   } catch (e) {
     resultText.textContent = 'Error: ' + e.message;
-    status.textContent = 'Recognition failed.';
+    status.textContent = 'Processing failed.';
     console.error(e);
   }
 }
