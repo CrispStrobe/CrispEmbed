@@ -559,38 +559,41 @@ static const ModelEntry k_registry[] = {
 
     // --- Reranker models (Phase 4) ---
 
-    { "bge-reranker-v2-m3", "bge-reranker-v2-m3.gguf",
-      "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3.gguf",
-      "XLM-R reranker multilingual (568M)", "2.2 GB", "apache-2.0", "https://huggingface.co/BAAI/bge-reranker-v2-m3" },
+    // Reranker defaults: 4-bit imatrix only where Kendall-tau vs full precision
+    // stays 1.0 (jina, ms-marco); the others keep q8_0 (tau<1.0 at 4-bit, and q8_0
+    // is still smaller than the full-precision base) — see LEARNINGS.md → reranker A/B.
+    { "bge-reranker-v2-m3", "bge-reranker-v2-m3-q8_0.gguf",
+      "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q8_0.gguf",
+      "XLM-R reranker multilingual 568M (Q8_0)", "613 MB", "apache-2.0", "https://huggingface.co/BAAI/bge-reranker-v2-m3" },
 
-    { "bge-reranker-base", "bge-reranker-base.gguf",
-      "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base.gguf",
-      "BERT reranker EN+ZH (278M)", "1.1 GB", "mit", "https://huggingface.co/BAAI/bge-reranker-base" },
+    { "bge-reranker-base", "bge-reranker-base-q8_0.gguf",
+      "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base-q8_0.gguf",
+      "BERT reranker EN+ZH 278M (Q8_0)", "304 MB", "mit", "https://huggingface.co/BAAI/bge-reranker-base" },
 
-    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2.gguf",
-      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2.gguf",
-      "BERT reranker English fast (22M)", "87 MB", "apache-2.0",
+    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
+      "BERT reranker English fast 22M (IQ4_XS+imatrix)", "19 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2" },
 
-    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2.gguf",
-      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2.gguf",
-      "BERT reranker English (33M)", "128 MB", "apache-2.0",
+    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
+      "BERT reranker English 33M (IQ4_XS+imatrix)", "25 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2" },
 
-    { "jina-reranker-v2-base-multilingual", "jina-reranker-v2-base-multilingual.gguf",
+    { "jina-reranker-v2-base-multilingual", "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/"
-      "jina-reranker-v2-base-multilingual.gguf",
-      "XLM-R reranker multilingual (278M)", "1.1 GB", "cc-by-nc-4.0",
+      "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
+      "XLM-R reranker multilingual 278M (Q4_K+imatrix)", "261 MB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
 
-    { "mxbai-rerank-xsmall-v1", "mxbai-rerank-xsmall-v1.gguf",
-      "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1.gguf",
-      "BERT reranker English fast (33M)", "128 MB", "apache-2.0",
+    { "mxbai-rerank-xsmall-v1", "mxbai-rerank-xsmall-v1-q8_0.gguf",
+      "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0.gguf",
+      "DeBERTa-v2 reranker English fast 33M (Q8_0)", "78 MB", "apache-2.0",
       "https://huggingface.co/mixedbread-ai/mxbai-rerank-xsmall-v1" },
 
-    { "mxbai-rerank-base-v1", "mxbai-rerank-base-v1.gguf",
-      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1.gguf",
-      "BERT reranker English (86M)", "330 MB", "apache-2.0",
+    { "mxbai-rerank-base-v1", "mxbai-rerank-base-v1-q8_0.gguf",
+      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0.gguf",
+      "DeBERTa-v2 reranker English 86M (Q8_0)", "199 MB", "apache-2.0",
       "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1" },
 
     // --- MTEB top multilingual models ---
