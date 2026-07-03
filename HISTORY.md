@@ -210,8 +210,14 @@ tokenizer + drifted LiLT/DiT); fixed the verify heuristic that false-flagged lfm
 pooling/mrope: a fresh re-export with the current `convert-decoder-embed-to-gguf.py` gives text
 cos 1.000000 (f16) / 0.9992 (q8_0) and still passes vision (0.9966). Re-quantized + uploaded the
 corrected `bidirlm-omni-2.5b-q8_0.gguf` + `bidirlm-text-ref.gguf` to `cstr/bidirlm-omni-2.5b-GGUF`;
-wired `bidirlm-text`. (The repo's f16 / imatrix quants + the `-textonly` repo still need the same
-fresh conversion.)
+wired `bidirlm-text`. Follow-up done: added a `--text-only` flag to `convert-decoder-embed-to-gguf.py`
+(gates the audio/vision Phase-2/3 blocks; the current converter otherwise always writes the combined
+GGUF — the old `-textonly` repo was a stale Phase-1 conversion). Regenerated + uploaded ALL variants
+of BOTH repos from the fresh conversion: full-omni `{f16,q4_k,q5_k,q6_k}` and textonly
+`{f16,q8_0,q4_k,q5_k,q6_k}` (textonly q8_0 text cos 0.9992). bidirlm is NOT an imatrix decoder (the
+registry ships q8_0), so plain k-quants are correct. Also confirmed CLOSED this pass: clip_text
+(`fa66a02` clip_style=true → cos 1.0, wired) and pcs (dequant FC-head weights → q4_k no longer
+crashes, wired) — both fixed by other agents from my handovers.
 
 ## July 2, 2026 — ggml v0.10.0 GPU-teardown regressions fixed + bidirlm-vision parity harness
 
