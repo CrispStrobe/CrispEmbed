@@ -597,6 +597,28 @@
       }
     },
     {
+      "name": "bidirlm-text",
+      "engine": "decoder_embed",
+      "diff_only": true,
+      "_comment": "BidirLM-Omni text-embedding path (crispembed_encode on the full-omni GGUF; mean-pool, bidirectional). Ref = tools/dump_decoder_embed_reference.py --pooling mean on BidirLM/BidirLM-Omni-2.5B-Embedding. The ORIGINAL shipped GGUFs had a converter bug that cratered the text tower to cos 0.047 (0.997 vision unaffected); re-exported 2026-07-03 with the current convert-decoder-embed-to-gguf.py — text 0.9992 (q8_0) + vision still 0.997, so this one GGUF serves both bidirlm-text and bidirlm-vision. Floor 0.98.",
+      "gguf": {
+        "repo": "cstr/bidirlm-omni-2.5b-GGUF",
+        "file": "bidirlm-omni-2.5b-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 2555
+      },
+      "diff": {
+        "binary": "test-decoder-embed-diff",
+        "ref": {
+          "repo": "cstr/bidirlm-omni-2.5b-GGUF",
+          "file": "bidirlm-text-ref.gguf"
+        },
+        "thresholds": {
+          "final_embedding": 0.98
+        }
+      }
+    },
+    {
       "name": "face_detect",
       "engine": "cnn_embed",
       "diff_only": true,
