@@ -2027,6 +2027,19 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   `core_cpu::to_f32` (dequant-safe), same pattern as the MLM/SPLADE head. Same
   class as the granite / pcs-q4k / MLM quant-read bugs — a quantized 2-D weight
   read as raw F32.
+- **Fixed-label NER gets imatrix; the metric is micro span-F1 (2026-07-03).**
+  bert-base-NER / xlmr-ner-hrl run the BERT-NER path, whose encoder is a *shared
+  `crispembed_context`* — so the collector fires on `--ner` with no code change (A/B
+  = exact (start,end,label) span-F1 vs full-precision gold; harness MODE `ner`).
+  Both → iq4_xs (span-F1 1.0). **But first they needed a `bert_ner` classifier
+  dequant fix (85feaeb):** `ner.classifier.weight` ships Q8_0/Q4_K and was read as
+  raw F32 → "unsupported type 8" → **failed to load on ANY quant** (yet another
+  instance of the quantized-2-D-weight-read-raw class). **GLiNER (gliner-deberta,
+  gliner-lfm) is NOT covered:** it uses `ggml_gallocr` + `ggml_backend_graph_compute`,
+  which has no eval-callback — the collector only attaches to a `ggml_backend_sched`.
+  Collecting imatrix there needs routing GLiNER's compute through a sched when
+  imatrix is active. **Reranker/NER A/B eval sets are small (n=5–6) → τ/F1 coarse;
+  treat 4-bit-vs-q8 picks as provisional until a larger paired/labeled corpus.**
 - **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
   base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
   calibration needs. But the imatrix is **activation statistics**, and q8_0 is
