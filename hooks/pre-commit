@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# hooks/pre-commit — auto-format staged C/C++ with tools/format.sh (clang-format-18)
+# so unformatted code never reaches `main` and trips the Lint CI job.
+#
+# Install (once per clone; core.hooksPath is shared across all worktrees):
+#   ./scripts/install-hooks.sh      # or: git config core.hooksPath hooks
+#
+# Behaviour: formats ONLY the staged project C/C++ files (src/ tests/ examples/
+# include/ tools/), re-stages them, and lets the commit proceed. Vendored trees
+# (ggml/, third_party/) are never touched. If clang-format-18 is missing it warns
+# and lets the commit through — the Lint CI job is the backstop.
+#
+# Portable to macOS bash 3.2 (no `mapfile`). Repo paths have no spaces, so plain
+# word-splitting of the file list is safe.
+set -euo pipefail
+
+cd "$(git rev-parse --show-toplevel)"
+
+files=$(git diff --cached --name-only --diff-filter=ACM \
+    | grep -E '\.(c|cc|cpp|cxx|h|hpp|hxx)$' \
+    | grep -E '^(src|tests|examples|include|tools)/' \
+    | grep -vE '^(ggml|third_party)/' || true)
+[ -z "$files" ] && exit 0
+
+# shellcheck disable=SC2086  # intentional word-split; repo paths have no spaces
+if ! ./tools/format.sh --fix $files; then
+    echo "pre-commit: tools/format.sh could not run (clang-format-18 missing?) — skipping" >&2
+    echo "pre-commit: the Lint CI job will still enforce formatting." >&2
+    exit 0
+fi
+
+# shellcheck disable=SC2086
+git add -- $files
+exit 0
