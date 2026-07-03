@@ -2873,20 +2873,22 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
 
     // Cache classifier weights on first call (avoids 4MB transfer per rerank)
     if (!ctx->rerank_cache_valid) {
+        // NOTE: the classifier/pooler *weights* are 2-D and the quantizer stores them
+        // Q8_0/Q4_K, so read them via core_cpu::to_f32 (dequant-safe) — a raw
+        // H*H*sizeof(float) get overruns ggml_nbytes and aborts ("tensor read out of
+        // bounds"), which crashed reranking on every quantized GGUF (jina-reranker-v2
+        // etc.). Biases stay F32.
         if (ctx->model.classifier_2layer) {
-            ctx->rerank_dw.resize(H * H);
             ctx->rerank_db.resize(H);
-            ctx->rerank_ow.resize(H);
-            ggml_backend_tensor_get(ctx->model.classifier_dense_w, ctx->rerank_dw.data(), 0, H * H * sizeof(float));
+            ctx->rerank_dw = core_cpu::to_f32(ctx->model.classifier_dense_w); // [H,H]
             ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H * sizeof(float));
-            ggml_backend_tensor_get(ctx->model.classifier_out_w, ctx->rerank_ow.data(), 0, H * sizeof(float));
+            ctx->rerank_ow = core_cpu::to_f32(ctx->model.classifier_out_w); // [H]
             ctx->rerank_out_has_bias = ctx->model.classifier_out_b != nullptr;
             if (ctx->rerank_out_has_bias) {
                 ggml_backend_tensor_get(ctx->model.classifier_out_b, &ctx->rerank_out_bias, 0, sizeof(float));
             }
         } else if (ctx->model.classifier_w) {
-            ctx->rerank_ow.resize(H);
-            ggml_backend_tensor_get(ctx->model.classifier_w, ctx->rerank_ow.data(), 0, H * sizeof(float));
+            ctx->rerank_ow = core_cpu::to_f32(ctx->model.classifier_w); // [H] or [H,1]
             ctx->rerank_out_has_bias = ctx->model.classifier_b != nullptr;
             if (ctx->rerank_out_has_bias) {
                 ggml_backend_tensor_get(ctx->model.classifier_b, &ctx->rerank_out_bias, 0, sizeof(float));
@@ -2895,9 +2897,8 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
         // Pooler (DeBERTa)
         ctx->rerank_has_pooler = ctx->model.pooler_w && ctx->model.pooler_b;
         if (ctx->rerank_has_pooler) {
-            ctx->rerank_pw.resize(H * H);
             ctx->rerank_pb.resize(H);
-            ggml_backend_tensor_get(ctx->model.pooler_w, ctx->rerank_pw.data(), 0, H * H * sizeof(float));
+            ctx->rerank_pw = core_cpu::to_f32(ctx->model.pooler_w); // [H,H]
             ggml_backend_tensor_get(ctx->model.pooler_b, ctx->rerank_pb.data(), 0, H * sizeof(float));
         }
         ctx->rerank_cache_valid = true;
