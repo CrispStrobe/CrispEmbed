@@ -1097,7 +1097,8 @@ static const ModelEntry k_registry[] = {
     // BERT fixed-label NER (CoNLL-03: PER/LOC/ORG/MISC)
     { "bert-base-ner", "bert-base-ner-iq4_xs.gguf",
       "https://huggingface.co/cstr/bert-base-NER-GGUF/resolve/main/bert-base-ner-iq4_xs.gguf",
-      "BERT NER 110M CoNLL-03 9 labels (IQ4_XS+imatrix, span-F1 1.0)", "70 MB", "mit", "https://huggingface.co/cstr/bert-base-NER-GGUF" },
+      "BERT NER 110M CoNLL-03 9 labels (IQ4_XS+imatrix, span-F1 1.0)", "70 MB", "mit",
+      "https://huggingface.co/cstr/bert-base-NER-GGUF" },
 
     { "xlmr-ner-hrl", "xlmr-ner-hrl-iq4_xs.gguf",
       "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-iq4_xs.gguf",
