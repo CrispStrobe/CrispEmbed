@@ -1933,8 +1933,10 @@ train_swa`) — a clean reference if we ever add it.
 - **RANK** = pooled vector → `cls` matmul(+b) → activation → optional `cls_norm`
   LayerNorm → `cls_out` matmul(+b). The activation is **GELU for ModernBERT, tanh
   otherwise**; ModernBERT pools MEAN, others CLS; Qwen3 rerankers softmax + LAST.
-  Worth diffing against our reranker heads (cf. `LEARNINGS.md → "GELU variant
-  matters for token classification"`).
+  **VERIFIED (2026-07-03) our `apply_classifier` matches:** 2-layer BERT/XLM-R
+  rerankers (jina-v2, bge, ms-marco) use `tanh` (crispembed.cpp ~2926); the DeBERTa
+  ContextPooler (mxbai) uses GELU-tanh (~2915). No ModernBERT reranker is in the
+  roster (would need GELU), so no fix needed — the RANK heads are correct vs upstream.
 - Qwen3-Embedding is trained **causal** (last-token/EOS pooling) — llama.cpp runs
   it causal and is *correct*. EmbeddingGemma and the LFM2.5 retrievers are
   bidirectional. Don't assume "decoder embedder ⇒ force non-causal".
