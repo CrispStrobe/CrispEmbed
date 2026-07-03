@@ -303,6 +303,9 @@ struct swinir_sr_context {
     // ggml conv infrastructure (convs on a CPU sched; Swin attention stays
     // SIMD-scalar). GPU conv_2d hits a Metal f32×f16 mul_mv pipeline-compile
     // failure, so the conv sched is pinned to CPU with CPU-resident weights.
+    ggml_backend_t wl_backend = nullptr; // weight-load backend; kept alive until
+                                         // AFTER free_weights() so wl.buf is never
+                                         // freed against a dead device (Gap-5 fix)
     ggml_backend_t enc_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
     ggml_context * gw_ctx = nullptr; // persistent F32 conv kernels
@@ -376,7 +379,11 @@ swinir_sr_context * swinir_sr_init(const char * model_path, int n_threads) {
         delete ctx;
         return nullptr;
     }
-    ggml_backend_free(backend);
+    // Do NOT free `backend` here: load_weights allocated wl.buf ON it, and
+    // free_weights() (in swinir_sr_free) frees that buffer. Freeing the backend
+    // first leaves wl.buf on a torn-down CUDA device → teardown SIGSEGV on
+    // Turing/Pascal (Gap 5). Keep it alive; free after free_weights().
+    ctx->wl_backend = backend;
 
     fprintf(stderr, "swinir_sr: dim=%d, rstb=%d, blocks=%d, heads=%d, ws=%d, scale=%dx, %d tensors\n", ctx->embed_dim,
             ctx->n_rstb, ctx->n_blocks, ctx->n_heads, ctx->window_size, ctx->upscale, (int)ctx->wl.tensors.size());
@@ -448,6 +455,7 @@ void swinir_sr_free(swinir_sr_context * ctx) {
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
+        if (ctx->wl_backend) ggml_backend_free(ctx->wl_backend); // AFTER free_weights (Gap-5)
         delete ctx;
     }
 }

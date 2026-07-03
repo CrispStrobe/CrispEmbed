@@ -39,16 +39,31 @@
 // ---------------------------------------------------------------------------
 
 static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
-    if (t->type == GGML_TYPE_F32) return (const float *)t->data;
+    // On CUDA/Vulkan/SYCL/HIP a weight's t->data is a DEVICE pointer that
+    // segfaults if read on the host. Keep the zero-copy fast path only for
+    // host-visible buffers (CPU / Metal); else copy via ggml_backend_tensor_get.
+    const bool host = !t->buffer || ggml_backend_buffer_is_host(t->buffer);
+    if (t->type == GGML_TYPE_F32 && host) return (const float *)t->data;
     int64_t n = ggml_nelements(t);
     buf.resize(n);
-    if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *)t->data;
+    std::vector<uint8_t> raw;
+    const void * src_bytes;
+    if (t->buffer) {
+        raw.resize(ggml_nbytes(t));
+        ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+        src_bytes = raw.data();
+    } else {
+        src_bytes = t->data;
+    }
+    if (t->type == GGML_TYPE_F32) {
+        memcpy(buf.data(), src_bytes, n * sizeof(float));
+    } else if (t->type == GGML_TYPE_F16) {
+        const ggml_fp16_t * src = (const ggml_fp16_t *) src_bytes;
         for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
     } else {
         auto * traits = ggml_get_type_traits(t->type);
         if (traits && traits->to_float)
-            traits->to_float(t->data, buf.data(), n);
+            traits->to_float(src_bytes, buf.data(), n);
         else
             std::fill(buf.begin(), buf.end(), 0.0f);
     }
@@ -245,6 +260,8 @@ struct dat_sr_context {
 
     // ggml conv infrastructure (convs on a CPU sched; attention stays scalar).
     bool use_ggml_conv = false;
+    ggml_backend_t wl_backend = nullptr; // weight-load backend; freed AFTER
+                                         // free_weights() so wl.buf outlives it (Gap-5)
     ggml_backend_t enc_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
     std::unordered_map<std::string, ggml_tensor *> gw; // persistent F32 kernels by weight name
@@ -1293,7 +1310,10 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
         delete ctx;
         return nullptr;
     }
-    ggml_backend_free(backend);
+    // Keep the weight-load backend alive: wl.buf lives on it and is freed by
+    // free_weights() in dat_sr_free. Freeing it here strands the buffer on a
+    // dead CUDA device → teardown SIGSEGV on Turing/Pascal (Gap 5).
+    ctx->wl_backend = backend;
     ctx->tensors = std::move(ctx->wl.tensors);
 
     int total_blocks = 0;
@@ -1557,6 +1577,7 @@ void dat_sr_free(dat_sr_context * ctx) {
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
+        if (ctx->wl_backend) ggml_backend_free(ctx->wl_backend); // AFTER free_weights (Gap-5)
         delete ctx;
     }
 }
