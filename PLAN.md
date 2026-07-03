@@ -1043,6 +1043,64 @@ both PASS on CUDA.
      whether it's stuck in the vision encoder or an infinite decode; the 300s timeout now
      kills it fast for iteration.
 
+### UPDATE 2026-07-03 — local Ampere CUDA changes the picture (Gap 5 + Gap 6)
+
+A **local NVIDIA CUDA GPU is now available** (RTX A1000 Laptop, Ampere **sm_86**,
+4 GB, CUDA 13.0; `build-cuda`, `CMAKE_CUDA_ARCHITECTURES=86-real`). This obsoletes
+the "there is no local CUDA, each fix costs a ~50-min Kaggle round-trip" note above
+(that was the macOS box). CUDA bugs are now reproducible in minutes — **but only the
+backend-agnostic ones**; sm_86 tolerates the older-arch faults. Two distinct fault
+classes fell out cleanly:
+
+**Class A — device-pointer weight reads (backend-agnostic; reproduces on any
+device-local backend: CUDA/Vulkan/SYCL/HIP).** Several engines dequantized/read a
+MODEL WEIGHT on the host by dereferencing `t->data` directly (`memcpy(t->data)`,
+`(fp16*)t->data`, `to_float(t->data)`, `return (const float*)t->data`). On a
+device-resident weight that pointer is device memory → host deref **SIGSEGV**. Safe
+on CPU and **Metal** (Apple unified memory is host-visible — why it "worked on
+Metal/CPU"). Fix everywhere: keep the zero-copy fast path only when
+`!t->buffer || ggml_backend_buffer_is_host(t->buffer)`, else read via
+`ggml_backend_tensor_get`.
+- **deepseek-ocr2** — was the Gap-6 "FAIL". SIGSEGV in `precompute_rpe_tables`
+  reading SAM `rel_pos` weights. **Reproduced + fixed + runtime-verified on local
+  CUDA** (correct fox OCR). (commit 42ef0ea)
+- **dat / tbsrn** — listed under Gap 5, but their real crash is Class A, not
+  teardown: they SIGSEGV'd 3/3 on Ampere during load-time BatchNorm fusion (dat
+  `to_f32` returned `t->data`; tbsrn BN lambda `memcpy`'d `t->data`; note the earlier
+  F32-fusion `buf.assign(p,…)` correctness fix is what began dereferencing the device
+  pointer). **Fixed + verified: dat cos 0.999995, tbsrn 0.999362, exit 0.** (28fb9b1)
+- **unlimited_ocr, math_ocr, smoldocling_ocr, parseq_ocr, tesseract_lstm** — same
+  antipattern on weights, fixed by inspection (compile-verified; need their models /
+  a Vulkan build to exercise). (42ef0ea)
+- **Codebase audit COMPLETE (2026-07-03):** full `->data` census (52 refs / 14 files)
+  + ggml host-accessor check (`ggml_get_f32_1d` etc. — none used). Every remaining
+  `->data` is safe: the 8 fixed helpers, `granite_vision_ocr` (has the host guard),
+  `instructir`/nafnet/safmn (already route via tensor_get), `decoder_embed` (GPU path
+  uses `ggml_backend_tensor_set`; direct writes only in the `// CPU fallback` branch),
+  `imatrix` (host-allocated gguf ctx), a `%p` debug print, and comments. **No Class-A
+  instance remains.**
+
+**Class B — arch-specific vision garbage (Turing/Pascal only; NOT reproducible on
+Ampere).** **glm-ocr, internvl2-1b, and qwen2vl-3b all produce CORRECT OCR on local
+Ampere sm_86** (glm/internvl2 char-perfect; qwen2vl-3b hits EOS at gen[17]). So the
+Kaggle `cer>4` / TIMEOUT are an **older-arch vision-encoder numerical divergence**
+(conv/windowed-attn/`flash_attn_ext` diverging on sm_75/sm_60), NOT a graph bug. The
+qwen2vl-3b "TIMEOUT" is this garbage driving runaway generation to `max_tokens=2048`
+— not a hang or OOM. glm's per-stage diff "FAIL" is a **stale-reference artifact**
+(identical crater on CPU; the ref was made by the stale no-rope dump script). Still
+open; genuinely needs a Turing/Pascal GPU (Kaggle) to localize the diverging op —
+compare against got-ocr2 / qwen3vl-2b which pass on CUDA.
+
+**Gap 5 teardown (swinir/dat/tbsrn free-after-load):** the free-after-`load_weights`
+backend-lifetime bug does NOT reproduce on Ampere (sm_86 tolerates freeing the
+buffer's backend early), but is real by inspection. Hardened all three: keep the
+weight-load backend in `ctx->wl_backend`, free it in `*_free()` AFTER `free_weights`
+(mirrors gliner). Kaggle-verifiable. (28fb9b1)
+
+**Still open on CUDA:** Class B (glm/internvl2/qwen2vl-3b, Turing/Pascal); and a
+Kaggle T4/P100 run to confirm the Class-A + Gap-5 fixes flip FAIL→PASS on the
+original arch.
+
 ### OCR engine correctness/stability fixes (2026-06-30, issue #25)
 
 Found while integrating the OCR engines downstream (BiblioForge). macOS arm64,
