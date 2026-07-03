@@ -133,13 +133,17 @@ def main():
     # tensors, so just calling AutoModelForMaskedLM and checking state_dict
     # produces false SPLADE positives for plain encoders like
     # sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2.
-    def _checkpoint_has_mlm_head(model_id: str) -> bool:
+    def _checkpoint_has(model_id: str, markers) -> bool:
+        """True iff the *checkpoint files* carry a key matching any marker.
+        Authoritative: HF from_pretrained() silently random-inits missing heads
+        (a SPLADE model loaded as TokenClassification gets an invented
+        classifier.weight; a plain encoder loaded as MaskedLM gets invented
+        cls.predictions.*), so the loaded state_dict lies. Read the files."""
         try:
             from huggingface_hub import hf_hub_download
             from safetensors import safe_open
         except Exception:
             return False
-        # If it's a local path, scan it directly; else try the HF cache.
         candidates = []
         local = Path(model_id)
         if local.is_dir():
@@ -151,52 +155,43 @@ def main():
                     candidates.append(Path(hf_hub_download(model_id, fname)))
                 except Exception:
                     pass
-        mlm_markers = ("cls.predictions.", "lm_head.")
         for p in candidates:
             if not p.exists():
                 continue
-            if p.suffix == ".safetensors":
-                try:
+            try:
+                if p.suffix == ".safetensors":
                     with safe_open(str(p), framework="pt") as f:
-                        if any(any(m in k for m in mlm_markers) for k in f.keys()):
-                            return True
-                except Exception:
-                    pass
-            else:  # pytorch_model.bin — fall back to torch.load (small probe)
-                try:
+                        keys = list(f.keys())
+                else:
                     import torch
-                    sd = torch.load(str(p), map_location="cpu", weights_only=False)
-                    if any(any(m in k for m in mlm_markers) for k in sd.keys()):
-                        return True
-                except Exception:
-                    pass
+                    keys = list(torch.load(str(p), map_location="cpu", weights_only=False).keys())
+                if any(any(m in k for m in markers) for k in keys):
+                    return True
+            except Exception:
+                pass
         return False
 
-    try:
-        model = _load(AutoModelForSequenceClassification)
-        sd_probe = model.state_dict()
-        # Only keep SeqClass model if it actually has num_labels == 1 (reranker)
-        if not (hasattr(model.config, "num_labels") and model.config.num_labels == 1):
-            raise ValueError("not a reranker")
-    except Exception:
-        # Try token classification (NER models: dslim/bert-base-NER, etc.)
+    # Decide the head from the CHECKPOINT (not the random-init-prone loaded model).
+    # A real fine-tuned classifier head wins (reranker / NER); else a real MLM head
+    # means SPLADE; else it's a plain embedder. This ordering is what stops SPLADE
+    # (config num_labels=2, no real classifier) being mis-read as a 2-label NER.
+    has_real_classifier = _checkpoint_has(args.model, ("classifier.weight", "classifier.out_proj.weight"))
+    has_mlm = _checkpoint_has(args.model, ("cls.predictions.", "lm_head."))
+
+    if has_real_classifier:
         try:
-            from transformers import AutoModelForTokenClassification
-            tc_model = _load(AutoModelForTokenClassification)
-            tc_sd = tc_model.state_dict()
-            if "classifier.weight" in tc_sd and tc_model.config.num_labels > 1:
-                model = tc_model
-                print(f"  detected: token classification ({tc_model.config.num_labels} labels)")
-            else:
-                raise ValueError("not a token classifier")
+            model = _load(AutoModelForSequenceClassification)
+            if not (hasattr(model.config, "num_labels") and model.config.num_labels == 1):
+                raise ValueError("not a reranker")
         except Exception:
-            # Real SPLADE checkpoints carry cls.predictions.* in the safetensors.
-            # Random-init heads (paraphrase-multilingual, all-MiniLM, etc.) do not.
-            if _checkpoint_has_mlm_head(args.model):
-                model = _load(AutoModelForMaskedLM)
-                print(f"  detected: MLM head (SPLADE)")
-            else:
-                model = _load(AutoModel)
+            from transformers import AutoModelForTokenClassification
+            model = _load(AutoModelForTokenClassification)
+            print(f"  detected: token classification ({model.config.num_labels} labels)")
+    elif has_mlm:
+        model = _load(AutoModelForMaskedLM)
+        print(f"  detected: MLM head (SPLADE)")
+    else:
+        model = _load(AutoModel)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
