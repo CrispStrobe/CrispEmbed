@@ -536,9 +536,18 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   1.0→1.0): the imatrix is language-agnostic (per-column activation stats set by the
   weights, not the calib language). So the existing English-calibrated quants stand;
   the bilingual corpora are used for A/B *reporting*, not calibration.
-- **TODO:** C8 remaining engine schedulers; retrieval A/B via `tests/bench_rag.py`.
-  Investigate `jina-reranker-v2-base-multilingual` aborting on German `--rerank`
-  (surfaced by the calib-ab run — a shipped multilingual-reranker bug).
+- **Collector wiring complete (2026-07-03).** Every text-producing engine now
+  hooks the imatrix collector: encoder + decoder + lfm2 (existing), GLiNER + lilt_kie
+  (sched + install), clip_text/SigLIP-text (opt-in sched, gallocr path otherwise).
+  cnn_embed is a face encoder (vision) — not a text imatrix target.
+- **jina-reranker-v2 crash — FIXED (commit 9c25c75).** Surfaced by the calib-ab run:
+  its Q8_0 768×768 `classifier.dense.weight` was read raw-F32 in `apply_classifier`
+  → abort on the first rerank of ANY input (looked German-specific only because that
+  was the first call). Read via `core_cpu::to_f32` (dequant-safe); the whole
+  quantized reranker was broken. 5th instance of the quantized-2D-weight-read-raw
+  class this session.
+- **TODO:** retrieval A/B via `tests/bench_rag.py` (rank-quality, not just
+  quant-agreement); C8-proper cheap-coverage archs where clean.
   engine schedulers; retrieval A/B via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
