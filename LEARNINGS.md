@@ -1,5 +1,23 @@
 # CrispEmbed — Technical Learnings
 
+## A source file shared across two repos can't be kept byte-identical if the repos' clang-format differs — sync the LOGIC (2026-07)
+
+`pcs.cpp` lives in both CrispEmbed (`src/pcs.cpp`, fallback) and CrispASR
+(`crisp_punc/src/pcs.cpp`, the copy that ships). The old rule was "keep them byte-identical modulo the
+`#include`" — but that is **unachievable**: the two repos have different `.clang-format` (CrispEmbed
+`PointerAlignment: Middle` + single-line ifs; CrispASR `Left` + broken ifs), each enforced by its own
+lint CI, so every commit reformats the shared file differently. Chasing byte-identity just fights the
+formatters. The right invariant is **logical** identity: check with a whitespace/comment-insensitive
+diff (strip comments, collapse whitespace, normalise the include name), not `diff`.
+
+Doing that here surfaced the only *real* drift — one line: this copy called `ggml_backend_init_best()`
+while CrispASR's called `crispasr_init_gpu_backend()` (the #214 `--gpu-backend` selector). Converged by
+adopting `crispasr_init_gpu_backend()` here too (via the already-vendored `core/gpu_backend_pref.h`); it
+falls back to `ggml_backend_init_best()` when no preference is set, so the change is **behavior-neutral
+by default** and gains `--gpu-backend` support. Runtime-verified: `test-punct-diff` on
+`pcs-xlmr-base-q4_k` (sha256-checked vs HF) punctuated + capitalised correctly on Metal. Same lesson
+applies to the other cross-repo duplicates (`core/gguf_loader.{h,cpp}`).
+
 ## `ggml_set_output` cannot corrupt computed VALUES — verify a CUDA fix before believing a plausible pattern (2026-07)
 
 Chasing a CUDA-only bug in `lfm2_embed`'s ColBERT path (`colbert_output` cos **0.57** on a
