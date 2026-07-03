@@ -1276,9 +1276,11 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
             int H_emb = (int)ctx->model.rel_embd->ne[0];
             int pos_buckets = ctx->position_buckets;
 
-            // Read rel_embd data from backend
-            std::vector<float> embd_data((size_t)H_emb * max_pos);
-            ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0, embd_data.size() * sizeof(float));
+            // Read rel_embd data from backend (dequant-safe). The quantizer stores
+            // rel_embd as Q8_0/Q4_K (it's a 2-D weight), so a raw n*sizeof(float) get
+            // would overrun ggml_nbytes and abort — DeBERTa rerankers (mxbai-rerank-*)
+            // and NER (gliner-deberta) ship a quantized rel_embd. to_f32 dequantizes.
+            std::vector<float> embd_data = core_cpu::to_f32(ctx->model.rel_embd);
 
             // Apply encoder LayerNorm to relative embeddings before expansion.
             // HF DeBERTa-v2: encoder.get_rel_embedding() does
@@ -1887,8 +1889,11 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx, const embed_
             int H_emb = (int)ctx->model.rel_embd->ne[0];
             int pos_buckets = ctx->position_buckets;
 
-            std::vector<float> embd_data((size_t)H_emb * max_pos);
-            ggml_backend_tensor_get(ctx->model.rel_embd, embd_data.data(), 0, embd_data.size() * sizeof(float));
+            // Dequant-safe: rel_embd is a 2-D weight the quantizer stores as Q8_0/Q4_K,
+            // so a raw n*sizeof(float) get overruns ggml_nbytes and aborts. DeBERTa
+            // rerankers (mxbai-rerank-*) and NER (gliner-deberta) ship a quantized
+            // rel_embd; to_f32 dequantizes it. (See the twin path for encode_tokens.)
+            std::vector<float> embd_data = core_cpu::to_f32(ctx->model.rel_embd);
 
             // Apply encoder LayerNorm to relative embeddings before expansion.
             // HF DeBERTa-v2: encoder.get_rel_embedding() does
