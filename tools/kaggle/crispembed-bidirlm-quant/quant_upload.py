@@ -17,6 +17,11 @@ Runs under chr1s4. Follows the proven crispembed-quant-upload pattern; stages un
 import os, subprocess, sys
 from pathlib import Path
 
+# The Kaggle image exports HF_HUB_ENABLE_HF_TRANSFER=1 but doesn't ship hf_transfer, so any
+# HF download (incl. the converter subprocess's from_pretrained) errors "hf_transfer not
+# available". Disable it here — os.environ propagates to child processes.
+os.environ["HF_HUB_ENABLE_HF_TRANSFER"] = "0"
+
 WORK = Path("/kaggle/working")
 # Clone repos under /tmp (NOT /kaggle/working) so `kernels output` — which downloads the
 # whole working dir — doesn't choke on the huge .git packs; keeps the log downloadable.
