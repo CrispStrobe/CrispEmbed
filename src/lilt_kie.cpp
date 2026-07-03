@@ -2,6 +2,7 @@
 
 #include "lilt_kie.h"
 #include "core/gguf_loader.h"
+#include "imatrix.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -246,6 +247,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
     backends.push_back(ctx->backend);
     if (ctx->backend_cpu) backends.push_back(ctx->backend_cpu);
     ctx->sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), 8192, false, false);
+    crispembed_imatrix_install(ctx->sched); // no-op unless CRISPEMBED_IMATRIX_OUT is set
 
     *out = ctx;
     return true;
@@ -712,6 +714,9 @@ int num_labels(context * ctx) {
 
 void free(context * ctx) {
     if (!ctx) return;
+    // Flush the imatrix here (this context isn't freed via crispembed_free, and
+    // clean_exit skips atexit); no-op/idempotent unless collection was active.
+    crispembed_imatrix_flush();
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
