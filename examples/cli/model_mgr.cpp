@@ -360,9 +360,18 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q8_0.gguf",
       "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB", "apache-2.0",
       "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
+    { "bidirlm-omni-2.5b-textcal", "bidirlm-omni-2.5b-q4_k-imatrix-textcal.gguf",
+      "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q4_k-imatrix-textcal.gguf",
+      "BidirLM-Omni 2.5B (Q4_K, TEXT-calibrated imatrix — text +0.036 cos; vision/audio plain)", "1.6 GB", "apache-2.0",
+      "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
     { "bidirlm-omni-2.5b-textonly", "bidirlm-omni-2.5b-textonly-q8_0.gguf",
       "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
       "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB", "apache-2.0",
+      "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
+    { "bidirlm-omni-2.5b-textonly-q4k", "bidirlm-omni-2.5b-textonly-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/"
+      "bidirlm-omni-2.5b-textonly-q4_k-imatrix.gguf",
+      "BidirLM-Omni 2.5B text-only (Q4_K+imatrix — cos 0.948, size option; q8 for quality)", "1.1 GB", "apache-2.0",
       "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
 
     // --- RAG-critical models (Phase 3) ---

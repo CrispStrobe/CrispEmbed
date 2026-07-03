@@ -577,9 +577,25 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
     box, type) goes through `ggml_get_rows`, which dequantizes → no clip-style add
     hazard. q4_k flips 3/16 KIE token labels vs f32 (the low-confidence ones);
     **q4_k+imat recovers all 3 → 16/16 label match.** imatrix collected (142 tensors).
-  - **Genuinely deferred (3):** `pcs-xlmr-base` — `pcs.cpp` is byte-shared with
-    CrispASR and must not diverge, so it stays unwired; **bidirlm-omni ×2** —
-    multimodal (vision+audio), no single-file text path. Not a clean batch.
+  - **The "deferred 3" were RE-TESTED and mostly DONE (2026-07-03).** The earlier
+    deferral reasons were largely wrong:
+    - **pcs-xlmr-base — SHIPPED.** Quantizes cleanly (q4_k output = f32, no hazard).
+      The shared-file blocker was solved with `#if __has_include("imatrix.h")` — the
+      collector hook is active in CrispEmbed and compiles out in CrispASR (both build;
+      pcs.cpp stays logically identical, paired commits CrispEmbed ff36015 / CrispASR
+      f35185b8). Fine metric (365 tokens vs f32): q4_k+imat cuts KL **4.2×**
+      (0.00132→0.00031) and restores argmax 1.0. Default → q4_k-imatrix.
+    - **bidirlm-omni-2.5b-textonly — SHIPPED.** NOT unwired — the *decoder* path
+      already installs the collector (crispembed.cpp:2067), and there's a dedicated
+      text-only variant with an f16 base. q4_k+imat cos 0.948 vs f16 (+0.036 over
+      plain); 2.5B is quant-sensitive so imatrix quants are SIZE options, default
+      stays q8_0.
+    - **bidirlm-omni-2.5b (full multimodal) — text-calibrated quant SHIPPED.** Text
+      path is identical to textonly (same output, same 196 tensors). A text-run
+      imatrix calibrates 196/452 tensors (LLM backbone); vision+audio towers quantize
+      plain. Shipped as `-q4_k-imatrix-textcal.gguf` (text +0.036, image/audio no
+      worse than plain q4_k). **Remaining future work:** a *fully* multimodal imatrix
+      needs image+audio calibration through the towers.
   - **Rollout DONE (2026-07-03), 6 of 7 shipped + defaults repointed to their
     max-quality flavor:** clip-text-base (q4_k+im 0.9932), clip-text-large (0.9918),
     siglip-text-base (0.9623 — 4-bit-sensitive, -q8 alias kept), lilt-funsd (16/16
