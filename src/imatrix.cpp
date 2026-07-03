@@ -27,7 +27,7 @@ std::mutex g_mu;
 bool g_checked = false;
 bool g_active = false;
 bool g_atexit = false;
-bool g_flushed = false;  // guard: write the imatrix at most once per process
+bool g_flushed = false; // guard: write the imatrix at most once per process
 std::string g_path;
 // weight name -> running sum of squares (double for numerical stability)
 std::map<std::string, std::vector<double>> g_sumsq;

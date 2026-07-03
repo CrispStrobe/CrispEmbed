@@ -56,7 +56,7 @@ static const float * sd_to_f32(const ggml_tensor * t, std::vector<float> & buf) 
     if (t->type == GGML_TYPE_F32) {
         memcpy(buf.data(), src_bytes, n * sizeof(float));
     } else if (t->type == GGML_TYPE_F16) {
-        const ggml_fp16_t * src = (const ggml_fp16_t *) src_bytes;
+        const ggml_fp16_t * src = (const ggml_fp16_t *)src_bytes;
         for (int64_t i = 0; i < n; i++) buf[i] = ggml_fp16_to_fp32(src[i]);
     } else {
         const auto * traits = ggml_get_type_traits(t->type);
