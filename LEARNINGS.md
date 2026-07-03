@@ -1095,6 +1095,33 @@ model is quantized. (2) "the collector fired and quantize succeeded" does NOT
 mean the quantized model runs — always run inference on the quant and check
 cos-vs-f32, per CLAUDE.md "build verifies compile, not correctness."
 
+## Quant/imatrix A/B needs a CONTINUOUS metric, not a thresholded one (2026-07)
+
+Evaluating imatrix on a classification model (punctuation, NER, KIE) with a
+**thresholded** metric — restored-string exact-match, or per-token argmax-label
+agreement — is blind to it. The argmax saturates to "perfect" long before the
+model is lossless: fireredpunc scored 5/5 restored-string match for *both* plain
+q4_k and q4_k+imatrix, so imatrix looked worthless (n=5 → "no value").
+
+imatrix acts on the **logits / probability distribution**, not the argmax. Dump
+the pre-argmax per-token class logits (an env hook like `FIREREDPUNC_DUMP_LOGITS`)
+and, over HUNDREDS of tokens, compute **mean per-token prob-cosine** (softmax vs
+gold softmax, →1) and **mean KL(gold‖quant)** (→0). Over 490 tokens that showed
+q4_k+imatrix cutting KL-from-f16 ~2.8× (0.0093→0.0033) — a real, monotone win the
+exact-match hid. Report those, not exact-match. (Embedders already use cosine, a
+continuous metric — this gap only bit the discrete-output models.)
+
+Two corollaries burned real time here:
+1. **Never A/B a gguf that is still being quantized.** A half-written iq4_xs read
+   as 0/5 exact-match ("iq4_xs breaks punct"); the completed file is argmax-perfect.
+   Gate the eval on a DONE sentinel + a file-size-stable check.
+2. **Measure against the highest-precision gold you actually have, and say which.**
+   fullstop-punc has no f16 base on HF (only q8_0), so its imatrix could only be
+   calibrated+quantized from q8_0 and measured vs q8_0 — a near-lossless gap
+   (KL 0.0012) where imatrix genuinely can't help. That's a real "no benefit", but
+   for a different reason than fireredpunc's "exact-match can't see it"; don't
+   conflate the two.
+
 ## DeepSeek-OCR-2: from a never-run port to character-perfect OCR (2026-06)
 
 > **Status: WORKING again after a perf-sweep regression (fixed 2026-07-02).**
