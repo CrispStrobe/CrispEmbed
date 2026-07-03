@@ -679,6 +679,15 @@ python tests/check_registry_licenses.py --json     # for CI
 
 ## Building
 
+### Contributor setup (git hooks)
+
+After cloning, install the hooks once so staged C/C++ is auto-formatted with
+clang-format-18 before every commit (the `Lint` CI job enforces the same):
+
+```bash
+./scripts/install-hooks.sh    # sets core.hooksPath=hooks (covers all worktrees)
+```
+
 ### Linux / macOS
 
 ```bash
