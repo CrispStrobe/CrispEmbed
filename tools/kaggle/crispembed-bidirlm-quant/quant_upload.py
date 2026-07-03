@@ -18,8 +18,10 @@ import os, subprocess, sys
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
+# Clone repos under /tmp (NOT /kaggle/working) so `kernels output` — which downloads the
+# whole working dir — doesn't choke on the huge .git packs; keeps the log downloadable.
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
-_CRISPASR_DIR = WORK / "CrispASR"
+_CRISPASR_DIR = Path("/tmp") / "CrispASR"
 
 if not _CRISPASR_DIR.exists():
     try:
@@ -31,6 +33,19 @@ if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh
 kh.init_progress()
+
+# Dump any uncaught traceback to a SMALL file in the working dir (repos live under /tmp,
+# so /kaggle/working stays tiny and downloadable even when the run errors).
+import traceback as _tb
+def _excepthook(et, ev, tb):
+    msg = "".join(_tb.format_exception(et, ev, tb))
+    try:
+        (WORK / "ERROR.txt").write_text(msg)
+    except Exception:
+        pass
+    print(msg, flush=True)
+sys.excepthook = _excepthook
+
 hf_token = kh.resolve_hf_token()
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
@@ -42,7 +57,7 @@ subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
 kh.step("deps_installed")
 
 # --- clone CrispEmbed main (has --text-only converter + crispembed-quantize) ---
-REPO = WORK / "CrispEmbed"
+REPO = Path("/tmp") / "CrispEmbed"
 if not REPO.exists():
     subprocess.check_call(["git", "clone", "--depth", "1", "--branch", "main",
                            "https://github.com/CrispStrobe/CrispEmbed.git", str(REPO)])
