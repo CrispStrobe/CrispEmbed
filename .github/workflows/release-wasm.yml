@@ -1,0 +1,102 @@
+name: Release WASM artifacts
+
+# Builds both OCR and embedding WASM modules and attaches them to
+# GitHub releases as downloadable assets.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to attach artifacts to (e.g. v0.12.0)'
+        required: false
+
+concurrency:
+  group: release-wasm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-attach:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '3.1.64'
+
+      # ---- OCR WASM ----
+      - name: Build OCR WASM
+        run: ./build-wasm.sh --clean
+
+      - name: Verify OCR output
+        run: |
+          ls -lh build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm
+          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 2097152 ] || (echo "WASM too large" && exit 1)
+
+      # ---- Embedding WASM ----
+      - name: Build Embedding WASM
+        run: ./build-embed-wasm.sh --clean --no-simd
+
+      - name: Verify Embedding output
+        run: |
+          ls -lh build-embed-wasm/crispembed_embed.js build-embed-wasm/crispembed_embed.wasm
+
+      # ---- Package ----
+      - name: Create release archives
+        run: |
+          # OCR bundle: Emscripten output + high-level JS wrapper + example
+          mkdir -p crispembed-ocr-wasm
+          cp build-wasm/crispembed_ocr.js crispembed-ocr-wasm/
+          cp build-wasm/crispembed_ocr.wasm crispembed-ocr-wasm/
+          cp wasm/crispembed-ocr.js crispembed-ocr-wasm/
+          cp examples/wasm-ocr/index.html crispembed-ocr-wasm/
+          cp examples/wasm-ocr/serve.py crispembed-ocr-wasm/
+          tar czf crispembed-ocr-wasm.tar.gz crispembed-ocr-wasm/
+
+          # Embedding bundle
+          mkdir -p crispembed-embed-wasm
+          cp build-embed-wasm/crispembed_embed.js crispembed-embed-wasm/
+          cp build-embed-wasm/crispembed_embed.wasm crispembed-embed-wasm/
+          tar czf crispembed-embed-wasm.tar.gz crispembed-embed-wasm/
+
+      # ---- Upload to Release ----
+      - name: Determine release tag
+        id: tag
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ inputs.tag }}" ]; then
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tag=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload to release
+        if: steps.tag.outputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ steps.tag.outputs.tag }}" \
+            crispembed-ocr-wasm.tar.gz \
+            crispembed-embed-wasm.tar.gz \
+            build-wasm/crispembed_ocr.wasm \
+            build-wasm/crispembed_ocr.js \
+            wasm/crispembed-ocr.js \
+            --clobber
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: crispembed-wasm-release
+          path: |
+            crispembed-ocr-wasm.tar.gz
+            crispembed-embed-wasm.tar.gz
+          retention-days: 90

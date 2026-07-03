@@ -1,5 +1,5 @@
 #!/bin/bash
-# CrispEmbed WASM Build Script — math OCR for browser use.
+# CrispEmbed WASM Build Script — OCR for browser use.
 #
 # Usage:
 #   ./build-wasm.sh                    # default build (single-threaded)
@@ -54,7 +54,7 @@ if [ "$THREADS" = "ON" ]; then
 fi
 
 echo "============================================"
-echo "  CrispEmbed - WASM Build (math OCR)"
+echo "  CrispEmbed - WASM Build (OCR)"
 echo "  Threading: $THREAD_LABEL"
 echo "============================================"
 
@@ -76,6 +76,10 @@ EXPORTED_FUNCS="[\
 '_wasm_ocr_init',\
 '_wasm_ocr_recognize_gray',\
 '_wasm_ocr_recognize',\
+'_wasm_ocr_recognize_copy',\
+'_wasm_ocr_confidences',\
+'_wasm_ocr_mean_confidence',\
+'_wasm_ocr_set_max_tokens',\
 '_wasm_ocr_free',\
 '_malloc',\
 '_free',\
