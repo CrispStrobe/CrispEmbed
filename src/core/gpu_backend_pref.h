@@ -24,12 +24,12 @@ namespace crispasr_gpu_pref {
 
 // The preference is a simple global — set once at process start,
 // read many times. Thread-safe via the string copy in get().
-inline std::string& pref_storage() {
+inline std::string & pref_storage() {
     static std::string s;
     return s;
 }
 
-inline std::mutex& pref_mutex() {
+inline std::mutex & pref_mutex() {
     static std::mutex m;
     return m;
 }
@@ -38,7 +38,7 @@ inline std::mutex& pref_mutex() {
 
 // Set the GPU backend preference. Call once at startup, before any
 // backend init_from_file. Empty string = auto.
-inline void crispasr_set_gpu_backend_pref(const char* name) {
+inline void crispasr_set_gpu_backend_pref(const char * name) {
     std::lock_guard<std::mutex> lock(crispasr_gpu_pref::pref_mutex());
     crispasr_gpu_pref::pref_storage() = name ? name : "";
 }
@@ -49,12 +49,10 @@ inline std::string crispasr_get_gpu_backend_pref() {
 }
 
 // Case-insensitive prefix check: does `haystack` start with `needle`?
-inline bool ci_starts_with(const char* haystack, const char* needle) {
+inline bool ci_starts_with(const char * haystack, const char * needle) {
     for (; *needle; ++haystack, ++needle) {
-        if (!*haystack)
-            return false;
-        if (tolower((unsigned char)*haystack) != tolower((unsigned char)*needle))
-            return false;
+        if (!*haystack) return false;
+        if (tolower((unsigned char)*haystack) != tolower((unsigned char)*needle)) return false;
     }
     return true;
 }
@@ -74,9 +72,8 @@ inline ggml_backend_t crispasr_init_gpu_backend() {
         for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
             ggml_backend_dev_t dev = ggml_backend_dev_get(i);
             enum ggml_backend_dev_type dt = ggml_backend_dev_type(dev);
-            if (dt != GGML_BACKEND_DEVICE_TYPE_GPU && dt != GGML_BACKEND_DEVICE_TYPE_IGPU)
-                continue;
-            const char* dev_name = ggml_backend_dev_name(dev);
+            if (dt != GGML_BACKEND_DEVICE_TYPE_GPU && dt != GGML_BACKEND_DEVICE_TYPE_IGPU) continue;
+            const char * dev_name = ggml_backend_dev_name(dev);
             if (ci_starts_with(dev_name, pref.c_str())) {
                 ggml_backend_t result = ggml_backend_dev_init(dev, nullptr);
                 if (result) {
@@ -91,15 +88,13 @@ inline ggml_backend_t crispasr_init_gpu_backend() {
         // e.g. the user writes "vulkan" and the registry name is "Vulkan".
         for (size_t i = 0; i < ggml_backend_reg_count(); ++i) {
             ggml_backend_reg_t reg = ggml_backend_reg_get(i);
-            const char* reg_name = ggml_backend_reg_name(reg);
-            if (!ci_starts_with(reg_name, pref.c_str()))
-                continue;
+            const char * reg_name = ggml_backend_reg_name(reg);
+            if (!ci_starts_with(reg_name, pref.c_str())) continue;
             // Found the registry — pick the first GPU device from it.
             for (size_t j = 0; j < ggml_backend_reg_dev_count(reg); ++j) {
                 ggml_backend_dev_t dev = ggml_backend_reg_dev_get(reg, j);
                 enum ggml_backend_dev_type dt = ggml_backend_dev_type(dev);
-                if (dt != GGML_BACKEND_DEVICE_TYPE_GPU && dt != GGML_BACKEND_DEVICE_TYPE_IGPU)
-                    continue;
+                if (dt != GGML_BACKEND_DEVICE_TYPE_GPU && dt != GGML_BACKEND_DEVICE_TYPE_IGPU) continue;
                 ggml_backend_t result = ggml_backend_dev_init(dev, nullptr);
                 if (result) {
                     fprintf(stderr, "%s: using preferred GPU backend: %s (via registry '%s')\n", __func__,
