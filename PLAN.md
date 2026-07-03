@@ -921,16 +921,12 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **pcs — REGRESSION FIXED, CLOSED (Gap 4).** See triage above — q4_k crashed on inference
   (Q4_K/Q4_0 FC-head weights read as F32). Fixed by per-row dequant of the head weights in
   CrispASR/crisp_punc/src/pcs.cpp (+ CrispEmbed/src/pcs.cpp mirror); wired crash guard `pcs`.
-- **clip_text — BUG FOUND (tokenizer), not a wave regression.** Engine vs HF `get_text_features`
-  cos=0.79. Localized: the projection IS applied (cos 0.79 to post-`text_proj`, −0.02 to
-  pre-projection), so the error is upstream in **tokenization**. `CLIP_TEXT_DEBUG` token dump on
-  "a photo of a fox": engine emits 11 GPT-2-style ids with `220` (space `Ġ`) between words
-  `[49406,64,220,1153,220,684,220,64,220,5007,49407]` vs HF's 7 CLIP ids
-  `[49406,320,1125,539,320,3240,49407]` — the engine's BPE never applies CLIP's `</w>`
-  word-boundary convention, so every token is wrong → wrong EOS hidden. Pre-existing (wave only
-  touched threading). Handover: `handover-prompts/clip-text-bpe-word-boundary-tokenizer-bug.md`.
-  Harness+dumper kept as WIP on the branch, NOT wired (cos 0.79 fails). Fix the CLIP BPE (`</w>`)
-  then wire.
+- **clip_text — BUG FIXED, CLOSED (Gap 4).** Was cos=0.79 vs HF `get_text_features`: localized to
+  **tokenization** — the BPE emitted 11 GPT-2-style ids (`220` space between words) vs HF's 7 CLIP
+  ids, i.e. it never applied CLIP's `</w>` word-boundary convention. Fixed (`fa66a02`) by passing
+  `clip_style=true` to `BPETokenizer::load` in clip_text_embed.cpp (the tokenizer already
+  implemented the `</w>` path). Now `final_embedding` cos **1.000000**. Wired `clip-text` in the
+  manifest (ref `cstr/clip-text-base-GGUF/clip-text-ref.gguf`). Pre-existing (not a wave regression).
 
 **Methodology lesson (reinforced): a single-stage diff cannot tell a dumper bug from an engine
 bug.** gliner's `lstm_out`-only check looked like a BiLSTM regression; multi-stage + the entity
