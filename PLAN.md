@@ -546,9 +546,21 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   was the first call). Read via `core_cpu::to_f32` (dequant-safe); the whole
   quantized reranker was broken. 5th instance of the quantized-2D-weight-read-raw
   class this session.
-- **TODO:** retrieval A/B via `tests/bench_rag.py` (rank-quality, not just
-  quant-agreement); C8-proper cheap-coverage archs where clean.
-  engine schedulers; retrieval A/B via `tests/bench_rag.py`.
+- **Retrieval-quality A/B DONE (2026-07-03).** `tests/bench_rag.py` now A/Bs all
+  shipped flavors on MRR@10/Recall@10 (rank quality, not just cosine) over a
+  hardened 35-doc IR set. Result: 4-bit preserves ranking (MRR/Recall ≥ F32) and
+  imatrix lifts cosine monotonically (q4_k < q4_k+im < iq4_xs), recovering
+  all-MiniLM's plain-q4_k MRR dip 0.948→0.950. The shipped imatrix defaults are
+  retrieval-safe.
+- **Architecture coverage audit DONE (2026-07-03).** No clean cheap-coverage gap
+  remains: the encoder family (BERT/RoBERTa/XLM-R/Nomic-MoE/ModernBERT), decoder
+  embedders (Qwen3/Gemma3/LFM2), rerankers, ColBERT, sparse, and NER are all
+  shipped; the reranker RANK-head activations were verified to match llama.cpp
+  (tanh for BERT/XLM-R, GELU for the DeBERTa pooler). Remaining upstream borrows are
+  *optimizations*, not coverage — chiefly LFM2 ShortConv → `ggml_ssm_conv` for
+  better Metal kernel coverage (perf, regression risk on a working engine).
+- **TODO (open, lower priority):** C4 KV/prefix reuse; the LFM2 ssm_conv perf
+  refactor; domain-matched calibration corpora if a specific deployment needs it.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
