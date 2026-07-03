@@ -4,6 +4,37 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 3, 2026 — imatrix C1 closed: `clean_exit` vs `atexit` bug fixed, all embedders complete
+
+Finished the imatrix rollout by fixing a subtle correctness bug in the collector and
+completing the last big decoder embedders. All work in a separate worktree, cherry-picked
+to `origin/main`.
+
+**The bug.** The last three models re-quantized (qwen3-embed-4b, octen-8b, qwen3-embed-8b)
+produced `-q4_k-imatrix.gguf` files whose A/B cosine was **bit-identical to the plain
+baseline** — the imatrix wasn't being applied. Root cause was not the quantizer or the
+model: the collector flushed its GGUF only from an `atexit` handler, but every one-shot
+CrispEmbed binary exits via `core_util::clean_exit()` → `_exit()` (which skips ggml's Metal
+static-dtor teardown *and* all atexit handlers). Calibration collected the stats correctly,
+exited rc=0 with valid embeddings, and discarded them at exit → empty `.imatrix` → quantizer
+fell back to unweighted. It looked model-specific only because `clean_exit` landed
+mid-rollout: the first 27 embedders were calibrated before it (fine), the last 3 after
+(empty). Reproduced locally on jina-v5-nano (small Qwen3 decoder) and instrumented the
+eval-callback to confirm it fired and matched every weight — the flush was the only failure.
+
+**The fix (commit 07439db).** Flush explicitly from `crispembed_free()` (runs before
+`clean_exit`), guarded by `g_flushed` so atexit + explicit paths write at most once per
+process. Also vendored `src/core/gpu_backend_pref.h` (a new CrispASR shared-core header)
+to unblock the build. See `LEARNINGS.md → "The collector wrote nothing"`.
+
+**Completion.** Re-ran the Kaggle harness (chr1s4, `FORCE=1`, branch with the fix) for the
+three models; all now show strong imatrix deltas vs q8_0 gold: qwen3-embed-4b 0.9683→0.9881,
+octen-8b 0.9746→0.9902, qwen3-embed-8b 0.9742→0.9934. octen-8b/qwen3-embed-4b's previously
+mislabeled files are now genuine imatrix quants. Registry defaults verified **optimal for
+all 30** — each resolves to its max-cosine A/B flavor (decoder embedders → q4_k+imatrix,
+BERT/XLM-R encoders → iq4_xs+imatrix; f2llm-v2-0.6b + nomic-v1.5 kept at q8_0, both <0.91 at
+4-bit). qwen3-embed-8b registry entry repointed + `-q4k`/`-iq4xs`/`-q8` aliases added.
+
 ## July 2, 2026 — Gap-4 embedding/face/tail-engine regression guardrails + 3 real bugs
 
 Closed the June-wave audit's "Gap 4" (engines with no standing diff test) and, in the

@@ -470,14 +470,23 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   quantizer bug (`dense.*` ST projection quantized → unloadable GGUF), now **FIXED**
   with a `dense.*` keep-F32 guard (`tools/quantize.cpp`; see `LEARNINGS.md`) and
   re-enabled. f2llm/nomic-v1.5 quantize poorly at 4-bit even with imatrix → keep q8_0.
-- **Registry: DONE for all 31.** Every covered model's auto-download default now
-  resolves to its A/B winner (`model_mgr.cpp`), with `-q4k`(imatrix)/`-iq4xs`/`-q8`
-  aliases; f2llm-v2-0.6b + nomic-embed-text-v1.5 kept at q8_0 (poor at 4-bit). The
-  `dense.*` quantizer guard (unblocking embeddinggemma) is landed.
-- **TODO:** finish the 4B/8B big-base runs (octen-4b/8b, qwen3-embed-4b/8b) + repoint
-  their defaults; C8 wire remaining engine schedulers; domain-matched calibration
-  corpora; retrieval A/B via `tests/bench_rag.py`; rerankers (need a rank-score A/B,
-  not embedding cosine).
+- **All embedders DONE (2026-07-03).** The 4B/8B big-base runs are complete:
+  octen-4b (q4_k+im 0.9889), qwen3-embed-4b (0.9881), octen-8b (0.9902),
+  qwen3-embed-8b (0.9934) — all cos-vs-q8_0. qwen3-embed-8b was the last of the
+  roster. **Caveat found + fixed:** the first pass on the big decoders produced
+  *empty* imatrix files (`-q4_k-imatrix.gguf` bit-identical to baseline) because
+  the collector flushed via `atexit`, which the CLI's `clean_exit()`/`_exit()`
+  skips — see `LEARNINGS.md → "The collector wrote nothing"`. Re-quantized after
+  the `crispembed_free()` flush fix (commit 07439db).
+- **Registry: optimally wired for every model.** Each auto-download default in
+  `model_mgr.cpp` resolves to its **max-cosine A/B flavor** (decoder embedders →
+  q4_k+imatrix, BERT/XLM-R encoders → iq4_xs+imatrix), with
+  `-q4k`(imatrix)/`-iq4xs`/`-q8` aliases; f2llm-v2-0.6b + nomic-embed-text-v1.5
+  kept at q8_0 (both collapse to <0.91 at 4-bit even with imatrix). Verified by
+  cross-checking all 30 defaults against the uploaded `-imatrix-ab.txt` files.
+- **TODO:** C8 wire remaining engine schedulers; domain-matched calibration
+  corpora; retrieval A/B via `tests/bench_rag.py`; rerankers (need a rank-score
+  A/B, not embedding cosine).
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
