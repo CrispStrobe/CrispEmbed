@@ -39,8 +39,8 @@ jobs:
           ls -lh build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm
           echo "JS size: $(wc -c < build-wasm/crispembed_ocr.js) bytes"
           echo "WASM size: $(wc -c < build-wasm/crispembed_ocr.wasm) bytes"
-          # Sanity: WASM should be < 2 MB, JS < 200 KB
-          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 2097152 ] || (echo "WASM too large" && exit 1)
+          # Sanity: WASM should be < 4 MB (full OCR pipeline), JS < 200 KB
+          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 4194304 ] || (echo "WASM too large" && exit 1)
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
