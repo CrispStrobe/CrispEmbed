@@ -603,6 +603,22 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
     std::vector<float> logits_buf(ctx.n_classes * N);
     ggml_backend_tensor_get(logits, logits_buf.data(), 0, logits_buf.size() * sizeof(float));
 
+    // Diff harness: append per-token raw class logits to $FIREREDPUNC_DUMP_LOGITS
+    // (one line per token, n_classes space-separated floats). Lets an A/B measure
+    // the pre-argmax distribution — where quantization/imatrix effects actually
+    // live — instead of the thresholded restored-string exact-match.
+    if (const char * dump_path = getenv("FIREREDPUNC_DUMP_LOGITS")) {
+        if (FILE * fp = fopen(dump_path, "a")) {
+            for (int t = 0; t < N; t++) {
+                for (int c = 0; c < ctx.n_classes; c++) {
+                    fprintf(fp, "%s%.7g", c ? " " : "", logits_buf[t * ctx.n_classes + c]);
+                }
+                fputc('\n', fp);
+            }
+            fclose(fp);
+        }
+    }
+
     // Argmax per token
     std::vector<int> preds(N);
     for (int t = 0; t < N; t++) {
