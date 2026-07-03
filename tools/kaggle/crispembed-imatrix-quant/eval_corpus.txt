@@ -1,16 +1,16 @@
-Tom seems to know a lot about Australia.
-Tom scheint viel über Australien zu wissen.
-We need at least eight hours of sleep each day.
-Wir brauchen täglich mindestens acht Stunden Schlaf.
-Mary probably thought she was going to have to do that today.
-Maria dachte wohl, sie müsse das heute tun.
-Mary asked me if she could borrow my umbrella.
-Maria fragte mich, ob sie sich meinen Schirm ausleihen dürfe.
-I need to be in Boston by 2:30 tomorrow afternoon.
-Ich muss morgen Nachmittag spätestens um halb drei in Boston sein.
-I grew up on a farm not too far from Boston.
-Ich bin auf einem Bauernhof ganz in der Nähe von Boston aufgewachsen.
-I didn't tell Tom and Mary anything they didn't already know.
-Ich habe Tom und Maria nichts gesagt, was sie nicht schon gewusst hätten.
-Tom and Mary are waiting for you to help them.
-Tom und Maria warten darauf, dass du ihnen hilfst.
+Doctors recommend rest and fluids to recover from a mild fever.
+Ärzte empfehlen Ruhe und Flüssigkeit, um sich von leichtem Fieber zu erholen.
+The function returns an error when the input list is empty.
+Die Funktion gibt einen Fehler zurück, wenn die Eingabeliste leer ist.
+Cutting carbon emissions requires a shift toward cleaner transport.
+Die Senkung der CO2-Emissionen erfordert einen Wechsel zu saubererem Verkehr.
+The painting uses warm colours to convey a sense of calm.
+Das Gemälde verwendet warme Farben, um ein Gefühl der Ruhe zu vermitteln.
+Small class sizes let teachers give students more individual attention.
+Kleine Klassen ermöglichen es Lehrern, den Schülern mehr individuelle Aufmerksamkeit zu geben.
+Migratory birds travel thousands of kilometres between seasons.
+Zugvögel legen zwischen den Jahreszeiten Tausende von Kilometern zurück.
+The bridge was designed to withstand strong earthquakes.
+Die Brücke wurde so entworfen, dass sie starken Erdbeben standhält.
+Deep ocean currents move heat slowly around the entire planet.
+Tiefe Meeresströmungen transportieren Wärme langsam um den gesamten Planeten.

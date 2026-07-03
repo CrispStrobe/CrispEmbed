@@ -1,30 +1,30 @@
-Mary said she didn't know where Tom was.
-Maria sagte, sie wisse nicht, wo Tom sei.
-How long are Tom and I supposed to stay here?
-Wie lange sollen Tom und ich hierbleiben?
-Tom and Mary say they don't want to sing with us anymore.
-Tom und Maria wollen nicht mehr mit uns singen.
-Mary spent all morning cleaning her room.
-Maria hat den ganzen Morgen ihr Zimmer aufgeräumt.
-Mary said she learned how to do that from Tom.
-Maria sagte, sie habe das von Tom gelernt.
-Tom told Mary that John had decided not to do that.
-Tom teilte Maria mit, dass Johannes beschlossen hätte, das zu unterlassen.
-These three pretty girls are all nieces of mine.
-Diese drei hübschen Mädchen sind alle Nichten von mir.
-It's not easy to translate a poem in a foreign language.
-Es ist nicht einfach, ein Gedicht in eine fremde Sprache zu übersetzen.
-It is strictly forbidden to translate this sentence!
-Es ist strengstens verboten, diesen Satz zu übersetzen!
-Tom and Mary said they couldn't do that again.
-Tom und Maria sagten, noch mal könnten sie das nicht.
-Tom doesn't know he shouldn't do that anymore.
-Tom weiß nicht, dass er das nicht mehr soll.
-Tom would like to know why you did that.
-Tom möchte wissen, warum du das getan hast.
-Tom loves to play improvisational theatre.
-Tom liebt es, Improvisationstheater zu spielen.
-Mary said she tried to do that the day before yesterday.
-Maria sagte, sie habe es vorgestern versucht.
-I have a daughter that goes to school with Tom.
-Ich habe eine Tochter, die mit Tom zur Schule geht.
+Machine learning models turn raw text into dense numerical vectors.
+Modelle des maschinellen Lernens wandeln rohen Text in dichte Zahlenvektoren um.
+The central bank raised interest rates to slow down inflation.
+Die Zentralbank erhöhte die Zinsen, um die Inflation zu bremsen.
+Photosynthesis lets green plants convert sunlight into chemical energy.
+Die Photosynthese ermöglicht es grünen Pflanzen, Sonnenlicht in chemische Energie umzuwandeln.
+A balanced diet with vegetables and whole grains supports good health.
+Eine ausgewogene Ernährung mit Gemüse und Vollkorn fördert die Gesundheit.
+The mountain range stretches for hundreds of kilometres along the coast.
+Das Gebirge erstreckt sich über Hunderte von Kilometern entlang der Küste.
+Ancient trade routes connected distant cities across several continents.
+Alte Handelswege verbanden weit entfernte Städte über mehrere Kontinente hinweg.
+Regular exercise strengthens the heart and improves overall mood.
+Regelmäßiger Sport stärkt das Herz und verbessert die allgemeine Stimmung.
+She added two cups of flour and a pinch of salt to the dough.
+Sie gab zwei Tassen Mehl und eine Prise Salz zum Teig hinzu.
+The orchestra rehearsed the symphony for several hours before the concert.
+Das Orchester probte die Sinfonie mehrere Stunden lang vor dem Konzert.
+Renewable energy sources like wind and solar keep getting cheaper.
+Erneuerbare Energiequellen wie Wind und Sonne werden immer günstiger.
+The spacecraft entered orbit after a journey of several months.
+Die Raumsonde trat nach einer Reise von mehreren Monaten in die Umlaufbahn ein.
+Learning a second language improves memory and opens new opportunities.
+Das Erlernen einer zweiten Sprache verbessert das Gedächtnis und eröffnet neue Chancen.
+Heavy rain and strong winds are expected across the region tomorrow.
+Für morgen werden in der Region starker Regen und kräftiger Wind erwartet.
+The new railway line cut the travel time between the two cities in half.
+Die neue Bahnstrecke halbierte die Reisezeit zwischen den beiden Städten.
+Distributed databases replicate records so that lookups stay fast.
+Verteilte Datenbanken replizieren Datensätze, damit Abfragen schnell bleiben.
