@@ -2130,6 +2130,16 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   is as good as a benchmark here and carries no attribution burden. Practical trap:
   `datasets` 4.x dropped script datasets, so MIRACL/germandpr won't `load_dataset` —
   use their parquet mirrors or self-author.
+- **imatrix calibration is ~language-agnostic — calibrate in EN, it generalizes to
+  DE (2026-07-03).** Controlled A/B (`tools/kaggle/crispembed-calib-ab/`): quantize
+  q4_k twice, imatrix from English-only vs English+German calibration, evaluate both
+  on a German set. Deltas were **noise**: bge-m3 DE +0.0001 (EN −0.0007),
+  xlmr-ner-hrl 1.0→1.0. **Why:** the imatrix is per-*column* sum-of-squared
+  activations — which columns matter is set by the weights/architecture, not the
+  calibration language — so a bilingual calibration corpus is NOT worth a
+  re-calibration rollout. Use bilingual corpora for **A/B reporting** (they surface
+  a real EN-vs-DE quality gap in the *model*), not for calibration. The A/B itself
+  is the cheap way to check this before spending compute on any rollout.
 - **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
   base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
   calibration needs. But the imatrix is **activation statistics**, and q8_0 is
