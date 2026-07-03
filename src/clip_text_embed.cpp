@@ -9,6 +9,7 @@
 
 #include "clip_text_embed.h"
 #include "tokenizer.h"
+#include "imatrix.h"
 #include "core/gguf_loader.h"
 #include "core/ggml_metal_guard.h"
 
@@ -75,6 +76,11 @@ struct context {
     bool bench = false;
 
     ggml_gallocr_t galloc = nullptr;
+    // imatrix: gallocr + graph_compute has no eval-callback, so when calibrating
+    // (CRISPEMBED_IMATRIX_OUT set) route compute through a sched the collector hooks.
+    bool imatrix_active = false;
+    ggml_backend_sched_t imatrix_sched = nullptr;
+    ggml_backend_t imatrix_cpu = nullptr; // CPU fallback the sched requires as last backend
 };
 
 bool load(context ** out, const char * path, int n_threads) {
@@ -249,6 +255,18 @@ bool load(context ** out, const char * path, int n_threads) {
     fprintf(stderr, "clip_text: loaded %d layers\n", ctx->n_layers);
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+    ctx->imatrix_active = (std::getenv("CRISPEMBED_IMATRIX_OUT") != nullptr);
+    if (ctx->imatrix_active) {
+        // ggml_backend_sched_new asserts the LAST backend is CPU.
+        std::vector<ggml_backend_t> bes;
+        bes.push_back(ctx->backend);
+        if (!ggml_backend_is_cpu(ctx->backend)) {
+            ctx->imatrix_cpu = ggml_backend_cpu_init();
+            bes.push_back(ctx->imatrix_cpu);
+        }
+        ctx->imatrix_sched = ggml_backend_sched_new(bes.data(), nullptr, (int)bes.size(), 8192, false, false);
+        crispembed_imatrix_install(ctx->imatrix_sched);
+    }
 
     return true;
 }
@@ -407,7 +425,12 @@ std::vector<float> encode(context * ctx, const char * text) {
     ggml_cgraph * gf = ggml_new_graph_custom(g, total_nodes, false);
     ggml_build_forward_expand(gf, pooled);
 
-    ggml_gallocr_alloc_graph(ctx->galloc, gf);
+    if (ctx->imatrix_active) {
+        ggml_backend_sched_reset(ctx->imatrix_sched);
+        ggml_backend_sched_alloc_graph(ctx->imatrix_sched, gf);
+    } else {
+        ggml_gallocr_alloc_graph(ctx->galloc, gf);
+    }
 
     if (bench) {
         auto t_pre1 = std::chrono::steady_clock::now();
@@ -431,7 +454,10 @@ std::vector<float> encode(context * ctx, const char * text) {
     // Compute
     {
         auto t_comp0 = std::chrono::steady_clock::now();
-        ggml_backend_graph_compute(ctx->backend, gf);
+        if (ctx->imatrix_active)
+            ggml_backend_sched_graph_compute(ctx->imatrix_sched, gf);
+        else
+            ggml_backend_graph_compute(ctx->backend, gf);
         if (bench) {
             auto t_comp1 = std::chrono::steady_clock::now();
             fprintf(stderr, "[clip_text-bench] graph compute: %.3f ms\n",
@@ -473,6 +499,9 @@ int dim(const context * ctx) {
 
 void free(context * ctx) {
     if (ctx) {
+        crispembed_imatrix_flush(); // this context isn't freed via crispembed_free; clean_exit skips atexit
+        if (ctx->imatrix_sched) ggml_backend_sched_free(ctx->imatrix_sched);
+        if (ctx->imatrix_cpu) ggml_backend_free(ctx->imatrix_cpu);
         if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
