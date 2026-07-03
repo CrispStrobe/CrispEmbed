@@ -634,16 +634,16 @@ static const ModelEntry k_registry[] = {
       "XLM-R 1024d 100+ languages (560M, F32)", "2.2 GB", "mit",
       "https://huggingface.co/intfloat/multilingual-e5-large" },
 
-    { "granite-embedding-278m", "granite-embedding-278m-multilingual.gguf",
+    { "granite-embedding-278m", "granite-embedding-278m-multilingual-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/granite-embedding-278m-multilingual-GGUF/resolve/main/"
-      "granite-embedding-278m-multilingual.gguf",
-      "XLM-R 768d IBM multilingual (278M)", "1.1 GB", "apache-2.0",
+      "granite-embedding-278m-multilingual-q4_k-imatrix.gguf",
+      "XLM-R 768d IBM multilingual 278M (Q4_K+imatrix)", "259 MB", "apache-2.0",
       "https://huggingface.co/ibm-granite/granite-embedding-278m-multilingual" },
 
-    { "granite-embedding-107m", "granite-embedding-107m-multilingual.gguf",
+    { "granite-embedding-107m", "granite-embedding-107m-multilingual-iq4_xs.gguf",
       "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/"
-      "granite-embedding-107m-multilingual.gguf",
-      "XLM-R 384d IBM multilingual (107M)", "418 MB", "apache-2.0",
+      "granite-embedding-107m-multilingual-iq4_xs.gguf",
+      "XLM-R 384d IBM multilingual 107M (IQ4_XS+imatrix)", "115 MB", "apache-2.0",
       "https://huggingface.co/ibm-granite/granite-embedding-107m-multilingual" },
 
     // --- Sparse models ---
@@ -689,9 +689,9 @@ static const ModelEntry k_registry[] = {
       "GTE 1024d English pre-LN+RoPE+GeGLU (Q8_0)", "463 MB", "apache-2.0",
       "https://huggingface.co/Alibaba-NLP/gte-large-en-v1.5" },
 
-    { "gte-modernbert-base", "gte-modernbert-base-q8_0.gguf",
-      "https://huggingface.co/cstr/gte-modernbert-base-GGUF/resolve/main/gte-modernbert-base-q8_0.gguf",
-      "ModernBERT 768d English CLS, alternating global/local SWA + per-layer RoPE (149M)", "152 MB", "apache-2.0",
+    { "gte-modernbert-base", "gte-modernbert-base-iq4_xs.gguf",
+      "https://huggingface.co/cstr/gte-modernbert-base-GGUF/resolve/main/gte-modernbert-base-iq4_xs.gguf",
+      "ModernBERT 768d English CLS, alternating global/local SWA + per-layer RoPE 149M (IQ4_XS+imatrix)", "102 MB", "apache-2.0",
       "https://huggingface.co/Alibaba-NLP/gte-modernbert-base" },
 
     { "embeddinggemma-300m", "embeddinggemma-300m-iq4_xs.gguf",
