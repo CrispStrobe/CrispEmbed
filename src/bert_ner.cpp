@@ -107,6 +107,19 @@ bool load(context ** out, const char * model_path, int n_threads) {
             std::vector<uint16_t> f16(n);
             ggml_backend_tensor_get(t, f16.data(), 0, n * sizeof(uint16_t));
             for (size_t i = 0; i < n; i++) dst[i] = ggml_fp16_to_fp32(f16[i]);
+        } else if (ggml_is_quantized(t->type)) {
+            // The quantizer stores the 2-D classifier weight as Q8_0/Q4_K; a raw
+            // n*sizeof(float) get would overrun ggml_nbytes and the F32/F16 branches
+            // miss it entirely — bert-base-NER / xlmr-ner-hrl failed to load on any
+            // quant. Read the packed bytes and dequantize via the type traits.
+            std::vector<uint8_t> q(ggml_nbytes(t));
+            ggml_backend_tensor_get(t, q.data(), 0, q.size());
+            const auto * tr = ggml_get_type_traits(t->type);
+            if (!tr || !tr->to_float) {
+                fprintf(stderr, "bert_ner: %s: no dequantizer for type %d\n", name, t->type);
+                return false;
+            }
+            tr->to_float(q.data(), dst.data(), (int64_t)n);
         } else {
             fprintf(stderr, "bert_ner: %s: unsupported type %d\n", name, t->type);
             return false;
