@@ -504,13 +504,26 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   repointed to iq4_xs. Required a `bert_ner` classifier-dequant fix (commit
   85feaeb): the Q8_0/Q4_K `ner.classifier.weight` was read as raw F32, so both
   **failed to load on any quant** (their q8_0 defaults were broken).
-- **TODO:** **GLiNER** imatrix (gliner-deberta, gliner-lfm) — blocked: they use a
-  `ggml_gallocr` + `ggml_backend_graph_compute` path with no eval-callback hook, so
-  the collector can't attach; needs routing their compute through a
-  `ggml_backend_sched` when imatrix is active. Then **sparse/ColBERT** (splade-pp,
-  lfm2-colbert); C8 wire remaining engine schedulers; domain-matched calibration
-  corpora; retrieval A/B via `tests/bench_rag.py`. **Note:** reranker/NER A/B eval
-  sets are small (n=5–6) so τ/F1 are coarse — larger corpora would firm the calls.
+- **C1d — GLiNER DONE (2026-07-03).** Routed GLiNER's 4 compute sites through an
+  opt-in `ggml_backend_sched` (built only when `CRISPEMBED_IMATRIX_OUT` is set) so
+  the collector's eval-callback attaches — the gallocr path has no hook. Flush in
+  `gliner_ner_free` (clean_exit skips atexit). gliner-deberta → iq4_xs (span-F1
+  1.0); gliner-lfm → q8_0 (q4_k+im 0.971 — the F1 dip is a 0.5-threshold artifact,
+  not a bug: uniform 2% score shift tips 3 borderline detections; verified by
+  score-level diff).
+- **C1e — ColBERT + Sparse DONE (2026-07-03).** ColBERT (`lfm2-colbert`, per-token
+  cosine A/B) → q4_k+im 0.9975. Sparse (`splade-pp-en-v1`, sparse-vector cosine)
+  → iq4_xs 0.996. **splade-pp was functionally broken** (GGUF shipped without the
+  MLM head) — a general **converter bug** (SPLADE mis-detected as 2-label NER via
+  HF random-init); fixed with checkpoint-authoritative head detection
+  (`convert-bert-to-gguf.py`), reconverted, sparse restored.
+- **Eval corpora (SOTA, permissive EN+DE):** report against **MMTEB** (Apache-2.0);
+  for calibration/A/B text use **MIRACL** (Apache-2.0) + **Tatoeba** (CC-BY-2.0) +
+  GermanQuAD (CC-BY-4.0). No clean MIT/Apache EN+DE *gold NER* exists → self-label.
+  Current reranker/NER/gliner A/B sets are small (n=5–6) so τ/F1 are coarse — the
+  continuous score/vector delta is the truer signal; scale the corpora next.
+- **TODO:** wire the MIRACL/Tatoeba EN+DE corpora into the harness; C8 remaining
+  engine schedulers; retrieval A/B via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
