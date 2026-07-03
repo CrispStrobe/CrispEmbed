@@ -72,6 +72,41 @@ RUN = [m.strip() for m in os.environ.get("MODELS", "").split(",") if m.strip()] 
 # Default hf_out = cstr/<name>-GGUF; default quants = QSPECS.
 OVERRIDES = {}
 
+# ── reranker (cross-encoder) support ─────────────────────────────────────────
+# Rerankers score (query, doc) pairs rather than producing a pooled embedding, so
+# `mean_cos` is meaningless. A/B metric = Kendall-tau on the doc ranking (what a
+# reranker is FOR) vs the q8/full-precision gold, with mean|dscore| as tiebreaker.
+# Calibration runs the `--rerank` path — the imatrix collector fires on it exactly
+# like the embed path (verified locally: ms-marco-MiniLM-L-6-v2 q4_k+im halves
+# mean|dscore| 0.0102->0.0064; iq4_xs+im gives tau 1.0).
+MODE = {m: "rerank" for m in (
+    "bge-reranker-base", "bge-reranker-v2-m3", "jina-reranker-v2-base-multilingual",
+    "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-12-v2",
+    "mxbai-rerank-base-v1", "mxbai-rerank-xsmall-v1",
+)}
+
+# (query, [docs]) calibration pairs — mixed relevance across domains. imatrix
+# quality tracks calibration relevance, so exercise realistic query/doc text.
+RERANK_CALIB = [
+    ("what causes rain", ["Rain forms when water vapor condenses into droplets.", "The stock market fell sharply today.", "Clouds release precipitation when saturated.", "Cats are popular pets worldwide."]),
+    ("how do vaccines work", ["Vaccines train the immune system using antigens.", "A recipe for chocolate cake needs flour and eggs.", "Immunization prompts antibody production.", "The train departs at noon."]),
+    ("best programming language for data science", ["Python is widely used for data analysis and ML.", "Football is played on a rectangular field.", "R is favored for statistical computing.", "The weather is cold in winter."]),
+    ("symptoms of the flu", ["Influenza causes fever, cough, and body aches.", "Paris is the capital of France.", "Flu often brings fatigue and sore throat.", "Diamonds form under high pressure."]),
+    ("how to reduce carbon emissions", ["Switching to renewable energy cuts emissions.", "The novel was published in 1925.", "Public transit reduces per-capita CO2.", "Guitars have six strings."]),
+    ("history of the Roman Empire", ["Rome expanded across the Mediterranean by conquest.", "Photosynthesis converts sunlight to energy.", "The empire fell in the 5th century.", "Smartphones use lithium batteries."]),
+    ("nutritional benefits of vegetables", ["Vegetables provide fiber, vitamins, and minerals.", "Jupiter is the largest planet.", "Leafy greens are rich in iron.", "The marathon is 42 kilometers."]),
+    ("how neural networks learn", ["Networks adjust weights via backpropagation.", "Coffee contains caffeine.", "Gradient descent minimizes the loss.", "The Nile is a long river."]),
+    ("effects of sleep deprivation", ["Lack of sleep impairs memory and focus.", "Mount Everest is the tallest mountain.", "Sleep loss weakens the immune system.", "Violins are string instruments."]),
+    ("renewable energy sources", ["Solar and wind are clean energy sources.", "The recipe calls for two cups of sugar.", "Hydropower generates electricity from water.", "Penguins live in cold climates."]),
+]
+RERANK_EVAL = [
+    ("treatment for headaches", ["Pain relievers like ibuprofen ease headaches.", "The bridge spans two kilometers.", "Rest and hydration reduce headache severity.", "Tomatoes are technically fruits."]),
+    ("how do plants make food", ["Plants use photosynthesis to make glucose.", "The car engine has six cylinders.", "Chlorophyll captures light energy.", "Chess has sixty-four squares."]),
+    ("causes of climate change", ["Greenhouse gas emissions drive warming.", "The museum opens at nine.", "Deforestation raises atmospheric CO2.", "Owls are nocturnal birds."]),
+    ("benefits of regular exercise", ["Exercise strengthens the heart and muscles.", "The library has many books.", "Physical activity improves mood.", "Saturn has prominent rings."]),
+    ("how computers store data", ["Data is stored as bits on drives and memory.", "Roses are often red.", "SSDs use flash memory cells.", "The concert starts at eight."]),
+]
+
 # QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None =
 # A/B reference only (never uploaded — don't clobber baselines). imatrix variants
 # get DISTINCT names: q4_k+imatrix -> *-q4_k-imatrix.gguf, iq4_xs -> *-iq4_xs.gguf.
@@ -128,6 +163,40 @@ def mean_cos(a, b):
         return d/(nu*nv) if nu and nv else 0.0
     n = min(len(a), len(b))
     return (sum(cos(a[i], b[i]) for i in range(n)) / n if n else float("nan")), n
+
+
+def rerank_scores(cli, model, query, docs):
+    """Return {doc_index: score} from the cross-encoder --rerank path."""
+    r = subprocess.run([str(cli), "-m", str(model), "--json", "--rerank", query, *docs],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"rerank failed for {model}:\n{r.stderr[-1500:]}")
+    return {res["index"]: res["score"] for res in json.loads(r.stdout)["results"]}
+
+
+def kendall_tau(a, b):
+    """Kendall-tau between two {index: score} maps over their shared indices."""
+    idx = sorted(set(a) & set(b)); con = dis = 0
+    for i in range(len(idx)):
+        for j in range(i + 1, len(idx)):
+            x, y = idx[i], idx[j]
+            sa, sb = a[x] - a[y], b[x] - b[y]
+            if sa == 0 or sb == 0:
+                continue
+            con += (sa > 0) == (sb > 0); dis += (sa > 0) != (sb > 0)
+    tot = con + dis
+    return (con - dis) / tot if tot else 1.0
+
+
+def rerank_ab(cli, model, gold):
+    """Mean Kendall-tau + mean|dscore| of `model` vs gold scores over RERANK_EVAL."""
+    taus, dabs = [], []
+    for (q, docs), g in zip(RERANK_EVAL, gold):
+        s = rerank_scores(cli, model, q, docs)
+        taus.append(kendall_tau(g, s))
+        shared = [i for i in g if i in s]
+        dabs.append(sum(abs(g[i] - s[i]) for i in shared) / len(shared) if shared else 0.0)
+    return sum(taus) / len(taus), sum(dabs) / len(dabs)
 
 
 _QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf16|imatrix)', re.I)
@@ -195,21 +264,37 @@ def process(name, cli, quant, api, calib, eval_):
     kh.step("model.source", model=name, src=src_fn, prefix=prefix,
             src_gb=round(ggs.get(src_fn, 0)/1e9, 2), big=big)
 
+    mode = MODE.get(name, "embed")     # "embed" (pooled vector) or "rerank" (cross-encoder)
+    metric = "tau" if mode == "rerank" else "cos"
     imat = stage / f"{prefix}.imatrix"; imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
     with kh.build_heartbeat(f"{name}.calibrate"):
-        cal = subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
-                             env=env, capture_output=True, text=True)
+        if mode == "rerank":
+            # collector fires on the --rerank path too; run every calib pair
+            outlen, err = 0, ""
+            for q, docs in RERANK_CALIB:
+                cal = subprocess.run([str(cli), "-m", str(csrc), "--json", "--rerank", q, *docs],
+                                     env=env, capture_output=True, text=True)
+                if cal.returncode != 0:
+                    raise RuntimeError(f"rerank calibration rc={cal.returncode} for {name}; "
+                                       f"stderr tail:\n{cal.stderr[-1200:]}")
+                outlen += len(cal.stdout); err = cal.stderr
+        else:
+            cal = subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
+                                 env=env, capture_output=True, text=True)
+            if cal.returncode != 0:
+                raise RuntimeError(f"calibration rc={cal.returncode} for {name}; stderr tail:\n{cal.stderr[-1200:]}")
+            outlen, err = len(cal.stdout), cal.stderr
     # Fail LOUDLY if calibration didn't produce the imatrix — otherwise the quantizer
     # silently falls back to NON-imatrix and uploads mislabeled "-imatrix" quants
-    # (observed on qwen3-embed-8b). Surface the CLI stderr for diagnosis.
-    if cal.returncode != 0:
-        raise RuntimeError(f"calibration rc={cal.returncode} for {name}; stderr tail:\n{cal.stderr[-1200:]}")
+    # (observed on qwen3-embed-8b: clean_exit skipped the atexit flush). Surface stderr.
     if not imat.exists() or imat.stat().st_size == 0:
         raise RuntimeError(f"calibration produced NO imatrix at {imat} for {name} "
-                           f"(rc=0); stdout {len(cal.stdout)}B; stderr tail:\n{cal.stderr[-1200:]}")
+                           f"(rc=0); stdout {outlen}B; stderr tail:\n{err[-1200:]}")
 
-    gold, _ = embed(cli, csrc, eval_)   # gold = calib source (q8_0 for big, ~lossless)
+    # gold = calib source (q8_0 for big / full-precision base otherwise, ~lossless)
+    gold = ([rerank_scores(cli, csrc, q, docs) for q, docs in RERANK_EVAL] if mode == "rerank"
+            else embed(cli, csrc, eval_)[0])
 
     report = []
     for qtype, use_im, up_tmpl in quants:
@@ -220,24 +305,30 @@ def process(name, cli, quant, api, calib, eval_):
         cmd = [str(quant), str(qsrc), str(out), qtype] + (["--imatrix", str(imat)] if use_im else [])
         with kh.build_heartbeat(f"{name}.quant.{tag}"):
             subprocess.check_call(cmd)
-        vecs, dt = embed(cli, out, eval_)
-        cos, n = mean_cos(vecs, gold)
+        if mode == "rerank":
+            val, dscore = rerank_ab(cli, out, gold)   # val = mean Kendall-tau
+            extra = f" dscore={dscore:.4f}"
+        else:
+            vecs, _ = embed(cli, out, eval_)
+            val, _ = mean_cos(vecs, gold); extra = ""
         mb = out.stat().st_size / 1e6
         upname = up_tmpl.format(prefix=prefix) if up_tmpl else "(A/B only)"
-        kh.step(f"{name}.ab.{tag}", imatrix=use_im, cos_vs_gold=round(cos, 6),
+        kh.step(f"{name}.ab.{tag}", imatrix=use_im, **{f"{metric}_vs_gold": round(val, 6)},
                 gold=goldlabel, size_mb=round(mb, 1), upload=upname)
-        report.append(f"{qtype:7s} imatrix={int(use_im)}  cos_vs_{goldlabel}={cos:.6f}  {mb:7.1f}MB  -> {upname}")
+        report.append(f"{qtype:7s} imatrix={int(use_im)}  {metric}_vs_{goldlabel}={val:.6f}{extra}  {mb:7.1f}MB  -> {upname}")
         if up_tmpl:
             with kh.build_heartbeat(f"{name}.upload.{tag}"):
                 api.upload_file(path_or_fileobj=str(out), path_in_repo=upname,
                     repo_id=hf_out, repo_type="model",
-                    commit_message=f"{qtype} +imatrix (cos_vs_{goldlabel}={cos:.4f})")
+                    commit_message=f"{qtype} +imatrix ({metric}_vs_{goldlabel}={val:.4f})")
         out.unlink(missing_ok=True)
 
-    summary = (f"imatrix A/B — {name} ({hf_out}), cos vs {goldlabel} gold, "
-               f"n={len(eval_)}, calib={len(calib)}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
+    calib_n = len(RERANK_CALIB) if mode == "rerank" else len(calib)
+    eval_n = len(RERANK_EVAL) if mode == "rerank" else len(eval_)
+    summary = (f"imatrix A/B — {name} ({hf_out}), {metric} vs {goldlabel} gold, "
+               f"n={eval_n}, calib={calib_n}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
     summ = stage / f"{prefix}-imatrix-ab.txt"; summ.write_text(summary)
-    for p, msg in [(summ, "A/B summary (cos vs gold)"), (imat, "importance matrix (calibration)")]:
+    for p, msg in [(summ, f"A/B summary ({metric} vs gold)"), (imat, "importance matrix (calibration)")]:
         with kh.build_heartbeat(f"{name}.upload.meta"):
             api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
                 repo_id=hf_out, repo_type="model", commit_message=msg)
