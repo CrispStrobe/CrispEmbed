@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrispEmbed OCR — WASM Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f5f5f5; color: #333;
+    max-width: 720px; margin: 0 auto; padding: 24px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+  .card {
+    background: #fff; border-radius: 8px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12); margin-bottom: 16px;
+  }
+  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+  input[type="text"], input[type="number"] {
+    width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.9rem; margin-bottom: 12px;
+  }
+  button {
+    background: #2563eb; color: #fff; border: none; border-radius: 6px;
+    padding: 10px 20px; font-size: 0.95rem; cursor: pointer;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  .drop-zone {
+    border: 2px dashed #cbd5e1; border-radius: 8px; padding: 40px 20px;
+    text-align: center; color: #64748b; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop-zone.dragover { border-color: #2563eb; background: #eff6ff; }
+  .drop-zone img {
+    max-width: 100%; max-height: 300px; margin-top: 12px; border-radius: 4px;
+  }
+  .progress-bar {
+    width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;
+    overflow: hidden; margin: 8px 0;
+  }
+  .progress-bar .fill {
+    height: 100%; background: #2563eb; width: 0%; transition: width .2s;
+  }
+  #status { font-size: 0.85rem; color: #64748b; min-height: 1.2em; }
+  #result-card { display: none; }
+  #result-text {
+    font-family: 'Courier New', monospace; font-size: 1rem;
+    background: #f8fafc; padding: 12px; border-radius: 4px;
+    white-space: pre-wrap; word-break: break-all;
+    border: 1px solid #e2e8f0; min-height: 40px;
+  }
+  .meta { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
+  .row { display: flex; gap: 12px; align-items: flex-end; }
+  .row > * { flex: 1; }
+</style>
+</head>
+<body>
+
+<h1>CrispEmbed OCR</h1>
+<p class="subtitle">Client-side OCR powered by WebAssembly — no server needed.</p>
+
+<!-- Setup -->
+<div class="card">
+  <label for="model-url">Model URL (GGUF)</label>
+  <input type="text" id="model-url"
+    value="https://huggingface.co/cstr/pix2tex-GGUF/resolve/main/pix2tex-q4_k.gguf"
+    placeholder="https://...model.gguf">
+  <div class="row">
+    <div>
+      <label for="n-threads">Threads</label>
+      <input type="number" id="n-threads" value="1" min="1" max="8">
+    </div>
+    <div style="flex:0 0 auto">
+      <button id="btn-init" onclick="initOCR()">Load Model</button>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+  <div id="status">Ready — enter a model URL and click "Load Model".</div>
+</div>
+
+<!-- Image input -->
+<div class="card">
+  <label>Image</label>
+  <div class="drop-zone" id="drop-zone"
+       ondragover="event.preventDefault(); this.classList.add('dragover')"
+       ondragleave="this.classList.remove('dragover')"
+       ondrop="handleDrop(event)"
+       onclick="document.getElementById('file-input').click()">
+    Drop an image here, or click to select
+  </div>
+  <input type="file" id="file-input" accept="image/*" style="display:none"
+         onchange="handleFile(this.files[0])">
+</div>
+
+<!-- Result -->
+<div class="card" id="result-card">
+  <label>Result</label>
+  <div id="result-text"></div>
+  <div class="meta" id="result-meta"></div>
+</div>
+
+<!--
+  Load the Emscripten-generated loader first, then the high-level wrapper.
+  In production, these files sit next to your index.html.
+  For this example, they come from ../../wasm/ or from a CDN.
+-->
+<script src="crispembed_ocr.js"></script>
+<script src="crispembed-ocr.js"></script>
+<script>
+
+let ocr = null;
+
+async function initOCR() {
+  const btn = document.getElementById('btn-init');
+  const status = document.getElementById('status');
+  const fill = document.getElementById('progress-fill');
+  const modelUrl = document.getElementById('model-url').value.trim();
+  const nThreads = parseInt(document.getElementById('n-threads').value) || 1;
+
+  if (!modelUrl) { status.textContent = 'Please enter a model URL.'; return; }
+
+  btn.disabled = true;
+  status.textContent = 'Initializing WASM module...';
+
+  try {
+    // Dispose previous instance if any
+    if (ocr) { ocr.dispose(); ocr = null; }
+
+    ocr = await CrispEmbedOCRWrapper.create({
+      modelUrl,
+      nThreads,
+      onProgress(p) {
+        fill.style.width = (p * 100).toFixed(0) + '%';
+        if (p < 0.05)      status.textContent = 'Initializing WASM module...';
+        else if (p < 0.80) status.textContent = 'Downloading model... ' + (p * 100).toFixed(0) + '%';
+        else if (p < 0.95) status.textContent = 'Loading model into WASM memory...';
+        else               status.textContent = 'Ready!';
+      },
+    });
+
+    status.textContent = `Model loaded (${ocr.version}). Drop or select an image.`;
+    btn.textContent = 'Reload Model';
+  } catch (e) {
+    status.textContent = 'Error: ' + e.message;
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) handleFile(file);
+}
+
+async function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+
+  // Show preview
+  const zone = document.getElementById('drop-zone');
+  const reader = new FileReader();
+  reader.onload = () => {
+    zone.innerHTML = `<img src="${reader.result}" alt="preview">`;
+  };
+  reader.readAsDataURL(file);
+
+  // Run OCR
+  await runOCR(file);
+}
+
+async function runOCR(source) {
+  if (!ocr) {
+    document.getElementById('status').textContent =
+      'Load a model first!';
+    return;
+  }
+
+  const status = document.getElementById('status');
+  const resultCard = document.getElementById('result-card');
+  const resultText = document.getElementById('result-text');
+  const resultMeta = document.getElementById('result-meta');
+
+  status.textContent = 'Recognizing...';
+  resultCard.style.display = 'block';
+  resultText.textContent = '...';
+  resultMeta.textContent = '';
+
+  // Yield to UI before blocking on WASM compute
+  await new Promise(r => setTimeout(r, 50));
+
+  const t0 = performance.now();
+  try {
+    const { text, confidence } = await ocr.recognize(source);
+    const ms = (performance.now() - t0).toFixed(0);
+
+    resultText.textContent = text || '(no text detected)';
+    resultMeta.textContent = `Confidence: ${(confidence * 100).toFixed(1)}% | Time: ${ms} ms`;
+    status.textContent = 'Done.';
+  } catch (e) {
+    resultText.textContent = 'Error: ' + e.message;
+    status.textContent = 'Recognition failed.';
+    console.error(e);
+  }
+}
+
+</script>
+</body>
+</html>
