@@ -4302,3 +4302,44 @@ vision layers and both LLM layers at cos 0.9999 (late layers per the sink-token
 caveat above). See also the "Self-consistent crispembed-diff reference" and
 "Never blame quantization" entries — and the meta-lesson: **independently
 reproduce a handover's root-cause claim before building on it.**
+
+## 2026-07 — pcs full ONNX parity + an encoder-parity audit sweep
+
+Chasing a shipped q4_k crash in the `pcs` punctuation engine turned into full parity
+work against the ONNX source (`1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase`,
+run via onnxruntime — `tools/dump_pcs_reference.py`). Six root causes, each a distinct
+class:
+1. **q4_k crash** — the CPU-side SBD/truecase heads read quantized FC weights via raw
+   `ggml_backend_tensor_get(..., n*sizeof(float))`, overrunning `ggml_nbytes` → abort. Fix:
+   read via a per-row dequant (`to_float` trait, sized by `ggml_nbytes`), or the shared
+   `core_cpu::to_f32`. Quantizer DOES quantize 2-D weights incl. `token_embd`, so any
+   CPU-side weight read must dequantize.
+2. **Tokenizer (dominant)** — XLM-R is SP **Unigram**; greedy longest-match mis-split
+   multi-subword words → embeddings cos as low as 0.13. Fix: Unigram Viterbi over
+   `tokenizer.ggml.scores` (converter now emits them; new `core_gguf::kv_f32_array`).
+3. **Decode** re-counted subtokens greedily → dropped final punctuation on multi-subword
+   words; now partitions the actual token_ids by ▁ word-start.
+4. **SBD** used argmax; ONNX thresholds `softmax P(boundary) > 0.05`.
+5. **Truecase** conditioning used the current token's sbd; ONNX feeds the SHIFTED
+   is-sentence-initial flag (`argmax seg[t-1]`).
+6. **Encoder numerics**: `ggml_gelu` (tanh) where XLM-R uses exact erf → `ggml_gelu_erf`;
+   LayerNorm eps `1e-12` → `1e-5` (RoBERTa/XLM-R; BERT genuinely wants 1e-12).
+After all six, tok+post+pre+seg predictions match ONNX 11/11, encoder hidden cos 0.999997,
+q8_0/f32 exact. Diagnostics: `PCS_DEBUG`, `PCS_FORCE_CPU`, `PCS_DUMP_HIDDEN`,
+`PCS_DUMP_LAYER`, `PCS_FLASH_ATTN`. GGUFs re-uploaded to `cstr/pcs-xlmr-base-GGUF` (+q8_0).
+
+The pcs classes then generalised across the codebase:
+- **GELU tanh→erf** wherever `hidden_act="gelu"` (exact erf): `gliner_ner.cpp` (DeBERTa-v3),
+  `lilt_kie.cpp` layout FFN (text FFN was already erf — asymmetric miss). Verify each
+  against the real `config.json`; SigLIP/CLIP genuinely use tanh/quick_gelu.
+- **Quant-read crash class**: `crispembed.cpp`'s MLM/SPLADE head read the quantized
+  `token_embd` / `mlm_transform_w` as raw F32 → now `core_cpu::to_f32` (the shared
+  backend-safe dequant in `src/core/cpu_ops.h`). The fused-QKV merge was already guarded
+  (`if (L.q_w->type != GGML_TYPE_F32) continue`).
+- **fullstop-punc** (XLM-R via the fireredpunc SP path) had the full pcs set (greedy
+  tokenizer + eps 1e-12 + tanh GELU) — fixed (inline Viterbi + conditional eps + erf),
+  verified exact vs HF, GGUFs re-uploaded. The dead `src/{pcs,fireredpunc}.cpp` fallback
+  duplicates (built only when the shared `crisp_punc` lib is absent) were unified.
+Note the two `pcs.cpp` copies (CrispASR `crisp_punc` = shipped; CrispEmbed `src` = fallback)
+must stay logically in sync; each repo's `.clang-format` differs so byte-identity is
+impossible — sync the logic. See the memory `pcs-cpp-two-copies-diverged`.
