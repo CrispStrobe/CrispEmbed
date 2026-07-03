@@ -12,8 +12,8 @@
 
 #include "pcs.h"
 
-#include "core/gpu_backend_pref.h" // crispasr_init_gpu_backend (#214)
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h" // crispasr_init_gpu_backend (#214)
 
 #include "ggml.h"
 #include "ggml-backend.h"
