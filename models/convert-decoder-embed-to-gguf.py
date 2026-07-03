@@ -56,6 +56,9 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True)
     parser.add_argument("--output", required=True)
+    parser.add_argument("--text-only", action="store_true",
+                        help="BidirLM-Omni: skip the audio + vision tower export "
+                             "(produces the smaller text-only GGUF; the text embedding is identical)")
     parser.add_argument("--dtype", choices=["f16", "f32", "q8_0"], default="f32")
     parser.add_argument("--load-dtype",
                         choices=["bfloat16", "float16", "float32"],
@@ -814,7 +817,7 @@ def main():
             return True
         return False
 
-    if is_bidirlm_omni:
+    if is_bidirlm_omni and not args.text_only:
         # config.audio_config still present — we only promoted text_config
         # fields earlier, leaving audio_config untouched.
         ac = getattr(config, "audio_config", None)
@@ -942,7 +945,7 @@ def main():
     # Vision tower export — runs regardless of ollama_mode. The bidirlm.vision.*
     # metadata + visual.* tensor names don't collide with Ollama's schema, so
     # the same GGUF works in both runtimes (Ollama just ignores the extras).
-    if is_bidirlm_omni:
+    if is_bidirlm_omni and not args.text_only:
         vc = getattr(config, "vision_config", None)
         if vc is None:
             print("  vision: no vision_config — skipping")
