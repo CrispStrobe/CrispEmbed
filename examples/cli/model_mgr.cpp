@@ -1067,9 +1067,9 @@ static const ModelEntry k_registry[] = {
       "GLiNER zero-shot NER (LFM2.5-350M, Q4_K compact)", "254 MB", "lfm1.0",
       "https://huggingface.co/cstr/sauerkraut-gliner-lfm-GGUF" },
 
-    { "gliner-deberta", "gliner-deberta-q8_0.gguf",
-      "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-q8_0.gguf",
-      "GLiNER zero-shot NER (DeBERTa-v3-base, 209M, Apache-2.0)", "198 MB", "apache-2.0",
+    { "gliner-deberta", "gliner-deberta-iq4_xs.gguf",
+      "https://huggingface.co/cstr/gliner-deberta-GGUF/resolve/main/gliner-deberta-iq4_xs.gguf",
+      "GLiNER zero-shot NER DeBERTa-v3-base 209M (IQ4_XS+imatrix, span-F1 1.0)", "159 MB", "apache-2.0",
       "https://huggingface.co/cstr/gliner-deberta-GGUF" },
 
     { "gliner-deberta-q4k", "gliner-deberta-q4_k.gguf",
