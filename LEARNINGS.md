@@ -1078,6 +1078,23 @@ layout — this reads wrong data sizes from F16 tensors (`tensor read out
 of bounds`). Fix: use `tensor_to_f32()` helper that reads raw bytes via
 `ggml_nbytes()` then dequantizes via `ggml_get_type_traits()->to_float`.
 
+**Quantized version (2026-07-03): the same rule bites `position_embd` on
+quant.** clip_text/SigLIP-text quantized cleanly on paper (75 tensors, imatrix
+fired) but produced `cos_vs_f32 = 0.0000` and aborted at inference:
+`binary_op: unsupported types: dst f32, src0 f32, src1 q8_0`. The quantizer
+stores `position_embd.weight` (a 2-D embedding table) as Q8_0, and the graph
+added it via a raw `ggml_view_2d(pos_embd)` — `ggml_add`'s src1 must be F32, and
+a Q8_0 view is not. The token embedding next to it was *fine* because it goes
+through `ggml_get_rows`, which dequantizes to F32; only the position path used a
+raw view. Fix: `if (ggml_is_quantized(pe->type)) pe = ggml_cast(g, pe,
+GGML_TYPE_F32);` before the view+add. **Lessons:** (1) an embedding table added
+(not matmul'd) must reach the binary op as F32 — either `get_rows` it (LiLT does
+this for all of pos/x/y/w/h/type and never hits the bug) or `ggml_cast` it; a
+raw `view_2d` of a quantized weight is a latent crash that only appears once the
+model is quantized. (2) "the collector fired and quantize succeeded" does NOT
+mean the quantized model runs — always run inference on the quant and check
+cos-vs-f32, per CLAUDE.md "build verifies compile, not correctness."
+
 ## DeepSeek-OCR-2: from a never-run port to character-perfect OCR (2026-06)
 
 > **Status: WORKING again after a perf-sweep regression (fixed 2026-07-02).**
