@@ -530,8 +530,15 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
     (Apache-2.0 framework); real permissive-ish retrieval data = **MIRACL**
     (Apache-2.0 card, Wikipedia text underneath) / **Tatoeba** (CC-BY-2.0) /
     GermanQuAD (CC-BY-4.0). No clean MIT/Apache EN+DE *gold NER* exists.
-- **TODO:** re-calibrate models on the bilingual corpora to refresh their EN+DE A/B
-  numbers; C8 remaining
+- **Bilingual re-calibration — NOT worth it (verified 2026-07-03).** A controlled
+  A/B (`tools/kaggle/crispembed-calib-ab/`) showed English-only vs bilingual imatrix
+  calibration makes a *noise*-level difference on German (bge-m3 DE +0.0001, xlmr-ner
+  1.0→1.0): the imatrix is language-agnostic (per-column activation stats set by the
+  weights, not the calib language). So the existing English-calibrated quants stand;
+  the bilingual corpora are used for A/B *reporting*, not calibration.
+- **TODO:** C8 remaining engine schedulers; retrieval A/B via `tests/bench_rag.py`.
+  Investigate `jina-reranker-v2-base-multilingual` aborting on German `--rerank`
+  (surfaced by the calib-ab run — a shipped multilingual-reranker bug).
   engine schedulers; retrieval A/B via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
