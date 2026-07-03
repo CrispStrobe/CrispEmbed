@@ -45,6 +45,18 @@ side: `main` `colbert_output` cos **0.571643** (FAIL, backbone `hidden` −0.702
 handover to 6 decimals) → fix cos **0.995885** (PASS, `hidden` +0.922054). The 0.99 regression
 guardrail now passes on CUDA.
 
+**Sweep — is it systemic? No.** All six `ggml_backend_sched_reserve` call sites were audited:
+`lfm2_embed.cpp` dense (455, already rebuilt), `lfm2_embed.cpp` colbert (635, the bug — now
+rebuilds), and the three `crispembed.cpp` encoder paths (1204 `encode_tokens`, 1495
+`encode_tokens_packed`, 1842 `run_encoder_raw` sparse/colbert/rerank). The `crispembed.cpp` three
+are safe: each reserves a separate `measure_gf = build_encoder_graph(T_bucket)` and then allocs a
+**distinct** `gf = build_encoder_graph(T)`. Even though `build_encoder_graph` re-inits over the
+shared `ctx->compute_meta` buffer (so `gf`'s tensors reuse `measure_gf`'s addresses), each call is a
+fresh `ggml_init` + `ggml_new_tensor`, which nulls `buffer`/`data` — so the allocated graph never
+carries the reserve pass's stale pointers. lfm2_colbert was the lone site that reserved and
+allocated the *same* object. (Distinct from the InternVL2 cached-graph-reuse class below, which was
+found and fixed separately.)
+
 ## Reading a QUANTIZED weight to CPU: size the copy by `ggml_nbytes(t)`, not `n_elem * 4` (2026-07)
 
 The shipped `pcs-xlmr-base-q4_k.gguf` (the CLI `pcs` entry) **crashes on every inference** —
@@ -664,6 +676,18 @@ pre-`c714758` behaviour.
    ggml's CPU and Metal allocators have different free/reuse semantics. Validate
    allocator-sensitive fixes on **every** backend you ship (the re-alloc fix was
    green on a CPU-only VPS and would have shipped the Metal crash).
+3. The same reuse anti-pattern can surface on a *different* backend and **need
+   not crash** — it can silently corrupt. `lfm2_embed`'s ColBERT path (2026-07,
+   top-of-file entry) hit the reserve-variant: `encode_multivec` re-allocated the
+   same `ggml_cgraph` it had passed to `ggml_backend_sched_reserve`. That was
+   tolerated on CPU *and* Metal (colbert_output cos 0.998) yet **silently
+   mis-computed on CUDA** (cos 0.571643, backbone `hidden` −0.702160 on a P100) —
+   the mirror image of this InternVL2 case (CPU-OK, Metal-crash). So "passes on
+   the backend I happened to test" proves nothing, and the failure may be a
+   quiet numerical drift, not a SIGSEGV. A graph handed to
+   `sched_reserve`/`sched_reset` is dead: rebuild a fresh one before the next
+   `sched_alloc_graph`+compute (the dense `lfm2_embed_encode_to` already does),
+   and A/B on the backend you actually ship to.
 
 ## GOT-OCR2: the "colorcolor…" garbage was a vision-neck permute, not quantization (2026-07)
 

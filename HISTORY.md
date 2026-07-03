@@ -4,6 +4,34 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 3, 2026 — lfm2_colbert ColBERT multivec: CUDA-only graph-reuse corruption fixed + P100-verified
+
+`crispembed_encode_multivec` produced garbage on CUDA only: `colbert_output` cos **0.571643**
+(backbone `hidden` cos −0.702160 on a Tesla P100) while the identical q8_0 backbone passed 20/20 in
+the dense-encode graph on the same device and scored 0.998 on CPU/Metal. Two earlier hypotheses were
+disproven first (the `set_output`-on-live-intermediate theory, and a cont-copy of `cur` — both gave
+byte-identical CUDA numbers; `ggml_set_output` can't change computed values). **Root cause:** the
+ColBERT graph re-allocated the *same* `ggml_cgraph` it had just handed to
+`ggml_backend_sched_reserve`; `ggml_backend_sched_reset` doesn't null `tensor->buffer`, so the
+reserve pass's stale buffer/residency assignment was reused at `sched_alloc_graph` → mis-computed
+backbone on CUDA (Metal tolerates it). The dense path (`lfm2_embed_encode_to`) already rebuilds a
+fresh graph after reserve; the multivec path didn't. **Fix:** factor graph construction into a
+lambda and rebuild after the bucket-change reserve, mirroring the dense path (`src/lfm2_embed.cpp`).
+
+**Verified by an on-GPU A/B on the exact handover hardware** (Tesla P100, compute 6.0) — a Kaggle
+kernel built github `main` (baseline) and the fix branch side by side against the same q8_0 GGUF +
+HF-float32 reference: `main` cos **0.571643** FAIL (hidden −0.702160, reproducing the handover to 6
+decimals) → fix cos **0.995885** PASS (hidden +0.922054). The wired 0.99 regression guardrail now
+passes on CUDA. A codebase sweep confirmed the bug was **not systemic** — the other five
+`sched_reserve` sites (dense lfm2 + three `crispembed.cpp` encoder paths) all rebuild a fresh graph
+between reserve and alloc. See `LEARNINGS.md` for the transferable rule and the InternVL2 sibling
+case (same reuse anti-pattern, opposite backend: Metal-crash vs CUDA-silent-corruption).
+
+**Verification-harness gotcha:** the ref-gen A/B kernel had to force CrispEmbed's local `crisp_*`
+fallback copies (`-DCRISP_PUNC_DIR=/nonexistent` …) — an adjacent CrispASR clone otherwise pulls in
+a version-skewed `crisp_punc` (missing `core/gpu_backend_pref.h`, since vendored on main in
+`8846a84`), which broke the CUDA build for reasons unrelated to the engine under test.
+
 ## July 3, 2026 — imatrix C1 closed: `clean_exit` vs `atexit` bug fixed, all embedders complete
 
 Finished the imatrix rollout by fixing a subtle correctness bug in the collector and
