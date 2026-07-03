@@ -559,8 +559,33 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   (tanh for BERT/XLM-R, GELU for the DeBERTa pooler). Remaining upstream borrows are
   *optimizations*, not coverage — chiefly LFM2 ShortConv → `ggml_ssm_conv` for
   better Metal kernel coverage (perf, regression risk on a working engine).
+- **Imatrix-less audit + unblock (2026-07-03).** A full-roster HF sweep found 9
+  text/structured models still without imatrix. Resolved:
+  - **CLIP + SigLIP text (3) — BUG FIXED.** They didn't just lack imatrix, they
+    *crashed on any quant*: `position_embd.weight` is Q8_0 and was added via a raw
+    `ggml_view_2d` → `binary_op: unsupported types ... src1 q8_0` (cos_vs_f32=0).
+    Dequant-cast the position embedding to F32 before the add in
+    `clip_text_embed.cpp` (token_embd is fine via get_rows; Q4_K matmul weights via
+    mul_mat). Now: q4_k 0.9916, **q4_k+imat 0.9932**, iq4_xs+imat 0.9916 vs f32.
+    Same F32-src1 family as the LFM2/Metal `ggml_mul` landmine.
+  - **fireredpunc + fullstop-punc (2) — WIRED.** `fireredpunc.cpp` already builds a
+    CPU-last `ggml_backend_sched` for both the chinese-BERT and XLM-R (fullstop)
+    paths; added `crispembed_imatrix_install` + flush-in-free (one-shot binaries
+    exit past atexit). Verified 73 tensors collected, punctuation output unchanged.
+  - **LiLT (2) — VERIFIED, no code needed.** Already wired (sched + install). Not
+    image-dependent — input is `{input_ids, bbox}`, and every embedding (pos, x/y/w/h
+    box, type) goes through `ggml_get_rows`, which dequantizes → no clip-style add
+    hazard. q4_k flips 3/16 KIE token labels vs f32 (the low-confidence ones);
+    **q4_k+imat recovers all 3 → 16/16 label match.** imatrix collected (142 tensors).
+  - **Genuinely deferred (3):** `pcs-xlmr-base` — `pcs.cpp` is byte-shared with
+    CrispASR and must not diverge, so it stays unwired; **bidirlm-omni ×2** —
+    multimodal (vision+audio), no single-file text path. Not a clean batch.
+  - **Rollout:** clip-text + lilt imatrix quants produced & verified locally;
+    fireredpunc/fullstop need their f32 base + a calib run (Kaggle, established path).
 - **TODO (open, lower priority):** C4 KV/prefix reuse; the LFM2 ssm_conv perf
-  refactor; domain-matched calibration corpora if a specific deployment needs it.
+  refactor; domain-matched calibration corpora if a specific deployment needs it;
+  produce+upload the newly-unblocked imatrix quants (clip/siglip-text, lilt,
+  fireredpunc, fullstop) and repoint their registry defaults.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
