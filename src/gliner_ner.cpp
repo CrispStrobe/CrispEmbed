@@ -10,6 +10,7 @@
 #include "gliner_ner.h"
 
 #include "core/cpu_ops.h"
+#include "imatrix.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -215,6 +216,12 @@ struct gliner_context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
 
+    // imatrix collection: gallocr + ggml_backend_graph_compute has no per-node hook,
+    // so when CRISPEMBED_IMATRIX_OUT is set we route compute through a sched (which
+    // the collector attaches to via an eval callback). Off (nullptr) in normal use.
+    bool imatrix_active = false;
+    ggml_backend_sched_t imatrix_sched = nullptr;
+
     // Reusable compute buffer
     std::vector<uint8_t> compute_meta;
 
@@ -239,6 +246,39 @@ struct gliner_context {
     std::vector<std::string> result_texts;
     std::vector<std::string> result_labels;
 };
+
+// ----------------------------------------------------------------------------
+// Compute helper: normally alloc+run via the lightweight gallocr path; when an
+// imatrix is being calibrated, run through the context's scheduler instead so the
+// collector's per-node eval callback fires. Keep `cc` alive until outputs are read.
+// ----------------------------------------------------------------------------
+struct gliner_cc {
+    ggml_gallocr_t galloc = nullptr;
+    ggml_backend_sched_t sched = nullptr; // borrowed — owned by the gliner_context
+};
+
+static bool gliner_cc_alloc(gliner_context * ctx, ggml_cgraph * gf, gliner_cc & cc) {
+    if (ctx->imatrix_active && ctx->imatrix_sched) {
+        cc.sched = ctx->imatrix_sched;
+        ggml_backend_sched_reset(cc.sched);
+        return ggml_backend_sched_alloc_graph(cc.sched, gf);
+    }
+    cc.galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+    return cc.galloc && ggml_gallocr_alloc_graph(cc.galloc, gf);
+}
+
+static void gliner_cc_compute(gliner_context * ctx, ggml_cgraph * gf, gliner_cc & cc) {
+    if (cc.sched) {
+        ggml_backend_sched_graph_compute(cc.sched, gf);
+    } else {
+        ggml_backend_graph_compute(ctx->backend, gf);
+    }
+}
+
+static void gliner_cc_free(gliner_cc & cc) {
+    if (cc.galloc) ggml_gallocr_free(cc.galloc); // sched is persistent — not freed here
+    cc.galloc = nullptr;
+}
 
 // ============================================================================
 // Model loading
@@ -982,6 +1022,20 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
         ggml_backend_cpu_set_n_threads(ctx->backend_cpu, n_threads);
     }
 
+    // When calibrating an imatrix, build a scheduler so the collector can hook the
+    // per-node eval callback (the fast gallocr path below has no such hook).
+    ctx->imatrix_active = (std::getenv("CRISPEMBED_IMATRIX_OUT") != nullptr);
+    if (ctx->imatrix_active) {
+        std::vector<ggml_backend_t> bes;
+        bes.push_back(ctx->backend);
+        // Add the CPU fallback only when the main backend is a GPU — on a CPU-only
+        // build backend/backend_cpu are two distinct CPU backends and a sched over
+        // duplicates misbehaves.
+        if (ctx->backend_cpu && !ggml_backend_is_cpu(ctx->backend)) bes.push_back(ctx->backend_cpu);
+        ctx->imatrix_sched = ggml_backend_sched_new(bes.data(), nullptr, (int)bes.size(), 65536, false, false);
+        crispembed_imatrix_install(ctx->imatrix_sched);
+    }
+
     // Compute meta buffer (256 MB should be sufficient)
     ctx->compute_meta.resize(256 * 1024 * 1024);
 
@@ -1019,6 +1073,11 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
 void gliner_ner_free(void * ptr) {
     if (!ptr) return;
     auto * ctx = (gliner_context *)ptr;
+    // Flush the imatrix here: this context is freed via gliner_ner_free (not
+    // crispembed_free), and one-shot CLIs _exit() via clean_exit which skips atexit.
+    // No-op unless collection was active; idempotent (guarded in imatrix.cpp).
+    crispembed_imatrix_flush();
+    if (ctx->imatrix_sched) ggml_backend_sched_free(ctx->imatrix_sched);
     if (ctx->model.buf) ggml_backend_buffer_free(ctx->model.buf);
     if (ctx->model.ctx) ggml_free(ctx->model.ctx);
     if (ctx->backend) ggml_backend_free(ctx->backend);
@@ -1216,10 +1275,10 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         ggml_cgraph * gf = ggml_new_graph_custom(g, 65536, false);
         ggml_build_forward_expand(gf, proj);
 
-        ggml_gallocr_t galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-        if (!ggml_gallocr_alloc_graph(galloc, gf)) {
+        gliner_cc cc;
+        if (!gliner_cc_alloc(ctx, gf, cc)) {
             fprintf(stderr, "[gliner] DeBERTa graph allocation failed\n");
-            ggml_gallocr_free(galloc);
+            gliner_cc_free(cc);
             ggml_free(g);
             return 0;
         }
@@ -1233,7 +1292,7 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         if (rpe_t) fill_deberta_rel_pos(*ctx, rpe_t, T);
 
         elapsed();
-        ggml_backend_graph_compute(ctx->backend, gf);
+        gliner_cc_compute(ctx, gf, cc);
         GDBG("DeBERTa encoder: %.1f ms", elapsed());
         if (bench) {
             auto t_enc1 = std::chrono::steady_clock::now();
@@ -1265,7 +1324,7 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         encoder_out.resize(T * gl_hidden);
         ggml_backend_tensor_get(proj, encoder_out.data(), 0, T * gl_hidden * sizeof(float));
 
-        ggml_gallocr_free(galloc);
+        gliner_cc_free(cc);
         ggml_free(g);
 
     } else {
@@ -1304,10 +1363,10 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         for (auto * lo : layer_outputs) ggml_build_forward_expand(gf, lo);
         ggml_build_forward_expand(gf, x);
 
-        ggml_gallocr_t galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-        if (!ggml_gallocr_alloc_graph(galloc, gf)) {
+        gliner_cc cc;
+        if (!gliner_cc_alloc(ctx, gf, cc)) {
             fprintf(stderr, "[gliner] LFM2 graph allocation failed\n");
-            ggml_gallocr_free(galloc);
+            gliner_cc_free(cc);
             ggml_free(g);
             return 0;
         }
@@ -1320,7 +1379,7 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         }
 
         elapsed();
-        ggml_backend_graph_compute(ctx->backend, gf);
+        gliner_cc_compute(ctx, gf, cc);
         GDBG("LFM2 backbone: %.1f ms", elapsed());
         if (bench) {
             auto t_enc1 = std::chrono::steady_clock::now();
@@ -1334,7 +1393,7 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
             all_layer_outs[i].resize(T * enc_hidden);
             ggml_backend_tensor_get(layer_outputs[i], all_layer_outs[i].data(), 0, T * enc_hidden * sizeof(float));
         }
-        ggml_gallocr_free(galloc);
+        gliner_cc_free(cc);
         ggml_free(g);
 
         // Layer fusion (CPU)
@@ -1553,10 +1612,10 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         if (pf) ggml_build_forward_expand(gf1, pf);
         ggml_build_forward_expand(gf1, er);
 
-        ggml_gallocr_t ga1 = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-        if (!ggml_gallocr_alloc_graph(ga1, gf1)) {
+        gliner_cc cc1;
+        if (!gliner_cc_alloc(ctx, gf1, cc1)) {
             fprintf(stderr, "[gliner] pass1 graph alloc failed\n");
-            ggml_gallocr_free(ga1);
+            gliner_cc_free(cc1);
             ggml_free(hg);
             return 0;
         }
@@ -1573,7 +1632,7 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         }
 
         elapsed();
-        ggml_backend_graph_compute(ctx->backend, gf1);
+        gliner_cc_compute(ctx, gf1, cc1);
         GDBG("head pass1: %.1f ms", elapsed());
 
         std::vector<float> ps_data(n_words * head_dim_gl), pe_data(n_words * head_dim_gl);
@@ -1584,7 +1643,7 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         if (!is_v0 && pf) ggml_backend_tensor_get(pf, pf_data.data(), 0, pf_data.size() * sizeof(float));
         ggml_backend_tensor_get(er, er_data.data(), 0, er_data.size() * sizeof(float));
 
-        ggml_gallocr_free(ga1);
+        gliner_cc_free(cc1);
         ggml_free(hg);
 
         // Assemble span concatenations
@@ -1619,10 +1678,10 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         ggml_cgraph * gf2 = ggml_new_graph_custom(hg2, 1024, false);
         ggml_build_forward_expand(gf2, scores);
 
-        ggml_gallocr_t ga2 = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-        if (!ggml_gallocr_alloc_graph(ga2, gf2)) {
+        gliner_cc cc2;
+        if (!gliner_cc_alloc(ctx, gf2, cc2)) {
             fprintf(stderr, "[gliner] pass2 graph alloc failed\n");
-            ggml_gallocr_free(ga2);
+            gliner_cc_free(cc2);
             ggml_free(hg2);
             return 0;
         }
@@ -1630,13 +1689,13 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         ggml_backend_tensor_set(inp_sp, span_cat.data(), 0, span_cat.size() * sizeof(float));
         ggml_backend_tensor_set(inp_er, er_data.data(), 0, er_data.size() * sizeof(float));
 
-        ggml_backend_graph_compute(ctx->backend, gf2);
+        gliner_cc_compute(ctx, gf2, cc2);
         GDBG("head pass2: %.1f ms", elapsed());
 
         std::vector<float> scores_raw(n_labels * n_spans);
         ggml_backend_tensor_get(scores, scores_raw.data(), 0, scores_raw.size() * sizeof(float));
 
-        ggml_gallocr_free(ga2);
+        gliner_cc_free(cc2);
         ggml_free(hg2);
 
         // Threshold + collect candidates
