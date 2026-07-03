@@ -148,7 +148,7 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
 -sSTACK_SIZE=2097152 \
 -sMODULARIZE=1 \
 -sEXPORT_NAME=CrispEmbedOCR \
--sENVIRONMENT=web,worker \
+-sENVIRONMENT=web,worker,node \
 -sFILESYSTEM=1 \
 -sWASM_BIGINT=1 \
 -sNO_EXIT_RUNTIME=1 \
