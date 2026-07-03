@@ -98,6 +98,11 @@ RERANK_CALIB = [
     ("how neural networks learn", ["Networks adjust weights via backpropagation.", "Coffee contains caffeine.", "Gradient descent minimizes the loss.", "The Nile is a long river."]),
     ("effects of sleep deprivation", ["Lack of sleep impairs memory and focus.", "Mount Everest is the tallest mountain.", "Sleep loss weakens the immune system.", "Violins are string instruments."]),
     ("renewable energy sources", ["Solar and wind are clean energy sources.", "The recipe calls for two cups of sugar.", "Hydropower generates electricity from water.", "Penguins live in cold climates."]),
+    # German (DE) calibration pairs
+    ("Wie entsteht Regen", ["Regen entsteht, wenn Wasserdampf zu Tropfen kondensiert.", "Die Börse fiel heute stark.", "Wolken geben Niederschlag ab, wenn sie gesättigt sind.", "Hunde sind beliebte Haustiere."]),
+    ("Wie wirken Impfstoffe", ["Impfstoffe trainieren das Immunsystem mit Antigenen.", "Ein Kuchenrezept braucht Mehl und Eier.", "Eine Impfung regt die Antikörperbildung an.", "Der Bus kommt um zwölf."]),
+    ("Beste Programmiersprache für Datenanalyse", ["Python wird häufig für Datenanalyse und maschinelles Lernen genutzt.", "Fußball wird auf einem Rasenfeld gespielt.", "R eignet sich gut für statistische Berechnungen.", "Im Winter ist es kalt."]),
+    ("Geschichte des Römischen Reiches", ["Rom dehnte sich durch Eroberungen im Mittelmeerraum aus.", "Photosynthese wandelt Sonnenlicht in Energie um.", "Das Reich fiel im fünften Jahrhundert.", "Smartphones nutzen Lithium-Akkus."]),
 ]
 RERANK_EVAL = [
     ("treatment for headaches", ["Pain relievers like ibuprofen ease headaches.", "The bridge spans two kilometers.", "Rest and hydration reduce headache severity.", "Tomatoes are technically fruits."]),
@@ -105,6 +110,11 @@ RERANK_EVAL = [
     ("causes of climate change", ["Greenhouse gas emissions drive warming.", "The museum opens at nine.", "Deforestation raises atmospheric CO2.", "Owls are nocturnal birds."]),
     ("benefits of regular exercise", ["Exercise strengthens the heart and muscles.", "The library has many books.", "Physical activity improves mood.", "Saturn has prominent rings."]),
     ("how computers store data", ["Data is stored as bits on drives and memory.", "Roses are often red.", "SSDs use flash memory cells.", "The concert starts at eight."]),
+    # German (DE) — same relevance structure (docs 1 & 3 relevant, 2 & 4 off-topic)
+    ("Wie funktioniert eine Solarzelle", ["Eine Solarzelle wandelt Sonnenlicht in elektrischen Strom um.", "Der Zug fährt um acht Uhr ab.", "Photovoltaik nutzt den photoelektrischen Effekt.", "Die Katze schläft auf dem Sofa."]),
+    ("Symptome einer Erkältung", ["Eine Erkältung verursacht Husten und Schnupfen.", "Der Fluss ist zwei Kilometer lang.", "Halsschmerzen und Müdigkeit treten häufig auf.", "Tomaten sind botanisch Früchte."]),
+    ("Ursachen des Klimawandels", ["Treibhausgase aus fossilen Brennstoffen erwärmen die Erde.", "Das Museum öffnet um neun Uhr.", "Abholzung erhöht den CO2-Gehalt der Luft.", "Eulen sind nachtaktive Vögel."]),
+    ("Vorteile von regelmäßigem Sport", ["Sport stärkt Herz und Muskeln.", "Die Bibliothek hat viele Bücher.", "Bewegung verbessert die Stimmung.", "Der Saturn hat auffällige Ringe."]),
 ]
 
 # ── NER (token-classification) support ───────────────────────────────────────
@@ -129,6 +139,12 @@ NER_CALIB = [
     "Google DeepMind is headquartered in London, England.",
     "The World Health Organization is based in Geneva, Switzerland.",
     "Nelson Mandela led South Africa after apartheid ended.",
+    # German (DE) calibration — entity-rich
+    "Ursula von der Leyen sprach in Brüssel mit Vertretern der NATO.",
+    "Volkswagen und BMW stellten neue Modelle in Wolfsburg vor.",
+    "Johann Wolfgang von Goethe wurde in Frankfurt geboren und lebte in Weimar.",
+    "Die Vereinten Nationen hielten in Genf einen Gipfel zum Klima ab.",
+    "Bayern München gewann das Spiel gegen Borussia Dortmund in München.",
 ]
 NER_EVAL = [
     "Joe Biden spoke with Emmanuel Macron about NATO in Brussels.",
@@ -137,14 +153,18 @@ NER_EVAL = [
     "Serena Williams won a tennis tournament in Melbourne, Australia.",
     "IBM and Oracle opened data centers in Texas and Virginia.",
     "Albert Einstein studied in Zurich before moving to Princeton.",
+    # German (DE) — entity-rich (PER / ORG / LOC)
+    "Olaf Scholz traf Emmanuel Macron in Berlin zu einem Gespräch.",
+    "Siemens und Bosch eröffneten ein Werk in München.",
+    "Angela Merkel wuchs in Hamburg auf und studierte in Leipzig.",
+    "Die Europäische Union tagte in Straßburg über den Haushalt.",
 ]
 
 # ── ColBERT (multi-vector) support ───────────────────────────────────────────
 # lfm2-colbert emits per-token vectors via --colbert; its LFM2 backbone shares the
 # instrumented lfm2 sched, so the collector fires unchanged. A/B metric = mean
 # per-token cosine (same text -> aligned tokens) vs full-precision gold.
-# (splade-pp sparse is NOT here: its GGUF ships without the MLM head — a converter
-# bug tracked separately — so --sparse can't run.)
+# (splade-pp sparse has its own MODE below, now that the MLM head is restored.)
 MODE.update({m: "colbert" for m in ("lfm2-colbert",)})
 
 COLBERT_CALIB = [
@@ -153,18 +173,21 @@ COLBERT_CALIB = [
     "Quantum computing research advances steadily each year.",
     "Financial markets reacted to the central bank announcement.",
     "Neural networks learn hierarchical features from data.",
-    "Renewable energy adoption is accelerating worldwide.",
-    "The novel explores themes of memory and identity.",
-    "Distributed systems rely on consensus protocols for consistency.",
-    "Photosynthesis converts sunlight into chemical energy.",
-    "Software engineers review code before merging changes.",
+    # German (DE)
+    "Maschinelles Lernen wandelt Text in Vektoren um.",
+    "Die Wettervorhersage sagt für morgen Regen voraus.",
+    "Erneuerbare Energien werden weltweit immer wichtiger.",
+    "Verteilte Systeme nutzen Konsensprotokolle für Konsistenz.",
+    "Photosynthese wandelt Sonnenlicht in chemische Energie um.",
 ]
 COLBERT_EVAL = [
     "Information retrieval systems rank documents by relevance.",
     "Climate change affects ecosystems around the globe.",
     "Deep learning models require large training datasets.",
-    "Effective communication improves team collaboration.",
-    "Databases index records for fast lookup.",
+    # German (DE)
+    "Suchsysteme ordnen Dokumente nach Relevanz.",
+    "Der Klimawandel betrifft Ökosysteme auf der ganzen Welt.",
+    "Datenbanken indexieren Datensätze für schnelle Suche.",
 ]
 
 # ── SPARSE (SPLADE) support ──────────────────────────────────────────────────
