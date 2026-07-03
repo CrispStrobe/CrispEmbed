@@ -48,12 +48,52 @@ with kh.build_heartbeat("download.model"):
     src = snapshot_download(repo_id=SRC_ID, cache_dir=str(scratch), token=hf_token)
 kh.step("model_downloaded", src=src)
 
-# --- Convert (auto-detects the SPLADE MLM head) ---
+# --- Diagnostic: what MLM-head keys does the SOURCE checkpoint actually have? ---
+import torch, glob
+diag = []
+def _log(s):
+    print(s, flush=True); diag.append(str(s))
+sd_keys = []
+for bp in glob.glob(str(Path(src) / "*.bin")) + glob.glob(str(Path(src) / "*.safetensors")):
+    try:
+        if bp.endswith(".bin"):
+            sd_keys = list(torch.load(bp, map_location="cpu", weights_only=False).keys())
+        else:
+            from safetensors import safe_open
+            with safe_open(bp, framework="pt") as f: sd_keys = list(f.keys())
+        break
+    except Exception as e:
+        _log(f"probe {bp}: {e}")
+_log(f"source has {len(sd_keys)} keys; MLM-ish keys: " +
+     str([k for k in sd_keys if any(x in k for x in ('cls.predict', 'lm_head', 'predictions', 'decoder', 'mlm'))][:20]))
+
+# --- Convert (auto-detects the SPLADE MLM head) — capture stdout ---
 OUT_BASE = WORK / f"{PREFIX}.gguf"
 with kh.build_heartbeat("convert"):
-    subprocess.check_call([sys.executable, str(REPO / "models" / "convert-bert-to-gguf.py"),
-        "--model", str(src), "--output", str(OUT_BASE), "--crisp", "--dtype", "f32"])
-kh.step("converted", size_mb=round(OUT_BASE.stat().st_size / 1e6, 1))
+    cvt = subprocess.run([sys.executable, str(REPO / "models" / "convert-bert-to-gguf.py"),
+        "--model", str(src), "--output", str(OUT_BASE), "--crisp", "--dtype", "f32"],
+        capture_output=True, text=True)
+_log("converter stdout tail:\n" + cvt.stdout[-1500:])
+_log("converter stderr tail:\n" + cvt.stderr[-800:])
+if cvt.returncode != 0:
+    raise RuntimeError(f"convert rc={cvt.returncode}:\n{cvt.stderr[-1200:]}")
+# inspect produced GGUF tensors for the MLM head
+import gguf as _g
+_r = _g.GGUFReader(str(OUT_BASE))
+_names = [t.name for t in _r.tensors]
+_head = [n for n in _names if any(x in n for x in ('mlm', 'sparse', 'cls'))]
+_log(f"GGUF has {len(_names)} tensors; head tensors: {_head}")
+# always upload the diagnostic so we see it even if a later step fails
+try:
+    (WORK / "splade-diag.txt").write_text("\n".join(diag))
+    if hf_token:
+        from huggingface_hub import HfApi as _A
+        _A(token=hf_token).upload_file(path_or_fileobj=str(WORK / "splade-diag.txt"),
+            path_in_repo="splade-diag.txt", repo_id=HF_REPO, repo_type="model",
+            commit_message="splade reconvert diagnostic")
+except Exception as e:
+    print("diag upload failed:", e, flush=True)
+kh.step("converted", size_mb=round(OUT_BASE.stat().st_size / 1e6, 1), head_tensors=_head)
 
 # --- Build CLI + quantizer ---
 kh.install_build_toolchain()
