@@ -1,5 +1,23 @@
 # CrispEmbed — Technical Learnings
 
+## A cratered embedding (cos ~0) can be a stale SHIPPED GGUF, not the engine/ref/pooling — test a fresh re-export (2026-07)
+
+`bidirlm-omni`'s text embedding read **cos 0.047** vs an independent HF mean-pool ref, and the
+engine loudly warned `stale GGUF — recovered mrope_section=[24,20,20] … re-export with the latest
+converter`. The obvious suspects were all wrong: (a) NOT pooling — `1_Pooling/config.json` confirms
+`pooling_mode_mean_tokens: true`, which the ref used; (b) NOT `mrope_section` — that warning still
+prints on a freshly-converted GGUF, but for **text-only** input all three mrope channels share the
+same position, so it's a red herring; (c) NOT the engine — the **vision** tower on the very same
+GGUF passed at 0.997. The actual bug was in the **tensor weights/layout the OLD converter produced**.
+Proof and fix in one step: re-run the current `convert-decoder-embed-to-gguf.py` → text jumps to
+**cos 1.000000 (f16) / 0.9992 (q8_0)** and vision still passes (0.9966). Lessons: (1) when a shipped
+GGUF is old, **a fresh re-export is the cheapest ground-truth test** — don't spend cycles theorizing
+about pooling/rope/quantization first; (2) an engine's own "stale GGUF" warning is a strong signal —
+believe it; (3) a bug can hit one tower (text: 0.047) while another (vision: 0.997) is fine, so
+**verify every path a shared GGUF feeds** before/after a re-export (one omni GGUF serves both
+`bidirlm-text` and `bidirlm-vision`); (4) `crispembed-quantize <in.gguf> <out> q8_0` re-quantizes a
+converted f16 without a separate llama.cpp — but imatrix k-quants still need the imatrix pipeline.
+
 ## A source file shared across two repos can't be kept byte-identical if the repos' clang-format differs — sync the LOGIC (2026-07)
 
 `pcs.cpp` lives in both CrispEmbed (`src/pcs.cpp`, fallback) and CrispASR
