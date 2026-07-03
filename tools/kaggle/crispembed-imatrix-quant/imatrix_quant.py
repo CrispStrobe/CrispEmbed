@@ -107,6 +107,35 @@ RERANK_EVAL = [
     ("how computers store data", ["Data is stored as bits on drives and memory.", "Roses are often red.", "SSDs use flash memory cells.", "The concert starts at eight."]),
 ]
 
+# ── NER (token-classification) support ───────────────────────────────────────
+# Fixed-label NER (bert-base-NER, xlmr-ner-hrl) runs the BERT-NER path, whose
+# encoder is a shared crispembed_context — so the imatrix collector fires on its
+# sched with zero code change. A/B metric = micro span-F1 (exact (start,end,label)
+# match) of the quant's entities vs the full-precision gold. (GLiNER models use a
+# gallocr compute path with no eval-callback hook, so they're not covered here.)
+MODE.update({m: "ner" for m in ("bert-base-NER", "xlmr-ner-hrl")})
+
+NER_CALIB = [
+    "Barack Obama met Angela Merkel in Berlin last Tuesday.",
+    "Apple and Microsoft announced a partnership in California.",
+    "The United Nations held a summit in Geneva about climate change.",
+    "Elon Musk visited the Tesla factory near Berlin.",
+    "Cristiano Ronaldo signed with a football club in Saudi Arabia.",
+    "Amazon opened a new office in Toronto, Canada.",
+    "Marie Curie was born in Warsaw and later worked in Paris.",
+    "Google DeepMind is headquartered in London, England.",
+    "The World Health Organization is based in Geneva, Switzerland.",
+    "Nelson Mandela led South Africa after apartheid ended.",
+]
+NER_EVAL = [
+    "Joe Biden spoke with Emmanuel Macron about NATO in Brussels.",
+    "Samsung and Sony compete in the electronics market across Japan.",
+    "The European Union met in Strasbourg to discuss the annual budget.",
+    "Serena Williams won a tennis tournament in Melbourne, Australia.",
+    "IBM and Oracle opened data centers in Texas and Virginia.",
+    "Albert Einstein studied in Zurich before moving to Princeton.",
+]
+
 # QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None =
 # A/B reference only (never uploaded — don't clobber baselines). imatrix variants
 # get DISTINCT names: q4_k+imatrix -> *-q4_k-imatrix.gguf, iq4_xs -> *-iq4_xs.gguf.
@@ -199,6 +228,26 @@ def rerank_ab(cli, model, gold):
     return sum(taus) / len(taus), sum(dabs) / len(dabs)
 
 
+def ner_entities(cli, model, text):
+    """Return the set of (start, end, label) spans from the --ner path."""
+    r = subprocess.run([str(cli), "-m", str(model), "--json", "--ner", text],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"ner failed for {model}:\n{r.stderr[-1500:]}")
+    return {(e["start"], e["end"], e["label"]) for e in json.loads(r.stdout).get("entities", [])}
+
+
+def ner_ab(cli, model, gold):
+    """Micro span-F1 (exact start/end/label match) of `model` vs gold over NER_EVAL."""
+    tp = fp = fn = 0
+    for text, g in zip(NER_EVAL, gold):
+        p = ner_entities(cli, model, text)
+        tp += len(g & p); fp += len(p - g); fn += len(g - p)
+    prec = tp / (tp + fp) if (tp + fp) else 0.0
+    rec = tp / (tp + fn) if (tp + fn) else 0.0
+    return (2 * prec * rec / (prec + rec)) if (prec + rec) else 0.0
+
+
 _QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf16|imatrix)', re.I)
 # LoRA / task-adapter variants (jina-v5 ships these at the SAME size as the base
 # retrieval model, so "largest non-quant" alone would wrongly pick one).
@@ -264,8 +313,8 @@ def process(name, cli, quant, api, calib, eval_):
     kh.step("model.source", model=name, src=src_fn, prefix=prefix,
             src_gb=round(ggs.get(src_fn, 0)/1e9, 2), big=big)
 
-    mode = MODE.get(name, "embed")     # "embed" (pooled vector) or "rerank" (cross-encoder)
-    metric = "tau" if mode == "rerank" else "cos"
+    mode = MODE.get(name, "embed")     # "embed" (pooled) / "rerank" (cross-encoder) / "ner"
+    metric = {"rerank": "tau", "ner": "f1"}.get(mode, "cos")
     imat = stage / f"{prefix}.imatrix"; imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
     with kh.build_heartbeat(f"{name}.calibrate"):
@@ -277,6 +326,16 @@ def process(name, cli, quant, api, calib, eval_):
                                      env=env, capture_output=True, text=True)
                 if cal.returncode != 0:
                     raise RuntimeError(f"rerank calibration rc={cal.returncode} for {name}; "
+                                       f"stderr tail:\n{cal.stderr[-1200:]}")
+                outlen += len(cal.stdout); err = cal.stderr
+        elif mode == "ner":
+            # BERT-NER encoder is a shared crispembed_context → collector fires on --ner
+            outlen, err = 0, ""
+            for t in NER_CALIB:
+                cal = subprocess.run([str(cli), "-m", str(csrc), "--json", "--ner", t],
+                                     env=env, capture_output=True, text=True)
+                if cal.returncode != 0:
+                    raise RuntimeError(f"ner calibration rc={cal.returncode} for {name}; "
                                        f"stderr tail:\n{cal.stderr[-1200:]}")
                 outlen += len(cal.stdout); err = cal.stderr
         else:
@@ -293,8 +352,12 @@ def process(name, cli, quant, api, calib, eval_):
                            f"(rc=0); stdout {outlen}B; stderr tail:\n{err[-1200:]}")
 
     # gold = calib source (q8_0 for big / full-precision base otherwise, ~lossless)
-    gold = ([rerank_scores(cli, csrc, q, docs) for q, docs in RERANK_EVAL] if mode == "rerank"
-            else embed(cli, csrc, eval_)[0])
+    if mode == "rerank":
+        gold = [rerank_scores(cli, csrc, q, docs) for q, docs in RERANK_EVAL]
+    elif mode == "ner":
+        gold = [ner_entities(cli, csrc, t) for t in NER_EVAL]
+    else:
+        gold = embed(cli, csrc, eval_)[0]
 
     report = []
     for qtype, use_im, up_tmpl in quants:
@@ -308,6 +371,9 @@ def process(name, cli, quant, api, calib, eval_):
         if mode == "rerank":
             val, dscore = rerank_ab(cli, out, gold)   # val = mean Kendall-tau
             extra = f" dscore={dscore:.4f}"
+        elif mode == "ner":
+            val = ner_ab(cli, out, gold)              # val = micro span-F1
+            extra = ""
         else:
             vecs, _ = embed(cli, out, eval_)
             val, _ = mean_cos(vecs, gold); extra = ""
@@ -323,8 +389,8 @@ def process(name, cli, quant, api, calib, eval_):
                     commit_message=f"{qtype} +imatrix ({metric}_vs_{goldlabel}={val:.4f})")
         out.unlink(missing_ok=True)
 
-    calib_n = len(RERANK_CALIB) if mode == "rerank" else len(calib)
-    eval_n = len(RERANK_EVAL) if mode == "rerank" else len(eval_)
+    calib_n = {"rerank": len(RERANK_CALIB), "ner": len(NER_CALIB)}.get(mode, len(calib))
+    eval_n = {"rerank": len(RERANK_EVAL), "ner": len(NER_EVAL)}.get(mode, len(eval_))
     summary = (f"imatrix A/B — {name} ({hf_out}), {metric} vs {goldlabel} gold, "
                f"n={eval_n}, calib={calib_n}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
     summ = stage / f"{prefix}-imatrix-ab.txt"; summ.write_text(summary)
