@@ -1,5 +1,40 @@
 # CrispEmbed — Technical Learnings
 
+## A weight's `t->data` is a DEVICE pointer on CUDA/Vulkan — host reads SIGSEGV; Metal/CPU hide it; local Ampere reproduces the class but not arch-specific garbage (2026-07)
+
+A model weight loaded on a device-local backend (CUDA/Vulkan/SYCL/ROCm-HIP) has a
+**device pointer in `t->data`**. Any host-side dereference — `memcpy(dst, t->data,…)`,
+`(const float*)t->data`, `traits->to_float(t->data,…)`, `return (const float*)t->data`
+from a `*_to_f32` fast path — **segfaults**. It is invisible on CPU and on **Metal**
+(Apple unified memory is host-visible, so `t->data` is a valid host pointer there),
+which is why this whole class "works on Metal/CPU, crashes only on CUDA." The fix is
+always the same: keep the zero-copy fast path only when
+`!t->buffer || ggml_backend_buffer_is_host(t->buffer)`, otherwise copy through
+`ggml_backend_tensor_get` (which does the device→host copy). Reference-correct
+implementations already in-tree: `granite_vision_ocr.cpp` (host-visibility guard),
+`glm_ocr.cpp` `read_model_w`, and the `surya_det` / `instructir` / nafnet / safmn
+helpers.
+
+Found + fixed across **8 engines** (deepseek-ocr2, unlimited_ocr, math_ocr,
+smoldocling_ocr, parseq_ocr, tesseract_lstm, dat_sr, tbsrn_sr); deepseek/dat/tbsrn
+runtime-verified on a local RTX A1000 (sm_86). A full `->data` census (52 refs / 14
+files) plus a ggml-host-accessor check (`ggml_get_f32_1d`, `ggml_get_data_f32` —
+none used) confirms no instance remains.
+
+Lessons: (1) a `*_to_f32(t, buf)` fast path that **returns `t->data`** is doubly
+dangerous — it silently skips fusion on F32 models (the DAT bug below) AND, once you
+"fix" that by copying the returned pointer (`buf.assign(p, p+n)`), the copy now
+dereferences a device pointer and crashes on GPU. Route the read through the backend
+buffer, don't paper over it. (2) **A local NVIDIA GPU is worth having even if it's a
+different arch than CI:** the RTX A1000 (Ampere sm_86) reproduced this whole class in
+minutes, but does NOT reproduce the *arch-specific* faults — glm-ocr / internvl2 /
+qwen2vl-3b vision garbage and the swinir/dat/tbsrn free-after-load teardown SIGSEGV
+all only manifest on Kaggle's older Turing (sm_75) / Pascal (sm_60) GPUs. So a modern
+local GPU cleanly *separates* backend-agnostic bugs (fixable + verifiable locally)
+from older-arch numerical divergence (needs the old hardware). (3) Metal's
+host-visible buffers make it a poor oracle for this class — a CUDA-only crash can sit
+latent through all Metal/CPU testing.
+
 ## A cratered embedding (cos ~0) can be a stale SHIPPED GGUF, not the engine/ref/pooling — test a fresh re-export (2026-07)
 
 `bidirlm-omni`'s text embedding read **cos 0.047** vs an independent HF mean-pool ref, and the

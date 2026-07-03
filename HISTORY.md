@@ -33,6 +33,49 @@ small A/B sets — see PLAN.
 
 ---
 
+## July 3, 2026 — device-pointer weight-read crash class fixed across 8 engines (local Ampere CUDA)
+
+A local NVIDIA CUDA GPU (RTX A1000 Laptop, Ampere **sm_86**, 4 GB, CUDA 13.0)
+became available, so Gap-5/Gap-6 CUDA faults could be reproduced locally instead of
+via ~50-min Kaggle round-trips. This exposed a **backend-agnostic crash class**
+distinct from the arch-specific vision garbage.
+
+**The bug (Class A):** engines that dequantize/read a MODEL WEIGHT on the host by
+dereferencing `t->data` directly (`memcpy(t->data)`, `(fp16*)t->data`,
+`traits->to_float(t->data)`, `return (const float*)t->data`). On a weight resident
+on a device-local backend (CUDA/Vulkan/SYCL/HIP) `t->data` is a DEVICE pointer, so
+the host read **SIGSEGVs**. Safe on CPU and Metal (Apple unified memory is
+host-visible) — which is exactly why these "worked on Metal/CPU, crashed only on
+CUDA." Fix everywhere: keep the zero-copy fast path only for host-visible buffers
+(`!t->buffer || ggml_backend_buffer_is_host(t->buffer)`), else read via
+`ggml_backend_tensor_get`.
+
+- **deepseek-ocr2** — the Gap-6 "FAIL". SIGSEGV in `precompute_rpe_tables` reading
+  SAM `rel_pos`. Reproduced, root-caused, fixed, **runtime-verified on local CUDA**
+  (character-perfect fox OCR). (42ef0ea)
+- **dat / tbsrn** — SIGSEGV'd 3/3 on Ampere during load-time BatchNorm fusion (dat
+  `to_f32` returned `t->data`; tbsrn BN lambda `memcpy`'d `t->data`). The earlier
+  DAT F32-fusion `buf.assign(p,…)` correctness fix is what began dereferencing the
+  device pointer. Fixed → **dat cos 0.999995, tbsrn 0.999362, exit 0** on CUDA. Also
+  gave all three SR engines a free-after-load backend-lifetime fix (keep
+  `ctx->wl_backend`, free after `free_weights`). (28fb9b1)
+- **unlimited_ocr, math_ocr, smoldocling_ocr, parseq_ocr, tesseract_lstm** — same
+  antipattern, fixed by inspection (compile-verified). (42ef0ea)
+
+**Codebase audit complete:** full `->data` census (52 refs / 14 files) + ggml
+host-accessor check — no Class-A instance remains. `granite_vision`, `instructir`/
+nafnet/safmn, `decoder_embed` (CPU-fallback branch only), `imatrix` (host gguf ctx)
+are all safe.
+
+**Class B (arch-specific vision garbage) is NOT this bug:** glm-ocr, internvl2-1b,
+qwen2vl-3b all produce CORRECT OCR on local Ampere sm_86. Their Kaggle `cer>4` /
+TIMEOUT is an older-arch (Turing sm_75 / Pascal sm_60) vision-encoder numerical
+divergence — still open, needs Kaggle hardware. (qwen2vl-3b's "TIMEOUT" = garbage
+→ runaway generation to `max_tokens=2048`, not a hang/OOM.) glm's per-stage diff
+"FAIL" is a stale-reference artifact (identical on CPU).
+
+---
+
 ## July 3, 2026 — imatrix rerankers + 3 dense backfills; DeBERTa quant-read bug fixed
 
 Extended imatrix coverage past the dense embedders. All in a worktree, cherry-picked to main.
