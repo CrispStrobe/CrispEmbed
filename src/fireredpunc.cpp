@@ -10,6 +10,7 @@
 #include "fireredpunc.h"
 
 #include "core/gguf_loader.h"
+#include "imatrix.h"
 
 #include "ggml.h"
 #include "ggml-backend.h"
@@ -435,6 +436,10 @@ static bool fireredpunc_load(fireredpunc_context & ctx, const char * path) {
     }
     ctx.sched = ggml_backend_sched_new(backends, nullptr, n_backends, 8192, false, false);
 
+    // Wire the imatrix collector (no-op unless CRISPEMBED_IMATRIX_OUT is set) so
+    // fireredpunc / fullstop-punc XLM-R can produce imatrix-calibrated quants.
+    crispembed_imatrix_install(ctx.sched);
+
     return true;
 }
 
@@ -849,6 +854,9 @@ char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
 
 void fireredpunc_free(fireredpunc_context * ctx) {
     if (!ctx) return;
+    // Flush imatrix before teardown — this context is freed directly (not via
+    // crispembed_free), and one-shot binaries exit past atexit handlers.
+    crispembed_imatrix_flush();
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->buf) ggml_backend_buffer_free(ctx->buf);
     if (ctx->w_ctx) ggml_free(ctx->w_ctx);
