@@ -15,6 +15,15 @@
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h" // crispasr_init_gpu_backend (#214)
 
+// pcs.cpp is byte-shared with CrispASR (which has no imatrix collector). Feature-
+// detect so the SAME source compiles in both: CrispEmbed provides imatrix.h and
+// the hook fires; CrispASR lacks it and the hook compiles out. Do NOT let this
+// file diverge between the two repos — keep the __has_include guard intact.
+#if __has_include("imatrix.h")
+#include "imatrix.h"
+#define PCS_HAS_IMATRIX 1
+#endif
+
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -362,6 +371,10 @@ static bool pcs_load(pcs_context & ctx, const char * path) {
     }
     ctx.sched = ggml_backend_sched_new(backends, nullptr, n_backends, 8192, false, false);
 
+#ifdef PCS_HAS_IMATRIX
+    crispembed_imatrix_install(ctx.sched); // no-op unless CRISPEMBED_IMATRIX_OUT is set
+#endif
+
     return true;
 }
 
@@ -588,6 +601,20 @@ static PCSResult pcs_run(pcs_context & ctx, const std::vector<int> & token_ids) 
     {
         std::vector<float> buf(ctx.n_post_labels * N);
         ggml_backend_tensor_get(post_logits, buf.data(), 0, buf.size() * sizeof(float));
+        // Diff harness: append per-token post-punc logits to $PCS_DUMP_LOGITS so a
+        // quant A/B can measure the pre-argmax distribution (prob-cosine/KL), not
+        // just the thresholded restored string. Plain fprintf — no imatrix dep, so
+        // it stays identical in the CrispASR copy.
+        if (const char * dp = std::getenv("PCS_DUMP_LOGITS")) {
+            if (FILE * fp = fopen(dp, "a")) {
+                for (int t = 0; t < N; t++) {
+                    for (int c = 0; c < ctx.n_post_labels; c++)
+                        fprintf(fp, "%s%.7g", c ? " " : "", buf[t * ctx.n_post_labels + c]);
+                    fputc('\n', fp);
+                }
+                fclose(fp);
+            }
+        }
         for (int t = 0; t < N; t++) {
             int best = 0;
             float best_val = buf[t * ctx.n_post_labels];
@@ -948,6 +975,9 @@ char * pcs_process(pcs_context * ctx, const char * text) {
 
 void pcs_free(pcs_context * ctx) {
     if (!ctx) return;
+#ifdef PCS_HAS_IMATRIX
+    crispembed_imatrix_flush(); // one-shot binaries exit past atexit
+#endif
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->buf) ggml_backend_buffer_free(ctx->buf);
     if (ctx->w_ctx) ggml_free(ctx->w_ctx);
