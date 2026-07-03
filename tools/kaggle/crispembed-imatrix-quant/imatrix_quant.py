@@ -113,7 +113,10 @@ RERANK_EVAL = [
 # sched with zero code change. A/B metric = micro span-F1 (exact (start,end,label)
 # match) of the quant's entities vs the full-precision gold. (GLiNER models use a
 # gallocr compute path with no eval-callback hook, so they're not covered here.)
-MODE.update({m: "ner" for m in ("bert-base-NER", "xlmr-ner-hrl")})
+# GLiNER (zero-shot span) also uses the --ner path; its compute now routes through a
+# sched during calibration (see gliner_ner.cpp) so the collector fires. --ner without
+# explicit labels uses the CLI default types, which the NER corpora exercise.
+MODE.update({m: "ner" for m in ("bert-base-NER", "xlmr-ner-hrl", "gliner-deberta", "sauerkraut-gliner-lfm")})
 
 NER_CALIB = [
     "Barack Obama met Angela Merkel in Berlin last Tuesday.",
