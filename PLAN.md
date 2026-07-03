@@ -862,18 +862,19 @@ bidirlm_audio/vision** — no documented CrispEmbed-side verification; assess.
 - **decoder_embed — CLEAN, CLOSED (Gap 4).** `test_decoder_embed_diff.cpp` (crispembed_encode,
   last-token pool) vs independent Qwen3-Embedding-0.6B HF ref: cos 0.9993 (q8_0-vs-f32). Ref
   uploaded to `cstr/qwen3-embed-0.6b-GGUF`, wired `diff_only`, run_one PASS. Added to Kaggle kernel.
-- **bidirlm (text) — BLOCKED: stale GGUF + multimodal pooling mismatch (Gap 4).** 2.5B; added to
-  `crispembed_ref_gen.py` reusing test-decoder-embed-diff (--pooling mean). Runs v5→v7 were blocked
-  in the dumper by the Kaggle image (custom-code prompt → `trust_remote_code`; then a transformers
-  tokenizer bug `_patch_mistral_regex`); **pinning transformers==4.57.6 in the kernel (v8) fixed the
-  dump**. But v8 then verify_failed with `cos 0.044` (orthogonal): the engine logs "**stale GGUF —
-  re-export with the latest converter**" and guesses `mrope_section=[24,20,20]`, image_token_id, etc.
-  BidirLM-Omni is a vision-language model (mrope, pool=mean, bidirectional) — the shipped
-  `bidirlm-omni-2.5b-textonly-q8_0.gguf` predates the current converter, and a plain HF mean-pool
-  doesn't match the engine's guessed-metadata forward. To close: re-export the GGUF with explicit
-  metadata, then match BidirLM-Omni-Embedding's actual text-embedding method (not a naive mean).
-  Low priority (instrumentation-only wave touch). decoder_embed dumped+verified+uploaded OK on CUDA
-  in the same runs — double-confirms local cos 0.9993.
+- **bidirlm (text) — CLOSED (was a converter bug in the SHIPPED GGUF, not pooling/mrope).** The
+  shipped `bidirlm-omni-2.5b*` GGUFs (both the full-omni and textonly repos) cratered the TEXT tower
+  to **cos 0.047** while vision passed 0.997 — the engine warns "stale GGUF — re-export". Proven
+  2026-07-03 the mean-pool ref was correct all along: a **fresh re-export with the current
+  `convert-decoder-embed-to-gguf.py`** gives text **cos 1.000000 (f16) / 0.9992 (q8_0)** AND still
+  passes vision (image_embeds 0.9966, deepstack 0.9997/0.9921). NOT an mrope issue (the `mrope_section`
+  warning persists on the fresh GGUF too but is a red herring — text-only shares all 3 rope channels);
+  the real bug was the tensor weights/layout the old converter produced. Re-quantized f16→q8_0 with
+  `crispembed-quantize`, uploaded the corrected `bidirlm-omni-2.5b-q8_0.gguf` + `bidirlm-text-ref.gguf`
+  to `cstr/bidirlm-omni-2.5b-GGUF`, wired `bidirlm-text` (test-decoder-embed-diff, one GGUF serves
+  both text + vision). FOLLOW-UP: the repo's f16 / imatrix q4_k/q5_k/q6_k + the whole `-textonly`
+  repo are still the OLD (text-broken) conversion — regenerate them from the fresh f16 (imatrix
+  variants via the imatrix pipeline). decoder_embed (Qwen3) double-confirmed on CUDA at cos 0.9993.
 - **Kaggle ref-gen kernel drift (investigated 2026-07, run v8):** the batch re-runs pre-closed
   engines too; findings — **lfm2 = ok** (was a FALSE verify_failed: it prints `PASS: 20 FAIL: 0`
   which tripped the kernel's `"FAIL" in out` heuristic; fixed to accept `fail: 0`). **lfm2_colbert =
