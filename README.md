@@ -144,13 +144,28 @@ Q4_K cosines for the 4B/8B decoder rows are min-cos vs **bf16** HF (the native t
 
 ### Quantization: imatrix defaults
 
-Text-embedding GGUFs are quantized with an **importance matrix** (imatrix,
-activation-weighted) — see `HISTORY.md`. `-m <model>` auto-downloads each model's
-best-tested small flavor (per-model A/B winner): **IQ4_XS+imatrix** on most
-XLM-R/BERT encoders, **Q4_K+imatrix** on the Qwen3/LFM2 decoder embedders. Every
-model also exposes `-q4k` (imatrix), `-iq4xs`, and `-q8` variants by name (e.g.
-`-m bge-m3-q8`). A couple that quantize poorly at 4-bit (f2llm, nomic-embed-text-v1.5)
-default to Q8_0.
+GGUFs are quantized with an **importance matrix** (imatrix, activation-weighted) —
+see `HISTORY.md`. `-m <model>` auto-downloads each model's best-tested small flavor
+(per-model A/B winner): **IQ4_XS+imatrix** on most XLM-R/BERT encoders,
+**Q4_K+imatrix** on the Qwen3/LFM2 decoder embedders. Every model also exposes
+`-q4k` (imatrix), `-iq4xs`, and `-q8` variants by name (e.g. `-m bge-m3-q8`). A
+couple that quantize poorly at 4-bit (f2llm, nomic-embed-text-v1.5) default to Q8_0.
+
+imatrix coverage now spans **every model class**, each A/B'd against the
+full-precision model with a task-appropriate metric — not just cosine:
+
+| class | models | A/B metric |
+|---|---|---|
+| dense embedders | 38 | mean cosine |
+| cross-encoder rerankers | 7 | Kendall-τ on the doc ranking |
+| fixed-label NER (BERT/XLM-R) | bert-base-NER, xlmr-ner-hrl | micro span-F1 |
+| zero-shot NER (GLiNER) | gliner-deberta, gliner-lfm | micro span-F1 |
+| ColBERT multi-vector | lfm2-colbert | mean per-token cosine |
+| sparse (SPLADE) | splade-pp-en-v1 | sparse-vector cosine |
+
+The collector attaches to the compute scheduler, so it works on any path that runs
+through one (`--rerank`, `--ner`, `--colbert`, `--sparse`); GLiNER's `gallocr` path
+gets an opt-in scheduler during calibration.
 
 ### Known issues
 
