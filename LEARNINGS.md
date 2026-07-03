@@ -1932,6 +1932,26 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   `-clustering`/`-text-matching` adapter GGUFs at the SAME size as the base
   retrieval model, so "largest non-quant .gguf" picked one → quantized the wrong
   weights. Fix: prefer the exact `{name}.gguf` and exclude task-suffix variants.
+- **The collector wrote nothing — `clean_exit` bypasses `atexit` (2026-07-03).**
+  The imatrix flush was registered via `atexit()`, but every one-shot CrispEmbed
+  binary exits through `core_util::clean_exit()` → `_exit()` (deliberately skips
+  ggml's slow Metal static-dtor teardown; see `src/core/clean_exit.h`), which also
+  skips ALL atexit handlers and static destructors. So calibration collected the
+  activation stats correctly, exited rc=0 with valid embeddings (431 KB JSON on
+  qwen3-embed-8b), and threw the stats away at exit — the `.imatrix` came out
+  empty and `crispembed-quantize` silently fell back to unweighted, producing a
+  `-q4_k-imatrix.gguf` **bit-identical to the plain baseline** (`cos == cos` in the
+  A/B). It looked model-specific only because `clean_exit` landed mid-rollout: the
+  first 27 embedders were calibrated before it (collected fine), the last 3 big
+  decoders (qwen3-embed-4b, octen-8b, qwen3-embed-8b) after it (empty). The eval
+  callback *did* fire and match every weight — the bug was purely the flush never
+  running. Fix (commit 07439db): call `crispembed_imatrix_flush()` from
+  `crispembed_free()` (runs before `clean_exit`), guarded by `g_flushed` so the
+  atexit fallback + explicit call write at most once per process. **Rule: never
+  persist via `atexit` in any binary that ends in `clean_exit` — flush at a real
+  teardown point.** The `fail-loudly-if-no-imatrix` guard in the Kaggle harness is
+  what surfaced it (octen-8b/qwen3-embed-4b had slipped through pre-guard as
+  silently mislabeled files, later corrected).
 - **crispembed-quantize + SentenceTransformer Dense projections — FIXED (2026-07).**
   embeddinggemma-300m quantized `dense.0/dense.1` (ST Dense/Matryoshka heads) to
   q8_0; the output GGUF then failed to load — `GGML_ASSERT(offset+size <=
