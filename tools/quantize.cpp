@@ -20,19 +20,11 @@
 #include <map>
 
 static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
-    {"f16",  GGML_FTYPE_MOSTLY_F16},
-    {"q4_0", GGML_FTYPE_MOSTLY_Q4_0},
-    {"q4_1", GGML_FTYPE_MOSTLY_Q4_1},
-    {"q5_0", GGML_FTYPE_MOSTLY_Q5_0},
-    {"q5_1", GGML_FTYPE_MOSTLY_Q5_1},
-    {"q8_0", GGML_FTYPE_MOSTLY_Q8_0},
-    {"q2_k", GGML_FTYPE_MOSTLY_Q2_K},
-    {"q3_k", GGML_FTYPE_MOSTLY_Q3_K},
-    {"q4_k", GGML_FTYPE_MOSTLY_Q4_K},
-    {"q5_k", GGML_FTYPE_MOSTLY_Q5_K},
-    {"q6_k", GGML_FTYPE_MOSTLY_Q6_K},
-    {"iq4_nl", GGML_FTYPE_MOSTLY_IQ4_NL},
-    {"iq4_xs", GGML_FTYPE_MOSTLY_IQ4_XS},
+    { "f16", GGML_FTYPE_MOSTLY_F16 },       { "q4_0", GGML_FTYPE_MOSTLY_Q4_0 }, { "q4_1", GGML_FTYPE_MOSTLY_Q4_1 },
+    { "q5_0", GGML_FTYPE_MOSTLY_Q5_0 },     { "q5_1", GGML_FTYPE_MOSTLY_Q5_1 }, { "q8_0", GGML_FTYPE_MOSTLY_Q8_0 },
+    { "q2_k", GGML_FTYPE_MOSTLY_Q2_K },     { "q3_k", GGML_FTYPE_MOSTLY_Q3_K }, { "q4_k", GGML_FTYPE_MOSTLY_Q4_K },
+    { "q5_k", GGML_FTYPE_MOSTLY_Q5_K },     { "q6_k", GGML_FTYPE_MOSTLY_Q6_K }, { "iq4_nl", GGML_FTYPE_MOSTLY_IQ4_NL },
+    { "iq4_xs", GGML_FTYPE_MOSTLY_IQ4_XS },
 };
 
 // When set, LLM decoder weight matrices (prefix "l.") are kept at F16 instead of
@@ -62,7 +54,7 @@ static bool load_imatrix(const std::string & path) {
         struct ggml_tensor * t = ggml_get_tensor(ctx, name);
         if (!t || t->type != GGML_TYPE_F32) continue;
         const int64_t ne0 = t->ne[0];
-        const float * d = (const float *) t->data;
+        const float * d = (const float *)t->data;
         std::string ck = std::string("count.") + name;
         int64_t kid = gguf_find_key(g, ck.c_str());
         uint64_t count = (kid >= 0) ? gguf_get_val_u64(g, kid) : 0;
@@ -75,8 +67,7 @@ static bool load_imatrix(const std::string & path) {
     }
     gguf_free(g);
     ggml_free(ctx);
-    fprintf(stderr, "imatrix: loaded importance vectors for %d tensors from '%s'\n",
-            loaded, path.c_str());
+    fprintf(stderr, "imatrix: loaded importance vectors for %d tensors from '%s'\n", loaded, path.c_str());
     return loaded > 0;
 }
 
@@ -84,22 +75,48 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     ggml_type qtype = GGML_TYPE_F32;
 
     switch (ftype) {
-        case GGML_FTYPE_MOSTLY_F16:  qtype = GGML_TYPE_F16;  break;
-        case GGML_FTYPE_MOSTLY_Q4_0: qtype = GGML_TYPE_Q4_0; break;
-        case GGML_FTYPE_MOSTLY_Q4_1: qtype = GGML_TYPE_Q4_1; break;
-        case GGML_FTYPE_MOSTLY_Q5_0: qtype = GGML_TYPE_Q5_0; break;
-        case GGML_FTYPE_MOSTLY_Q5_1: qtype = GGML_TYPE_Q5_1; break;
-        case GGML_FTYPE_MOSTLY_Q8_0: qtype = GGML_TYPE_Q8_0; break;
-        case GGML_FTYPE_MOSTLY_Q2_K: qtype = GGML_TYPE_Q2_K; break;
-        case GGML_FTYPE_MOSTLY_Q3_K: qtype = GGML_TYPE_Q3_K; break;
-        case GGML_FTYPE_MOSTLY_Q4_K: qtype = GGML_TYPE_Q4_K; break;
-        case GGML_FTYPE_MOSTLY_Q5_K: qtype = GGML_TYPE_Q5_K; break;
-        case GGML_FTYPE_MOSTLY_Q6_K: qtype = GGML_TYPE_Q6_K; break;
-        case GGML_FTYPE_MOSTLY_IQ4_NL: qtype = GGML_TYPE_IQ4_NL; break;
-        case GGML_FTYPE_MOSTLY_IQ4_XS: qtype = GGML_TYPE_IQ4_XS; break;
-        default:
-            fprintf(stderr, "unsupported quantization type %d\n", ftype);
-            return false;
+    case GGML_FTYPE_MOSTLY_F16:
+        qtype = GGML_TYPE_F16;
+        break;
+    case GGML_FTYPE_MOSTLY_Q4_0:
+        qtype = GGML_TYPE_Q4_0;
+        break;
+    case GGML_FTYPE_MOSTLY_Q4_1:
+        qtype = GGML_TYPE_Q4_1;
+        break;
+    case GGML_FTYPE_MOSTLY_Q5_0:
+        qtype = GGML_TYPE_Q5_0;
+        break;
+    case GGML_FTYPE_MOSTLY_Q5_1:
+        qtype = GGML_TYPE_Q5_1;
+        break;
+    case GGML_FTYPE_MOSTLY_Q8_0:
+        qtype = GGML_TYPE_Q8_0;
+        break;
+    case GGML_FTYPE_MOSTLY_Q2_K:
+        qtype = GGML_TYPE_Q2_K;
+        break;
+    case GGML_FTYPE_MOSTLY_Q3_K:
+        qtype = GGML_TYPE_Q3_K;
+        break;
+    case GGML_FTYPE_MOSTLY_Q4_K:
+        qtype = GGML_TYPE_Q4_K;
+        break;
+    case GGML_FTYPE_MOSTLY_Q5_K:
+        qtype = GGML_TYPE_Q5_K;
+        break;
+    case GGML_FTYPE_MOSTLY_Q6_K:
+        qtype = GGML_TYPE_Q6_K;
+        break;
+    case GGML_FTYPE_MOSTLY_IQ4_NL:
+        qtype = GGML_TYPE_IQ4_NL;
+        break;
+    case GGML_FTYPE_MOSTLY_IQ4_XS:
+        qtype = GGML_TYPE_IQ4_XS;
+        break;
+    default:
+        fprintf(stderr, "unsupported quantization type %d\n", ftype);
+        return false;
     }
 
     printf("Loading model from '%s'\n", fname_inp.c_str());
@@ -127,9 +144,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         for (int i = 0; i < n_tensors; i++) {
             const char * name = gguf_get_tensor_name(ctx_in, i);
             std::string sn(name);
-            if (sn.rfind("cnn.", 0) == 0 ||
-                sn.rfind("scrfd.", 0) == 0 ||
-                sn.rfind("arcface.", 0) == 0 ||
+            if (sn.rfind("cnn.", 0) == 0 || sn.rfind("scrfd.", 0) == 0 || sn.rfind("arcface.", 0) == 0 ||
                 sn.rfind("sface.", 0) == 0) {
                 is_cnn_model = true;
                 break;
@@ -182,7 +197,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     FILE * fin = fopen(fname_inp.c_str(), "rb");
     const size_t data_offset_in = gguf_get_data_offset(ctx_in);
 
-    std::vector<float>   f32_data;
+    std::vector<float> f32_data;
     std::vector<uint8_t> q_data;
 
     int n_quantized = 0, n_kept = 0, n_imatrix = 0;
@@ -209,8 +224,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // Guard 1: patch_embed tensors — always copy as-is (they are conv2d kernels)
         // patch_embed, downsample, merger — used in host-side computation,
         // must stay F32 (ggml_backend_tensor_get reads as float).
-        if (sname.find("patch_embed") != std::string::npos ||
-            sname.find("downsample") != std::string::npos ||
+        if (sname.find("patch_embed") != std::string::npos || sname.find("downsample") != std::string::npos ||
             sname.find("merger") != std::string::npos) {
             printf("note: %s — copying as-is (host-side computation)\n", name);
             size_t sz = ggml_nbytes(t);
@@ -223,7 +237,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             std::vector<uint8_t> raw(sz);
             if (fread(raw.data(), 1, sz, fin) != sz) {
                 fprintf(stderr, "failed to read raw data for patch_embed tensor\n");
-                fclose(fin); fclose(fout);
+                fclose(fin);
+                fclose(fout);
                 return false;
             }
             fwrite(raw.data(), 1, sz, fout);
@@ -250,7 +265,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             std::vector<uint8_t> raw(sz);
             if (fread(raw.data(), 1, sz, fin) != sz) {
                 fprintf(stderr, "failed to read LoRA tensor data\n");
-                fclose(fin); fclose(fout);
+                fclose(fin);
+                fclose(fout);
                 return false;
             }
             fwrite(raw.data(), 1, sz, fout);
@@ -278,7 +294,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             std::vector<uint8_t> raw(sz);
             if (fread(raw.data(), 1, sz, fin) != sz) {
                 fprintf(stderr, "failed to read raw data for %d-D tensor\n", ndims);
-                fclose(fin); fclose(fout);
+                fclose(fin);
+                fclose(fout);
                 return false;
             }
             fwrite(raw.data(), 1, sz, fout);
@@ -290,25 +307,21 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             continue;
         }
 
-        bool is_embd = sname.find("embd") != std::string::npos ||
-                        sname.find("embed") != std::string::npos ||
-                        sname.find("token_types") != std::string::npos;
+        bool is_embd = sname.find("embd") != std::string::npos || sname.find("embed") != std::string::npos ||
+                       sname.find("token_types") != std::string::npos;
         // Skip tiny embedding tables (token_types has only 2 rows)
         // — quantizing these breaks Ollama's binary ops (f32 + q8_0)
-        bool is_tiny_embd = (t->ne[1] <= 4) &&
-                            (sname.find("token_types") != std::string::npos ||
-                             sname.find("type_embd") != std::string::npos);
+        bool is_tiny_embd = (t->ne[1] <= 4) && (sname.find("token_types") != std::string::npos ||
+                                                sname.find("type_embd") != std::string::npos);
         // Position/class embeddings, LayerScale, and NAFNet beta/gamma
         // used in ggml_add/ggml_mul — must stay F32 (binary ops don't
         // support F32 + Q8_0/F16 operands, and these are tiny scale factors)
         bool is_add_operand = sname.find("position_embedding") != std::string::npos ||
                               sname.find("class_embedding") != std::string::npos ||
-                              sname.find(".ls1") != std::string::npos ||
-                              sname.find(".ls2") != std::string::npos ||
-                              sname.find(".beta") != std::string::npos ||
-                              sname.find(".gamma") != std::string::npos;
+                              sname.find(".ls1") != std::string::npos || sname.find(".ls2") != std::string::npos ||
+                              sname.find(".beta") != std::string::npos || sname.find(".gamma") != std::string::npos;
         if (is_add_operand) {
-            is_tiny_embd = true;  // force copy-as-is
+            is_tiny_embd = true; // force copy-as-is
         }
         // SentenceTransformer Dense / Matryoshka projection heads (dense.0/dense.1):
         // the decoder_embed loader reads these as F32, so quantizing them makes the
@@ -317,24 +330,28 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // working reference q8_0 (F32 there, Q8_0 here → unloadable), and re-quantizing
         // with this guard loads + embeds cleanly.
         if (sname.rfind("dense.", 0) == 0 || sname.find(".dense.") != std::string::npos) {
-            is_tiny_embd = true;  // force copy-as-is (keep F32)
+            is_tiny_embd = true; // force copy-as-is (keep F32)
+        }
+        // Audio mel filterbank / window: host-read constants for the log-mel front
+        // end, NOT graph matmul weights. Quantizing them injects error into every
+        // spectrogram (and a raw host read used to crash — now dequant-safe). Tiny
+        // (~100 KB), so keep F32.
+        if (sname.find("mel_filters") != std::string::npos || sname.find("mel_window") != std::string::npos) {
+            is_tiny_embd = true; // force copy-as-is (keep F32)
         }
         // Source may be F32/F16 OR already quantized (we dequantize it to F32
         // first — see the read block below). Re-quantizing from q8_0 lets us skip
         // the huge f32 base for large models: q8_0 is ~lossless (cos ~0.9998) so
         // q8→f32→q4 ≈ f32→q4, and the q8_0 is a fraction of the f32 download.
         bool src_ok = (type == GGML_TYPE_F32 || type == GGML_TYPE_F16 || ggml_is_quantized(type));
-        bool quantize = (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) &&
-                        src_ok &&
-                        (ggml_n_dims(t) >= 2) &&
-                        !is_tiny_embd;
+        bool quantize =
+            (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) && src_ok && (ggml_n_dims(t) >= 2) && !is_tiny_embd;
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
 
         // Embedding tables: use Q8_0 for aggressive quants to preserve quality
         // while still compressing (embedding tables are huge, ~50% of model)
-        if (quantize && is_embd &&
-            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
+        if (quantize && is_embd && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
             qtype_used = GGML_TYPE_Q8_0;
         }
 
@@ -351,13 +368,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // 2-layer bridge from vision features into the LLM embedding space, and
         // quantizing it to Q4_K measurably hurt parity (HF-blueprint projector
         // cos 0.929 at Q4_K vs ~0.95 at Q8_0) for negligible size.
-        bool is_vision_weight = sname.rfind("v.", 0) == 0 ||
-                                sname.rfind("c.", 0) == 0 ||
-                                sname.rfind("qe.", 0) == 0 ||
-                                sname.rfind("vis.", 0) == 0 ||
-                                sname.rfind("proj.", 0) == 0;
-        if (quantize && is_vision_weight &&
-            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+        bool is_vision_weight = sname.rfind("v.", 0) == 0 || sname.rfind("c.", 0) == 0 || sname.rfind("qe.", 0) == 0 ||
+                                sname.rfind("vis.", 0) == 0 || sname.rfind("proj.", 0) == 0;
+        if (quantize && is_vision_weight && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(vision→Q8_0) ");
@@ -367,10 +380,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // the generic "ffn_gate_inp"): these pick which experts run, so even
         // small quant error flips the top-k selection and corrupts the output.
         // Keep them at Q8_0 minimum (they are tiny: n_experts × hidden).
-        bool is_moe_router = sname.find("mlp_gate.weight") != std::string::npos ||
-                             sname.find("ffn_gate_inp") != std::string::npos;
-        if (quantize && is_moe_router &&
-            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
+        bool is_moe_router =
+            sname.find("mlp_gate.weight") != std::string::npos || sname.find("ffn_gate_inp") != std::string::npos;
+        if (quantize && is_moe_router && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(moe-router→Q8_0) ");
         }
@@ -382,12 +394,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // hidden state). Keep it at Q8_0 minimum — cheap relative to the experts
         // (~+90 MB on a 2 GB model). Matches "lm_head.weight" (this model) and
         // the generic llama.cpp "output.weight" (but NOT "output_norm.weight").
-        bool is_lm_head = sname.find("lm_head.weight") != std::string::npos ||
-                          sname == "output.weight" ||
+        bool is_lm_head = sname.find("lm_head.weight") != std::string::npos || sname == "output.weight" ||
                           sname.find(".output.weight") != std::string::npos;
-        if (quantize && is_lm_head &&
-            qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
-            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+        if (quantize && is_lm_head && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_Q6_K &&
+            qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(lm-head→Q8_0) ");
         }
@@ -398,8 +408,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // (llm_layer_0 cos ≥ 0.99996 vs f32, identical OCR). The earlier "cos
         // 0.936 → garbage" that motivated this flag was a per-row diff-harness
         // artifact, not real sensitivity (see #25). Flag kept for diagnostics.
-        if (quantize && g_decoder_f16 && sname.rfind("l.", 0) == 0 &&
-            qtype_used != GGML_TYPE_F16 && qtype_used != GGML_TYPE_F32) {
+        if (quantize && g_decoder_f16 && sname.rfind("l.", 0) == 0 && qtype_used != GGML_TYPE_F16 &&
+            qtype_used != GGML_TYPE_F32) {
             qtype_used = GGML_TYPE_F16;
             printf("(decoder→F16) ");
         }
@@ -411,16 +421,27 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (quantize && ncols % qk != 0) {
             ggml_type fallback = GGML_TYPE_COUNT;
             switch (qtype) {
-                case GGML_TYPE_Q2_K:
-                case GGML_TYPE_Q3_K:
-                case GGML_TYPE_Q4_K: fallback = GGML_TYPE_Q4_0; break;
-                case GGML_TYPE_Q5_K: fallback = GGML_TYPE_Q5_0; break;
-                case GGML_TYPE_Q6_K: fallback = GGML_TYPE_Q8_0; break;
-                // IQ4_XS uses 256-wide super-blocks; fall back to IQ4_NL (32-wide,
-                // same 4-bit non-linear codebook) when the row isn't 256-aligned.
-                case GGML_TYPE_IQ4_XS: fallback = GGML_TYPE_IQ4_NL; break;
-                case GGML_TYPE_IQ4_NL: fallback = GGML_TYPE_Q4_0; break;
-                default: break;
+            case GGML_TYPE_Q2_K:
+            case GGML_TYPE_Q3_K:
+            case GGML_TYPE_Q4_K:
+                fallback = GGML_TYPE_Q4_0;
+                break;
+            case GGML_TYPE_Q5_K:
+                fallback = GGML_TYPE_Q5_0;
+                break;
+            case GGML_TYPE_Q6_K:
+                fallback = GGML_TYPE_Q8_0;
+                break;
+            // IQ4_XS uses 256-wide super-blocks; fall back to IQ4_NL (32-wide,
+            // same 4-bit non-linear codebook) when the row isn't 256-aligned.
+            case GGML_TYPE_IQ4_XS:
+                fallback = GGML_TYPE_IQ4_NL;
+                break;
+            case GGML_TYPE_IQ4_NL:
+                fallback = GGML_TYPE_Q4_0;
+                break;
+            default:
+                break;
             }
             if (fallback != GGML_TYPE_COUNT && ncols % ggml_blck_size(fallback) == 0) {
                 qtype_used = fallback;
@@ -453,14 +474,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             if (type == GGML_TYPE_F32) {
                 if (fread(f32_data.data(), sizeof(float), nelements, fin) != (size_t)nelements) {
                     fprintf(stderr, "failed to read f32 data\n");
-                    fclose(fin); fclose(fout);
+                    fclose(fin);
+                    fclose(fout);
                     return false;
                 }
             } else if (type == GGML_TYPE_F16) {
                 std::vector<ggml_fp16_t> f16_data(nelements);
                 if (fread(f16_data.data(), sizeof(ggml_fp16_t), nelements, fin) != (size_t)nelements) {
                     fprintf(stderr, "failed to read f16 data\n");
-                    fclose(fin); fclose(fout);
+                    fclose(fin);
+                    fclose(fout);
                     return false;
                 }
                 for (int64_t j = 0; j < nelements; j++) {
@@ -473,13 +496,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 std::vector<uint8_t> qbuf(src_bytes);
                 if (fread(qbuf.data(), 1, src_bytes, fin) != src_bytes) {
                     fprintf(stderr, "failed to read quantized source data\n");
-                    fclose(fin); fclose(fout);
+                    fclose(fin);
+                    fclose(fout);
                     return false;
                 }
                 const ggml_type_traits * tr = ggml_get_type_traits(type);
                 if (!tr || !tr->to_float) {
                     fprintf(stderr, "no dequantizer for source type %s\n", ggml_type_name(type));
-                    fclose(fin); fclose(fout);
+                    fclose(fin);
+                    fclose(fout);
                     return false;
                 }
                 tr->to_float(qbuf.data(), f32_data.data(), nelements);
@@ -499,14 +524,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                         n_imatrix++;
                         printf("(imatrix) ");
                     } else {
-                        printf("(imatrix shape %zu!=%lld, skipped) ",
-                               it->second.size(), (long long)t->ne[0]);
+                        printf("(imatrix shape %zu!=%lld, skipped) ", it->second.size(), (long long)t->ne[0]);
                     }
                 }
             }
 
-            size_t q_size = ggml_quantize_chunk(qtype_used, f32_data.data(), q_data.data(),
-                                                 0, nelements / t->ne[0], t->ne[0], imatrix);
+            size_t q_size = ggml_quantize_chunk(qtype_used, f32_data.data(), q_data.data(), 0, nelements / t->ne[0],
+                                                t->ne[0], imatrix);
 
             fwrite(q_data.data(), 1, q_size, fout);
             gguf_set_tensor_type(ctx_out, name, qtype_used);
@@ -523,7 +547,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             std::vector<uint8_t> raw_data(size);
             if (fread(raw_data.data(), 1, size, fin) != size) {
                 fprintf(stderr, "failed to read raw data\n");
-                fclose(fin); fclose(fout);
+                fclose(fin);
+                fclose(fout);
                 return false;
             }
             fwrite(raw_data.data(), 1, size, fout);
@@ -552,8 +577,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     printf("\n%d quantized, %d kept", n_quantized, n_kept);
     if (!g_imatrix.empty()) printf(", %d with imatrix", n_imatrix);
     printf("\n");
-    printf("%.0f MB -> %.0f MB (%.1fx compression)\n",
-           total_orig / 1048576.0, total_new / 1048576.0,
+    printf("%.0f MB -> %.0f MB (%.1fx compression)\n", total_orig / 1048576.0, total_new / 1048576.0,
            (double)total_orig / (total_new > 0 ? (double)total_new : 1.0));
 
     return true;
@@ -565,12 +589,16 @@ int main(int argc, char ** argv) {
     std::string imatrix_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
-        if (a == "--decoder-f16") g_decoder_f16 = true;
+        if (a == "--decoder-f16")
+            g_decoder_f16 = true;
         else if (a == "--imatrix") {
-            if (i + 1 >= argc) { fprintf(stderr, "--imatrix requires a file path\n"); return 1; }
+            if (i + 1 >= argc) {
+                fprintf(stderr, "--imatrix requires a file path\n");
+                return 1;
+            }
             imatrix_path = argv[++i];
-        }
-        else pos.push_back(a);
+        } else
+            pos.push_back(a);
     }
     if (pos.size() != 3) {
         fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--imatrix <file>]\n\n", argv[0]);
@@ -598,7 +626,7 @@ int main(int argc, char ** argv) {
     }
 
     if (!imatrix_path.empty()) {
-        load_imatrix(imatrix_path);  // non-fatal: falls back to unweighted if empty
+        load_imatrix(imatrix_path); // non-fatal: falls back to unweighted if empty
     }
 
     if (!quantize_model(fname_inp, fname_out, it->second)) {
