@@ -139,6 +139,34 @@ NER_EVAL = [
     "Albert Einstein studied in Zurich before moving to Princeton.",
 ]
 
+# ── ColBERT (multi-vector) support ───────────────────────────────────────────
+# lfm2-colbert emits per-token vectors via --colbert; its LFM2 backbone shares the
+# instrumented lfm2 sched, so the collector fires unchanged. A/B metric = mean
+# per-token cosine (same text -> aligned tokens) vs full-precision gold.
+# (splade-pp sparse is NOT here: its GGUF ships without the MLM head — a converter
+# bug tracked separately — so --sparse can't run.)
+MODE.update({m: "colbert" for m in ("lfm2-colbert",)})
+
+COLBERT_CALIB = [
+    "Machine learning transforms raw text into vector representations.",
+    "The weather forecast predicts rain across the region tomorrow.",
+    "Quantum computing research advances steadily each year.",
+    "Financial markets reacted to the central bank announcement.",
+    "Neural networks learn hierarchical features from data.",
+    "Renewable energy adoption is accelerating worldwide.",
+    "The novel explores themes of memory and identity.",
+    "Distributed systems rely on consensus protocols for consistency.",
+    "Photosynthesis converts sunlight into chemical energy.",
+    "Software engineers review code before merging changes.",
+]
+COLBERT_EVAL = [
+    "Information retrieval systems rank documents by relevance.",
+    "Climate change affects ecosystems around the globe.",
+    "Deep learning models require large training datasets.",
+    "Effective communication improves team collaboration.",
+    "Databases index records for fast lookup.",
+]
+
 # QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None =
 # A/B reference only (never uploaded — don't clobber baselines). imatrix variants
 # get DISTINCT names: q4_k+imatrix -> *-q4_k-imatrix.gguf, iq4_xs -> *-iq4_xs.gguf.
@@ -251,6 +279,29 @@ def ner_ab(cli, model, gold):
     return (2 * prec * rec / (prec + rec)) if (prec + rec) else 0.0
 
 
+def colbert_vecs(cli, model, text):
+    """Return the list of per-token vectors from the --colbert path."""
+    r = subprocess.run([str(cli), "-m", str(model), "--json", "--colbert", text],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"colbert failed for {model}:\n{r.stderr[-1500:]}")
+    return json.loads(r.stdout)[0]["vectors"]
+
+
+def colbert_ab(cli, model, gold):
+    """Mean per-token cosine of `model`'s ColBERT vectors vs gold over COLBERT_EVAL."""
+    def _cos(a, b):
+        d = sum(x * y for x, y in zip(a, b))
+        na = math.sqrt(sum(x * x for x in a)); nb = math.sqrt(sum(y * y for y in b))
+        return d / (na * nb) if na and nb else 0.0
+    tot = n = 0
+    for text, g in zip(COLBERT_EVAL, gold):
+        pv = colbert_vecs(cli, model, text)
+        for gt, pt in zip(g, pv):
+            tot += _cos(gt, pt); n += 1
+    return tot / n if n else float("nan")
+
+
 _QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf16|imatrix)', re.I)
 # LoRA / task-adapter variants (jina-v5 ships these at the SAME size as the base
 # retrieval model, so "largest non-quant" alone would wrongly pick one).
@@ -341,6 +392,15 @@ def process(name, cli, quant, api, calib, eval_):
                     raise RuntimeError(f"ner calibration rc={cal.returncode} for {name}; "
                                        f"stderr tail:\n{cal.stderr[-1200:]}")
                 outlen += len(cal.stdout); err = cal.stderr
+        elif mode == "colbert":
+            outlen, err = 0, ""
+            for t in COLBERT_CALIB:
+                cal = subprocess.run([str(cli), "-m", str(csrc), "--json", "--colbert", t],
+                                     env=env, capture_output=True, text=True)
+                if cal.returncode != 0:
+                    raise RuntimeError(f"colbert calibration rc={cal.returncode} for {name}; "
+                                       f"stderr tail:\n{cal.stderr[-1200:]}")
+                outlen += len(cal.stdout); err = cal.stderr
         else:
             cal = subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
                                  env=env, capture_output=True, text=True)
@@ -359,6 +419,8 @@ def process(name, cli, quant, api, calib, eval_):
         gold = [rerank_scores(cli, csrc, q, docs) for q, docs in RERANK_EVAL]
     elif mode == "ner":
         gold = [ner_entities(cli, csrc, t) for t in NER_EVAL]
+    elif mode == "colbert":
+        gold = [colbert_vecs(cli, csrc, t) for t in COLBERT_EVAL]
     else:
         gold = embed(cli, csrc, eval_)[0]
 
@@ -377,6 +439,9 @@ def process(name, cli, quant, api, calib, eval_):
         elif mode == "ner":
             val = ner_ab(cli, out, gold)              # val = micro span-F1
             extra = ""
+        elif mode == "colbert":
+            val = colbert_ab(cli, out, gold)          # val = mean per-token cosine
+            extra = ""
         else:
             vecs, _ = embed(cli, out, eval_)
             val, _ = mean_cos(vecs, gold); extra = ""
@@ -392,8 +457,8 @@ def process(name, cli, quant, api, calib, eval_):
                     commit_message=f"{qtype} +imatrix ({metric}_vs_{goldlabel}={val:.4f})")
         out.unlink(missing_ok=True)
 
-    calib_n = {"rerank": len(RERANK_CALIB), "ner": len(NER_CALIB)}.get(mode, len(calib))
-    eval_n = {"rerank": len(RERANK_EVAL), "ner": len(NER_EVAL)}.get(mode, len(eval_))
+    calib_n = {"rerank": len(RERANK_CALIB), "ner": len(NER_CALIB), "colbert": len(COLBERT_CALIB)}.get(mode, len(calib))
+    eval_n = {"rerank": len(RERANK_EVAL), "ner": len(NER_EVAL), "colbert": len(COLBERT_EVAL)}.get(mode, len(eval_))
     summary = (f"imatrix A/B — {name} ({hf_out}), {metric} vs {goldlabel} gold, "
                f"n={eval_n}, calib={calib_n}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
     summ = stage / f"{prefix}-imatrix-ab.txt"; summ.write_text(summary)
