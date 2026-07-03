@@ -580,8 +580,29 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   - **Genuinely deferred (3):** `pcs-xlmr-base` — `pcs.cpp` is byte-shared with
     CrispASR and must not diverge, so it stays unwired; **bidirlm-omni ×2** —
     multimodal (vision+audio), no single-file text path. Not a clean batch.
-  - **Rollout:** clip-text + lilt imatrix quants produced & verified locally;
-    fireredpunc/fullstop need their f32 base + a calib run (Kaggle, established path).
+  - **Rollout DONE (2026-07-03), 6 of 7 shipped + defaults repointed to their
+    max-quality flavor:** clip-text-base (q4_k+im 0.9932), clip-text-large (0.9918),
+    siglip-text-base (0.9623 — 4-bit-sensitive, -q8 alias kept), lilt-funsd (16/16
+    KIE labels), fireredpunc (q4_k+im, **KL 0.0033 vs plain 0.0093 = 2.8x closer to
+    f16**). All uploaded to their `cstr/*-GGUF` repos with q8_0/q4_k/q4_k-imatrix/
+    iq4_xs/.imatrix/-imatrix-ab.txt + `-iq4xs/-q8/-f32` registry aliases.
+    - **fullstop-punc — kept plain q4_k, no imatrix.** No f32/f16 base exists on HF
+      (only q8_0/q4_k), so imatrix could only be calibrated+quantized *from q8_0*;
+      measured against q8_0 the plain q4_k is already near-lossless (prob-cos 0.9996,
+      KL 0.0012) and imatrix adds nothing. A proper f16-calibrated version would need
+      reconverting from `oliverguhr/...` safetensors (no punct converter in `models/`)
+      — not worth it for a sub-0.0012-KL gap.
+    - **lilt-base — skipped.** Headless base/pretraining checkpoint (0 labels), no
+      inference target and no meaningful A/B; users fine-tune it first.
+  - **Metric lesson (why fireredpunc first looked worthless).** Restored-string
+    exact-match / argmax-label agreement are THRESHOLDED — the final decision
+    saturates while the probability distribution still drifts, so plain-q4_k and
+    q4_k+imat both score "perfect" and imatrix looks useless (n=5 → "no value").
+    imatrix acts on the LOGITS. Added a `$FIREREDPUNC_DUMP_LOGITS` hook and a
+    continuous A/B (`/tmp/punct_ab.py`: mean per-token softmax prob-cosine + KL vs
+    gold over hundreds of tokens); that revealed the real 2.8x KL win. Also caught a
+    false negative from A/B-ing a **half-written gguf** (mid-quantize iq4_xs read as
+    0/5; complete file is argmax-perfect). See `LEARNINGS.md`.
 - **TODO (open, lower priority):** C4 KV/prefix reuse; the LFM2 ssm_conv perf
   refactor; domain-matched calibration corpora if a specific deployment needs it;
   produce+upload the newly-unblocked imatrix quants (clip/siglip-text, lilt,
