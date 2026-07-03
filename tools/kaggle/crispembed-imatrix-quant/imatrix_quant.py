@@ -167,6 +167,13 @@ COLBERT_EVAL = [
     "Databases index records for fast lookup.",
 ]
 
+# ── SPARSE (SPLADE) support ──────────────────────────────────────────────────
+# splade-pp emits sparse term weights via --sparse (MLM head max-pooled over the
+# vocab). The head runs through run_encoder_raw's ctx->sched, so the collector
+# fires unchanged. A/B metric = cosine of the sparse term-weight vectors vs the
+# full-precision gold (reuse the embed calib/eval text corpora).
+MODE.update({m: "sparse" for m in ("splade-pp-en-v1",)})
+
 # QSPECS: (qtype, use_imatrix, upload_name_template | None). upload_name None =
 # A/B reference only (never uploaded — don't clobber baselines). imatrix variants
 # get DISTINCT names: q4_k+imatrix -> *-q4_k-imatrix.gguf, iq4_xs -> *-iq4_xs.gguf.
@@ -302,6 +309,26 @@ def colbert_ab(cli, model, gold):
     return tot / n if n else float("nan")
 
 
+def sparse_vec(cli, model, text):
+    """Return {token_id: weight} sparse term-weight vector from the --sparse path."""
+    r = subprocess.run([str(cli), "-m", str(model), "--json", "--sparse", text],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(f"sparse failed for {model}:\n{r.stderr[-1500:]}")
+    return {e["token_id"]: e["weight"] for e in json.loads(r.stdout)[0]["sparse"]}
+
+
+def sparse_ab(cli, model, gold):
+    """Mean cosine of `model`'s sparse vectors vs gold over the eval texts."""
+    def _scos(a, b):
+        keys = set(a) | set(b)
+        d = sum(a.get(k, 0.0) * b.get(k, 0.0) for k in keys)
+        na = math.sqrt(sum(v * v for v in a.values())); nb = math.sqrt(sum(v * v for v in b.values()))
+        return d / (na * nb) if na and nb else 0.0
+    vals = [_scos(sparse_vec(cli, model, t), g) for t, g in gold]
+    return sum(vals) / len(vals) if vals else float("nan")
+
+
 _QUANT_RE = re.compile(r'(^|[-.])(q\d|iq\d|q4_k|q5_k|q6_k|q8_0|q4_0|q5_0|q5_1|bf16|imatrix)', re.I)
 # LoRA / task-adapter variants (jina-v5 ships these at the SAME size as the base
 # retrieval model, so "largest non-quant" alone would wrongly pick one).
@@ -401,6 +428,15 @@ def process(name, cli, quant, api, calib, eval_):
                     raise RuntimeError(f"colbert calibration rc={cal.returncode} for {name}; "
                                        f"stderr tail:\n{cal.stderr[-1200:]}")
                 outlen += len(cal.stdout); err = cal.stderr
+        elif mode == "sparse":
+            outlen, err = 0, ""
+            for t in calib:
+                cal = subprocess.run([str(cli), "-m", str(csrc), "--json", "--sparse", t],
+                                     env=env, capture_output=True, text=True)
+                if cal.returncode != 0:
+                    raise RuntimeError(f"sparse calibration rc={cal.returncode} for {name}; "
+                                       f"stderr tail:\n{cal.stderr[-1200:]}")
+                outlen += len(cal.stdout); err = cal.stderr
         else:
             cal = subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
                                  env=env, capture_output=True, text=True)
@@ -421,6 +457,8 @@ def process(name, cli, quant, api, calib, eval_):
         gold = [ner_entities(cli, csrc, t) for t in NER_EVAL]
     elif mode == "colbert":
         gold = [colbert_vecs(cli, csrc, t) for t in COLBERT_EVAL]
+    elif mode == "sparse":
+        gold = [(t, sparse_vec(cli, csrc, t)) for t in eval_]
     else:
         gold = embed(cli, csrc, eval_)[0]
 
@@ -441,6 +479,9 @@ def process(name, cli, quant, api, calib, eval_):
             extra = ""
         elif mode == "colbert":
             val = colbert_ab(cli, out, gold)          # val = mean per-token cosine
+            extra = ""
+        elif mode == "sparse":
+            val = sparse_ab(cli, out, gold)           # val = mean sparse-vector cosine
             extra = ""
         else:
             vecs, _ = embed(cli, out, eval_)
