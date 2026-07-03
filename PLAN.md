@@ -590,12 +590,20 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
       text-only variant with an f16 base. q4_k+imat cos 0.948 vs f16 (+0.036 over
       plain); 2.5B is quant-sensitive so imatrix quants are SIZE options, default
       stays q8_0.
-    - **bidirlm-omni-2.5b (full multimodal) — text-calibrated quant SHIPPED.** Text
-      path is identical to textonly (same output, same 196 tensors). A text-run
-      imatrix calibrates 196/452 tensors (LLM backbone); vision+audio towers quantize
-      plain. Shipped as `-q4_k-imatrix-textcal.gguf` (text +0.036, image/audio no
-      worse than plain q4_k). **Remaining future work:** a *fully* multimodal imatrix
-      needs image+audio calibration through the towers.
+    - **bidirlm-omni-2.5b (full multimodal) — FULLY multimodal imatrix SHIPPED
+      (2026-07-03).** Wired the vision tower (`bidirlm_vision.cpp`, own sched) and
+      the audio tower (`crisp_audio/audio_tower.cpp`, `__has_include` guard — the
+      collector resolves via crispembed-core's include path in the CrispEmbed build,
+      compiles out in standalone CrispASR). A combined text+image+audio calibration
+      run merges (collector's `merge_existing()`) into one imatrix covering **442 of
+      452** tensors (196 text + 99 vision + 147 audio). Held-out A/B vs f16:
+      text +0.036, **image +0.0072 (0.988→0.9955)**, audio +0.00001 (audio tower is
+      already 4-bit-lossless). Shipped `-q4_k-imatrix-multimodal.gguf`, supersedes the
+      text-only quant. **Found+fixed a latent bug:** `crisp_audio_compute_mel` read
+      the 2-D `mel_filters` raw → aborted on ANY quantized bidirlm (audio worked only
+      at f16); now dequant-safe (CrispASR 06c5f1d4) + `mel_filters`/`mel_window` kept
+      F32 in the quantizer. Registry default stays q8_0 (quant-sensitive); this is a
+      size option (`bidirlm-omni-2.5b-mm`).
   - **Rollout DONE (2026-07-03), 6 of 7 shipped + defaults repointed to their
     max-quality flavor:** clip-text-base (q4_k+im 0.9932), clip-text-large (0.9918),
     siglip-text-base (0.9623 — 4-bit-sensitive, -q8 alias kept), lilt-funsd (16/16
