@@ -2058,6 +2058,37 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   Collecting imatrix there needs routing GLiNER's compute through a sched when
   imatrix is active. **Reranker/NER A/B eval sets are small (n=5–6) → τ/F1 coarse;
   treat 4-bit-vs-q8 picks as provisional until a larger paired/labeled corpus.**
+- **GLiNER imatrix needs a sched — the collector only hooks a `ggml_backend_sched`
+  (2026-07-03).** GLiNER used `ggml_gallocr` + `ggml_backend_graph_compute` (no
+  eval-callback), so the collector couldn't see its matmuls. Fix: build an opt-in
+  sched (only when `CRISPEMBED_IMATRIX_OUT` is set) and route all compute sites
+  through it via a small alloc/compute helper; keep the fast gallocr path otherwise
+  (zero overhead in normal use). **Flush in `gliner_ner_free`** — GLiNER isn't freed
+  via `crispembed_free`, so its imatrix would leak past clean_exit's `_exit`.
+  General lesson: any engine with a *self-contained gallocr compute* is invisible to
+  the collector until it runs through a sched.
+- **gliner-lfm q4_k span-F1 0.94 was a coarse-metric artifact, not a bug.** Score-
+  level diff showed uniform 2% quant shift with **max |Δscore| 0.031** (no outliers
+  → no localized bug); the F1 dip was 3 detections scoring 0.50–0.51 crossing the
+  0.5 threshold. Cross-check: the same LFM2 backbone scores 0.9975 on lfm2-colbert.
+  **When a discrete/threshold metric (F1, τ) looks bad at small n, compare the
+  continuous scores/vectors before blaming quant or a bug.**
+- **Converter head detection must read the CHECKPOINT, not the loaded model
+  (2026-07-03).** `convert-bert-to-gguf.py` tried AutoModelForTokenClassification
+  before the MLM check, but HF **random-inits** a `classifier.weight` for a SPLADE
+  model (config num_labels=2) — so `"classifier.weight" in state_dict` was True and
+  SPLADE was mis-detected as a 2-label NER, dropping the real `cls.predictions.*`
+  head. Every splade-pp GGUF shipped with no sparse head (functionally broken). Fix:
+  decide the head from the **checkpoint files** (a real `classifier.weight`/`cls.
+  predictions.*` there is authoritative) — real classifier wins (reranker/NER), else
+  real MLM head → SPLADE, else embedder. HF silently invents missing heads, so the
+  loaded `state_dict` lies for *any* head-detection heuristic.
+- **SOTA permissive EN+DE eval corpora:** report scores against **MMTEB**
+  (Apache-2.0 framework); for calibration/A/B *text* (no labels needed for the
+  quant-vs-full-precision agreement metric) use **MIRACL** (Apache-2.0) queries+
+  passages and **Tatoeba** (CC-BY-2.0) EN–DE pairs; GermanQuAD/GermanDPR are CC-BY-
+  4.0. Avoid XNLI/MultiNERD (NC), Flores/Wikipedia-derived (SA). No clean MIT/Apache
+  EN+DE *gold NER* exists → self-label permissive text with a teacher model.
 - **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
   base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
   calibration needs. But the imatrix is **activation statistics**, and q8_0 is

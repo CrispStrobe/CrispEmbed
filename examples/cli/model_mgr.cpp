@@ -660,9 +660,9 @@ static const ModelEntry k_registry[] = {
 
     // --- Sparse models ---
 
-    { "splade-pp-en-v1", "splade-pp-en-v1.gguf",
-      "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1.gguf",
-      "BERT sparse (SPLADE) English (109M)", "418 MB", "apache-2.0",
+    { "splade-pp-en-v1", "splade-pp-en-v1-iq4_xs.gguf",
+      "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1-iq4_xs.gguf",
+      "BERT sparse SPLADE English 109M (IQ4_XS+imatrix, sparse-cos 0.996)", "72 MB", "apache-2.0",
       "https://huggingface.co/prithivida/Splade_PP_en_v1" },
 
     // --- GTE v1.5 (new BERT) ---
