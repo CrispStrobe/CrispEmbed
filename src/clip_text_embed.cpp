@@ -327,8 +327,16 @@ std::vector<float> encode(context * ctx, const char * text) {
     // Token embedding lookup
     ggml_tensor * x = ggml_get_rows(g, ctx->token_embd, ids); // [D, T]
 
-    // Position embedding: pos_embd is [D, max_pos], take first T positions
-    ggml_tensor * pos = ggml_view_2d(g, ctx->pos_embd, D, T, ctx->pos_embd->nb[1], 0);
+    // Position embedding: pos_embd is [D, max_pos], take first T positions.
+    // When quantized (Q8_0 in q4_k/imatrix builds), ggml_add's src1 must be F32
+    // — a raw Q8_0 view aborts in binary-ops. Dequant-cast to F32 first; the
+    // matmul weights (Q4_K) are fine because ggml_mul_mat handles quantized src0,
+    // and token_embd (Q8_0) is fine because ggml_get_rows dequantizes.
+    ggml_tensor * pe = ctx->pos_embd;
+    if (ggml_is_quantized(pe->type)) {
+        pe = ggml_cast(g, pe, GGML_TYPE_F32);
+    }
+    ggml_tensor * pos = ggml_view_2d(g, pe, D, T, pe->nb[1], 0);
     x = ggml_add(g, x, pos);
 
     // Causal mask for CLIP (nullptr for SigLIP bidirectional)
