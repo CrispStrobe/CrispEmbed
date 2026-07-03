@@ -497,10 +497,20 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   (commit 73a016e — a raw-F32 read of a quantized 2-D weight aborted them on ANY
   quant; also unblocks gliner-deberta NER). **Reranker A/B eval is small (n=5); a
   larger paired corpus is future work before finalizing 4-bit-vs-q8 calls.**
-- **TODO:** NER/token-classification imatrix (needs a span-F1 A/B; gliner-deberta
-  now runnable post-fix) + sparse/ColBERT (splade-pp, lfm2-colbert); C8 wire
-  remaining engine schedulers; domain-matched calibration corpora; retrieval A/B
-  via `tests/bench_rag.py`.
+- **C1c — fixed-label NER DONE (2026-07-03).** Harness `ner` MODE: calibrate over
+  `--ner` texts (BERT-NER's encoder is a shared crispembed_context, so the
+  collector fires unchanged), A/B = micro **span-F1** vs full-precision gold.
+  bert-base-NER (iq4_xs span-F1 1.0) + xlmr-ner-hrl (iq4_xs 1.0) done — both
+  repointed to iq4_xs. Required a `bert_ner` classifier-dequant fix (commit
+  85feaeb): the Q8_0/Q4_K `ner.classifier.weight` was read as raw F32, so both
+  **failed to load on any quant** (their q8_0 defaults were broken).
+- **TODO:** **GLiNER** imatrix (gliner-deberta, gliner-lfm) — blocked: they use a
+  `ggml_gallocr` + `ggml_backend_graph_compute` path with no eval-callback hook, so
+  the collector can't attach; needs routing their compute through a
+  `ggml_backend_sched` when imatrix is active. Then **sparse/ColBERT** (splade-pp,
+  lfm2-colbert); C8 wire remaining engine schedulers; domain-matched calibration
+  corpora; retrieval A/B via `tests/bench_rag.py`. **Note:** reranker/NER A/B eval
+  sets are small (n=5–6) so τ/F1 are coarse — larger corpora would firm the calls.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
