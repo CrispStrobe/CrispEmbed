@@ -214,9 +214,9 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/octen-4b-GGUF/resolve/main/octen-4b-q8_0.gguf",
       "Qwen3 2560d multilingual (Q8_0)", "4.3 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-4B" },
 
-        { "octen-8b", "octen-8b-iq4_xs.gguf",
-      "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-iq4_xs.gguf",
-      "Qwen3 4096d multilingual (IQ4_XS+imatrix)", "4.4 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-8B" },
+        { "octen-8b", "octen-8b-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q4_k-imatrix.gguf",
+      "Qwen3 4096d multilingual (Q4_K+imatrix)", "4.6 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-8B" },
     { "octen-8b-q4k", "octen-8b-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q4_k-imatrix.gguf",
       "Qwen3 4096d multilingual (Q4_K+imatrix)", "4.6 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-8B" },
@@ -320,9 +320,9 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/qwen3-embed-0.6b-GGUF/resolve/main/qwen3-embed-0.6b-q8_0.gguf",
       "Qwen3 1024d official (Q8_0)", "639 MB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-0.6B" },
 
-        { "qwen3-embed-4b", "qwen3-embed-4b-iq4_xs.gguf",
-      "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-iq4_xs.gguf",
-      "Qwen3 2560d official (IQ4_XS+imatrix)", "2.3 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-4B" },
+        { "qwen3-embed-4b", "qwen3-embed-4b-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-q4_k-imatrix.gguf",
+      "Qwen3 2560d official (Q4_K+imatrix)", "2.5 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-4B" },
     { "qwen3-embed-4b-q4k", "qwen3-embed-4b-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-q4_k-imatrix.gguf",
       "Qwen3 2560d official (Q4_K+imatrix)", "2.5 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-4B" },
@@ -333,9 +333,18 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/qwen3-embed-4b-GGUF/resolve/main/qwen3-embed-4b-q8_0.gguf",
       "Qwen3 2560d official (Q8_0)", "4.3 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-4B" },
 
-    { "qwen3-embed-8b", "qwen3-embed-8b-q4_k.gguf",
-      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q4_k.gguf",
-      "Qwen3 4096d official (8B)", "4.4 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-8B" },
+    { "qwen3-embed-8b", "qwen3-embed-8b-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q4_k-imatrix.gguf",
+      "Qwen3 4096d official 8B (Q4_K+imatrix)", "4.6 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-8B" },
+    { "qwen3-embed-8b-q4k", "qwen3-embed-8b-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q4_k-imatrix.gguf",
+      "Qwen3 4096d official 8B (Q4_K+imatrix)", "4.6 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-8B" },
+    { "qwen3-embed-8b-iq4xs", "qwen3-embed-8b-iq4_xs.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-iq4_xs.gguf",
+      "Qwen3 4096d official 8B (IQ4_XS+imatrix)", "4.4 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-8B" },
+    { "qwen3-embed-8b-q8", "qwen3-embed-8b-q8_0.gguf",
+      "https://huggingface.co/cstr/qwen3-embed-8b-GGUF/resolve/main/qwen3-embed-8b-q8_0.gguf",
+      "Qwen3 4096d official 8B (Q8_0)", "8.0 GB", "apache-2.0", "https://huggingface.co/Qwen/Qwen3-Embedding-8B" },
 
     // BidirLM-Omni — bidirectional Qwen3 (text) + Whisper-shape audio tower (cross-modal).
     // Two repos: -textonly is the smaller text-only variant; without suffix includes audio.
