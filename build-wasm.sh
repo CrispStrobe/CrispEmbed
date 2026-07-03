@@ -81,6 +81,25 @@ EXPORTED_FUNCS="[\
 '_wasm_ocr_mean_confidence',\
 '_wasm_ocr_set_max_tokens',\
 '_wasm_ocr_free',\
+'_wasm_ocr_pipeline_init',\
+'_wasm_ocr_pipeline_run',\
+'_wasm_ocr_pipeline_free',\
+'_wasm_ocr_pipeline_full_init',\
+'_wasm_ocr_pipeline_full_run',\
+'_wasm_ocr_pipeline_full_free',\
+'_wasm_scan_cleanup_init',\
+'_wasm_scan_cleanup_process',\
+'_wasm_scan_cleanup_free_image',\
+'_wasm_scan_cleanup_free',\
+'_wasm_scan_cleanup_detect_page_split',\
+'_wasm_scan_cleanup_content_bbox',\
+'_wasm_ocr_render',\
+'_wasm_text_det_init',\
+'_wasm_text_det_run',\
+'_wasm_text_det_free',\
+'_wasm_layout_init',\
+'_wasm_layout_detect',\
+'_wasm_layout_free',\
 '_malloc',\
 '_free',\
 '_main'\
@@ -125,8 +144,8 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
 -sEXPORTED_FUNCTIONS=$EXPORTED_FUNCS \
 -sEXPORTED_RUNTIME_METHODS=$EXPORTED_RUNTIME \
 -sALLOW_MEMORY_GROWTH=1 \
--sINITIAL_MEMORY=67108864 \
--sSTACK_SIZE=1048576 \
+-sINITIAL_MEMORY=134217728 \
+-sSTACK_SIZE=2097152 \
 -sMODULARIZE=1 \
 -sEXPORT_NAME=CrispEmbedOCR \
 -sENVIRONMENT=web,worker \

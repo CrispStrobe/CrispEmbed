@@ -311,33 +311,37 @@ Utility libraries (not model backends) follow a lighter pattern.
 
 ### Currently implemented utility libraries
 
-| Library | C API | CLI | Rust | Python | Dart | Server |
-|---------|-------|-----|------|--------|------|--------|
-| Classical preproc (skew, bg norm, despeckle, blackfilter, page-split, content-bbox) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| 1-bit DWA morphology | header | — | — | — | — | — |
-| CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| NAFNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| TBSRN text-line SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| PAN whole-image SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| HAT SR (SOTA) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| DAT SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| SwinIR super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Restormer restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| InstructIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| AdaIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Text LID (standalone) | ✓ | — | ✓ | ✓ | — | ✓ |
-| Table structure recognition | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| BERT NER token classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| LiLT layout-aware KIE | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Pix2Struct document understanding | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Library | C API | CLI | Rust | Python | Dart | Server | WASM |
+|---------|-------|-----|------|--------|------|--------|------|
+| Classical preproc (skew, bg norm, despeckle, blackfilter, page-split, content-bbox) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| 1-bit DWA morphology | header | — | — | — | — | — | — |
+| CC text line detection | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Page dewarping | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| OCR renderers (text, hOCR, ALTO, PDF) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| OCR pipeline (det+rec+reading order) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| OCR full pipeline (cleanup+routing) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Text detection (DBNet/Surya standalone) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Layout detection (RT-DETRv2 17-class) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Punctuation restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| TPS dewarp (learned) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| PDF DPI profiling | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| NAFNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| TBSRN text-line SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| PAN whole-image SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| HAT SR (SOTA) | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| DAT SR | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| SAFMN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Real-ESRGAN super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| SwinIR super-resolution | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Restormer restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| SCUNet denoising | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| InstructIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| AdaIR restoration | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Text LID (standalone) | ✓ | — | ✓ | ✓ | — | ✓ | — |
+| Table structure recognition | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| BERT NER token classification | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| LiLT layout-aware KIE | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
+| Pix2Struct document understanding | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | — |
 
 ### Implementation patterns
 
@@ -355,3 +359,83 @@ Utility libraries (not model backends) follow a lighter pattern.
 - **Keep debug prints** but gate behind `CRISPEMBED_DEBUG` env var
 - **Build target:** `crispembed` (static lib) + `crispembed-cli` + `crispembed-shared` + test binaries
 - **Format:** No mandatory formatter, but keep consistent with surrounding code
+
+---
+
+## WASM Build
+
+CrispEmbed compiles to WebAssembly via Emscripten for client-side browser use.
+
+### Build scripts
+
+| Script | Target | Output |
+|--------|--------|--------|
+| `build-wasm.sh` | OCR (full pipeline) | `build-wasm/crispembed_ocr.{js,wasm}` |
+| `build-embed-wasm.sh` | Text embeddings | `build-embed-wasm/crispembed_embed.{js,wasm}` |
+
+### Architecture
+
+```
+browser
+  ├─ crispembed_ocr.js       ← Emscripten-generated loader (modularized)
+  ├─ crispembed_ocr.wasm     ← compiled WASM binary (~2.3 MB)
+  ├─ crispembed-ocr.js       ← high-level JS wrapper (issue #31)
+  └─ model.gguf              ← fetched at runtime, loaded into MEMFS
+```
+
+The Emscripten module exports C functions prefixed with `wasm_*`. The high-level
+JS wrapper (`crispembed-ocr.js`) provides:
+- **TextDecoder fix** for resizable ArrayBuffer (V8 bug with ALLOW_MEMORY_GROWTH)
+- **Canvas API abstraction** — accepts HTMLImageElement, Canvas, Video, Blob, File, URL
+- **One-shot API** — `create()` → `recognize()` → `dispose()`, no manual malloc/free
+- **JSON serialization** — pipeline results returned as parsed JSON objects
+
+### WASM module components
+
+The OCR WASM module includes the complete pipeline:
+
+| Component | C wrapper function | Model needed? |
+|-----------|--------------------|---------------|
+| Single-model recognition | `wasm_ocr_init/recognize/free` | Yes (TrOCR/pix2tex GGUF) |
+| Full pipeline (det+rec) | `wasm_ocr_pipeline_init/run/free` | Yes (DBNet + TrOCR) |
+| Advanced pipeline | `wasm_ocr_pipeline_full_init/run/free` | Yes + optional NAFNet/SR |
+| Scan cleanup (classical) | `wasm_scan_cleanup_init/process/free` | No |
+| Text detection | `wasm_text_det_init/run/free` | Yes (DBNet/Surya GGUF) |
+| Layout detection | `wasm_layout_init/detect/free` | Yes (RT-DETRv2 GGUF) |
+| OCR rendering | `wasm_ocr_render` | No (uses pipeline results) |
+
+### Adding a function to the WASM build
+
+1. Add `WASM_EXPORT` function to `wasm/ocr_wrapper.c`
+2. Add `'_function_name'` to `EXPORTED_FUNCS` in `build-wasm.sh`
+3. Add JS wrapper method in `wasm/crispembed-ocr.js`
+4. Add Dart wrapper in `flutter/crispembed/lib/src/math_ocr_web.dart`
+5. Add Rust wrapper in `wasm/crispembed-ocr-wasm/src/lib.rs`
+6. Run tests: `node tests/test_wasm_ocr_wrapper.js && node tests/test_wasm_ocr_live.js`
+
+### WASM build flags
+
+```bash
+ALLOW_MEMORY_GROWTH=1     # WASM memory grows as needed
+INITIAL_MEMORY=134217728  # 128 MB initial (full pipeline)
+STACK_SIZE=2097152        # 2 MB stack
+MODULARIZE=1              # factory function pattern
+EXPORT_NAME=CrispEmbedOCR # global factory name
+ENVIRONMENT=web,worker    # browser targets
+FILESYSTEM=1              # MEMFS for model loading
+```
+
+### Testing
+
+```bash
+# Unit tests (no WASM build needed — validates JS, exports, consistency):
+node tests/test_wasm_ocr_wrapper.js
+
+# Live tests (requires build-wasm.sh first — loads actual WASM module):
+node tests/test_wasm_ocr_live.js
+```
+
+### CI/CD
+
+- `build-wasm.yml` — builds on push, uploads artifacts (30-day retention)
+- `release-wasm.yml` — attaches WASM bundles to GitHub releases
