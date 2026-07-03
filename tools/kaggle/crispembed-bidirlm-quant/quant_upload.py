@@ -49,15 +49,19 @@ if not REPO.exists():
     subprocess.check_call(["git", "-C", str(REPO), "submodule", "update", "--init", "--recursive"])
 kh.step("cloned")
 
-# --- download the model once (trust_remote_code files come with the snapshot) ---
-from huggingface_hub import snapshot_download, HfApi
+# --- model: let the converter's from_pretrained pull it (avoids the Kaggle image's
+#     broken huggingface_hub.snapshot_download, which references a constant its constants
+#     module lacks). from_pretrained uses hf_hub_download per-file — a working code path.
+#     Cache under /tmp (the ~70 GB writable layer, not /kaggle/working's ~20 GB). ---
+from huggingface_hub import HfApi
 scratch = Path("/tmp") / "bidirlm-work"
 scratch.mkdir(parents=True, exist_ok=True)
-with kh.build_heartbeat("download.model"):
-    src = snapshot_download(repo_id="BidirLM/BidirLM-Omni-2.5B-Embedding",
-                            cache_dir=str(scratch / "hf-cache"), token=hf_token)
-print(f"[model] {src}", flush=True)
-kh.step("model_downloaded")
+os.environ["HF_HOME"] = str(scratch / "hf-cache")
+if hf_token:
+    os.environ["HF_TOKEN"] = hf_token
+    os.environ["HUGGING_FACE_HUB_TOKEN"] = hf_token
+src = "BidirLM/BidirLM-Omni-2.5B-Embedding"   # HF id — converter downloads it
+kh.step("model_ready")
 
 # --- build crispembed-quantize (CPU) ---
 kh.install_build_toolchain()
