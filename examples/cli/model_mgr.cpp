@@ -1047,9 +1047,9 @@ static const ModelEntry k_registry[] = {
     // LFM2.5-ColBERT-350M — LiquidAI ColBERT multi-vector (per-token 128d)
     // Same backbone as LFM2.5-Embedding + Dense projection head
     // License: LFM Open License v1.0
-    { "lfm2-colbert", "lfm2-colbert-q8_0.gguf",
-      "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q8_0.gguf",
-      "LFM2.5 ColBERT 128d multi-vector hybrid (350M)", "419 MB", "lfm1.0",
+    { "lfm2-colbert", "lfm2-colbert-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/lfm2-colbert-GGUF/resolve/main/lfm2-colbert-q4_k-imatrix.gguf",
+      "LFM2.5 ColBERT 128d multi-vector hybrid 350M (Q4_K+imatrix, per-token cos 0.9975)", "234 MB", "lfm1.0",
       "https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M" },
 
     { "lfm2-colbert-q4k", "lfm2-colbert-q4_k.gguf",
