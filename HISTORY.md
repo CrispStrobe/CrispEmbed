@@ -4,6 +4,35 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 3, 2026 — imatrix everywhere: GLiNER (sched), ColBERT, Sparse; splade converter bug fixed
+
+Closed out the non-embedding imatrix classes. All in a worktree, cherry-picked to main.
+
+**GLiNER (C1d).** GLiNER used `ggml_gallocr` + `ggml_backend_graph_compute` (no eval-callback), so the
+collector couldn't attach. Added an opt-in `ggml_backend_sched` (built only when calibrating) + a
+`gliner_cc` alloc/compute helper applied to all 4 compute sites, and flush in `gliner_ner_free` (this
+context isn't freed via `crispembed_free`, and clean_exit skips atexit). gliner-deberta → iq4_xs
+(span-F1 1.0); gliner-lfm → q8_0. Investigated gliner-lfm's q4_k span-F1 0.941: **not a bug** — a
+uniform 2% score shift tips 3 detections scoring 0.50–0.51 under the 0.5 threshold (same LFM2 backbone
+hits 0.9975 on lfm2-colbert). A cautionary tale in coarse binary metrics at n=6.
+
+**ColBERT + Sparse (C1e).** Added `colbert` (per-token cosine) and `sparse` (sparse-vector cosine)
+harness modes. lfm2-colbert → q4_k+im 0.9975; splade-pp → iq4_xs 0.996.
+
+**splade-pp was broken — a general converter bug.** Its GGUFs shipped with only the encoder (no MLM
+head), so `--sparse` failed. Root cause: `convert-bert-to-gguf.py` tried `AutoModelForTokenClassification`
+before the MLM check, and HF **random-inits** a `classifier.weight` for SPLADE (config num_labels=2), so
+it was mis-detected as a 2-label NER model and the real `cls.predictions.*` head was dropped. Fixed by
+deciding the head from the **checkpoint files** (authoritative) rather than the random-init-prone loaded
+model — a real classifier wins (reranker/NER), else a real MLM head means SPLADE, else embedder.
+Reconverted with `--sparse` verified before upload; sparse restored. This would have silently broken any
+SPLADE/MLM conversion.
+
+Also identified the SOTA permissive EN+DE eval-corpora path (MMTEB / MIRACL / Tatoeba) for scaling the
+small A/B sets — see PLAN.
+
+---
+
 ## July 3, 2026 — imatrix rerankers + 3 dense backfills; DeBERTa quant-read bug fixed
 
 Extended imatrix coverage past the dense embedders. All in a worktree, cherry-picked to main.
