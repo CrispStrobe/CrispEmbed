@@ -517,12 +517,21 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   MLM head) — a general **converter bug** (SPLADE mis-detected as 2-label NER via
   HF random-init); fixed with checkpoint-authoritative head detection
   (`convert-bert-to-gguf.py`), reconverted, sparse restored.
-- **Eval corpora (SOTA, permissive EN+DE):** report against **MMTEB** (Apache-2.0);
-  for calibration/A/B text use **MIRACL** (Apache-2.0) + **Tatoeba** (CC-BY-2.0) +
-  GermanQuAD (CC-BY-4.0). No clean MIT/Apache EN+DE *gold NER* exists → self-label.
-  Current reranker/NER/gliner A/B sets are small (n=5–6) so τ/F1 are coarse — the
-  continuous score/vector delta is the truer signal; scale the corpora next.
-- **TODO:** wire the MIRACL/Tatoeba EN+DE corpora into the harness; C8 remaining
+- **Eval corpora — bilingual EN+DE, DONE (2026-07-03).** The harness now ships
+  bilingual EN+DE calibration/eval corpora across all modes: embed/sparse/ColBERT
+  text (`calib_corpus.txt`/`eval_corpus.txt`, `tools/gen_eval_corpora.py`) and
+  hand-written German parallels for the structured rerank/NER/ColBERT corpora (n
+  roughly doubled — e.g. RERANK_EVAL 5→9, NER_EVAL 6→10). **All bundled text is
+  self-authored and released CC0** — no third-party content license (avoids CC-BY /
+  Wikipedia-CC-BY-SA), so it's usable under MIT/Apache/BSD-3. Verified both
+  languages A/B cleanly (gte-modernbert q4_k vs q8: EN 0.987, **DE 0.975** — a real
+  gap the old English-only n=5 set couldn't show).
+  - *For SOTA benchmark scoring* (not license-free): report against **MMTEB**
+    (Apache-2.0 framework); real permissive-ish retrieval data = **MIRACL**
+    (Apache-2.0 card, Wikipedia text underneath) / **Tatoeba** (CC-BY-2.0) /
+    GermanQuAD (CC-BY-4.0). No clean MIT/Apache EN+DE *gold NER* exists.
+- **TODO:** re-calibrate models on the bilingual corpora to refresh their EN+DE A/B
+  numbers; C8 remaining
   engine schedulers; retrieval A/B via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,

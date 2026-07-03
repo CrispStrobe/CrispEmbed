@@ -2120,10 +2120,16 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   loaded `state_dict` lies for *any* head-detection heuristic.
 - **SOTA permissive EN+DE eval corpora:** report scores against **MMTEB**
   (Apache-2.0 framework); for calibration/A/B *text* (no labels needed for the
-  quant-vs-full-precision agreement metric) use **MIRACL** (Apache-2.0) queries+
-  passages and **Tatoeba** (CC-BY-2.0) EN–DE pairs; GermanQuAD/GermanDPR are CC-BY-
-  4.0. Avoid XNLI/MultiNERD (NC), Flores/Wikipedia-derived (SA). No clean MIT/Apache
-  EN+DE *gold NER* exists → self-label permissive text with a teacher model.
+  quant-vs-full-precision agreement metric) real-data options are **MIRACL**
+  (Apache-2.0 card, but Wikipedia text underneath → effectively CC-BY-SA) and
+  **Tatoeba** (CC-BY-2.0) EN–DE pairs; GermanQuAD/GermanDPR are CC-BY-4.0. Avoid
+  XNLI/MultiNERD (NC), Flores/Wikipedia-derived (SA). **For a fully license-free
+  bundle (usable under MIT/Apache/BSD-3), self-author the text and release it CC0**
+  — that's what CrispEmbed ships (`tools/gen_eval_corpora.py`, EN+DE parallel pairs);
+  quant-agreement A/B only needs diverse realistic multilingual text, so hand-written
+  is as good as a benchmark here and carries no attribution burden. Practical trap:
+  `datasets` 4.x dropped script datasets, so MIRACL/germandpr won't `load_dataset` —
+  use their parquet mirrors or self-author.
 - **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
   base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
   calibration needs. But the imatrix is **activation statistics**, and q8_0 is
