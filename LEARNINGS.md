@@ -1986,6 +1986,29 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
 - **Some models quantize poorly at 4-bit regardless of imatrix.** f2llm-v2-0.6b
   q4_k baseline 0.683 → +imatrix only 0.830; nomic-embed-text-v1.5 0.837 → 0.905.
   imatrix still helps, but for these keep q8_0 as the recommended flavor.
+- **Rerankers get imatrix too — but the A/B metric is Kendall-tau, not cosine
+  (2026-07-03).** Cross-encoders score (query, doc) pairs; there's no pooled
+  embedding to cosine. The imatrix *collector* fires on the `--rerank` path with
+  zero code change, so only the harness A/B differs: mean Kendall-tau on the doc
+  ranking vs the q8/full-precision gold, mean|dscore| as tiebreaker (harness
+  `MODE`/`rerank_ab`). All 7 rerankers quantized. imatrix reliably improves
+  dscore; τ preservation is model-dependent — jina-v2 + ms-marco-L6/L12 stay
+  τ=1.0 at 4-bit (wired to iq4_xs/q4_k+im), bge + mxbai drop to τ≈0.73–0.93 so
+  their defaults stay q8_0. **Caveat: the eval set is small (n=5 queries × 4 docs),
+  so τ is coarse (steps of ~0.033) and noisy — treat 4-bit-vs-q8 reranker calls as
+  provisional; a larger paired corpus would firm them up.**
+- **DeBERTa `rel_embd` must be dequantized on read — crashed ALL quantized DeBERTa
+  models (2026-07-03).** `rel_embd` (disentangled-attention relative-position
+  embeddings) is a 2-D weight the quantizer stores as Q8_0/Q4_K, but BOTH position-
+  expansion paths (`run_encoder_raw` + `encode_tokens`) read it with a raw
+  `n*sizeof(float)` get → `offset+size > ggml_nbytes` → "tensor read out of bounds"
+  abort. So mxbai-rerank-base/xsmall-v1 and gliner-deberta could not run on any
+  quantized GGUF (only the full-precision base worked). This surfaced as an
+  "imatrix failure" but was unrelated — a plain `--rerank` on the q8 also crashed
+  (masked earlier by reading `rc` through a `head` pipe). Fix: read via
+  `core_cpu::to_f32` (dequant-safe), same pattern as the MLM/SPLADE head. Same
+  class as the granite / pcs-q4k / MLM quant-read bugs — a quantized 2-D weight
+  read as raw F32.
 - **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
   base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
   calibration needs. But the imatrix is **activation statistics**, and q8_0 is

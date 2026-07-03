@@ -484,9 +484,23 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   `-q4k`(imatrix)/`-iq4xs`/`-q8` aliases; f2llm-v2-0.6b + nomic-embed-text-v1.5
   kept at q8_0 (both collapse to <0.91 at 4-bit even with imatrix). Verified by
   cross-checking all 30 defaults against the uploaded `-imatrix-ab.txt` files.
-- **TODO:** C8 wire remaining engine schedulers; domain-matched calibration
-  corpora; retrieval A/B via `tests/bench_rag.py`; rerankers (need a rank-score
-  A/B, not embedding cosine).
+- **All 38 dense embedders DONE (2026-07-03).** Backfilled the last three —
+  granite-embedding-278m (q4_k+im 0.9960), granite-embedding-107m (iq4_xs 0.9935),
+  gte-modernbert-base (iq4_xs 0.9892) — defaults repointed to their max-cosine
+  flavor.
+- **C1b — rerankers DONE (2026-07-03).** Extended the harness with a `rerank`
+  MODE: calibration runs the `--rerank` path (collector fires unchanged), A/B =
+  mean **Kendall-tau** on the doc ranking vs full-precision gold (+ mean|dscore|
+  tiebreaker). All 7 rerankers quantized. Defaults: jina-v2 → q4_k+im,
+  ms-marco-L6/L12 → iq4_xs (τ=1.0); bge + mxbai stay q8_0 (τ<1.0 at 4-bit). The
+  mxbai DeBERTa rerankers only became quantizable after the `rel_embd` dequant fix
+  (commit 73a016e — a raw-F32 read of a quantized 2-D weight aborted them on ANY
+  quant; also unblocks gliner-deberta NER). **Reranker A/B eval is small (n=5); a
+  larger paired corpus is future work before finalizing 4-bit-vs-q8 calls.**
+- **TODO:** NER/token-classification imatrix (needs a span-F1 A/B; gliner-deberta
+  now runnable post-fix) + sparse/ColBERT (splade-pp, lfm2-colbert); C8 wire
+  remaining engine schedulers; domain-matched calibration corpora; retrieval A/B
+  via `tests/bench_rag.py`.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
