@@ -4,6 +4,31 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 3, 2026 — imatrix rerankers + 3 dense backfills; DeBERTa quant-read bug fixed
+
+Extended imatrix coverage past the dense embedders. All in a worktree, cherry-picked to main.
+
+**3 dense embedders backfilled.** granite-embedding-107m/278m-multilingual and gte-modernbert-base
+now carry imatrix quants (all 38 dense embedders done); registry defaults repointed to their
+max-cosine flavor (granite-278m q4_k+im 0.9960, granite-107m iq4_xs 0.9935, gte-modernbert iq4_xs
+0.9892). Confirmed the ModernBERT encoder flows through the collector locally first.
+
+**Rerankers (C1b).** Added a `rerank` MODE to the Kaggle harness: calibration runs the `--rerank`
+cross-encoder path (the imatrix collector fires on it with zero code change), and the A/B metric
+becomes mean **Kendall-tau** on the doc ranking vs full-precision gold, with mean|dscore| as
+tiebreaker — cosine is meaningless for a (query,doc) scorer. Validated locally (ms-marco-L6: q4_k+im
+halves dscore, iq4_xs+im τ=1.0) by exec'ing the harness's own functions before the run. All 7
+rerankers quantized; defaults wired by the rule "smallest flavor with τ=1.0, else q8_0": jina-v2 →
+q4_k+im, ms-marco-L6/L12 → iq4_xs; bge + mxbai → q8_0 (τ<1.0 at 4-bit). imatrix reliably improves
+dscore across all 7. The eval set is small (n=5) so τ is coarse — flagged as future work.
+
+**DeBERTa `rel_embd` quant-read bug (commit 73a016e).** The 2 mxbai rerankers failed — not an imatrix
+issue: they're DeBERTa, and `rel_embd` (a 2-D disentangled-attention weight) ships Q8_0/Q4_K, but both
+position-expansion paths read it as raw F32 → `offset+size > ggml_nbytes` abort. So mxbai-rerank-* and
+gliner-deberta could not run on ANY quantized GGUF. My earlier "it runs" was a `head`-pipe rc artifact.
+Fix: dequant-safe `core_cpu::to_f32`; verified mxbai reranks + collects imatrix. Same class as the
+granite / pcs-q4k / MLM quant-read bugs.
+
 ## July 3, 2026 — lfm2_colbert ColBERT multivec: CUDA-only graph-reuse corruption fixed + P100-verified
 
 `crispembed_encode_multivec` produced garbage on CUDA only: `colbert_output` cos **0.571643**
