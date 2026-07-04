@@ -4541,3 +4541,37 @@ CrispASR tools/upstream-prs/22-webgpu-ocr-ops.{md,patch}. Hard-won lessons:
   region texts differ (F16 rounding; GPU text closer to native GT on one).
   Autoregressive TrOCR decode is only mildly faster on GPU (JSPI round-trip
   overhead per step) — batching decode steps is the next perf lever.
+
+
+## OCR-engine WebGPU sweep + OPFS cache (July 5)
+
+Per-engine CPU-vs-WebGPU sweep in headless Chromium
+(tests/wasm-browser/engine-sweep.js), single-model wasm API, warm numbers:
+
+| engine    | wasm CPU | WebGPU | note |
+|-----------|----------|--------|------|
+| pix2tex   | 6.3 s    | 2.4 s  | 2.6x |
+| trocr     | 6.9 s    | 1.7 s  | 4.0x — biggest win |
+| parseq    | 0.17 s   | 0.65 s | correct, but tiny model = CPU wins |
+| hmer      | 13.0 s   | 11.4 s | 1.15x |
+| bttr      | 7.8 s    | 9.0 s  | GPU slightly slower |
+| tesseract | 0.16 s   | 0.17 s | tiny LSTM, parity |
+
+All six now produce text matching CPU. Two bugs found:
+- **parseq returned garbage on WebGPU** ("MMM"): it computes on a raw
+  gallocr (no sched/CPU fallback) and uses ggml_flash_attn_ext, which
+  ggml-webgpu compiles OUT under Emscripten *inside its case* — so even our
+  default-case skip warning didn't fire. Fix: exact manual attention under
+  __EMSCRIPTEN__ in parseq_ocr.cpp (+ tensor-pool bump for the extra ~16
+  nodes/layer), and a warning added to the flash-attn Emscripten branch in
+  the ggml patch. Rule: any engine that computes WITHOUT a sched must not
+  emit ops the webgpu backend lacks — flash_attn_ext is the trap.
+- Manual attention overflowed parseq's exactly-sized ggml metadata pool —
+  "not enough space in the context's memory pool" — pools must budget for
+  per-platform graph variants.
+
+**OPFS model cache** (wllama-pattern, in wasm/crispembed-ocr.js):
+opfs://crispembed-models/<encoded-url>, awaited write (a fire-and-forget
+write is killed if the page navigates right after load — cost us a
+head-scratcher), navigator.storage.persist() attempt, clear API +
+demo link. Verified: second page load hits cache, zero network.

@@ -138,6 +138,10 @@
   </div>
   <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
   <div id="status">Select a mode and click "Load".</div>
+  <div style="margin-top:8px;">
+    <small>Models are cached locally (OPFS) after the first download.
+    <a href="#" id="clear-cache" style="color:#2563eb;">Clear model cache</a></small>
+  </div>
 </div>
 
 <!-- Image input -->
@@ -433,6 +437,17 @@ async function processImage() {
 
 // Default thread count reflects isolation state (threads need COOP/COEP).
 document.getElementById('n-threads').value = defaultThreads();
+
+document.getElementById('clear-cache').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try {
+    const root = await navigator.storage.getDirectory();
+    await root.removeEntry('crispembed-models', { recursive: true });
+    document.getElementById('status').textContent = 'Model cache cleared.';
+  } catch (_) {
+    document.getElementById('status').textContent = 'Model cache already empty.';
+  }
+});
 
 // Offer the WebGPU toggle only when the browser has WebGPU and the build is
 // deployed alongside the demo.

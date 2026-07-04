@@ -84,9 +84,17 @@ Configurable via C API, CLI, Python, Rust, Dart, HTTP server.
 GPU acceleration (CUDA/Vulkan/Metal). iOS + Android + **WASM** builds.
 102 models in registry (text, vision, face, OCR, NER, scan cleanup), 200+ GGUF variants on HF.
 
-**Browser**: Math OCR compiles to WebAssembly (1 MB) via `build-wasm.sh`.
-Runs entirely client-side — no server, no API key. GGUF models fetched on
-demand and cached in IndexedDB.
+**Browser**: the OCR stack compiles to WebAssembly via `build-wasm.sh`
+(single-model recognition, DBNet+TrOCR pipeline, scan cleanup) and runs
+entirely client-side — no server, no API key. Three build tiers, picked at
+runtime: SIMD CPU, multithreaded (COOP/COEP via a bundled service worker,
+works on GitHub Pages), and experimental **WebGPU** (`--webgpu`,
+Chromium; ~2.8x on ViT recognition, ~60x on DBNet detection vs wasm CPU —
+six local WGSL kernels, see `patches/ggml-webgpu-ops.patch`). Inference
+runs in a Web Worker with live engine progress. Live demo:
+https://crispstrobe.github.io/CrispEmbed/ (deployed from `main` by CI,
+verified end-to-end by a headless-Chromium test suite on every push —
+`examples/wasm-ocr/README.md` has details).
 
 **Demo**: [HuggingFace Space](https://huggingface.co/spaces/cstr/CrispEmbed) —
 text embeddings (cosine similarity) + math OCR (image → LaTeX), auto-deployed
