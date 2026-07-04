@@ -4,6 +4,22 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 4, 2026 (evening) — WebGPU tier for the WASM demo (~2.2×, experimental)
+
+ggml's WebGPU backend (emdawnwebgpu/Dawn, JSPI) now builds to WASM via
+`./build-wasm.sh --webgpu`, deploys under `webgpu/` on Pages, and is offered
+as an opt-in checkbox when the browser has `navigator.gpu`. pix2tex
+recognition: ~3.0-3.5 s vs 6.4-7.7 s on the SIMD CPU build (M1, warm),
+output byte-identical to native across repeat runs; unsupported ops
+(LayerNorm, IM2COL) fall back to CPU inside the engine's scheduler — adding
+those WGSL shaders upstream is the next perf step. Porting details (shader
+embedder fix, JSPI_EXPORTS + async ccall wrapper, resizable-heap vs
+writeBuffer, non-re-entrant encoder graph cache removed) in LEARNINGS.md.
+Verified: browser e2e green for all three tiers (plain 13/13, threaded,
+webgpu incl. GT byte-equality); native output unchanged.
+
+---
+
 ## July 4, 2026 (later) — WASM demo: Web Worker + threads + the missing SIMD kernels
 
 Follow-up to the #31 fix after user feedback ("2nd tab seems to hang"): the

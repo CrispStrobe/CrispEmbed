@@ -4,6 +4,7 @@
 # Usage:
 #   ./build-wasm.sh                    # default build (single-threaded)
 #   ./build-wasm.sh --threads          # multithreaded (requires COOP/COEP headers)
+#   ./build-wasm.sh --webgpu           # experimental WebGPU backend (emdawnwebgpu)
 #   ./build-wasm.sh --clean            # remove build-wasm/ first
 #   ./build-wasm.sh --simd             # enable WASM SIMD128 (default: on)
 #   ./build-wasm.sh --no-simd          # disable WASM SIMD128
@@ -24,6 +25,7 @@ BUILD_DIR_SET=false
 CLEAN=false
 SIMD=ON
 THREADS=OFF
+WEBGPU=OFF
 CMAKE_EXTRA=()
 
 while [[ $# -gt 0 ]]; do
@@ -32,6 +34,7 @@ while [[ $# -gt 0 ]]; do
         --simd)     SIMD=ON; shift ;;
         --no-simd)  SIMD=OFF; shift ;;
         --threads)  THREADS=ON; shift ;;
+        --webgpu)   WEBGPU=ON; shift ;;
         --)         shift; CMAKE_EXTRA=("$@"); break ;;
         *)          CMAKE_EXTRA+=("$1"); shift ;;
     esac
@@ -47,6 +50,40 @@ fi
 THREAD_LABEL="single-threaded"
 THREAD_C_FLAGS=""
 THREAD_LINK_FLAGS=""
+WEBGPU_FLAGS=""
+WEBGPU_LINK_FLAGS=""
+if [ "$WEBGPU" = "ON" ]; then
+    WEBGPU_FLAGS="-DGGML_WEBGPU=ON"
+    # JSPI: every export that can reach GPU work (and therefore suspend)
+    # must be wrapped with WebAssembly.promising — list them explicitly.
+    # JS callers must use ccall(..., {async:true}) for these (the JS wrapper
+    # does; see _acall in wasm/crispembed-ocr.js).
+    WEBGPU_LINK_FLAGS="-sJSPI_EXPORTS=[\
+'wasm_ocr_init','wasm_ocr_recognize','wasm_ocr_recognize_gray','wasm_ocr_recognize_copy','wasm_ocr_free',\
+'wasm_ocr_pipeline_init','wasm_ocr_pipeline_run','wasm_ocr_pipeline_free',\
+'wasm_ocr_pipeline_full_init','wasm_ocr_pipeline_full_run','wasm_ocr_pipeline_full_free',\
+'wasm_scan_cleanup_init','wasm_scan_cleanup_process','wasm_scan_cleanup_free',\
+'wasm_text_det_init','wasm_text_det_run','wasm_text_det_free',\
+'wasm_layout_init','wasm_layout_detect','wasm_layout_free',\
+'wasm_ocr_render'] \
+-sALLOW_MEMORY_GROWTH=0 -sINITIAL_MEMORY=536870912"
+    # Chrome rejects GPUQueue.writeBuffer with views into a RESIZABLE
+    # ArrayBuffer (what ALLOW_MEMORY_GROWTH produces) — same browser-API
+    # class as the issue-31 TextDecoder crash. Fixed 512 MB heap instead.
+    # ggml snapshot 8be60f8 ships WGSL templates as *.tmpl.wgsl, which the
+    # embed script blindly embeds as invalid C identifiers (wgsl_cpy.tmpl).
+    # Upstream master renamed them to plain *.tmpl (skipped by the script);
+    # mirror that rename here (idempotent, working tree only).
+    for t in "$SCRIPT_DIR"/ggml/src/ggml-webgpu/wgsl-shaders/*.tmpl.wgsl; do
+        [ -e "$t" ] && mv "$t" "${t%.wgsl}" && echo "[INFO] renamed $(basename "$t") -> $(basename "${t%.wgsl}")"
+    done
+    # Experimental: ggml-webgpu links the emdawnwebgpu port and adds
+    # -sASYNCIFY itself (INTERFACE link options). Separate output dir so all
+    # variants coexist (demo serves this build under webgpu/).
+    if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-webgpu"; fi
+    echo "[INFO] WebGPU backend enabled -> $BUILD_DIR/"
+fi
+
 if [ "$THREADS" = "ON" ]; then
     THREAD_LABEL="multithreaded (requires COOP/COEP headers)"
     THREAD_C_FLAGS="-pthread"
@@ -145,6 +182,7 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
     -DCRISPEMBED_BUILD_SHARED=OFF \
     -DCRISPEMBED_WASM=ON \
     -DCRISPEMBED_WASM_THREADS="$THREADS" \
+    $WEBGPU_FLAGS \
     -DCMAKE_C_FLAGS="$SIMD_FLAGS $THREAD_C_FLAGS" \
     -DCMAKE_CXX_FLAGS="$SIMD_FLAGS $THREAD_C_FLAGS" \
     -DCMAKE_EXE_LINKER_FLAGS="\
@@ -160,6 +198,7 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
 -sWASM_BIGINT=1 \
 -sNO_EXIT_RUNTIME=1 \
 $THREAD_LINK_FLAGS \
+$WEBGPU_LINK_FLAGS \
 $SIMD_FLAGS \
 " \
     "${CMAKE_EXTRA[@]+"${CMAKE_EXTRA[@]}"}"

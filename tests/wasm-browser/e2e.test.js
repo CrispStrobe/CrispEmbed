@@ -64,7 +64,13 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
 
   const server = require('./server.js');
 
-  const browser = await chromium.launch();
+  const WEBGPU = process.env.WASM_E2E_WEBGPU === '1';
+  // Headless WebGPU needs explicit enabling; ANGLE picks Metal on macOS,
+  // Vulkan/SwiftShader elsewhere.
+  const browser = await chromium.launch(WEBGPU ? {
+    args: ['--enable-unsafe-webgpu', '--enable-gpu',
+           '--enable-features=Vulkan', '--ignore-gpu-blocklist'],
+  } : {});
   const page = await browser.newPage();
 
   const pageErrors = [];
@@ -98,6 +104,13 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
       'Process disabled with image but no model');
 
     console.log('\n=== Single-model: load pix2tex via demo UI ===');
+    if (WEBGPU) {
+      assert(await page.evaluate(() => !!navigator.gpu),
+        'browser exposes navigator.gpu');
+      await page.waitForSelector('#webgpu-opt', { state: 'visible', timeout: 10000 });
+      await page.check('#opt-webgpu');
+      console.log('  WebGPU toggle enabled');
+    }
     await page.fill('#model-url', BASE + '/models/pix2tex-mfr-q4_k.gguf');
     await page.click('#btn-init');
     await page.waitForFunction(
@@ -110,7 +123,10 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
       'Process enabled once model + image are both present');
     const loaderUsed = await page.evaluate(() => window.__loaderUsed);
     console.log(`  loader used: ${loaderUsed}`);
-    if (process.env.WASM_E2E_THREADS === '1') {
+    if (WEBGPU) {
+      assert(loaderUsed === 'webgpu/crispembed_ocr.js',
+        `webgpu loader selected (got ${loaderUsed})`);
+    } else if (process.env.WASM_E2E_THREADS === '1') {
       assert(loaderUsed === 'threaded/crispembed_ocr.js',
         `threaded loader selected (got ${loaderUsed})`);
     }

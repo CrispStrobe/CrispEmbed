@@ -29,6 +29,13 @@ that touches the WASM build)
 - **SIMD**: builds pass `-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm` so ggml compiles
   its WASM-SIMD quant kernels (without it, CMake reports the arch as x86 and
   every quantized matmul silently runs scalar — ~2x slower).
+- **WebGPU (experimental)**: `./build-wasm.sh --webgpu` builds with ggml's
+  WebGPU backend (emdawnwebgpu/Dawn, JSPI). Deployed under `webgpu/`, offered
+  as an opt-in checkbox when the browser has `navigator.gpu`. Measured ~2.2x
+  vs the SIMD CPU build for pix2tex recognition (M1, output byte-identical;
+  unsupported ops like LayerNorm fall back to CPU inside ggml's scheduler).
+  Uses a fixed 512 MB heap: Chrome rejects `GPUQueue.writeBuffer` from views
+  into a resizable (growable) WASM heap.
 
 The Det+Rec pipeline is still the slowest mode (a ViT decode per detected
 region); the single-model and cleanup modes run in seconds.
