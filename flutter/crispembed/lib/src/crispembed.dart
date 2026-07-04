@@ -611,6 +611,88 @@ class CrispEmbed {
   }
 
   // ------------------------------------------------------------------
+  // LoRA hot-swap (§12.6a)
+  // ------------------------------------------------------------------
+
+  // Lazily looked up — absent on older builds without LoRA support.
+  CrispembedSetLoraDart? _setLoraFn;
+  CrispembedGetLoraDart? _getLoraFn;
+  CrispembedListLoraDart? _listLoraFn;
+  bool _loraBound = false;
+
+  void _bindLora() {
+    if (_loraBound) return;
+    _loraBound = true;
+    try {
+      _setLoraFn = _lib.lookupFunction<CrispembedSetLoraNative,
+          CrispembedSetLoraDart>('crispembed_set_lora');
+      _getLoraFn = _lib.lookupFunction<CrispembedGetLoraNative,
+          CrispembedGetLoraDart>('crispembed_get_lora');
+      _listLoraFn = _lib.lookupFunction<CrispembedListLoraNative,
+          CrispembedListLoraDart>('crispembed_list_lora');
+    } catch (_) {
+      _setLoraFn = null;
+      _getLoraFn = null;
+      _listLoraFn = null;
+    }
+  }
+
+  /// True if this build supports LoRA hot-swap.
+  bool get hasLora {
+    _bindLora();
+    return _setLoraFn != null;
+  }
+
+  /// Switch to a named LoRA adapter at runtime (decoder models only).
+  ///
+  /// Pass empty string or null to deactivate all adapters (restore base).
+  /// Returns true on success, false on failure (no adapter, not a decoder).
+  bool setLora(String? adapterName) {
+    _checkDisposed();
+    _bindLora();
+    if (_setLoraFn == null) return false;
+    final name = (adapterName ?? '').toNativeUtf8();
+    try {
+      return _setLoraFn!(_ctx, name) != 0;
+    } finally {
+      calloc.free(name);
+    }
+  }
+
+  /// Get the currently active LoRA adapter name (empty if none).
+  String get activeLora {
+    _checkDisposed();
+    _bindLora();
+    if (_getLoraFn == null) return '';
+    final p = _getLoraFn!(_ctx);
+    return p == nullptr ? '' : p.toDartString();
+  }
+
+  /// List available LoRA adapters in this model.
+  List<String> listLora() {
+    _checkDisposed();
+    _bindLora();
+    if (_listLoraFn == null) return const [];
+    final namesPtr = calloc<Pointer<Pointer<Utf8>>>();
+    final countPtr = calloc<Int32>();
+    try {
+      final ok = _listLoraFn!(_ctx, namesPtr, countPtr);
+      if (ok == 0 || countPtr.value <= 0) return const [];
+      final count = countPtr.value;
+      final names = namesPtr.value;
+      final result = <String>[];
+      for (var i = 0; i < count; i++) {
+        final p = names[i];
+        if (p != nullptr) result.add(p.toDartString());
+      }
+      return result;
+    } finally {
+      calloc.free(namesPtr);
+      calloc.free(countPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Lifecycle
   // ------------------------------------------------------------------
 
