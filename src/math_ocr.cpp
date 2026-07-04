@@ -587,9 +587,15 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
         }
         ctx->enc_graph = nullptr;
 
+        // The graph + tensor structs are CACHED in ctx beyond this scope, so
+        // the metadata pool must be owned by the ggml context (mem_buffer =
+        // nullptr → ggml mallocs it, ggml_free releases it). A stack-local
+        // buffer here is a use-after-free: the CPU backend's work buffer
+        // reuses the freed block and mul_mat's quantized-activation writes
+        // clobber the cached tensor structs (hard crash on WASM, silent on
+        // macOS malloc).
         size_t meta_size = 16 * 1024 * 1024;
-        std::vector<uint8_t> meta(meta_size);
-        ggml_init_params ip = { meta_size, meta.data(), true };
+        ggml_init_params ip = { meta_size, nullptr, true };
         ggml_context * g = ggml_init(ip);
         ctx->enc_graph = build_encoder_graph(ctx, g, T);
         ctx->enc_graph_g = g;
@@ -1666,8 +1672,10 @@ bool math_ocr_encode_batch_raw(math_ocr_context * ctx, const uint8_t * const * c
 
         size_t meta_size = (size_t)(ctx->hparams.enc_layers * 80 + 512) * ggml_tensor_overhead() +
                            ggml_graph_overhead_custom(ctx->hparams.enc_layers * 80 + 512, false) + 4 * 1024 * 1024;
-        std::vector<uint8_t> meta(meta_size);
-        ggml_init_params ip = { meta_size, meta.data(), true };
+        // Cached beyond this scope (ctx->enc_batch) — ggml must own the pool
+        // (see the single-image encoder above for the use-after-free this
+        // prevents).
+        ggml_init_params ip = { meta_size, nullptr, true };
         ggml_context * g = ggml_init(ip);
         ctx->enc_batch = build_encoder_graph_batch(ctx, g, T, B);
         ctx->enc_batch_g = g;

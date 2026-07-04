@@ -106,7 +106,8 @@ EXPORTED_FUNCS="[\
 ]"
 
 EXPORTED_RUNTIME="[\
-'ccall','cwrap','FS','MEMFS','getValue','setValue','UTF8ToString','stringToUTF8','lengthBytesUTF8'\
+'ccall','cwrap','FS','MEMFS','getValue','setValue','UTF8ToString','stringToUTF8','lengthBytesUTF8',\
+'HEAPU8','HEAP8','HEAPU32','HEAP32','HEAPF32'\
 ]"
 
 # SIMD flags
