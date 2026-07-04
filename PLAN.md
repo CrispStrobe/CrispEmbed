@@ -508,6 +508,14 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
     classifier). Same headless-model trap as splade-pp. **Audited all 7 rerankers:
     only bge-reranker-base was affected**; v2-m3, jina, mxbai×2, ms-marco×2 all have
     heads.
+  - **Full cross-family head audit (2026-07-04, tokenless gguf-header curl).** Every
+    task-head model verified to carry its required head: bert-base-NER + xlmr-ner-hrl
+    (`ner.classifier`), splade-pp (`mlm_transform`), gliner-deberta + gliner-lfm
+    (`prompt_rep`/`span.out_project`), lfm2-colbert (`colbert.projection`, `--colbert`
+    1024→128 confirmed), and embeddinggemma's Matryoshka `dense.0/1` (768-dim output
+    confirmed). **bge-reranker-base was the ONLY affected model across all families.**
+    (Header read must exceed the tokenizer-vocab KV — ~9 MB for 30–250 K vocabs,
+    ~20 MB for Gemma's 256 K — or the tensor-info section is missed → false HEADLESS.)
   - **imatrix does NOT help rerankers.** On the working bge-reranker-base (τ vs f16,
     16×6): q8_0 **1.000** (top1 16/16) → q4_k 0.967 → q4_k+imat 0.958 → iq4_xs 0.942.
     4-bit keeps the top doc but reorders the tail, and imatrix slightly *hurts* (the
