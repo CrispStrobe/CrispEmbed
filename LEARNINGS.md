@@ -4618,3 +4618,14 @@ parity with CPU improved (7/8 vs 6/8). Kept ON for webgpu (small consistent
 win, strictly faster decode, ~model-size extra wasm-heap for the CPU copy).
 Prediction vs reality note: the profiling suggested a bigger pipeline win —
 always A/B the actual workload, not the microbench.
+
+
+## Engine sweep round 2 (12/12) + a wasm-CPU drift lesson
+
+posformer/texo/mixtex/ppformulanet/texteller all MATCH CPU on WebGPU;
+texteller-3 q4_k (177 MB) fits the fixed 512 MB webgpu heap and is the
+biggest GPU win (5.4x). trocr-small-handwritten DIFFERED between wasm-CPU
+and wasm-GPU on a printed-word (out-of-distribution) fixture — the NATIVE
+engine sided with the GPU output: the wasm-CPU SIMD accumulation was the
+drifting leg. Lesson: on borderline inputs, 'differs from wasm-CPU' is not
+'GPU is wrong' — always arbitrate with the native engine.

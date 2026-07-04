@@ -93,7 +93,9 @@
 
   <!-- Single model config -->
   <div id="cfg-single">
-    <label for="model-url">Recognition Model URL (GGUF)</label>
+    <label for="model-preset">Model</label>
+    <select id="model-preset"></select>
+    <label for="model-url">Model URL (GGUF) — editable for manual override</label>
     <input type="text" id="model-url"
       value="https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf"
       placeholder="https://...model.gguf">
@@ -194,6 +196,68 @@ if ('serviceWorker' in navigator && !crossOriginIsolated
 
 // All inference runs in a Web Worker (ocr-worker.js) so the page stays
 // responsive during multi-second WASM compute, with live engine progress.
+
+// Verified model presets (each checked CPU + WebGPU against the native
+// engine — tests/wasm-browser/engine-sweep.js). Picking one fills the URL
+// field below, which stays editable for manual override.
+const MODEL_PRESETS = [
+  { group: 'Printed text', name: 'TrOCR small printed (45 MB)',
+    url: 'https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q4_k.gguf' },
+  { group: 'Printed text', name: 'Tesseract LSTM eng (3 MB)',
+    url: 'https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-f16.gguf' },
+  { group: 'Printed text', name: 'Tesseract LSTM deu (2 MB)',
+    url: 'https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-deu-f16.gguf' },
+  { group: 'Scene text', name: 'PARSeq tiny (7 MB)',
+    url: 'https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-tiny-q8_0.gguf' },
+  { group: 'Handwritten text', name: 'TrOCR small handwritten (68 MB)',
+    url: 'https://huggingface.co/cstr/trocr-small-handwritten-GGUF/resolve/main/trocr-small-handwritten-q8_0.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'pix2tex (18 MB)', default: true,
+    url: 'https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'Texo distill (13 MB)',
+    url: 'https://huggingface.co/cstr/texo-distill-gguf/resolve/main/texo-distill-q4_k.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'PP-FormulaNet-L (127 MB)',
+    url: 'https://huggingface.co/cstr/ppformulanet-l-gguf/resolve/main/ppformulanet-l-q4_k.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'TexTeller-3 (177 MB)',
+    url: 'https://huggingface.co/cstr/texteller-3-GGUF/resolve/main/texteller-3-q4_k.gguf' },
+  { group: 'Math (handwritten) → LaTeX', name: 'HMER (4 MB)',
+    url: 'https://huggingface.co/cstr/hmer-handwritten-math-gguf/resolve/main/hmer-hw-q4_k.gguf' },
+  { group: 'Math (handwritten) → LaTeX', name: 'BTTR (11 MB)',
+    url: 'https://huggingface.co/cstr/bttr-handwritten-math-gguf/resolve/main/bttr-hw-q4_k.gguf' },
+  { group: 'Math (handwritten) → LaTeX', name: 'PosFormer (10 MB)',
+    url: 'https://huggingface.co/cstr/posformer-hw-GGUF/resolve/main/posformer-hw-q4_k.gguf' },
+  { group: 'Math (mixed zh/en) → LaTeX', name: 'MixTeX (60 MB)',
+    url: 'https://huggingface.co/cstr/mixtex-zhen-gguf/resolve/main/mixtex-zhen-q4_k.gguf' },
+];
+
+function initModelPicker() {
+  const sel = document.getElementById('model-preset');
+  const urlInput = document.getElementById('model-url');
+  const groups = {};
+  for (const p of MODEL_PRESETS) {
+    if (!groups[p.group]) {
+      groups[p.group] = document.createElement('optgroup');
+      groups[p.group].label = p.group;
+      sel.appendChild(groups[p.group]);
+    }
+    const o = document.createElement('option');
+    o.value = p.url;
+    o.textContent = p.name;
+    if (p.default) o.selected = true;
+    groups[p.group].appendChild(o);
+  }
+  const custom = document.createElement('option');
+  custom.value = '';
+  custom.textContent = 'Custom URL…';
+  sel.appendChild(custom);
+  sel.addEventListener('change', () => {
+    if (sel.value) urlInput.value = sel.value;
+    else { urlInput.value = ''; urlInput.focus(); }
+  });
+  // Manual edits flip the picker to Custom so the UI never lies.
+  urlInput.addEventListener('input', () => {
+    if (![...sel.options].some(o => o.value === urlInput.value)) sel.value = '';
+  });
+}
 
 let worker = null;
 let engineReady = false;
@@ -442,6 +506,8 @@ async function processImage() {
     updateProcessButton();
   }
 }
+
+initModelPicker();
 
 // Default thread count reflects isolation state (threads need COOP/COEP).
 document.getElementById('n-threads').value = defaultThreads();

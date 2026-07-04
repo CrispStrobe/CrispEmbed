@@ -12,12 +12,18 @@ const path = require('path');
 const fs = require('fs');
 
 const ENGINES = [
-  { name: 'pix2tex',   model: 'pix2tex-mfr-q4_k.gguf',          image: 'formula' },
-  { name: 'trocr',     model: 'trocr-small-printed-q4_k.gguf',  image: 'word' },
-  { name: 'parseq',    model: 'parseq-tiny-q8_0.gguf',          image: 'word' },
-  { name: 'hmer',      model: 'hmer-hw-q4_k.gguf',              image: 'formula' },
-  { name: 'bttr',      model: 'bttr-hw-q4_k.gguf',              image: 'formula' },
-  { name: 'tesseract', model: 'tesseract-eng-f16.gguf',         image: 'word' },
+  { name: 'pix2tex',    model: 'pix2tex-mfr-q4_k.gguf',              image: 'formula' },
+  { name: 'trocr',      model: 'trocr-small-printed-q4_k.gguf',      image: 'word' },
+  { name: 'trocr-hw',   model: 'trocr-small-handwritten-q8_0.gguf',  image: 'word' },
+  { name: 'parseq',     model: 'parseq-tiny-q8_0.gguf',              image: 'word' },
+  { name: 'hmer',       model: 'hmer-hw-q4_k.gguf',                  image: 'formula' },
+  { name: 'bttr',       model: 'bttr-hw-q4_k.gguf',                  image: 'formula' },
+  { name: 'posformer',  model: 'posformer-hw-q4_k.gguf',             image: 'formula' },
+  { name: 'texo',       model: 'texo-distill-q4_k.gguf',             image: 'formula' },
+  { name: 'mixtex',     model: 'mixtex-zhen-q4_k.gguf',              image: 'formula' },
+  { name: 'ppformulanet', model: 'ppformulanet-l-q4_k.gguf',         image: 'formula' },
+  { name: 'texteller',  model: 'texteller-3-q4_k.gguf',              image: 'formula' },
+  { name: 'tesseract',  model: 'tesseract-eng-f16.gguf',             image: 'word' },
 ];
 
 (async () => {
