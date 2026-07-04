@@ -58,6 +58,10 @@ function resolveUrl(urlPath) {
     if (process.env.WASM_E2E_WEBGPU !== '1') return null;
     return path.join(repoRoot, 'build-wasm-webgpu', path.basename(clean));
   }
+  if (clean.startsWith('/webgpu-compat/')) {
+    if (process.env.WASM_E2E_WEBGPU !== '1') return null;
+    return path.join(repoRoot, 'build-wasm-webgpu-compat', path.basename(clean));
+  }
   if (clean === '/crispembed-ocr.js') {
     return path.join(repoRoot, 'wasm', 'crispembed-ocr.js');
   }

@@ -214,10 +214,18 @@ async function probeLoader(dir) {
 
 async function pickLoader() {
   // WebGPU (opt-in checkbox): GPU compute; unsupported ops fall back to CPU
-  // inside the engine's scheduler.
+  // inside the engine's scheduler. The JSPI build needs
+  // WebAssembly.Suspending (Chromium); Safari/Firefox get the Asyncify
+  // compat build. ?gpuCompat=1 forces the compat variant (testing).
   if (navigator.gpu && document.getElementById('opt-webgpu').checked) {
-    const l = await probeLoader('webgpu/');
-    if (l) return l;
+    const hasJspi = typeof WebAssembly.Suspending === 'function'
+      && new URLSearchParams(location.search).get('gpuCompat') !== '1';
+    if (hasJspi) {
+      const l = await probeLoader('webgpu/');
+      if (l) return l;
+    }
+    const lc = await probeLoader('webgpu-compat/');
+    if (lc) return lc;
   }
   if (crossOriginIsolated) {
     const l = await probeLoader('threaded/');
@@ -452,7 +460,8 @@ document.getElementById('clear-cache').addEventListener('click', async (e) => {
 // Offer the WebGPU toggle only when the browser has WebGPU and the build is
 // deployed alongside the demo.
 if (navigator.gpu) {
-  probeLoader('webgpu/').then((l) => {
+  const dir = typeof WebAssembly.Suspending === 'function' ? 'webgpu/' : 'webgpu-compat/';
+  probeLoader(dir).then((l) => {
     if (l) document.getElementById('webgpu-opt').style.display = '';
   });
 }

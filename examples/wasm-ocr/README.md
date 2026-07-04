@@ -30,7 +30,9 @@ that touches the WASM build)
   its WASM-SIMD quant kernels (without it, CMake reports the arch as x86 and
   every quantized matmul silently runs scalar — ~2x slower).
 - **WebGPU (experimental)**: `./build-wasm.sh --webgpu` builds with ggml's
-  WebGPU backend (emdawnwebgpu/Dawn, JSPI — Chromium-only for now). Deployed
+  WebGPU backend (emdawnwebgpu/Dawn, JSPI). Browsers without JSPI get the
+  Asyncify variant (`--webgpu-compat`, served under `webgpu-compat/`,
+  picked automatically; `?gpuCompat=1` forces it for testing). Deployed
   under `webgpu/`, offered as an opt-in checkbox when the browser has
   `navigator.gpu`. Six local WGSL kernels (patches/ggml-webgpu-ops.patch:
   LayerNorm, IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE, ARANGE — all

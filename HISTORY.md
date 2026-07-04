@@ -4,6 +4,20 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 5, 2026 (evening) — WebGPU compat tier (Asyncify), WebKit verified, SW fix
+
+`--webgpu-compat` Asyncify variant for JSPI-less browsers, auto-picked via
+WebAssembly.Suspending detection, deployed under webgpu-compat/ (15/15 e2e
+in Chromium via ?gpuCompat=1). WebKit engine verified end-to-end on the CPU
+tier (ground-truth match) after scoping coi-sw to document/script/wasm
+responses only — WebKit kills service workers mid-stream on large proxied
+downloads. Playwright WebKit 26.5 ships JSPI, so real Safari may use the
+JSPI GPU build directly. TrOCR phase profiling: GPU encoder 5.5x, GPU
+decoder 5x SLOWER (48->231 ms) — decoder-split/batched-decode deferred
+with data in PLAN.
+
+---
+
 ## July 5, 2026 (later) — engine sweep: six OCR engines correct on WebGPU; OPFS cache
 
 Per-engine browser sweep (engine-sweep.js): pix2tex 2.6x, trocr 4.0x on

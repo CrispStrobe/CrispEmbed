@@ -4575,3 +4575,28 @@ opfs://crispembed-models/<encoded-url>, awaited write (a fire-and-forget
 write is killed if the page navigates right after load — cost us a
 head-scratcher), navigator.storage.persist() attempt, clear API +
 demo link. Verified: second page load hits cache, zero network.
+
+
+## WebGPU compat tier + WebKit findings + decode profiling (July 5)
+
+- **--webgpu-compat** (GGML_WEBGPU_JSPI=OFF -> Asyncify, 4.6 MB vs 3.3 MB
+  JSPI): for browsers with WebGPU but no JSPI. Demo picks by
+  `typeof WebAssembly.Suspending === 'function'`; `?gpuCompat=1` forces it.
+  Verified 15/15 in Chromium (Asyncify path exercises the same wrapper
+  _acall contract — ccall {async:true} behaves on all three build flavors).
+- **WebKit (Playwright 26.5)**: JSPI **shipped** (WebAssembly.Suspending
+  exists — real Safari 26 may run the JSPI GPU build once WebGPU is
+  exposed); navigator.gpu absent in headless; OPFS reads work but writes
+  throw transient UnknownError in the ephemeral test profile (wrapper
+  degrades to no-cache correctly). CPU tier verified on WebKit:
+  ground-truth match.
+- **coi-sw must not proxy model downloads**: WebKit terminates service
+  workers mid-stream ("Service Worker context closed"), killing 17 MB
+  fetches routed through respondWith. The SW now only stamps same-origin
+  document/script/wasm responses — COEP on the document already covers
+  CORS-mode subresource fetches.
+- **TrOCR phase profiling (warm, M1)**: encoder CPU 3896 ms -> GPU 714 ms
+  (5.5x); decoder CPU 48 ms -> GPU 231 ms (5x SLOWER — per-token
+  JSPI/submit overhead on tiny matrices). Next lever, deferred with data:
+  encoder-on-GPU + decoder-on-CPU split (needs decoder weights resident on
+  both backends) or cross-region batched decode for the pipeline.

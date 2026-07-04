@@ -64,7 +64,9 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
 
   const server = require('./server.js');
 
-  const WEBGPU = process.env.WASM_E2E_WEBGPU === '1';
+  const WEBGPU_COMPAT = process.env.WASM_E2E_WEBGPU_COMPAT === '1';
+  const WEBGPU = process.env.WASM_E2E_WEBGPU === '1' || WEBGPU_COMPAT;
+  if (WEBGPU_COMPAT) process.env.WASM_E2E_WEBGPU = '1';  // server route gate
   // Headless WebGPU needs explicit enabling; ANGLE picks Metal on macOS,
   // Vulkan/SwiftShader elsewhere.
   const browser = await chromium.launch(WEBGPU ? {
@@ -80,7 +82,7 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
 
   try {
     console.log('\n=== Page load + module availability ===');
-    await page.goto(BASE + '/', { waitUntil: 'load' });
+    await page.goto(BASE + (WEBGPU_COMPAT ? '/?gpuCompat=1' : '/'), { waitUntil: 'load' });
     // The COI service worker reloads the page once after first install to
     // apply COOP/COEP — wait out that navigation before asserting.
     await page.waitForTimeout(1200);
@@ -123,7 +125,10 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
       'Process enabled once model + image are both present');
     const loaderUsed = await page.evaluate(() => window.__loaderUsed);
     console.log(`  loader used: ${loaderUsed}`);
-    if (WEBGPU) {
+    if (WEBGPU_COMPAT) {
+      assert(loaderUsed === 'webgpu-compat/crispembed_ocr.js',
+        `webgpu-compat loader selected (got ${loaderUsed})`);
+    } else if (WEBGPU) {
       assert(loaderUsed === 'webgpu/crispembed_ocr.js',
         `webgpu loader selected (got ${loaderUsed})`);
     } else if (process.env.WASM_E2E_THREADS === '1') {

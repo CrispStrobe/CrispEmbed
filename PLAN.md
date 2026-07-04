@@ -2392,6 +2392,9 @@ bundles attach via release-wasm.yml on version tags. Measured (M1):
 pix2tex ~2.8x vs wasm CPU on WebGPU; DBNet detection ~60x; det+rec
 pipeline ~1.8x. History/learnings: HISTORY.md July 4-5 2026 entries.
 
-Open follow-ups: OPFS model cache (wllama pattern), decode-step batching
-for autoregressive recognizers on WebGPU, Asyncify -compat variant
-(Safari/Firefox), per-engine WebGPU coverage sweep.
+Open follow-ups: decoder placement on WebGPU — measured (TrOCR, warm, M1):
+encoder 5.5x faster on GPU, decoder 5x SLOWER (48->231 ms; per-token
+JSPI/submit overhead). Fix = encoder-GPU/decoder-CPU split (decoder weights
+resident on both backends) or cross-region batched decode in the pipeline.
+Done since: OPFS cache, --webgpu-compat (Asyncify) tier, per-engine sweep
+(6/6 correct; trocr 4x).
