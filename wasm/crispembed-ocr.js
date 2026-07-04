@@ -32,8 +32,80 @@
 // Shared helpers
 // ---------------------------------------------------------------------------
 
-/** @private Fetch a GGUF model with streaming progress. */
+// ---------------------------------------------------------------------------
+// OPFS model cache (origin-private file system). Downloaded GGUFs are kept
+// in opfs://crispembed-models/<encoded-url> so revisits skip the network
+// entirely. Degrades to plain fetch when OPFS is unavailable (older Safari,
+// private browsing). Clear with CrispEmbedModelCache.clear().
+// ---------------------------------------------------------------------------
+
+const _opfs = {
+  DIR: 'crispembed-models',
+  _name(url) { return encodeURIComponent(url); },
+  async _dir(create) {
+    if (typeof navigator === 'undefined' || !navigator.storage || !navigator.storage.getDirectory) return null;
+    const root = await navigator.storage.getDirectory();
+    return await root.getDirectoryHandle(this.DIR, { create: !!create });
+  },
+  async read(url) {
+    try {
+      const dir = await this._dir(false);
+      if (!dir) return null;
+      const fh = await dir.getFileHandle(this._name(url));
+      const file = await fh.getFile();
+      if (file.size === 0) return null;
+      return new Uint8Array(await file.arrayBuffer());
+    } catch (_) { return null; }
+  },
+  async write(url, bytes) {
+    try {
+      const dir = await this._dir(true);
+      if (!dir) return false;
+      // Ask for persistent storage once — without it Safari evicts
+      // script-writable storage after 7 days without interaction.
+      try { navigator.storage.persist && navigator.storage.persist(); } catch (_) {}
+      const fh = await dir.getFileHandle(this._name(url), { create: true });
+      const w = await fh.createWritable();
+      await w.write(bytes);
+      await w.close();
+      return true;
+    } catch (_) { return false; }
+  },
+  async clear() {
+    try {
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry(this.DIR, { recursive: true });
+      return true;
+    } catch (_) { return false; }
+  },
+  async list() {
+    const out = [];
+    try {
+      const dir = await this._dir(false);
+      if (!dir) return out;
+      for await (const [name, handle] of dir.entries()) {
+        const f = await handle.getFile();
+        out.push({ url: decodeURIComponent(name), size: f.size });
+      }
+    } catch (_) {}
+    return out;
+  },
+};
+
+/** Public cache management (page or worker context). */
+const CrispEmbedModelCache = {
+  clear: () => _opfs.clear(),
+  list: () => _opfs.list(),
+};
+
+/** @private Fetch a GGUF model with streaming progress + OPFS caching. */
 async function _fetchModel(url, onProgress, progressStart, progressEnd) {
+  const cached = await _opfs.read(url);
+  if (cached) {
+    console.log(`[CrispEmbedOCR] model cache hit (OPFS): ${url} (${cached.length} bytes)`);
+    if (onProgress) onProgress(progressEnd);
+    return cached;
+  }
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Failed to fetch model: ${response.status} ${response.statusText}`);
@@ -56,6 +128,12 @@ async function _fetchModel(url, onProgress, progressStart, progressEnd) {
   for (const chunk of chunks) {
     bytes.set(chunk, offset);
     offset += chunk.length;
+  }
+  // Persist before returning (awaited: a fire-and-forget write is killed
+  // if the page navigates right after load). Failures (quota, private
+  // mode) never block loading.
+  if (await _opfs.write(url, bytes)) {
+    console.log(`[CrispEmbedOCR] model cached (OPFS): ${url}`);
   }
   return bytes;
 }
@@ -860,5 +938,6 @@ if (typeof module !== 'undefined' && module.exports) {
     CrispEmbedScanCleanup,
     CrispEmbedTextDetector,
     CrispEmbedLayoutDetector,
+    CrispEmbedModelCache,
   };
 }

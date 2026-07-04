@@ -139,7 +139,7 @@ index 9d88f98..c38b2e1 100644
          ggml_webgpu_mul_mat_vec_pipeline_key key = {};
          key.src0_type                            = context.src0->type;
 diff --git a/src/ggml-webgpu/ggml-webgpu.cpp b/src/ggml-webgpu/ggml-webgpu.cpp
-index aa20a74..aa1b44f 100644
+index aa20a74..876d746 100644
 --- a/src/ggml-webgpu/ggml-webgpu.cpp
 +++ b/src/ggml-webgpu/ggml-webgpu.cpp
 @@ -822,6 +822,224 @@ static webgpu_encoded_op ggml_webgpu_set(webgpu_context & ctx,
@@ -367,7 +367,18 @@ index aa20a74..aa1b44f 100644
  static webgpu_encoded_op ggml_webgpu_pad(webgpu_context & ctx, ggml_tensor * src, ggml_tensor * dst) {
      ggml_webgpu_shader_lib_context shader_lib_ctx = {};
      shader_lib_ctx.src0                           = src;
-@@ -2440,7 +2658,18 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
+@@ -2427,6 +2645,10 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
+ #ifndef __EMSCRIPTEN__
+             return ggml_webgpu_flash_attn(ctx, src0, src1, src2, node->src[3], node->src[4], node);
+ #else
++            // Same silent-skip hazard as the default case: warn, because on a
++            // sched-less compute path a dropped attention = garbage output.
++            fprintf(stderr, "ggml_webgpu: SKIPPING unsupported op FLASH_ATTN_EXT (%s) — no Emscripten kernels\n",
++                    node->name);
+             return std::nullopt;
+ #endif
+         case GGML_OP_ADD:
+@@ -2440,7 +2662,18 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
              return ggml_webgpu_repeat(ctx, src0, node);
          case GGML_OP_RMS_NORM:
          case GGML_OP_L2_NORM:
@@ -386,7 +397,7 @@ index aa20a74..aa1b44f 100644
          case GGML_OP_ROPE:
              return ggml_webgpu_rope(ctx, src0, src1, src2, node);
          case GGML_OP_GLU:
-@@ -2480,6 +2709,10 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
+@@ -2480,6 +2713,10 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
          case GGML_OP_SUM_ROWS:
              return ggml_webgpu_sum_rows(ctx, src0, node);
          default:
@@ -397,7 +408,7 @@ index aa20a74..aa1b44f 100644
              return std::nullopt;
      }
  }
-@@ -3426,8 +3659,35 @@ static bool ggml_backend_webgpu_device_supports_op(ggml_backend_dev_t dev, const
+@@ -3426,8 +3663,35 @@ static bool ggml_backend_webgpu_device_supports_op(ggml_backend_dev_t dev, const
              }
          case GGML_OP_RMS_NORM:
          case GGML_OP_L2_NORM:

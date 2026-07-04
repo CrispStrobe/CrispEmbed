@@ -2374,10 +2374,24 @@ Both fixes are implemented in `decoder_embed.cpp`:
 
 ---
 
-### Blueprint: WASM build target — DONE
+### Blueprint: WASM build target — DONE (reworked July 2026, issue #31)
 
-Implemented via `build-wasm.sh` (Math OCR) and `build-embed-wasm.sh`
-(text embeddings). CI workflows in `.github/workflows/build-wasm.yml`
-and `build-wasm-embed.yml`. HuggingFace Space demo at `hf-space/`.
-README mentions: "Math OCR compiles to WebAssembly (1 MB) via build-wasm.sh.
-Runs entirely client-side — no server, no API key."
+`build-wasm.sh` (OCR: single-model + DBNet/TrOCR pipeline + scan cleanup;
+2.2 MB wasm) and `build-embed-wasm.sh` (text embeddings). Three tiers:
+plain SIMD CPU, `--threads` (COOP/COEP; coi-sw.js service worker makes
+GitHub Pages crossOriginIsolated), `--webgpu` (emdawnwebgpu/JSPI,
+Chromium-only; six local WGSL kernels in patches/ggml-webgpu-ops.patch —
+NORM/IM2COL/POOL_2D/CONV_TRANSPOSE_2D/UPSCALE/ARANGE, upstream draft at
+CrispASR tools/upstream-prs/22). Demo (examples/wasm-ocr) runs inference
+in a Web Worker, auto-picks the best tier, deploys to
+https://crispstrobe.github.io/CrispEmbed/ via deploy-pages.yml.
+Verification: node suites + headless-Chromium e2e in build-wasm.yml on
+every push (byte-equality vs native CLI ground truth); ggml
+test-backend-ops executes in-browser for the WebGPU kernels; release
+bundles attach via release-wasm.yml on version tags. Measured (M1):
+pix2tex ~2.8x vs wasm CPU on WebGPU; DBNet detection ~60x; det+rec
+pipeline ~1.8x. History/learnings: HISTORY.md July 4-5 2026 entries.
+
+Open follow-ups: OPFS model cache (wllama pattern), decode-step batching
+for autoregressive recognizers on WebGPU, Asyncify -compat variant
+(Safari/Firefox), per-engine WebGPU coverage sweep.

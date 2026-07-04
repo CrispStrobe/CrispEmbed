@@ -4,6 +4,19 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 5, 2026 (later) — engine sweep: six OCR engines correct on WebGPU; OPFS cache
+
+Per-engine browser sweep (engine-sweep.js): pix2tex 2.6x, trocr 4.0x on
+WebGPU; parseq/hmer/bttr/tesseract correct (tiny models stay faster on
+CPU). Fixed parseq-on-WebGPU garbage: raw-gallocr engine + flash_attn_ext,
+which ggml-webgpu silently compiles out under Emscripten — manual attention
+under __EMSCRIPTEN__ + metadata-pool bump. OPFS model cache added to the JS
+wrapper (awaited write, persist(), clear link in the demo) — revisits load
+models with zero network. README/PLAN wasm sections rewritten to match
+reality. e2e 13/13 + 15/15 (webgpu).
+
+---
+
 ## July 5, 2026 — WebGPU conv stack: full OCR graph on GPU, browser test-backend-ops
 
 Five more WGSL kernels (IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE
