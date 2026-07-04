@@ -3,9 +3,14 @@ name: Release WASM artifacts
 # Builds both OCR and embedding WASM modules and attaches them to
 # GitHub releases as downloadable assets.
 
+# NOTE: `on: release` would never fire here — releases are published by
+# release.yml using the default GITHUB_TOKEN, and GitHub does not trigger
+# workflows from events created with that token. Trigger on the tag push
+# (same as release.yml) instead.
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
   workflow_dispatch:
     inputs:
       tag:
@@ -29,8 +34,6 @@ jobs:
 
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v14
-        with:
-          version: '3.1.64'
 
       # ---- OCR WASM ----
       - name: Build OCR WASM
@@ -39,7 +42,7 @@ jobs:
       - name: Verify OCR output
         run: |
           ls -lh build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm
-          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 2097152 ] || (echo "WASM too large" && exit 1)
+          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 4194304 ] || (echo "WASM too large" && exit 1)
 
       # ---- Embedding WASM ----
       - name: Build Embedding WASM
@@ -71,8 +74,8 @@ jobs:
       - name: Determine release tag
         id: tag
         run: |
-          if [ "${{ github.event_name }}" = "release" ]; then
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "tag=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
           elif [ -n "${{ inputs.tag }}" ]; then
             echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
           else
@@ -84,6 +87,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # release.yml creates the release in a parallel run of the same tag
+          # push — wait for it to exist before uploading (up to ~15 min).
+          for i in $(seq 1 45); do
+            gh release view "${{ steps.tag.outputs.tag }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1 && break
+            echo "waiting for release ${{ steps.tag.outputs.tag }} to be created ($i)"; sleep 20
+          done
           gh release upload "${{ steps.tag.outputs.tag }}" \
             crispembed-ocr-wasm.tar.gz \
             crispembed-embed-wasm.tar.gz \

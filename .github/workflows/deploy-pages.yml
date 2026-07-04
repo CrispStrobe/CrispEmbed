@@ -1,0 +1,68 @@
+name: Deploy WASM demo (GitHub Pages)
+
+# Builds the OCR WASM module and publishes the browser demo
+# (examples/wasm-ocr) to GitHub Pages. The demo is fully client-side;
+# models are fetched from Hugging Face (CORS-enabled) at runtime.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'ggml/**'
+      - 'wasm/**'
+      - 'examples/wasm-ocr/**'
+      - 'CMakeLists.txt'
+      - 'build-wasm.sh'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+
+      - name: Build WASM
+        run: ./build-wasm.sh --clean
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site
+          cp examples/wasm-ocr/index.html _site/
+          cp build-wasm/crispembed_ocr.js _site/
+          cp build-wasm/crispembed_ocr.wasm _site/
+          cp wasm/crispembed-ocr.js _site/
+          ls -lh _site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

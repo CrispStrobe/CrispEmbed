@@ -42,6 +42,21 @@ jobs:
           # Sanity: WASM should be < 4 MB (full OCR pipeline), JS < 200 KB
           [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 4194304 ] || (echo "WASM too large" && exit 1)
 
+      - name: Node smoke + wrapper unit tests (real WASM module)
+        run: |
+          node tests/test_wasm_ocr_live.js
+          node tests/test_wasm_ocr_wrapper.js
+
+      - name: Browser end-to-end test (headless Chromium, real model)
+        run: |
+          mkdir -p /tmp/wasm-models
+          curl -sL "https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf" \
+            -o /tmp/wasm-models/pix2tex-mfr-q4_k.gguf
+          cd tests/wasm-browser
+          npm install
+          npx playwright install --with-deps chromium
+          CRISPEMBED_MODELS_DIR=/tmp/wasm-models node e2e.test.js
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

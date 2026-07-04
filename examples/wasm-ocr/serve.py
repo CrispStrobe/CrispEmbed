@@ -12,6 +12,7 @@ Usage:
     # 2. Run the server:
     python serve.py          # default port 8080
     python serve.py 3000     # custom port
+    python serve.py --coi    # add COOP/COEP headers (threaded WASM builds)
 
     # 3. Open http://localhost:8080 in your browser.
 """
@@ -28,13 +29,19 @@ class WasmHandler(http.server.SimpleHTTPRequestHandler):
     }
 
     def end_headers(self):
-        # Required for SharedArrayBuffer (multi-threaded WASM)
-        self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
-        self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
+        if COI:
+            # Required for SharedArrayBuffer (multi-threaded WASM builds only,
+            # i.e. build-wasm.sh --threads). The default single-threaded build
+            # does not need these, and COEP: require-corp can break cross-origin
+            # model downloads from servers without CORP headers.
+            self.send_header('Cross-Origin-Opener-Policy', 'same-origin')
+            self.send_header('Cross-Origin-Embedder-Policy', 'require-corp')
         super().end_headers()
 
 
-port = int(sys.argv[1]) if len(sys.argv) > 1 else 8080
+COI = '--coi' in sys.argv
+args = [a for a in sys.argv[1:] if not a.startswith('--')]
+port = int(args[0]) if args else 8080
 print(f'Serving on http://localhost:{port}')
 print('Press Ctrl+C to stop.\n')
 http.server.HTTPServer(('', port), WasmHandler).serve_forever()

@@ -142,13 +142,25 @@ function _calcDimensions(w, h, { maxWidth, maxHeight } = {}) {
   return { drawW, drawH };
 }
 
+/** @private Get a fresh Uint8Array view of the WASM heap.
+ *  module.HEAPU8 requires 'HEAPU8' in EXPORTED_RUNTIME_METHODS (build-wasm.sh
+ *  does this); recent Emscripten versions no longer attach heap views to
+ *  modularized instances implicitly. */
+function _heapU8(module) {
+  if (module.HEAPU8) return module.HEAPU8;
+  if (module.wasmMemory) return new Uint8Array(module.wasmMemory.buffer);
+  throw new Error(
+    'CrispEmbedOCR: module has no HEAPU8 view — rebuild the WASM with ' +
+    "HEAPU8 in EXPORTED_RUNTIME_METHODS (current build-wasm.sh does this)");
+}
+
 /** @private Copy pixel data into WASM heap, run callback, clean up. */
 function _withPixels(module, imageData, fn) {
   const { width, height, data } = imageData;
   const nBytes = data.length;
   const pixelPtr = module._malloc(nBytes);
   try {
-    module.HEAPU8.set(data, pixelPtr);
+    _heapU8(module).set(data, pixelPtr);
     return fn(pixelPtr, width, height, 4);
   } finally {
     module._free(pixelPtr);
@@ -495,7 +507,7 @@ class CrispEmbedScanCleanup {
 
       // Output is RGB (3 channels) — convert to RGBA for ImageData
       const rgbSize = ow * oh * 3;
-      const rgb = new Uint8Array(this.#module.HEAPU8.buffer, resultPtr, rgbSize);
+      const rgb = new Uint8Array(_heapU8(this.#module).buffer, resultPtr, rgbSize);
       const rgba = new Uint8ClampedArray(ow * oh * 4);
       for (let i = 0, j = 0; i < ow * oh; i++, j += 3) {
         rgba[i * 4] = rgb[j];

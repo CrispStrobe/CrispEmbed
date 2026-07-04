@@ -38,3 +38,7 @@ tmp/
 
 # scan_cleanup benchmark output
 scan-bench/
+
+# wasm browser e2e
+tests/wasm-browser/node_modules/
+tests/wasm-browser/package-lock.json

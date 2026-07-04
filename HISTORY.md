@@ -4,6 +4,45 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 4, 2026 — WASM OCR actually works in browsers (#31): UAF fix, verified e2e, GH Pages demo
+
+Issue #31's reporter said the WASM OCR "still doesn't seem to work" — and every
+piece of it was indeed broken end-to-end, previously "verified" only by node
+tests that special-cased the crashes (`passed++` around a known ViT abort).
+
+**Root cause, engine:** `math_ocr` cached the encoder graph in ctx but built it
+in a ggml context whose `mem_buffer` was a stack-local `std::vector` → freed
+before compute; the CPU backend's mul_mat work buffer reused the block and the
+quantize-activations write clobbered the cached tensor structs. Hard
+`memory access out of bounds` in every browser (this was the whole "ViT models
+exceed WASM limits" myth — pix2tex AND TrOCR), reproducible native segfault on
+some inputs (dbnet+trocr on a 520×260 crop). Fix: ggml-owned metadata pools
+(`mem_buffer = nullptr`) for both cached graphs (single + batch). Details in
+LEARNINGS.md.
+
+**Root cause, integration:** all three default model URLs in the demo pointed
+at HF repos that never existed (cstr/pix2tex-GGUF etc. → 401); the JS wrapper
+used `module.HEAPU8` without exporting heap views (`EXPORTED_RUNTIME_METHODS`),
+so `recognize()` threw in every modern-emscripten browser build; serve.py
+forced COEP unconditionally.
+
+**Verification (new, in CI):** `tests/wasm-browser/e2e.test.js` — Playwright
+headless-Chromium test that drives the real demo page: fetch model → UI load →
+canvas RGBA → recognize. pix2tex output must EQUAL the native CLI ground truth
+(`x = \frac { - b \pm \sqrt { b ^ { 2 } - 4 a c } } { 2 a }`) — it does,
+byte-identical. Gated `WASM_E2E_PIPELINE=1` also runs DBNet+TrOCR on a real
+scan crop (tests/regression/images/scan_strip.png): 8 regions, words match
+native GT (MAMMAA/LIKE/SUMMER…/HEAVEN), ~142 s single-threaded. build-wasm.yml
+now runs node smoke + wrapper + browser e2e on every push.
+
+**Release/deploy:** release-wasm.yml never ran once — `on: release` never
+fires for releases created by release.yml with GITHUB_TOKEN; now triggers on
+the `v*` tag push (with a wait-for-release loop) and its stale 2 MiB size gate
+(wasm is 2.2 MB) is aligned to 4 MiB. New deploy-pages.yml publishes the demo
+to https://crispstrobe.github.io/CrispEmbed/ on every main push.
+
+---
+
 ## July 3, 2026 — imatrix everywhere: GLiNER (sched), ColBERT, Sparse; splade converter bug fixed
 
 Closed out the non-embedding imatrix classes. All in a worktree, cherry-picked to main.

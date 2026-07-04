@@ -4370,3 +4370,38 @@ The pcs classes then generalised across the codebase:
 Note the two `pcs.cpp` copies (CrispASR `crisp_punc` = shipped; CrispEmbed `src` = fallback)
 must stay logically in sync; each repo's `.clang-format` differs so byte-identity is
 impossible — sync the logic. See the memory `pcs-cpp-two-copies-diverged`.
+
+## Cached ggml graphs must own their metadata pool (WASM crash → native segfault, #31)
+
+`math_ocr` cached the encoder graph across calls (`ctx->enc_graph` /
+`ctx->enc_batch`) but built it inside a ggml context whose `mem_buffer` was a
+**stack-local `std::vector`** — freed as soon as the build block's scope
+closed, while the cached graph (and every tensor struct in it) still pointed
+into the dead buffer. Classic use-after-free with wildly different symptoms
+per allocator:
+
+- **WASM (dlmalloc)**: the freed 16 MB block is immediately handed back to
+  the CPU backend as its mul_mat work buffer, so quantize_row_q8_0's
+  activation writes land **on top of the cached tensor structs** —
+  `src1->data` becomes float garbage (odd pointer like `0x1f826019`) and the
+  next row read traps `memory access out of bounds`. This is why every
+  ViT-class OCR (pix2tex, TrOCR) "exceeded WASM limits" — it never did; it
+  was heap corruption.
+- **macOS malloc**: usually silent (different size class → freed region not
+  reused), but segfaulted reproducibly on some inputs (dbnet+trocr pipeline
+  on a 520×260 crop, exit 139).
+
+Fix (one line per site): pass `mem_buffer = nullptr` so **ggml owns the
+pool** and `ggml_free(ctx->enc_graph_g)` releases it —
+`ggml_init_params ip = { meta_size, nullptr, true };`
+
+Debug method that found it: Playwright browser e2e (weak node tests had
+`passed++` around the crash!) → emcc `-g2 -sASSERTIONS=2` build for a
+symbolized stack → per-row fprintf of `srcp/dstp/src1->data` in the mul_mat
+quantize loop, which showed wdata's write range covering the `src1` tensor
+struct address. Rule: **any** ggml graph cached beyond the building scope
+must have a context-owned (or ctx-member-owned) metadata pool; a local
+buffer is only safe when build + compute complete within the same scope.
+Audit note: `precompute_cross_kv` and the decoder loop use local pools but
+compute in-scope — legal. The scan for `std::vector<uint8_t> meta` +
+`ctx->…_g = g` found no other offenders.
