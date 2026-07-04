@@ -4494,3 +4494,21 @@ Op coverage note: ggml-webgpu (this snapshot) has MUL_MAT/FLASH_ATTN/
 SOFT_MAX/ROPE/GET_ROWS/unary but NO GGML_OP_NORM (classic LayerNorm) and no
 IM2COL — ViT LayerNorms run on CPU via sched splits (still nets 2.2×);
 DBNet conv detection gains little until those shaders exist (upstream-able).
+
+
+## WebGPU LayerNorm kernel (patches/ggml-webgpu-layernorm.patch)
+
+ggml-webgpu's `row_norm.wgsl` is a clean template (RMS_NORM / L2_NORM
+variants); LayerNorm (GGML_OP_NORM) is a small delta: second workgroup
+accumulator for the plain sum, `var = E[x^2] - mean^2`, and the update
+helper gains a shift param (`dst = scale * (src + shift)`, shift = -mean;
+0 for the existing variants). Wiring: pipeline-getter case + encode dispatch
++ supports_op (eps already at op_params[0], same as RMS_NORM). Kept as a
+git patch applied idempotently by build-wasm.sh --webgpu (the submodule
+tracks upstream ggml-org/ggml). Same-conditions A/B, pix2tex e2e (M1,
+Chrome headless): 2.46-3.11 s -> 1.67-1.79 s (~1.4x; ~2.8x total vs SIMD
+CPU), output byte-identical. Candidate for upstreaming to
+ggml-org/llama.cpp (per AI-policy: mechanical disclosure, human-written
+prose). DBNet detection still runs its conv stack on CPU — needs IM2COL +
+CONV_TRANSPOSE_2D + POOL_2D + UPSCALE kernels (a real upstream project,
+deferred).
