@@ -37,8 +37,8 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
     console.log(`\n=== Deployed demo: ${LIVE_URL} ===`);
     const resp = await page.goto(LIVE_URL, { waitUntil: 'load', timeout: 60000 });
     assert(resp.ok(), `page loads (HTTP ${resp.status()})`);
-    assert(await page.evaluate(() => typeof CrispEmbedOCRWrapper === 'function'),
-      'wrapper JS is served');
+    const wk = await page.evaluate(async () => (await fetch('ocr-worker.js')).status);
+    assert(wk === 200, `ocr-worker.js is served (HTTP ${wk})`);
 
     console.log('\n=== Load default model from Hugging Face (CORS) ===');
     const defaultUrl = await page.inputValue('#model-url');

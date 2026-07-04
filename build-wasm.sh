@@ -20,6 +20,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="build-wasm"
+BUILD_DIR_SET=false
 CLEAN=false
 SIMD=ON
 THREADS=OFF
@@ -49,8 +50,12 @@ THREAD_LINK_FLAGS=""
 if [ "$THREADS" = "ON" ]; then
     THREAD_LABEL="multithreaded (requires COOP/COEP headers)"
     THREAD_C_FLAGS="-pthread"
-    THREAD_LINK_FLAGS="-pthread -sPTHREAD_POOL_SIZE=4"
-    echo "[INFO] Multithreaded build enabled"
+    # Pool sized for typical laptops; ggml uses n_threads <= pool size.
+    THREAD_LINK_FLAGS="-pthread -sPTHREAD_POOL_SIZE=8 -sPTHREAD_POOL_SIZE_STRICT=0"
+    # Separate output dir so single-threaded and threaded artifacts coexist
+    # (the demo serves the threaded build under threaded/).
+    if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-threads"; fi
+    echo "[INFO] Multithreaded build enabled -> $BUILD_DIR/"
 fi
 
 echo "============================================"
@@ -130,6 +135,7 @@ echo "[INFO] Configuring with emcmake..."
 cd "$SCRIPT_DIR"
 emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
     -DCMAKE_BUILD_TYPE=Release \
+    -DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm \
     -DGGML_CUDA=OFF \
     -DGGML_METAL=OFF \
     -DGGML_VULKAN=OFF \

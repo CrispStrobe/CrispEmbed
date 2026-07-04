@@ -60,12 +60,22 @@ async function _fetchModel(url, onProgress, progressStart, progressEnd) {
   return bytes;
 }
 
-/** @private Initialize the Emscripten module (shared across all wrappers). */
+/** @private Initialize the Emscripten module (shared across all wrappers).
+ *  Set globalThis.CRISPEMBED_MODULE_OPTS to pass Emscripten Module options
+ *  (e.g. { printErr: line => ... } to capture engine progress logs). */
 async function _initModule() {
+  // Hosts may pre-instantiate the module (globalThis.CRISPEMBED_MODULE_PROMISE).
+  // Required for pthread builds inside Web Workers: the Emscripten pthread
+  // bootstrap deadlocks if the factory is first called from inside an active
+  // onmessage handler, so workers instantiate at top level instead.
+  if (typeof globalThis !== 'undefined' && globalThis.CRISPEMBED_MODULE_PROMISE) {
+    return await globalThis.CRISPEMBED_MODULE_PROMISE;
+  }
   if (typeof CrispEmbedOCR === 'undefined') {
     throw new Error('CrispEmbedOCR not found. Load crispembed_ocr.js first.');
   }
-  return await CrispEmbedOCR();
+  const opts = (typeof globalThis !== 'undefined' && globalThis.CRISPEMBED_MODULE_OPTS) || {};
+  return await CrispEmbedOCR(Object.assign({}, opts));
 }
 
 /** @private Write bytes to MEMFS, creating directories as needed. */

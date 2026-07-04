@@ -4,6 +4,36 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 4, 2026 (later) — WASM demo: Web Worker + threads + the missing SIMD kernels
+
+Follow-up to the #31 fix after user feedback ("2nd tab seems to hang"): the
+pipeline WORKED but computed on the main thread — a frozen tab for minutes is
+indistinguishable from a hang.
+
+**Worker offload.** All inference moved to a Web Worker (`ocr-worker.js`);
+the page stays responsive (e2e asserts a <1.5 s main-thread round-trip during
+compute), with live engine progress (new per-region prints in ocr_pipeline)
+and an elapsed-seconds ticker. Explicit Process button; image/model in any
+order.
+
+**SIMD was silently off.** Under emcmake, CMAKE_SYSTEM_PROCESSOR=x86 → ggml
+"Unknown CPU architecture → generic implementations" → arch/wasm/quants.c
+never compiled; every quantized matmul was scalar. Fix:
+`-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm` in both wasm build scripts (~1.5-2×).
+
+**Threads.** `build-wasm.sh --threads` → `build-wasm-threads/`, deployed
+under `threaded/` on Pages; `coi-sw.js` (COOP/COEP service worker +
+controllerchange one-shot reload) makes GH Pages crossOriginIsolated; the
+page auto-picks the threaded build when isolated (default min(4, cores-1)
+threads). Pipeline A/B on the scan strip: 4 threads ≈ 1.5–1.8× vs single.
+Two emscripten-6 pthread-in-worker gotchas (see LEARNINGS): the factory
+deadlocks if first called inside an active onmessage handler (instantiate at
+worker top level), and pthread workers spawn from self.location.href
+(mainScriptUrlOrBlob is gone) — ocr-worker.js doubles as a pthread shim
+(`self.name === 'em-pthread'` → importScripts the module and yield).
+
+---
+
 ## July 4, 2026 — WASM OCR actually works in browsers (#31): UAF fix, verified e2e, GH Pages demo
 
 Issue #31's reporter said the WASM OCR "still doesn't seem to work" — and every

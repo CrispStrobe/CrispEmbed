@@ -164,6 +164,7 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
         double rec_total_ms = 0.0;
         if (enc_ok) {
             for (size_t i = 0; i < crop_entries.size(); i++) {
+                fprintf(stderr, "ocr_pipeline: recognizing region %zu/%zu\n", i + 1, crop_entries.size());
                 auto t_rec = std::chrono::steady_clock::now();
                 int out_len = 0;
                 const char * text = math_ocr_decode_batch_crop(ctx->rec, (int)i, &out_len);
@@ -182,6 +183,7 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
         } else {
             // Fallback: sequential single-crop path
             for (size_t i = 0; i < crop_entries.size(); i++) {
+                fprintf(stderr, "ocr_pipeline: recognizing region %zu/%zu\n", i + 1, crop_entries.size());
                 int out_len = 0;
                 const char * text = math_ocr_recognize_raw(ctx->rec, crop_entries[i].data.data(), crop_entries[i].w,
                                                            crop_entries[i].h, 3, &out_len);

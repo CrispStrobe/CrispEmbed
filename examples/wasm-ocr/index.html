@@ -162,13 +162,56 @@
   <div class="meta" id="result-meta"></div>
 </div>
 
-<script src="crispembed_ocr.js"></script>
-<script src="crispembed-ocr.js"></script>
+<script>
+// ---------------------------------------------------------------------------
+// COI service worker: makes the page crossOriginIsolated on hosts that can't
+// set COOP/COEP headers (GitHub Pages), unlocking the multithreaded WASM
+// build (SharedArrayBuffer). One-time reload after first install.
+// ---------------------------------------------------------------------------
+if ('serviceWorker' in navigator && !crossOriginIsolated
+    && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  // The SW calls clients.claim(), so on first install `controllerchange`
+  // fires — the document must then be re-fetched THROUGH the SW to pick up
+  // the COOP/COEP headers. One reload, guarded against loops.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
+      sessionStorage.setItem('coi-reloaded', '1');
+      location.reload();
+    }
+  });
+  navigator.serviceWorker.register('coi-sw.js')
+    .catch(() => {/* no isolation — single-threaded fallback */});
+}
+</script>
 <script>
 
-let engine = null;
+// All inference runs in a Web Worker (ocr-worker.js) so the page stays
+// responsive during multi-second WASM compute, with live engine progress.
+
+let worker = null;
+let engineReady = false;
 let currentMode = 'single';
 let lastFile = null;
+let processing = false;
+let elapsedTimer = null;
+let threadedLoader = null;   // 'threaded/crispembed_ocr.js' when usable
+
+async function pickLoader() {
+  if (threadedLoader !== null) return threadedLoader || 'crispembed_ocr.js';
+  threadedLoader = '';
+  if (crossOriginIsolated) {
+    try {
+      const r = await fetch('threaded/crispembed_ocr.js', { method: 'HEAD' });
+      if (r.ok) threadedLoader = 'threaded/crispembed_ocr.js';
+    } catch (_) {}
+  }
+  return threadedLoader || 'crispembed_ocr.js';
+}
+
+function defaultThreads() {
+  if (!crossOriginIsolated) return 1;
+  return Math.min(4, Math.max(1, (navigator.hardwareConcurrency || 4) - 1));
+}
 
 function setMode(mode) {
   currentMode = mode;
@@ -177,11 +220,26 @@ function setMode(mode) {
   document.getElementById('cfg-single').classList.toggle('hidden', mode !== 'single');
   document.getElementById('cfg-pipeline').classList.toggle('hidden', mode !== 'pipeline');
   document.getElementById('cfg-cleanup').classList.toggle('hidden', mode !== 'cleanup');
-  // Dispose previous engine
-  if (engine) { engine.dispose(); engine = null; }
+  disposeWorker();
   document.getElementById('btn-init').textContent = 'Load';
   document.getElementById('status').textContent = 'Select a mode and click "Load".';
   updateProcessButton();
+}
+
+function disposeWorker() {
+  if (worker) { worker.postMessage({ cmd: 'dispose' }); worker.terminate(); worker = null; }
+  engineReady = false;
+}
+
+function updateProcessButton() {
+  const btn = document.getElementById('btn-process');
+  const hint = document.getElementById('process-hint');
+  btn.disabled = processing || !(engineReady && lastFile);
+  if (processing)                    hint.textContent = 'Processing\u2026';
+  else if (engineReady && lastFile)  hint.textContent = 'Ready.';
+  else if (!engineReady && lastFile) hint.textContent = 'Image selected — load a model above, then process.';
+  else if (engineReady && !lastFile) hint.textContent = 'Model ready — select an image.';
+  else                               hint.textContent = '';
 }
 
 async function init() {
@@ -189,47 +247,82 @@ async function init() {
   const status = document.getElementById('status');
   const fill = document.getElementById('progress-fill');
   const nThreads = parseInt(document.getElementById('n-threads').value) || 1;
-
   btn.disabled = true;
   fill.style.width = '0%';
 
-  function onProgress(p) {
-    fill.style.width = (p * 100).toFixed(0) + '%';
-    if (p < 0.05)      status.textContent = 'Initializing WASM module...';
-    else if (p < 0.80) status.textContent = 'Downloading model(s)... ' + (p * 100).toFixed(0) + '%';
-    else if (p < 0.95) status.textContent = 'Loading into WASM memory...';
-    else               status.textContent = 'Ready!';
+  disposeWorker();
+  const loader = await pickLoader();
+
+  const initMsg = { cmd: 'init', mode: currentMode, loader, nThreads };
+  if (currentMode === 'single') {
+    initMsg.modelUrl = document.getElementById('model-url').value.trim();
+    if (!initMsg.modelUrl) { status.textContent = 'Enter a model URL.'; btn.disabled = false; return; }
+  } else if (currentMode === 'pipeline') {
+    initMsg.detUrl = document.getElementById('det-url').value.trim();
+    initMsg.recUrl = document.getElementById('rec-url').value.trim();
+    if (!initMsg.detUrl || !initMsg.recUrl) { status.textContent = 'Enter both model URLs.'; btn.disabled = false; return; }
   }
 
-  try {
-    if (engine) { engine.dispose(); engine = null; }
+  window.__loaderUsed = loader;  // observable by tests
+  worker = new Worker('ocr-worker.js?loader=' + encodeURIComponent(loader));
+  worker.onmessage = (ev) => handleWorkerMessage(ev.data);
+  worker.onerror = (e) => { status.textContent = 'Worker error: ' + e.message; btn.disabled = false; };
+  worker.postMessage(initMsg);
+  status.textContent = 'Initializing WASM module' + (loader.startsWith('threaded') ? ' (multithreaded)' : '') + '\u2026';
+}
 
-    if (currentMode === 'single') {
-      const modelUrl = document.getElementById('model-url').value.trim();
-      if (!modelUrl) { status.textContent = 'Enter a model URL.'; return; }
-      engine = await CrispEmbedOCRWrapper.create({ modelUrl, nThreads, onProgress });
-      status.textContent = `Model loaded (${engine.version}). Drop or select an image.`;
+let onResult = null;
+let onRunError = null;
 
-    } else if (currentMode === 'pipeline') {
-      const detUrl = document.getElementById('det-url').value.trim();
-      const recUrl = document.getElementById('rec-url').value.trim();
-      if (!detUrl || !recUrl) { status.textContent = 'Enter both model URLs.'; return; }
-      engine = await CrispEmbedOCRPipeline.create({ detModelUrl: detUrl, recModelUrl: recUrl, nThreads, onProgress });
-      status.textContent = 'Pipeline loaded. Drop or select an image.';
-
-    } else if (currentMode === 'cleanup') {
-      engine = await CrispEmbedScanCleanup.create({ nThreads, onProgress });
-      status.textContent = 'Scan cleanup ready. Drop or select an image.';
-    }
-
-    btn.textContent = 'Reload';
-  } catch (e) {
-    status.textContent = 'Error: ' + e.message;
-    console.error(e);
-  } finally {
-    btn.disabled = false;
+function handleWorkerMessage(msg) {
+  const status = document.getElementById('status');
+  const fill = document.getElementById('progress-fill');
+  if (msg.cmd === 'progress') {
+    fill.style.width = (msg.p * 100).toFixed(0) + '%';
+    if (msg.p < 0.80) status.textContent = 'Downloading model(s)\u2026 ' + (msg.p * 100).toFixed(0) + '%';
+    else               status.textContent = 'Loading into WASM memory\u2026';
+  } else if (msg.cmd === 'log') {
+    // Live engine progress (e.g. "ocr_pipeline: recognizing region 3/8")
+    if (processing) setStatusLog(msg.line);
+    else console.debug('[engine]', msg.line);
+  } else if (msg.cmd === 'ready') {
+    engineReady = true;
+    document.getElementById('btn-init').disabled = false;
+    document.getElementById('btn-init').textContent = 'Reload';
+    const th = crossOriginIsolated ? ' Threads available.' : '';
+    status.textContent = (currentMode === 'cleanup' ? 'Scan cleanup ready.'
+      : currentMode === 'pipeline' ? 'Pipeline loaded.' : 'Model loaded.')
+      + ' Drop or select an image.' + th;
     updateProcessButton();
+  } else if (msg.cmd === 'error') {
+    document.getElementById('btn-init').disabled = false;
+    if (onRunError) { onRunError(new Error(msg.message)); return; }
+    status.textContent = 'Error: ' + msg.message;
+    stopElapsed();
+    processing = false;
+    updateProcessButton();
+  } else if (msg.cmd === 'result') {
+    if (onResult) onResult(msg);
   }
+}
+
+let processT0 = 0;
+let lastLogLine = '';
+function setStatusLog(line) {
+  lastLogLine = line;
+}
+function startElapsed() {
+  processT0 = performance.now();
+  const status = document.getElementById('status');
+  elapsedTimer = setInterval(() => {
+    const s = ((performance.now() - processT0) / 1000).toFixed(0);
+    status.textContent = 'Processing\u2026 ' + s + 's'
+      + (lastLogLine ? ' — ' + lastLogLine : '');
+  }, 500);
+}
+function stopElapsed() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+  lastLogLine = '';
 }
 
 function handleDrop(e) {
@@ -241,106 +334,91 @@ function handleDrop(e) {
 function handleFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
   lastFile = file;
-
   const zone = document.getElementById('drop-zone');
   const reader = new FileReader();
   reader.onload = () => { zone.innerHTML = `<img src="${reader.result}" alt="preview">`; };
   reader.readAsDataURL(file);
-
-  // Selecting an image no longer auto-runs the engine: model and image can
-  // be chosen in either order, and the same image can be re-processed
-  // (e.g. after switching mode or model). Click "Process" to run.
   updateProcessButton();
 }
 
-function updateProcessButton() {
-  const btn = document.getElementById('btn-process');
-  const hint = document.getElementById('process-hint');
-  btn.disabled = !(engine && lastFile);
-  if (engine && lastFile)      hint.textContent = 'Ready.';
-  else if (!engine && lastFile) hint.textContent = 'Image selected — load a model above, then process.';
-  else if (engine && !lastFile) hint.textContent = 'Model ready — select an image.';
-  else                          hint.textContent = '';
+async function fileToImageData(file) {
+  const bmp = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bmp.width; canvas.height = bmp.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bmp, 0, 0);
+  return ctx.getImageData(0, 0, bmp.width, bmp.height);
 }
 
 async function processImage() {
-  if (!engine || !lastFile) return;
-  const btn = document.getElementById('btn-process');
-  btn.disabled = true;
-  try {
-    await runEngine(lastFile);
-  } finally {
-    updateProcessButton();
-  }
-}
-
-async function runEngine(source) {
-  if (!engine) {
-    document.getElementById('status').textContent = 'Load a model first!';
-    return;
-  }
+  if (!engineReady || !lastFile || processing) return;
+  processing = true;
+  updateProcessButton();
 
   const status = document.getElementById('status');
   const resultCard = document.getElementById('result-card');
   const resultText = document.getElementById('result-text');
   const resultMeta = document.getElementById('result-meta');
-
-  status.textContent = 'Processing...';
   resultCard.style.display = 'block';
-  resultText.textContent = '...';
+  resultText.textContent = '\u2026';
   resultMeta.textContent = '';
+  startElapsed();
 
-  await new Promise(r => setTimeout(r, 50));
-
-  const t0 = performance.now();
   try {
-    if (currentMode === 'single') {
-      const { text, confidence } = await engine.recognize(source);
-      const ms = (performance.now() - t0).toFixed(0);
-      resultText.textContent = text || '(no text detected)';
-      resultMeta.textContent = `Confidence: ${(confidence * 100).toFixed(1)}% | Time: ${ms} ms`;
+    const imageData = await fileToImageData(lastFile);
+    const options = currentMode === 'cleanup' ? {
+      deskew: document.getElementById('opt-deskew').checked,
+      cropBorders: document.getElementById('opt-crop').checked,
+      whitenBackground: document.getElementById('opt-whiten').checked,
+      binarize: document.getElementById('opt-binarize').checked,
+    } : {};
 
-    } else if (currentMode === 'pipeline') {
-      const result = await engine.run(source);
-      const ms = (performance.now() - t0).toFixed(0);
-      const regions = result.regions || [];
+    const result = await new Promise((resolve, reject) => {
+      onResult = resolve;
+      onRunError = reject;
+      const buf = imageData.data.buffer;
+      worker.postMessage({ cmd: 'run', width: imageData.width,
+        height: imageData.height, data: buf, options }, [buf]);
+    });
+
+    const ms = (performance.now() - processT0).toFixed(0);
+    if (result.kind === 'single') {
+      resultText.textContent = result.text || '(no text detected)';
+      resultMeta.textContent = `Confidence: ${(result.confidence * 100).toFixed(1)}% | Time: ${ms} ms`;
+    } else if (result.kind === 'pipeline') {
+      const regions = (result.result && result.result.regions) || [];
       const lines = regions.map((r, i) =>
-        `[${i+1}] (${r.x.toFixed(0)},${r.y.toFixed(0)} ${r.w.toFixed(0)}x${r.h.toFixed(0)}) ` +
-        `conf=${(r.confidence*100).toFixed(1)}% "${r.text}"`
-      );
+        `[${i + 1}] (${r.x.toFixed(0)},${r.y.toFixed(0)} ${r.w.toFixed(0)}x${r.h.toFixed(0)}) ` +
+        `conf=${(r.confidence * 100).toFixed(1)}% "${r.text}"`);
       resultText.textContent = lines.join('\n') || '(no text detected)';
       resultMeta.textContent = `${regions.length} region(s) | Time: ${ms} ms`;
-
-    } else if (currentMode === 'cleanup') {
-      const opts = {
-        deskew: document.getElementById('opt-deskew').checked,
-        cropBorders: document.getElementById('opt-crop').checked,
-        whitenBackground: document.getElementById('opt-whiten').checked,
-        binarize: document.getElementById('opt-binarize').checked,
-      };
-      const cleanedData = await engine.process(source, opts);
-      const ms = (performance.now() - t0).toFixed(0);
-
-      // Show cleaned image
+    } else if (result.kind === 'cleanup') {
+      const cleaned = new ImageData(new Uint8ClampedArray(result.data), result.width, result.height);
       const canvas = document.createElement('canvas');
-      canvas.width = cleanedData.width;
-      canvas.height = cleanedData.height;
-      canvas.getContext('2d').putImageData(cleanedData, 0, 0);
+      canvas.width = cleaned.width; canvas.height = cleaned.height;
+      canvas.getContext('2d').putImageData(cleaned, 0, 0);
       const zone = document.getElementById('drop-zone');
       zone.innerHTML = '';
       zone.appendChild(canvas);
-
-      resultText.textContent = `Cleaned: ${cleanedData.width}x${cleanedData.height}`;
+      resultText.textContent = `Cleaned: ${cleaned.width}x${cleaned.height}`;
       resultMeta.textContent = `Time: ${ms} ms`;
     }
-
     status.textContent = 'Done.';
   } catch (e) {
     resultText.textContent = 'Error: ' + e.message;
     status.textContent = 'Processing failed.';
     console.error(e);
+  } finally {
+    stopElapsed();
+    processing = false;
+    onResult = null;
+    onRunError = null;
+    updateProcessButton();
   }
 }
+
+// Default thread count reflects isolation state (threads need COOP/COEP).
+document.getElementById('n-threads').value = defaultThreads();
 
 </script>
 </body>
