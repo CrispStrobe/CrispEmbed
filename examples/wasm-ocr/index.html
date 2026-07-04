@@ -149,6 +149,10 @@
   </div>
   <input type="file" id="file-input" accept="image/*" style="display:none"
          onchange="handleFile(this.files[0])">
+  <div style="margin-top:12px; display:flex; gap:12px; align-items:center;">
+    <button id="btn-process" onclick="processImage()" disabled>Process</button>
+    <span id="process-hint" style="font-size:0.85rem; color:#64748b;"></span>
+  </div>
 </div>
 
 <!-- Result -->
@@ -177,6 +181,7 @@ function setMode(mode) {
   if (engine) { engine.dispose(); engine = null; }
   document.getElementById('btn-init').textContent = 'Load';
   document.getElementById('status').textContent = 'Select a mode and click "Load".';
+  updateProcessButton();
 }
 
 async function init() {
@@ -223,6 +228,7 @@ async function init() {
     console.error(e);
   } finally {
     btn.disabled = false;
+    updateProcessButton();
   }
 }
 
@@ -232,7 +238,7 @@ function handleDrop(e) {
   if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
 }
 
-async function handleFile(file) {
+function handleFile(file) {
   if (!file || !file.type.startsWith('image/')) return;
   lastFile = file;
 
@@ -241,7 +247,31 @@ async function handleFile(file) {
   reader.onload = () => { zone.innerHTML = `<img src="${reader.result}" alt="preview">`; };
   reader.readAsDataURL(file);
 
-  await runEngine(file);
+  // Selecting an image no longer auto-runs the engine: model and image can
+  // be chosen in either order, and the same image can be re-processed
+  // (e.g. after switching mode or model). Click "Process" to run.
+  updateProcessButton();
+}
+
+function updateProcessButton() {
+  const btn = document.getElementById('btn-process');
+  const hint = document.getElementById('process-hint');
+  btn.disabled = !(engine && lastFile);
+  if (engine && lastFile)      hint.textContent = 'Ready.';
+  else if (!engine && lastFile) hint.textContent = 'Image selected — load a model above, then process.';
+  else if (engine && !lastFile) hint.textContent = 'Model ready — select an image.';
+  else                          hint.textContent = '';
+}
+
+async function processImage() {
+  if (!engine || !lastFile) return;
+  const btn = document.getElementById('btn-process');
+  btn.disabled = true;
+  try {
+    await runEngine(lastFile);
+  } finally {
+    updateProcessButton();
+  }
 }
 
 async function runEngine(source) {

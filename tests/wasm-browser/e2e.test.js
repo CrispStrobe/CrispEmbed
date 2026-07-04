@@ -83,6 +83,15 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
     assert(await page.evaluate(() => typeof CrispEmbedOCRPipeline === 'function'),
       'CrispEmbedOCRPipeline is defined');
 
+    // Deliberately select the IMAGE FIRST (the ordering from the #31
+    // follow-up): nothing may auto-run, and Process stays disabled until a
+    // model is loaded too.
+    console.log('\n=== Select image BEFORE model — no auto-run ===');
+    await page.setInputFiles('#file-input',
+      path.join(repoRoot, 'tests', 'regression', 'images', 'formula_quadratic.png'));
+    assert(await page.isDisabled('#btn-process'),
+      'Process disabled with image but no model');
+
     console.log('\n=== Single-model: load pix2tex via demo UI ===');
     await page.fill('#model-url', BASE + '/models/pix2tex-mfr-q4_k.gguf');
     await page.click('#btn-init');
@@ -92,10 +101,11 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
       null, { timeout: 120000 });
     const loadStatus = await page.textContent('#status');
     assert(loadStatus.includes('Model loaded'), `model loaded via UI (status: "${loadStatus}")`);
+    assert(!(await page.isDisabled('#btn-process')),
+      'Process enabled once model + image are both present');
 
-    console.log('\n=== Single-model: OCR formula_quadratic.png through the UI ===');
-    await page.setInputFiles('#file-input',
-      path.join(repoRoot, 'tests', 'regression', 'images', 'formula_quadratic.png'));
+    console.log('\n=== Single-model: OCR formula_quadratic.png via Process ===');
+    await page.click('#btn-process');
     await page.waitForFunction(
       () => {
         const s = document.getElementById('status').textContent;
@@ -136,6 +146,7 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
 
       await page.setInputFiles('#file-input',
         path.join(repoRoot, 'tests', 'regression', 'images', 'scan_strip.png'));
+      await page.click('#btn-process');
       await page.waitForFunction(
         () => {
           const s = document.getElementById('status').textContent;
