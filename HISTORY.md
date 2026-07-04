@@ -4,6 +4,18 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 6, 2026 — 12 OCR engines verified in the browser; model picker
+
+Extended the WebGPU sweep to 12 engines — all produce correct text.
+Standouts: TexTeller-3 (177 MB) 29.2 s -> 5.5 s on GPU (5.4x, best LaTeX
+quality of the math engines); PP-FormulaNet-L 113 -> 43 s (2.6x); trocr
+small handwritten verified against the NATIVE engine (the wasm-CPU leg,
+not GPU, was the drifting one on an out-of-distribution input). The demo's
+single-model tab gained a grouped preset picker (13 entries) that fills the
+still-editable URL field — manual override preserved, harnesses untouched.
+
+---
+
 ## July 5, 2026 (night) — decoder-on-CPU split for the WebGPU tier
 
 MATH_OCR_DEC_CPU=1: decoder weights duplicated into a CPU buffer so the

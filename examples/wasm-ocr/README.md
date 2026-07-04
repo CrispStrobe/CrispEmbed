@@ -12,7 +12,7 @@ that touches the WASM build)
 
 | Mode | Models | Default URLs |
 |------|--------|--------------|
-| Single model | pix2tex (math formula → LaTeX), TrOCR, PARSeq, HMER, BTTR | [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf) `pix2tex-mfr-q4_k.gguf` (17 MB) |
+| Single model | 12 verified engines via a preset picker (TrOCR printed/handwritten, PARSeq, Tesseract eng/deu, pix2tex, Texo, PP-FormulaNet-L, TexTeller-3, HMER, BTTR, PosFormer, MixTeX) + manual URL override | default: [`cstr/pix2tex-mfr-gguf`](https://huggingface.co/cstr/pix2tex-mfr-gguf) `pix2tex-mfr-q4_k.gguf` (17 MB) |
 | Pipeline (Det+Rec) | DBNet detection + TrOCR recognition | [`cstr/dbnet-ic15-GGUF`](https://huggingface.co/cstr/dbnet-ic15-GGUF) `dbnet-ic15-q4_k.gguf` (7 MB) + [`cstr/trocr-small-printed-GGUF`](https://huggingface.co/cstr/trocr-small-printed-GGUF) `trocr-small-printed-q4_k.gguf` (45 MB) |
 | Scan cleanup | none (classical deskew/binarize/denoise) | — |
 
