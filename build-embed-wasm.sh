@@ -86,6 +86,7 @@ echo "[INFO] Configuring with emcmake..."
 cd "$SCRIPT_DIR"
 emcmake cmake -S . -B "$BUILD_DIR" \
     -DCMAKE_BUILD_TYPE=Release \
+    -DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm \
     -DGGML_CUDA=OFF \
     -DGGML_METAL=OFF \
     -DGGML_VULKAN=OFF \

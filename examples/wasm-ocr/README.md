@@ -16,9 +16,22 @@ that touches the WASM build)
 | Pipeline (Det+Rec) | DBNet detection + TrOCR recognition | [`cstr/dbnet-ic15-GGUF`](https://huggingface.co/cstr/dbnet-ic15-GGUF) `dbnet-ic15-q4_k.gguf` (7 MB) + [`cstr/trocr-small-printed-GGUF`](https://huggingface.co/cstr/trocr-small-printed-GGUF) `trocr-small-printed-q4_k.gguf` (45 MB) |
 | Scan cleanup | none (classical deskew/binarize/denoise) | — |
 
-Note: the Det+Rec pipeline is functional but slow in the single-threaded
-WASM build (recognition is a ViT decode per detected region — expect minutes
-on a full page). The single-model and cleanup modes run in seconds.
+## Architecture & performance
+
+- **All inference runs in a Web Worker** (`ocr-worker.js`) — the page stays
+  responsive during compute, with live engine progress (region i/N, elapsed
+  time) streamed from the engine's stderr.
+- **Multithreading on static hosting**: `coi-sw.js` (a minimal COOP/COEP
+  service worker) makes the page `crossOriginIsolated` even on GitHub Pages,
+  which unlocks SharedArrayBuffer. When the threaded build is deployed under
+  `threaded/`, the demo picks it automatically and defaults to
+  min(4, cores-1) threads.
+- **SIMD**: builds pass `-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm` so ggml compiles
+  its WASM-SIMD quant kernels (without it, CMake reports the arch as x86 and
+  every quantized matmul silently runs scalar — ~2x slower).
+
+The Det+Rec pipeline is still the slowest mode (a ViT decode per detected
+region); the single-model and cleanup modes run in seconds.
 
 ## Run locally
 
@@ -31,7 +44,11 @@ cd examples/wasm-ocr
 cp ../../build-wasm/crispembed_ocr.{js,wasm} .
 cp ../../wasm/crispembed-ocr.js .
 
-# 3. Serve (plain static server; --coi only needed for --threads builds)
+cp ../../wasm/crispembed-ocr.js ocr-worker.js coi-sw.js .   # worker + COI SW
+# optional threaded build: ./build-wasm.sh --threads -> build-wasm-threads/
+mkdir -p threaded && cp ../../build-wasm-threads/crispembed_ocr.{js,wasm} threaded/ 2>/dev/null || true
+
+# 3. Serve (plain static server; --coi enables threads without the SW reload)
 python serve.py
 # open http://localhost:8080
 ```

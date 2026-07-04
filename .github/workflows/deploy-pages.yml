@@ -39,17 +39,24 @@ jobs:
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v14
 
-      - name: Build WASM
+      - name: Build WASM (single-threaded)
         run: ./build-wasm.sh --clean
+
+      - name: Build WASM (multithreaded)
+        run: ./build-wasm.sh --clean --threads
 
       - name: Assemble site
         run: |
-          mkdir -p _site
+          mkdir -p _site/threaded
           cp examples/wasm-ocr/index.html _site/
+          cp examples/wasm-ocr/ocr-worker.js _site/
+          cp examples/wasm-ocr/coi-sw.js _site/
           cp build-wasm/crispembed_ocr.js _site/
           cp build-wasm/crispembed_ocr.wasm _site/
+          cp build-wasm-threads/crispembed_ocr.js _site/threaded/
+          cp build-wasm-threads/crispembed_ocr.wasm _site/threaded/
           cp wasm/crispembed-ocr.js _site/
-          ls -lh _site/
+          ls -lhR _site/
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

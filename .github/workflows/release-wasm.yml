@@ -65,6 +65,8 @@ jobs:
           cp build-wasm/crispembed_ocr.wasm crispembed-ocr-wasm/
           cp wasm/crispembed-ocr.js crispembed-ocr-wasm/
           cp examples/wasm-ocr/index.html crispembed-ocr-wasm/
+          cp examples/wasm-ocr/ocr-worker.js crispembed-ocr-wasm/
+          cp examples/wasm-ocr/coi-sw.js crispembed-ocr-wasm/
           cp examples/wasm-ocr/serve.py crispembed-ocr-wasm/
           tar czf crispembed-ocr-wasm.tar.gz crispembed-ocr-wasm/
 

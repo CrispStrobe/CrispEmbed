@@ -43,8 +43,16 @@ function resolveUrl(urlPath) {
     return path.join(repoRoot, 'examples', 'wasm-ocr', 'index.html');
   }
   if (clean === '/serve.py') return path.join(repoRoot, 'examples', 'wasm-ocr', 'serve.py');
+  if (clean === '/ocr-worker.js' || clean === '/coi-sw.js') {
+    return path.join(repoRoot, 'examples', 'wasm-ocr', path.basename(clean));
+  }
   if (clean === '/crispembed_ocr.js' || clean === '/crispembed_ocr.wasm') {
     return path.join(repoRoot, 'build-wasm', path.basename(clean));
+  }
+  if (clean.startsWith('/threaded/')) {
+    // Deterministic tests: threaded build only exposed when requested.
+    if (process.env.WASM_E2E_THREADS !== '1') return null;
+    return path.join(repoRoot, 'build-wasm-threads', path.basename(clean));
   }
   if (clean === '/crispembed-ocr.js') {
     return path.join(repoRoot, 'wasm', 'crispembed-ocr.js');

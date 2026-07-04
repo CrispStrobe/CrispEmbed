@@ -75,13 +75,18 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
   try {
     console.log('\n=== Page load + module availability ===');
     await page.goto(BASE + '/', { waitUntil: 'load' });
+    // The COI service worker reloads the page once after first install to
+    // apply COOP/COEP — wait out that navigation before asserting.
+    await page.waitForTimeout(1200);
+    await page.waitForLoadState('load');
     assert(await page.title() !== '', 'page has a title');
-    assert(await page.evaluate(() => typeof CrispEmbedOCR === 'function'),
-      'Emscripten factory CrispEmbedOCR is defined');
-    assert(await page.evaluate(() => typeof CrispEmbedOCRWrapper === 'function'),
-      'high-level CrispEmbedOCRWrapper is defined');
-    assert(await page.evaluate(() => typeof CrispEmbedOCRPipeline === 'function'),
-      'CrispEmbedOCRPipeline is defined');
+    console.log('  crossOriginIsolated:', await page.evaluate(() => crossOriginIsolated));
+    // Inference runs in a Web Worker now — the page only needs the worker
+    // script and its imports to be served.
+    for (const f of ['ocr-worker.js', 'crispembed_ocr.js', 'crispembed-ocr.js', 'coi-sw.js']) {
+      const st = await page.evaluate(async (u) => (await fetch(u)).status, f);
+      assert(st === 200, `${f} is served (HTTP ${st})`);
+    }
 
     // Deliberately select the IMAGE FIRST (the ordering from the #31
     // follow-up): nothing may auto-run, and Process stays disabled until a
@@ -103,9 +108,22 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
     assert(loadStatus.includes('Model loaded'), `model loaded via UI (status: "${loadStatus}")`);
     assert(!(await page.isDisabled('#btn-process')),
       'Process enabled once model + image are both present');
+    const loaderUsed = await page.evaluate(() => window.__loaderUsed);
+    console.log(`  loader used: ${loaderUsed}`);
+    if (process.env.WASM_E2E_THREADS === '1') {
+      assert(loaderUsed === 'threaded/crispembed_ocr.js',
+        `threaded loader selected (got ${loaderUsed})`);
+    }
 
     console.log('\n=== Single-model: OCR formula_quadratic.png via Process ===');
     await page.click('#btn-process');
+    // The whole point of the worker refactor: the page must stay responsive
+    // while WASM computes. A main-thread round-trip must return promptly.
+    await page.waitForTimeout(700);
+    const t0 = Date.now();
+    await page.evaluate(() => 1 + 1);
+    const rt = Date.now() - t0;
+    assert(rt < 1500, `page responsive during processing (round-trip ${rt} ms)`);
     await page.waitForFunction(
       () => {
         const s = document.getElementById('status').textContent;
@@ -123,8 +141,10 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
       `no uncaught page errors (TextDecoder etc.): ${JSON.stringify(pageErrors)}`);
     // Emscripten routes C stderr (engine debug logs like "math_ocr: ...")
     // to console.error — only genuine JS/wasm errors count.
+    // 404s are expected for optional resources (threaded/ probe, favicon).
     const realErrors = consoleErrors.filter(e =>
-      !e.includes('favicon') && !/^[a-z0-9_]+:\s/.test(e));
+      !e.includes('favicon') && !/^[a-z0-9_]+:\s/.test(e)
+      && !/status of 404/.test(e));
     assert(realErrors.length === 0, `no console errors: ${JSON.stringify(realErrors)}`);
 
     // Optional: full det+rec pipeline through the UI (slow in single-threaded

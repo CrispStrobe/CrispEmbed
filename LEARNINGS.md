@@ -4405,3 +4405,59 @@ buffer is only safe when build + compute complete within the same scope.
 Audit note: `precompute_cross_kv` and the decoder loop use local pools but
 compute in-scope — legal. The scan for `std::vector<uint8_t> meta` +
 `ctx->…_g = g` found no other offenders.
+
+## Emscripten + ggml: CMAKE_SYSTEM_PROCESSOR is "x86" → WASM SIMD kernels silently dropped
+
+Under `emcmake`, the Emscripten toolchain sets `CMAKE_SYSTEM_PROCESSOR=x86`
+(bitness advertisement), so ggml-cpu's arch dispatch hits the "Unknown CPU
+architecture → generic implementations" branch and **never compiles
+`arch/wasm/quants.c`** — every quantized vec_dot/quantize ran scalar even
+though `-msimd128` was set (that flag only lit up the `__wasm_simd128__`
+blocks in TUs that have them; the generic quants file has none). Symptom in
+stacks: `quantize_row_q8_0` tail-calling `quantize_row_q8_0_ref`. Fix: pass
+`-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm` (officially supported toolchain
+override) → "Wasm detected", arch file compiles, ~1.5-2× on q4_0/q4_K
+OCR inference. Applies to any ggml-based wasm build (CrispASR too).
+
+Related wasm-demo architecture (same session): inference must run in a Web
+Worker — single-threaded WASM on the main thread freezes the tab for the
+whole compute and is indistinguishable from a hang (user report on #31).
+Engine stderr, forwarded via `CRISPEMBED_MODULE_OPTS.printErr` →
+postMessage, doubles as live progress ("ocr_pipeline: recognizing region
+i/N"). For threads on static hosting (GitHub Pages can't set headers), a
+COOP/COEP-injecting service worker (`coi-sw.js`) + one guarded reload makes
+the page crossOriginIsolated; `controllerchange` (the SW calls
+clients.claim()) is the reload signal — polling `controller === null` after
+`ready` is racy AND wrong (claim() sets the controller without the document
+having the headers).
+
+
+## Emscripten 6 pthreads inside a Web Worker — two deadlocks and their shims
+
+Running a `-pthread` Emscripten module INSIDE a dedicated worker (module
+importScripts'ed into our own worker script) hits two silent hangs:
+
+1. **Factory-inside-onmessage deadlock.** If `CrispEmbedOCR()` (the
+   MODULARIZE factory) is first invoked from within an active `onmessage`
+   handler, the pthread pool bootstrap never completes — the factory promise
+   just never resolves (no error). Same code at worker top level works.
+   Pattern: pass config via the worker's query string
+   (`ocr-worker.js?loader=...`), importScripts + instantiate at top level,
+   stash `globalThis.CRISPEMBED_MODULE_PROMISE`, and have the wrapper's
+   `_initModule` reuse it.
+
+2. **Pthread workers spawn OUR worker script.** `mainScriptUrlOrBlob` no
+   longer exists in emscripten 6; pthread workers are spawned from
+   `_scriptName = self.location.href` — which is the OUTER worker's URL when
+   the module was importScripts'ed. Symptom: N nested workers spawn running
+   the host worker script, the module's pool wait hangs, and the module
+   logs "worker sent an unknown command <x>" for the host's own postMessages.
+   Fix: make the host worker **pthread-transparent** — first thing in the
+   script: `if (self.name === 'em-pthread') { importScripts(LOADER); }` and
+   nothing else (the Emscripten loader, evaluated under that worker name,
+   runs its own pthread bootstrap and owns the worker).
+
+Also: `locateFile` must return ABSOLUTE URLs in worker contexts (relative
+paths abort with XHR "Invalid URL" in blob workers, and threaded builds live
+in a subdirectory). Debug recipe: wrap `self.Worker` before importScripts to
+log spawn URLs; forward `printErr` via postMessage.

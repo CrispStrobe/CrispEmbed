@@ -59,7 +59,10 @@ endif()
 # but degrades gracefully (pthread stubs in Emscripten libc).
 # ---------------------------------------------------------------------------
 option(CRISPEMBED_WASM_THREADS "Use real pthreads in WASM (requires COOP/COEP)" OFF)
-if(EMSCRIPTEN AND NOT CRISPEMBED_WASM_THREADS)
+if(EMSCRIPTEN)
+    # Also used for threaded builds: CMake's real FindThreads fails under
+    # Emscripten, and build-wasm.sh --threads already injects -pthread into
+    # CMAKE_{C,CXX,EXE_LINKER}_FLAGS, so a no-op Threads::Threads suffices.
     list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 endif()
 
