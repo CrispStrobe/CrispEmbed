@@ -49,8 +49,13 @@ function main() {
   if (LOADER.startsWith('webgpu')) {
     // Run DBNet detection on the GPU too (~60x vs wasm CPU on M1; box
     // parity verified via tests/wasm-browser/det-ab.js). The recognizer
-    // already picks the GPU through ggml_backend_init_best().
-    self.CRISPEMBED_MODULE_OPTS.preRun = [(mod) => { mod.ENV.OCR_DETECT_USE_GPU = '1'; }];
+    // already picks the GPU through ggml_backend_init_best(); its
+    // autoregressive decode however is ~5x slower on GPU (per-token
+    // submit/suspend overhead), so decode is steered to CPU.
+    self.CRISPEMBED_MODULE_OPTS.preRun = [(mod) => {
+      mod.ENV.OCR_DETECT_USE_GPU = '1';
+      mod.ENV.MATH_OCR_DEC_CPU = '1';
+    }];
   }
 
   // Import AND instantiate at top level (not inside onmessage): the

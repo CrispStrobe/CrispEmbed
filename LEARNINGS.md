@@ -4600,3 +4600,21 @@ demo link. Verified: second page load hits cache, zero network.
   JSPI/submit overhead on tiny matrices). Next lever, deferred with data:
   encoder-on-GPU + decoder-on-CPU split (needs decoder weights resident on
   both backends) or cross-region batched decode for the pipeline.
+
+
+## Decoder-on-CPU split for WebGPU (MATH_OCR_DEC_CPU=1)
+
+math_ocr can duplicate the decoder weights into a CPU buffer (second
+load_weights pass into wl_dec; `dec.*` lookups in map_tensors route there),
+which steers the sched to run the autoregressive decode on CPU while the
+encoder stays on GPU. Enabled by the demo worker for the webgpu tiers.
+
+Measured (M1, warm): single-model TrOCR decode 216 -> 48 ms (= pure-CPU
+decode speed; total 918 -> 886 ms). Pipeline (8 regions): 164 -> 160 s —
+essentially a wash: the pipeline's per-region decode does long cross-attn
+against 578-token encoder outputs, which amortizes the per-token GPU
+submit/suspend overhead that dominates short decodes. Bonus: region-text
+parity with CPU improved (7/8 vs 6/8). Kept ON for webgpu (small consistent
+win, strictly faster decode, ~model-size extra wasm-heap for the CPU copy).
+Prediction vs reality note: the profiling suggested a bigger pipeline win —
+always A/B the actual workload, not the microbench.
