@@ -638,10 +638,43 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   and a *fully-clean* bidirlm multimodal re-quant with F32 mel_filters (the shipped
   file uses quantized mel + the dequant read-fix; the quantizer now keeps mel F32,
   so a future re-quant would be marginally cleaner — audio is already 0.9979).
-- **TODO (open, lower priority, non-imatrix):** C4 KV/prefix reuse; the LFM2
-  ssm_conv perf refactor; a larger paired reranker A/B corpus before finalizing the
-  bge/mxbai 4-bit-vs-q8 calls (current n=9); domain-matched calibration corpora if a
-  specific deployment needs it.
+### Pending work — consolidated backlog (2026-07-04)
+
+Nothing below is a regression or a blocker; the shipped surface is correct. In
+rough priority order (P1 = finishes an in-flight thread, P3 = large/speculative):
+
+- **P1 — Finalize reranker 4-bit-vs-q8 calls with a larger A/B corpus.** The
+  bge-reranker / mxbai-rerank defaults stay q8_0 on the basis of τ<1.0 over only
+  n=9 paired query-doc examples (`RERANK_EVAL` in
+  `tools/kaggle/crispembed-imatrix-quant/imatrix_quant.py`). Expand to ~30 EN+DE
+  pairs (self-authored CC0) and re-run Kendall-τ; if 4-bit+imatrix holds τ≈1.0 on
+  the bigger set, repoint those two to q4_k+imatrix. The only genuinely-unfinished
+  imatrix thread.
+- **P2 — C2 data-driven GGUF behavior flags.** Bake `pooling_type`,
+  `causal_attention`, `add_bos_token`, `add_eos_token` into GGUF metadata
+  (llama.cpp convention) instead of per-arch branches in the dispatcher (e.g. the
+  LFM2 "BOS-only" rule). Pure refactor: `test_all_parity.py` outputs must be
+  byte-identical before/after across a WordPiece + SPM + BPE model. Watch the
+  `gguf_free` use-after-free landmine.
+- **P2 — C3 true batched decoder-embedding graph.** Encoder path is opt-in
+  (`n_ubatch==n_batch`, block-diagonal mask); the decoder path
+  (`decoder_encode_tokens_batch`) still needs the block-diagonal + prefix-recompute
+  layout for real throughput.
+- **P2 — C4 KV/prefix-sharing for decoder embeddings.** Port the `seq_cp`
+  cell-copy idea (copy *whole* shared prefixes only); A/B: reused-prefix outputs
+  identical to full recompute, wall-clock ≈ unique-suffix work. Confirm on LFM2.
+- **P3 — LFM2 ShortConv → `ggml_ssm_conv` perf refactor.** Better Metal kernel
+  coverage, but regression risk on a working engine; guard with `test-lfm2-diff`.
+- **P3 — C5 in-process Qwen2VL image preprocessor** (the long-standing
+  `Qwen2VLImageProcessorFast` port — replaces the Python preproc dependency).
+- **P3 — bidirlm multimodal clean re-quant** with F32 `mel_filters` (cosmetic; the
+  shipped file works via the dequant read-fix, audio already 0.9979). OOM-prone on
+  the 16 GB Mac — do on Kaggle if ever.
+- **P3 — Non-embedding OCR/vision perf** (unrelated to this arc): CUDA Class-B
+  divergence on Turing/Pascal (needs that HW to localize), F16-KV-cache ports for
+  deepseek_ocr2, unified `core/vlm_decoder.h`. Tracked in the OCR sections below.
+- **Domain-matched calibration corpora** — only if a specific deployment needs it;
+  the shipped imatrix is language/domain-agnostic (verified).
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
