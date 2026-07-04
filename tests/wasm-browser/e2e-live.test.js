@@ -56,6 +56,7 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
     console.log('\n=== Recognize formula through the deployed UI ===');
     await page.setInputFiles('#file-input',
       path.join(repoRoot, 'tests', 'regression', 'images', 'formula_quadratic.png'));
+    await page.click('#btn-process');
     await page.waitForFunction(
       () => {
         const s = document.getElementById('status').textContent;
