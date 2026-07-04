@@ -48,9 +48,12 @@ jobs:
       - name: Build WASM (WebGPU, experimental)
         run: ./build-wasm.sh --clean --webgpu
 
+      - name: Build WASM (WebGPU compat/Asyncify, experimental)
+        run: ./build-wasm.sh --clean --webgpu-compat
+
       - name: Assemble site
         run: |
-          mkdir -p _site/threaded _site/webgpu
+          mkdir -p _site/threaded _site/webgpu _site/webgpu-compat
           cp examples/wasm-ocr/index.html _site/
           cp examples/wasm-ocr/ocr-worker.js _site/
           cp examples/wasm-ocr/coi-sw.js _site/
@@ -60,6 +63,8 @@ jobs:
           cp build-wasm-threads/crispembed_ocr.wasm _site/threaded/
           cp build-wasm-webgpu/crispembed_ocr.js _site/webgpu/
           cp build-wasm-webgpu/crispembed_ocr.wasm _site/webgpu/
+          cp build-wasm-webgpu-compat/crispembed_ocr.js _site/webgpu-compat/
+          cp build-wasm-webgpu-compat/crispembed_ocr.wasm _site/webgpu-compat/
           cp wasm/crispembed-ocr.js _site/
           ls -lhR _site/
 

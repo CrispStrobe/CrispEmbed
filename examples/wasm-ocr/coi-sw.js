@@ -15,6 +15,13 @@ self.addEventListener('fetch', (event) => {
   const req = event.request;
   // Pass through requests we must not intercept.
   if (req.cache === 'only-if-cached' && req.mode !== 'same-origin') return;
+  // Only same-origin documents/scripts/wasm need the headers (COEP on the
+  // document covers CORS-mode subresource fetches). Never proxy large model
+  // downloads: WebKit terminates service workers mid-stream ("Service
+  // Worker context closed"), killing the fetch.
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+  if (!/\.(html|js|mjs|wasm)$/.test(url.pathname) && url.pathname !== '/' && req.destination !== 'document') return;
   event.respondWith((async () => {
     const resp = await fetch(req);
     if (resp.status === 0 || resp.type === 'opaque') return resp;

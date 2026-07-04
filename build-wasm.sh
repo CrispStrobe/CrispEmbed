@@ -26,6 +26,7 @@ CLEAN=false
 SIMD=ON
 THREADS=OFF
 WEBGPU=OFF
+WEBGPU_COMPAT=OFF
 CMAKE_EXTRA=()
 
 while [[ $# -gt 0 ]]; do
@@ -35,6 +36,7 @@ while [[ $# -gt 0 ]]; do
         --no-simd)  SIMD=OFF; shift ;;
         --threads)  THREADS=ON; shift ;;
         --webgpu)   WEBGPU=ON; shift ;;
+        --webgpu-compat) WEBGPU=ON; WEBGPU_COMPAT=ON; shift ;;
         --)         shift; CMAKE_EXTRA=("$@"); break ;;
         *)          CMAKE_EXTRA+=("$1"); shift ;;
     esac
@@ -54,6 +56,14 @@ WEBGPU_FLAGS=""
 WEBGPU_LINK_FLAGS=""
 if [ "$WEBGPU" = "ON" ]; then
     WEBGPU_FLAGS="-DGGML_WEBGPU=ON"
+    if [ "$WEBGPU_COMPAT" = "ON" ]; then
+        # Asyncify variant for browsers with WebGPU but no JSPI (Safari 26,
+        # Firefox). Bigger + slower than JSPI; the demo picks it only when
+        # WebAssembly.Suspending is missing.
+        WEBGPU_FLAGS="$WEBGPU_FLAGS -DGGML_WEBGPU_JSPI=OFF"
+        if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-webgpu-compat"; fi
+        echo "[INFO] WebGPU compat (Asyncify) variant -> $BUILD_DIR/"
+    fi
     # JSPI: every export that can reach GPU work (and therefore suspend)
     # must be wrapped with WebAssembly.promising — list them explicitly.
     # JS callers must use ccall(..., {async:true}) for these (the JS wrapper
@@ -94,7 +104,7 @@ if [ "$WEBGPU" = "ON" ]; then
     # Experimental: ggml-webgpu links the emdawnwebgpu port and adds
     # -sASYNCIFY itself (INTERFACE link options). Separate output dir so all
     # variants coexist (demo serves this build under webgpu/).
-    if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-webgpu"; fi
+    if [ "$BUILD_DIR_SET" = false ] && [ "$WEBGPU_COMPAT" != "ON" ]; then BUILD_DIR="build-wasm-webgpu"; fi
     echo "[INFO] WebGPU backend enabled -> $BUILD_DIR/"
 fi
 
