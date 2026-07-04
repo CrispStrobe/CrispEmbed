@@ -1701,7 +1701,6 @@ bool math_ocr_encode_batch_raw(math_ocr_context * ctx, const uint8_t * const * c
 
         size_t meta_size = (size_t)(ctx->hparams.enc_layers * 80 + 512) * ggml_tensor_overhead() +
                            ggml_graph_overhead_custom(ctx->hparams.enc_layers * 80 + 512, false) + 4 * 1024 * 1024;
-<<<<<<< HEAD
         ctx->enc_batch_meta.resize(meta_size);
         ggml_init_params ip = { meta_size, ctx->enc_batch_meta.data(), true };
         ggml_context * g = ggml_init(ip);
