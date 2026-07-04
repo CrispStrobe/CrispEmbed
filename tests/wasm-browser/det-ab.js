@@ -23,7 +23,9 @@ const fs = require('fs');
 
   const imgB64 = fs.readFileSync(path.join(repoRoot, 'tests/regression/images/scan_strip.png')).toString('base64');
 
-  const runOne = (useGpu) => page.evaluate(async ({ imgB64, useGpu }) => {
+  const runOne = async (useGpu) => {
+    await page.evaluate((v) => { window.__DEC_CPU__ = v; }, process.env.AB_DEC_CPU === '1');
+    return page.evaluate(async ({ imgB64, useGpu }) => {
     // TextDecoder patch (normally applied by crispembed-ocr.js): growable
     // wasm heaps back UTF8ToString views with a resizable ArrayBuffer,
     // which Chrome's TextDecoder rejects.
@@ -51,7 +53,10 @@ const fs = require('fs');
         logs.push(t);
         if (errLogs.length < 20 && /error|Error|invalid|Invalid|SKIPPING/.test(t)) errLogs.push(t);
       },
-      preRun: [(mod) => { if (useGpu) mod.ENV.OCR_DETECT_USE_GPU = '1'; }],
+      preRun: [(mod) => {
+        if (useGpu) mod.ENV.OCR_DETECT_USE_GPU = '1';
+        if (useGpu && window.__DEC_CPU__) mod.ENV.MATH_OCR_DEC_CPU = '1';
+      }],
     });
     const copts = useGpu ? { async: true } : {};
     try { m.FS.mkdir('/models'); } catch (_) {}
@@ -77,6 +82,7 @@ const fs = require('fs');
       return { error: String(e && e.stack || e).slice(0, 300), logs: errLogs.concat(logs.slice(-2)) };
     }
   }, { imgB64, useGpu });
+  };
 
   const cpu = process.env.AB_GPU_ONLY === '1'
     ? { regions: [], initMs: 0, runMs: 0, logs: [] }

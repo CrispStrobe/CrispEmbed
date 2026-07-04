@@ -4,6 +4,16 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 5, 2026 (night) — decoder-on-CPU split for the WebGPU tier
+
+MATH_OCR_DEC_CPU=1: decoder weights duplicated into a CPU buffer so the
+sched runs autoregressive decode on CPU while the encoder stays on GPU.
+Demo worker enables it for both webgpu tiers. TrOCR decode 216 -> 48 ms;
+pipeline essentially a wash (164 -> 160 s) but region-text parity with CPU
+improved. e2e 15/15 webgpu + 13/13 default.
+
+---
+
 ## July 5, 2026 (evening) — WebGPU compat tier (Asyncify), WebKit verified, SW fix
 
 `--webgpu-compat` Asyncify variant for JSPI-less browsers, auto-picked via

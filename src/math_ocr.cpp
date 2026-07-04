@@ -103,6 +103,12 @@ struct math_ocr_context {
     // Infrastructure
     std::vector<std::string> vocab;
     core_gguf::WeightLoad wl;
+    // Optional CPU-resident copy of the decoder weights (MATH_OCR_DEC_CPU=1):
+    // on WebGPU-in-browser the autoregressive decode is ~5x slower on GPU
+    // (per-token submit/suspend overhead on tiny matrices), so the sched is
+    // steered to run decode on CPU by placing the decoder weights there.
+    core_gguf::WeightLoad wl_dec;
+    bool dec_on_cpu = false;
     core_cpu::DequantCache dcache; // per-context (replaces global _deq_cache)
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
@@ -162,6 +168,8 @@ static ggml_tensor * F(const std::unordered_map<std::string, ggml_tensor *> & m,
 
 static void map_tensors(math_ocr_context * ctx) {
     const auto & m = ctx->wl.tensors;
+    // Decoder-side tensors come from the CPU copy when the split is active.
+    const auto & md = ctx->dec_on_cpu ? ctx->wl_dec.tensors : ctx->wl.tensors;
     const auto & hp = ctx->hparams;
     char buf[256];
 
@@ -199,8 +207,8 @@ static void map_tensors(math_ocr_context * ctx) {
     }
 
     auto D2 = [&](const char * s, const char * f) {
-        auto * t = F(m, s);
-        return t ? t : F(m, f);
+        auto * t = F(md, s);
+        return t ? t : F(md, f);
     };
     ctx->tok_embed = D2("dec.d.embed_tokens.weight", "dec.decoder.model.decoder.embed_tokens.weight");
     ctx->pos_embed_dec = D2("dec.d.embed_positions.weight", "dec.decoder.model.decoder.embed_positions.weight");
@@ -209,8 +217,8 @@ static void map_tensors(math_ocr_context * ctx) {
     ctx->dec_embed_ln_b = D2("dec.d.layernorm_embedding.bias", "dec.decoder.model.decoder.layernorm_embedding.bias");
     ctx->dec_final_ln_w = D2("dec.d.layer_norm.weight", "dec.decoder.model.decoder.layer_norm.weight");
     ctx->dec_final_ln_b = D2("dec.d.layer_norm.bias", "dec.decoder.model.decoder.layer_norm.bias");
-    ctx->lm_head_w = F(m, "dec.lm_head.weight");
-    ctx->lm_head_b = F(m, "dec.lm_head.bias");
+    ctx->lm_head_w = F(md, "dec.lm_head.weight");
+    ctx->lm_head_b = F(md, "dec.lm_head.bias");
     // Tied embeddings: lm_head shares embed_tokens weight
     if (!ctx->lm_head_w && ctx->tok_embed) ctx->lm_head_w = ctx->tok_embed;
 
@@ -219,10 +227,10 @@ static void map_tensors(math_ocr_context * ctx) {
         auto & l = ctx->dec_layers[i];
         auto DL = [&](const char * s) {
             snprintf(buf, sizeof(buf), "dec.d.layers.%d.%s", i, s);
-            auto * t = F(m, buf);
+            auto * t = F(md, buf);
             if (t) return t;
             snprintf(buf, sizeof(buf), "dec.decoder.model.decoder.layers.%d.%s", i, s);
-            return F(m, buf);
+            return F(md, buf);
         };
         l.self_ln_w = DL("self_attn_layer_norm.weight");
         l.self_ln_b = DL("self_attn_layer_norm.bias");
@@ -1313,6 +1321,17 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
     }
     fprintf(stderr, "math_ocr: weights loaded (%zu tensors)\n", ctx->wl.tensors.size());
 
+    // Decoder-on-CPU split (opt-in, requires a GPU primary backend).
+    bool dec_cpu = (getenv("MATH_OCR_DEC_CPU") && atoi(getenv("MATH_OCR_DEC_CPU")));
+    if (dec_cpu && ctx->backend_cpu) {
+        if (core_gguf::load_weights(model_path, ctx->backend_cpu, "math_ocr(dec-cpu)", ctx->wl_dec)) {
+            ctx->dec_on_cpu = true;
+            fprintf(stderr, "math_ocr: decoder weights duplicated on CPU (decode runs on CPU)\n");
+        } else {
+            fprintf(stderr, "math_ocr: dec-cpu load failed — decoder stays on the primary backend\n");
+        }
+    }
+
     // Create scheduler — GPU + CPU fallback
     fprintf(stderr, "math_ocr: creating scheduler...\n");
     std::vector<ggml_backend_t> backends;
@@ -1345,6 +1364,7 @@ void math_ocr_free(math_ocr_context * ctx) {
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
+    if (ctx->dec_on_cpu) core_gguf::free_weights(ctx->wl_dec);
     delete ctx;
 }
 
