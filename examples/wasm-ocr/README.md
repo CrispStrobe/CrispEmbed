@@ -31,9 +31,11 @@ that touches the WASM build)
   every quantized matmul silently runs scalar — ~2x slower).
 - **WebGPU (experimental)**: `./build-wasm.sh --webgpu` builds with ggml's
   WebGPU backend (emdawnwebgpu/Dawn, JSPI). Deployed under `webgpu/`, offered
-  as an opt-in checkbox when the browser has `navigator.gpu`. Measured ~2.2x
-  vs the SIMD CPU build for pix2tex recognition (M1, output byte-identical;
-  unsupported ops like LayerNorm fall back to CPU inside ggml's scheduler).
+  as an opt-in checkbox when the browser has `navigator.gpu`. Measured ~2.8x
+  vs the SIMD CPU build for pix2tex recognition (M1, output byte-identical).
+  A local LayerNorm WGSL kernel (patches/ggml-webgpu-layernorm.patch, worth
+  ~1.4x of that) keeps the ViT layers on GPU; remaining unsupported ops fall
+  back to CPU inside ggml's scheduler.
   Uses a fixed 512 MB heap: Chrome rejects `GPUQueue.writeBuffer` from views
   into a resizable (growable) WASM heap.
 

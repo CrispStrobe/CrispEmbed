@@ -77,6 +77,18 @@ if [ "$WEBGPU" = "ON" ]; then
     for t in "$SCRIPT_DIR"/ggml/src/ggml-webgpu/wgsl-shaders/*.tmpl.wgsl; do
         [ -e "$t" ] && mv "$t" "${t%.wgsl}" && echo "[INFO] renamed $(basename "$t") -> $(basename "${t%.wgsl}")"
     done
+    # LayerNorm (GGML_OP_NORM) WGSL kernel — local addition to ggml-webgpu
+    # (upstream has only RMS_NORM/L2_NORM; ViT encoders use LayerNorm and
+    # otherwise round-trip to CPU every layer). Idempotent apply.
+    NORM_PATCH="$SCRIPT_DIR/patches/ggml-webgpu-layernorm.patch"
+    if git -C "$SCRIPT_DIR/ggml" apply --check "$NORM_PATCH" 2>/dev/null; then
+        git -C "$SCRIPT_DIR/ggml" apply "$NORM_PATCH"
+        echo "[INFO] applied ggml-webgpu-layernorm.patch"
+    elif git -C "$SCRIPT_DIR/ggml" apply --reverse --check "$NORM_PATCH" 2>/dev/null; then
+        echo "[INFO] ggml-webgpu-layernorm.patch already applied"
+    else
+        echo "[WARN] ggml-webgpu-layernorm.patch does not apply — building without it"
+    fi
     # Experimental: ggml-webgpu links the emdawnwebgpu port and adds
     # -sASYNCIFY itself (INTERFACE link options). Separate output dir so all
     # variants coexist (demo serves this build under webgpu/).

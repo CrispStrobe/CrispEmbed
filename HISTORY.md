@@ -4,6 +4,18 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 4, 2026 (night) — WebGPU LayerNorm kernel: ~2.8× total vs CPU
+
+Local WGSL LayerNorm (GGML_OP_NORM) for ggml-webgpu, applied as
+patches/ggml-webgpu-layernorm.patch by build-wasm.sh --webgpu — the ViT
+encoder's 24+ per-pass LayerNorms no longer round-trip to CPU.
+Same-conditions A/B: webgpu 2.46-3.11 s → 1.67-1.79 s (~1.4×), ~2.8× vs the
+SIMD CPU build; output byte-identical to native GT in every run. IM2COL &
+friends (DBNet conv stack on GPU) deferred — needs 4 kernels, upstream-scale
+work.
+
+---
+
 ## July 4, 2026 (evening) — WebGPU tier for the WASM demo (~2.2×, experimental)
 
 ggml's WebGPU backend (emdawnwebgpu/Dawn, JSPI) now builds to WASM via
