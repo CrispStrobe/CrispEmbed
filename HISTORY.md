@@ -4,6 +4,25 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 5, 2026 — WebGPU conv stack: full OCR graph on GPU, browser test-backend-ops
+
+Five more WGSL kernels (IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE
+nearest+bilinear, ARANGE) + the earlier LayerNorm, carried as
+patches/ggml-webgpu-ops.patch and drafted for upstream
+(CrispASR tools/upstream-prs/22). All validated by ggml's own
+test-backend-ops compiled to wasm and EXECUTED in headless Chromium
+(IM2COL 77/77, POOL_2D 128/128, UPSCALE 11/11, NORM 20/20, CT2D 3/3,
+ARANGE 2/2) — a browser-CI capability upstream doesn't have. Demo's WebGPU
+tier now also runs DBNet detection on GPU (OCR_DETECT_USE_GPU=1 in the
+worker): detection 90 s -> 1.5 s (~60x), det+rec pipeline 291 s -> 164 s
+(1.78x) with box parity. Root-caused the "0 detections" mystery to
+ggml-webgpu silently no-op'ing unhandled ops (UPSCALE) on the sched-less
+path — the patch adds a warning. Ecosystem survey (wllama/whisper.cpp/
+transformers.js et al.) archived in LEARNINGS/memory; top follow-up:
+OPFS model cache (wllama pattern, MIT).
+
+---
+
 ## July 4, 2026 (night) — WebGPU LayerNorm kernel: ~2.8× total vs CPU
 
 Local WGSL LayerNorm (GGML_OP_NORM) for ggml-webgpu, applied as

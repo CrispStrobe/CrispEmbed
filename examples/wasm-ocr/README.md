@@ -30,12 +30,15 @@ that touches the WASM build)
   its WASM-SIMD quant kernels (without it, CMake reports the arch as x86 and
   every quantized matmul silently runs scalar — ~2x slower).
 - **WebGPU (experimental)**: `./build-wasm.sh --webgpu` builds with ggml's
-  WebGPU backend (emdawnwebgpu/Dawn, JSPI). Deployed under `webgpu/`, offered
-  as an opt-in checkbox when the browser has `navigator.gpu`. Measured ~2.8x
-  vs the SIMD CPU build for pix2tex recognition (M1, output byte-identical).
-  A local LayerNorm WGSL kernel (patches/ggml-webgpu-layernorm.patch, worth
-  ~1.4x of that) keeps the ViT layers on GPU; remaining unsupported ops fall
-  back to CPU inside ggml's scheduler.
+  WebGPU backend (emdawnwebgpu/Dawn, JSPI — Chromium-only for now). Deployed
+  under `webgpu/`, offered as an opt-in checkbox when the browser has
+  `navigator.gpu`. Six local WGSL kernels (patches/ggml-webgpu-ops.patch:
+  LayerNorm, IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE, ARANGE — all
+  validated in-browser with ggml's test-backend-ops) put the full OCR graph
+  on GPU. Measured on M1: pix2tex ~2.8x vs the SIMD CPU build
+  (byte-identical output); det+rec pipeline ~1.8x end-to-end with DBNet
+  detection alone ~60x (90 s -> 1.5 s), box parity verified
+  (tests/wasm-browser/det-ab.js).
   Uses a fixed 512 MB heap: Chrome rejects `GPUQueue.writeBuffer` from views
   into a resizable (growable) WASM heap.
 

@@ -46,6 +46,12 @@ function main() {
       (LOADER.includes('/') ? LOADER.slice(0, LOADER.lastIndexOf('/') + 1) : '') + f,
       self.location.href).href,
   };
+  if (LOADER.startsWith('webgpu')) {
+    // Run DBNet detection on the GPU too (~60x vs wasm CPU on M1; box
+    // parity verified via tests/wasm-browser/det-ab.js). The recognizer
+    // already picks the GPU through ggml_backend_init_best().
+    self.CRISPEMBED_MODULE_OPTS.preRun = [(mod) => { mod.ENV.OCR_DETECT_USE_GPU = '1'; }];
+  }
 
   // Import AND instantiate at top level (not inside onmessage): the
   // Emscripten pthread bootstrap deadlocks when the factory is first called

@@ -77,17 +77,19 @@ if [ "$WEBGPU" = "ON" ]; then
     for t in "$SCRIPT_DIR"/ggml/src/ggml-webgpu/wgsl-shaders/*.tmpl.wgsl; do
         [ -e "$t" ] && mv "$t" "${t%.wgsl}" && echo "[INFO] renamed $(basename "$t") -> $(basename "${t%.wgsl}")"
     done
-    # LayerNorm (GGML_OP_NORM) WGSL kernel — local addition to ggml-webgpu
-    # (upstream has only RMS_NORM/L2_NORM; ViT encoders use LayerNorm and
-    # otherwise round-trip to CPU every layer). Idempotent apply.
-    NORM_PATCH="$SCRIPT_DIR/patches/ggml-webgpu-layernorm.patch"
-    if git -C "$SCRIPT_DIR/ggml" apply --check "$NORM_PATCH" 2>/dev/null; then
-        git -C "$SCRIPT_DIR/ggml" apply "$NORM_PATCH"
-        echo "[INFO] applied ggml-webgpu-layernorm.patch"
-    elif git -C "$SCRIPT_DIR/ggml" apply --reverse --check "$NORM_PATCH" 2>/dev/null; then
-        echo "[INFO] ggml-webgpu-layernorm.patch already applied"
+    # Local WGSL kernels for ggml-webgpu (upstream gaps): LayerNorm (NORM),
+    # IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE (nearest+bilinear), ARANGE
+    # + a warning when the encoder silently skips an unsupported op. All
+    # validated in-browser via ggml test-backend-ops (see
+    # tests/wasm-browser/README note + LEARNINGS). Idempotent apply.
+    OPS_PATCH="$SCRIPT_DIR/patches/ggml-webgpu-ops.patch"
+    if git -C "$SCRIPT_DIR/ggml" apply --check "$OPS_PATCH" 2>/dev/null; then
+        git -C "$SCRIPT_DIR/ggml" apply "$OPS_PATCH"
+        echo "[INFO] applied ggml-webgpu-ops.patch"
+    elif git -C "$SCRIPT_DIR/ggml" apply --reverse --check "$OPS_PATCH" 2>/dev/null; then
+        echo "[INFO] ggml-webgpu-ops.patch already applied"
     else
-        echo "[WARN] ggml-webgpu-layernorm.patch does not apply — building without it"
+        echo "[WARN] ggml-webgpu-ops.patch does not apply — building without it"
     fi
     # Experimental: ggml-webgpu links the emdawnwebgpu port and adds
     # -sASYNCIFY itself (INTERFACE link options). Separate output dir so all
@@ -161,7 +163,7 @@ EXPORTED_FUNCS="[\
 
 EXPORTED_RUNTIME="[\
 'ccall','cwrap','FS','MEMFS','getValue','setValue','UTF8ToString','stringToUTF8','lengthBytesUTF8',\
-'HEAPU8','HEAP8','HEAPU32','HEAP32','HEAPF32'\
+'HEAPU8','HEAP8','HEAPU32','HEAP32','HEAPF32','ENV'\
 ]"
 
 # SIMD flags

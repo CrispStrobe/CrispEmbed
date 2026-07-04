@@ -4512,3 +4512,32 @@ ggml-org/llama.cpp (per AI-policy: mechanical disclosure, human-written
 prose). DBNet detection still runs its conv stack on CPU — needs IM2COL +
 CONV_TRANSPOSE_2D + POOL_2D + UPSCALE kernels (a real upstream project,
 deferred).
+
+
+## WebGPU OCR kernels round 2 — conv stack + the silent-skip trap
+
+Six WGSL kernels (NORM, IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE,
+ARANGE) now carried as patches/ggml-webgpu-ops.patch; upstream-PR draft at
+CrispASR tools/upstream-prs/22-webgpu-ocr-ops.{md,patch}. Hard-won lessons:
+
+- **ggml-webgpu's encoder silently SKIPS unhandled ops** (default: returns
+  nullopt = no-op). On the sched-less compute path (ocr_detect uses raw
+  ggml_backend_graph_compute) this yields silently wrong output — DBNet
+  "detected 0 regions" because its 7 UPSCALE nodes were dropped. The patch
+  adds a stderr warning; when debugging "wrong results on webgpu", grep for
+  SKIPPING first.
+- **ggml test-backend-ops runs in headless Chromium**: link
+  ggml/tests/test-backend-ops.cpp against the build-wasm-webgpu static libs
+  (em++ --use-port=emdawnwebgpu -sJSPI -fwasm-exceptions, fixed heap), load
+  in a page with Module.arguments=['test','-o',OP,'-b','WebGPU']. Per-op
+  validation vs CPU with proper tolerances — found real bugs decimal-literal
+  (-FLT_MAX must be bitcast<f32>(0xff7fffffu); WGSL rejects -3.4028235e38),
+  missing sf3 (batch-dim rescale), and non-contiguous src (stride_src0).
+  Nobody upstream executes browser tests in CI; this setup exceeds it.
+- **WebGPU dispatch is capped at 65535 workgroups/dimension** — conv
+  lowerings exceed it; dispatch 2D with an nwg_x uniform and linearize.
+- Pipeline A/B (scan strip, M1, back-to-back): CPU 291 s vs GPU 164 s
+  (1.78x); detection 90 s -> 1.5 s (~60x); same boxes, two borderline
+  region texts differ (F16 rounding; GPU text closer to native GT on one).
+  Autoregressive TrOCR decode is only mildly faster on GPU (JSPI round-trip
+  overhead per step) — batching decode steps is the next perf lever.
