@@ -627,10 +627,21 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
     gold over hundreds of tokens); that revealed the real 2.8x KL win. Also caught a
     false negative from A/B-ing a **half-written gguf** (mid-quantize iq4_xs read as
     0/5; complete file is argmax-perfect). See `LEARNINGS.md`.
-- **TODO (open, lower priority):** C4 KV/prefix reuse; the LFM2 ssm_conv perf
-  refactor; domain-matched calibration corpora if a specific deployment needs it;
-  produce+upload the newly-unblocked imatrix quants (clip/siglip-text, lilt,
-  fireredpunc, fullstop) and repoint their registry defaults.
+- **imatrix rollout COMPLETE (2026-07-03/04).** Every quantizable text/structured/
+  multimodal model now has an imatrix quant with its default repointed to the
+  max-quality flavor: 38 dense embedders, 7 rerankers, 2 NER, 2 GLiNER, ColBERT,
+  SPLADE, clip/siglip-text ×3, lilt-funsd, fireredpunc, pcs-xlmr-base, and
+  bidirlm-omni-2.5b (textonly + fully-multimodal). Intentionally NOT done, with
+  reasons recorded: **fullstop-punc** (no f16 base on HF → q8_0-requant imatrix is
+  a measurable no-op; would need a safetensors reconvert for a sub-0.0012-KL gain),
+  **lilt-base** (headless pretraining checkpoint, 0 labels, no inference target),
+  and a *fully-clean* bidirlm multimodal re-quant with F32 mel_filters (the shipped
+  file uses quantized mel + the dequant read-fix; the quantizer now keeps mel F32,
+  so a future re-quant would be marginally cleaner — audio is already 0.9979).
+- **TODO (open, lower priority, non-imatrix):** C4 KV/prefix reuse; the LFM2
+  ssm_conv perf refactor; a larger paired reranker A/B corpus before finalizing the
+  bge/mxbai 4-bit-vs-q8 calls (current n=9); domain-matched calibration corpora if a
+  specific deployment needs it.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
