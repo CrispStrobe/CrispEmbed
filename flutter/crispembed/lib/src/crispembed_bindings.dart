@@ -1043,3 +1043,23 @@ typedef CrispembedLightOnOcrRecognizeDart = Pointer<Utf8> Function(
     Pointer<Void> ctx, Pointer<Uint8> pixels,
     int width, int height, int channels,
     Pointer<Int32> outLen);
+
+// --- LoRA hot-swap (§12.6a) ---
+typedef CrispembedSetLoraNative = Int32 Function(
+    Pointer<CrispembedContext> ctx, Pointer<Utf8> adapterName);
+typedef CrispembedSetLoraDart = int Function(
+    Pointer<CrispembedContext> ctx, Pointer<Utf8> adapterName);
+
+typedef CrispembedGetLoraNative = Pointer<Utf8> Function(
+    Pointer<CrispembedContext> ctx);
+typedef CrispembedGetLoraDart = Pointer<Utf8> Function(
+    Pointer<CrispembedContext> ctx);
+
+typedef CrispembedListLoraNative = Int32 Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Pointer<Pointer<Utf8>>> outNames,
+    Pointer<Int32> outCount);
+typedef CrispembedListLoraDart = int Function(
+    Pointer<CrispembedContext> ctx,
+    Pointer<Pointer<Pointer<Utf8>>> outNames,
+    Pointer<Int32> outCount);
