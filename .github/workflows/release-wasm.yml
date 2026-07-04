@@ -17,6 +17,10 @@ on:
         description: 'Release tag to attach artifacts to (e.g. v0.12.0)'
         required: false
 
+# Needed for `gh release upload` — the default GITHUB_TOKEN is read-only.
+permissions:
+  contents: write
+
 concurrency:
   group: release-wasm-${{ github.ref }}
   cancel-in-progress: true
