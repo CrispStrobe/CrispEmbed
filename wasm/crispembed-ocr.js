@@ -164,14 +164,23 @@ function _heapU8(module) {
     "HEAPU8 in EXPORTED_RUNTIME_METHODS (current build-wasm.sh does this)");
 }
 
+/** @private ccall that tolerates suspension (WebGPU builds use JSPI /
+ *  Asyncify: any call that reaches GPU work may suspend, which is illegal
+ *  through a plain synchronous ccall). With {async:true} Emscripten returns
+ *  a Promise on suspending builds and the raw value on plain builds —
+ *  `await` normalizes both. Non-suspending getters keep using sync ccall. */
+function _acall(module, name, ret, argTypes, args) {
+  return Promise.resolve(module.ccall(name, ret, argTypes, args, { async: true }));
+}
+
 /** @private Copy pixel data into WASM heap, run callback, clean up. */
-function _withPixels(module, imageData, fn) {
+async function _withPixels(module, imageData, fn) {
   const { width, height, data } = imageData;
   const nBytes = data.length;
   const pixelPtr = module._malloc(nBytes);
   try {
     _heapU8(module).set(data, pixelPtr);
-    return fn(pixelPtr, width, height, 4);
+    return await fn(pixelPtr, width, height, 4);
   } finally {
     module._free(pixelPtr);
   }
@@ -205,7 +214,7 @@ class CrispEmbedOCRWrapper {
     _writeToMemfs(module, modelPath, modelBytes);
     onProgress?.(0.85);
 
-    const ctxPtr = module.ccall('wasm_ocr_init', 'number',
+    const ctxPtr = await _acall(module, 'wasm_ocr_init', 'number',
       ['string', 'number'], [modelPath, nThreads]);
     if (!ctxPtr) throw new Error('wasm_ocr_init failed');
 
@@ -226,8 +235,8 @@ class CrispEmbedOCRWrapper {
     const imageData = await _toImageData(source, options);
     const lenPtr = this.#module._malloc(4);
     try {
-      return _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
-        const strPtr = this.#module.ccall('wasm_ocr_recognize_copy', 'number',
+      return await _withPixels(this.#module, imageData, async (pixelPtr, w, h, ch) => {
+        const strPtr = await _acall(this.#module, 'wasm_ocr_recognize_copy', 'number',
           ['number', 'number', 'number', 'number', 'number', 'number'],
           [this.#ctxPtr, pixelPtr, w, h, ch, lenPtr]);
         if (!strPtr) return { text: '', confidence: 0 };
@@ -249,8 +258,8 @@ class CrispEmbedOCRWrapper {
   dispose() {
     if (this.#disposed) return;
     this.#disposed = true;
-    try { this.#module.ccall('wasm_ocr_free', null, ['number'], [this.#ctxPtr]); }
-    catch (e) { console.warn('[CrispEmbedOCR] dispose error:', e); }
+    _acall(this.#module, 'wasm_ocr_free', null, ['number'], [this.#ctxPtr])
+      .catch((e) => console.warn('[CrispEmbedOCR] dispose error:', e));
     this.#ctxPtr = 0;
   }
 }
@@ -296,7 +305,7 @@ class CrispEmbedOCRPipeline {
     _writeToMemfs(module, recPath, recBytes);
     onProgress?.(0.80);
 
-    const ctxPtr = module.ccall('wasm_ocr_pipeline_init', 'number',
+    const ctxPtr = await _acall(module, 'wasm_ocr_pipeline_init', 'number',
       ['string', 'string', 'number'], [detPath, recPath, nThreads]);
     if (!ctxPtr) throw new Error('wasm_ocr_pipeline_init failed');
 
@@ -354,7 +363,7 @@ class CrispEmbedOCRPipeline {
     }
     onProgress?.(0.80);
 
-    const ctxPtr = module.ccall('wasm_ocr_pipeline_full_init', 'number',
+    const ctxPtr = await _acall(module, 'wasm_ocr_pipeline_full_init', 'number',
       ['string', 'string', 'string', 'string', 'number', 'number', 'number'],
       [detPath, recPath, nafnetPath, srPath,
        cleanupEnabled ? 1 : 0, routerEnabled ? 1 : 0, nThreads]);
@@ -390,7 +399,7 @@ class CrispEmbedOCRPipeline {
 
     try {
       const fnName = this.#mode === 'full' ? 'wasm_ocr_pipeline_full_run' : 'wasm_ocr_pipeline_run';
-      const jsonPtr = this.#module.ccall(fnName, 'number',
+      const jsonPtr = await _acall(this.#module, fnName, 'number',
         ['number', 'string'], [this.#ctxPtr, imgPath]);
 
       if (!jsonPtr) return this.#mode === 'full'
@@ -432,8 +441,8 @@ class CrispEmbedOCRPipeline {
     if (this.#disposed) return;
     this.#disposed = true;
     const fn = this.#mode === 'full' ? 'wasm_ocr_pipeline_full_free' : 'wasm_ocr_pipeline_free';
-    try { this.#module.ccall(fn, null, ['number'], [this.#ctxPtr]); }
-    catch (e) { console.warn('[CrispEmbedOCR] dispose error:', e); }
+    _acall(this.#module, fn, null, ['number'], [this.#ctxPtr])
+      .catch((e) => console.warn('[CrispEmbedOCR] dispose error:', e));
     this.#ctxPtr = 0;
   }
 }
@@ -472,7 +481,7 @@ class CrispEmbedScanCleanup {
     }
     onProgress?.(0.85);
 
-    const ctxPtr = module.ccall('wasm_scan_cleanup_init', 'number',
+    const ctxPtr = await _acall(module, 'wasm_scan_cleanup_init', 'number',
       ['string', 'number'], [modelPath || '', nThreads]);
     if (!ctxPtr) throw new Error('wasm_scan_cleanup_init failed');
 
@@ -501,8 +510,8 @@ class CrispEmbedScanCleanup {
     const ohPtr = this.#module._malloc(4);
 
     try {
-      const resultPtr = _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
-        return this.#module.ccall('wasm_scan_cleanup_process', 'number',
+      const resultPtr = await _withPixels(this.#module, imageData, async (pixelPtr, w, h, ch) => {
+        return await _acall(this.#module, 'wasm_scan_cleanup_process', 'number',
           ['number', 'number', 'number', 'number', 'number',
            'number', 'number', 'number', 'number', 'number', 'number'],
           [this.#ctxPtr, pixelPtr, w, h, ch,
@@ -540,7 +549,7 @@ class CrispEmbedScanCleanup {
    */
   async detectPageSplit(source) {
     const imageData = await _toImageData(source);
-    return _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
+    return await _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
       return this.#module.ccall('wasm_scan_cleanup_detect_page_split', 'number',
         ['number', 'number', 'number', 'number'], [pixelPtr, w, h, ch]);
     });
@@ -557,7 +566,7 @@ class CrispEmbedScanCleanup {
     const ptrX1 = this.#module._malloc(4);
     const ptrY1 = this.#module._malloc(4);
     try {
-      const rc = _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
+      const rc = await _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
         return this.#module.ccall('wasm_scan_cleanup_content_bbox', 'number',
           ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
           [pixelPtr, w, h, ch, ptrX0, ptrY0, ptrX1, ptrY1]);
@@ -580,8 +589,8 @@ class CrispEmbedScanCleanup {
   dispose() {
     if (this.#disposed) return;
     this.#disposed = true;
-    try { this.#module.ccall('wasm_scan_cleanup_free', null, ['number'], [this.#ctxPtr]); }
-    catch (e) { console.warn('[CrispEmbedOCR] cleanup dispose error:', e); }
+    _acall(this.#module, 'wasm_scan_cleanup_free', null, ['number'], [this.#ctxPtr])
+      .catch((e) => console.warn('[CrispEmbedOCR] cleanup dispose error:', e));
     this.#ctxPtr = 0;
   }
 }
@@ -609,7 +618,7 @@ class CrispEmbedTextDetector {
     const modelPath = '/models/det.gguf';
     _writeToMemfs(module, modelPath, bytes);
     onProgress?.(0.85);
-    const ctxPtr = module.ccall('wasm_text_det_init', 'number',
+    const ctxPtr = await _acall(module, 'wasm_text_det_init', 'number',
       ['string', 'number'], [modelPath, nThreads]);
     if (!ctxPtr) throw new Error('wasm_text_det_init failed');
     try { module.FS.unlink(modelPath); } catch (_) {}
@@ -628,8 +637,8 @@ class CrispEmbedTextDetector {
   async detect(source, { textThreshold = 0.3, lowThreshold = 0.2 } = {}) {
     if (this.#disposed) throw new Error('disposed');
     const imageData = await _toImageData(source);
-    const jsonStr = _withPixels(this.#module, imageData, (pixelPtr, w, h, ch) => {
-      const ptr = this.#module.ccall('wasm_text_det_run', 'number',
+    const jsonStr = await _withPixels(this.#module, imageData, async (pixelPtr, w, h, ch) => {
+      const ptr = await _acall(this.#module, 'wasm_text_det_run', 'number',
         ['number', 'number', 'number', 'number', 'number', 'number', 'number'],
         [this.#ctxPtr, pixelPtr, w, h, ch, textThreshold, lowThreshold]);
       if (!ptr) return '[]';
@@ -643,8 +652,8 @@ class CrispEmbedTextDetector {
   dispose() {
     if (this.#disposed) return;
     this.#disposed = true;
-    try { this.#module.ccall('wasm_text_det_free', null, ['number'], [this.#ctxPtr]); }
-    catch (e) { console.warn('[CrispEmbedOCR] detector dispose error:', e); }
+    _acall(this.#module, 'wasm_text_det_free', null, ['number'], [this.#ctxPtr])
+      .catch((e) => console.warn('[CrispEmbedOCR] detector dispose error:', e));
     this.#ctxPtr = 0;
   }
 }
@@ -672,7 +681,7 @@ class CrispEmbedLayoutDetector {
     const modelPath = '/models/layout.gguf';
     _writeToMemfs(module, modelPath, bytes);
     onProgress?.(0.85);
-    const ctxPtr = module.ccall('wasm_layout_init', 'number',
+    const ctxPtr = await _acall(module, 'wasm_layout_init', 'number',
       ['string', 'number'], [modelPath, nThreads]);
     if (!ctxPtr) throw new Error('wasm_layout_init failed');
     // Keep model in MEMFS — layout_detect reads from file path
@@ -697,7 +706,7 @@ class CrispEmbedLayoutDetector {
     _writeToMemfs(this.#module, imgPath, pngBytes);
 
     try {
-      const ptr = this.#module.ccall('wasm_layout_detect', 'number',
+      const ptr = await _acall(this.#module, 'wasm_layout_detect', 'number',
         ['number', 'string', 'number'], [this.#ctxPtr, imgPath, scoreThreshold]);
       if (!ptr) return [];
       const jsonStr = this.#module.UTF8ToString(ptr);
@@ -711,8 +720,8 @@ class CrispEmbedLayoutDetector {
   dispose() {
     if (this.#disposed) return;
     this.#disposed = true;
-    try { this.#module.ccall('wasm_layout_free', null, ['number'], [this.#ctxPtr]); }
-    catch (e) { console.warn('[CrispEmbedOCR] layout dispose error:', e); }
+    _acall(this.#module, 'wasm_layout_free', null, ['number'], [this.#ctxPtr])
+      .catch((e) => console.warn('[CrispEmbedOCR] layout dispose error:', e));
     this.#ctxPtr = 0;
   }
 }

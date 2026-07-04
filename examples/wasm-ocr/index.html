@@ -129,6 +129,9 @@
       <label for="n-threads">Threads</label>
       <input type="number" id="n-threads" value="1" min="1" max="8">
     </div>
+    <div id="webgpu-opt" style="display:none">
+      <label><input type="checkbox" id="opt-webgpu"> WebGPU (experimental)</label>
+    </div>
     <div style="flex:0 0 auto">
       <button id="btn-init" onclick="init()">Load</button>
     </div>
@@ -194,18 +197,29 @@ let currentMode = 'single';
 let lastFile = null;
 let processing = false;
 let elapsedTimer = null;
-let threadedLoader = null;   // 'threaded/crispembed_ocr.js' when usable
+const loaderCache = {};      // variant dir -> loader path or ''
+
+async function probeLoader(dir) {
+  if (loaderCache[dir] !== undefined) return loaderCache[dir];
+  try {
+    const r = await fetch(dir + 'crispembed_ocr.js', { method: 'HEAD' });
+    loaderCache[dir] = r.ok ? dir + 'crispembed_ocr.js' : '';
+  } catch (_) { loaderCache[dir] = ''; }
+  return loaderCache[dir];
+}
 
 async function pickLoader() {
-  if (threadedLoader !== null) return threadedLoader || 'crispembed_ocr.js';
-  threadedLoader = '';
-  if (crossOriginIsolated) {
-    try {
-      const r = await fetch('threaded/crispembed_ocr.js', { method: 'HEAD' });
-      if (r.ok) threadedLoader = 'threaded/crispembed_ocr.js';
-    } catch (_) {}
+  // WebGPU (opt-in checkbox): GPU compute; unsupported ops fall back to CPU
+  // inside the engine's scheduler.
+  if (navigator.gpu && document.getElementById('opt-webgpu').checked) {
+    const l = await probeLoader('webgpu/');
+    if (l) return l;
   }
-  return threadedLoader || 'crispembed_ocr.js';
+  if (crossOriginIsolated) {
+    const l = await probeLoader('threaded/');
+    if (l) return l;
+  }
+  return 'crispembed_ocr.js';
 }
 
 function defaultThreads() {
@@ -419,6 +433,14 @@ async function processImage() {
 
 // Default thread count reflects isolation state (threads need COOP/COEP).
 document.getElementById('n-threads').value = defaultThreads();
+
+// Offer the WebGPU toggle only when the browser has WebGPU and the build is
+// deployed alongside the demo.
+if (navigator.gpu) {
+  probeLoader('webgpu/').then((l) => {
+    if (l) document.getElementById('webgpu-opt').style.display = '';
+  });
+}
 
 </script>
 </body>

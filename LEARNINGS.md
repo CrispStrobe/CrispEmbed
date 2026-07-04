@@ -4461,3 +4461,36 @@ Also: `locateFile` must return ABSOLUTE URLs in worker contexts (relative
 paths abort with XHR "Invalid URL" in blob workers, and threaded builds live
 in a subdirectory). Debug recipe: wrap `self.Worker` before importScripts to
 log spawn URLs; forward `printErr` via postMessage.
+
+
+## ggml WebGPU backend in the browser (emscripten) — porting notes
+
+Shipped as an experimental opt-in tier for the WASM OCR demo (~2.2× vs the
+SIMD CPU build for pix2tex on M1, output byte-identical). What it took, in
+order of discovery:
+
+1. **ggml snapshot 8be60f8's WGSL templates break the shader embedder** —
+   `*.tmpl.wgsl` files get embedded as invalid C identifiers
+   (`wgsl_cpy.tmpl`). Upstream later renamed them to plain `*.tmpl` (the
+   embed script only globs `*.wgsl`); build-wasm.sh --webgpu mirrors that
+   rename in the submodule working tree (idempotent).
+2. **JSPI exports**: GGML_WEBGPU_JSPI defaults ON → any export that can
+   reach GPU work suspends and MUST be listed in `-sJSPI_EXPORTS` (else
+   "trying to suspend without WebAssembly.promising"), and JS must call it
+   via `ccall(..., {async:true})`. The wrapper's `_acall` awaits every
+   engine-touching call — `await` normalizes plain builds (raw value) and
+   JSPI builds (Promise), so one wrapper serves all variants.
+3. **Resizable-heap vs browser APIs, round 2**: Chrome rejects
+   `GPUQueue.writeBuffer` with views into a resizable ArrayBuffer — the
+   exact class as the issue-31 TextDecoder crash. WebGPU build uses
+   `-sALLOW_MEMORY_GROWTH=0 -sINITIAL_MEMORY=512MB`.
+4. **Encoder graph cache is NOT re-entrant across sched resets** (again —
+   same class as Parakeet §176s): 2nd recognize on the cached graph traps
+   `unreachable` on WebGPU. math_ocr now always rebuilds the encoder graph
+   (build cost is µs next to compute). This cache also caused the issue-31
+   UAF — it is a bug magnet; do not reintroduce without a re-entrancy test.
+
+Op coverage note: ggml-webgpu (this snapshot) has MUL_MAT/FLASH_ATTN/
+SOFT_MAX/ROPE/GET_ROWS/unary but NO GGML_OP_NORM (classic LayerNorm) and no
+IM2COL — ViT LayerNorms run on CPU via sched splits (still nets 2.2×);
+DBNet conv detection gains little until those shaders exist (upstream-able).

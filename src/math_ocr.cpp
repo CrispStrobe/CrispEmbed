@@ -578,8 +578,13 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
         for (int i = 0; i < n; i++) embedded[i] += pe[i];
     }
 
-    // Step 2: Build (or reuse) ggml graph for transformer layers
-    if (ctx->enc_graph_T != T) {
+    // Step 2: Build the ggml graph for the transformer layers.
+    // Always rebuild: reusing a cached graph across ggml_backend_sched_reset
+    // + alloc cycles is not re-entrant (second compute traps 'unreachable'
+    // on WebGPU and returned empty output on other backends — same class as
+    // the Parakeet enc-cache collapse). Graph build cost is microseconds
+    // next to the encoder compute.
+    if (true) {
         // Free old cached graph if T changed (different image size)
         if (ctx->enc_graph_g) {
             ggml_free(ctx->enc_graph_g);
@@ -1663,7 +1668,8 @@ bool math_ocr_encode_batch_raw(math_ocr_context * ctx, const uint8_t * const * c
     }
 
     // --- Step 2: build/reuse batched encoder graph ---
-    if (ctx->enc_batch_T != T || ctx->enc_batch_B != B) {
+    if (true) { // always rebuild — see single-image encoder comment
+
         if (ctx->enc_batch_g) {
             ggml_free(ctx->enc_batch_g);
             ctx->enc_batch_g = nullptr;
