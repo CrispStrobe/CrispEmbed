@@ -495,8 +495,27 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   ms-marco-L6/L12 → iq4_xs (τ=1.0); bge + mxbai stay q8_0 (τ<1.0 at 4-bit). The
   mxbai DeBERTa rerankers only became quantizable after the `rel_embd` dequant fix
   (commit 73a016e — a raw-F32 read of a quantized 2-D weight aborted them on ANY
-  quant; also unblocks gliner-deberta NER). **Reranker A/B eval is small (n=5); a
-  larger paired corpus is future work before finalizing 4-bit-vs-q8 calls.**
+  quant; also unblocks gliner-deberta NER).
+- **C1b-finalize (2026-07-04) — reranker A/B on a finer corpus + a shipped-broken
+  model fixed.** Expanded the paired corpus to 16 EN+DE queries × 6 docs (graded
+  relevance → real score spread; `tools/kaggle/.../imatrix_quant.py` RERANK_EVAL).
+  - **BUG: `bge-reranker-base` was shipped HEADLESS.** Its GGUFs were converted as a
+    plain XLM-R *encoder* (197 tensors, `pooling_type`, **no classifier head**) — the
+    CLI correctly refused: "model is not a cross-encoder reranker". So the old
+    "τ<1.0 keep q8_0" call was measured on a non-functional model. Reconverted with
+    the head-aware converter (2-layer `classifier.dense`+`out_proj` now baked in),
+    re-uploaded to `cstr/bge-reranker-base-GGUF` (verified on HF: q8 header has the
+    classifier). Same headless-model trap as splade-pp. **Audited all 7 rerankers:
+    only bge-reranker-base was affected**; v2-m3, jina, mxbai×2, ms-marco×2 all have
+    heads.
+  - **imatrix does NOT help rerankers.** On the working bge-reranker-base (τ vs f16,
+    16×6): q8_0 **1.000** (top1 16/16) → q4_k 0.967 → q4_k+imat 0.958 → iq4_xs 0.942.
+    4-bit keeps the top doc but reorders the tail, and imatrix slightly *hurts* (the
+    score head is argmax/threshold-sensitive, like the punct argmax case). **q8_0 is
+    the correct reranker default** — now a *measured* call.
+  - **TODO:** the jina-v2 (q4_k+im) and ms-marco-L6/L12 (iq4_xs) 4-bit defaults were
+    set on the old n=9 corpus at claimed τ=1.0; re-check them on the 16×6 corpus —
+    if 4-bit reorders their tails too, move them to q8_0.
 - **C1c — fixed-label NER DONE (2026-07-03).** Harness `ner` MODE: calibrate over
   `--ner` texts (BERT-NER's encoder is a shared crispembed_context, so the
   collector fires unchanged), A/B = micro **span-F1** vs full-precision gold.
