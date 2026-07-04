@@ -129,10 +129,12 @@ struct math_ocr_context {
     ggml_context * enc_graph_g = nullptr;
     ggml_cgraph * enc_graph = nullptr;
     int enc_graph_T = -1;
+    std::vector<uint8_t> enc_graph_meta; // backing memory for enc_graph_g
 
     // Batched encoder graph (cached per T×B)
     ggml_context * enc_batch_g = nullptr;
     ggml_cgraph * enc_batch = nullptr;
+    std::vector<uint8_t> enc_batch_meta; // backing memory for enc_batch_g
     int enc_batch_T = -1;
     int enc_batch_B = -1;
 
@@ -608,7 +610,8 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
         // clobber the cached tensor structs (hard crash on WASM, silent on
         // macOS malloc).
         size_t meta_size = 16 * 1024 * 1024;
-        ggml_init_params ip = { meta_size, nullptr, true };
+        ctx->enc_graph_meta.resize(meta_size);
+        ggml_init_params ip = { meta_size, ctx->enc_graph_meta.data(), true };
         ggml_context * g = ggml_init(ip);
         ctx->enc_graph = build_encoder_graph(ctx, g, T);
         ctx->enc_graph_g = g;
@@ -1698,10 +1701,9 @@ bool math_ocr_encode_batch_raw(math_ocr_context * ctx, const uint8_t * const * c
 
         size_t meta_size = (size_t)(ctx->hparams.enc_layers * 80 + 512) * ggml_tensor_overhead() +
                            ggml_graph_overhead_custom(ctx->hparams.enc_layers * 80 + 512, false) + 4 * 1024 * 1024;
-        // Cached beyond this scope (ctx->enc_batch) — ggml must own the pool
-        // (see the single-image encoder above for the use-after-free this
-        // prevents).
-        ggml_init_params ip = { meta_size, nullptr, true };
+<<<<<<< HEAD
+        ctx->enc_batch_meta.resize(meta_size);
+        ggml_init_params ip = { meta_size, ctx->enc_batch_meta.data(), true };
         ggml_context * g = ggml_init(ip);
         ctx->enc_batch = build_encoder_graph_batch(ctx, g, T, B);
         ctx->enc_batch_g = g;
