@@ -513,9 +513,13 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
     4-bit keeps the top doc but reorders the tail, and imatrix slightly *hurts* (the
     score head is argmax/threshold-sensitive, like the punct argmax case). **q8_0 is
     the correct reranker default** — now a *measured* call.
-  - **TODO:** the jina-v2 (q4_k+im) and ms-marco-L6/L12 (iq4_xs) 4-bit defaults were
-    set on the old n=9 corpus at claimed τ=1.0; re-check them on the 16×6 corpus —
-    if 4-bit reorders their tails too, move them to q8_0.
+  - **Re-checked jina + ms-marco on the 16×6 corpus (2026-07-04) → ALL rerankers
+    now default Q8_0.** They DID reorder the tail: ms-marco-L6 iq4_xs **τ=0.958**,
+    jina-v2 q4_k+im **τ=0.925** (both top1 16/16, min-τ ~0.73). So every reranker
+    4-bit default was a coarse-corpus artifact; repointed jina + ms-marco-L6/L12 to
+    q8_0 (their q8_0 GGUFs already shipped — registry-only change, `-iq4xs`/`-q4k`
+    aliases kept). Net rule: **rerankers ship Q8_0, always** (exact ranking; 4-bit is
+    a size alias only). bge + mxbai were already q8_0.
 - **C1c — fixed-label NER DONE (2026-07-03).** Harness `ner` MODE: calibrate over
   `--ner` texts (BERT-NER's encoder is a shared crispembed_context, so the
   collector fires unchanged), A/B = micro **span-F1** vs full-precision gold.
