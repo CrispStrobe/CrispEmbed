@@ -516,6 +516,10 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
     confirmed). **bge-reranker-base was the ONLY affected model across all families.**
     (Header read must exceed the tokenizer-vocab KV — ~9 MB for 30–250 K vocabs,
     ~20 MB for Gemma's 256 K — or the tensor-info section is missed → false HEADLESS.)
+    **Automated as `tests/audit_gguf_heads.py`** (manifest-driven, tokenless HTTP
+    range reads, stdlib-only, exits 1 on any missing head; negative-tested). Run it
+    as a release gate after any converter change or re-upload; it currently passes
+    all 14 task/projection-head models.
   - **imatrix does NOT help rerankers.** On the working bge-reranker-base (τ vs f16,
     16×6): q8_0 **1.000** (top1 16/16) → q4_k 0.967 → q4_k+imat 0.958 → iq4_xs 0.942.
     4-bit keeps the top doc but reorders the tail, and imatrix slightly *hurts* (the
