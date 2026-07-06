@@ -340,6 +340,25 @@ deskew fill (3, already correct), grayfilter (4, subsumed by our whitening).
   0.071), all other cases unchanged. Added the `darkvignette` degradation to the
   harness as a permanent do-no-harm guard.
 
+- [x] **Consensus deskew + per-params deskew on all image paths (2026-07-06,
+  `ce7f1c4`).** The Hough-energy angle is now cross-checked against the
+  independent differential-square-sum detector (`classical_preproc.h`) before
+  rotating — sign agreement + a 1.5° magnitude band (DSS is opposite-signed and
+  overestimates by ~0.5–1.2° depending on resolution); conflict → no rotation.
+  New `deskew_consensus` param (default on) mirrored through the C ABI, Python
+  and Rust bindings. New `scan_cleanup_deskew_rgb` (consensus detect + bilinear
+  rotate, channel-preserving, white fill) gives every image-*embedding* path an
+  optional per-params deskew, off by default: `image_preproc::config.deskew`
+  (covers `encode_image_file` / `encode_text_with_image_file` /
+  `preprocess_image[_rgb]` via `crispembed_set_image_deskew`),
+  `vit_embed::set_deskew` / `crispembed_vit_set_deskew`, CLI `--deskew`, and
+  granular cleanup toggles (`--no-deskew`, `--no-crop-borders`, `--no-whiten`,
+  `--binarize`, `--no-deskew-consensus`, `--deskew-max-angle`). Verified: 22/22
+  in `test-scan-cleanup`; a 3°-skewed synthetic scan comes out at 0.00°
+  residual; library preprocess grid changes only while the toggle is on. Also
+  fixed: Rust `from_stages` `ScanCleanupParams` literal was missing the four
+  despeckle/blackfilter fields (did not compile).
+
 Harness: `tools/scan_cleanup_bench.py --image clean.png --bin build/crispembed`.
 
 ### llama.cpp parity, convergence & A/B plan (2026-07)
