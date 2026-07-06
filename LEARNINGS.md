@@ -4629,3 +4629,39 @@ and wasm-GPU on a printed-word (out-of-distribution) fixture — the NATIVE
 engine sided with the GPU output: the wasm-CPU SIMD accumulation was the
 drifting leg. Lesson: on borderline inputs, 'differs from wasm-CPU' is not
 'GPU is wrong' — always arbitrate with the native engine.
+
+## Two-detector consensus deskew: opposite signs and a resolution-dependent bias (2026-07-06)
+
+`scan_cleanup` gained a consensus mode (`deskew_consensus`, default on) that
+cross-checks the Hough-energy angle against the independent Leptonica-style
+differential-square-sum detector (`classical_preproc.h`, `find_skew_angle`)
+before rotating. Two empirical facts anyone touching this code needs
+(verified on synthetic rotations, `tests/test_scan_cleanup.cpp`):
+
+1. **The two detectors use OPPOSITE sign conventions.** After
+   `scan_cleanup_rotate(+3°)`, Hough reports `+3.0` while DSS reports
+   `-3.5`. Map with `-dss` before comparing.
+2. **DSS overestimates the magnitude with a resolution-dependent bias** —
+   ~0.5° on 800px pages, ~1.2° on 400px — because it binarizes and reduces
+   4× before the shear sweep. Its SIGN is always reliable. A fixed 1.0°
+   agreement tolerance therefore silently rejects genuine ~3° skews on
+   small images (the failure looked like "consensus never confirms"); the
+   shipped gate is sign agreement + a 1.5° magnitude band. DSS also only
+   sweeps ±7°, so Hough angles above 6° pass through uncross-checked.
+
+The consensus detector also backs `scan_cleanup_deskew_rgb` (bilinear,
+channel-preserving, white-fill rotation), which is the building block for
+the optional per-params deskew on all image-embedding paths
+(`crispembed_set_image_deskew`, `vit_embed::set_deskew`, CLI `--deskew`;
+off by default). One observed caveat: for CLIP-style photo models on a
+synthetic page, deskewing moved the embedding FURTHER from the straight
+original — the expanded white corner wedges perturb a square-resize photo
+model more than 3° of skew does. Deskew-for-embeddings is a
+scanned-document feature; keep it opt-in.
+
+While mirroring the new param into bindings: the Rust `from_stages`
+`ScanCleanupParams` literal was missing the four despeckle/blackfilter
+fields — an E0063 compile error, i.e. the crate could not have built since
+those fields were added (there is no Rust CI). Fixed by basing the literal
+on `crispembed_scan_cleanup_defaults()` via struct-update syntax so future
+field additions inherit defaults instead of breaking the build.
