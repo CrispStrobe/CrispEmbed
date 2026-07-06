@@ -353,6 +353,17 @@ CRISPEMBED_API const float * crispembed_preprocess_image_rgb(crispembed_context 
                                                              int width, int channels, int * out_n_patches,
                                                              int * out_row_dim, int32_t out_grid_thw[3]);
 
+// Optional document deskew for every file/RGB image path on this context
+// (crispembed_encode_image_file, crispembed_encode_text_with_image_file,
+// crispembed_preprocess_image, crispembed_preprocess_image_rgb). When enabled,
+// the decoded image runs through the scan_cleanup consensus skew detector
+// (Hough cross-checked against differential-square-sum) and is rotated
+// (bilinear, white fill) before smart_resize whenever a skew is confirmed.
+// Disabled by default — enable for scanned-document embeddings only; natural
+// photographs should stay un-rotated. `max_angle_deg` caps the correction
+// (pass <= 0 to keep the current value; initial default 15°).
+CRISPEMBED_API void crispembed_set_image_deskew(crispembed_context * ctx, int enable, float max_angle_deg);
+
 // ---------------------------------------------------------------------------
 // Standalone ViT image embedding (SigLIP, CLIP)
 // ---------------------------------------------------------------------------
@@ -369,6 +380,10 @@ CRISPEMBED_API int crispembed_vit_dim(const crispembed_vit_context * ctx);
 // owned by ctx, valid until next call. Returns NULL on failure.
 CRISPEMBED_API const float * crispembed_vit_encode_file(crispembed_vit_context * ctx, const char * image_path,
                                                         int * out_dim);
+
+// Optional document deskew for crispembed_vit_encode_file — same semantics
+// and default (off) as crispembed_set_image_deskew.
+CRISPEMBED_API void crispembed_vit_set_deskew(crispembed_vit_context * ctx, int enable, float max_angle_deg);
 
 // Free ViT context.
 CRISPEMBED_API void crispembed_vit_free(crispembed_vit_context * ctx);
@@ -879,6 +894,8 @@ typedef struct {
     float despeckle_thresh;   // speck vs local-median darkness gap 0..1, default 0.25
     int blackfilter;          // 1 = clear large SOLID dark regions (default: 1)
     float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
+    int deskew_consensus;     // 1 = cross-check Hough vs differential-square-sum
+                              //     detectors; rotate only on agreement (default: 1)
 } crispembed_scan_cleanup_params;
 
 CRISPEMBED_API crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void);

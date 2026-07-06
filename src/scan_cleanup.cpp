@@ -5,6 +5,7 @@
 // no external dependencies beyond stdlib + math.
 
 #include "scan_cleanup.h"
+#include "classical_preproc.h"
 #include "nafnet_denoise.h"
 
 #include <chrono>
@@ -45,6 +46,7 @@ scan_cleanup_params scan_cleanup_defaults(void) {
     p.despeckle_thresh = 0.25f;
     p.blackfilter = 1;
     p.blackfilter_thresh = 0.20f;
+    p.deskew_consensus = 1;
     return p;
 }
 
@@ -213,6 +215,46 @@ float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angl
     return best_angle;
 }
 
+float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, float max_angle_deg) {
+    float a_hough = scan_cleanup_detect_angle(gray, w, h, max_angle_deg);
+
+    // Second opinion: differential-square-sum detector (classical_preproc.h).
+    // Empirically its angle is OPPOSITE-signed vs the Hough detector (verified
+    // on synthetic rotations: rotate(+3°) → hough=+3.0, dss=-3.5) and it only
+    // sweeps ±7°, so cross-checking is limited to that range.
+    std::vector<uint8_t> u8((size_t)w * h);
+    for (int i = 0; i < w * h; i++) {
+        float v = gray[i] * 255.0f + 0.5f;
+        u8[i] = (uint8_t)std::max(0.0f, std::min(255.0f, v));
+    }
+    float a_dss = 0.0f, conf = 0.0f;
+    int rc = find_skew_angle(u8.data(), w, h, &a_dss, &conf);
+    bool dss_ok = (rc == 0 && conf >= 3.0f); // >3 = good per classical_preproc.h
+    float a_dss_mapped = -a_dss;             // map into the Hough sign convention
+
+    const float dss_sweep = 6.0f; // find_skew_angle sweeps ±7°; keep margin
+    // DSS overestimates the magnitude by a resolution-dependent bias (its 4×
+    // reduction: ~0.5° on 800px pages, ~1.2° on 400px) but the SIGN is always
+    // reliable, so gate on sign agreement plus a generous magnitude band.
+    const float agree_tol = 1.5f;
+
+    if (a_hough != 0.0f) {
+        if (fabsf(a_hough) > dss_sweep) return a_hough; // beyond DSS range, can't cross-check
+        if (!dss_ok) return a_hough;                    // no usable second opinion
+        bool sign_conflict = a_hough * a_dss_mapped < 0.0f && fabsf(a_dss_mapped) >= 0.5f;
+        if (sign_conflict) return 0.0f;
+        return fabsf(a_dss_mapped - a_hough) <= agree_tol ? a_hough : 0.0f;
+    }
+
+    // Hough gated out (below its confidence/peak thresholds). Fall back to the
+    // DSS estimate only on a strong, clearly nonzero signal within range.
+    if (dss_ok && conf >= 4.0f && fabsf(a_dss_mapped) >= 0.3f && fabsf(a_dss_mapped) <= dss_sweep &&
+        fabsf(a_dss_mapped) <= max_angle_deg) {
+        return a_dss_mapped;
+    }
+    return 0.0f;
+}
+
 void scan_cleanup_rotate(const float * gray, int w, int h, float angle_deg, float ** out, int * w_out, int * h_out) {
     float rad = angle_deg * (float)M_PI / 180.0f;
     float cos_a = cosf(rad);
@@ -284,6 +326,75 @@ void scan_cleanup_rotate(const float * gray, int w, int h, float angle_deg, floa
     *out = dst;
     *w_out = ow;
     *h_out = oh;
+}
+
+int scan_cleanup_deskew_rgb(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg,
+                            uint8_t ** out_pixels, int * out_w, int * out_h) {
+    if (!pixels || w <= 0 || h <= 0 || (channels != 1 && channels != 3 && channels != 4) || !out_pixels || !out_w ||
+        !out_h) {
+        return -1;
+    }
+    *out_pixels = nullptr;
+    *out_w = w;
+    *out_h = h;
+
+    std::vector<float> gray = to_gray_f32(pixels, w, h, channels);
+    float angle = scan_cleanup_detect_angle_consensus(gray.data(), w, h, max_angle_deg);
+    if (fabsf(angle) <= 0.1f) return 0; // straight enough — no output buffer
+
+    // Correction rotation (same -angle convention as the grayscale pipeline),
+    // preserving all channels. White fill so document margins stay paper-like.
+    float rad = -angle * (float)M_PI / 180.0f;
+    float cos_a = cosf(rad);
+    float sin_a = sinf(rad);
+
+    float cx = w / 2.0f, cy = h / 2.0f;
+    float corners[4][2] = { { 0, 0 }, { (float)w, 0 }, { 0, (float)h }, { (float)w, (float)h } };
+    float min_x = 1e9f, max_x = -1e9f, min_y = 1e9f, max_y = -1e9f;
+    for (auto & c : corners) {
+        float dx = c[0] - cx, dy = c[1] - cy;
+        float rx = cos_a * dx - sin_a * dy + cx;
+        float ry = sin_a * dx + cos_a * dy + cy;
+        min_x = std::min(min_x, rx);
+        max_x = std::max(max_x, rx);
+        min_y = std::min(min_y, ry);
+        max_y = std::max(max_y, ry);
+    }
+    int ow = (int)ceilf(max_x - min_x);
+    int oh = (int)ceilf(max_y - min_y);
+
+    uint8_t * dst = (uint8_t *)malloc((size_t)ow * oh * channels);
+    if (!dst) return -1;
+    memset(dst, 0xFF, (size_t)ow * oh * channels); // white (and opaque alpha)
+
+    float inv_cos = cos_a;
+    float inv_sin = -sin_a;
+    for (int dy = 0; dy < oh; dy++) {
+        for (int dx = 0; dx < ow; dx++) {
+            float px = (dx + min_x) - cx;
+            float py = (dy + min_y) - cy;
+            float sx = inv_cos * px - inv_sin * py + cx;
+            float sy = inv_sin * px + inv_cos * py + cy;
+            if (sx < 0 || sx >= w - 1 || sy < 0 || sy >= h - 1) continue;
+            int ix = (int)sx, iy = (int)sy;
+            float fx = sx - ix, fy = sy - iy;
+            const uint8_t * p00 = pixels + ((size_t)iy * w + ix) * channels;
+            const uint8_t * p10 = p00 + channels;
+            const uint8_t * p01 = p00 + (size_t)w * channels;
+            const uint8_t * p11 = p01 + channels;
+            uint8_t * q = dst + ((size_t)dy * ow + dx) * channels;
+            for (int c = 0; c < channels; c++) {
+                float v =
+                    p00[c] * (1 - fx) * (1 - fy) + p10[c] * fx * (1 - fy) + p01[c] * (1 - fx) * fy + p11[c] * fx * fy;
+                q[c] = (uint8_t)std::max(0.0f, std::min(255.0f, v + 0.5f));
+            }
+        }
+    }
+
+    *out_pixels = dst;
+    *out_w = ow;
+    *out_h = oh;
+    return 0;
 }
 
 // ── 2. Binarization ─────────────────────────────────────────────────
@@ -725,7 +836,9 @@ int scan_cleanup_process(scan_cleanup_ctx * ctx, const uint8_t * pixels, int wid
     // 1. Deskew
     if (params.deskew) {
         auto t0 = std::chrono::steady_clock::now();
-        float angle = scan_cleanup_detect_angle(gray.data(), w, h, params.deskew_max_angle);
+        float angle = params.deskew_consensus
+                          ? scan_cleanup_detect_angle_consensus(gray.data(), w, h, params.deskew_max_angle)
+                          : scan_cleanup_detect_angle(gray.data(), w, h, params.deskew_max_angle);
         if (fabsf(angle) > 0.1f) {
             float * rotated = nullptr;
             int rw = 0, rh = 0;

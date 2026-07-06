@@ -70,6 +70,27 @@ static float dot_product(const float * a, const float * b, int n) {
     return sum;
 }
 
+// Granular overrides for the scan-cleanup recipe (--no-deskew & friends).
+// Templated because the CLI touches both the internal scan_cleanup_params
+// and the C-ABI crispembed_scan_cleanup_params (same field names).
+struct cleanup_overrides {
+    bool no_deskew = false;
+    bool no_crop = false;
+    bool no_whiten = false;
+    bool binarize = false;
+    bool no_consensus = false;
+    float deskew_max_angle = 0.0f; // 0 = keep library default
+
+    template <typename P> void apply(P & p) const {
+        if (no_deskew) p.deskew = 0;
+        if (no_crop) p.crop_borders = 0;
+        if (no_whiten) p.whiten_background = 0;
+        if (binarize) p.binarize = 1;
+        if (no_consensus) p.deskew_consensus = 0;
+        if (deskew_max_angle > 0.0f) p.deskew_max_angle = deskew_max_angle;
+    }
+};
+
 static void print_usage(const char * prog) {
     fprintf(stderr, "Usage: %s -m MODEL [options] [TEXT ...]\n\n", prog);
     fprintf(stderr, "Options:\n");
@@ -121,6 +142,11 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --cc-detect FILE   detect text lines via connected components (model-free)\n");
     fprintf(stderr, "  --cleanup        preprocess scan before OCR (deskew, crop borders, whiten background)\n");
     fprintf(stderr, "  --cleanup-only F process scan and write cleaned image to stdout (no OCR)\n");
+    fprintf(stderr, "       --no-deskew / --no-crop-borders / --no-whiten  disable a cleanup step\n");
+    fprintf(stderr, "       --binarize      enable adaptive binarization in cleanup\n");
+    fprintf(stderr, "       --no-deskew-consensus  skip the second-detector cross-check before rotating\n");
+    fprintf(stderr, "       --deskew-max-angle F   cap the deskew correction (degrees, default 15)\n");
+    fprintf(stderr, "  --deskew         deskew scanned documents before --image embedding (off by default)\n");
     fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
@@ -224,6 +250,8 @@ static int cli_main(int argc, char ** argv) {
     std::string ocr_det_path;        // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
     bool cleanup_mode = false;       // --cleanup: preprocess before OCR
+    cleanup_overrides cleanup_ov;    // --no-deskew / --binarize / ... recipe tweaks
+    bool image_deskew = false;       // --deskew: deskew before --image embedding
     std::string cleanup_only_path;   // --cleanup-only FILE: standalone cleanup
     std::string detect_split_path;   // --detect-split FILE: report two-up page split
     std::string detect_content_path; // --detect-content FILE: report content bbox
@@ -366,6 +394,20 @@ static int cli_main(int argc, char ** argv) {
             cc_detect_path = argv[++i];
         } else if (strcmp(argv[i], "--cleanup") == 0) {
             cleanup_mode = true;
+        } else if (strcmp(argv[i], "--no-deskew") == 0) {
+            cleanup_ov.no_deskew = true;
+        } else if (strcmp(argv[i], "--no-crop-borders") == 0) {
+            cleanup_ov.no_crop = true;
+        } else if (strcmp(argv[i], "--no-whiten") == 0) {
+            cleanup_ov.no_whiten = true;
+        } else if (strcmp(argv[i], "--binarize") == 0) {
+            cleanup_ov.binarize = true;
+        } else if (strcmp(argv[i], "--no-deskew-consensus") == 0) {
+            cleanup_ov.no_consensus = true;
+        } else if (strcmp(argv[i], "--deskew-max-angle") == 0 && i + 1 < argc) {
+            cleanup_ov.deskew_max_angle = (float)atof(argv[++i]);
+        } else if (strcmp(argv[i], "--deskew") == 0) {
+            image_deskew = true;
         } else if (strcmp(argv[i], "--punct-model") == 0 && i + 1 < argc) {
             punct_model = argv[++i];
         } else if (strcmp(argv[i], "--output-format") == 0 && i + 1 < argc) {
@@ -1024,6 +1066,7 @@ static int cli_main(int argc, char ** argv) {
         }
         auto * sctx = scan_cleanup_init(nullptr, n_threads);
         auto params = scan_cleanup_defaults();
+        cleanup_ov.apply(params);
         uint8_t * out = nullptr;
         int ow = 0, oh = 0;
         int rc = scan_cleanup_process(sctx, data, w, h, ch, params, &out, &ow, &oh);
@@ -1106,6 +1149,7 @@ static int cli_main(int argc, char ** argv) {
             st.cleanup_enabled = is_vlm ? 0 : 1;
             st.denoise = (pipeline_denoise && !is_vlm) ? 1 : 0;
             st.cleanup = crispembed_scan_cleanup_defaults();
+            cleanup_ov.apply(st.cleanup);
             st.det_prob_threshold = 0.3f;
             st.det_box_threshold = 0.5f;
             st.det_target_short = 736;
@@ -1722,6 +1766,7 @@ static int cli_main(int argc, char ** argv) {
         if (cleanup_mode) {
             auto * sctx = scan_cleanup_init(nullptr, n_threads);
             auto sp = scan_cleanup_defaults();
+            cleanup_ov.apply(sp);
             int cw = 0, ch2 = 0;
             if (scan_cleanup_process(sctx, data, w, h, ch, sp, &cleaned, &cw, &ch2) == 0 && cleaned) {
                 stbi_image_free(data);
@@ -1885,6 +1930,9 @@ static int cli_main(int argc, char ** argv) {
                 for (size_t j = 0; j < emb.size(); j++) printf("%.6f%s", emb[j], j + 1 < emb.size() ? " " : "\n");
             } else {
                 // Image file (JPG/PNG/BMP) — native resize + normalize
+                if (image_deskew) {
+                    vit_embed::set_deskew(vctx, true, cleanup_ov.deskew_max_angle);
+                }
                 auto emb = vit_embed::encode_file(vctx, image_path.c_str());
                 if (emb.empty()) {
                     fprintf(stderr, "error: ViT image encoding failed for '%s'\n", image_path.c_str());
@@ -1907,6 +1955,9 @@ static int cli_main(int argc, char ** argv) {
 
     // Init model
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
+    if (ctx && image_deskew) {
+        crispembed_set_image_deskew(ctx, 1, cleanup_ov.deskew_max_angle);
+    }
     if (!ctx) {
         if (print_dim) {
             vit_embed::context * vctx = nullptr;

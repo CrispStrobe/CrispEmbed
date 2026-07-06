@@ -7,6 +7,7 @@
 // 2D RoPE, deepstack, and block-diagonal attention masks.
 
 #include "vit_embed.h"
+#include "scan_cleanup.h"
 #include "core/gguf_loader.h"
 #include "core/ggml_metal_guard.h"
 
@@ -64,6 +65,8 @@ struct context {
     bool has_attn_pool = false;
     bool has_visual_proj = false;
     bool use_quick_gelu = false; // CLIP uses quick_gelu, SigLIP uses gelu
+    bool deskew = false;         // optional document deskew in encode_file
+    float deskew_max_angle = 15.0f;
 
     // Weights
     ggml_tensor * patch_embed_w = nullptr;
@@ -688,6 +691,12 @@ static void bilinear_resize(const unsigned char * src, int src_w, int src_h, flo
     }
 }
 
+void set_deskew(context * ctx, bool enable, float max_angle_deg) {
+    if (!ctx) return;
+    ctx->deskew = enable;
+    if (max_angle_deg > 0.0f) ctx->deskew_max_angle = max_angle_deg;
+}
+
 std::vector<float> encode_file(context * ctx, const char * image_path) {
     if (!ctx || !image_path) return {};
 
@@ -696,6 +705,17 @@ std::vector<float> encode_file(context * ctx, const char * image_path) {
     if (!data) {
         fprintf(stderr, "vit_embed: cannot load image '%s'\n", image_path);
         return {};
+    }
+
+    if (ctx->deskew) {
+        uint8_t * rot = nullptr;
+        int rw = 0, rh = 0;
+        if (scan_cleanup_deskew_rgb(data, w, h, 3, ctx->deskew_max_angle, &rot, &rw, &rh) == 0 && rot) {
+            stbi_image_free(data);
+            data = rot; // freed via stbi_image_free below (both are plain malloc/free)
+            w = rw;
+            h = rh;
+        }
     }
 
     int sz = ctx->img_size;

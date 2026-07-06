@@ -857,6 +857,7 @@ pub struct ScanCleanupParams {
     pub despeckle_thresh: c_float,
     pub blackfilter: c_int,
     pub blackfilter_thresh: c_float,
+    pub deskew_consensus: c_int,
 }
 
 extern "C" {

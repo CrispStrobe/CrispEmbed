@@ -2178,7 +2178,8 @@ pub struct OcrCleanupSpec {
     pub morph_kernel: i32,
     pub border_threshold: f32,
     pub deskew_max_angle: f32,
-    pub denoise: bool, // NAFNet tier-2
+    pub deskew_consensus: bool, // cross-check the two skew detectors before rotating
+    pub denoise: bool,          // NAFNet tier-2
 }
 
 impl Default for OcrCleanupSpec {
@@ -2195,6 +2196,7 @@ impl Default for OcrCleanupSpec {
             morph_kernel: 51,
             border_threshold: 0.15,
             deskew_max_angle: 15.0,
+            deskew_consensus: true,
             denoise: false,
         }
     }
@@ -2456,6 +2458,10 @@ impl CrispOcrPipeline {
                     morph_kernel: s.cleanup.morph_kernel,
                     border_threshold: s.cleanup.border_threshold,
                     deskew_max_angle: s.cleanup.deskew_max_angle,
+                    deskew_consensus: s.cleanup.deskew_consensus as std::os::raw::c_int,
+                    // despeckle/blackfilter knobs are not in OcrCleanupSpec; take
+                    // the library defaults (also covers fields added later).
+                    ..unsafe { crispembed_sys::crispembed_scan_cleanup_defaults() }
                 },
                 det_prob_threshold: s.det_prob_threshold,
                 det_box_threshold: s.det_box_threshold,

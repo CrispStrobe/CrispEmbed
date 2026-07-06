@@ -425,8 +425,11 @@ Document scan preprocessing — pure C++, no external tool dependencies.
 Two tiers: classical image processing (no model) and learned denoising
 via NAFNet CNN (GGUF model, MIT license).
 
-**Tier 1 (classical, no model):** deskew (Hough transform), Otsu/Sauvola
-binarization, border crop, background whitening (morphological open).
+**Tier 1 (classical, no model):** deskew (Hough transform, cross-checked
+against an independent differential-square-sum detector — rotation only
+happens when both agree, preventing spurious rotations on clean pages),
+Otsu/Sauvola binarization, border crop, background whitening
+(morphological open).
 
 **Tier 2 (learned, NAFNet):** NAFNet-SIDD-width32 U-Net denoising CNN
 (29M params, 30 MB Q8_0). Pre-trained on SIDD smartphone image denoising.
@@ -434,6 +437,11 @@ binarization, border crop, background whitening (morphological open).
 ```bash
 # CLI — classical only
 ./build/crispembed --cleanup-only scan.png
+
+# Granular recipe control (each cleanup step toggles independently)
+./build/crispembed --cleanup-only scan.png --no-whiten --binarize \
+    --deskew-max-angle 10          # also: --no-deskew, --no-crop-borders,
+                                   #       --no-deskew-consensus
 
 # CLI — with NAFNet denoising before OCR
 ./build/crispembed --cleanup -m ocr_model.gguf --ocr scan.png
@@ -446,6 +454,26 @@ from crispembed import CrispScanCleanup
 cleanup = CrispScanCleanup()                          # tier 1 only
 cleanup = CrispScanCleanup("nafnet-sidd-w32-q8_0.gguf")  # tier 1 + 2
 cleaned = cleanup.process("scan.png")                 # numpy RGB array
+```
+
+**Deskew for image embeddings:** every file/RGB image-embedding path can
+optionally deskew scanned documents before preprocessing (off by default —
+photographs should stay un-rotated):
+
+```bash
+# CLI — works for both ViT (CLIP/SigLIP) and multimodal decoder models
+./build/crispembed -m clip-vit-base-patch16 --image scan.png --deskew
+```
+
+```c
+// C ABI — per-context toggles
+crispembed_set_image_deskew(ctx, 1, 15.0f);     // decoder/omni image paths
+crispembed_vit_set_deskew(vit_ctx, 1, 15.0f);   // standalone ViT path
+```
+
+```python
+emb = CrispEmbed("model.gguf")
+emb.set_image_deskew(True)          # affects encode_image_file & preprocessing
 ```
 
 ## Text Super-Resolution

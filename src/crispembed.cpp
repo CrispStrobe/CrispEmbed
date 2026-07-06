@@ -230,7 +230,9 @@ struct crispembed_context {
     bool dump_layers = false;       // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int position_buckets = 0;       // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;         // 0 = use model default
-    std::string prefix;             // prepended to text before tokenization (e.g. "query: ")
+    int image_deskew = 0;           // optional scan deskew on the file/RGB image paths
+    float image_deskew_max_angle = 15.0f;
+    std::string prefix; // prepended to text before tokenization (e.g. "query: ")
     // ColBERT self-describing metadata (read from GGUF, empty = not set)
     std::string colbert_query_prefix;
     std::string colbert_doc_prefix;
@@ -3334,6 +3336,8 @@ extern "C" const float * crispembed_preprocess_image(crispembed_context * ctx, c
             cfg.merge_size = ctx->dec->spatial_merge_size;
         }
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_file(image_path, cfg, r)) {
         return nullptr;
@@ -3362,6 +3366,8 @@ extern "C" const float * crispembed_preprocess_image_rgb(crispembed_context * ct
     if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
         cfg.merge_size = ctx->dec->spatial_merge_size;
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_rgb(rgb, height, width, channels, cfg, r)) {
         return nullptr;
@@ -3386,6 +3392,8 @@ extern "C" const float * crispembed_encode_image_file(crispembed_context * ctx, 
     if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
         cfg.merge_size = ctx->dec->spatial_merge_size;
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_file(image_path, cfg, r)) return nullptr;
 
@@ -3401,11 +3409,19 @@ extern "C" const float * crispembed_encode_text_with_image_file(crispembed_conte
     if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
         cfg.merge_size = ctx->dec->spatial_merge_size;
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_file(image_path, cfg, r)) return nullptr;
 
     return crispembed_encode_text_with_image(ctx, text, r.patches.data(), r.n_patches, r.grid_thw, /*n_images=*/1,
                                              out_dim);
+}
+
+extern "C" void crispembed_set_image_deskew(crispembed_context * ctx, int enable, float max_angle_deg) {
+    if (!ctx) return;
+    ctx->image_deskew = enable;
+    if (max_angle_deg > 0.0f) ctx->image_deskew_max_angle = max_angle_deg;
 }
 
 // ---------------------------------------------------------------------------
@@ -3446,6 +3462,11 @@ extern "C" const float * crispembed_vit_encode_file(crispembed_vit_context * ctx
     }
     *out_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
+}
+
+extern "C" void crispembed_vit_set_deskew(crispembed_vit_context * ctx, int enable, float max_angle_deg) {
+    if (!ctx || !ctx->vit) return;
+    vit_embed::set_deskew(ctx->vit, enable != 0, max_angle_deg);
 }
 
 extern "C" void crispembed_vit_free(crispembed_vit_context * ctx) {
@@ -4483,6 +4504,7 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
     o.despeckle_thresh = p.despeckle_thresh;
     o.blackfilter = p.blackfilter;
     o.blackfilter_thresh = p.blackfilter_thresh;
+    o.deskew_consensus = p.deskew_consensus;
     return o;
 }
 
@@ -5068,6 +5090,7 @@ extern "C" crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void)
     cp.despeckle_thresh = p.despeckle_thresh;
     cp.blackfilter = p.blackfilter;
     cp.blackfilter_thresh = p.blackfilter_thresh;
+    cp.deskew_consensus = p.deskew_consensus;
     return cp;
 }
 
