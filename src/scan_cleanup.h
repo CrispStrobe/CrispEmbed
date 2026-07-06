@@ -42,6 +42,9 @@ typedef struct {
     int blackfilter;          // 1 = clear large SOLID dark regions (scanner-edge
                               //     shadow, photocopy edge, blobs) (default: 1)
     float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
+    int deskew_consensus;     // 1 = cross-check the Hough angle against the
+                              //     differential-square-sum detector and only
+                              //     rotate when both agree (default: 1)
 } scan_cleanup_params;
 
 // Returns default params (deskew + crop + whiten enabled, binarize disabled)
@@ -67,6 +70,24 @@ void scan_cleanup_free_image(uint8_t * pixels);
 // Detect skew angle in degrees (positive = clockwise).
 // Returns angle; 0.0 if no strong lines detected.
 float scan_cleanup_detect_angle(const float * gray, int w, int h, float max_angle_deg);
+
+// Consensus skew detection: the Hough-energy angle cross-checked against the
+// independent differential-square-sum detector (classical_preproc.h,
+// find_skew_angle). Returns an angle in scan_cleanup_detect_angle's sign
+// convention (pass -angle to scan_cleanup_rotate to correct):
+//   - both detectors agree (within 1°)  → the Hough angle;
+//   - they conflict                     → 0.0 (no spurious rotation);
+//   - only one has a usable estimate    → that estimate, confidence-gated.
+float scan_cleanup_detect_angle_consensus(const float * gray, int w, int h, float max_angle_deg);
+
+// Detect skew on a decoded color/gray uint8 image (channels 1, 3 or 4) via the
+// consensus detector and, when skewed, rotate to correct (bilinear, white
+// fill). On success returns 0; *out_pixels is a malloc'd buffer with the SAME
+// channel count (caller frees with scan_cleanup_free_image), or NULL when the
+// image needed no rotation (angle below the confidence gates). Returns -1 on
+// bad input or allocation failure.
+int scan_cleanup_deskew_rgb(const uint8_t * pixels, int w, int h, int channels, float max_angle_deg,
+                            uint8_t ** out_pixels, int * out_w, int * out_h);
 
 // Rotate image by angle (degrees, positive = counter-clockwise correction).
 // Allocates *out (w_out * h_out floats). Caller frees with free().

@@ -51,6 +51,11 @@ struct config {
     int max_pixels = 1024 * 1024; // 1048576
     float mean[3] = { 0.5f, 0.5f, 0.5f };
     float std[3] = { 0.5f, 0.5f, 0.5f };
+    // Optional document deskew before smart_resize (scan_cleanup consensus
+    // detector + bilinear rotation, white fill). Off by default: photographs
+    // must not be rotated; enable for scanned-document embeddings.
+    int deskew = 0;
+    float deskew_max_angle = 15.0f;
 };
 
 struct result {

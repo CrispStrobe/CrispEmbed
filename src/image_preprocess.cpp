@@ -2,6 +2,7 @@
 // See image_preprocess.h for the parity caveat (bilinear vs torchvision bicubic).
 
 #include "image_preprocess.h"
+#include "scan_cleanup.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 // NOT static — export symbols for use by ocr_detect, ocr_pipeline, math_ocr
@@ -260,6 +261,18 @@ bool preprocess_rgb(const uint8_t * rgb, int height, int width, int channels, co
     if (channels < 3) {
         std::fprintf(stderr, "image_preproc: expected RGB(A) input, got %d channels\n", channels);
         return false;
+    }
+    if (cfg.deskew) {
+        uint8_t * rot = nullptr;
+        int rw2 = 0, rh2 = 0;
+        if (scan_cleanup_deskew_rgb(rgb, width, height, channels, cfg.deskew_max_angle, &rot, &rw2, &rh2) == 0 && rot) {
+            config c2 = cfg;
+            c2.deskew = 0;
+            bool ok = preprocess_rgb(rot, rh2, rw2, channels, c2, out);
+            scan_cleanup_free_image(rot);
+            return ok;
+        }
+        // detector reported no skew (or bad input) — continue unrotated
     }
     const int factor = cfg.patch_size * cfg.merge_size;
     int rh = 0, rw = 0;

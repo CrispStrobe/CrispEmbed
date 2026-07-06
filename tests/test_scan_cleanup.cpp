@@ -214,6 +214,78 @@ static void test_deskew() {
     CHECK(fabsf(d8 - 8.0f) < 2.0f, "8 deg skew still detected");
 }
 
+static void test_deskew_consensus() {
+    printf("\n=== Deskew consensus (Hough × differential-square-sum) ===\n");
+
+    const int w = 400, h = 300;
+
+    // Genuine skew: both detectors agree → the angle survives the cross-check.
+    auto img = make_skewed_image(w, h, 3.0f);
+    std::vector<float> gray(w * h);
+    for (int i = 0; i < w * h; i++) gray[i] = img[i] / 255.0f;
+    float agreed = scan_cleanup_detect_angle_consensus(gray.data(), w, h, 15.0f);
+    printf("  Applied skew: 3.0 deg, consensus: %.1f deg\n", agreed);
+    CHECK(fabsf(agreed - 3.0f) < 2.0f, "consensus confirms genuine 3 deg skew");
+
+    // Axis-aligned text → both report ~0, consensus must not rotate.
+    auto flat = make_text_image(w, h);
+    std::vector<float> fgray(w * h);
+    for (int i = 0; i < w * h; i++) fgray[i] = flat[i] / 255.0f;
+    float flat_angle = scan_cleanup_detect_angle_consensus(fgray.data(), w, h, 15.0f);
+    printf("  Axis-aligned text consensus: %.2f deg (expect 0)\n", flat_angle);
+    CHECK(flat_angle == 0.0f, "consensus reports 0 on axis-aligned text");
+
+    // Beyond the DSS ±7 deg sweep the Hough estimate passes through unchecked.
+    auto img8 = make_skewed_image(w, h, 8.0f);
+    std::vector<float> g8(w * h);
+    for (int i = 0; i < w * h; i++) g8[i] = img8[i] / 255.0f;
+    float d8 = scan_cleanup_detect_angle_consensus(g8.data(), w, h, 15.0f);
+    printf("  Applied skew: 8.0 deg, consensus: %.1f deg\n", d8);
+    CHECK(fabsf(d8 - 8.0f) < 2.0f, "large skew beyond cross-check range still detected");
+}
+
+static void test_deskew_rgb() {
+    printf("\n=== RGB deskew (scan_cleanup_deskew_rgb) ===\n");
+
+    const int w = 400, h = 300;
+    auto img = make_skewed_image(w, h, 4.0f);
+
+    // Tint the grayscale synthetic page so channel handling is exercised.
+    std::vector<uint8_t> rgb(w * h * 3);
+    for (int i = 0; i < w * h; i++) {
+        rgb[i * 3 + 0] = img[i];
+        rgb[i * 3 + 1] = (uint8_t)(img[i] * 0.9f);
+        rgb[i * 3 + 2] = (uint8_t)(img[i] * 0.8f);
+    }
+
+    uint8_t * out = nullptr;
+    int ow = 0, oh = 0;
+    int rc = scan_cleanup_deskew_rgb(rgb.data(), w, h, 3, 15.0f, &out, &ow, &oh);
+    CHECK(rc == 0 && out != nullptr, "skewed RGB image gets rotated");
+    if (out) {
+        // Re-detect on the corrected image: residual skew should be near zero.
+        std::vector<float> gray2(ow * oh);
+        for (int i = 0; i < ow * oh; i++) {
+            gray2[i] = (0.299f * out[i * 3] + 0.587f * out[i * 3 + 1] + 0.114f * out[i * 3 + 2]) / 255.0f;
+        }
+        float residual = scan_cleanup_detect_angle_consensus(gray2.data(), ow, oh, 15.0f);
+        printf("  Residual skew after correction: %.2f deg\n", residual);
+        CHECK(fabsf(residual) < 1.0f, "residual skew below 1 degree");
+        scan_cleanup_free_image(out);
+    }
+
+    // Straight input → no output buffer allocated (no-op contract).
+    std::vector<uint8_t> flat = make_text_image(w, h);
+    std::vector<uint8_t> flat_rgb(w * h * 3);
+    for (int i = 0; i < w * h; i++) {
+        flat_rgb[i * 3] = flat_rgb[i * 3 + 1] = flat_rgb[i * 3 + 2] = flat[i];
+    }
+    uint8_t * out2 = (uint8_t *)0x1; // poison, must be reset to NULL
+    int ow2 = -1, oh2 = -1;
+    rc = scan_cleanup_deskew_rgb(flat_rgb.data(), w, h, 3, 15.0f, &out2, &ow2, &oh2);
+    CHECK(rc == 0 && out2 == nullptr && ow2 == w && oh2 == h, "straight image is a no-op (NULL output)");
+}
+
 static void test_background_whiten() {
     printf("\n=== Background whitening ===\n");
 
@@ -326,6 +398,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     test_sauvola();
     test_border_crop();
     test_deskew();
+    test_deskew_consensus();
+    test_deskew_rgb();
     test_background_whiten();
     test_full_pipeline();
 

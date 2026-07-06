@@ -270,6 +270,11 @@ class CrispEmbed:
                 ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int),
             ]
             lib.crispembed_encode_image_file.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_set_image_deskew"):
+            lib.crispembed_set_image_deskew.argtypes = [
+                ctypes.c_void_p, ctypes.c_int, ctypes.c_float,
+            ]
+            lib.crispembed_set_image_deskew.restype = None
         if hasattr(lib, "crispembed_encode_text_with_image_file"):
             lib.crispembed_encode_text_with_image_file.argtypes = [
                 ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p,
@@ -633,6 +638,18 @@ class CrispEmbed:
         if not ptr or out_dim.value <= 0:
             return np.empty((0,), dtype=np.float32)
         return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def set_image_deskew(self, enable: bool = True, max_angle: float = 0.0):
+        """Toggle optional document deskew for the file/RGB image paths
+        (``encode_image_file``, ``encode_text_with_image_file`` and the
+        native preprocessor). Off by default — enable for scanned-document
+        embeddings only; photographs should stay un-rotated. ``max_angle``
+        caps the correction in degrees (0 keeps the current value,
+        initially 15°).
+        """
+        if hasattr(self._lib, "crispembed_set_image_deskew"):
+            self._lib.crispembed_set_image_deskew(
+                self._ctx, int(enable), float(max_angle))
 
     def encode_image_file(self, path: str) -> np.ndarray:
         """In-process image embedding (no `transformers` dependency).
@@ -2435,6 +2452,7 @@ class _ScanCleanupParams(ctypes.Structure):
         ("despeckle_thresh", ctypes.c_float),
         ("blackfilter", ctypes.c_int),
         ("blackfilter_thresh", ctypes.c_float),
+        ("deskew_consensus", ctypes.c_int),
     ]
 
 
@@ -2501,7 +2519,8 @@ class CrispScanCleanup:
                 binarize_method=0, sauvola_k=0.2, sauvola_window=25,
                 morph_kernel=51, border_threshold=0.15,
                 deskew_max_angle=15.0, despeckle=True, despeckle_thresh=0.25,
-                blackfilter=True, blackfilter_thresh=0.20):
+                blackfilter=True, blackfilter_thresh=0.20,
+                deskew_consensus=True):
         """Process a scan image.
 
         Args:
@@ -2550,6 +2569,7 @@ class CrispScanCleanup:
         params.despeckle_thresh = despeckle_thresh
         params.blackfilter = int(blackfilter)
         params.blackfilter_thresh = blackfilter_thresh
+        params.deskew_consensus = int(deskew_consensus)
 
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
         out_w = ctypes.c_int(0)
