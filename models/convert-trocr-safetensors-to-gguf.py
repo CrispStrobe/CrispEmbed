@@ -49,6 +49,17 @@ def main():
     with open(config_path) as f:
         config = json.load(f)
 
+    # generation_config.json is what HF generate() actually resolves
+    # decoder_start_token_id from — authoritative over config.json, which often
+    # leaves it unset at the top level (e.g. TrOCR: top-level None, but
+    # generation_config says 2). Reading only config.json wrongly fell back to
+    # bos=0 → the decoder started on the wrong token and emitted empty output.
+    gen_cfg = {}
+    gen_path = model_dir / "generation_config.json"
+    if gen_path.exists():
+        with open(gen_path) as f:
+            gen_cfg = json.load(f)
+
     enc_cfg = config.get("encoder", config)
     dec_cfg = config.get("decoder", config)
 
@@ -78,7 +89,10 @@ def main():
     # 2 — a wrong start poisons the position-0 KV and the decode repeats/degenerates).
     # Flat (non-nested) configs are unaffected: config is dec_cfg, so this reads
     # the same field as before.
-    dec_start = config.get("decoder_start_token_id")
+    # Priority: generation_config (what generate() uses) → top-level config → bos.
+    dec_start = gen_cfg.get("decoder_start_token_id")
+    if dec_start is None:
+        dec_start = config.get("decoder_start_token_id")
     if dec_start is None:
         dec_start = config.get("bos_token_id", bos)
     scale_embedding = dec_cfg.get("scale_embedding", True)
@@ -113,6 +127,21 @@ def main():
                 if idx < len(tokens):
                     tokens[idx] = word
             print(f"Tokenizer: {len(tokens)} tokens from vocab.json")
+
+    # TrOCR-small (XLM-R/RoBERTa) ships NO tokenizer.json/vocab.json — only
+    # tokenizer_config.json — so the id→string mapping must come from
+    # AutoTokenizer, which also handles the fairseq vocab offset. Without this
+    # the vocab stays empty and every generated token detokenizes to "" (empty
+    # OCR output despite a correct encoder + decoder).
+    if not any(tokens):
+        try:
+            from transformers import AutoTokenizer
+            tk = AutoTokenizer.from_pretrained(str(model_dir))
+            n = dec_cfg.get("vocab_size") or vocab_size or tk.vocab_size
+            tokens = [(tk.convert_ids_to_tokens(i) or f"<unk_{i}>") for i in range(n)]
+            print(f"Tokenizer: {len(tokens)} tokens via AutoTokenizer (XLM-R/SentencePiece)")
+        except Exception as e:
+            print(f"WARNING: AutoTokenizer fallback failed: {e}")
 
     # Merge added_tokens.json (separate file, e.g. TexTeller Chinese chars)
     added_tok_path = model_dir / "added_tokens.json"
