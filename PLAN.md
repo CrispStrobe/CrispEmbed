@@ -1438,6 +1438,45 @@ swinir_sr.
   comment was over-cautious. `test-hat-diff` is now registered in CMake; reference
   `hat-ref.gguf` is on HF `cstr/text-super-resolution-gguf`.
 
+### TrOCR recognizer — improve accuracy + speed (2026-07-07)
+
+The DBNet-ic15 + trocr-small-printed pipeline gives poor results on real
+documents. Isolated the cause this session — it is the **models**, not the port
+or the runtime:
+
+- **WASM ≡ native, token-for-token.** The PROXY_TO_PTHREAD multithreaded WASM
+  pipeline decodes bit-identical tokens to the native CPU run (same 6 boxes,
+  same `best=` token every decode step; logits differ only ~3rd decimal from
+  SIMD/thread reduction order). So the WASM/threading path introduces zero
+  accuracy change.
+- **GGUF ≈ HF.** Parity vs `microsoft/trocr-small-printed` (HF transformers) on
+  CrispEmbed's own crops: 3/5 identical (`MAMMA`, `LIKE`, `WE`), and HF *itself*
+  reads the crops as uppercase fragments (`Mamma`→`MAMMA`, `too`→`TOO`). So the
+  conversion is faithful; the low quality is trocr-small's ceiling on
+  scene-text-detector crops.
+- **The one real GGUF↔HF discrepancy: a trailing repeated subword** — GGUF
+  `TOOO` vs HF `TOO`, `SUMMERER` vs HF `SUMMER`. This is the "repeated-token
+  garbage" noted above: our greedy decode lacks HF's `no_repeat_ngram` / eos /
+  length-penalty behavior. **Actionable:** port `no_repeat_ngram`(=3) + verify
+  eos/length-penalty parity in `math_ocr.cpp`'s decoder (got-ocr2 already does
+  this — see 2026-07-01 note).
+
+Accuracy — the bigger levers:
+- **Detection under-covers documents.** DBNet-ic15 is an ICDAR-2015 *scene-text*
+  detector; on a dense book page it found 6 boxes out of ~40 words. Swap in a
+  **document-text detector** (Surya / a PP-OCR DBNet trained on documents) for
+  dense-page coverage.
+- **Prefer the doc-VLMs for real documents.** PaddleOCR-VL / SmolDocling (below)
+  read a whole page directly and beat the DBNet+trocr-small line pipeline; steer
+  document OCR there and keep DBNet+TrOCR for the scene/line-crop case.
+
+Speed — the pipeline's dominant cost is **per-region autoregressive decode**
+(the token loop is inherently sequential): ~19 s/region on WASM (4 threads),
+~25 s/region native (1 thread). PROXY_TO_PTHREAD parallelizes each matmul but
+cannot parallelize the token loop, so CPU stays slow. Real speed path is the
+**GPU (WebGPU / Metal) recognizer decode**; also consider batching regions
+through the encoder and a shorter `--ocr-max-tokens` for line crops.
+
 ### OCR — next-gen models to port
 
 | # | Model | Params | OmniDocBench | License | Architecture | Status |
