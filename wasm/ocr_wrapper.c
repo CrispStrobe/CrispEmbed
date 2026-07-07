@@ -399,7 +399,81 @@ void wasm_layout_free(void * ctx) {
     crispembed_layout_free(ctx);
 }
 
-// Emscripten requires a main() for executables.
+#ifdef __EMSCRIPTEN_PTHREADS__
+#include <emscripten/proxying.h>
+#include <emscripten/threading.h>
+#include <emscripten/em_asm.h>
+#include <pthread.h>
+
+// PROXY_TO_PTHREAD path — multithreaded, deadlock-free recognize in the browser.
+// The deadlock rule: the thread owning the event loop (the "servicer" worker)
+// must not block in pthread_join, but ggml's compute threads do exactly that.
+// Under -sPROXY_TO_PTHREAD, main() runs on a dedicated "runtime" pthread (kept
+// alive below). We proxy the blocking pipeline call onto that thread — the
+// servicer never blocks, so ggml's compute threads run fine — and deliver the
+// JSON result back to the servicer via a JS callback (Module.__ocrDeliver),
+// keyed by request id. Mirrors CrispASR's ttsSynthesizeAsync.
+static em_proxying_queue * g_ocr_pq = NULL;
+static pthread_t           g_ocr_runtime_thread;
+static int                 g_ocr_runtime_ready = 0;
+
+typedef struct {
+    void *    ctx;
+    char *    image_path;
+    int       req_id;
+    int       full;      // 1 = wasm_ocr_pipeline_full_run, 0 = wasm_ocr_pipeline_run
+    char *    result;    // malloc'd JSON; ownership passed to JS (frees via Module._free)
+    pthread_t servicer;  // thread to deliver the result on
+} ocr_async_job;
+
+static void ocr_async_deliver(void * arg) {  // runs on the servicer thread
+    ocr_async_job * j = (ocr_async_job *) arg;
+    EM_ASM({ if (Module['__ocrDeliver']) Module['__ocrDeliver']($0, $1); }, j->req_id, (int) j->result);
+    if (j->image_path) free(j->image_path);
+    free(j);
+}
+
+static void ocr_async_run(void * arg) {  // runs on the runtime thread (pthread-0)
+    ocr_async_job * j = (ocr_async_job *) arg;
+    j->result = j->full ? wasm_ocr_pipeline_full_run(j->ctx, j->image_path)
+                        : wasm_ocr_pipeline_run(j->ctx, j->image_path);
+    emscripten_proxy_async(g_ocr_pq, j->servicer, ocr_async_deliver, j);
+}
+
+// Fire-and-forget recognize for the multithreaded (PROXY_TO_PTHREAD) build.
+// Returns immediately; JS receives (req_id, resultPtr) via Module.__ocrDeliver.
+WASM_EXPORT
+void wasm_ocr_pipeline_run_async(void * ctx, const char * image_path, int req_id, int full) {
+    ocr_async_job * j = (ocr_async_job *) malloc(sizeof(ocr_async_job));
+    j->ctx        = ctx;
+    j->image_path = image_path ? strdup(image_path) : NULL;
+    j->req_id     = req_id;
+    j->full       = full;
+    j->result     = NULL;
+    j->servicer   = pthread_self();
+    if (g_ocr_runtime_ready && g_ocr_pq) {
+        emscripten_proxy_async(g_ocr_pq, g_ocr_runtime_thread, ocr_async_run, j);
+    } else {
+        // No proxied runtime thread (shouldn't happen once main() has run) —
+        // run inline as a fallback and deliver synchronously.
+        j->result = j->full ? wasm_ocr_pipeline_full_run(j->ctx, j->image_path)
+                            : wasm_ocr_pipeline_run(j->ctx, j->image_path);
+        EM_ASM({ if (Module['__ocrDeliver']) Module['__ocrDeliver']($0, $1); }, j->req_id, (int) j->result);
+        if (j->image_path) free(j->image_path);
+        free(j);
+    }
+}
+#endif
+
+// Emscripten requires a main() for executables. Under -sPROXY_TO_PTHREAD this
+// runs on the dedicated runtime pthread; record it + keep the runtime alive so
+// it can service the proxying queue (see wasm_ocr_pipeline_run_async above).
 int main(void) {
+#ifdef __EMSCRIPTEN_PTHREADS__
+    g_ocr_pq             = em_proxying_queue_create();
+    g_ocr_runtime_thread = pthread_self();
+    g_ocr_runtime_ready  = 1;
+    emscripten_exit_with_live_runtime();
+#endif
     return 0;
 }

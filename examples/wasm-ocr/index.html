@@ -292,6 +292,13 @@ async function pickLoader() {
     if (lc) return lc;
   }
   if (crossOriginIsolated) {
+    // Prefer the PROXY_TO_PTHREAD build: multithreaded AND browser-safe. The
+    // plain 'threaded/' build deadlocks on ggml's pthread_join (compute threads
+    // block the servicer worker), so it only works single-threaded — the proxy
+    // build runs the blocking OCR on the runtime pthread instead. Fall back to
+    // threaded/ (kept for parity) then the single-threaded root build.
+    const p = await probeLoader('proxy/');
+    if (p) return p;
     const l = await probeLoader('threaded/');
     if (l) return l;
   }

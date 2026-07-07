@@ -251,6 +251,34 @@ function _acall(module, name, ret, argTypes, args) {
   return Promise.resolve(module.ccall(name, ret, argTypes, args, { async: true }));
 }
 
+/** @private Multithreaded, deadlock-free pipeline recognize for the
+ *  PROXY_TO_PTHREAD build (build-wasm.sh --proxy-to-pthread). The blocking OCR
+ *  runs on the runtime pthread (not this servicer worker), and the JSON result
+ *  comes back via Module.__ocrDeliver(reqId, ptr). Resolves to the JSON string.
+ *  Only used when _wasm_ocr_pipeline_run_async is exported (the proxy build). */
+function _ocrRecognizeProxied(module, ctxPtr, imagePath, full) {
+  if (!module.__ocrPending) {
+    module.__ocrPending = new Map();
+    module.__ocrReqSeq = 0;
+    module.__ocrDeliver = (reqId, ptr) => {
+      const resolve = module.__ocrPending.get(reqId);
+      if (!resolve) { if (ptr) module._free(ptr); return; }
+      module.__ocrPending.delete(reqId);
+      const json = ptr ? module.UTF8ToString(ptr) : '';
+      if (ptr) module._free(ptr);
+      resolve(json);
+    };
+  }
+  return new Promise((resolve) => {
+    const reqId = ++module.__ocrReqSeq;
+    module.__ocrPending.set(reqId, resolve);
+    // ccall allocs+frees the path string; the C side strdup's it for the job.
+    module.ccall('wasm_ocr_pipeline_run_async', null,
+      ['number', 'string', 'number', 'number'],
+      [ctxPtr, imagePath, reqId, full ? 1 : 0]);
+  });
+}
+
 /** @private Copy pixel data into WASM heap, run callback, clean up. */
 async function _withPixels(module, imageData, fn) {
   const { width, height, data } = imageData;
@@ -476,19 +504,28 @@ class CrispEmbedOCRPipeline {
     _writeToMemfs(this.#module, imgPath, pngBytes);
 
     try {
-      const fnName = this.#mode === 'full' ? 'wasm_ocr_pipeline_full_run' : 'wasm_ocr_pipeline_run';
-      const jsonPtr = await _acall(this.#module, fnName, 'number',
-        ['number', 'string'], [this.#ctxPtr, imgPath]);
+      const full = this.#mode === 'full';
+      let jsonStr;
+      if (this.#module._wasm_ocr_pipeline_run_async) {
+        // PROXY_TO_PTHREAD build: run the blocking pipeline on the runtime
+        // pthread so the servicer never blocks — multithreaded, no deadlock.
+        jsonStr = await _ocrRecognizeProxied(this.#module, this.#ctxPtr, imgPath, full);
+      } else {
+        const fnName = full ? 'wasm_ocr_pipeline_full_run' : 'wasm_ocr_pipeline_run';
+        const jsonPtr = await _acall(this.#module, fnName, 'number',
+          ['number', 'string'], [this.#ctxPtr, imgPath]);
+        if (jsonPtr) {
+          jsonStr = this.#module.UTF8ToString(jsonPtr);
+          this.#module._free(jsonPtr);
+        }
+      }
 
-      if (!jsonPtr) return this.#mode === 'full'
+      if (!jsonStr) return full
         ? { text: '', confidence: 0, n_regions: 0, regions: [] }
         : { regions: [] };
 
-      const jsonStr = this.#module.UTF8ToString(jsonPtr);
-      this.#module._free(jsonPtr);
-
       const parsed = JSON.parse(jsonStr);
-      return this.#mode === 'full' ? parsed : { regions: parsed };
+      return full ? parsed : { regions: parsed };
     } finally {
       try { this.#module.FS.unlink(imgPath); } catch (_) {}
     }

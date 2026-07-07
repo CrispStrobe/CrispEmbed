@@ -25,6 +25,7 @@ BUILD_DIR_SET=false
 CLEAN=false
 SIMD=ON
 THREADS=OFF
+PROXY=OFF
 WEBGPU=OFF
 WEBGPU_COMPAT=OFF
 CMAKE_EXTRA=()
@@ -35,6 +36,7 @@ while [[ $# -gt 0 ]]; do
         --simd)     SIMD=ON; shift ;;
         --no-simd)  SIMD=OFF; shift ;;
         --threads)  THREADS=ON; shift ;;
+        --proxy-to-pthread) THREADS=ON; PROXY=ON; shift ;;
         --webgpu)   WEBGPU=ON; shift ;;
         --webgpu-compat) WEBGPU=ON; WEBGPU_COMPAT=ON; shift ;;
         --)         shift; CMAKE_EXTRA=("$@"); break ;;
@@ -110,8 +112,19 @@ if [ "$THREADS" = "ON" ]; then
     THREAD_LINK_FLAGS="-pthread -sPTHREAD_POOL_SIZE=8 -sPTHREAD_POOL_SIZE_STRICT=0"
     # Separate output dir so single-threaded and threaded artifacts coexist
     # (the demo serves the threaded build under threaded/).
-    if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-threads"; fi
-    echo "[INFO] Multithreaded build enabled -> $BUILD_DIR/"
+    if [ "$PROXY" = "ON" ]; then
+        # Run main() on a dedicated "runtime" pthread so the servicer worker never
+        # blocks; the async recognize (wasm_ocr_pipeline_run_async) proxies the
+        # blocking OCR onto it, so ggml's compute threads run without the
+        # pthread_join deadlock. This is the browser-safe multithreaded build.
+        THREAD_LINK_FLAGS="$THREAD_LINK_FLAGS -sPROXY_TO_PTHREAD=1"
+        THREAD_LABEL="multithreaded + PROXY_TO_PTHREAD (deadlock-free; requires COOP/COEP)"
+        if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-proxy"; fi
+        echo "[INFO] PROXY_TO_PTHREAD build enabled -> $BUILD_DIR/"
+    else
+        if [ "$BUILD_DIR_SET" = false ]; then BUILD_DIR="build-wasm-threads"; fi
+        echo "[INFO] Multithreaded build enabled -> $BUILD_DIR/"
+    fi
 fi
 
 echo "============================================"
@@ -148,6 +161,7 @@ EXPORTED_FUNCS="[\
 '_wasm_ocr_pipeline_full_init',\
 '_wasm_ocr_pipeline_full_run',\
 '_wasm_ocr_pipeline_full_free',\
+'_wasm_ocr_pipeline_run_async',\
 '_wasm_scan_cleanup_init',\
 '_wasm_scan_cleanup_process',\
 '_wasm_scan_cleanup_free_image',\
