@@ -92,15 +92,10 @@ if [ "$WEBGPU" = "ON" ]; then
     # + a warning when the encoder silently skips an unsupported op. All
     # validated in-browser via ggml test-backend-ops (see
     # tests/wasm-browser/README note + LEARNINGS). Idempotent apply.
-    OPS_PATCH="$SCRIPT_DIR/patches/ggml-webgpu-ops.patch"
-    if git -C "$SCRIPT_DIR/ggml" apply --check "$OPS_PATCH" 2>/dev/null; then
-        git -C "$SCRIPT_DIR/ggml" apply "$OPS_PATCH"
-        echo "[INFO] applied ggml-webgpu-ops.patch"
-    elif git -C "$SCRIPT_DIR/ggml" apply --reverse --check "$OPS_PATCH" 2>/dev/null; then
-        echo "[INFO] ggml-webgpu-ops.patch already applied"
-    else
-        echo "[WARN] ggml-webgpu-ops.patch does not apply — building without it"
-    fi
+    # NOTE (2026-07): these webgpu ops now live in the pinned ggml submodule
+    # (CrispStrobe/ggml @ crispstrobe-ops = v0.10.2 + our ops), so the old
+    # build-time patch is no longer applied. Kept in patches/ for provenance.
+    echo "[INFO] ggml-webgpu ops (NORM/arange/pool2d/conv_transpose_2d + upstreamed im2col/upscale) are baked into the pinned CrispStrobe/ggml submodule"
     # Experimental: ggml-webgpu links the emdawnwebgpu port and adds
     # -sASYNCIFY itself (INTERFACE link options). Separate output dir so all
     # variants coexist (demo serves this build under webgpu/).
