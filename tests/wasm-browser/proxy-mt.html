@@ -1,0 +1,32 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>booting</title>
+<body>
+<script>
+  // Worker-based (matches the real demo): the module runs in the worker, so the
+  // page main thread stays free and playwright's polling of window.__mt is reliable.
+  window.__mt = null;
+  const IMAGE = new URLSearchParams(location.search).get('img') || '/images/scan_strip.png';
+  const worker = new Worker('/proxy-mt-worker.js');
+  worker.onmessage = (e) => {
+    const d = e.data;
+    if (d.log) { console.log('[worker]', d.log); return; }
+    if (d.ready) {
+      document.title = 'worker ready — loading models + running…';
+      worker.postMessage({
+        detUrl: '/models/dbnet-ic15-q4_k.gguf',
+        recUrl: '/models/trocr-small-printed-q4_k.gguf',
+        imageUrl: IMAGE,
+        nThreads: 4
+      });
+      return;
+    }
+    window.__mt = d;
+    document.title = 'DONE ' + (d.ok ? 'ok' : 'err');
+  };
+  worker.onerror = (e) => {
+    window.__mt = { ok: false, error: 'worker error: ' + (e.message || e) };
+    document.title = 'DONE err';
+  };
+</script>
+</body>

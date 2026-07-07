@@ -54,6 +54,14 @@ function resolveUrl(urlPath) {
     if (process.env.WASM_E2E_THREADS !== '1') return null;
     return path.join(repoRoot, 'build-wasm-threads', path.basename(clean));
   }
+  if (clean.startsWith('/proxy/')) {
+    // PROXY_TO_PTHREAD (deadlock-free multithread) build.
+    if (process.env.WASM_E2E_PROXY !== '1') return null;
+    return path.join(repoRoot, 'build-wasm-proxy', path.basename(clean));
+  }
+  if (clean === '/proxy-mt.html' || clean === '/proxy-mt-worker.js') {
+    return path.join(__dirname, path.basename(clean));
+  }
   if (clean.startsWith('/webgpu/')) {
     if (process.env.WASM_E2E_WEBGPU !== '1') return null;
     return path.join(repoRoot, 'build-wasm-webgpu', path.basename(clean));
