@@ -10,6 +10,7 @@
 #include "ggml-cpu.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
+#include "crispembed_diff.h" // per-stage parity harness (env-gated: MATH_OCR_DIFF_REF)
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -364,7 +365,7 @@ static ggml_cgraph * build_encoder_graph_batch(math_ocr_context * ctx, ggml_cont
         residual = cur;
         cur = g_ln(g, cur, L.ln2_w, L.ln2_b);
         ggml_tensor * up = g_linear(g, cur, L.ff_up_w, L.ff_up_b);
-        up = ggml_gelu(g, up);
+        up = ggml_gelu_erf(g, up); // DeiT encoder: exact GELU (hidden_act="gelu")
         cur = g_linear(g, up, L.ff_down_w, L.ff_down_b);
         cur = ggml_add(g, residual, cur);
     }
@@ -405,6 +406,12 @@ static ggml_cgraph * build_encoder_graph(math_ocr_context * ctx, ggml_context * 
     const auto & hp = ctx->hparams;
     const int H = hp.enc_hidden;
 
+    // Env-gated per-layer outputs for the crispembed_diff harness (MATH_OCR_DIFF_REF).
+    // ggml_set_output keeps each layer's activation live so run_encoder can read it
+    // back and compare it to the Python reference — the doc's "first layer < 0.999
+    // = the bug" recipe. Off by default (no perturbation of the normal forward).
+    const bool diff_layers = std::getenv("MATH_OCR_DIFF_REF") != nullptr;
+
     ggml_cgraph * gf = ggml_new_graph_custom(g, hp.enc_layers * 60 + 512, false);
 
     // Input: pre-embedded patches [H, T] as a float input tensor
@@ -443,9 +450,16 @@ static ggml_cgraph * build_encoder_graph(math_ocr_context * ctx, ggml_context * 
         residual = cur;
         cur = g_ln(g, cur, L.ln2_w, L.ln2_b);
         ggml_tensor * up = g_linear(g, cur, L.ff_up_w, L.ff_up_b);
-        up = ggml_gelu(g, up);
+        up = ggml_gelu_erf(g, up); // DeiT uses exact GELU (hidden_act="gelu"), not the tanh approx
         cur = g_linear(g, up, L.ff_down_w, L.ff_down_b);
         cur = ggml_add(g, residual, cur);
+
+        if (diff_layers) {
+            char lname[24];
+            snprintf(lname, sizeof(lname), "enc_layer_%d", il);
+            ggml_set_name(cur, lname);
+            ggml_set_output(cur);
+        }
     }
 
     // Final LN
@@ -642,6 +656,37 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
     ggml_tensor * out = ggml_graph_get_tensor(ctx->enc_graph, "enc_output");
     ctx->enc_out.resize(T * H);
     if (out) ggml_backend_tensor_get(out, ctx->enc_out.data(), 0, T * H * sizeof(float));
+
+    // --- Per-stage parity harness (MATH_OCR_DIFF_REF=ref.gguf) ----------------
+    // Compare the input embed (structural gate FIRST), each encoder layer, and
+    // the final output vs the Python reference. Per-token cos (row_dim=0 → D=
+    // hidden, gguf dim order). If enc_embed < ~0.99999 the divergence is a
+    // structural input/preprocessing mismatch, not a per-layer numeric bug.
+    if (const char * diff_ref = std::getenv("MATH_OCR_DIFF_REF")) {
+        crispembed_diff::Ref ref;
+        if (ref.load(diff_ref)) {
+            auto report = [](const char * nm, const crispembed_diff::Report & r) {
+                fprintf(stderr, "[math-ocr-diff] %-13s cos_min=%.6f cos_mean=%.6f max_abs=%.2e %s\n", nm, r.cos_min,
+                        r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            };
+            if (ref.has("enc_embed")) {
+                report("enc_embed", ref.compare("enc_embed", embedded.data(), (size_t)T * H, 0));
+            }
+            std::vector<float> buf((size_t)T * H);
+            for (int il = 0; il < ctx->hparams.enc_layers; il++) {
+                char lname[24];
+                snprintf(lname, sizeof(lname), "enc_layer_%d", il);
+                if (!ref.has(lname)) continue;
+                ggml_tensor * lt = ggml_graph_get_tensor(ctx->enc_graph, lname);
+                if (!lt) continue;
+                ggml_backend_tensor_get(lt, buf.data(), 0, (size_t)T * H * sizeof(float));
+                report(lname, ref.compare(lname, buf.data(), (size_t)T * H, 0));
+            }
+            if (ref.has("enc_output")) {
+                report("enc_output", ref.compare("enc_output", ctx->enc_out.data(), (size_t)T * H, 0));
+            }
+        }
+    }
 
     ctx->n_enc_tokens = T;
 }

@@ -382,6 +382,9 @@ target_link_libraries(test-mixtex PRIVATE crispembed)
 add_executable(test-mixtex-diff tests/test_mixtex_diff.cpp)
 target_link_libraries(test-mixtex-diff PRIVATE crispembed)
 
+add_executable(test-math-ocr-diff tests/test_math_ocr_diff.cpp)
+target_link_libraries(test-math-ocr-diff PRIVATE crispembed)
+
 add_executable(test-hat-diff tests/test_hat_diff.cpp)
 target_link_libraries(test-hat-diff PRIVATE crispembed)
 
