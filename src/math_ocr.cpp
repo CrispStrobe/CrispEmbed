@@ -152,6 +152,20 @@ struct math_ocr_context {
         bool allocated = false;
     } ds;
 
+    // Persistent decoder KV cache on the compute device (avoids per-step re-upload).
+    struct dec_kv_cache {
+        ggml_context * ctx = nullptr;
+        ggml_backend_buffer_t buf = nullptr;
+        ggml_tensor * self_k = nullptr;  // [D, max_seq, n_layers]
+        ggml_tensor * self_v = nullptr;
+        ggml_tensor * cross_k = nullptr; // [D, n_enc, n_layers]
+        ggml_tensor * cross_v = nullptr;
+        int max_seq = 0;
+        int n_enc = 0;
+        int n_past = 0;
+        bool allocated = false;
+    } dkv;
+
     bool bench = false;
 };
 
@@ -779,6 +793,57 @@ static void ensure_dec_scratch(math_ocr_context * ctx, int max_kv) {
     ctx->ds.allocated = true;
 }
 
+static bool alloc_dec_kv_cache(math_ocr_context * ctx, int max_seq, int n_enc) {
+    auto & kv = ctx->dkv;
+    if (kv.allocated && kv.max_seq >= max_seq && kv.n_enc >= n_enc) {
+        kv.n_past = 0;
+        if (kv.buf) ggml_backend_buffer_clear(kv.buf, 0);
+        return true;
+    }
+    if (kv.buf) { ggml_backend_buffer_free(kv.buf); kv.buf = nullptr; }
+    if (kv.ctx) { ggml_free(kv.ctx); kv.ctx = nullptr; }
+    kv.allocated = false;
+
+    const int D = ctx->hparams.dec_d_model;
+    const int nl = ctx->hparams.dec_layers;
+
+    size_t mem = 4 * ggml_tensor_overhead() + ggml_graph_overhead();
+    ggml_init_params ip = { mem, nullptr, true };
+    kv.ctx = ggml_init(ip);
+    if (!kv.ctx) return false;
+
+    kv.self_k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, max_seq, nl);
+    kv.self_v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, max_seq, nl);
+    kv.cross_k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, n_enc, nl);
+    kv.cross_v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, n_enc, nl);
+
+    kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, ctx->backend);
+    if (!kv.buf) {
+        fprintf(stderr, "math_ocr: KV cache alloc failed\n");
+        ggml_free(kv.ctx); kv.ctx = nullptr;
+        return false;
+    }
+    ggml_backend_buffer_clear(kv.buf, 0);
+
+    kv.max_seq = max_seq;
+    kv.n_enc = n_enc;
+    kv.n_past = 0;
+    kv.allocated = true;
+
+    size_t bytes = ggml_backend_buffer_get_size(kv.buf);
+    fprintf(stderr, "math_ocr: decoder KV cache: %d layers, max_seq=%d, n_enc=%d, %.1f MB\n",
+            nl, max_seq, n_enc, (float)bytes / 1024 / 1024);
+    return true;
+}
+
+static void free_dec_kv_cache(math_ocr_context * ctx) {
+    auto & kv = ctx->dkv;
+    if (kv.buf) { ggml_backend_buffer_free(kv.buf); kv.buf = nullptr; }
+    if (kv.ctx) { ggml_free(kv.ctx); kv.ctx = nullptr; }
+    kv.allocated = false;
+    kv.n_past = 0;
+}
+
 static std::vector<float> decoder_step_scalar(math_ocr_context * ctx, int tok, int step,
                                               std::vector<std::vector<float>> & kv_k,
                                               std::vector<std::vector<float>> & kv_v) {
@@ -982,21 +1047,23 @@ static std::vector<int> run_decoder_beam_scalar(math_ocr_context * ctx, int beam
 //   "self_k_out_L"  — [D, 1] new self-attn K for layer L (to append to cache)
 //   "self_v_out_L"  — [D, 1] new self-attn V for layer L
 
+// Build a ggml graph for one autoregressive decoder step.
+// Uses persistent device-side KV cache (ctx->dkv): new K/V are written
+// into the cache via ggml_cpy at position n_kv, and full K/V history
+// is read via ggml_view. Cross-attention K/V are also in the persistent
+// cache — no per-step CPU→GPU upload.
 static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_context * g, int n_kv, int n_enc) {
     const auto & hp = ctx->hparams;
     const int D = hp.dec_d_model;
     const int V = hp.vocab_size;
     const int n_dec = hp.dec_layers;
+    auto & kv = ctx->dkv;
 
-    // Generous node budget: per layer ~40 ops, plus embeddings + final
     ggml_cgraph * gf = ggml_new_graph_custom(g, n_dec * 100 + 512, false);
 
-    // Input: pre-computed token embedding (tok + pos + embed_ln), shape [D, 1]
     ggml_tensor * cur = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, 1);
     ggml_set_name(cur, "dec_tok_emb");
     ggml_set_input(cur);
-
-    char name[64];
 
     for (int li = 0; li < n_dec; li++) {
         const auto & l = ctx->dec_layers[li];
@@ -1005,73 +1072,45 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
         ggml_tensor * residual = cur;
 
         // ---- Self-attention ----
-        // Project Q, K, V from current hidden state [D, 1]
-        ggml_tensor * q = g_linear(g, cur, l.self_q_w, l.self_q_b);     // [D, 1]
-        ggml_tensor * k_new = g_linear(g, cur, l.self_k_w, l.self_k_b); // [D, 1]
-        ggml_tensor * v_new = g_linear(g, cur, l.self_v_w, l.self_v_b); // [D, 1]
+        ggml_tensor * q = g_linear(g, cur, l.self_q_w, l.self_q_b);
+        ggml_tensor * k_new = g_linear(g, cur, l.self_k_w, l.self_k_b);
+        ggml_tensor * v_new = g_linear(g, cur, l.self_v_w, l.self_v_b);
 
-        // Output the new K/V so we can append to cache externally
-        snprintf(name, sizeof(name), "self_k_out_%d", li);
-        ggml_set_name(k_new, name);
-        ggml_set_output(k_new);
-        snprintf(name, sizeof(name), "self_v_out_%d", li);
-        ggml_set_name(v_new, name);
-        ggml_set_output(v_new);
+        // Write new K/V into persistent cache at position n_kv
+        size_t k_layer_off = (size_t)li * kv.self_k->nb[2];
+        ggml_tensor * k_dst = ggml_view_2d(g, kv.self_k, D, 1,
+            kv.self_k->nb[1], k_layer_off + (size_t)n_kv * kv.self_k->nb[1]);
+        ggml_tensor * v_dst = ggml_view_2d(g, kv.self_v, D, 1,
+            kv.self_v->nb[1], (size_t)li * kv.self_v->nb[2] + (size_t)n_kv * kv.self_v->nb[1]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, k_new, k_dst));
+        ggml_build_forward_expand(gf, ggml_cpy(g, v_new, v_dst));
 
-        // Build K_full / V_full: either just the new token (step 0) or
-        // concatenation of cache + new token
-        ggml_tensor * k_full;
-        ggml_tensor * v_full;
-        if (n_kv > 0) {
-            // Input: accumulated K/V cache [D, n_kv] (previous tokens)
-            ggml_tensor * k_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_kv);
-            snprintf(name, sizeof(name), "self_k_in_%d", li);
-            ggml_set_name(k_cache, name);
-            ggml_set_input(k_cache);
+        // Read full KV history [0..n_kv+1)
+        int Lk = n_kv + 1;
+        ggml_tensor * k_full = ggml_view_2d(g, kv.self_k, D, Lk,
+            kv.self_k->nb[1], k_layer_off);
+        ggml_tensor * v_full = ggml_view_2d(g, kv.self_v, D, Lk,
+            kv.self_v->nb[1], (size_t)li * kv.self_v->nb[2]);
 
-            ggml_tensor * v_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_kv);
-            snprintf(name, sizeof(name), "self_v_in_%d", li);
-            ggml_set_name(v_cache, name);
-            ggml_set_input(v_cache);
+        ggml_tensor * sa = g_mha_1q(g, q, k_full, v_full, hp.dec_heads, Lk);
+        sa = g_linear(g, sa, l.self_out_w, l.self_out_b);
 
-            // Concatenate: K_full = [k_cache ; k_new] → [D, n_kv+1]
-            k_full = ggml_concat(g, k_cache, k_new, 1);
-            v_full = ggml_concat(g, v_cache, v_new, 1);
-        } else {
-            // First step: no cache, just use the new token
-            k_full = k_new; // [D, 1]
-            v_full = v_new;
-        }
-
-        // Single-query MHA: Q [D,1], K [D, n_kv+1], V [D, n_kv+1]
-        ggml_tensor * sa = g_mha_1q(g, q, k_full, v_full, hp.dec_heads, n_kv + 1);
-        sa = g_linear(g, sa, l.self_out_w, l.self_out_b); // [D, 1]
-
-        // Residual + post-LN
         cur = ggml_add(g, residual, sa);
         cur = g_ln(g, cur, l.self_ln_w, l.self_ln_b);
 
-        // ---- Cross-attention ----
+        // ---- Cross-attention (from persistent device cache) ----
         if (l.cross_q_w) {
             residual = cur;
+            ggml_tensor * cq = g_linear(g, cur, l.cross_q_w, l.cross_q_b);
 
-            ggml_tensor * cq = g_linear(g, cur, l.cross_q_w, l.cross_q_b); // [D, 1]
-
-            // Cross K/V are pre-computed and fixed
-            ggml_tensor * ck = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_enc);
-            snprintf(name, sizeof(name), "cross_k_%d", li);
-            ggml_set_name(ck, name);
-            ggml_set_input(ck);
-
-            ggml_tensor * cv = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_enc);
-            snprintf(name, sizeof(name), "cross_v_%d", li);
-            ggml_set_name(cv, name);
-            ggml_set_input(cv);
+            ggml_tensor * ck = ggml_view_2d(g, kv.cross_k, D, n_enc,
+                kv.cross_k->nb[1], (size_t)li * kv.cross_k->nb[2]);
+            ggml_tensor * cv = ggml_view_2d(g, kv.cross_v, D, n_enc,
+                kv.cross_v->nb[1], (size_t)li * kv.cross_v->nb[2]);
 
             ggml_tensor * ca = g_mha_1q(g, cq, ck, cv, hp.dec_heads, n_enc);
             ca = g_linear(g, ca, l.cross_out_w, l.cross_out_b);
 
-            // Residual + post-LN
             cur = ggml_add(g, residual, ca);
             cur = g_ln(g, cur, l.cross_ln_w, l.cross_ln_b);
         }
@@ -1080,19 +1119,16 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
         if (l.ff_up_w) {
             residual = cur;
             ggml_tensor * up = g_linear(g, cur, l.ff_up_w, l.ff_up_b);
-            up = ggml_relu(g, up); // TrOCR decoder: activation_function="relu" (NOT gelu)
+            up = ggml_relu(g, up);
             ggml_tensor * down = g_linear(g, up, l.ff_down_w, l.ff_down_b);
 
-            // Residual + post-LN
             cur = ggml_add(g, residual, down);
             cur = g_ln(g, cur, l.ff_ln_w, l.ff_ln_b);
         }
     }
 
-    // Final LayerNorm
     if (ctx->dec_final_ln_w) cur = g_ln(g, cur, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
 
-    // LM head → logits [V, 1]
     cur = g_linear(g, cur, ctx->lm_head_w, ctx->lm_head_b);
     ggml_set_name(cur, "logits");
     ggml_set_output(cur);
@@ -1113,8 +1149,8 @@ static float cosine_sim(const float * a, const float * b, int n) {
     return (float)(dot / (sqrt(na) * sqrt(nb)));
 }
 
-// Run the full decoder loop using graph-based computation.
-// Returns the generated tokens (excluding the start token).
+// Run the full decoder loop with persistent device-side KV cache.
+// Eliminates per-step CPU→GPU cache re-uploads.
 static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     ctx->char_confidences.clear();
     const auto & hp = ctx->hparams;
@@ -1123,47 +1159,41 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     const int n_dec = hp.dec_layers;
     const int n_enc = ctx->n_enc_tokens;
 
-    // --- Optimization 1: Pre-cache dequantized embeddings ---
-    // Dequantize once instead of every step (avoids full vocab table dequant per step)
+    int max_steps = std::min(hp.max_seq_len, 200);
+
+    // Allocate persistent KV cache on device (or reset if already allocated)
+    if (!alloc_dec_kv_cache(ctx, max_steps, n_enc)) {
+        fprintf(stderr, "math_ocr: failed to allocate decoder KV cache\n");
+        return {};
+    }
+
+    // Upload cross-attention K/V once (stays on device for all steps)
+    for (int li = 0; li < n_dec; li++) {
+        size_t off = (size_t)li * ctx->dkv.cross_k->nb[2];
+        ggml_backend_tensor_set(ctx->dkv.cross_k, ctx->cross_k_cache[li].data(),
+                                off, n_enc * D * sizeof(float));
+        ggml_backend_tensor_set(ctx->dkv.cross_v, ctx->cross_v_cache[li].data(),
+                                off, n_enc * D * sizeof(float));
+    }
+
+    // Pre-cache dequantized embeddings (once, not per step)
     std::vector<float> tok_emb_f32;
     std::vector<float> pos_emb_f32;
     if (ctx->tok_embed) tok_emb_f32 = to_f32(ctx->tok_embed);
     if (ctx->pos_embed_dec) pos_emb_f32 = to_f32(ctx->pos_embed_dec);
 
-    // --- Optimization: Use 1 thread for decoder (small tensors, threading overhead dominates) ---
-    // The decoder operates on [D,1] vectors where D=256, so matrix ops are tiny.
-    // Multi-threading adds massive synchronization overhead for these small ops.
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, 1);
 
-    // --- Optimization 2: Single metadata buffer (16MB, reused) ---
     const size_t meta_sz = 16 * 1024 * 1024;
     std::vector<uint8_t> meta_buf(meta_sz);
     ggml_init_params ip = { meta_sz, meta_buf.data(), true };
 
-    // Self-attention KV cache: per layer, grows by [D] each step
-    std::vector<std::vector<float>> self_k_cache(n_dec);
-    std::vector<std::vector<float>> self_v_cache(n_dec);
-
-    // --- Validation harness (scalar decoder for comparison) ---
-#ifdef DECODER_VALIDATE
-    std::vector<std::vector<float>> scalar_k_cache(n_dec);
-    std::vector<std::vector<float>> scalar_v_cache(n_dec);
-    std::vector<int> scalar_tokens = { hp.decoder_start_token };
-    float min_cos = 1.0f;
-    fprintf(stderr, "math_ocr: DECODER_VALIDATE enabled — comparing graph vs scalar\n");
-    ctx->ds.allocated = false;
-    ensure_dec_scratch(ctx, hp.max_seq_len);
-#endif
-
     std::vector<int> tokens = { hp.decoder_start_token };
-    int max_steps = std::min(hp.max_seq_len, 200);
 
     for (int step = 0; step < max_steps; step++) {
         int tok = tokens.back();
-        int n_kv = step; // number of previously cached K/V tokens (0 on first step)
+        int n_kv = step;
 
-        // 1. CPU-side: compute token + positional embedding + embed LN
-        //    Uses pre-cached dequantized tables (Optimization 1)
         std::vector<float> emb(D, 0.0f);
         if (!tok_emb_f32.empty() && tok >= 0 && tok < V) {
             float sc = ctx->scale_embedding ? sqrtf((float)D) : 1.0f;
@@ -1181,12 +1211,9 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
                     emb[2], emb[3], emb[4]);
         }
 
-        // 2. Build the graph for this step (reuse metadata buffer — Optimization 2)
         ggml_context * g = ggml_init(ip);
-
         ggml_cgraph * gf = build_decoder_step_graph(ctx, g, n_kv, n_enc);
 
-        // 3. Allocate graph
         ggml_backend_sched_reset(ctx->sched);
         if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
             fprintf(stderr, "math_ocr: decoder graph alloc failed at step %d\n", step);
@@ -1194,80 +1221,18 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
             break;
         }
 
-        // 4. Set input tensors
-
-        // Token embedding
+        // Only input: token embedding (KV cache is persistent, handled by graph)
         ggml_tensor * t_emb = ggml_graph_get_tensor(gf, "dec_tok_emb");
         if (t_emb) ggml_backend_tensor_set(t_emb, emb.data(), 0, D * sizeof(float));
 
-        // Self-attention KV caches
-        char name[64];
-        for (int li = 0; li < n_dec; li++) {
-            if (n_kv > 0) {
-                snprintf(name, sizeof(name), "self_k_in_%d", li);
-                ggml_tensor * kt = ggml_graph_get_tensor(gf, name);
-                if (kt) ggml_backend_tensor_set(kt, self_k_cache[li].data(), 0, n_kv * D * sizeof(float));
-
-                snprintf(name, sizeof(name), "self_v_in_%d", li);
-                ggml_tensor * vt = ggml_graph_get_tensor(gf, name);
-                if (vt) ggml_backend_tensor_set(vt, self_v_cache[li].data(), 0, n_kv * D * sizeof(float));
-            }
-
-            // Cross-attention K/V (constant, but must re-set after sched realloc)
-            snprintf(name, sizeof(name), "cross_k_%d", li);
-            ggml_tensor * ck = ggml_graph_get_tensor(gf, name);
-            if (ck) ggml_backend_tensor_set(ck, ctx->cross_k_cache[li].data(), 0, n_enc * D * sizeof(float));
-
-            snprintf(name, sizeof(name), "cross_v_%d", li);
-            ggml_tensor * cv = ggml_graph_get_tensor(gf, name);
-            if (cv) ggml_backend_tensor_set(cv, ctx->cross_v_cache[li].data(), 0, n_enc * D * sizeof(float));
-        }
-
-        // 5. Compute
         ggml_backend_sched_graph_compute(ctx->sched, gf);
 
-        // 6. Read logits
         std::vector<float> logits(V);
         ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
         if (logits_t) ggml_backend_tensor_get(logits_t, logits.data(), 0, V * sizeof(float));
 
-        // 7. Read new K/V and append to cache
-        for (int li = 0; li < n_dec; li++) {
-            std::vector<float> k_new(D), v_new(D);
-            snprintf(name, sizeof(name), "self_k_out_%d", li);
-            ggml_tensor * ko = ggml_graph_get_tensor(gf, name);
-            if (ko) ggml_backend_tensor_get(ko, k_new.data(), 0, D * sizeof(float));
-
-            snprintf(name, sizeof(name), "self_v_out_%d", li);
-            ggml_tensor * vo = ggml_graph_get_tensor(gf, name);
-            if (vo) ggml_backend_tensor_get(vo, v_new.data(), 0, D * sizeof(float));
-
-            self_k_cache[li].insert(self_k_cache[li].end(), k_new.begin(), k_new.end());
-            self_v_cache[li].insert(self_v_cache[li].end(), v_new.begin(), v_new.end());
-        }
-
         ggml_free(g);
 
-        // --- Validation: compare graph logits with scalar decoder ---
-#ifdef DECODER_VALIDATE
-        {
-            int scalar_tok = scalar_tokens.back();
-            auto scalar_logits = decoder_step_scalar(ctx, scalar_tok, step, scalar_k_cache, scalar_v_cache);
-            float cs = cosine_sim(logits.data(), scalar_logits.data(), V);
-            if (cs < min_cos) min_cos = cs;
-            if (step < 10 || cs < 0.99f) {
-                int g_best = 0, s_best = 0;
-                for (int v = 1; v < V; v++) {
-                    if (logits[v] > logits[g_best]) g_best = v;
-                    if (scalar_logits[v] > scalar_logits[s_best]) s_best = v;
-                }
-                fprintf(stderr, "math_ocr: [validate] step %d cosine=%.6f graph_best=%d scalar_best=%d\n", step, cs,
-                        g_best, s_best);
-            }
-        }
-#endif
-
-        // 8. Greedy argmax
         int best = 0;
         float best_s = logits[0];
         for (int v = 1; v < V; v++)
@@ -1283,7 +1248,6 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
 
         if (best == hp.eos_token || best == hp.pad_token) break;
 
-        // Confidence: softmax of winning token
         {
             float max_l = logits[0];
             for (int v = 1; v < V; v++)
@@ -1294,17 +1258,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
         }
 
         tokens.push_back(best);
-
-#ifdef DECODER_VALIDATE
-        // Mirror the scalar decoder's token sequence to match graph decoder
-        scalar_tokens.push_back(best);
-#endif
     }
-
-#ifdef DECODER_VALIDATE
-    fprintf(stderr, "math_ocr: [validate] DONE — min cosine similarity across all steps: %.6f %s\n", min_cos,
-            min_cos >= 0.99f ? "PASS" : "FAIL");
-#endif
 
     // Restore multi-threading for subsequent encoder runs
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
@@ -1406,6 +1360,7 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
 
 void math_ocr_free(math_ocr_context * ctx) {
     if (!ctx) return;
+    free_dec_kv_cache(ctx);
     if (ctx->enc_graph_g) ggml_free(ctx->enc_graph_g);
     if (ctx->enc_batch_g) ggml_free(ctx->enc_batch_g);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
