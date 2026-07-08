@@ -1076,11 +1076,11 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
             cur = g_ln(g, cur, l.cross_ln_w, l.cross_ln_b);
         }
 
-        // ---- FFN (GELU) ----
+        // ---- FFN ----
         if (l.ff_up_w) {
             residual = cur;
             ggml_tensor * up = g_linear(g, cur, l.ff_up_w, l.ff_up_b);
-            up = ggml_gelu(g, up);
+            up = ggml_relu(g, up); // TrOCR decoder: activation_function="relu" (NOT gelu)
             ggml_tensor * down = g_linear(g, up, l.ff_down_w, l.ff_down_b);
 
             // Residual + post-LN
