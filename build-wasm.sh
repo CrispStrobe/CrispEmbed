@@ -161,7 +161,6 @@ EXPORTED_FUNCS="[\
 '_wasm_ocr_pipeline_full_init',\
 '_wasm_ocr_pipeline_full_run',\
 '_wasm_ocr_pipeline_full_free',\
-'_wasm_ocr_pipeline_run_async',\
 '_wasm_scan_cleanup_init',\
 '_wasm_scan_cleanup_process',\
 '_wasm_scan_cleanup_free_image',\
@@ -179,6 +178,14 @@ EXPORTED_FUNCS="[\
 '_free',\
 '_main'\
 ]"
+
+# The async proxied recognize (wasm_ocr_pipeline_run_async) is
+# __EMSCRIPTEN_PTHREADS__-guarded — it only exists in --threads / --proxy-to-pthread
+# builds. Exporting it from the single-thread build fails at link
+# ("symbol exported via --export not found").
+if [ "$THREADS" = "ON" ]; then
+    EXPORTED_FUNCS="${EXPORTED_FUNCS%]},'_wasm_ocr_pipeline_run_async']"
+fi
 
 EXPORTED_RUNTIME="[\
 'ccall','cwrap','FS','MEMFS','getValue','setValue','UTF8ToString','stringToUTF8','lengthBytesUTF8',\
