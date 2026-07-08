@@ -76,14 +76,15 @@ def main():
     embedded[0] = cls.flatten()[:H]
     embedded[1] = dist.flatten()[:H]
 
-    # Patch embeddings (all uniform gray)
+    # Patch embeddings (all uniform gray). Vectorized (was a ~170M-iteration
+    # triple loop): every patch is the same uniform gray, so its embedding is
+    # embed[h] = Bp[h] + pixel_val * sum_j Wp[h,j] — identical for all patches.
+    # NOTE: tools/dump_math_ocr_perlayer_reference.py is the preferred reference
+    # (real per-layer HF activations on the same input) for the crispembed_diff
+    # math_ocr harness; this ONNX dumper only captures embed + final encoder out.
     pixel_val = 0.6
-    for p_idx in range(T - 2):
-        for h in range(H):
-            s = Bp[h]
-            for j in range(3 * P * P):
-                s += pixel_val * Wp.flatten()[h * 3 * P * P + j]
-            embedded[p_idx + 2, h] = s
+    patch_embed = Bp.astype(np.float64) + pixel_val * Wp.reshape(H, -1).astype(np.float64).sum(axis=1)
+    embedded[2:] = patch_embed.astype(np.float32)
 
     embedded += pos.reshape(T, H)[:T]
 
