@@ -72,7 +72,15 @@ arch = kh.detect_cuda_arch()
 cuda_flags = kh.cuda_build_flags(arch)
 cache_flags = kh.cache_and_link_flags()
 
+# cuda_flags and cache_flags are lists — join them for shell command
+if isinstance(cuda_flags, list):
+    cuda_flags = " ".join(cuda_flags)
+if isinstance(cache_flags, list):
+    cache_flags = " ".join(cache_flags)
+
 print(f"Building CrispEmbed (CUDA arch={arch})...")
+print(f"  cuda_flags: {cuda_flags}")
+print(f"  cache_flags: {cache_flags}")
 os.chdir(str(EMBED_DIR))
 subprocess.check_call(
     f"cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release "
