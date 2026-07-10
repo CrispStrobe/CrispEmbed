@@ -26,6 +26,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <cstring>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -1233,13 +1234,30 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
 
         ggml_free(g);
 
-        int best = 0;
-        float best_s = logits[0];
-        for (int v = 1; v < V; v++)
-            if (logits[v] > best_s) {
-                best_s = logits[v];
-                best = v;
+        // Greedy argmax with no-repeat-ngram blocking (prevents TOOO→TOO loops).
+        // Ban any token that would complete an already-seen trigram.
+        const int no_repeat_ngram = 3;
+        int best = -1;
+        {
+            std::unordered_set<int> banned;
+            const int k = no_repeat_ngram - 1;
+            const int n = (int)tokens.size();
+            if (no_repeat_ngram > 1 && n >= k && k > 0) {
+                for (int i = 0; i + k < n; i++) {
+                    bool match = true;
+                    for (int j = 0; j < k; j++) {
+                        if (tokens[i + j] != tokens[n - k + j]) { match = false; break; }
+                    }
+                    if (match) banned.insert(tokens[i + k]);
+                }
             }
+            float best_s = -INFINITY;
+            for (int v = 0; v < V; v++) {
+                if (!banned.empty() && banned.count(v)) continue;
+                if (logits[v] > best_s) { best_s = logits[v]; best = v; }
+            }
+            if (best < 0) best = 0; // fallback (all banned — shouldn't happen)
+        }
 
         if (step < 5) {
             fprintf(stderr, "math_ocr: [graph] dec step %d: tok=%d logits[0..4]=[%.3f %.3f %.3f %.3f %.3f] best=%d\n",
