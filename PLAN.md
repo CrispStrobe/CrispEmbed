@@ -1639,7 +1639,7 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   Migrated: smoldocling_ocr (replaced wbufs), granite_vision_ocr (replaced
   wcache). Remaining runtimes still need migration.
 
-- [ ] **Adopt F16 ggml KV cache** — Port to: deepseek_ocr2 (F32 std::vector).
+- [x] **Adopt F16 ggml KV cache** — all decoder engines now use persistent device KV.
   pix2struct: **DONE** (`088d359`) — F32 std::vector KV cache + cross-attn pre-compute.
   lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
