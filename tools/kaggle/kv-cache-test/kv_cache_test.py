@@ -114,9 +114,9 @@ def dl(repo, fname):
     return str(p)
 
 # Small models for quick tests
-pix2tex = dl("cstr/pix2tex-GGUF", "pix2tex-mfr-q4_k.gguf")
-dbnet = dl("cstr/DBNet-text-detect-GGUF", "dbnet-ic15-q4_k.gguf")
-trocr = dl("cstr/TrOCR-small-GGUF", "trocr-small-printed-q4_k.gguf")
+pix2tex = dl("cstr/pix2tex-mfr-gguf", "pix2tex-mfr-q4_k.gguf")
+dbnet = dl("cstr/dbnet-ic15-GGUF", "dbnet-ic15-q4_k.gguf")
+trocr = dl("cstr/trocr-small-printed-GGUF", "trocr-small-printed-q4_k.gguf")
 
 # Larger models (persistent KV is critical for these)
 deepseek = dl("cstr/deepseek-ocr2-crispembed-GGUF", "deepseek-ocr2-q4_k.gguf")
