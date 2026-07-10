@@ -4,6 +4,30 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 10, 2026 — TrOCR decoder: persistent KV cache + no_repeat_ngram
+
+### Persistent device-side KV cache (`perf/trocr-persistent-kv`)
+- Replaced CPU-side `std::vector<float>` KV cache with persistent ggml tensors
+  on the compute device (adopted from lightonocr.cpp pattern)
+- Self K/V: `[D, max_seq, n_layers]` — written via `ggml_cpy` at `n_past` (O(1)/step)
+- Cross K/V: `[D, n_enc, n_layers]` — uploaded once, read via `ggml_view`
+- Eliminates O(n²) growing cache re-uploads + 1200 cross-attn re-uploads per region
+- **Result: ~4.4s/region on CPU (down from ~19s/region) — 4x speedup**
+- Verified: 61/61 regions on scan_page_pd.png (P&P scan), 3/3 on pp_clean.png
+
+### WASM full pipeline end-to-end verified
+- Rebuilt WASM with persistent KV cache fix
+- **First successful full-pipeline WASM run on a real scanned page**
+- 61 regions detected + recognized on scan_page_pd.png (606×1000) in 1186s
+- Previously crashed with ggml hash table overflow / memory OOB
+
+### no_repeat_ngram trigram blocking
+- Ported `argmax_no_repeat_ngram` from qwen2vl_ocr.cpp/got_ocr.cpp
+- Bans tokens that would complete an already-seen 3-gram
+- Fixes TOOO→TOO, SUMMERER→SUMMER divergence vs HF
+
+---
+
 ## July 6, 2026 — 12 OCR engines verified in the browser; model picker
 
 Extended the WebGPU sweep to 12 engines — all produce correct text.
