@@ -111,6 +111,33 @@ from `hf-space/`.
 | **[CrisperWeaver](https://github.com/CrispStrobe/CrisperWeaver)** | Flutter transcription app powered by CrispASR — desktop + mobile, fully offline |
 | **[Susurrus](https://github.com/CrispStrobe/Susurrus)** | Python ASR GUI with 9 backends (faster-whisper, mlx-whisper, voxtral, ...) |
 
+### Beyond llama.cpp
+
+CrispEmbed shares ggml as the compute backend but covers capabilities
+that llama.cpp does not:
+
+| Capability | CrispEmbed | llama.cpp |
+|---|---|---|
+| Dense text embeddings (10 architectures) | MPNet, GTE-v1.5, DeBERTa-v2, Gemma3, Qwen3, ModernBERT, NomicBERT, SPLADE, BERT, XLM-R | BERT/Jina only |
+| Sparse retrieval (SPLADE / BGE-M3) | Full term-weight sparse vectors | Not supported |
+| ColBERT multi-vector | Per-token embeddings + MaxSim | Not supported |
+| Cross-encoder reranking | bge-reranker, Jina, mxbai, MiniLM | Not supported |
+| Face detection + recognition | SCRFD/YuNet detect, ArcFace/SFace/AuraFace recognize | Not supported |
+| OCR (15 engines) | Math (7), scene text (PARSeq), document (TrOCR, Tesseract LSTM, 6 VLMs) | Not supported |
+| Document layout detection | RT-DETRv2 (17 classes) | Not supported |
+| Text detection | Surya EfficientViT + CC fallback | Not supported |
+| Scan cleanup + dewarping | Classical + learned (NAFNet, TPS) | Not supported |
+| Image super-resolution | 8 engines (HAT, DAT, ESRGAN, SwinIR, TBSRN, SAFMN, Restormer, SCUNet) | Not supported |
+| Named entity recognition | GLiNER zero-shot + BERT fixed-label | Not supported |
+| Key information extraction | OCR + NER pipeline for forms/receipts | Not supported |
+| Text language identification | CLD3/GlotLID | Not supported |
+| WASM browser build | Full OCR pipeline runs client-side | Experimental |
+| OCR output formats | hOCR, ALTO XML, searchable PDF | Not applicable |
+
+CrispEmbed is not a chat/generation engine — it focuses on retrieval,
+understanding, and document processing where llama.cpp focuses on text
+generation.
+
 ## Status
 
 **28 embedding models** shown below (all pass, cos>=0.965 vs HF), **78 models** total in registry (including rerankers, SPLADE, CLIP/SigLIP vision, CLIP text, YuNet/SCRFD face detection, AuraFace/SFace recognition):
