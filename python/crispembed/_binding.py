@@ -348,41 +348,54 @@ class CrispEmbed:
         self,
         texts: Union[str, List[str]],
         normalize: bool = True,
+        matryoshka_dim: Optional[int] = None,
     ) -> np.ndarray:
         """Encode text(s) to embedding vectors.
 
         Args:
             texts: Single string or list of strings.
             normalize: L2-normalize (default True, already done in C).
+            matryoshka_dim: Truncate embeddings to this dimension and re-normalize.
+                Useful for Matryoshka models (e.g. EmbeddingGemma) that support
+                variable output dimensions. None = use model's full dimension.
 
         Returns:
             np.ndarray of shape (n_texts, dim) or (dim,) for single text.
         """
+        # Set matryoshka dimension if requested
+        if matryoshka_dim is not None:
+            self._lib.crispembed_set_dim(self._ctx, matryoshka_dim)
+
         single = isinstance(texts, str)
         if single:
             texts = [texts]
 
         n = len(texts)
 
-        if n == 1:
+        try:
+            if n == 1:
+                dim = ctypes.c_int(0)
+                ptr = self._lib.crispembed_encode(
+                    self._ctx, texts[0].encode("utf-8"), ctypes.byref(dim)
+                )
+                if not ptr:
+                    raise RuntimeError(f"Encoding failed for: {texts[0][:50]}")
+                out = np.ctypeslib.as_array(ptr, shape=(dim.value,)).copy()
+                return out if single else out.reshape(1, -1)
+
+            c_texts = (ctypes.c_char_p * n)(*(t.encode("utf-8") for t in texts))
             dim = ctypes.c_int(0)
-            ptr = self._lib.crispembed_encode(
-                self._ctx, texts[0].encode("utf-8"), ctypes.byref(dim)
+            ptr = self._lib.crispembed_encode_batch(
+                self._ctx, c_texts, n, ctypes.byref(dim)
             )
             if not ptr:
-                raise RuntimeError(f"Encoding failed for: {texts[0][:50]}")
-            out = np.ctypeslib.as_array(ptr, shape=(dim.value,)).copy()
-            return out if single else out.reshape(1, -1)
-
-        c_texts = (ctypes.c_char_p * n)(*(t.encode("utf-8") for t in texts))
-        dim = ctypes.c_int(0)
-        ptr = self._lib.crispembed_encode_batch(
-            self._ctx, c_texts, n, ctypes.byref(dim)
-        )
-        if not ptr:
-            raise RuntimeError("Batch encoding failed")
-        out = np.ctypeslib.as_array(ptr, shape=(n * dim.value,)).copy()
-        return out.reshape(n, dim.value)
+                raise RuntimeError("Batch encoding failed")
+            out = np.ctypeslib.as_array(ptr, shape=(n * dim.value,)).copy()
+            return out.reshape(n, dim.value)
+        finally:
+            # Reset to full dimension after matryoshka encode
+            if matryoshka_dim is not None:
+                self._lib.crispembed_set_dim(self._ctx, 0)
 
     # ------------------------------------------------------------------
     # Sparse retrieval (BGE-M3 / SPLADE)
