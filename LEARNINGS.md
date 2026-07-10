@@ -1,5 +1,27 @@
 # CrispEmbed — Technical Learnings
 
+## Per-step CPU→device KV cache re-upload is the #1 autoregressive perf killer (2026-07)
+
+math_ocr's TrOCR decoder stored self-attention K/V in CPU `std::vector<float>`
+and re-uploaded the entire growing cache via `ggml_backend_tensor_set` every
+decode step. With 200 steps this is O(n²) total transfers — plus constant-cost
+cross-attention K/V re-uploads (6 layers × n_enc × D × 4B per step).
+
+On Metal/WebGPU this caused ~19s/region (device sync overhead dominates).
+On WASM it caused OOM (ggml hash table overflow from graph rebuild pressure).
+
+**Fix:** Adopt the lightonocr.cpp persistent KV cache pattern:
+- Allocate `ggml_tensor` for K/V on the compute device once at max_seq
+- Write new K/V per step via `ggml_cpy` into `ggml_view_2d` at offset `n_past` (O(1))
+- Read full history via `ggml_view_2d` (zero-copy on device)
+- Cross-attn K/V uploaded once before the decode loop
+
+**Result:** 19s→4.4s/region on CPU (4.3x), WASM crash eliminated.
+
+**Rule:** Any autoregressive decoder with `std::vector` KV cache + per-step
+`tensor_set` should be migrated to persistent device tensors. The pattern is
+in lightonocr.cpp (GQA + RoPE variant) and now math_ocr.cpp (simple MHA).
+
 ## A weight's `t->data` is a DEVICE pointer on CUDA/Vulkan — host reads SIGSEGV; Metal/CPU hide it; local Ampere reproduces the class but not arch-specific garbage (2026-07)
 
 A model weight loaded on a device-local backend (CUDA/Vulkan/SYCL/ROCm-HIP) has a

@@ -1454,12 +1454,10 @@ or the runtime:
   reads the crops as uppercase fragments (`Mamma`→`MAMMA`, `too`→`TOO`). So the
   conversion is faithful; the low quality is trocr-small's ceiling on
   scene-text-detector crops.
-- **The one real GGUF↔HF discrepancy: a trailing repeated subword** — GGUF
-  `TOOO` vs HF `TOO`, `SUMMERER` vs HF `SUMMER`. This is the "repeated-token
-  garbage" noted above: our greedy decode lacks HF's `no_repeat_ngram` / eos /
-  length-penalty behavior. **Actionable:** port `no_repeat_ngram`(=3) + verify
-  eos/length-penalty parity in `math_ocr.cpp`'s decoder (got-ocr2 already does
-  this — see 2026-07-01 note).
+- ~~**The one real GGUF↔HF discrepancy: a trailing repeated subword**~~ — **FIXED**
+  (`6791af5`): ported `argmax_no_repeat_ngram`(=3) from qwen2vl_ocr.cpp to
+  `math_ocr.cpp`'s graph decoder. Bans tokens completing an already-seen trigram.
+  eos/length-penalty parity still TODO but the main repeat bug is resolved.
 
 Accuracy — the bigger levers:
 - **Detection under-covers documents.** DBNet-ic15 is an ICDAR-2015 *scene-text*
@@ -1646,7 +1644,11 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   lightonocr: **DONE** (`485cb97`, branch `lighton-perf`) — 2.09x total speedup.
   granite_vision_ocr: **DONE** (`66b8de2`).
   smoldocling_ocr: **DONE** (`bc329e4`, branch `feat/smoldocling-kvcache-prefill`).
-  qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding
+  qwen2vl_ocr: **DONE** — already had F16 kvc; fixed CPU round-trip in seeding.
+  math_ocr (TrOCR): **DONE** (`230f190`, `perf/trocr-persistent-kv`) — persistent
+  device-side F32 KV cache with ggml_view/ggml_cpy. 4x speedup (19s→4.4s/region).
+  Cross-attn K/V uploaded once. Also fixed WASM full-pipeline crash (was OOM from
+  per-step re-uploads).
   (`48948a6`, branch `feat/qwen2vl-kvcache`).
 
 - [x] **Move granite_vision_ocr to full Metal ggml graphs (vision + LLM)** —
