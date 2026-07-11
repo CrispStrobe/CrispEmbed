@@ -4780,6 +4780,20 @@ More applications of the rule above, plus a technique for verified perf wins:
   they ever move conv to Metal. `conv_2d_direct`'s only edge is memory (no im2col
   buffer) — irrelevant at a fixed 640² input.
 
+- **The conv-swap win was engine-specific: whole-network conv (layout) wins, a
+  neck/patch conv in a decode-dominated model does NOT.** Sweeping the other
+  `conv_2d_direct` / `conv2d_cpu` users (got_ocr SAM-neck, glm_ocr patch-embed,
+  ppformulanet/unlimited/bttr necks) — they're all a small neck/patch stage inside
+  a transformer+decoder model. **got_ocr measured**: neck_projector 396 ms of
+  6738 ms (~6%, convs a fraction of that) while **decode = 92%** (499 × ~12 ms).
+  So the conv swap is ~4% at best — the flagged-micro-gap-that-isn't-dominant case;
+  don't churn it. And the got_ocr **decode step is ~89% GPU-execute / ~11% host**
+  (metal-prof: 940 nodes, 2.5 ms encode / ~20 ms gpu synced) → **compute-bound**,
+  so the decode-step graph cache / ggml-metal ICB (which only remove host/dispatch)
+  cap out at ~10–17% there — modest, and a risky project. Lesson: the layout
+  backbone was special because the ENTIRE net is conv (measured 99.6% GPU / 11.7s);
+  measure the fraction before assuming a repeat of a win.
+
 - **The ggml gitlink/symlink dance bit twice this session** — see the `git stash`/
   `git checkout` reset trap; a fresh-worktree build needs the ggml symlink, git ops
   need the gitlink, and stash/checkout silently swap it back to the empty gitlink
