@@ -977,23 +977,14 @@ static void mlp_2layer(const float * input, // (N, in_dim)
 {
     std::vector<float> mid(N * mid_dim);
 
-    // Layer 0: Linear + ReLU
-    for (int n = 0; n < N; n++) {
-        for (int j = 0; j < mid_dim; j++) {
-            float val = b0[j];
-            for (int k = 0; k < in_dim; k++) val += w0[j * in_dim + k] * input[n * in_dim + k];
-            mid[n * mid_dim + j] = val > 0.0f ? val : 0.0f; // ReLU
-        }
-    }
+    // Layer 0: Linear + ReLU — batched SIMD GEMM (was a scalar matmul per token).
+    // w0 is [mid_dim, in_dim] = [out_dim, in_dim], matching linear_batch_cpu.
+    core_cpu::linear_batch_cpu(input, mid.data(), N, in_dim, mid_dim, w0, b0);
+    for (size_t i = 0; i < mid.size(); i++)
+        if (mid[i] < 0.0f) mid[i] = 0.0f;
 
-    // Layer 3: Linear (no activation)
-    for (int n = 0; n < N; n++) {
-        for (int j = 0; j < out_dim; j++) {
-            float val = b3[j];
-            for (int k = 0; k < mid_dim; k++) val += w3[j * mid_dim + k] * mid[n * mid_dim + k];
-            output[n * out_dim + j] = val;
-        }
-    }
+    // Layer 3: Linear (no activation) — batched SIMD GEMM.
+    core_cpu::linear_batch_cpu(mid.data(), output, N, mid_dim, out_dim, w3, b3);
 }
 
 // ============================================================================
@@ -1427,16 +1418,11 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
             float w = attn_weights[l];
             for (int i = 0; i < T * enc_hidden; i++) fused[i] += w * all_layer_outs[l][i];
         }
-        // Output projection
+        // Output projection — batched SIMD GEMM (was a scalar [enc_hidden, enc_hidden]
+        // matmul per token; the dominant layer-fusion cost).
         encoder_out.resize(T * enc_hidden);
-        for (int t = 0; t < T; t++) {
-            for (int d = 0; d < enc_hidden; d++) {
-                float val = ctx->fuser_out_proj_b[d];
-                for (int k = 0; k < enc_hidden; k++)
-                    val += ctx->fuser_out_proj_w[d * enc_hidden + k] * fused[t * enc_hidden + k];
-                encoder_out[t * enc_hidden + d] = val;
-            }
-        }
+        core_cpu::linear_batch_cpu(fused.data(), encoder_out.data(), T, enc_hidden, enc_hidden,
+                                   ctx->fuser_out_proj_w.data(), ctx->fuser_out_proj_b.data());
         GDBG("layer fusion: %.1f ms", elapsed());
         if (bench) {
             auto t_fuse1 = std::chrono::steady_clock::now();
