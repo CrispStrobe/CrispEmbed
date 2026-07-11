@@ -2645,6 +2645,18 @@ of `init_best()` in `crispembed.cpp:81`, broaden the Metal F16 mul_mm guard from
 
 ### Tier-1 item 1 — concrete design: decode-step graph cache
 
+**MEASURED ROI caveat (2026-07-11).** This is model-dependent and generally
+MODEST — set expectations before implementing. metal-prof of got-ocr2-q4_k decode:
+each 940-node step is **~89% GPU-execute / ~11% host** (2.5 ms Metal-encode / ~20 ms
+gpu, synced) → compute-bound, so caching the graph (which removes graph-build +
+alloc-planning, i.e. part of the host slice) caps at **~10–17%** there. Lighter
+decoders skew more host/dispatch-bound but the earlier trocr-small measurement was
+only **2–6%** (build+alloc 0.47 ms/step vs 18.5 ms Metal compute). So the win is
+real but small, and the value is highest for **many-token decodes on light models**
+(unlimited/formula OCR) and lowest for heavy q4_k LLM decoders. Worth doing for the
+correctness/tidiness and the cumulative effect across long outputs, but don't expect
+a headline multiple. A handover prompt for this exists (see session notes).
+
 **Verified current state (2026-07-11 code read).** No decoder caches the built
 cgraph. Even the "best" ones rebuild every step:
 - `deepseek_ocr2` decode loop (`deepseek_ocr2.cpp:1915-1955`) calls
