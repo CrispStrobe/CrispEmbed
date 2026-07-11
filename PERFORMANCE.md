@@ -731,6 +731,71 @@ runtime category. "Existing" means the optimization is already implemented;
 
 ---
 
+## Runtime Optimization Audit — Re-verification (2026-07-11)
+
+Full re-sweep of the codebase against the June audit above. **Nearly every P0/P1
+the June audit flagged has since been executed.** The tables above are retained
+for history but are now stale: read this section for the current state. Findings
+here were verified against current code (`git` HEAD), not carried from the doc.
+
+### June-audit claims that are now WRONG (code has moved on)
+
+| June claim | Current reality | Evidence |
+|---|---|---|
+| `conv2d_cpu` "still scalar / needs im2col restructure" (arch-rec #2) | Per-patch gather into a `thread_local` buffer + SIMD `dot_product` per output channel, with a hoisted interior-fast-path boundary check. Effectively single-patch im2col+SIMD. | `core/cpu_ops.h:345-400` |
+| `mel.cpp` projection "naive triple-loop matmul" | `core_cpu::dot_product` fast path for the contiguous layout; scalar retained only for transposed/accumulator cases | `core/mel.cpp:116-117` |
+| VLM decoders "F32 CPU KV re-uploaded each step / CPU-scalar" (qwen2vl, deepseek, smoldocling, granite, pix2struct) | All default to ggml graphs with **F16 device-resident KV** + `ggml_flash_attn_ext`. Scalar is an env-gated fallback. | qwen2vl_ocr.cpp:1091-1092,2412; deepseek_ocr2.cpp:154,1604-1620; granite_vision_ocr.cpp:626-627; smoldocling_ocr.cpp:685-686; pix2struct.cpp:347 |
+| SR "No SIMD anywhere / no dequant caching 12-of-13 / no tiling" | 11/13 SR runtimes on ggml graphs; DequantCache fleet-wide (12 files); Hann-window tiling universal | esrgan_sr.cpp:362; instructir.cpp:164; scunet_denoise.cpp:327 |
+| decoder_embed "no flash in single-text path" | Single-text path (B≤1) now calls `ggml_flash_attn_ext` | decoder_embed.cpp:1196,1421 |
+| gliner "BiLSTM fully scalar" | Gate matmuls use `core_cpu::dot_product` (SIMD); only the per-timestep sequencing is inherent | gliner_ner.cpp:915-916 |
+| tesseract "LSTM gates no SIMD" | SIMD via `core_cpu::dot_product` | tesseract_lstm.cpp:256-257 |
+| Math-OCR scalar encoders (DenseNet bttr/hmer/posformer, HGNetv2 ppformulanet, Swin mixtex) | DenseNet/HGNetv2 → ggml graphs (default); mixtex projections on ggml (window attention still scalar — see gaps) | bttr/posformer/hmer/ppformulanet; mixtex_ocr.cpp:126 |
+
+### Verified DONE since June (net-new work)
+
+- **Device-resident F16 KV cache** across the VLM decoder set; **persistent
+  single decode graph** in deepseek_ocr2 and math_ocr (TrOCR ~4×). Other VLM
+  decoders (qwen2vl/granite/smoldocling) have device-resident KV but still
+  rebuild the decode graph per step.
+- **WebGPU/WASM tier** (OCR build): ~950 lines of authored WGSL kernels
+  (LayerNorm, IM2COL/CONV_2D/POOL_2D/CONV_TRANSPOSE_2D/UPSCALE/ARANGE) landed in
+  the pinned `ggml` submodule. Detection ~60×, det+rec pipeline ~1.8×, ~2.8×
+  total vs SIMD-CPU. Multithreaded via `--proxy-to-pthread`.
+- **Beam search** added to math_ocr, bttr, ppformulanet, ppformulanet_l.
+- **imatrix** quant rollout (20 models); confirmed **zero inference cost** —
+  the eval-callback early-returns unless `CRISPEMBED_IMATRIX_OUT` is set
+  (`imatrix.cpp:131`). It is a calibration/quant-time artifact only.
+
+### True remaining gaps (2026-07-11)
+
+| P | Area | Gap | Impact |
+|---|---|---|---|
+| **P1** | Graph caching (all runtimes) | **0 runtimes reuse the built cgraph.** Decoders rebuild + `sched_reset`+`alloc_graph` per token; device KV landed but the graph around it is rebuilt each step. Blocked on WebGPU (traps `unreachable`) — needs per-backend gating (safe on Metal/CPU). | #1 unrealized lever |
+| **P1** | layout_detect | Deformable cross-attention still CPU-scalar 6-nested bilinear grid-sample | Dominates DETR decoder; the one surviving June P0 |
+| **P1** | text_sr | ~~Only SR engine still fully scalar (`tsr_conv2d`)~~ — conv now delegates to SIMD `core_cpu::conv2d_cpu` (this branch). Remaining: a full ggml graph for GPU offload | Convs SIMD-accelerated; GPU path still open |
+| **P1** | WebGPU embedding tier | `build-embed-wasm.sh` has no `--webgpu` path — text embeddings are CPU-only in browser | Whole embedding browser tier misses the proven GPU path |
+| **P2** | scunet_denoise | Swin blocks still scalar; only SR engine without DequantCache (`scunet_denoise.cpp:32`) | Transformer half unaccelerated + repeated dequant |
+| **P2** | esrgan/safmn/restormer/instructir | CPU-pinned **deliberately** (documented in-file): conv weights land in a Metal/CUDA buffer the CPU conv sched can't read → "pre-allocated tensor in a buffer that cannot run" abort on Metal / segfault on CUDA; instructir also hits a Metal `mul_mv` f32×f16 pipeline-compile bug. NOT a free flip — needs the conv weight-residency / GPU-conv-dispatch fix (same class as the nafnet residency bug) | Real bug, not a config toggle |
+| **P2** | mixtex_ocr | Swin window attention still scalar (`mixtex_ocr.cpp:126`) | Encoder O(N²·D)-bound |
+| **P2** | qwen2vl/granite/smoldocling | Decode graph rebuilt per step (KV device-resident, but not the persistent-graph pattern deepseek/math use) | Per-step build/launch overhead |
+| **P2** | deepseek_ocr2 | LLM/enc flash are opt-in default-off (measured slower on CPU); re-benchmark on Metal/CUDA | Backend-dependent |
+| **P3** | Build/infra | No LTO/IPO; `GGML_BLAS=OFF` (Accelerate not guaranteed for CPU-fallback matmul); `--gpu-backend` ignored (`crispembed.cpp:81` calls `init_best()` directly); app-level OpenMP possibly unlinked; Metal F16 mul_mm guard in only 5/~40 GPU files | Broad low-effort |
+| **P3** | Misc | ocr_orchestrator PNG round-trip + N reloads; gliner DeBERTa rel-pos [H,T²] ~117MB/call; ppformulanet_l decoder scalar; `conv2d_cpu` not GEMM-batched/multithreaded | Localized |
+
+### Highest-ceiling paths forward
+
+1. **Decode-step graph cache** (per-backend gated) — cache the *decode-step*
+   graph, not the encoder graph (encoder caching is a measured dud + a GPU
+   use-after-free landmine). Templates: the `sched_reserve`+T-bucket pattern in
+   the text encoder and lfm2.
+2. **ggml-metal ICB (indirect command buffer) replay** — Metal decode is
+   per-op-dispatch bound; CUDA-graph capture already solves the CUDA side.
+3. **Finish residual scalar kernels** (layout_detect deformable, text_sr, scunet
+   Swin, mixtex window attn) and upgrade `conv2d_cpu` per-patch → true
+   im2col+GEMM (batch all output channels) + multithread.
+
+---
+
 ## VLM OCR Benchmarks (Intel Xeon Skylake, 4 threads, CPU-only)
 
 ### Qwen3-VL-2B-Instruct (q4_k, 1.5 GB)
