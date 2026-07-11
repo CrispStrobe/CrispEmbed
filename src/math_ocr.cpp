@@ -115,6 +115,10 @@ struct math_ocr_context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
+    // Decode-step graph cache (MATH_OCR_DECODE_CACHE=1): dedicated gallocr
+    // reserved once at max decode length, computed sched-free — see
+    // run_decoder_graph.
+    ggml_gallocr_t decode_galloc = nullptr;
     int n_threads;
     std::string result_buf;
     std::vector<float> char_confidences; // per-token softmax probabilities
@@ -157,7 +161,7 @@ struct math_ocr_context {
     struct dec_kv_cache {
         ggml_context * ctx = nullptr;
         ggml_backend_buffer_t buf = nullptr;
-        ggml_tensor * self_k = nullptr;  // [D, max_seq, n_layers]
+        ggml_tensor * self_k = nullptr; // [D, max_seq, n_layers]
         ggml_tensor * self_v = nullptr;
         ggml_tensor * cross_k = nullptr; // [D, n_enc, n_layers]
         ggml_tensor * cross_v = nullptr;
@@ -801,8 +805,14 @@ static bool alloc_dec_kv_cache(math_ocr_context * ctx, int max_seq, int n_enc) {
         if (kv.buf) ggml_backend_buffer_clear(kv.buf, 0);
         return true;
     }
-    if (kv.buf) { ggml_backend_buffer_free(kv.buf); kv.buf = nullptr; }
-    if (kv.ctx) { ggml_free(kv.ctx); kv.ctx = nullptr; }
+    if (kv.buf) {
+        ggml_backend_buffer_free(kv.buf);
+        kv.buf = nullptr;
+    }
+    if (kv.ctx) {
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
+    }
     kv.allocated = false;
 
     const int D = ctx->hparams.dec_d_model;
@@ -821,7 +831,8 @@ static bool alloc_dec_kv_cache(math_ocr_context * ctx, int max_seq, int n_enc) {
     kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, ctx->backend);
     if (!kv.buf) {
         fprintf(stderr, "math_ocr: KV cache alloc failed\n");
-        ggml_free(kv.ctx); kv.ctx = nullptr;
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
         return false;
     }
     ggml_backend_buffer_clear(kv.buf, 0);
@@ -832,15 +843,21 @@ static bool alloc_dec_kv_cache(math_ocr_context * ctx, int max_seq, int n_enc) {
     kv.allocated = true;
 
     size_t bytes = ggml_backend_buffer_get_size(kv.buf);
-    fprintf(stderr, "math_ocr: decoder KV cache: %d layers, max_seq=%d, n_enc=%d, %.1f MB\n",
-            nl, max_seq, n_enc, (float)bytes / 1024 / 1024);
+    fprintf(stderr, "math_ocr: decoder KV cache: %d layers, max_seq=%d, n_enc=%d, %.1f MB\n", nl, max_seq, n_enc,
+            (float)bytes / 1024 / 1024);
     return true;
 }
 
 static void free_dec_kv_cache(math_ocr_context * ctx) {
     auto & kv = ctx->dkv;
-    if (kv.buf) { ggml_backend_buffer_free(kv.buf); kv.buf = nullptr; }
-    if (kv.ctx) { ggml_free(kv.ctx); kv.ctx = nullptr; }
+    if (kv.buf) {
+        ggml_backend_buffer_free(kv.buf);
+        kv.buf = nullptr;
+    }
+    if (kv.ctx) {
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
+    }
     kv.allocated = false;
     kv.n_past = 0;
 }
@@ -1079,19 +1096,17 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
 
         // Write new K/V into persistent cache at position n_kv
         size_t k_layer_off = (size_t)li * kv.self_k->nb[2];
-        ggml_tensor * k_dst = ggml_view_2d(g, kv.self_k, D, 1,
-            kv.self_k->nb[1], k_layer_off + (size_t)n_kv * kv.self_k->nb[1]);
-        ggml_tensor * v_dst = ggml_view_2d(g, kv.self_v, D, 1,
-            kv.self_v->nb[1], (size_t)li * kv.self_v->nb[2] + (size_t)n_kv * kv.self_v->nb[1]);
+        ggml_tensor * k_dst =
+            ggml_view_2d(g, kv.self_k, D, 1, kv.self_k->nb[1], k_layer_off + (size_t)n_kv * kv.self_k->nb[1]);
+        ggml_tensor * v_dst = ggml_view_2d(g, kv.self_v, D, 1, kv.self_v->nb[1],
+                                           (size_t)li * kv.self_v->nb[2] + (size_t)n_kv * kv.self_v->nb[1]);
         ggml_build_forward_expand(gf, ggml_cpy(g, k_new, k_dst));
         ggml_build_forward_expand(gf, ggml_cpy(g, v_new, v_dst));
 
         // Read full KV history [0..n_kv+1)
         int Lk = n_kv + 1;
-        ggml_tensor * k_full = ggml_view_2d(g, kv.self_k, D, Lk,
-            kv.self_k->nb[1], k_layer_off);
-        ggml_tensor * v_full = ggml_view_2d(g, kv.self_v, D, Lk,
-            kv.self_v->nb[1], (size_t)li * kv.self_v->nb[2]);
+        ggml_tensor * k_full = ggml_view_2d(g, kv.self_k, D, Lk, kv.self_k->nb[1], k_layer_off);
+        ggml_tensor * v_full = ggml_view_2d(g, kv.self_v, D, Lk, kv.self_v->nb[1], (size_t)li * kv.self_v->nb[2]);
 
         ggml_tensor * sa = g_mha_1q(g, q, k_full, v_full, hp.dec_heads, Lk);
         sa = g_linear(g, sa, l.self_out_w, l.self_out_b);
@@ -1104,10 +1119,8 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
             residual = cur;
             ggml_tensor * cq = g_linear(g, cur, l.cross_q_w, l.cross_q_b);
 
-            ggml_tensor * ck = ggml_view_2d(g, kv.cross_k, D, n_enc,
-                kv.cross_k->nb[1], (size_t)li * kv.cross_k->nb[2]);
-            ggml_tensor * cv = ggml_view_2d(g, kv.cross_v, D, n_enc,
-                kv.cross_v->nb[1], (size_t)li * kv.cross_v->nb[2]);
+            ggml_tensor * ck = ggml_view_2d(g, kv.cross_k, D, n_enc, kv.cross_k->nb[1], (size_t)li * kv.cross_k->nb[2]);
+            ggml_tensor * cv = ggml_view_2d(g, kv.cross_v, D, n_enc, kv.cross_v->nb[1], (size_t)li * kv.cross_v->nb[2]);
 
             ggml_tensor * ca = g_mha_1q(g, cq, ck, cv, hp.dec_heads, n_enc);
             ca = g_linear(g, ca, l.cross_out_w, l.cross_out_b);
@@ -1171,10 +1184,8 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     // Upload cross-attention K/V once (stays on device for all steps)
     for (int li = 0; li < n_dec; li++) {
         size_t off = (size_t)li * ctx->dkv.cross_k->nb[2];
-        ggml_backend_tensor_set(ctx->dkv.cross_k, ctx->cross_k_cache[li].data(),
-                                off, n_enc * D * sizeof(float));
-        ggml_backend_tensor_set(ctx->dkv.cross_v, ctx->cross_v_cache[li].data(),
-                                off, n_enc * D * sizeof(float));
+        ggml_backend_tensor_set(ctx->dkv.cross_k, ctx->cross_k_cache[li].data(), off, n_enc * D * sizeof(float));
+        ggml_backend_tensor_set(ctx->dkv.cross_v, ctx->cross_v_cache[li].data(), off, n_enc * D * sizeof(float));
     }
 
     // Pre-cache dequantized embeddings (once, not per step)
@@ -1188,6 +1199,28 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     const size_t meta_sz = 16 * 1024 * 1024;
     std::vector<uint8_t> meta_buf(meta_sz);
     ggml_init_params ip = { meta_sz, meta_buf.data(), true };
+
+    // MATH_OCR_DECODE_CACHE=1: reserve a dedicated gallocr once for the longest
+    // decode graph (n_kv = max_steps) and run each step sched-free — the decode
+    // graph is single-backend (weights + self/cross KV on ctx->backend) and its
+    // node count is constant per step (only the self-attn KV read length grows
+    // with n_kv), so every per-step alloc takes the no-realloc fast path and the
+    // sched's split_graph is skipped. Output-identical. Same trick as got_ocr.
+    static const bool use_cache = (std::getenv("MATH_OCR_DECODE_CACHE") != nullptr);
+    if (use_cache && !ctx->decode_galloc) {
+        ctx->decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+        ggml_context * rg = ggml_init(ip);
+        ggml_cgraph * rgf = build_decoder_step_graph(ctx, rg, max_steps - 1, n_enc);
+        bool reserved = ggml_gallocr_reserve(ctx->decode_galloc, rgf);
+        ggml_free(rg);
+        if (!reserved) {
+            fprintf(stderr, "math_ocr: decode gallocr reserve failed; using sched\n");
+            ggml_gallocr_free(ctx->decode_galloc);
+            ctx->decode_galloc = nullptr;
+        } else {
+            fprintf(stderr, "math_ocr: decode-step graph cache active (max_steps=%d)\n", max_steps);
+        }
+    }
 
     std::vector<int> tokens = { hp.decoder_start_token };
 
@@ -1215,18 +1248,30 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
         ggml_context * g = ggml_init(ip);
         ggml_cgraph * gf = build_decoder_step_graph(ctx, g, n_kv, n_enc);
 
-        ggml_backend_sched_reset(ctx->sched);
-        if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
-            fprintf(stderr, "math_ocr: decoder graph alloc failed at step %d\n", step);
-            ggml_free(g);
-            break;
+        if (ctx->decode_galloc) {
+            if (!ggml_gallocr_alloc_graph(ctx->decode_galloc, gf)) {
+                fprintf(stderr, "math_ocr: decoder gallocr alloc failed at step %d\n", step);
+                ggml_free(g);
+                break;
+            }
+        } else {
+            ggml_backend_sched_reset(ctx->sched);
+            if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+                fprintf(stderr, "math_ocr: decoder graph alloc failed at step %d\n", step);
+                ggml_free(g);
+                break;
+            }
         }
 
         // Only input: token embedding (KV cache is persistent, handled by graph)
         ggml_tensor * t_emb = ggml_graph_get_tensor(gf, "dec_tok_emb");
         if (t_emb) ggml_backend_tensor_set(t_emb, emb.data(), 0, D * sizeof(float));
 
-        ggml_backend_sched_graph_compute(ctx->sched, gf);
+        if (ctx->decode_galloc) {
+            ggml_backend_graph_compute(ctx->backend, gf);
+        } else {
+            ggml_backend_sched_graph_compute(ctx->sched, gf);
+        }
 
         std::vector<float> logits(V);
         ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
@@ -1246,7 +1291,10 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
                 for (int i = 0; i + k < n; i++) {
                     bool match = true;
                     for (int j = 0; j < k; j++) {
-                        if (tokens[i + j] != tokens[n - k + j]) { match = false; break; }
+                        if (tokens[i + j] != tokens[n - k + j]) {
+                            match = false;
+                            break;
+                        }
                     }
                     if (match) banned.insert(tokens[i + k]);
                 }
@@ -1254,7 +1302,10 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
             float best_s = -INFINITY;
             for (int v = 0; v < V; v++) {
                 if (!banned.empty() && banned.count(v)) continue;
-                if (logits[v] > best_s) { best_s = logits[v]; best = v; }
+                if (logits[v] > best_s) {
+                    best_s = logits[v];
+                    best = v;
+                }
             }
             if (best < 0) best = 0; // fallback (all banned — shouldn't happen)
         }
@@ -1381,6 +1432,7 @@ void math_ocr_free(math_ocr_context * ctx) {
     free_dec_kv_cache(ctx);
     if (ctx->enc_graph_g) ggml_free(ctx->enc_graph_g);
     if (ctx->enc_batch_g) ggml_free(ctx->enc_batch_g);
+    if (ctx->decode_galloc) ggml_gallocr_free(ctx->decode_galloc);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);

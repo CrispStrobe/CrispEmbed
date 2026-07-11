@@ -2761,7 +2761,7 @@ output-identical. This confirms the roadmap's framing — a modest, real,
 worth-shipping-as-opt-in win, NOT a headline multiple; the dominant per-step cost
 remains compute/dispatch (Tier-1 item 2).
 
-**EXTENDED to 3 more decoders (2026-07-11), all output byte-identical.** Same
+**EXTENDED to 4 more decoders (2026-07-11), all output byte-identical.** Same
 sched-free-gallocr mechanism, one env gate each, default OFF:
 `internvl2_ocr` (`INTERNVL2_DECODE_CACHE=1`), `glm_ocr` (`GLM_OCR_DECODE_CACHE=1`),
 `lightonocr` (`LOCR_DECODE_CACHE=1`, a CPU-only decoder — its inline decode graph
@@ -2804,7 +2804,17 @@ no win to capture. **Lesson: "single-graph decoder" is necessary but not
 sufficient; the decode graph must also be single-backend** (got_ocr/internvl2/glm
 are all-Metal, lightonocr all-CPU; qwen2vl is Metal+CPU). Fixing qwen2vl would
 mean getting its attention onto Metal (a separate op-coverage task), not the
-graph cache. Still open (each needs its own check for single-backend decode
-first): `smoldocling` (CPU LM head outside the graph), `granite` (shares the
-vision sched), `math_ocr` (enc-dec cross-attn KV), and `deepseek_ocr2`
+graph cache.
+
+**`math_ocr` (TrOCR enc-dec) DONE (`MATH_OCR_DECODE_CACHE=1`).** The 4th backend
+in the list above is really the 5th engine — added after qwen2vl: despite being
+an encoder-**decoder** with a second (cross-attn) KV set, its decode is
+single-graph, single-backend (self+cross KV + weights on `ctx->backend`; the
+`GGML_SCHED_DEBUG=2` decode split is all one backend), and decode-only. Reserved
+at `max_steps`; the cross-attn KV read length is fixed (`n_enc`) while only the
+self-attn read grows with `n_kv`, so the constant-node-count invariant holds.
+Byte-identical + engaged on fox + scan_strip (trocr-small-printed-q8_0). It's the
+lightest decoder ported (D=256) → best relative win of the set. Still open (each
+needs the single-backend decode check first): `smoldocling` (CPU LM head outside
+the graph), `granite` (shares the vision sched), and `deepseek_ocr2`
 (per-layer-per-step → needs the persistent-graph variant).
