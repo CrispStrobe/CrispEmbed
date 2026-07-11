@@ -2619,10 +2619,24 @@ micro-gap"). The genuine remaining levers are projects, each needing a stable
 benchmark harness:
 
 1. **SIMD/ggml-ify the scalar-compute hot paths** — the actual dominant costs:
-   scunet WMSA+MLP (`scunet_denoise.cpp:310-390`), mixtex Swin window attention
-   (`mixtex_ocr.cpp:126`), layout_detect deformable cross-attention
+   scunet WMSA+MLP (`scunet_denoise.cpp:310-390`), ~~mixtex Swin window attention
+   (`mixtex_ocr.cpp:126`)~~, layout_detect deformable cross-attention
    (`layout_detect.cpp:797`). Highest ROI; verifiable per-engine with a
    downloadable model; do one engine end-to-end as a proof.
+   - **mixtex DONE (2026-07-11) — but the lever was THREADING, not SIMD.** The
+     Swin attention math was already SIMD (`816a88a` dot-product) + ggml-batched
+     (`2453e04`); measuring showed the encoder (2395 ms, ~48% of a 5009 ms total
+     on mixtex_pow) was still bottlenecked by the **serial per-window loop**
+     (`mixtex_ocr.cpp:741`) — 270 independent windows in stage 0, run
+     single-threaded regardless of `-t`. Each `window_mhsa` is self-contained
+     (own scratch, disjoint output slice), so the loop parallelizes
+     byte-identically. Now honors `ctx->n_threads` (default `n_threads=1` keeps
+     the old behavior; `MIXTEX_WMSA_SCALAR=1` forces serial). **Isolated A/B at
+     `-t 8`, best-of-3: encoder 1420 → 733 ms (1.94×)** (full no-`-t` baseline
+     was ~2350 ms → ~733 ms once ggml's other-op threading is also on).
+     Byte-identical LaTeX on mixtex_pow + formula_quadratic. The lesson matches
+     safmn/esrgan: for an already-SIMD scalar kernel over independent units, the
+     next lever is **loop-level parallelism**, not more SIMD.
 2. **ggml-metal ICB replay** — per-op Metal dispatch dominates decode (measured:
    trocr compute ~18ms/step is dispatch, not math). CUDA-graph capture already
    solves the CUDA side (CrispASR §210). Large upstream-ggml design + prototype.
