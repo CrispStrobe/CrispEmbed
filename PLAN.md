@@ -2788,8 +2788,23 @@ win on LIGHT decoders, ~0% on heavy ones** — and its real value is
 **load-insensitivity**: the sched's `alloc` ballooned to ~4.3 ms/step under loadavg
 ~24 (→ a ~4 ms/step, ~15% saving there) while the gallocr path stays flat at
 ~0.1–0.2 ms regardless of load. glm-q8_0 wall-clock not measured (heavier than
-internvl2 → predictably within noise; correctness verified). Still open:
-`qwen2vl`/`smoldocling` (decode inlined / CPU LM head — same pattern, more
-surgery), `granite` (shares the vision sched), `math_ocr` (enc-dec cross-attn
-KV), and `deepseek_ocr2` (per-layer-per-step → needs the persistent-graph
-variant).
+internvl2 → predictably within noise; correctness verified).
+
+**`qwen2vl` does NOT fit — attempted and reverted (2026-07-11).** Its decode graph
+is single-graph and constant-shape (KV views span `[0..max_seq-1]` + `kv_mask` —
+it was already designed so `sched_alloc_graph` skips gallocr realloc, see the
+comment at `build_decode_step_graph`), BUT it is **multi-backend**:
+`GGML_SCHED_DEBUG=2` shows per-layer `SPLIT: CPU` for the attention (the
+`qwen_kv_k/v (view)(reshaped)(permuted)` + `(cont)` tensors run on CPU, rest on
+MTL0). So computing it sched-free on `ctx.backend` (Metal) forces those CPU ops
+onto Metal → empty/garbage output (verified: fox OCR went 2 lines → 0). And
+because the shape is already constant, the reserve buys nothing (no realloc to
+skip), while `split_graph` is *mandatory* for a multi-backend graph — so there is
+no win to capture. **Lesson: "single-graph decoder" is necessary but not
+sufficient; the decode graph must also be single-backend** (got_ocr/internvl2/glm
+are all-Metal, lightonocr all-CPU; qwen2vl is Metal+CPU). Fixing qwen2vl would
+mean getting its attention onto Metal (a separate op-coverage task), not the
+graph cache. Still open (each needs its own check for single-backend decode
+first): `smoldocling` (CPU LM head outside the graph), `granite` (shares the
+vision sched), `math_ocr` (enc-dec cross-attn KV), and `deepseek_ocr2`
+(per-layer-per-step → needs the persistent-graph variant).
