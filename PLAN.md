@@ -2620,9 +2620,9 @@ benchmark harness:
 
 1. **SIMD/ggml-ify the scalar-compute hot paths** — the actual dominant costs:
    scunet WMSA+MLP (`scunet_denoise.cpp:310-390`), ~~mixtex Swin window attention
-   (`mixtex_ocr.cpp:126`)~~, layout_detect deformable cross-attention
-   (`layout_detect.cpp:797`). Highest ROI; verifiable per-engine with a
-   downloadable model; do one engine end-to-end as a proof.
+   (`mixtex_ocr.cpp:126`)~~, ~~layout_detect deformable cross-attention~~. Highest
+   ROI; verifiable per-engine with a downloadable model; do one engine end-to-end
+   as a proof.
    - **mixtex DONE (2026-07-11) — but the lever was THREADING, not SIMD.** The
      Swin attention math was already SIMD (`816a88a` dot-product) + ggml-batched
      (`2453e04`); measuring showed the encoder (2395 ms, ~48% of a 5009 ms total
@@ -2637,6 +2637,20 @@ benchmark harness:
      Byte-identical LaTeX on mixtex_pow + formula_quadratic. The lesson matches
      safmn/esrgan: for an already-SIMD scalar kernel over independent units, the
      next lever is **loop-level parallelism**, not more SIMD.
+   - **layout_detect DONE (2026-07-11) — and the flagged target was wrong.** The
+     roadmap flagged the *deformable cross-attention* loop, but instrumenting it
+     showed it is only **~1.5% of Phase 2** (~30 ms of ~1920 ms) — a dud, the
+     classic flagged-micro-gap-that-isn't-the-dominant-cost. The real Phase-2
+     cost is the `cpu_linear` matmuls (self-attn / projections / FFN over 6
+     layers, up to N=8400 memory tokens for cross_value). Already AXPY'd
+     (`477a4b5`, ~1.26×); the remaining lever is **threading its independent
+     output-row loop** (`layout_detect.cpp:1038`, honors `ctx->n_threads`, default
+     1 = old behavior). Best-of-5 min at `-t 8`: Phase 2 **2345 → 1572 ms
+     (1.49×; median 1.24×)**, byte-identical (21 regions). Sub-2× because the big
+     cross_value matmuls are partly **memory-bandwidth-bound** (don't scale to 8×)
+     and per-call `std::thread` spawn adds overhead — a shared thread pool would
+     tighten it, but that's a cross-engine project. Same lesson again: measure to
+     find the real hot loop, then parallelize the independent axis.
 2. **ggml-metal ICB replay** — per-op Metal dispatch dominates decode (measured:
    trocr compute ~18ms/step is dispatch, not math). CUDA-graph capture already
    solves the CUDA side (CrispASR §210). Large upstream-ggml design + prototype.
