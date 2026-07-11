@@ -2637,6 +2637,18 @@ benchmark harness:
      Byte-identical LaTeX on mixtex_pow + formula_quadratic. The lesson matches
      safmn/esrgan: for an already-SIMD scalar kernel over independent units, the
      next lever is **loop-level parallelism**, not more SIMD.
+   - **mixtex DECODER DONE (2026-07-11) — a redundant-work bug, not a kernel.**
+     The decoder is the other ~52% (2607 ms). Instrumenting it: the autoregressive
+     step loop is 91%, and its cost was **re-dequantizing the (constant) f16
+     decoder weights on EVERY step** — ~11 `to_f32()` calls per layer × 4 layers ×
+     30 steps. Hoisted all of them into a per-layer f32 cache built once before
+     the loop (`decw`). Same-binary same-load A/B (`MIXTEX_DEC_DEQUANT_PER_STEP=1`
+     restores per-step dequant, kept as a regression gate), best-of-3 min:
+     **decoder 2923 → 1008 ms (~2.9×)**, byte-identical. First guess (threading
+     the vocab projection) was measured as ~4% of the step and discarded — the
+     redundant dequant was the real cost. (Cross-attn K/V precompute is a separate
+     6%, already hoisted.) Lesson: on an AR decoder, check for constant work
+     re-run per step before optimizing any kernel.
    - **layout_detect DONE (2026-07-11) — and the flagged target was wrong.** The
      roadmap flagged the *deformable cross-attention* loop, but instrumenting it
      showed it is only **~1.5% of Phase 2** (~30 ms of ~1920 ms) — a dud, the
