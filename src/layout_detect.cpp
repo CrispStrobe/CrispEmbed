@@ -32,6 +32,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Debug logging gated on LAYOUT_DEBUG env var
@@ -1035,7 +1036,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     // --- Phase 2: Decoder (CPU-side) ---
     auto t_phase2 = std::chrono::steady_clock::now();
 
-    auto cpu_linear = [](const float * x, float * y, int in_d, int out_d, int N, ggml_tensor * w_t, ggml_tensor * b_t) {
+    auto cpu_linear = [nthreads = ctx->n_threads](const float * x, float * y, int in_d, int out_d, int N,
+                                                  ggml_tensor * w_t, ggml_tensor * b_t) {
         auto W = tensor_to_f32(w_t);
         auto b_v = tensor_to_f32(b_t);
         if (W.empty()) W.resize(out_d * in_d, 0.0f);
@@ -1057,15 +1059,35 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         // strode x by N. The per-output accumulation order (i ascending) is unchanged,
         // so the result is byte-identical to the old scalar loop.
         const size_t Nz = (size_t)N;
-        for (int o = 0; o < out_d; o++) {
-            float * yo = y + (size_t)o * Nz;
-            const float bo = b[o];
-            for (int n = 0; n < N; n++) yo[n] = bo;
-            for (int i = 0; i < in_d; i++) {
-                const float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
-                const float * xi = x + (size_t)i * Nz;
-                for (int n = 0; n < N; n++) yo[n] += w * xi[n];
+        // Each output row o writes a disjoint yo, so the o-loop parallelizes
+        // byte-identically. This is the dominant Phase-2 cost (the deformable
+        // sample loop is ~1.5%); honors ctx->n_threads (default 1 = old behavior).
+        auto compute_rows = [&](int o0, int o1) {
+            for (int o = o0; o < o1; o++) {
+                float * yo = y + (size_t)o * Nz;
+                const float bo = b[o];
+                for (int n = 0; n < N; n++) yo[n] = bo;
+                for (int i = 0; i < in_d; i++) {
+                    const float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
+                    const float * xi = x + (size_t)i * Nz;
+                    for (int n = 0; n < N; n++) yo[n] += w * xi[n];
+                }
             }
+        };
+        int nt = std::min(nthreads, out_d);
+        // Only thread when the matmul is big enough to amortize thread spawn.
+        if (nt <= 1 || (size_t)out_d * in_d * Nz < (size_t)(1u << 20)) {
+            compute_rows(0, out_d);
+        } else {
+            std::vector<std::thread> pool;
+            pool.reserve(nt);
+            int chunk = (out_d + nt - 1) / nt;
+            for (int t = 0; t < nt; t++) {
+                int o0 = t * chunk, o1 = std::min(o0 + chunk, out_d);
+                if (o0 >= o1) break;
+                pool.emplace_back(compute_rows, o0, o1);
+            }
+            for (auto & th : pool) th.join();
         }
     };
 
@@ -1378,6 +1400,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
          token_scores[N_queries - 1].first);
     LDBG("layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
+    double _deform_ms = 0; // profiling accumulator for the deformable-sampling loop
     for (int li = 0; li < 6; li++) {
         // Recompute pos_enc from current reference points each layer (matches HF)
         compute_pos_enc(ref_points.data(), pos_enc.data());
@@ -1565,6 +1588,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         int value_hd = D / N_heads; // 32
         std::vector<float> cross_out(D * N_queries, 0.0f);
 
+        auto _td0 = std::chrono::steady_clock::now();
         for (int q = 0; q < N_queries; q++) {
             float ref_cx = ref_points[q * 4 + 0]; // cx in [0, 1]
             float ref_cy = ref_points[q * 4 + 1]; // cy in [0, 1]
@@ -1617,6 +1641,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
                 }
             }
         }
+        _deform_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _td0).count();
 
         if (li == 0 && layout_debug()) {
             float mn = 1e9, mx = -1e9;
@@ -1844,7 +1869,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase2).count();
-        fprintf(stderr, "[layout_detect-bench] Phase 2 decoder: %.1f ms\n", ms);
+        fprintf(stderr, "[layout_detect-bench] Phase 2 decoder: %.1f ms (deformable-sample loop: %.1f ms)\n", ms,
+                _deform_ms);
     }
 
     // --- Phase 3: Detection heads ---
