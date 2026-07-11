@@ -141,9 +141,12 @@ bool load(context ** out, const char * path, int n_threads) {
 
     core_gguf::free_metadata(g);
 
-    fprintf(stderr, "ocr_detect: loading %s\n", path);
-    fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n", ctx->prob_thresh, ctx->box_thresh,
-            ctx->unclip_ratio);
+    const bool ocr_det_debug = (std::getenv("OCR_DETECT_DEBUG") != nullptr);
+    if (ocr_det_debug) {
+        fprintf(stderr, "ocr_detect: loading %s\n", path);
+        fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n", ctx->prob_thresh, ctx->box_thresh,
+                ctx->unclip_ratio);
+    }
 
     // Backend selection. DBNet is a tiny (~7 MB) but conv-heavy net: its
     // forward is dominated by Conv2d / ConvTranspose2d at large spatial
@@ -216,7 +219,7 @@ bool load(context ** out, const char * path, int n_threads) {
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
-    fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
+    if (ocr_det_debug) fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_OCR_DETECT_BENCH") != nullptr);
     return true;
 }
