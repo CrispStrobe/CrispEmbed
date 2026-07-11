@@ -2759,7 +2759,27 @@ busy machines because the sched `alloc` scales with sequence length + CPU load
 Verified byte-identical on 3 images (incl. the 499-step page); CPU backend also
 output-identical. This confirms the roadmap's framing — a modest, real,
 worth-shipping-as-opt-in win, NOT a headline multiple; the dominant per-step cost
-remains compute/dispatch (Tier-1 item 2). Same mechanism applies verbatim to the
-other single-graph decoders (`qwen2vl`/`granite`/`smoldocling`); `deepseek_ocr2`
-rebuilds per-layer per-step so it needs the persistent-graph variant, still
-open.
+remains compute/dispatch (Tier-1 item 2).
+
+**EXTENDED to 3 more decoders (2026-07-11), all output byte-identical.** Same
+sched-free-gallocr mechanism, one env gate each, default OFF:
+`internvl2_ocr` (`INTERNVL2_DECODE_CACHE=1`), `glm_ocr` (`GLM_OCR_DECODE_CACHE=1`),
+`lightonocr` (`LOCR_DECODE_CACHE=1`, a CPU-only decoder — its inline decode graph
+was hoisted into a `build_step_graph(n_past)` lambda so it can be reserved).
+**Critical correctness gate learned here: cache DECODE steps only (`n_past > 0`).**
+Unlike `got_ocr` (whose prefill is a separate code path), these three route
+*prefill* through the same `run_cached_step`; sending the prefill graph (vision
+splice / full-sequence mRoPE, a different node count) through a decode-shaped
+gallocr reservation + sched-free compute corrupts output — glm degenerated into
+repetition until the `n_past > 0` gate was added (internvl2 happened to survive
+sched-free prefill, but is now correctly gated too). Verified byte-identical ON
+vs OFF, cache engagement confirmed via a stderr marker: internvl2-1b-q4_k
+(scan_page_pd 21 lines + fox), glm-ocr-q8_0 (scan_page_pd 44 lines),
+lightonocr-1b-q4_k (scan_strip + fox). Host build+alloc saving is the same class
+as got_ocr's measured ~87% (wall-clock re-measure deferred — the dev box was at
+loadavg ~50 with competing builds, which the A/B rule says fabricates timings;
+correctness is load-independent and is the acceptance test). Still open:
+`qwen2vl`/`smoldocling` (decode inlined / CPU LM head — same pattern, more
+surgery), `granite` (shares the vision sched), `math_ocr` (enc-dec cross-attn
+KV), and `deepseek_ocr2` (per-layer-per-step → needs the persistent-graph
+variant).

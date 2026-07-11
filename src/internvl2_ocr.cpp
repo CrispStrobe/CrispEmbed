@@ -971,6 +971,10 @@ void free_(context & ctx) {
         ctx.vis_graph_ctx = nullptr;
     }
     ctx.vis_graph_cached = false;
+    if (ctx.decode_galloc) {
+        ggml_gallocr_free(ctx.decode_galloc);
+        ctx.decode_galloc = nullptr;
+    }
     if (ctx.sched) {
         ggml_backend_sched_free(ctx.sched);
         ctx.sched = nullptr;
@@ -1278,13 +1282,46 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
     const int T = n_tokens;
     const int Lk = n_past + T;
 
+    // INTERNVL2_DECODE_CACHE=1: reserve a dedicated gallocr once for the
+    // max-length decode graph and compute sched-free — the decode graph is
+    // single-backend and its node count is constant per step, so every per-step
+    // ggml_gallocr_alloc_graph takes the no-realloc fast path (skips the sched's
+    // split_graph). Output-identical. Same trick as got_ocr.
+    // Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different
+    // graph shape (image splice) and stays on the sched.
+    static const bool use_cache = (std::getenv("INTERNVL2_DECODE_CACHE") != nullptr);
+    const bool cache_this = use_cache && n_past > 0;
+    if (cache_this && !ctx.decode_galloc) {
+        ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
+        llm_graph rg = build_llm_graph(ctx, 1, ctx.kvc.max_seq - 1, /*use_kv_cache=*/true);
+        bool reserved = ggml_gallocr_reserve(ctx.decode_galloc, rg.gf);
+        ggml_free(rg.gctx);
+        if (!reserved) {
+            fprintf(stderr, "internvl2_ocr: decode gallocr reserve failed; using sched\n");
+            ggml_gallocr_free(ctx.decode_galloc);
+            ctx.decode_galloc = nullptr;
+        } else {
+            fprintf(stderr, "internvl2_ocr: decode-step graph cache active (reserved at max_seq=%d)\n",
+                    ctx.kvc.max_seq);
+        }
+    }
+    const bool cache_active = cache_this && ctx.decode_galloc;
+
     llm_graph lg = build_llm_graph(ctx, T, n_past, /*use_kv_cache=*/true);
 
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
-        fprintf(stderr, "internvl2_ocr: cached step graph alloc failed\n");
-        ggml_free(lg.gctx);
-        return false;
+    if (cache_active) {
+        if (!ggml_gallocr_alloc_graph(ctx.decode_galloc, lg.gf)) {
+            fprintf(stderr, "internvl2_ocr: cached step gallocr alloc failed\n");
+            ggml_free(lg.gctx);
+            return false;
+        }
+    } else {
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
+            fprintf(stderr, "internvl2_ocr: cached step graph alloc failed\n");
+            ggml_free(lg.gctx);
+            return false;
+        }
     }
 
     // Set token IDs
@@ -1358,7 +1395,11 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
     }
 
     // Compute
-    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    if (cache_active) {
+        ggml_backend_graph_compute(ctx.backend, lg.gf);
+    } else {
+        ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    }
 
     // Read logits for the last token only
     if (lg.logits_out) {

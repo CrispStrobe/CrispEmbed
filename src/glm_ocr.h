@@ -134,6 +134,9 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
+    // Decode-step graph cache (GLM_OCR_DECODE_CACHE=1): dedicated gallocr reserved
+    // once for the max decode graph, computed sched-free — see run_cached_step.
+    ggml_gallocr_t decode_galloc = nullptr;
     std::vector<uint8_t> compute_meta;
     kv_cache kvc;
     tokenizer tok;
