@@ -2504,14 +2504,37 @@ Problem: Metal LLM/TTS decode is per-op-dispatch bound (~100 ms/step on ~280-op
 graphs). The CUDA side already solves this via CUDA-graph capture (CrispASR
 §210, ~9–13× on RTX). ggml-metal has no ICB replay path.
 
-Plan:
-1. **Depends on item 1** — a stable, reused per-step graph is the prerequisite
-   for capturing an ICB once and replaying it.
-2. Prototype ICB encoding in ggml-metal: encode the fixed op sequence once,
-   replay per step updating only buffer offsets / position inputs.
-3. Likely an **upstream ggml contribution** rather than in-tree; scope as
-   research/large. Coordinate with CrispASR (shared ggml submodule).
+**FEASIBILITY MEASURED 2026-07-11 (for CrispEmbed decoders).** The shared ggml
+submodule already carries CrispASR's §210 ICB-feasibility probe
+(`ggml-metal-context.m:438`, env `CRISPASR_METAL_PROFILE=1`), which splits each
+`graph_compute` into host-encode time (what an ICB replay collapses) vs
+GPU-execute time (what it cannot). Ran it on a trocr decode:
 
+| graph | nodes | encode_us (ICB removes) | gpu_us (ICB can't) |
+|---|---|---|---|
+| encoder (ViT) | 386 | 10188 | 58658 |
+| decode step, cold (1st) | 355 | 9679 (pipeline compile) | 6733 |
+| **decode step, warm** | 355 | **731 (18%)** | **3335 (82%)** |
+
+**Verdict for CrispEmbed decoders: ICB is a ~18% win at best** — it collapses only
+the host-encode portion of a warm decode step; the GPU-execute 82% (per-kernel
+launch latency across ~355 sequential ops) is untouchable by ICB. The cold-step
+9.7ms encode is one-time pipeline compilation (a persistent decode graph /
+pipeline cache addresses that, once). So a full ggml-metal ICB port is **NOT**
+justified for CrispEmbed's (light) decoders — the GPU-execute majority is the real
+cost, so the lever is op-count / kernel-efficiency reduction (fewer, bigger ops
+per step), not ICB.
+
+**Caveat:** this is trocr (355-node decode). CrispASR's heavy LLM decoders
+(granite/voxtral4b, the ~100 ms/step floor) may have a larger encode fraction —
+their §210 probe measures it there, and CUDA-graph capture already gave them
+9–13× on CUDA (where launch overhead is worse than Metal's encode). Re-measure
+per-decoder with `CRISPASR_METAL_PROFILE=1` before committing to any ICB work.
+
+Original plan (only if a decoder measures encode-bound):
+1. Depends on a stable, reused per-step graph (item 1) to capture an ICB once.
+2. Prototype ICB encoding in ggml-metal; replay per step, updating only buffer
+   offsets / position inputs. Upstream ggml contribution; coordinate with CrispASR.
 Verify: Apple-GPU target model; per-step latency before/after; output parity.
 
 #### 3. Real SR-GPU fix — conv weight residency (unblocks 4 SR engines)
