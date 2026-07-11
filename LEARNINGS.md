@@ -4728,3 +4728,45 @@ ones were not. The genuine remaining levers are the scalar-compute hot paths
 themselves (SIMD/ggml-ify scunet/mixtex WMSA, layout_detect deformable attn) and
 Metal per-op dispatch (ggml-metal ICB replay) — not the mechanical gaps around
 them. Verify which case you're in first.
+
+## Two more measured instances + a byte-identical SIMD trick (2026-07-11)
+
+More applications of the rule above, plus a technique for verified perf wins:
+
+- **gliner DeBERTa encoder is GPU-execute-bound, not dispatch-bound.** The
+  shared ggml `CRISPASR_METAL_PROFILE` probe split the 942-node encoder graph
+  into host-encode ~3.3 ms vs GPU-execute ~70–90 ms → **~96% GPU / ~4% host**.
+  So the "cut ggml_cont/permute, fuse ops" lever (which only touches host-encode)
+  was the WRONG one. The real cost: the disentangled c2p/p2c position matmuls
+  projected the full `[H, T*T]` pair-grid through `k_w`/`q_w`, but only `≤2T-1`
+  DISTINCT relative-position buckets exist. Fix: project the unique buckets once
+  (`[H, n_used]`), then `ggml_get_rows` to expand — output-identical, **1.28×
+  (T≈40) to 1.71× (T≈90)**, win scales O(T²−T). Same "reuse an invariant instead
+  of recomputing per element" shape as the rel-pos CPU cache, moved into the graph.
+
+- **layout_detect Phase-2 decoder cost is the scalar `cpu_linear` matmul, NOT
+  the deformable-attention sampling loop** (my first guess — corrected by the
+  bench). The deformable sample loop is ~17M MACs; `cpu_linear` (`:1018`) is a
+  scalar stride-N matmul at up to 256×256×8400, ~10×/layer×6 = ~3–5G MACs. Guess
+  cost, then measure; the loud-looking loop wasn't the cost.
+
+- **Byte-identical SIMD via AXPY reordering** (the technique). A `[out,N] = W[out,in]
+  @ X[in,N]` matmul written as `for n,o: sum_i W[o,i]*x[i*N+n]` strides `x` by N
+  (cache-hostile, un-vectorizable) — the layout_detect hot loop. Reordering to
+  `for o: y[o,:] = b[o]; for i: y[o,:] += W[o,i]*x[i,:]` makes `x[i,:]`/`y[o,:]`
+  contiguous over N (vectorizes) while keeping the **per-output accumulation order
+  (i ascending) identical → byte-identical**, verified by an empty `diff` of the
+  region output. This is strictly better than routing through `core_cpu::dot_product`
+  / `linear_batch_cpu` when you want byte-identity: those do a SIMD horizontal/
+  pairwise reduction that changes summation order (cos≈1, not exact). Measured
+  **~1.26× on Phase-2** (best-of A/B of two back-to-back binaries — the only valid
+  timing method on a box that was at loadavg 20–137 with competing crispasr/
+  flutter; best-of because noise only inflates times). AXPY was also far more
+  load-STABLE than the strided baseline (better cache behavior under memory
+  contention) — a side signal that the access-pattern change, not just SIMD width,
+  was the win.
+
+- **The ggml gitlink/symlink dance bit twice this session** — see the `git stash`/
+  `git checkout` reset trap; a fresh-worktree build needs the ggml symlink, git ops
+  need the gitlink, and stash/checkout silently swap it back to the empty gitlink
+  → stale-binary. Re-`ln -s` after any tree-touching git op before rebuilding.
