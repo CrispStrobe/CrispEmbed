@@ -26,6 +26,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdarg>
@@ -36,6 +37,7 @@
 #include <map>
 #include <unordered_map>
 #include <string>
+#include <thread>
 #include <vector>
 
 using core_cpu::gelu_erf;
@@ -738,13 +740,43 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context * ctx, const float
             int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[1] : 0;
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
-            for (int w = 0; w < n_windows; w++) {
+            // Each window's MHSA is independent (self-contained scratch, writes
+            // only its own output slice), so the window loop parallelizes across
+            // cores byte-identically. This honors ctx->n_threads (the window
+            // attention was previously single-threaded regardless of -t); default
+            // n_threads=1 keeps the old behavior. MIXTEX_WMSA_SCALAR=1 forces the
+            // single-threaded path even under -t (A/B baseline).
+            auto run_window = [&](int w) {
                 const float * win_mask =
                     (!attn_mask_all.empty()) ? attn_mask_all.data() + w * tokens_per_win * tokens_per_win : nullptr;
                 window_mhsa(windows.data() + w * tokens_per_win * D, attn_out.data() + w * tokens_per_win * D,
                             tokens_per_win, D, n_heads, q_w.data(), q_b.data(), k_w.data(), k_b.data(), v_w.data(),
                             v_b.data(), out_w.data(), out_b.data(), rpb_t.empty() ? nullptr : rpb_t.data(),
                             rpb_i.empty() ? nullptr : rpb_i.data(), rpb_len, win_mask);
+            };
+            static const bool wmsa_scalar = (std::getenv("MIXTEX_WMSA_SCALAR") != nullptr);
+            int n_thr = wmsa_scalar ? 1 : std::min(ctx->n_threads, n_windows);
+            if (ctx->bench) {
+                static bool printed = false;
+                if (!printed) {
+                    fprintf(stderr, "[mixtex-bench] wmsa n_threads=%d (ctx=%d, n_windows=%d)\n", n_thr, ctx->n_threads,
+                            n_windows);
+                    printed = true;
+                }
+            }
+            if (n_thr <= 1) {
+                for (int w = 0; w < n_windows; w++) run_window(w);
+            } else {
+                std::atomic<int> next{ 0 };
+                std::vector<std::thread> pool;
+                pool.reserve(n_thr);
+                for (int t = 0; t < n_thr; t++) {
+                    pool.emplace_back([&]() {
+                        int w;
+                        while ((w = next.fetch_add(1)) < n_windows) run_window(w);
+                    });
+                }
+                for (auto & th : pool) th.join();
             }
 
             // Diff: compare windowed attention output BEFORE window_reverse
