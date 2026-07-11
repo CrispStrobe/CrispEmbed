@@ -2555,15 +2555,19 @@ ignored its `n_threads` (hardcoded 1-thread conv sched) — DONE, ~2.3× on an
 Already-done (audit was stale, do NOT "fix"): tbsrn PE2D is already cached
 (`tbsrn_sr.cpp:425`, `pe_cache`).
 
-Negative results (measured — do NOT re-chase as cheap wins): **esrgan honor
-`n_threads`** compiles and is correct but is perf-INERT — `-t 1` ≈ `-t 8` on a
-384px upscale (13.6s vs 13.3s, output bit-identical). esrgan already runs its
-ggml conv sched at the ggml default; the workload doesn't thread-scale here
-(128px tiles, conv/im2col-bound). The real esrgan lever is **tile-loop
-parallelism**, but each tile's `esrgan_process_float` uses the shared
-`ctx->enc_sched`, so it needs per-thread backend+scheduler replication — a real
-concurrency change, not a one-liner. safmn's `n_threads` fix WAS a real 2.3×
-because its convs thread-scale; the two are not the same.
+Negative results (measured — do NOT re-chase as cheap wins): **esrgan intra-op
+threading**. `esrgan_process_float_ggml` pins the sched to 1 thread every compute
+(`esrgan_sr.cpp:266`, `fn(be, 1)`), so the init-time thread count is irrelevant.
+Wiring line 266 to honor `n_threads` and measuring properly: `-t 1` = 21s,
+`-t 8` = **33s** (SLOWER), output bit-identical. esrgan tiles into 128px pieces;
+each tile's conv is too small to amortize thread overhead, and `-t 8` on 4 P-cores
+oversubscribes. The 1-thread pin is the *safe* choice — reverted the change.
+The real esrgan lever is **tile-loop parallelism** (run whole tiles concurrently,
+each single-threaded), which needs per-thread backend+scheduler replication
+(the tile loop shares one `ctx->enc_sched`) — a real concurrency project, not a
+one-liner, and hard to verify reliably on a loaded dev machine. safmn's fix WAS a
+real 2.3× because it convolves the *whole* image in one graph (no tiling), so its
+convs thread-scale; esrgan's tiled convs do not. Different situations.
 
 ### Tier 3 — see PERFORMANCE.md re-verification gap table
 
