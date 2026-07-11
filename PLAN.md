@@ -2537,6 +2537,19 @@ Original plan (only if a decoder measures encode-bound):
    offsets / position inputs. Upstream ggml contribution; coordinate with CrispASR.
 Verify: Apple-GPU target model; per-step latency before/after; output parity.
 
+#### 2b. Op-count / kernel-efficiency reduction (the lever the ICB probe points to)
+
+Since the ICB probe showed warm Metal decode is GPU-execute-bound (~82%, i.e.
+per-kernel launch latency across ~355 sequential ops), the tractable in-tree lever
+is **fewer, bigger ops per decode step** — each fused op is one fewer Metal
+dispatch. Candidates: fuse the per-layer norm+scale+bias chains, fuse QKV, fuse the
+GLU/SwiGLU elementwise chain, prefer `ggml_soft_max_ext` (scale+mask+softmax in
+one op) over the 3-op manual form. This is **per-decoder graph surgery** in each
+`build_decoder_step_graph` — risky (easy to change numerics) and must be verified
+per model (output cosine ≈1.0 + node-count + per-step latency). NOT a blanket
+change; scope one decoder, count nodes before/after, measure. Deferred — needs a
+stable benchmark and per-model care; lower confidence than the SIMD-hot-path wins.
+
 #### 3. Real SR-GPU fix — conv weight residency (unblocks 4 SR engines)
 
 Problem: `esrgan_sr`, `safmn_sr`, `restormer`, `instructir` are CPU-pinned
@@ -2571,6 +2584,7 @@ ignored its `n_threads` (hardcoded 1-thread conv sched) — DONE, ~2.3× on an
 | safmn honor `n_threads` (was hardcoded 1) | `safmn_sr.cpp:181,255` | **DONE — verified** | ~2.3× (16.2s→7.1s, 8-core Mac) on safmn-x4, bit-identical output; convs run on CPU sched (not Metal) |
 | tps_locnet weight dequant cache | `tps_locnet.cpp:262-314` | **DONE** | conv + FC weights now dequantized (and FC-transposed) once at load; predict() reuses them. Bit-identical by construction; helps repeated-predict callers (the bundled `tps_auto_dewarp` does one predict per load, so it's neutral there). Compile-verified; no model in registry to runtime-measure |
 | scunet Swin MLP → SIMD GEMM | `scunet_denoise.cpp:366-387` | **DONE — verified 1.69×** | WMSA was already SIMD (dot_product QK^T + linear_batch_cpu projections); the surviving scalar hot loop was the per-pixel MLP. Now batched into two `linear_batch_cpu` GEMMs. **11.74s→6.96s on scunet-color 256², output byte-identical (0 pixel diff).** (The "uncached dequant" at `:32` is once/block, not per-pixel — confirmed marginal, skipped.) |
+| gliner mlp_2layer + fuser out-proj → SIMD GEMM | `gliner_ner.cpp:978-996,1430-1438` | **DONE — output-identical, but marginal on deberta** | hand-rolled per-token scalar matmuls → `linear_batch_cpu`. Output bit-identical (all 7 entities + scores match). Measured on gliner-deberta: head-passes ~5.9→5.6ms (~0.15% of the 203ms total). gliner-deberta is **encoder-bound** (177ms) and does NOT exercise the fuser path; the fuser conversion targets the audit's flagged layer-fusion `[enc_hidden,enc_hidden]`/token hotspot for **multi-layer variants** (unverified — need such a model). **Real gliner lever = the 177ms DeBERTa encoder** (check disentangled-attention / rel-pos path for scalar loops); not investigated. |
 | gate debug `fprintf` behind verbosity | layout_detect, surya_det, ocr_detect | Open — trivial | unconditional stderr in production |
 | conv2d_cpu → true im2col+GEMM + multithread | `core/cpu_ops.h:345` | Open | current per-patch SIMD recomputes the gather per out-channel; batch all out-channels into one GEMM |
 | restormer single-pass variance | `restormer.cpp:101` | Open — NEEDS RE-READ | audit claimed double-variance "dead work"; verify before touching |
