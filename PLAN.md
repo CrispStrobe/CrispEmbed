@@ -2775,10 +2775,20 @@ repetition until the `n_past > 0` gate was added (internvl2 happened to survive
 sched-free prefill, but is now correctly gated too). Verified byte-identical ON
 vs OFF, cache engagement confirmed via a stderr marker: internvl2-1b-q4_k
 (scan_page_pd 21 lines + fox), glm-ocr-q8_0 (scan_page_pd 44 lines),
-lightonocr-1b-q4_k (scan_strip + fox). Host build+alloc saving is the same class
-as got_ocr's measured ~87% (wall-clock re-measure deferred — the dev box was at
-loadavg ~50 with competing builds, which the A/B rule says fabricates timings;
-correctness is load-independent and is the acceptance test). Still open:
+lightonocr-1b-q4_k (scan_strip + fox).
+
+**Quiet-box wall-clock A/B (2026-07-11, best-of-3 back-to-back, loadavg ~7).**
+The saving reconciles across metrics and scales inversely with per-step compute:
+got_ocr-q4_k STEP_PROFILE build+alloc **0.85 → 0.28 ms/step** (alloc 0.73 → 0.08,
+the gallocr flat vs the sched growing), and decode_total **6108 → 5933 ms best-of-3
+(~3%, ~0.35 ms/step, 499 steps @ ~12 ms/step)** — the two agree within noise. On
+the heavier internvl2-1b (~36 ms/step) the same ~0.5 ms host saving is **below the
+noise floor (best-of-3 15473 vs 15706 ms, ~0%)**. So the decode-cache is a **~3%
+win on LIGHT decoders, ~0% on heavy ones** — and its real value is
+**load-insensitivity**: the sched's `alloc` ballooned to ~4.3 ms/step under loadavg
+~24 (→ a ~4 ms/step, ~15% saving there) while the gallocr path stays flat at
+~0.1–0.2 ms regardless of load. glm-q8_0 wall-clock not measured (heavier than
+internvl2 → predictably within noise; correctness verified). Still open:
 `qwen2vl`/`smoldocling` (decode inlined / CPU LM head — same pattern, more
 surgery), `granite` (shares the vision sched), `math_ocr` (enc-dec cross-attn
 KV), and `deepseek_ocr2` (per-layer-per-step → needs the persistent-graph
