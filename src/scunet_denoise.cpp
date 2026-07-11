@@ -363,28 +363,28 @@ static void swin_block_forward(float * x, int C, int H, int W, const swin_block_
     const float * ln2_w_ptr = to_f32(wt.ln2_w, dqC);
     const float * ln2_b_ptr = to_f32(wt.ln2_b, dqD);
 
-    // Pre-allocate buffers outside the pixel loop (was per-pixel before —
-    // 65536+ heap allocs per swin block for a 256x256 image)
+    // Batched MLP: apply LN2 per pixel into a [hw, C] row-major matrix, then run
+    // the two Linear layers as SIMD GEMMs (linear_batch_cpu) instead of a scalar
+    // matmul per pixel. The per-pixel MLP (~2*C*mlp_hidden MACs/pixel over hw
+    // pixels) was the dominant scalar cost of the swin block; this matches the
+    // WMSA path, which already uses linear_batch_cpu/dot_product. Output differs
+    // only by FMA accumulation ordering (~1e-6), like the already-SIMD attention.
     std::vector<float> pix_norm(C);
-    std::vector<float> h(mlp_hidden);
+    std::vector<float> nrm_batch((size_t)hw * C);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++) {
-            for (int c = 0; c < C; c++) pix[c] = x[c * hw + y * W + xi];
+            int p = y * W + xi;
+            for (int c = 0; c < C; c++) pix[c] = x[c * hw + p];
             layer_norm(pix.data(), C, ln2_w_ptr, ln2_b_ptr, pix_norm.data());
-
-            // MLP: Linear(C→hidden) + GELU + Linear(hidden→C)
-            for (int o = 0; o < mlp_hidden; o++) {
-                float sum = m0b[o];
-                for (int i = 0; i < C; i++) sum += m0w[o * C + i] * pix_norm[i];
-                h[o] = sum;
-            }
-            gelu_inplace(h.data(), mlp_hidden);
-            for (int o = 0; o < C; o++) {
-                float sum = m2b[o];
-                for (int i = 0; i < mlp_hidden; i++) sum += m2w[o * mlp_hidden + i] * h[i];
-                x[o * hw + y * W + xi] += sum;
-            }
+            for (int c = 0; c < C; c++) nrm_batch[(size_t)p * C + c] = pix_norm[c];
         }
+    std::vector<float> h_batch((size_t)hw * mlp_hidden);
+    core_cpu::linear_batch_cpu(nrm_batch.data(), h_batch.data(), hw, C, mlp_hidden, m0w, m0b);
+    gelu_inplace(h_batch.data(), hw * mlp_hidden);
+    std::vector<float> out_batch((size_t)hw * C);
+    core_cpu::linear_batch_cpu(h_batch.data(), out_batch.data(), hw, mlp_hidden, C, m2w, m2b);
+    for (int c = 0; c < C; c++)
+        for (int p = 0; p < hw; p++) x[c * hw + p] += out_batch[(size_t)p * C + c];
 
     if (g_swin_debug_cb && cur_block == g_swin_debug_block_id) g_swin_debug_cb("full_swin", x, C * hw);
 }
