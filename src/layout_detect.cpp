@@ -902,8 +902,9 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     auto t_phase1 = std::chrono::steady_clock::now();
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // Per-block backbone comparison
-    {
+    // Per-block backbone comparison (diagnostic only — the tensor read-backs are
+    // pure debug work, so gate the whole block, not just the range prints).
+    if (layout_debug()) {
         // Read stem
         auto read_range = [&](const char * name) {
             ggml_tensor * t = ggml_graph_get_tensor(gf, name);
@@ -1474,7 +1475,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
             ggml_free(gc);
         }
-        {
+        if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
                 mn = std::min(mn, v);
@@ -1489,7 +1490,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         // Value projection: [D, N_total] → [D, N_total]
         std::vector<float> values(D * total_tokens);
         cpu_linear(memory.data(), values.data(), D, D, total_tokens, layer.cross_value_w, layer.cross_value_b);
-        if (li == 0) {
+        if (li == 0 && layout_debug()) {
             float vmin = 1e9, vmax = -1e9;
             for (auto v : values) {
                 vmin = std::min(vmin, v);
@@ -1592,7 +1593,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             }
         }
 
-        if (li == 0) {
+        if (li == 0 && layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : cross_out) {
                 mn = std::min(mn, v);
@@ -1680,7 +1681,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
 
-        {
+        if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
                 mn = std::min(mn, v);
@@ -1737,7 +1738,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             ggml_free(gc);
         }
 
-        {
+        if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
                 mn = std::min(mn, v);
@@ -1869,7 +1870,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     std::sort(results.begin(), results.end(), [](const region & a, const region & b) { return a.score > b.score; });
 
     // Debug: print top scores
-    if (results.empty()) {
+    if (results.empty() && layout_debug()) {
         float max_score = 0;
         for (auto & v : class_scores) max_score = std::max(max_score, v);
         fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
@@ -1880,7 +1881,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         fprintf(stderr, "[layout_detect-bench] Phase 3 heads: %.1f ms\n", ms3);
         fprintf(stderr, "[layout_detect-bench] total: %.1f ms\n", total_ms);
     }
-    fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n", results.size(), score_threshold);
+    if (layout_debug())
+        fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n", results.size(), score_threshold);
     return results;
 }
 
