@@ -2456,3 +2456,107 @@ Done: OPFS cache; --webgpu-compat (Asyncify) tier; per-engine sweep (6/6
 correct; trocr 4x); decoder-on-CPU split (MATH_OCR_DEC_CPU=1, on for the
 demo's webgpu tiers — decode at CPU speed, pipeline ~wash, parity improved).
 Remaining idea (unscheduled): cross-region batched decode in the pipeline.
+
+## Runtime speedup roadmap (2026-07-11 sweep)
+
+Source: full runtime re-verification, 2026-07-11 — see `PERFORMANCE.md →
+"Runtime Optimization Audit — Re-verification (2026-07-11)"` for the verified
+state tables and the corrected June-audit claims. This is the actionable
+backlog. **Every item needs a target GGUF model to verify against (q8_0
+preferred, to isolate the change from q4_k quant noise) and a before/after
+parity + latency measurement — do NOT land a "perf" change on a compile-only
+check.** The June audit's "flip to init_best" for the SR engines was a mirage
+(they are CPU-pinned deliberately); treat all "easy win" labels as unverified
+until the code confirms them.
+
+### Tier 1 — higher-ceiling (each needs its own design pass + a target model)
+
+#### 1. Decode-step graph cache (per-backend gated) — the #1 unrealized lever
+
+Problem: no runtime reuses the built cgraph. Every autoregressive decoder does a
+full graph rebuild + `ggml_backend_sched_reset` + `ggml_backend_sched_alloc_graph`
+**per generated token**. Device-resident F16 KV caches landed across the VLM
+decoders, but the graph *around* the KV is still rebuilt each step.
+
+Plan:
+1. Pick a reference decoder that already has persistent KV + a single decode
+   graph — `deepseek_ocr2` (`deepseek_ocr2.cpp:1558`, `lag.gf` built once) or
+   `math_ocr` (dkv). Instrument per-step: graph-build vs alloc-plan vs compute.
+2. Cache the decode-step graph + a persistent gallocr/sched reservation keyed by
+   a **bucketed KV length** (pad T to a bucket; rebuild only on bucket cross).
+   Templates in-tree: text encoder `sched_reserve`+T-bucket
+   (`crispembed.cpp:1202-1217`), lfm2 (`lfm2_embed.cpp:452-457`).
+3. **Cache the decode-step graph only — NOT the encoder graph.** Encoder-graph
+   caching is a measured dud on compute-bound work and a known GPU
+   use-after-free (CrispASR #235 disabled it in 8 backends).
+4. **Per-backend gating mandatory.** Graph reuse traps `unreachable` on WebGPU
+   (`09dc519`) — keep OFF there. Respect the scheduler landmine
+   (`ggml_backend_sched_reset` does not null `tensor->buffer`; run side graphs
+   before the main alloc — CLAUDE.md / LEARNINGS).
+5. Generalize decoder-by-decoder behind an env flag, measuring each.
+
+Verify: q8_0 model per decoder; output cosine vs pre-change baseline ≈1.0 (graph
+structure identical, only reuse changes) + per-token latency drop.
+
+#### 2. ggml-metal ICB (indirect command buffer) replay — Apple-side decode
+
+Problem: Metal LLM/TTS decode is per-op-dispatch bound (~100 ms/step on ~280-op
+graphs). The CUDA side already solves this via CUDA-graph capture (CrispASR
+§210, ~9–13× on RTX). ggml-metal has no ICB replay path.
+
+Plan:
+1. **Depends on item 1** — a stable, reused per-step graph is the prerequisite
+   for capturing an ICB once and replaying it.
+2. Prototype ICB encoding in ggml-metal: encode the fixed op sequence once,
+   replay per step updating only buffer offsets / position inputs.
+3. Likely an **upstream ggml contribution** rather than in-tree; scope as
+   research/large. Coordinate with CrispASR (shared ggml submodule).
+
+Verify: Apple-GPU target model; per-step latency before/after; output parity.
+
+#### 3. Real SR-GPU fix — conv weight residency (unblocks 4 SR engines)
+
+Problem: `esrgan_sr`, `safmn_sr`, `restormer`, `instructir` are CPU-pinned
+**deliberately** — conv weights loaded via `init_best` land in a Metal/CUDA
+buffer the CPU conv scheduler can't read → "pre-allocated tensor in a buffer
+that cannot run" abort on Metal / segfault on CUDA (same class as the nafnet
+residency bug). `instructir` also hits a Metal `mul_mv` f32×f16 pipeline-compile
+bug. NOT the "flip to init_best" the June audit implied.
+
+Plan — the tractable angle: **working siblings exist**. `dat_sr`, `hat_sr`,
+`swinir_sr`, `pan_sr`, `tbsrn_sr`, `nafnet_denoise`, `adair` all call
+`init_best` and run on GPU.
+1. Diff the weight-load / buffer-type / graph-build path of a working sibling
+   (`dat_sr.cpp:1307`) vs a broken one (`esrgan_sr.cpp:117`). The delta is the
+   residency bug.
+2. Match the working approach (place conv weights in the buffer the conv op is
+   scheduled on, or force the conv onto the GPU backend so weights + op
+   co-locate).
+3. `instructir`: cast both `mul_mv` operands to a Metal-supported variant.
+4. Remove the obsolete CPU-pin + the `*_FORCE_CPU`-is-a-no-op comments.
+
+Verify: SR model per engine (check registry for esrgan/safmn defaults); Metal
+output must match the CPU path within tolerance (SR is quality-sensitive).
+
+### Tier 2 — safe, self-contained wins (verified against code)
+
+| Win | File | Status | Note |
+|---|---|---|---|
+| text_sr scalar conv → SIMD `conv2d_cpu` | `text_sr.cpp:33` | **DONE (this branch)** | numerically-equivalent delegation; compiles clean; runtime parity pending a model (none provisioned, no registry URL) |
+| tps_locnet weight dequant cache | `tps_locnet.cpp:262-314` | Open — VERIFIED real | `to_f32` re-dequantizes conv+fc weights every `predict`; cache F32 at init |
+| scunet DequantCache + Swin → SIMD/ggml | `scunet_denoise.cpp:32,369` | Open | only SR engine without dequant cache; Swin half still scalar |
+| gate debug `fprintf` behind verbosity | layout_detect, surya_det, ocr_detect | Open — trivial | unconditional stderr in production |
+| conv2d_cpu → true im2col+GEMM + multithread | `core/cpu_ops.h:345` | Open | current per-patch SIMD recomputes the gather per out-channel; batch all out-channels into one GEMM |
+| restormer single-pass variance | `restormer.cpp:101` | Open — NEEDS RE-READ | audit claimed double-variance "dead work"; verify before touching |
+
+Already-done (audit was stale, do NOT "fix"): tbsrn PE2D is already cached
+(`tbsrn_sr.cpp:425`, `pe_cache`).
+
+### Tier 3 — see PERFORMANCE.md re-verification gap table
+
+layout_detect deformable cross-attn (scalar); WebGPU embedding tier (no GPU
+path in `build-embed-wasm.sh`); mixtex Swin window attn (scalar);
+qwen2vl/granite/smoldocling per-step graph rebuild (folds into Tier-1 item 1);
+build/infra (LTO/IPO, `GGML_BLAS=ON` Accelerate, honor `--gpu-backend` instead
+of `init_best()` in `crispembed.cpp:81`, broaden the Metal F16 mul_mm guard from
+5/~40 GPU files).
