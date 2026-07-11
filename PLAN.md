@@ -2523,26 +2523,29 @@ that cannot run" abort on Metal / segfault on CUDA (same class as the nafnet
 residency bug). `instructir` also hits a Metal `mul_mv` f32×f16 pipeline-compile
 bug. NOT the "flip to init_best" the June audit implied.
 
-Plan — the tractable angle: **working siblings exist**. `dat_sr`, `hat_sr`,
-`swinir_sr`, `pan_sr`, `tbsrn_sr`, `nafnet_denoise`, `adair` all call
-`init_best` and run on GPU.
-1. Diff the weight-load / buffer-type / graph-build path of a working sibling
-   (`dat_sr.cpp:1307`) vs a broken one (`esrgan_sr.cpp:117`). The delta is the
-   residency bug.
-2. Match the working approach (place conv weights in the buffer the conv op is
-   scheduled on, or force the conv onto the GPU backend so weights + op
-   co-locate).
-3. `instructir`: cast both `mul_mv` operands to a Metal-supported variant.
-4. Remove the obsolete CPU-pin + the `*_FORCE_CPU`-is-a-no-op comments.
+**CORRECTION (2026-07-11 diagnosis — the audit's premise was wrong):** there is
+NO GPU sibling to match. The *entire* SR family computes convolutions on a
+CPU-only `enc_sched` — `swinir_sr.cpp:447` literally prints
+`conv path = ggml_conv_2d (CPU sched)`. The `init_best` in dat/hat/swinir is only
+the weight-LOAD backend; they then allocate a *separate* CPU-resident F32 weight
+context (`swinir_sr.cpp:439`, `dat_sr.cpp:316`, `hat_sr.cpp:453`) and copy the
+dequantized weights into it, so the CPU conv can read them. esrgan/safmn/
+restormer/instructir just skip that copy and load straight on CPU. So SR-on-GPU
+is a genuine unsolved item (needs Metal `ggml_conv_2d` for these shapes + a
+GPU-resident weight/graph path the whole family currently avoids), NOT a
+residency toggle. Reprioritize DOWN — it is research, not a quick win, and none
+of the "working" engines demonstrate it.
 
-Verify: SR model per engine (check registry for esrgan/safmn defaults); Metal
-output must match the CPU path within tolerance (SR is quality-sensitive).
+Real, tractable SR-CPU wins found in the same diagnosis (see Tier 2): safmn
+ignored its `n_threads` (hardcoded 1-thread conv sched) — DONE, ~2.3× on an
+8-core Mac, bit-identical output.
 
 ### Tier 2 — safe, self-contained wins (verified against code)
 
 | Win | File | Status | Note |
 |---|---|---|---|
-| text_sr scalar conv → SIMD `conv2d_cpu` | `text_sr.cpp:33` | **DONE (this branch)** | numerically-equivalent delegation; compiles clean; runtime parity pending a model (none provisioned, no registry URL) |
+| text_sr scalar conv → SIMD `conv2d_cpu` | `text_sr.cpp:33` | **DONE (merged)** | numerically-equivalent delegation; compiles clean; runtime parity pending a model (none provisioned, no registry URL) |
+| safmn honor `n_threads` (was hardcoded 1) | `safmn_sr.cpp:181,255` | **DONE — verified** | ~2.3× (16.2s→7.1s, 8-core Mac) on safmn-x4, bit-identical output; convs run on CPU sched (not Metal) |
 | tps_locnet weight dequant cache | `tps_locnet.cpp:262-314` | Open — VERIFIED real | `to_f32` re-dequantizes conv+fc weights every `predict`; cache F32 at init |
 | scunet DequantCache + Swin → SIMD/ggml | `scunet_denoise.cpp:32,369` | Open | only SR engine without dequant cache; Swin half still scalar |
 | gate debug `fprintf` behind verbosity | layout_detect, surya_det, ocr_detect | Open — trivial | unconditional stderr in production |
