@@ -4798,3 +4798,57 @@ More applications of the rule above, plus a technique for verified perf wins:
   `git checkout` reset trap; a fresh-worktree build needs the ggml symlink, git ops
   need the gitlink, and stash/checkout silently swap it back to the empty gitlink
   → stale-binary. Re-`ln -s` after any tree-touching git op before rebuilding.
+
+## Decode-step graph cache + CPU-decoder wins (2026-07-11, cont.)
+
+Five decoders got a gated **sched-free `ggml_gallocr` decode-step cache**, plus
+threading/dequant wins on two CPU engines. The durable lessons:
+
+- **Sched-free decode cache: reserve a `ggml_gallocr` once at max KV length, then
+  compute decode steps via `ggml_backend_graph_compute(backend, gf)` — not the
+  sched.** A decode step's graph has constant node count (only tensor shapes grow
+  with `n_past`), so a gallocr reserved for the longest graph takes
+  `ggml_gallocr_needs_realloc`'s no-realloc fast path every step, and the
+  sched-free compute skips `ggml_backend_sched_split_graph` (the per-step host
+  cost). Shipped byte-identical on got_ocr, internvl2, glm, lightonocr, math_ocr
+  (each behind `<ENGINE>_DECODE_CACHE=1`, default OFF). Measured host build+alloc
+  ~0.85→0.28 ms/step (got_ocr, quiet) → ~3% on light decoders, ~0% on heavy ones
+  (compute-dominated). **Its real value is load-insensitivity:** the sched's
+  `alloc` balloons to ~4.3 ms/step under load while the gallocr stays flat ~0.1 ms.
+- **Cache DECODE steps only (`n_past > 0`), never prefill.** got_ocr's prefill is
+  a separate code path, but internvl2/glm/lightonocr route prefill through the same
+  `run_cached_step`. Sending the prefill graph (image splice / full-seq mRoPE — a
+  DIFFERENT node count) through a decode-shaped gallocr reservation + sched-free
+  compute corrupts output: **glm degenerated into repetition** until the `n_past>0`
+  gate was added (internvl2 survived by luck). Always gate on `n_past>0`.
+- **"Single-graph decoder" is necessary but NOT sufficient — the decode graph must
+  also be single-BACKEND.** qwen2vl looked ideal (single graph, already
+  constant-shape) but `GGML_SCHED_DEBUG=2` showed its **attention runs on CPU**
+  (per-layer `SPLIT: CPU`) while the rest is Metal. A sched-free
+  `graph_compute(ctx.backend=Metal)` forces those CPU ops onto Metal → empty
+  output. And with a constant shape there's no realloc to skip, so nothing to gain.
+  Reverted. Check `GGML_SCHED_DEBUG=2` for CPU splits before attempting the cache.
+- **On an autoregressive decoder, check for CONSTANT WORK re-run per step before
+  optimizing any kernel.** mixtex's CPU decoder re-ran ~11 `to_f32()` weight
+  dequantizations per layer on EVERY of 30 steps (converting the same f16 weights
+  ~120×). Hoisting them into a once-built f32 cache: **decoder 2923→1008 ms
+  (~2.9×)**, byte-identical (same-binary A/B via `MIXTEX_DEC_DEQUANT_PER_STEP=1`).
+  My first guess (thread the 25681-wide vocab projection) measured as ~4% of the
+  step — a dud. The redundant dequant was 65%. Same shape as the rel-pos / weight
+  dequant caches: an invariant recomputed in the hot loop.
+- **For an already-SIMD scalar kernel over INDEPENDENT units, the next lever is
+  loop-level threading, not more SIMD.** mixtex's Swin window attention was already
+  dot-product-SIMD; the encoder bottleneck was the **serial per-window loop** (270
+  independent windows). Threading it (each `window_mhsa` self-contained, disjoint
+  output) → **encoder 1420→733 ms (1.94×)**, byte-identical. Same for layout's
+  `cpu_linear` (thread the independent output-row `o`-loop → Phase-2 ~1.24–1.49×,
+  partly memory-bandwidth-bound so sub-2×). Both now **honor `ctx->n_threads`**
+  (default `-t` = 1 → old serial behavior), the mixtex/layout analog of the safmn
+  n_threads fix. Byte-identical by construction (disjoint writes, unchanged
+  per-unit math) — verify with a `-t 1` vs `-t 8` diff.
+- **Prove the parallel path actually engaged.** A best-of-3 briefly showed mixtex
+  threading giving *zero* speedup — a shell-function bug where `-t 8` silently
+  didn't reach the binary. Added a one-line `n_threads=N` / `cache active` stderr
+  marker (bench-gated) to each change so a run *proves* the fast path ran before
+  any timing is trusted (a loaded box already fabricates numbers; a mis-set flag
+  fabricates worse).
