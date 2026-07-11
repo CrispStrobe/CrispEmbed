@@ -423,11 +423,30 @@ static ggml_tensor * prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH
     return w;
 }
 
+// Backbone conv dispatch. Default: ggml_conv_2d (im2col + F32 GEMM). The
+// metal-prof probe showed the backbone graph is ~99.6% GPU-execute (~11.7s
+// gpu_us / 44ms encode on layout-heron @ 640^2) — conv_2d_direct is a poor Metal
+// kernel for these shapes, while mul_mm (GEMM) is highly optimized; the im2col
+// path is ~9.8x faster (Phase-1 11.4s → 1.2s). prep_conv casts the kernel to F32,
+// so the fork's ggml_conv_2d picks an F32 im2col and the GEMM stays F32 — output
+// is cos≈1 vs direct (same detections; only FP reduction order differs, ≤0.001
+// score / ≤0.1px bbox jitter, well within the test_layout_diff cos≥0.99 gate).
+// LAYOUT_CONV_DIRECT=1 restores the old direct path (regression fallback).
+static bool layout_conv_direct() {
+    static int v = -1;
+    if (v < 0) v = (getenv("LAYOUT_CONV_DIRECT") != nullptr) ? 1 : 0;
+    return v == 1;
+}
+static ggml_tensor * conv2d_dispatch(ggml_context * g, ggml_tensor * w, ggml_tensor * x, int stride, int pad) {
+    if (layout_conv_direct()) return ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    return ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+}
+
 static ggml_tensor * conv_relu(ggml_context * g, ggml_tensor * x, const conv_w & c, int IC, int KH, int KW, int stride,
                                int pad, bool relu = true) {
     if (!c.w) return x;
     auto * w = prep_conv(g, c.w, IC, KH, KW);
-    x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    x = conv2d_dispatch(g, w, x, stride, pad);
     if (c.b) {
         auto * b = c.b;
         if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
@@ -443,7 +462,7 @@ static ggml_tensor * conv_silu(ggml_context * g, ggml_tensor * x, const conv_w &
                                int pad) {
     if (!c.w) return x;
     auto * w = prep_conv(g, c.w, IC, KH, KW);
-    x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    x = conv2d_dispatch(g, w, x, stride, pad);
     if (c.b) {
         auto * b = c.b;
         if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);

@@ -4766,6 +4766,20 @@ More applications of the rule above, plus a technique for verified perf wins:
   contention) — a side signal that the access-pattern change, not just SIMD width,
   was the win.
 
+- **`ggml_conv_2d_direct` is a SLOW Metal kernel for large-spatial shapes; use
+  `ggml_conv_2d` (im2col+GEMM).** The layout_detect backbone (RT-DETRv2 @ 640²)
+  ran its 505-node graph at ~99.6% GPU-execute, 11.7s gpu_us — pure Metal conv.
+  Swapping the two conv sites from `conv_2d_direct` to `conv_2d` (im2col + `mul_mm`
+  GEMM) cut Phase-1 **11.4s → 1.2s (~9.8×)**. Metal's simdgroup `mul_mm` is highly
+  optimized; the direct-conv kernel is not, for these shapes. Output is cos≈1 (both
+  F32 — the fork's `ggml_conv_2d` picks an F32 im2col when the kernel is F32; only
+  reduction order differs → ≤0.001 score / ≤0.1px bbox jitter, clears the cos≥0.99
+  regression gate). This is the conv-heavy-engine case of the dev-doc's "conv_2d
+  port wins for conv-heavy engines" note — flip the default there, gate the direct
+  path (`LAYOUT_CONV_DIRECT=1`). **Candidate for the CPU-pinned SR family too** if
+  they ever move conv to Metal. `conv_2d_direct`'s only edge is memory (no im2col
+  buffer) — irrelevant at a fixed 640² input.
+
 - **The ggml gitlink/symlink dance bit twice this session** — see the `git stash`/
   `git checkout` reset trap; a fresh-worktree build needs the ggml symlink, git ops
   need the gitlink, and stash/checkout silently swap it back to the empty gitlink
