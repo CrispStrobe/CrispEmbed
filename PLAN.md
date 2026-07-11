@@ -2577,3 +2577,53 @@ qwen2vl/granite/smoldocling per-step graph rebuild (folds into Tier-1 item 1);
 build/infra (LTO/IPO, `GGML_BLAS=ON` Accelerate, honor `--gpu-backend` instead
 of `init_best()` in `crispembed.cpp:81`, broaden the Metal F16 mul_mm guard from
 5/~40 GPU files).
+
+### Tier-1 item 1 — concrete design: decode-step graph cache
+
+**Verified current state (2026-07-11 code read).** No decoder caches the built
+cgraph. Even the "best" ones rebuild every step:
+- `deepseek_ocr2` decode loop (`deepseek_ocr2.cpp:1915-1955`) calls
+  `build_llm_layer_attn` **per layer per step**, then `sched_reset` +
+  `sched_alloc_graph` + `ggml_free(lag.gctx)` each iteration. KV is
+  device-persistent (`alloc_ds_kv_cache`), the *graph* is not.
+- `qwen2vl`/`granite`/`smoldocling` rebuild their decode graph each step too.
+
+So the per-step cost is graph **build + allocation-planning**, paid every token
+(deepseek: every token × every layer).
+
+**The invariant that makes caching possible.** Across steps the graph STRUCTURE
+is identical; only shapes tied to `n_past` change — the K/V history view length
+`[0 .. n_past+T)` and the mask width. Fix those to a *bucket* and the graph is
+reusable within the bucket.
+
+**Design.**
+1. Bucket the KV length: `B = ceil((n_past + T) / S) * S` (S = 64 or 128). Build
+   K/V history views of length `B`; the attention mask zeroes the unused
+   `[n_past+T, B)` tail. Rebuild + re-reserve only when `n_past` crosses into a
+   new bucket (amortized: a rebuild every S tokens, not every token).
+2. Persist `lag.gctx` + `lag.gf` and a `ggml_backend_sched` reservation across
+   steps in a bucket. Each step, update only the input tensors (`layer_input`,
+   `pos_ids`, `mask`) via `ggml_backend_tensor_set` — do NOT rebuild.
+   Reservation template already in-tree: text encoder `sched_reserve`+T-bucket
+   (`crispembed.cpp:1202-1217`), lfm2 (`lfm2_embed.cpp:452-457`).
+3. **Landmines:** `ggml_backend_sched_reset` does not null `tensor->buffer`
+   (LEARNINGS) — with a persistent reserved graph, do not `reset` between alloc
+   and compute on the same graph; run side graphs (embedding lookups) before the
+   main alloc. Cache the *decode-step* graph only, never the encoder graph
+   (measured dud + the CrispASR #235 GPU use-after-free).
+4. **Per-backend gating (mandatory):** env flag; OFF on WebGPU (graph reuse traps
+   `unreachable`, `09dc519`); validate separately on Metal / CPU / CUDA.
+
+**Reference decoder to prototype:** `deepseek_ocr2` — it already has device KV +
+a clean single-layer graph builder (`build_llm_layer_attn`) to make persistent,
+and `DS_PROFILE` instrumentation.
+
+**Caveat — measure build-vs-compute first.** `DS_PROFILE` (commit `ded09a8`)
+found deepseek decode already **compute-bound**, so caching the graph may buy
+little THERE; the win is largest on lighter decoders (smaller matmuls → graph
+build/alloc is a bigger fraction). Step 0 of implementation: per-token breakdown
+(build vs alloc-plan vs compute) on each candidate decoder; only pursue the ones
+where build+alloc is a meaningful fraction.
+
+**Verify:** q8_0 model per decoder; output cosine vs pre-change baseline ≈1.0
+(structure identical, only reuse changes); per-token latency before/after.
