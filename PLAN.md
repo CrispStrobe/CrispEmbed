@@ -2547,7 +2547,7 @@ ignored its `n_threads` (hardcoded 1-thread conv sched) — DONE, ~2.3× on an
 | text_sr scalar conv → SIMD `conv2d_cpu` | `text_sr.cpp:33` | **DONE (merged)** | numerically-equivalent delegation; compiles clean; runtime parity pending a model (none provisioned, no registry URL) |
 | safmn honor `n_threads` (was hardcoded 1) | `safmn_sr.cpp:181,255` | **DONE — verified** | ~2.3× (16.2s→7.1s, 8-core Mac) on safmn-x4, bit-identical output; convs run on CPU sched (not Metal) |
 | tps_locnet weight dequant cache | `tps_locnet.cpp:262-314` | **DONE** | conv + FC weights now dequantized (and FC-transposed) once at load; predict() reuses them. Bit-identical by construction; helps repeated-predict callers (the bundled `tps_auto_dewarp` does one predict per load, so it's neutral there). Compile-verified; no model in registry to runtime-measure |
-| scunet DequantCache + Swin → SIMD/ggml | `scunet_denoise.cpp:32,369` | Open | only SR engine without dequant cache; Swin half still scalar |
+| scunet Swin → SIMD/ggml | `scunet_denoise.cpp:310-390` | Open — REAL lever | the scalar per-pixel WMSA+MLP is the dominant scunet cost; SIMD/ggml-ify it. (The "uncached dequant" at `:32` is a marginal sub-lever — O(weights)/block vs O(H·W·C)/block scalar compute; don't bother with the cache alone.) |
 | gate debug `fprintf` behind verbosity | layout_detect, surya_det, ocr_detect | Open — trivial | unconditional stderr in production |
 | conv2d_cpu → true im2col+GEMM + multithread | `core/cpu_ops.h:345` | Open | current per-patch SIMD recomputes the gather per out-channel; batch all out-channels into one GEMM |
 | restormer single-pass variance | `restormer.cpp:101` | Open — NEEDS RE-READ | audit claimed double-variance "dead work"; verify before touching |
@@ -2568,6 +2568,30 @@ each single-threaded), which needs per-thread backend+scheduler replication
 one-liner, and hard to verify reliably on a loaded dev machine. safmn's fix WAS a
 real 2.3× because it convolves the *whole* image in one graph (no tiling), so its
 convs thread-scale; esrgan's tiled convs do not. Different situations.
+
+### Prioritization update (2026-07-11) — cheap wins are exhausted
+
+Three flagged micro-gaps in a row (esrgan threading, decode-step graph cache,
+scunet dequant) measured as marginal/inert because the real bottleneck is
+elsewhere (see LEARNINGS "measure the DOMINANT cost before fixing a flagged
+micro-gap"). The genuine remaining levers are projects, each needing a stable
+benchmark harness:
+
+1. **SIMD/ggml-ify the scalar-compute hot paths** — the actual dominant costs:
+   scunet WMSA+MLP (`scunet_denoise.cpp:310-390`), mixtex Swin window attention
+   (`mixtex_ocr.cpp:126`), layout_detect deformable cross-attention
+   (`layout_detect.cpp:797`). Highest ROI; verifiable per-engine with a
+   downloadable model; do one engine end-to-end as a proof.
+2. **ggml-metal ICB replay** — per-op Metal dispatch dominates decode (measured:
+   trocr compute ~18ms/step is dispatch, not math). CUDA-graph capture already
+   solves the CUDA side (CrispASR §210). Large upstream-ggml design + prototype.
+3. Optional marginal cleanups (each <5%): scunet dequant cache, debug-`fprintf`
+   gating in layout_detect/surya_det/ocr_detect, honor `--gpu-backend` in
+   `crispembed.cpp:81`, LTO/IPO, broaden the Metal F16 mul_mm guard.
+
+Session's two REAL wins (merged): safmn whole-image threading (2.3×), tps_locnet
+dequant hoist (for reuse-callers). Both were where the gap WAS a meaningful
+fraction.
 
 ### Tier 3 — see PERFORMANCE.md re-verification gap table
 
