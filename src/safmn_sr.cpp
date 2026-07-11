@@ -178,7 +178,6 @@ struct safmn_context {
 };
 
 safmn_context * safmn_init(const char * model_path, int n_threads) {
-    (void)n_threads;
     if (!model_path) return nullptr;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
@@ -252,7 +251,10 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
 
     ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {
-        ggml_backend_cpu_set_n_threads(ctx->enc_backend, 1);
+        // Honor the caller's thread count (was hardcoded to 1). SAFMN's convs run on
+        // this CPU sched via ggml_conv_2d; single-threaded left cores idle on large
+        // upscales. Matches the swinir/dat/hat siblings, which all pass n_threads.
+        ggml_backend_cpu_set_n_threads(ctx->enc_backend, n_threads > 0 ? n_threads : 4);
         ggml_backend_t backends[] = { ctx->enc_backend };
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     }
