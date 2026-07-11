@@ -4855,3 +4855,33 @@ threading/dequant wins on two CPU engines. The durable lessons:
   marker (bench-gated) to each change so a run *proves* the fast path ran before
   any timing is trusted (a loaded box already fabricates numbers; a mis-set flag
   fabricates worse).
+
+## surya-det: the default path was broken since the port; only the A/B reference path was ever verified (2026-07-11)
+
+Found while auditing `core_cpu::conv2d_cpu` consumers: **every default-path
+surya-det detection aborted** with `GGML_ASSERT(a->ne[2] == b->ne[2])` at
+`ggml.c:4472`. Root cause: LiteMLA's `agg_pw` is a *grouped* pointwise conv
+(groups = 3·heads — neither depthwise nor groups=1) and `g_conv` routed it
+through `ggml_conv_2d`, which has no groups support. The depthwise branch
+(`groups == IC` → `ggml_conv_2d_dw`) masked the gap for `agg_dw`, so the
+grouped-but-not-depthwise case only exists on this one conv — and it asserts
+at graph-BUILD time (hard abort, no fallback possible).
+
+Two lessons:
+
+1. **Verify the DEFAULT path, not just the reference path.** A pre-merge
+   build (06c02ee) crashes identically, so this is not a regression — the
+   graph path has been broken since the port. The port's parity was evidently
+   established via `SURYA_DET_SCALAR=1` (the CPU reference), and the
+   regression manifest has no surya entry, so nothing ever exercised the
+   path users actually get. Same genus as verify-handover-claims: the
+   "working engine" claim was true only for the A/B baseline path.
+
+2. **A 1×1 grouped conv is a batched matmul, not N small convs.** The fix
+   expresses `y[g·OCg+oc, hw] = Σ_icg w·x` as ONE `ggml_mul_mat` on
+   `[ICg, OCg, groups] × [ICg, HW, groups]` with two cont+permutes — ~6
+   graph nodes total vs ~5 *per group* for a split-conv-concat loop (48
+   groups at stage3 would have blown the 2048-node gf2 budget and added ~96
+   Metal dispatches). Verified: 39/39 boxes byte-identical to the scalar
+   reference on Metal AND forced-CPU; the restored graph path is ~2× the
+   scalar fallback (18.5 s vs 38 s end-to-end on scan_page_pd).
