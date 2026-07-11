@@ -4835,7 +4835,10 @@ threading/dequant wins on two CPU engines. The durable lessons:
   (~2.9×)**, byte-identical (same-binary A/B via `MIXTEX_DEC_DEQUANT_PER_STEP=1`).
   My first guess (thread the 25681-wide vocab projection) measured as ~4% of the
   step — a dud. The redundant dequant was 65%. Same shape as the rel-pos / weight
-  dequant caches: an invariant recomputed in the hot loop.
+  dequant caches: an invariant recomputed in the hot loop. **Audited the other CPU
+  OCR decoders for the same bug — clean:** ppformulanet / ppformulanet_l hoist all
+  `to_f32()` before their decode loops; bttr / posformer / hmer / parseq have none
+  (ggml graphs). mixtex was the lone offender; no need to re-grep.
 - **For an already-SIMD scalar kernel over INDEPENDENT units, the next lever is
   loop-level threading, not more SIMD.** mixtex's Swin window attention was already
   dot-product-SIMD; the encoder bottleneck was the **serial per-window loop** (270
