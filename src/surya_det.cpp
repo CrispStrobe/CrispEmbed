@@ -302,7 +302,7 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
-    fprintf(stderr, "surya_det: loaded %s (%d threads)\n", model_path, n_threads);
+    if (ctx->dump) fprintf(stderr, "surya_det: loaded %s (%d threads)\n", model_path, n_threads);
     return ctx;
 }
 
