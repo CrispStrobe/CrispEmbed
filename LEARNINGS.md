@@ -4687,3 +4687,44 @@ fields — an E0063 compile error, i.e. the crate could not have built since
 those fields were added (there is no Rust CI). Fixed by basing the literal
 on `crispembed_scan_cleanup_defaults()` via struct-update syntax so future
 field additions inherit defaults instead of breaking the build.
+
+## Runtime perf: measure the DOMINANT cost before "fixing" a flagged micro-gap (2026-07-11)
+
+An audit / code-review flags mechanical gaps — "weights re-dequantized every
+call", "`n_threads` ignored", "graph rebuilt every step". Each is real, but in a
+runtime that is **scalar-compute- or dispatch-bound**, fixing the gap moves a
+tiny fraction. A runtime re-verification sweep hit three in a row where the
+flagged gap was NOT the bottleneck:
+
+- **esrgan `n_threads`**: the real thread-count sink is `fn(be, 1)` at
+  `esrgan_sr.cpp:266`, which clobbers the init-time count before every compute.
+  Wiring it to honor `n_threads` made decode SLOWER — `-t 8` 33s vs `-t 1` 21s
+  (bit-identical output). esrgan tiles into 128px pieces; a per-tile conv is too
+  small to amortize thread overhead and oversubscribes 4 P-cores. Contrast
+  **safmn**, where the *same* one-line fix gave a real **2.3×** — because safmn
+  convolves the WHOLE image in one graph, so its convs thread-scale. Thread
+  scaling depends on op size, not on whether the flag is wired.
+- **decode-step graph cache** (billed the "#1 lever"): measured on trocr-small
+  (lightest decoder, D=256/V=1200) — build+alloc 0.47 ms/step vs compute
+  18.5 ms Metal / 6.9 ms CPU → **2–6%**. And build cost is ~constant per step
+  (fixed node count) while compute grows with `n_kv`, so the fraction only
+  shrinks. The real decode cost is per-op dispatch (Metal), not graph build.
+- **scunet uncached dequant**: `to_f32` per Swin block is O(weights); the block
+  itself is O(H·W·C) scalar WMSA+MLP per pixel. Caching saves a small fraction
+  × tiles — marginal.
+
+Also: the audit's "flip the CPU-pinned SR engines to `init_best` for free GPU"
+was a **mirage** — they are CPU-pinned *deliberately* (conv weight residency;
+`esrgan_sr.cpp:115`), and NO SR engine runs conv on GPU (all use a CPU
+`enc_sched`; `swinir_sr.cpp:447` literally prints `ggml_conv_2d (CPU sched)`).
+And tbsrn's PE2D was already cached (`tbsrn_sr.cpp:425`).
+
+**Rule:** before implementing a flagged micro-optimization, measure or reason
+about the DOMINANT cost of the hot path — build-vs-compute split (env-gated
+timers on a real model), thread-scaling (op size), tile count. The two real wins
+of the sweep (safmn whole-image threading 2.3×; tps_locnet dequant hoist for
+reuse-callers) were both where the gap WAS a meaningful fraction; the marginal
+ones were not. The genuine remaining levers are the scalar-compute hot paths
+themselves (SIMD/ggml-ify scunet/mixtex WMSA, layout_detect deformable attn) and
+Metal per-op dispatch (ggml-metal ICB replay) — not the mechanical gaps around
+them. Verify which case you're in first.
