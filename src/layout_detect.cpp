@@ -1032,14 +1032,20 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             int ne0 = (int)w_t->ne[0];
             transposed = (ne0 != out_d && ne0 == in_d);
         }
-        for (int n = 0; n < N; n++) {
-            for (int o = 0; o < out_d; o++) {
-                float sum = b[o];
-                for (int i = 0; i < in_d; i++) {
-                    float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
-                    sum += w * x[i * N + n];
-                }
-                y[o * N + n] = sum;
+        // y[o,:] = b[o] + sum_i W[o,i] * x[i,:], computed as contiguous AXPYs over the
+        // N axis. x[i,:] and y[o,:] are contiguous (col-major [dim, N]), so the inner
+        // loop vectorizes — unlike the previous (o,n)-first form whose inner reduction
+        // strode x by N. The per-output accumulation order (i ascending) is unchanged,
+        // so the result is byte-identical to the old scalar loop.
+        const size_t Nz = (size_t)N;
+        for (int o = 0; o < out_d; o++) {
+            float * yo = y + (size_t)o * Nz;
+            const float bo = b[o];
+            for (int n = 0; n < N; n++) yo[n] = bo;
+            for (int i = 0; i < in_d; i++) {
+                const float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
+                const float * xi = x + (size_t)i * Nz;
+                for (int n = 0; n < N; n++) yo[n] += w * xi[n];
             }
         }
     };
