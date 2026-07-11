@@ -2625,5 +2625,28 @@ build/alloc is a bigger fraction). Step 0 of implementation: per-token breakdown
 (build vs alloc-plan vs compute) on each candidate decoder; only pursue the ones
 where build+alloc is a meaningful fraction.
 
-**Verify:** q8_0 model per decoder; output cosine vs pre-change baseline ≈1.0
-(structure identical, only reuse changes); per-token latency before/after.
+**Step 0 result — MEASURED 2026-07-11 (trocr-small q8_0, a deliberately LIGHT
+decoder: D=256, V=1200, 6 layers).** Instrumented the math_ocr decode loop
+(`build_decoder_step_graph` + `sched_reset` + `sched_alloc_graph` vs
+`sched_graph_compute`):
+
+| backend | build+alloc / step | compute / step | build fraction |
+|---|---|---|---|
+| Metal | 0.47 ms | 18.5 ms | **2%** |
+| CPU   | 0.46 ms | 6.9 ms  | **6%** |
+
+**Verdict: the decode-step graph cache is a 2–6% win here, not the "#1 lever."**
+And it's an *upper bound* — build+alloc is ~constant per step (fixed node count;
+only KV tensor *shapes* grow), while compute grows with `n_kv`, so `build_frac`
+only shrinks for longer sequences. Even on the lightest decoder where the roadmap
+predicted the biggest payoff, graph construction is a minority cost. The dominant
+per-step cost is compute/dispatch (Metal ~18ms vs CPU ~7ms for the same tiny
+graph → Metal per-op dispatch overhead, not math). **Reprioritize: the real
+decode lever is cutting per-step dispatch — Tier-1 item 2 (ggml-metal ICB replay)
+and op-count reduction — NOT the graph cache.** (Sample = 2 decode steps at small
+`n_kv`; the constant-build-cost argument makes the conclusion robust to step
+count. Re-measure on a heavier decoder if ever revisited, but expect an even
+smaller fraction.)
+
+**Verify (if ever pursued):** q8_0 model per decoder; output cosine vs baseline
+≈1.0 (structure identical, only reuse changes); per-token latency before/after.
