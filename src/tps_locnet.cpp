@@ -156,6 +156,13 @@ struct tps_locnet {
         ggml_tensor * b; // [oc]
     } fc1, fc2;
 
+    // Dequantized (and FC-transposed) weights, precomputed once at load. predict()
+    // previously re-dequantized every conv+FC weight and re-transposed both FC
+    // matrices (with fresh allocations) on every call.
+    std::vector<float> conv_w_f32[4], conv_b_f32[4];
+    std::vector<float> fc1_w_f32, fc1_b_f32; // fc1_w stored transposed [fc_dim, ic]
+    std::vector<float> fc2_w_f32, fc2_b_f32; // fc2_w stored transposed [F*2, fc_dim]
+
     bool bench = false;
 };
 
@@ -215,6 +222,34 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
         return nullptr;
     }
 
+    // Precompute dequantized weights once, so predict() reuses them every call
+    // instead of re-dequantizing + re-transposing the FC matrices each time.
+    {
+        std::vector<float> tmp;
+        for (int i = 0; i < 4; i++) {
+            const float * w = to_f32(net->conv[i].w, tmp);
+            net->conv_w_f32[i].assign(w, w + ggml_nelements(net->conv[i].w));
+            const float * b = to_f32(net->conv[i].b, tmp);
+            net->conv_b_f32[i].assign(b, b + ggml_nelements(net->conv[i].b));
+        }
+        const int ic_fc1 = net->channels[3]; // fc1 input = last conv's output channels
+        const float * fc1w = to_f32(net->fc1.w, tmp);
+        net->fc1_w_f32.resize((size_t)net->fc_dim * ic_fc1);
+        for (int o = 0; o < net->fc_dim; o++)
+            for (int i = 0; i < ic_fc1; i++) net->fc1_w_f32[(size_t)o * ic_fc1 + i] = fc1w[(size_t)i * net->fc_dim + o];
+        const float * fc1b = to_f32(net->fc1.b, tmp);
+        net->fc1_b_f32.assign(fc1b, fc1b + ggml_nelements(net->fc1.b));
+
+        const int f2 = net->num_fiducial * 2;
+        const float * fc2w = to_f32(net->fc2.w, tmp);
+        net->fc2_w_f32.resize((size_t)f2 * net->fc_dim);
+        for (int o = 0; o < f2; o++)
+            for (int i = 0; i < net->fc_dim; i++)
+                net->fc2_w_f32[(size_t)o * net->fc_dim + i] = fc2w[(size_t)i * f2 + o];
+        const float * fc2b = to_f32(net->fc2.b, tmp);
+        net->fc2_b_f32.assign(fc2b, fc2b + ggml_nelements(net->fc2.b));
+    }
+
     return net;
 }
 
@@ -249,7 +284,6 @@ int tps_locnet_predict(tps_locnet * net, const uint8_t * gray, int w, int h, flo
     }
 
     std::vector<float> buf_b;
-    std::vector<float> dq_w, dq_b;
 
     // Forward pass: 4 conv blocks
     auto t_conv0 = std::chrono::steady_clock::now();
@@ -258,9 +292,9 @@ int tps_locnet_predict(tps_locnet * net, const uint8_t * gray, int w, int h, flo
         int oc = net->channels[i];
         int oh = cur_h, ow = cur_w; // same-padding conv preserves size
 
-        // Conv2d (3x3, pad=1)
-        const float * wptr = to_f32(net->conv[i].w, dq_w);
-        const float * bptr = to_f32(net->conv[i].b, dq_b);
+        // Conv2d (3x3, pad=1) — weights dequantized once at load.
+        const float * wptr = net->conv_w_f32[i].data();
+        const float * bptr = net->conv_b_f32[i].data();
 
         // GGUF data is in numpy row-major order: [OC, IC, KH, KW].
         // Our conv2d() expects the same layout — use directly.
@@ -295,30 +329,15 @@ int tps_locnet_predict(tps_locnet * net, const uint8_t * gray, int w, int h, flo
                 std::chrono::duration<double, std::milli>(t_conv1 - t_conv0).count());
     }
 
-    // FC1 + ReLU
+    // FC1 + ReLU — weights dequantized + transposed once at load.
     auto t_fc0 = std::chrono::steady_clock::now();
-    const float * fc1_w = to_f32(net->fc1.w, dq_w);
-    const float * fc1_b = to_f32(net->fc1.b, dq_b);
-
-    // ggml stores FC as [ic, oc] — transpose to [oc, ic]
-    std::vector<float> fc1_wt(net->fc_dim * ic);
-    for (int o = 0; o < net->fc_dim; o++)
-        for (int i = 0; i < ic; i++) fc1_wt[o * ic + i] = fc1_w[i * net->fc_dim + o];
-
     buf_b.resize(net->fc_dim);
-    fc_forward(buf_a.data(), ic, fc1_wt.data(), fc1_b, net->fc_dim, buf_b.data());
+    fc_forward(buf_a.data(), ic, net->fc1_w_f32.data(), net->fc1_b_f32.data(), net->fc_dim, buf_b.data());
     relu_inplace(buf_b.data(), net->fc_dim);
 
-    // FC2
-    const float * fc2_w = to_f32(net->fc2.w, dq_w);
-    const float * fc2_b = to_f32(net->fc2.b, dq_b);
-
-    std::vector<float> fc2_wt(F * 2 * net->fc_dim);
-    for (int o = 0; o < F * 2; o++)
-        for (int i = 0; i < net->fc_dim; i++) fc2_wt[o * net->fc_dim + i] = fc2_w[i * F * 2 + o];
-
+    // FC2 — weights dequantized + transposed once at load.
     std::vector<float> raw_pts(F * 2);
-    fc_forward(buf_b.data(), net->fc_dim, fc2_wt.data(), fc2_b, F * 2, raw_pts.data());
+    fc_forward(buf_b.data(), net->fc_dim, net->fc2_w_f32.data(), net->fc2_b_f32.data(), F * 2, raw_pts.data());
 
     // Convert from [-1, 1] normalized coords to pixel coords
     for (int i = 0; i < F; i++) {
