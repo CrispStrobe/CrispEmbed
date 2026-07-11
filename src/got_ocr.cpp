@@ -415,6 +415,7 @@ bool got_ocr::load(context & ctx, const char * gguf_path, int n_threads, int ver
 void got_ocr::free_(context & ctx) {
     if (ctx.kvc.buf) ggml_backend_buffer_free(ctx.kvc.buf);
     if (ctx.kvc.ctx) ggml_free(ctx.kvc.ctx);
+    if (ctx.decode_galloc) ggml_gallocr_free(ctx.decode_galloc);
     if (ctx.sched) ggml_backend_sched_free(ctx.sched);
     if (ctx.model_buf) ggml_backend_buffer_free(ctx.model_buf);
     if (ctx.model_ctx) ggml_free(ctx.model_ctx);
@@ -1243,17 +1244,51 @@ struct splice_data {
 
 static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, int n_tokens, int n_past,
                             std::vector<float> & last_logits_out, const splice_data * sd = nullptr) {
+    // GOT_OCR_DECODE_CACHE=1 swaps the per-step ggml_backend_sched
+    // reset+alloc+compute (which re-runs split_graph over the whole decode graph
+    // every token) for a dedicated gallocr reserved once at max KV length + a
+    // sched-free compute. The decode graph is single-backend (all weights + KV on
+    // ctx.backend), and its node COUNT is constant per step (only tensor shapes
+    // grow with n_past), so once reserved for the longest graph every subsequent
+    // ggml_gallocr_alloc_graph takes the no-realloc fast path. Output-identical.
+    static const bool use_cache = (std::getenv("GOT_OCR_DECODE_CACHE") != nullptr);
     auto & l = ctx.m.lhp;
     int T = n_tokens;
     int D = (int)l.hidden_size;
     int V = (int)l.vocab_size;
 
+    if (use_cache && !ctx.decode_galloc) {
+        // Reserve the decode gallocr for the maximum-length decode graph (Lk =
+        // kvc.max_seq). Built with n_past>0 so it has the exact decode structure
+        // (no prefill image splice). Freed before the real step graph is built so
+        // ctx.compute_meta is reused cleanly.
+        ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
+        llm_graph rg = build_llm_graph(ctx, 1, ctx.kvc.max_seq - 1, true);
+        bool reserved = ggml_gallocr_reserve(ctx.decode_galloc, rg.gf);
+        ggml_free(rg.gctx);
+        if (!reserved) {
+            fprintf(stderr, "got_ocr: decode gallocr reserve failed; falling back to sched\n");
+            ggml_gallocr_free(ctx.decode_galloc);
+            ctx.decode_galloc = nullptr;
+        }
+    }
+
     auto _t0 = std::chrono::steady_clock::now();
     llm_graph lg = build_llm_graph(ctx, T, n_past, true);
     auto _t1 = std::chrono::steady_clock::now();
 
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) return false;
+    if (ctx.decode_galloc) {
+        if (!ggml_gallocr_alloc_graph(ctx.decode_galloc, lg.gf)) {
+            ggml_free(lg.gctx);
+            return false;
+        }
+    } else {
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
+            ggml_free(lg.gctx);
+            return false;
+        }
+    }
     auto _t2 = std::chrono::steady_clock::now();
 
     // Token IDs
@@ -1293,7 +1328,11 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
     }
 
     auto _t3 = std::chrono::steady_clock::now();
-    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    if (ctx.decode_galloc) {
+        ggml_backend_graph_compute(ctx.backend, lg.gf);
+    } else {
+        ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    }
     auto _t4 = std::chrono::steady_clock::now();
 
     // Read last token's logits

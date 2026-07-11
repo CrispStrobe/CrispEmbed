@@ -138,6 +138,11 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr; // CPU fallback (sched requires CPU last)
     ggml_backend_sched_t sched = nullptr;
+    // Decode-step graph cache (GOT_OCR_DECODE_CACHE=1): a dedicated gallocr
+    // reserved once for the max-length decode graph so each per-step
+    // ggml_gallocr_alloc_graph hits the no-realloc fast path, and the step runs
+    // sched-free on ctx.backend — skipping ggml_backend_sched_split_graph.
+    ggml_gallocr_t decode_galloc = nullptr;
     std::vector<uint8_t> compute_meta;
     kv_cache kvc;
     tokenizer tok;
