@@ -2003,25 +2003,20 @@ manual decode (no HF `.generate()`), seed `<bos>=4426`, stop `<eos>=8822`,
   vs 1.98 s for ~100 tokens); the gain grows with sequence length.
 - ✅ GGUF upload: `cstr/smt-grandstaff-GGUF` (f32 83 MB + q8_0 24 MB + MIT model
   card; card license verified `mit`). Registry auto-download works end-to-end.
-- ✅ **Preprocessing corrected + port re-validated (this was wrong before).** The
-  earlier engine used `reduce_ratio=0.5` + a cv2-BGR channel swap — WRONG. The
-  authoritative pipeline (SMT-main `data.py::prepare_data`) is RGB, `reduce_ratio=
-  1.0`, `width=min(w,3056)`, `height=max(h,256)`, no swap. Fixed in `recognize_raw`
-  + the dumper. **Port parity re-verified on 10 fresh GrandStaff images: C++ ==
-  Python blueprint = 100.00% token agreement** (8/10 byte-identical; 2 differ only
-  because the Python ref was maxlen-capped — prefixes 100% identical).
-- ⚠️ **Model accuracy caveat (NOT a port bug).** vs ground truth the model scores
-  only ~30% on the clean `antoniorv6/grandstaff` test split — it reads clefs but
-  misreads key/time signatures and degenerates (no `<eos>`) on some images. This
-  is faithfully reproduced by the port (SMT-plusplus forward is the correct one;
-  SMT-main's forward gives 0% garbage on this checkpoint). Ruled out: measurement,
-  preprocessing, image quality, weight-load (360/360), attention-scaling. Open
-  hypothesis: data-distribution mismatch (model tagged `camera_grandstaff` vs the
-  clean test images). **Verify on the true Camera-GrandStaff distribution before
-  claiming production OMR quality.** The C++ port itself is exact.
-  Lesson recorded: [[validate-intermediates-and-outputs]] — "100% vs my own
-  same-preprocessing reference" hid both a preprocessing bug and a broken
-  accuracy metric; only decoded-output-vs-ground-truth surfaced them.
+- ✅ **Preprocessing fixed → SMT WORKS at 96.3%.** The engine had been *inverting*
+  the image (SMT-plusplus's `convert_img_to_tensor` has `RandomInvert(p=1.0)`), but
+  `smt-grandstaff` is an **SMT-main** model whose preprocessing is `Grayscale→
+  ToTensor` with **NO invert**. Inverting → ~30%; correct (non-inverted) → **96.3%**
+  on the clean `antoniorv6/grandstaff` test split (per-image 91.8/96.2/96.7/99.6%).
+  Full pipeline: RGB (no cv2-BGR swap), `reduce_ratio=1.0`, `width=min(w,3056)`,
+  `height=max(h,256)`, grayscale, no invert. Fixed in `recognize_raw` + the dumper.
+- ✅ **Fully validated:** per-stage diff cos=1.0; C++ decode == Python blueprint
+  (100% token agreement, 10 fresh images); **C++ engine vs ground truth = 96.3%.**
+  SMT-plusplus's unscaled forward confirmed correct (SMT-main's forward → 0% garbage
+  on this checkpoint). The port was exact all along — the invert was the only bug.
+  Lesson: [[validate-intermediates-and-outputs]] — a "reads-structure-not-detail"
+  pattern across models was a preprocessing/input bug, not model quality; derive
+  preprocessing from the model's OWN repo (SMT-main, not the SMT-plusplus fork).
 
 **Landmines:**
 - **⚠ SMT attention is UNSCALED.** `MHA.forward` computes `bmm(q,k)` then softmax

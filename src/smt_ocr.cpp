@@ -825,8 +825,9 @@ const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, 
     // Mirror the SMT single-system inference pipeline (SMT-main data.py
     // prepare_data + convert_img_to_tensor), reduce_ratio=1.0:
     //   width = min(w, 3056); height = max(h, 256); cv2.resize (bilinear, uint8)
-    //   → RandomInvert(255-x) → Grayscale (RGB luma) → /255.
-    // The HF dataset feeds RGB (np.array(PIL)), NOT cv2 BGR — so NO channel swap.
+    //   → Grayscale (RGB ITU-R 601 luma) → /255. NO invert (SMT-main's
+    //   convert_img_to_tensor is Grayscale→ToTensor; inverting drops accuracy
+    //   from ~96% to ~30%), NO channel swap (HF dataset feeds RGB).
     if (!data || w <= 0 || h <= 0 || ch <= 0) return nullptr;
     int rw = w > 3056 ? 3056 : w;
     int rh = h < 256 ? 256 : h;
@@ -853,13 +854,8 @@ const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, 
                 float top = p00 + wx * (p01 - p00), bot = p10 + wx * (p11 - p10);
                 pix[k] = std::round(top + wy * (bot - top)); // cv2 returns uint8
             }
-            float luma;
-            if (nk >= 3) {
-                float i0 = 255.0f - pix[0], i1 = 255.0f - pix[1], i2 = 255.0f - pix[2];
-                luma = 0.299f * i0 + 0.587f * i1 + 0.114f * i2; // RGB (ITU-R 601), no swap
-            } else {
-                luma = 255.0f - pix[0];
-            }
+            float luma = (nk >= 3) ? 0.299f * pix[0] + 0.587f * pix[1] + 0.114f * pix[2] // RGB luma, no invert
+                                   : pix[0];
             gray[(size_t)y * rw + x] = std::round(luma) / 255.0f;
         }
     }

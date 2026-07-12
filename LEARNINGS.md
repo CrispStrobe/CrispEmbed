@@ -1,36 +1,41 @@
 # CrispEmbed — Technical Learnings
 
-## Port-fidelity is not model-quality: a same-preprocessing self-reference + a broken metric hid two bugs (2026-07-12, SMT OMR)
+## "Reads structure but not detail" across independent models = a preprocessing/input bug on MY side, not model quality (2026-07-12, SMT + TrOMR OMR)
 
-Ported the Sheet Music Transformer (staff-notation → bekern). The ggml graph was
-validated per-stage (cos=1.0) AND against the Python model's decoded tokens
-(100% match). Both were real — yet real-world OMR was ~30% vs ground truth. Two
-things the "100% match" could not catch, because I compared the C++ engine only
-to my OWN Python reference that used the SAME (wrong) preprocessing:
+Two published SOTA OMR models both scored ~30% vs ground truth through my harness
+— each reading the *structure* (clefs, barlines) right but the *detail* (pitches,
+key/time sig) wrong. That uniform cross-model failure was the tell: a **systematic
+input bug on my side**, not two coincidentally-weak models. Both were "wrong
+input," and fixing it took each from ~30% to ~96%:
 
-- **Preprocessing was wrong on BOTH sides.** I used `reduce_ratio=0.5` + a
-  cv2-BGR channel swap. The authoritative single-system pipeline (SMT-main
-  `data.py::prepare_data`) is RGB (`np.array(PIL)`, not cv2 BGR), `reduce_ratio=
-  1.0`, `width=min(w,3056)`, `height=max(h,256)`. Wrong ratio under-reads (decode
-  came out ~half the ground-truth length). C++==Python held because both were wrong.
-- **The accuracy metric was broken.** I compared the model's dot-stripped tokens
-  (`8FL`) against raw GT with `·` dots (`8·F·L`) — every note counted wrong. GT
-  must be normalized exactly as prepare_data: `re.sub(r'(?<=\=)\d+','')`, spaces→
-  `<s>`, strip `·`, tabs→`<t>`, newlines→`<b>`.
+- **SMT: a spurious invert.** I used the **SMT-plusplus** fork's
+  `convert_img_to_tensor` (`RandomInvert(p=1.0)`), but `smt-grandstaff` is an
+  **SMT-main** model whose `convert_img_to_tensor` is `Grayscale→ToTensor` with
+  **NO invert**. Feeding white-on-black → 30%; black-on-white (correct) → **96.3%**.
+  Also from SMT-main `prepare_data`: RGB (not cv2 BGR), `reduce_ratio=1.0`,
+  `width=min(w,3056)`, `height=max(h,256)`.
+- **TrOMR: fed the wrong file.** The repo's `N.png` are 4-channel *reference
+  renderings*; `readimg`'s `255 - img[:,:,3]` on their opaque alpha yields an
+  all-black image (`gray range 0 0`). The real inputs are `photoN.jpg`. On the
+  photos, TrOMR reads clefs/keys/rhythms/pitches correctly.
 
-**Read the forward, not the abstract, and verify which forward the checkpoint
-wants.** SMT's `MHA.forward` computes `bmm(q,k)` with NO `1/sqrt(d)` scaling
-(`scale_factor` is defined but never applied). Adding the scale made accuracy
-*worse*. The checkpoint's tensor names (`input_attention`/`MHA`/`lq`/`ffNet`/
-`out_layer`) match **SMT-plusplus**, not the current **SMT-main** (`self_attn`/
-`q_proj`/`vocab_projection`) — and remapping the weights into SMT-main's forward
-produced 0% garbage. So SMT-plusplus's unscaled forward is the correct one; the
-port reproduces it exactly.
+The **accuracy metric** was ALSO wrong at first: comparing the model's dot-stripped
+tokens (`8FL`) to raw GT with `·` (`8·F·L`). GT must be normalized exactly as the
+model's `prepare_data`: `re.sub(r'(?<=\=)\d+','')`, spaces→`<s>`, strip `·`,
+tabs→`<t>`, newlines→`<b>`.
 
-**Durable rule:** for a ported generative model, "matches my reference" only
-proves the port. Also measure decoded-output vs GROUND TRUTH on ≥10 fresh
-inputs, and derive the reference's preprocessing from the model's own training
-data pipeline — not a plausible guess. See [[validate-intermediates-and-outputs]].
+The SMT port itself was correct the whole time (per-stage cos=1.0, C++==Python
+100%, SMT-plusplus's unscaled forward confirmed vs SMT-main which gives 0% garbage
+on this checkpoint). "C++==Python==30%" proved only the PORT — both shared my bad
+preprocessing.
+
+**Durable rules:** (1) when a published SOTA model scores implausibly low, suspect
+your HARNESS, not the model; (2) a "reads-structure-not-detail" pattern — and
+*especially* the same pattern across independent models — is an input/preprocessing
+bug; (3) derive preprocessing from the model's OWN repo/commit (`smt-grandstaff`
+↔ SMT-main, not the same-named SMT-plusplus fork), and run the model on its OWN
+example images/expected outputs before trusting any number. See
+[[validate-intermediates-and-outputs]].
 
 ## Importing a llama.cpp LLM: un-permute q/k, because llama.cpp rewrites them for its interleaved RoPE (2026-07-12, SmolVLM import)
 

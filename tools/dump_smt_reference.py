@@ -91,14 +91,15 @@ def main():
 
     # ---- preprocessing (SMT-main data.py prepare_data + convert_img_to_tensor) ----
     # RGB (the HF dataset feeds np.array(PIL), NOT cv2 BGR); reduce_ratio=1.0;
-    # width = min(w, 3056); height = max(h, 256).
+    # width = min(w, 3056); height = max(h, 256); Grayscale -> ToTensor, NO invert
+    # (SMT-main convert_img_to_tensor has no RandomInvert — inverting tanks accuracy).
     from PIL import Image
     img = np.array(Image.open(args.image).convert("RGB"))  # RGB HWC uint8
     W = min(int(np.ceil(img.shape[1] * args.reduce_ratio)), 3056)
     H = max(int(np.ceil(img.shape[0] * args.reduce_ratio)), 256)
     img = cv2.resize(img, (W, H))
-    x = convert_img_to_tensor(img)          # (1,H,W) float [0,1]
-    x = x.unsqueeze(0).to(device)           # (1,1,H,W)
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0  # no invert
+    x = torch.from_numpy(gray)[None, None].to(device)  # (1,1,H,W)
     print(f"input_tensor: {tuple(x.shape)}  range [{x.min():.3f},{x.max():.3f}]")
 
     stages = {}

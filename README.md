@@ -51,10 +51,9 @@ All auto-detected from GGUF metadata, ~3-5s decoder time.
 
 **Optical Music Recognition (OMR)**: Sheet Music Transformer (staff-notation image
 → bekern tokens; ConvNext encoder + cross-attention Transformer decoder, 21.4M,
-MIT, 24 MB Q8_0). KV-cached greedy decode; auto-detected via `--ocr`. Note: the
-C++ engine reproduces the reference model exactly (100% token parity), but the
-published `smt-grandstaff` checkpoint's accuracy on clean scores is limited —
-treat OMR as experimental.
+MIT, 24 MB Q8_0). KV-cached greedy decode; auto-detected via `--ocr`. Reproduces
+the reference model exactly (per-stage cos=1.0, 100% token parity) and scores
+**96.3%** vs ground truth on the GrandStaff test set.
 
 **Tesseract LSTM OCR**: 12 languages (eng, deu, fra, spa, ita, por, nld, rus, ara,
 chi_sim, jpn, kor) in tiny GGUF models (435 KB–1.7 MB Q8_0). Converted from
