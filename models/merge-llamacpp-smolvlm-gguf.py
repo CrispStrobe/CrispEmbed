@@ -95,30 +95,10 @@ def map_vision_name(name, tinfo_by_name):
     return None, None
 
 
-def llama_unpermute_qk_rows(data: bytes, out_rows: int, n_head: int, head_dim: int) -> bytes:
-    """Undo llama.cpp's q/k permute (convert_hf_to_gguf LlamaModel.permute),
-    converting its interleaved-RoPE weight layout back to HF rotate_half layout
-    — which is what CrispEmbed's converter emits and the loader's RoPE expects.
-
-    The permute only reorders OUTPUT rows (the ne1 dim); each row's bytes are
-    untouched, so this works byte-exact on any dtype incl. Q8_0 (rows are
-    independently quantized). Forward maps HF (h,s,d)->llama (h,d,s); we invert:
-    HF_row(h,s,d) data comes from llama_row(h,d,s)."""
-    if out_rows % n_head != 0:
-        raise ValueError(f"out_rows {out_rows} not divisible by n_head {n_head}")
-    row = len(data) // out_rows
-    hd2 = head_dim // 2
-    if head_dim * n_head != out_rows:
-        raise ValueError(f"n_head*head_dim {n_head*head_dim} != out_rows {out_rows}")
-    src = memoryview(data)
-    out = bytearray(len(data))
-    for h in range(n_head):
-        for s in range(2):
-            for d in range(hd2):
-                hf = h * head_dim + s * hd2 + d
-                lla = h * head_dim + d * 2 + s
-                out[hf * row:(hf + 1) * row] = src[lla * row:(lla + 1) * row]
-    return bytes(out)
+# q/k un-permute lives in the shared core (core.llama_unpermute_qk_rows). SmolVLM's
+# LLM is arch=llama (interleaved RoPE) so it DOES need un-permuting — unlike the
+# qwen2 (NEOX) LLM in the InternVL merge, which is copied verbatim.
+llama_unpermute_qk_rows = core.llama_unpermute_qk_rows
 
 
 def map_llm_name(name):

@@ -4,6 +4,36 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 12, 2026 — mmproj interop: 3rd family (InternVL) + diff-harness validation
+
+### InternVL2.5/3 import (`feat/mmproj-internvl`)
+- `models/merge-llamacpp-internvl-gguf.py`: import a stock llama.cpp InternVL2.5/3
+  pair (arch=qwen2 LLM + `internvl` mmproj) into CrispEmbed's `internvl2` engine.
+  **Validated end-to-end**: ggml-org/InternVL2_5-1B merges, loads, OCRs correctly
+  on Metal, and the diff-harness intermediates match the native converter to 6
+  decimals. Third distinct arch on the shared `gguf_merge_core.py` dispatch
+  (after Qwen2-VL + SmolVLM).
+- New transforms vs SmolVLM: **vision QKV re-fusion** (mmproj splits attn_q/k/v →
+  loader wants fused `attn_qkv`; byte-concat, no permute — vision has no RoPE);
+  **arch-conditional q/k un-permute** — arch=qwen2 uses NEOX RoPE so q/k copy
+  VERBATIM (un-permuting gave garbage; this was THE bug). MLP connector
+  (`mm.model.mlp.{0,1,3}`→`v.proj.{norm,fc1,fc2}`), layer-scale ls1/ls2, class
+  token, dynamic-tiling metadata injected per InternVL2.5 defaults. ViT FFN
+  fc1/fc2 mapped by output dim — here `ffn_up`=fc1, the INVERSE of SmolVLM.
+- `tests/test_mmproj_internvl.py` (no download) + wired into the regression smoke
+  tier. Folded the shared `llama_unpermute_qk_rows` into `gguf_merge_core.py`.
+
+### Import-validation discipline (both SmolVLM + InternVL)
+- Per the standing rule "test intermediates AND outputs, not just outputs":
+  validated each import THREE ways — (1) ground-truth output vs `llama-mtmd-cli`
+  on the same GGUF; (2) HF per-stage reference dump vs `build/test-*-diff`; (3)
+  isolation — the native converter on the same HF model gives IDENTICAL cosines,
+  proving import ≡ native. Caught that InternVL OCRs correctly while
+  `vis_patch_embed cos=-0.936` (a pre-existing internvl2-harness convention
+  artifact, present in the native path too — not the interop). See LEARNINGS.md.
+
+---
+
 ## July 12, 2026 — C4 prefix cache, math_ocr decode fusion, two-way mmproj interop
 
 ### C4 — cross-call prefix KV cache for decoder embeddings (`feat/c4-cross-call-prefix-kv`)

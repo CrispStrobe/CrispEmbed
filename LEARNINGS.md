@@ -20,16 +20,43 @@ row-shuffle — no dequantization. q uses `n_head`, k uses `n_head_kv`; v and
 everything else copy verbatim. After un-permuting, the merged SmolVLM OCR'd
 `The quick brown fox…` correctly on Metal.
 
-Durable rule: **any time you ingest a llama.cpp `arch=llama`/qwen/etc. LLM into
-a CrispEmbed graph that reads HF-layout weights, un-permute q/k first.** Symptom
-is always "fluent but wrong / repetitive," never a crash — the shapes are
-identical, only the row order differs. (Same failure class as the
-[[flashattn-ext-already-permutes]] layout bugs: right values, wrong arrangement.)
-Two more recurring transforms confirmed on this port: the SigLIP ViT FFN is
-**name-inverted** in llama.cpp's clip export (`ffn_down`=fc1, `ffn_up`=fc2 —
-map by output dim, like the Qwen2-VL ViT), and the 4-D Conv2d patch weight
-flattens to 2-D by a pure C-order shape relabel (byte-identical, no data touch).
-See `models/merge-llamacpp-smolvlm-gguf.py` + `tests/test_mmproj_smolvlm.py`.
+Durable rule: **un-permute q/k when ingesting a llama.cpp NORMAL-RoPE LLM
+(`arch=llama`/mistral/gemma) into a CrispEmbed HF-layout graph.** Symptom is
+always "fluent but wrong / repetitive," never a crash — shapes are identical,
+only row order differs. (Same class as the [[flashattn-ext-already-permutes]]
+bugs: right values, wrong arrangement.)
+
+**CRUCIAL refinement (2026-07-12, InternVL import):** the un-permute is
+**arch-dependent**. llama.cpp permutes q/k ONLY for interleaved/NORMAL-RoPE
+arches; **NEOX-RoPE arches (`qwen2`) are already in HF layout** and must be copied
+**verbatim**. InternVL2.5-1B's LLM is `arch=qwen2` — un-permuting it produced
+"the! The title! It's not!" garbage; copying verbatim gave correct OCR + full
+diff-harness parity with the native converter. So: `needs_unpermute = arch in
+{llama, mistral, gemma}`, else verbatim. Two more recurring transforms: the
+ViT/SigLIP/InternViT FFN is **name-inverted** in llama.cpp's clip export (map
+fc1/fc2 by OUTPUT dim, NOT name — SmolVLM has `ffn_down`=fc1 while InternVL has
+`ffn_up`=fc1, opposite, so name-matching is guaranteed wrong), and the 4-D Conv2d
+patch weight flattens to 2-D by a pure C-order shape relabel (byte-identical).
+InternVL also needs **QKV re-fusion** (mmproj splits attn_q/k/v; the loader wants
+a fused `attn_qkv` — byte-concat [q;k;v], and vision has no RoPE so no permute).
+See `models/merge-llamacpp-{smolvlm,internvl}-gguf.py` + their tests.
+
+## Diff-harness catches masked bugs the output can't: a robust LLM reads correct text over cos-0.94 vision (2026-07-12, import validation)
+
+The user's standing rule — **"always test against the diff-harness intermediates
+AND ground-truth outputs, never just the output"** — earned its keep on the
+InternVL import: CrispEmbed OCR'd "The quick brown fox…" perfectly while
+`build/test-internvl2-diff` showed `vis_patch_embed cos=-0.936` (near
+anti-correlation). The LLM was robust enough to read simple text over badly
+degraded vision embeds, so the output check alone would have shipped a masked
+defect. The method that cleared BOTH new imports (SmolVLM cos 0.943, InternVL cos
+-0.936): dump HF per-stage activations (`tools/dump_*_reference.py`), diff with
+`build/test-*-diff`, then **run the native converter on the same HF model and diff
+IT against the same reference** — identical cosines ⇒ my import ≡ the blessed
+native path, and the sub-threshold stage is a pre-existing engine/harness artifact
+(here the internvl2 harness's `vis_patch_embed` convention), not my change. Ground
+truth for an imported GGUF is the source engine itself: `llama-mtmd-cli` on the
+same file. See [[validate-intermediates-and-outputs]].
 
 ## VL "runs but ignores the image": use the inject-embeds discriminator BEFORE diffing the vision tower (2026-07-12, mmproj reverse interop)
 
