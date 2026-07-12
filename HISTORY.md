@@ -4,6 +4,38 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 12, 2026 — P3 backlog sweep (every item triaged)
+
+Worked the whole low-priority backlog to a clean end state — each item is now
+DONE, WON'T-DO with a verified reason, or externally blocked. Real changes:
+
+- **internvl2 diff-harness input guard** (`fix/internvl-diff-input-guard`). An
+  earlier InternVL import looked broken (`vis_patch_embed cos=-0.936`) — the
+  cause was **mine**: I dumped the HF reference on a real image while the harness
+  feeds a synthetic gradient. Re-validated correctly (dump without `--image`):
+  `vis_patch_embed cos=0.999999`, import **identical to the native converter** at
+  every stage. Added a guard so it can't recur: `dump_internvl2_reference.py`
+  stamps `diff.input_mode`, and `test_internvl2_diff` refuses a non-gradient
+  reference. (A residual `vis_proj_output cos=-0.098` is a pre-existing
+  InternViT-vs-HF projector gap present in the native path too, not the interop.)
+  Corrected the LEARNINGS entry that had mis-labeled the −0.936 a "convention
+  artifact," and pruned a stale "STRONG LEAD" red herring from the PLAN.
+- **Reranker eval corpus** expanded 16→30 self-authored CC0 EN+DE graded groups
+  (`RERANK_EVAL`); the Kendall-τ run stays Kaggle-only.
+- **Bicubic `a` A/B resolved by local measurement** (no 4 GB model): HF vision
+  processors resize via PIL (`a=−0.5`), which CrispEmbed already uses; `a=−0.75`
+  is cos<0.00002 worse. Fixed the inaccurate kernel comment.
+
+Resolved by analysis (no code, correct outcome): `<__media__>` marker
+(mtmd-internal, no CrispEmbed entry point); LFM2 ShortConv→`ggml_ssm_conv`
+(already Metal-covered via im2col+mul_mat, and ssm_conv is causal vs the
+bidirectional embed conv); reverse export for SmolVLM/InternVL (no use case —
+both already ship as llama.cpp GGUFs); CrispASR `gpu_backend_pref.h` sync
+(already committed `9f2e68f7`, logically identical); bidirlm re-quant (cosmetic
++ Kaggle-only); esrgan tiles (measured slower). See PLAN.md status block.
+
+---
+
 ## July 12, 2026 — mmproj interop: 3rd family (InternVL) + diff-harness validation
 
 ### Unified import CLI + README (`feat/mmproj-unified-cli`)
