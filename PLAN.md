@@ -1932,12 +1932,22 @@ manual decode (no HF `.generate()`), seed `<bos>=4426`, stop `<eos>=8822`,
   → `ggml_build_forward_expand` each; (b) `crispembed_diff.h` GGUF reader only
   decodes F32 (its I32 branch checks a stale type id 5, but this ggml tags I32
   as 26) → dumper now stores `token_ids` as F32.
-- ⏭ Remaining: (1) preprocessing parity in `recognize_file` (cv2-bilinear
-  resize + torchvision grayscale/invert vs current nearest+luma) — validate via
-  a full native-vs-HF roundtrip; (2) KV-cache the decoder (greedy is O(L²)
-  full-recompute, ~8.6 s/250 tok on CPU); (3) Metal validation (diff was
-  CPU-only — snapshots lie on Metal); (4) CLI/registry/C-API/quantize wiring
-  (contributing.md checklist); (5) GGUF upload + registry entry.
+- ✅ Preprocessing parity: `recognize_raw` now does cv2-bilinear resize +
+  RandomInvert + BGR-as-RGB grayscale → native decode is **token-identical to
+  HF** on real GrandStaff scores (100% on 3/4; 4th matched to the ref cap), CPU
+  and Metal.
+- ✅ Wiring: `src/crispembed.cpp` dispatcher (`arch=="smt_ocr"` → all 4 switches),
+  so `crispembed -m smt.gguf --ocr score.png` works end-to-end (verified 69/69 vs
+  HF); `smt_ocr_recognize_raw` added; `examples/cli/model_mgr.cpp` registry entry
+  (`smt-grandstaff`). Server/bindings inherit via the generic `crispembed_ocr_model_*`.
+- ✅ Quantize: `tools/quantize.cpp` keeps SMT conv kernels (`dwconv`/`downsampling`)
+  and the baked PE (`positional`) F32; engine reshapes the quantizer's flattened
+  2-D conv headers back to 4-D. **q8_0 (24 MB) decodes identically to HF (100%);
+  q4_k (17 MB) is too lossy for the AR decode (~32%) — ship f32 + q8_0 only.**
+- ⏭ Remaining: (1) KV-cache the decoder (greedy is O(L²) full-recompute, ~8.6 s/
+  250 tok); (2) GGUF upload (needs `hf auth login` — staged in scratchpad:
+  `smt-grandstaff-{f32,q8_0}.gguf` → `cstr/smt-grandstaff-GGUF`); (3) Metal
+  full-diff (decode already verified on Metal).
 
 **Landmines:**
 - **⚠ SMT attention is UNSCALED.** `MHA.forward` computes `bmm(q,k)` then softmax

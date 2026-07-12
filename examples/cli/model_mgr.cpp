@@ -1310,6 +1310,13 @@ static const ModelEntry k_registry[] = {
       "TexTeller 3.0 math→LaTeX (ViT+TrOCR, 310M, EN+CN)", "302 MB", "apache-2.0",
       "https://huggingface.co/cstr/texteller-3-GGUF" },
 
+    // Sheet Music Transformer — Optical Music Recognition (ConvNext + transformer,
+    // 21.4M). q8_0 decodes identically to HF; q4_k is too lossy for the AR decode.
+    { "smt-grandstaff", "smt-grandstaff-q8_0.gguf",
+      "https://huggingface.co/cstr/smt-grandstaff-GGUF/resolve/main/smt-grandstaff-q8_0.gguf",
+      "Sheet Music Transformer OMR: staff notation→bekern (pianoform, 21.4M)", "24 MB", "mit",
+      "https://huggingface.co/antoniorv6/smt-grandstaff" },
+
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 

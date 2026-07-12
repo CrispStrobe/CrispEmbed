@@ -224,8 +224,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // Guard 1: patch_embed tensors — always copy as-is (they are conv2d kernels)
         // patch_embed, downsample, merger — used in host-side computation,
         // must stay F32 (ggml_backend_tensor_get reads as float).
+        // SMT ConvNext: dwconv/downsampling are conv2d kernels; smt.positional_1d
+        // is a baked sinusoidal PE consumed by ggml_add. All must stay F32
+        // (quantizing a conv kernel or an add-operand PE breaks the graph).
         if (sname.find("patch_embed") != std::string::npos || sname.find("downsample") != std::string::npos ||
-            sname.find("merger") != std::string::npos) {
+            sname.find("downsampling") != std::string::npos || sname.find("dwconv") != std::string::npos ||
+            sname.find("positional") != std::string::npos || sname.find("merger") != std::string::npos) {
             printf("note: %s — copying as-is (host-side computation)\n", name);
             size_t sz = ggml_nbytes(t);
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
