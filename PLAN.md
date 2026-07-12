@@ -749,12 +749,16 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 > llama.cpp mmproj at a sane size); GLM-4V would mean a 9B download vs a loader
 > still needing dynamic-preprocessing work.
 >
-> STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h`
-> sync (3-line change applied on disk, uncommitted — commit in the CrispASR
-> session); C5(a) bicubic a=−0.75 A/B (residual already 0.999984); the
-> `<__media__>` prompt-marker (doesn't fit CrispEmbed's image-path CLI); LFM2
-> ShortConv → `ggml_ssm_conv` (P3, regression risk); reranker corpus expansion
-> (P3, measured LOW-EV).
+> RESOLVED in the 2026-07-12 backlog sweep: **C5(a) bicubic** (measured — HF uses
+> PIL a=−0.5, already correct; a=−0.75 is cos<0.00002 worse); **`<__media__>`
+> marker** (not-applicable — mtmd-internal, CrispEmbed expands tokens per-engine;
+> no CLI prompt entry point); **reranker corpus** (expanded 16→30 EN+DE groups;
+> τ-eval is Kaggle-only); **internvl2 diff-harness input guard** (dump stamps
+> `diff.input_mode`, harness refuses image-vs-gradient mismatch).
+> STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h` sync (3-line
+> change applied on disk, uncommitted — commit in the CrispASR session); LFM2
+> ShortConv → `ggml_ssm_conv` (P3, regression risk, needs the model); bidirlm
+> multimodal clean re-quant (P3).
 
 
 - **C2 data-driven GGUF behavior flags — DONE (2026-07-12).** Survey found it
@@ -894,8 +898,19 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
       so the GGUF is self-describing. (Method note for future VL interop: the
       inject-embeds + zeros/random discriminator instantly separates a vision
       bug from an LLM-conditioning bug — do that FIRST before diffing the ViT.)
-      Do NOT link libmtmd. `<__media__>` prompt-marker: separate low-value
-      follow-up.
+      Do NOT link libmtmd. **`<__media__>` prompt-marker — RESOLVED as
+      not-applicable (2026-07-12).** Verified by reading the code: it's an
+      mtmd-INTERNAL marker that mtmd expands into engine-specific image tokens.
+      CrispEmbed already does that expansion itself — each OCR/VLM engine inserts
+      its own image token at its canonical position (`internvl2_ocr`
+      `<IMG_CONTEXT>`, `qwen2vl_ocr` `<|image_pad|>`, `smoldocling`
+      `<image>`) inside `build_prompt`, and the image is supplied as a path /
+      pixel buffer, not an inline prompt marker. There is no `--prompt` CLI flag,
+      so no entry point where a user would type `<__media__>`, and no consumer
+      for a marker parser. Adding one would be speculative dead code that
+      contradicts the deliberate image-path design. Migration mapping for a
+      llama.cpp/mtmd user: a `<__media__>` prompt → CrispEmbed `--image FILE`
+      (image auto-placed per engine). Closed; not a follow-up.
 
 - **P3 — reranker corpus expansion — corpus DONE (2026-07-12); τ-eval pending
   Kaggle.** `RERANK_EVAL` extended from 16 to **30** self-authored-CC0 EN+DE
