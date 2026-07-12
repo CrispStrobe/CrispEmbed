@@ -809,9 +809,20 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
       `ggml_can_mul_mat` mismatch — config reads correctly (heads 12/kv 2/hidden
       1536/28L), all loaded weight dims are consistent, and `llama-mtmd-cli` runs
       the same weights, so this is a **Qwen2-VL-2B forward-path gap in an engine
-      built/tested for Qwen2.5-VL-3B**, not an interop-naming issue. Needs a
-      targeted `a->ne`/`b->ne` print at the failing matmul (bounded). Do NOT link
-      libmtmd. `<__media__>` prompt-marker: separate low-value follow-up.
+      built/tested for Qwen2.5-VL-3B**, not an interop-naming issue.
+      **STRONG LEAD (next step):** `qwen2vl.vision.intermediate_size` is written
+      as **1536** (from `clip.vision.feed_forward_length`, which for qwen2vl is
+      the PROJECTION dim, NOT the ViT MLP intermediate), but the actual
+      `v.blk.*.ffn_up.weight` is **5120**-wide — so any vision-FFN graph tensor
+      sized from `vhp.intermediate_size` mismatches the weights → the abort. Fix:
+      derive `vhp.intermediate_size` from the loaded `ffn_fc1/ffn_up` weight (the
+      dim ≠ hidden), in `load_tensors` AND wherever recognize re-reads
+      `clip.vision.feed_forward_length` (qwen2vl_ocr.cpp ~L90 / ~L956); and fix
+      the merge to write `qwen2vl.vision.intermediate_size` = the `ffn_up`
+      out-dim, not `clip.vision.feed_forward_length`. (A first load-site override
+      did not fire — confirm the code path / that `vis_blocks[0].ffn_fc1_w` is
+      populated there first.) Do NOT link libmtmd. `<__media__>` prompt-marker:
+      separate low-value follow-up.
 
 - **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
   16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY
