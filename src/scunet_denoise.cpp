@@ -18,6 +18,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -25,7 +26,13 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <thread>
 #include <vector>
+
+// Host-side WMSA thread count, set from scunet_init's n_threads (the window
+// attention runs on the CPU outside ggml, so the backend thread count does
+// not apply to it). Default 1 = the historical serial behavior.
+static int g_wmsa_threads = 1;
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -215,10 +222,14 @@ static void wmsa_forward(const float * x_chw, int C, int H, int W, const float *
     float scale = 1.0f / sqrtf((float)head_dim);
     std::vector<float> attn_out(nW * N * C);
 
-    for (int wi = 0; wi < nW; wi++) {
+    // Each window is independent (reads qkv/rpb/mask, writes only its own
+    // attn_out slice), so the window loop parallelizes byte-identically across
+    // g_wmsa_threads (was single-threaded regardless of -t; default 1 keeps the
+    // old behavior). SCUNET_WMSA_SCALAR=1 forces serial (A/B baseline).
+    auto run_window = [&](int wi, std::vector<float> & scr) {
         for (int hd = 0; hd < n_heads; hd++) {
             // Compute attention scores
-            scratch.resize(N * N);
+            scr.resize(N * N);
             for (int i = 0; i < N; i++) {
                 const float * qi = &qkv[(wi * N + i) * 3 * C + hd * head_dim];
                 for (int j = 0; j < N; j++) {
@@ -226,31 +237,48 @@ static void wmsa_forward(const float * x_chw, int C, int H, int W, const float *
                     float dot = core_cpu::dot_product(qi, kj, head_dim);
                     float bias = rpb[rpb_idx[i * N + j]];
                     float mask_val = shift ? attn_mask[wi * N * N + i * N + j] : 0.0f;
-                    scratch[i * N + j] = dot * scale + bias + mask_val;
+                    scr[i * N + j] = dot * scale + bias + mask_val;
                 }
             }
             // Softmax per row
             for (int i = 0; i < N; i++) {
                 float mx = -1e30f;
-                for (int j = 0; j < N; j++) mx = std::max(mx, scratch[i * N + j]);
+                for (int j = 0; j < N; j++) mx = std::max(mx, scr[i * N + j]);
                 float sum = 0;
                 for (int j = 0; j < N; j++) {
-                    scratch[i * N + j] = expf(scratch[i * N + j] - mx);
-                    sum += scratch[i * N + j];
+                    scr[i * N + j] = expf(scr[i * N + j] - mx);
+                    sum += scr[i * N + j];
                 }
-                for (int j = 0; j < N; j++) scratch[i * N + j] /= sum;
+                for (int j = 0; j < N; j++) scr[i * N + j] /= sum;
             }
             // Attn × V
             for (int i = 0; i < N; i++) {
                 float * dst = &attn_out[(wi * N + i) * C + hd * head_dim];
                 for (int d = 0; d < head_dim; d++) dst[d] = 0;
                 for (int j = 0; j < N; j++) {
-                    float a = scratch[i * N + j];
+                    float a = scr[i * N + j];
                     const float * vj = &qkv[(wi * N + j) * 3 * C + 2 * C + hd * head_dim];
                     for (int d = 0; d < head_dim; d++) dst[d] += a * vj[d];
                 }
             }
         }
+    };
+    static const bool wmsa_scalar = (std::getenv("SCUNET_WMSA_SCALAR") != nullptr);
+    int n_thr = wmsa_scalar ? 1 : std::min(g_wmsa_threads, nW);
+    if (n_thr <= 1) {
+        for (int wi = 0; wi < nW; wi++) run_window(wi, scratch);
+    } else {
+        std::atomic<int> next{ 0 };
+        std::vector<std::thread> pool;
+        pool.reserve(n_thr);
+        for (int t = 0; t < n_thr; t++) {
+            pool.emplace_back([&]() {
+                std::vector<float> scr;
+                int wi;
+                while ((wi = next.fetch_add(1)) < nW) run_window(wi, scr);
+            });
+        }
+        for (auto & th : pool) th.join();
     }
 
     // Output projection: (nW*N, C) → (nW*N, C) — batched SIMD
@@ -505,7 +533,7 @@ static void load_ctb(core_gguf::WeightLoad & wl, const char * prefix, ctb_weight
 }
 
 scunet_context * scunet_init(const char * model_path, int n_threads) {
-    (void)n_threads;
+    g_wmsa_threads = n_threads > 0 ? n_threads : 1;
     if (!model_path) return nullptr;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
