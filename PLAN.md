@@ -772,6 +772,21 @@ graph for decoder models" task. (The **decoder** batched graph already existed �
   `iq3 % ne33` (confirmed in ggml source). **NOTE: this env is CPU-only
   (`GGML_METAL=OFF`; sandbox has no GPU) — Metal not empirically exercised** → kept
   opt-in pending a real-Metal A/B before flipping the default over packed.
+  - **Real-Metal A/B DONE (2026-07-12, M1) → KEEP OPT-IN, do NOT flip.** Two
+    load-independent findings kill the flip: (1) **parity**: on Metal the 4D
+    path fails the harness's own 0.9999 gate at group=100 (worst cos
+    **0.9998933** on the mixed-length TEXTS; group=2 passes 1.0 — deviation
+    grows with padding, i.e. the F16 flash-attn accumulation over −inf-masked
+    padded keys), while it passed on CPU (0.9999697). (2) **mixed-length
+    throughput**: 4D lost in ALL 12 mixed-length measurements across two
+    independent bench runs (0.19×–0.87× vs sequential) — the per-item padding
+    to group-max is real compute on Metal, and length-sorting doesn't save a
+    genuinely mixed batch. Only near-uniform large batches won (uniform N=128:
+    1.66×/1.30× vs seq, consistent with the CPU result). Caveat: absolute
+    timings taken on a heavily loaded box (loadavg ~486; same-config spread
+    9–25 s), but the two findings above are sign-consistent across runs /
+    load-independent. Verdict: 4D is a CPU-backend + uniform-length tool;
+    packed (also opt-in) remains the better Metal batching mode.
 
 **C4 — KV prefix-sharing for the decoder-embedding path.** Port the `seq_cp`
 cell-copy idea (cells carry `{pos, set<seq_id>}`; compute shared prefix once, copy
@@ -2583,6 +2598,7 @@ ignored its `n_threads` (hardcoded 1-thread conv sched) — DONE, ~2.3× on an
 | text_sr scalar conv → SIMD `conv2d_cpu` | `text_sr.cpp:33` | **DONE (merged)** | numerically-equivalent delegation; compiles clean; runtime parity pending a model (none provisioned, no registry URL) |
 | safmn honor `n_threads` (was hardcoded 1) | `safmn_sr.cpp:181,255` | **DONE — verified** | ~2.3× (16.2s→7.1s, 8-core Mac) on safmn-x4, bit-identical output; convs run on CPU sched (not Metal) |
 | tps_locnet weight dequant cache | `tps_locnet.cpp:262-314` | **DONE** | conv + FC weights now dequantized (and FC-transposed) once at load; predict() reuses them. Bit-identical by construction; helps repeated-predict callers (the bundled `tps_auto_dewarp` does one predict per load, so it's neutral there). Compile-verified; no model in registry to runtime-measure |
+| scunet WMSA window-loop threading (mixtex pattern) | `scunet_denoise.cpp:218` | **DONE — byte-identical; speedup unquantified (loaded box)** | per-window attention loop was serial regardless of `-t` (nW=1024 at 256²); now threads across `scunet_init`'s n_threads (file-scope `g_wmsa_threads`, per-thread scratch), `SCUNET_WMSA_SCALAR=1` = serial baseline. Output byte-identical to pre-change main at `-t 1` AND `-t 8` (PPM cmp). Wall-clock A/B inconclusive under loadavg ~486 (same-config spread 9–25 s) — default `-t 1` keeps the exact old serial path, so the change is inert until `-t >1`; quiet-box re-measure pending (expect ~mixtex's 1.94× shape on the attention share). |
 | scunet Swin MLP → SIMD GEMM | `scunet_denoise.cpp:366-387` | **DONE — verified 1.69×** | WMSA was already SIMD (dot_product QK^T + linear_batch_cpu projections); the surviving scalar hot loop was the per-pixel MLP. Now batched into two `linear_batch_cpu` GEMMs. **11.74s→6.96s on scunet-color 256², output byte-identical (0 pixel diff).** (The "uncached dequant" at `:32` is once/block, not per-pixel — confirmed marginal, skipped.) |
 | gliner mlp_2layer + fuser out-proj → SIMD GEMM | `gliner_ner.cpp:978-996,1430-1438` | **DONE — output-identical, but marginal on deberta** | hand-rolled per-token scalar matmuls → `linear_batch_cpu`. Output bit-identical (all 7 entities + scores match). Measured on gliner-deberta: head-passes ~5.9→5.6ms (~0.15% of the 203ms total). gliner-deberta is **encoder-bound** (177ms) and does NOT exercise the fuser path; the fuser conversion targets the audit's flagged layer-fusion `[enc_hidden,enc_hidden]`/token hotspot for **multi-layer variants** (unverified — need such a model). **Real gliner lever = the DeBERTa encoder** — DONE below. |
 | gliner DeBERTa encoder: dedup disentangled rel-pos projection | `gliner_ner.cpp` c2p/p2c blocks + `prepare_deberta_rel_pos` | **DONE — verified 1.28–1.71×, byte-identical** | Step-0 `CRISPASR_METAL_PROFILE` split showed the encoder is **~96% GPU-execute / ~4% host-encode** (942 nodes, encode ~3.3ms vs gpu ~70–90ms) — so the lever is GPU compute, not op-count/dispatch. The c2p+p2c position matmuls (`k_w/q_w @ [H, T*T]`) were **~88% of per-layer matmul FLOPs** yet projected the full `T*T` pair-grid, when only `≤2T-1` *distinct* rel-pos buckets exist. Fix: project the unique bucket embeddings once (`[H, n_used]`), then `ggml_get_rows` to expand — output-identical (same floats, same per-column reductions; also drops the p2c `[H,T*T]` transpose-cont). **Encoder short (T≈40) 73→57ms (1.28×); long (T≈90, the ~177ms regime) 279→163ms best (1.71×)** — win scales with T (saving is O(T²−T)). All entities/spans/scores byte-identical vs a same-commit baseline build. Metal-confirmed (MTL0), edge cases (single-word T small) sane. |
@@ -2620,10 +2636,12 @@ micro-gap"). The genuine remaining levers are projects, each needing a stable
 benchmark harness:
 
 1. **SIMD/ggml-ify the scalar-compute hot paths** — the actual dominant costs:
-   scunet WMSA+MLP (`scunet_denoise.cpp:310-390`), ~~mixtex Swin window attention
+   ~~scunet WMSA+MLP (`scunet_denoise.cpp:310-390`)~~, ~~mixtex Swin window attention
    (`mixtex_ocr.cpp:126`)~~, ~~layout_detect deformable cross-attention~~. Highest
    ROI; verifiable per-engine with a downloadable model; do one engine end-to-end
-   as a proof.
+   as a proof. ALL THREE DONE — scunet closed 2026-07-12: MLP GEMM (caaf082,
+   1.69×) + the WMSA window loop threaded (mixtex pattern, byte-identical,
+   below); the remaining WMSA attention math was already SIMD.
    - **mixtex DONE (2026-07-11) — but the lever was THREADING, not SIMD.** The
      Swin attention math was already SIMD (`816a88a` dot-product) + ggml-batched
      (`2453e04`); measuring showed the encoder (2395 ms, ~48% of a 5009 ms total
