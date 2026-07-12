@@ -320,3 +320,31 @@ def write_combined_gguf(out_path: str,
                       f"{dn} ({info.nbytes/1024/1024:.1f} MB)")
 
     return os.path.getsize(out_path)
+
+
+# ── llama.cpp import helpers ────────────────────────────────────────
+
+def llama_unpermute_qk_rows(data: bytes, out_rows: int, n_head: int, head_dim: int) -> bytes:
+    """Undo llama.cpp's q/k permute (convert_hf_to_gguf LlamaModel.permute),
+    converting its interleaved-RoPE weight layout back to HF rotate_half layout
+    — which is what CrispEmbed's converters emit and their RoPE expects.
+
+    Applies to any llama.cpp arch=llama/qwen2 LLM imported into a CrispEmbed
+    HF-layout loader; without it the decoder emits fluent-but-repetitive garbage
+    (never a crash — shapes are identical, only row order differs). The permute
+    reorders OUTPUT rows only, so this is a byte-exact row-shuffle on any dtype
+    (Q8_0 rows are independently quantized). Works for weights (row = one matmul
+    row) AND biases (row = one element). q uses n_head; k uses n_head_kv."""
+    if n_head * head_dim != out_rows:
+        raise ValueError(f"n_head*head_dim {n_head*head_dim} != out_rows {out_rows}")
+    row = len(data) // out_rows
+    hd2 = head_dim // 2
+    src = memoryview(data)
+    out = bytearray(len(data))
+    for h in range(n_head):
+        for s in range(2):
+            for d in range(hd2):
+                hf = h * head_dim + s * hd2 + d
+                lla = h * head_dim + d * 2 + s
+                out[hf * row:(hf + 1) * row] = src[lla * row:(lla + 1) * row]
+    return bytes(out)

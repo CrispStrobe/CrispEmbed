@@ -37,6 +37,8 @@ on:
       - 'models/merge-llamacpp-smolvlm-gguf.py'
       - 'models/gguf_merge_core.py'
       - 'tests/test_mmproj_smolvlm.py'
+      - 'models/merge-llamacpp-internvl-gguf.py'
+      - 'tests/test_mmproj_internvl.py'
   pull_request:
     paths:
       - 'src/got_ocr.cpp'
@@ -51,6 +53,8 @@ on:
       - 'models/merge-llamacpp-smolvlm-gguf.py'
       - 'models/gguf_merge_core.py'
       - 'tests/test_mmproj_smolvlm.py'
+      - 'models/merge-llamacpp-internvl-gguf.py'
+      - 'tests/test_mmproj_internvl.py'
 
 permissions:
   contents: read
@@ -78,6 +82,8 @@ jobs:
         run: python tests/test_mmproj_interop.py
       - name: SmolVLM merge structure + un-permute
         run: python tests/test_mmproj_smolvlm.py
+      - name: InternVL merge structure (QKV fuse, arch-conditional un-permute)
+        run: python tests/test_mmproj_internvl.py
 
   # Tier 0: schema + parser + guard unit tests. No binary, no network.
   smoke:
