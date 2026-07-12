@@ -765,13 +765,25 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
   coverage; regression risk on a working engine. Gate: `test-lfm2-diff` all
   20 stages ≥ 0.9999 + `tools/dump_lfm2_reference.py` reference unchanged.
 
-- **P3 — C5 remnants (the preprocessor port itself is DONE — see below).**
-  `src/image_preprocess.{h,cpp}` implements smart_resize + Catmull-Rom
-  bicubic (a=-0.5, antialias) and is wired into qwen2vl/bidirlm/mixtex.
-  Remaining: (a) A/B the `a=-0.75` PyTorch-style kernel vs HF per engine —
-  the known sub-pixel residual (bidirlm `encode_image_file` cos 0.999984);
-  (b) mmproj-GGUF metadata-key + `<__media__>` chunk interop with llama.cpp
-  (do NOT link libmtmd — it PUBLIC-links all of llama).
+- **P3 — C5 remnants (the preprocessor port itself is DONE). Assessed
+  2026-07-12 — both correctly deferred, for concrete reasons (not just the
+  brief).**
+  - (a) bicubic A/B: `image_preprocess.cpp` currently uses `a=-0.5` (Catmull-Rom,
+    matches PIL/torchvision-transforms), residual already **cos 0.999984**. The
+    A/B against `a=-0.75` (torch.nn.functional style) needs an HF reference dump,
+    i.e. a ~4 GB qwen2vl/bidirlm download + `transformers`, for a **<0.001**
+    cosine change. Marginal and RAM-heavy on the 16 GB box; the brief's own
+    "only worth bundling with other work on those engines" stands. Not done
+    standalone.
+  - (b) mmproj interop: the **llama.cpp mmproj key schema is locally known** —
+    `models/merge-llamacpp-qwen2vl-gguf.py` already ingests it (`clip.vision.*`,
+    tensors `v.blk.N.*`/`v.patch_embd`/`v.post_ln`/`mm.*`). So drafting a `clip.*`
+    metadata EXPORT in the converter is mechanically feasible. BUT it **cannot be
+    validated without a llama.cpp build** (round-trip: export → load in llama.cpp
+    → run). Shipping unvalidated interop metadata is exactly the wrong-handover
+    anti-pattern the repo forbids (A/B against ground truth before trusting).
+    This needs its own session with a llama.cpp interop harness; do NOT link
+    libmtmd (it PUBLIC-links all of llama).
 
 - **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
   16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY
