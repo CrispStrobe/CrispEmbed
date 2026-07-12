@@ -4,6 +4,75 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 12, 2026 — C4 prefix cache, math_ocr decode fusion, two-way mmproj interop
+
+### C4 — cross-call prefix KV cache for decoder embeddings (`feat/c4-cross-call-prefix-kv`)
+- When consecutive `encode()` calls share an instruction prefix (Jina-v5 /
+  Qwen3-Embedding "Instruct:…\nQuery:" prompts), compute the prefix once and
+  reuse it. The decoder-embed path is a single-shot prefill (flash-attn over the
+  whole sequence), so with causal attention the prefix tokens' per-layer
+  post-rope K/V + final hidden are independent of any suffix.
+- `dec_prefix_cache` (per-context): build the cache via a prefix-only graph, then
+  a suffix-only graph whose queries attend to `[cached prefix K/V | fresh suffix
+  K/V]` (rectangular flash-attn). Full/cold/miss path is the untouched
+  `decoder_encode_tokens` (byte-identical). Bidirectional models ineligible;
+  invalidated on LoRA swap. Default ON, `CRISPEMBED_DECODER_PREFIX_CACHE=0` opts out.
+- Both graphs compute on a single-backend **gallocr** (not the sched): the sched
+  aliases the 2·n_layer interior `set_output` K/V snapshots to one buffer. The
+  injected per-layer inputs are marked `set_output` so gallocr keeps them distinct.
+- **Landmine (cost most of the debug):** V was a `ggml_reshape_3d` VIEW —
+  `set_output` on a view does NOT protect the source `v_proj` buffer, so the
+  readback was stale garbage (K, a fresh rope output, was fine; `prefix_hidden`
+  looked correct because flash read V in time). Fix: `ggml_cont` K and V before
+  marking them output. (See LEARNINGS.)
+- **Verified:** CPU bit-equal (cos 1.0, max_abs 0.0) cached-vs-full on octen-0.6b
+  q8 (Qwen3) + harrier-270m q8 (Gemma3); Metal cos ≥ 0.9999995; no-prefix
+  byte-identical to the pre-C4 binary. Speed: 40 long-prefix prompts 2.16→1.30s
+  end-to-end, **≈2.07× compute-only** (octen q8 Metal). Test:
+  `tests/test_prefix_cache.py`.
+
+### math_ocr decode — drop redundant conts (~30% faster decode)
+- Step-0 measurement first: decode-step graph = 355 nodes; encoder 200 ms vs
+  decoder 44 ms (decode ~18% of compute). The step already uses flash_attn_ext,
+  and the brief-flagged QKV concat is only ~1.3% of compute.
+- The real overhead was `ggml_cont` after every permute in `g_mha_1q` —
+  flash_attn only needs row-contiguous src (`nb0==type_size`), which
+  `permute(0,2,1,3)` preserves. Removed 36 redundant copy-kernels/step →
+  **355→319 nodes, decode 45.5→31.5 ms (~30%)**, transcript byte-identical on
+  Metal AND CPU. `MATH_OCR_ATTN_CONT=1` restores.
+- Negative result (gate-caught): the same conversion on the 578×578 *encoder*
+  attention is byte-identical on Metal but DIVERGES on the CPU kernel — kept
+  manual F32, documented inline.
+
+### mmproj interop, BOTH directions (Qwen2-VL ↔ llama.cpp)
+- **Export** (`models/export-mmproj-llamacpp.py`): CrispEmbed combined Qwen2-VL
+  GGUF → a llama.cpp `mmproj-*.gguf`. Complete `clip.*` schema extracted
+  empirically from a real reference (27 KV / 520 tensors, no guessing).
+  Validated end-to-end: the exported mmproj + LLM run in `llama-mtmd-cli` and
+  OCR fox.png correctly.
+- **Import** (fixed `merge-llamacpp-qwen2vl-gguf.py`): a stock llama.cpp
+  Qwen2-VL-2B now loads + OCRs correctly in `crispembed --ocr` on Metal AND CPU
+  ("The quick brown fox jumps over the lazy dog. 12345", identical to
+  `llama-mtmd-cli`). Four bugs fixed:
+  1. Merge renamed tensors to names the loader can't read (`vis.blocks.*`) →
+     SIGSEGV. Keep native `v.blk.*`/`blk.*` + concat the split temporal patch embed.
+  2. ViT-FFN **fc1/fc2 role inversion** — llama.cpp's mmproj inverts
+     `ffn_up`/`ffn_down` vs the projection direction (biases prove it); map fc1 by
+     output dim, not name.
+  3. Loader `v.post_ln` merger-norm + tied-`lm_head` fallbacks for native GGUFs.
+  4. **The image was silently dropped** (real cause of "text not visible"):
+     `qwen2vl.image_token_id` is absent from llama.cpp GGUFs, so the splice used
+     default `0` while the prompt emitted `<|image_pad|>=151655` → never spliced.
+     Fixed the default to 151655 + the merge now writes the token IDs.
+  - Localized via an HF diff-harness + the **inject-embeds discriminator**
+    (zeros/random/HF embeds → identical output = image ignored), which flipped a
+    phantom vision hunt to the real LLM-splice bug in one test.
+- Regression: the shipped Qwen2.5-VL-3B still detects correctly + OCRs fox.png;
+  all mmproj changes are gated to the Qwen2-VL (non-SwiGLU / missing-metadata)
+  path only.
+
+---
+
 ## July 10, 2026 — TrOCR decoder: persistent KV cache + no_repeat_ngram
 
 ### Persistent device-side KV cache (`perf/trocr-persistent-kv`)

@@ -702,6 +702,22 @@ verify `GGML_METAL:BOOL=ON` in `build/CMakeCache.txt`; check `git worktree
 list` + `git log main..<branch>` for a concurrent session's finished work; all
 edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 
+> **Status after the 2026-07-12 session (all on `main`, all validated):**
+> DONE — C2 GGUF flags; **C4 cross-call prefix KV cache** (bit-equal CPU /
+> cos ≥ 0.9999995 Metal, ≈2.07× compute); **Tier-1 2b decode fusion** (math_ocr
+> cont-removal, ~30% faster decode, byte-identical); **C5 mmproj interop BOTH
+> directions** — export (`models/export-mmproj-llamacpp.py`, validated via
+> `llama-mtmd-cli`) and import (fixed `merge-llamacpp-qwen2vl-gguf.py`: stock
+> llama.cpp Qwen2-VL-2B now OCRs correctly in `crispembed --ocr`, no 2.5-VL
+> regression). STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h`
+> sync (3-line change applied on disk, uncommitted — commit in the CrispASR
+> session); C5(a) bicubic a=−0.75 A/B (residual already 0.999984); the
+> `<__media__>` prompt-marker (doesn't fit CrispEmbed's image-path CLI); LFM2
+> ShortConv → `ggml_ssm_conv` (P3, regression risk); reranker corpus expansion
+> (P3, measured LOW-EV). The reverse-interop pattern generalizes only to
+> Qwen2-VL-family fused-QKV/GELU mmprojs — Qwen2.5-VL already works natively.
+
+
 - **C2 data-driven GGUF behavior flags — DONE (2026-07-12).** Survey found it
   was already mostly data-driven: pooling (`bert.pooling_method`/`pooling_type`
   read at load), causal-attention (`is_bidirectional` arch KV in
