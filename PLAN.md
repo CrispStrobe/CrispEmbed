@@ -709,13 +709,27 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 > directions** — export (`models/export-mmproj-llamacpp.py`, validated via
 > `llama-mtmd-cli`) and import (fixed `merge-llamacpp-qwen2vl-gguf.py`: stock
 > llama.cpp Qwen2-VL-2B now OCRs correctly in `crispembed --ocr`, no 2.5-VL
-> regression). STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h`
+> regression).
+>
+> **mmproj interop hardening + 2nd family (2026-07-12, follow-up):**
+> `tests/test_mmproj_interop.py` — a real-scripts round-trip regression (found +
+> fixed two shipped bugs: export read stale legacy names; merge hardcoded F16
+> patch dtype). Then **generalized to a family-dispatch** — shared
+> `models/gguf_merge_core.py` (Qwen2-VL merge ported onto it, byte-identical) +
+> **`models/merge-llamacpp-smolvlm-gguf.py`**: imports a stock llama.cpp
+> **SmolVLM (Idefics3)** pair into the `smoldocling` engine, **validated
+> end-to-end** (SmolVLM-256M OCRs correctly on Metal). Key transform: un-permute
+> q/k (llama.cpp's interleaved-RoPE layout → HF). Both tests in the
+> `regression.yml` smoke tier. So the import path is proven for TWO families now
+> (Qwen2-VL fused-QKV/GELU **and** SmolVLM/Idefics3 SigLIP); adding a 3rd is a
+> new per-family map on the shared core + a real reference to validate against.
+>
+> STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h`
 > sync (3-line change applied on disk, uncommitted — commit in the CrispASR
 > session); C5(a) bicubic a=−0.75 A/B (residual already 0.999984); the
 > `<__media__>` prompt-marker (doesn't fit CrispEmbed's image-path CLI); LFM2
 > ShortConv → `ggml_ssm_conv` (P3, regression risk); reranker corpus expansion
-> (P3, measured LOW-EV). The reverse-interop pattern generalizes only to
-> Qwen2-VL-family fused-QKV/GELU mmprojs — Qwen2.5-VL already works natively.
+> (P3, measured LOW-EV).
 
 
 - **C2 data-driven GGUF behavior flags — DONE (2026-07-12).** Survey found it
@@ -791,7 +805,13 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
     cosine change. Marginal and RAM-heavy on the 16 GB box; the brief's own
     "only worth bundling with other work on those engines" stands. Not done
     standalone.
-  - (b) mmproj interop — **EXPORT half DONE + validated 2026-07-12**
+  - (b) mmproj interop — **DONE + GENERALIZED (see the status block above;
+    the narrative below is the original blow-by-blow, kept for the debugging
+    trail).** Both directions ship for Qwen2-VL; the import path is now a
+    family-dispatch on `models/gguf_merge_core.py` with a validated 2nd family
+    (SmolVLM/Idefics3 → `smoldocling`, `merge-llamacpp-smolvlm-gguf.py`).
+    Regression: `tests/test_mmproj_interop.py` + `tests/test_mmproj_smolvlm.py`.
+    Original notes: **EXPORT half DONE + validated 2026-07-12**
     (`models/export-mmproj-llamacpp.py`). Converts a CrispEmbed combined
     Qwen2-VL GGUF → a llama.cpp `mmproj-*.gguf` (metadata: general.architecture=
     clip / clip-vision, the full `clip.*` key set incl. projector_type=
