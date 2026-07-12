@@ -46,6 +46,10 @@ struct lfm2_hparams {
     uint32_t vocab_size = 65536;
     uint32_t bos_id = 1;
     uint32_t eos_id = 7;
+    // C2 behavior flags; defaults = the historical hardcoded LFM2 rule
+    // (BOS-only wrapping, add_eos_token=False).
+    bool add_bos = true;
+    bool add_eos = false;
 };
 
 // ============================================================================
@@ -150,6 +154,10 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     hp.vocab_size = core_gguf::kv_u32(gctx, "lfm2.vocab_size", 65536);
     hp.bos_id = core_gguf::kv_u32(gctx, "tokenizer.ggml.bos_token_id", 1);
     hp.eos_id = core_gguf::kv_u32(gctx, "tokenizer.ggml.eos_token_id", 7);
+    // C2: honor explicit add_bos/add_eos metadata; absent → the historical
+    // BOS-only rule stays (byte-identical for shipped GGUFs).
+    hp.add_bos = core_gguf::kv_bool(gctx, "tokenizer.ggml.add_bos_token", true);
+    hp.add_eos = core_gguf::kv_bool(gctx, "tokenizer.ggml.add_eos_token", false);
 
     // BPE vocabulary
     auto tokens_vec = core_gguf::kv_str_array(gctx, "tokenizer.ggml.tokens");
@@ -293,11 +301,13 @@ static std::vector<int32_t> lfm2_tokenize(const lfm2_embed_model & m, const char
     // BPE-encode the text (whitespace pre-tokeniser, GPT-2 byte encoding)
     std::vector<int32_t> ids = core_bpe::tokenize_simple(m.token_to_id, m.merge_rank, std::string(text));
 
-    // BOS prefix only (add_eos_token=False for this model)
+    // Wrap per the C2 behavior flags (LFM2.5 ships BOS-only:
+    // add_bos_token=true, add_eos_token=false)
     std::vector<int32_t> result;
-    result.reserve(ids.size() + 1);
-    result.push_back((int32_t)m.hparams.bos_id);
+    result.reserve(ids.size() + 2);
+    if (m.hparams.add_bos) result.push_back((int32_t)m.hparams.bos_id);
     for (int32_t id : ids) result.push_back(id);
+    if (m.hparams.add_eos) result.push_back((int32_t)m.hparams.eos_id);
     return result;
 }
 

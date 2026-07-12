@@ -389,6 +389,13 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 
         // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece
         int tokenizer_type = u32("tokenizer.ggml.type", 0);
+        // C2 behavior flags (llama.cpp convention, BOOL-typed; absent or
+        // non-BOOL → default true = the historical wrap behavior, so every
+        // shipped GGUF is byte-identical). Read while `g` is live (gguf_free
+        // use-after-free landmine).
+        const bool tok_add_bos = core_gguf::kv_bool(g, "tokenizer.ggml.add_bos_token", true);
+        const bool tok_add_eos = core_gguf::kv_bool(g, "tokenizer.ggml.add_eos_token", true);
+
         if (tokenizer_type == 2 || (tokenizer_type == 0 && n > 100000)) {
             // SentencePiece / XLM-RoBERTa
             int bos_id = u32("tokenizer.ggml.bos_token_id", 0);
@@ -396,6 +403,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
             ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
+            ctx->sp_tokenizer.set_add_flags(tok_add_bos, tok_add_eos);
             ctx->use_sentencepiece = true;
             fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n", n, scores.size());
         } else if (tokenizer_type == 1) {
@@ -403,6 +411,11 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int cls_id = u32("tokenizer.ggml.cls_token_id", 0);
             int sep_id = u32("tokenizer.ggml.sep_token_id", 2);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
+            // add_bos/add_eos=false disable the CLS/SEP wrap via the -1 id
+            // convention (encode() only wraps ids that are >= 0); the merges
+            // reload below re-reads bos_id()/eos_id(), so this persists.
+            if (!tok_add_bos) cls_id = -1;
+            if (!tok_add_eos) sep_id = -1;
 
             // BPE merges stored as tensor (newline-separated blob)
             // Merges will be loaded after weight loading (from tensor "tokenizer.merges")

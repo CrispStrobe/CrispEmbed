@@ -81,6 +81,14 @@ public:
     // Tokenize a sentence pair: <s> text_a </s> text_b </s>, type_ids all 0.
     embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
 
+    // C2 behavior flags (tokenizer.ggml.add_bos_token / add_eos_token):
+    // gate the <s>/</s> wrap in encode(). encode_pair() keeps the canonical
+    // cross-encoder layout regardless — separators are structural there.
+    void set_add_flags(bool add_bos, bool add_eos) {
+        add_bos_ = add_bos;
+        add_eos_ = add_eos;
+    }
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
     // Look up the surface form of a token by id. Returns an empty string
@@ -102,6 +110,8 @@ private:
     int eos_id_ = 2;
     int unk_id_ = 3;
     int pad_id_ = 1;
+    bool add_bos_ = true; // wrap encode() with <s> (default = historical behavior)
+    bool add_eos_ = true; // wrap encode() with </s>
     int max_length_ = 512;
     int max_token_len_ = 64; // max byte length of any vocab token
 
