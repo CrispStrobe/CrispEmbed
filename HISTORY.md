@@ -6,6 +6,15 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ## July 12, 2026 — mmproj interop: 3rd family (InternVL) + diff-harness validation
 
+### Unified import CLI + README (`feat/mmproj-unified-cli`)
+- `models/merge-llamacpp-gguf.py`: one entry point that auto-detects the family
+  from the mmproj's `clip.projector_type` (qwen2vl_merger / idefics3 / internvl)
+  and dispatches to the matching per-family merge — clean errors for unsupported
+  or missing projectors. `tests/test_mmproj_dispatch.py` (routing + full
+  end-to-end) in the smoke tier. Documented under README "Converting models →
+  Importing a stock llama.cpp VL model" (the capability was previously
+  undiscoverable — README didn't mention it).
+
 ### InternVL2.5/3 import (`feat/mmproj-internvl`)
 - `models/merge-llamacpp-internvl-gguf.py`: import a stock llama.cpp InternVL2.5/3
   pair (arch=qwen2 LLM + `internvl` mmproj) into CrispEmbed's `internvl2` engine.

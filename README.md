@@ -879,6 +879,33 @@ python models/convert-decoder-embed-to-gguf.py \
 
 Pre-converted models: [HuggingFace cstr/](https://huggingface.co/cstr)
 
+### Importing a stock llama.cpp VL model
+
+Already have a vision-language model in llama.cpp's split format (an LLM GGUF +
+an `mmproj-*.gguf`)? Import it directly into a single CrispEmbed-loadable GGUF —
+no re-conversion from the original weights, tensor data copied byte-for-byte (no
+re-quantization):
+
+```bash
+# Auto-detects the family from the mmproj's clip.projector_type
+python models/merge-llamacpp-gguf.py \
+    --llm   InternVL2_5-1B-Q8_0.gguf \
+    --mmproj mmproj-InternVL2_5-1B-f16.gguf \
+    --output internvl2_5-1b-crispembed.gguf
+
+./build/crispembed --ocr page.png -m internvl2_5-1b-crispembed.gguf
+```
+
+| `clip.projector_type` | Family | CrispEmbed engine |
+|---|---|---|
+| `qwen2vl_merger` | Qwen2-VL | `qwen2vl_ocr` |
+| `idefics3` | SmolVLM | `smoldocling` |
+| `internvl` | InternVL2.5 / 3 | `internvl2_ocr` |
+
+Each import was validated end-to-end against the source `llama-mtmd-cli` output
+and per-stage against an HF diff-harness (matching the native converter). Pass
+`--detect` to print the detected family without merging.
+
 ## Quantization
 
 | Type | Compression | Quality (cos vs F32) | Notes |
