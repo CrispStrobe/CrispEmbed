@@ -829,16 +829,25 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
       larger-output projection (by bias/weight dim). The weights are already
       correct ggml `[in,out]` order (no transpose needed — Qwen2-VL's null
       `qkv_w` means the fix_ne gate correctly never fires).
-    - **Remaining (final mile): OCR output is coherent but WRONG** ("text not
-      clear") — the LLM decodes fine but the vision embedding is subtly off.
-      Verified individually correct: patch temporal concat (matches
-      `patchify_qwen_layout` c,t,H,W order), block LayerNorm/RMSNorm (variant-
-      aware), full-vs-window attention (full for 2-VL), quick_gelu FFN, merger
-      LayerNorm, OCR prompt/chat template. Remaining suspects: vision attention
-      RoPE / LLM image-token mRoPE positions / spatial-merge grouping — needs a
-      per-layer **diff-harness** (dump CrispEmbed vision stages vs a llama.cpp
-      reference; first divergence = the bug). Do NOT link libmtmd.
-      `<__media__>` prompt-marker: separate low-value follow-up.
+    - **DONE — reverse interop WORKS end-to-end on Metal AND CPU.** A stock
+      llama.cpp Qwen2-VL-2B (ggml-org GGUFs) → `merge-llamacpp-qwen2vl-gguf.py`
+      → `crispembed --ocr` reads fox.png as *"The quick brown fox jumps over the
+      lazy dog. 12345"* (identical to `llama-mtmd-cli`). The final bug was NOT
+      the vision: a proper **HF diff-harness** (Qwen2-VL-2B vision tower fed
+      CrispEmbed's exact patches) showed the vision output at cos 0.957 — and
+      **injecting HF's perfect embeds still produced "text not visible"**, and
+      zeros/random/HF embeds gave IDENTICAL output → the image was being
+      **silently dropped**. Root cause: `qwen2vl.image_token_id` is absent from
+      llama.cpp GGUFs, so the vision-text splice used its default `0` while the
+      prompt builder emitted `<|image_pad|>=151655` → the splice found no image
+      positions. Fixed both sides: `image_token_id` default is now 151655
+      (matching the prompt's `image_pad_id`), and the merge writes
+      `qwen2vl.image_token_id`/`vision_start`/`vision_end` (151655/151652/151653)
+      so the GGUF is self-describing. (Method note for future VL interop: the
+      inject-embeds + zeros/random discriminator instantly separates a vision
+      bug from an LLM-conditioning bug — do that FIRST before diffing the ViT.)
+      Do NOT link libmtmd. `<__media__>` prompt-marker: separate low-value
+      follow-up.
 
 - **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
   16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY

@@ -85,8 +85,13 @@ struct llm_hparams {
     bool has_qk_norm = false;                 // Qwen3-VL: RMSNorm on Q/K per head
     bool tie_word_embeddings = true;
 
-    // Special token IDs
-    uint32_t image_token_id = 0;
+    // Special token IDs. image_token_id defaults to the Qwen2/2.5-VL
+    // <|image_pad|> (151655) so the vision-text splice fires even when
+    // qwen2vl.image_token_id is absent from the GGUF (e.g. llama.cpp-sourced
+    // mmproj merges) — it MUST match the prompt builder's image_pad_id default,
+    // else the prompt emits 151655 pads while the splice hunts for token 0 and
+    // the image is silently dropped.
+    uint32_t image_token_id = 151655;
     uint32_t video_token_id = 0;
     uint32_t vision_start_token_id = 0;
     uint32_t vision_end_token_id = 0;

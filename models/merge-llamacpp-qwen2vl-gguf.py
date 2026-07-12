@@ -623,10 +623,22 @@ def build_output_metadata(
             else:
                 kv.append((key, vtype, val))
 
-    # ── Pass through vision special tokens from LLM metadata ──
+    # ── Vision special tokens ──
+    # Pass through from LLM metadata if present, else use the fixed Qwen2/2.5-VL
+    # IDs. llama.cpp GGUFs do NOT carry these, and CrispEmbed's vision-text splice
+    # needs qwen2vl.image_token_id to find the <|image_pad|> positions — without
+    # it the splice looks for token 0, never fires, and the image is silently
+    # dropped (model replies "text not visible").
+    _tok_defaults = {
+        "qwen2vl.image_token_id": 151655,        # <|image_pad|>
+        "qwen2vl.vision_start_token_id": 151652,  # <|vision_start|>
+        "qwen2vl.vision_end_token_id": 151653,    # <|vision_end|>
+    }
     for key in ["qwen2vl.image_token_id", "qwen2vl.video_token_id",
                 "qwen2vl.vision_start_token_id", "qwen2vl.vision_end_token_id"]:
         v = lm.get(key)
+        if v is None:
+            v = _tok_defaults.get(key)
         if v is not None:
             add_u32(key, v)
 
