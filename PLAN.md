@@ -820,9 +820,17 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
     lightonocr): the same cont-removal applies to any per-step attention that
     already uses flash + permute; audit each on a quiet box, per-engine.
 
-- **P3 — LFM2 ShortConv → `ggml_ssm_conv`.** Perf refactor for Metal kernel
-  coverage; regression risk on a working engine. Gate: `test-lfm2-diff` all
-  20 stages ≥ 0.9999 + `tools/dump_lfm2_reference.py` reference unchanged.
+- **P3 — LFM2 ShortConv → `ggml_ssm_conv` — WON'T-DO, resolved by analysis
+  (2026-07-12).** The premise (Metal kernel coverage) is already satisfied:
+  `lfm2_short_conv` uses `ggml_conv_1d_dw`, which decomposes to
+  `ggml_im2col` + `ggml_mul_mat` (ggml.c ~L4583) — **both have Metal kernels**,
+  so the conv already runs fully on-device with no CPU fallback. Refactoring
+  gains nothing on coverage AND is a semantic mismatch: `ggml_ssm_conv` is
+  **causal** (left-padded sliding window `[t, t+nc)`), while LFM2-embed's
+  ShortConv is **bidirectional/symmetric** (centre-padded, `[t-1, t+1]`), so a
+  drop-in swap would change the output; matching it would need fiddly custom
+  symmetric padding of the ssm_conv input, adding risk to a working, correct,
+  Metal-covered engine for no measured benefit. Closed.
 
 - **P3 — C5 remnants (the preprocessor port itself is DONE). Assessed
   2026-07-12 — both correctly deferred, for concrete reasons (not just the
