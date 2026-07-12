@@ -1,5 +1,36 @@
 # CrispEmbed — Technical Learnings
 
+## Importing a llama.cpp LLM: un-permute q/k, because llama.cpp rewrites them for its interleaved RoPE (2026-07-12, SmolVLM import)
+
+Merging a stock llama.cpp **SmolVLM-256M** (arch=llama LLM + idefics3 mmproj)
+into CrispEmbed's `smoldocling` engine: the model loaded, ran the full vision +
+connector + LLM pipeline, and produced **fluent garbage** ("The The The [ [").
+Vision was fine; the LLM's attention was scrambled.
+
+Root cause: **llama.cpp's `convert_hf_to_gguf.py` permutes the q_proj/k_proj
+weights** (`LlamaModel.permute`: reshape `[n_head, 2, head_dim/2, …]` →
+swapaxes → reshape) so that ggml's *interleaved* RoPE (`GGML_ROPE_TYPE_NORMAL`)
+reproduces HF's *rotate_half* result. CrispEmbed's native converters read HF
+weights **verbatim** and apply rotate_half RoPE directly. So a llama.cpp LLM's
+q/k are in the wrong layout for a CrispEmbed loader → every RoPE'd dot product
+is wrong → the decoder loops on a few tokens. Fix: **un-permute q and k back to
+HF layout in the merge** (inverse of the reshape/swapaxes). It only reorders
+OUTPUT rows, and Q8_0 quantizes each row independently, so it's a byte-exact
+row-shuffle — no dequantization. q uses `n_head`, k uses `n_head_kv`; v and
+everything else copy verbatim. After un-permuting, the merged SmolVLM OCR'd
+`The quick brown fox…` correctly on Metal.
+
+Durable rule: **any time you ingest a llama.cpp `arch=llama`/qwen/etc. LLM into
+a CrispEmbed graph that reads HF-layout weights, un-permute q/k first.** Symptom
+is always "fluent but wrong / repetitive," never a crash — the shapes are
+identical, only the row order differs. (Same failure class as the
+[[flashattn-ext-already-permutes]] layout bugs: right values, wrong arrangement.)
+Two more recurring transforms confirmed on this port: the SigLIP ViT FFN is
+**name-inverted** in llama.cpp's clip export (`ffn_down`=fc1, `ffn_up`=fc2 —
+map by output dim, like the Qwen2-VL ViT), and the 4-D Conv2d patch weight
+flattens to 2-D by a pure C-order shape relabel (byte-identical, no data touch).
+See `models/merge-llamacpp-smolvlm-gguf.py` + `tests/test_mmproj_smolvlm.py`.
+
 ## VL "runs but ignores the image": use the inject-embeds discriminator BEFORE diffing the vision tower (2026-07-12, mmproj reverse interop)
 
 Loading a stock llama.cpp Qwen2-VL-2B into CrispEmbed, `--ocr` ran and produced

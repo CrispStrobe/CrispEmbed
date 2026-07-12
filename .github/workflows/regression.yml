@@ -34,6 +34,9 @@ on:
       - 'models/merge-llamacpp-qwen2vl-gguf.py'
       - 'models/export-mmproj-llamacpp.py'
       - 'tests/test_mmproj_interop.py'
+      - 'models/merge-llamacpp-smolvlm-gguf.py'
+      - 'models/gguf_merge_core.py'
+      - 'tests/test_mmproj_smolvlm.py'
   pull_request:
     paths:
       - 'src/got_ocr.cpp'
@@ -45,6 +48,9 @@ on:
       - 'models/merge-llamacpp-qwen2vl-gguf.py'
       - 'models/export-mmproj-llamacpp.py'
       - 'tests/test_mmproj_interop.py'
+      - 'models/merge-llamacpp-smolvlm-gguf.py'
+      - 'models/gguf_merge_core.py'
+      - 'tests/test_mmproj_smolvlm.py'
 
 permissions:
   contents: read
@@ -54,11 +60,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # llama.cpp <-> CrispEmbed Qwen2-VL mmproj interop. Pure Python, no binary,
-  # no network: synthesizes tiny fixtures and round-trips them through the
-  # merge + export scripts. Guards the silent 2026-07-12 reverse-interop bugs
-  # (identity naming, vision special-token injection, temporal-patch concat,
-  # merge<->export inverse). See tests/test_mmproj_interop.py.
+  # llama.cpp <-> CrispEmbed VL-model interop merges. Pure Python, no binary,
+  # no network: synthesizes tiny fixtures and drives the real merge/export
+  # scripts. Guards the silent 2026-07-12 interop bugs (Qwen2-VL: identity
+  # naming, special-token injection, temporal-patch concat, merge<->export
+  # inverse; SmolVLM: q/k un-permute, fc1/fc2 inversion, patch flatten).
   mmproj-interop:
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -68,8 +74,10 @@ jobs:
         with: { python-version: '3.11' }
       - name: Install deps
         run: python -m pip install --quiet numpy gguf
-      - name: mmproj interop round-trip
+      - name: Qwen2-VL mmproj interop round-trip
         run: python tests/test_mmproj_interop.py
+      - name: SmolVLM merge structure + un-permute
+        run: python tests/test_mmproj_smolvlm.py
 
   # Tier 0: schema + parser + guard unit tests. No binary, no network.
   smoke:

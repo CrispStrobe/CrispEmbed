@@ -91,6 +91,26 @@ Completed milestones and work log. See PLAN.md for current roadmap.
      (byte-exact for any unquantized dtype).
   See LEARNINGS.md "Two 'inverse' interop scripts drift silently…".
 
+### mmproj interop generalized to a 2nd VL family — SmolVLM (`feat/mmproj-multiarch`)
+- Extracted `models/gguf_merge_core.py`: the shared hand-rolled GGUF read/write
+  core (byte-exact quantized copy). Ported the Qwen2-VL merge onto it (−300 dup
+  lines, round-trip test proves byte-identical) — the "family-dispatch" base.
+- Added `models/merge-llamacpp-smolvlm-gguf.py`: import a stock llama.cpp
+  **SmolVLM (Idefics3)** pair (arch=llama LLM + idefics3 mmproj) into CrispEmbed's
+  `smoldocling` engine. **Validated end-to-end**: ggml-org/SmolVLM-256M-Instruct
+  merged + loaded + OCR'd `The quick brown fox…` correctly on Metal. Every map is
+  grounded in the real inspected files + the native converter's target format,
+  not guessed.
+- Three transforms nailed (all in `tests/test_mmproj_smolvlm.py`, no download):
+  1. **q/k un-permute** — llama.cpp permutes q/k for its interleaved RoPE; the
+     CrispEmbed loader wants HF rotate_half layout. Without this the LLM produces
+     fluent garbage. Byte-exact row-shuffle (works on Q8_0). *This was the bug.*
+  2. SigLIP FFN fc1/fc2 name-inversion (map by output dim, as with Qwen2-VL ViT).
+  3. 4-D Conv2d patch → 2-D flatten (pure C-order shape relabel, byte-identical).
+  Tokenizer (gpt2 BPE) passes through as `tokenizer.ggml.*` (loader reads it as a
+  fallback); `<image>`=49190 injected. Wired into the `regression.yml` smoke tier.
+  See LEARNINGS.md "Importing a llama.cpp LLM: un-permute q/k…".
+
 ---
 
 ## July 10, 2026 — TrOCR decoder: persistent KV cache + no_repeat_ngram
