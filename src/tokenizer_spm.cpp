@@ -142,14 +142,15 @@ embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
 
     auto token_ids = tokenize_text(processed);
 
-    // Build result: <s> + tokens + </s>
+    // Build result: <s> + tokens + </s> (each wrap gated by the C2
+    // add_bos/add_eos behavior flags; both default true)
     std::vector<int32_t> ids;
-    ids.push_back(bos_id_);
+    if (add_bos_) ids.push_back(bos_id_);
     for (int id : token_ids) {
-        if ((int)ids.size() >= max_length_ - 1) break;
+        if ((int)ids.size() >= max_length_ - (add_eos_ ? 1 : 0)) break;
         ids.push_back(id);
     }
-    ids.push_back(eos_id_);
+    if (add_eos_) ids.push_back(eos_id_);
 
     // Pad
     embed_tokens result;

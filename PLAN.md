@@ -702,26 +702,22 @@ verify `GGML_METAL:BOOL=ON` in `build/CMakeCache.txt`; check `git worktree
 list` + `git log main..<branch>` for a concurrent session's finished work; all
 edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 
-- **P2 — C2 data-driven GGUF behavior flags. (IN PROGRESS 2026-07-12, branch
-  `feat/gguf-behavior-flags` if present — check before starting.)**
-  *What:* read optional GGUF KVs `crispembed.pooling_type` ("mean"/"cls"/
-  "last"), `crispembed.causal_attention` (bool), `tokenizer.ggml.add_bos_token`
-  / `add_eos_token` (llama.cpp-convention names) in the loader; when a KV is
-  absent, fall back to the EXACT current per-arch defaults so every shipped
-  GGUF behaves identically. Then emit the KVs from the converters so new
-  conversions are self-describing (e.g. LFM2 "BOS-only" → add_bos=true,
-  add_eos=false in metadata instead of code).
-  *Files:* `src/crispembed.cpp` (`pool_method` at ctx struct ~:223 and its
-  per-arch assignment sites; BOS/EOS wrap sites in the tokenize helpers),
-  `src/lfm2_embed.cpp` (BOS-only rule), `src/decoder_embed.cpp` (last-token
-  pooling / causal flags), `models/convert-bert-to-gguf.py` (+ decoder
-  converters) for emission.
-  *Gate:* `tests/test_all_parity.py` byte-identical before/after on a
-  WordPiece (all-MiniLM q8_0), an SPM (multilingual-e5-small), and a BPE
-  (gte-modernbert) model — all EXISTING GGUFs (no KVs → fallback path); plus
-  one fresh conversion with KVs present must match its pre-C2 conversion.
-  *Landmines:* `gguf_init_from_file` KVs must be read BEFORE `gguf_free`
-  (silent use-after-free corrupts inference); `model_mgr.cpp` churn.
+- **C2 data-driven GGUF behavior flags — DONE (2026-07-12).** Survey found it
+  was already mostly data-driven: pooling (`bert.pooling_method`/`pooling_type`
+  read at load), causal-attention (`is_bidirectional` arch KV in
+  `decoder_embed.cpp:96`), decoder-BPE `add_bos_token` (crispembed.cpp ~:2101),
+  and the converters already EMIT `tokenizer.ggml.add_bos_token`/`add_eos_token`.
+  What landed now: the remaining readers — SPM encode() wrap gated by
+  `set_add_flags` (encode_pair keeps the canonical cross-encoder layout),
+  encoder-BPE CLS/SEP gated via the -1-id convention (survives the merges
+  reload), and LFM2's hardcoded BOS-only rule replaced by flag reads with
+  defaults (true, false) = the historical rule. `kv_bool` is BOOL-typed-only →
+  absent/foreign-typed KVs fall back to exact current behavior.
+  *Verified:* byte-identical embeddings main-vs-change on all four tokenizer
+  families (all-MiniLM WordPiece, multilingual-e5-small SPM with flags
+  present, gte-modernbert BPE with flags absent, lfm2-embed with flags
+  absent), 3 texts each incl. multibyte; negative test: patching
+  `add_eos_token=false` into an e5 copy changes the embedding (flag is live).
 
 - **P2 — C4 KV/prefix-sharing ACROSS decoder-embedding calls.** The in-batch
   version already exists — `decoder_encode_tokens_batch`
@@ -799,7 +795,7 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
   was listed as an open port — the port shipped, only the remnants above are
   open.
 
-**C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
+**C2 — data-driven GGUF behavior flags. DONE 2026-07-12 (see backlog brief above for the landed delta + verification).** Original scope: bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
 of hardcoding in the dispatcher (e.g. our LFM2 "BOS-only" rule → `add_bos_token=
 true,add_eos_token=false`). Reduces per-arch branches; improves interop.
