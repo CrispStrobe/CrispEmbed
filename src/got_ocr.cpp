@@ -11,6 +11,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -373,7 +374,7 @@ bool got_ocr::load(context & ctx, const char * gguf_path, int n_threads, int ver
     // Useful to sidestep Metal op gaps and to A/B Metal-vs-CPU outputs while
     // debugging vision-encoder correctness (issue #25).
     bool force_cpu = (std::getenv("GOT_OCR_FORCE_CPU") && atoi(std::getenv("GOT_OCR_FORCE_CPU")));
-    ctx.backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init(); // fallback if init_best failed
     if (!ctx.backend) return false;
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);

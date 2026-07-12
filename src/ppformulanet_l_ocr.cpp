@@ -9,6 +9,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
@@ -1037,7 +1038,7 @@ ppformulanet_l_ocr_context * ppformulanet_l_ocr_init(const char * model_path, in
 
     // Prefer GPU backend when available
     bool force_cpu = (getenv("PPFNL_OCR_FORCE_CPU") && atoi(getenv("PPFNL_OCR_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();

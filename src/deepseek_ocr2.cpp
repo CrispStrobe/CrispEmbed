@@ -12,6 +12,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <array>
@@ -1609,21 +1610,19 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx & ctx, int li, int T, int
     size_t layer_off_k = (size_t)li * ctx.kvc.k->nb[2];
     size_t layer_off_v = (size_t)li * ctx.kvc.v->nb[2];
 
-    ggml_tensor * k_dst = ggml_view_2d(g, ctx.kvc.k, kv_dim, T,
-        ctx.kvc.k->nb[1], layer_off_k + (size_t)n_past * ctx.kvc.k->nb[1]);
-    ggml_tensor * v_dst = ggml_view_2d(g, ctx.kvc.v, kv_dim, T,
-        ctx.kvc.v->nb[1], layer_off_v + (size_t)n_past * ctx.kvc.v->nb[1]);
+    ggml_tensor * k_dst =
+        ggml_view_2d(g, ctx.kvc.k, kv_dim, T, ctx.kvc.k->nb[1], layer_off_k + (size_t)n_past * ctx.kvc.k->nb[1]);
+    ggml_tensor * v_dst =
+        ggml_view_2d(g, ctx.kvc.v, kv_dim, T, ctx.kvc.v->nb[1], layer_off_v + (size_t)n_past * ctx.kvc.v->nb[1]);
 
     ggml_build_forward_expand(lag.gf, ggml_cpy(g, K_flat, k_dst));
     ggml_build_forward_expand(lag.gf, ggml_cpy(g, V_flat, v_dst));
 
     // Read full K/V history [0..n_past+T) from persistent cache.
-    ggml_tensor * Kfull = ggml_reshape_3d(g,
-        ggml_view_2d(g, ctx.kvc.k, kv_dim, Lk, ctx.kvc.k->nb[1], layer_off_k),
-        hd, nkv, Lk);
-    ggml_tensor * Vfull = ggml_reshape_3d(g,
-        ggml_view_2d(g, ctx.kvc.v, kv_dim, Lk, ctx.kvc.v->nb[1], layer_off_v),
-        hd, nkv, Lk);
+    ggml_tensor * Kfull =
+        ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.k, kv_dim, Lk, ctx.kvc.k->nb[1], layer_off_k), hd, nkv, Lk);
+    ggml_tensor * Vfull =
+        ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.v, kv_dim, Lk, ctx.kvc.v->nb[1], layer_off_v), hd, nkv, Lk);
 
     // GQA repeat if needed
     int kv_repeat = nh / nkv;
@@ -2109,7 +2108,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
         return nullptr;
     }
 
-    ctx.backend = ggml_backend_init_best();
+    ctx.backend = crispasr_init_gpu_backend();
     if (!ctx.backend) {
         ctx.backend = ggml_backend_cpu_init();
         if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
@@ -2172,8 +2171,14 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
 }
 
 static void free_ds_kv_cache(ds_ocr2_ctx & c) {
-    if (c.kvc.buf) { ggml_backend_buffer_free(c.kvc.buf); c.kvc.buf = nullptr; }
-    if (c.kvc.ctx) { ggml_free(c.kvc.ctx); c.kvc.ctx = nullptr; }
+    if (c.kvc.buf) {
+        ggml_backend_buffer_free(c.kvc.buf);
+        c.kvc.buf = nullptr;
+    }
+    if (c.kvc.ctx) {
+        ggml_free(c.kvc.ctx);
+        c.kvc.ctx = nullptr;
+    }
     c.kvc.allocated = false;
     c.kvc.n_past = 0;
 }
@@ -2201,7 +2206,8 @@ static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
     kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, c.backend);
     if (!kv.buf) {
         fprintf(stderr, "deepseek_ocr2: KV cache alloc failed\n");
-        ggml_free(kv.ctx); kv.ctx = nullptr;
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
         return false;
     }
     ggml_backend_buffer_clear(kv.buf, 0);
@@ -2211,8 +2217,8 @@ static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
     kv.allocated = true;
 
     size_t bytes = ggml_backend_buffer_get_size(kv.buf);
-    fprintf(stderr, "deepseek_ocr2: KV cache: %d layers, max_seq=%d, kv_dim=%d, %.1f MB\n",
-            nl, max_seq, kv_dim, (float)bytes / 1024 / 1024);
+    fprintf(stderr, "deepseek_ocr2: KV cache: %d layers, max_seq=%d, kv_dim=%d, %.1f MB\n", nl, max_seq, kv_dim,
+            (float)bytes / 1024 / 1024);
     return true;
 }
 

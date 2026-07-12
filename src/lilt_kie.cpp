@@ -6,6 +6,7 @@
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -104,7 +105,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
 
     // Init backend — prefer GPU when available
     bool force_cpu = (getenv("LILT_KIE_FORCE_CPU") && atoi(getenv("LILT_KIE_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) {
         delete ctx;

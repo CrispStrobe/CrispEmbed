@@ -16,6 +16,7 @@
 #include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <atomic>
@@ -544,7 +545,7 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
     core_gguf::free_metadata(meta);
 
     bool force_cpu = (getenv("SCUNET_FORCE_CPU") && atoi(getenv("SCUNET_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(backend)) ggml_backend_cpu_set_n_threads(backend, n_threads > 0 ? n_threads : 2);
     core_gguf::WeightLoad wl;

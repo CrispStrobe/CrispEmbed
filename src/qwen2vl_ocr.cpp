@@ -30,6 +30,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -903,7 +904,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
 
     // Init backend — prefer GPU when available
     bool force_cpu = (getenv("QWEN2VL_OCR_FORCE_CPU") && atoi(getenv("QWEN2VL_OCR_FORCE_CPU")));
-    ctx.backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
     ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();

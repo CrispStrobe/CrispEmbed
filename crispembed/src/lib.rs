@@ -49,6 +49,16 @@ pub struct CrispEmbed {
 // the opaque context pointer; we hold the only reference.
 unsafe impl Send for CrispEmbed {}
 
+/// Set the process-global GPU backend preference ("metal", "cuda", "vulkan",
+/// ...), matched case-insensitively against the ggml device and registry
+/// names. Call once BEFORE constructing any model. Empty string = auto.
+/// An unavailable preference warns on stderr and falls back to auto; use the
+/// per-engine `*_FORCE_CPU` environment variables to force CPU.
+pub fn set_gpu_backend(name: &str) {
+    let cn = CString::new(name).unwrap_or_default();
+    unsafe { crispembed_sys::crispembed_set_gpu_backend(cn.as_ptr()) }
+}
+
 impl CrispEmbed {
     /// Load a GGUF model file.
     ///

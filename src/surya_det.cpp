@@ -10,6 +10,7 @@
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <chrono>
 #include <cmath>
@@ -205,7 +206,7 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     // GPU; set SURYA_DET_FORCE_CPU=1 to pin to CPU for parity debugging.
     const char * force_cpu = std::getenv("SURYA_DET_FORCE_CPU");
     bool want_cpu = force_cpu && force_cpu[0] && std::strcmp(force_cpu, "0") != 0;
-    ctx->backend = want_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = want_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, ctx->backend, "surya_det", ctx->wl)) {
         ggml_backend_free(ctx->backend);

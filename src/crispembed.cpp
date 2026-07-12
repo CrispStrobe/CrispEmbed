@@ -11,6 +11,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -78,7 +79,7 @@ static ggml_backend_t crispembed_init_backend(int n_threads) {
         }
         return cpu;
     }
-    return ggml_backend_init_best();
+    return crispasr_init_gpu_backend();
 }
 
 // ---------------------------------------------------------------------------
@@ -2276,6 +2277,10 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
     }
     if (out_n_dim) *out_n_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
+}
+
+extern "C" void crispembed_set_gpu_backend(const char * name) {
+    crispasr_set_gpu_backend_pref(name);
 }
 
 extern "C" void crispembed_set_dim(crispembed_context * ctx, int dim) {

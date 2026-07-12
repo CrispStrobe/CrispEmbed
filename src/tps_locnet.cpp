@@ -18,6 +18,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -180,7 +181,7 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
 
     // Pass 2: load weights
     bool force_cpu = (getenv("TPS_LOCNET_FORCE_CPU") && atoi(getenv("TPS_LOCNET_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) backend = ggml_backend_cpu_init();
 
     core_gguf::WeightLoad wl;
