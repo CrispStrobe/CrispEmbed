@@ -192,6 +192,7 @@ list(APPEND CRISPEMBED_SOURCES src/clip_text_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cnn_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/smt_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/posformer_ocr.cpp)
@@ -384,6 +385,12 @@ target_link_libraries(test-mixtex-diff PRIVATE crispembed)
 
 add_executable(test-math-ocr-diff tests/test_math_ocr_diff.cpp)
 target_link_libraries(test-math-ocr-diff PRIVATE crispembed)
+
+add_executable(test-smt-diff tests/test_smt_diff.cpp)
+target_link_libraries(test-smt-diff PRIVATE crispembed)
+
+add_executable(test-smt-reco tests/test_smt_reco.cpp)
+target_link_libraries(test-smt-reco PRIVATE crispembed)
 
 add_executable(test-hat-diff tests/test_hat_diff.cpp)
 target_link_libraries(test-hat-diff PRIVATE crispembed)
