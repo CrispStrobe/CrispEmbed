@@ -2247,6 +2247,18 @@ Organized by priority (P0 = highest impact, P3 = nice-to-have).
   - `ppformulanet_ocr` HGNetv2 CNN: **DONE** (`c058099`). ggml conv2d graph, 12x speedup.
 
 - [ ] **Move SR/restoration engines from scalar conv to ggml graphs**:
+  **SAFMN DONE (2026-07-13)** — `safmn_sr.cpp` forward is now ONE fused ggml
+  graph (to_feat → 8 AttBlocks → to_img; only pixel-shuffle stays scalar),
+  replacing per-conv mini-graphs. **~2.2× faster (6.1s → 2.8s, 256²→1024² x4)
+  and MORE accurate: cos 1.000000 vs 0.994** (F32 convs + exact `ggml_gelu_erf`,
+  not the tanh approx — that erf-vs-tanh detail was the one gotcha, worth 0.947→
+  1.0). **Key finding for the siblings: Metal is a NET LOSS on these tiny/tiled
+  models** — dispatch + host↔device copy overhead beats the compute savings
+  (measured ~4.9s Metal vs ~3.4s CPU); default to CPU, keep GPU opt-in
+  (`SAFMN_SR_METAL`) for the larger engines (hat/restormer/swinir) where it may
+  pay off. So the port pattern is: fused single graph on CPU, erf-GELU, verify
+  cos≥0.95 via `test-<engine>-diff`. Remaining: nafnet, scunet, swinir, tbsrn,
+  hat, adair, dat, restormer, instructir.
   **All engines below are already implemented, numerically verified, and fully
   wired (converter + docs + C/CLI/Python/Rust/Dart/Server bindings). This task
   is purely a *backend* port** — swapping their nested-loop scalar conv forward
