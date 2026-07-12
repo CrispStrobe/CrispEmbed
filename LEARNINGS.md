@@ -4885,3 +4885,39 @@ Two lessons:
    Metal dispatches). Verified: 39/39 boxes byte-identical to the scalar
    reference on Metal AND forced-CPU; the restored graph path is ~2× the
    scalar fallback (18.5 s vs 38 s end-to-end on scan_page_pd).
+
+## The build dir was silently CPU-only for 5 days — check the cache before calling anything "Metal" (2026-07-12)
+
+Found while verifying the `--gpu-backend` sweep: the main working tree's
+`build/` had `GGML_METAL:BOOL=OFF` (`GGML_AVAILABLE_BACKENDS=ggml-cpu`),
+configured 2026-07-07 — almost certainly by the CPU-only sandbox session that
+built the 4D encoder batch (its PLAN note even says "this env is CPU-only,
+GGML_METAL=OFF"). It stuck: every measurement made with the main binary from
+07-07 to 07-12 that was labelled "Metal" actually ran on CPU. `init_best`
+falls back without any error, and on a CPU-only BUILD there is not even the
+"embedded metal library" stderr line to miss — silence is the only symptom.
+
+Casualties corrected:
+- **The 4D-batch "Metal verdict" was wrong twice over**: the "Metal parity
+  failure" (0.99989 < gate) and the mixed-length throughput loss were CPU
+  numbers. On a real Metal build, 4D parity PASSES (0.9999996) and **packed
+  is 5–7× vs sequential everywhere** (uniform and mixed, interleaved bench)
+  — packed is the Metal batching mode; 4D is the CPU tool. PLAN C3 rewritten.
+- **Cross-binary baselines were conflated** (CPU main vs Metal worktree):
+  yesterday's "mixtex 19 s → 5 s", "layout 21 s → 3.4 s", "gliner 6.7 → 3.1 s"
+  wall-clock comparisons overstate the code wins — the branch's own
+  same-binary isolated numbers (1.94×, 9.8×, 1.28–1.71×) are the real ones.
+  The "gliner Metal score wiggle" was actually CPU-vs-Metal backend diff.
+- **ppformulanet-L re-measured** on Metal: encoder 31 s → 8.3 s, so the CPU
+  neck is ~18% of total (not ~10%) and the decoder (~69%) is the dominant
+  cost. conv2d_cpu skip verdict stands; the engine's lever is its decoder.
+
+Rules: (1) before any backend-attributed measurement, verify
+`GGML_METAL:BOOL=ON` in the build cache AND `MTL0` in the run's stderr;
+(2) never compare wall-clock across binaries from differently-configured
+build dirs — same-binary env-toggled A/B or nothing; (3) after any sandbox
+session, assume the build config may have been downgraded.
+
+Bonus bug the same day: `tests/test_encoder_batch.py`'s 4D parity class
+leaked `CRISPEMBED_ENCODER_4D=1` into the throughput test, so its "seq" and
+"packed" legs silently ran the 4D path. Pop the mode envs at bench start.
