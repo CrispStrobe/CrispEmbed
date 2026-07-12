@@ -335,8 +335,9 @@ bool load_tensors(context & ctx, const char * path) {
         }
     }
 
-    m.merger.norm_w = get("v.merger.norm.weight");
-    m.merger.norm_b = get("v.merger.norm.bias");
+    // Merger post-norm: CrispEmbed "v.merger.norm" vs llama.cpp mmproj "v.post_ln".
+    m.merger.norm_w = get2("v.merger.norm.weight", "v.post_ln.weight");
+    m.merger.norm_b = get2("v.merger.norm.bias", "v.post_ln.bias");
     m.merger.fc1_w = get2("v.merger.fc1.weight", "mm.0.weight");
     if (!m.merger.fc1_w) m.merger.fc1_w = get("v.merger.linear_fc1.weight");
     m.merger.fc1_b = get2("v.merger.fc1.bias", "mm.0.bias");
@@ -417,6 +418,9 @@ bool load_tensors(context & ctx, const char * path) {
     m.lm_head_w = get2("l.lm_head.weight", "output.weight");
     if (!m.lm_head_w) m.lm_head_w = get("llm.lm_head.weight");
     if (!m.lm_head_w) m.lm_head_w = get("llm.embed.weight"); // tied
+    // llama.cpp-native tied models (e.g. Qwen2-VL-2B): no output.weight, tie to
+    // the token embedding.
+    if (!m.lm_head_w) m.lm_head_w = m.embed_tokens;
 
     // Some GGUF converters store every 2-D weight in PyTorch (out, in) row-major
     // order instead of ggml's (in, out) convention. ggml_mul_mat(W, x) requires

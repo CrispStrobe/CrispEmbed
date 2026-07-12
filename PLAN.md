@@ -791,9 +791,27 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
     VL-model download or inference. So the output is byte-identical to a
     known-good llama.cpp mmproj (which llama.cpp loads by definition). Do NOT
     link libmtmd (it PUBLIC-links all of llama) — this is offline conversion.
-    - Remaining: the `<__media__>` chunk convention (runtime prompt-marker interop,
-      `mtmd_default_marker()`); lower-value convenience, needs the VL runtime +
-      a model for end-to-end validation. Separate follow-up.
+    - EXPORT validated END-TO-END 2026-07-12: merge (shipped) → export → the
+      exported mmproj + LLM run in `llama-mtmd-cli` and OCR fox.png correctly
+      ("The quick brown fox jumps over the lazy dog. 12345"). So CrispEmbed→
+      llama.cpp mmproj interop works.
+    - **REVERSE direction (llama.cpp → CrispEmbed) — core bug fixed, one
+      remaining engine-support gap.** Discovered `merge-llamacpp-qwen2vl-gguf.py`
+      was BROKEN: it renamed tensors to `vis.blocks.*`/`llm.layers.*`, which the
+      current `qwen2vl_ocr` loader does NOT read (it reads llama.cpp-native
+      `v.blk.*`/`blk.*` + CrispEmbed `l.blk.*`), so its output SIGSEGV'd on load
+      (vision misdetected as 2.5-VL). Fixed: (1) merge now keeps native names +
+      concatenates the split temporal patch embed (`v.patch_embd.weight` +
+      `.weight.1` → `[in*T*H*W, out]`); (2) loader gains `v.post_ln` merger-norm
+      + tied-`lm_head`(=`token_embd`) fallbacks. Result: a llama.cpp Qwen2-VL-2B
+      now LOADS and is CORRECTLY detected as Qwen2-VL (LayerNorm/GELU) — was an
+      immediate crash before. Remaining: OCR still aborts at a forward-graph
+      `ggml_can_mul_mat` mismatch — config reads correctly (heads 12/kv 2/hidden
+      1536/28L), all loaded weight dims are consistent, and `llama-mtmd-cli` runs
+      the same weights, so this is a **Qwen2-VL-2B forward-path gap in an engine
+      built/tested for Qwen2.5-VL-3B**, not an interop-naming issue. Needs a
+      targeted `a->ne`/`b->ne` print at the failing matmul (bounded). Do NOT link
+      libmtmd. `<__media__>` prompt-marker: separate low-value follow-up.
 
 - **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
   16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY
