@@ -1,5 +1,46 @@
 # CrispEmbed — Technical Learnings
 
+## VL "runs but ignores the image": use the inject-embeds discriminator BEFORE diffing the vision tower (2026-07-12, mmproj reverse interop)
+
+Loading a stock llama.cpp Qwen2-VL-2B into CrispEmbed, `--ocr` ran and produced
+fluent-but-wrong output ("The text in the image is not visible"). I spent a long
+time building an HF diff-harness on the *vision tower* (fed CrispEmbed's exact
+patches to HF's Qwen2-VL vision model) and found cos 0.957 — close but imperfect,
+which nearly sent me chasing a phantom ViT bug for hours.
+
+**The decisive test was one line of thinking:** if the vision were the problem,
+better embeds would help. So I added a `CRISPEMBED_LOAD_MERGER=path` override
+that swaps the computed image embeds for a dumped tensor, and fed it three
+inputs: HF's *perfect* embeds, all-zeros, and random. **All three produced the
+IDENTICAL output.** That instantly proves the image is being *ignored entirely* —
+the bug is LLM-side conditioning (splice / prompt / positions), NOT the vision
+tower, and the cos-0.957 was a red herring.
+
+Root cause: `qwen2vl.image_token_id` is absent from llama.cpp GGUFs. CrispEmbed
+had **two mismatched defaults for the same concept** — the prompt builder's
+`image_pad_id` defaulted to `<|image_pad|>=151655`, while the vision-text splice's
+`image_token_id` defaulted to `0`. So the prompt emitted 151655 pads while the
+splice searched for token 0, matched nothing, and never replaced any embedding.
+Fix: default `image_token_id` to 151655 (match the prompt) + write the token IDs
+in the converter so the GGUF self-describes.
+
+Durable rule: **for any "multimodal model runs but ignores the modality," run the
+inject-{perfect, zeros, random} discriminator FIRST.** Identical outputs ⇒ the
+modality is dropped (conditioning bug — check the token-id/splice/positions);
+different outputs ⇒ the encoder is genuinely wrong (then diff the tower). It
+separates encoder bugs from conditioning bugs in a single cheap test, before any
+per-layer harness. Sibling gotcha from the same session: two independent
+defaults for one metadata key silently disagree — grep for every place a special
+token id is read and make the defaults identical (or better, write the key).
+
+Also from this port (llama.cpp qwen2vl mmproj → CrispEmbed): **llama.cpp INVERTS
+the ViT `ffn_up`/`ffn_down` names vs the projection direction** — `ffn_down` is
+fc1 (hidden→intermediate), `ffn_up` is fc2, provable by bias widths
+(`ffn_down.bias`=[intermediate], `ffn_up.bias`=[hidden]). Map fc1/fc2 by the
+output dim, never the name. And to localize a `ggml_can_mul_mat`/`ggml_can_repeat`
+abort, temporarily print `a->ne`/`b->ne` right before the assert in ggml.c
+(revert after) — it names the exact tensor + shapes in one run.
+
 ## `ggml_set_output` on a reshape/view does NOT protect the underlying source buffer — snapshot reads back garbage (2026-07-12, C4)
 
 Building the C4 cross-call prefix KV cache, the plan was: run a prefix-only
