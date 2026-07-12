@@ -48,6 +48,11 @@ const smt_ocr_hparams * smt_ocr_get_hparams(const smt_ocr_context * ctx);
 /// Returns a bekern token string (space-joined), owned by ctx, or NULL.
 const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int width, int height, int * out_len);
 
+/// Recognize on a raw pixel buffer (RGB/RGBA/gray uint8); resize+invert+grayscale
+/// preprocessing is applied internally. Returns a bekern token string, or NULL.
+const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * pixels, int width, int height, int channels,
+                                   int * out_len);
+
 /// Recognize on a raw image file (PNG/JPEG); handles preprocessing internally.
 const char * smt_ocr_recognize_file(smt_ocr_context * ctx, const char * image_path, int * out_len);
 

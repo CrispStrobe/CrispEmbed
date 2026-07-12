@@ -221,8 +221,13 @@ static ggml_tensor * ln_cf(ggml_context * g, ggml_tensor * x, ggml_tensor * w, g
     xc = ln0(g, xc, w, b);
     return ggml_cont(g, ggml_permute(g, xc, 2, 0, 1, 3)); // back to [W,H,C,N]
 }
-// conv2d with in-graph F16 kernel cast; a=[KW,KH,IC,OC], x=[W,H,IC,N]
-static ggml_tensor * conv(ggml_context * g, ggml_tensor * a, ggml_tensor * x, int s, int p, bool dw) {
+// conv2d with in-graph F16 kernel cast; kernel [KW,KH,IC,OC], x=[W,H,IC,N].
+// crispembed-quantize flattens 4D conv kernels to 2D [IC*KH*KW, OC] in the GGUF
+// header (data bytes unchanged); reshape back to 4D so ggml_conv_2d sees a valid
+// kernel for both the F32 converter output and quantized GGUFs.
+static ggml_tensor * conv(ggml_context * g, ggml_tensor * a, ggml_tensor * x, int s, int p, bool dw, int kw, int kh,
+                          int ic, int oc) {
+    if (ggml_n_dims(a) != 4) a = ggml_reshape_4d(g, a, kw, kh, ic, oc);
     ggml_tensor * k = ggml_cast(g, a, GGML_TYPE_F16);
     return dw ? ggml_conv_2d_dw(g, k, x, s, s, p, p, 1, 1) : ggml_conv_2d(g, k, x, s, s, p, p, 1, 1);
 }
@@ -269,21 +274,25 @@ static ggml_cgraph * build_encoder(smt_ocr_context * ctx, ggml_context * g, int 
     ggml_set_name(x, "input");
     ggml_set_input(x);
 
-    // stem: Conv2d(k4,s4) + channels-first LN
-    ggml_tensor * cur = conv(g, ctx->stem_w, x, ctx->hp.enc_stem_kernel, 0, false); // [W/4,H/4,64,1]
+    // stem: Conv2d(in_ch->C0, k, s=k) + channels-first LN
+    const int K = ctx->hp.enc_stem_kernel;
+    int cur_ch = ctx->stage_sizes[0];
+    ggml_tensor * cur = conv(g, ctx->stem_w, x, K, 0, false, K, K, ctx->hp.enc_num_channels, cur_ch);
     cur = add_cbias(g, cur, ctx->stem_b);
     cur = ln_cf(g, cur, ctx->stem_ln_w, ctx->stem_ln_b);
 
     for (int s = 0; s < ctx->hp.enc_num_stages; s++) {
         auto & S = ctx->stages[s];
-        if (S.ds_conv_w) { // downsampling: channels-first LN → Conv2d(k2,s2)
+        int Cs = ctx->stage_sizes[s];
+        if (S.ds_conv_w) { // downsampling: channels-first LN → Conv2d(Cprev->Cs, k2, s2)
             cur = ln_cf(g, cur, S.ds_ln_w, S.ds_ln_b);
-            cur = conv(g, S.ds_conv_w, cur, 2, 0, false);
+            cur = conv(g, S.ds_conv_w, cur, 2, 0, false, 2, 2, cur_ch, Cs);
             cur = add_cbias(g, cur, S.ds_conv_b);
         }
+        cur_ch = Cs;
         for (auto & L : S.layers) {
             ggml_tensor * inp = cur;
-            ggml_tensor * y = conv(g, L.dw_w, cur, 1, 3, true); // depthwise 7×7
+            ggml_tensor * y = conv(g, L.dw_w, cur, 1, 3, true, 7, 7, 1, Cs); // depthwise 7×7
             y = add_cbias(g, y, L.dw_b);
             ggml_tensor * yc = ggml_cont(g, ggml_permute(g, y, 1, 2, 0, 3)); // [C,W,H,N]
             yc = ln0(g, yc, L.ln_w, L.ln_b);
@@ -603,18 +612,17 @@ const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int 
     return ctx->result.c_str();
 }
 
-const char * smt_ocr_recognize_file(smt_ocr_context * ctx, const char * image_path, int * out_len) {
-    int w = 0, h = 0, c = 0;
-    stbi_uc * data = stbi_load(image_path, &w, &h, &c, 3); // force RGB
-    if (!data) return nullptr;
+const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, int w, int h, int ch, int * out_len) {
     // Mirror the SMT inference pipeline (data.py + convert_img_to_tensor):
     //   cv2.resize ×0.5 bilinear (uint8) → RandomInvert(255-x) → Grayscale → /255.
     // cv2 loads BGR and ToPILImage treats it as RGB, so the grayscale luma uses
     // the swapped channel order (R-slot=blue, B-slot=red). stbi gives RGB, so
-    // the swap maps R-slot→stbi[2], B-slot→stbi[0].
+    // the swap maps R-slot→data[2], B-slot→data[0]. 1-channel input is gray.
+    if (!data || w <= 0 || h <= 0 || ch <= 0) return nullptr;
     int rw = (int)std::ceil(w * 0.5), rh = (int)std::ceil(h * 0.5);
     float sx = (float)w / rw, sy = (float)h / rh;
     auto clampi = [](int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); };
+    int nk = ch >= 3 ? 3 : 1;
     std::vector<float> gray((size_t)rw * rh);
     for (int y = 0; y < rh; y++) {
         float fy = (y + 0.5f) * sy - 0.5f;
@@ -626,22 +634,35 @@ const char * smt_ocr_recognize_file(smt_ocr_context * ctx, const char * image_pa
             int x0 = (int)std::floor(fx);
             float wx = fx - x0;
             int x0c = clampi(x0, 0, w - 1), x1c = clampi(x0 + 1, 0, w - 1);
-            float ch[3];
-            for (int k = 0; k < 3; k++) {
-                float p00 = data[((size_t)y0c * w + x0c) * 3 + k];
-                float p01 = data[((size_t)y0c * w + x1c) * 3 + k];
-                float p10 = data[((size_t)y1c * w + x0c) * 3 + k];
-                float p11 = data[((size_t)y1c * w + x1c) * 3 + k];
+            float pix[3] = { 0, 0, 0 };
+            for (int k = 0; k < nk; k++) {
+                float p00 = data[((size_t)y0c * w + x0c) * ch + k];
+                float p01 = data[((size_t)y0c * w + x1c) * ch + k];
+                float p10 = data[((size_t)y1c * w + x0c) * ch + k];
+                float p11 = data[((size_t)y1c * w + x1c) * ch + k];
                 float top = p00 + wx * (p01 - p00), bot = p10 + wx * (p11 - p10);
-                ch[k] = std::round(top + wy * (bot - top)); // cv2 returns uint8
+                pix[k] = std::round(top + wy * (bot - top)); // cv2 returns uint8
             }
-            float inv0 = 255.0f - ch[0], inv1 = 255.0f - ch[1], inv2 = 255.0f - ch[2];
-            float luma = 0.299f * inv2 + 0.587f * inv1 + 0.114f * inv0; // BGR-as-RGB swap
+            float luma;
+            if (nk >= 3) {
+                float i0 = 255.0f - pix[0], i1 = 255.0f - pix[1], i2 = 255.0f - pix[2];
+                luma = 0.299f * i2 + 0.587f * i1 + 0.114f * i0; // BGR-as-RGB swap
+            } else {
+                luma = 255.0f - pix[0];
+            }
             gray[(size_t)y * rw + x] = std::round(luma) / 255.0f;
         }
     }
-    stbi_image_free(data);
     return smt_ocr_recognize(ctx, gray.data(), rw, rh, out_len);
+}
+
+const char * smt_ocr_recognize_file(smt_ocr_context * ctx, const char * image_path, int * out_len) {
+    int w = 0, h = 0, c = 0;
+    stbi_uc * data = stbi_load(image_path, &w, &h, &c, 3); // force RGB
+    if (!data) return nullptr;
+    const char * r = smt_ocr_recognize_raw(ctx, data, w, h, 3, out_len);
+    stbi_image_free(data);
+    return r;
 }
 
 // ---------------------------------------------------------------------------
