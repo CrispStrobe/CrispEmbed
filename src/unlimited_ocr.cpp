@@ -13,6 +13,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <array>
@@ -2736,7 +2737,7 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
         return nullptr;
     }
 
-    ctx.backend = ggml_backend_init_best();
+    ctx.backend = crispasr_init_gpu_backend();
     if (!ctx.backend) {
         ctx.backend = ggml_backend_cpu_init();
         if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);

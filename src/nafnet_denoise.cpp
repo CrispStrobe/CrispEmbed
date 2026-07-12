@@ -14,6 +14,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -333,7 +334,7 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     // Forward pass is scalar CPU but weights can reside on GPU (read via
     // ggml_backend_tensor_get). Backend kept alive for tensor access.
     bool force_cpu = (getenv("NAFNET_FORCE_CPU") && atoi(getenv("NAFNET_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(model_path, ctx->backend, "nafnet", ctx->wl)) {

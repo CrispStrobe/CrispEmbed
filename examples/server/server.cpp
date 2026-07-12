@@ -115,6 +115,8 @@ int main(int argc, char ** argv) {
             port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc)
             n_threads = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--gpu-backend") == 0 && i + 1 < argc)
+            crispembed_set_gpu_backend(argv[++i]);
         else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc)
             det_model_path = argv[++i];
         else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc)

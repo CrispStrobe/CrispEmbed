@@ -15,6 +15,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include "core/gguf_loader.h"
@@ -1050,7 +1051,7 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
     if (force_cpu && force_cpu[0] && std::strcmp(force_cpu, "0") != 0) {
         ctx->backend = ggml_backend_cpu_init();
     } else {
-        ctx->backend = ggml_backend_init_best();
+        ctx->backend = crispasr_init_gpu_backend();
     }
     if (!ctx->backend) {
         ctx->backend = ggml_backend_cpu_init();

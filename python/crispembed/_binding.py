@@ -68,6 +68,18 @@ def _load_library(lib_path: Optional[str] = None):
     return ctypes.CDLL(path)
 
 
+def set_gpu_backend(name: Optional[str], lib_path: Optional[str] = None) -> None:
+    """Set the process-global GPU backend preference ("metal", "cuda",
+    "vulkan", ...), matched case-insensitively against the ggml device and
+    registry names. Call BEFORE constructing any model. None or "" = auto.
+    An unavailable preference warns on stderr and falls back to auto; use
+    the per-engine *_FORCE_CPU environment variables to force CPU."""
+    lib = _load_library(lib_path)
+    lib.crispembed_set_gpu_backend.argtypes = [ctypes.c_char_p]
+    lib.crispembed_set_gpu_backend.restype = None
+    lib.crispembed_set_gpu_backend((name or "").encode("utf-8"))
+
+
 class _CrispEmbedHparams(ctypes.Structure):
     _fields_ = [
         ("n_vocab", ctypes.c_int32),

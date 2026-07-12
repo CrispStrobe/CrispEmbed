@@ -161,6 +161,12 @@ extern "C" {
         out_count: *mut c_int,
     ) -> c_int;
 
+    /// Set the process-global GPU backend preference ("metal", "cuda",
+    /// "vulkan", ...), matched case-insensitively against the ggml device and
+    /// registry names. Call once BEFORE any *_init. NULL or "" = auto.
+    /// An unavailable preference warns on stderr and falls back to auto.
+    pub fn crispembed_set_gpu_backend(name: *const c_char);
+
     /// Truncate output to `dim` dimensions (Matryoshka). 0 = model default.
     pub fn crispembed_set_dim(ctx: *mut CrispembedContext, dim: c_int);
 

@@ -60,6 +60,14 @@ typedef struct crispembed_hparams {
 // Returns NULL on failure.
 CRISPEMBED_API crispembed_context * crispembed_init(const char * model_path, int n_threads);
 
+// Set the process-global GPU backend preference (issue #214 semantics):
+// "metal", "cuda", "vulkan", ... matched case-insensitively against the ggml
+// device/registry names. Call once at startup, BEFORE any *_init. NULL or ""
+// = auto (ggml_backend_init_best). An unavailable preference warns on stderr
+// and falls back to auto. This selects among GPU backends only; use the
+// per-engine *_FORCE_CPU environment variables to force CPU.
+CRISPEMBED_API void crispembed_set_gpu_backend(const char * name);
+
 // Set Matryoshka output dimension. 0 = use model default.
 // Must be <= model's native dimension. The embedding is truncated
 // and re-normalized to the specified dimension.

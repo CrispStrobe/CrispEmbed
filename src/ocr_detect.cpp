@@ -21,6 +21,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
@@ -162,7 +163,7 @@ bool load(context ** out, const char * path, int n_threads) {
     // conv-transpose kernel. OCR_DETECT_FORCE_CPU=1 forces CPU and overrides it.
     bool force_cpu = (getenv("OCR_DETECT_FORCE_CPU") && atoi(getenv("OCR_DETECT_FORCE_CPU")));
     bool use_gpu = (getenv("OCR_DETECT_USE_GPU") && atoi(getenv("OCR_DETECT_USE_GPU")));
-    ctx->backend = (use_gpu && !force_cpu) ? ggml_backend_init_best() : ggml_backend_cpu_init();
+    ctx->backend = (use_gpu && !force_cpu) ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 

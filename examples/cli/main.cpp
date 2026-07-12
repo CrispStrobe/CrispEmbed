@@ -97,6 +97,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  -m MODEL         path to GGUF model or model name (auto-download)\n");
     fprintf(stderr, "  -f FILE          read texts from file (one per line)\n");
     fprintf(stderr, "  -t N             number of threads (default: 1)\n");
+    fprintf(stderr, "  --gpu-backend B  preferred GPU backend (metal/cuda/vulkan/...); default: auto.\n");
+    fprintf(stderr, "                   Unavailable backend warns and falls back to auto\n");
     fprintf(stderr, "  -d N             output dimension (Matryoshka truncation)\n");
     fprintf(stderr, "  --prefix TEXT    prepend a prefix to all inputs before tokenization\n");
     fprintf(stderr, "  --json           output as JSON array\n");
@@ -314,6 +316,8 @@ static int cli_main(int argc, char ** argv) {
             file_path = argv[++i];
         } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
             n_threads = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "--gpu-backend") == 0 && i + 1 < argc) {
+            crispembed_set_gpu_backend(argv[++i]);
         } else if (strcmp(argv[i], "-d") == 0 && i + 1 < argc) {
             output_dim = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--prefix") == 0 && i + 1 < argc) {

@@ -15,6 +15,7 @@
 #include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-backend.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -163,7 +164,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: weights
-    ggml_backend_t backend = ggml_backend_init_best();
+    ggml_backend_t backend = crispasr_init_gpu_backend();
     if (!core_gguf::load_weights(path, backend, "tesseract_lstm", ctx->wl)) {
         ggml_backend_free(backend);
         return false;
