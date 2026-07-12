@@ -207,6 +207,13 @@ struct crispembed_context {
     embed_model model;
     std::unique_ptr<dec_model> dec; // non-null for decoder models
     bool is_decoder = false;
+    // C4 — cross-call prefix KV cache for the decoder-embedding path. Reuses a
+    // shared instruction prefix's per-layer K/V + hidden across consecutive
+    // encode() calls. prev_dec_tokens holds the previous call's ids (for LCP
+    // detection). Opt out via CRISPEMBED_DECODER_PREFIX_CACHE=0.
+    dec_prefix_cache dec_prefix;
+    std::vector<int32_t> prev_dec_tokens;
+    int prefix_cache_enabled = -1; // -1 = unresolved, 0 = off, 1 = on
     // LFM2.5 bidirectional embedding (arch="lfm2")
     lfm2_embed_ctx * lfm2_ctx = nullptr;
     bool is_lfm2 = false;
@@ -2272,8 +2279,17 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
     }
 
     if (ctx->is_decoder && ctx->dec) {
-        ctx->last_output =
-            decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads, ctx->sched, &ctx->compute_meta);
+        if (ctx->prefix_cache_enabled < 0) {
+            const char * e = std::getenv("CRISPEMBED_DECODER_PREFIX_CACHE");
+            ctx->prefix_cache_enabled = (e && e[0] == '0') ? 0 : 1; // default ON
+        }
+        if (ctx->prefix_cache_enabled) {
+            ctx->last_output = decoder_encode_tokens_cached(*ctx->dec, ctx->backend, tokens, ctx->n_threads, ctx->sched,
+                                                            &ctx->compute_meta, ctx->dec_prefix, ctx->prev_dec_tokens);
+        } else {
+            ctx->last_output =
+                decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads, ctx->sched, &ctx->compute_meta);
+        }
     } else {
         ctx->last_output = encode_tokens(ctx, tokens);
     }
@@ -2315,6 +2331,10 @@ extern "C" int crispembed_set_lora(crispembed_context * ctx, const char * adapte
     if (!ctx || !ctx->is_decoder || !ctx->dec) return 0;
     if (ctx->dec->lora_adapters.empty()) return 0;
     std::string name = adapter_name ? adapter_name : "";
+    // Weights change under the prefix cache — invalidate it (its cached K/V
+    // were computed against the old weights).
+    ctx->dec_prefix.clear();
+    ctx->prev_dec_tokens.clear();
     return decoder_set_lora(*ctx->dec, ctx->backend, name) ? 1 : 0;
 }
 

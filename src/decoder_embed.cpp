@@ -1608,3 +1608,565 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
 
     return results;
 }
+
+// ---------------------------------------------------------------------------
+// C4 — cross-call prefix KV cache
+//
+// The decoder-embed path is a single-shot prefill (flash-attn over the whole
+// sequence). With causal attention, the first P tokens' per-layer post-rope
+// K/V and final hidden states are INDEPENDENT of any suffix that follows, so
+// we compute them once (build graph) and reuse them (suffix graph) across
+// calls that share the same leading prefix. Text-only (no image / MRoPE);
+// bidirectional models are ineligible.
+// ---------------------------------------------------------------------------
+
+// Shared per-layer decoder stack, used by BOTH the build graph (T_q = P,
+// mark_kv_out=true, prefix_k=null) and the suffix graph (T_q = S,
+// mark_kv_out=false, prefix_k[il]=cached K/V to prepend). Replicates the exact
+// math of decoder_encode_tokens' text-only layer loop; validated bit-equal
+// against the full path on CPU by the C4 parity gate. Returns the final
+// output-normed hidden [H, T_q].
+static ggml_tensor * dec_build_layer_stack(ggml_context * g, const dec_model & m, ggml_tensor * cur, ggml_tensor * pos,
+                                           ggml_tensor * fa_mask, ggml_tensor * ones_h, ggml_tensor * ones_hd,
+                                           int head_dim, int n_heads, int n_kv_heads, int q_dim, int T_q,
+                                           ggml_tensor ** prefix_k, ggml_tensor ** prefix_v, bool mark_kv_out) {
+    const int H = m.n_embd;
+    const float eps = m.rms_norm_eps;
+
+    auto rms_norm = [&](ggml_tensor * x, ggml_tensor * w) -> ggml_tensor * {
+        x = ggml_rms_norm(g, x, eps);
+        if (m.gemma_norm) {
+            x = ggml_clamp(g, x, -1000.0f, 1000.0f);
+            ggml_tensor * ones = (w->ne[0] == H) ? ones_h : ones_hd;
+            return ggml_mul(g, x, ggml_add(g, w, ones));
+        }
+        return ggml_mul(g, x, w);
+    };
+
+    for (int il = 0; il < m.n_layer; il++) {
+        const auto & L = m.layers[il];
+        ggml_tensor * residual = cur;
+
+        if (L.attn_norm_w) cur = rms_norm(cur, L.attn_norm_w);
+
+        ggml_tensor * Q = ggml_mul_mat(g, L.q_w, cur);
+        if (L.q_b) Q = ggml_add(g, Q, L.q_b);
+        ggml_tensor * K = ggml_mul_mat(g, L.k_w, cur);
+        if (L.k_b) K = ggml_add(g, K, L.k_b);
+        ggml_tensor * V = ggml_mul_mat(g, L.v_w, cur);
+        if (L.v_b) V = ggml_add(g, V, L.v_b);
+
+        Q = ggml_reshape_3d(g, Q, head_dim, n_heads, T_q);
+        K = ggml_reshape_3d(g, K, head_dim, n_kv_heads, T_q);
+        V = ggml_reshape_3d(g, V, head_dim, n_kv_heads, T_q);
+
+        if (L.q_norm_w) Q = rms_norm(Q, L.q_norm_w);
+        if (L.k_norm_w) K = rms_norm(K, L.k_norm_w);
+
+        float layer_rope_theta = m.rope_theta;
+        if (m.rope_theta_local > 0.0f && m.global_attn_every_n > 0) {
+            bool is_global = ((il + 1) % m.global_attn_every_n == 0);
+            layer_rope_theta = is_global ? m.rope_theta : m.rope_theta_local;
+        }
+
+        int rope_mode = 2; // NEOX
+        Q = ggml_rope_ext(g, Q, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+        K = ggml_rope_ext(g, K, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
+
+        // Build mode: snapshot post-rope prefix K/V (pre-permute [head_dim, n_kv, T_q]).
+        // V here is still a reshape VIEW of the v_proj output; set_output on a view
+        // does NOT protect the underlying v_proj buffer, so gallocr reuses it and
+        // the post-compute readback is stale (the forward's flash read it in time,
+        // so prefix_hidden stayed correct — but the cached V was garbage). Force
+        // both into their own contiguous buffers before marking them output.
+        if (mark_kv_out) {
+            char nm[24];
+            K = ggml_cont(g, K);
+            V = ggml_cont(g, V);
+            std::snprintf(nm, sizeof(nm), "kv_k_%d", il);
+            ggml_set_name(K, nm);
+            ggml_set_output(K);
+            std::snprintf(nm, sizeof(nm), "kv_v_%d", il);
+            ggml_set_name(V, nm);
+            ggml_set_output(V);
+        }
+
+        // Reuse mode: prepend cached prefix K/V along the token axis (ne[2]).
+        // Suffix K/V (positions P..P+S-1) follow the prefix K/V (positions 0..P-1),
+        // so the concatenated sequence is exactly the full sequence's K/V.
+        if (prefix_k) {
+            K = ggml_concat(g, prefix_k[il], K, 2);
+            V = ggml_concat(g, prefix_v[il], V, 2);
+        }
+
+        Q = ggml_permute(g, Q, 0, 2, 1, 3);
+        K = ggml_permute(g, K, 0, 2, 1, 3);
+        V = ggml_permute(g, V, 0, 2, 1, 3);
+
+        float scale = (m.attn_scale > 0.0f) ? (1.0f / sqrtf(m.attn_scale)) : (1.0f / sqrtf((float)head_dim));
+        ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, fa_mask, scale, 0.0f, 0.0f);
+        attn = ggml_reshape_2d(g, attn, q_dim, T_q);
+
+        attn = ggml_mul_mat(g, L.o_w, attn);
+        if (L.o_b) attn = ggml_add(g, attn, L.o_b);
+
+        if (L.post_attn_norm_w) attn = rms_norm(attn, L.post_attn_norm_w);
+
+        if (L.pre_ffn_norm_w) {
+            if (L.ffn_norm_w) attn = rms_norm(attn, L.ffn_norm_w);
+            cur = ggml_add(g, residual, attn);
+            residual = cur;
+            cur = rms_norm(cur, L.pre_ffn_norm_w);
+        } else {
+            cur = ggml_add(g, residual, attn);
+            residual = cur;
+            if (L.ffn_norm_w) cur = rms_norm(cur, L.ffn_norm_w);
+        }
+
+        if (L.gate_w && L.up_w && L.down_w) {
+            ggml_tensor * gate = ggml_mul_mat(g, L.gate_w, cur);
+            if (m.activation == 2 || m.activation == 1) {
+                gate = ggml_gelu(g, gate);
+            } else {
+                gate = ggml_silu(g, gate);
+            }
+            ggml_tensor * up = ggml_mul_mat(g, L.up_w, cur);
+            ggml_tensor * ffn = ggml_mul(g, gate, up);
+            ffn = ggml_mul_mat(g, L.down_w, ffn);
+            if (L.post_ffn_norm_w) ffn = rms_norm(ffn, L.post_ffn_norm_w);
+            cur = ggml_add(g, residual, ffn);
+        } else {
+            cur = residual;
+        }
+    }
+
+    if (m.output_norm) cur = rms_norm(cur, m.output_norm);
+    return cur;
+}
+
+// Build the prefix cache: run the first P tokens through a causal graph and
+// capture per-layer post-rope K/V + final output-normed hidden. Returns false
+// (cache untouched) on any allocation failure so the caller can fall back.
+static bool dec_build_prefix_cache(const dec_model & m, ggml_backend_t backend, const int32_t * ids, int P,
+                                   int n_threads, ggml_backend_sched_t sched, std::vector<uint8_t> * compute_meta,
+                                   dec_prefix_cache & cache) {
+    (void)sched;
+    (void)n_threads;
+    const int H = m.n_embd;
+    const int n_heads = m.n_head;
+    const int n_kv_heads = m.n_kv_head;
+    int q_dim = m.layers[0].q_w ? (int)m.layers[0].q_w->ne[1] : H;
+    const int head_dim = (m.head_dim > 0) ? m.head_dim : (q_dim / n_heads);
+    q_dim = n_heads * head_dim;
+
+    const int graph_size = std::max(4096, m.n_layer * 50 + 256);
+
+    // The build graph marks 2*n_layer interior post-rope K/V snapshots as
+    // outputs. ggml_backend_sched reuses buffers across them — they read back
+    // identical (the documented "set_output snapshots alias" gotcha, which
+    // bites the CPU sched too) — so build + compute this graph on a SINGLE
+    // backend via gallocr, which keeps output-flagged tensors in distinct
+    // persistent buffers.
+    std::vector<uint8_t> meta_buf;
+    size_t meta_sz = ggml_tensor_overhead() * (size_t)graph_size + ggml_graph_overhead_custom(graph_size, false);
+    uint8_t * meta_ptr;
+    if (compute_meta && compute_meta->size() >= meta_sz) {
+        meta_ptr = compute_meta->data();
+        meta_sz = compute_meta->size();
+    } else {
+        meta_buf.resize(meta_sz);
+        meta_ptr = meta_buf.data();
+    }
+    ggml_init_params ip = { meta_sz, meta_ptr, /*no_alloc=*/true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    ggml_tensor * ids_t = ggml_new_tensor_1d(g, GGML_TYPE_I32, P);
+    ggml_set_name(ids_t, "tok_ids");
+    ggml_set_input(ids_t);
+    ggml_tensor * cur = ggml_get_rows(g, m.token_embd, ids_t);
+    if (m.embed_scale != 1.0f) cur = ggml_scale(g, cur, m.embed_scale);
+
+    ggml_tensor * ones_h = nullptr;
+    ggml_tensor * ones_hd = nullptr;
+    if (m.gemma_norm) {
+        ones_h = ggml_new_tensor_1d(g, GGML_TYPE_F32, H);
+        ggml_set_name(ones_h, "ones_h");
+        ggml_set_input(ones_h);
+        if (m.layers[0].q_norm_w) {
+            ones_hd = ggml_new_tensor_1d(g, GGML_TYPE_F32, head_dim);
+            ggml_set_name(ones_hd, "ones_hd");
+            ggml_set_input(ones_hd);
+        }
+    }
+
+    ggml_tensor * pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, P);
+    ggml_set_name(pos, "pos_ids");
+    ggml_set_input(pos);
+
+    ggml_tensor * fa_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, P, P);
+    ggml_set_name(fa_mask, "causal_mask");
+    ggml_set_input(fa_mask);
+
+    ggml_tensor * out =
+        dec_build_layer_stack(g, m, cur, pos, fa_mask, ones_h, ones_hd, head_dim, n_heads, n_kv_heads, q_dim, P,
+                              /*prefix_k=*/nullptr, /*prefix_v=*/nullptr, /*mark_kv_out=*/true);
+    ggml_set_name(out, "prefix_out");
+    ggml_set_output(out);
+    ggml_build_forward_expand(gf, out);
+    // Ensure the marked K/V snapshots are part of the compute graph.
+    for (int il = 0; il < m.n_layer; il++) {
+        char nm[24];
+        std::snprintf(nm, sizeof(nm), "kv_k_%d", il);
+        ggml_build_forward_expand(gf, ggml_graph_get_tensor(gf, nm));
+        std::snprintf(nm, sizeof(nm), "kv_v_%d", il);
+        ggml_build_forward_expand(gf, ggml_graph_get_tensor(gf, nm));
+    }
+
+    std::vector<int32_t> pos_data(P);
+    for (int t = 0; t < P; t++) pos_data[t] = t;
+
+    ggml_gallocr_t ga = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
+    if (!ga || !ggml_gallocr_alloc_graph(ga, gf)) {
+        fprintf(stderr, "decoder_prefix_cache: build gallocr alloc failed\n");
+        if (ga) ggml_gallocr_free(ga);
+        ggml_free(g);
+        return false;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"), ids, 0, (size_t)P * sizeof(int32_t));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), pos_data.data(), 0, (size_t)P * sizeof(int32_t));
+    {
+        std::vector<ggml_fp16_t> md((size_t)P * P);
+        ggml_fp16_t neg = ggml_fp32_to_fp16(-INFINITY);
+        for (int q = 0; q < P; q++)
+            for (int k = 0; k < P; k++) md[(size_t)q * P + k] = (k <= q) ? 0 : neg;
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "causal_mask"), md.data(), 0,
+                                md.size() * sizeof(ggml_fp16_t));
+    }
+    if (m.gemma_norm) {
+        std::vector<float> ones(H, 1.0f);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"), ones.data(), 0, H * sizeof(float));
+        if (ones_hd) {
+            std::vector<float> onh(head_dim, 1.0f);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"), onh.data(), 0, head_dim * sizeof(float));
+        }
+    }
+    ggml_backend_graph_compute(backend, gf);
+
+    // Read back per-layer K/V + final prefix hidden.
+    cache.clear();
+    cache.P = P;
+    cache.n_layer = m.n_layer;
+    cache.head_dim = head_dim;
+    cache.n_kv_heads = n_kv_heads;
+    cache.n_embd = H;
+    cache.prefix_ids.assign(ids, ids + P);
+    cache.K.resize(m.n_layer);
+    cache.V.resize(m.n_layer);
+    const size_t kv_n = (size_t)head_dim * n_kv_heads * P;
+    for (int il = 0; il < m.n_layer; il++) {
+        char nm[24];
+        cache.K[il].resize(kv_n);
+        cache.V[il].resize(kv_n);
+        std::snprintf(nm, sizeof(nm), "kv_k_%d", il);
+        ggml_tensor * kt = ggml_graph_get_tensor(gf, nm);
+        std::snprintf(nm, sizeof(nm), "kv_v_%d", il);
+        ggml_tensor * vt = ggml_graph_get_tensor(gf, nm);
+        ggml_backend_tensor_get(kt, cache.K[il].data(), 0, kv_n * sizeof(float));
+        ggml_backend_tensor_get(vt, cache.V[il].data(), 0, kv_n * sizeof(float));
+    }
+    cache.prefix_hidden.resize((size_t)H * P);
+    ggml_tensor * ot = ggml_graph_get_tensor(gf, "prefix_out");
+    ggml_backend_tensor_get(ot, cache.prefix_hidden.data(), 0, (size_t)H * P * sizeof(float));
+
+    ggml_gallocr_free(ga);
+    ggml_free(g);
+    cache.valid = true;
+    return true;
+}
+
+// Encode using the cached prefix: run only the S suffix tokens through a graph
+// whose queries attend to [cached prefix K/V | fresh suffix K/V], then pool
+// (combining cached prefix hidden for mean pooling). Returns the L2-normalized
+// pooled embedding (matching decoder_encode_tokens). On alloc failure returns
+// empty so the caller can fall back to the full path.
+static std::vector<float> dec_encode_suffix(const dec_model & m, ggml_backend_t backend, const embed_tokens & tokens,
+                                            int n_threads, ggml_backend_sched_t sched,
+                                            std::vector<uint8_t> * compute_meta, const dec_prefix_cache & cache) {
+    (void)backend;
+    const int H = m.n_embd;
+    const int n_heads = m.n_head;
+    const int n_kv_heads = m.n_kv_head;
+    int q_dim = m.layers[0].q_w ? (int)m.layers[0].q_w->ne[1] : H;
+    const int head_dim = (m.head_dim > 0) ? m.head_dim : (q_dim / n_heads);
+    q_dim = n_heads * head_dim;
+
+    const int P = cache.P;
+    const int T = (int)tokens.ids.size();
+    const int S = T - P;    // suffix length (> 0 guaranteed by caller)
+    const int T_kv = P + S; // total keys visible to suffix queries
+
+    (void)sched;
+    (void)n_threads;
+    const int graph_size = std::max(4096, m.n_layer * 50 + 256);
+
+    // Compute on a single backend via gallocr (same rationale as the build
+    // graph — avoids all scheduler buffer-reuse ambiguity for the many injected
+    // prefix K/V inputs and the cross-token concat).
+    std::vector<uint8_t> meta_buf;
+    size_t meta_sz = ggml_tensor_overhead() * (size_t)graph_size + ggml_graph_overhead_custom(graph_size, false);
+    uint8_t * meta_ptr;
+    if (compute_meta && compute_meta->size() >= meta_sz) {
+        meta_ptr = compute_meta->data();
+        meta_sz = compute_meta->size();
+    } else {
+        meta_buf.resize(meta_sz);
+        meta_ptr = meta_buf.data();
+    }
+    ggml_init_params ip = { meta_sz, meta_ptr, /*no_alloc=*/true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, graph_size, false);
+
+    // Suffix token embeddings
+    ggml_tensor * ids_t = ggml_new_tensor_1d(g, GGML_TYPE_I32, S);
+    ggml_set_name(ids_t, "tok_ids");
+    ggml_set_input(ids_t);
+    ggml_tensor * cur = ggml_get_rows(g, m.token_embd, ids_t);
+    if (m.embed_scale != 1.0f) cur = ggml_scale(g, cur, m.embed_scale);
+
+    ggml_tensor * ones_h = nullptr;
+    ggml_tensor * ones_hd = nullptr;
+    if (m.gemma_norm) {
+        ones_h = ggml_new_tensor_1d(g, GGML_TYPE_F32, H);
+        ggml_set_name(ones_h, "ones_h");
+        ggml_set_input(ones_h);
+        if (m.layers[0].q_norm_w) {
+            ones_hd = ggml_new_tensor_1d(g, GGML_TYPE_F32, head_dim);
+            ggml_set_name(ones_hd, "ones_hd");
+            ggml_set_input(ones_hd);
+        }
+    }
+
+    // Suffix positions P..P+S-1
+    ggml_tensor * pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, S);
+    ggml_set_name(pos, "pos_ids");
+    ggml_set_input(pos);
+
+    // Attention mask [T_kv (keys), S (queries)] F16: suffix query sq (abs pos
+    // P+sq) attends to all prefix keys and causally within the suffix.
+    ggml_tensor * fa_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, T_kv, S);
+    ggml_set_name(fa_mask, "attn_mask");
+    ggml_set_input(fa_mask);
+
+    // Cached prefix K/V inputs, one pair per layer [head_dim, n_kv_heads, P].
+    // Each pk/pv is consumed at exactly one layer, so gallocr would otherwise
+    // reuse an early layer's input buffer as scratch and corrupt it before its
+    // concat reads it (observed: pk[0] L1-drifted while pk[last] stayed clean).
+    // Marking them set_output as well as set_input keeps each in a dedicated,
+    // non-reused buffer — same mechanism that lets the build graph read back
+    // its per-layer K/V snapshots intact.
+    std::vector<ggml_tensor *> pk(m.n_layer), pv(m.n_layer);
+    for (int il = 0; il < m.n_layer; il++) {
+        char nm[24];
+        pk[il] = ggml_new_tensor_3d(g, GGML_TYPE_F32, head_dim, n_kv_heads, P);
+        std::snprintf(nm, sizeof(nm), "pk_%d", il);
+        ggml_set_name(pk[il], nm);
+        ggml_set_input(pk[il]);
+        ggml_set_output(pk[il]);
+        pv[il] = ggml_new_tensor_3d(g, GGML_TYPE_F32, head_dim, n_kv_heads, P);
+        std::snprintf(nm, sizeof(nm), "pv_%d", il);
+        ggml_set_name(pv[il], nm);
+        ggml_set_input(pv[il]);
+        ggml_set_output(pv[il]);
+    }
+
+    ggml_tensor * out = dec_build_layer_stack(g, m, cur, pos, fa_mask, ones_h, ones_hd, head_dim, n_heads, n_kv_heads,
+                                              q_dim, S, pk.data(), pv.data(), /*mark_kv_out=*/false);
+    ggml_set_name(out, "decoder_out");
+    ggml_set_output(out);
+    ggml_build_forward_expand(gf, out);
+
+    std::vector<int32_t> suf_ids(S);
+    std::vector<int32_t> pos_data(S);
+    for (int s = 0; s < S; s++) {
+        suf_ids[s] = tokens.ids[P + s];
+        pos_data[s] = P + s;
+    }
+
+    ggml_gallocr_t ga = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
+    if (!ga || !ggml_gallocr_alloc_graph(ga, gf)) {
+        fprintf(stderr, "decoder_prefix_cache: suffix gallocr alloc failed\n");
+        if (ga) ggml_gallocr_free(ga);
+        ggml_free(g);
+        return {};
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"), suf_ids.data(), 0, (size_t)S * sizeof(int32_t));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), pos_data.data(), 0, (size_t)S * sizeof(int32_t));
+    {
+        std::vector<ggml_fp16_t> md((size_t)T_kv * S);
+        ggml_fp16_t neg = ggml_fp32_to_fp16(-INFINITY);
+        for (int sq = 0; sq < S; sq++) {
+            for (int k = 0; k < T_kv; k++) {
+                bool attend = (k < P) || (k <= P + sq); // all prefix + causal suffix
+                md[(size_t)sq * T_kv + k] = attend ? 0 : neg;
+            }
+        }
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "attn_mask"), md.data(), 0, md.size() * sizeof(ggml_fp16_t));
+    }
+    for (int il = 0; il < m.n_layer; il++) {
+        char nm[24];
+        std::snprintf(nm, sizeof(nm), "pk_%d", il);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), cache.K[il].data(), 0,
+                                cache.K[il].size() * sizeof(float));
+        std::snprintf(nm, sizeof(nm), "pv_%d", il);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), cache.V[il].data(), 0,
+                                cache.V[il].size() * sizeof(float));
+    }
+    if (m.gemma_norm) {
+        std::vector<float> ones(H, 1.0f);
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_h"), ones.data(), 0, H * sizeof(float));
+        if (ones_hd) {
+            std::vector<float> onh(head_dim, 1.0f);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ones_hd"), onh.data(), 0, head_dim * sizeof(float));
+        }
+    }
+    ggml_backend_graph_compute(backend, gf);
+
+    // Read suffix hidden [H, S]
+    std::vector<float> suf_hidden((size_t)H * S);
+    ggml_tensor * ot = ggml_graph_get_tensor(gf, "decoder_out");
+    ggml_backend_tensor_get(ot, suf_hidden.data(), 0, (size_t)H * S * sizeof(float));
+    ggml_gallocr_free(ga);
+    ggml_free(g);
+    if (std::getenv("CRISPEMBED_DECODER_PREFIX_DEBUG")) {
+        double s0 = 0, sl = 0;
+        for (int i = 0; i < H; i++)
+            sl += (double)suf_hidden[(size_t)(S - 1) * H + i] * suf_hidden[(size_t)(S - 1) * H + i];
+        for (int i = 0; i < H; i++) s0 += (double)suf_hidden[i] * suf_hidden[i];
+        fprintf(stderr, "  [suffix] P=%d S=%d |suf_row0|=%.3f |suf_last|=%.3f |pk0|=%.3f\n", P, S, sqrt(s0), sqrt(sl),
+                [&] {
+                    double s = 0;
+                    for (float x : cache.K[0]) s += (double)x * x;
+                    return sqrt(s);
+                }());
+    }
+
+    // --- Pool (mirrors decoder_encode_tokens over [prefix | suffix]) ---
+    std::vector<float> pooled(H, 0.0f);
+    if (m.pooling_method == 1) {
+        // Mean pooling over valid prefix + suffix tokens.
+        int n_valid = 0;
+        for (int t = 0; t < P; t++) {
+            if (!tokens.attn_mask[t]) continue;
+            const float * row = cache.prefix_hidden.data() + (size_t)t * H;
+            for (int i = 0; i < H; i++) pooled[i] += row[i];
+            n_valid++;
+        }
+        for (int s = 0; s < S; s++) {
+            if (!tokens.attn_mask[P + s]) continue;
+            const float * row = suf_hidden.data() + (size_t)s * H;
+            for (int i = 0; i < H; i++) pooled[i] += row[i];
+            n_valid++;
+        }
+        if (n_valid > 0) {
+            const float inv = 1.0f / (float)n_valid;
+            for (int i = 0; i < H; i++) pooled[i] *= inv;
+        }
+    } else {
+        // Last-token pooling: last valid token overall (suffix is non-empty).
+        int last_t = T - 1;
+        for (int t = T - 1; t >= 0; t--) {
+            if (tokens.attn_mask[t]) {
+                last_t = t;
+                break;
+            }
+        }
+        if (last_t >= P) {
+            memcpy(pooled.data(), suf_hidden.data() + (size_t)(last_t - P) * H, H * sizeof(float));
+        } else {
+            memcpy(pooled.data(), cache.prefix_hidden.data() + (size_t)last_t * H, H * sizeof(float));
+        }
+    }
+
+    // Dense projection (SentenceTransformer-style)
+    for (const auto & dl : m.dense_proj) {
+        std::vector<float> out_vec(dl.out_dim, 0.0f);
+        const float * w = dl.weight.data();
+        for (int o = 0; o < dl.out_dim; o++) {
+            float acc = 0.0f;
+            for (int j = 0; j < dl.in_dim; j++) acc += w[o * dl.in_dim + j] * pooled[j];
+            out_vec[o] = acc;
+        }
+        pooled = std::move(out_vec);
+    }
+
+    // L2 normalize
+    float norm = 0;
+    for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
+    norm = sqrtf(std::max(norm, 1e-12f));
+    for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
+    return pooled;
+}
+
+// Longest common prefix length of two id vectors.
+static int dec_lcp(const std::vector<int32_t> & a, const std::vector<int32_t> & b) {
+    int n = std::min((int)a.size(), (int)b.size());
+    int i = 0;
+    while (i < n && a[i] == b[i]) i++;
+    return i;
+}
+
+std::vector<float> decoder_encode_tokens_cached(const dec_model & m, ggml_backend_t backend,
+                                                const embed_tokens & tokens, int n_threads, ggml_backend_sched_t sched,
+                                                std::vector<uint8_t> * compute_meta, dec_prefix_cache & cache,
+                                                std::vector<int32_t> & prev_tokens) {
+    const int T = (int)tokens.ids.size();
+    const int MIN_PREFIX = 4;
+    const bool debug = (std::getenv("CRISPEMBED_DECODER_PREFIX_DEBUG") != nullptr);
+
+    // Ineligible: bidirectional models (no causal prefix independence).
+    if (m.is_bidirectional || T < MIN_PREFIX + 1) {
+        auto r = decoder_encode_tokens(m, backend, tokens, n_threads, sched, compute_meta);
+        prev_tokens = tokens.ids;
+        return r;
+    }
+
+    // Fast path: current tokens start with a valid cached prefix (and leave a
+    // non-empty suffix). Reuse the cache directly.
+    auto starts_with_cache = [&]() -> bool {
+        if (!cache.valid || cache.P < MIN_PREFIX || cache.P >= T) return false;
+        for (int i = 0; i < cache.P; i++)
+            if (tokens.ids[i] != cache.prefix_ids[i]) return false;
+        return true;
+    };
+
+    if (starts_with_cache()) {
+        auto r = dec_encode_suffix(m, backend, tokens, n_threads, sched, compute_meta, cache);
+        prev_tokens = tokens.ids;
+        if (!r.empty()) {
+            if (debug) fprintf(stderr, "decoder_prefix_cache: HIT P=%d S=%d\n", cache.P, T - cache.P);
+            return r;
+        }
+        // Suffix graph failed → fall through to full path.
+        cache.clear();
+    }
+
+    // Build path: a repeated leading prefix vs the previous call → cache it, then reuse.
+    int lcp = dec_lcp(tokens.ids, prev_tokens);
+    if (lcp >= MIN_PREFIX && lcp < T) {
+        if (dec_build_prefix_cache(m, backend, tokens.ids.data(), lcp, n_threads, sched, compute_meta, cache)) {
+            auto r = dec_encode_suffix(m, backend, tokens, n_threads, sched, compute_meta, cache);
+            prev_tokens = tokens.ids;
+            if (!r.empty()) {
+                if (debug) fprintf(stderr, "decoder_prefix_cache: BUILD+HIT P=%d S=%d\n", lcp, T - lcp);
+                return r;
+            }
+            cache.clear();
+        }
+    }
+
+    // Fallback: untouched full-sequence path (byte-identical to pre-C4).
+    auto r = decoder_encode_tokens(m, backend, tokens, n_threads, sched, compute_meta);
+    prev_tokens = tokens.ids;
+    return r;
+}
