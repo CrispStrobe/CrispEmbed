@@ -103,6 +103,10 @@ struct smt_ocr_context {
     // cached encoder memory (host) from the last run_encoder
     std::vector<float> mem_value, mem_key; // [n_enc * C], token-major (c fastest)
     int n_enc = 0, enc_h = 0, enc_w = 0;
+    // decode KV cache: cross K/V are constant per image (precomputed once);
+    // self K/V grow one token per step.
+    std::vector<std::vector<float>> cross_k_host, cross_v_host; // [nl][n_enc*C]
+    std::vector<std::vector<float>> self_k_host, self_v_host;   // [nl][t*C]
 };
 
 // ---------------------------------------------------------------------------
@@ -501,6 +505,202 @@ static bool run_decoder(smt_ocr_context * ctx, const std::vector<int32_t> & ids,
 }
 
 // ---------------------------------------------------------------------------
+// Incremental (KV-cached) decode: cross K/V precomputed once, self K/V grown
+// one token per step. Mathematically identical to the full-recompute path
+// (causal self-attn + constant cross memory), but O(L) work per step.
+// ---------------------------------------------------------------------------
+static void precompute_cross_kv(smt_ocr_context * ctx) {
+    const int C = ctx->hp.d_model, nE = ctx->n_enc, nl = ctx->hp.dec_layers;
+    ctx->cross_k_host.assign(nl, {});
+    ctx->cross_v_host.assign(nl, {});
+    size_t meta = 32 * 1024 * 1024;
+    std::vector<uint8_t> buf(meta);
+    ggml_init_params ip = { meta, buf.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, nl * 8 + 16, false);
+    ggml_tensor * mk = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nE);
+    ggml_set_name(mk, "mk");
+    ggml_set_input(mk);
+    ggml_tensor * mv = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nE);
+    ggml_set_name(mv, "mv");
+    ggml_set_input(mv);
+    for (int i = 0; i < nl; i++) {
+        auto & L = ctx->dec[i];
+        char nm[16];
+        ggml_tensor * ck = lin(g, mk, L.ca_k_w, L.ca_k_b);
+        snprintf(nm, sizeof(nm), "ck_%d", i);
+        ggml_set_name(ck, nm);
+        ggml_set_output(ck);
+        ggml_build_forward_expand(gf, ck);
+        ggml_tensor * cv = lin(g, mv, L.ca_v_w, L.ca_v_b);
+        snprintf(nm, sizeof(nm), "cv_%d", i);
+        ggml_set_name(cv, nm);
+        ggml_set_output(cv);
+        ggml_build_forward_expand(gf, cv);
+    }
+    ggml_backend_sched_reset(ctx->sched);
+    ggml_backend_sched_alloc_graph(ctx->sched, gf);
+    ggml_backend_tensor_set(mk, ctx->mem_key.data(), 0, ctx->mem_key.size() * sizeof(float));
+    ggml_backend_tensor_set(mv, ctx->mem_value.data(), 0, ctx->mem_value.size() * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->sched, gf);
+    for (int i = 0; i < nl; i++) {
+        char nm[16];
+        ctx->cross_k_host[i].resize((size_t)nE * C);
+        ctx->cross_v_host[i].resize((size_t)nE * C);
+        snprintf(nm, sizeof(nm), "ck_%d", i);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, nm), ctx->cross_k_host[i].data(), 0,
+                                (size_t)nE * C * sizeof(float));
+        snprintf(nm, sizeof(nm), "cv_%d", i);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, nm), ctx->cross_v_host[i].data(), 0,
+                                (size_t)nE * C * sizeof(float));
+    }
+    ggml_free(g);
+}
+
+// One decode step for the token at position n_cached (0-based). Self K/V for the
+// n_cached prior tokens come from the host cache; the new token's K/V are emitted
+// as "sk_i"/"sv_i" for the caller to append.
+static ggml_cgraph * build_decode_step(smt_ocr_context * ctx, ggml_context * g, int n_cached) {
+    const auto & hp = ctx->hp;
+    const int C = hp.d_model, nh = hp.num_heads, nE = ctx->n_enc;
+    ggml_cgraph * gf = ggml_new_graph_custom(g, hp.dec_layers * 128 + 512, false);
+
+    ggml_tensor * token = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(token, "step_token");
+    ggml_set_input(token);
+    ggml_tensor * cur = ggml_get_rows(g, ctx->tok_embed, token); // [C,1]
+    ggml_tensor * pe = ggml_view_2d(g, ctx->pos1d, C, 1, ctx->pos1d->nb[1], (size_t)n_cached * ctx->pos1d->nb[1]);
+    cur = ggml_add(g, cur, pe);
+
+    for (int i = 0; i < hp.dec_layers; i++) {
+        auto & Lr = ctx->dec[i];
+        char nm[16];
+        ggml_tensor * q = lin(g, cur, Lr.sa_q_w, Lr.sa_q_b);
+        ggml_tensor * knew = lin(g, cur, Lr.sa_k_w, Lr.sa_k_b); // [C,1]
+        ggml_tensor * vnew = lin(g, cur, Lr.sa_v_w, Lr.sa_v_b);
+        snprintf(nm, sizeof(nm), "sk_%d", i);
+        ggml_set_name(knew, nm);
+        ggml_set_output(knew);
+        ggml_build_forward_expand(gf, knew);
+        snprintf(nm, sizeof(nm), "sv_%d", i);
+        ggml_set_name(vnew, nm);
+        ggml_set_output(vnew);
+        ggml_build_forward_expand(gf, vnew);
+        ggml_tensor *kfull = knew, *vfull = vnew;
+        if (n_cached > 0) {
+            ggml_tensor * skin = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, n_cached);
+            snprintf(nm, sizeof(nm), "skin_%d", i);
+            ggml_set_name(skin, nm);
+            ggml_set_input(skin);
+            ggml_tensor * svin = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, n_cached);
+            snprintf(nm, sizeof(nm), "svin_%d", i);
+            ggml_set_name(svin, nm);
+            ggml_set_input(svin);
+            kfull = ggml_concat(g, skin, knew, 1); // [C, n_cached+1]
+            vfull = ggml_concat(g, svin, vnew, 1);
+        }
+        ggml_tensor * sa = mha_core(g, q, kfull, vfull, nh, 1, n_cached + 1, nullptr);
+        sa = lin(g, sa, Lr.sa_o_w, Lr.sa_o_b);
+        cur = ggml_add(g, cur, sa);
+        cur = ln0(g, cur, Lr.n1_w, Lr.n1_b);
+        // cross-attention against precomputed (already-projected) K/V
+        ggml_tensor * ck = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nE);
+        snprintf(nm, sizeof(nm), "ck_%d", i);
+        ggml_set_name(ck, nm);
+        ggml_set_input(ck);
+        ggml_tensor * cv = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nE);
+        snprintf(nm, sizeof(nm), "cv_%d", i);
+        ggml_set_name(cv, nm);
+        ggml_set_input(cv);
+        ggml_tensor * aq = cur;
+        ggml_tensor * cq = lin(g, aq, Lr.ca_q_w, Lr.ca_q_b);
+        ggml_tensor * ca = mha_core(g, cq, ck, cv, nh, 1, nE, nullptr);
+        ca = lin(g, ca, Lr.ca_o_w, Lr.ca_o_b);
+        cur = ggml_add(g, aq, ca);
+        cur = ln0(g, cur, Lr.n2_w, Lr.n2_b);
+        ggml_tensor * ff = lin(g, cur, Lr.ff0_w, Lr.ff0_b);
+        ff = ggml_relu(g, ff);
+        ff = lin(g, ff, Lr.ff3_w, Lr.ff3_b);
+        cur = ggml_add(g, cur, ff);
+        cur = ln0(g, cur, Lr.n3_w, Lr.n3_b);
+    }
+    ggml_tensor * logits = lin(g, ggml_relu(g, cur), ctx->lm_w, ctx->lm_b); // [V,1]
+    ggml_set_name(logits, "logits");
+    ggml_set_output(logits);
+    ggml_build_forward_expand(gf, logits);
+    return gf;
+}
+
+// KV-cached greedy decode. Assumes run_encoder already populated mem_*.
+static void decode_greedy_kv(smt_ocr_context * ctx) {
+    const auto & hp = ctx->hp;
+    const int C = hp.d_model, nl = hp.dec_layers, V = hp.vocab_size;
+    precompute_cross_kv(ctx);
+    ctx->self_k_host.assign(nl, {});
+    ctx->self_v_host.assign(nl, {});
+    ctx->result.clear();
+    int id = hp.bos_token;
+    for (int pos = 0; pos < hp.maxlen; pos++) {
+        size_t meta = 24 * 1024 * 1024;
+        std::vector<uint8_t> buf(meta);
+        ggml_init_params ip = { meta, buf.data(), true };
+        ggml_context * g = ggml_init(ip);
+        ggml_cgraph * gf = build_decode_step(ctx, g, pos);
+        ggml_backend_sched_reset(ctx->sched);
+        if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+            ggml_free(g);
+            break;
+        }
+        int32_t tok = id;
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "step_token"), &tok, 0, sizeof(int32_t));
+        for (int l = 0; l < nl; l++) {
+            char nm[16];
+            snprintf(nm, sizeof(nm), "ck_%d", l);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), ctx->cross_k_host[l].data(), 0,
+                                    ctx->cross_k_host[l].size() * sizeof(float));
+            snprintf(nm, sizeof(nm), "cv_%d", l);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), ctx->cross_v_host[l].data(), 0,
+                                    ctx->cross_v_host[l].size() * sizeof(float));
+            if (pos > 0) {
+                snprintf(nm, sizeof(nm), "skin_%d", l);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), ctx->self_k_host[l].data(), 0,
+                                        ctx->self_k_host[l].size() * sizeof(float));
+                snprintf(nm, sizeof(nm), "svin_%d", l);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), ctx->self_v_host[l].data(), 0,
+                                        ctx->self_v_host[l].size() * sizeof(float));
+            }
+        }
+        ggml_backend_sched_graph_compute(ctx->sched, gf);
+        std::vector<float> logits(V);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "logits"), logits.data(), 0, V * sizeof(float));
+        for (int l = 0; l < nl; l++) {
+            char nm[16];
+            float kn[4096], vn[4096]; // C <= 4096
+            snprintf(nm, sizeof(nm), "sk_%d", l);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, nm), kn, 0, C * sizeof(float));
+            snprintf(nm, sizeof(nm), "sv_%d", l);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, nm), vn, 0, C * sizeof(float));
+            ctx->self_k_host[l].insert(ctx->self_k_host[l].end(), kn, kn + C);
+            ctx->self_v_host[l].insert(ctx->self_v_host[l].end(), vn, vn + C);
+        }
+        ggml_free(g);
+        int best = 0;
+        float bv = logits[0];
+        for (int i = 1; i < V; i++)
+            if (logits[i] > bv) {
+                bv = logits[i];
+                best = i;
+            }
+        if (best == hp.eos_token) break;
+        if (best >= 0 && best < (int)ctx->vocab.size()) {
+            if (!ctx->result.empty()) ctx->result += ' ';
+            ctx->result += ctx->vocab[best];
+        }
+        id = best;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Init / free
 // ---------------------------------------------------------------------------
 smt_ocr_context * smt_ocr_init(const char * model_path, int n_threads) {
@@ -579,9 +779,9 @@ const smt_ocr_hparams * smt_ocr_get_hparams(const smt_ocr_context * ctx) {
 // ---------------------------------------------------------------------------
 // Greedy inference
 // ---------------------------------------------------------------------------
-const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
-    // pixels: grayscale [0,1] row-major, already inverted+resized by the caller.
-    if (!run_encoder(ctx, pixels, width, height, nullptr, nullptr)) return nullptr;
+// Full-recompute greedy decode (O(L²)); kept as an A/B reference behind
+// SMT_OCR_FULL_DECODE=1. The KV-cached path (decode_greedy_kv) is the default.
+static void decode_greedy_full(smt_ocr_context * ctx) {
     std::vector<int32_t> ids = { ctx->hp.bos_token };
     ctx->result.clear();
     int V = ctx->hp.vocab_size;
@@ -608,6 +808,15 @@ const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int 
         }
         ids.push_back(best);
     }
+}
+
+const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
+    // pixels: grayscale [0,1] row-major, already inverted+resized by the caller.
+    if (!run_encoder(ctx, pixels, width, height, nullptr, nullptr)) return nullptr;
+    if (getenv("SMT_OCR_FULL_DECODE"))
+        decode_greedy_full(ctx);
+    else
+        decode_greedy_kv(ctx);
     if (out_len) *out_len = (int)ctx->result.size();
     return ctx->result.c_str();
 }
