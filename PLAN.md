@@ -1974,10 +1974,26 @@ manual decode (no HF `.generate()`), seed `<bos>=4426`, stop `<eos>=8822`,
   `SMT_OCR_FULL_DECODE=1` for A/B) and to HF, CPU + Metal. **5.4× faster** (0.37 s
   vs 1.98 s for ~100 tokens); the gain grows with sequence length.
 - ✅ GGUF upload: `cstr/smt-grandstaff-GGUF` (f32 83 MB + q8_0 24 MB + MIT model
-  card; card license verified `mit`). Registry auto-download verified end-to-end:
-  `crispembed -m smt-grandstaff --ocr score.png` downloads q8_0 and decodes
-  101/101 vs HF. **SMT OMR port complete.** (Metal full per-stage diff optional —
-  decode already verified on Metal.)
+  card; card license verified `mit`). Registry auto-download works end-to-end.
+- ✅ **Preprocessing corrected + port re-validated (this was wrong before).** The
+  earlier engine used `reduce_ratio=0.5` + a cv2-BGR channel swap — WRONG. The
+  authoritative pipeline (SMT-main `data.py::prepare_data`) is RGB, `reduce_ratio=
+  1.0`, `width=min(w,3056)`, `height=max(h,256)`, no swap. Fixed in `recognize_raw`
+  + the dumper. **Port parity re-verified on 10 fresh GrandStaff images: C++ ==
+  Python blueprint = 100.00% token agreement** (8/10 byte-identical; 2 differ only
+  because the Python ref was maxlen-capped — prefixes 100% identical).
+- ⚠️ **Model accuracy caveat (NOT a port bug).** vs ground truth the model scores
+  only ~30% on the clean `antoniorv6/grandstaff` test split — it reads clefs but
+  misreads key/time signatures and degenerates (no `<eos>`) on some images. This
+  is faithfully reproduced by the port (SMT-plusplus forward is the correct one;
+  SMT-main's forward gives 0% garbage on this checkpoint). Ruled out: measurement,
+  preprocessing, image quality, weight-load (360/360), attention-scaling. Open
+  hypothesis: data-distribution mismatch (model tagged `camera_grandstaff` vs the
+  clean test images). **Verify on the true Camera-GrandStaff distribution before
+  claiming production OMR quality.** The C++ port itself is exact.
+  Lesson recorded: [[validate-intermediates-and-outputs]] — "100% vs my own
+  same-preprocessing reference" hid both a preprocessing bug and a broken
+  accuracy metric; only decoded-output-vs-ground-truth surfaced them.
 
 **Landmines:**
 - **⚠ SMT attention is UNSCALED.** `MHA.forward` computes `bmm(q,k)` then softmax
