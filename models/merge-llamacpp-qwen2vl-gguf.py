@@ -704,11 +704,21 @@ def main():
     p1_src = next((t for t in mmproj.tensors if t.name == "v.patch_embd.weight.1"), None)
     if p0 is not None and p1_src is not None:
         info0 = p0[1]
+        # The concat only reorders whole elements, so a width-correct integer
+        # view is byte-exact for ANY unquantized dtype (F16/F32/BF16) — the old
+        # hardcoded float16 silently corrupted F32 patch embeddings.
+        block_size, bytes_per_elem = GGML_TYPE_META.get(info0.dtype, (0, 0))
+        _elem_dtype = {1: np.uint8, 2: np.uint16, 4: np.uint32, 8: np.uint64}
+        if block_size != 1 or bytes_per_elem not in _elem_dtype:
+            sys.exit(f"error: cannot split quantized patch embed (dtype "
+                     f"{GGML_TYPE_NAME.get(info0.dtype, info0.dtype)}); "
+                     f"convert the mmproj to F16/F32 first")
+        edt = _elem_dtype[bytes_per_elem]
         np_shape = list(reversed(info0.shape))  # ggml ne → numpy (out,in,H,W)
-        a0 = np.frombuffer(read_tensor_data(mmproj, info0), dtype=np.float16).reshape(np_shape)
-        a1 = np.frombuffer(read_tensor_data(mmproj, p1_src), dtype=np.float16).reshape(np_shape)
+        a0 = np.frombuffer(read_tensor_data(mmproj, info0), dtype=edt).reshape(np_shape)
+        a1 = np.frombuffer(read_tensor_data(mmproj, p1_src), dtype=edt).reshape(np_shape)
         comb = np.stack([a0, a1], axis=2).reshape(np_shape[0], -1)  # (out, in*T*H*W)
-        comb_bytes = np.ascontiguousarray(comb.astype(np.float16)).tobytes()
+        comb_bytes = np.ascontiguousarray(comb).tobytes()
         comb_info = TensorInfo(
             name="v.patch_embd.weight",
             shape=[comb.shape[1], comb.shape[0]],  # ggml ne = [in*T*H*W, out]

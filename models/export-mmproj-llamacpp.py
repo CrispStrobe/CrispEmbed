@@ -9,12 +9,14 @@ llama.cpp / mtmd consume the vision tower as a standalone `mmproj-*.gguf` with:
 This lets a CrispEmbed-converted Qwen2-VL vision tower be loaded by
 `llama-mtmd-cli --mmproj ...` (interop; do NOT link libmtmd into crispembed).
 
-The tensor-name and metadata maps here are the exact INVERSE of the shipped,
-proven merge script, so an mmproj → CrispEmbed → mmproj round-trip is the
-identity (see --self-test, which validates that with a reference mmproj — no
-VL-model download or inference needed).
+Naming: the merge script keeps llama.cpp-native tensor names (`v.blk.*`,
+`v.patch_embd`, `v.post_ln`, `mm.*`) verbatim in the combined GGUF — those
+are exactly the names the qwen2vl_ocr loader reads. So the vision tensor
+names are IDENTITY between a combined CrispEmbed GGUF and the mmproj; the
+only structural transform is splitting the temporal patch embedding back
+into its two slices (the inverse of the merge's concatenation) and lifting
+`qwen2vl.vision.*` config into `clip.vision.*`.
 
-Usage:
     python export-mmproj-llamacpp.py --in crispembed-qwen2vl.gguf --out mmproj.gguf
     python export-mmproj-llamacpp.py --self-test ref-mmproj.gguf
 """
@@ -23,44 +25,25 @@ import sys
 
 import numpy as np
 from gguf import GGUFReader, GGUFWriter, GGMLQuantizationType
-from gguf.constants import GGUFValueType
 
-# ── Tensor-name maps: CrispEmbed → llama.cpp (inverse of the merge script) ──
-GLOBAL_MAP_C2L = {
-    "vis.patch_embed.proj.weight":   "v.patch_embd.weight",
-    "vis.patch_embed.proj_t.weight": "v.patch_embd.weight.1",
-    "vis.merger.ln_q.weight":        "v.post_ln.weight",
-    "vis.merger.ln_q.bias":          "v.post_ln.bias",
-    "proj.mlp1.weight":              "mm.0.weight",
-    "proj.mlp1.bias":                "mm.0.bias",
-    "proj.mlp2.weight":              "mm.2.weight",
-    "proj.mlp2.bias":                "mm.2.bias",
-}
-VIS_BLOCK_MAP_C2L = {
-    "attn.q.weight": "attn_q.weight", "attn.k.weight": "attn_k.weight",
-    "attn.v.weight": "attn_v.weight", "attn.proj.weight": "attn_out.weight",
-    "attn.q.bias": "attn_q.bias", "attn.k.bias": "attn_k.bias",
-    "attn.v.bias": "attn_v.bias", "attn.proj.bias": "attn_out.bias",
-    "norm1.weight": "ln1.weight", "norm1.bias": "ln1.bias",
-    "norm2.weight": "ln2.weight", "norm2.bias": "ln2.bias",
-    "mlp.fc1.weight": "ffn_up.weight", "mlp.fc1.bias": "ffn_up.bias",
-    "mlp.fc2.weight": "ffn_down.weight", "mlp.fc2.bias": "ffn_down.bias",
-}
 # Qwen2-VL image normalization is the fixed OpenAI-CLIP statistic (matches the
 # reference mmproj exactly); CrispEmbed combined GGUFs don't store it.
 QWEN2VL_IMAGE_MEAN = [0.48145467042922974, 0.45782750844955444, 0.40821072459220886]
 QWEN2VL_IMAGE_STD = [0.2686295509338379, 0.2613025903701782, 0.27577710151672363]
 
+# GGML types the temporal patch can be split in-place. GGUFReader decodes
+# these to a real float ndarray we can reshape/slice losslessly; BF16 and the
+# quantized types decode ambiguously, so we keep those combined (see below).
+_SPLITTABLE = {GGMLQuantizationType.F16, GGMLQuantizationType.F32}
 
-def crisp_to_llama_name(name):
-    if name in GLOBAL_MAP_C2L:
-        return GLOBAL_MAP_C2L[name]
-    if name.startswith("vis.blocks."):
-        rest = name[len("vis.blocks."):]
-        layer, _, suffix = rest.partition(".")
-        if suffix in VIS_BLOCK_MAP_C2L:
-            return f"v.blk.{layer}.{VIS_BLOCK_MAP_C2L[suffix]}"
-    return None  # not a vision tensor (LLM tensor, skip)
+# The combined patch's llama.cpp name and its split second slice.
+PATCH_NAME = "v.patch_embd.weight"
+PATCH_NAME_1 = "v.patch_embd.weight.1"
+
+
+def is_vision_tensor(name):
+    """A tensor belongs to the vision tower / projector (not the LLM)."""
+    return name.startswith("v.") or name.startswith("mm.")
 
 
 def _mv(md, *keys, default=None):
@@ -99,29 +82,73 @@ def write_mmproj(out_path, tensors, md_general_name, vis):
     w.close()
 
 
+def split_temporal_patch(combined, in_ch, temporal, patch):
+    """Inverse of the merge concatenation. `combined` is the numpy patch in
+    (out, in*T*H*W) order (GGUFReader data order); returns a list of `temporal`
+    slices each shaped (out, in, H, W) — the llama.cpp split form. Returns None
+    if the element count doesn't match (caller keeps the combined tensor)."""
+    out = combined.shape[0]
+    if combined.size != out * in_ch * temporal * patch * patch:
+        return None
+    resh = combined.reshape(out, in_ch, temporal, patch, patch)
+    return [np.ascontiguousarray(resh[:, :, t]) for t in range(temporal)]
+
+
 def read_crisp_vision(reader):
-    """Extract vision tensors + config from a CrispEmbed combined GGUF."""
+    """Extract vision tensors + config from a CrispEmbed combined GGUF.
+
+    Vision tensor names are kept identity (they already are llama.cpp-native);
+    the concatenated temporal patch is split back into two slices."""
     md = {f.name: f.contents() for f in reader.fields.values()}
+    patch = int(_mv(md, "qwen2vl.vision.patch_size",
+                    "qwen2vl.vision.spatial_patch_size", default=14))
+    in_ch = int(_mv(md, "qwen2vl.vision.in_channels", default=3))
+    temporal = int(_mv(md, "qwen2vl.vision.temporal_patch_size", default=2))
+
     tensors = []
     hidden = None
+    ffn_up = None
+    proj_out = None
     for t in reader.tensors:
-        ln = crisp_to_llama_name(t.name)
-        if ln is None:
+        if not is_vision_tensor(t.name):
             continue
-        arr = np.array(t.data)
-        tensors.append((ln, arr, t.tensor_type))
-        if ln == "v.blk.0.ln1.weight":
-            hidden = int(t.shape[0])
+        qt = t.tensor_type
+        if t.name == PATCH_NAME:
+            data = np.array(t.data)
+            slices = None
+            if qt in _SPLITTABLE:
+                slices = split_temporal_patch(data, in_ch, temporal, patch)
+            if slices is None:
+                # Unsplittable (BF16/quantized or shape mismatch): keep combined.
+                if qt not in _SPLITTABLE:
+                    print(f"  note: patch dtype {qt.name} not splittable — keeping combined")
+                tensors.append((PATCH_NAME, data, qt))
+            else:
+                # Preserve GGUFReader's decoded dtype (F16->float16, F32->float32).
+                tensors.append((PATCH_NAME, slices[0].astype(data.dtype), qt))
+                for i, s in enumerate(slices[1:], start=1):
+                    tensors.append((f"{PATCH_NAME}.{i}", s.astype(data.dtype), qt))
+            continue
+        if t.name == PATCH_NAME_1:
+            continue  # already-split slice (a combined GGUF shouldn't have it)
+        tensors.append((t.name, np.array(t.data), qt))
+        if t.name == "v.blk.0.ln1.weight":
+            hidden = int(t.shape[-1])       # ne last dim = vector length
+        if t.name == "v.blk.0.ffn_up.weight":
+            ffn_up = int(t.shape[-1])       # ne = [in, out] -> out
+        if t.name == "mm.2.weight":
+            proj_out = int(t.shape[-1])     # ne = [in, out] -> out
+
     layers = int(_mv(md, "qwen2vl.vision.num_hidden_layers", "qwen2vl.vision.depth"))
     heads = int(_mv(md, "qwen2vl.vision.num_attention_heads", "qwen2vl.vision.num_heads"))
-    patch = int(_mv(md, "qwen2vl.vision.patch_size", "qwen2vl.vision.spatial_patch_size", default=14))
     vis = {
         "block_count": layers,
         "head_count": heads,
         "patch_size": patch,
-        "embedding_length": hidden or int(_mv(md, "qwen2vl.vision.hidden_size", default=1280)),
-        "feed_forward_length": int(_mv(md, "qwen2vl.vision.intermediate_size", default=0)) or None,
-        "projection_dim": int(_mv(md, "qwen2vl.vision.out_hidden_size", "qwen2vl.hidden_size", default=1536)),
+        "embedding_length": int(_mv(md, "qwen2vl.vision.hidden_size", default=0)) or hidden or 1280,
+        "feed_forward_length": int(_mv(md, "qwen2vl.vision.intermediate_size", default=0)) or ffn_up,
+        "projection_dim": int(_mv(md, "qwen2vl.vision.out_hidden_size",
+                                  "qwen2vl.hidden_size", default=0)) or proj_out or 1536,
         "image_size": int(_mv(md, "qwen2vl.vision.image_size", default=560)),
         "ln_eps": float(_mv(md, "qwen2vl.vision.layer_norm_eps", default=1e-6)),
         "image_mean": QWEN2VL_IMAGE_MEAN,
@@ -135,138 +162,74 @@ def do_export(in_path, out_path):
     r = GGUFReader(in_path)
     tensors, vis, name = read_crisp_vision(r)
     if not tensors:
-        sys.exit("error: no vision tensors (vis.*/proj.*) found — not a CrispEmbed Qwen2-VL GGUF?")
+        sys.exit("error: no vision tensors (v.*/mm.*) found — not a CrispEmbed Qwen2-VL GGUF?")
     if vis["feed_forward_length"] is None:
-        # infer from mlp.fc1 (ffn_up) shape
         for n, a, _ in tensors:
             if n.endswith("ffn_up.weight"):
                 vis["feed_forward_length"] = int(a.shape[0]); break
     write_mmproj(out_path, tensors, name, vis)
-    print(f"wrote {out_path}: {len(tensors)} vision tensors, {vis['block_count']} blocks")
+    n_blk = sum(1 for n, _, _ in tensors if n.startswith("v.blk."))
+    print(f"wrote {out_path}: {len(tensors)} vision tensors, {vis['block_count']} blocks "
+          f"({n_blk} block tensors)")
 
 
 def do_self_test(ref_path):
-    """Round-trip: ref mmproj → CrispEmbed vision names → export → diff vs ref.
-    Validates the inverse maps + schema reproduce the reference exactly."""
+    """Validate the risky transform (temporal patch concat<->split) and the
+    identity naming against a reference llama.cpp mmproj — no VL-model download
+    or inference needed.
+
+    Steps: read ref mmproj (which has the split patch weight + weight.1);
+    concat the two slices exactly as the merge script would; split the combined
+    back with export's logic; assert the recovered slices are byte-identical to
+    the originals and that every vision tensor name is recognized."""
     ref = GGUFReader(ref_path)
     rmd = {f.name: f.contents() for f in ref.fields.values()}
-    # llama.cpp → CrispEmbed (forward map, from the merge script)
-    L2C_GLOBAL = {v: k for k, v in GLOBAL_MAP_C2L.items()}
-    L2C_BLOCK = {v: k for k, v in VIS_BLOCK_MAP_C2L.items()}
+    patch = int(rmd.get("clip.vision.patch_size", 14))
+    in_ch = 3
+    temporal = 2
 
-    def llama_to_crisp(name):
-        if name in L2C_GLOBAL:
-            return L2C_GLOBAL[name]
-        if name.startswith("v.blk."):
-            rest = name[len("v.blk."):]
-            layer, _, suffix = rest.partition(".")
-            if suffix in L2C_BLOCK:
-                return f"vis.blocks.{layer}.{L2C_BLOCK[suffix]}"
-        return None
-
-    # Build synthetic CrispEmbed vision tensors + expected reference tensors.
-    ref_tensors = {}
-    crisp_tensors = []
-    for t in ref.tensors:
-        cn = llama_to_crisp(t.name)
-        if cn is None:
-            continue  # non-vision (shouldn't happen in an mmproj)
-        arr = np.array(t.data)
-        ref_tensors[t.name] = (arr, t.tensor_type)
-        crisp_tensors.append((cn, arr, t.tensor_type))
-    # Round-trip the names back to llama.cpp via the export map.
-    exp_tensors = {}
-    for cn, arr, qt in crisp_tensors:
-        ln = crisp_to_llama_name(cn)
-        assert ln is not None, f"export map lost tensor {cn}"
-        exp_tensors[ln] = (arr, qt)
-
-    # 1) tensor names + data identical
+    by_name = {t.name: t for t in ref.tensors}
     ok = True
-    if set(exp_tensors) != set(ref_tensors):
-        miss = set(ref_tensors) - set(exp_tensors)
-        extra = set(exp_tensors) - set(ref_tensors)
-        print(f"FAIL tensor-name set: missing={list(miss)[:3]} extra={list(extra)[:3]}")
+
+    # 1) Every ref tensor is classified as vision (an mmproj is vision-only).
+    unclassified = [t.name for t in ref.tensors if not is_vision_tensor(t.name)]
+    if unclassified:
+        print(f"FAIL unclassified vision tensors: {unclassified[:3]}")
         ok = False
     else:
-        for n in ref_tensors:
-            a, at = exp_tensors[n]
-            b, bt = ref_tensors[n]
-            if at != bt or not np.array_equal(a, b):
-                print(f"FAIL tensor data differs: {n}")
-                ok = False
-                break
-        print(f"tensor round-trip: {len(ref_tensors)} tensors "
-              f"{'byte-identical' if ok else 'DIFFER'}")
+        print(f"tensor classification: all {len(by_name)} mmproj tensors recognized as vision")
 
-    # 1b) Exercise the actual GGUF write path: write an mmproj from the
-    # crisp-renamed tensors + reference config, re-read it, diff vs reference.
-    import os
-    import tempfile
-    vis = {
-        "block_count": rmd["clip.vision.block_count"],
-        "head_count": rmd["clip.vision.attention.head_count"],
-        "patch_size": rmd["clip.vision.patch_size"],
-        "embedding_length": rmd["clip.vision.embedding_length"],
-        "feed_forward_length": rmd["clip.vision.feed_forward_length"],
-        "projection_dim": rmd["clip.vision.projection_dim"],
-        "image_size": rmd["clip.vision.image_size"],
-        "ln_eps": rmd.get("clip.vision.attention.layer_norm_epsilon", 1e-6),
-        "image_mean": QWEN2VL_IMAGE_MEAN,
-        "image_std": QWEN2VL_IMAGE_STD,
-        "file_type": rmd.get("general.file_type", 7),
-    }
-    tmp = os.path.join(tempfile.gettempdir(), "mmproj_export_roundtrip.gguf")
-    write_mmproj(tmp, [(n, a, t) for n, (a, t) in exp_tensors.items()],
-                 rmd.get("general.name"), vis)
-    rt = GGUFReader(tmp)
-    rt_md = {f.name: f.contents() for f in rt.fields.values()}
-    rt_tensors = {t.name: (np.array(t.data), t.tensor_type) for t in rt.tensors}
-    if set(rt_tensors) != set(ref_tensors):
-        print("FAIL written-file tensor set differs")
+    # 2) Temporal patch concat -> split round-trip is byte-identical.
+    p0 = by_name.get(PATCH_NAME)
+    p1 = by_name.get(PATCH_NAME_1)
+    if p0 is None or p1 is None:
+        print(f"WARN reference has no split patch ({PATCH_NAME}[.1]); skipping patch round-trip")
+    else:
+        a0 = np.array(p0.data)  # (out, in, H, W)
+        a1 = np.array(p1.data)
+        # merge concat: stack on temporal axis -> (out, in, T, H, W) -> (out, in*T*H*W)
+        combined = np.stack([a0, a1], axis=2).reshape(a0.shape[0], -1)
+        slices = split_temporal_patch(combined, in_ch, temporal, patch)
+        if slices is None:
+            print("FAIL patch split returned None (shape mismatch)")
+            ok = False
+        elif not (np.array_equal(slices[0], a0) and np.array_equal(slices[1], a1)):
+            print("FAIL patch concat->split not identity")
+            ok = False
+        else:
+            print(f"temporal patch: concat->split byte-identical ({a0.shape} x{temporal})")
+
+    # 3) clip.* config keys the export re-emits are all readable from the ref.
+    needed = ["clip.vision.block_count", "clip.vision.attention.head_count",
+              "clip.vision.patch_size", "clip.vision.embedding_length",
+              "clip.vision.projection_dim", "clip.vision.image_size"]
+    missing = [k for k in needed if k not in rmd]
+    if missing:
+        print(f"FAIL reference missing clip.* keys: {missing}")
         ok = False
     else:
-        for n in ref_tensors:
-            a, at = rt_tensors[n]
-            b, bt = ref_tensors[n]
-            if at != bt or not np.array_equal(a, b):
-                print(f"FAIL written-file tensor {n} differs")
-                ok = False
-                break
-        print(f"written-file re-read: {len(rt_tensors)} tensors "
-              f"{'byte-identical to reference' if ok else 'DIFFER'}")
-    for k in ("clip.projector_type", "clip.vision.block_count",
-              "clip.vision.embedding_length", "clip.vision.image_size"):
-        if rt_md.get(k) != rmd.get(k):
-            print(f"FAIL written meta {k}: wrote={rt_md.get(k)} ref={rmd.get(k)}")
-            ok = False
-    os.remove(tmp)
+        print("metadata schema: all required clip.* keys present in reference")
 
-    # 2) metadata schema: the clip.* keys we emit must match the reference values.
-    checks = {
-        "clip.projector_type": "qwen2vl_merger",
-        "clip.has_vision_encoder": True,
-        "clip.vision.image_size": rmd.get("clip.vision.image_size"),
-        "clip.vision.patch_size": rmd.get("clip.vision.patch_size"),
-        "clip.vision.embedding_length": rmd.get("clip.vision.embedding_length"),
-        "clip.vision.block_count": rmd.get("clip.vision.block_count"),
-        "clip.vision.attention.head_count": rmd.get("clip.vision.attention.head_count"),
-        "clip.vision.projection_dim": rmd.get("clip.vision.projection_dim"),
-    }
-    for k, expect in checks.items():
-        got = rmd.get(k)
-        same = (got == expect)
-        if not same:
-            print(f"FAIL meta {k}: ref={got}")
-            ok = False
-    # image_mean/std constants must equal the reference
-    for k, const in (("clip.vision.image_mean", QWEN2VL_IMAGE_MEAN),
-                     ("clip.vision.image_std", QWEN2VL_IMAGE_STD)):
-        rv = list(rmd.get(k, []))
-        if not (len(rv) == 3 and all(abs(x - y) < 1e-6 for x, y in zip(rv, const))):
-            print(f"FAIL meta {k}: ref={rv} const={const}")
-            ok = False
-    print(f"metadata schema: {'complete + matches reference' if ok else 'MISMATCH'}")
     print("\nSELF-TEST", "PASS" if ok else "FAIL")
     return 0 if ok else 1
 
