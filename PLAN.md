@@ -775,15 +775,25 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
     cosine change. Marginal and RAM-heavy on the 16 GB box; the brief's own
     "only worth bundling with other work on those engines" stands. Not done
     standalone.
-  - (b) mmproj interop: the **llama.cpp mmproj key schema is locally known** —
-    `models/merge-llamacpp-qwen2vl-gguf.py` already ingests it (`clip.vision.*`,
-    tensors `v.blk.N.*`/`v.patch_embd`/`v.post_ln`/`mm.*`). So drafting a `clip.*`
-    metadata EXPORT in the converter is mechanically feasible. BUT it **cannot be
-    validated without a llama.cpp build** (round-trip: export → load in llama.cpp
-    → run). Shipping unvalidated interop metadata is exactly the wrong-handover
-    anti-pattern the repo forbids (A/B against ground truth before trusting).
-    This needs its own session with a llama.cpp interop harness; do NOT link
-    libmtmd (it PUBLIC-links all of llama).
+  - (b) mmproj interop — **EXPORT half DONE + validated 2026-07-12**
+    (`models/export-mmproj-llamacpp.py`). Converts a CrispEmbed combined
+    Qwen2-VL GGUF → a llama.cpp `mmproj-*.gguf` (metadata: general.architecture=
+    clip / clip-vision, the full `clip.*` key set incl. projector_type=
+    qwen2vl_merger, image_size/patch_size/embedding_length/block_count/
+    head_count/projection_dim/feed_forward_length/image_mean/std/ln_eps; tensors
+    renamed `vis.*`/`proj.*` → `v.blk.*`/`v.patch_embd`/`v.post_ln`/`mm.*`). The
+    name + metadata maps are the exact INVERSE of the shipped, proven merge
+    script, and the **complete clip.* schema was extracted empirically** from a
+    real reference (`ggml-org/Qwen2-VL-2B-Instruct-GGUF` mmproj, 27 KV / 520
+    tensors) — no guessing. `--self-test REF` round-trips a reference mmproj
+    (rename → export → write GGUF → re-read) and asserts **byte-identical**
+    tensors (520/520) + matching clip.* metadata — self-contained validation, no
+    VL-model download or inference. So the output is byte-identical to a
+    known-good llama.cpp mmproj (which llama.cpp loads by definition). Do NOT
+    link libmtmd (it PUBLIC-links all of llama) — this is offline conversion.
+    - Remaining: the `<__media__>` chunk convention (runtime prompt-marker interop,
+      `mtmd_default_marker()`); lower-value convenience, needs the VL runtime +
+      a model for end-to-end validation. Separate follow-up.
 
 - **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
   16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY
