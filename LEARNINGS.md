@@ -1,5 +1,37 @@
 # CrispEmbed — Technical Learnings
 
+## `ggml_set_output` on a reshape/view does NOT protect the underlying source buffer — snapshot reads back garbage (2026-07-12, C4)
+
+Building the C4 cross-call prefix KV cache, the plan was: run a prefix-only
+graph, mark each layer's post-rope **K** and **V** as outputs, read them back
+after compute, reuse them in a suffix-only graph. K read back correct; V read
+back *garbage* — and the corruption differed between a P=9 and a P=T=19 build of
+the same prefix, so it wasn't a value error, it was a **stale buffer**.
+
+Root cause: in the graph, `K = ggml_rope_ext(...)` is a **fresh contiguous
+tensor** (rope allocates its own output), so `ggml_set_output(K)` pins a buffer
+that is genuinely K's. But `V = ggml_reshape_3d(v_proj, ...)` is a **VIEW** that
+aliases the `v_proj` matmul output. `ggml_set_output` on the view flags the view
+tensor, not `v_proj`'s buffer — so gallocr freely reuses `v_proj`'s buffer for a
+later op, and the post-compute `tensor_get(V)` reads whatever overwrote it. The
+*forward* was fine (flash-attn consumed V via its permute-view before the reuse,
+so `prefix_hidden` read cos 1.0 vs the full path) — only the **snapshot** was
+stale. Symptom: reused-prefix embeddings cos ≈ 0 (orthogonal), while the cached
+K matched byte-for-byte and every other input (mask, positions, concat order,
+rectangular flash) checked out. Cost most of a debugging cycle precisely because
+the forward looked correct.
+
+Fix: `K = ggml_cont(g, K); V = ggml_cont(g, V);` immediately before
+`ggml_set_output` — `cont` materializes each into its own contiguous buffer that
+`set_output` then protects. Rule: **before snapshotting a graph intermediate for
+read-back, `ggml_cont` it if it is (or might be) a view** — reshape/permute/slice
+results are views; matmul/rope/norm/add results are fresh. This is the
+read-back-a-view sibling of the existing "sched aliases many set_output
+snapshots to one buffer" and "gallocr reuses input buffers as scratch" gotchas —
+localize it by printing per-layer norms (aliasing → identical norms) and by
+diffing the snapshot against an independent recompute (here: cache built with
+P=lcp vs P=T, first-P tokens must match; K L1=0, V L1=15075 pinpointed it).
+
 ## Per-step CPU→device KV cache re-upload is the #1 autoregressive perf killer (2026-07)
 
 math_ocr's TrOCR decoder stored self-attention K/V in CPU `std::vector<float>`

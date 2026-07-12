@@ -719,21 +719,20 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
   absent), 3 texts each incl. multibyte; negative test: patching
   `add_eos_token=false` into an e5 copy changes the embedding (flag is live).
 
-- **P2 — C4 KV/prefix-sharing ACROSS decoder-embedding calls.** The in-batch
-  version already exists — `decoder_encode_tokens_batch`
-  (`src/decoder_embed.cpp:1190`) detects a common prefix and lays out
-  `[prefix | suffix_0 | suffix_1 | ...]` with a causal block mask, computing
-  the shared prefix once per BATCH CALL. What is missing is persistence
-  ACROSS calls: cache the prefix KV (llama.cpp `seq_cp` cell-copy idea) so a
-  second batch with the same instruction prefix skips recomputing it.
-  *Files:* `src/decoder_embed.cpp` (`detect_common_prefix` ~:1160, the batch
-  layout right after), `src/lfm2_embed.cpp` (LFM2 ShortConv state cannot be
-  partially erased — copy WHOLE prefixes only, never split a conv window).
-  *Gate — quality first (load-independent):* reused-prefix outputs vs full
-  recompute cos ≥ 0.9999 on jina-v5-nano (small Qwen3, registry) + a Gemma3
-  (harrier-270m) + LFM2 (lfm2-embed). *Speed:* `tests/test_decoder_batch.py`,
-  N prompts sharing a prefix, target ≈ unique-suffix work — needs a QUIET box
-  (loadavg < ~8), else defer the timing claim like scunet.
+- **P2 — C4 KV/prefix-sharing ACROSS decoder-embedding calls. DONE 2026-07-12
+  (see the detailed C4 brief below for the landed delta + numbers).** Persists
+  a per-context prefix KV cache so a second call with the same instruction
+  prefix skips recomputing it. Ships Qwen3 (octen) + Gemma3 (harrier); LFM2 is
+  a separate path (`lfm2_embed.cpp`, never routed through
+  `decoder_encode_tokens_cached`) so its ShortConv whole-prefix constraint does
+  not apply. jina-v5 is `is_bidirectional=1` → correctly ineligible (causal
+  prefix independence does not hold). Default ON, opt out with
+  `CRISPEMBED_DECODER_PREFIX_CACHE=0`.
+  *Verified:* CPU bit-equal (cos 1.0, max_abs 0.0) cached-vs-full on octen-0.6b
+  q8 + harrier-270m q8; Metal cos ≥ 0.9999995; no-prefix byte-identical to the
+  pre-C4 main binary (cos 1.0, max_abs 0.0). Speed (octen q8 Metal, load 1.2,
+  σ≈0.02s): 40 long-prefix prompts 2.16→1.30s end-to-end; ≈2.07× compute-only
+  after subtracting ~0.50s fixed load. Test: `tests/test_prefix_cache.py`.
 
 - **P2 — Tier-1 2b op-count reduction, one decoder end-to-end.** Warm Metal
   decode is ~82% GPU-execute across ~355 sequential ops (measured, trocr);
@@ -863,16 +862,38 @@ graph for decoder models" task. (The **decoder** batched graph already existed �
     class left `CRISPEMBED_ENCODER_4D=1` set, so the throughput test's "seq"
     and "packed" legs silently ran the 4D path (fixed: bench pops both envs).
 
-**C4 — KV prefix-sharing for the decoder-embedding path.** Port the `seq_cp`
-cell-copy idea (cells carry `{pos, set<seq_id>}`; compute shared prefix once, copy
-to each fork, decode only the divergent suffix). Note: LFM2 conv state can't be
-partially erased — copy *whole* prefixes only. (Blueprint "KV cache for
-prefix-shared decoder batches" is marked DONE — this extends/validates it.)
-- *A/B speed:* `test_decoder_batch.py` — time N prompts sharing a common instruction
-  prefix, with vs without prefix reuse; target ≈ (unique-suffix work) not (N × full).
-- *A/B quality:* `test-<model>-diff` — reused-prefix outputs identical to full
-  recompute (cos ≥ 0.9999) on Qwen3-Embedding and a Gemma3 embedder; separately
-  confirm on LFM2 (whole-prefix constraint).
+**C4 — KV prefix-sharing for the decoder-embedding path. DONE 2026-07-12.**
+The decoder-embed path is a single-shot prefill (flash-attn over the whole
+sequence, no autoregressive KV cache), so with causal attention the prefix
+tokens' per-layer post-rope K/V and final output-normed hidden are INDEPENDENT
+of any suffix. Landed:
+- `dec_prefix_cache` in `decoder_embed_internal.h` (host-side per-layer K/V +
+  prefix hidden + prefix ids), a member of `crispembed_context`.
+- `decoder_encode_tokens_cached` (`decoder_embed.cpp`): on a repeated leading
+  prefix (LCP vs the previous call, exact-match, MIN_PREFIX=4) it BUILDS the
+  cache via a prefix-only graph then runs a SUFFIX-ONLY graph whose queries
+  attend to `[cached prefix K/V | fresh suffix K/V]` (rectangular flash-attn,
+  n_q=S < n_kv=P+S); on a later call starting with the cached prefix it reuses
+  directly. The full/cold/miss path is the UNTOUCHED `decoder_encode_tokens`
+  (byte-identical). Wired into the single-text encode in `crispembed.cpp`,
+  invalidated on LoRA hot-swap. Bidirectional models ineligible.
+- Both the build and suffix graphs compute on a SINGLE-backend `ggml_gallocr`
+  (not the sched): the sched aliases the 2·n_layer interior `set_output` K/V
+  snapshots to one reused buffer (read back identical). The injected per-layer
+  prefix-K/V inputs are marked `set_output` too so gallocr keeps them in
+  distinct, non-reused buffers.
+- **Landmine (cost most of the debug time):** in the build graph V was
+  `ggml_reshape_3d(v_proj)` — a VIEW; `set_output` on a view does NOT protect
+  the underlying v_proj buffer, so the post-compute V readback was stale garbage
+  (K, a fresh rope output, was fine; prefix_hidden was correct because the
+  forward's flash read V in time). Fix: `ggml_cont` K and V before marking them
+  output. See LEARNINGS.
+- *A/B quality:* PASS. `tests/test_prefix_cache.py` cached-vs-full: octen-0.6b
+  q8 + harrier-270m (Gemma3) q8, CPU **bit-equal** (cos 1.0, max_abs 0.0),
+  Metal cos ≥ **0.9999995**. Same-prefix-twice, prefix-change (invalidation),
+  no-prefix (byte-identical, incl. vs the pre-C4 binary) all covered.
+- *A/B speed:* octen q8 Metal, load 1.2, σ≈0.02s: 40 long-prefix prompts
+  2.16→1.30s end-to-end, **≈2.07× compute-only** (after ~0.50s fixed load).
 
 **C5 — mtmd preprocessing alignment. PORT DONE (`src/image_preprocess.{h,cpp}`, wired into qwen2vl/bidirlm/mixtex); only the remnants below are open.**
 Use `tools/mtmd/mtmd-image.cpp` as the reference spec: `calc_size_preserved_ratio`
