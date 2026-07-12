@@ -1944,10 +1944,13 @@ manual decode (no HF `.generate()`), seed `<bos>=4426`, stop `<eos>=8822`,
   and the baked PE (`positional`) F32; engine reshapes the quantizer's flattened
   2-D conv headers back to 4-D. **q8_0 (24 MB) decodes identically to HF (100%);
   q4_k (17 MB) is too lossy for the AR decode (~32%) — ship f32 + q8_0 only.**
-- ⏭ Remaining: (1) KV-cache the decoder (greedy is O(L²) full-recompute, ~8.6 s/
-  250 tok); (2) GGUF upload (needs `hf auth login` — staged in scratchpad:
-  `smt-grandstaff-{f32,q8_0}.gguf` → `cstr/smt-grandstaff-GGUF`); (3) Metal
-  full-diff (decode already verified on Metal).
+- ✅ KV-cache: incremental decode (cross K/V precomputed once, self K/V grown per
+  step via concat). Token-identical to the full-recompute path (kept behind
+  `SMT_OCR_FULL_DECODE=1` for A/B) and to HF, CPU + Metal. **5.4× faster** (0.37 s
+  vs 1.98 s for ~100 tokens); the gain grows with sequence length.
+- ⏭ Remaining: GGUF upload (needs `hf auth login` — staged in scratchpad:
+  `smt-grandstaff-{f32,q8_0}.gguf` → `cstr/smt-grandstaff-GGUF`; registry entry
+  already points there). Metal full per-stage diff optional (decode verified).
 
 **Landmines:**
 - **⚠ SMT attention is UNSCALED.** `MHA.forward` computes `bmm(q,k)` then softmax
