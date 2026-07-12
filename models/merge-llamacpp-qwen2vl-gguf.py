@@ -391,32 +391,35 @@ _VIS_BLK_RE = re.compile(r"^v\.blk\.(\d+)\.(.+)$")
 
 
 def map_tensor_name(name: str) -> Optional[str]:
-    """Map a llama.cpp tensor name to CrispEmbed convention.
+    """Keep the llama.cpp-native tensor name.
 
-    Returns the new name, or None if the tensor should be skipped.
+    The qwen2vl_ocr loader reads llama.cpp-native names directly (`v.blk.*`,
+    `blk.*`, `token_embd`, `output_norm`, `mm.*`, `v.post_ln`, `v.patch_embd`).
+    An earlier version of this script renamed everything to `vis.blocks.*` /
+    `llm.layers.*`, which the current loader does NOT read — its output crashed
+    on load (vision misdetected → SIGSEGV). Identity is correct; the only
+    structural transform (concatenating the split temporal patch embedding) is
+    handled in main().
     """
-    # Check global map first
-    if name in GLOBAL_MAP:
+    if name == "v.patch_embd.weight.1":
+        return None  # folded into v.patch_embd.weight
+    return name
+    # (legacy remap retained below for reference; unreachable)
+    if name in GLOBAL_MAP:  # noqa
         return GLOBAL_MAP[name]
-
-    # Vision block
     m = _VIS_BLK_RE.match(name)
     if m:
         layer = m.group(1)
         suffix = m.group(2)
         if suffix in VIS_BLOCK_MAP:
             return f"vis.blocks.{layer}.{VIS_BLOCK_MAP[suffix]}"
-        print(f"  WARNING: unmapped vision block tensor: {name}")
         return None
-
-    # LLM block
     m = _LLM_BLK_RE.match(name)
     if m:
         layer = m.group(1)
         suffix = m.group(2)
         if suffix in LLM_BLOCK_MAP:
             return f"llm.layers.{layer}.{LLM_BLOCK_MAP[suffix]}"
-        print(f"  WARNING: unmapped LLM block tensor: {name}")
         return None
 
     print(f"  WARNING: unmapped tensor: {name}")
@@ -679,6 +682,32 @@ def main():
         else:
             skipped.append(t.name)
 
+    # Combine the split temporal patch embedding. llama.cpp stores the Qwen2-VL
+    # Conv3d patch as two [out,in,H,W] slices (v.patch_embd.weight + .weight.1,
+    # temporal_patch_size=2); the loader expects one weight flattening to
+    # [out, in*T*H*W]. Stack in PyTorch Conv3d order [out,in,T,H,W] → flatten.
+    import numpy as np
+
+    p0 = next((x for x in out_tensors if x[0] == "v.patch_embd.weight"), None)
+    p1_src = next((t for t in mmproj.tensors if t.name == "v.patch_embd.weight.1"), None)
+    if p0 is not None and p1_src is not None:
+        info0 = p0[1]
+        np_shape = list(reversed(info0.shape))  # ggml ne → numpy (out,in,H,W)
+        a0 = np.frombuffer(read_tensor_data(mmproj, info0), dtype=np.float16).reshape(np_shape)
+        a1 = np.frombuffer(read_tensor_data(mmproj, p1_src), dtype=np.float16).reshape(np_shape)
+        comb = np.stack([a0, a1], axis=2).reshape(np_shape[0], -1)  # (out, in*T*H*W)
+        comb_bytes = np.ascontiguousarray(comb.astype(np.float16)).tobytes()
+        comb_info = TensorInfo(
+            name="v.patch_embd.weight",
+            shape=[comb.shape[1], comb.shape[0]],  # ggml ne = [in*T*H*W, out]
+            dtype=info0.dtype,
+            offset=0,
+            nbytes=len(comb_bytes),
+        )
+        out_tensors = [x for x in out_tensors if x[0] != "v.patch_embd.weight"]
+        out_tensors.append(("v.patch_embd.weight", comb_info, ("__BYTES__", comb_bytes)))
+        print(f"  patch embed: concatenated 2 temporal slices → {comb_info.shape} ({len(comb_bytes)/1e6:.1f} MB)")
+
     # Handle tied embeddings: if no lm_head, engine uses tie_word_embeddings flag
     has_lm_head = any(name == "llm.lm_head.weight" for name, _, _ in out_tensors)
 
@@ -742,7 +771,10 @@ def main():
         # Write tensor data
         total_bytes = 0
         for i, (new_name, info, source) in enumerate(out_tensors):
-            data = read_tensor_data(source, info)
+            if isinstance(source, tuple) and source and source[0] == "__BYTES__":
+                data = source[1]
+            else:
+                data = read_tensor_data(source, info)
             f.write(data)
             total_bytes += len(data)
 
