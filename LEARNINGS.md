@@ -73,22 +73,39 @@ InternVL also needs **QKV re-fusion** (mmproj splits attn_q/k/v; the loader want
 a fused `attn_qkv` — byte-concat [q;k;v], and vision has no RoPE so no permute).
 See `models/merge-llamacpp-{smolvlm,internvl}-gguf.py` + their tests.
 
-## Diff-harness catches masked bugs the output can't: a robust LLM reads correct text over cos-0.94 vision (2026-07-12, import validation)
+## Diff-harness: match the INPUT the harness feeds, and isolate against the native converter (2026-07-12, import validation)
 
 The user's standing rule — **"always test against the diff-harness intermediates
 AND ground-truth outputs, never just the output"** — earned its keep on the
-InternVL import: CrispEmbed OCR'd "The quick brown fox…" perfectly while
-`build/test-internvl2-diff` showed `vis_patch_embed cos=-0.936` (near
-anti-correlation). The LLM was robust enough to read simple text over badly
-degraded vision embeds, so the output check alone would have shipped a masked
-defect. The method that cleared BOTH new imports (SmolVLM cos 0.943, InternVL cos
--0.936): dump HF per-stage activations (`tools/dump_*_reference.py`), diff with
-`build/test-*-diff`, then **run the native converter on the same HF model and diff
-IT against the same reference** — identical cosines ⇒ my import ≡ the blessed
-native path, and the sub-threshold stage is a pre-existing engine/harness artifact
-(here the internvl2 harness's `vis_patch_embed` convention), not my change. Ground
-truth for an imported GGUF is the source engine itself: `llama-mtmd-cli` on the
-same file. See [[validate-intermediates-and-outputs]].
+InternVL import, but ALSO showed how a mis-run harness lies. First read of
+`build/test-internvl2-diff` on my import showed `vis_patch_embed cos=-0.936`
+(near anti-correlation) while OCR was perfect — alarming. **Root cause was NOT a
+real defect: I dumped the HF reference with `--image test_text.png` (a real,
+tiled image) while `test-internvl2-diff` feeds a SYNTHETIC GRADIENT** (a clean
+single 448² tile, no dynamic tiling). Apples-to-oranges inputs → garbage cosine.
+Re-dumped WITHOUT `--image` (gradient, matching the harness): `vis_patch_embed`
+jumped to **cos 0.999999**, and my import was **identical to the native converter
+at every stage** (both 0.999999 patch-embed; both `vis_proj_output` −0.098; LLM
+identical modulo my Q8_0 vs native f16). So the import is genuinely correct.
+
+Fix (this commit): the dump tool stamps `diff.input_mode` (`gradient` or
+`image:<name>`) into the reference GGUF; the internvl2 harness **refuses** a
+non-gradient reference with a clear message instead of reporting a misleading
+anti-correlation. Prevents the exact trap.
+
+Two durable rules: (1) **a diff harness is only valid when both sides see the
+same input** — the gradient-vs-tiled-image mismatch produced a confident, wrong
+−0.936. (2) **Isolate my-bug-vs-baseline by running the native converter on the
+same HF model and diffing IT against the same reference**: identical cosines ⇒
+import ≡ the blessed path, and any residual gap is pre-existing. Here that gap is
+`vis_proj_output cos=-0.098` — a **pre-existing InternViT-vs-HF projector-stage
+parity gap present in the native converter too** (doesn't break OCR; the
+`pixel_unshuffle_v2` order matches between dump and engine, so it's a deeper
+layer/projector divergence, not the interop). Ground truth for an imported GGUF
+is the source engine itself: `llama-mtmd-cli` on the same file. And the original
+point still stands — the LLM read correct text over that mis-measured vision
+cosine, so the output check alone would have hidden it. See
+[[validate-intermediates-and-outputs]].
 
 ## VL "runs but ignores the image": use the inject-embeds discriminator BEFORE diffing the vision tower (2026-07-12, mmproj reverse interop)
 

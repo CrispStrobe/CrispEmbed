@@ -856,34 +856,18 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
       exported mmproj + LLM run in `llama-mtmd-cli` and OCR fox.png correctly
       ("The quick brown fox jumps over the lazy dog. 12345"). So CrispEmbed→
       llama.cpp mmproj interop works.
-    - **REVERSE direction (llama.cpp → CrispEmbed) — core bug fixed, one
-      remaining engine-support gap.** Discovered `merge-llamacpp-qwen2vl-gguf.py`
-      was BROKEN: it renamed tensors to `vis.blocks.*`/`llm.layers.*`, which the
+    - **REVERSE direction (llama.cpp → CrispEmbed) — DONE.** The merge was
+      BROKEN: it renamed tensors to `vis.blocks.*`/`llm.layers.*`, which the
       current `qwen2vl_ocr` loader does NOT read (it reads llama.cpp-native
       `v.blk.*`/`blk.*` + CrispEmbed `l.blk.*`), so its output SIGSEGV'd on load
-      (vision misdetected as 2.5-VL). Fixed: (1) merge now keeps native names +
+      (vision misdetected as 2.5-VL). Fixed: (1) merge keeps native names +
       concatenates the split temporal patch embed (`v.patch_embd.weight` +
       `.weight.1` → `[in*T*H*W, out]`); (2) loader gains `v.post_ln` merger-norm
-      + tied-`lm_head`(=`token_embd`) fallbacks. Result: a llama.cpp Qwen2-VL-2B
-      now LOADS and is CORRECTLY detected as Qwen2-VL (LayerNorm/GELU) — was an
-      immediate crash before. Remaining: OCR still aborts at a forward-graph
-      `ggml_can_mul_mat` mismatch — config reads correctly (heads 12/kv 2/hidden
-      1536/28L), all loaded weight dims are consistent, and `llama-mtmd-cli` runs
-      the same weights, so this is a **Qwen2-VL-2B forward-path gap in an engine
-      built/tested for Qwen2.5-VL-3B**, not an interop-naming issue.
-      **STRONG LEAD (next step):** `qwen2vl.vision.intermediate_size` is written
-      as **1536** (from `clip.vision.feed_forward_length`, which for qwen2vl is
-      the PROJECTION dim, NOT the ViT MLP intermediate), but the actual
-      `v.blk.*.ffn_up.weight` is **5120**-wide — so any vision-FFN graph tensor
-      sized from `vhp.intermediate_size` mismatches the weights → the abort. Fix:
-      derive `vhp.intermediate_size` from the loaded `ffn_fc1/ffn_up` weight (the
-      dim ≠ hidden), in `load_tensors` AND wherever recognize re-reads
-      `clip.vision.feed_forward_length` (qwen2vl_ocr.cpp ~L90 / ~L956); and fix
-      the merge to write `qwen2vl.vision.intermediate_size` = the `ffn_up`
-      out-dim, not `clip.vision.feed_forward_length`.
-    - **UPDATE — no longer crashes; now LOADS + RUNS end-to-end (rc=0).** The
-      abort was NOT the intermediate metadata; it was the ViT-FFN **fc1/fc2 role
-      mapping**: llama.cpp's qwen2vl mmproj INVERTS `ffn_up`/`ffn_down` vs the
+      + tied-`lm_head`(=`token_embd`) fallbacks. (A transient `ggml_can_mul_mat`
+      abort was first mis-blamed on `qwen2vl.vision.intermediate_size` metadata —
+      **red herring**; the real cause was the ViT-FFN fc1/fc2 mapping, below.)
+    - The abort was the ViT-FFN **fc1/fc2 role mapping**: llama.cpp's qwen2vl
+      mmproj INVERTS `ffn_up`/`ffn_down` vs the
       projection direction (`ffn_down`=fc1 hidden→intermediate, `ffn_up`=fc2 —
       proven by biases: `ffn_up.bias`=[hidden], `ffn_down.bias`=[intermediate]).
       The loader blindly aliased `ffn_up→fc1`; fixed to map fc1 = the
