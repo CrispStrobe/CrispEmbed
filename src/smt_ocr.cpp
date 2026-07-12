@@ -822,13 +822,14 @@ const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int 
 }
 
 const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, int w, int h, int ch, int * out_len) {
-    // Mirror the SMT inference pipeline (data.py + convert_img_to_tensor):
-    //   cv2.resize ×0.5 bilinear (uint8) → RandomInvert(255-x) → Grayscale → /255.
-    // cv2 loads BGR and ToPILImage treats it as RGB, so the grayscale luma uses
-    // the swapped channel order (R-slot=blue, B-slot=red). stbi gives RGB, so
-    // the swap maps R-slot→data[2], B-slot→data[0]. 1-channel input is gray.
+    // Mirror the SMT single-system inference pipeline (SMT-main data.py
+    // prepare_data + convert_img_to_tensor), reduce_ratio=1.0:
+    //   width = min(w, 3056); height = max(h, 256); cv2.resize (bilinear, uint8)
+    //   → RandomInvert(255-x) → Grayscale (RGB luma) → /255.
+    // The HF dataset feeds RGB (np.array(PIL)), NOT cv2 BGR — so NO channel swap.
     if (!data || w <= 0 || h <= 0 || ch <= 0) return nullptr;
-    int rw = (int)std::ceil(w * 0.5), rh = (int)std::ceil(h * 0.5);
+    int rw = w > 3056 ? 3056 : w;
+    int rh = h < 256 ? 256 : h;
     float sx = (float)w / rw, sy = (float)h / rh;
     auto clampi = [](int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); };
     int nk = ch >= 3 ? 3 : 1;
@@ -855,7 +856,7 @@ const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, 
             float luma;
             if (nk >= 3) {
                 float i0 = 255.0f - pix[0], i1 = 255.0f - pix[1], i2 = 255.0f - pix[2];
-                luma = 0.299f * i2 + 0.587f * i1 + 0.114f * i0; // BGR-as-RGB swap
+                luma = 0.299f * i0 + 0.587f * i1 + 0.114f * i2; // RGB (ITU-R 601), no swap
             } else {
                 luma = 255.0f - pix[0];
             }

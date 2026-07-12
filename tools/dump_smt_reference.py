@@ -43,7 +43,7 @@ def main():
     ap.add_argument("--smt-repo", required=True, help="SMT-plusplus clone (for smt_model + preprocessing)")
     ap.add_argument("--image", required=True, help="input score image")
     ap.add_argument("--output", required=True, help="output ref GGUF")
-    ap.add_argument("--reduce-ratio", type=float, default=0.5)
+    ap.add_argument("--reduce-ratio", type=float, default=1.0)
     ap.add_argument("--max-tokens", type=int, default=256, help="cap greedy decode length")
     args = ap.parse_args()
 
@@ -89,13 +89,13 @@ def main():
         print(f"WARNING unexpected: {unexpected[:8]}", file=sys.stderr)
     model.eval().to(device)
 
-    # ---- preprocessing (data.py:60-62 + convert_img_to_tensor) ----
-    img = cv2.imread(args.image)  # BGR HWC uint8
-    if img is None:
-        print(f"Error: cannot read {args.image}", file=sys.stderr)
-        return 1
-    W = int(np.ceil(img.shape[1] * args.reduce_ratio))
-    H = int(np.ceil(img.shape[0] * args.reduce_ratio))
+    # ---- preprocessing (SMT-main data.py prepare_data + convert_img_to_tensor) ----
+    # RGB (the HF dataset feeds np.array(PIL), NOT cv2 BGR); reduce_ratio=1.0;
+    # width = min(w, 3056); height = max(h, 256).
+    from PIL import Image
+    img = np.array(Image.open(args.image).convert("RGB"))  # RGB HWC uint8
+    W = min(int(np.ceil(img.shape[1] * args.reduce_ratio)), 3056)
+    H = max(int(np.ceil(img.shape[0] * args.reduce_ratio)), 256)
     img = cv2.resize(img, (W, H))
     x = convert_img_to_tensor(img)          # (1,H,W) float [0,1]
     x = x.unsqueeze(0).to(device)           # (1,1,H,W)
