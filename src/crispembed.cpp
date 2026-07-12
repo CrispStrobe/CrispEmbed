@@ -1460,14 +1460,17 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
 // C3: is the packed block-diagonal batch path eligible + enabled?
 // Only for absolute-position encoders (no MPNet rel-bias, no DeBERTa rel-embd,
 // no RoPE — those carry T×T / per-position structure that packing would need to
-// re-index per segment). Opt-in via CRISPEMBED_ENCODER_PACKED until A/B-proven,
-// then this becomes the default with CRISPEMBED_ENCODER_NOPACK as the opt-out.
+// re-index per segment). Default: ON when the primary backend is a GPU
+// (A/B-proven on Metal 2026-07-12: 5.2–7.4× vs sequential on uniform AND
+// mixed-length batches, parity cos 1.0 — see PLAN C3), OFF on CPU (measured
+// unstable 0.46×–2.07× there). CRISPEMBED_ENCODER_PACKED=1/0 overrides the
+// default in either direction.
 static bool packed_batch_enabled(const crispembed_context * ctx) {
     if (ctx->is_decoder) return false;
     if (ctx->model.rel_attn_bias || ctx->model.rel_embd || ctx->use_rope) return false;
     const char * v = std::getenv("CRISPEMBED_ENCODER_PACKED");
-    if (v && v[0] && std::strcmp(v, "0") != 0) return true; // explicit opt-in
-    return false;                                           // default OFF (flip after A/B)
+    if (v && v[0]) return std::strcmp(v, "0") != 0;            // explicit override, both ways
+    return ctx->backend && !ggml_backend_is_cpu(ctx->backend); // default: GPU on, CPU off
 }
 
 // Packed batched encoding (C3): pack all B sequences end-to-end into one graph of

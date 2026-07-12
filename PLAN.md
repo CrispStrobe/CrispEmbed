@@ -786,9 +786,14 @@ graph for decoder models" task. (The **decoder** batched graph already existed �
     **Verdict: on Metal, PACKED is the batching mode** — 5–7× vs sequential,
     parity cos 1.0, consistent on uniform AND mixed. 4D beats sequential but
     always trails packed there; 4D remains the CPU-backend tool (its 1.18–1.48×
-    CPU result stands). Both stay opt-in for now because the default must also
-    serve the CPU-only VPS (packed measured unstable 0.46×–2.07× there); a
-    backend-conditional default (packed-on-Metal) is the follow-up if wanted.
+    CPU result stands).
+  - **Backend-conditional default SHIPPED (2026-07-12).** `packed_batch_enabled`
+    now defaults ON when the primary backend is a GPU and OFF on CPU;
+    `CRISPEMBED_ENCODER_PACKED=1/0` overrides in either direction, 4D stays
+    opt-in. Verified: Metal default output is **bitwise identical** to forced
+    packed, worst cos vs sequential 0.9999996, warm B=30 mixed 3.2× (loaded
+    box; 5–7× at lower load); CPU default output identical to sequential
+    (cos 1.0); full test_encoder_batch suite green.
     En route: `tests/test_encoder_batch.py` had an env leak — the 4D parity
     class left `CRISPEMBED_ENCODER_4D=1` set, so the throughput test's "seq"
     and "packed" legs silently ran the 4D path (fixed: bench pops both envs).
