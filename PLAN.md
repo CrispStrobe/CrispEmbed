@@ -891,13 +891,13 @@ supported but never parity-checked, and broke three ways; now **cos 0.999999**
   texts (edge case, not chased; the guardrail text is verified-aligned).
 
 **NEXT PRIORITIES (2026-07, ordered):** **C3 4D batch — DONE (opt-in, see C3).**
-**EmbeddingGemma** Dense(×2)/mean/Matryoshka pipeline verified correct (~0.997, an
-accepted small Gemma3-backbone residual amplified by the Dense bottleneck); remaining:
-a committed parity test + exposing `matryoshka_dim` in the Python `encode()`. The
-registry pooling label ("last-token" → mean-pool) fix is **deferred**:
-`examples/cli/model_mgr.cpp` is Lint-broken and actively churned by the concurrent
-imatrix-repoint work (which also repoints the embeddinggemma entry), so the 1-line
-label fix should land with that work to avoid conflicts. Nomic-v2-MoE already covered
+**EmbeddingGemma — ALL CLOSED (2026-07-12).** Dense(×2)/mean/Matryoshka pipeline
+verified correct (~0.997, an accepted small Gemma3-backbone residual amplified by
+the Dense bottleneck). The parity test + Python `matryoshka_dim` in `encode()`
+landed earlier than this note assumed (`6659252`,
+`tests/test_embeddinggemma_parity.py`); the registry pooling labels
+("last-token" → mean-pool, 4 embeddinggemma entries) are fixed now that the
+imatrix-repoint churn on `model_mgr.cpp` has landed. Nomic-v2-MoE already covered
 (`test_moe_parity.py`).
 
 **C9 — preserve & document our differentiation.** MPNet, GTE-v1.5, DeBERTa-v2,
