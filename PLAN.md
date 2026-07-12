@@ -819,10 +819,26 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
       dim ≠ hidden), in `load_tensors` AND wherever recognize re-reads
       `clip.vision.feed_forward_length` (qwen2vl_ocr.cpp ~L90 / ~L956); and fix
       the merge to write `qwen2vl.vision.intermediate_size` = the `ffn_up`
-      out-dim, not `clip.vision.feed_forward_length`. (A first load-site override
-      did not fire — confirm the code path / that `vis_blocks[0].ffn_fc1_w` is
-      populated there first.) Do NOT link libmtmd. `<__media__>` prompt-marker:
-      separate low-value follow-up.
+      out-dim, not `clip.vision.feed_forward_length`.
+    - **UPDATE — no longer crashes; now LOADS + RUNS end-to-end (rc=0).** The
+      abort was NOT the intermediate metadata; it was the ViT-FFN **fc1/fc2 role
+      mapping**: llama.cpp's qwen2vl mmproj INVERTS `ffn_up`/`ffn_down` vs the
+      projection direction (`ffn_down`=fc1 hidden→intermediate, `ffn_up`=fc2 —
+      proven by biases: `ffn_up.bias`=[hidden], `ffn_down.bias`=[intermediate]).
+      The loader blindly aliased `ffn_up→fc1`; fixed to map fc1 = the
+      larger-output projection (by bias/weight dim). The weights are already
+      correct ggml `[in,out]` order (no transpose needed — Qwen2-VL's null
+      `qkv_w` means the fix_ne gate correctly never fires).
+    - **Remaining (final mile): OCR output is coherent but WRONG** ("text not
+      clear") — the LLM decodes fine but the vision embedding is subtly off.
+      Verified individually correct: patch temporal concat (matches
+      `patchify_qwen_layout` c,t,H,W order), block LayerNorm/RMSNorm (variant-
+      aware), full-vs-window attention (full for 2-VL), quick_gelu FFN, merger
+      LayerNorm, OCR prompt/chat template. Remaining suspects: vision attention
+      RoPE / LLM image-token mRoPE positions / spatial-merge grouping — needs a
+      per-layer **diff-harness** (dump CrispEmbed vision stages vs a llama.cpp
+      reference; first divergence = the bug). Do NOT link libmtmd.
+      `<__media__>` prompt-marker: separate low-value follow-up.
 
 - **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
   16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY

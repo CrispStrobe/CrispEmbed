@@ -312,12 +312,19 @@ bool load_tensors(context & ctx, const char * path) {
         blk.ffn_fc1_b = get2(p + "ffn_fc1.bias", p + "ffn.fc1.bias");
         blk.ffn_fc2_w = get2(p + "ffn_fc2.weight", p + "ffn.fc2.weight");
         blk.ffn_fc2_b = get2(p + "ffn_fc2.bias", p + "ffn.fc2.bias");
-        // mmproj or dot-notation ffn_up/ffn_down used for GELU — map to fc1/fc2
+        // mmproj or dot-notation ffn_up/ffn_down used for GELU — map to fc1/fc2.
+        // llama.cpp's qwen2vl mmproj INVERTS the ffn_up/ffn_down naming vs the
+        // fc1/fc2 projection direction (ffn_down.bias=[intermediate]=fc1,
+        // ffn_up.bias=[hidden]=fc2), so map by the actual output dim (bias/weight
+        // size): fc1 = hidden→intermediate (larger output), fc2 the reverse.
         if (!blk.ffn_fc1_w && !blk.ffn_gate_w && blk.ffn_up_w) {
-            blk.ffn_fc1_w = blk.ffn_up_w;
-            blk.ffn_fc1_b = blk.ffn_up_b;
-            blk.ffn_fc2_w = blk.ffn_down_w;
-            blk.ffn_fc2_b = blk.ffn_down_b;
+            int64_t up_out = blk.ffn_up_b ? blk.ffn_up_b->ne[0] : blk.ffn_up_w->ne[1];
+            int64_t dn_out = blk.ffn_down_b ? blk.ffn_down_b->ne[0] : blk.ffn_down_w->ne[1];
+            bool up_is_fc1 = (up_out >= dn_out); // fc1 has the larger (intermediate) output
+            blk.ffn_fc1_w = up_is_fc1 ? blk.ffn_up_w : blk.ffn_down_w;
+            blk.ffn_fc1_b = up_is_fc1 ? blk.ffn_up_b : blk.ffn_down_b;
+            blk.ffn_fc2_w = up_is_fc1 ? blk.ffn_down_w : blk.ffn_up_w;
+            blk.ffn_fc2_b = up_is_fc1 ? blk.ffn_down_b : blk.ffn_up_b;
         }
     }
 
