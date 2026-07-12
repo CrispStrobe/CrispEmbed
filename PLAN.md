@@ -894,14 +894,16 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
       Do NOT link libmtmd. `<__media__>` prompt-marker: separate low-value
       follow-up.
 
-- **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
-  16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY
-  reranker (τ 0.925–0.967), which is why all rerankers default q8_0 — a
-  bigger corpus will almost certainly re-confirm that, not flip it. Only do
-  this if a deployment specifically needs 4-bit rerankers: extend
-  `RERANK_EVAL` in `tools/kaggle/crispembed-imatrix-quant/imatrix_quant.py`
-  to ~30 self-authored-CC0 EN+DE graded groups, Kendall-τ vs f16 gold,
-  repoint only on τ=1.0.
+- **P3 — reranker corpus expansion — corpus DONE (2026-07-12); τ-eval pending
+  Kaggle.** `RERANK_EVAL` extended from 16 to **30** self-authored-CC0 EN+DE
+  graded 6-doc groups (7 EN + 7 DE new distinct topics: antibiotics, tides,
+  four-stroke engine, balanced diet, earthquakes, dreams, rainbows). All eval
+  loops iterate `len(RERANK_EVAL)` so nothing else changed. The **actual
+  Kendall-τ vs f16 gold runs on Kaggle** (needs the reranker models + GPU) — not
+  runnable locally. Expectation unchanged: the 16×6 corpus already showed 4-bit
+  reorders tails on EVERY reranker (τ 0.925–0.967), so the larger corpus will
+  almost certainly re-confirm the q8_0 default, not flip it; only repoint a
+  reranker to 4-bit if it scores τ=1.0 on the expanded set.
 
 - **P3 — CrispASR `gpu_backend_pref.h` sync.** Commit `0622c1d` added a
   metal→mtl alias (ggml registry is named "MTL"); CrispASR's copy needs the
