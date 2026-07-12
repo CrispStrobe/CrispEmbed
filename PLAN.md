@@ -734,29 +734,32 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
   σ≈0.02s): 40 long-prefix prompts 2.16→1.30s end-to-end; ≈2.07× compute-only
   after subtracting ~0.50s fixed load. Test: `tests/test_prefix_cache.py`.
 
-- **P2 — Tier-1 2b op-count reduction, one decoder end-to-end. MEASURED — STOP
-  for trocr (hard-rule-#5 below-threshold; 2026-07-12).** Step-0 measurement on
-  the specified vehicle first (`MATH_OCR_NODES=1` prints the decode-step
-  `n_nodes`; `CRISPEMBED_MATH_OCR_BENCH=1` prints encoder/decoder ms):
-  - decode-step graph = **355 nodes** (6 layers, n_enc=578), matching the brief.
-  - **Split (trocr-small-printed q8, fox.png, Metal, stable): encoder 200 ms,
-    decoder 44 ms** → decode is ~18% of compute (~10% of total incl. load); the
-    **encoder is 82% of compute**.
-  - The step graph ALREADY uses `ggml_flash_attn_ext` (g_mha_1q) — brief item
-    (1) "manual softmax → soft_max_ext" is already done, even more fused. The
-    remaining safe fusion is self-attn QKV concat (3 mul_mat+3 add → 1+1+views,
-    byte-identical q8 row-stack): that touches ~24 of 355 nodes ≈ 7% of decode
-    ≈ **~1.3% of compute** — below the 15% threshold. (Cross-QKV can't fuse: k/v
-    come from the encoder cache; cont-removal in g_mha_1q is numerics-risky and
-    also sub-2%.)
-  - Verdict: **not worth shipping for trocr** — trocr outputs are short (line
-    recognizer, 6–8 tokens) so decode never dominates, and the box was loaded
-    (load 4.2, wall-clock ±13%) so a speedup couldn't be A/B'd against ground
-    truth anyway. The decode-step fusion pattern only pays off on **long-output**
-    VLM decoders (qwen2vl/got/glm/internvl2/lightonocr, 100s of tokens); revisit
-    there, on a QUIET box, with each engine's own graph. Left in place: a gated
-    `MATH_OCR_NODES` diagnostic for that future work. For trocr the real lever is
-    the 200 ms encoder, out of this task's decode-step scope.
+- **P2 — Tier-1 2b op-count reduction, one decoder end-to-end. DONE 2026-07-12
+  — decode-step ~30% faster, byte-identical.** Measured first (`MATH_OCR_NODES=1`
+  prints decode-step `n_nodes`; `CRISPEMBED_MATH_OCR_BENCH=1` prints encoder/
+  decoder ms), then fixed the *actual* overhead — which was NOT where the brief
+  pointed:
+  - Baseline: decode-step = **355 nodes**; encoder 200 ms vs decoder 44 ms
+    (trocr q8 Metal) → decode ~18% of compute, encoder 82%.
+  - The step already uses `ggml_flash_attn_ext` (brief item 1 done); the flagged
+    QKV concat is only ~1.3% of compute (below threshold, skipped).
+  - **The real overhead was the redundant `ggml_cont` copies in the single-query
+    decoder attention** (`g_mha_1q`): `flash_attn_ext` only needs row-contiguous
+    src (`nb0==type_size`), which `permute(0,2,1,3)` preserves, so the 3 conts
+    (×2 self+cross ×6 layers = 36 copy-kernels) were pure waste. Removed →
+    **355→319 nodes, decode 45.5→31.5 ms (~30% faster, interleaved, no overlap)**,
+    transcript byte-identical on Metal AND CPU (fox + scan_strip). Default now
+    cont-off; `MATH_OCR_ATTN_CONT=1` restores them.
+  - **Negative result (gate caught it):** converting the 578×578 *encoder*
+    attention (`g_mha`) from manual F32 mul_mat+soft_max to `flash_attn_ext` is
+    byte-identical on Metal but **DIVERGES on the CPU kernel** (GOOD→DSP.90,
+    CARDS→RECEIPT). Kept manual F32 there (conts are load-bearing for mul_mat).
+    Documented inline so nobody "optimizes" it again. The 200 ms encoder remains
+    the real cost but is out of this decode-step task's scope (and its safe
+    fusion path is blocked by the CPU-flash divergence).
+  - Generalization to long-output VLM decoders (qwen2vl/got/glm/internvl2/
+    lightonocr): the same cont-removal applies to any per-step attention that
+    already uses flash + permute; audit each on a quiet box, per-engine.
 
 - **P3 — LFM2 ShortConv → `ggml_ssm_conv`.** Perf refactor for Metal kernel
   coverage; regression risk on a working engine. Gate: `test-lfm2-diff` all
