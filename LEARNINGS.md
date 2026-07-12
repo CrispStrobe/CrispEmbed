@@ -41,6 +41,37 @@ output dim, never the name. And to localize a `ggml_can_mul_mat`/`ggml_can_repea
 abort, temporarily print `a->ne`/`b->ne` right before the assert in ggml.c
 (revert after) — it names the exact tensor + shapes in one run.
 
+## Two "inverse" interop scripts drift silently unless a round-trip test runs the REAL scripts end-to-end (2026-07-12, mmproj hardening)
+
+Adding a regression test for the llama.cpp⇆CrispEmbed Qwen2-VL mmproj interop
+immediately exposed two silent bugs that had shipped, both invisible to the
+existing per-script self-tests:
+
+1. **Name-map divergence.** The merge script (mmproj→CrispEmbed) was changed to
+   keep llama.cpp-native tensor names verbatim (`v.blk.*`, `mm.*`, `v.post_ln.*`)
+   because that's what the `qwen2vl_ocr` loader actually reads — but the export
+   script (CrispEmbed→mmproj) still read the *legacy* `vis.blocks.*`/`proj.*`
+   names the merge script no longer produces. So `export --in <real-merged-gguf>`
+   found **zero** vision tensors and errored. The export's own `--self-test`
+   passed the whole time because it round-tripped *synthetic legacy names it
+   generated itself*, never touching a file the merge script wrote. A per-script
+   self-test that fabricates its own input can't catch cross-script drift.
+
+2. **Hardcoded patch dtype.** The merge's temporal-patch concatenation did
+   `np.frombuffer(..., dtype=np.float16)`, silently corrupting any **F32**
+   `v.patch_embd.weight` (common in real mmproj files). Fix: view by the tensor's
+   real element *width* (`GGML_TYPE_META` byte size → `uint8/16/32/64`); the
+   concat only reorders whole elements, so a width-correct integer view is
+   byte-exact for any unquantized dtype and never interprets the float value.
+
+Durable rule: **for a pair of scripts claimed to be inverses (A→B, B→A), the
+only test that matters feeds a fixture through the REAL A then the REAL B (via
+subprocess) and asserts the output equals the input** — here, a synthesized tiny
+mmproj → `merge` → `export` → mmproj, all 40 vision tensors byte-identical, for
+each patch dtype (F16 and F32). Self-tests that validate one script against its
+own synthetic data give false confidence. See `tests/test_mmproj_interop.py`
+(pure Python, no model download, wired into the `regression.yml` smoke tier).
+
 ## `ggml_set_output` on a reshape/view does NOT protect the underlying source buffer — snapshot reads back garbage (2026-07-12, C4)
 
 Building the C4 cross-call prefix KV cache, the plan was: run a prefix-only

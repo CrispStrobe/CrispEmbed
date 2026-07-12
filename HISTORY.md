@@ -71,6 +71,26 @@ Completed milestones and work log. See PLAN.md for current roadmap.
   all mmproj changes are gated to the Qwen2-VL (non-SwiGLU / missing-metadata)
   path only.
 
+### mmproj interop hardening + regression test (`feat/mmproj-interop-tests`)
+- Added `tests/test_mmproj_interop.py`: a pure-Python, zero-download round-trip
+  test that synthesizes tiny llama.cpp-shaped LLM + mmproj fixtures and drives
+  the **real** merge + export scripts via subprocess, for both F16 and F32 patch
+  dtypes. Guards all four silent 2026-07-12 reverse-interop bug classes
+  (identity naming, vision special-token injection, temporal-patch concat,
+  merge⇆export inverse) + a full 40-tensor byte-identical round-trip. Wired into
+  the `regression.yml` smoke tier (no binary, no network).
+- Writing the test immediately caught **two latent bugs** that had shipped:
+  1. `export-mmproj-llamacpp.py` still read legacy `vis.*`/`proj.*` tensor names,
+     which the merge script stopped producing when it switched to identity
+     naming — so `export --in <real merged gguf>` found zero vision tensors. Its
+     own `--self-test` never caught it (it round-tripped synthetic legacy names).
+     Rewrote export to read native `v.blk.*`/`mm.*` names + invert the temporal
+     patch concat (split back into two slices, dtype-preserving).
+  2. The merge's patch concatenation hardcoded `np.float16`, silently corrupting
+     F32 patch embeddings. Now views by the tensor's real element width
+     (byte-exact for any unquantized dtype).
+  See LEARNINGS.md "Two 'inverse' interop scripts drift silently…".
+
 ---
 
 ## July 10, 2026 — TrOCR decoder: persistent KV cache + no_repeat_ngram
