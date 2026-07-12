@@ -692,43 +692,112 @@ engines are a 1-line `crispembed_imatrix_install(sched)` away), `crispembed-quan
   and a *fully-clean* bidirlm multimodal re-quant with F32 mel_filters (the shipped
   file uses quantized mel + the dequant read-fix; the quantizer now keeps mel F32,
   so a future re-quant would be marginally cleaner — audio is already 0.9979).
-### Pending work — consolidated backlog (2026-07-04)
+### Pending work — consolidated backlog (2026-07-12) — HANDOVER BRIEFS
 
-Nothing below is a regression or a blocker; the shipped surface is correct. In
-rough priority order (P1 = finishes an in-flight thread, P3 = large/speculative):
+Nothing below is a regression or a blocker; the shipped surface is correct.
+Each item is written so a fresh agent can execute it without re-deriving
+context. **Before starting ANY item: read LEARNINGS "measure the DOMINANT cost
+before fixing a flagged micro-gap" and "The build dir was silently CPU-only";
+verify `GGML_METAL:BOOL=ON` in `build/CMakeCache.txt`; check `git worktree
+list` + `git log main..<branch>` for a concurrent session's finished work; all
+edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 
-- **P1 — Finalize reranker 4-bit-vs-q8 calls with a larger A/B corpus.** The
-  bge-reranker / mxbai-rerank defaults stay q8_0 on the basis of τ<1.0 over only
-  n=9 paired query-doc examples (`RERANK_EVAL` in
-  `tools/kaggle/crispembed-imatrix-quant/imatrix_quant.py`). Expand to ~30 EN+DE
-  pairs (self-authored CC0) and re-run Kendall-τ; if 4-bit+imatrix holds τ≈1.0 on
-  the bigger set, repoint those two to q4_k+imatrix. The only genuinely-unfinished
-  imatrix thread.
-- **P2 — C2 data-driven GGUF behavior flags.** Bake `pooling_type`,
-  `causal_attention`, `add_bos_token`, `add_eos_token` into GGUF metadata
-  (llama.cpp convention) instead of per-arch branches in the dispatcher (e.g. the
-  LFM2 "BOS-only" rule). Pure refactor: `test_all_parity.py` outputs must be
-  byte-identical before/after across a WordPiece + SPM + BPE model. Watch the
-  `gguf_free` use-after-free landmine.
-- **P2 — C3 true batched decoder-embedding graph.** Encoder path is opt-in
-  (`n_ubatch==n_batch`, block-diagonal mask); the decoder path
-  (`decoder_encode_tokens_batch`) still needs the block-diagonal + prefix-recompute
-  layout for real throughput.
-- **P2 — C4 KV/prefix-sharing for decoder embeddings.** Port the `seq_cp`
-  cell-copy idea (copy *whole* shared prefixes only); A/B: reused-prefix outputs
-  identical to full recompute, wall-clock ≈ unique-suffix work. Confirm on LFM2.
-- **P3 — LFM2 ShortConv → `ggml_ssm_conv` perf refactor.** Better Metal kernel
-  coverage, but regression risk on a working engine; guard with `test-lfm2-diff`.
-- **P3 — C5 in-process Qwen2VL image preprocessor** (the long-standing
-  `Qwen2VLImageProcessorFast` port — replaces the Python preproc dependency).
-- **P3 — bidirlm multimodal clean re-quant** with F32 `mel_filters` (cosmetic; the
-  shipped file works via the dequant read-fix, audio already 0.9979). OOM-prone on
-  the 16 GB Mac — do on Kaggle if ever.
-- **P3 — Non-embedding OCR/vision perf** (unrelated to this arc): CUDA Class-B
-  divergence on Turing/Pascal (needs that HW to localize), F16-KV-cache ports for
-  deepseek_ocr2, unified `core/vlm_decoder.h`. Tracked in the OCR sections below.
-- **Domain-matched calibration corpora** — only if a specific deployment needs it;
-  the shipped imatrix is language/domain-agnostic (verified).
+- **P2 — C2 data-driven GGUF behavior flags. (IN PROGRESS 2026-07-12, branch
+  `feat/gguf-behavior-flags` if present — check before starting.)**
+  *What:* read optional GGUF KVs `crispembed.pooling_type` ("mean"/"cls"/
+  "last"), `crispembed.causal_attention` (bool), `tokenizer.ggml.add_bos_token`
+  / `add_eos_token` (llama.cpp-convention names) in the loader; when a KV is
+  absent, fall back to the EXACT current per-arch defaults so every shipped
+  GGUF behaves identically. Then emit the KVs from the converters so new
+  conversions are self-describing (e.g. LFM2 "BOS-only" → add_bos=true,
+  add_eos=false in metadata instead of code).
+  *Files:* `src/crispembed.cpp` (`pool_method` at ctx struct ~:223 and its
+  per-arch assignment sites; BOS/EOS wrap sites in the tokenize helpers),
+  `src/lfm2_embed.cpp` (BOS-only rule), `src/decoder_embed.cpp` (last-token
+  pooling / causal flags), `models/convert-bert-to-gguf.py` (+ decoder
+  converters) for emission.
+  *Gate:* `tests/test_all_parity.py` byte-identical before/after on a
+  WordPiece (all-MiniLM q8_0), an SPM (multilingual-e5-small), and a BPE
+  (gte-modernbert) model — all EXISTING GGUFs (no KVs → fallback path); plus
+  one fresh conversion with KVs present must match its pre-C2 conversion.
+  *Landmines:* `gguf_init_from_file` KVs must be read BEFORE `gguf_free`
+  (silent use-after-free corrupts inference); `model_mgr.cpp` churn.
+
+- **P2 — C4 KV/prefix-sharing ACROSS decoder-embedding calls.** The in-batch
+  version already exists — `decoder_encode_tokens_batch`
+  (`src/decoder_embed.cpp:1190`) detects a common prefix and lays out
+  `[prefix | suffix_0 | suffix_1 | ...]` with a causal block mask, computing
+  the shared prefix once per BATCH CALL. What is missing is persistence
+  ACROSS calls: cache the prefix KV (llama.cpp `seq_cp` cell-copy idea) so a
+  second batch with the same instruction prefix skips recomputing it.
+  *Files:* `src/decoder_embed.cpp` (`detect_common_prefix` ~:1160, the batch
+  layout right after), `src/lfm2_embed.cpp` (LFM2 ShortConv state cannot be
+  partially erased — copy WHOLE prefixes only, never split a conv window).
+  *Gate — quality first (load-independent):* reused-prefix outputs vs full
+  recompute cos ≥ 0.9999 on jina-v5-nano (small Qwen3, registry) + a Gemma3
+  (harrier-270m) + LFM2 (lfm2-embed). *Speed:* `tests/test_decoder_batch.py`,
+  N prompts sharing a prefix, target ≈ unique-suffix work — needs a QUIET box
+  (loadavg < ~8), else defer the timing claim like scunet.
+
+- **P2 — Tier-1 2b op-count reduction, one decoder end-to-end.** Warm Metal
+  decode is ~82% GPU-execute across ~355 sequential ops (measured, trocr);
+  ICB and graph-cache are dead ends (measured 18% / 2–6%). The lever is
+  fewer, bigger ops. *Concrete first target:* `src/math_ocr.cpp`
+  `build_decoder_step_graph` (lightest decoder, D=256, has
+  `MATH_OCR_DECODE_CACHE` + DS_PROFILE-style instrumentation): replace the
+  manual scale→mask-add→softmax with `ggml_soft_max_ext` (1 op for 3), fuse
+  QKV into one matmul + views, check norm→scale→bias chains. Count nodes
+  before/after (`gf->n_nodes`), target 355 → ≲300.
+  *Gate:* byte-identical greedy transcript on trocr-small-printed q8_0
+  (fox.png + scan_strip fixtures, `--ocr`), Metal AND CPU; per-step ms via
+  `CRISPASR_METAL_PROFILE=1` on a quiet box. Numerics-risky — one decoder,
+  measured, before generalizing.
+
+- **P3 — LFM2 ShortConv → `ggml_ssm_conv`.** Perf refactor for Metal kernel
+  coverage; regression risk on a working engine. Gate: `test-lfm2-diff` all
+  20 stages ≥ 0.9999 + `tools/dump_lfm2_reference.py` reference unchanged.
+
+- **P3 — C5 remnants (the preprocessor port itself is DONE — see below).**
+  `src/image_preprocess.{h,cpp}` implements smart_resize + Catmull-Rom
+  bicubic (a=-0.5, antialias) and is wired into qwen2vl/bidirlm/mixtex.
+  Remaining: (a) A/B the `a=-0.75` PyTorch-style kernel vs HF per engine —
+  the known sub-pixel residual (bidirlm `encode_image_file` cos 0.999984);
+  (b) mmproj-GGUF metadata-key + `<__media__>` chunk interop with llama.cpp
+  (do NOT link libmtmd — it PUBLIC-links all of llama).
+
+- **P3 — reranker corpus expansion (LOW EXPECTED VALUE — read first).** The
+  16×6 EN+DE corpus already showed 4-bit reorders ranking tails on EVERY
+  reranker (τ 0.925–0.967), which is why all rerankers default q8_0 — a
+  bigger corpus will almost certainly re-confirm that, not flip it. Only do
+  this if a deployment specifically needs 4-bit rerankers: extend
+  `RERANK_EVAL` in `tools/kaggle/crispembed-imatrix-quant/imatrix_quant.py`
+  to ~30 self-authored-CC0 EN+DE graded groups, Kendall-τ vs f16 gold,
+  repoint only on τ=1.0.
+
+- **P3 — CrispASR `gpu_backend_pref.h` sync.** Commit `0622c1d` added a
+  metal→mtl alias (ggml registry is named "MTL"); CrispASR's copy needs the
+  same 3 lines. Its tree had uncommitted work on 2026-07-12 — sync when
+  clean, keep the files logically identical (see the pcs.cpp convention).
+
+- **P3 — esrgan tile-loop parallelism.** Intra-op threading measured SLOWER
+  (see negative result above); the real lever is running whole 128px tiles
+  concurrently, which needs per-thread backend+sched replication (the tile
+  loop shares one `ctx->enc_sched`). A real concurrency project; verify on a
+  quiet box.
+
+- **P3 — bidirlm multimodal clean re-quant** with F32 `mel_filters`
+  (cosmetic; shipped file works via the dequant read-fix). OOM-prone on the
+  16 GB Mac — Kaggle only.
+
+- **P3 — non-embedding OCR/vision perf** (CUDA Class-B divergence needs
+  Turing/Pascal HW; deepseek_ocr2 F16-KV port; unified `core/vlm_decoder.h`)
+  — tracked in the OCR sections below.
+
+- **Stale-claims corrections (2026-07-12):** the old backlog said the decoder
+  batched graph "still needs the block-diagonal + prefix-recompute layout" —
+  it EXISTS (`decoder_encode_tokens_batch`, prefix-sharing included); and C5
+  was listed as an open port — the port shipped, only the remnants above are
+  open.
 
 **C2 — data-driven GGUF behavior flags.** Bake `pooling_type`, `causal_attention`,
 `add_bos_token`, `add_eos_token` into GGUF metadata (llama.cpp convention) instead
@@ -809,7 +878,7 @@ prefix-shared decoder batches" is marked DONE — this extends/validates it.)
   recompute (cos ≥ 0.9999) on Qwen3-Embedding and a Gemma3 embedder; separately
   confirm on LFM2 (whole-prefix constraint).
 
-**C5 — mtmd preprocessing alignment (the open Qwen2VLImageProcessor port).**
+**C5 — mtmd preprocessing alignment. PORT DONE (`src/image_preprocess.{h,cpp}`, wired into qwen2vl/bidirlm/mixtex); only the remnants below are open.**
 Use `tools/mtmd/mtmd-image.cpp` as the reference spec: `calc_size_preserved_ratio`
 (= HF `smart_resize`), `resize_bicubic_pillow` (fixed-point, PIL `a=-0.5` — note
 their comment that PyTorch uses `a=-0.75`; this is exactly our sub-pixel resize
