@@ -1948,9 +1948,11 @@ manual decode (no HF `.generate()`), seed `<bos>=4426`, stop `<eos>=8822`,
   step via concat). Token-identical to the full-recompute path (kept behind
   `SMT_OCR_FULL_DECODE=1` for A/B) and to HF, CPU + Metal. **5.4× faster** (0.37 s
   vs 1.98 s for ~100 tokens); the gain grows with sequence length.
-- ⏭ Remaining: GGUF upload (needs `hf auth login` — staged in scratchpad:
-  `smt-grandstaff-{f32,q8_0}.gguf` → `cstr/smt-grandstaff-GGUF`; registry entry
-  already points there). Metal full per-stage diff optional (decode verified).
+- ✅ GGUF upload: `cstr/smt-grandstaff-GGUF` (f32 83 MB + q8_0 24 MB + MIT model
+  card; card license verified `mit`). Registry auto-download verified end-to-end:
+  `crispembed -m smt-grandstaff --ocr score.png` downloads q8_0 and decodes
+  101/101 vs HF. **SMT OMR port complete.** (Metal full per-stage diff optional —
+  decode already verified on Metal.)
 
 **Landmines:**
 - **⚠ SMT attention is UNSCALED.** `MHA.forward` computes `bmm(q,k)` then softmax
