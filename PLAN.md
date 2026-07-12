@@ -1775,6 +1775,182 @@ all Apache-2.0 and would be a major accuracy upgrade.
 can be replaced with Apache-2.0 82% models — eliminates the license gate
 in the UI AND nearly doubles handwritten accuracy.
 
+### Optical Music Recognition (OMR) — models to port (2026-07-12)
+
+OMR is "OCR for staff notation": the winning modern approach is exactly the
+TexTeller shape — vision encoder + autoregressive transformer decoder emitting
+a linearized notation token sequence. This reuses the existing
+VisionEncoderDecoder machinery (`math_ocr.cpp` path). Output format is
+irrelevant to us (bekern / **kern / MusicXML / LilyPond are all parseable
+downstream), so we optimize for arch fit + license, not output dialect.
+
+**Two distinct problems:** printed staff notation (tractable, MIT weights
+exist) and handwritten (hard; the real license risk is on the *training
+data*, not the code — see landmine below).
+
+| # | Model | Params | License (code / weights) | Architecture | Output | Handles | Effort | Status |
+|---|-------|--------|--------------------------|-------------|--------|---------|--------|--------|
+| 1 | **Sheet Music Transformer (SMT / SMT++)** | **21.4M** | **MIT / MIT** | ConvNext encoder + vanilla Transformer decoder | bekern | Printed polyphonic / pianoform | **Low** — TexTeller-clone; only new piece is the ConvNext backbone (conv + LN + GELU, no attention — simpler than any ViT already ported) | **TODO — recommended first** |
+| 2 | **oemer** | 2× U-Net | **MIT / MIT** (GH releases) | 2 semantic-segmentation U-Nets (staff/symbol) + numpy reconstruction | MusicXML | Printed, phone photos, skewed | **High** — multi-model + heavy rule-based reconstruction; poor ggml fit | Reference/fallback only |
+| 3 | Polyphonic-TrOMR (NetEase) | ~22M | **Apache-2.0 / Apache-2.0** (weights committed in-repo) | ViT + multi-head Transformer decoder (parallel rhythm/pitch/lift/note heads) | symbolic text (`clef-G2+keySignature-…`) | Printed polyphonic | Medium | Viable fallback; `homr` (AGPL) wraps it but weights are the clean Apache-2.0 ones |
+| 4 | Flova/omr_transformer | ~ | Apache-2.0 / Apache-2.0 (HF) | Donut VisionEncoderDecoder | LilyPond | artificial + **handwritten** + whiteboard ("simple notes" toy) | Medium | Only permissive handwritten lead; low quality |
+| ~~5~~ | ~~homr (liebharc)~~ | — | ~~**AGPL-3.0**~~ | pipeline + TrOMR | MusicXML | printed/camera | — | **REJECTED — AGPL** |
+
+**Recommended priority:**
+
+1. **SMT (printed)** — port target. MIT code *and* MIT weights, only 21.4M
+   params (quantizes to near-nothing), ConvNext + standard transformer decoder.
+   Weights: `antoniorv6/smt-grandstaff`, `-camera-grandstaff`,
+   `-string-quartets` (all MIT). Trained on GrandStaff (Ideal + Camera) and
+   Quartets. Plan: new `models/convert-smt-to-gguf.py` mirroring the TexTeller
+   converter; reuse the `math_ocr.cpp` decoder graph; add a ConvNext encoder
+   (new, but the simplest backbone in the roster); bekern tokenizer is a small
+   finite lookup vocab (no BPE/Unigram needed). Validate parity vs HF weights
+   the usual way.
+
+2. **Handwritten (phase 2)** — no MIT-weights handwritten model with SMT's
+   polish exists. Reach handwritten by *fine-tuning SMT on synthetic +
+   license-clean handwritten-style data*, same graph. `Flova/omr_transformer`
+   is the only permissive handwritten lead but is a toy.
+
+3. **Polyphonic-TrOMR (viable fallback)** — weights confirmed available and
+   clean: `tromr/workspace/checkpoints/img2score_epoch47.pth` (86.3 MB) is
+   committed directly into the Apache-2.0 repo (not LFS → covered by the repo
+   license), with a 4-file tokenizer set (`tokenizer_{lift,pitch,rhythm,note}.json`).
+   Architectural wrinkle vs SMT: TrOMR is **not** a single autoregressive stream
+   — it has *parallel classification heads* (rhythm / pitch / lift / note) per
+   decoder timestep, so a port needs 4 output projections + a merge step, not
+   one LM head. Prefer SMT unless we specifically need TrOMR's real-world/camera
+   robustness. `homr` wraps this same model but is AGPL — take the weights from
+   the NetEase repo, not homr.
+
+**Reuse map (assessed 2026-07-12, feat/smt-omr worktree):** ~70% of the SMT
+port reuses existing infra —
+- **Decoder + decode loop + C ABI:** `src/math_ocr.cpp` is already SMT's exact
+  shape ("Hybrid CNN + ViT encoder → cross-attention Transformer decoder → token
+  sequence"): KV-cached decoder, greedy + beam decode, batched encode, per-token
+  confidences. SMT's "classic Transformer decoder" == TrOCR == this; port by
+  config, not new graph code.
+- **Converter:** `models/convert-trocr-safetensors-to-gguf.py` already handles
+  the decoder + top-level `decoder_start_token_id`. New `convert-smt-to-gguf.py`
+  = that file + a ConvNext encoder tensor mapping.
+- **ConvNext encoder (the one new piece):** CrispASR has ConvNeXt blocks in
+  `f5_tts / vibevoice / qwen3_tts / kugelaudio / outetts_wavtok` (1-D/audio, but
+  identical block: dwconv → LN → pwconv → GELU → pwconv → layer-scale → residual)
+  + `core/activation.h`; CrispEmbed has mature `ggml_conv_2d` engines (`swinir`,
+  `nafnet`, `cnn_embed`, `adair`, `tbsrn`) for the 2-D image side. Adapt, not
+  invent.
+- **Shared load/preproc/vocab:** math_ocr grayscale-resize-normalize;
+  `core/{gguf_loader,cpu_ops,bpe}.h`; bekern = fixed lookup vocab (simpler than
+  any in-tree BPE).
+- New work = 2-D ConvNext encoder + bekern vocab + encoder-side converter.
+
+**Confirmed SMT architecture (2026-07-12, from SMT++ source + safetensors header):**
+Total **21.4M params, F32, 360 tensors, 85.5 MB** `model.safetensors`. Greedy
+manual decode (no HF `.generate()`), seed `<bos>=4426`, stop `<eos>=8822`,
+`pad=0`, up to `maxlen=1281` steps.
+- **⚠ Convert against SMT++ tensor names, NOT SMT-main.** The shipped
+  grandstaff/camera-grandstaff weights only match `SMT-plusplus/smt_model/
+  modeling_smt.py` (`input_attention`/`cross_attention`/`ffNet`/`out_layer`); the
+  SMT-main repo has a rewritten module whose names match no checkpoint.
+  `smt-string-quartets` ships **no weights** (README only).
+- **Encoder** = stock HF `ConvNextModel(num_channels=1, num_stages=3,
+  hidden_sizes=[64,128,256], depths=[3,3,9])`. Plain ConvNeXt, no attention. Stem
+  Conv2d(1→64,k4,s4)+LN; stage-1/2 downsample Conv2d(k2,s2); **16× H/W reduction**.
+  Last stage already outputs 256 = `d_model`, so **no encoder→decoder projection**.
+  `encoder.layernorm` (pooler LN) is in the ckpt but **dead** on the inference path
+  (`last_hidden_state` is pre-pooler). Tensors:
+  `encoder.embeddings.patch_embeddings.{weight[64,1,4,4],bias}`,
+  `encoder.encoder.stages.{0,1,2}.layers.{i}.{dwconv,layernorm,pwconv1,pwconv2,layer_scale_parameter}`,
+  `encoder.encoder.stages.{1,2}.downsampling_layer.{0=LN,1=Conv2d}`.
+- **Decoder** = 8 layers, d_model=256, **4 heads** (hd=64), **FFN dim=256 (1×, not
+  4×)**, activation **ReLU** (+ `end_relu` before the head). Post-norm:
+  self-attn→norm1→cross-attn→norm2→FFN→norm3. Token emb `nn.Embedding[20578,256]`;
+  **embeddings NOT tied** to head. LM head = `Conv1d(256→20578,k1)` →
+  `decoder.out_layer.weight[20578,256,1]` (squeeze trailing 1 → Linear) + bias.
+  Tensors: `decoder.embedding.weight`, `decoder.decoder.layers.{0..7}.
+  {input_attention,cross_attention}.{lq,lk,lv,out_proj}.{weight,bias}`,
+  `.ffNet.{0,3}.{weight,bias}`, `.{norm1,norm2,norm3}.{weight,bias}`.
+- **Positional encodings are NOT in the checkpoint — bake as constants.** (a) 1-D
+  sinusoidal added to decoder token embeddings; (b) 2-D sinusoidal
+  (`dim=256`, first 128ch=row H, last 128ch=col W, `div=exp(-arange(0,dim//2,2)/dim·ln1e4)`).
+- **⚠ Cross-attention key≠value:** encoder output flattened over H×W;
+  the 2-D PE is added to the **KEYS only**; **VALUES are the raw** flattened
+  features. Query = decoder states. Cross-attn has no mask; self-attn is causal.
+- **Preprocessing:** grayscale, **always color-invert** (`RandomInvert(p=1.0)` —
+  mandatory, not augmentation), `ToTensor` → **[0,1], NO mean/std normalize**.
+  `cv2.resize` bilinear at `reduce_ratio=0.5`, height floored/capped ~256px
+  (`maxh=256`, `maxw=3056`).
+- **bekern vocab** = fixed word-level lookup (NOT BPE), `out_categories=20578`,
+  identical across grandstaff/camera. `w2i`/`i2w` embedded in `config.json`
+  (875 kB) and as `vocab/*.npy`. Split GT on whitespace/`·` delimiter; layout
+  tokens `<b>` break / `<s>` space / `<t>` tab.
+- **SMT vs SMT++:** identical neural graph; SMT++ gains are training-side
+  (curriculum + synthetic full pages). Full-page = same graph, bigger images +
+  longer decode + layout tokens, no extra module. **Target single-system
+  grandstaff first** (the only checkpoints with published weights).
+
+**Port progress (2026-07-12, feat/smt-omr worktree):**
+- ✅ `models/convert-smt-to-gguf.py` — torch-free, verbatim SMT++ names, squeezes
+  `out_layer` 1×1 conv→Linear, bakes 1-D decoder PE, records `smt.scale_attention=
+  False`. Verified GGUF: arch `smt_ocr`, 361 tensors, 20578-tok vocab, 83 MB.
+- ✅ `tools/dump_smt_reference.py` — loads REAL SMT++ model (hooks, not a
+  re-forward), dumps 18 per-stage F32 tensors → `smt_ref.gguf`. Validated on a
+  real GrandStaff test image: enc 336×128→`(256,8,21)` (16× reduction, 168 mem
+  tokens), decode emits correct bekern (`**ekern_1.0 <t> … *clefG2 <b> …`).
+  Test assets in scratchpad: `smt-grandstaff/`, `SMT-plusplus/` clone, `gs_test0.png`
+  (+ `.gt.txt`), `smt_ref.gguf`. Note: cloned `SMTConfig` needs a
+  `super().__init__(**kwargs)` patch to load under transformers 4.57.
+- ✅ `src/smt_ocr.{h,cpp}` ggml engine (ConvNext encoder + cross-attn decoder +
+  greedy decode) + `tests/test_smt_diff.cpp` + CMake wiring. **Full per-stage
+  parity vs `smt_ref.gguf` (CPU):** enc_stage0/1/2 + enc_output + mem_key
+  cos_min ≥ 0.999996; dec_tok_emb + dec_layer0–7 + logits cos_min = **1.000000**.
+  Native greedy decode emits correct bekern (header/clefs/meter/barlines match
+  GT exactly; `*k[]` vs GT `*k[b-]` is the model's own prediction — the Python
+  ref emits `*k[]` too). Bugs found & fixed during bring-up: (a) off-trunk
+  `enc_stageN` snapshots weren't in the graph (`to_tokens` forks off the trunk)
+  → `ggml_build_forward_expand` each; (b) `crispembed_diff.h` GGUF reader only
+  decodes F32 (its I32 branch checks a stale type id 5, but this ggml tags I32
+  as 26) → dumper now stores `token_ids` as F32.
+- ⏭ Remaining: (1) preprocessing parity in `recognize_file` (cv2-bilinear
+  resize + torchvision grayscale/invert vs current nearest+luma) — validate via
+  a full native-vs-HF roundtrip; (2) KV-cache the decoder (greedy is O(L²)
+  full-recompute, ~8.6 s/250 tok on CPU); (3) Metal validation (diff was
+  CPU-only — snapshots lie on Metal); (4) CLI/registry/C-API/quantize wiring
+  (contributing.md checklist); (5) GGUF upload + registry entry.
+
+**Landmines:**
+- **⚠ SMT attention is UNSCALED.** `MHA.forward` computes `bmm(q,k)` then softmax
+  with **no** `1/sqrt(head_dim)` — `self.scale_factor` is defined but never
+  applied (verified in source, not the abstract). The C++ must NOT scale QK^T
+  (converter records `smt.scale_attention=False`). Also: token embeddings are
+  **not** scaled by `sqrt(d_model)` (no `scale_embedding`).
+- **Cross-attn key≠value:** memory_key = flattened encoder features **+ 2-D PE**;
+  memory_value = **raw** flattened features. Easy to wire both to the same tensor.
+- **Encoder `last_hidden_state` is pre-pooler-LN** → `encoder.layernorm` in the
+  ckpt is dead weight; don't apply it. Feature map is `(256, H/16, W/16)`.
+- **Handwritten training-data license trap:** the canonical handwritten OMR
+  datasets — **MUSCIMA++ / CVC-MUSCIMA — are CC BY-NC-SA (non-commercial)**.
+  Training weights on them contaminates the *weights* for commercial use (same
+  pattern as the old PosFormer/BTTR/HMER math models). PrIMuS / Camera-PrIMuS /
+  GrandStaff are printed/synthetic and license-clean. Keep handwritten training
+  data NC-free from day one if shipped weights must be commercially usable.
+- **VisionEncoderDecoder `decoder_start_token_id`** comes from the *top-level*
+  config, not the nested decoder config (the TexTeller start-token bug that
+  poisoned position-0 KV — see the TexTeller 3.0 entry above). SMT's converter
+  must resolve the start token the same way.
+- Watch F16 Metal matmul overflow on large activations (see
+  [[metal-mul-mm-f16-overflow]]) as with all VED ports.
+
+**Sources:** SMT [github.com/antoniorv6/SMT](https://github.com/antoniorv6/SMT) ·
+[SMT++](https://github.com/antoniorv6/SMT-plusplus) ·
+[HF smt-grandstaff (MIT)](https://huggingface.co/antoniorv6/smt-grandstaff) ·
+[PRAIG collection](https://huggingface.co/collections/PRAIG/sheet-music-transformer-6853c4ca1bd7980a91677dfd).
+oemer [github.com/BreezeWhite/oemer (MIT)](https://github.com/BreezeWhite/oemer).
+TrOMR [github.com/NetEase/Polyphonic-TrOMR (Apache-2.0, weights `img2score_epoch47.pth` 86 MB in-repo)](https://github.com/NetEase/Polyphonic-TrOMR).
+[Flova/omr_transformer (Apache-2.0)](https://huggingface.co/Flova/omr_transformer).
+homr [github.com/liebharc/homr (AGPL-3.0)](https://github.com/liebharc/homr).
+
 ### Feature gaps vs fastembed-rs
 
 | Gap | Impact | Effort | Notes |
