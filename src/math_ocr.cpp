@@ -318,8 +318,13 @@ static ggml_tensor * g_linear(ggml_context * g, ggml_tensor * x, ggml_tensor * w
 static ggml_tensor * g_mha(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, int n_heads, int T) {
     int H = Q->ne[0];
     int hd = H / n_heads;
-    // Reshape [H, T] → [hd, nh, T] → permute [hd, T, nh]
-    // Reshape [H, T] → [hd, nh, T] → permute → [hd, T, nh] → cont
+    // Reshape [H, T] → [hd, nh, T] → permute → [hd, T, nh] → cont.
+    // NOTE: this MUST stay manual F32 matmul + soft_max_ext. Converting the
+    // encoder to ggml_flash_attn_ext (F16 intermediate) is byte-identical on
+    // Metal but DIVERGES on the CPU kernel for this 578×578 full-attention shape
+    // (transcript changed: GOOD→DSP.90, CARDS→RECEIPT) — the mul_mat kernels
+    // also require contiguous src, so the conts are load-bearing here. Only the
+    // single-query decoder (g_mha_1q) can drop conts + use flash safely.
     Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, T), 0, 2, 1, 3));
     K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, T), 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, T), 0, 2, 1, 3));
@@ -405,12 +410,22 @@ static ggml_tensor * g_mha_1q(ggml_context * g, ggml_tensor * Q, ggml_tensor * K
                               int n_kv) {
     int H = (int)Q->ne[0];
     int hd = H / n_heads;
-    // Q: [H, 1] → [hd, nh, 1] → permute → [hd, 1, nh]
-    Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, 1), 0, 2, 1, 3));
-    // K: [H, n_kv] → [hd, nh, n_kv] → permute → [hd, n_kv, nh]
-    K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, n_kv), 0, 2, 1, 3));
-    // V: [H, n_kv] → [hd, nh, n_kv] → permute → [hd, n_kv, nh]
-    V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, n_kv), 0, 2, 1, 3));
+    // flash_attn_ext only requires row-contiguous src (nb0 == type_size), which
+    // permute(0,2,1,3) preserves — so the ggml_cont copies after each permute
+    // were unnecessary. Dropping them removes 3 copy-kernels per attention call
+    // (6/layer across self+cross): decode-step graph 355 -> 319 nodes and the
+    // decode step runs ~30% faster (interleaved trocr q8 Metal: 45.5 -> 31.5 ms,
+    // no overlap), transcript byte-identical on Metal AND CPU (fox + scan_strip).
+    // Default is now cont-off; MATH_OCR_ATTN_CONT=1 restores the old copies for
+    // regression bisection.
+    static const bool keep_cont = (std::getenv("MATH_OCR_ATTN_CONT") != nullptr);
+    auto shape = [&](ggml_tensor * t, int seq) {
+        t = ggml_permute(g, ggml_reshape_3d(g, t, hd, n_heads, seq), 0, 2, 1, 3); // [hd, seq, nh]
+        return keep_cont ? ggml_cont(g, t) : t;
+    };
+    Q = shape(Q, 1);
+    K = shape(K, n_kv);
+    V = shape(V, n_kv);
 
     // flash_attn_ext: Q [hd,1,nh], K [hd,n_kv,nh], V [hd,n_kv,nh] → output [hd,1,nh]
     ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
