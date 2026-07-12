@@ -823,13 +823,16 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 - **P3 — C5 remnants (the preprocessor port itself is DONE). Assessed
   2026-07-12 — both correctly deferred, for concrete reasons (not just the
   brief).**
-  - (a) bicubic A/B: `image_preprocess.cpp` currently uses `a=-0.5` (Catmull-Rom,
-    matches PIL/torchvision-transforms), residual already **cos 0.999984**. The
-    A/B against `a=-0.75` (torch.nn.functional style) needs an HF reference dump,
-    i.e. a ~4 GB qwen2vl/bidirlm download + `transformers`, for a **<0.001**
-    cosine change. Marginal and RAM-heavy on the 16 GB box; the brief's own
-    "only worth bundling with other work on those engines" stands. Not done
-    standalone.
+  - (a) bicubic A/B — **RESOLVED by measurement 2026-07-12 (no model download
+    needed).** The A/B doesn't need a 4 GB VL model: it's about which cubic
+    coefficient the HF processors match. Measured locally (PIL vs torch on a
+    structured test image): HF `image_transforms.resize` uses **PIL/Pillow**
+    (`a=-0.5`), which is what `image_preprocess.cpp` already uses — so `a=-0.5`
+    is correct for HF parity (residual cos 0.999984). `a=-0.75` (OpenCV
+    `INTER_CUBIC` / `torch.nn.functional`) differs from `a=-0.5` by only cos
+    0.999983–0.999995 (max ~0.13/255) AND would move *away* from the PIL path —
+    so switching is strictly worse. No change; corrected the stale code comment
+    (it wrongly listed OpenCV under `a=-0.5`).
   - (b) mmproj interop — **DONE + GENERALIZED (see the status block above;
     the narrative below is the original blow-by-blow, kept for the debugging
     trail).** Both directions ship for Qwen2-VL; the import path is now a

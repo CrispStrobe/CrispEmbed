@@ -49,7 +49,13 @@ bool smart_resize(int height, int width, int factor, int min_pixels, int max_pix
 
 namespace {
 
-// Catmull-Rom cubic kernel with a = -0.5 (matches torchvision / OpenCV / PIL).
+// Catmull-Rom cubic kernel with a = -0.5. This matches PIL (Pillow) and
+// torchvision.transforms with the PIL backend — the resize path HF vision
+// processors (Qwen2-VL etc.) actually use, so a = -0.5 is the correct choice
+// for HF parity (measured residual cos 0.999984). NOTE: OpenCV INTER_CUBIC and
+// torch.nn.functional.interpolate(mode='bicubic') use a = -0.75 instead; the
+// difference vs a = -0.5 is only cos ~0.99999 (max ~0.13/255), so it is not
+// worth a runtime toggle — see PLAN "C5 remnants (a)".
 //   |x| <  1: (a+2)|x|^3 - (a+3)|x|^2 + 1
 //   |x| <  2: a|x|^3 - 5a|x|^2 + 8a|x| - 4a
 //   else    : 0
