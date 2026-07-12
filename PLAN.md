@@ -749,16 +749,22 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 > llama.cpp mmproj at a sane size); GLM-4V would mean a 9B download vs a loader
 > still needing dynamic-preprocessing work.
 >
-> RESOLVED in the 2026-07-12 backlog sweep: **C5(a) bicubic** (measured — HF uses
-> PIL a=−0.5, already correct; a=−0.75 is cos<0.00002 worse); **`<__media__>`
-> marker** (not-applicable — mtmd-internal, CrispEmbed expands tokens per-engine;
-> no CLI prompt entry point); **reranker corpus** (expanded 16→30 EN+DE groups;
-> τ-eval is Kaggle-only); **internvl2 diff-harness input guard** (dump stamps
-> `diff.input_mode`, harness refuses image-vs-gradient mismatch).
-> STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h` sync (3-line
-> change applied on disk, uncommitted — commit in the CrispASR session); LFM2
-> ShortConv → `ggml_ssm_conv` (P3, regression risk, needs the model); bidirlm
-> multimodal clean re-quant (P3).
+> **2026-07-12 backlog sweep — the P3 list is now fully triaged (every item
+> DONE, WON'T-DO with a verified reason, or externally-blocked; nothing left to
+> start on this box):**
+> - **DONE:** C5(a) bicubic (measured — HF uses PIL a=−0.5, already correct;
+>   a=−0.75 is cos<0.00002 worse); reranker corpus (16→30 EN+DE groups; τ-eval
+>   Kaggle-only); internvl2 diff-harness input guard (dump stamps
+>   `diff.input_mode`, harness refuses image-vs-gradient mismatch); CrispASR
+>   `gpu_backend_pref.h` sync (already committed `9f2e68f7`; logically identical).
+> - **WON'T-DO (verified):** `<__media__>` marker (mtmd-internal; CrispEmbed
+>   expands tokens per-engine, no entry point); LFM2 ShortConv → `ggml_ssm_conv`
+>   (already Metal-covered via im2col+mul_mat; ssm_conv is causal vs the
+>   bidirectional embed conv); reverse export for SmolVLM/InternVL (no use case —
+>   both already ship as llama.cpp GGUFs); esrgan tile parallelism (intra-op
+>   measured slower).
+> - **Externally blocked:** bidirlm clean re-quant (cosmetic + Kaggle-only OOM);
+>   non-embedding OCR/vision CUDA perf (needs Turing/Pascal HW).
 
 
 - **C2 data-driven GGUF behavior flags — DONE (2026-07-12).** Survey found it
@@ -931,20 +937,30 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
   almost certainly re-confirm the q8_0 default, not flip it; only repoint a
   reranker to 4-bit if it scores τ=1.0 on the expanded set.
 
-- **P3 — CrispASR `gpu_backend_pref.h` sync.** Commit `0622c1d` added a
-  metal→mtl alias (ggml registry is named "MTL"); CrispASR's copy needs the
-  same 3 lines. Its tree had uncommitted work on 2026-07-12 — sync when
-  clean, keep the files logically identical (see the pcs.cpp convention).
+- **P3 — CrispASR `gpu_backend_pref.h` sync — DONE (verified 2026-07-12).**
+  CrispASR committed the alias in `9f2e68f7` ("alias --gpu-backend metal ->
+  mtl"); a logical diff of the two `gpu_backend_pref.h` copies shows only
+  per-repo clang-format style (`char*` vs `char *`, single- vs multi-line ifs) —
+  the metal→mtl logic is identical in both, exactly as the pcs.cpp "sync logic
+  not bytes" convention prescribes. No further action.
+
+- **P3 — reverse export for SmolVLM/InternVL — WON'T-DO, no use case
+  (2026-07-12).** CrispEmbed→llama.cpp mmproj export only helps a model that
+  exists in CrispEmbed format but NOT in llama.cpp. SmolVLM and InternVL both
+  already ship as llama.cpp GGUFs (ggml-org), so exporting them back is dead
+  work. (Qwen2-VL keeps its export because it predates this and served as the
+  interop proof.) Revisit only for a genuinely CrispEmbed-exclusive VL model.
 
 - **P3 — esrgan tile-loop parallelism.** Intra-op threading measured SLOWER
   (see negative result above); the real lever is running whole 128px tiles
   concurrently, which needs per-thread backend+sched replication (the tile
   loop shares one `ctx->enc_sched`). A real concurrency project; verify on a
-  quiet box.
+  quiet box. **Not started — measured-negative micro-lever, deferred.**
 
-- **P3 — bidirlm multimodal clean re-quant** with F32 `mel_filters`
-  (cosmetic; shipped file works via the dequant read-fix). OOM-prone on the
-  16 GB Mac — Kaggle only.
+- **P3 — bidirlm multimodal clean re-quant** with F32 `mel_filters` — **no
+  local action possible (confirmed 2026-07-12): cosmetic** (the shipped GGUF
+  already works via the dequant read-fix) **and Kaggle-only** (re-quant OOMs the
+  16 GB Mac). Nothing to do on this box.
 
 - **P3 — non-embedding OCR/vision perf** (CUDA Class-B divergence needs
   Turing/Pascal HW; deepseek_ocr2 F16-KV port; unified `core/vlm_decoder.h`)
