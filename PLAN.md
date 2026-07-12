@@ -420,6 +420,14 @@ Vision / VLM-OCR (via `libmtmd`, projector-id keyed):
 | CLIP/SigLIP standalone image **or** text embed | ❌ | — | mtmd is tower-only (per-patch, LLM-sized); no text tower — **we are unique** |
 | Math OCR (pix2tex/TrOCR/HMER/BTTR/PosFormer/MixTex/PP-FormulaNet/PARSeq/Tesseract/Pix2Struct) | ❌ | — | enc-dec/CTC out of llama.cpp's class — **we are unique** |
 
+**Reverse interop (import a stock llama.cpp mmproj INTO CrispEmbed):** shipped +
+validated for the three rows where both a working CrispEmbed loader and a
+downloadable mmproj exist — `qwen2vl_merger`, `idefics3`, `internvl` — via the
+auto-detecting `models/merge-llamacpp-gguf.py` (see the status block below and
+README "Importing a stock llama.cpp VL model"). Qwen2-VL is bidirectional
+(export too). The rest need either a non-crashing dynamic-preproc loader
+(`glm4v`) or an mmproj llama.cpp doesn't ship (`GOT-OCR2`).
+
 Entirely outside the ggml ecosystem (CrispEmbed-only): **face** (YuNet/SCRFD/
 AuraFace/SFace), **detection/layout** (DBNet/RT-DETRv2/Surya-Det), **NER/KIE**
 (GLiNER/LiLT; BERT-NER only an *unmerged* PR #19725), **LID** (CLD3/GlotLID),
@@ -711,18 +719,35 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
 > llama.cpp Qwen2-VL-2B now OCRs correctly in `crispembed --ocr`, no 2.5-VL
 > regression).
 >
-> **mmproj interop hardening + 2nd family (2026-07-12, follow-up):**
+> **mmproj interop hardening + generalized to 3 families (2026-07-12, follow-up):**
 > `tests/test_mmproj_interop.py` — a real-scripts round-trip regression (found +
 > fixed two shipped bugs: export read stale legacy names; merge hardcoded F16
-> patch dtype). Then **generalized to a family-dispatch** — shared
-> `models/gguf_merge_core.py` (Qwen2-VL merge ported onto it, byte-identical) +
-> **`models/merge-llamacpp-smolvlm-gguf.py`**: imports a stock llama.cpp
-> **SmolVLM (Idefics3)** pair into the `smoldocling` engine, **validated
-> end-to-end** (SmolVLM-256M OCRs correctly on Metal). Key transform: un-permute
-> q/k (llama.cpp's interleaved-RoPE layout → HF). Both tests in the
-> `regression.yml` smoke tier. So the import path is proven for TWO families now
-> (Qwen2-VL fused-QKV/GELU **and** SmolVLM/Idefics3 SigLIP); adding a 3rd is a
-> new per-family map on the shared core + a real reference to validate against.
+> patch dtype). Then **generalized to a family-dispatch on shared
+> `models/gguf_merge_core.py`** — one unified entry point
+> `models/merge-llamacpp-gguf.py` auto-detects the family from
+> `clip.projector_type` and routes to the per-family merge. THREE families now
+> import a stock llama.cpp VL model into CrispEmbed, each **validated
+> end-to-end** (correct OCR + diff-harness intermediate parity with the native
+> converter, isolated against the source `llama-mtmd-cli`):
+>   - **Qwen2-VL** (`qwen2vl_merger` → `qwen2vl_ocr`): identity names, Conv3d
+>     temporal patch. `merge-llamacpp-qwen2vl-gguf.py` (bidirectional: also
+>     `export-mmproj-llamacpp.py`).
+>   - **SmolVLM/Idefics3** (`idefics3` → `smoldocling`): SigLIP, `ffn_down`=fc1,
+>     arch=llama LLM → q/k **un-permute**. `merge-llamacpp-smolvlm-gguf.py`
+>     (256M + 500M validated).
+>   - **InternVL2.5/3** (`internvl` → `internvl2_ocr`): InternViT, QKV re-fusion,
+>     layer-scale, class token, MLP connector, `ffn_up`=fc1 (inverse of SmolVLM),
+>     dynamic-tiling metadata, arch=qwen2 LLM → q/k copied **VERBATIM** (NEOX
+>     RoPE — un-permuting scrambles it; this was the bug).
+>     `merge-llamacpp-internvl-gguf.py` (1B validated).
+> Key cross-cutting rules (LEARNINGS.md): un-permute q/k is **arch-dependent**
+> (llama yes, qwen2 no); map ViT FFN fc1/fc2 by **output dim**, never name; the
+> diff-harness catches masked bugs the output hides (InternVL OCR'd correctly at
+> `vis_patch_embed cos=-0.936`). Four Python tests + README "Importing a stock
+> llama.cpp VL model" in the `regression.yml` smoke tier. These three are the
+> complete tractable set (both a working CrispEmbed loader AND a downloadable
+> llama.cpp mmproj at a sane size); GLM-4V would mean a 9B download vs a loader
+> still needing dynamic-preprocessing work.
 >
 > STILL OPEN (all P3, low-EV/blocked): CrispASR `gpu_backend_pref.h`
 > sync (3-line change applied on disk, uncommitted — commit in the CrispASR
