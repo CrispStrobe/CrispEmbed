@@ -1149,6 +1149,14 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
     ggml_set_output(cur);
 
     ggml_build_forward_expand(gf, cur);
+    if (std::getenv("MATH_OCR_NODES")) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fprintf(stderr, "[math_ocr] decode-step graph: n_nodes=%d (n_dec=%d, n_kv=%d, n_enc=%d)\n",
+                    ggml_graph_n_nodes(gf), n_dec, n_kv, n_enc);
+        }
+    }
     return gf;
 }
 

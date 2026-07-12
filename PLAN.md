@@ -734,19 +734,29 @@ edits in a worktree (ggml symlink dance, see CLAUDE.md).** In priority order:
   σ≈0.02s): 40 long-prefix prompts 2.16→1.30s end-to-end; ≈2.07× compute-only
   after subtracting ~0.50s fixed load. Test: `tests/test_prefix_cache.py`.
 
-- **P2 — Tier-1 2b op-count reduction, one decoder end-to-end.** Warm Metal
-  decode is ~82% GPU-execute across ~355 sequential ops (measured, trocr);
-  ICB and graph-cache are dead ends (measured 18% / 2–6%). The lever is
-  fewer, bigger ops. *Concrete first target:* `src/math_ocr.cpp`
-  `build_decoder_step_graph` (lightest decoder, D=256, has
-  `MATH_OCR_DECODE_CACHE` + DS_PROFILE-style instrumentation): replace the
-  manual scale→mask-add→softmax with `ggml_soft_max_ext` (1 op for 3), fuse
-  QKV into one matmul + views, check norm→scale→bias chains. Count nodes
-  before/after (`gf->n_nodes`), target 355 → ≲300.
-  *Gate:* byte-identical greedy transcript on trocr-small-printed q8_0
-  (fox.png + scan_strip fixtures, `--ocr`), Metal AND CPU; per-step ms via
-  `CRISPASR_METAL_PROFILE=1` on a quiet box. Numerics-risky — one decoder,
-  measured, before generalizing.
+- **P2 — Tier-1 2b op-count reduction, one decoder end-to-end. MEASURED — STOP
+  for trocr (hard-rule-#5 below-threshold; 2026-07-12).** Step-0 measurement on
+  the specified vehicle first (`MATH_OCR_NODES=1` prints the decode-step
+  `n_nodes`; `CRISPEMBED_MATH_OCR_BENCH=1` prints encoder/decoder ms):
+  - decode-step graph = **355 nodes** (6 layers, n_enc=578), matching the brief.
+  - **Split (trocr-small-printed q8, fox.png, Metal, stable): encoder 200 ms,
+    decoder 44 ms** → decode is ~18% of compute (~10% of total incl. load); the
+    **encoder is 82% of compute**.
+  - The step graph ALREADY uses `ggml_flash_attn_ext` (g_mha_1q) — brief item
+    (1) "manual softmax → soft_max_ext" is already done, even more fused. The
+    remaining safe fusion is self-attn QKV concat (3 mul_mat+3 add → 1+1+views,
+    byte-identical q8 row-stack): that touches ~24 of 355 nodes ≈ 7% of decode
+    ≈ **~1.3% of compute** — below the 15% threshold. (Cross-QKV can't fuse: k/v
+    come from the encoder cache; cont-removal in g_mha_1q is numerics-risky and
+    also sub-2%.)
+  - Verdict: **not worth shipping for trocr** — trocr outputs are short (line
+    recognizer, 6–8 tokens) so decode never dominates, and the box was loaded
+    (load 4.2, wall-clock ±13%) so a speedup couldn't be A/B'd against ground
+    truth anyway. The decode-step fusion pattern only pays off on **long-output**
+    VLM decoders (qwen2vl/got/glm/internvl2/lightonocr, 100s of tokens); revisit
+    there, on a QUIET box, with each engine's own graph. Left in place: a gated
+    `MATH_OCR_NODES` diagnostic for that future work. For trocr the real lever is
+    the 200 ms encoder, out of this task's decode-step scope.
 
 - **P3 — LFM2 ShortConv → `ggml_ssm_conv`.** Perf refactor for Metal kernel
   coverage; regression risk on a working engine. Gate: `test-lfm2-diff` all
