@@ -24,6 +24,10 @@ const ENGINES = [
   { name: 'ppformulanet', model: 'ppformulanet-l-q4_k.gguf',         image: 'formula' },
   { name: 'texteller',  model: 'texteller-3-q4_k.gguf',              image: 'formula' },
   { name: 'tesseract',  model: 'tesseract-eng-f16.gguf',             image: 'word' },
+  // Optical Music Recognition (staff image → notation). Committed fixtures.
+  { name: 'smt',        model: 'smt-grandstaff-q8_0.gguf',           image: 'staff_smt' },
+  { name: 'tromr',      model: 'tromr-q8_0.gguf',                    image: 'staff_tromr' },
+  { name: 'flova',      model: 'flova-q4_k.gguf',                    image: 'staff_flova' },
 ];
 
 (async () => {
@@ -36,6 +40,10 @@ const ENGINES = [
   const images = {
     formula: fs.readFileSync(path.join(repoRoot, 'tests/regression/images/formula_quadratic.png')).toString('base64'),
     word: fs.readFileSync(path.join(MODELS_DIR, 'word.png')).toString('base64'),
+    // OMR fixtures (committed): printed / photo / handwritten staff.
+    staff_smt: fs.readFileSync(path.join(repoRoot, 'tests/regression/images/staff_smt.png')).toString('base64'),
+    staff_tromr: fs.readFileSync(path.join(repoRoot, 'tests/regression/images/staff_tromr.jpg')).toString('base64'),
+    staff_flova: fs.readFileSync(path.join(repoRoot, 'tests/regression/images/staff_flova.png')).toString('base64'),
   };
 
   const server = require('./server.js');
