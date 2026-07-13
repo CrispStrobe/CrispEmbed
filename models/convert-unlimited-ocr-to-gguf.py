@@ -121,9 +121,12 @@ def map_tensor_name(n):
             "mlp.shared_experts.down_proj.weight":"shared_exp.ffn_down.weight",
         }.get(r)
         if direct: return f"l.blk.{i}.{direct}"
-        # Routed experts
-        e = re.match(r"mlp\.experts\.(\d+)\.(gate|up|down)_proj\.weight", r)
-        if e: return f"l.blk.{i}.exp.{e.group(1)}.ffn_{e.group(2)}.weight"
+        # MoE routed experts are NOT mapped here — they are collected and emitted as
+        # STACKED 3D tensors (l.blk.{i}.ffn_{gate,up,down}_exps.weight) in the write
+        # loop, so the runtime loads them directly and skips the per-expert→stacked
+        # copy (saves ~1.3 GB of duplicated resident weights).
+        if re.match(r"mlp\.experts\.(\d+)\.(gate|up|down)_proj\.weight", r):
+            return None
     return None
 
 
@@ -330,7 +333,19 @@ def main():
             raise ValueError(f"Unsupported dtype: {dtype_str}")
         return arr
 
+    # MoE routed experts, collected here and emitted as STACKED 3D tensors after the
+    # main loop: moe_experts[(layer_idx, proj)][expert_idx] = [out, in] array.
+    moe_experts = {}
+    EXP_RE = re.compile(r"model\.layers\.(\d+)\.mlp\.experts\.(\d+)\.(gate|up|down)_proj\.weight")
+
     for name in tensor_names:
+        em = EXP_RE.match(name)
+        if em:
+            li, ei, proj = int(em.group(1)), int(em.group(2)), em.group(3)
+            fpath, info, data_offset = all_tensors[name]
+            moe_experts.setdefault((li, proj), {})[ei] = read_tensor(fpath, info, data_offset)  # [out, in]
+            continue
+
         gguf_name = map_tensor_name(name)
         if gguf_name is None:
             skipped += 1
@@ -350,6 +365,25 @@ def main():
 
         if tensor_count % 100 == 0:
             print(f"  {tensor_count} tensors processed...", end="\r")
+
+    # Emit stacked experts. numpy [n_exp, out, in] reverses to ggml ne=[in, out, n_exp]
+    # — byte-identical to what the runtime's stack_moe_experts builds (expert e at slice
+    # offset e*nb[2]). Experts MUST be stacked in ascending index order (0..n_exp-1).
+    n_stacked = 0
+    for (li, proj), ed in sorted(moe_experts.items()):
+        n_e = len(ed)
+        if sorted(ed.keys()) != list(range(n_e)):
+            raise ValueError(f"layer {li} {proj}: expert indices not contiguous 0..{n_e-1}: {sorted(ed.keys())}")
+        if n_e != n_experts:
+            print(f"  WARN layer {li} {proj}: {n_e} experts (config says {n_experts})")
+        stacked = np.stack([ed[e] for e in range(n_e)], axis=0).astype(dtype_np)  # [n_exp, out, in]
+        gguf_name = f"l.blk.{li}.ffn_{proj}_exps.weight"
+        total_params += stacked.size
+        writer.add_tensor(gguf_name, stacked, raw_dtype=dtype_gguf)
+        tensor_count += 1
+        n_stacked += 1
+    print(f"  Stacked {n_stacked} MoE expert tensors "
+          f"({len(set(li for li, _ in moe_experts))} layers × 3 proj, {n_experts} experts each)")
 
     print(f"\nWriting {tensor_count} tensors (skipped {skipped})...")
 
