@@ -82,26 +82,36 @@ parse, worst cos_min=0.999848, genuinely passing). **v11 confirmed: 46 models,
 4 FAIL** (was 14) — hat/pan/tbsrn/lilt/lfm2 all PASS. Every false FAIL is gone;
 the harness follow-ups are complete.
 
-**Still open — 4 FAILs, all needing a CUDA box to diagnose (local Ampere sm_86
-does NOT reproduce these):**
-- **Class-B garbage** — `glm-ocr` (cer 4.3) + `internvl2-1b` (cer 5.4). Localizer
-  status: **glm-ocr's ref + diff binary BOTH exist** (`glm-ocr-crispembed-GGUF/
-  glm-ocr-ref-full.gguf`, `test-glm-ocr-diff`) → enabling a manifest `diff` block
-  gives per-stage vision localization on the next CUDA run (verify ref freshness
-  first — an earlier note flagged a stale no-rope glm ref). `internvl2` needs a
-  ref generated from **InternVL2-1B** (InternViT-300M + Qwen2-0.5B — NOT the local
-  InternVL2.5-1B, a different arch; ~2 GB download).
-- **granite-vision** — text OCR PASSES; the divergence localizes to the
-  **projector** MLP stage (cos 0.95–0.97). Likely F16 accumulation on old-arch
-  CUDA (the Metal ÷256/×256 fix was on the LLM SwiGLU, not the projector). Do NOT
-  change it blind — it passes on CPU/Metal/Ampere; a fix must be verified on the
-  failing arch.
-- **layout-heron** — `test-layout-diff` **SIGABRT (signal 6) before any stage
-  output** on CUDA (a genuine abort *during* the diff, not a teardown — the
-  harness tolerance correctly does not mask it). The stderr backtrace is in
-  `test-layout-diff` but the GGML_ASSERT message is truncated in the log; next
-  step is a CUDA run that captures the full assert to localize the aborting op
-  (RT-DETRv2 deformable cross-attention is the prime suspect).
+**RESOLVED — all FAILs closed (portfolio 14 → 0).** A diagnostic kernel
+(`tools/kaggle/crispembed-cuda-diag`, Tesla P100 / Pascal sm_60) exercised each
+under its env gates; none of the "Class-B" ones were real CUDA vision
+divergences:
+- **`glm-ocr` + `internvl2-1b` — a stdout banner, not vision garbage
+  (`7998f3c`).** Both printed their load banner (`loading… Vision:… LLM:… KV
+  cache… Ready`) via `printf` → **stdout**, and `run_one`'s `--ocr` text-match
+  captures stdout, so `actual` = the banner (cer 4.3/5.4). Both OCR the fox
+  **correctly** on CUDA *and* CPU; only the harness saw the banner. Routed all
+  banners to stderr (matching `qwen2vl_ocr`).
+- **`granite-vision` — text OCR PASSES;** the projector diff drift is
+  cross-toolchain FP strictness (identical CUDA=CPU=scalar on P100), threshold
+  already 0.95.
+- **`layout-heron` — one genuine CUDA bug + one comparison artifact.** The
+  SIGABRT was `fattn.cu:602` — Pascal (sm_60) has **no flash-attention kernel**;
+  fixed by a manual attention fallback (`49cb38a`, `LAYOUT_DETECT_FLASH=1`
+  restores flash). The subsequent `dec_0_cross_out` FAIL was **not** an inference
+  bug: the 300 decoder queries are picked by a `partial_sort` over ~8400 near-tie
+  encoder proposals, so a tiny backend FP delta in enc_output (cos 0.99999)
+  reorders near-tie ranks and the index-aligned per-query cosine craters even
+  though the cross_out *values* are correct (final boxes unaffected — score-sort
+  + NMS). Fixed by comparing that stage **permutation-tolerantly** (best-cosine
+  match; `d7f0480`). See LEARNINGS.md → "A parity stage downstream of a
+  topk/argsort selection craters by query PERMUTATION."
+
+**Bottom line:** the diagnostic-first approach (test on the box via env gates)
+was essential — a blind "fix the Class-B vision divergence" would have chased a
+non-existent bug. One real CUDA bug (Pascal flash-abort) + one stdout-banner
+harness bug + one topk-permutation comparison artifact + cross-toolchain FP
+strictness. Portfolio now **46 models, 0 FAIL**.
 
 ---
 
