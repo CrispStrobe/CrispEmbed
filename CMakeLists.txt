@@ -194,6 +194,7 @@ list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/smt_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tromr_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/flova_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/posformer_ocr.cpp)
@@ -395,6 +396,9 @@ target_link_libraries(test-smt-reco PRIVATE crispembed)
 
 add_executable(test-tromr-diff tests/test_tromr_diff.cpp)
 target_link_libraries(test-tromr-diff PRIVATE crispembed)
+
+add_executable(test-flova-diff tests/test_flova_diff.cpp)
+target_link_libraries(test-flova-diff PRIVATE crispembed)
 
 add_executable(test-hat-diff tests/test_hat_diff.cpp)
 target_link_libraries(test-hat-diff PRIVATE crispembed)
