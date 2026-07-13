@@ -46,10 +46,12 @@ PASS/FAIL in **ANSI colour codes** (defeating the anchored regex); `hat`/`pan`/
 `tbsrn` print `name   cos_min=…` (spaces, **no colon**); `lilt`/`layout` use
 aligned **column tables**. Now strip ANSI first + cover the colon-less and 2
 table formats — verified against the real `test-lfm2-diff` output (20 stages
-parse, worst cos_min=0.999848, genuinely passing). v11 re-run expected 9→3.
+parse, worst cos_min=0.999848, genuinely passing). **v11 confirmed: 46 models,
+4 FAIL** (was 14) — hat/pan/tbsrn/lilt/lfm2 all PASS. Every false FAIL is gone;
+the harness follow-ups are complete.
 
-**Still open — older-arch (Turing/Pascal) ggml-CUDA numerical divergence (needs
-that HW to iterate; local Ampere sm_86 does NOT reproduce):**
+**Still open — 4 FAILs, all needing a CUDA box to diagnose (local Ampere sm_86
+does NOT reproduce these):**
 - **Class-B garbage** — `glm-ocr` (cer 4.3) + `internvl2-1b` (cer 5.4). Localizer
   status: **glm-ocr's ref + diff binary BOTH exist** (`glm-ocr-crispembed-GGUF/
   glm-ocr-ref-full.gguf`, `test-glm-ocr-diff`) → enabling a manifest `diff` block
@@ -62,6 +64,12 @@ that HW to iterate; local Ampere sm_86 does NOT reproduce):**
   CUDA (the Metal ÷256/×256 fix was on the LLM SwiGLU, not the projector). Do NOT
   change it blind — it passes on CPU/Metal/Ampere; a fix must be verified on the
   failing arch.
+- **layout-heron** — `test-layout-diff` **SIGABRT (signal 6) before any stage
+  output** on CUDA (a genuine abort *during* the diff, not a teardown — the
+  harness tolerance correctly does not mask it). The stderr backtrace is in
+  `test-layout-diff` but the GGML_ASSERT message is truncated in the log; next
+  step is a CUDA run that captures the full assert to localize the aborting op
+  (RT-DETRv2 deformable cross-attention is the prime suspect).
 
 ---
 
