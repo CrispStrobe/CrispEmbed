@@ -678,7 +678,16 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
   cont-removal does NOT generalize to decoder-only VLM engines — got_ocr's cached
   decode already feeds K/V as cache views, so only Q's cont was removable
   (byte-identical, but latency within noise; `5011848`, `GOT_OCR_ATTN_CONT=1`).
-  So op fusion, not cont-removal, is the remaining lever for these decoders.
+  **Op-fusion measured marginal too (2026-07-13):** (a) Metal already auto-fuses
+  (`use fusion=true`; `kernel_norm_mul_add`, `kernel_bin_fuse` kernels handle the
+  norm/scale/bias + GLU elementwise chains at dispatch), so graph-level elementwise
+  fusion is redundant there; (b) attention is already flash-fused; (c) these
+  decode steps are compute-bound (got_ocr ~89% GPU-execute), capping any dispatch
+  reduction at the ~11% host slice; (d) the trocr decoder is already lean (319
+  nodes, 55 ms/16 tok — the ViT *encoder* at 212 ms is trocr's real cost, not the
+  decoder). The only non-auto-fusable win is **QKV concat-matmul** (3→1), but for
+  block-quantized (q4_k) weights it needs load-time row-block stacking + a split,
+  for an uncertain sub-11% gain — deferred as moderate-effort/uncertain-benefit.
   (DeepSeek-OCR-2's MoE-compute lever is detailed in its own subsection above.)
 - **unlimited_ocr — remaining deferred items.** `UOCR_PD=1` persistent T=1 decode
   graph (blocked on a small flash-attn padded-vs-exact-KV numerical drift that
