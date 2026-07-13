@@ -1,5 +1,39 @@
 # CrispEmbed — Technical Learnings
 
+## Fusing per-conv graphs helps only OVERHEAD-bound models; measure first (2026-07-13, SR ports)
+
+CrispEmbed's SR/restoration engines dispatched a **fresh ggml graph per conv**
+(init → alloc → compute → read-back, scalar glue between). Fusing the forward
+into one graph is a real win **only when graph-setup overhead dominates**:
+
+- **SAFMN** (228K params, tiny convs) is *overhead-bound* → full fusion gave
+  **2.2× (6.1s→2.8s) + cos 1.0 vs 0.994**. Metal LOSES here (per-dispatch +
+  host↔device copy > the tiny compute) → default CPU.
+- **NAFNet / InstructIR** (32–256-ch convs) are *compute-bound* → per-block
+  fusion is correct (cos ≥ 0.999998, byte-identical output) but **perf-neutral**
+  (the conv math, not setup, is the cost). NAFNet defaults to Metal for a modest
+  ~15%; InstructIR stays CPU (GPU conv_2d hits a Metal f32×f16 mul_mv pipeline
+  issue on this arch).
+
+So **measure the baseline first** — `grep forward_expand / conv2d_ggml` to tell a
+genuinely per-conv engine from an already-fused one (Restormer, scunet, swinir,
+etc. were already single-graph, just mislabeled "CPU-scalar"), and time it to see
+if it's overhead- or compute-bound before investing in a fused-graph port.
+
+Two gotchas that cost real time on these ports:
+1. **erf vs tanh GELU.** SAFMN's reference uses exact erf GELU; `ggml_gelu` is the
+   **tanh approximation**, and using it alone dropped output cos 1.0 → 0.947. Use
+   `ggml_gelu_erf` when the reference does exact GELU (SAFM/SR/many ViTs).
+2. **Conv weight layout scramble.** GGUF stores conv weights as `[OC,IC,KH,KW]`
+   bytes, but `ggml_conv_2d` wants an `[KW,KH,IC,OC]` kernel. A plain
+   `ggml_reshape_4d` on the raw leaf claims the right ne but keeps the wrong byte
+   order → a reshape ASSERT or a silently scrambled kernel (cos ~0.5). Copy the
+   dequant bytes UNCHANGED into an explicit `[KW,KH,IC,OC]` tensor (nafnet_resident)
+   or replicate the engine's own axis-order detection (instructir `ir_kernel`).
+   Also: raw GGUF leaves live on `ctx->backend`; a CPU conv sched can't run ops on
+   a foreign-buffer leaf, so park weights on `enc_backend` or include their backend
+   in the sched. Env-gate every path (`<ENGINE>_LEGACY`/`_CPU`/`_METAL`).
+
 ## "Reads structure but not detail" across independent models = a preprocessing/input bug on MY side, not model quality (2026-07-12, SMT + TrOMR OMR)
 
 Two published SOTA OMR models both scored ~30% vs ground truth through my harness
