@@ -1,4 +1,10 @@
-// nafnet_denoise.cpp — NAFNet image denoising (CPU-scalar implementation)
+// nafnet_denoise.cpp — NAFNet image denoising (fused per-block ggml graph).
+//
+// Each NAFBlock is ONE fused ggml graph (LN → conv → dwconv → SimpleGate → SCA →
+// conv → beta-residual → LN → conv → SimpleGate → conv → gamma-residual),
+// replacing per-conv mini-graphs. NAFNet is compute-bound (32–256-ch convs), so
+// it runs on Metal by default (NAFNET_CPU forces CPU; NAFNET_LEGACY = old path).
+// cos 0.999998 vs the HF reference.
 //
 // NAFBlock forward:
 //   x = LN1(x)
@@ -201,11 +207,36 @@ struct nafblock_weights {
     ggml_tensor * conv4_bt;
     ggml_tensor * conv5_wt; // [C, C, 1, 1]
     ggml_tensor * conv5_bt;
+    // ggml handles for the fused-graph path (norm/sca/beta/gamma).
+    ggml_tensor *norm1_wt, *norm1_bt, *norm2_wt, *norm2_bt;
+    ggml_tensor *sca_wt, *sca_bt, *beta_t, *gamma_t;
 };
+
+// ── Fused-graph helpers (one NAFBlock = one ggml graph) ─────────────
+// (ng_conv / ng_sca need nafnet_resident, so they are defined further down.)
+
+// (ng_chan_ln also needs nafnet_resident — defined further down.)
+
+// SimpleGate: split [W,H,2C] channel-wise, first-half * second-half → [W,H,C].
+static ggml_tensor * ng_simple_gate(ggml_context * g, ggml_tensor * x, int c) {
+    ggml_tensor * a = ggml_cont(g, ggml_view_4d(g, x, x->ne[0], x->ne[1], c, 1, x->nb[1], x->nb[2], x->nb[3], 0));
+    ggml_tensor * b =
+        ggml_cont(g, ggml_view_4d(g, x, x->ne[0], x->ne[1], c, 1, x->nb[1], x->nb[2], x->nb[3], (size_t)c * x->nb[2]));
+    return ggml_mul(g, a, b);
+}
+
+// One NAFBlock as a single ggml graph (defined after nafnet_context).
+static int nafblock_forward_fused(nafnet_context * ctx, const float * input, int c, int h, int w,
+                                  const nafblock_weights & wt, float * output);
 
 static void nafblock_forward(nafnet_context * ctx, const float * input, int c, int h, int w,
                              const nafblock_weights & wt, float * output, std::vector<float> & tmp1,
                              std::vector<float> & tmp2, std::vector<float> & tmp3) {
+    // Fused single-graph block (default). Replaces the per-conv mini-graphs +
+    // scalar glue. Legacy path via NAFNET_LEGACY=1.
+    static const bool legacy = getenv("NAFNET_LEGACY") != nullptr;
+    if (!legacy && nafblock_forward_fused(ctx, input, c, h, w, wt, output) == 0) return;
+
     int hw = h * w;
     int c2 = c * 2;
 
@@ -279,6 +310,7 @@ struct nafnet_context {
 
     // ggml graph infrastructure for batched matmuls
     ggml_backend_t enc_backend = nullptr;
+    ggml_backend_t enc_cpu_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
     std::vector<uint8_t> enc_meta;
 
@@ -309,6 +341,7 @@ struct nafnet_context {
         return dcache.get(t);
     }
 };
+
 
 nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     auto * ctx = new nafnet_context;
@@ -352,12 +385,25 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
 
     ctx->bench = (std::getenv("CRISPEMBED_NAFNET_BENCH") != nullptr);
 
-    // ggml conv infrastructure
-    ctx->enc_backend = ggml_backend_cpu_init();
+    // ggml conv infrastructure. Default GPU: NAFNet is compute-bound (32–256-ch
+    // convs over the UNet), so the fused-block graph pays off on Metal (unlike
+    // the tiny, overhead-bound SAFMN where Metal lost). NAFNET_CPU forces CPU.
+    // Weights are parked on enc_backend by nafnet_resident, so a GPU enc_backend
+    // keeps them GPU-resident and the CPU-fallback backend handles any uncovered op.
+    ctx->enc_backend = getenv("NAFNET_CPU") ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!ctx->enc_backend) ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {
-        ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
-        ggml_backend_t backends[] = { ctx->enc_backend };
-        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        if (ggml_backend_is_cpu(ctx->enc_backend)) {
+            ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        } else {
+            // ggml_backend_sched requires the last backend to be CPU (fallback).
+            ctx->enc_cpu_backend = ggml_backend_cpu_init();
+            ggml_backend_cpu_set_n_threads(ctx->enc_cpu_backend, ctx->n_threads);
+            ggml_backend_t backends[] = { ctx->enc_backend, ctx->enc_cpu_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+        }
     }
 
     return ctx;
@@ -371,6 +417,7 @@ void nafnet_free(nafnet_context * ctx) {
             if (c) ggml_free(c);
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+        if (ctx->enc_cpu_backend) ggml_backend_free(ctx->enc_cpu_backend);
         core_gguf::free_weights(ctx->wl);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
@@ -415,6 +462,92 @@ static ggml_tensor * nafnet_resident(nafnet_context * ctx, const ggml_tensor * s
     ctx->gw_bufs.push_back(kbuf);
     ctx->gw_cache[src] = t;
     return t;
+}
+
+// Channel LayerNorm over C (ne[2]) + affine. All weights parked on enc_backend
+// via nafnet_resident (raw GGUF leaves live on ctx->backend, which the CPU conv
+// sched cannot run).
+static ggml_tensor * ng_chan_ln(nafnet_context * ctx, ggml_context * g, ggml_tensor * x, ggml_tensor * wt,
+                                ggml_tensor * bt, int C) {
+    ggml_tensor * xp = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3)); // [W,H,C]→[C,W,H]
+    xp = ggml_norm(g, xp, 1e-6f);
+    ggml_tensor * w = nafnet_resident(ctx, wt, GGML_TYPE_F32, C, 1, 1, 1);
+    ggml_tensor * b = nafnet_resident(ctx, bt, GGML_TYPE_F32, C, 1, 1, 1);
+    xp = ggml_add(g, ggml_mul(g, xp, ggml_reshape_3d(g, w, C, 1, 1)), ggml_reshape_3d(g, b, C, 1, 1));
+    return ggml_cont(g, ggml_permute(g, xp, 2, 0, 1, 3)); // [C,W,H]→[W,H,C]
+}
+
+// Conv2d/depthwise as graph nodes, using nafnet_resident for the correct
+// [KW,KH,IC,OC] kernel layout (a plain reshape scrambles the GGUF bytes).
+static ggml_tensor * ng_conv(nafnet_context * ctx, ggml_context * g, ggml_tensor * x, ggml_tensor * wt,
+                             ggml_tensor * bt, int ic, int oc, int kh, int kw, int pad, int groups) {
+    const bool dw = (groups > 1 && groups == ic);
+    const int ic_g = dw ? 1 : ic;
+    ggml_type wtype = dw ? GGML_TYPE_F16 : GGML_TYPE_F32; // dw im2col is F16
+    ggml_tensor * w = nafnet_resident(ctx, wt, wtype, kw, kh, ic_g, oc);
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, 1, 1, pad, pad, 1, 1) : ggml_conv_2d(g, w, x, 1, 1, pad, pad, 1, 1);
+    if (bt) {
+        ggml_tensor * b = nafnet_resident(ctx, bt, GGML_TYPE_F32, oc, 1, 1, 1);
+        y = ggml_add(g, y, ggml_reshape_3d(g, b, 1, 1, oc));
+    }
+    return y;
+}
+
+// SCA: global-avg-pool → 1x1 conv (with bias) → per-channel gate of x.
+static ggml_tensor * ng_sca(nafnet_context * ctx, ggml_context * g, ggml_tensor * x, ggml_tensor * wt, ggml_tensor * bt,
+                            int c) {
+    ggml_tensor * pooled = ggml_pool_2d(g, x, GGML_OP_POOL_AVG, x->ne[0], x->ne[1], x->ne[0], x->ne[1], 0, 0);
+    ggml_tensor * attn = ng_conv(ctx, g, pooled, wt, bt, c, c, 1, 1, 0, 1);
+    return ggml_mul(g, x, attn);
+}
+
+static int nafblock_forward_fused(nafnet_context * ctx, const float * input, int c, int h, int w,
+                                  const nafblock_weights & wt, float * output) {
+    if (!ctx->enc_sched) return -1;
+    const int max_nodes = 512;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * inp = ggml_new_tensor_4d(g, GGML_TYPE_F32, w, h, c, 1);
+    ggml_set_name(inp, "inp");
+    ggml_set_input(inp);
+
+    ggml_tensor * beta = nafnet_resident(ctx, wt.beta_t, GGML_TYPE_F32, c, 1, 1, 1);
+    ggml_tensor * gamma = nafnet_resident(ctx, wt.gamma_t, GGML_TYPE_F32, c, 1, 1, 1);
+
+    ggml_tensor * t = ng_chan_ln(ctx, g, inp, wt.norm1_wt, wt.norm1_bt, c);
+    t = ng_conv(ctx, g, t, wt.conv1_wt, wt.conv1_bt, c, 2 * c, 1, 1, 0, 1);
+    t = ng_conv(ctx, g, t, wt.conv2_wt, wt.conv2_bt, 2 * c, 2 * c, 3, 3, 1, 2 * c);
+    t = ng_simple_gate(g, t, c);
+    t = ng_sca(ctx, g, t, wt.sca_wt, wt.sca_bt, c);
+    t = ng_conv(ctx, g, t, wt.conv3_wt, wt.conv3_bt, c, c, 1, 1, 0, 1);
+    t = ggml_mul(g, t, ggml_reshape_3d(g, beta, 1, 1, c));
+    ggml_tensor * x1 = ggml_add(g, inp, t);
+
+    ggml_tensor * u = ng_chan_ln(ctx, g, x1, wt.norm2_wt, wt.norm2_bt, c);
+    u = ng_conv(ctx, g, u, wt.conv4_wt, wt.conv4_bt, c, 2 * c, 1, 1, 0, 1);
+    u = ng_simple_gate(g, u, c);
+    u = ng_conv(ctx, g, u, wt.conv5_wt, wt.conv5_bt, c, c, 1, 1, 0, 1);
+    u = ggml_mul(g, u, ggml_reshape_3d(g, gamma, 1, 1, c));
+    ggml_tensor * out = ggml_add(g, x1, u);
+
+    ggml_set_name(out, "out");
+    ggml_set_output(out);
+    ggml_build_forward_expand(gf, out);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        ggml_free(g);
+        return -1;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "inp"), input, 0, (size_t)c * h * w * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), output, 0, (size_t)c * h * w * sizeof(float));
+    ggml_free(g);
+    return 0;
 }
 
 static void conv2d_ggml(nafnet_context * ctx, const float * input, int ic, int ih, int iw, ggml_tensor * weight_t,
@@ -571,6 +704,15 @@ static int nafnet_process_tile(nafnet_context * ctx, const uint8_t * input, int 
         wt.conv4_bt = get_raw(prefix + ".conv4.bias");
         wt.conv5_wt = get_raw(prefix + ".conv5.weight");
         wt.conv5_bt = get_raw(prefix + ".conv5.bias");
+        // ggml handles for the fused-graph path.
+        wt.norm1_wt = get_raw(prefix + ".norm1.weight");
+        wt.norm1_bt = get_raw(prefix + ".norm1.bias");
+        wt.norm2_wt = get_raw(prefix + ".norm2.weight");
+        wt.norm2_bt = get_raw(prefix + ".norm2.bias");
+        wt.sca_wt = get_raw(prefix + ".sca.weight");
+        wt.sca_bt = get_raw(prefix + ".sca.bias");
+        wt.beta_t = get_raw(prefix + ".beta");
+        wt.gamma_t = get_raw(prefix + ".gamma");
         return wt;
     };
 
