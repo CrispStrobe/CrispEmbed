@@ -438,12 +438,28 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // hidden state). Keep it at Q8_0 minimum — cheap relative to the experts
         // (~+90 MB on a 2 GB model). Matches "lm_head.weight" (this model) and
         // the generic llama.cpp "output.weight" (but NOT "output_norm.weight").
+        // SMT OMR LM head is a squeezed 1×1 Conv1d named "decoder.out_layer.weight"
+        // (not lm_head/output) — its logits drive a near-tie AR bekern decode that
+        // Q4_K flips into repetition, so include it in the head guard.
         bool is_lm_head = sname.find("lm_head.weight") != std::string::npos || sname == "output.weight" ||
-                          sname.find(".output.weight") != std::string::npos;
+                          sname.find(".output.weight") != std::string::npos || sname == "decoder.out_layer.weight";
         if (quantize && is_lm_head && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_Q6_K &&
             qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(lm-head→Q8_0) ");
+        }
+
+        // SMT OMR ConvNext encoder (encoder.encoder.stages.*.pwconv{1,2}) is the
+        // "reading" half — its output directly determines the transcription, and
+        // Q4_K drops enc_output cos to ~0.95 and derails the decode. Keep the
+        // encoder matmul weights at Q8_0 minimum (the ConvNext pointwise convs;
+        // dwconv/downsample are already copied as-is by Guard 1 above).
+        bool is_smt_encoder = sname.rfind("encoder.encoder.stages.", 0) == 0 &&
+                              sname.find("pwconv") != std::string::npos && sname.find(".weight") != std::string::npos;
+        if (quantize && is_smt_encoder && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(smt-enc→Q8_0) ");
         }
 
         // LLM decoder weights (prefix "l.": attn_*, ffn_*, embed_tokens): keep at
