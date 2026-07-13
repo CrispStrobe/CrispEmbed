@@ -409,6 +409,31 @@ static std::vector<float> tensor_to_f32(ggml_tensor * t) {
     return out;
 }
 
+// Full (unmasked) multi-head attention for the layout encoder/decoder.
+// Inputs Q,K,V are [head_dim, N, heads]; returns [head_dim, heads, N] — the SAME
+// layout ggml_flash_attn_ext produces, so callers reshape straight to [D, N].
+//
+// Default is a manual masked-attention path (mul_mat + soft_max_ext + mul_mat),
+// which is correct on EVERY backend/arch. `ggml_flash_attn_ext` is gated behind
+// LAYOUT_DETECT_FLASH=1 because on **CUDA Pascal (sm_60)** there is no flash
+// kernel and `ggml_cuda_flash_attn_ext` calls `GGML_ABORT("fatal error")`
+// (ggml-cuda/fattn.cu:602) — the layout graph runs on a single CUDA backend that
+// bypasses the scheduler's `supports_op` CPU fallback, so it aborts instead of
+// falling back. Manual attention is a negligible cost here (Phase-2 is dominated
+// by the cpu_linear projections, not this attention). Numerically ~identical to
+// flash on backends that support it (verify: LAYOUT_DETECT_FLASH=1 A/B).
+static ggml_tensor * layout_attn(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, float scale) {
+    static const bool use_flash = (std::getenv("LAYOUT_DETECT_FLASH") != nullptr);
+    if (use_flash) {
+        return ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+    }
+    ggml_tensor * scores = ggml_mul_mat(g, K, Q);                    // [N_k, N_q, heads]
+    scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);     // softmax over keys
+    ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [N, head_dim, heads]
+    ggml_tensor * attn = ggml_mul_mat(g, Vt, scores);                // [head_dim, N_q, heads]
+    return ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));          // [head_dim, heads, N_q]
+}
+
 static ggml_tensor * prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
@@ -598,7 +623,7 @@ static ggml_tensor * aifi_self_attn(ggml_context * g, ggml_tensor * x, const hyb
 
     // Permute to [head_dim, N, N_heads] → compatible with flash_attn
     // ggml flash_attn_ext expects q[D,N,H], k[D,N,H], v[D,N,H]
-    auto * attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f / sqrtf(head_dim), 0, 0);
+    auto * attn = layout_attn(g, q, k, v, 1.0f / sqrtf(head_dim));
     // flash_attn_ext already applies permute(0,2,1,3): output is [hd, nh, N].
     // Reshape straight to [D, N]; the old manual-path permute scrambled it.
     // (NB: this helper is currently unused — encoder_forward inlines its own AIFI block.)
@@ -688,7 +713,7 @@ static void encoder_forward(ggml_context * g, const hybrid_encoder & enc, ggml_t
         V = ggml_reshape_3d(g, V, hd, heads, N_tok);
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        auto * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        auto * attn = layout_attn(g, Q, K, V, 1.0f / sqrtf((float)hd));
         // flash_attn_ext already applies permute(0,2,1,3): output is [hd, heads, N].
         // Reshape straight to [D, N] — the old manual path's extra permute scrambled it.
         attn = ggml_reshape_2d(g, attn, D_a, N_tok);
@@ -1465,7 +1490,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             V = ggml_reshape_3d(gc, V, hd, N_heads, N_queries);
             V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
 
-            auto * attn = ggml_flash_attn_ext(gc, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+            auto * attn = layout_attn(gc, Q, K, V, 1.0f / sqrtf((float)hd));
             // flash_attn_ext already applies permute(0,2,1,3): output is [hd, heads, N].
             // Reshape straight to [D, N] — the old manual path's extra permute scrambled it.
             attn = ggml_reshape_2d(gc, attn, D, N_queries);
