@@ -1116,8 +1116,15 @@ static llm_graph build_llm_graph(got_ocr::context & ctx, int n_tokens, int n_pas
 
         // flash_attn_ext handles GQA natively; GOT-OCR2 is MHA (nh==nkv)
 
-        // Flash attention
-        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+        // Flash attention. flash_attn_ext only needs row-contiguous Q
+        // (nb0==type_size), which permute(0,2,1,3) already preserves, so the
+        // ggml_cont is a redundant copy (one per layer per decode step). Cached
+        // Kfull/Vfull are already non-cont cache views. Default is cont-off;
+        // GOT_OCR_ATTN_CONT=1 restores the copy for regression bisection.
+        // (Same removal proven byte-identical for math_ocr, MATH_OCR_ATTN_CONT.)
+        static const bool keep_cont = (std::getenv("GOT_OCR_ATTN_CONT") != nullptr);
+        Q = ggml_permute(g, Q, 0, 2, 1, 3);
+        if (keep_cont) Q = ggml_cont(g, Q);
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, lg.mask_in, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
         attn = ggml_reshape_2d(g, attn, D, T);
 
