@@ -253,21 +253,31 @@ _DIFF_PATTERNS = [
     re.compile(r"^\s*(\S+)\s+cos=([-+0-9.eE]+)\s+cos_ch_min="),
     # lfm2 (assertion form):         "[PASS] layer_15    cos=0.999714  (thr=0.999)"
     re.compile(r"^\s*\[(?:PASS|FAIL)\]\s+(\S+)\s+cos=([-+0-9.eE]+)"),
-    # lilt table:                    "stage   <elements int>   <cos_min>  <max_abs>  <status>"
-    re.compile(r"^\s*(\S+)\s+\d+\s+([01]\.\d+)\s+[-+0-9.eE]+\s+\S+"),
-    # layout table:                  "stage   <cos_min>  <cos_mean>  <max_abs>  <status>"
-    re.compile(r"^\s*(\S+)\s+([01]\.\d+)\s+[01]\.\d+\s+[-+0-9.eE]+\s+\S+"),
+    # lilt table: "stage <elements int> <cos_min> <max_abs> <status>". REQUIRE a
+    # PASS/FAIL/SKIP status at the end so this does NOT match LAYOUT_DEBUG value
+    # dumps like "memory[s3,0,:8]: 0.0 0.0 0.0 0.0 …" (which end in a number).
+    re.compile(r"^\s*(\S+)\s+\d+\s+([01]\.\d+)\s+[-+0-9.eE]+\s+(?:PASS|FAIL|SKIP)\b"),
+    # layout table: "stage <cos_min> <cos_mean> <max_abs> <status>" (status required).
+    re.compile(r"^\s*(\S+)\s+([01]\.\d+)\s+[01]\.\d+\s+[-+0-9.eE]+\s+(?:PASS|FAIL|SKIP)\b"),
     # bert_ner (bare columns):       "final_hidden   0.995906   6.60e-02 PASS"
     re.compile(r"^\s*(\S+)\s+([01]\.\d+)\s+[-+0-9.eE]+\s+(?:PASS|FAIL)\s*$"),
 ]
+# granite-vision prints the stage NAME on one line ("C++ stage: projector …") and
+# the score on the NEXT ("    cos_min=0.952 max_abs=2.97e+00 FAIL") — no name on
+# the score line, so the anchored patterns above miss it. Match the nameless
+# score line and give it a synthetic stage id (evaluated against the manifest's
+# global "*" threshold).
+_DIFF_NAMELESS = re.compile(r"^\s*cos(?:_min)?=([-+0-9.eE]+)\s+max_abs=\S+\s+(?:PASS|FAIL|SKIP)")
 # kept for back-compat references
 _DIFF_LINE = _DIFF_PATTERNS[0]
 
 
 def parse_diff_stdout(stdout: str) -> dict[str, float]:
     stages: dict[str, float] = {}
+    nameless = 0
     for line in stdout.splitlines():
         line = _ANSI.sub("", line)
+        matched = False
         for pat in _DIFF_PATTERNS:
             m = pat.match(line)
             if m:
@@ -275,7 +285,16 @@ def parse_diff_stdout(stdout: str) -> dict[str, float]:
                     stages[m.group(1)] = float(m.group(2))
                 except ValueError:
                     pass
+                matched = True
                 break
+        if not matched:
+            m = _DIFF_NAMELESS.match(line)
+            if m:
+                try:
+                    nameless += 1
+                    stages[f"stage_{nameless}"] = float(m.group(1))
+                except ValueError:
+                    pass
     return stages
 
 
