@@ -4,6 +4,34 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — SR/restoration engines → fused ggml graphs (complete)
+
+Ported the super-resolution / restoration engines from per-conv mini-graphs (a
+fresh graph init/alloc/compute/read-back for every conv) to fused ggml graphs.
+All verified against the PyTorch reference via `test-<engine>-diff` and A/B'd
+against the legacy path (identical output), env-gated per engine.
+
+- **SAFMN** (`8594cee`): whole forward = ONE fused graph. **2.2× faster
+  (6.1s→2.8s) AND more accurate (cos 1.000000 vs 0.994)** — F32 convs + exact
+  `ggml_gelu_erf` (the tanh approx alone dropped cos to 0.947). Tiny/overhead-
+  bound; Metal is a net loss (default CPU, `SAFMN_SR_METAL`/`SAFMN_SR_LEGACY`).
+- **NAFNet** (`14a8393`) + **InstructIR** (`e1eb1dc`): fused per-block graph,
+  cos ≥ 0.999998, output identical to legacy. Both are NAFNet-family =
+  **compute-bound**, so fusion is perf-NEUTRAL (cleaner code, not faster).
+  NAFNet defaults to Metal (~15%; `NAFNET_CPU`); InstructIR is CPU-only (GPU
+  conv_2d hits a Metal f32×f16 mul_mv pipeline issue). Gates `*_LEGACY`.
+- **Restormer** (`663f661`): was ALREADY fused — `rst_transformer_block_ggml`
+  (MDTA transposed-attention + GDFN in one graph) is the default, `RESTORMER_
+  SCALAR` the fallback. Only the stale "CPU-scalar" header was corrected.
+- **scunet, swinir, tbsrn, hat, adair, dat**: already single-graph
+  (`forward_expand=1`) — verified sensible (swinir 0.9984, dat 0.99999). No work.
+
+**Finding (see LEARNINGS / memory):** the fusion win is entirely about
+overhead-bound (tiny SAFMN → 2.2×) vs compute-bound (larger engines →
+perf-neutral). Two recurring gotchas: erf-vs-tanh GELU, and conv weight-layout
+scrambling (GGUF `[OC,IC,KH,KW]` bytes vs ggml's `[KW,KH,IC,OC]` — a plain
+reshape scrambles them; copy bytes into the right layout).
+
 ## July 13, 2026 — got_ocr decode: redundant Q cont dropped (byte-identical; cont-removal doesn't generalize)
 
 Tested whether math_ocr's ~30% decode cont-removal generalizes to the VLM
