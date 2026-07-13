@@ -4,6 +4,41 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — QKV-fusion probe (measured negative) + detector-postprocess audit
+
+Three follow-on investigations run while the CUDA regression kernel built:
+
+- **QKV fusion for got_ocr LLM decode — measured negative, reverted.** Probed a
+  gated `GOT_OCR_QKV_FUSE` (graph-time `ggml_concat` of the q/k/v projection
+  weights + one matmul + split). Result: **`ggml_concat` mishandles q4_k weights
+  → garbage output** (1023-step runaway decode, "recognition failed"), and
+  re-concatenating per step is **3× slower** (42.8 vs ~12.9 ms/step). A correct
+  fusion needs manual **load-time q4_k row-block byte-stacking**; and by the
+  memory-bound-decode analysis (T=1 mul_mv reads the weight, so 3 q4_k matmuls
+  move the same bytes as one fused q4_k matmul) it saves only ~2 matmul launches
+  per layer — ~4 % of the ~11 % host slice on a compute-bound decode. High
+  effort, sub-5 % ceiling → deferred. Probe reverted (no code change). Note:
+  got_ocr's **vision** tower already ships a fused `attn_qkv`; only the LLM
+  decoder keeps separate q/k/v (that's where the GGUF stores them).
+- **surya_det (the recommended doc detector) — clean by inspection.** Box
+  extraction is O(Σ bbox_area) (bounded; no DBNet-style bbox×contour blowup) and
+  the encoder is a bench-covered ggml graph. No hidden postprocess bug. (`--ocr-det`
+  is DBNet-specific — `ocr_detect::load` rejects surya; surya runs via the
+  orchestrator.)
+- **cc_detect — clean.** Proper two-pass union-find connected components, O(w·h).
+- **DBNet 3 s graph** (now the detector's dominant cost after the 28× postprocess
+  fix) is the ResNet-18 + FPN + DB-head conv stack; the two head ConvTranspose2d
+  deconvs (×4 upsample to full res) are the suspected cost, but detection is not
+  the OCR-pipeline bottleneck (per-region TrOCR recognition dominates) and a
+  deconv→sub-pixel-conv rewrite is a model-level change that alters output —
+  deferred.
+
+Net: item 1 (DBNet postprocess, 28×) was the real win; the detector-postprocess
+family is otherwise clean, and decoder op-fusion is now confirmed marginal with
+hard evidence (not just analysis).
+
+---
+
 ## July 13, 2026 — DBNet detection: scanline box scoring (28× faster postprocess)
 
 Investigated the "DBNet detector on Metal" item and found it was **misframed**.

@@ -700,9 +700,12 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
   decode steps are compute-bound (got_ocr ~89% GPU-execute), capping any dispatch
   reduction at the ~11% host slice; (d) the trocr decoder is already lean (319
   nodes, 55 ms/16 tok — the ViT *encoder* at 212 ms is trocr's real cost, not the
-  decoder). The only non-auto-fusable win is **QKV concat-matmul** (3→1), but for
-  block-quantized (q4_k) weights it needs load-time row-block stacking + a split,
-  for an uncertain sub-11% gain — deferred as moderate-effort/uncertain-benefit.
+  decoder). The only non-auto-fusable win is **QKV concat-matmul** (3→1), but a
+  probe (`GOT_OCR_QKV_FUSE`, 2026-07-13) confirmed it's not worth it: `ggml_concat`
+  **mishandles q4_k** (garbage output) and re-concatenating per step is 3× slower,
+  so a correct fusion needs manual load-time q4_k row-block byte-stacking — and on
+  a memory-bound T=1 decode that only saves ~2 matmul launches/layer (~4%).
+  Deferred; see HISTORY.
   (DeepSeek-OCR-2's MoE-compute lever is detailed in its own subsection above.)
 - **unlimited_ocr — remaining deferred items.** `UOCR_PD=1` persistent T=1 decode
   graph (blocked on a small flash-attn padded-vs-exact-KV numerical drift that
