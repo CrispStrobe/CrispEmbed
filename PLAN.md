@@ -824,7 +824,20 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
     (glm/internvl2) + cross-toolchain FP threshold strictness (granite). The
     diagnostic-first approach (test on the box via env gates) was essential — a
     blind "fix the Class-B vision divergence" would have chased a non-existent bug.
-  - **Next:** `ocr-portfolio-regression` re-run (v13) to confirm 4 → ~0. Detail below.
+  - **RESULT: portfolio 14 → 1 FAIL** across the fix waves (harness `be6ec54`;
+    parser `2af57b1`; layout flash→manual `49cb38a`; banner→stderr `7998f3c`;
+    parser value-dump/nameless `c26abc4`). glm-ocr, internvl2, granite all PASS on
+    P100 now. **All 4 original FAILs were fixed** — every "Class-B" one was a
+    harness/output bug, not CUDA vision divergence.
+  - **The ONE remaining FAIL is separate + pre-existing: `layout-heron`
+    `dec_0_cross_out` cos_min is NON-DETERMINISTIC** — 0.977 PASS on the P100
+    diagnostic (v2), −0.034 FAIL on the portfolio (v14), SAME code + SAME P100.
+    It also fails on Mac Metal for BOTH manual and flash attention (−0.08 / −0.19),
+    so it is **backend-independent and NOT introduced by the flash→manual fix** —
+    a pre-existing flaky boundary-query in the deformable cross-attention's
+    CPU-side bilinear sampling (the manifest already notes "~0.977 on one boundary
+    query"). Separate investigation: stabilize that one boundary query (thread-
+    order / edge-sample), or gate the stage on cos_MEAN (~0.999) not cos_min.
 
   Original diagnostic detail (the run that overturned 3 of the 4 assumptions):
   - **`layout-heron` — REAL CUDA bug (fixable).** `test-layout-diff` aborts:
