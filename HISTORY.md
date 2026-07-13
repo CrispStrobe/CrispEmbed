@@ -4,6 +4,38 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — Transcoda-59M zero-shot OMR engine (clean-room, byte-exact, persistent-KV decode)
+
+Ported **Transcoda-59M** (`btrkeks/transcoda-59M-zeroshot-v1`) — full-page score
+image → Humdrum `**kern`, OMR-NED SOTA on real historical scans — as the fourth
+OMR engine (`src/transcoda_ocr.{h,cpp}`, arch `transcoda_ocr`). Architecture:
+ConvNeXt-V2-Tiny encoder (GRN blocks, no LayerScale) + 2-layer projector + 2D
+sinusoidal PE dual-memory bridge + 8-layer pre-LN RoPE cross-attention decoder,
+untied LM head. 58.8 M params.
+
+**Clean-room** (weights CC-BY-4.0, reference code AGPL): written from the paper
+(arXiv 2605.10835) + HF config/data files + an activation oracle
+(`tools/dump_transcoda_reference.py`, gitignored — running the model is fact-
+gathering). First build hit all stages cos = 1.000000 (encoder + all 8 decoder
+blocks + logits, CPU & Metal), argmax 191/191, native preprocessing bit-exact vs
+the oracle. Greedy `**kern` decode is **byte-identical to the HF reference** (460
+chars / 203 tokens) at both f32 and q8_0 after fixing four decode-side bugs (KV
+view-stale, `/`-separator, per-occurrence repetition penalty, oracle 192-token
+cap — see LEARNINGS). q8_0 (65 MB, 3.4×) needed a quantizer keep-guard for the
+ConvNeXt conv2d kernels.
+
+**Perf:** replaced the naive host-shuttled KV path with a persistent device-
+resident KV cache (cross K/V computed once, self K/V written in-graph — the
+got_ocr pattern), **2.4–4× faster decode, byte-identical** on Metal and CPU; the
+host path stays behind `TRANSCODA_OCR_HOST_KV=1`.
+
+Shipped: HF `cstr/transcoda-omr-GGUF` (f32 + q8_0 + CC-BY-4.0 card w/ attribution,
+license verified), model registry, regression fixture (`page_transcoda.png` from
+CC-BY-4.0 verovio-synth-omr, cer 0.000), README/omr.dart wiring. Deferred: beam-3
+and grammar-constrained (`**kern` GBNF) decode.
+
+---
+
 ## July 13, 2026 — Kaggle CUDA regression: Class-A/Gap-5 fixes CONFIRMED (clean run)
 
 Ran the OCR-portfolio regression on Kaggle CUDA (T4/P100,

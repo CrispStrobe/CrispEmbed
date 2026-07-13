@@ -172,6 +172,57 @@ made it fast and the two things worth recording:
   high-activation token), the honest q8_0 floor, NOT a decode error (argmax 40/40,
   greedy byte-exact). Don't chase it with F16; the output is already exact.
 
+## Transcoda engine port: clean-room from an oracle, and the four things that made greedy diverge despite cos=1.0 (2026-07-13, src/transcoda_ocr.cpp)
+
+Transcoda-59M (ConvNeXt-V2-Tiny encoder → 2-layer projector + 2D-sinusoidal-PE
+bridge → 8-layer pre-LN **RoPE** cross-attn decoder → Humdrum `**kern`) is the
+first CrispEmbed engine written **clean-room**: the weights are CC-BY-4.0 but the
+reference *code* is AGPL, so the engine was written only from the paper, the HF
+config/data files, and an activation **oracle** (running the AGPL model = facts).
+Every architecture question the handover left open was answered by the oracle in
+one probe, not by reading source:
+
+- **Introspection beats the handover.** `inspect.signature` + `named_modules` +
+  `VisionFrontendOutput` field dump pinned every fact: grid is **46×32=1472**
+  (handover said 47×33), norm is **[-1,1]** not ImageNet, RoPE is **torchtune
+  adjacent-pair = ggml `ROPE_TYPE_NORMAL`** (not NEOX like every HF port here),
+  cross-attn is **dual-memory** (K = projector-out+2D-PE, V = projector-out raw —
+  the SMT pattern), the final encoder `layernorm` is **dead** (proj_input ==
+  last_hidden_state exactly), and the 2D-PE matches SMT's `/C=512` formula. First
+  build: all stages cos=1.000000, argmax 191/191, native preproc bit-exact.
+- **Per-stage cos=1.0 does NOT mean the decode matches — four separate bugs made
+  free-running greedy diverge while teacher-forced parity was perfect:** (1) the
+  KV-step cached the RoPE'd K as a bare `reshape` **view**, whose source buffer is
+  clobbered post-compute ([[set-output-on-view-stale]]) → `ggml_cont` it; (2) the
+  output joined tokens with `/`, but kern tokens **contain** `/` (e.g. `*M2/4`) and
+  the structure lives in literal `\n`/`\t` vocab tokens → concatenate directly, no
+  separator; (3) `repetition_penalty=1.1` was applied once **per occurrence** of a
+  token in the running sequence, so frequent tokens (the `\n` record separator) got
+  ÷1.1^k and were crushed — HF applies it once **per unique token**
+  ([[repetition-penalty-per-unique-token]]); (4) the oracle dump was capped at 192
+  tokens, so "byte-exact for 442 chars then 18 extra" was the *oracle* truncating,
+  not the engine. The tell that unlocked (1)–(3): teacher-forced argmax was 191/191
+  but greedy still diverged ⇒ the bug is in the sampling loop / KV path, never the
+  graph. With all four fixed, greedy is byte-identical to the HF reference.
+- **q8_0 conv keep-guard, again.** Like TrOMR, the ConvNeXt-V2 stem/downsample/
+  depthwise conv2d kernels are reshaped to 4D in-engine; the downsample convs have
+  `IC·KH·KW`=384 (%32==0) so they slip past the `ncols%32` auto-skip and quantize
+  → `ggml_cpy(q8_0→F16)` aborts (`ggml_dup` "fatal error"; Metal/CPU have no
+  q8_0→F16 cast). The converter's short names (`enc.embed.patch`, `.ds.conv`,
+  `.dw.`) didn't match the quantizer keep patterns; added them. Pointwise convs
+  (pw1/pw2) are matmuls in-engine and quantize fine. q8_0 (65 MB): decode still
+  byte-identical to the reference (enc cos 0.988 = the honest q8_0 conv floor).
+- **Persistent device-KV cache = 2.4–4× faster decode, byte-identical.** The first
+  KV path shuttled everything through host vectors and re-uploaded the cross K/V +
+  growing self K/V **every step**, plus `ggml_concat`. Moving cross K/V (computed
+  once) and self K/V (written in-graph via `ggml_cpy` into a position-view, read
+  back via a `[C,pos+1]` view — the got_ocr pattern) into a persistent backend
+  buffer removed all per-step host traffic. Byte-exact vs the host path on Metal
+  AND CPU; 2.4–4× faster per back-to-back A/B (variance is machine load — measure
+  both arms back-to-back, never idle-vs-loaded). Default flipped; the host path
+  stays behind `TRANSCODA_OCR_HOST_KV=1` and the O(L²) recompute behind
+  `TRANSCODA_OCR_FULL_DECODE=1` for regression bisection.
+
 ## Importing a llama.cpp LLM: un-permute q/k, because llama.cpp rewrites them for its interleaved RoPE (2026-07-12, SmolVLM import)
 
 Merging a stock llama.cpp **SmolVLM-256M** (arch=llama LLM + idefics3 mmproj)
