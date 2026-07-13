@@ -117,7 +117,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --detect FILE    detect faces in image (detection model)\n");
     fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: "
                     "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
-                    "tromr(music)/flova(music)/"
+                    "tromr(music)/flova(music)/transcoda(music)/"
                     "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines (default: 2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");

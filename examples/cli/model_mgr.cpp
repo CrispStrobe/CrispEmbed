@@ -1349,6 +1349,14 @@ static const ModelEntry k_registry[] = {
       "Flova/omr_transformer OMR: handwritten music→LilyPond (Q8_0)", "162 MB", "apache-2.0",
       "https://huggingface.co/Flova/omr_transformer" },
 
+    // Transcoda-59M — zero-shot full-page OMR (ConvNeXt-V2 enc + 8L RoPE cross-attn
+    // decoder, 59M). Score image→Humdrum **kern. OMR-NED SOTA on real historical
+    // scans. Weights cc-by-4.0 (attribution required).
+    { "transcoda", "transcoda-q8_0.gguf",
+      "https://huggingface.co/cstr/transcoda-omr-GGUF/resolve/main/transcoda-q8_0.gguf",
+      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M)", "120 MB", "cc-by-4.0",
+      "https://huggingface.co/btrkeks/transcoda-59M-zeroshot-v1" },
+
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 

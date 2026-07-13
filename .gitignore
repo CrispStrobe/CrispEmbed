@@ -45,3 +45,6 @@ tests/wasm-browser/package-lock.json
 
 # local build logs
 webgpu-build.log
+
+# Transcoda oracle dumper imports the AGPL reference package (clean-room: throwaway)
+tools/dump_transcoda_reference.py
