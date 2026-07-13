@@ -513,7 +513,7 @@
     {
       "name": "ppformulanet",
       "engine": "ppformulanet",
-      "_comment": "Printed-formula OCR (PP-FormulaNet-L). Same catastrophic-regression guard (Metal/CUDA residency-abort class, fixed 2026-07-02). expected_text null on purpose (crash + no-garbage guard). MUST run on a GPU build. On the formula fixture it currently reads \\begin{array}{r}{ x = \\frac{-b\\pm\\sqrt{b^2-4ac}}{2a}}\\end{array}. (mixtex_ocr is intentionally NOT guarded here — it runs post-fix but has a separate pre-existing decode-degeneration bug that would fail the no-garbage guard; add its entry once that is fixed.)",
+      "_comment": "Printed-formula OCR (PP-FormulaNet-L, SAM-ViT + MBart). Same catastrophic-regression guard (Metal/CUDA residency-abort class, fixed 2026-07-02). expected_text pinned 2026-07-13 to the deterministic q8_0 decode of formula_quadratic.png — CPU==Metal byte-identical, the correct quadratic formula in PP-FormulaNet's array/mathscr style. Upgrades this from crash+no-garbage-only to a text-match guard. NOTE: the MBart decoder + SAM-ViT encoder use tanh-approx GELU where the reference (config activation_function=gelu) is exact erf — a benign ~1e-3 deviation; the decode is correct and argmax-unaffected, so it was NOT switched to erf without a full PaddleOCR reference (dev-guide inverse-default rule). MUST run on a GPU build. (mixtex_ocr is intentionally NOT guarded here — separate pre-existing decode-degeneration bug.)",
       "gguf": {
         "repo": "cstr/ppformulanet-l-gguf",
         "file": "ppformulanet-l-q8_0.gguf",
@@ -521,7 +521,7 @@
         "approx_size_mb": 200
       },
       "sample": "tests/regression/images/formula_quadratic.png",
-      "expected_text": null,
+      "expected_text": "\\begin{array} { r } { { \\pmb { \\mathscr { x } } } = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c \\, } } { 2 a } } \\end{array}",
       "match": {
         "max_cer": 0.15
       }
