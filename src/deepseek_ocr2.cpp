@@ -144,7 +144,9 @@ struct ds_ocr2_ctx {
     // Stacked MoE expert weights ([in,out,n_exp]) for the ggml_mul_mat_id path.
     ggml_context * moe_ctx{};
     ggml_backend_buffer_t moe_buf{};
-    bool moe_metal = false; // true once experts are stacked + the graph path is on
+    bool moe_metal = false;        // true once experts are stacked + the graph path is on
+    bool moe_prestacked = false;   // GGUF already ships ffn_*_exps (converter #4) → skip runtime stacking
+    ggml_context * moe_view_ctx{}; // per-expert views into prestacked tensors (DS_MOE_CPU fallback only)
 
     // Tokenizer
     std::vector<std::string> id_to_piece;
@@ -622,15 +624,54 @@ static bool load_tensors(ds_ocr2_ctx & ctx, const char * path) {
         } else {
             // MoE
             ly.router_w = LF("mlp_gate.weight");
-            ly.experts.resize(lhp.n_experts);
-            for (int j = 0; j < lhp.n_experts; j++) {
-                auto EF = [&](const char * sfx) -> ggml_tensor * {
-                    snprintf(buf, sizeof(buf), "l.blk.%d.exp.%d.%s", i, j, sfx);
-                    return F(buf);
-                };
-                ly.experts[j].gate_w = EF("ffn_gate.weight");
-                ly.experts[j].up_w = EF("ffn_up.weight");
-                ly.experts[j].down_w = EF("ffn_down.weight");
+
+            // Prefer PRESTACKED experts (converter #4): l.blk.{i}.ffn_{gate,up,down}_exps.weight
+            // are [in,out,n_exp] tensors byte-identical to what stack_moe_experts()
+            // builds — load them directly (no per-expert copies, no stacking pass, saves
+            // ~1.3 GB of duplicated resident weights). Fall back to the per-expert layout
+            // for legacy GGUFs.
+            ly.gate_exps = LF("ffn_gate_exps.weight");
+            ly.up_exps = LF("ffn_up_exps.weight");
+            ly.down_exps = LF("ffn_down_exps.weight");
+            if (ly.gate_exps && ly.up_exps && ly.down_exps) {
+                ctx.moe_prestacked = true;
+                // The graph MoE path consumes gate_exps/up_exps/down_exps directly.
+                // Only the DS_MOE_CPU fallback needs per-expert tensors — build them as
+                // views into the stacked buffer (shared storage, no copy). The view's own
+                // ->buffer is null, so set it to the parent's: ggml_backend_tensor_get
+                // (used by to_f32) reads via view_src->buffer, but to_f32's fast path gates
+                // on ->buffer and would otherwise deref a raw device pointer (Metal segfault).
+                if (getenv("DS_MOE_CPU")) {
+                    if (!ctx.moe_view_ctx) {
+                        ggml_init_params vp = {
+                            (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
+                        };
+                        ctx.moe_view_ctx = ggml_init(vp);
+                    }
+                    auto mkview = [&](ggml_tensor * st, int e) -> ggml_tensor * {
+                        ggml_tensor * v =
+                            ggml_view_2d(ctx.moe_view_ctx, st, st->ne[0], st->ne[1], st->nb[1], (size_t)e * st->nb[2]);
+                        v->buffer = st->buffer;
+                        return v;
+                    };
+                    ly.experts.resize(lhp.n_experts);
+                    for (int j = 0; j < lhp.n_experts; j++) {
+                        ly.experts[j].gate_w = mkview(ly.gate_exps, j);
+                        ly.experts[j].up_w = mkview(ly.up_exps, j);
+                        ly.experts[j].down_w = mkview(ly.down_exps, j);
+                    }
+                }
+            } else {
+                ly.experts.resize(lhp.n_experts);
+                for (int j = 0; j < lhp.n_experts; j++) {
+                    auto EF = [&](const char * sfx) -> ggml_tensor * {
+                        snprintf(buf, sizeof(buf), "l.blk.%d.exp.%d.%s", i, j, sfx);
+                        return F(buf);
+                    };
+                    ly.experts[j].gate_w = EF("ffn_gate.weight");
+                    ly.experts[j].up_w = EF("ffn_up.weight");
+                    ly.experts[j].down_w = EF("ffn_down.weight");
+                }
             }
             ly.shared_gate_w = LF("shared_exp.ffn_gate.weight");
             ly.shared_up_w = LF("shared_exp.ffn_up.weight");
@@ -2147,9 +2188,16 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     // Stack MoE experts for the Metal ggml_mul_mat_id decode path (default).
     // DS_MOE_CPU=1 keeps the per-token CPU-scalar moe_ffn_cpu (slower, but the
     // reference path / fallback for platforms where mul_mat_id misbehaves).
+    // A prestacked GGUF (converter #4) already loaded gate_exps/up_exps/down_exps
+    // directly, so skip the runtime copy — the graph path is ready as-is.
     if (!getenv("DS_MOE_CPU")) {
-        ctx.moe_metal = stack_moe_experts(ctx);
-        if (!ctx.moe_metal) fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
+        if (ctx.moe_prestacked) {
+            ctx.moe_metal = true;
+            fprintf(stderr, "deepseek_ocr2: using prestacked MoE experts (no runtime stacking)\n");
+        } else {
+            ctx.moe_metal = stack_moe_experts(ctx);
+            if (!ctx.moe_metal) fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
+        }
     }
     init_ms("stack_moe_experts");
 
@@ -2229,6 +2277,7 @@ void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (c.sched) ggml_backend_sched_free(c.sched);
     if (c.moe_buf) ggml_backend_buffer_free(c.moe_buf);
     if (c.moe_ctx) ggml_free(c.moe_ctx);
+    if (c.moe_view_ctx) ggml_free(c.moe_view_ctx);
     // model_buf/model_ctx alias model_wl — free via free_weights (also unmaps).
     c.model_buf = nullptr;
     c.model_ctx = nullptr;
