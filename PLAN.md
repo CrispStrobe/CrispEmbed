@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR ggml engine (`src/tromr_ocr.cpp`) | **Landed on `main`** (validated cos 1.0 / 100% argmax / byte-exact). Remaining: HF upload `cstr/tromr-GGUF` + registry entry — awaiting go-ahead. |
+| 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR ggml engine (`src/tromr_ocr.cpp`) | **DONE** — landed on `main` (cos 1.0 / 100% argmax / byte-exact). HF `cstr/tromr-GGUF` uploaded (f32 + q8_0 + Apache-2.0 card); `model_mgr.cpp` registry entry added. Full wiring per contributing.md complete. |
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
 | 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | 🔄 running the CUDA portfolio-regression kernel |
@@ -280,6 +280,15 @@ micro-gap" and "the build dir was silently CPU-only"; verify
 a worktree (ggml symlink dance, see CLAUDE.md).
 
 ### Optical Music Recognition (OMR) — models to port (2026-07-12)
+
+**Planned — songbook management (product layer, not an engine).** Beyond
+single-image recognition we want a way to organize recognized scores into
+**songbooks**: import/scan → OMR (SMT/TrOMR) → store the notation + source image
+per song, group songs into collections, browse/search/reorder/export. Intended to
+be **integrated into `workshop`** (the app currently under active development)
+rather than a standalone tool — i.e. `workshop` gains a songbook view backed by
+the CrispEmbed OMR engines. Scope TBD (persistence format, per-song metadata,
+edit/re-run flow); flagged here so the OMR work and the workshop work stay aligned.
 
 OMR is "OCR for staff notation": the winning modern approach is exactly the
 TexTeller shape — vision encoder + autoregressive transformer decoder emitting
