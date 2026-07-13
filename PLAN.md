@@ -762,17 +762,51 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 
 ### Open correctness / infrastructure
 
-- **CUDA Class-B — vision garbage on Turing/Pascal only.** glm-ocr, internvl2-1b,
-  qwen2vl-3b produce garbage/timeout OCR on Kaggle T4/P100 but are CORRECT on
-  local Ampere (sm_86) and Metal/CPU — an older-arch vision-encoder numerical
-  divergence (conv / windowed-attn / `flash_attn_ext` on sm_75/sm_60), NOT a graph
-  bug. Needs a Turing/Pascal GPU (Kaggle) to localize the diverging op; compare
-  against got-ocr2 / qwen3vl-2b, which pass on CUDA. (Class-A device-pointer
-  weight-read SIGSEGVs and the Gap-5 free-after-load teardown were fixed on local
-  Ampere — see HISTORY.)
-- **Kaggle T4/P100 confirmation.** Re-run the full manifest on the original CUDA
-  arch to confirm the Class-A + Gap-5 fixes flip FAIL→PASS
-  (`tools/kaggle/ocr-portfolio-regression`; see local `kaggle_usage.md` for auth).
+- **CUDA regression — the 4 remaining FAILs, DIAGNOSED on P100 (2026-07-13).**
+  A diagnostic kernel (`tools/kaggle/crispembed-cuda-diag`, run on a **Tesla P100 /
+  Pascal sm_60**) exercised each engine under its env gates. **The diagnostic
+  overturned 3 of the 4 assumptions — only ONE is a real CUDA bug:**
+  - **`layout-heron` — REAL CUDA bug (fixable).** `test-layout-diff` aborts:
+    `ggml/src/ggml-cuda/fattn.cu:602 fatal error` in `ggml_cuda_flash_attn_ext`
+    → `GGML_ABORT` because Pascal (sm_60) has **no flash-attention kernel**
+    (`get_best_fattn_kernel == BEST_FATTN_KERNEL_NONE`). With
+    `LAYOUT_DETECT_FORCE_CPU=1` **all 8 stages PASS (cos 1.0)** — so the graph is
+    correct; the engine just runs `flash_attn_ext` on a single CUDA backend that
+    bypasses the scheduler's `supports_op` CPU-fallback. **Fix:** don't use the
+    CUDA flash kernel where it's unsupported — either (a) route layout attention
+    through a scheduler that honours `ggml_cuda_flash_attn_ext_supported` (returns
+    false on sm_60 → runs on CPU), or (b) give `layout_detect` a manual masked
+    attention fallback (`mul_mat`+`soft_max_ext`+`mul_mat`, mask=nullptr = full
+    attn) selected when flash is unsupported. Verify: `test-layout-diff` PASSES on
+    P100. NOTE T4 (Turing sm_75) HAS flash — this only bites Pascal.
+  - **`granite-vision` — NOT a CUDA bug.** The projector stages fail **identically
+    on CUDA, `GRANITE_VIS_SCALAR`, AND full-CPU (`GRANITE_CPU`)** on the P100 box
+    (cos 0.952 / 0.958 / 0.955 — same to 2 dp across all three), while they PASS on
+    the Mac. So it is a **cross-toolchain FP-strictness gap** (Kaggle gcc vs Mac
+    clang on high-magnitude projector activations, max_abs ~2.7–4.3), NOT a CUDA
+    divergence, and the **OCR text passes** (cer 0.163). **Fix:** relax the
+    projector-stage diff thresholds (≈0.95, they gate a real crater by going
+    negative) — a parity-harness strictness fix, not a model change.
+  - **`glm-ocr` — NOT a CUDA bug.** `test-glm-ocr-diff` vis_layers 14–23 fail at
+    cos 0.96–0.98 **identically on CUDA and CPU** on P100 (vis_layer_23: CUDA
+    0.9630 vs CPU 0.9632; max_abs up to 217) — same cross-toolchain strictness as
+    granite. And on a clean generated fox image glm reads it **correctly on CUDA**
+    (`"The quick brown fox jumps over the lazy dog 12345"`). So glm's vision is not
+    CUDA-garbage. Its portfolio FAIL is the **text-match on the repo `fox.png`
+    (800×200)** specifically — untested CPU-vs-CUDA yet (see below).
+  - **`internvl2` — reads a generated fox CORRECTLY on P100 CUDA** (identical to
+    CPU). No ref uploaded, so no per-stage diff. Its portfolio FAIL is likewise the
+    text-match on the repo `fox.png` (800×200), not universal vision garbage.
+  - **Open sub-question (glm + internvl2 portfolio garbage):** the repo `fox.png`
+    is 800×200 (the diagnostic used a 640×96 render). Next diagnostic run must OCR
+    the **repo** `tests/regression/images/fox.png` under default vs `*_FORCE_CPU`
+    for both engines — if CPU is also garbage there, it's a Kaggle-BUILD issue
+    (like granite/glm diff), not CUDA; if only CUDA is garbage, it's a genuine
+    larger-image CUDA vision divergence to localize. The vis-diff being CPU=CUDA
+    identical strongly suggests the former.
+  - **Full data:** the diagnostic log is on Kaggle
+    (`chr1s4/crispembed-cuda-diagnostic-4-remaining-fails`, transcript in
+    `/kaggle/working/diag.log`); see HISTORY.md.
 - **DBNet detector — mostly resolved (2026-07-13).** The CPY abort was already
   fixed (`dequant_rows_f32` via get_rows); the real cost was the CPU postprocess
   (43 s → 1.5 s, scanline box scoring `74b8ac5`, see HISTORY). Detection graph
