@@ -16,7 +16,7 @@ races). Remove the row when the branch lands.
 | 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR OMR (engine + wiring + quants + fixture) | **DONE** — engine `src/tromr_ocr.cpp` on `main` (cos 1.0 / 100% argmax / byte-exact); HF `cstr/tromr-GGUF` (f32 + q8_0 31 MB w/ F16 backbone + Apache-2.0 card); registry + regression fixture (cer 0.000). Now: evaluating OMR model #4 (Flova/omr_transformer, Donut VED) for port-vs-skip. |
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
-| 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | 🔄 running the CUDA portfolio-regression kernel |
+| 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | ⚠️ partial: Class-A/Gap-5 confirmed PASS on CUDA (deepseek-ocr2, dat, swinir, qwen2vl-3b); run ERRORed on **ENOSPC** (9 FAILs were disk-full download failures, not engine bugs) → re-running with a `/tmp` cache fix |
 | 2026-07-13 | opus-1m (interop/SR) | Kaggle reranker τ-eval on the expanded 30-group RERANK_EVAL corpus (`crispembed-imatrix-quant`) | **DONE** — ran on the 30-group corpus (`c0b5dbc`), imatrix q4_k/iq4_xs re-uploaded to the 3 `cstr/*-reranker-*-GGUF` repos. Result: imatrix cuts q4_k score-drift −23–29% everywhere, holds τ on the bge pair, **improves** τ on jina (0.929→0.942). q4_k+imatrix is the recommended sub-q8 reranker quant. |
 
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
