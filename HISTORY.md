@@ -4,6 +4,30 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — DBNet detection: scanline box scoring (28× faster postprocess)
+
+Investigated the "DBNet detector on Metal" item and found it was **misframed**.
+The CPY abort was already fixed (`dequant_rows_f32` via get_rows), and detection
+graph-compute is only **~3 s on CPU** (Metal `conv_transpose_2d` is still ~13×
+slower, so CPU stays the correct default). Measuring the full detector exposed
+the real bottleneck: **`extract_boxes` postprocess was ~43 s** — 15× the graph.
+
+Root cause: `score_polygon` tested every bbox pixel against the **full** traced
+contour (O(bbox_area × contour_len)), and `trace_contour` can emit a very long
+contour (up to `w*h*2`) on a degenerate component, so the product exploded.
+Rewrote `score_polygon` as a **scanline polygon fill**: each row's edge crossings
+are computed once, then a pixel's inside/outside is an `upper_bound` over the
+sorted crossings — even-odd-identical to the per-pixel ray-cast (inside iff an
+odd number of crossings lie strictly right of x). **Byte-identical box output.**
+
+- Same-binary A/B (dbnet-ic15-q4_k, forced CPU, 10-line page): postprocess
+  **43326 → 1540 ms (~28×)**; total detection **46.4 → 4.9 s**. Boxes cmp-identical
+  on the page (14) and fox (1). `OCR_DETECT_SCALAR_SCORE=1` restores the old path.
+- Lesson (again): measure the dominant cost first — the "GPU-accelerate detection"
+  premise chased a 3 s graph while a 43 s CPU postprocess dominated. (`74b8ac5`)
+
+---
+
 ## July 13, 2026 — SR/restoration engines → fused ggml graphs (complete)
 
 Ported the super-resolution / restoration engines from per-conv mini-graphs (a
