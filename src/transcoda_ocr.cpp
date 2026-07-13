@@ -520,9 +520,18 @@ static bool run_decoder(transcoda_ocr_context * ctx, const std::vector<int32_t> 
 // ---------------------------------------------------------------------------
 static int argmax_with_penalty(const float * logits, int V, const std::vector<int> & seen, float penalty) {
     std::vector<float> lg(logits, logits + V);
-    if (penalty != 1.0f)
+    if (penalty != 1.0f) {
+        // HF RepetitionPenaltyLogitsProcessor penalizes each token that appears in
+        // the running sequence exactly ONCE (regardless of how often it repeats) —
+        // applying it per-occurrence over-suppresses frequent tokens (e.g. the '\n'
+        // kern record separator), derailing the decode.
+        std::vector<char> done(V, 0);
         for (int id : seen)
-            if (id >= 0 && id < V) lg[id] = lg[id] > 0 ? lg[id] / penalty : lg[id] * penalty;
+            if (id >= 0 && id < V && !done[id]) {
+                lg[id] = lg[id] > 0 ? lg[id] / penalty : lg[id] * penalty;
+                done[id] = 1;
+            }
+    }
     int best = 0;
     float bv = lg[0];
     for (int i = 1; i < V; i++)
@@ -1008,6 +1017,29 @@ int transcoda_ocr_run_diff(transcoda_ocr_context * ctx, const char * ref_path) {
         readcmp(nm);
     }
     readcmp("logits");
+    // Per-position argmax agreement: does my logits[i] top-1 == the oracle's next
+    // token ids[i+1]? Near-tie flips (F32 op-order) show up here; a high rate with
+    // only a few flips confirms the port is correct despite greedy AR divergence.
+    if (ref.has("logits")) {
+        ggml_tensor * lt = ggml_graph_get_tensor(dgf, "logits");
+        int V = ctx->hp.vocab_size;
+        std::vector<float> lg(ggml_nelements(lt));
+        ggml_backend_tensor_get(lt, lg.data(), 0, lg.size() * sizeof(float));
+        int agree = 0, cmp = 0;
+        for (int i = 0; i + 1 < L; i++) {
+            int best = 0;
+            float bv = lg[(size_t)i * V];
+            for (int v = 1; v < V; v++)
+                if (lg[(size_t)i * V + v] > bv) {
+                    bv = lg[(size_t)i * V + v];
+                    best = v;
+                }
+            cmp++;
+            if (best == ids[i + 1]) agree++;
+        }
+        fprintf(stderr, "[tc-diff] argmax agreement vs oracle next-token: %d/%d = %.4f\n", agree, cmp,
+                cmp ? (double)agree / cmp : 1.0);
+    }
     ggml_free(dg);
 
     fprintf(stderr, "transcoda_diff: %s (%d stage failures)\n", fails ? "FAIL" : "PASS", fails);
