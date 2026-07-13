@@ -4,13 +4,6 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
-## 🚦 RELEASE FREEZE — cutting **v0.15.0** (2026-07-13, ~13:30 CET)
-
-A release is being cut from the current `main` tip. **Please hold non-critical
-pushes to `main` for ~15 min** so the version-bump commit + tag land on a stable
-green tip (rapid pushes cancel the release build). Ping/land only if urgent.
-This row is removed once `v0.15.0` is tagged + published.
-
 ## 🚧 Active work in flight (update + push to `main` at EVERY checkpoint)
 
 Multiple sessions/worktrees run in parallel and push to `main` concurrently.
