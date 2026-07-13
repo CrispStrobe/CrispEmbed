@@ -1,0 +1,18 @@
+{
+  "id": "chr1s4/crispembed-deepseek-ocr2-stacked-convert",
+  "title": "CrispEmbed DeepSeek-OCR-2 stacked-experts GGUF reconvert",
+  "code_file": "deepseek_ocr2_convert.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token",
+    "chr1s4/crispembed-ccache"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}
