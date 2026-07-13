@@ -2,10 +2,11 @@
 //
 // Wraps the same auto-detecting OCR dispatcher as the other recognizers, but
 // named/documented for OMR. Works with any OMR GGUF whose `general.architecture`
-// the engine recognizes (currently `smt_ocr` — Sheet Music Transformer →
-// bekern; `tromr_ocr` — Polyphonic-TrOMR → rhythm/pitch/lift streams). The
-// model is auto-detected from the GGUF, so the same class handles every OMR
-// engine.
+// the engine recognizes (`smt_ocr` — Sheet Music Transformer → bekern;
+// `tromr_ocr` — Polyphonic-TrOMR → rhythm/pitch/lift streams; `flova_ocr` —
+// handwritten music → LilyPond; `transcoda_ocr` — zero-shot full-page score →
+// Humdrum `**kern`). The model is auto-detected from the GGUF, so the same
+// class handles every OMR engine.
 //
 // Usage (Flutter):
 //   final omr = CrispEmbedOmr('smt-grandstaff-q8_0.gguf');
