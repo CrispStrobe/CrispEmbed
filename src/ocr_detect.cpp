@@ -701,23 +701,58 @@ static float score_polygon(const float * prob_map, int map_w, int map_h,
                            const std::vector<std::pair<int, int>> & contour, int min_x, int min_y, int max_x,
                            int max_y) {
     if (contour.empty()) return 0;
+    const int n = (int)contour.size();
     float sum = 0;
     int count = 0;
-    // Simple approach: for each pixel in the bbox, check if it's inside
-    // the polygon using ray-casting
-    for (int y = min_y; y <= max_y && y < map_h; y++) {
-        for (int x = min_x; x <= max_x && x < map_w; x++) {
-            // Ray casting: count crossings to the right
-            int crossings = 0;
-            int n = (int)contour.size();
-            for (int i = 0, j = n - 1; i < n; j = i++) {
-                int yi = contour[i].second, yj = contour[j].second;
-                int xi = contour[i].first, xj = contour[j].first;
-                if ((yi <= y && yj > y) || (yj <= y && yi > y)) {
-                    float t = (float)(y - yi) / (yj - yi);
-                    if (x < xi + t * (xj - xi)) crossings++;
+
+    // The original ray-cast tested every bbox pixel against the FULL contour —
+    // O(bbox_area * contour_len). On a degenerate component trace_contour can
+    // emit a very long contour, so that product blew up to tens of seconds in
+    // postprocess. The scanline form below computes each row's edge crossings
+    // once (O(contour) per row), so a pixel's inside/outside is an upper_bound
+    // over the sorted crossings — O(bbox_h*contour + bbox_area*log). It is
+    // even-odd-identical to the per-pixel test (a pixel is inside iff an ODD
+    // number of crossings lie strictly to its right, x < crossing_x), so the
+    // box output is byte-identical. OCR_DETECT_SCALAR_SCORE=1 restores the old
+    // per-pixel path for bisection.
+    static const bool scalar_score = (std::getenv("OCR_DETECT_SCALAR_SCORE") != nullptr);
+    if (scalar_score) {
+        for (int y = min_y; y <= max_y && y < map_h; y++) {
+            for (int x = min_x; x <= max_x && x < map_w; x++) {
+                int crossings = 0;
+                for (int i = 0, j = n - 1; i < n; j = i++) {
+                    int yi = contour[i].second, yj = contour[j].second;
+                    int xi = contour[i].first, xj = contour[j].first;
+                    if ((yi <= y && yj > y) || (yj <= y && yi > y)) {
+                        float t = (float)(y - yi) / (yj - yi);
+                        if (x < xi + t * (xj - xi)) crossings++;
+                    }
+                }
+                if (crossings & 1) {
+                    sum += prob_map[x + y * map_w];
+                    count++;
                 }
             }
+        }
+        return count > 0 ? sum / count : 0;
+    }
+
+    std::vector<float> xs; // edge-crossing x positions for the current row
+    for (int y = min_y; y <= max_y && y < map_h; y++) {
+        xs.clear();
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            int yi = contour[i].second, yj = contour[j].second;
+            int xi = contour[i].first, xj = contour[j].first;
+            if ((yi <= y && yj > y) || (yj <= y && yi > y)) {
+                float t = (float)(y - yi) / (yj - yi);
+                xs.push_back(xi + t * (xj - xi));
+            }
+        }
+        if (xs.empty()) continue;
+        std::sort(xs.begin(), xs.end());
+        for (int x = min_x; x <= max_x && x < map_w; x++) {
+            // crossings strictly to the right of x == #{c in xs : x < c}
+            int crossings = (int)(xs.end() - std::upper_bound(xs.begin(), xs.end(), (float)x));
             if (crossings & 1) {
                 sum += prob_map[x + y * map_w];
                 count++;
