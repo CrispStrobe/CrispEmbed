@@ -28,19 +28,19 @@ extern "C" {
 typedef struct transcoda_ocr_context transcoda_ocr_context;
 
 typedef struct transcoda_ocr_hparams {
-    int32_t d_model;       // 512
-    int32_t n_layers;      // 8
-    int32_t n_heads;       // 8  (head_dim 64)
-    int32_t dim_ff;        // 1024
-    int32_t vocab_size;    // 3000
-    int32_t max_seq_len;   // 2048
-    float rope_theta;      // 10000
+    int32_t d_model;     // 512
+    int32_t n_layers;    // 8
+    int32_t n_heads;     // 8  (head_dim 64)
+    int32_t dim_ff;      // 1024
+    int32_t vocab_size;  // 3000
+    int32_t max_seq_len; // 2048
+    float rope_theta;    // 10000
     // encoder
-    int32_t enc_num_stages;   // 4
-    int32_t enc_num_channels; // 3
-    int32_t enc_stem_kernel;  // 4
-    int32_t enc_reduction;    // 32
-    int32_t fixed_h, fixed_w; // 1485 x 1050
+    int32_t enc_num_stages;    // 4
+    int32_t enc_num_channels;  // 3
+    int32_t enc_stem_kernel;   // 4
+    int32_t enc_reduction;     // 32
+    int32_t fixed_h, fixed_w;  // 1485 x 1050
     float mean0, mean1, mean2; // 0.5 / 0.5 / 0.5
     float std0, std1, std2;    // 0.5 / 0.5 / 0.5
     int32_t bos_token, eos_token, pad_token;
