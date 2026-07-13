@@ -888,6 +888,22 @@
           "final_embedding": 0.99
         }
       }
+    },
+    {
+      "name": "tromr",
+      "engine": "tromr",
+      "_comment": "Polyphonic-TrOMR OMR (ResNetV2+ViT encoder + x-transformers decoder, 4 parallel heads). Deterministic greedy argmax over rhythm/pitch/lift streams, merged to symbolic notation. expected_text is the byte-exact decode on examples/photo1.jpg (Apache-2.0), captured 2026-07-13: CPU==Metal identical, tromr-q8_0 (F16 backbone) == f32. Guards the whole OMR path (SAME-pad conv, ViT 32^-0.5 scale, scaled pos-emb, SIGLU/GEGLU, greedy argmax, detok+merge) — any regression craters the notation. The no-garbage guard passes with margin (the frequent 'note' word is 39/85 < the 0.5 repetition floor).",
+      "gguf": {
+        "repo": "cstr/tromr-GGUF",
+        "file": "tromr-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 31
+      },
+      "sample": "tests/regression/images/staff_tromr.jpg",
+      "expected_text": "clef-F4+keySignature-CM+note-E3_eighth.|note-C4_eighth.+note-E3_sixteenth|note-D4_sixteenth+note-E3_eighth.|note-E4_eighth.+note-E3_sixteenth|note-F4_sixteenth+note-E3_eighth.|note-C4_eighth.+note-E3_sixteenth|note-B3_sixteenth+note-E3_eighth.|note-D4_eighth.+note-E3_sixteenth|note-C4_sixteenth+barline+note-D3_eighth.|note-F3_eighth.|note-C4_whole+note-D3_sixteenth|note-F3_sixteenth+note-D3_eighth.|note-F3_eighth.+note-D3_sixteenth|note-F3_sixteenth+note-D3_half|note-F3_half+barline+note-D3_eighth.|note-B3_eighth.+note-E3_sixteenth|note-B3_sixteenth+note-F3_eighth.|note-B3_eighth.+note-G3_sixteenth|note-B3_sixteenth+note-B3_quarter|note-D4_quarter+note-G3_quarter|note-B3_quarter+barline",
+      "match": {
+        "max_cer": 0.1
+      }
     }
   ]
 }
