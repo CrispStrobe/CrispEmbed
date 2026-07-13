@@ -295,30 +295,58 @@ downstream), so we optimize for arch fit + license, not output dialect.
 exist) and handwritten (hard; the real license risk is on the *training
 data*, not the code — see landmine below).
 
+**Licensing methodology — AGPL *code* is NOT a blocker (verified 2026-07-13).**
+The gate is the **weights** license (we redistribute GGUFs) and the **engine
+authorship**, which are independent of an upstream repo's *code* license:
+- If the **weights** are permissive (MIT / Apache / **CC BY**), the GGUF is
+  redistributable regardless of the training-code license. AGPL/GPL on the
+  *code* does not attach to CC-BY *weights*. (Training-data license only matters
+  if we redistribute the data or retrain — not for shipping pretrained weights.)
+- The **engine** is written **clean-room**: run the upstream Python as an
+  *oracle* (reference-activation dumps — no derivative) and implement from a
+  **facts-only spec** (architecture, tensor shapes, op order, hparams, eps/scale
+  — all uncopyrightable) + the paper + configs. Never transcribe AGPL source
+  line-by-line. Two-team wall: the brief-writer may read the AGPL `.py`; the
+  implementer sees only the facts brief. (Permissive blueprints don't need this.)
+- Hard rejects shrink to: **gated / unlicensed / non-permissive weights**, or an
+  **11B+ base under a restrictive model license**, or a **non-single-model
+  pipeline** (poor ggml fit).
+
 | # | Model | Params | License (code / weights) | Architecture | Output | Handles | Effort | Status |
 |---|-------|--------|--------------------------|-------------|--------|---------|--------|--------|
-| 1 | **Sheet Music Transformer (SMT / SMT++)** | **21.4M** | **MIT / MIT** | ConvNext encoder + vanilla Transformer decoder | bekern | Printed polyphonic / pianoform | **Low** — TexTeller-clone; only new piece is the ConvNext backbone (conv + LN + GELU, no attention — simpler than any ViT already ported) | **TODO — recommended first** |
-| 2 | **oemer** | 2× U-Net | **MIT / MIT** (GH releases) | 2 semantic-segmentation U-Nets (staff/symbol) + numpy reconstruction | MusicXML | Printed, phone photos, skewed | **High** — multi-model + heavy rule-based reconstruction; poor ggml fit | Reference/fallback only |
-| 3 | Polyphonic-TrOMR (NetEase) | ~22M | **Apache-2.0 / Apache-2.0** (weights committed in-repo) | ViT + multi-head Transformer decoder (parallel rhythm/pitch/lift/note heads) | symbolic text (`clef-G2+keySignature-…`) | Printed polyphonic | Medium | Viable fallback; `homr` (AGPL) wraps it but weights are the clean Apache-2.0 ones |
-| 4 | **Flova/omr_transformer** | 143M | Apache-2.0 / Apache-2.0 (HF) | Donut VED (DonutSwin + 4L mBART) | LilyPond | artificial + **handwritten** + whiteboard ("simple notes") | Medium | **DONE** — `src/flova_ocr.cpp` (cos 1.0 / 40-40 argmax / byte-exact incl. native preproc); q8_0 162 MB byte-exact; CLI wired. Pending HF upload + registry + fixture |
-| ~~5~~ | ~~homr (liebharc)~~ | — | ~~**AGPL-3.0**~~ | pipeline + TrOMR | MusicXML | printed/camera | — | **REJECTED — AGPL** |
+| 1 | **Sheet Music Transformer (SMT)** | 21.4M | **MIT / MIT** | ConvNext encoder + Transformer decoder | bekern | Printed polyphonic | Low | **DONE** — `src/smt_ocr.cpp` shipped (per-stage cos 1.0, 96.3% GrandStaff) |
+| 1b | **SMT++ full-page** | ~10.9M | **MIT / MIT** — `PRAIG/smt-fp-grandstaff` (public, **not gated**, verified HF card) | full-page extension of SMT (curriculum-trained) | bekern | **Full-page pianoform** (no separate layout stage) | **Low–Med** | **DOABLE — top permissive target.** Verify arch delta vs base SMT first: deep-research *refuted* (2-1) the "same-arch, curriculum-only" claim, so confirm the graph before assuming free reuse. If same graph → near-free extension of shipped SMT |
+| 2 | **Transcoda-59M-zeroshot** | 58.8M | **AGPL code / CC BY 4.0 weights** (`btrkeks/transcoda-59M-zeroshot-v1`, verified HF card) | ConvNeXt-V2-Tiny enc + 8L Transformer dec (d512/8h, **RoPE**) | **kern | **Full-page + historical scans** (zero-shot); **current OMR-NED SOTA** (Polish 63.97%, Verovio 18.46% — beats SMT++ & Legato) | **Med** | **DOABLE — accuracy leader.** Weights CC BY 4.0 → GGUF redistribution clean (attribute). Engine **clean-room** (code is AGPL). Arch fully in-tree: ConvNeXt-V2 ≈ SMT's ConvNext, RoPE decoder ≈ Qwen3; add 3000-token kern BPE tok; optional GBNF grammar-constrained decode. Training data `polish-scores` = `license: other` (irrelevant to CC-BY weight redistribution) |
+| 3 | Polyphonic-TrOMR (NetEase) | ~22M | **Apache-2.0 / Apache-2.0** | ViT + multi-head Transformer decoder (rhythm/pitch/lift/note) | symbolic text | Printed polyphonic photos | Medium | **DONE** — `src/tromr_ocr.cpp` (cos 1.0 / 100% argmax / byte-exact); `cstr/tromr-GGUF` |
+| 4 | **Flova/omr_transformer** | 143M | Apache-2.0 / Apache-2.0 | Donut VED (DonutSwin + 4L mBART) | LilyPond | artificial + **handwritten** + whiteboard (monophonic) | Medium | **DONE** — `src/flova_ocr.cpp` (cos 1.0 / 40-40 argmax / byte-exact); `cstr/flova-omr-GGUF` (f32 + q8_0); CLI + registry wired |
+| 5 | oemer | 2× U-Net | MIT / MIT | 2 segmentation U-Nets + numpy reconstruction | MusicXML | Printed, photos, skewed | High | Reference-only — multi-model + rule-based reconstruction, poor ggml fit |
+| ~~6~~ | ~~Legato~~ | ~11B | MIT (trained delta) / **Llama-3.2 license + GATED** | frozen Llama-3.2-11B-Vision + trained decoder | ABC | full-page | — | **REJECTED** — 11B base under Meta's Llama license + contact-gated weights; MIT covers only the delta. Too big + non-permissive base |
+| ~~7~~ | ~~starry / FindLab~~ | — | **no code license / gated, unlicensed weights** | 7-microservice pipeline (PyTorch+TF+ONNX) | LilyPond/kern | complex polyphonic | — | **REJECTED** — not a single model (poor ggml fit) *and* weights token-gated with no stated license |
+| ~~8~~ | ~~Clarity-OMR~~ | — | (unverified) | PDF→MusicXML **pipeline** | MusicXML | printed | High | Reference-only — multi-stage pipeline, not a single VED model |
+| ~~9~~ | ~~homr (liebharc)~~ | — | **AGPL-3.0** (code) | pipeline + TrOMR | MusicXML | printed/camera | — | **REJECTED** — pipeline (poor ggml fit); the underlying TrOMR is already shipped separately (Apache-2.0) |
 
-**Recommended priority:**
+**Recommended priority (updated 2026-07-13 — SMT/TrOMR/Flova all shipped):**
 
-1. **SMT (printed)** — port target. MIT code *and* MIT weights, only 21.4M
-   params (quantizes to near-nothing), ConvNext + standard transformer decoder.
-   Weights: `antoniorv6/smt-grandstaff`, `-camera-grandstaff`,
-   `-string-quartets` (all MIT). Trained on GrandStaff (Ideal + Camera) and
-   Quartets. Plan: new `models/convert-smt-to-gguf.py` mirroring the TexTeller
-   converter; reuse the `math_ocr.cpp` decoder graph; add a ConvNext encoder
-   (new, but the simplest backbone in the roster); bekern tokenizer is a small
-   finite lookup vocab (no BPE/Unigram needed). Validate parity vs HF weights
-   the usual way.
+1. **SMT++ full-page** — best permissive next step. MIT + public weights
+   (`PRAIG/smt-fp-grandstaff`), and it extends the *already-shipped* `smt_ocr.cpp`.
+   First task is cheap and decisive: **verify the arch delta vs base SMT** (the
+   deep-research verifier *refuted* the "curriculum-only, identical arch" claim
+   2-1, so don't assume free reuse). If the graph matches → near-free full-page
+   pianoform (no separate layout stage). If it differs → scope the delta.
 
-2. **Handwritten (phase 2)** — no MIT-weights handwritten model with SMT's
-   polish exists. Reach handwritten by *fine-tuning SMT on synthetic +
-   license-clean handwritten-style data*, same graph. `Flova/omr_transformer`
-   is the only permissive handwritten lead but is a toy.
+2. **Transcoda-59M** — accuracy leader + only permissive route to historical
+   scans. Weights are **CC BY 4.0** (redistribute the GGUF freely, attribute);
+   the code is AGPL so the engine is written **clean-room** (Python-as-oracle +
+   facts-spec — see "Licensing methodology" above). Arch is fully in-tree:
+   ConvNeXt-V2-Tiny ≈ SMT's ConvNext backbone, 8L RoPE decoder ≈ Qwen3 decoder;
+   the only new pieces are a 3000-token **kern BPE tokenizer and (optional) GBNF
+   grammar-constrained decode. Highest accuracy on the OMR-NED benchmark.
+
+3. **Handwritten *polyphonic* — the real remaining gap.** No permissive model
+   fills it: Flova (shipped) is monophonic-toy; the strong performers are all
+   rejected (Legato = Llama-11B/gated, starry = gated/unlicensed pipeline, homr =
+   AGPL pipeline). Reach it by *fine-tuning* a shipped graph (SMT or Transcoda)
+   on synthetic + license-clean handwritten-style data — same engine, new weights.
 
 3. **Polyphonic-TrOMR — DONE (2026-07-13).** Genuinely accurate model (reads
    clefs/keys/rhythms/pitches correctly on real photos). The ggml engine
