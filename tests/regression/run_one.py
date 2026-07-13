@@ -271,10 +271,21 @@ def run_diff(diff_binary: Path, gguf: Path, ref: Path,
     env.setdefault("LD_LIBRARY_PATH", str(diff_binary.parent))
     proc = subprocess.run(cmd, capture_output=True, text=True,
                           check=False, timeout=timeout, env=env)
-    if proc.returncode < 0:
-        die(f"diff harness died from signal {-proc.returncode}\n"
-            f"  stderr tail: {proc.stderr[-400:]}")
+    # Parse the per-stage cosines BEFORE reacting to the exit code. A
+    # teardown/atexit crash (common on CUDA: the GPU device is freed by a C++
+    # static dtor at process exit, AFTER the diff already printed every stage —
+    # the ggml v0.10 residency assert / SIGABRT class) must not mask a correct
+    # forward. If we parsed complete stage lines, judge by them and only WARN on
+    # the signal; die only when the process crashed before producing any output.
     stages = parse_diff_stdout(proc.stdout + "\n" + proc.stderr)
+    if proc.returncode < 0:
+        if stages:
+            print(f"[warn] diff harness exited on signal {-proc.returncode} "
+                  f"after producing {len(stages)} stage(s) — treating as a "
+                  f"teardown crash and judging by the stages")
+        else:
+            die(f"diff harness died from signal {-proc.returncode} before any "
+                f"stage output\n  stderr tail: {proc.stderr[-400:]}")
     if not stages:
         die(f"diff harness produced no parseable stage lines.\n"
             f"  stdout tail: {proc.stdout[-400:]}\n"
@@ -303,7 +314,16 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
     # into its test binary — run `<binary> <gguf> [args]` and require the pinned exit.
     rc_spec = entry.get("run_check")
     if rc_spec:
-        argv = [str(diff_bin(rc_spec["binary"])), str(gguf), *rc_spec.get("args", [])]
+        rc_bin = diff_bin(rc_spec["binary"])
+        if not rc_bin.exists():
+            # An optional test binary that isn't built in this config is a SKIP,
+            # not a FAIL. e.g. test-punct-diff needs crisp_punc (CrispASR), which
+            # the Kaggle CUDA kernel doesn't clone (CRISPEMBED_HAS_CRISP_PUNC=OFF)
+            # — the punct models (pcs/fireredpunc/fullstop) then can't be checked
+            # here. Previously this crashed with FileNotFoundError → false FAIL.
+            print(f"[{name}] SKIP run_check ({rc_spec['binary']} not built)")
+            return 0
+        argv = [str(rc_bin), str(gguf), *rc_spec.get("args", [])]
         print(f"[{name}] run_check: {' '.join(argv)}")
         r = subprocess.run(argv, env={**os.environ, **rc_spec.get("env", {})})
         exp = int(rc_spec.get("expect_exit", 0))
