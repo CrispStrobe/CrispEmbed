@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR ggml engine (`src/tromr_ocr.cpp`) | **DONE** — landed on `main` (cos 1.0 / 100% argmax / byte-exact). HF `cstr/tromr-GGUF` uploaded (f32 + q8_0 + Apache-2.0 card); `model_mgr.cpp` registry entry added. Full wiring per contributing.md complete. |
+| 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR OMR (engine + wiring + quants + fixture) | **DONE** — engine `src/tromr_ocr.cpp` on `main` (cos 1.0 / 100% argmax / byte-exact); HF `cstr/tromr-GGUF` (f32 + q8_0 31 MB w/ F16 backbone + Apache-2.0 card); registry + regression fixture (cer 0.000). Now: evaluating OMR model #4 (Flova/omr_transformer, Donut VED) for port-vs-skip. |
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
 | 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | 🔄 running the CUDA portfolio-regression kernel |
