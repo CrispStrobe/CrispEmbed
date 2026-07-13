@@ -281,15 +281,6 @@ a worktree (ggml symlink dance, see CLAUDE.md).
 
 ### Optical Music Recognition (OMR) — models to port (2026-07-12)
 
-**Planned — songbook management (product layer, not an engine).** Beyond
-single-image recognition we want a way to organize recognized scores into
-**songbooks**: import/scan → OMR (SMT/TrOMR) → store the notation + source image
-per song, group songs into collections, browse/search/reorder/export. Intended to
-be **integrated into `workshop`** (the app currently under active development)
-rather than a standalone tool — i.e. `workshop` gains a songbook view backed by
-the CrispEmbed OMR engines. Scope TBD (persistence format, per-song metadata,
-edit/re-run flow); flagged here so the OMR work and the workshop work stay aligned.
-
 OMR is "OCR for staff notation": the winning modern approach is exactly the
 TexTeller shape — vision encoder + autoregressive transformer decoder emitting
 a linearized notation token sequence. This reuses the existing
