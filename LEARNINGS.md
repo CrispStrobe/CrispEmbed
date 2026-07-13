@@ -895,6 +895,48 @@ never stops." Two *independent* bugs, and one handover claim that was wrong:
   f16-vs-f32 (the GGUF is f16, HF f32), not preprocessing. Bilinear is retained behind
   `MIXTEX_BILINEAR=1` for A/B bisection (dev-guide "keep both paths" rule).
 
+### TexTeller was garbage: decoder FFN activation was hardcoded ReLU (2026-07-13)
+
+TexTeller (ViT + TrOCR VED on the shared `math_ocr.cpp` engine) shipped emitting
+garbled LaTeX, yet had a passing regression fixture-shaped history because it was
+only ever checked per-stage (encoder cos ~0.999), never on the **decoded output**
+(HARD RULE #3). Two pix2tex-specific constants were hardcoded in the shared engine:
+
+1. **Decoder FFN activation hardcoded `ggml_relu`** — but TexTeller's TrOCR decoder
+   uses **GELU** (`config.decoder.activation_function == "gelu"`; pix2tex/TrOCR-small
+   use relu). Wrong activation on every FFN layer accumulated into output that
+   *partially recovered structure* (`\[x \} \} = \frac{-b \pm \sqrt{...}}{2a}` — the
+   `\frac` skeleton is right, the rest drifts). **That partial-correctness is the
+   diagnostic signature of a small-but-systematic per-layer error** (wrong-but-similar
+   activation, subtle norm), NOT a gross wiring bug. Now data-driven from
+   `decoder.activation_function` (default relu → pix2tex unchanged); graph uses
+   `ggml_gelu_erf`, scalar uses exact `erff`. HF "gelu" == erf, not tanh.
+2. **Preprocessing hardcoded mean=std=0.5 + squash-resize** (TrOCR). TexTeller needs
+   mean=0.9545467/std=0.15394445 + trim-white-border + aspect-preserving resize
+   (short edge→S-1, long edge capped at S) + **white pad** to 448 (its torchvision
+   transform; pad value 0 in normalized space == mean grey). Now
+   `encoder.image_mean/std` + `encoder.preprocess_pad` from GGUF (defaults reproduce
+   pix2tex). TexTeller ships **no `preprocessor_config.json`** — constants live in its
+   source; the converter takes `--image-mean/--image-std/--preprocess pad`.
+
+**Isolation that nailed it (dev-guide diff-harness):** injecting the *reference*
+`pixel_values` still garbled → not preprocessing; dumping the encoder memory and
+diffing vs HF's `ViTModel.last_hidden_state` gave per-token cos mean **0.99933**
+(CLS 0.99997) → encoder correct → bug is in the decoder; f16 == q8_0 garbage → not
+quantization → graph. GELU flipped it to a **byte-exact** match on both formula
+fixtures, f16==q8_0, CPU==Metal; pix2tex-mfr stays byte-identical. Env A/B:
+`MATH_OCR_{MEAN,STD,PAD,FFN_GELU}`; graph-isolation hooks `MATH_OCR_{PV_BIN,DUMP_ENC}`.
+
+**Bug class — audit any converted-model engine for hardcoded, model-dependent
+constants** (activation fn, input mean/std, resize mode, prefix-token count, RoPE
+variant). Sibling status: `ppformulanet_ocr`/`ppformulanet_l` use **tanh-approx**
+GELU where MBart's `gelu` is **erf** (minor cos ~0.999 mismatch, and both carry
+`expected_text: null` fixtures — unvalidated end-to-end); `mixtex` correctly uses
+`gelu_erf`. **Root systemic hole: a fixture pinned from the engine's *own* output
+"passes" while enshrining garbage** — golden text must trace to the HF reference,
+and `expected_text: null` means "never validated," not "fine." See
+[[validate-intermediates-and-outputs]], [[never-blame-quantization]].
+
 ## DRY: byte-level BPE decode centralized in core/bpe.h (2026-07-02)
 
 Every OCR/VLM engine hand-rolled the *inverse* of `core_bpe::byte_encoder()`
