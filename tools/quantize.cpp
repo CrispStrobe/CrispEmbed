@@ -231,10 +231,17 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // HybridEmbed projector (enc.proj) are conv2d kernels flattened to 2D above;
         // quantizing them makes the in-engine reshape-to-4D produce an ne[0] that is
         // not a multiple of the block size → ggml_dup abort. Keep them as-is.
+        // Transcoda ConvNeXt-V2 conv2d kernels (short-named by the converter): the
+        // stem patch conv (enc.embed.patch), the downsample convs (enc.st*.ds.conv)
+        // and the depthwise convs (enc.st*.l*.dw) are reshaped to 4D in-engine, so
+        // quantizing them yields an ne[0] not %32 → ggml_dup/cast abort. The
+        // pointwise convs (pw1/pw2) are matmuls in-engine and quantize fine.
         if (sname.find("patch_embed") != std::string::npos || sname.find("downsample") != std::string::npos ||
             sname.find("downsampling") != std::string::npos || sname.find("dwconv") != std::string::npos ||
             sname.find("enc.bb") != std::string::npos || sname.find("enc.proj") != std::string::npos ||
-            sname.find("positional") != std::string::npos || sname.find("merger") != std::string::npos) {
+            sname.find("enc.embed.patch") != std::string::npos || sname.find(".ds.conv") != std::string::npos ||
+            sname.find(".dw.") != std::string::npos || sname.find("positional") != std::string::npos ||
+            sname.find("merger") != std::string::npos) {
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 #ifdef _WIN32
             _fseeki64(fin, (int64_t)off, SEEK_SET);
