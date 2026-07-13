@@ -200,6 +200,9 @@ if ('serviceWorker' in navigator && !crossOriginIsolated
 // Verified model presets (each checked CPU + WebGPU against the native
 // engine — tests/wasm-browser/engine-sweep.js). Picking one fills the URL
 // field below, which stays editable for manual override.
+// NOTE: the "Music (OMR)" group is newly added — the engines compile+link into
+// the WASM build and share the generic OCR dispatch, but they still need to be
+// run through engine-sweep.js to join the CPU+WebGPU-verified set.
 const MODEL_PRESETS = [
   { group: 'Printed text', name: 'TrOCR small printed (45 MB)',
     url: 'https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q4_k.gguf' },
@@ -227,6 +230,14 @@ const MODEL_PRESETS = [
     url: 'https://huggingface.co/cstr/posformer-hw-GGUF/resolve/main/posformer-hw-q4_k.gguf' },
   { group: 'Math (mixed zh/en) → LaTeX', name: 'MixTeX (60 MB)',
     url: 'https://huggingface.co/cstr/mixtex-zhen-gguf/resolve/main/mixtex-zhen-q4_k.gguf' },
+  // Optical Music Recognition (staff image → notation). Same generic OCR dispatch
+  // (crispembed_ocr_model_recognize auto-detects the arch from GGUF metadata).
+  { group: 'Music (OMR)', name: 'SMT — printed → bekern (24 MB)',
+    url: 'https://huggingface.co/cstr/smt-grandstaff-GGUF/resolve/main/smt-grandstaff-q8_0.gguf' },
+  { group: 'Music (OMR)', name: 'Polyphonic-TrOMR — photos → symbolic (31 MB)',
+    url: 'https://huggingface.co/cstr/tromr-GGUF/resolve/main/tromr-q8_0.gguf' },
+  { group: 'Music (OMR)', name: 'Flova — handwritten → LilyPond (162 MB)',
+    url: 'https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q8_0.gguf' },
 ];
 
 function initModelPicker() {

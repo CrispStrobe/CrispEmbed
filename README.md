@@ -104,10 +104,12 @@ run `git submodule update --init --recursive`.
 ./build-wasm.sh             # client-side OCR (SIMD / multithreaded / WebGPU tiers)
 ```
 
-The WASM build runs the full DBNet+TrOCR pipeline and scan-cleanup entirely
-client-side (no server, no API key) — SIMD CPU, multithreaded (COOP/COEP service
-worker, works on GitHub Pages), and experimental **WebGPU** (~2.8× on ViT
-recognition, ~60× on DBNet detection vs WASM CPU). See `examples/wasm-ocr/README.md`.
+The WASM build runs the full DBNet+TrOCR pipeline, scan-cleanup, and every
+auto-detected single-model OCR engine — math → LaTeX, scene text, and **music
+(OMR: SMT / TrOMR / Flova)** — entirely client-side (no server, no API key). Three
+tiers: SIMD CPU, multithreaded (COOP/COEP service worker, works on GitHub Pages),
+and experimental **WebGPU** (~2.8× on ViT recognition, ~60× on DBNet detection vs
+WASM CPU). The whole engine set is one 2.3 MB `.wasm`. See `examples/wasm-ocr/README.md`.
 
 ### As a system library
 
