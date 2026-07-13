@@ -125,6 +125,7 @@ struct math_ocr_context {
     std::vector<float> char_confidences; // per-token softmax probabilities
 
     bool scale_embedding = true; // TrOCR: scale tok embed by sqrt(d_model)
+    bool ffn_gelu = false;       // decoder FFN activation: false=ReLU (pix2tex), true=GELU (TexTeller)
 
     // Cached encoder output + cross-attention K/V (precomputed once)
     std::vector<float> enc_out;
@@ -691,6 +692,14 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
     ggml_tensor * out = ggml_graph_get_tensor(ctx->enc_graph, "enc_output");
     ctx->enc_out.resize(T * H);
     if (out) ggml_backend_tensor_get(out, ctx->enc_out.data(), 0, T * H * sizeof(float));
+    if (const char * dp = std::getenv("MATH_OCR_DUMP_ENC")) { // DEBUG: dump encoder memory [T,H]
+        FILE * fp = fopen(dp, "wb");
+        if (fp) {
+            fwrite(ctx->enc_out.data(), sizeof(float), (size_t)T * H, fp);
+            fclose(fp);
+            fprintf(stderr, "math_ocr: dumped enc_out [%d,%d] to %s\n", T, H, dp);
+        }
+    }
 
     // --- Per-stage parity harness (MATH_OCR_DIFF_REF=ref.gguf) ----------------
     // Compare the input embed (structural gate FIRST), each encoder layer, and
@@ -890,7 +899,7 @@ static std::vector<float> decoder_step_scalar(math_ocr_context * ctx, int tok, i
     // Token + positional embedding
     if (ctx->tok_embed && tok >= 0 && tok < V) {
         auto emb = to_f32(ctx->tok_embed);
-        float sc = sqrtf((float)D);
+        float sc = ctx->scale_embedding ? sqrtf((float)D) : 1.0f;
         for (int i = 0; i < D; i++) ds.x[i] = emb[tok * D + i] * sc;
     }
     if (ctx->pos_embed_dec) {
@@ -940,7 +949,13 @@ static std::vector<float> decoder_step_scalar(math_ocr_context * ctx, int tok, i
         if (l.ff_up_w) {
             const int FF = hp.dec_ffn_dim;
             linear_cpu(ctx, ds.x.data(), ds.inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
-            for (int i = 0; i < FF; i++) ds.inter[i] = ds.inter[i] > 0 ? ds.inter[i] : 0;
+            if (ctx->ffn_gelu)
+                for (int i = 0; i < FF; i++) {
+                    float v = ds.inter[i];
+                    ds.inter[i] = 0.5f * v * (1.0f + erff(v * 0.70710678f)); // exact GELU
+                }
+            else
+                for (int i = 0; i < FF; i++) ds.inter[i] = ds.inter[i] > 0 ? ds.inter[i] : 0;
             linear_cpu(ctx, ds.inter.data(), ds.ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
             for (int i = 0; i < D; i++) ds.x[i] += ds.ffn[i];
             layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, l.ff_ln_w, l.ff_ln_b);
@@ -1149,7 +1164,7 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
         if (l.ff_up_w) {
             residual = cur;
             ggml_tensor * up = g_linear(g, cur, l.ff_up_w, l.ff_up_b);
-            up = ggml_relu(g, up);
+            up = ctx->ffn_gelu ? ggml_gelu_erf(g, up) : ggml_relu(g, up);
             ggml_tensor * down = g_linear(g, up, l.ff_down_w, l.ff_down_b);
 
             cur = ggml_add(g, residual, down);
@@ -1380,6 +1395,17 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
     hp.enc_intermediate = core_gguf::kv_u32(gctx, "encoder.intermediate_size", 1536);
     hp.image_size = core_gguf::kv_u32(gctx, "encoder.image_size", 384);
     hp.patch_size = core_gguf::kv_u32(gctx, "encoder.patch_size", 16);
+    // Input preprocessing (data-driven; defaults reproduce the historical
+    // pix2tex/TrOCR path: mean=std=0.5 with a plain squash-resize). TexTeller
+    // needs its own grayscale normalization + trim/aspect/white-pad — carried
+    // in the GGUF as encoder.image_mean/std/preprocess_pad. Env vars override
+    // for A/B on a GGUF that predates these keys (see LEARNINGS).
+    hp.image_mean = core_gguf::kv_f32(gctx, "encoder.image_mean", 0.5f);
+    hp.image_std = core_gguf::kv_f32(gctx, "encoder.image_std", 0.5f);
+    hp.preprocess_pad = core_gguf::kv_bool(gctx, "encoder.preprocess_pad", false) ? 1 : 0;
+    if (const char * e = std::getenv("MATH_OCR_MEAN")) hp.image_mean = (float)atof(e);
+    if (const char * e = std::getenv("MATH_OCR_STD")) hp.image_std = (float)atof(e);
+    if (const char * e = std::getenv("MATH_OCR_PAD")) hp.preprocess_pad = atoi(e) ? 1 : 0;
     hp.dec_layers = core_gguf::kv_u32(gctx, "decoder.decoder_layers", 6);
     hp.dec_heads = core_gguf::kv_u32(gctx, "decoder.decoder_attention_heads", 8);
     hp.dec_d_model = core_gguf::kv_u32(gctx, "decoder.d_model", 256);
@@ -1394,6 +1420,15 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
     {
         int idx = gguf_find_key(gctx, "decoder.scale_embedding");
         ctx->scale_embedding = (idx < 0) ? true : gguf_get_val_bool(gctx, idx);
+    }
+    // Decoder FFN activation is model-dependent: pix2tex/TrOCR-small use ReLU,
+    // TexTeller's TrOCR decoder uses GELU (config activation_function). Hardcoding
+    // ReLU silently corrupted the TexTeller FFN → drifting/garbled LaTeX. Read it
+    // from the GGUF (default ReLU); env override MATH_OCR_FFN_GELU for A/B.
+    {
+        std::string act = core_gguf::kv_str(gctx, "decoder.activation_function", "relu");
+        ctx->ffn_gelu = (act.find("gelu") != std::string::npos);
+        if (const char * e = std::getenv("MATH_OCR_FFN_GELU")) ctx->ffn_gelu = atoi(e) != 0;
     }
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
@@ -1469,6 +1504,98 @@ const math_ocr_hparams * math_ocr_get_hparams(const math_ocr_context * ctx) {
     return ctx ? &ctx->hparams : nullptr;
 }
 
+// Bilinear-sample the [0,1] grayscale source (sw×sh) into a dw×dh block.
+static float bilerp_gray(const float * g, int sw, int sh, float fx, float fy) {
+    int x0 = (int)fx, x1 = std::min(x0 + 1, sw - 1);
+    int y0 = (int)fy, y1 = std::min(y0 + 1, sh - 1);
+    float wx = fx - x0, wy = fy - y0;
+    return (1 - wy) * ((1 - wx) * g[y0 * sw + x0] + wx * g[y0 * sw + x1]) +
+           wy * ((1 - wx) * g[y1 * sw + x0] + wx * g[y1 * sw + x1]);
+}
+
+// Prepare the encoder input buffer `rgb` (n_channels × S × S, normalized,
+// grayscale replicated across channels) from a [0,1] grayscale image.
+//
+//   preprocess_pad==0 (pix2tex/TrOCR): squash-resize width×height → S×S.
+//   preprocess_pad==1 (TexTeller): trim the uniform background border, resize
+//     preserving aspect (short edge → S-1, long edge capped at S), then place
+//     top-left and white-pad the right/bottom to S×S. Matches TexTeller's
+//     torchvision transform (trim_white_border → Resize(S-1,max_size=S) →
+//     Normalize(mean,std) → pad). Pad value is 0 in normalized space == the
+//     mean grey (≈ white), exactly as v2.functional.pad(fill=0) after Normalize.
+static void preprocess_image(const math_ocr_hparams & hp, int n_channels, const float * gray, int width, int height,
+                             std::vector<float> & rgb) {
+    const int S = hp.image_size;
+    const float mean = hp.image_mean, std_ = hp.image_std;
+    rgb.assign((size_t)n_channels * S * S, 0.0f);
+
+    if (!hp.preprocess_pad) {
+        const float fsx = (float)width / S, fsy = (float)height / S;
+        for (int y = 0; y < S; y++) {
+            for (int x = 0; x < S; x++) {
+                float v = bilerp_gray(gray, width, height, x * fsx, y * fsy);
+                v = (v - mean) / std_;
+                for (int c = 0; c < n_channels; c++) rgb[(size_t)c * S * S + y * S + x] = v;
+            }
+        }
+        return;
+    }
+
+    // --- TexTeller path ---
+    // 1) trim uniform background border (bg = modal corner value; thresh 15/255).
+    auto q8 = [](float v) { return (int)std::lround(v * 255.0f); };
+    int c00 = q8(gray[0]), c01 = q8(gray[width - 1]), c10 = q8(gray[(height - 1) * width]),
+        c11 = q8(gray[(height - 1) * width + (width - 1)]);
+    int corners[4] = { c00, c01, c10, c11 }, bg = c00, best = 0;
+    for (int i = 0; i < 4; i++) {
+        int cnt = 0;
+        for (int j = 0; j < 4; j++)
+            if (corners[j] == corners[i]) cnt++;
+        if (cnt > best) {
+            best = cnt;
+            bg = corners[i];
+        }
+    }
+    int minx = width, miny = height, maxx = -1, maxy = -1;
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+            if (std::abs(q8(gray[y * width + x]) - bg) > 15) {
+                minx = std::min(minx, x);
+                maxx = std::max(maxx, x);
+                miny = std::min(miny, y);
+                maxy = std::max(maxy, y);
+            }
+    if (maxx < minx) { // fully uniform image → keep as-is
+        minx = 0;
+        miny = 0;
+        maxx = width - 1;
+        maxy = height - 1;
+    }
+    const int tw = maxx - minx + 1, th = maxy - miny + 1;
+
+    // 2) aspect-preserving scale: short edge → S-1, but cap long edge at S.
+    float scale = (float)(S - 1) / std::min(tw, th);
+    if (std::max(tw, th) * scale > (float)S) scale = (float)S / std::max(tw, th);
+    int dw = std::max(1, std::min(S, (int)std::lround(tw * scale)));
+    int dh = std::max(1, std::min(S, (int)std::lround(th * scale)));
+
+    // 3) bilinear-resize the trimmed region into the top-left of the S×S buffer.
+    const float fsx = (float)tw / dw, fsy = (float)th / dh;
+    for (int y = 0; y < dh; y++) {
+        for (int x = 0; x < dw; x++) {
+            float sx = std::min((float)tw - 1, x * fsx), sy = std::min((float)th - 1, y * fsy);
+            int x0 = minx + (int)sx, x1 = std::min(x0 + 1, maxx);
+            int y0 = miny + (int)sy, y1 = std::min(y0 + 1, maxy);
+            float wx = sx - (int)sx, wy = sy - (int)sy;
+            float v = (1 - wy) * ((1 - wx) * gray[y0 * width + x0] + wx * gray[y0 * width + x1]) +
+                      wy * ((1 - wx) * gray[y1 * width + x0] + wx * gray[y1 * width + x1]);
+            v = (v - mean) / std_;
+            for (int c = 0; c < n_channels; c++) rgb[(size_t)c * S * S + y * S + x] = v;
+        }
+    }
+    // right/bottom padding stays 0.0f (== mean grey after Normalize).
+}
+
 const char * math_ocr_recognize(math_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
     if (!ctx || !pixels) return nullptr;
     const int S = ctx->hparams.image_size;
@@ -1480,25 +1607,25 @@ const char * math_ocr_recognize(math_ocr_context * ctx, const float * pixels, in
     const int n_channels = ctx->patch_proj_w ? (int)(ggml_nelements(ctx->patch_proj_w) / ctx->hparams.enc_hidden) /
                                                    (ctx->hparams.patch_size * ctx->hparams.patch_size)
                                              : 3;
-    fprintf(stderr, "math_ocr: image_size S=%d, channels=%d, allocating buf(%d)\n", S, n_channels, n_channels * S * S);
-    // Resize + expand gray→CHW + normalize (mean=0.5, std=0.5)
+    fprintf(stderr, "math_ocr: image_size S=%d, channels=%d, mean=%.4f std=%.4f pad=%d\n", S, n_channels,
+            ctx->hparams.image_mean, ctx->hparams.image_std, ctx->hparams.preprocess_pad);
+    // Resize + expand gray→CHW + normalize (data-driven mean/std + preprocess mode)
     auto tb0 = std::chrono::steady_clock::now();
-    std::vector<float> rgb(n_channels * S * S);
-    fprintf(stderr, "math_ocr: buf allocated\n");
-    float fsx = (float)width / S, fsy = (float)height / S;
-    for (int y = 0; y < S; y++) {
-        float fy = y * fsy;
-        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
-        float wy = fy - y0;
-        for (int x = 0; x < S; x++) {
-            float fx = x * fsx;
-            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
-            float wx = fx - x0;
-            float v = (1 - wy) * ((1 - wx) * pixels[y0 * width + x0] + wx * pixels[y0 * width + x1]) +
-                      wy * ((1 - wx) * pixels[y1 * width + x0] + wx * pixels[y1 * width + x1]);
-            v = (v - 0.5f) / 0.5f;
-            for (int c = 0; c < n_channels; c++) rgb[c * S * S + y * S + x] = v;
+    std::vector<float> rgb;
+    // DEBUG: inject a raw normalized pixel_values buffer (S*S f32, replicated to
+    // n_channels) to isolate the graph from native preprocessing (see LEARNINGS).
+    if (const char * pv = std::getenv("MATH_OCR_PV_BIN")) {
+        FILE * fp = fopen(pv, "rb");
+        std::vector<float> plane((size_t)S * S);
+        if (fp && fread(plane.data(), sizeof(float), plane.size(), fp) == plane.size()) {
+            rgb.assign((size_t)n_channels * S * S, 0.0f);
+            for (int c = 0; c < n_channels; c++)
+                for (int i = 0; i < S * S; i++) rgb[(size_t)c * S * S + i] = plane[i];
+            fprintf(stderr, "math_ocr: injected pixel_values from %s\n", pv);
         }
+        if (fp) fclose(fp);
+    } else {
+        preprocess_image(ctx->hparams, n_channels, pixels, width, height, rgb);
     }
     if (bench)
         fprintf(stderr, "[math_ocr-bench] preprocess: %.1f ms\n",
@@ -1607,23 +1734,12 @@ const char * math_ocr_recognize_beam(math_ocr_context * ctx, const float * pixel
 
     const int S = ctx->hparams.image_size;
 
-    // Preprocess: resize + gray→3ch + normalize (mean=0.5, std=0.5)
-    std::vector<float> rgb(3 * S * S);
-    float fsx = (float)width / S, fsy = (float)height / S;
-    for (int y = 0; y < S; y++) {
-        float fy = y * fsy;
-        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
-        float wy = fy - y0;
-        for (int x = 0; x < S; x++) {
-            float fx = x * fsx;
-            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
-            float wx = fx - x0;
-            float v = (1 - wy) * ((1 - wx) * pixels[y0 * width + x0] + wx * pixels[y0 * width + x1]) +
-                      wy * ((1 - wx) * pixels[y1 * width + x0] + wx * pixels[y1 * width + x1]);
-            v = (v - 0.5f) / 0.5f;
-            rgb[0 * S * S + y * S + x] = rgb[1 * S * S + y * S + x] = rgb[2 * S * S + y * S + x] = v;
-        }
-    }
+    // Preprocess: resize + gray→CHW + normalize (data-driven mean/std + mode)
+    const int n_channels = ctx->patch_proj_w ? (int)(ggml_nelements(ctx->patch_proj_w) / ctx->hparams.enc_hidden) /
+                                                   (ctx->hparams.patch_size * ctx->hparams.patch_size)
+                                             : 3;
+    std::vector<float> rgb;
+    preprocess_image(ctx->hparams, n_channels, pixels, width, height, rgb);
 
     run_encoder(ctx, rgb.data(), S, S);
 
