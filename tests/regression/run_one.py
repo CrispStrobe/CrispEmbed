@@ -208,14 +208,23 @@ def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
 # Diff binaries print per-stage cosines in several bespoke formats. Match all of
 # them, else a numerically-correct engine gets a false "no parseable stage lines"
 # FAIL (this masked ~7 correct engines in the 2026-07 Kaggle CUDA run).
+# Strip ANSI colour codes before parsing — several diff binaries (lfm2, lilt, …)
+# wrap the PASS/FAIL tag in \033[32m…\033[0m, which otherwise sits between the
+# leading whitespace and "[PASS]" and defeats the anchored regexes below.
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
 _DIFF_PATTERNS = [
-    # nafnet / restormer / got-ocr: "stage: cos_min=0.999 max_abs=... PASS"
-    #   and esrgan / safmn:         "output: cos=1.000 max_abs=... PASS"  (cos, no _min)
-    re.compile(r"^\s*(\S+):\s+cos(?:_min)?=([-+0-9.eE]+)\s+max_abs="),
-    # swinir / hat / dat:           "output   cos=0.998  cos_ch_min=... max_abs=..."
+    # got-ocr "stage: cos_min=…" AND hat/pan/tbsrn "output   cos_min=…" (the colon
+    # is optional — the SR binaries pad the name with spaces, no colon).
+    re.compile(r"^\s*([^\s:]+):?\s+cos(?:_min)?=([-+0-9.eE]+)\s+max_abs="),
+    # swinir / dat:                  "output   cos=0.998  cos_ch_min=... max_abs=..."
     re.compile(r"^\s*(\S+)\s+cos=([-+0-9.eE]+)\s+cos_ch_min="),
-    # lfm2 / lilt (assertion form):  "[PASS] layer_15    cos=0.999714  (thr=0.999)"
+    # lfm2 (assertion form):         "[PASS] layer_15    cos=0.999714  (thr=0.999)"
     re.compile(r"^\s*\[(?:PASS|FAIL)\]\s+(\S+)\s+cos=([-+0-9.eE]+)"),
+    # lilt table:                    "stage   <elements int>   <cos_min>  <max_abs>  <status>"
+    re.compile(r"^\s*(\S+)\s+\d+\s+([01]\.\d+)\s+[-+0-9.eE]+\s+\S+"),
+    # layout table:                  "stage   <cos_min>  <cos_mean>  <max_abs>  <status>"
+    re.compile(r"^\s*(\S+)\s+([01]\.\d+)\s+[01]\.\d+\s+[-+0-9.eE]+\s+\S+"),
     # bert_ner (bare columns):       "final_hidden   0.995906   6.60e-02 PASS"
     re.compile(r"^\s*(\S+)\s+([01]\.\d+)\s+[-+0-9.eE]+\s+(?:PASS|FAIL)\s*$"),
 ]
@@ -226,6 +235,7 @@ _DIFF_LINE = _DIFF_PATTERNS[0]
 def parse_diff_stdout(stdout: str) -> dict[str, float]:
     stages: dict[str, float] = {}
     for line in stdout.splitlines():
+        line = _ANSI.sub("", line)
         for pat in _DIFF_PATTERNS:
             m = pat.match(line)
             if m:
