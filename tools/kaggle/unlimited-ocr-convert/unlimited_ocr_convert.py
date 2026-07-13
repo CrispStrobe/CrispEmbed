@@ -77,9 +77,14 @@ kh.step("downloaded", src=str(SRC))
 converter = EMBED_DIR / "models" / "convert-unlimited-ocr-to-gguf.py"
 F16 = SCRATCH / "unlimited-ocr-f16-stacked.gguf"
 kh.step("convert.f16")
+# Prefix single-thread BLAS/OMP + unbuffered (dev-guide HARD rule: numpy bf16→f16
+# casts + the large expert accumulate/stack deadlock/thrash under multithreaded
+# OpenBLAS/OMP otherwise). TMPDIR off /tmp for GGUFWriter's use_temp_file spill.
+conv_env = {**os.environ, "OMP_NUM_THREADS": "1", "OPENBLAS_NUM_THREADS": "1",
+            "MKL_NUM_THREADS": "1", "PYTHONUNBUFFERED": "1", "TMPDIR": str(SCRATCH)}
 with kh.build_heartbeat("convert.f16"):
     subprocess.check_call([sys.executable, str(converter),
-                           "--model-dir", str(SRC), "--output", str(F16), "--fp16"])
+                           "--model-dir", str(SRC), "--output", str(F16), "--fp16"], env=conv_env)
 print(f"[f16] {F16.stat().st_size/1e9:.2f} GB", flush=True)
 kh.step("f16_done", size_gb=round(F16.stat().st_size / 1e9, 2))
 
