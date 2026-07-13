@@ -216,4 +216,28 @@ if iv:
     except Exception as ex:
         print(f"  internvl2 discriminator skipped: {ex}", flush=True)
 
+kh.step("diag.repo_fox")
+# The portfolio FAIL for glm+internvl2 is the text-match on the REPO fox.png
+# (800x200) — the earlier discriminator used a 640x96 render (which both read
+# correctly). Test the ACTUAL repo image, CUDA vs *_FORCE_CPU: if CPU is also
+# garbage, it's a Kaggle-build issue (like the granite/glm diff drift), not CUDA;
+# if only CUDA is garbage, it's a genuine larger-image CUDA vision divergence.
+repo_fox = EMBED_DIR / "tests/regression/images/fox.png"
+if repo_fox.exists():
+    print(f"  repo fox: {repo_fox} exists", flush=True)
+    if iv:
+        run("INTERNVL2 / CUDA (default) --ocr REPO fox (800x200)", [CLI, "-m", iv, "--ocr", str(repo_fox)])
+        run("INTERNVL2 / CPU (FORCE_CPU) --ocr REPO fox", [CLI, "-m", iv, "--ocr", str(repo_fox)],
+            {"INTERNVL2_OCR_FORCE_CPU": 1})
+    if glm:
+        run("GLM / CUDA (default) --ocr REPO fox (800x200)", [CLI, "-m", glm, "--ocr", str(repo_fox)])
+        run("GLM / CPU (FORCE_CPU) --ocr REPO fox", [CLI, "-m", glm, "--ocr", str(repo_fox)],
+            {"GLM_OCR_FORCE_CPU": 1})
+else:
+    print(f"  repo fox NOT found at {repo_fox}", flush=True)
+
+# LAYOUT re-check: with the flash->manual fix (main), test-layout-diff should no
+# longer abort on CUDA — expect all stages PASS (this run clones the fixed main).
+print("\n=== (layout above should now PASS on CUDA if the manual-attn fix is in main) ===", flush=True)
+
 print("\n=== DIAG DONE — full transcript in /kaggle/working/diag.log ===", flush=True)
