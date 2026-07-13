@@ -113,9 +113,14 @@ if peri:
 def gguf_tensor(name):
     return next(t for t in r.tensors if t.name == name)
 
+# gate/up project hidden(1280)->moe_inter(896): ne=[in=1280,out=896,n_exp=64].
+# down projects moe_inter(896)->hidden(1280): ne=[in=896,out=1280,n_exp=64].
 t0 = gguf_tensor("l.blk.1.ffn_gate_exps.weight")
 if list(int(x) for x in t0.shape) != [1280, 896, 64]:
-    _fail(f"stacked shape {list(t0.shape)} != [1280,896,64] (ggml ne=[in,out,n_exp])")
+    _fail(f"gate_exps shape {list(t0.shape)} != [1280,896,64] (ggml ne=[in,out,n_exp])")
+td = gguf_tensor("l.blk.1.ffn_down_exps.weight")
+if list(int(x) for x in td.shape) != [896, 1280, 64]:
+    _fail(f"down_exps shape {list(td.shape)} != [896,1280,64] (ggml ne=[in,out,n_exp])")
 
 # Byte-equivalence: read source experts directly (bf16 -> f32 -> f16, same path as
 # the converter) and compare to the corresponding stacked slice e.
@@ -147,12 +152,15 @@ def read_src_expert(li, proj, e):
 checks = [(1, "gate", 0), (1, "up", 5), (6, "down", 63), (11, "gate", 30), (11, "down", 1)]
 for (li, proj, e) in checks:
     gt = gguf_tensor(f"l.blk.{li}.ffn_{proj}_exps.weight")
-    slice_e = np.array(gt.data, dtype=np.float16).reshape(64, 896, 1280)[e]  # [out, in]
-    src = read_src_expert(li, proj, e)
+    inn, out, ne = (int(x) for x in gt.shape)  # ggml ne=[in,out,n_exp]
+    slice_e = np.array(gt.data, dtype=np.float16).reshape(ne, out, inn)[e]  # [out, in]
+    src = read_src_expert(li, proj, e)  # source [out, in]
+    if slice_e.shape != src.shape:
+        _fail(f"shape mismatch layer {li} {proj} e{e}: gguf {slice_e.shape} vs src {src.shape}")
     if not np.array_equal(slice_e, src):
         d = int(np.sum(slice_e.view(np.uint16) != src.view(np.uint16)))
         _fail(f"expert bytes differ at layer {li} {proj} e{e}: {d}/{slice_e.size} elems")
-    print(f"[val] layer {li} {proj} e{e}: byte-identical ✓", flush=True)
+    print(f"[val] layer {li} {proj} e{e} {slice_e.shape}: byte-identical ✓", flush=True)
 kh.step("validated", stacked=len(exps), checks=len(checks))
 
 # %% [code]
