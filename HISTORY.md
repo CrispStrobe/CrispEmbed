@@ -4,6 +4,31 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — DeepSeek-OCR-2 #4: converter-emitted stacked MoE experts (−1.3 GB resident)
+
+Closed the last open DeepSeek-OCR-2 memory lever (`feat/ds-ocr2-stacked-experts`).
+The MoE decoder shipped per-expert 2D weights that `stack_moe_experts()` rebuilt
+into 3D `[in,out,n_exp]` tensors at load — so both copies (~1.3 GB) sat resident.
+
+- **Converter** now emits `l.blk.{i}.ffn_{gate,up,down}_exps.weight` directly:
+  `np.stack(experts, axis=0)` → ggml `ne=[in,out,n_exp]`, byte-identical to the
+  runtime stack (expert `e` at `e*nb[2]`). **Loader** loads them straight into
+  `gate_exps` (no copy, no stacking pass), builds per-expert views for the
+  `DS_MOE_CPU` fallback (with `view->buffer` set to dodge the Metal device-pointer
+  deref), and keeps a backward-compat path for legacy per-expert GGUFs. Quantizer
+  already handled 3D experts (per-row; `down` `ne[0]=896` falls to Q4_0 exactly as
+  the per-expert down did — not a regression).
+- **Kaggle reconvert** (`chr1s4/crispembed-deepseek-ocr2-stacked-convert`)
+  byte-validated the stacked slices vs the source safetensors (all checks) and
+  uploaded f16 + q4_k to `cstr/deepseek-ocr2-crispembed-GGUF` as NEW `-stacked`
+  files (non-clobbering — the rev-pinned regression GGUF untouched).
+- **Local M1 Metal A/B (q4_k, back-to-back):** decoded output IDENTICAL ("The
+  quick brown fox jumps over the lazy dog. 12345", cer 0.0) on all three loader
+  paths (prestacked / DS_MOE_CPU views / legacy); **peak footprint 5.27 → 3.97 GB
+  (−1.30 GB, −25%)**. (RSS is a misleading metric here — mmap page cache; footprint
+  is the real number. See LEARNINGS.) Regression entry `deepseek-ocr2-stacked`
+  added; registry promotion to stacked-default left for maintainer sign-off.
+
 ## July 13, 2026 — Transcoda-59M zero-shot OMR engine (clean-room, byte-exact, persistent-KV decode)
 
 Ported **Transcoda-59M** (`btrkeks/transcoda-59M-zeroshot-v1`) — full-page score

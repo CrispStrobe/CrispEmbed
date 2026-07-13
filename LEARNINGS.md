@@ -1,5 +1,46 @@
 # CrispEmbed — Technical Learnings
 
+## Converter-emitted stacked MoE experts halve the resident expert memory — and measure the win by PEAK FOOTPRINT, not max RSS (2026-07-13, deepseek-ocr2 #4)
+
+The MoE decoders (deepseek_ocr2, unlimited_ocr) shipped per-expert 2D weight
+tensors (`l.blk.{i}.exp.{e}.ffn_{gate,up,down}.weight`) and `stack_moe_experts()`
+rebuilt them at load into 3D `[in,out,n_exp]` tensors for `ggml_mul_mat_id` — so
+BOTH the per-expert copies (in `model_buf`) AND the stacked copy (in `moe_buf`)
+sat resident: ~1.3 GB duplicated on a 2 GB q4_k model.
+
+**Fix: emit the stacked tensors from the CONVERTER, load them directly.** The key
+layout identity: `np.stack([expert_e for e], axis=0)` → numpy `[n_exp,out,in]`
+which gguf reverses to ggml `ne=[in,out,n_exp]` — **byte-identical** to what
+`stack_moe_experts` builds (expert `e` at slice offset `e*nb[2]`). So the loader
+just points `gate_exps` at the loaded tensor; no copy, no stacking pass. Verified
+the identity locally on a synthetic gguf before spending Kaggle compute, and
+byte-validated the real slices vs the source safetensors on Kaggle.
+
+Gotchas that mattered:
+- **`down_proj` has the opposite shape.** gate/up are hidden→moe_inter
+  (`ne=[1280,896,64]`); down is moe_inter→hidden (`ne=[896,1280,64]`). A validator
+  (or any per-tensor reshape) that hardcodes one shape breaks on down. And down's
+  `ne[0]=896` is not 256-divisible, so Q4_K falls back to Q4_0 — but the OLD
+  per-expert down tensors had the same `ne[0]=896`, so this is byte-for-byte the
+  same quantization, not a regression.
+- **DS_MOE_CPU fallback needs per-expert views, and the view's `->buffer` must be
+  set.** `ggml_backend_tensor_get` reads a view via `view_src->buffer`, but
+  `to_f32`'s fast path gates on `t->buffer` (null on a fresh view) and would then
+  deref the raw device pointer → Metal segfault. Set `view->buffer = parent->buffer`.
+- **The quantizer already handles 3D** (`n_dims>=5` copies as-is; 3D falls through
+  to the standard per-row path, `nrows = nelements/ne[0]`), so no quantizer change.
+- **Keep the loader backward-compatible** (probe `ffn_gate_exps`; else legacy
+  per-expert) so old GGUFs still load — HARD-RULE-4 "never delete the working path."
+
+**Metric lesson: judge process memory by PEAK FOOTPRINT (`phys_footprint`), not
+max RSS.** On the M1 A/B, `maximum resident set size` was *noisy and even inverted*
+(old 1.83 GB vs new 4.22 GB) because RSS counts mmap'd GGUF pages resident in the
+page cache, which swings with cache state. `peak memory footprint` — the process's
+own committed anonymous memory — was stable and showed the real win: **5.27 → 3.97
+GB (−1.30 GB, −25%)**, matching the removed duplication exactly. Decoded output was
+identical ("The quick brown fox…" cer 0.0) on all three loader paths. See the
+[[deepseek-stacked-experts-memory]] memory. Landed on branch, HF `-stacked` files.
+
 ## A parity stage downstream of a topk/argsort selection craters by query PERMUTATION under tiny backend FP deltas — not a compute bug (2026-07-13, layout-heron dec_0_cross_out)
 
 `test-layout-diff`'s `dec_0_cross_out` stage looked like a flaky GPU bug:
