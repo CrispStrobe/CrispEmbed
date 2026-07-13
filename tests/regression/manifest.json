@@ -920,6 +920,22 @@
       "match": {
         "max_cer": 0.15
       }
+    },
+    {
+      "name": "smt",
+      "engine": "smt",
+      "_comment": "Sheet Music Transformer OMR (ConvNeXt encoder + cross-attn Transformer decoder -> bekern staff notation). Deterministic greedy argmax over the 20578-token bekern vocab. expected_text is the byte-exact q8_0 decode on a GrandStaff test image (antoniorv6/grandstaff, MIT), captured 2026-07-13: CPU==Metal identical, q8_0 == f32 (96.3% vs the dataset GT). Guards the whole VED OMR path (ConvNeXt patch-embed + stages, 2-D sinusoidal PE on cross-attn KEYS only, UNSCALED attention, greedy argmax, detok). The no-garbage guard passes with margin (top layout token '<b>' -> 'b' repeats 40/152 < the 0.5 repetition floor).",
+      "gguf": {
+        "repo": "cstr/smt-grandstaff-GGUF",
+        "file": "smt-grandstaff-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 24
+      },
+      "sample": "tests/regression/images/staff_smt.png",
+      "expected_text": "**ekern_1.0 <t> **ekern_1.0 <b> *clefF4 <t> *clefG2 <b> *k[b-] <t> *k[b-] <b> *M2/4 <t> *M2/4 <b> =- <t> =- <b> 8FL <t> 16r <b> . <t> 16ffLL <b> 8cJ <s> 8A <t> 16ee <b> . <t> 16ddJJ <b> 8CL <t> 16ccLL <b> . <t> 16b <b> 8cJ <s> 8A <t> 16cc <b> . <t> 16aJJ <b> = <t> = <b> 8GL <t> 8.aaL <s> 8.b- <b> 8eJ <s> 8c <s> 8B- <t> . <b> . <t> 16ggJk <b> 8CL <t> 4b-[ <b> 8eJ <s> 8c <s> 8B- <t> . <b> = <t> = <b> 4G <t> 16b-LL] <b> . <t> 16cc <b> . <t> 16ee <s> 16b- <b> . <t> 16ccJJ <b> 4C <t> 16ddLL <b> . <t> 16ee <b> . <t> 16dd <b> . <t> 16ccJJ <b> = <t> = <b> 8FL <t> 8.ggL <s> 8.a <b> 8fJ <s> 8A <t> . <b> . <t> 16ffJk <b> 8CL <t> 4a[ <b> 8fJ <s> 8c <s> 8A <t> . <b> = <t> = <b> *- <t> *- <b>  <b>",
+      "match": {
+        "max_cer": 0.1
+      }
     }
   ]
 }
