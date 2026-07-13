@@ -66,10 +66,14 @@ class TestManifest(unittest.TestCase):
                 self.assertTrue("diff" in e or "run_check" in e,
                                 f"{e['name']} has no diff/run_check harness")
             else:
-                for k in ("sample", "expected_text"):
-                    # expected_text may be null (not captured yet) but the key
-                    # should be present so gaps are visible.
-                    self.assertIn(k, e, f"{e['name']} missing {k}")
+                # expected_text may be null (not captured yet) but the key
+                # should be present so gaps are visible.
+                self.assertIn("expected_text", e, f"{e['name']} missing expected_text")
+                # The OCR sample is either a committed in-tree image ("sample")
+                # or one fetched from an HF dataset parquet at test time
+                # ("sample_hf" — for license-restricted images kept out of the repo).
+                self.assertTrue("sample" in e or "sample_hf" in e,
+                                f"{e['name']} missing sample/sample_hf")
             if "diff" in e:
                 d = e["diff"]
                 self.assertIn("binary", d)
