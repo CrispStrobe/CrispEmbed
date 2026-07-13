@@ -17,6 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
 | 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | 🔄 running the CUDA portfolio-regression kernel |
+| 2026-07-13 | opus-1m (interop/SR) | Kaggle reranker τ-eval on the expanded 30-group RERANK_EVAL corpus (`crispembed-imatrix-quant`) | 🔄 **In progress** — completes the corpus expansion (`c0b5dbc`); pushing the kernel |
 
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
@@ -734,7 +735,11 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
   Ampere — see HISTORY.)
 - **Kaggle T4/P100 confirmation.** Re-run the full manifest on the original CUDA
   arch to confirm the Class-A + Gap-5 fixes flip FAIL→PASS
+<<<<<<< HEAD
   (`tools/kaggle/ocr-portfolio-regression`; see local `kaggle_usage.md` for auth).
+=======
+  (`tools/kaggle/ocr-portfolio-regression`, secondary Kaggle account).
+>>>>>>> 7ac455f (docs(plan): mark active work — Kaggle rerank τ-eval (interop/SR session))
 - **DBNet detector — mostly resolved (2026-07-13).** The CPY abort was already
   fixed (`dequant_rows_f32` via get_rows); the real cost was the CPU postprocess
   (43 s → 1.5 s, scanline box scoring `74b8ac5`, see HISTORY). Detection graph
