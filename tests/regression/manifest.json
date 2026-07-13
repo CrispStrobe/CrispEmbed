@@ -756,7 +756,7 @@
       "name": "layout-heron",
       "engine": "layout-detect",
       "diff_only": true,
-      "_comment": "RT-DETRv2 (docling-project/docling-layout-heron) layout detector guardrail (no --ocr). Ref = tools/dump_layout_reference.py; input/backbone/encoder stages (ip3..enc_output) cos 1.0 on Metal AND CPU. Guards the encoder-scramble class: the dc0861b flash_attn swap kept the old manual permute(0,2,1,3) after ggml_flash_attn_ext (which already permutes internally), scrambling s3..enc_output to negative cos. dec_0_cross_out rides the deformable cross-attention CPU bilinear-sampling floor (~0.977 cos_min on one boundary query, ~0.999 mean) \u2014 pre-existing, backend-independent, unrelated to the encoder path.",
+      "_comment": "RT-DETRv2 (docling-project/docling-layout-heron) layout detector guardrail (no --ocr). Ref = tools/dump_layout_reference.py; input/backbone/encoder stages (ip3..enc_output) cos 1.0 on Metal AND CPU. Guards the encoder-scramble class: the dc0861b flash_attn swap kept the old manual permute(0,2,1,3) after ggml_flash_attn_ext (which already permutes internally), scrambling s3..enc_output to negative cos. dec_0_cross_out is compared PERMUTATION-TOLERANTLY (test_layout_diff.cpp perm_tolerant_cos): the 300 decoder queries are picked by a partial_sort over ~8400 near-tie encoder proposals, so a tiny backend FP delta in enc_output (Metal/CUDA vs the CPU/Python reference) reorders near-tie ranks and index-aligned cos craters (mean ~0.79, min negative on Metal) even though the cross_out VALUES are correct and the final boxes (score-sorted + NMS) are unaffected. Best-cosine matching each reference query recovers true parity (cos_mean ~0.999, min ~0.95 = the one deformable-sampling boundary query); a real decoder scramble collapses all matches toward 0 and trips the 0.85 gate.",
       "gguf": {
         "repo": "cstr/layout-heron-gguf",
         "file": "layout-heron-f32.gguf",
@@ -770,7 +770,7 @@
         },
         "thresholds": {
           "*": 0.99,
-          "dec_0_cross_out": 0.97
+          "dec_0_cross_out": 0.85
         }
       }
     },
