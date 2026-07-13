@@ -1324,6 +1324,13 @@ static const ModelEntry k_registry[] = {
       "Polyphonic-TrOMR OMR: staff image→rhythm/pitch/lift notation (~22M, camera-robust)", "31 MB", "apache-2.0",
       "https://github.com/NetEase/Polyphonic-TrOMR" },
 
+    // Flova/omr_transformer — handwritten/whiteboard OMR (DonutSwin + 4L mBART VED,
+    // 143M). q8_0 decodes byte-identically to HF. Only permissive handwritten-music
+    // OMR model; "simple notes" → LilyPond.
+    { "flova", "flova-q8_0.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q8_0.gguf",
+      "Flova/omr_transformer OMR: handwritten/whiteboard music→LilyPond (143M)", "162 MB", "apache-2.0",
+      "https://huggingface.co/Flova/omr_transformer" },
+
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
 

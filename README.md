@@ -49,7 +49,7 @@ BTTR (handwritten, DenseNet+Transformer, 53% CROHME),
 HMER (handwritten, DenseNet+GRU attention).
 All auto-detected from GGUF metadata, ~3-5s decoder time.
 
-**Optical Music Recognition (OMR)**: two engines, both auto-detected via `--ocr`.
+**Optical Music Recognition (OMR)**: three engines, all auto-detected via `--ocr`.
 - **Sheet Music Transformer (SMT/SMT++)** (staff-notation image → bekern tokens;
   ConvNext encoder + cross-attention Transformer decoder, 21.4M, MIT, 24 MB Q8_0).
   KV-cached greedy decode; reproduces the reference exactly (per-stage cos=1.0,
@@ -59,6 +59,11 @@ All auto-detected from GGUF metadata, ~3-5s decoder time.
   x-transformers decoder with 4 parallel heads, ~22M, Apache-2.0). Robust on
   real photos; reproduces the reference exactly (per-stage cos=1.0, 100% argmax
   parity, byte-exact decode on the reference examples).
+- **Flova/omr_transformer** (handwritten / whiteboard "simple notes" image →
+  LilyPond `c'2 a''8 …`; DonutSwin encoder + 4-layer mBART decoder VED, ~143M,
+  Apache-2.0, 162 MB Q8_0). The only permissive handwritten-music OMR model;
+  reproduces the reference exactly (per-stage cos=1.0, 40/40 argmax parity,
+  byte-exact decode incl. the native no-`transformers` preprocessing path).
 
 **Tesseract LSTM OCR**: 12 languages (eng, deu, fra, spa, ita, por, nld, rus, ara,
 chi_sim, jpn, kor) in tiny GGUF models (435 KB–1.7 MB Q8_0). Converted from
@@ -317,6 +322,7 @@ kept as deprecated aliases). Available through CLI (`--ocr`), HTTP server
 | **BTTR** | DenseNet + Transformer | 6.5M | — | Handwritten math | MIT |
 | **DeepSeek-OCR-2** | SAM ViT-B + Qwen2 enc + DeepSeek-V2 MoE | 3B | 2.2 GB | Document OCR (runs on Metal + q4_k) | Apache-2.0 |
 | **DeiT+TrOCR** | DeiT-S + TrOCR | 65M | — | Printed math | Apache-2.0 |
+| **Flova/omr_transformer** | DonutSwin + mBART 4L | 143M | 162 MB | Handwritten/whiteboard music → LilyPond | Apache-2.0 |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | 849 MB | Document OCR (OmniDocBench #1, 8 langs) | MIT |
 | **GOT-OCR2** | SAM ViT-B + Qwen2-0.5B | 0.7B | 422 MB | Document OCR (text+LaTeX+tables) | Apache-2.0 |
 | **HMER** | DenseNet + GRU attention | 6M | — | Handwritten math | MIT |
