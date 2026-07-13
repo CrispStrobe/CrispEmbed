@@ -4,6 +4,17 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## 🚧 Active work in flight (update + push to `main` at EVERY checkpoint)
+
+Multiple sessions/worktrees run in parallel and push to `main` concurrently.
+Before starting a task, add a row; at every checkpoint update it and push this
+file to `main` so others see what's claimed (avoids duplicate work + CI-cancel
+races). Remove the row when the branch lands.
+
+| Since | Branch / worktree | Task | Status |
+|-------|-------------------|------|--------|
+| 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR ggml engine (`src/tromr_ocr.cpp`) | **Landed on `main`** (validated cos 1.0 / 100% argmax / byte-exact). Remaining: HF upload `cstr/tromr-GGUF` + registry entry — awaiting go-ahead. |
+
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
 > still **pending**.
