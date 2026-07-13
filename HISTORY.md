@@ -37,7 +37,16 @@ all PASS.
 before reacting to the exit code, so a teardown-crash-after-valid-stages is a
 WARN not a FAIL (Gap-5); `run_check` SKIPs when its binary isn't built (fixes the
 false `test-punct-diff` FAIL — crisp_punc isn't in the CrispEmbed CUDA kernel).
-Re-ran (v10) to verify the FAIL count drops.
+**v10: 14→9 FAILs** (pcs/fireredpunc/fullstop/gliner cleared).
+
+**Diff-parser fix DONE (`2af57b1`) — 6 of the remaining 9 were FALSE FAILs.**
+`lfm2`/`lilt`/`layout-heron`/`hat`/`pan`/`tbsrn` reported "no parseable stage
+lines" because the parser missed their output formats: `lfm2`/`lilt` wrap
+PASS/FAIL in **ANSI colour codes** (defeating the anchored regex); `hat`/`pan`/
+`tbsrn` print `name   cos_min=…` (spaces, **no colon**); `lilt`/`layout` use
+aligned **column tables**. Now strip ANSI first + cover the colon-less and 2
+table formats — verified against the real `test-lfm2-diff` output (20 stages
+parse, worst cos_min=0.999848, genuinely passing). v11 re-run expected 9→3.
 
 **Still open — older-arch (Turing/Pascal) ggml-CUDA numerical divergence (needs
 that HW to iterate; local Ampere sm_86 does NOT reproduce):**
