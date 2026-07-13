@@ -712,10 +712,13 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 - **Kaggle T4/P100 confirmation.** Re-run the full manifest on the original CUDA
   arch to confirm the Class-A + Gap-5 fixes flip FAIL→PASS
   (`tools/kaggle/ocr-portfolio-regression`, account `chr1s4`).
-- **DBNet detector on Metal — `unsupported op 'CPY'`.** Worked around with a
-  Metal-safe `ggml_get_rows` dequant + a CPU-default detector
-  (`OCR_DETECT_FORCE_CPU=1`); a full Metal CPY path for k-quant sources (or a
-  faster Metal `conv_transpose_2d`) would let detection run on GPU by default.
+- **DBNet detector — mostly resolved (2026-07-13).** The CPY abort was already
+  fixed (`dequant_rows_f32` via get_rows); the real cost was the CPU postprocess
+  (43 s → 1.5 s, scanline box scoring `74b8ac5`, see HISTORY). Detection graph
+  compute is only ~3 s on CPU and Metal `conv_transpose_2d` is still ~13× slower,
+  so **CPU stays the correct default** — a faster Metal `conv_transpose_2d` (or a
+  1/4-res prob-map + cheap upscale) is the only remaining, low-value, upstream
+  lever for GPU-default detection.
 - **bidirlm-omni GGUF re-quant follow-up.** The text-tower converter bug is fixed
   and `bidirlm-omni-2.5b-q8_0.gguf` re-uploaded (text cos 1.0 f16 / 0.9992 q8_0),
   but the repo's f16 + imatrix q4_k/q5_k/q6_k and the whole `-textonly` repo are
