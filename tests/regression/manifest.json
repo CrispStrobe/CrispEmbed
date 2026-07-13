@@ -936,6 +936,22 @@
       "match": {
         "max_cer": 0.1
       }
+    },
+    {
+      "name": "pix2tex",
+      "engine": "math_ocr",
+      "_comment": "pix2tex-mfr printed math OCR (DeiT ViT encoder + TrOCR decoder, 28M -> LaTeX; the src/math_ocr.cpp VED path). Deterministic greedy decode. expected_text is the byte-exact q4_k decode on formula_quadratic.png, captured 2026-07-13: CPU==Metal identical and the CORRECT quadratic formula. Guards the DeiT+TrOCR encoder-decoder graph (patch embed, greedy AR decode, BPE detok); a graph-scramble regression yields wrong LaTeX far above max_cer. No-garbage guard passes (no degenerate repetition).",
+      "gguf": {
+        "repo": "cstr/pix2tex-mfr-gguf",
+        "file": "pix2tex-mfr-q4_k.gguf",
+        "revision": "main",
+        "approx_size_mb": 17
+      },
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
+      "match": {
+        "max_cer": 0.1
+      }
     }
   ]
 }
