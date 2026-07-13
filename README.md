@@ -25,7 +25,7 @@ Android, and in the browser.
 |---|---|---|
 | **Text embeddings** | Dense vectors from 10 encoder/decoder architectures | BERT, XLM-R, MPNet, NomicBERT (+MoE), ModernBERT, GTE-v1.5, DeBERTa-v2, Qwen3, Gemma3. Matryoshka truncation, prompt prefixes. cos ≥ 0.965 vs HF |
 | **Retrieval** | Sparse + multi-vector + reranking | SPLADE / BGE-M3 sparse term weights, ColBERT per-token + MaxSim, cross-encoder & bi-encoder rerankers |
-| **OCR** | 15+ engines, image → text/LaTeX/notation | General (DBNet+TrOCR), scene-text (PARSeq), 7 math engines, 3 music (OMR) engines, 6 document VLMs, 12-language Tesseract-LSTM |
+| **OCR** | 15+ engines, image → text/LaTeX/notation | General (DBNet+TrOCR), scene-text (PARSeq), 7 math engines, 4 music (OMR) engines, 6 document VLMs, 12-language Tesseract-LSTM |
 | **Document AI** | Understand page structure | RT-DETRv2 layout (17 classes), Surya text detection, LiLT layout-aware KIE, hOCR/ALTO/searchable-PDF output |
 | **NER / KIE / LID** | Extract structured info | Zero-shot (GLiNER) + fixed-label (BERT/XLM-R) NER, receipt/form KIE, CLD3/GlotLID language ID |
 | **Vision & face** | Cross-modal + biometrics | CLIP/SigLIP text-image search, YuNet/SCRFD detect, ArcFace/SFace/AuraFace recognize |
@@ -59,6 +59,7 @@ cmake -S . -B build && cmake --build build -j        # macOS: ./build-macos.sh (
 # OCR / document AI (engine auto-detected from GGUF metadata)
 ./build/crispembed -m ppformulanet-l  --ocr formula.png       # math → LaTeX
 ./build/crispembed -m flova           --ocr score.png         # music → LilyPond
+./build/crispembed -m transcoda       --ocr page.png          # full-page score → **kern
 ./build/crispembed -m qwen3vl-2b      --ocr document.png      # VLM document OCR
 
 # Cross-modal & face
@@ -106,7 +107,7 @@ run `git submodule update --init --recursive`.
 
 The WASM build runs the full DBNet+TrOCR pipeline, scan-cleanup, and every
 auto-detected single-model OCR engine — math → LaTeX, scene text, and **music
-(OMR: SMT / TrOMR / Flova)** — entirely client-side (no server, no API key). Three
+(OMR: SMT / TrOMR / Flova / Transcoda)** — entirely client-side (no server, no API key). Three
 tiers: SIMD CPU, multithreaded (COOP/COEP service worker, works on GitHub Pages),
 and experimental **WebGPU** (~2.8× on ViT recognition, ~60× on DBNet detection vs
 WASM CPU). The whole engine set is one 2.3 MB `.wasm`. See `examples/wasm-ocr/README.md`.
@@ -189,6 +190,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **SMT++ full-page** | ConvNext + Transformer | 11M | Whole pianoform *page* → bekern (no segmentation) | MIT |
 | **Polyphonic-TrOMR** | ResNetV2+ViT + 4-head decoder | ~22M | Printed music photos → symbolic | Apache-2.0 |
 | **Flova/omr_transformer** | DonutSwin + mBART-4L | 143M | Handwritten/whiteboard music → LilyPond | Apache-2.0 |
+| **Transcoda-59M** | ConvNeXt-V2 + 8L RoPE cross-attn | 59M | Zero-shot full-page score → Humdrum `**kern` (real-scan SOTA) | CC-BY-4.0 |
 | **GOT-OCR2** | SAM ViT-B + Qwen2-0.5B | 0.7B | Doc OCR (text+LaTeX+tables) | Apache-2.0 |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | Doc OCR (OmniDocBench #1, 8 langs) | MIT |
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
@@ -216,6 +218,10 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
 - **Flova/omr_transformer** (Apache-2.0) — the only permissive *handwritten*
   music model; whiteboard "simple notes" → LilyPond, byte-exact incl. the native
   no-`transformers` preprocessing path.
+- **Transcoda-59M** (CC-BY-4.0, `transcoda`) — zero-shot *full-page* score →
+  Humdrum `**kern` in one pass. ConvNeXt-V2-Tiny encoder + 8-layer RoPE
+  cross-attention decoder; OMR-NED SOTA on real historical scans. Clean-room
+  engine (per-stage cos = 1.0, byte-exact greedy decode vs the HF reference).
 
 ### Layout, detection & preprocessing
 
@@ -406,7 +412,7 @@ is governed by its **upstream** license. Check the **License** column in
 
 | License class | Examples | What you can do |
 |---|---|---|
-| **Permissive** (Apache-2.0 / MIT) | most BERT/XLM-R/MPNet, BGE, E5, Granite, MXBai, Nomic, Qwen3, Harrier, GTE-v1.5, SMT, TrOMR, Flova, LiLT | commercial use OK with normal attribution |
+| **Permissive** (Apache-2.0 / MIT / CC-BY-4.0) | most BERT/XLM-R/MPNet, BGE, E5, Granite, MXBai, Nomic, Qwen3, Harrier, GTE-v1.5, SMT, TrOMR, Flova, Transcoda (CC-BY-4.0), LiLT | commercial use OK with normal attribution |
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
 | **LFM Open License v1.0** | `lfm2-embed*`, `lfm2-colbert`, `gliner-lfm` | free under $10M annual revenue |
 | **Gemma Terms** | `embeddinggemma-300m` | commercial OK, subject to Google's Prohibited Use Policy |
