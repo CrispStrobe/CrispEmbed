@@ -53,9 +53,9 @@ struct tc_enc_stage {
     std::vector<tc_enc_layer> layers;
 };
 struct tc_dec_layer {
-    ggml_tensor *qkv_w, *qkv_b, *sa_o_w, *sa_o_b;             // fused self-attn
+    ggml_tensor *qkv_w, *qkv_b, *sa_o_w, *sa_o_b; // fused self-attn
     ggml_tensor *ca_q_w, *ca_q_b, *ca_k_w, *ca_k_b, *ca_v_w, *ca_v_b, *ca_o_w, *ca_o_b;
-    ggml_tensor *n0_w, *n0_b, *n1_w, *n1_b, *n2_w, *n2_b;     // pre-LN
+    ggml_tensor *n0_w, *n0_b, *n1_w, *n1_b, *n2_w, *n2_b; // pre-LN
     ggml_tensor *ff0_w, *ff0_b, *ff3_w, *ff3_b;
 };
 
@@ -224,15 +224,15 @@ static ggml_tensor * to_tokens(ggml_context * g, ggml_tensor * map) {
 // ne0=channels). GRN(x)=x + γ·(x·Nx)+β, Nx=L2(x over W,H per channel)/mean_c.
 static ggml_tensor * grn(ggml_context * g, ggml_tensor * x, ggml_tensor * w, ggml_tensor * b) {
     int C = x->ne[0], Wd = x->ne[1], Hd = x->ne[2], S = Wd * Hd;
-    ggml_tensor * xf = ggml_reshape_2d(g, x, C, S);              // [C,S]
-    ggml_tensor * xt = ggml_cont(g, ggml_transpose(g, xf));     // [S,C]
-    ggml_tensor * ss = ggml_sum_rows(g, ggml_sqr(g, xt));       // [1,C] sum_S x^2
-    ggml_tensor * Gx = ggml_sqrt(g, ss);                        // [1,C] L2 per channel
+    ggml_tensor * xf = ggml_reshape_2d(g, x, C, S);         // [C,S]
+    ggml_tensor * xt = ggml_cont(g, ggml_transpose(g, xf)); // [S,C]
+    ggml_tensor * ss = ggml_sum_rows(g, ggml_sqr(g, xt));   // [1,C] sum_S x^2
+    ggml_tensor * Gx = ggml_sqrt(g, ss);                    // [1,C] L2 per channel
     ggml_tensor * mean = ggml_scale(g, ggml_sum_rows(g, ggml_cont(g, ggml_transpose(g, Gx))),
-                                    1.0f / (float)C);           // [1,1] mean over channels
-    ggml_tensor * Nx = ggml_div(g, Gx, mean);                  // [1,C] broadcast [1,1]
-    ggml_tensor * Nxc = ggml_cont(g, ggml_transpose(g, Nx));   // [C,1]
-    ggml_tensor * xn = ggml_mul(g, xf, Nxc);                   // [C,S] · [C,1]
+                                    1.0f / (float)C);        // [1,1] mean over channels
+    ggml_tensor * Nx = ggml_div(g, Gx, mean);                // [1,C] broadcast [1,1]
+    ggml_tensor * Nxc = ggml_cont(g, ggml_transpose(g, Nx)); // [C,1]
+    ggml_tensor * xn = ggml_mul(g, xf, Nxc);                 // [C,S] · [C,1]
     ggml_tensor * gw = ggml_reshape_2d(g, f32(g, w), C, 1);
     ggml_tensor * gb = ggml_reshape_2d(g, f32(g, b), C, 1);
     ggml_tensor * out = ggml_add(g, ggml_add(g, ggml_mul(g, xn, gw), gb), xf); // γ(x·Nx)+β+x
@@ -304,10 +304,10 @@ static ggml_cgraph * build_encoder(transcoda_ocr_context * ctx, ggml_context * g
             yc = ln0(g, yc, L.ln_w, L.ln_b);
             yc = lin(g, yc, L.pw1_w, L.pw1_b); // [4C,...]
             yc = ggml_gelu_erf(g, yc);
-            yc = grn(g, yc, L.grn_w, L.grn_b); // GRN over [4C,W,H] (V2)
-            yc = lin(g, yc, L.pw2_w, L.pw2_b); // [C,...]
+            yc = grn(g, yc, L.grn_w, L.grn_b);                 // GRN over [4C,W,H] (V2)
+            yc = lin(g, yc, L.pw2_w, L.pw2_b);                 // [C,...]
             y = ggml_cont(g, ggml_permute(g, yc, 2, 0, 1, 3)); // back to [W,H,C,N]
-            cur = ggml_add(g, inp, y);                          // residual, NO LayerScale
+            cur = ggml_add(g, inp, y);                         // residual, NO LayerScale
         }
     }
     ggml_tensor * grid = to_tokens(g, cur); // [768, n_enc]
@@ -687,7 +687,7 @@ static ggml_cgraph * build_decode_step(transcoda_ocr_context * ctx, ggml_context
         ggml_tensor * sc = ggml_mul_mat(g, Kp, Qp); // [Lk,1,nh]
         sc = ggml_soft_max_ext(g, sc, nullptr, scale, 0.0f);
         ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, Vp, 1, 0, 2, 3));
-        ggml_tensor * sa = ggml_mul_mat(g, Vt, sc);        // [hd,1,nh]
+        ggml_tensor * sa = ggml_mul_mat(g, Vt, sc); // [hd,1,nh]
         sa = ggml_cont(g, ggml_permute(g, sa, 0, 2, 1, 3));
         sa = ggml_reshape_2d(g, sa, C, 1);
         sa = lin(g, sa, Lr.sa_o_w, Lr.sa_o_b);
@@ -912,8 +912,7 @@ static std::vector<float> preprocess(const transcoda_ocr_context * ctx, const ui
             } else {
                 rgb[0] = rgb[1] = rgb[2] = 255.0f; // white bottom pad
             }
-            for (int k = 0; k < 3; k++)
-                out[((size_t)k * TH + y) * TW + x] = (rgb[k] / 255.0f - mean[k]) / stdv[k];
+            for (int k = 0; k < 3; k++) out[((size_t)k * TH + y) * TW + x] = (rgb[k] / 255.0f - mean[k]) / stdv[k];
         }
     }
     *outW = TW;
