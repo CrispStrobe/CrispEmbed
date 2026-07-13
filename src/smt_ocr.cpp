@@ -87,6 +87,25 @@ struct smt_dec_layer {
     ggml_tensor *n3_w, *n3_b;
 };
 
+// Persistent device-side KV cache for the AR decode (Pattern A, math_ocr.cpp).
+// Self K/V grow one column per step; projected cross K/V are uploaded once and
+// reused across all steps — avoids the O(n²) host round-trip + the per-step
+// re-upload of the (potentially ~400 MB) cross memory that dominated full-page
+// decode. Allocated once on ctx->backend.
+struct smt_kv_cache {
+    ggml_context * ctx = nullptr;
+    ggml_backend_buffer_t buf = nullptr;
+    ggml_tensor *self_k = nullptr, *self_v = nullptr; // [C, max_seq, nl]
+    // Cross K/V are constant across all decode steps, so we store them ONCE in
+    // the exact head-split layout ggml_mul_mat wants — cross_k as [hd, n_enc, nh,
+    // nl] (the K operand) and cross_v as [n_enc, hd, nh, nl] (the Vᵀ operand) —
+    // so the per-step cross-attention skips the O(n_enc) reshape/permute/cont
+    // that otherwise dominates full-page decode.
+    ggml_tensor *cross_k = nullptr, *cross_v = nullptr;
+    int max_seq = 0, n_enc = 0;
+    bool allocated = false;
+};
+
 struct smt_ocr_context {
     smt_ocr_hparams hp;
     // encoder
@@ -111,6 +130,8 @@ struct smt_ocr_context {
     // self K/V grow one token per step.
     std::vector<std::vector<float>> cross_k_host, cross_v_host; // [nl][n_enc*C]
     std::vector<std::vector<float>> self_k_host, self_v_host;   // [nl][t*C]
+    smt_kv_cache kv;                                            // persistent device KV (Pattern A)
+    ggml_gallocr_t decode_galloc = nullptr;                     // reserved-once decode-step allocator (Pattern B)
 };
 
 // ---------------------------------------------------------------------------
@@ -528,6 +549,86 @@ static bool run_decoder(smt_ocr_context * ctx, const std::vector<int32_t> & ids,
 // one token per step. Mathematically identical to the full-recompute path
 // (causal self-attn + constant cross memory), but O(L) work per step.
 // ---------------------------------------------------------------------------
+// Allocate (or reuse) the persistent device KV cache. Reuses the existing
+// buffer when it is already large enough for this image's n_enc + max_seq.
+static bool alloc_smt_kv_cache(smt_ocr_context * ctx, int max_seq, int n_enc) {
+    auto & kv = ctx->kv;
+    if (kv.allocated && kv.max_seq >= max_seq && kv.n_enc >= n_enc) {
+        if (kv.buf) ggml_backend_buffer_clear(kv.buf, 0);
+        return true;
+    }
+    if (kv.buf) ggml_backend_buffer_free(kv.buf);
+    if (kv.ctx) ggml_free(kv.ctx);
+    kv = smt_kv_cache{};
+
+    const int C = ctx->hp.d_model, nl = ctx->hp.dec_layers, nh = ctx->hp.num_heads, hd = C / nh;
+    ggml_init_params ip = { 4 * ggml_tensor_overhead(), nullptr, true };
+    kv.ctx = ggml_init(ip);
+    if (!kv.ctx) return false;
+    kv.self_k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, C, max_seq, nl);
+    kv.self_v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, C, max_seq, nl);
+    kv.cross_k = ggml_new_tensor_4d(kv.ctx, GGML_TYPE_F32, hd, n_enc, nh, nl); // K operand
+    kv.cross_v = ggml_new_tensor_4d(kv.ctx, GGML_TYPE_F32, n_enc, hd, nh, nl); // Vᵀ operand
+    kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, ctx->backend);
+    if (!kv.buf) {
+        ggml_free(kv.ctx);
+        kv = smt_kv_cache{};
+        fprintf(stderr, "smt_ocr: KV cache alloc failed\n");
+        return false;
+    }
+    ggml_backend_buffer_clear(kv.buf, 0);
+    kv.max_seq = max_seq;
+    kv.n_enc = n_enc;
+    kv.allocated = true;
+    if (getenv("SMT_OCR_DEBUG"))
+        fprintf(stderr, "smt_ocr: KV cache %d layers max_seq=%d n_enc=%d %.1f MB\n", nl, max_seq, n_enc,
+                (float)ggml_backend_buffer_get_size(kv.buf) / 1024 / 1024);
+    return true;
+}
+
+// Project the cross memory K/V once and store them INTO the device KV cache in
+// the head-split layout the per-step cross-attention consumes directly
+// (cross_k=[hd,nE,nh], cross_v=[nE,hd,nh] per layer) — no per-step cont. Assumes
+// alloc_smt_kv_cache already ran.
+static void precompute_cross_kv_ready(smt_ocr_context * ctx) {
+    const int C = ctx->hp.d_model, nE = ctx->n_enc, nl = ctx->hp.dec_layers;
+    const int nh = ctx->hp.num_heads, hd = C / nh;
+    auto & kv = ctx->kv;
+    size_t meta = 48 * 1024 * 1024;
+    std::vector<uint8_t> buf(meta);
+    ggml_init_params ip = { meta, buf.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, nl * 16 + 16, false);
+    ggml_tensor * mk = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nE);
+    ggml_set_name(mk, "mk");
+    ggml_set_input(mk);
+    ggml_tensor * mv = ggml_new_tensor_2d(g, GGML_TYPE_F32, C, nE);
+    ggml_set_name(mv, "mv");
+    ggml_set_input(mv);
+    for (int i = 0; i < nl; i++) {
+        auto & L = ctx->dec[i];
+        // K operand: [C,nE] -> [hd,nh,nE] -> permute -> cont [hd,nE,nh]
+        ggml_tensor * ck = lin(g, mk, L.ca_k_w, L.ca_k_b);
+        ck = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, ck, hd, nh, nE), 0, 2, 1, 3));
+        ggml_tensor * kdst = ggml_view_3d(g, kv.cross_k, hd, nE, nh, kv.cross_k->nb[1], kv.cross_k->nb[2],
+                                          (size_t)i * kv.cross_k->nb[3]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, ck, kdst));
+        // Vᵀ operand: [C,nE] -> [hd,nE,nh] -> permute -> cont [nE,hd,nh]
+        ggml_tensor * cv = lin(g, mv, L.ca_v_w, L.ca_v_b);
+        cv = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, cv, hd, nh, nE), 0, 2, 1, 3)); // [hd,nE,nh]
+        cv = ggml_cont(g, ggml_permute(g, cv, 1, 0, 2, 3));                                 // [nE,hd,nh]
+        ggml_tensor * vdst = ggml_view_3d(g, kv.cross_v, nE, hd, nh, kv.cross_v->nb[1], kv.cross_v->nb[2],
+                                          (size_t)i * kv.cross_v->nb[3]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, cv, vdst));
+    }
+    ggml_backend_sched_reset(ctx->sched);
+    ggml_backend_sched_alloc_graph(ctx->sched, gf);
+    ggml_backend_tensor_set(mk, ctx->mem_key.data(), 0, ctx->mem_key.size() * sizeof(float));
+    ggml_backend_tensor_set(mv, ctx->mem_value.data(), 0, ctx->mem_value.size() * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->sched, gf);
+    ggml_free(g);
+}
+
 static void precompute_cross_kv(smt_ocr_context * ctx) {
     const int C = ctx->hp.d_model, nE = ctx->n_enc, nl = ctx->hp.dec_layers;
     ctx->cross_k_host.assign(nl, {});
@@ -721,6 +822,166 @@ static void decode_greedy_kv(smt_ocr_context * ctx) {
     }
 }
 
+// One decode step using the persistent device KV cache. Writes the new token's
+// projected self K/V into the cache at slot n_cached (in-graph ggml_cpy) and
+// reads the [0..n_cached] history + the pre-uploaded cross K/V as views — the
+// only per-step input is "step_token". Same math as build_decode_step.
+static ggml_cgraph * build_decode_step_persist(smt_ocr_context * ctx, ggml_context * g, int n_cached) {
+    const auto & hp = ctx->hp;
+    const int C = hp.d_model, nh = hp.num_heads, nE = ctx->n_enc;
+    const float attn_scale = hp.scale_attention ? (1.0f / sqrtf((float)(C / nh))) : 1.0f;
+    auto & kv = ctx->kv;
+    ggml_cgraph * gf = ggml_new_graph_custom(g, hp.dec_layers * 128 + 512, false);
+
+    ggml_tensor * token = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(token, "step_token");
+    ggml_set_input(token);
+    ggml_tensor * cur = ggml_get_rows(g, ctx->tok_embed, token); // [C,1]
+    ggml_tensor * pe = ggml_view_2d(g, ctx->pos1d, C, 1, ctx->pos1d->nb[1], (size_t)n_cached * ctx->pos1d->nb[1]);
+    cur = ggml_add(g, cur, pe);
+
+    for (int i = 0; i < hp.dec_layers; i++) {
+        auto & Lr = ctx->dec[i];
+        ggml_tensor * q = lin(g, cur, Lr.sa_q_w, Lr.sa_q_b);
+        ggml_tensor * knew = lin(g, cur, Lr.sa_k_w, Lr.sa_k_b); // [C,1]
+        ggml_tensor * vnew = lin(g, cur, Lr.sa_v_w, Lr.sa_v_b);
+        // write the new K/V into the persistent cache at column n_cached
+        const size_t koff = (size_t)i * kv.self_k->nb[2];
+        const size_t voff = (size_t)i * kv.self_v->nb[2];
+        ggml_tensor * kdst =
+            ggml_view_2d(g, kv.self_k, C, 1, kv.self_k->nb[1], koff + (size_t)n_cached * kv.self_k->nb[1]);
+        ggml_tensor * vdst =
+            ggml_view_2d(g, kv.self_v, C, 1, kv.self_v->nb[1], voff + (size_t)n_cached * kv.self_v->nb[1]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, knew, kdst));
+        ggml_build_forward_expand(gf, ggml_cpy(g, vnew, vdst));
+        // read the full self history [0 .. n_cached] as a contiguous view
+        const int Lk = n_cached + 1;
+        ggml_tensor * kfull = ggml_view_2d(g, kv.self_k, C, Lk, kv.self_k->nb[1], koff);
+        ggml_tensor * vfull = ggml_view_2d(g, kv.self_v, C, Lk, kv.self_v->nb[1], voff);
+        ggml_tensor * sa = mha_core(g, q, kfull, vfull, nh, 1, Lk, nullptr, attn_scale);
+        sa = lin(g, sa, Lr.sa_o_w, Lr.sa_o_b);
+        cur = ggml_add(g, cur, sa);
+        cur = ln0(g, cur, Lr.n1_w, Lr.n1_b);
+        // cross-attention against the pre-laid-out device cache — only the tiny
+        // query is processed per step; K/V are read as views in mul_mat-ready
+        // layout (no O(n_enc) cont). Math is identical to mha_core.
+        const int hd = C / nh;
+        ggml_tensor * ckr = ggml_view_3d(g, kv.cross_k, hd, nE, nh, kv.cross_k->nb[1], kv.cross_k->nb[2],
+                                         (size_t)i * kv.cross_k->nb[3]); // [hd,nE,nh]
+        ggml_tensor * cvr = ggml_view_3d(g, kv.cross_v, nE, hd, nh, kv.cross_v->nb[1], kv.cross_v->nb[2],
+                                         (size_t)i * kv.cross_v->nb[3]); // [nE,hd,nh]
+        ggml_tensor * aq = cur;
+        ggml_tensor * cq = lin(g, aq, Lr.ca_q_w, Lr.ca_q_b);                                             // [C,1]
+        ggml_tensor * qr = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, cq, hd, nh, 1), 0, 2, 1, 3)); // [hd,1,nh]
+        ggml_tensor * scr = ggml_mul_mat(g, ckr, qr);                                                    // [nE,1,nh]
+        scr = ggml_soft_max_ext(g, scr, nullptr, attn_scale, 0.0f);
+        ggml_tensor * ca = ggml_mul_mat(g, cvr, scr);                                 // [hd,1,nh]
+        ca = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, ca, 0, 2, 1, 3)), C, 1); // [C,1]
+        ca = lin(g, ca, Lr.ca_o_w, Lr.ca_o_b);
+        cur = ggml_add(g, aq, ca);
+        cur = ln0(g, cur, Lr.n2_w, Lr.n2_b);
+        ggml_tensor * ff = lin(g, cur, Lr.ff0_w, Lr.ff0_b);
+        ff = ggml_relu(g, ff);
+        ff = lin(g, ff, Lr.ff3_w, Lr.ff3_b);
+        cur = ggml_add(g, cur, ff);
+        cur = ln0(g, cur, Lr.n3_w, Lr.n3_b);
+    }
+    ggml_tensor * head_in = hp.head_pre_relu ? ggml_relu(g, cur) : cur;
+    ggml_tensor * logits = lin(g, head_in, ctx->lm_w, ctx->lm_b); // [V,1]
+    ggml_set_name(logits, "logits");
+    ggml_set_output(logits);
+    ggml_build_forward_expand(gf, logits);
+    return gf;
+}
+
+// KV-cached greedy decode with a PERSISTENT device-side cache (Pattern A):
+// cross K/V uploaded once, self K/V grow in-graph — no per-step host round-trip.
+// Output-identical to decode_greedy_kv; ~orders faster on long (full-page) decodes.
+static void decode_greedy_kv_persist(smt_ocr_context * ctx) {
+    const auto & hp = ctx->hp;
+    const int C = hp.d_model, nl = hp.dec_layers, V = hp.vocab_size, nE = ctx->n_enc;
+    if (!alloc_smt_kv_cache(ctx, hp.maxlen, nE)) {
+        decode_greedy_kv(ctx); // fallback to the host-cache path
+        return;
+    }
+    // project cross K/V once, in mul_mat-ready layout, straight into the cache
+    precompute_cross_kv_ready(ctx);
+
+    // Pattern B: reserve one gallocr for the longest step graph and dispatch
+    // sched-free — the decode graph is single-backend (weights + KV on
+    // ctx->backend) with constant node count, so every per-step alloc hits the
+    // no-realloc fast path and the sched's per-step split_graph is skipped. This
+    // is the win for the ~thousands-of-steps full-page decode. Gated so the sched
+    // path stays available (SMT_OCR_NO_DECODE_CACHE=1); output-identical.
+    const bool use_cache = !getenv("SMT_OCR_NO_DECODE_CACHE");
+    if (use_cache) {
+        if (!ctx->decode_galloc)
+            ctx->decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+        size_t rmeta = 24 * 1024 * 1024;
+        std::vector<uint8_t> rbuf(rmeta);
+        ggml_init_params rip = { rmeta, rbuf.data(), true };
+        ggml_context * rg = ggml_init(rip);
+        ggml_cgraph * rgf = build_decode_step_persist(ctx, rg, hp.maxlen - 1); // longest graph
+        bool ok = ctx->decode_galloc && ggml_gallocr_reserve(ctx->decode_galloc, rgf);
+        ggml_free(rg);
+        if (!ok && ctx->decode_galloc) {
+            ggml_gallocr_free(ctx->decode_galloc);
+            ctx->decode_galloc = nullptr;
+        }
+    } else if (ctx->decode_galloc) {
+        ggml_gallocr_free(ctx->decode_galloc);
+        ctx->decode_galloc = nullptr;
+    }
+
+    ctx->result.clear();
+    int id = hp.bos_token;
+    const bool dbg = getenv("SMT_OCR_DEBUG");
+    double t_step0 = dbg ? ggml_time_us() : 0;
+    for (int pos = 0; pos < hp.maxlen; pos++) {
+        if (dbg && pos > 0 && pos % 50 == 0)
+            fprintf(stderr, "smt_ocr: decode step %d, %.1f ms/step\n", pos, (ggml_time_us() - t_step0) / 1000.0 / pos);
+        size_t meta = 24 * 1024 * 1024;
+        std::vector<uint8_t> buf(meta);
+        ggml_init_params ip = { meta, buf.data(), true };
+        ggml_context * g = ggml_init(ip);
+        ggml_cgraph * gf = build_decode_step_persist(ctx, g, pos);
+        if (ctx->decode_galloc) {
+            if (!ggml_gallocr_alloc_graph(ctx->decode_galloc, gf)) {
+                ggml_free(g);
+                break;
+            }
+        } else {
+            ggml_backend_sched_reset(ctx->sched);
+            if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+                ggml_free(g);
+                break;
+            }
+        }
+        int32_t tok = id;
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "step_token"), &tok, 0, sizeof(int32_t));
+        if (ctx->decode_galloc)
+            ggml_backend_graph_compute(ctx->backend, gf); // sched-free, single-backend
+        else
+            ggml_backend_sched_graph_compute(ctx->sched, gf);
+        std::vector<float> logits(V);
+        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "logits"), logits.data(), 0, V * sizeof(float));
+        ggml_free(g);
+        int best = 0;
+        float bv = logits[0];
+        for (int i = 1; i < V; i++)
+            if (logits[i] > bv) {
+                bv = logits[i];
+                best = i;
+            }
+        if (best == hp.eos_token) break;
+        if (best >= 0 && best < (int)ctx->vocab.size()) {
+            if (!ctx->result.empty()) ctx->result += ' ';
+            ctx->result += ctx->vocab[best];
+        }
+        id = best;
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Init / free
 // ---------------------------------------------------------------------------
@@ -797,6 +1058,9 @@ smt_ocr_context * smt_ocr_init(const char * model_path, int n_threads) {
 
 void smt_ocr_free(smt_ocr_context * ctx) {
     if (!ctx) return;
+    if (ctx->decode_galloc) ggml_gallocr_free(ctx->decode_galloc);
+    if (ctx->kv.buf) ggml_backend_buffer_free(ctx->kv.buf); // KV buffer belongs to backend — free first
+    if (ctx->kv.ctx) ggml_free(ctx->kv.ctx);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
@@ -845,10 +1109,15 @@ static void decode_greedy_full(smt_ocr_context * ctx) {
 const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
     // pixels: grayscale [0,1] row-major, already inverted+resized by the caller.
     if (!run_encoder(ctx, pixels, width, height, nullptr, nullptr)) return nullptr;
+    // Decode paths (A/B-gated): default = persistent device KV cache (fastest);
+    // SMT_OCR_HOSTKV=1 = the host-round-trip KV path; SMT_OCR_FULL_DECODE=1 = the
+    // no-cache teacher-forced full graph. The three are output-identical.
     if (getenv("SMT_OCR_FULL_DECODE"))
         decode_greedy_full(ctx);
-    else
+    else if (getenv("SMT_OCR_HOSTKV"))
         decode_greedy_kv(ctx);
+    else
+        decode_greedy_kv_persist(ctx);
     if (out_len) *out_len = (int)ctx->result.size();
     return ctx->result.c_str();
 }
