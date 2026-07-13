@@ -4,6 +4,29 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — Kaggle CUDA regression: Class-A/Gap-5 fixes confirmed (partial run, ENOSPC)
+
+Ran the OCR-portfolio regression on Kaggle CUDA (T4/P100,
+`tools/kaggle/ocr-portfolio-regression`) against current `main`. The run ended
+in **ERROR from `No space left on device`** — the documented disk gotcha:
+crispembed's `CRISPEMBED_CACHE_DIR` defaults to `$HOME/.cache` (the small Kaggle
+partition), so a multi-GB multi-model pull ENOSPC'd. **9 FAILs were disk-full
+download failures, not engine bugs** (bert_ner, bidirlm-vision, clip-text,
+modernbert, layout-heron, lfm2, lfm2_colbert, mixtex, gliner — all in the "HF
+download failed" list).
+
+**Signal that IS trustworthy (downloaded + ran + passed):** the **Class-A
+device-pointer + Gap-5 free-after-load fixes are confirmed on CUDA** —
+`deepseek-ocr2` PASS, `dat` PASS, `swinir` PASS, and `qwen2vl-3b` PASS (it was a
+Gap-6 TIMEOUT before). Class-B (`glm-ocr`, `internvl2-1b`) FAIL as expected on
+Turing/Pascal (older-arch vision divergence). `tbsrn` FAILed and downloaded fine,
+so that one needs a clean re-run to classify.
+
+**Fix + re-run:** point `CRISPEMBED_CACHE_DIR` at `/tmp` (~70 GB) in the kernel so
+downloads don't fill `/kaggle/working`, then re-run for a clean full confirmation.
+
+---
+
 ## July 13, 2026 — QKV-fusion probe (measured negative) + detector-postprocess audit
 
 Three follow-on investigations run while the CUDA regression kernel built:
