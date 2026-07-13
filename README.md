@@ -185,7 +185,8 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **MixTeX** | Swin-Tiny + RoBERTa | 86M | CN+EN LaTeX | Apache-2.0 |
 | **Texo-Distill** | HGNetv2 + MBart | 20M | Printed math (small) | AGPL-3.0 |
 | **PosFormer / BTTR / HMER** | DenseNet + Transformer/GRU | 6–7M | Handwritten math (CROHME) | MIT / CC-BY-NC |
-| **SMT / SMT++** | ConvNext + Transformer | 21M | Printed music → bekern (96.3% GrandStaff) | MIT |
+| **SMT** | ConvNext + Transformer | 21M | Printed music (systems) → bekern (96.3% GrandStaff) | MIT |
+| **SMT++ full-page** | ConvNext + Transformer | 11M | Whole pianoform *page* → bekern (no segmentation) | MIT |
 | **Polyphonic-TrOMR** | ResNetV2+ViT + 4-head decoder | ~22M | Printed music photos → symbolic | Apache-2.0 |
 | **Flova/omr_transformer** | DonutSwin + mBART-4L | 143M | Handwritten/whiteboard music → LilyPond | Apache-2.0 |
 | **GOT-OCR2** | SAM ViT-B + Qwen2-0.5B | 0.7B | Doc OCR (text+LaTeX+tables) | Apache-2.0 |
@@ -205,8 +206,11 @@ VLMs.
 
 Three permissively-licensed engines, all auto-detected via `--ocr`:
 
-- **SMT / SMT++** (MIT) — printed polyphonic/pianoform → bekern. Reproduces the
-  reference exactly (per-stage cos = 1.0, 96.3% vs GrandStaff ground truth).
+- **SMT** (MIT, `smt-grandstaff`) — printed polyphonic staff systems → bekern.
+  Reproduces the reference exactly (per-stage cos = 1.0, 96.3% vs GrandStaff).
+- **SMT++ full-page** (MIT, `smt-fp`) — a whole pianoform *page* → bekern in one
+  pass, no staff/system segmentation (per-stage cos ≥ 0.9998, byte-exact greedy
+  decode vs the HF reference).
 - **Polyphonic-TrOMR** (Apache-2.0) — staff photos → rhythm/pitch/lift streams.
   Robust on real photos; byte-exact decode on the reference examples.
 - **Flova/omr_transformer** (Apache-2.0) — the only permissive *handwritten*

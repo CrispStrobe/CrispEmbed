@@ -1,13 +1,17 @@
 // smt_ocr.cpp — Sheet Music Transformer (SMT/SMT++) OMR via ggml graph compute.
 //
 // ConvNext encoder + cross-attention Transformer decoder → bekern tokens.
-// Blueprint: SMT-plusplus/smt_model/modeling_smt.py (read line-by-line).
-// KEY DEVIATIONS from a vanilla VED (verified in source, not the abstract):
-//   • attention QK^T is UNSCALED (MHA.scale_factor defined but never applied);
+// Two published lineages share this network (auto-detected + normalised by
+// models/convert-smt-to-gguf.py, driven here by GGUF behaviour flags):
+//   • smt-plusplus (antoniorv6/smt-grandstaff, systems-level): QK^T UNSCALED,
+//     ReLU before the LM head, LM head = 1×1 Conv1d [V,256,1].
+//   • smt-main (antoniorv6/SMT, incl. PRAIG/smt-fp-grandstaff full page): QK^T
+//     scaled by d_head**-0.5, NO ReLU before the head, LM head = Linear [V,256],
+//     reduce_ratio=1.0 + RandomInvert preprocessing, maxlen up to 4353.
+// KEY DEVIATIONS common to both (verified in source, not the abstract):
 //   • cross-attn KEY = enc features + 2D PE, VALUE = raw enc features;
 //   • decoder FFN is 1× (256→256), ReLU; token emb NOT scaled by sqrt(d);
-//   • encoder last_hidden_state is pre-pooler-LN (encoder.layernorm is dead);
-//   • LM head = 1×1 Conv1d (stored [V,256,1], squeezed to Linear by the converter).
+//   • encoder last_hidden_state is pre-pooler-LN (encoder.layernorm is dead).
 
 #include "smt_ocr.h"
 #include "ggml.h"
@@ -241,16 +245,18 @@ static ggml_tensor * to_tokens(ggml_context * g, ggml_tensor * map) {
     ggml_tensor * t = ggml_cont(g, ggml_permute(g, map, 1, 2, 0, 3)); // [C,W,H,N]
     return ggml_reshape_2d(g, t, C, W * H);                           // [C, W*H]
 }
-// unscaled multi-head attention core (returns concat-heads [C,Lq], no out_proj)
+// multi-head attention core (returns concat-heads [C,Lq], no out_proj).
+// scale multiplies QK^T before softmax: 1.0 = unscaled (smt-plusplus),
+// d_head**-0.5 = scaled (smt-main).
 static ggml_tensor * mha_core(ggml_context * g, ggml_tensor * q, ggml_tensor * k, ggml_tensor * v, int nh, int Lq,
-                              int Lk, ggml_tensor * mask) {
+                              int Lk, ggml_tensor * mask, float scale) {
     int C = q->ne[0];
     int hd = C / nh;
     ggml_tensor * Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, q, hd, nh, Lq), 0, 2, 1, 3)); // [hd,Lq,nh]
     ggml_tensor * K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, k, hd, nh, Lk), 0, 2, 1, 3)); // [hd,Lk,nh]
     ggml_tensor * V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, v, hd, nh, Lk), 0, 2, 1, 3)); // [hd,Lk,nh]
     ggml_tensor * scores = ggml_mul_mat(g, K, Q);                                                   // [Lk,Lq,nh]
-    scores = ggml_soft_max_ext(g, scores, mask, 1.0f, 0.0f);         // UNSCALED (scale=1.0)
+    scores = ggml_soft_max_ext(g, scores, mask, scale, 0.0f);
     ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [Lk,hd,nh]
     ggml_tensor * a = ggml_mul_mat(g, Vt, scores);                   // [hd,Lq,nh]
     a = ggml_cont(g, ggml_permute(g, a, 0, 2, 1, 3));                // [hd,nh,Lq]
@@ -314,6 +320,11 @@ static ggml_cgraph * build_encoder(smt_ocr_context * ctx, ggml_context * g, int 
         ggml_set_output(tok);
         ggml_build_forward_expand(gf, tok); // off-trunk branch — expand explicitly
     }
+    // Exact reduced spatial dims from the conv output (NOT W/16, H/16 — for
+    // arbitrary full-page sizes the per-conv rounding differs from a single /16,
+    // and enc_h*enc_w must equal n_enc or the 2D-PE add reads out of bounds).
+    ctx->enc_w = (int)cur->ne[0];
+    ctx->enc_h = (int)cur->ne[1];
     ggml_tensor * out = to_tokens(g, cur); // [C, n_enc]
     ggml_set_name(out, "enc_output");
     ggml_set_output(out);
@@ -373,8 +384,14 @@ static bool run_encoder(smt_ocr_context * ctx, const float * input, int W, int H
     ggml_tensor * out = ggml_graph_get_tensor(gf, "enc_output");
     int C = out->ne[0];
     ctx->n_enc = out->ne[1];
-    ctx->enc_h = H / ctx->hp.enc_reduction;
-    ctx->enc_w = W / ctx->hp.enc_reduction;
+    // ctx->enc_h / ctx->enc_w were set exactly in build_encoder from the conv
+    // output shape (enc_h*enc_w == n_enc).
+    if ((size_t)ctx->enc_h * ctx->enc_w != (size_t)ctx->n_enc) {
+        fprintf(stderr, "smt_ocr: enc grid mismatch enc_h*enc_w=%d != n_enc=%d\n", ctx->enc_h * ctx->enc_w, ctx->n_enc);
+        ggml_free(g);
+        delete buf;
+        return false;
+    }
     ctx->mem_value.resize((size_t)ctx->n_enc * C);
     ggml_backend_tensor_get(out, ctx->mem_value.data(), 0, ctx->mem_value.size() * sizeof(float));
 
@@ -400,6 +417,7 @@ static bool run_encoder(smt_ocr_context * ctx, const float * input, int W, int H
 static ggml_cgraph * build_decoder(smt_ocr_context * ctx, ggml_context * g, int L) {
     const auto & hp = ctx->hp;
     int C = hp.d_model, nh = hp.num_heads, nE = ctx->n_enc;
+    float attn_scale = hp.scale_attention ? (1.0f / sqrtf((float)(C / nh))) : 1.0f;
     ggml_cgraph * gf = ggml_new_graph_custom(g, hp.dec_layers * 64 + 256, false);
 
     ggml_tensor * tokens = ggml_new_tensor_1d(g, GGML_TYPE_I32, L);
@@ -428,16 +446,16 @@ static ggml_cgraph * build_decoder(smt_ocr_context * ctx, ggml_context * g, int 
         ggml_tensor * q = lin(g, cur, Lr.sa_q_w, Lr.sa_q_b);
         ggml_tensor * k = lin(g, cur, Lr.sa_k_w, Lr.sa_k_b);
         ggml_tensor * v = lin(g, cur, Lr.sa_v_w, Lr.sa_v_b);
-        ggml_tensor * sa = mha_core(g, q, k, v, nh, L, L, mask);
+        ggml_tensor * sa = mha_core(g, q, k, v, nh, L, L, mask, attn_scale);
         sa = lin(g, sa, Lr.sa_o_w, Lr.sa_o_b);
         cur = ggml_add(g, cur, sa);
         cur = ln0(g, cur, Lr.n1_w, Lr.n1_b);
-        // cross-attention (unscaled, no mask; KEY=mem_key, VALUE=mem_value)
+        // cross-attention (no mask; KEY=mem_key, VALUE=mem_value)
         ggml_tensor * aq = cur;
         ggml_tensor * cq = lin(g, aq, Lr.ca_q_w, Lr.ca_q_b);
         ggml_tensor * ck = lin(g, mk, Lr.ca_k_w, Lr.ca_k_b);
         ggml_tensor * cv = lin(g, mv, Lr.ca_v_w, Lr.ca_v_b);
-        ggml_tensor * ca = mha_core(g, cq, ck, cv, nh, L, nE, nullptr);
+        ggml_tensor * ca = mha_core(g, cq, ck, cv, nh, L, nE, nullptr, attn_scale);
         ca = lin(g, ca, Lr.ca_o_w, Lr.ca_o_b);
         cur = ggml_add(g, aq, ca);
         cur = ln0(g, cur, Lr.n2_w, Lr.n2_b);
@@ -452,8 +470,9 @@ static ggml_cgraph * build_decoder(smt_ocr_context * ctx, ggml_context * g, int 
         ggml_set_name(cur, nm);
         ggml_set_output(cur);
     }
-    // logits = out_layer(relu(output))
-    ggml_tensor * logits = lin(g, ggml_relu(g, cur), ctx->lm_w, ctx->lm_b); // [V,L]
+    // logits = out_layer(head_in); head_in = ReLU(output) for smt-plusplus, raw for smt-main
+    ggml_tensor * head_in = hp.head_pre_relu ? ggml_relu(g, cur) : cur;
+    ggml_tensor * logits = lin(g, head_in, ctx->lm_w, ctx->lm_b); // [V,L]
     ggml_set_name(logits, "logits");
     ggml_set_output(logits);
     ggml_build_forward_expand(gf, logits);
@@ -563,6 +582,7 @@ static void precompute_cross_kv(smt_ocr_context * ctx) {
 static ggml_cgraph * build_decode_step(smt_ocr_context * ctx, ggml_context * g, int n_cached) {
     const auto & hp = ctx->hp;
     const int C = hp.d_model, nh = hp.num_heads, nE = ctx->n_enc;
+    const float attn_scale = hp.scale_attention ? (1.0f / sqrtf((float)(C / nh))) : 1.0f;
     ggml_cgraph * gf = ggml_new_graph_custom(g, hp.dec_layers * 128 + 512, false);
 
     ggml_tensor * token = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
@@ -599,7 +619,7 @@ static ggml_cgraph * build_decode_step(smt_ocr_context * ctx, ggml_context * g, 
             kfull = ggml_concat(g, skin, knew, 1); // [C, n_cached+1]
             vfull = ggml_concat(g, svin, vnew, 1);
         }
-        ggml_tensor * sa = mha_core(g, q, kfull, vfull, nh, 1, n_cached + 1, nullptr);
+        ggml_tensor * sa = mha_core(g, q, kfull, vfull, nh, 1, n_cached + 1, nullptr, attn_scale);
         sa = lin(g, sa, Lr.sa_o_w, Lr.sa_o_b);
         cur = ggml_add(g, cur, sa);
         cur = ln0(g, cur, Lr.n1_w, Lr.n1_b);
@@ -614,7 +634,7 @@ static ggml_cgraph * build_decode_step(smt_ocr_context * ctx, ggml_context * g, 
         ggml_set_input(cv);
         ggml_tensor * aq = cur;
         ggml_tensor * cq = lin(g, aq, Lr.ca_q_w, Lr.ca_q_b);
-        ggml_tensor * ca = mha_core(g, cq, ck, cv, nh, 1, nE, nullptr);
+        ggml_tensor * ca = mha_core(g, cq, ck, cv, nh, 1, nE, nullptr, attn_scale);
         ca = lin(g, ca, Lr.ca_o_w, Lr.ca_o_b);
         cur = ggml_add(g, aq, ca);
         cur = ln0(g, cur, Lr.n2_w, Lr.n2_b);
@@ -624,7 +644,8 @@ static ggml_cgraph * build_decode_step(smt_ocr_context * ctx, ggml_context * g, 
         cur = ggml_add(g, cur, ff);
         cur = ln0(g, cur, Lr.n3_w, Lr.n3_b);
     }
-    ggml_tensor * logits = lin(g, ggml_relu(g, cur), ctx->lm_w, ctx->lm_b); // [V,1]
+    ggml_tensor * head_in = hp.head_pre_relu ? ggml_relu(g, cur) : cur;
+    ggml_tensor * logits = lin(g, head_in, ctx->lm_w, ctx->lm_b); // [V,1]
     ggml_set_name(logits, "logits");
     ggml_set_output(logits);
     ggml_build_forward_expand(gf, logits);
@@ -732,15 +753,26 @@ smt_ocr_context * smt_ocr_init(const char * model_path, int n_threads) {
     {
         int idx = gguf_find_key(gc, "smt.scale_attention");
         hp.scale_attention = (idx < 0) ? 0 : (gguf_get_val_bool(gc, idx) ? 1 : 0);
+        // Default preserves the shipped smt-plusplus base behaviour (keys absent):
+        // ReLU before the head, legacy clamp preprocessing, no invert.
+        idx = gguf_find_key(gc, "smt.head_pre_relu");
+        hp.head_pre_relu = (idx < 0) ? 1 : (gguf_get_val_bool(gc, idx) ? 1 : 0);
+        idx = gguf_find_key(gc, "smt.preproc.reduce_ratio");
+        hp.preproc_reduce_ratio = (idx < 0) ? 0.0f : gguf_get_val_f32(gc, idx);
+        idx = gguf_find_key(gc, "smt.preproc.invert");
+        hp.preproc_invert = (idx < 0) ? 0 : (gguf_get_val_bool(gc, idx) ? 1 : 0);
     }
     ctx->stage_sizes = { 64, 128, 256 };
     ctx->stage_depths = { 3, 3, 9 };
     ctx->vocab = core_gguf::kv_str_array(gc, "tokenizer.tokens");
     core_gguf::free_metadata(gc);
 
-    fprintf(stderr, "smt_ocr: enc %d stages /%d, dec %dL/%dH/d%d ff%d vocab=%d(%zu) scale_attn=%d\n", hp.enc_num_stages,
-            hp.enc_reduction, hp.dec_layers, hp.num_heads, hp.d_model, hp.dim_ff, hp.vocab_size, ctx->vocab.size(),
-            hp.scale_attention);
+    fprintf(stderr,
+            "smt_ocr: enc %d stages /%d, dec %dL/%dH/d%d ff%d vocab=%d(%zu) maxlen=%d scale_attn=%d head_relu=%d "
+            "reduce_ratio=%.3f invert=%d\n",
+            hp.enc_num_stages, hp.enc_reduction, hp.dec_layers, hp.num_heads, hp.d_model, hp.dim_ff, hp.vocab_size,
+            ctx->vocab.size(), hp.maxlen, hp.scale_attention, hp.head_pre_relu, hp.preproc_reduce_ratio,
+            hp.preproc_invert);
 
     bool force_cpu = (getenv("SMT_OCR_FORCE_CPU") && atoi(getenv("SMT_OCR_FORCE_CPU")));
     ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
@@ -822,15 +854,28 @@ const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int 
 }
 
 const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, int w, int h, int ch, int * out_len) {
-    // Mirror the SMT single-system inference pipeline (SMT-main data.py
-    // prepare_data + convert_img_to_tensor), reduce_ratio=1.0:
-    //   width = min(w, 3056); height = max(h, 256); cv2.resize (bilinear, uint8)
-    //   → Grayscale (RGB ITU-R 601 luma) → /255. NO invert (SMT-main's
-    //   convert_img_to_tensor is Grayscale→ToTensor; inverting drops accuracy
-    //   from ~96% to ~30%), NO channel swap (HF dataset feeds RGB).
+    // Two preprocessing policies, selected by GGUF metadata:
+    //   • smt-plusplus base (reduce_ratio<=0): mirror SMT-main data.py
+    //     prepare_data — width=min(w,3056); height=max(h,256); cv2.resize
+    //     bilinear→Grayscale(ITU-R 601)→/255, NO invert (inverting the base
+    //     model drops accuracy ~96%→30%).
+    //   • smt-main full-page (reduce_ratio>0): cv2.resize by ceil(dim×ratio)
+    //     (no clamp) then convert_img_to_tensor = RandomInvert(p=1)→Grayscale→
+    //     ToTensor, i.e. per-channel 255−x BEFORE luma, then /255.
     if (!data || w <= 0 || h <= 0 || ch <= 0) return nullptr;
-    int rw = w > 3056 ? 3056 : w;
-    int rh = h < 256 ? 256 : h;
+    float rr = ctx->hp.preproc_reduce_ratio;
+    if (const char * e = getenv("SMT_OCR_REDUCE_RATIO")) rr = (float)atof(e); // test-only scale override
+    const bool invert = ctx->hp.preproc_invert != 0;
+    int rw, rh;
+    if (rr > 0.0f) {
+        rw = (int)std::ceil((double)w * rr);
+        rh = (int)std::ceil((double)h * rr);
+        if (rw < 1) rw = 1;
+        if (rh < 1) rh = 1;
+    } else {
+        rw = w > 3056 ? 3056 : w;
+        rh = h < 256 ? 256 : h;
+    }
     float sx = (float)w / rw, sy = (float)h / rh;
     auto clampi = [](int v, int lo, int hi) { return v < lo ? lo : (v > hi ? hi : v); };
     int nk = ch >= 3 ? 3 : 1;
@@ -853,8 +898,9 @@ const char * smt_ocr_recognize_raw(smt_ocr_context * ctx, const uint8_t * data, 
                 float p11 = data[((size_t)y1c * w + x1c) * ch + k];
                 float top = p00 + wx * (p01 - p00), bot = p10 + wx * (p11 - p10);
                 pix[k] = std::round(top + wy * (bot - top)); // cv2 returns uint8
+                if (invert) pix[k] = 255.0f - pix[k];        // RandomInvert on uint8 RGB
             }
-            float luma = (nk >= 3) ? 0.299f * pix[0] + 0.587f * pix[1] + 0.114f * pix[2] // RGB luma, no invert
+            float luma = (nk >= 3) ? 0.299f * pix[0] + 0.587f * pix[1] + 0.114f * pix[2] // RGB ITU-R 601 luma
                                    : pix[0];
             gray[(size_t)y * rw + x] = std::round(luma) / 255.0f;
         }

@@ -1317,6 +1317,15 @@ static const ModelEntry k_registry[] = {
       "Sheet Music Transformer OMR: staff notation→bekern (pianoform, 21.4M)", "24 MB", "mit",
       "https://huggingface.co/antoniorv6/smt-grandstaff" },
 
+    // SMT++ full-page pianoform OMR (antoniorv6/SMT rewrite, 10.9M). Same engine
+    // as smt-grandstaff but scaled config (maxlen 4353, 181-token vocab) + smt-main
+    // forward (scaled attn, no pre-head ReLU) + reduce_ratio=1.0/invert preproc.
+    // q8_0 per-stage cos ≥0.9998; greedy decode byte-identical to HF at f32/q8_0.
+    { "smt-fp", "smt-fp-grandstaff-q8_0.gguf",
+      "https://huggingface.co/cstr/smt-fp-grandstaff-GGUF/resolve/main/smt-fp-grandstaff-q8_0.gguf",
+      "SMT++ full-page OMR: whole pianoform page→bekern (10.9M)", "16 MB", "mit",
+      "https://huggingface.co/PRAIG/smt-fp-grandstaff" },
+
     // Polyphonic-TrOMR — Optical Music Recognition (ResNetV2+ViT encoder +
     // x-transformers decoder, ~22M). q8_0 decodes byte-identically to the
     // reference; camera/photo-robust. rhythm/pitch/lift streams merged to notation.
