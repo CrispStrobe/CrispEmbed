@@ -1886,8 +1886,16 @@ data*, not the code — see landmine below).
    license-clean handwritten-style data*, same graph. `Flova/omr_transformer`
    is the only permissive handwritten lead but is a toy.
 
-3. **Polyphonic-TrOMR (viable fallback)** — weights confirmed available and
-   clean: `tromr/workspace/checkpoints/img2score_epoch47.pth` (86.3 MB) is
+3. **Polyphonic-TrOMR — IN PROGRESS (2026-07-13).** Confirmed a genuinely
+   accurate model (reads clefs/keys/rhythms/pitches correctly on real photos).
+   **Done + merged:** blueprint read, `models/convert-tromr-to-gguf.py` (tested,
+   261 tensors), `tools/dump_tromr_reference.py` (23-stage oracle), `src/tromr_ocr.h`
+   (ABI), Dart `CrispEmbedOmr` wrapper. **Remaining:** the ggml engine
+   `src/tromr_ocr.cpp` (large build: ResNetV2+ViT encoder + x-transformers decoder
+   + 4 heads) → dispatcher wiring → quantize + upload. **Full self-contained build
+   brief: `docs/tromr-engine-handover.md`** (architecture, exact tensor names,
+   formulas, SAME-pad solution, reuse map, validation plan, wiring).
+   Weights: `tromr/workspace/checkpoints/img2score_epoch47.pth` (86.3 MB)
    committed directly into the Apache-2.0 repo (not LFS → covered by the repo
    license), with a 4-file tokenizer set (`tokenizer_{lift,pitch,rhythm,note}.json`).
    Architectural wrinkle vs SMT: TrOMR is **not** a single autoregressive stream
