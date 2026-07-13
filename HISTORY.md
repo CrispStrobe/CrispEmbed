@@ -60,6 +60,12 @@ odd number of crossings lie strictly right of x). **Byte-identical box output.**
   on the page (14) and fox (1). `OCR_DETECT_SCALAR_SCORE=1` restores the old path.
 - Lesson (again): measure the dominant cost first — the "GPU-accelerate detection"
   premise chased a 3 s graph while a 43 s CPU postprocess dominated. (`74b8ac5`)
+- **Full-pipeline impact (verified end-to-end):** on the same 14-region page the
+  whole DBNet+TrOCR pipeline went **~46 s → 7.2 s** (detect 4.4 s [graph 3.0 +
+  postproc 1.3] · batch-encode 2.5 s [14 ViT passes] · decode **0.3 s**). Note the
+  decode is NOT the bottleneck here — detection-conv-graph + the ViT encoder are,
+  both inherent compute. Confirmed no more algorithmic/O(n²) fruit in the OCR
+  detect→recognize path; the remaining levers are all model/kernel-level.
 
 ---
 
