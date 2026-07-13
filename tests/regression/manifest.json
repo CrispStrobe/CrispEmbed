@@ -904,6 +904,22 @@
       "match": {
         "max_cer": 0.1
       }
+    },
+    {
+      "name": "flova",
+      "engine": "flova",
+      "_comment": "Flova/omr_transformer OMR (DonutSwin encoder + 4-layer mBART VED → LilyPond). Handwritten/whiteboard monophonic music. Deterministic greedy argmax over the 75-token vocab, detok to LilyPond. expected_text is the byte-exact decode on the model card's sample1.png (Apache-2.0, from Flova/omr_transformer), captured 2026-07-13 with flova-q8_0.gguf: CPU==Metal identical, q8_0 == f32 == the model-card transcription. Guards the whole VED OMR path (DonutSwin windowed attn + shifted-window mask, patch-merge downsample, final encoder LN, mBART pre-norm cross-attn, offset-2 learned positions, eos=54 stop, detok). The no-garbage guard passes with margin (top word '8' repeats 8/23 < the 0.5 repetition floor).",
+      "gguf": {
+        "repo": "cstr/flova-omr-GGUF",
+        "file": "flova-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 162
+      },
+      "sample": "tests/regression/images/staff_flova.png",
+      "expected_text": "c'2 a''8 c''8 r4 c'1 e'8 c'8 c'8 a''8 f'4 a'8 c'8",
+      "match": {
+        "max_cer": 0.15
+      }
     }
   ]
 }
