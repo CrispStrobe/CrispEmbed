@@ -33,10 +33,26 @@ all PASS.
 - `hat` (+ `pan`/`tbsrn`/`lilt`/`lfm2`): diff harness "no parseable stage lines"
   / long runtime — harness/format issues on CUDA, per-engine detail TBD.
 
-**Open follow-ups (separate from this confirmation, some need Turing/Pascal HW):**
-Gap-5 harness-tolerance fix in `run_one.py` (flip teardown-crash-after-valid to a
-warned PASS); build/register `test-punct-diff` in the CUDA config or skip it;
-Class-B vision-op localization; granite CUDA projector cos drift.
+**Follow-ups — harness fixes DONE (`be6ec54`):** `run_diff` now parses stages
+before reacting to the exit code, so a teardown-crash-after-valid-stages is a
+WARN not a FAIL (Gap-5); `run_check` SKIPs when its binary isn't built (fixes the
+false `test-punct-diff` FAIL — crisp_punc isn't in the CrispEmbed CUDA kernel).
+Re-ran (v10) to verify the FAIL count drops.
+
+**Still open — older-arch (Turing/Pascal) ggml-CUDA numerical divergence (needs
+that HW to iterate; local Ampere sm_86 does NOT reproduce):**
+- **Class-B garbage** — `glm-ocr` (cer 4.3) + `internvl2-1b` (cer 5.4). Localizer
+  status: **glm-ocr's ref + diff binary BOTH exist** (`glm-ocr-crispembed-GGUF/
+  glm-ocr-ref-full.gguf`, `test-glm-ocr-diff`) → enabling a manifest `diff` block
+  gives per-stage vision localization on the next CUDA run (verify ref freshness
+  first — an earlier note flagged a stale no-rope glm ref). `internvl2` needs a
+  ref generated from **InternVL2-1B** (InternViT-300M + Qwen2-0.5B — NOT the local
+  InternVL2.5-1B, a different arch; ~2 GB download).
+- **granite-vision** — text OCR PASSES; the divergence localizes to the
+  **projector** MLP stage (cos 0.95–0.97). Likely F16 accumulation on old-arch
+  CUDA (the Metal ÷256/×256 fix was on the LLM SwiGLU, not the projector). Do NOT
+  change it blind — it passes on CPU/Metal/Ampere; a fix must be verified on the
+  failing arch.
 
 ---
 
