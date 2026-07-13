@@ -809,14 +809,22 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
   - **`layout-heron` — FIXED (`49cb38a`).** The flash→manual attention fallback
     removed the `fattn.cu:602` abort; P100 CUDA now runs `test-layout-diff` to
     **8/8 stages PASS, DIFF PASSED** (dec_0_cross_out 0.977). ✅
-  - **`glm-ocr` + `internvl2` — read the repo `fox.png` (800×200) CORRECTLY on
-    P100 CUDA *and* CPU** ("The quick brown fox…12345") — the v11 `cer>4` garbage
-    is gone. Not a persistent CUDA bug. ✅
+  - **`glm-ocr` + `internvl2` — FIXED (`7998f3c`): it was a stdout banner, NOT
+    vision garbage.** Both engines printed their load banner (`glm_ocr: loading…
+    Vision:… LLM:… KV cache… Ready`) via `printf` → **stdout**, and `run_one`'s
+    `--ocr` text-match captures stdout — so `actual` = the banner (cer 4.3/5.4,
+    mis-read as "Class-B CUDA vision garbage"). The P100 diagnostic proved both
+    OCR the fox **correctly** on CUDA *and* CPU; only the harness saw the banner.
+    Routed all banners to stderr to match the passing engines (qwen2vl_ocr, …). ✅
   - **`granite-vision` — text OCR PASSES**; the projector diff drift is
     cross-toolchain FP strictness (identical CUDA=CPU=scalar on P100), threshold
     already 0.95. ✅
-  - **Next:** a full `ocr-portfolio-regression` re-run to confirm the FAIL count
-    drops from 4 (expect ~0). The detailed diagnosis below is kept for the record.
+  - **Bottom line: NONE of the 4 were real CUDA vision divergences.** It was one
+    genuine CUDA bug (layout flash-abort on Pascal) + a stdout-banner harness bug
+    (glm/internvl2) + cross-toolchain FP threshold strictness (granite). The
+    diagnostic-first approach (test on the box via env gates) was essential — a
+    blind "fix the Class-B vision divergence" would have chased a non-existent bug.
+  - **Next:** `ocr-portfolio-regression` re-run (v13) to confirm 4 → ~0. Detail below.
 
   Original diagnostic detail (the run that overturned 3 of the 4 assumptions):
   - **`layout-heron` — REAL CUDA bug (fixable).** `test-layout-diff` aborts:
