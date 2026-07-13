@@ -667,7 +667,11 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
   the GLU elementwise chain, prefer `ggml_soft_max_ext`. Per-decoder graph surgery
   in each `build_decoder_step_graph`; verify output cos ≈ 1.0 + node-count +
   latency per model. Re-measure heavy decoders with `CRISPASR_METAL_PROFILE=1`
-  before any ICB work.
+  before any ICB work. **Caveat (measured 2026-07-13):** the math_ocr ~30%
+  cont-removal does NOT generalize to decoder-only VLM engines — got_ocr's cached
+  decode already feeds K/V as cache views, so only Q's cont was removable
+  (byte-identical, but latency within noise; `5011848`, `GOT_OCR_ATTN_CONT=1`).
+  So op fusion, not cont-removal, is the remaining lever for these decoders.
   (DeepSeek-OCR-2's MoE-compute lever is detailed in its own subsection above.)
 - **unlimited_ocr — remaining deferred items.** `UOCR_PD=1` persistent T=1 decode
   graph (blocked on a small flash-attn padded-vs-exact-KV numerical drift that
