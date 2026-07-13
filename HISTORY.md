@@ -4,6 +4,137 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — PLAN.md sorted: completed backlog archived here
+
+PLAN.md had grown to ~3,400 lines, most of it DONE narrative interleaved with a
+thin layer of still-open work. Sorted it down to ~700 lines (current architecture
++ genuinely-open/in-progress items + the llama.cpp support-matrix reference); the
+completed material below moved out of PLAN. Most of it is already recorded in the
+dated entries further down and in `LEARNINGS.md` — this entry is the index of what
+was removed and preserves the PLAN-unique specifics. No code changed; full prior
+PLAN.md text remains in git history.
+
+**llama.cpp convergence backlog (C1–C6) — all shipped.**
+- **C1 imatrix quantization** — `src/imatrix.{h,cpp}` (eval-callback collector,
+  `CRISPEMBED_IMATRIX_OUT`), `crispembed-quantize --imatrix`, `tools/imatrix_ab.py`.
+  IQ4_XS/IQ4_NL wired. Kaggle rollout re-quantized **all 38 dense embedders + 7
+  rerankers + NER/GLiNER/ColBERT/sparse**; registry defaults repointed to each
+  model's max-cosine flavor (decoder embedders → q4_k+imatrix, BERT/XLM-R encoders
+  → iq4_xs+imatrix; f2llm-v2-0.6b + nomic-v1.5 kept q8_0; rerankers ship q8_0). Full
+  A/B tables were in PLAN; the closure is HISTORY "July 2–3 2026" imatrix entries.
+  Sub-closures: C1b rerankers (Kendall-τ; bge-reranker-base was shipped HEADLESS →
+  reconverted; `tests/audit_gguf_heads.py` release gate), C1c fixed-label NER
+  (span-F1 1.0), C1d GLiNER (opt-in sched for the collector), C1e ColBERT+sparse
+  (splade-pp converter bug fixed). Bilingual EN+DE eval corpora (CC0) added;
+  bilingual re-calibration measured not-worth-it (imatrix is language-agnostic).
+- **C2 data-driven GGUF behavior flags** — pooling / causal-attention /
+  add_bos_token / add_eos_token now read from GGUF metadata; verified byte-identical
+  across WordPiece/SPM/BPE/LFM2 families.
+- **C3 batched-encoder throughput** — `encode_tokens_packed` (block-diagonal seg
+  mask) + `encode_tokens_4d` (rectangular per-item mask). Metal verdict: **PACKED is
+  the batching mode (5–7× vs sequential, parity cos 1.0)**; 4D is the CPU tool
+  (1.18–1.48×). Backend-conditional default (packed ON for GPU, OFF for CPU).
+- **C4 cross-call prefix KV cache** — `decoder_encode_tokens_cached`
+  (`dec_prefix_cache`), Qwen3 + Gemma3; CPU bit-equal, Metal cos ≥ 0.9999995,
+  ≈2.07× compute-only. Default ON, `CRISPEMBED_DECODER_PREFIX_CACHE=0` opts out.
+  Landmine: `ggml_cont` K and V before `set_output` (view-snapshot staleness).
+- **C5 mtmd preprocessing** — `src/image_preprocess.{h,cpp}` (smart_resize +
+  PIL-`a=-0.5` bicubic), wired into qwen2vl/bidirlm/mixtex. Bicubic-`a` A/B resolved
+  by local measurement (HF uses PIL a=-0.5; a=-0.75 is strictly worse).
+- **C6 flash-attn epilogue audit** — swept all 39 `ggml_flash_attn_ext` sites across
+  22 engines; no surviving double-permute; codified as a reusable graph guard.
+- **mmproj interop, both directions, 3 families** — export
+  (`export-mmproj-llamacpp.py`) + import via a family-dispatch on
+  `models/gguf_merge_core.py` (unified `merge-llamacpp-gguf.py`): Qwen2-VL,
+  SmolVLM/Idefics3, InternVL2.5/3, each validated end-to-end. Rule: un-permute q/k
+  is arch-dependent (llama yes, qwen2/NEOX no); map ViT FFN fc1/fc2 by output dim.
+  Tests: `test_mmproj_interop.py` + `test_mmproj_smolvlm.py`.
+
+**June-2026 optimization-TODO audit — fully closed.** The line-by-line review of
+~57K lines / 60+ runtimes completed: P0 (SIMD `core/cpu_ops.h`, DequantCache, F16 KV
+across all decoder engines, granite full-Metal graph path, pix2struct rewrite,
+scunet heap hoist), P1 (flash-attn everywhere, scalar encoders → ggml graphs,
+patch-embed → im2col+matmul, RoPE freq tables, batched-linear GEMM in SR attention,
+batched region recognition), P2 (LFM2 sched+T-bucket, graph caching, gallocr reuse,
+native GQA in flash-attn, BatchNorm fusion, mel OpenMP/SIMD), P3 (BPE min-heap,
+WordPiece trie, alloc hoists, bilinear resize, beam search, morph_fast, SIMD
+norms/softmax). Only open remnant: SR fused-single-graph (SAFMN pattern) — now in
+PLAN.
+
+**Per-backend performance passes — DONE:** lightonocr (2.09×), qwen2vl (+OCR
+correctness 4-bug fix), deepseek_ocr2 (OCR correct; perf-sweep regression reverted;
+MoE-compute is the only remaining lever, now in PLAN), got_ocr, glm_ocr (+5-bug OCR
+fix), granite_vision (full Metal graph, 270→139 ms/tok), smoldocling, internvl2,
+SR/denoise SIMD, embedding flash-attn. unlimited_ocr remains IN PROGRESS (open items
+moved to PLAN).
+
+**Implementation blueprints — DONE:** prefix-shared decoder-batch KV cache
+(`decoder_encode_tokens_batch`), batched-decoder F16 mask + Gemma3 NaN clamp, and the
+WASM build target (`build-wasm.sh` / `build-embed-wasm.sh`, 3 tiers incl. WebGPU;
+GitHub Pages demo). Detail in the July 4–5 2026 WASM entries below.
+
+**Runtime speedup roadmap (2026-07-11 sweep) — Tier-2 wins closed:** scunet Swin
+MLP → SIMD GEMM (1.69×) + WMSA window-loop threading; gliner DeBERTa encoder rel-pos
+dedup (1.28–1.71×, byte-identical); layout_detect Phase-2 `cpu_linear` → SIMD AXPY
+(~1.26×) + backbone `conv_2d_direct` → im2col GEMM (~9.8× Phase-1, default flipped);
+surya_det grouped-pointwise-conv graph-path crash fixed; safmn honor `n_threads`
+(~2.3×); tps_locnet dequant hoist; debug-`fprintf` gating (layout/surya/ocr_detect).
+Decode-step graph cache shipped for got_ocr/internvl2/glm_ocr/lightonocr/math_ocr
+(remaining decoders + the ICB/op-count lever moved to PLAN). Negatives recorded (do
+not re-chase): esrgan intra-op threading (slower), restormer double-variance (audit
+was wrong), conv2d_cpu → im2col (marginal), got_ocr/glm_ocr conv swap (~4%).
+
+**Regression-guardrail closure (2026-07):** SR/restoration (11) + esrgan/safmn + lilt
++ lfm2 + decoder_embed/vit_embed/clip_text/cnn_embed-face/tps_locnet/fireredpunc/pcs/
+bidirlm-vision/bidirlm-text auto-guarded in `tests/regression/manifest.json`. Wave
+regressions found by tracing: **layout** (double-permute after flash_attn, `6027b56`)
+and **nafnet** (scrambled conv-kernel layout + residency). Disambiguated non-bugs:
+gliner (dead reference, engine fine), lfm2/lfm2_colbert/bert_ner (dumper bugs).
+lfm2_colbert CUDA multivec corruption fixed (rebuild graph after `sched_reserve`,
+P100 cos 0.57→0.996). **pcs reached full ONNX parity** (Unigram Viterbi tokenizer +
+5 more root causes); fullstop-punc got the same treatment. Open residuals (bert_ner
+download-blocked ref, face-recognition unguarded) moved to PLAN.
+
+**CUDA-backend gaps (Kaggle + local Ampere sm_86):** **Class-A device-pointer
+weight-read SIGSEGVs fixed across 8 engines** (deepseek-ocr2/dat/tbsrn/unlimited/
+math_ocr/smoldocling/parseq/tesseract — host-guard the zero-copy path, else
+`ggml_backend_tensor_get`; commits 42ef0ea/28fb9b1); full `->data` census clean.
+**Gap-5 free-after-load teardown** hardened (keep `wl_backend`, free after
+`free_weights`). **Class-B** (glm/internvl2/qwen2vl-3b garbage on Turing/Pascal only)
+remains open → PLAN.
+
+**OCR correctness/stability (issue #25, 2026-06-30):** VLM repetition
+(`argmax_no_repeat_ngram` n=3 in internvl2/qwen2vl/got_ocr/math_ocr), got-ocr2 graph
+crashes, DBNet Metal CPY worked around (get_rows dequant + CPU-default), self-contained
+CI artifacts, ggml v0.10.0 Metal residency + lfm2 sched teardown aborts fixed
+(`GGML_METAL_NO_RESIDENCY` default + `core_util::clean_exit`). Open: DBNet full Metal
+CPY path → PLAN. **GPU + quantization audit (2026-06-16):** ~28 engines full-GPU,
+~10 GPU-safe, 0 CPU-only; all have `<ENGINE>_FORCE_CPU=1`.
+
+**TrOCR recognizer investigation (2026-07-07):** WASM ≡ native token-for-token; GGUF
+≈ HF; the trailing-repeat bug fixed (`6791af5`). Low quality is trocr-small's ceiling
+on scene-text crops, not the port. Remaining accuracy/speed levers → PLAN.
+
+**Next-gen + handwritten-math OCR ports — DONE:** PaddleOCR-VL 0.9B/1.6,
+SmolDocling, Qari-OCR, TexTeller 3.0, Uni-MuMER-Qwen3-VL-2B, Uni-MuMER-Qwen2.5-VL-3B.
+License rejections retained in PLAN's next-gen table (dots.ocr, MinerU2.5, Hunyuan).
+**SMT (printed OMR) — DONE, shipped `cstr/smt-grandstaff-GGUF` at 96.3%** (per-stage
+cos 1.0; the invert was the only bug — SMT-main preprocessing has no RandomInvert);
+TrOMR + handwritten phase-2 remain in PLAN's OMR section.
+
+**scan_cleanup / unpaper feature ports (2026-07) — all 6 evaluated:** despeckle
+(heavy-speckle CER 0.580→0.032), blackfilter (8-CC labelling + 40%-page guard +
+sharpness gate), 2-up page splitting, content-mask detection — all clean-room, MIT.
+grayfilter/blurfilter deliberately skipped (subsumed by morphological-closing
+whitening); deskew corner-fill already correct. Consensus deskew (Hough × DSS) +
+per-params deskew across all image paths (`ce7f1c4`). Harness:
+`tools/scan_cleanup_bench.py`.
+
+**core/ refactoring:** `core/cpu_ops.h` + `core/vlm_attention.h` extracted (728+134
+lines deduped, 185 unit tests). `core/vlm_decoder.h` deferred → PLAN.
+
+---
+
 ## July 12, 2026 — P3 backlog sweep (every item triaged)
 
 Worked the whole low-priority backlog to a clean end state — each item is now
