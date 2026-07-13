@@ -32,8 +32,11 @@ typedef struct math_ocr_hparams {
     int32_t enc_heads;        // num_attention_heads (6 small, 16 large)
     int32_t enc_hidden;       // hidden_size (384 small, 1024 large)
     int32_t enc_intermediate; // intermediate_size (1536 small, 4096 large)
-    int32_t image_size;       // 384
+    int32_t image_size;       // 384 (pix2tex) / 448 (texteller)
     int32_t patch_size;       // 16
+    float image_mean;         // input normalization mean (0.5 pix2tex / 0.9545467 texteller)
+    float image_std;          // input normalization std  (0.5 pix2tex / 0.15394445 texteller)
+    int32_t preprocess_pad;   // 0=squash-resize (pix2tex, default); 1=trim+aspect-resize+white-pad (texteller)
 
     // Decoder (TrOCR)
     int32_t dec_layers;     // decoder_layers (6 small, 12 large)
