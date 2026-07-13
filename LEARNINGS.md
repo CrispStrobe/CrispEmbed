@@ -1,5 +1,26 @@
 # CrispEmbed — Technical Learnings
 
+## `ggml_concat` silently corrupts q4_k weights — QKV fusion needs load-time byte-stacking (2026-07-13, got_ocr QKV probe)
+
+Tried to fuse got_ocr's LLM-decoder Q/K/V into one matmul via a graph-time
+`ggml_concat(q_w, k_w, v_w, dim=1)` on the q4_k projection weights. It **compiles
+and runs (no abort) but produces garbage** — the decode ran away to 1023 tokens
+and "recognition failed". `ggml_concat` has no k-quant path; it mishandles the
+super-block layout, so concatenating q4_k tensors yields wrong bytes. Two takeaways:
+
+- **Never `ggml_concat` (or any elementwise op) a k-quant weight** and feed it to
+  `mul_mat`. A correct QKV fusion must **byte-stack the row blocks at LOAD time**
+  (q4_k rows over ne[1]=out are whole blocks, so stacking output rows is a valid
+  q4_k tensor) into a persistent tensor — not rebuild it in the graph each step
+  (which was also **3× slower**: 42.8 vs 12.9 ms/step from re-concatenating).
+- **It isn't worth it anyway** on these decoders: a T=1 decode step is
+  memory-bound `mul_mv`, so 3 separate q4_k matmuls move the same bytes as one
+  fused q4_k matmul — fusion only saves ~2 kernel launches/layer (~4% of the
+  ~11% host slice on a compute-bound decode). Metal also auto-fuses the norm/GLU
+  elementwise chains already. `GOT_OCR_QKV_FUSE` probe reverted; see HISTORY.
+  (got_ocr's *vision* tower ships a fused `attn_qkv` from the converter — the
+  right place to fuse is the GGUF, not the runtime graph.)
+
 ## Fusing per-conv graphs helps only OVERHEAD-bound models; measure first (2026-07-13, SR ports)
 
 CrispEmbed's SR/restoration engines dispatched a **fresh ggml graph per conv**

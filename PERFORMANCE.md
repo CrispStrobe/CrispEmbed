@@ -65,6 +65,23 @@ mat-vec) kernel issue, not a bandwidth effect; see
 is unaffected (all three quants: cos ≥ 0.99996 vs f32, identical OCR — see
 [`docs/got-ocr2.md`](docs/got-ocr2.md)).
 
+### DBNet text detection — scanline box scoring (2026-07-13, M1 CPU)
+
+`extract_boxes`' polygon scoring was O(bbox_area × contour_len) (ray-cast every
+bbox pixel against the full traced contour) — pathological when a degenerate
+component yields a very long contour. Rewritten as a scanline polygon fill
+(even-odd-identical → **byte-identical boxes**, `OCR_DETECT_SCALAR_SCORE=1` for
+the old path). dbnet-ic15-q4_k, forced CPU, a 10-line page:
+
+| Stage | Before | After |
+|-------|--------|-------|
+| DBNet postprocess | 43 326 ms | **1 540 ms** (~28×) |
+| Detection total (graph 3 s + postproc) | 46.4 s | **4.9 s** |
+| Full DBNet+TrOCR pipeline (14 regions) | ~46 s | **7.2 s** (detect 4.4 · batch-enc 2.5 · decode 0.3) |
+
+Note the decode is not the pipeline bottleneck here — the detection conv graph
+and the ViT crop encoder are (both inherent compute). See LEARNINGS / HISTORY.
+
 ## Ollama Integration (Q8_0, Apple M1)
 
 All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export.
