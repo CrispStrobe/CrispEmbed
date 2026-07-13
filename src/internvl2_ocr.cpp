@@ -689,7 +689,8 @@ bool alloc_kv_cache(context & ctx, int max_seq) {
 
     size_t kv_bytes = ggml_backend_buffer_get_size(ctx.kvc.buf);
     if (ctx.verbosity >= 1) {
-        printf("  KV cache: %d layers, max_seq=%d, %.1f MB\n", n_layers, max_seq, (float)kv_bytes / 1024 / 1024);
+        fprintf(stderr, "  KV cache: %d layers, max_seq=%d, %.1f MB\n", n_layers, max_seq,
+                (float)kv_bytes / 1024 / 1024);
     }
     return true;
 }
@@ -915,7 +916,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     ctx.verbosity = verbosity;
 
     if (verbosity >= 1) {
-        printf("internvl2_ocr: loading %s\n", gguf_path);
+        fprintf(stderr, "internvl2_ocr: loading %s\n", gguf_path);
     }
 
     // Load hparams
@@ -925,13 +926,13 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     }
 
     if (verbosity >= 1) {
-        printf("  Vision: %uL, %ud, %uH, patch=%u, image=%u\n", ctx.m.vhp.num_hidden_layers, ctx.m.vhp.hidden_size,
-               ctx.m.vhp.num_attention_heads, ctx.m.vhp.patch_size, ctx.m.vhp.image_size);
-        printf("  Projector: ratio=%.1f, %u→%u tokens, dim %u→%u\n", ctx.m.php.downsample_ratio, ctx.m.vhp.n_patches,
-               ctx.m.php.n_merged_tokens, ctx.m.php.merge_dim, ctx.m.php.output_dim);
-        printf("  LLM: %uL, %ud, %uH/%uKV, inter=%u, vocab=%u\n", ctx.m.lhp.num_hidden_layers, ctx.m.lhp.hidden_size,
-               ctx.m.lhp.num_attention_heads, ctx.m.lhp.num_key_value_heads, ctx.m.lhp.intermediate_size,
-               ctx.m.lhp.vocab_size);
+        fprintf(stderr, "  Vision: %uL, %ud, %uH, patch=%u, image=%u\n", ctx.m.vhp.num_hidden_layers,
+                ctx.m.vhp.hidden_size, ctx.m.vhp.num_attention_heads, ctx.m.vhp.patch_size, ctx.m.vhp.image_size);
+        fprintf(stderr, "  Projector: ratio=%.1f, %u→%u tokens, dim %u→%u\n", ctx.m.php.downsample_ratio,
+                ctx.m.vhp.n_patches, ctx.m.php.n_merged_tokens, ctx.m.php.merge_dim, ctx.m.php.output_dim);
+        fprintf(stderr, "  LLM: %uL, %ud, %uH/%uKV, inter=%u, vocab=%u\n", ctx.m.lhp.num_hidden_layers,
+                ctx.m.lhp.hidden_size, ctx.m.lhp.num_attention_heads, ctx.m.lhp.num_key_value_heads,
+                ctx.m.lhp.intermediate_size, ctx.m.lhp.vocab_size);
     }
 
     // Init backend — prefer GPU when available
@@ -959,7 +960,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
 
     if (verbosity >= 1) {
         const char * bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";
-        printf("  Ready (%s, %d threads)\n", bname, n_threads);
+        fprintf(stderr, "  Ready (%s, %d threads)\n", bname, n_threads);
     }
 
     return true;
