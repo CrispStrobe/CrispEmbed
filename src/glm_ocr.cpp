@@ -434,7 +434,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     ctx.n_threads = n_threads;
     ctx.verbosity = verbosity;
 
-    if (verbosity >= 1) printf("glm_ocr: loading %s\n", gguf_path);
+    if (verbosity >= 1) fprintf(stderr, "glm_ocr: loading %s\n", gguf_path);
 
     if (!load_hparams(ctx, gguf_path)) {
         fprintf(stderr, "glm_ocr: failed to load hparams\n");
@@ -442,11 +442,11 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     }
 
     if (verbosity >= 1) {
-        printf("  Vision: %uL, %ud, %uH, patch=%u, image=%u\n", ctx.m.vhp.depth, ctx.m.vhp.hidden_size,
-               ctx.m.vhp.num_heads, ctx.m.vhp.patch_size, ctx.m.vhp.image_size);
-        printf("  LLM: %uL, %ud, %uH/%uKV, hd=%u, inter=%u, vocab=%u\n", ctx.m.lhp.num_hidden_layers,
-               ctx.m.lhp.hidden_size, ctx.m.lhp.num_attention_heads, ctx.m.lhp.num_key_value_heads, ctx.m.lhp.head_dim,
-               ctx.m.lhp.intermediate_size, ctx.m.lhp.vocab_size);
+        fprintf(stderr, "  Vision: %uL, %ud, %uH, patch=%u, image=%u\n", ctx.m.vhp.depth, ctx.m.vhp.hidden_size,
+                ctx.m.vhp.num_heads, ctx.m.vhp.patch_size, ctx.m.vhp.image_size);
+        fprintf(stderr, "  LLM: %uL, %ud, %uH/%uKV, hd=%u, inter=%u, vocab=%u\n", ctx.m.lhp.num_hidden_layers,
+                ctx.m.lhp.hidden_size, ctx.m.lhp.num_attention_heads, ctx.m.lhp.num_key_value_heads, ctx.m.lhp.head_dim,
+                ctx.m.lhp.intermediate_size, ctx.m.lhp.vocab_size);
     }
 
     // Prefer GPU backend when available
@@ -471,7 +471,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
 
     if (verbosity >= 1) {
         const char * bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";
-        printf("  Ready (%s, %d threads)\n", bname, n_threads);
+        fprintf(stderr, "  Ready (%s, %d threads)\n", bname, n_threads);
     }
     return true;
 }
@@ -979,8 +979,8 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
     ctx.kvc.n_past = 0;
     ctx.kvc.allocated = true;
     if (ctx.verbosity >= 1) {
-        printf("  KV cache: %d layers, max_seq=%d, %.1f MB\n", n_layers, max_seq,
-               (float)ggml_backend_buffer_get_size(ctx.kvc.buf) / 1024 / 1024);
+        fprintf(stderr, "  KV cache: %d layers, max_seq=%d, %.1f MB\n", n_layers, max_seq,
+                (float)ggml_backend_buffer_get_size(ctx.kvc.buf) / 1024 / 1024);
     }
     return true;
 }
