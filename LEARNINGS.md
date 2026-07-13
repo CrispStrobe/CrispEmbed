@@ -130,6 +130,48 @@ per-position agreement under teacher forcing (100%), not by exact-match to a
 stochastic sample. A single near-tie flip (F16 conv-cast, logits max_abs ~8e-3)
 cascades the greedy path once the prefixes diverge — expected, not a regression.
 
+## Flova engine port: the sibling-verbatim path, and a Donut patch-embed pad the handover glossed (2026-07-13, src/flova_ocr.cpp)
+
+Flova/omr_transformer (Donut VED: DonutSwin encoder → 4-layer **pre-norm** mBART
+decoder → LilyPond) is the only permissive handwritten-music OMR model. It reached
+full parity on the **first build** — every diff-harness stage cos=1.000000
+(enc_stage0..3, enc_output, dec_block0..3, logits), 40/40 teacher-forced argmax
+agreement, and byte-exact greedy decode (`c'2 a''8 c''8 r4 c'1 e'8 …`) matching the
+model card, including the native no-`transformers` Donut preprocessing path. What
+made it fast and the two things worth recording:
+
+- **The encoder was a config change, not a rewrite.** DonutSwin is the *same*
+  windowed-attention Swin already in `mixtex_ocr.cpp` (scalar window_partition /
+  cyclic_shift / window_mhsa + RPB, batched LN/linear on a small ggml CPU graph).
+  `run_swin_encoder` already reads embed_dim / depths / heads / window_size from
+  hparams generically, so copying it verbatim and pointing it at `flova.encoder.*`
+  (embed 128, depths [2,2,14,2], heads [4,8,16,32], window 10) Just Worked. The
+  `rpb_table [nh,361]` / `rpb_index [100,100]` tensors are read generically — no
+  code change, only the tensors differ.
+- **The one real encoder fix: patch-embed pads UP, mixtex truncated.** mixtex's
+  input (400×500) is divisible by patch_size 4, so it used `pH = img_h/ps` (floor).
+  Flova's 583×409 is not: DonutSwin zero-pads H,W up to a multiple of patch_size
+  (583→584, 409→412) → grid **146×103** (not 146/103-anything the brief spelled as
+  "584×416/104", an off-by-a-few). Use ceil-div `pH=(h+ps-1)/ps` and guard the conv
+  reads (`if (iy>=h||ix>=w) continue`). Stage-0 PatchMerging then pads the odd W
+  103→104 → 73×52 = 3796, matching `enc_stage0`. Getting this wrong shifts every
+  token and tanks stage 0 immediately — the diff harness localizes it in one run.
+- **The decoder is fresh but small: pre-norm mBART.** LN *before* each sublayer with
+  the residual around it (unlike BART/RoBERTa post-norm), embed = tokens·√1024 +
+  learned-positions[**pos+2**] then layernorm_embedding, GELU-erf FFN, untied
+  lm_head, eps 1e-5 throughout. Teacher-forced full-sequence forward (causal self +
+  unmasked cross) doubles as the greedy engine (re-run over the growing prefix; L≤128
+  so O(L²) is free). eos is the tokenizer's `</s>`=**54**, not generation_config's
+  stale mBART `2` — same class as the TexTeller decoder-start trap.
+- **q8_0 needs no keep-guard here (unlike TrOMR).** Flova's Swin is all linear; the
+  only conv is the patch embed, which the quantizer flattens to `[48,128]` — ncols
+  48 %32≠0 so Q8_0 auto-skips it (kept F32), and `rpb_index` (ncols 100) is likewise
+  auto-kept, preserving its integer indices. Result: byte-exact decode on all three
+  samples (573→162 MB, cos_mean 0.9997). The diff harness flags enc_stage3/enc_output
+  `cos_min` 0.987 — a single worst-token per-row cosine (max_abs 0.93 on one
+  high-activation token), the honest q8_0 floor, NOT a decode error (argmax 40/40,
+  greedy byte-exact). Don't chase it with F16; the output is already exact.
+
 ## Importing a llama.cpp LLM: un-permute q/k, because llama.cpp rewrites them for its interleaved RoPE (2026-07-12, SmolVLM import)
 
 Merging a stock llama.cpp **SmolVLM-256M** (arch=llama LLM + idefics3 mmproj)
