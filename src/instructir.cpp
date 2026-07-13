@@ -1,4 +1,10 @@
-// instructir.cpp — InstructIR all-in-one restoration (CPU-scalar).
+// instructir.cpp — InstructIR all-in-one restoration (fused per-block ggml graph).
+//
+// Each NAFBlock is ONE fused ggml graph (LN → conv → dwconv → SimpleGate → SCA →
+// conv → beta-residual → LN → conv → SimpleGate → conv → gamma-residual),
+// replacing per-conv mini-graphs. NAFNet-family = compute-bound, so this is
+// perf-neutral (cleaner, cos 1.000000 vs ref); CPU-only (GPU conv_2d hits a Metal
+// mul_mv pipeline issue). INSTRUCTIR_LEGACY=1 restores the per-conv path.
 //
 // NAFNet U-Net backbone with ICB (Instruction Condition Block) text injection.
 // Encoder: 4 levels [2,2,4,8 NAFBlocks] + ICB + Conv2d(k=2,s=2) downsample
@@ -131,8 +137,68 @@ struct nafblock_wt {
     ggml_tensor *conv5_w, *conv5_b; // 1x1, C→C
 };
 
+// ── Fused-graph helpers (one NAFBlock = one ggml graph) ─────────────
+// Prepare a GGUF conv weight into ggml's [KW,KH,IC_g,OC] F16 kernel layout
+// (same detection as conv2d_ggml — GGUF stores 2D or 4D in varying axis order).
+static ggml_tensor * ir_kernel(ggml_context * g, ggml_tensor * wt, int ic_g, int oc, int kh, int kw) {
+    ggml_tensor * w = wt;
+    if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+    if (ggml_n_dims(w) == 2) {
+        int64_t ik = (int64_t)ic_g * kh * kw;
+        if (w->ne[0] == ik) {
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
+        } else if (w->ne[1] == ik) {
+            w = ggml_cont(g, ggml_transpose(g, w));
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, w->ne[1]);
+        } else {
+            w = ggml_reshape_4d(g, w, kw, kh, ic_g, oc);
+        }
+    } else if (ggml_n_dims(w) >= 4) {
+        if (w->ne[0] == oc && w->ne[3] != oc) w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
+    }
+    if (w->type != GGML_TYPE_F16) w = ggml_cast(g, w, GGML_TYPE_F16);
+    return w;
+}
+
+static ggml_tensor * ir_conv(ggml_context * g, ggml_tensor * x, ggml_tensor * wt, ggml_tensor * bt, int ic, int oc,
+                             int kh, int kw, int pad, int groups) {
+    const bool dw = groups > 1;
+    ggml_tensor * w = ir_kernel(g, wt, dw ? 1 : ic, oc, kh, kw);
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, 1, 1, pad, pad, 1, 1) : ggml_conv_2d(g, w, x, 1, 1, pad, pad, 1, 1);
+    if (bt) y = ggml_add(g, y, ggml_reshape_3d(g, bt, 1, 1, oc));
+    return y;
+}
+
+// Channel LayerNorm over C (ne[2]) + affine. x: [W,H,C,1].
+static ggml_tensor * ir_chan_ln(ggml_context * g, ggml_tensor * x, ggml_tensor * wt, ggml_tensor * bt, int C) {
+    ggml_tensor * xp = ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3)); // [W,H,C]→[C,W,H]
+    xp = ggml_norm(g, xp, 1e-6f);
+    ggml_tensor * w = wt->type == GGML_TYPE_F32 ? wt : ggml_cast(g, wt, GGML_TYPE_F32);
+    ggml_tensor * b = bt->type == GGML_TYPE_F32 ? bt : ggml_cast(g, bt, GGML_TYPE_F32);
+    xp = ggml_add(g, ggml_mul(g, xp, ggml_reshape_3d(g, w, C, 1, 1)), ggml_reshape_3d(g, b, C, 1, 1));
+    return ggml_cont(g, ggml_permute(g, xp, 2, 0, 1, 3)); // [C,W,H]→[W,H,C]
+}
+
+static ggml_tensor * ir_gate(ggml_context * g, ggml_tensor * x, int c) { // SimpleGate: [W,H,2C]→[W,H,C]
+    ggml_tensor * a = ggml_cont(g, ggml_view_4d(g, x, x->ne[0], x->ne[1], c, 1, x->nb[1], x->nb[2], x->nb[3], 0));
+    ggml_tensor * b =
+        ggml_cont(g, ggml_view_4d(g, x, x->ne[0], x->ne[1], c, 1, x->nb[1], x->nb[2], x->nb[3], (size_t)c * x->nb[2]));
+    return ggml_mul(g, a, b);
+}
+
+static ggml_tensor * ir_sca(ggml_context * g, ggml_tensor * x, ggml_tensor * wt, ggml_tensor * bt, int c) {
+    ggml_tensor * pooled = ggml_pool_2d(g, x, GGML_OP_POOL_AVG, x->ne[0], x->ne[1], x->ne[0], x->ne[1], 0, 0);
+    ggml_tensor * attn = ir_conv(g, pooled, wt, bt, c, c, 1, 1, 0, 1);
+    return ggml_mul(g, x, attn);
+}
+
+// Fused NAFBlock graph (defined after instructir_context). Returns 0 or -1.
+static int nafblock_forward_fused(instructir_context * ctx, float * x, int c, int h, int w, const nafblock_wt & wt);
+
 static void nafblock_forward(instructir_context * ctx, float * x, int c, int h, int w, const nafblock_wt & wt,
                              core_cpu::DequantCache & dqc) {
+    static const bool legacy = getenv("INSTRUCTIR_LEGACY") != nullptr;
+    if (!legacy && nafblock_forward_fused(ctx, x, c, h, w, wt) == 0) return;
     int hw = h * w, c2 = c * 2;
     if (!wt.beta || !wt.gamma || !wt.norm1_w || !wt.conv1_w || !wt.conv2_w || !wt.sca_w || !wt.conv3_w || !wt.norm2_w ||
         !wt.conv4_w || !wt.conv5_w) {
@@ -299,6 +365,53 @@ static void load_icb(core_gguf::WeightLoad & wl, const char * pfx, icb_wt & ic) 
     char blk[256];
     snprintf(blk, sizeof(blk), "%s.block", pfx);
     load_nafblock(wl, blk, ic.block);
+}
+
+// One NAFBlock as a single fused ggml graph (in-place on x), replacing the
+// per-conv mini-graphs + scalar glue.
+static int nafblock_forward_fused(instructir_context * ctx, float * x, int c, int h, int w, const nafblock_wt & wt) {
+    if (!ctx->enc_sched) return -1;
+    const int max_nodes = 512;
+    size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
+    std::vector<uint8_t> meta(buf_size);
+    ggml_init_params ip = { buf_size, meta.data(), true };
+    ggml_context * g = ggml_init(ip);
+    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    ggml_tensor * inp = ggml_new_tensor_4d(g, GGML_TYPE_F32, w, h, c, 1);
+    ggml_set_name(inp, "inp");
+    ggml_set_input(inp);
+
+    ggml_tensor * t = ir_chan_ln(g, inp, wt.norm1_w, wt.norm1_b, c);
+    t = ir_conv(g, t, wt.conv1_w, wt.conv1_b, c, 2 * c, 1, 1, 0, 1);
+    t = ir_conv(g, t, wt.conv2_w, wt.conv2_b, 2 * c, 2 * c, 3, 3, 1, 2 * c);
+    t = ir_gate(g, t, c);
+    t = ir_sca(g, t, wt.sca_w, wt.sca_b, c);
+    t = ir_conv(g, t, wt.conv3_w, wt.conv3_b, c, c, 1, 1, 0, 1);
+    t = ggml_mul(g, t, ggml_reshape_3d(g, wt.beta, 1, 1, c));
+    ggml_tensor * x1 = ggml_add(g, inp, t);
+
+    ggml_tensor * u = ir_chan_ln(g, x1, wt.norm2_w, wt.norm2_b, c);
+    u = ir_conv(g, u, wt.conv4_w, wt.conv4_b, c, 2 * c, 1, 1, 0, 1);
+    u = ir_gate(g, u, c);
+    u = ir_conv(g, u, wt.conv5_w, wt.conv5_b, c, c, 1, 1, 0, 1);
+    u = ggml_mul(g, u, ggml_reshape_3d(g, wt.gamma, 1, 1, c));
+    ggml_tensor * out = ggml_add(g, x1, u);
+
+    ggml_set_name(out, "out");
+    ggml_set_output(out);
+    ggml_build_forward_expand(gf, out);
+
+    ggml_backend_sched_reset(ctx->enc_sched);
+    if (!ggml_backend_sched_alloc_graph(ctx->enc_sched, gf)) {
+        ggml_free(g);
+        return -1;
+    }
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "inp"), x, 0, (size_t)c * h * w * sizeof(float));
+    ggml_backend_sched_graph_compute(ctx->enc_sched, gf);
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "out"), x, 0, (size_t)c * h * w * sizeof(float)); // in-place
+    ggml_free(g);
+    return 0;
 }
 
 // ── ggml per-conv dispatch (nafnet pattern; F32 kernels for tight parity) ──
