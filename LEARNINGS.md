@@ -1,5 +1,48 @@
 # CrispEmbed — Technical Learnings
 
+## A parity stage downstream of a topk/argsort selection craters by query PERMUTATION under tiny backend FP deltas — not a compute bug (2026-07-13, layout-heron dec_0_cross_out)
+
+`test-layout-diff`'s `dec_0_cross_out` stage looked like a flaky GPU bug:
+cos_min **−0.08 on Metal**, **0.977 on CPU**, and "non-deterministic" across
+Kaggle P100 runs (0.977 then −0.034 on the *same* box). Every instinct said
+"Metal/CUDA numerical divergence in the deformable cross-attention." All wrong.
+
+**The cross_out values are correct on every backend — they're just in a
+different order.** RT-DETRv2 selects its 300 decoder queries with a
+`std::partial_sort` over ~8400 **near-tie** encoder proposals
+(`layout_detect.cpp` ~1318). A minuscule backend FP delta in `enc_output`
+(Metal/CUDA vs the CPU/Python reference — max_abs 0.02, **cos 0.99999**, passes
+its own 0.99 gate) reshuffles the near-tie ranks. So "query *i*" in our output
+is a *different physical proposal* than "query *i*" in the reference. The
+per-query, index-aligned cosine the harness computed then craters purely from
+the reordering. The final detections are unaffected — they go through
+score-sort + NMS, which is order-invariant.
+
+**What nailed it (generalizable diagnostic):**
+1. **Dump the intermediate that FEEDS the stage.** The *initial* decoder queries
+   already showed per-query cos mean 0.78 / 111-of-300 below 0.9 — matching
+   cross_out's 0.79 mean exactly. That located the divergence *upstream* of the
+   CPU-side deformable sampling everyone suspected.
+2. **The bijection signature.** Best-cosine matching each reference query to our
+   output recovered **cos_mean 0.999 with 299/300 unique targets** — a clean
+   bijection is the fingerprint of "right values, wrong order." A real scramble
+   has no such matching (all best-matches collapse toward 0).
+3. **Backend-independent of the impl choice.** Both manual `layout_attn` and
+   `flash_attn_ext` gave the same ~0.79 — ruling out the attention kernel and
+   pointing at a *selection*, not a *computation*, difference.
+
+**Fix pattern (durable):** any parity stage downstream of a topk/argsort/greedy
+*selection* must be compared **permutation-tolerantly** — best-cosine match each
+reference vector against the full candidate set (`perm_tolerant_cos` in
+`tests/test_layout_diff.cpp`, gate 0.85). This still catches a genuine
+regression: simulated scrambles (feature-shuffle / sign-flip / spatial-roll) all
+collapse to ≤0.08. And the encoder-scramble class it nominally guarded is
+*already* covered strictly (0.99) by the upstream `s3..enc_output` stages, so the
+looser downstream gate loses no coverage. Same "the metric was wrong, not the
+model" class as the "bidirlm-vision parity: gate on per-token MEAN cosine" entry
+below (worst-row min misleads under a legitimate outlier). Fixed on `main`
+d7f0480.
+
 ## `ggml_concat` silently corrupts q4_k weights — QKV fusion needs load-time byte-stacking (2026-07-13, got_ocr QKV probe)
 
 Tried to fuse got_ocr's LLM-decoder Q/K/V into one matmul via a graph-time
