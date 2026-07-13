@@ -761,17 +761,105 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 
 ### Open correctness / infrastructure
 
-- **CUDA Class-B — vision garbage on Turing/Pascal only.** glm-ocr, internvl2-1b,
-  qwen2vl-3b produce garbage/timeout OCR on Kaggle T4/P100 but are CORRECT on
-  local Ampere (sm_86) and Metal/CPU — an older-arch vision-encoder numerical
-  divergence (conv / windowed-attn / `flash_attn_ext` on sm_75/sm_60), NOT a graph
-  bug. Needs a Turing/Pascal GPU (Kaggle) to localize the diverging op; compare
-  against got-ocr2 / qwen3vl-2b, which pass on CUDA. (Class-A device-pointer
-  weight-read SIGSEGVs and the Gap-5 free-after-load teardown were fixed on local
-  Ampere — see HISTORY.)
-- **Kaggle T4/P100 confirmation.** Re-run the full manifest on the original CUDA
-  arch to confirm the Class-A + Gap-5 fixes flip FAIL→PASS
-  (`tools/kaggle/ocr-portfolio-regression`; see local `kaggle_usage.md` for auth).
+- **CUDA regression — the 4 remaining FAILs: diagnosis & fix plan.** After the
+  2026-07-13 harness fixes, the Kaggle CUDA portfolio run is **46 models, 4 FAIL**
+  (`glm-ocr`, `internvl2-1b`, `granite-vision`, `layout-heron`). All four PASS on
+  local Ampere (sm_86) + Metal + CPU and fail only on Kaggle **T4 (Turing sm_75) /
+  P100 (Pascal sm_60)** — so every one is an **older-arch ggml-CUDA** issue that
+  reproduces ONLY on that HW. The full self-contained plan is below; see
+  `HISTORY.md → "Kaggle CUDA regression"` for the run history.
+
+  **Shared reproduction + tooling (read once).**
+  - Kernel: `tools/kaggle/ocr-portfolio-regression` (clones `main`, CUDA build,
+    runs `tests/regression/run_one.py` per model). Account = **chr1s4** (auth in
+    local `kaggle_usage.md`; the token is NOT in `../.env`, which is chr1str).
+    Push: `kaggle kernels push -p tools/kaggle/ocr-portfolio-regression`; poll
+    `kaggle kernels status chr1s4/crispembed-ocr-portfolio-regression`; fetch
+    `kaggle kernels output … -p OUT` (the JSON `.log` reconstructs via
+    `"".join(e["data"] for e in json.load(...))`). Model + ref GGUFs stage under
+    `/tmp` (the `/kaggle/working` ENOSPC fix, `8f175cb`) — keep it.
+  - Iterate a SINGLE model to save the 30 h/week GPU quota: set
+    `CRISPEMBED_BRANCH` in `ocr_portfolio_regression.py` to a debug branch and
+    trim the manifest loop, or run `run_one.py --name <model>` from a minimal
+    kernel. Each full run is ~30–45 min (cold build ~21 min unless the
+    `chr1s4/crispembed-ccache` dataset warms it to ~3 min — refresh that dataset
+    after a good build, see `kaggle_usage.md`).
+  - **Confirm it's the CUDA backend, not the model:** re-run the failing engine
+    with `<ENGINE>_FORCE_CPU=1` (or `CRISPEMBED_FORCE_CPU=1`) on the SAME Kaggle
+    box — if CPU is correct there, the CUDA path is the cause (expected for all 4).
+  - **The two references that PASS on CUDA are the control group:** `got-ocr2`
+    (SAM ViT-B + Qwen2, `flash_attn_ext`) and `qwen3vl-2b` — diff the graph
+    construction of a failing engine against these to spot the divergent op.
+
+  **(1) `glm-ocr` + `internvl2-1b` — Class-B vision garbage (cer > 4).** The
+  vision encoder emits garbage tokens on old-arch CUDA → the LLM hallucinates.
+  - *Discriminator FIRST (cheap, decisive — from [[verify-handover-claims-independently]]):*
+    inject known-good vision embeds (dump them on CPU) into the CUDA decode; if
+    the OCR text is then correct, the bug is the vision tower; if still garbage,
+    it's LLM conditioning. Also try zeros/random embeds — if output is identical
+    regardless, the image is being silently dropped (a splice/token-id bug, not
+    numerics — the same class as the Qwen2-VL `image_token_id` default bug).
+  - *Localize the vision op:* `glm-ocr`'s ref + `test-glm-ocr-diff` BOTH exist
+    (`cstr/glm-ocr-crispembed-GGUF/glm-ocr-ref-full.gguf`) → add a manifest `diff`
+    block for glm-ocr and run on Kaggle to first-diff the vision stages (verify the
+    ref is fresh first — an earlier note flagged a stale no-rope glm ref; if stale,
+    re-dump with the current rope-correct engine). `internvl2` needs a ref dumped
+    from **InternVL2-1B** (InternViT-300M + Qwen2-0.5B — NOT the local
+    InternVL2.5-1B, a different arch), `tools/dump_internvl2_reference.py` (lazy
+    safetensors, ~fits 16 GB), upload to `cstr/internvl2-1b-crispembed-GGUF`.
+  - *Likely cause + candidate fixes (verify each on Kaggle):* the first vision
+    stage whose cos craters names the op — prime suspects on sm_75/sm_60 are (a)
+    an F16-accumulating `mul_mm`/`flash_attn_ext` (fix: F32 activation scaling like
+    the Metal `metal-mul-mm-f16-overflow` ÷256/×256, or `ggml_mul_mat` set to F32
+    precision on that op), (b) a conv/im2col kernel, or (c) a `get_rows` whose
+    index is a non-contiguous view (CUDA asserts `nb[0]==type_size` — see the
+    `flashattn`/`get_rows` contiguity note in `../crispasr-crispembed-dev.md`;
+    fix: `ggml_cont` the index). Gate any fix behind an env var and A/B on Kaggle
+    (cos vs the ref + decoded OCR).
+
+  **(2) `granite-vision` — projector cos drift (text still PASSES).** 3 diff
+  stages read cos **0.95–0.97** on CUDA (the **projector** MLP, 4608→2048→2048),
+  but the LLM is robust so the OCR text passes (cer 0.163 < 0.180).
+  - *Strong lead already in the code:* `gv_run_projector_graph`
+    (`granite_vision_ocr.cpp:648`) notes that using the **tanh** GELU instead of
+    the exact **erf** GELU drops projector cos to **0.954** — exactly the observed
+    CUDA range. So the likely cause is the CUDA backend using a lower-precision
+    GELU (or an F16 `mul_mm` cast) on the projector. The Metal ÷256/×256 fix
+    (`:847`) guards only the **LLM** SwiGLU, NOT the projector.
+  - *Fixes to try (verify on Kaggle, don't touch the passing CPU/Metal/Ampere
+    paths blind):* force **F32 `ggml_gelu_erf`** on the projector regardless of
+    backend; and/or force F32 precision on the two projector `mul_mat`s; and/or
+    extend the ÷256/×256 activation scaling to the projector. Run
+    `test-granite-vision-diff` on Kaggle before/after (target the projector stage
+    back to cos ≥ 0.99). Isolate with `CRISPEMBED_GRANITE_VIS_SCALAR` /
+    `_LLM_SCALAR` — if the scalar (CPU-math) projector passes on the Kaggle box,
+    it confirms the divergence is in the ggml-CUDA projector graph.
+
+  **(3) `layout-heron` — `test-layout-diff` SIGABRT (signal 6) BEFORE any stage
+  output.** A genuine ggml **abort during** the diff on CUDA (not a teardown — the
+  harness tolerance correctly does not mask it), so the layout graph itself hits a
+  `GGML_ASSERT` on old-arch CUDA.
+  - *Get the assert message (step 0):* the log truncates it. Run `test-layout-diff`
+    standalone on the Kaggle box (or `GGML_ABORT`-verbose) and capture full stderr
+    — the assert prints `op` + `file:line`, which names the failing kernel
+    immediately. Backtrace is inside `test-layout-diff` (RT-DETRv2: ResNet-50 +
+    HybridEncoder + 6-layer deformable-cross-attn decoder).
+  - *Prime suspect:* the CUDA `get_rows`/view contiguity assert
+    (`GGML_ASSERT(src1->nb[0] == ggml_type_size(...))`) — CUDA requires a
+    CONTIGUOUS index/operand where CPU/Metal tolerate a strided view. The
+    deformable cross-attention builds strided sampling indices; `flash_attn_ext`
+    is used at `layout_detect.cpp:601/691/1468`. Audit any `get_rows`/view feeding
+    a kernel in the decoder path and `ggml_cont` it (output-neutral). This is the
+    exact class that bit dia-TTS on P100 (worked on M1) — see the CUDA-contiguity
+    note in `../crispasr-crispembed-dev.md`.
+
+  **Priority + notes.** layout-heron (3) is likely the cheapest — one assert
+  message + a `ggml_cont` — do it first. granite (2) has the clearest lead
+  (GELU/precision) and its text already passes, so it's low-urgency but tractable.
+  Class-B (1) is the hardest (garbage output, needs ref-gen + op localization +
+  a numerical fix) — use the inject-embeds discriminator to avoid chasing the
+  wrong half. None of these is verifiable on this Mac (Ampere passes); every fix
+  must be A/B'd on the Kaggle T4/P100 kernel behind an env gate before flipping.
 - **DBNet detector — mostly resolved (2026-07-13).** The CPY abort was already
   fixed (`dequant_rows_f32` via get_rows); the real cost was the CPU postprocess
   (43 s → 1.5 s, scanline box scoring `74b8ac5`, see HISTORY). Detection graph
