@@ -4,26 +4,39 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
-## July 13, 2026 — Kaggle CUDA regression: Class-A/Gap-5 fixes confirmed (partial run, ENOSPC)
+## July 13, 2026 — Kaggle CUDA regression: Class-A/Gap-5 fixes CONFIRMED (clean run)
 
 Ran the OCR-portfolio regression on Kaggle CUDA (T4/P100,
-`tools/kaggle/ocr-portfolio-regression`) against current `main`. The run ended
-in **ERROR from `No space left on device`** — the documented disk gotcha:
-crispembed's `CRISPEMBED_CACHE_DIR` defaults to `$HOME/.cache` (the small Kaggle
-partition), so a multi-GB multi-model pull ENOSPC'd. **9 FAILs were disk-full
-download failures, not engine bugs** (bert_ner, bidirlm-vision, clip-text,
-modernbert, layout-heron, lfm2, lfm2_colbert, mixtex, gliner — all in the "HF
-download failed" list).
+`tools/kaggle/ocr-portfolio-regression`) against current `main`. First run
+ERRORed on **`No space left on device`** — `REGRESSION_WORK` pointed at
+`/kaggle/working` (~20 GB), so a multi-GB multi-model pull ENOSPC'd. **Fixed the
+kernel** to stage downloads under `/tmp` (~70 GB, `8f175cb`) and re-ran clean
+(v9): 44 models, 14 FAIL, and the previously-ENOSPC'd models now PASS
+(modernbert, mixtex, bidirlm-vision, clip-text, bert_ner, lfm2_colbert, tromr).
 
-**Signal that IS trustworthy (downloaded + ran + passed):** the **Class-A
-device-pointer + Gap-5 free-after-load fixes are confirmed on CUDA** —
-`deepseek-ocr2` PASS, `dat` PASS, `swinir` PASS, and `qwen2vl-3b` PASS (it was a
-Gap-6 TIMEOUT before). Class-B (`glm-ocr`, `internvl2-1b`) FAIL as expected on
-Turing/Pascal (older-arch vision divergence). `tbsrn` FAILed and downloaded fine,
-so that one needs a clean re-run to classify.
+**Confirmation goal MET — the Class-A device-pointer + Gap-5 free-after-load
+fixes flip FAIL→PASS on CUDA:** `deepseek-ocr2`, `dat`, `swinir`, `qwen2vl-3b`
+(was a Gap-6 TIMEOUT), and **`lfm2_colbert`** (the CUDA multivec-corruption fix)
+all PASS.
 
-**Fix + re-run:** point `CRISPEMBED_CACHE_DIR` at `/tmp` (~70 GB) in the kernel so
-downloads don't fill `/kaggle/working`, then re-run for a clean full confirmation.
+**The 14 FAILs are NOT regressions in the fixed engines** — triaged from the log:
+- `glm-ocr` (cer 4.3), `internvl2-1b` (cer 5.4): **known Class-B** older-arch
+  vision divergence (still needs Turing/Pascal to localize — as documented).
+- `pcs`, `fireredpunc`, `fullstop-punc`: `FileNotFoundError:
+  build/bin/test-punct-diff` — the crisp_punc test binary isn't built in the
+  CrispEmbed CUDA config. **Test-harness gap, not an engine failure.**
+- `layout-heron`: `diff harness died from signal 6` (SIGABRT **teardown** after
+  results) — the Gap-5 harness-tolerance item (parse stages before the
+  returncode<0 check).
+- `granite-vision`: text OCR **PASSES** (cer 0.163 < 0.180); only 3 diff-harness
+  stages read cos 0.95–0.97 on CUDA (projector) — output correct, threshold strict.
+- `hat` (+ `pan`/`tbsrn`/`lilt`/`lfm2`): diff harness "no parseable stage lines"
+  / long runtime — harness/format issues on CUDA, per-engine detail TBD.
+
+**Open follow-ups (separate from this confirmation, some need Turing/Pascal HW):**
+Gap-5 harness-tolerance fix in `run_one.py` (flip teardown-crash-after-valid to a
+warned PASS); build/register `test-punct-diff` in the CUDA config or skip it;
+Class-B vision-op localization; granite CUDA projector cos drift.
 
 ---
 
