@@ -210,7 +210,12 @@ def main():
         scale_attention = True
         head_pre_relu = False
         preproc_reduce_ratio = 1.0
-        preproc_invert = True
+        # NO invert: although SMT-plusplus's convert_img_to_tensor has
+        # RandomInvert(p=1.0), the published full-page checkpoint reads correctly
+        # only on NON-inverted input — inverting makes the real HF model itself
+        # degenerate into `8 . r` repetition (verified: no-invert reproduces the
+        # ground-truth key/time/notes; invert loops). Same polarity as base SMT.
+        preproc_invert = False
     else:
         scale_attention = False
         head_pre_relu = True
