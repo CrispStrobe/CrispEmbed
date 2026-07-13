@@ -235,14 +235,42 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             sname.find("downsampling") != std::string::npos || sname.find("dwconv") != std::string::npos ||
             sname.find("enc.bb") != std::string::npos || sname.find("enc.proj") != std::string::npos ||
             sname.find("positional") != std::string::npos || sname.find("merger") != std::string::npos) {
-            printf("note: %s — copying as-is (host-side computation)\n", name);
-            size_t sz = ggml_nbytes(t);
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 #ifdef _WIN32
             _fseeki64(fin, (int64_t)off, SEEK_SET);
 #else
             fseeko(fin, (off_t)off, SEEK_SET);
 #endif
+            // TrOMR (`enc.bb.*`) backbone conv *weights* are cast to F16 in-engine
+            // (tromr_ocr.cpp prep_conv) regardless of storage precision, so an F16
+            // GGUF is LOSSLESS to the computation and ~halves the kept-conv bytes.
+            // Gated on the TrOMR-only `enc.bb` prefix, so no other model is affected.
+            bool conv_to_f16 = (type == GGML_TYPE_F32) && sname.find("enc.bb") != std::string::npos &&
+                               sname.find("conv") != std::string::npos && sname.find(".weight") != std::string::npos;
+            if (conv_to_f16) {
+                const int64_t n = ggml_nelements(t);
+                std::vector<float> f32buf(n);
+                if (fread(f32buf.data(), sizeof(float), n, fin) != (size_t)n) {
+                    fprintf(stderr, "failed to read conv tensor for F16 conversion\n");
+                    fclose(fin);
+                    fclose(fout);
+                    return false;
+                }
+                std::vector<ggml_fp16_t> f16buf(n);
+                for (int64_t j = 0; j < n; j++) f16buf[j] = ggml_fp32_to_fp16(f32buf[j]);
+                const size_t sz16 = (size_t)n * sizeof(ggml_fp16_t);
+                fwrite(f16buf.data(), 1, sz16, fout);
+                gguf_set_tensor_type(ctx_out, name, GGML_TYPE_F16);
+                size_t pad16 = GGML_PAD(sz16, GGUF_DEFAULT_ALIGNMENT) - sz16;
+                for (size_t j = 0; j < pad16; j++) fputc(0, fout);
+                printf("note: %s — F16 (backbone conv, engine casts to F16)\n", name);
+                total_orig += ggml_nbytes(t);
+                total_new += sz16;
+                n_kept++;
+                continue;
+            }
+            printf("note: %s — copying as-is (host-side computation)\n", name);
+            size_t sz = ggml_nbytes(t);
             std::vector<uint8_t> raw(sz);
             if (fread(raw.data(), 1, sz, fin) != sz) {
                 fprintf(stderr, "failed to read raw data for patch_embed tensor\n");
