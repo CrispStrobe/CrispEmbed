@@ -1330,6 +1330,15 @@ static const ModelEntry k_registry[] = {
     { "flova", "flova-q8_0.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q8_0.gguf",
       "Flova/omr_transformer OMR: handwritten/whiteboard music→LilyPond (143M)", "162 MB", "apache-2.0",
       "https://huggingface.co/Flova/omr_transformer" },
+    // q4_k is half the size and decoded byte-exact on all three sample images
+    // (the encoder's per-token cosine drifts but the greedy decode never flips).
+    // q8_0 stays the default; q4_k is the smaller-download option (e.g. browser).
+    { "flova-q4k", "flova-q4_k.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q4_k.gguf",
+      "Flova/omr_transformer OMR: handwritten music→LilyPond (Q4_K, byte-exact on samples)", "88 MB", "apache-2.0",
+      "https://huggingface.co/Flova/omr_transformer" },
+    { "flova-q8", "flova-q8_0.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q8_0.gguf",
+      "Flova/omr_transformer OMR: handwritten music→LilyPond (Q8_0)", "162 MB", "apache-2.0",
+      "https://huggingface.co/Flova/omr_transformer" },
 
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
