@@ -3731,6 +3731,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "smoldocling_ocr.h"
 #include "unlimited_ocr.h"
 #include "smt_ocr.h"
+#include "tromr_ocr.h"
 #include "core/gguf_loader.h"
 
 enum ocr_model_type {
@@ -3752,7 +3753,8 @@ enum ocr_model_type {
     OCR_MODEL_DEEPSEEK_OCR2,
     OCR_MODEL_SMOLDOCLING,
     OCR_MODEL_UNLIMITED_OCR,
-    OCR_MODEL_SMT
+    OCR_MODEL_SMT,
+    OCR_MODEL_TROMR
 };
 
 struct ocr_model {
@@ -3784,6 +3786,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "math_ocr") return OCR_MODEL_PIX2TEX;
     if (arch == "unlimited_ocr") return OCR_MODEL_UNLIMITED_OCR;
     if (arch == "smt_ocr") return OCR_MODEL_SMT;
+    if (arch == "tromr_ocr") return OCR_MODEL_TROMR;
     return OCR_MODEL_PIX2TEX;
 }
 
@@ -3847,6 +3850,9 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
         break;
     case OCR_MODEL_SMT:
         inner = smt_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_TROMR:
+        inner = tromr_ocr_init(path, n_threads);
         break;
     }
     if (!inner) return nullptr;
@@ -3915,6 +3921,9 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_SMT:
         smt_ocr_free((smt_ocr_context *)u->ctx);
         break;
+    case OCR_MODEL_TROMR:
+        tromr_ocr_free((tromr_ocr_context *)u->ctx);
+        break;
     }
     delete u;
 }
@@ -3971,6 +3980,8 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return unlimited_ocr_recognize_raw((unlimited_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_SMT:
         return smt_ocr_recognize_raw((smt_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_TROMR:
+        return tromr_ocr_recognize_raw((tromr_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -4039,6 +4050,13 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         std::vector<uint8_t> gray(w * h);
         for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
         return smt_ocr_recognize_raw((smt_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_TROMR: {
+        // TrOMR preprocessing (resize+gray+normalize) happens in recognize_raw;
+        // hand it a 1-channel uint8 image built from the [0,1] grayscale floats.
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+        return tromr_ocr_recognize_raw((tromr_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
     }
     }
     return nullptr;

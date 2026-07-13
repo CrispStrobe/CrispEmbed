@@ -127,12 +127,19 @@ def main():
     w.add_array("tromr.pitch_tokens", tokv["pitch"])
     w.add_array("tromr.lift_tokens", tokv["lift"])
 
+    # ggml enforces GGML_MAX_NAME=64; the backbone downsample names reach 69 chars
+    # (encoder.patch_embed.backbone.stages.0.blocks.0.downsample.conv.weight). Shorten
+    # the backbone prefix so the ggml C loader accepts every tensor. The engine's
+    # map_tensors() uses the same "enc.bb" prefix.
+    def short(name):
+        return name.replace("encoder.patch_embed.backbone", "enc.bb")
+
     n = 0
     for name in sorted(sd.keys()):
         d = sd[name].detach().cpu().float().numpy()
         if args.fp16 and d.ndim == 2 and not name.endswith(".bias"):
             d = d.astype(np.float16)
-        w.add_tensor(name, np.ascontiguousarray(d))
+        w.add_tensor(short(name), np.ascontiguousarray(d))
         n += 1
 
     w.write_header_to_file()

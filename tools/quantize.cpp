@@ -227,8 +227,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // SMT ConvNext: dwconv/downsampling are conv2d kernels; smt.positional_1d
         // is a baked sinusoidal PE consumed by ggml_add. All must stay F32
         // (quantizing a conv kernel or an add-operand PE breaks the graph).
+        // TrOMR: the ResNetV2 backbone (enc.bb.*, incl. stem.conv/conv1/2/3) and the
+        // HybridEmbed projector (enc.proj) are conv2d kernels flattened to 2D above;
+        // quantizing them makes the in-engine reshape-to-4D produce an ne[0] that is
+        // not a multiple of the block size → ggml_dup abort. Keep them as-is.
         if (sname.find("patch_embed") != std::string::npos || sname.find("downsample") != std::string::npos ||
             sname.find("downsampling") != std::string::npos || sname.find("dwconv") != std::string::npos ||
+            sname.find("enc.bb") != std::string::npos || sname.find("enc.proj") != std::string::npos ||
             sname.find("positional") != std::string::npos || sname.find("merger") != std::string::npos) {
             printf("note: %s — copying as-is (host-side computation)\n", name);
             size_t sz = ggml_nbytes(t);
