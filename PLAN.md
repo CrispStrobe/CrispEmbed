@@ -16,7 +16,7 @@ races). Remove the row when the branch lands.
 | 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR ggml engine (`src/tromr_ocr.cpp`) | **Landed on `main`** (validated cos 1.0 / 100% argmax / byte-exact). Remaining: HF upload `cstr/tromr-GGUF` + registry entry — awaiting go-ahead. |
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
-| 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | ⛔ **Blocked** — only chr1str tokens on this box; kernel needs the chr1s4 account |
+| 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | 🔄 running the CUDA portfolio-regression kernel |
 
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
