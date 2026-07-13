@@ -4,6 +4,28 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 13, 2026 — got_ocr decode: redundant Q cont dropped (byte-identical; cont-removal doesn't generalize)
+
+Tested whether math_ocr's ~30% decode cont-removal generalizes to the VLM
+decoders (PLAN flagged qwen2vl/got/glm/internvl2/lightonocr). It does **not**,
+for decoder-only engines whose KV comes from a cache. In got_ocr's cached decode
+path, `Kfull`/`Vfull` are already fed to `ggml_flash_attn_ext` as non-cont cache
+views, so only **Q** carried a removable `ggml_cont` (permute(0,2,1,3) already
+gives flash-attn the row-contiguous input it needs). Dropped it, gated
+`GOT_OCR_ATTN_CONT=1` for bisection (mirrors `MATH_OCR_ATTN_CONT`).
+
+- **Byte-identical on Metal AND CPU** (`GOT_OCR_FORCE_CPU=1`), cont-off vs cont-on,
+  on a one-line fox image and a 10-line / 117-step page (409-byte transcript,
+  `cmp`-identical). Strict node-count cleanup (one fewer copy kernel per layer per
+  step).
+- **Latency within noise** (loaded box, loadavg ~19; decode_total medians
+  ~identical). got_ocr decode is compute-bound (~89% GPU-execute), so removing
+  Q's cont is a micro-gap — kept default cont-off because it's never-worse and
+  matches the math_ocr convention, but it is not a perf headline. PLAN's op-count
+  lever updated with this caveat so the generalization isn't re-chased. (`5011848`)
+
+---
+
 ## July 13, 2026 — PLAN.md sorted: completed backlog archived here
 
 PLAN.md had grown to ~3,400 lines, most of it DONE narrative interleaved with a
