@@ -17,7 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
 | 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | 🔄 running the CUDA portfolio-regression kernel |
-| 2026-07-13 | opus-1m (interop/SR) | Kaggle reranker τ-eval on the expanded 30-group RERANK_EVAL corpus (`crispembed-imatrix-quant`) | 🔄 **In progress** — completes the corpus expansion (`c0b5dbc`); pushing the kernel |
+| 2026-07-13 | opus-1m (interop/SR) | Kaggle reranker τ-eval on the expanded 30-group RERANK_EVAL corpus (`crispembed-imatrix-quant`) | **DONE** — ran on the 30-group corpus (`c0b5dbc`), imatrix q4_k/iq4_xs re-uploaded to the 3 `cstr/*-reranker-*-GGUF` repos. Result: imatrix cuts q4_k score-drift −23–29% everywhere, holds τ on the bge pair, **improves** τ on jina (0.929→0.942). q4_k+imatrix is the recommended sub-q8 reranker quant. |
 
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
