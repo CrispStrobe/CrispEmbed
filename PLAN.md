@@ -628,17 +628,25 @@ before/after parity + latency measurement — never land a "perf" change on a
 compile-only check. A/B every change against ground truth and gate behind an env
 var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 
-- **SR/restoration — fused single ggml graph (the SAFMN pattern).** SAFMN's
-  forward is now ONE fused graph (`to_feat → 8 AttBlocks → to_img`, erf-GELU) —
-  **~2.2× faster AND more accurate (cos 1.000000 vs 0.994)** than the old
-  per-conv mini-graphs. **nafnet is done too (`14a8393`, fused per-block graph,
-  compute-bound, Metal default).** Apply the same fused-graph + `ggml_gelu_erf`
-  treatment to the siblings that still build per-conv graphs: **scunet, swinir,
-  tbsrn, hat, adair, dat, restormer, instructir.** Each already has a
-  `test-<engine>-diff` gate (keep it green, cos ≥ 0.95/0.99) and ships numerically
-  verified. **Key finding:** on these tiny/tiled models Metal is a *net loss*
-  (dispatch + host↔device copy > compute savings); default to CPU, keep GPU
-  opt-in (`<ENGINE>_SR_METAL`) only for the larger engines (hat/restormer/swinir).
+- **SR/restoration — fused ggml graphs: COMPLETE (2026-07-13).** Every engine
+  now runs a fused ggml graph, not per-conv mini-graphs. Ported this session:
+  - **SAFMN** (`8594cee`): whole forward = ONE fused graph (erf-GELU) — **2.2×
+    faster AND more accurate (cos 1.000000 vs 0.994)**. Tiny/overhead-bound, so
+    fusion is a big win; Metal is a net loss here (default CPU, `SAFMN_SR_METAL`).
+  - **NAFNet** (`14a8393`) + **InstructIR** (`e1eb1dc`): fused per-block graph,
+    cos ≥ 0.999998, output identical to legacy. NAFNet-family = **compute-bound**,
+    so fusion is perf-NEUTRAL (cleaner, not faster). NAFNet defaults to Metal
+    (modest ~15%; `NAFNET_CPU`); InstructIR is CPU-only (GPU conv_2d hits a Metal
+    f32×f16 mul_mv pipeline issue). Gates: `NAFNET_LEGACY` / `INSTRUCTIR_LEGACY`.
+  - **Restormer**: was ALREADY fused — `rst_transformer_block_ggml` (MDTA + GDFN
+    in one graph) is the default; `RESTORMER_SCALAR` is the fallback (cos 0.999997
+    both). Only the stale "CPU-scalar" header was corrected.
+  - **scunet, swinir, tbsrn, hat, adair, dat**: already build a single graph
+    (`forward_expand=1`, no per-conv helpers) — verified sensible (swinir 0.9984,
+    dat 0.99999, hat 0.89 q8_0). No work needed; the "CPU-scalar" labels were loose.
+  **Key finding:** the fusion win depends on overhead-bound (tiny SAFMN → 2.2×)
+  vs compute-bound (NAFNet/InstructIR → perf-neutral). Metal helps only where
+  per-dispatch overhead is small relative to compute. Env gates per engine.
 - **SR-on-GPU — conv weight residency (research, deferred).** The entire SR
   family computes convs on a CPU-only `enc_sched` with CPU-resident F32 kernels;
   there is no GPU sibling to match. Real SR-on-GPU needs Metal `ggml_conv_2d` for
