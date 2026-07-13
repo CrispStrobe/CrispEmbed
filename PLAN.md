@@ -744,11 +744,8 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
   Ampere — see HISTORY.)
 - **Kaggle T4/P100 confirmation.** Re-run the full manifest on the original CUDA
   arch to confirm the Class-A + Gap-5 fixes flip FAIL→PASS
-<<<<<<< HEAD
-  (`tools/kaggle/ocr-portfolio-regression`; see local `kaggle_usage.md` for auth).
-=======
-  (`tools/kaggle/ocr-portfolio-regression`, secondary Kaggle account).
->>>>>>> 7ac455f (docs(plan): mark active work — Kaggle rerank τ-eval (interop/SR session))
+  (`tools/kaggle/ocr-portfolio-regression`, secondary Kaggle account — see local
+  `kaggle_usage.md` for auth).
 - **DBNet detector — mostly resolved (2026-07-13).** The CPY abort was already
   fixed (`dequant_rows_f32` via get_rows); the real cost was the CPU postprocess
   (43 s → 1.5 s, scanline box scoring `74b8ac5`, see HISTORY). Detection graph
