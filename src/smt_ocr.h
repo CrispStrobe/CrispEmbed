@@ -36,7 +36,12 @@ typedef struct smt_ocr_hparams {
     int32_t maxh, maxw; // 2D PE table caps
     // Special tokens
     int32_t bos_token, eos_token, pad_token;
-    int32_t scale_attention; // 0 for SMT (QK^T is UNSCALED)
+    // Forward-behaviour flags (differ between the smt-plusplus base and the
+    // smt-main full-page checkpoints — see models/convert-smt-to-gguf.py).
+    int32_t scale_attention;    // 0 = UNSCALED (smt-plusplus); 1 = scale by d_head**-0.5 (smt-main)
+    int32_t head_pre_relu;      // 1 = ReLU before LM head (smt-plusplus); 0 = none (smt-main)
+    float preproc_reduce_ratio; // >0: resize ×ratio (smt-main); <=0: legacy clamp policy (smt-plusplus)
+    int32_t preproc_invert;     // 1 = invert grayscale (smt-main RandomInvert); 0 = no invert
 } smt_ocr_hparams;
 
 /// Load an SMT GGUF model. NULL on failure.

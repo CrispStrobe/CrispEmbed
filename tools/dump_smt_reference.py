@@ -45,6 +45,10 @@ def main():
     ap.add_argument("--output", required=True, help="output ref GGUF")
     ap.add_argument("--reduce-ratio", type=float, default=1.0)
     ap.add_argument("--max-tokens", type=int, default=256, help="cap greedy decode length")
+    ap.add_argument("--invert", action="store_true",
+                    help="invert grayscale (smt-main RandomInvert(p=1) preprocessing)")
+    ap.add_argument("--no-clamp", action="store_true",
+                    help="resize by reduce_ratio only, no min-w/max-h clamp (smt-main full-page)")
     args = ap.parse_args()
 
     import gguf
@@ -73,7 +77,17 @@ def main():
         out_dir=cfg.get("out_dir", "SMIR"), d_model=int(cfg["d_model"]),
         dim_ff=int(cfg["dim_ff"]), num_dec_layers=int(cfg["num_dec_layers"]),
     )
+    # transformers >=4.5x reads config._attn_implementation in PreTrainedModel.__init__;
+    # the 4.49-era SMTConfig doesn't set it. eager is fine (we run manual forwards).
+    smt_cfg._attn_implementation_internal = "eager"
     model = SMTModelForCausalLM(smt_cfg)
+
+    # Two code lineages share the SMTModelForCausalLM class name with different
+    # submodule attributes. Detect which --smt-repo we're running against.
+    is_main = hasattr(model, "pos2D")  # antoniorv6/SMT (full-page); else smt-plusplus
+    pe2d = model.pos2D if is_main else model.positional_2D
+    pe1d = model.decoder.position_encoding if is_main else model.decoder.positional_1D
+    print(f"scheme: {'smt-main' if is_main else 'smt-plusplus'}")
 
     # load weights verbatim (out_layer stays Conv1d [V,d,1] here — do NOT squeeze)
     sd = {}
@@ -95,10 +109,17 @@ def main():
     # (SMT-main convert_img_to_tensor has no RandomInvert — inverting tanks accuracy).
     from PIL import Image
     img = np.array(Image.open(args.image).convert("RGB"))  # RGB HWC uint8
-    W = min(int(np.ceil(img.shape[1] * args.reduce_ratio)), 3056)
-    H = max(int(np.ceil(img.shape[0] * args.reduce_ratio)), 256)
+    if args.no_clamp:  # smt-main full-page: resize by ratio only
+        W = int(np.ceil(img.shape[1] * args.reduce_ratio))
+        H = int(np.ceil(img.shape[0] * args.reduce_ratio))
+    else:              # smt-plusplus base: clamp width<=3056, height>=256
+        W = min(int(np.ceil(img.shape[1] * args.reduce_ratio)), 3056)
+        H = max(int(np.ceil(img.shape[0] * args.reduce_ratio)), 256)
     img = cv2.resize(img, (W, H))
-    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float32) / 255.0  # no invert
+    gray = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float32)  # ITU-R 601 luma, uint8
+    if args.invert:  # RandomInvert(p=1.0) then ToTensor  (== 255 - gray, /255)
+        gray = 255.0 - gray
+    gray = gray / 255.0
     x = torch.from_numpy(gray)[None, None].to(device)  # (1,1,H,W)
     print(f"input_tensor: {tuple(x.shape)}  range [{x.min():.3f},{x.max():.3f}]")
 
@@ -134,7 +155,7 @@ def main():
 
     # ---- cross-attn memory (key != value) ----
     with torch.no_grad():
-        pos_features = model.positional_2D(enc_output)
+        pos_features = pe2d(enc_output)
         mem_value = torch.flatten(enc_output, 2, 3).permute(2, 0, 1)   # (HW,B,C) raw
         mem_key = torch.flatten(pos_features, 2, 3).permute(2, 0, 1)   # (HW,B,C) +2D PE
     store("mem_value", mem_value[:, 0, :])   # (HW,C)
@@ -155,9 +176,13 @@ def main():
 
     # ---- teacher-forced decoder pass with per-layer hooks ----
     with torch.no_grad():
-        emb = model.decoder.embedding(tokens_t).permute(0, 2, 1)       # (B,C,L)
-        pe = model.decoder.positional_1D(emb, start=0)
-        dec_tok_emb = pe.permute(2, 0, 1)                              # (L,B,C)
+        if is_main:  # PE1D operates on (B,L,C) directly (no channel-first permute)
+            pe = pe1d(model.decoder.embedding(tokens_t), start=0)      # (B,L,C)
+            dec_tok_emb = pe.permute(1, 0, 2)                          # (L,B,C)
+        else:
+            emb = model.decoder.embedding(tokens_t).permute(0, 2, 1)   # (B,C,L)
+            pe = pe1d(emb, start=0)
+            dec_tok_emb = pe.permute(2, 0, 1)                          # (L,B,C)
     store("dec_tok_emb", dec_tok_emb[:, 0, :])                          # (L,C)
 
     layer_out = {}
@@ -170,8 +195,11 @@ def main():
     for h in hooks:
         h.remove()
     for i in sorted(layer_out):
-        store(f"dec_layer{i}", layer_out[i][:, 0, :])                   # (L,C)
-    logits = out.logits[0].permute(1, 0).contiguous()                  # (L,V)
+        # smt-main layers are batch-first (B,L,C); smt-plusplus is seq-first (L,B,C)
+        lo = layer_out[i][0] if is_main else layer_out[i][:, 0, :]
+        store(f"dec_layer{i}", lo)                                      # (L,C)
+    # smt-main logits are (B,L,V); smt-plusplus is (B,V,L) from the Conv1d head
+    logits = out.logits[0].contiguous() if is_main else out.logits[0].permute(1, 0).contiguous()  # (L,V)
     store("logits", logits)
     print(f"logits: {tuple(logits.shape)}")
 

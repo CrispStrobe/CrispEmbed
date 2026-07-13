@@ -44,6 +44,60 @@ from safetensors import safe_open
 ARCH = "smt_ocr"
 
 
+# The published weights come in two naming schemes for the SAME network:
+#   • "smt-plusplus" (antoniorv6/smt-grandstaff): decoder layers use
+#     input_attention.l{q,k,v}/out_proj, cross_attention.*, ffNet.0/3,
+#     norm1/2/3; LM head = decoder.out_layer (Conv1d k1). Attention is UNSCALED
+#     and a ReLU precedes the head. This is what src/smt_ocr.cpp expects.
+#   • "smt-main" (antoniorv6/SMT rewrite, incl. PRAIG/smt-fp-grandstaff full
+#     page): decoder layers use self_attn.{q,k,v,out}_proj,
+#     cross_attn.{q,k,v,out}_proj, ffn.0/3, norm_layers.0/1/2; LM head =
+#     decoder.vocab_projection (plain Linear). Attention IS scaled by
+#     d_head**-0.5 and there is NO ReLU before the head (read line-by-line from
+#     SMT/smt_model/modeling_smt.py).
+# We normalise smt-main tensor names to the smt-plusplus names the engine loads,
+# and emit behaviour flags so the C++ engine applies the right forward.
+_DEC = "decoder.decoder.layers."
+
+
+def detect_scheme(tensor_names):
+    keys = set(tensor_names)
+    if any(".self_attn.q_proj." in k for k in keys) or "decoder.vocab_projection.weight" in keys:
+        return "smt-main"
+    return "smt-plusplus"
+
+
+def map_name_smt_main(name):
+    """Rename an smt-main tensor to the smt-plusplus name the engine loads."""
+    if name == "decoder.vocab_projection.weight":
+        return "decoder.out_layer.weight"
+    if name == "decoder.vocab_projection.bias":
+        return "decoder.out_layer.bias"
+    if name.startswith(_DEC):
+        rest = name[len(_DEC):]
+        idx, suf = rest.split(".", 1)
+        sub = {
+            "self_attn.q_proj": "input_attention.lq",
+            "self_attn.k_proj": "input_attention.lk",
+            "self_attn.v_proj": "input_attention.lv",
+            "self_attn.out_proj": "input_attention.out_proj",
+            "cross_attn.q_proj": "cross_attention.lq",
+            "cross_attn.k_proj": "cross_attention.lk",
+            "cross_attn.v_proj": "cross_attention.lv",
+            "cross_attn.out_proj": "cross_attention.out_proj",
+            "ffn.0": "ffNet.0",
+            "ffn.3": "ffNet.3",
+            "norm_layers.0": "norm1",
+            "norm_layers.1": "norm2",
+            "norm_layers.2": "norm3",
+        }
+        for src, dst in sub.items():
+            if suf.startswith(src + "."):
+                return _DEC + idx + "." + dst + suf[len(src):]
+        return name  # encoder-style / already-mapped
+    return name  # encoder.* names are identical across schemes
+
+
 def build_positional_1d(dim, len_max):
     """Mirror PositionalEncoding1D (modeling_smt.py:38-49).
 
@@ -124,17 +178,44 @@ def main():
         print(f"Error: {st_path} not found", file=sys.stderr)
         return 1
     print(f"Loading {st_path} ...")
-    tensors = {}
+    raw = {}
     with safe_open(str(st_path), framework="numpy") as f:
         for k in f.keys():
-            tensors[k] = f.get_tensor(k)
-    print(f"Loaded {len(tensors)} tensors")
+            raw[k] = f.get_tensor(k)
+    print(f"Loaded {len(raw)} tensors")
 
-    # out_layer is a 1x1 Conv1d [V, d_model, 1] -> squeeze to Linear [V, d_model]
+    scheme = detect_scheme(raw.keys())
+    print(f"Naming scheme: {scheme}")
+    if scheme == "smt-main":
+        tensors = {map_name_smt_main(k): v for k, v in raw.items()}
+        if len(tensors) != len(raw):
+            print("Error: name collision during smt-main remap", file=sys.stderr)
+            return 1
+    else:
+        tensors = raw
+
+    # out_layer is a 1x1 Conv1d [V, d_model, 1] -> squeeze to Linear [V, d_model].
+    # (smt-main's vocab_projection is already Linear [V, d_model]; no squeeze.)
     ol = "decoder.out_layer.weight"
     if ol in tensors and tensors[ol].ndim == 3 and tensors[ol].shape[-1] == 1:
         tensors[ol] = tensors[ol][:, :, 0]
         print(f"  Squeezed {ol} -> {tensors[ol].shape}")
+
+    # Behaviour flags — smt-main scales attention (d_head**-0.5) and applies the
+    # LM head WITHOUT a preceding ReLU; smt-plusplus is unscaled with a pre-head
+    # ReLU. Preprocessing: smt-main full-page finetune uses reduce_ratio=1.0 and
+    # RandomInvert(p=1.0)+Grayscale (SMT/data_augmentation convert_img_to_tensor);
+    # smt-plusplus base uses the legacy clamp policy (reduce_ratio<=0 sentinel).
+    if scheme == "smt-main":
+        scale_attention = True
+        head_pre_relu = False
+        preproc_reduce_ratio = 1.0
+        preproc_invert = True
+    else:
+        scale_attention = False
+        head_pre_relu = True
+        preproc_reduce_ratio = 0.0  # sentinel: engine uses legacy clamp policy
+        preproc_invert = False
 
     # ---- write GGUF ----
     print(f"Writing GGUF -> {args.output}")
@@ -163,8 +244,11 @@ def main():
     w.add_uint32("smt.bos_token_id", bos)
     w.add_uint32("smt.eos_token_id", eos)
     w.add_uint32("smt.pad_token_id", pad)
-    # QK^T is UNSCALED in SMT (scale_factor defined but never applied)
-    w.add_bool("smt.scale_attention", False)
+    # Forward-behaviour flags (see detect_scheme / map_name_smt_main above)
+    w.add_bool("smt.scale_attention", scale_attention)
+    w.add_bool("smt.head_pre_relu", head_pre_relu)
+    w.add_float32("smt.preproc.reduce_ratio", preproc_reduce_ratio)
+    w.add_bool("smt.preproc.invert", preproc_invert)
     # tokenizer
     w.add_array("tokenizer.tokens", tokens)
 
