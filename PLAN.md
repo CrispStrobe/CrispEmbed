@@ -262,6 +262,17 @@ CrispEmbed/
 
 ## Pending work
 
+### 🚧 Active work in flight
+
+Sessions run in parallel and push to `main` concurrently — claim your item here
+and push before/while you work it, so others don't collide (see CLAUDE.md).
+
+| Session | Item | Status | Branch |
+|---|---|---|---|
+| opus-1m (perf sweep) | 1. DBNet detection postprocess (scanline scoring) | ✅ landed `74b8ac5` (28× byte-identical) | merged |
+| opus-1m (perf sweep) | 2. Decoder op-fusion | ✅ measured marginal, documented `58a3751` | merged |
+| opus-1m (perf sweep) | 3. Kaggle CUDA confirmation (Class-A + Gap-5) | ⛔ blocked — only chr1str tokens on this box, kernel needs chr1s4 | — |
+
 Only genuinely-open, in-progress, or reference material lives below. **Completed
 milestones — the imatrix quant rollout (C1), batched-encoder throughput (C3),
 prefix KV cache (C4), mtmd-preprocessing port (C5), flash-attn epilogue audit
