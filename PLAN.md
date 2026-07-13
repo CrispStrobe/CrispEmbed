@@ -302,23 +302,30 @@ data*, not the code — see landmine below).
    license-clean handwritten-style data*, same graph. `Flova/omr_transformer`
    is the only permissive handwritten lead but is a toy.
 
-3. **Polyphonic-TrOMR — IN PROGRESS (2026-07-13).** Confirmed a genuinely
-   accurate model (reads clefs/keys/rhythms/pitches correctly on real photos).
-   **Done + merged:** blueprint read, `models/convert-tromr-to-gguf.py` (tested,
-   261 tensors), `tools/dump_tromr_reference.py` (23-stage oracle), `src/tromr_ocr.h`
-   (ABI), Dart `CrispEmbedOmr` wrapper. **Remaining:** the ggml engine
-   `src/tromr_ocr.cpp` (large build: ResNetV2+ViT encoder + x-transformers decoder
-   + 4 heads) → dispatcher wiring → quantize + upload. **Full self-contained build
-   brief: `docs/tromr-engine-handover.md`** (architecture, exact tensor names,
-   formulas, SAME-pad solution, reuse map, validation plan, wiring).
+3. **Polyphonic-TrOMR — DONE (2026-07-13).** Genuinely accurate model (reads
+   clefs/keys/rhythms/pitches correctly on real photos). The ggml engine
+   `src/tromr_ocr.cpp` (ResNetV2 SAME-pad backbone + hybrid ViT encoder →
+   x-transformers 12-sublayer decoder with SIGLU attn-on-attn + GEGLU FF → 4
+   parallel heads, autoregressive over rhythm/pitch/lift streams) is written,
+   wired (dispatcher + CMake + `test-tromr-diff` + CLI `--ocr` auto-detect), and
+   **validated CPU-only vs the reference model**: every diff-harness stage cos
+   **1.0** (backbone, ViT context, all 12 decoder blocks, all 4 logit heads),
+   **100% per-position argmax agreement** teacher-forced (66/66, 85/85), greedy
+   decode **byte-exact** vs the authors' `examples/{1,2,3}.txt`, Metal == CPU.
+   q8_0 also decodes byte-exact. **Remaining:** HF upload `cstr/tromr-GGUF`
+   (f32 + q8_0) + `model_mgr.cpp` registry entry.
+   Corrections vs the (now-removed) handover brief found in validation: ViT scale
+   is **32^-0.5** not 64^-0.5; the converter emitted tensor names >64 chars that
+   the ggml loader rejects (`GGML_MAX_NAME`) → shortened the backbone prefix to
+   `enc.bb`; the quantizer must keep `enc.bb`/`enc.proj` convs unquantized
+   (flatten+quantize → reshape-to-4D abort). See LEARNINGS.md.
    Weights: `tromr/workspace/checkpoints/img2score_epoch47.pth` (86.3 MB)
    committed directly into the Apache-2.0 repo (not LFS → covered by the repo
    license), with a 4-file tokenizer set (`tokenizer_{lift,pitch,rhythm,note}.json`).
    Architectural wrinkle vs SMT: TrOMR is **not** a single autoregressive stream
    — it has *parallel classification heads* (rhythm / pitch / lift / note) per
-   decoder timestep, so a port needs 4 output projections + a merge step, not
-   one LM head. Prefer SMT unless we specifically need TrOMR's real-world/camera
-   robustness. `homr` wraps this same model but is AGPL — take the weights from
+   decoder timestep, so the port needs 4 output projections + a merge step, not
+   one LM head. `homr` wraps this same model but is AGPL — weights taken from
    the NetEase repo, not homr.
 
 **Reuse map (assessed 2026-07-12, feat/smt-omr worktree):** ~70% of the SMT

@@ -71,6 +71,44 @@ bug; (3) derive preprocessing from the model's OWN repo/commit (`smt-grandstaff`
 example images/expected outputs before trusting any number. See
 [[validate-intermediates-and-outputs]].
 
+## TrOMR engine port: three traps a "tested" converter + handover brief hid (2026-07-13, src/tromr_ocr.cpp)
+
+Porting Polyphonic-TrOMR (ResNetV2 SAME-pad backbone + hybrid ViT encoder →
+x-transformers 12-sublayer decoder with SIGLU attn-on-attn / GEGLU FF → 4 parallel
+heads) reached full parity (every diff-harness stage cos=1.0, 100% teacher-forced
+argmax agreement 66/66 & 85/85, byte-exact greedy decode vs the authors'
+`examples/{1,2,3}.txt`, Metal==CPU). Three non-obvious traps, none caught by the
+"tested" converter or the handover brief:
+
+- **The handover brief's ViT scale was wrong.** It said `64^-0.5`; the correct
+  value is **`32^-0.5`** because `head_dim = encoder_dim/heads = 256/8 = 32` (the
+  qkv weight is `[768,256]` = 3×256, so the inner dim is 256, not 512). The decoder
+  *is* `64^-0.5` (inner 512, 8 heads). `enc_context` cos only hits 1.0 with 32.
+  Corollary: [[verify-handover-claims-independently]] — the brief also mislabeled a
+  scale and I only caught it because the diff harness is the arbiter.
+- **The Python `gguf` writer does not enforce `GGML_MAX_NAME` (64), the ggml C
+  loader does.** The converter emitted 69-char names
+  (`encoder.patch_embed.backbone.stages.0.blocks.0.downsample.conv.weight`) and
+  every engine load aborted `tensor name … too long`. A converter can be "tested"
+  (writes fine, round-trips in Python) yet produce a GGUF **no ggml engine can
+  open** — because no engine existed yet to load it. Fix: shorten the prefix in the
+  converter (`→ enc.bb`) and mirror it in `map_tensors`.
+- **Quantizing flattened 4D conv weights breaks the in-engine reshape-to-4D.** The
+  quantizer flattens `[kw,kh,ic,oc] → [ic*kh*kw, oc]` then quantizes; reshaping a
+  q8_0 tensor back to 4D yields an `ne[0]` (e.g. 1 for a 1×1 conv) that is not a
+  multiple of the 32-element block → `ggml_dup` abort. Fix per the SMT precedent:
+  add the conv prefixes (`enc.bb`, `enc.proj`) to the `tools/quantize.cpp`
+  keep-guard so they stay F32. q8_0 then decodes byte-exact (argmax 66/66); the
+  backbone staying F32 costs compression (1.7x) but that is a correctness/size
+  tradeoff, not a bug.
+
+Also: the authors' `examples/N.txt` were sampled at **`temperature=0.2` (stochastic)**,
+so neither my argmax nor the reference dumper's argmax is *expected* to match them
+byte-for-byte on hard polyphonic passages — argmax faithfulness is proven by
+per-position agreement under teacher forcing (100%), not by exact-match to a
+stochastic sample. A single near-tie flip (F16 conv-cast, logits max_abs ~8e-3)
+cascades the greedy path once the prefixes diverge — expected, not a regression.
+
 ## Importing a llama.cpp LLM: un-permute q/k, because llama.cpp rewrites them for its interleaved RoPE (2026-07-12, SmolVLM import)
 
 Merging a stock llama.cpp **SmolVLM-256M** (arch=llama LLM + idefics3 mmproj)

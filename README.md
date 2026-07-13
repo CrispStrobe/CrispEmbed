@@ -49,11 +49,16 @@ BTTR (handwritten, DenseNet+Transformer, 53% CROHME),
 HMER (handwritten, DenseNet+GRU attention).
 All auto-detected from GGUF metadata, ~3-5s decoder time.
 
-**Optical Music Recognition (OMR)**: Sheet Music Transformer (staff-notation image
-→ bekern tokens; ConvNext encoder + cross-attention Transformer decoder, 21.4M,
-MIT, 24 MB Q8_0). KV-cached greedy decode; auto-detected via `--ocr`. Reproduces
-the reference model exactly (per-stage cos=1.0, 100% token parity) and scores
-**96.3%** vs ground truth on the GrandStaff test set.
+**Optical Music Recognition (OMR)**: two engines, both auto-detected via `--ocr`.
+- **Sheet Music Transformer (SMT/SMT++)** (staff-notation image → bekern tokens;
+  ConvNext encoder + cross-attention Transformer decoder, 21.4M, MIT, 24 MB Q8_0).
+  KV-cached greedy decode; reproduces the reference exactly (per-stage cos=1.0,
+  100% token parity) and scores **96.3%** vs ground truth on GrandStaff.
+- **Polyphonic-TrOMR** (staff image → parallel rhythm/pitch/lift streams merged
+  into symbolic notation `clef-G2+keySignature-…`; ResNetV2+ViT encoder +
+  x-transformers decoder with 4 parallel heads, ~22M, Apache-2.0). Robust on
+  real photos; reproduces the reference exactly (per-stage cos=1.0, 100% argmax
+  parity, byte-exact decode on the reference examples).
 
 **Tesseract LSTM OCR**: 12 languages (eng, deu, fra, spa, ita, por, nld, rus, ara,
 chi_sim, jpn, kor) in tiny GGUF models (435 KB–1.7 MB Q8_0). Converted from
