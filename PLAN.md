@@ -762,10 +762,22 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 
 ### Open correctness / infrastructure
 
-- **CUDA regression — the 4 remaining FAILs, DIAGNOSED on P100 (2026-07-13).**
-  A diagnostic kernel (`tools/kaggle/crispembed-cuda-diag`, run on a **Tesla P100 /
-  Pascal sm_60**) exercised each engine under its env gates. **The diagnostic
-  overturned 3 of the 4 assumptions — only ONE is a real CUDA bug:**
+- **CUDA regression — the 4 FAILs are RESOLVED / explained (P100-verified 2026-07-13).**
+  A diagnostic kernel (`tools/kaggle/crispembed-cuda-diag`, Tesla P100 / Pascal
+  sm_60) diagnosed each under its env gates, then a 2nd run verified the fix:
+  - **`layout-heron` — FIXED (`49cb38a`).** The flash→manual attention fallback
+    removed the `fattn.cu:602` abort; P100 CUDA now runs `test-layout-diff` to
+    **8/8 stages PASS, DIFF PASSED** (dec_0_cross_out 0.977). ✅
+  - **`glm-ocr` + `internvl2` — read the repo `fox.png` (800×200) CORRECTLY on
+    P100 CUDA *and* CPU** ("The quick brown fox…12345") — the v11 `cer>4` garbage
+    is gone. Not a persistent CUDA bug. ✅
+  - **`granite-vision` — text OCR PASSES**; the projector diff drift is
+    cross-toolchain FP strictness (identical CUDA=CPU=scalar on P100), threshold
+    already 0.95. ✅
+  - **Next:** a full `ocr-portfolio-regression` re-run to confirm the FAIL count
+    drops from 4 (expect ~0). The detailed diagnosis below is kept for the record.
+
+  Original diagnostic detail (the run that overturned 3 of the 4 assumptions):
   - **`layout-heron` — REAL CUDA bug (fixable).** `test-layout-diff` aborts:
     `ggml/src/ggml-cuda/fattn.cu:602 fatal error` in `ggml_cuda_flash_attn_ext`
     → `GGML_ABORT` because Pascal (sm_60) has **no flash-attention kernel**
