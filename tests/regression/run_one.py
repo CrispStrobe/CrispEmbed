@@ -113,6 +113,38 @@ def hf_download(repo: str, file_in_repo: str, revision: str, dest_dir: Path,
         die(f"HF download failed: {repo}/{file_in_repo}@{revision}: {e}")
 
 
+def resolve_sample_hf(spec: dict, dest_dir: Path) -> Path:
+    """Extract a fixture image embedded in an HF-dataset parquet at a pinned
+    revision, and write it to dest_dir as a PNG.
+
+    This keeps license-restricted source images (e.g. CROHME = CC-BY-NC-SA)
+    OUT of this MIT/Apache repo: they are fetched from the original dataset at
+    test time (like the GGUFs already are), never committed here. `spec` keys:
+    dataset, file (parquet path in the dataset repo), revision (commit sha —
+    pin it so the row is stable), row (integer index), image_column, and
+    optional label_column/expect_label which gate against the dataset shifting
+    under the pinned row."""
+    from huggingface_hub import hf_hub_download
+    import pandas as pd
+    pq = hf_hub_download(repo_id=spec["dataset"], filename=spec["file"],
+                         revision=spec["revision"], repo_type="dataset",
+                         local_dir=str(dest_dir), token=os.environ.get("HF_TOKEN"))
+    df = pd.read_parquet(pq)
+    idx = int(spec["row"])
+    if idx >= len(df):
+        die(f"sample_hf row {idx} out of range (dataset has {len(df)} rows)")
+    row = df.iloc[idx]
+    lbl_col, expect = spec.get("label_column"), spec.get("expect_label")
+    if lbl_col and expect is not None and str(row[lbl_col]) != expect:
+        die(f"sample_hf row {idx} label mismatch: got {str(row[lbl_col])!r}, "
+            f"expected {expect!r} — the pinned dataset revision may have changed")
+    img = row[spec["image_column"]]
+    data = img["bytes"] if isinstance(img, dict) else bytes(img)
+    out = dest_dir / f"sample_hf_{spec['dataset'].replace('/', '_')}_{idx}.png"
+    out.write_bytes(data)
+    return out
+
+
 # ── text comparison (lenient) ────────────────────────────────────────
 _WS = re.compile(r"\s+")
 _PUNCT = re.compile(r"[^\w\s]", re.UNICODE)
@@ -341,15 +373,20 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
         print(f"[{name}] {'PASS' if ok else 'FAIL'} (exit {r.returncode}, expect {exp})")
         return 0 if ok else 1
 
-    sample = REPO_ROOT / entry["sample"]
-    if not sample.exists():
-        # allow fixtures to live in an HF fixtures repo
-        fx = manifest.get("fixtures")
-        if fx and "sample" in entry:
-            sample = hf_download(fx["repo"], entry["sample"],
-                                 fx.get("revision", "main"), work_dir)
-        else:
-            die(f"sample image missing: {sample}")
+    if entry.get("sample_hf"):
+        # License-restricted source image fetched from its dataset at test time
+        # (never committed here) — see resolve_sample_hf.
+        sample = resolve_sample_hf(entry["sample_hf"], work_dir)
+    else:
+        sample = REPO_ROOT / entry["sample"]
+        if not sample.exists():
+            # allow fixtures to live in an HF fixtures repo
+            fx = manifest.get("fixtures")
+            if fx and "sample" in entry:
+                sample = hf_download(fx["repo"], entry["sample"],
+                                     fx.get("revision", "main"), work_dir)
+            else:
+                die(f"sample image missing: {sample}")
 
     extra = entry.get("ocr_args", [])
     print(f"[{name}] running crispembed --ocr {sample.name} ...")

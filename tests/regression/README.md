@@ -41,7 +41,7 @@ A model **passes** only if all applicable checks pass.
       "name": "got-ocr2",
       "engine": "got-ocr2",
       "gguf": { "repo": "cstr/…-GGUF", "file": "…-q4_k.gguf", "revision": "<sha>" },
-      "sample": "tests/regression/images/fox.png",
+      "sample": "tests/regression/images/fox.png",   // local image, OR use sample_hf (below)
       "expected_text": "The quick brown fox …",   // null = not captured yet
       "match": { "max_cer": 0.10 },
       "ocr_args": [],                                // extra CLI flags (optional)
@@ -57,6 +57,28 @@ A model **passes** only if all applicable checks pass.
 
 `expected_text: null` means "not captured yet" — the key is kept so gaps are
 visible. Seed it via the rebake workflow below.
+
+**`sample_hf` (license-restricted fixture images).** When the only in-domain
+test image is under a license we can't bundle into this MIT/Apache repo (e.g.
+CROHME handwritten-math = CC-BY-NC-SA), replace `sample` with a `sample_hf`
+block that extracts one image from an HF **dataset** parquet at test time (like
+the GGUFs, the image is fetched from its original source and never committed):
+
+```jsonc
+"sample_hf": {
+  "dataset": "Kitajiang/test2_CROHME2014",
+  "file": "CROHME2014/test-00000-of-00001.parquet",
+  "revision": "<commit-sha>",          // PIN it so the row is stable
+  "row": 23,                            // integer index into the parquet
+  "image_column": "image",
+  "label_column": "latex_formula",      // optional sanity gate:
+  "expect_label": "\\[C_{t}=C+C=2C\\]"  // fail loudly if the row shifts
+}
+```
+
+Needs `pandas` in the test env (present on Kaggle + the conda base). Pick a row
+the model reads correctly + deterministically (CPU==Metal) so the pinned
+`expected_text` is a real guard, and attribute the source dataset in `_comment`.
 
 ## Rebake → validate workflow (adding / updating a model)
 
