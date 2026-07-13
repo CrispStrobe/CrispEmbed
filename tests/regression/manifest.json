@@ -952,6 +952,22 @@
       "match": {
         "max_cer": 0.1
       }
+    },
+    {
+      "name": "texteller",
+      "engine": "math_ocr",
+      "_comment": "TexTeller 3.0 math OCR (ViT + TrOCR VED, GELU decoder FFN, TexTeller preprocessing: trim+aspect-resize+white-pad to 448, mean 0.9545/std 0.1539). expected_text is the byte-exact q8_0 decode on formula_quadratic.png, captured 2026-07-13: matches HF OleehyO/TexTeller, f16==q8_0, CPU==Metal. GUARDS THE REGRESSION THAT SHIPPED BROKEN: the decoder FFN activation was hardcoded ReLU (needs GELU) + wrong preprocessing → garbled LaTeX; reverting either craters CER far above max_cer. Requires the GGUF to carry decoder.activation_function=gelu + encoder.image_mean/std/preprocess_pad (re-uploaded 2026-07-13).",
+      "gguf": {
+        "repo": "cstr/texteller-3-GGUF",
+        "file": "texteller-3-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 302
+      },
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": "\\[x= \\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}\\]",
+      "match": {
+        "max_cer": 0.1
+      }
     }
   ]
 }
