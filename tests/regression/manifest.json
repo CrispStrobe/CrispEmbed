@@ -946,6 +946,22 @@
       }
     },
     {
+      "name": "transcoda",
+      "engine": "transcoda",
+      "_comment": "Transcoda-59M zero-shot OMR (ConvNeXt-V2-Tiny encoder + 2-layer projector + 2D-sinusoidal-PE bridge + 8-layer pre-LN RoPE cross-attn decoder -> Humdrum **kern). Full-page score image, greedy argmax over the 3000-token BPE vocab with repetition_penalty=1.1. Clean-room engine (paper + config + oracle; the AGPL reference code is never read). expected_text is the byte-exact q8_0 decode on a Verovio-synth page (btrkeks/verovio-synth-omr, CC-BY-4.0), captured 2026-07-13: f32 per-stage cos=1.000000 (CPU==Metal), argmax 191/191 vs the HF reference, and both f32 and q8_0 greedy decodes are BYTE-IDENTICAL to the HF reference (460 chars / 203 tokens). Guards the whole path (ConvNeXt-V2 GRN blocks, projector, dual-memory cross-attn K=PE/V=raw, torchtune-NORMAL RoPE self-attn, pre-LN, untied LM head, per-unique-token repetition penalty, direct-concat detok). The no-garbage guard passes with margin (top token '=' repeats ~30/203 < the 0.5 repetition floor).",
+      "gguf": {
+        "repo": "cstr/transcoda-omr-GGUF",
+        "file": "transcoda-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 65
+      },
+      "sample": "tests/regression/images/page_transcoda.png",
+      "expected_text": "*clefG2 *k[f#] *M2/4 8d = 16gLL 16a 16b 16ccJJ 8ddL 8bJ = 8ccL 8ee 8dd 8gJ = 8.aL 16bJk 16ddLL 16cc 16b 16aJJ = 8gL 8f# 8g 8dJ = 16gLL 16a 16b 16ccJJ 8ddL 8bJ = 8ccL 8ee 8dd 8gJ = 8aL 8bJ 16ddLL 16cc 16b 16aJJ = 8gL 8f#J 8g =:|!|: 8dd = 8ggL 8ggJ 16ggLL 16aa 16bb 16ggJJ = 8eeL 8eeJ 4ee = 8aaL 8aaJ 16aaLL 16bb 16aa 16ggJJ = 8ff#L 8ddJ 8ddL 16eeL 16ff#JJ = 8ggL 8ee 8ee 8aaJ = 8ff#L 8dd 8dd 8ggJ = 16eeLL 16dd 16cc 16bJJ 16aLL 16b 16cc 16ddJJ = 8bL 8gJ 8g =:|!",
+      "match": {
+        "max_cer": 0.10
+      }
+    },
+    {
       "name": "smt",
       "engine": "smt",
       "_comment": "Sheet Music Transformer OMR (ConvNeXt encoder + cross-attn Transformer decoder -> bekern staff notation). Deterministic greedy argmax over the 20578-token bekern vocab. expected_text is the byte-exact q8_0 decode on a GrandStaff test image (antoniorv6/grandstaff, MIT), captured 2026-07-13: CPU==Metal identical, q8_0 == f32 (96.3% vs the dataset GT). Guards the whole VED OMR path (ConvNeXt patch-embed + stages, 2-D sinusoidal PE on cross-attn KEYS only, UNSCALED attention, greedy argmax, detok). The no-garbage guard passes with margin (top layout token '<b>' -> 'b' repeats 40/152 < the 0.5 repetition floor).",
