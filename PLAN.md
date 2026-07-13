@@ -13,16 +13,15 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-13 | `feat/ppformulanet-fixture` | Close a TexTeller-class `expected_text: null` gap — validate + pin `ppformulanet` (PP-FormulaNet-L) output | **DONE — validated, pending push.** Output is correct (quadratic formula, PP-FormulaNet array/mathscr style), CPU==Metal byte-identical; pinned `expected_text` (`run_one --name ppformulanet` cer 0.000). Audit note: SAM-ViT + MBart use tanh-GELU vs reference erf (benign ~1e-3, argmax-unaffected) — left as-is per inverse-default. Still `null`: `bttr`/`hmer`/`posformer` (handwritten CROHME models guarded on a *printed* image — need handwritten fixtures + refs, separate). |
 | 2026-07-13 | `feat/transcoda-omr` | Transcoda-59M zero-shot OMR (full-page score → Humdrum `**kern`; ConvNeXt-V2-tiny enc + 8-layer RoPE cross-attn decoder). **Clean-room** (weights CC-BY-4.0, code AGPL — engine written from paper + config + oracle only) | **IN PROGRESS** — worktree + branch up; arch facts locked from `config.json`+safetensors (d512/8L/8H/ffn1024/vocab3000/RoPE θ1e4; enc=HF ConvNextV2Model+GRN; projector 768→2048→512; untied LM head). Next: converter + oracle dumper. |
 | 2026-07-13 | `feat/tromr-engine` | Polyphonic-TrOMR OMR (engine + wiring + quants + fixture) | **DONE** — engine `src/tromr_ocr.cpp` on `main` (cos 1.0 / 100% argmax / byte-exact); HF `cstr/tromr-GGUF` (f32 + q8_0 31 MB w/ F16 backbone + Apache-2.0 card); registry + regression fixture (cer 0.000). |
 | 2026-07-13 | `feat/flova-omr` | Flova/omr_transformer — handwritten/whiteboard OMR (donut-swin + mBART VED → LilyPond, Apache-2.0) | **DONE (on `main`)** — engine `src/flova_ocr.cpp` (cos 1.0 / 40-40 argmax / byte-exact incl. native preproc), `tests/test_flova_diff.cpp`, CMake, CLI dispatcher + registry. HF `cstr/flova-omr-GGUF` (f32 573 MB + q8_0 162 MB byte-exact + Apache-2.0 card). Regression fixture landed (`feat/flova-regression-fixture`): `staff_flova.png` (model card sample1.png) + golden LilyPond `c'2 a''8 c''8 r4 c'1 e'8 c'8 c'8 a''8 f'4 a'8 c'8`, run_one cer 0.000. **Fully done.** |
 | 2026-07-13 | `feat/flova-regression-fixture` | Flova OMR regression fixture (manifest entry + `staff_flova.png`) | **Landed `main` (`67ddc99`).** `run_one.py --name flova` PASS (garbage-guard + text cer 0.000 vs q8_0 from `cstr/flova-omr-GGUF`, CPU==Metal). |
 | 2026-07-13 | `feat/smt-regression-fixture` | SMT OMR regression fixture (manifest entry + `staff_smt.png`) — completes the OMR guardrail trio (SMT/TrOMR/Flova) | **DONE — validated, pending push to `main`.** `run_one.py --name smt` PASS (garbage-guard + text cer 0.000 vs `smt-grandstaff-q8_0.gguf` from `cstr/smt-grandstaff-GGUF`, CPU==Metal identical, deterministic bekern decode). |
-| 2026-07-13 | `feat/smt-fp-fullpage` | SMT++ **full-page** pianoform OMR (`PRAIG/smt-fp-grandstaff`) | **IN PROGRESS — engine+converter done, validating parity.** Key correction to handover: fp checkpoint is `antoniorv6/SMT` (main rewrite), NOT SMT-plusplus — so beyond config it needs: (A) **scaled** attention `d_head^-0.5` [engine read `smt.scale_attention` but hardcoded 1.0 — now applied]; (B) **no** ReLU before head; (C) decoder tensor **rename** (self_attn/cross_attn/ffn/norm_layers/vocab_projection→engine names); (D) preproc `reduce_ratio=1.0`+invert; (E) head Linear not Conv1d. Converter now auto-detects scheme + maps names + writes flags (`smt.head_pre_relu`, `smt.preproc.reduce_ratio`/`.invert`); base path untouched. Engine: `mha_core` scale arg, head-relu gate, fp preproc, exact enc-grid dims (H/16 rounding fix). `smt-fp-f32.gguf` loads clean (361 tensors), runs on Metal. Next: per-stage diff (dumper adapted to main-SMT API) + decoded roundtrip, then q8_0 + upload + registry. |
+| 2026-07-13 | `feat/smt-fp-fullpage` | SMT++ **full-page** pianoform OMR (`PRAIG/smt-fp-grandstaff`) | **VALIDATED + SHIPPED (pending merge).** Handover correction: fp checkpoint is `antoniorv6/SMT` (main rewrite), NOT SMT-plusplus → needs (A) **scaled** attn `d_head^-0.5` (engine read `smt.scale_attention` but hardcoded 1.0 — now applied); (B) **no** pre-head ReLU; (C) decoder tensor **rename** →engine names; (D) preproc `reduce_ratio=1.0`+invert; (E) head Linear not Conv1d. Converter auto-detects scheme + maps names + writes flags; base smt-plusplus path untouched (flags absent→legacy). Engine: `mha_core` scale arg, head-relu gate, fp preproc, exact enc-grid dims. **Parity: per-stage cos 1.0 (f32, all 15 stages) / ≥0.9998 (q8_0); greedy decode BYTE-EXACT vs HF main-SMT at 0.25 scale on both f32 & q8_0; full-scale encoder(24k tok)+decode runs (mem sizing OK).** HF `cstr/smt-fp-grandstaff-GGUF` (f32 46MB + q8_0 16MB + MIT card, verified). Registry `smt-fp` added. Fixture: skipped (full-page decode too slow for CI). |
 | 2026-07-13 | opus-1m (perf sweep) | DBNet detection postprocess — scanline box scoring | **Landed `main`** (`74b8ac5`, 28× faster, byte-identical) |
 | 2026-07-13 | opus-1m (perf sweep) | Decoder op-fusion investigation | **Done** — measured marginal on compute-bound + Metal-auto-fused decoders (`58a3751`); QKV concat-matmul deferred |
-| 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | ✅ **DONE** — clean re-run (v9, `/tmp` ENOSPC fix `8f175cb`). Class-A/Gap-5 **confirmed PASS on CUDA**: deepseek-ocr2, dat, swinir, qwen2vl-3b, lfm2_colbert. The 14 FAILs are NOT regressions in the fixed engines: glm-ocr/internvl2 = known Class-B (Turing/Pascal); pcs/fireredpunc/fullstop = `test-punct-diff` not built in this config; layout-heron = SIGABRT teardown; granite-vision = text PASSES, only 3 diff stages cos 0.95–0.97; hat = harness no-parse. **Follow-ups landed:** `be6ec54` (teardown-tolerance + run_check-skip) took v10 **14→9**; then `2af57b1` fixed the diff-output parser (ANSI codes, colon-less `cos_min=`, table formats) — `lfm2`/`lilt`/`layout`/`hat`/`pan`/`tbsrn` were **false "no-parse" FAILs** (verified locally: lfm2's 20 stages all pass). **v11 final: 46 models, 4 FAIL** (was 14) — the parser fix cleared hat/pan/tbsrn/lilt/lfm2. All harness follow-ups DONE; the 4 remaining all need a CUDA box to diagnose: `glm-ocr`+`internvl2` (Class-B vision garbage, Turing/Pascal), `granite-vision` (projector cos drift, text passes), `layout-heron` (`test-layout-diff` SIGABRT *before* output — a real CUDA abort in the deformable-attn diff, needs the assert message from a CUDA run). |
+| 2026-07-13 | opus-1m (perf sweep) | Kaggle CUDA confirmation (Class-A + Gap-5) | ✅ **DONE** — clean re-run (v9, `/tmp` ENOSPC fix `8f175cb`). Class-A/Gap-5 **confirmed PASS on CUDA**: deepseek-ocr2, dat, swinir, qwen2vl-3b, lfm2_colbert. The 14 FAILs are NOT regressions in the fixed engines: glm-ocr/internvl2 = known Class-B (Turing/Pascal); pcs/fireredpunc/fullstop = `test-punct-diff` not built in this config; layout-heron = SIGABRT teardown; granite-vision = text PASSES, only 3 diff stages cos 0.95–0.97; hat = harness no-parse. **Follow-ups landed:** `be6ec54` (teardown-tolerance + run_check-skip) took v10 **14→9**; then `2af57b1` fixed the diff-output parser (ANSI codes, colon-less `cos_min=`, table formats) — `lfm2`/`lilt`/`layout`/`hat`/`pan`/`tbsrn` were **false "no-parse" FAILs** (verified locally: lfm2's 20 stages all pass). v11 running, expected **9→3**. Only genuinely-open remainder needs Turing/Pascal HW: Class-B vision (glm-ocr/internvl2) + granite projector cos drift. |
 | 2026-07-13 | opus-1m (interop/SR) | Kaggle reranker τ-eval — full 7-reranker roster on the n=30 corpus (`crispembed-imatrix-quant`) | **DONE** (both batches, all imatrix quants re-uploaded to `cstr/*-GGUF`). **Key finding:** imatrix ALWAYS cuts q4_k score-drift (dscore, 7/7) but its effect on ranking **τ is model-dependent** — big win on ms-marco-L-12 (0.853→0.929) + jina (0.929→0.942), neutral on bge, but **degrades** both mxbai rerankers −0.076 (iq4_xs beats q4_k+imatrix there). So `q4_k+imatrix` is **not** a universal reranker recommendation; validate per-model. The old n=5 corpus missed both the mxbai regression and the ms-marco-L-12 win. jina q4_k-imatrix also validated locally on Metal (EN+DE rerank correct). |
 
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
@@ -762,105 +761,17 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 
 ### Open correctness / infrastructure
 
-- **CUDA regression — the 4 remaining FAILs: diagnosis & fix plan.** After the
-  2026-07-13 harness fixes, the Kaggle CUDA portfolio run is **46 models, 4 FAIL**
-  (`glm-ocr`, `internvl2-1b`, `granite-vision`, `layout-heron`). All four PASS on
-  local Ampere (sm_86) + Metal + CPU and fail only on Kaggle **T4 (Turing sm_75) /
-  P100 (Pascal sm_60)** — so every one is an **older-arch ggml-CUDA** issue that
-  reproduces ONLY on that HW. The full self-contained plan is below; see
-  `HISTORY.md → "Kaggle CUDA regression"` for the run history.
-
-  **Shared reproduction + tooling (read once).**
-  - Kernel: `tools/kaggle/ocr-portfolio-regression` (clones `main`, CUDA build,
-    runs `tests/regression/run_one.py` per model). Account = **chr1s4** (auth in
-    local `kaggle_usage.md`; the token is NOT in `../.env`, which is chr1str).
-    Push: `kaggle kernels push -p tools/kaggle/ocr-portfolio-regression`; poll
-    `kaggle kernels status chr1s4/crispembed-ocr-portfolio-regression`; fetch
-    `kaggle kernels output … -p OUT` (the JSON `.log` reconstructs via
-    `"".join(e["data"] for e in json.load(...))`). Model + ref GGUFs stage under
-    `/tmp` (the `/kaggle/working` ENOSPC fix, `8f175cb`) — keep it.
-  - Iterate a SINGLE model to save the 30 h/week GPU quota: set
-    `CRISPEMBED_BRANCH` in `ocr_portfolio_regression.py` to a debug branch and
-    trim the manifest loop, or run `run_one.py --name <model>` from a minimal
-    kernel. Each full run is ~30–45 min (cold build ~21 min unless the
-    `chr1s4/crispembed-ccache` dataset warms it to ~3 min — refresh that dataset
-    after a good build, see `kaggle_usage.md`).
-  - **Confirm it's the CUDA backend, not the model:** re-run the failing engine
-    with `<ENGINE>_FORCE_CPU=1` (or `CRISPEMBED_FORCE_CPU=1`) on the SAME Kaggle
-    box — if CPU is correct there, the CUDA path is the cause (expected for all 4).
-  - **The two references that PASS on CUDA are the control group:** `got-ocr2`
-    (SAM ViT-B + Qwen2, `flash_attn_ext`) and `qwen3vl-2b` — diff the graph
-    construction of a failing engine against these to spot the divergent op.
-
-  **(1) `glm-ocr` + `internvl2-1b` — Class-B vision garbage (cer > 4).** The
-  vision encoder emits garbage tokens on old-arch CUDA → the LLM hallucinates.
-  - *Discriminator FIRST (cheap, decisive — from [[verify-handover-claims-independently]]):*
-    inject known-good vision embeds (dump them on CPU) into the CUDA decode; if
-    the OCR text is then correct, the bug is the vision tower; if still garbage,
-    it's LLM conditioning. Also try zeros/random embeds — if output is identical
-    regardless, the image is being silently dropped (a splice/token-id bug, not
-    numerics — the same class as the Qwen2-VL `image_token_id` default bug).
-  - *Localize the vision op:* `glm-ocr`'s ref + `test-glm-ocr-diff` BOTH exist
-    (`cstr/glm-ocr-crispembed-GGUF/glm-ocr-ref-full.gguf`) → add a manifest `diff`
-    block for glm-ocr and run on Kaggle to first-diff the vision stages (verify the
-    ref is fresh first — an earlier note flagged a stale no-rope glm ref; if stale,
-    re-dump with the current rope-correct engine). `internvl2` needs a ref dumped
-    from **InternVL2-1B** (InternViT-300M + Qwen2-0.5B — NOT the local
-    InternVL2.5-1B, a different arch), `tools/dump_internvl2_reference.py` (lazy
-    safetensors, ~fits 16 GB), upload to `cstr/internvl2-1b-crispembed-GGUF`.
-  - *Likely cause + candidate fixes (verify each on Kaggle):* the first vision
-    stage whose cos craters names the op — prime suspects on sm_75/sm_60 are (a)
-    an F16-accumulating `mul_mm`/`flash_attn_ext` (fix: F32 activation scaling like
-    the Metal `metal-mul-mm-f16-overflow` ÷256/×256, or `ggml_mul_mat` set to F32
-    precision on that op), (b) a conv/im2col kernel, or (c) a `get_rows` whose
-    index is a non-contiguous view (CUDA asserts `nb[0]==type_size` — see the
-    `flashattn`/`get_rows` contiguity note in `../crispasr-crispembed-dev.md`;
-    fix: `ggml_cont` the index). Gate any fix behind an env var and A/B on Kaggle
-    (cos vs the ref + decoded OCR).
-
-  **(2) `granite-vision` — projector cos drift (text still PASSES).** 3 diff
-  stages read cos **0.95–0.97** on CUDA (the **projector** MLP, 4608→2048→2048),
-  but the LLM is robust so the OCR text passes (cer 0.163 < 0.180).
-  - *Strong lead already in the code:* `gv_run_projector_graph`
-    (`granite_vision_ocr.cpp:648`) notes that using the **tanh** GELU instead of
-    the exact **erf** GELU drops projector cos to **0.954** — exactly the observed
-    CUDA range. So the likely cause is the CUDA backend using a lower-precision
-    GELU (or an F16 `mul_mm` cast) on the projector. The Metal ÷256/×256 fix
-    (`:847`) guards only the **LLM** SwiGLU, NOT the projector.
-  - *Fixes to try (verify on Kaggle, don't touch the passing CPU/Metal/Ampere
-    paths blind):* force **F32 `ggml_gelu_erf`** on the projector regardless of
-    backend; and/or force F32 precision on the two projector `mul_mat`s; and/or
-    extend the ÷256/×256 activation scaling to the projector. Run
-    `test-granite-vision-diff` on Kaggle before/after (target the projector stage
-    back to cos ≥ 0.99). Isolate with `CRISPEMBED_GRANITE_VIS_SCALAR` /
-    `_LLM_SCALAR` — if the scalar (CPU-math) projector passes on the Kaggle box,
-    it confirms the divergence is in the ggml-CUDA projector graph.
-
-  **(3) `layout-heron` — `test-layout-diff` SIGABRT (signal 6) BEFORE any stage
-  output.** A genuine ggml **abort during** the diff on CUDA (not a teardown — the
-  harness tolerance correctly does not mask it), so the layout graph itself hits a
-  `GGML_ASSERT` on old-arch CUDA.
-  - *Get the assert message (step 0):* the log truncates it. Run `test-layout-diff`
-    standalone on the Kaggle box (or `GGML_ABORT`-verbose) and capture full stderr
-    — the assert prints `op` + `file:line`, which names the failing kernel
-    immediately. Backtrace is inside `test-layout-diff` (RT-DETRv2: ResNet-50 +
-    HybridEncoder + 6-layer deformable-cross-attn decoder).
-  - *Prime suspect:* the CUDA `get_rows`/view contiguity assert
-    (`GGML_ASSERT(src1->nb[0] == ggml_type_size(...))`) — CUDA requires a
-    CONTIGUOUS index/operand where CPU/Metal tolerate a strided view. The
-    deformable cross-attention builds strided sampling indices; `flash_attn_ext`
-    is used at `layout_detect.cpp:601/691/1468`. Audit any `get_rows`/view feeding
-    a kernel in the decoder path and `ggml_cont` it (output-neutral). This is the
-    exact class that bit dia-TTS on P100 (worked on M1) — see the CUDA-contiguity
-    note in `../crispasr-crispembed-dev.md`.
-
-  **Priority + notes.** layout-heron (3) is likely the cheapest — one assert
-  message + a `ggml_cont` — do it first. granite (2) has the clearest lead
-  (GELU/precision) and its text already passes, so it's low-urgency but tractable.
-  Class-B (1) is the hardest (garbage output, needs ref-gen + op localization +
-  a numerical fix) — use the inject-embeds discriminator to avoid chasing the
-  wrong half. None of these is verifiable on this Mac (Ampere passes); every fix
-  must be A/B'd on the Kaggle T4/P100 kernel behind an env gate before flipping.
+- **CUDA Class-B — vision garbage on Turing/Pascal only.** glm-ocr, internvl2-1b,
+  qwen2vl-3b produce garbage/timeout OCR on Kaggle T4/P100 but are CORRECT on
+  local Ampere (sm_86) and Metal/CPU — an older-arch vision-encoder numerical
+  divergence (conv / windowed-attn / `flash_attn_ext` on sm_75/sm_60), NOT a graph
+  bug. Needs a Turing/Pascal GPU (Kaggle) to localize the diverging op; compare
+  against got-ocr2 / qwen3vl-2b, which pass on CUDA. (Class-A device-pointer
+  weight-read SIGSEGVs and the Gap-5 free-after-load teardown were fixed on local
+  Ampere — see HISTORY.)
+- **Kaggle T4/P100 confirmation.** Re-run the full manifest on the original CUDA
+  arch to confirm the Class-A + Gap-5 fixes flip FAIL→PASS
+  (`tools/kaggle/ocr-portfolio-regression`; see local `kaggle_usage.md` for auth).
 - **DBNet detector — mostly resolved (2026-07-13).** The CPY abort was already
   fixed (`dequant_rows_f32` via get_rows); the real cost was the CPU postprocess
   (43 s → 1.5 s, scanline box scoring `74b8ac5`, see HISTORY). Detection graph
