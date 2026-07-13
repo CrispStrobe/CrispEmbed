@@ -285,6 +285,47 @@ micro-gap" and "the build dir was silently CPU-only"; verify
 `git log main..<branch>` for a concurrent session's finished work; all edits in
 a worktree (ggml symlink dance, see CLAUDE.md).
 
+### Transcoda OMR decode enhancements (deferred, 2026-07-13)
+
+The shipped `transcoda_ocr` engine uses greedy decode (byte-identical to the HF
+reference; persistent device-KV, 2.4–4×). The paper's two higher-accuracy decode
+modes are **deferred** — both are large, and neither is byte-exactly validatable,
+so they were intentionally NOT shipped (byte-exact-or-bust discipline). Concrete
+plans for a follow-up session:
+
+- **Beam search (width 3)** — the paper's headline (OMR-NED 18.46% vs greedy
+  ~higher on Verovio-synth). HF config: `num_beams=3, length_penalty=1.0,
+  repetition_penalty=1.1, early_stopping=True`.
+  - *Where*: a `decode_beam(ctx, n_beams)` in `src/transcoda_ocr.cpp`, gated
+    `TRANSCODA_OCR_NUM_BEAMS=N` (opt-in; greedy stays the default). Per-beam
+    next-token logits via either B independent persistent KV caches (extend
+    `pk_*` to a `[..., B]` beam dim) or the full-recompute `run_decoder` per beam
+    (simplest, O(B·L²) — fine for opt-in).
+  - *Algorithm* (mirror HF `BeamSearchScorer`): keep B live beams (init scores
+    `[0,-inf,-inf]`), each step apply per-unique-token rep-penalty + `log_softmax`,
+    add to beam score, take top-`2B` over the flattened `B×vocab`, route eos
+    candidates to a finished pool with score `/(len**length_penalty)`, keep the
+    top-B non-eos as the next beams; early-stop when B finished hypotheses exist;
+    return the best finished (or best live) hypothesis.
+  - *Validation*: (1) on the confident synth page `sample_page.png`, HF beam-3 ==
+    greedy, so mine must be **byte-exact == greedy** there (a real regression
+    gate); (2) on a real Polish scan (`btrkeks/polish-scores`, license "other" —
+    LOCAL validation only, do NOT commit the image), HF beam-3 diverges from
+    greedy at accent/ornament tokens (`16b#JJ`→`16bJJ`) and spine markers
+    (`*^`/`*v`) — target **CER-close** to the HF beam-3 dump (byte-exact over a
+    512-token uncapped scan is not realistically achievable; cascading). HF
+    references already captured: `scratch-transcoda/oracle_beam3.kern.txt`,
+    `polish_beam3.kern.txt`.
+
+- **Grammar-constrained decode** — guarantees structurally-valid `**kern`
+  (paper's `grammars/kern.gbnf` via xgrammar logits processors). Large: needs a
+  GBNF parser + a per-step token-mask constraint engine (llama.cpp's
+  `llama-grammar` is the reference, ~1k LOC). *Where*: a `kern_grammar.{h,cpp}`
+  constraint module + a mask hook in the decode loop, gated
+  `TRANSCODA_OCR_GRAMMAR=1`. *Validation*: structural only (every output parses as
+  valid kern); no byte-exact HF target (xgrammar's tie-breaking differs). Lowest
+  priority — greedy already emits valid kern on clean inputs.
+
 ### Optical Music Recognition (OMR) — models to port (2026-07-12)
 
 OMR is "OCR for staff notation": the winning modern approach is exactly the
