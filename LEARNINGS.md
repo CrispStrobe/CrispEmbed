@@ -39,7 +39,19 @@ page cache, which swings with cache state. `peak memory footprint` — the proce
 own committed anonymous memory — was stable and showed the real win: **5.27 → 3.97
 GB (−1.30 GB, −25%)**, matching the removed duplication exactly. Decoded output was
 identical ("The quick brown fox…" cer 0.0) on all three loader paths. See the
-[[deepseek-stacked-experts-memory]] memory. Landed on branch, HF `-stacked` files.
+[[deepseek-stacked-experts-memory]] memory. On `main`, HF `-stacked` files.
+
+**Generalizes to any per-expert-load + runtime-stack engine.** Applied verbatim to
+`unlimited_ocr` (same DeepSeek-V2 MoE, `baidu/Unlimited-OCR`): output byte-identical
+on all 3 loader paths, peak footprint 4.32 → 3.11 GB (−1.21 GB). `crispembed.cpp`'s
+BERT/NLLB MoE embedders already load pre-stacked 3D experts (`expert_fc1_w
+[H,inter,N_exp]`) from their converter — no duplication, nothing to do. Those three
+are the *only* `ggml_mul_mat_id` paths in the tree. One Kaggle gotcha the port
+surfaced: the numpy expert **accumulate-then-stack** (holding ~10 GB of f32 experts)
+**thrashes for hours under multithreaded OpenBLAS** — the v1 reconvert hung ~3h with
+no progress. Prefix converters with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1` (the dev-guide HARD rule) — the deepseek run
+got lucky without it, unlimited did not.
 
 ## A parity stage downstream of a topk/argsort selection craters by query PERMUTATION under tiny backend FP deltas — not a compute bug (2026-07-13, layout-heron dec_0_cross_out)
 

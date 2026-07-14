@@ -223,6 +223,22 @@
       }
     },
     {
+      "name": "unlimited-ocr-stacked",
+      "engine": "unlimited-ocr",
+      "gguf": {
+        "repo": "cstr/unlimited-ocr-crispembed-GGUF",
+        "file": "unlimited-ocr-q4_k-stacked.gguf",
+        "revision": "b11fef884fee",
+        "approx_size_mb": 2252
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "title [33, 196, 636, 360]The quick brown fox jumps\ntitle [34, 548, 588, 740]over the lazy dog. 12345",
+      "expected_text_source": "captured 2026-07-14 on M1 Metal at q4_k. Unlimited-OCR (baidu, DeepSeek-V2 MoE) full-page grounding output (title blocks + coords). Guards the PRESTACKED loader path (unlimited_ocr: 'using prestacked MoE experts') added with the stacked-experts converter change: the 64 routed experts ship as l.blk.{i}.ffn_{gate,up,down}_exps.weight 3D tensors (byte-identical to per-expert; validated vs source on Kaggle), so the runtime skips the per-expert->stacked copy (peak footprint 4.32->3.11 GB, -1.2 GB). Decoded output byte-identical to the per-expert GGUF on all 3 loader paths. First regression coverage for this engine; also guards the vision-graph garble class (any encoder scramble craters the CER). max_cer buffers minor cross-backend coord drift.",
+      "match": {
+        "max_cer": 0.15
+      }
+    },
+    {
       "name": "restormer",
       "engine": "restormer",
       "diff_only": true,

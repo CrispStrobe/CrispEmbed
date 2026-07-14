@@ -1061,9 +1061,12 @@ static const ModelEntry k_registry[] = {
       "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding; stacked experts)", "2.3 GB", "apache-2.0",
       "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF" },
 
-    { "unlimited-ocr", "unlimited-ocr-q4_k.gguf",
-      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k.gguf",
-      "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "2.0 GB", "mit",
+    // Stacked MoE experts: ~1.2 GB lower resident footprint than the per-expert
+    // layout; the loader falls back to per-expert for older GGUFs. Distinct cache
+    // filename so an existing per-expert cache re-downloads the stacked file.
+    { "unlimited-ocr", "unlimited-ocr-q4_k-stacked.gguf",
+      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k-stacked.gguf",
+      "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages

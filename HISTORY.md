@@ -27,7 +27,17 @@ into 3D `[in,out,n_exp]` tensors at load — so both copies (~1.3 GB) sat reside
   paths (prestacked / DS_MOE_CPU views / legacy); **peak footprint 5.27 → 3.97 GB
   (−1.30 GB, −25%)**. (RSS is a misleading metric here — mmap page cache; footprint
   is the real number. See LEARNINGS.) Regression entry `deepseek-ocr2-stacked`
-  added; registry promotion to stacked-default left for maintainer sign-off.
+  added; registry default promoted to the stacked q4_k.
+- **Ported the same optimization to `unlimited-ocr`** (`feat/uocr-stacked-experts`,
+  `baidu/Unlimited-OCR` — the same DeepSeek-V2 MoE): verbatim converter+loader port,
+  Kaggle-reconverted + byte-validated, HF `-stacked` files (rev `b11fef884fee`).
+  M1 Metal q4_k A/B: **output byte-identical on all 3 loader paths; peak footprint
+  4.32 → 3.11 GB (−1.21 GB, −28%)**. Registry promoted; first-ever regression entry
+  `unlimited-ocr-stacked` added. (The v1 Kaggle run hung ~3h with no progress — the
+  numpy expert accumulate/stack thrashed under multithreaded OpenBLAS; fixed by the
+  dev-guide-mandated single-thread OMP/BLAS + unbuffered converter prefix.)
+  `crispembed.cpp` BERT/NLLB MoE embedders already load pre-stacked 3D experts — no
+  change needed. Those are the only three `ggml_mul_mat_id` paths.
 
 ## July 13, 2026 — Transcoda-59M zero-shot OMR engine (clean-room, byte-exact, persistent-KV decode)
 
