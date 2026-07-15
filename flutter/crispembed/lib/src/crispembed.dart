@@ -14,8 +14,9 @@ import 'crispembed_bindings.dart';
 DynamicLibrary _openNativeLib([String? libPath]) {
   if (libPath != null) return DynamicLibrary.open(libPath);
   if (Platform.isIOS) return DynamicLibrary.process();
-  if (Platform.isAndroid || Platform.isLinux)
+  if (Platform.isAndroid || Platform.isLinux) {
     return DynamicLibrary.open('libcrispembed.so');
+  }
   if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
   if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
   return DynamicLibrary.open('libcrispembed.so');
@@ -2072,7 +2073,9 @@ class CrispLiLT {
     _checkDisposed();
     final T = inputIds.length;
     final idsPtr = calloc<Int32>(T);
-    for (var i = 0; i < T; i++) idsPtr[i] = inputIds[i];
+    for (var i = 0; i < T; i++) {
+      idsPtr[i] = inputIds[i];
+    }
     final bboxPtr = calloc<Int32>(T * 4);
     for (var i = 0; i < T; i++) {
       for (var j = 0; j < 4; j++) {
@@ -2154,8 +2157,9 @@ class CrispTextLID {
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr, nThreads);
     calloc.free(pathPtr);
-    if (_ctx == nullptr)
+    if (_ctx == nullptr) {
       throw Exception('Failed to load LID model: $modelPath');
+    }
   }
 
   int get nLabels => _nLabelsFn(_ctx);
@@ -2209,8 +2213,9 @@ class CrispTruecaser {
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr);
     calloc.free(pathPtr);
-    if (_ctx == nullptr)
+    if (_ctx == nullptr) {
       throw Exception('Failed to load truecaser: $modelPath');
+    }
   }
 
   /// Apply truecasing. Returns truecased text.
@@ -2871,8 +2876,9 @@ class CrispDatSr {
             'crispembed_dat_sr_init')
         .call(pathPtr, nThreads);
     calloc.free(pathPtr);
-    if (_ctx == nullptr)
+    if (_ctx == nullptr) {
       throw Exception('Failed to load DAT SR model: $modelPath');
+    }
   }
 
   DatSrResult process(Uint8List pixels, int width, int height,
@@ -2886,8 +2892,9 @@ class CrispDatSr {
     try {
       final rc = _processFn(
           _ctx, pxNative, width, height, tileW, tileH, outPxPtr, outW, outH);
-      if (rc != 0 || outPxPtr.value.address == 0)
+      if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('DAT SR process failed');
+      }
       final ow = outW.value, oh = outH.value;
       final result =
           Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
@@ -4121,7 +4128,9 @@ String? ocrRender(DynamicLibrary lib, List<OcrResult> results, int pageWidth,
   final ptr =
       renderFn(arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
   calloc.free(fmtPtr);
-  for (final tp in textPtrs) calloc.free(tp);
+  for (final tp in textPtrs) {
+    calloc.free(tp);
+  }
   calloc.free(arr);
 
   if (ptr == nullptr) return null;
