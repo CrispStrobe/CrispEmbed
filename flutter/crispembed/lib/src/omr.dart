@@ -37,8 +37,9 @@ typedef _OmrRecognizeRawDart = Pointer<Utf8> Function(
 DynamicLibrary _openOmrLib([String? libPath]) {
   if (libPath != null) return DynamicLibrary.open(libPath);
   if (Platform.isIOS) return DynamicLibrary.process();
-  if (Platform.isAndroid || Platform.isLinux)
+  if (Platform.isAndroid || Platform.isLinux) {
     return DynamicLibrary.open('libcrispembed.so');
+  }
   if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
   if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
   return DynamicLibrary.open('libcrispembed.so');

@@ -2,6 +2,8 @@
 ///
 /// These mirror the C API in src/crispembed.h exactly.
 /// Prefer using the high-level [CrispEmbed] class instead.
+library;
+
 import 'dart:ffi';
 
 import 'package:ffi/ffi.dart';
