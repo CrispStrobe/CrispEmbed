@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
-import '../lib/crispembed.dart';
+import 'package:crispembed/crispembed.dart';
 
 void assertTrue(bool condition, String message) {
   if (!condition) {
