@@ -366,8 +366,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->pre_ln             = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets   = u32("bert.position_buckets", 0);
-    hp.n_experts            = u32("bert.num_experts", 0);
-    hp.n_experts_per_tok    = u32("bert.num_experts_per_tok", 0);
+    hp.n_experts            = u32("bert.num_experts",
+                             u32("nomic-bert-moe.expert_count", 0));
+    hp.n_experts_per_tok    = u32("bert.num_experts_per_tok",
+                             u32("nomic-bert-moe.expert_used_count", 0));
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -550,6 +552,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.k_b   = get_any({pfx + "attn.k.bias", blk + "attn_k.bias"});
         L.v_w   = get_any({pfx + "attn.v.weight", blk + "attn_v.weight"});
         L.v_b   = get_any({pfx + "attn.v.bias", blk + "attn_v.bias"});
+        L.qkv_w = get_any({pfx + "attn.qkv.weight", blk + "attn_qkv.weight"});
+        L.qkv_b = get_any({pfx + "attn.qkv.bias", blk + "attn_qkv.bias"});
         L.o_w   = get_any({pfx + "attn.o.weight", blk + "attn_output.weight"});
         L.o_b   = get_any({pfx + "attn.o.bias", blk + "attn_output.bias"});
         L.ln2_w = get_any({pfx + "ln2.weight", blk + "layer_output_norm.weight"});
@@ -561,9 +565,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.ffn_gate_w    = get_any({pfx + "ffn_gate.weight", blk + "ffn_gate.weight"});     // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w = get_any({pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight"}); // Fused gate+up (ModernBERT/GTE v1.5)
         // MoE expert tensors (present only on MoE layers)
-        L.moe_gate_w    = get(pfx + "ffn.moe_gate.weight");
-        L.expert_fc1_w  = get(pfx + "ffn.expert_fc1.weight");
-        L.expert_fc2_w  = get(pfx + "ffn.expert_fc2.weight");
+        L.moe_gate_w    = get_any({pfx + "ffn.moe_gate.weight", blk + "ffn_gate_inp.weight"});
+        L.expert_fc1_w  = get_any({pfx + "ffn.expert_fc1.weight", blk + "ffn_up_exps.weight"});
+        L.expert_fc2_w  = get_any({pfx + "ffn.expert_fc2.weight", blk + "ffn_down_exps.weight"});
         L.moe_ffn_bias  = get(pfx + "ffn.moe_bias");
     }
 
