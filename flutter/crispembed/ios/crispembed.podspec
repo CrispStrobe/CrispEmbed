@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name             = 'crispembed'
-  s.version          = '0.3.0'
+  s.version          = '0.15.0'
   s.summary          = 'CrispEmbed on-device inference — embeddings + math OCR via ggml.'
   s.homepage         = 'https://github.com/CrispStrobe/CrispEmbed'
   s.license          = { :type => 'MIT' }

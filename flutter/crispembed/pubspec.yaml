@@ -5,6 +5,14 @@ description: >
   DeiT+TrOCR on-device math equation recognition.
 version: 0.15.0
 homepage: https://github.com/CrispStrobe/CrispEmbed
+repository: https://github.com/CrispStrobe/CrispEmbed/tree/main/flutter/crispembed
+
+topics:
+  - embeddings
+  - ocr
+  - ffi
+  - ggml
+  - on-device
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

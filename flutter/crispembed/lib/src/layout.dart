@@ -211,8 +211,7 @@ class CrispLayout {
 
 /// Decode the packed `CrispLayoutRegion[]` buffer returned by
 /// `crispembed_layout_detect`.
-List<LayoutRegion> _decodeLayoutBuffer(
-    Pointer<CrispLayoutRegion> buf, int n) {
+List<LayoutRegion> _decodeLayoutBuffer(Pointer<CrispLayoutRegion> buf, int n) {
   final results = <LayoutRegion>[];
   for (var i = 0; i < n; i++) {
     final r = buf[i];

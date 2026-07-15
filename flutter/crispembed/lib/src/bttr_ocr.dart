@@ -58,10 +58,10 @@ class CrispEmbedBttrOcr {
   CrispEmbedBttrOcr(String modelPath, {int nThreads = 4, String? libPath}) {
     _lib = _openLib(libPath);
 
-    final init = _lib.lookupFunction<_BttrInitC, _BttrInitDart>(
-        'crispembed_bttr_ocr_init');
-    _free = _lib.lookupFunction<_BttrFreeC, _BttrFreeDart>(
-        'crispembed_bttr_ocr_free');
+    final init = _lib
+        .lookupFunction<_BttrInitC, _BttrInitDart>('crispembed_bttr_ocr_init');
+    _free = _lib
+        .lookupFunction<_BttrFreeC, _BttrFreeDart>('crispembed_bttr_ocr_free');
     _recognizeGray =
         _lib.lookupFunction<_BttrRecognizeGrayC, _BttrRecognizeGrayDart>(
             'crispembed_bttr_ocr_recognize_gray');
