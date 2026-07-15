@@ -67,9 +67,8 @@ class CrispEmbedOcr {
     var received = 0;
 
     while (true) {
-      final result =
-          (await (reader.callMethod('read'.toJS) as JSPromise).toDart)
-              as JSObject;
+      final result = (await (reader.callMethod('read'.toJS) as JSPromise)
+          .toDart) as JSObject;
       final done = (result.getProperty('done'.toJS) as JSBoolean).toDart;
       if (done) break;
       final chunk = (result.getProperty('value'.toJS) as JSUint8Array).toDart;
@@ -221,12 +220,15 @@ class CrispEmbedOcr {
       name.toJS,
       returnType?.toJS ?? ''.toJS,
       argTypes.map((t) => t.toJS).toList().toJS,
-      args.map((a) {
-        if (a is int) return a.toJS;
-        if (a is String) return a.toJS;
-        if (a is double) return a.toJS;
-        return a as JSAny;
-      }).toList().toJS,
+      args
+          .map((a) {
+            if (a is int) return a.toJS;
+            if (a is String) return a.toJS;
+            if (a is double) return a.toJS;
+            return a as JSAny;
+          })
+          .toList()
+          .toJS,
     );
     if (returnType == 'number' && result != null) {
       return (result as JSNumber).toDartInt;

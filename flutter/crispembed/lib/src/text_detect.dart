@@ -28,12 +28,10 @@ typedef _FreeC = Void Function(Pointer<Void>);
 typedef _FreeDart = void Function(Pointer<Void>);
 
 // crispembed_text_det(ctx, pixels, w, h, channels, text_thresh, low_thresh, out_n)
-typedef _DetectC = Pointer<Float> Function(
-    Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Float, Float,
-    Pointer<Int32>);
-typedef _DetectDart = Pointer<Float> Function(
-    Pointer<Void>, Pointer<Uint8>, int, int, int, double, double,
-    Pointer<Int32>);
+typedef _DetectC = Pointer<Float> Function(Pointer<Void>, Pointer<Uint8>, Int32,
+    Int32, Int32, Float, Float, Pointer<Int32>);
+typedef _DetectDart = Pointer<Float> Function(Pointer<Void>, Pointer<Uint8>,
+    int, int, int, double, double, Pointer<Int32>);
 
 // ---------------------------------------------------------------------------
 // Dart result type
@@ -57,8 +55,7 @@ class TextDetRegion {
 
   @override
   String toString() {
-    final coords =
-        '(${x0.toStringAsFixed(1)}, ${y0.toStringAsFixed(1)}) → '
+    final coords = '(${x0.toStringAsFixed(1)}, ${y0.toStringAsFixed(1)}) → '
         '(${x1.toStringAsFixed(1)}, ${y1.toStringAsFixed(1)})';
     return 'TextDetRegion($coords conf=${confidence.toStringAsFixed(3)})';
   }
@@ -114,10 +111,8 @@ class CrispTextDetect {
 
     final init =
         _lib.lookupFunction<_InitC, _InitDart>('crispembed_text_det_init');
-    _free =
-        _lib.lookupFunction<_FreeC, _FreeDart>('crispembed_text_det_free');
-    _detect =
-        _lib.lookupFunction<_DetectC, _DetectDart>('crispembed_text_det');
+    _free = _lib.lookupFunction<_FreeC, _FreeDart>('crispembed_text_det_free');
+    _detect = _lib.lookupFunction<_DetectC, _DetectDart>('crispembed_text_det');
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr, nThreads);
@@ -154,9 +149,8 @@ class CrispTextDetect {
     pixPtr.asTypedList(pixels.length).setAll(0, pixels);
     final countPtr = calloc<Int32>();
     try {
-      final buf = _detect(
-          _ctx, pixPtr, width, height, channels,
-          textThreshold, lowThreshold, countPtr);
+      final buf = _detect(_ctx, pixPtr, width, height, channels, textThreshold,
+          lowThreshold, countPtr);
       final n = countPtr.value;
       if (buf == nullptr || n <= 0) return [];
       return _decodeResults(buf, n);

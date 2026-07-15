@@ -6,7 +6,7 @@
 // See .github/workflows/build.yml (build-android job).
 
 group 'com.crispstrobe.crispembed'
-version '0.3.0'
+version '0.15.0'
 
 buildscript {
     repositories {

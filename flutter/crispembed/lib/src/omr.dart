@@ -37,7 +37,8 @@ typedef _OmrRecognizeRawDart = Pointer<Utf8> Function(
 DynamicLibrary _openOmrLib([String? libPath]) {
   if (libPath != null) return DynamicLibrary.open(libPath);
   if (Platform.isIOS) return DynamicLibrary.process();
-  if (Platform.isAndroid || Platform.isLinux) return DynamicLibrary.open('libcrispembed.so');
+  if (Platform.isAndroid || Platform.isLinux)
+    return DynamicLibrary.open('libcrispembed.so');
   if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
   if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
   return DynamicLibrary.open('libcrispembed.so');
@@ -64,12 +65,16 @@ class CrispEmbedOmr {
   /// [libPath] — optional explicit path to the shared library.
   CrispEmbedOmr(String modelPath, {int nThreads = 4, String? libPath}) {
     _lib = _openOmrLib(libPath);
-    final init = _lib.lookupFunction<_OmrInitC, _OmrInitDart>('crispembed_ocr_model_init');
-    _free = _lib.lookupFunction<_OmrFreeC, _OmrFreeDart>('crispembed_ocr_model_free');
-    _recognizeGray = _lib.lookupFunction<_OmrRecognizeGrayC, _OmrRecognizeGrayDart>(
-        'crispembed_ocr_model_recognize_gray');
-    _recognizeRaw = _lib.lookupFunction<_OmrRecognizeRawC, _OmrRecognizeRawDart>(
-        'crispembed_ocr_model_recognize');
+    final init = _lib
+        .lookupFunction<_OmrInitC, _OmrInitDart>('crispembed_ocr_model_init');
+    _free = _lib
+        .lookupFunction<_OmrFreeC, _OmrFreeDart>('crispembed_ocr_model_free');
+    _recognizeGray =
+        _lib.lookupFunction<_OmrRecognizeGrayC, _OmrRecognizeGrayDart>(
+            'crispembed_ocr_model_recognize_gray');
+    _recognizeRaw =
+        _lib.lookupFunction<_OmrRecognizeRawC, _OmrRecognizeRawDart>(
+            'crispembed_ocr_model_recognize');
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr, nThreads);

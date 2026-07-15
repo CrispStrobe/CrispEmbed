@@ -1,4 +1,6 @@
 build/
+.dart_tool/
+pubspec.lock
 __pycache__/
 *.pyc
 *.o
