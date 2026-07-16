@@ -29,6 +29,7 @@ import socket
 import subprocess
 import time
 import unittest
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -138,6 +139,89 @@ class ServerJsonInputLive(unittest.TestCase):
         payload = '{"model":"m","prompt":"a \\\\ b ] c"}'
         d = _post(self._base() + "/api/embeddings", payload)
         self.assertGreater(len(d["embedding"]), 0, "non-empty embedding vector")
+
+    def test_native_embed_texts_escaped_array(self) -> None:
+        # A1: /embed ("texts") carried the same delimiter-scan bug as the three
+        # endpoints issue #34 named — it was outside that issue's repro scope.
+        payload = '{"texts":["plain","has ] bracket","has \\"quote\\"","has \\\\ backslash"]}'
+        d = _post(self._base() + "/embed", payload)
+        embs = d.get("embeddings", d.get("data"))
+        self.assertEqual(len(embs), 4, "one embedding per input text")
+
+    def test_native_embed_single_text(self) -> None:
+        # "texts" absent -> falls back to "text" single string.
+        d = _post(self._base() + "/embed", '{"text":"a ] b"}')
+        embs = d.get("embeddings", d.get("data"))
+        self.assertEqual(len(embs), 1)
+
+
+@unittest.skipUnless(SERVER_BIN and MODEL, "needs crispembed-server + CRISPEMBED_TEST_EMBED_MODEL")
+class ServerJsonInputLegacyGateLive(unittest.TestCase):
+    """A/B the CRISPEMBED_SERVER_LEGACY_JSON=1 gate end-to-end.
+
+    Proves the env gate actually switches the running server's parser: the same
+    escaped payload that returns 6 embeddings by default returns the wrong count
+    under the legacy scan, while a benign payload is unaffected either way.
+    Keeps the gate honest as a bisection switch (it is never removed).
+    """
+
+    proc: subprocess.Popen
+    port: int
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.port = _free_port()
+        env = dict(os.environ, CRISPEMBED_SERVER_LEGACY_JSON="1")
+        cls.proc = subprocess.Popen(
+            [SERVER_BIN, "-m", MODEL, "--host", "127.0.0.1", "--port", str(cls.port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            env=env,
+        )
+        base = f"http://127.0.0.1:{cls.port}"
+        deadline = time.time() + 120
+        while time.time() < deadline:
+            if cls.proc.poll() is not None:
+                raise RuntimeError("server exited during startup")
+            try:
+                urllib.request.urlopen(base + "/health", timeout=2).read()
+                return
+            except Exception:
+                time.sleep(1)
+        raise RuntimeError("server did not become ready in time")
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if getattr(cls, "proc", None):
+            cls.proc.terminate()
+            try:
+                cls.proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                cls.proc.kill()
+
+    def _base(self) -> str:
+        return f"http://127.0.0.1:{self.port}"
+
+    def test_benign_payload_is_gate_neutral(self) -> None:
+        # No escapes/brackets -> legacy must agree with the default parser.
+        payload = '{"input":["alpha","beta","gamma"]}'
+        d = _post(self._base() + "/v1/embeddings", payload)
+        self.assertEqual(len(d["data"]), 3, "gate is output-neutral on benign payloads")
+
+    def test_legacy_gate_reproduces_the_bug(self) -> None:
+        # The issue #34 payload: legacy must NOT return 6 (that's the bug we keep
+        # the gate to reproduce). If this ever returns 6, the gate stopped working.
+        payload = (
+            '{"input":["normal text","text with ] bracket inside",'
+            '"text with escaped quote: \\"hello\\"","text with backslash: \\\\",'
+            '"another normal text","final item"]}'
+        )
+        try:
+            d = _post(self._base() + "/v1/embeddings", payload)
+            n = len(d["data"])
+        except urllib.error.HTTPError as e:
+            n = 0 if e.code == 400 else -1  # legacy can also drop everything -> 400
+        self.assertNotEqual(n, 6, "legacy scan must still mis-parse (gate is live)")
 
 
 if __name__ == "__main__":
