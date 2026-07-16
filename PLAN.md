@@ -952,6 +952,29 @@ before/after parity + latency measurement — never land a "perf" change on a
 compile-only check. A/B every change against ground truth and gate behind an env
 var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
 
+- **ENCODER (embedding) path — the domain the 2026-07-16 community-GGUF work
+  landed in, and NOT otherwise in this backlog (encoders are fast: 6–22 layers,
+  batched).** One concrete micro-lever spotted:
+  - **MoE FFN redundant `ggml_repeat` (nomic-bert-moe / nomic-embed-text-v2-moe).**
+    The MoE FFN in `src/crispembed.cpp` explicitly expands the input
+    `cur [H,TB] → [H,K,TB]` with `ggml_repeat` before `ggml_mul_mat_id`. llama.cpp's
+    canonical MoE reshapes to `[H,1,TB]` and lets `mul_mat_id` BROADCAST the
+    singleton expert-slot dim, so the repeat materializes K copies of the
+    activations per MoE layer for nothing (6 MoE layers × K=2 on nomic-v2-moe).
+    **In progress (`perf/moe-encoder-repeat`):** gate the broadcast path behind
+    `CRISPEMBED_MOE_NO_REPEAT=1` (default keeps the repeat until validated); prove
+    byte-identical output old-vs-new + HF cosine unchanged (deterministic, no quiet
+    box needed); measure latency back-to-back on a QUIET box before flipping the
+    default (modest — a memory/op save on a compute-bound FFN; may be perf-neutral).
+- **HEADLINE remaining lever — GPU (Metal/WebGPU) recognizer AR decode.**
+  PERFORMANCE.md calls the per-region CPU-bound token loop "the real speed path".
+  Substantial project: a persistent single-step decode graph on the GPU (the
+  moonshine/OMR persistent-graph pattern in the dev guide — build once, gallocr
+  once at max KV, dispatch sched-free per step, re-set all inputs each compute).
+  Needs a quiet box + a real CUDA box (Kaggle) for the decoded-roundtrip gate
+  before flipping a GPU default (CUDA has stricter per-op contiguity asserts than
+  CPU/Metal — LEARNING 35). High value for document-OCR-at-volume.
+
 - **SR/restoration — fused ggml graphs: COMPLETE (2026-07-13).** Every engine
   now runs a fused ggml graph, not per-conv mini-graphs. Ported this session:
   - **SAFMN** (`8594cee`): whole forward = ONE fused graph (erf-GELU) — **2.2×
