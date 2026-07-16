@@ -396,8 +396,11 @@ that model's final layer is unusually quant-sensitive. Prefer f16/q8 for it.
    forward_pre_hook (pre-block-0 by definition, architecture-agnostic). The gate
    now prints |ours| and |ref| so this class of artifact is visible at a glance.
 
-**Backlog:** the f16/f32 control is manual; wiring a per-entry `control_file`
-into the matrix would make "prove it's quant, not a bug" a one-command check.
+**Precision control — now automated (2026-07-16).** The manual f16/f32 control
+is wired into the matrix: entries carry `control_file` + `control_min_cos`, and
+`tests/prove_quant_control.py --all` runs the control GGUF per-stage vs the HF
+reference and asserts every stage clears the floor. "Prove it's quant, not a bug"
+is now one command. Covers bge-small (f32), nomic-v1.5 (f16), nomic-v2-moe (f16).
 
 ### Transcoda OMR decode enhancements (deferred, 2026-07-13)
 

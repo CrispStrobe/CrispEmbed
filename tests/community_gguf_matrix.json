@@ -23,7 +23,9 @@
     "  min_ref_cos   optional: required cosine between the two conversions",
     "",
     "MEASURED (2026-07-16, q4_k GGUF vs HF fp32, tests/hf_parity_community.py): bge-small 0.9962 | MiniLM 0.9919 | nomic-v2-moe 0.9797 | nomic-v1.5 0.9515. min_hf_cos=0.95 is sized to sit under the q4_k floor while still catching a structural bug (wrong pooling/rope/dims), which craters cosine far below it.",
-    "PRECISION CONTROL — the only way to tell 'quant floor' from 'our bug': re-run the SAME code path at f16/f32. bge-small f32 and nomic-v1.5 f16 both give per-stage cos=1.000000 vs HF at EVERY layer, proving both encoder paths (bert split-QKV/abs-pos AND nomic-bert fused-QKV/RoPE) are exact and every q4_k delta is quantization. Do this before ever calling a low cosine a bug."
+    "PRECISION CONTROL — the only way to tell 'quant floor' from 'our bug': re-run the SAME code path at f16/f32. bge-small f32 and nomic-v1.5 f16 both give per-stage cos=1.000000 vs HF at EVERY layer, proving both encoder paths (bert split-QKV/abs-pos AND nomic-bert fused-QKV/RoPE) are exact and every q4_k delta is quantization. Do this before ever calling a low cosine a bug.",
+    "",
+    "control_file / control_min_cos: a HIGHER-PRECISION GGUF (f16/f32) of the SAME model. tests/prove_quant_control.py runs it per-stage vs the HF fp32 reference; ~1.0 at every layer proves the encoder GRAPH is exact, so the shipped-quant gap (measured_hf_cos) is quantization, NOT our bug. This automates the manual f16/f32 control that separated 'quant floor' from 'our bug' for #33."
   ],
   "models": [
     {
@@ -44,7 +46,9 @@
       "hf_trust_remote_code": true,
       "min_hf_cos": 0.95,
       "measured_hf_cos": 0.9797,
-      "measured_note": "q4_k floor; f32/f16 control not run for this one (500MB+ HF model)"
+      "measured_note": "q4_k floor; f32/f16 control not run for this one (500MB+ HF model)",
+      "control_file": "nomic-embed-text-v2-moe.f16.gguf",
+      "control_min_cos": 0.999
     },
     {
       "name": "nomic-embed-text-v1.5",
@@ -64,7 +68,9 @@
       "hf_trust_remote_code": true,
       "min_hf_cos": 0.95,
       "measured_hf_cos": 0.9515,
-      "measured_note": "LOWEST of the matrix, and it is NOT a bug: per-stage f16 vs HF fp32 is cos=1.000000 at ALL 12 layers (norms identical), so the nomic-bert graph (fused QKV + RoPE) is exact. The q4_k drop is real but purely quantization, concentrated in the LAST block (layer_10 0.9977 -> layer_11 0.9499 — a step, not smooth drift). This model's final layer is unusually quant-sensitive; prefer f16/q8 for retrieval quality."
+      "measured_note": "LOWEST of the matrix, and it is NOT a bug: per-stage f16 vs HF fp32 is cos=1.000000 at ALL 12 layers (norms identical), so the nomic-bert graph (fused QKV + RoPE) is exact. The q4_k drop is real but purely quantization, concentrated in the LAST block (layer_10 0.9977 -> layer_11 0.9499 — a step, not smooth drift). This model's final layer is unusually quant-sensitive; prefer f16/q8 for retrieval quality.",
+      "control_file": "nomic-embed-text-v1.5.f16.gguf",
+      "control_min_cos": 0.999
     },
     {
       "name": "bge-small-en-v1.5",
@@ -84,7 +90,9 @@
       "hf_trust_remote_code": false,
       "min_hf_cos": 0.95,
       "measured_hf_cos": 0.9962,
-      "measured_note": "per-stage f32 vs HF fp32 is cos=1.000000 at ALL 12 layers — the bert path (split QKV + absolute positions) is exact; all q4_k deltas are quantization"
+      "measured_note": "per-stage f32 vs HF fp32 is cos=1.000000 at ALL 12 layers — the bert path (split QKV + absolute positions) is exact; all q4_k deltas are quantization",
+      "control_file": "bge-small-en-v1.5-f32.gguf",
+      "control_min_cos": 0.9999
     },
     {
       "name": "all-MiniLM-L6-v2",
