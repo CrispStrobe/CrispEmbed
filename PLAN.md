@@ -13,7 +13,8 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-16 | `fix/nomic-moe-json-parse` | Clean reimpl of the two open GitHub PRs (#35/#36), which are unmergeable 150-commit fork-divergence branches off old `main` (both would revert 32+ newer commits; #35 doesn't even contain its claimed fix). **#34** server JSON-escaped input parsing + **#33** nomic-embed-text-v2-moe GGUF load. | **VALIDATING.** #34: new `examples/server/json_input.h` (escaping-aware parser) routes /v1/embeddings + /api/embed + /api/embeddings; unit test `test-server-json-input` (16 cases) + `tests/test_server_live.py` (3 endpoints) both PASS. #33: added `nomic-bert-moe.*` metadata + `attn_qkv`/`ffn_gate_inp`/`ffn_up_exps`/`ffn_down_exps` tensor aliases — model loads (12L/768d/8-exp/RoPE/SPM) + embeds; **HF cosine parity mean 0.9839 / min 0.9797** (q4_k vs HF fp32). Note: the fork's PR #36 only added the two `expert_count` keys — without the dimension keys it would still load at the 384d/6L defaults, so it too was incomplete. **DONE — validated, pending push.** |
+| 2026-07-16 | `fix/nomic-moe-json-parse` | GitHub issues **#34** (server JSON-escaped input parsing) + **#33** (nomic-embed-text-v2-moe GGUF load) — clean reimpl of PRs #35/#36, which were unmergeable 150-commit fork-divergence branches off old `main` (#35 didn't contain its claimed fix; #36 added only the 2 `expert_count` keys, so it would still have loaded at the 384d/6L defaults). | **LANDED `main` (`fa5bd9e`).** #34: `examples/server/json_input.h` escaping-aware parser on /v1/embeddings + /api/embed + /api/embeddings; `test-server-json-input` (16 cases) + `tests/test_server_live.py` (3 endpoints) PASS. #33: `nomic-bert-moe.*` metadata + `attn_qkv`/`ffn_gate_inp`/`ffn_up_exps`/`ffn_down_exps` aliases; loads 12L/768d/8-exp top-2 + **HF cosine mean 0.9839 / min 0.9797** (q4_k vs fp32). PRs #35/#36 + issues #33/#34 closed. Follow-ups A1–A4 filed in the backlog. |
+| 2026-07-16 | `feat/json-arch-hardening` | **A1–A4 ecosystem-compat + input-parsing hardening** (backlog "Ecosystem-compat + input-parsing hardening"). A1 finish JSON parser migration (4 endpoints still carry the #34 bug, incl. `/embed`); A2 arch-driven hparams + strict mode (systemic #33); A3 community-GGUF import matrix; A4 red-main / toolchain-drift signal. | **IN FLIGHT.** All with env gates + A/B + unit tests per the env-gate rule. Gates: `CRISPEMBED_SERVER_LEGACY_JSON=1`, `CRISPEMBED_ARCH_HPARAMS=0`, `CRISPEMBED_STRICT_HPARAMS=1`. |
 | 2026-07-15 | `chore/pub-crispembed-dart` | pub.dev quality: crispembed **0.15.1** to 160/160 pana points (add example/README, enable `lints/core` + brace/dangling-doc fixes) | **DONE — publishing 0.15.1.** Docs/lint only, no behaviour change. |
 | 2026-07-13 | `feat/handwritten-fixtures` | Close the bttr/hmer/posformer `expected_text: null` gap with in-domain CROHME fixtures | **DONE — validated, pending push.** Confirmed **no bug** — the 3 CROHME models were guarded on a *printed* image (out-of-domain); on correctly-rendered CROHME 2014 all three read simple formulas correctly + deterministically (CPU==Metal). Added a `sample_hf` harness mechanism: fetches one CROHME image from `Kitajiang/test2_CROHME2014` (pinned rev, row 23 `C_t=C+C=2C`) at test time so CC-BY-NC-SA data stays OUT of the MIT repo. Pinned `expected_text` for all 3 (`run_one` cer 0.000). |
 | 2026-07-13 | `feat/transcoda-omr` | Transcoda-59M zero-shot OMR (full-page score → Humdrum `**kern`; ConvNeXt-V2-tiny enc + 8-layer RoPE cross-attn decoder). **Clean-room** (weights CC-BY-4.0, code AGPL — engine written from paper + config + oracle only) | **DONE (on `main`).** Engine `src/transcoda_ocr.{h,cpp}` + converter + oracle + wiring (CMake/dispatcher/CLI/registry) + quantizer conv keep-guard. f32 `test-transcoda-diff` **all stages cos=1.000000** (CPU & Metal) + **argmax 191/191**, native preproc bit-exact. **Both f32 and q8_0 greedy decodes byte-identical to the HF reference** (460 chars / 203 tokens). HF `cstr/transcoda-omr-GGUF` (f32 224 MB + q8_0 65 MB + **CC-BY-4.0 card w/ attribution**, license verified landed). Registry entry + regression fixture (`page_transcoda.png` from CC-BY-4.0 verovio-synth-omr, **cer 0.000**, garbage-guard PASS). Fixed: KV view-stale, rep-penalty per-unique-token, `/`-separator. Full wiring (README/omr.dart; bindings auto-dispatch by arch). **Perf: persistent device-KV decode 2.4–4× faster, byte-identical** (host path behind `TRANSCODA_OCR_HOST_KV=1`). Deferred to backlog: beam-3 + `**kern` grammar-constrained decode. **Fully done** (milestone in HISTORY.md; deep-dive in LEARNINGS.md). |
@@ -289,6 +290,65 @@ micro-gap" and "the build dir was silently CPU-only"; verify
 `GGML_METAL:BOOL=ON` in `build/CMakeCache.txt`; check `git worktree list` +
 `git log main..<branch>` for a concurrent session's finished work; all edits in
 a worktree (ggml symlink dance, see CLAUDE.md).
+
+### Ecosystem-compat + input-parsing hardening (A1–A4, opened 2026-07-16)
+
+Four items surfaced while fixing issues #33/#34 (`fa5bd9e`). #34 fixed the JSON
+input parser for the 3 endpoints the issue named; #33 taught the loader the
+`nomic-bert-moe.*` GGUF names. Both fixes were *instance-level* — these items
+close the underlying **bug classes**. Ordered by value; A1/A2 are independent.
+
+**A1 — finish the JSON parser migration (live bug).** `examples/server/json_input.h`
+(`json_extract_strings`, escaping-aware) now backs `/v1/embeddings`, `/api/embed`
+and `/api/embeddings`. Four endpoints still use the old delimiter-scan and carry
+the *identical* `]`-in-string / `\"` / `\\` cardinality bug:
+
+| server.cpp | endpoint | field |
+|---|---|---|
+| ~292 | **`/embed`** | `"texts"` array — an embedding endpoint, missed by the #34 scope |
+| ~1113 | `/rerank` | `"documents"` array |
+| ~1635 | `/ner/extract` | `"labels"` array |
+| ~1770 | `/kie/extract` | `"labels"` array |
+
+A `/rerank` document containing `]` silently mis-splits today. Steps: route all
+four through `json_extract_strings`; gate the OLD scan behind
+`CRISPEMBED_SERVER_LEGACY_JSON=1` (regression-bisection per the env-gate rule —
+never remove the gate); A/B old-vs-new over a payload corpus (must be *identical*
+on unescaped payloads, differ only where the old one was wrong); extend
+`test-server-json-input`. Gate: unit test + live `tests/test_server_live.py`.
+
+**A2 — arch-driven hparams + strict mode (systemic version of #33).** `load_model`
+hardcodes `bert.*`/`xlmr.*` key chains; #33 appended `nomic-bert-moe.*`, which is
+an alias list that grows one model at a time (the fork's PR did the same and was
+still incomplete). llama.cpp/Ollama *always* write `<general.architecture>.*`
+(`embedding_length`, `block_count`, `attention.head_count`, …), so read
+`general.architecture` and derive the prefix generically — every future community
+GGUF then works with no new code, and the `nomic-bert-moe.*` lines collapse into it.
+**The sharper half:** missing keys currently fall back to *silent defaults*
+(384-dim / 6-layer / 1e-12 eps). #33 got lucky and failed loudly on a missing
+tensor; for an arch whose tensor names *do* resolve, this silently emits a garbage
+embedding with exit code 0. Add an opt-in hard-fail. Gates:
+`CRISPEMBED_ARCH_HPARAMS=0` disables arch-derived lookup (default ON — purely
+additive, only fires when the bert.*/xlmr.* keys are absent);
+`CRISPEMBED_STRICT_HPARAMS=1` hard-fails on a missing required hparam (default OFF
+— hard-fail could break models legitimately relying on a default). A/B: existing
+models must be **byte-identical** with the gate on vs off; nomic-moe loads only
+with it on. Unit test the key-resolution logic host-side.
+
+**A3 — community-GGUF import matrix.** The registry ships
+`nomic-embed-text-v2-moe` (model_mgr.cpp:435) pointing at **our own `cstr/`**
+conversions, which load fine — while the *community* GGUF (`nomic-ai/…-GGUF`,
+what users reach for first) did not, which is exactly what #33 was. Nothing tests
+the ecosystem's output of models we claim to support. Add a harness that loads
+community (llama.cpp/Ollama) GGUFs and asserts load + cosine-vs-reference; env-gated
+so it skips without models. This is what catches the next #33 before a user does.
+
+**A4 — red-main + toolchain-drift signal.** `main` was red 2026-07-14 → 07-16 and
+nobody noticed until a push landed on it: `setup-emsdk` was unpinned, `latest`
+drifted 6.0.2 → 6.0.3, and 6.0.3's clang segfaults compiling `layout_detect.cpp`
+(fixed by pinning 6.0.2 in `0e1a1b9`). Audit the workflows for other
+"latest"-alias toolchain installs with the same drift exposure, and add a signal
+so a red `main` self-reports.
 
 ### Transcoda OMR decode enhancements (deferred, 2026-07-13)
 
