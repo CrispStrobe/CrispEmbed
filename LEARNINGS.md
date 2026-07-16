@@ -1,5 +1,93 @@
 # CrispEmbed — Technical Learnings
 
+## A low q4_k cosine is NOT a bug — prove it with a precision control (2026-07-16)
+
+When a shipped q4_k GGUF scores a low cosine vs the HF model (nomic-embed-text-v1.5
+hit **0.9515**), that number alone can NEVER distinguish "quant floor" from "our
+encoder graph is wrong" — both look identical at the output. The ONLY thing that
+separates them is re-running the **same code path at higher precision**: if the
+f16/f32 GGUF of the same model matches the original Python model to ~1.0 at EVERY
+per-stage layer, the graph is exact and the whole q4_k gap is quantization.
+
+Measured this way, all three encoder paths are proven exact:
+`bge-small f32` = 1.000000/stage, `nomic-v1.5 f16` = 1.000000/stage,
+`nomic-v2-moe f16` ≥ 0.9998/stage — so nomic-v1.5's 0.9515 is a real *quality*
+fact (that model's last block is unusually quant-sensitive; prefer f16/q8), NOT a
+port bug. Automated as `tests/prove_quant_control.py` (`control_file` per matrix
+entry). **Do this before ever calling a low cosine a bug.** Corollary: cross-
+comparing two of OUR OWN conversions (q4_k vs cstr-iq4_xs) is not ground truth —
+both can agree and both be wrong; only the original Python model is.
+
+## "Loads + emits" proves nothing; a loud failure beats silent garbage (2026-07-16)
+
+Two related discipline lessons from the community-GGUF work:
+
+1. **A model that loads and returns a same-shape vector can still be garbage.**
+   The community `modern-bert` loader fix made gte-modernbert-base load
+   (22L/768d, right dims) and emit a 768-dim embedding — yet cos(related)=0.068 <
+   cos(unrelated)=0.157 (negative margin). "It loads" and "the dim is right" are
+   necessary, never sufficient (HARD RULE #3). The per-stage HF diff then showed
+   the STRUCTURAL GATE itself failing (`emb_ln_out` cos 0.58 = divergence *before*
+   block 0), which localized the bug to tokenization, not the graph — the
+   opposite of where intuition (GeGLU/attention) pointed.
+
+2. **Do not "fix" a loud failure into a silent-wrong success.** The modern-bert
+   loader aliases turned a LOUD `missing required tensor` into a SILENT garbage
+   embedding (loads, exit 0). That is strictly worse and was NOT shipped — the
+   change was reverted, only the diagnosis kept. Same principle drives
+   `CRISPEMBED_STRICT_HPARAMS`: a missing required hparam that silently defaults to
+   384-dim/6-layer emits a plausible-but-wrong embedding with exit 0. A model that
+   won't load tells the user something is wrong; one that loads-and-lies does not.
+
+## Community GGUFs ≠ our own conversions — the ecosystem-compat gap (2026-07-16, #33)
+
+We ship registry entries pointing at our `cstr/*` GGUFs and test THOSE, so a model
+"works" while the *community* GGUF of the same model — a llama.cpp/Ollama export,
+which is what users reach for first — fails to load. That is exactly what issue
+#33 was (nomic-embed-text-v2-moe). The gaps are systematic:
+
+- **Metadata keys.** Our converter writes `bert.*`; llama.cpp writes
+  `<general.architecture>.*` (e.g. `nomic-bert-moe.embedding_length`). Fix once,
+  generally: read `general.architecture` and derive the prefix (`core_hparams`,
+  A2) — every future arch resolves with no new code. Appending one alias per model
+  (what #33's upstream PR did — it added only the 2 `expert_count` keys and would
+  still have loaded at 384-dim/6-layer) never finishes.
+- **Tensor names.** Fused `attn_qkv`, stacked `ffn_up_exps`/`ffn_down_exps`,
+  `attn_norm`/`ffn_norm`/`output_norm` (ModernBERT) — llama.cpp names differ from
+  ours. `get_any({...})` alias lists.
+- **Tokenizer selection (the deep one).** Our converter writes a numeric
+  `tokenizer.ggml.type`; community GGUFs write the standard STRING
+  `tokenizer.ggml.model` (`gpt2`/`bert`/`t5`) with merges in the
+  `tokenizer.ggml.merges` KV ARRAY, not a tensor. crispembed reading only
+  `tokenizer.ggml.type` (+ an `n>100000→SPM` vocab-size heuristic) silently picks
+  the WRONG tokenizer for a modern-bert `gpt2` GGUF → WordPiece not BPE → garbage
+  from token 0. (The heuristic only made e5/granite work by luck.)
+
+Guard it: `tests/community_gguf_matrix.json` loads THIRD-PARTY GGUFs and gates on
+load + shape + a garbage guard + HF parity. Adding 3 entries immediately surfaced
+a 3rd arch string (`nomic-bert`), a latent RoPE default bug, and the modern-bert
+tokenizer bug — the coverage IS the bug-finder.
+
+## Hand-rolled JSON drifts into N diverged copies — centralize in `core/` (2026-07-16)
+
+The HTTP server and the CLI each had their own `json_escape`, and they had already
+DIVERGED (server: `"`,`\`,`\n`; CLI added `\r`,`\t`) — both echoing OCR/KIE/NER
+text, both missing `\b`/`\f`/`\u00XX`, so both emitted invalid JSON on a control
+char (a tab in OCR'd table text breaks every strict client). Same class as the
+`pcs.cpp` two-copies-drift lesson. Unified into `src/core/json.h` (`core_json`,
+matching `core_util`/`core_gguf`). Two durable sub-lessons:
+
+- **The escaper must be the exact inverse of the decoder**, and the way to prove
+  it is a round-trip PROPERTY test — `decode(escape(x)) == x` over all 256 byte
+  values — not example cases. That property test would have caught the missing
+  `\t`/`\r` immediately; the example-based tests didn't.
+- **Locate JSON keys structurally (brace-depth 1), never `body.find("\"key\"")`.**
+  A string VALUE equal to the key name (legal unescaped, e.g. `["input"]` in a
+  labels array) makes `find` match the decoy and skip to the next colon — returning
+  another key's values, or values for a key that isn't present. Reachable via
+  user-controlled `/ner` labels.
+
+
 ## Converter-emitted stacked MoE experts halve the resident expert memory — and measure the win by PEAK FOOTPRINT, not max RSS (2026-07-13, deepseek-ocr2 #4)
 
 The MoE decoders (deepseek_ocr2, unlimited_ocr) shipped per-expert 2D weight

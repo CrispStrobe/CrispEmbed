@@ -4,6 +4,63 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 16, 2026 — JSON I/O hardening + `core_json` + community-GGUF ecosystem compat
+
+Landed a cluster of correctness fixes around HTTP/CLI JSON handling and
+community-GGUF loading, plus a ground-truth parity methodology. All on `main`.
+
+- **#34 — server JSON input parser mis-split escaped payloads.** The embedding
+  endpoints hand-scanned request bodies: `body.find(']')` took the first bracket
+  even inside a string value, and the `"`-pair loop ignored `\"`/`\\`. A payload
+  whose inputs contained `]`, `\"` or `\\` produced the wrong input cardinality
+  ("returned 7 embeddings for 6 inputs"). Fixed with an escaping-aware parser.
+- **A1 — completed the migration.** `/embed`, `/rerank`, `/ner/extract`, `/kie`
+  carried the identical bug (worse than assumed: a `]` in the *first* array
+  element dropped *every* element). Zero delimiter-scan parses remain.
+- **B1/B2 + centralization → `src/core/json.h` (`core_json`).** Completed the
+  escaper (was `"`,`\`,`\n` only; now every control char per RFC 8259, the exact
+  inverse of the decoder — round-trip property tested over all 256 bytes) and made
+  key location structural (a decoy `"key"` *value* no longer matches, reachable via
+  `/ner` labels). The server AND CLI each had a diverged `json_escape` (3 vs 5
+  chars, both echoing OCR text) — unified into `core_json`; the CLI's latent
+  control-char bug fixed for free (proven live: CLI `--json` on tab text emits
+  `"a\tb"`, strict-JSON valid). Also routed the server's ~14 scalar/image field
+  reads (`conf`/`threshold`/`max_tokens`/`extract_image_path`) through `core_json`,
+  closing the same decoy bug for scalars. One env gate
+  (`CRISPEMBED_SERVER_LEGACY_JSON=1`) reverts the whole surface for A/B.
+- **#33 — nomic-embed-text-v2-moe wouldn't load** (`missing required tensor
+  attn.q.weight`). Community/llama.cpp GGUFs use the `nomic-bert-moe.*` metadata
+  keys + fused `attn_qkv`/stacked `ffn_*_exps` tensors. Fixed; HF cosine parity
+  mean 0.9839.
+- **A2 — arch-driven hparams + strict mode.** Generalized #33: read
+  `general.architecture` and derive `<arch>.<field>` keys, so any community GGUF
+  resolves with no new code (the per-model alias list stops growing). Missing
+  *required* hparams previously fell back to silent defaults (384-dim/6-layer) →
+  silent-garbage embedding; `CRISPEMBED_STRICT_HPARAMS=1` makes it hard-fail.
+  A/B: existing models byte-identical on/off; nomic byte-identical to #33's build.
+- **A3 + ground-truth parity.** A community-GGUF import matrix
+  (`tests/community_gguf_matrix.json` + `run_community_gguf.py`) — because we tested
+  our own `cstr/*` conversions, not the ecosystem's (which is what #33 was). Added
+  HF/PyTorch per-stage parity (`tools/dump_encoder_reference.py` +
+  `tests/test_encoder_diff.py` + `CRISPEMBED_DUMP_LAYERS_GGUF`) and automated the
+  precision control (`prove_quant_control.py`): re-run at f16/f32 to prove a low
+  q4_k cosine is quantization, not a bug. Proven for bge-small (f32=1.000000/stage),
+  nomic-v1.5 (f16=1.000000), nomic-v2-moe (f16≥0.9998) — all three encoder paths
+  (bert, nomic-bert, nomic-bert-moe) are exact; all quant gaps are quantization.
+- **A4 — CI drift guards.** WASM CI had sat red for 2 days from an unpinned
+  `setup-emsdk` drifting `latest` 6.0.2→6.0.3 (a clang that SIGSEGVs on
+  `layout_detect.cpp`). Pinned 6.0.2; added `tools/check_workflow_pins.sh` (fails
+  on any unpinned toolchain step, self-tested both arms) + a daily `main-health`
+  cron that self-reports a red `main`.
+- **Found (not fixed): community `modern-bert` GGUFs.** Wider matrix coverage
+  found gte-modernbert-base won't load. Attempted a loader fix, validated it
+  produced GARBAGE (structural gate `emb_ln_out` cos 0.58), traced the true first
+  divergence to the TOKENIZER (dispatch reads only crispembed's own
+  `tokenizer.ggml.type`, ignores the standard `tokenizer.ggml.model="gpt2"` →
+  WordPiece instead of BPE). **Deliberately NOT shipped** — the loader-alias part
+  alone turns a loud failure into silent garbage. Full validated diagnosis +
+  recipe in `handover-prompts/modernbert-community-gguf.md`.
+
 ## July 13, 2026 — DeepSeek-OCR-2 #4: converter-emitted stacked MoE experts (−1.3 GB resident)
 
 Closed the last open DeepSeek-OCR-2 memory lever (`feat/ds-ocr2-stacked-experts`).
