@@ -491,7 +491,16 @@ bug:**
     needs offset 0, so there is no tokenizer-side signal to key offset-2 off. The
     fix belongs upstream (the community GGUF must emit `position_offset`), or
     users should use a GGUF that declares it (our `cstr/*` e5 sets it). Left as a
-    documented finding; no speculative heuristic shipped.
+    documented finding; no speculative heuristic shipped. **A position_embd
+    row-count heuristic was CONSIDERED and RULED OUT (verified 2026-07-16):**
+    RoBERTa allocates 2 extra rows (max_pos = ctx+2), so `position_embd` rows
+    beyond `context_length` might have signalled offset 2 — but the community e5,
+    granite, and bge GGUFs ALL have `position_embd`=[384,512] with ctx=512 (the
+    e5 converter dropped the 2 padding rows), so there is NO row-count signal
+    either. Conclusion: with an identical 512-row table AND an identical RoBERTa
+    SPM tokenizer, e5 (needs offset 2) and granite (offset 0) are
+    indistinguishable from GGUF metadata alone — crispembed cannot auto-detect it;
+    the offset must be carried in the GGUF. Thread CLOSED (not fixable our side).
   - Regression note: both still load as SentencePiece under the new
     model-string-authoritative dispatch (t5→SPM directly; bert+250K→SPM via the
     retained heuristic), so the dispatch change did not regress the bert/SPM path.
