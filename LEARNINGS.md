@@ -120,6 +120,30 @@ The RESOLUTION of the modern-bert entry above (`gte-modernbert-base`, arch
   repo than the shipped q8_0 (eranmazur ships only q8_0; the f16 is in
   `cstr/*-GGUF`), so `prove_quant_control.py` gained a `control_repo` override.
 
+## Position offset can NOT be inferred from the tokenizer — a community XLM-R "bert" GGUF that omits `position_offset` is under-specified (2026-07-16, e5 vs granite)
+
+Extending the community matrix to two XLM-RoBERTa-family SPM embedders exported as
+arch `bert` split them:
+- `granite-embedding-107m-multilingual` (community q4_k) parity-matches HF at the
+  structural gate (cos 0.9999) — it uses absolute position **offset 0**.
+- `multilingual-e5-small` (community `rodion-m` fp32) does NOT: gate cos **0.467**
+  with matching norms (16.4 vs 16.5) = a pure position-embedding SHIFT. HF
+  `intfloat/multilingual-e5-small` is XLM-RoBERTa (padding_idx=1 → position
+  **offset 2**), but the community `bert`-arch GGUF drops `bert.position_offset`,
+  so crispembed defaults to 0.
+
+The trap: **both models share the identical RoBERTa SentencePiece tokenizer**
+(bos=0/eos=2/pad=1, tokens `[0,33600,31,8999,2]` for "hello world"), yet need
+DIFFERENT position offsets. So there is no tokenizer-side signal to key an
+"offset 2" heuristic off — it would break granite. Position-embedding convention
+lives in the model config (`padding_idx`), which a `bert`-arch GGUF export can
+silently omit. Do NOT add a speculative auto-detect; it's an under-specified
+export (fix belongs upstream / use a GGUF that declares the offset — our `cstr/*`
+e5 does). The matrix is what surfaced it: granite ADDED + validated, e5
+documented as a found gap, no false "passing" entry shipped. (A garbage-guard-only
+check would have *passed* e5 on a self-consistent-but-wrong vector — only the HF
+per-stage structural gate caught the shift.)
+
 ## Hand-rolled JSON drifts into N diverged copies — centralize in `core/` (2026-07-16)
 
 The HTTP server and the CLI each had their own `json_escape`, and they had already
