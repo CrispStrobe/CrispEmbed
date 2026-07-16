@@ -7,6 +7,7 @@
 //
 // Returns non-zero exit code on any failure (matches the repo's other test-* runners).
 
+#include "core/clean_exit.h"
 #include "json_input.h"
 
 #include <cstdio>
@@ -28,7 +29,7 @@ static std::string S(const char * s) {
     return std::string(s);
 }
 
-int main() {
+static int crispembed_test_main() {
     std::printf("test_server_json_input\n");
 
     // Issue #34 primary reproduction: 6 inputs with ], escaped quotes, backslash.
@@ -123,4 +124,10 @@ int main() {
 
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");
     return g_failures == 0 ? 0 : 1;
+}
+
+// Route through core_util::clean_exit per the tools/check_test_clean_exit.sh guard
+// (host-only test, but the guard is blanket over tests/*.cpp mains).
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
