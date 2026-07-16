@@ -1,0 +1,19 @@
+name: Publish crispembed to pub.dev
+on:
+  push:
+    tags: ['crispembed-v[0-9]+.[0-9]+.[0-9]+']
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # OIDC auth to pub.dev (no stored secrets)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - name: Publish
+        working-directory: flutter/crispembed
+        run: |
+          flutter pub get
+          flutter pub publish --force
