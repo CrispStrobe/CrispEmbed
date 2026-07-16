@@ -31,7 +31,7 @@
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
-#include "json_input.h"
+#include "core/json.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "model_mgr.h"
@@ -58,22 +58,8 @@
 #include <string>
 #include <vector>
 
-static std::string json_escape(const std::string & s) {
-    std::string out;
-    for (char c : s) {
-        if (c == '"')
-            out += "\\\"";
-        else if (c == '\\')
-            out += "\\\\";
-        else if (c == '\n')
-            out += "\\n";
-        else
-            out += c;
-    }
-    return out;
-}
-
-using crispembed_server::json_extract_strings;
+using core_json::json_escape;
+using core_json::json_extract_strings;
 
 int main(int argc, char ** argv) {
     std::string model_path;
