@@ -554,7 +554,38 @@ that model's final layer is unusually quant-sensitive. Prefer f16/q8 for it.
 is wired into the matrix: entries carry `control_file` + `control_min_cos`, and
 `tests/prove_quant_control.py --all` runs the control GGUF per-stage vs the HF
 reference and asserts every stage clears the floor. "Prove it's quant, not a bug"
-is now one command. Covers bge-small (f32), nomic-v1.5 (f16), nomic-v2-moe (f16).
+is now one command. Covers bge-small (f32), nomic-v1.5 (f16), nomic-v2-moe (f16),
+gte-modernbert (f16), granite-107m (f16).
+
+#### Community-matrix coverage roadmap — candidate archs to add (2026-07-16)
+
+Current entries (6): bge-small + all-MiniLM (`bert`, split-QKV/abs-pos/WordPiece),
+nomic-v1.5 (`nomic-bert`), nomic-v2-moe (`nomic-bert-moe`), gte-modernbert
+(`modern-bert`, gpt2-BPE), granite-107m (`bert` + `t5`/SPM, CLS). Each remaining
+family below exercises a DISTINCT loader/graph path not yet guarded against a
+third-party GGUF. Ordered by coverage value; every one is a load + shape +
+garbage-guard + HF per-stage entry (the granite recipe), each MUST be gated on the
+per-stage structural cosine (a garbage-guard-only pass hides an e5-style shift).
+Availability probed 2026-07-16 (repos listed are candidates, not yet validated):
+
+| Candidate | arch / path it covers | Fits dense driver? | Candidate community GGUF | Watch-out |
+|---|---|---|---|---|
+| **Qwen3-Embedding-0.6B** | `qwen3` DECODER embed — last-token pool, **causal**, gpt2-BPE decoder path (distinct from modern-bert's ENCODER BPE) | ✅ (last-token) | `Qwen/Qwen3-Embedding-0.6B-GGUF` (official) + many | Instruct/query prefix is caller-side; confirm last-token pooling maps right |
+| **EmbeddingGemma-300m** | `gemma-embedding` — mean pool, **Dense bottleneck + Matryoshka** projection (see LEARNINGS "non-orthogonal Dense bottleneck") | ✅ (mean) | `ggml-org/embeddinggemma-300m-qat-q8_0-GGUF`, `unsloth/…`, `lmstudio-community/…` | Dense modules must be in the GGUF; ~0.002 backbone discrepancy is amplified by the bottleneck (known) |
+| **LFM2.5-Embedding-350M** | `lfm2` bidirectional hybrid — ShortConv + attention, **BOS-only wrap** | ✅ (mean/CLS) | `LiquidAI/LFM2.5-Embedding-350M-GGUF` (official) | Metal `ggml_mul` src[1] must be F32 (norm-weight cast, see CLAUDE.md LFM2 notes) |
+| **GTE-v1.5 (gte-base-en-v1.5)** | `NewModel` NTK-RoPE + GeGLU **tanh** (the path the modern-bert `geglu_erf` gate was explicitly kept OFF for) | ✅ | `cstr/gte-base-en-v1.5-GGUF` (our own; llama.cpp ❌ so third-party rare) | Guards the tanh-GeGLU branch stays correct next to modern-bert's erf branch |
+| **MPNet (all-mpnet-base-v2)** | MPNet two-stream / T5-style rel-attn bias — **we are unique** | ✅ | `cstr/all-mpnet-base-v2-GGUF` (our own; no third-party — llama.cpp ❌) | Not a true ecosystem gap (no community export exists); lower priority |
+| **XLM-R-large / multilingual-e5-large** | `bert`+SPM XLM-R at 1024-dim | ✅ | `soichisumi/…-Q8_0-GGUF`, `phate334/…`, `walsons/…` | **EXPECT the e5-small position-offset FAILURE** (XLM-R needs offset 2; community `bert`-arch GGUFs omit `position_offset`). Add ONLY if a community GGUF declares the offset — else it documents the same known gap |
+| **SPLADE-v3 (sparse)** | MLM/sparse head — `has_sparse` path, NOT dense | ❌ (needs a sparse-specific check, not the garbage guard) | `mradermacher/Splade-V3-GGUF` | Driver has no sparse mode; would need a top-term overlap gate. Separate work |
+| **DeBERTa-v2** | disentangled c2p/p2c rel-attn (`rel_embd`, `position_buckets`) — **we are unique**, highest-complexity encoder path | ✅ | **none found** (llama.cpp ❌, no community GGUF exists) | Blocked on the absence of any third-party GGUF; only our own conversion exists |
+
+Highest-leverage next picks when a box is free: **Qwen3-Embedding** and
+**EmbeddingGemma** (both official GGUFs + genuinely new pooling/projection paths),
+then **LFM2.5-Embedding** and **GTE-v1.5**. XLM-R-large is expected to reproduce
+the e5 offset gap (add only as a documented negative or if a GGUF declares the
+offset). SPLADE needs a sparse-mode driver first; DeBERTa-v2 is blocked on GGUF
+availability. Do each on a quiet box (250K-vocab SPM reads + HF forwards are slow
+under contention) and gate on the per-stage structural cosine.
 
 ### Transcoda OMR decode enhancements (deferred, 2026-07-13)
 
@@ -1009,11 +1040,20 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
     canonical MoE reshapes to `[H,1,TB]` and lets `mul_mat_id` BROADCAST the
     singleton expert-slot dim, so the repeat materializes K copies of the
     activations per MoE layer for nothing (6 MoE layers × K=2 on nomic-v2-moe).
-    **In progress (`perf/moe-encoder-repeat`):** gate the broadcast path behind
-    `CRISPEMBED_MOE_NO_REPEAT=1` (default keeps the repeat until validated); prove
-    byte-identical output old-vs-new + HF cosine unchanged (deterministic, no quiet
-    box needed); measure latency back-to-back on a QUIET box before flipping the
-    default (modest — a memory/op save on a compute-bound FFN; may be perf-neutral).
+    Gate landed on `main` (`5abc4de`), broadcast path behind
+    `CRISPEMBED_MOE_NO_REPEAT=1` (default keeps the repeat).
+    **Correctness VALIDATED (2026-07-16):** default vs `CRISPEMBED_MOE_NO_REPEAT=1`
+    on `nomic-embed-text-v2-moe` is **BYTE-IDENTICAL (max_abs_diff=0.0, cos=1.0)**
+    at BOTH f16 and q4_k (50-token input) — the broadcast is exactly the repeat, so
+    HF cosine is unchanged by construction. **Latency INCONCLUSIVE / neutral:** a
+    7-run bench A/B (graph-compute, T=50, Metal) gave repeat median ~188 ms vs
+    norepeat ~195 ms but with ±100 ms run-to-run swings at load ~9 — the
+    distributions fully overlap, so no reliable delta (matches the "may be
+    perf-neutral" expectation; the repeat materializes only ~1.8 MB total). **Flip
+    decision deferred:** per the dev-guide rule (flip only when it wins on speed AND
+    quality), a clean flip needs a genuine quiet box (load <3) for a back-to-back
+    median; until then keep opt-in — correctness is no longer the blocker, only a
+    trustworthy latency number is.
 - **HEADLINE remaining lever — GPU (Metal/WebGPU) recognizer AR decode.**
   PERFORMANCE.md calls the per-region CPU-bound token loop "the real speed path".
   Substantial project: a persistent single-step decode graph on the GPU (the
