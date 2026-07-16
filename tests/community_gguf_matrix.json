@@ -1,0 +1,42 @@
+{
+  "_comment": [
+    "Community-GGUF import matrix (A3). See PLAN.md 'Ecosystem-compat + input-parsing hardening'.",
+    "",
+    "WHY: we test our own cstr/* conversions, not the ecosystem's. Issue #33 was exactly that gap —",
+    "the registry ships nomic-embed-text-v2-moe pointing at cstr/ GGUFs (which loaded), while the",
+    "community GGUF users actually reach for first (nomic-ai/*-GGUF, a llama.cpp export) aborted with",
+    "'missing required tensor attn.q.weight'. Nothing caught it before a user did.",
+    "",
+    "Each entry pins a THIRD-PARTY GGUF of a model we claim to support. The driver asserts it loads,",
+    "reports the expected arch/dims, and produces a semantically sane embedding (the garbage guard —",
+    "a model loaded with fabricated hparams still emits floats, so dim+rc alone prove nothing).",
+    "",
+    "Fields:",
+    "  name          test id",
+    "  repo/file     HuggingFace repo + filename of the COMMUNITY gguf",
+    "  arch          expected general.architecture (documents which key family it exercises)",
+    "  dim           expected embedding dimension — the silent-default trap (#33 would give 384)",
+    "  n_layer       expected layer count (nomic: 12; the silent default is 6)",
+    "  query_prefix / doc_prefix  task prefixes this model family requires",
+    "  min_margin    cos(query, related) must exceed cos(query, unrelated) by at least this",
+    "  ref_file      optional: our own conversion of the SAME model, for a cross-conversion A/B",
+    "  min_ref_cos   optional: required cosine between the two conversions"
+  ],
+  "models": [
+    {
+      "name": "nomic-embed-text-v2-moe",
+      "repo": "nomic-ai/nomic-embed-text-v2-moe-GGUF",
+      "file": "nomic-embed-text-v2-moe.Q4_K_M.gguf",
+      "arch": "nomic-bert-moe",
+      "dim": 768,
+      "n_layer": 12,
+      "query_prefix": "search_query: ",
+      "doc_prefix": "search_document: ",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "Regression guard for issue #33: llama.cpp export uses fused attn_qkv + ffn_*_exps tensors and nomic-bert-moe.* hparam keys. Before the fix this aborted at load; with hparams missing it would have run at 384-dim/6-layer."
+    }
+  ]
+}
