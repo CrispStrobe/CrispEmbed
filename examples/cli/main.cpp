@@ -8,6 +8,7 @@
 
 #include "crispembed.h"
 #include "core/clean_exit.h"
+#include "core/json.h"
 #include "model_mgr.h"
 #include "vit_embed.h"
 #include "clip_text_embed.h"
@@ -34,33 +35,9 @@
 #include <utility>
 #include <vector>
 
-static std::string json_escape(const std::string & s) {
-    std::string out;
-    out.reserve(s.size() + 8);
-    for (char c : s) {
-        switch (c) {
-        case '\\':
-            out += "\\\\";
-            break;
-        case '"':
-            out += "\\\"";
-            break;
-        case '\n':
-            out += "\\n";
-            break;
-        case '\r':
-            out += "\\r";
-            break;
-        case '\t':
-            out += "\\t";
-            break;
-        default:
-            out += c;
-            break;
-        }
-    }
-    return out;
-}
+// json_escape now lives in core/json.h (was a diverged local copy that, like the
+// server's, left \b \f and other control chars raw — invalid JSON in OCR output).
+using core_json::json_escape;
 
 static float dot_product(const float * a, const float * b, int n) {
     float sum = 0.0f;

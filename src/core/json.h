@@ -1,4 +1,9 @@
-// Minimal JSON-string extraction helpers for the HTTP server.
+// core_json — shared JSON string escaping + extraction helpers.
+//
+// Centralized in core/ (like core_util/core_gguf) because the server AND the CLI
+// each hand-rolled their own json_escape and they had already DIVERGED (server: 3
+// chars; CLI: 5) — both echoing OCR/KIE/NER text, both missing control-char escapes.
+// One correct, tested implementation, per the pcs.cpp 'two copies drift' lesson.
 //
 // The server hand-parses request bodies (no JSON library dependency). These two
 // helpers replace the previous delimiter-scan approach, which mis-split any
@@ -16,7 +21,7 @@
 #include <utility>
 #include <vector>
 
-namespace crispembed_server {
+namespace core_json {
 
 // Decode a JSON string literal starting at body[i] (which must be the opening
 // '"'). Honors JSON escape sequences (\" \\ \/ \n \t \r \b \f \uXXXX, including
@@ -122,19 +127,77 @@ inline bool json_decode_string(const std::string & body, size_t i, std::string &
     return false;
 }
 
+// Locate the VALUE of a top-level object key structurally, returning the index
+// of the first non-whitespace value character (or npos).
+//
+// This replaces a plain body.find("\"key\""), which latches onto any occurrence
+// of the token — including a decoy string VALUE that happens to equal the key
+// name. A JSON string element like ["input"] is legal unescaped, so
+//   {"labels":["input"],"other":["x","y"]}  asked for "input"
+// made find() match the array element, skip to the NEXT colon ("other"), and
+// return another key's values (or values for a key that is not even present).
+//
+// We only match "key" when it sits at object depth 1 in KEY position (right
+// after '{' or a depth-1 ',') and is immediately followed by ':'. Strings are
+// scanned with escape awareness so quotes/brackets inside values never confuse
+// the depth/position tracking.
+inline size_t json_find_key_value(const std::string & body, const char * key) {
+    const std::string want(key);
+    int depth = 0;
+    bool expect_key = false; // at depth 1, is the next string a key?
+    size_t i = 0;
+    while (i < body.size()) {
+        const char c = body[i];
+        if (c == '"') {
+            std::string s;
+            size_t end = 0;
+            if (!json_decode_string(body, i, s, end)) return std::string::npos; // malformed
+            const bool is_key = (depth == 1 && expect_key);
+            i = end;
+            // Skip whitespace to see whether a ':' follows (confirms key position).
+            size_t j = i;
+            while (j < body.size() && (body[j] == ' ' || body[j] == '\t' || body[j] == '\n' || body[j] == '\r')) j++;
+            if (is_key && j < body.size() && body[j] == ':') {
+                expect_key = false; // a value follows this colon
+                if (s == want) {
+                    j++; // past ':'
+                    while (j < body.size() && (body[j] == ' ' || body[j] == '\t' || body[j] == '\n' || body[j] == '\r'))
+                        j++;
+                    return j < body.size() ? j : std::string::npos;
+                }
+            }
+            continue;
+        }
+        switch (c) {
+        case '{':
+            depth++;
+            if (depth == 1) expect_key = true;
+            break;
+        case '[':
+            depth++;
+            break;
+        case '}':
+        case ']':
+            depth--;
+            break;
+        case ',':
+            if (depth == 1) expect_key = true;
+            break;
+        default:
+            break;
+        }
+        i++;
+    }
+    return std::string::npos;
+}
+
 // Extract the string value(s) of a top-level JSON key into `out`. Handles both
 //   "key": "single string"   and   "key": ["a", "b", ...]
 // with full JSON string escaping, so values containing ], \" or \\ no longer
 // corrupt parsing or the input cardinality. Returns the number of strings added.
 inline size_t json_extract_strings_escaped(const std::string & body, const char * key, std::vector<std::string> & out) {
-    const std::string needle = std::string("\"") + key + "\"";
-    size_t k = body.find(needle);
-    if (k == std::string::npos) return 0;
-    size_t p = body.find(':', k + needle.size());
+    size_t p = json_find_key_value(body, key);
     if (p == std::string::npos) return 0;
-    p++;
-    while (p < body.size() && (body[p] == ' ' || body[p] == '\t' || body[p] == '\n' || body[p] == '\r')) p++;
-    if (p >= body.size()) return 0;
     const size_t before = out.size();
     if (body[p] == '[') {
         p++;
@@ -209,4 +272,84 @@ inline size_t json_extract_strings(const std::string & body, const char * key, s
                                  : json_extract_strings_escaped(body, key, out);
 }
 
-} // namespace crispembed_server
+// ---------------------------------------------------------------------------
+// Output escaping — the symmetric half of the input parser.
+//
+// The exact inverse of json_decode_string: escape ", \, and EVERY control
+// character U+0000..U+001F. RFC 8259 forbids a raw control char inside a JSON
+// string, so emitting a tab/CR/etc. unescaped produces output that strict
+// parsers (Python json, Go encoding/json, JS JSON.parse) reject outright. OCR /
+// KIE / OMR results routinely contain tabs and newlines (tables, kern/LilyPond
+// structure), so this was a live break on the OCR echo endpoints.
+//
+// The short forms match what json_decode_string decodes, so
+// json_decode_string(json_escape_strict(x)) == x for ANY byte string (bytes
+// >= 0x80 pass through as UTF-8, which JSON permits). That round-trip is the
+// property test.
+// ---------------------------------------------------------------------------
+inline std::string json_escape_strict(const std::string & s) {
+    static const char * HEX = "0123456789abcdef";
+    std::string out;
+    out.reserve(s.size() + 8);
+    for (unsigned char c : s) {
+        switch (c) {
+        case '"':
+            out += "\\\"";
+            break;
+        case '\\':
+            out += "\\\\";
+            break;
+        case '\b':
+            out += "\\b";
+            break;
+        case '\f':
+            out += "\\f";
+            break;
+        case '\n':
+            out += "\\n";
+            break;
+        case '\r':
+            out += "\\r";
+            break;
+        case '\t':
+            out += "\\t";
+            break;
+        default:
+            if (c < 0x20) {
+                out += "\\u00";
+                out += HEX[(c >> 4) & 0xF];
+                out += HEX[c & 0xF];
+            } else {
+                out += (char)c;
+            }
+        }
+    }
+    return out;
+}
+
+// Legacy escaper (pre-fix): only ", \, \n — leaves \t, \r and other control
+// chars RAW, which is invalid JSON. Kept behind the gate as the bisection
+// escape hatch; known-buggy by construction, do not "fix".
+inline std::string json_escape_legacy(const std::string & s) {
+    std::string out;
+    for (char c : s) {
+        if (c == '"')
+            out += "\\\"";
+        else if (c == '\\')
+            out += "\\\\";
+        else if (c == '\n')
+            out += "\\n";
+        else
+            out += c;
+    }
+    return out;
+}
+
+// Gated entry point (shares CRISPEMBED_SERVER_LEGACY_JSON with the parser, so one
+// switch reverts the whole JSON surface — input parse + key location + output
+// escaping — to pre-fix behaviour for A/B).
+inline std::string json_escape(const std::string & s) {
+    return json_legacy_enabled() ? json_escape_legacy(s) : json_escape_strict(s);
+}
+
+} // namespace core_json

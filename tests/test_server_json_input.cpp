@@ -1,6 +1,6 @@
 // Unit test for the HTTP server's JSON string-input parser (issue #34).
 //
-// Host-only: no model, no ggml — exercises examples/server/json_input.h directly.
+// Host-only: no model, no ggml — exercises src/core/json.h directly.
 // Verifies that valid escaped JSON payloads (values containing ']', \" and \\,
 // newlines, and \uXXXX) parse to the correct input cardinality, rather than the
 // old delimiter-scan approach that produced "returned 7 embeddings for 6 inputs".
@@ -8,16 +8,19 @@
 // Returns non-zero exit code on any failure (matches the repo's other test-* runners).
 
 #include "core/clean_exit.h"
-#include "json_input.h"
+#include "core/json.h"
 
 #include <cstdio>
 #include <string>
 #include <vector>
 
-using crispembed_server::json_decode_string;
-using crispembed_server::json_extract_strings;
-using crispembed_server::json_extract_strings_escaped;
-using crispembed_server::json_extract_strings_legacy;
+using core_json::json_decode_string;
+using core_json::json_escape_legacy;
+using core_json::json_escape_strict;
+using core_json::json_extract_strings;
+using core_json::json_extract_strings_escaped;
+using core_json::json_extract_strings_legacy;
+using core_json::json_find_key_value;
 
 static int g_failures = 0;
 
@@ -181,6 +184,85 @@ static int crispembed_test_main() {
         std::vector<std::string> out;
         json_extract_strings(S("{\"input\":[\"a]a\",\"b\",\"c\"]}"), "input", out);
         check("gate defaults to escaped parser", out.size() == 3);
+    }
+
+    // =================================================================
+    // B2: structural key location — a decoy "key" string appearing as a
+    // VALUE must not be mistaken for the key (previously find() latched onto
+    // it and returned another key's values, or values for an absent key).
+    // =================================================================
+    {
+        // Key genuinely absent, but a decoy element equals the name.
+        std::vector<std::string> out;
+        size_t n = json_extract_strings(S("{\"labels\":[\"input\"],\"other\":[\"x\",\"y\"]}"), "input", out);
+        check("decoy value not matched as key -> 0", n == 0 && out.empty());
+    }
+    {
+        // Decoy BEFORE the real key: must still find the real one.
+        std::vector<std::string> out;
+        json_extract_strings(S("{\"labels\":[\"input\"],\"input\":[\"good\"]}"), "input", out);
+        check("real key found past a decoy value", out.size() == 1 && out[0] == "good");
+    }
+    {
+        // Key name appearing inside a nested object value must be ignored.
+        std::vector<std::string> out;
+        size_t n = json_extract_strings(S("{\"a\":{\"input\":[\"nested\"]},\"input\":[\"top\"]}"), "input", out);
+        check("nested same-name key ignored (depth>1)", n == 1 && out[0] == "top");
+    }
+    {
+        // A value string equal to the key name at depth 1 (as a plain value).
+        std::vector<std::string> out;
+        size_t n = json_extract_strings(S("{\"model\":\"input\",\"input\":[\"v\"]}"), "input", out);
+        check("depth-1 value equal to key name ignored", n == 1 && out[0] == "v");
+    }
+    {
+        // json_find_key_value returns npos when the key is truly absent.
+        check("find_key_value: absent -> npos",
+              json_find_key_value(S("{\"labels\":[\"input\"]}"), "input") == std::string::npos);
+        check("find_key_value: present -> value index",
+              json_find_key_value(S("{\"input\":\"x\"}"), "input") != std::string::npos);
+    }
+
+    // =================================================================
+    // B1: output escaping — round-trip property + control-char coverage.
+    // =================================================================
+    {
+        // The property that makes the escaper correct: for ANY byte string,
+        // decode(escape(x)) == x. Covers every control char plus quotes/backslash.
+        std::string all;
+        for (int c = 0; c < 256; c++) all.push_back((char)c);
+        // A few structured strings too (OCR-ish: tabs + newlines).
+        const char * cases[] = {
+            "plain", "a\tb\tc", "line1\r\nline2", "quote:\" back:\\ ", "\x01\x02\x1f control", "café \xf0\x9f\x98\x80",
+            ""
+        };
+        bool roundtrip_ok = true;
+        auto rt = [&](const std::string & x) {
+            std::string wire = std::string("\"") + json_escape_strict(x) + "\"";
+            std::string dec;
+            size_t end = 0;
+            if (!json_decode_string(wire, 0, dec, end) || dec != x) {
+                roundtrip_ok = false;
+                std::printf("      round-trip FAILED for %zu-byte input\n", x.size());
+            }
+        };
+        rt(all);
+        for (const char * c : cases) rt(S(c));
+        check("B1 round-trip: decode(escape(x))==x for all 256 bytes + cases", roundtrip_ok);
+
+        // Explicit control-char escapes (the actual bug: raw \t/\r were emitted).
+        check("escape tab -> \\t", json_escape_strict(S("a\tb")) == "a\\tb");
+        check("escape CR -> \\r", json_escape_strict(S("a\rb")) == "a\\rb");
+        check("escape US(0x1f) -> \\u001f", json_escape_strict(S("a\x1f")) == "a\\u001f");
+        check("escape quote+backslash", json_escape_strict(S("\"\\")) == "\\\"\\\\");
+        check("high bytes pass through", json_escape_strict(S("\xc3\xa9")) == "\xc3\xa9");
+
+        // A/B: the legacy escaper left \t and \r RAW (invalid JSON) — proves the
+        // gate reproduces the old, broken behaviour.
+        check("A/B legacy leaves tab raw", json_escape_legacy(S("a\tb")) == "a\tb");
+        check("A/B legacy leaves CR raw", json_escape_legacy(S("a\rb")) == "a\rb");
+        check("A/B legacy == strict on tab-free text",
+              json_escape_legacy(S("plain \"q\"")) == json_escape_strict(S("plain \"q\"")));
     }
 
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");

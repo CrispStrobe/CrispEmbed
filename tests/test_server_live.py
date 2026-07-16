@@ -154,6 +154,29 @@ class ServerJsonInputLive(unittest.TestCase):
         embs = d.get("embeddings", d.get("data"))
         self.assertEqual(len(embs), 1)
 
+    def test_b2_decoy_key_value_ignored(self) -> None:
+        # B2: an unrelated key whose VALUE array contains the literal "input"
+        # must not be mistaken for the input key. The real "input" has 3 items.
+        payload = '{"labels":["input"],"input":["one","two","three"]}'
+        d = _post(self._base() + "/v1/embeddings", payload)
+        self.assertEqual(len(d["data"]), 3, "must locate the real input key, not the decoy value")
+
+    def test_b1_responses_are_strict_json(self) -> None:
+        # B1 regression guard for the escaper refactor: the server's own
+        # response must be STRICT JSON. Python's json.loads (used by _post)
+        # rejects raw control chars, so a valid parse here proves the response
+        # went through the escaper. (The escaper's exhaustive proof — decode(
+        # escape(x))==x over all 256 bytes — lives in test-server-json-input;
+        # embedding responses don't echo arbitrary control chars, the OCR/NER
+        # endpoints do, and those need their own models.)
+        for route, payload in (
+            ("/v1/embeddings", '{"input":["a","b"]}'),
+            ("/api/embed", '{"input":["x"]}'),
+            ("/api/embeddings", '{"prompt":"hi"}'),
+        ):
+            d = _post(self._base() + route, payload)  # raises on a strict-JSON failure
+            self.assertIsInstance(d, dict)
+
 
 @unittest.skipUnless(SERVER_BIN and MODEL, "needs crispembed-server + CRISPEMBED_TEST_EMBED_MODEL")
 class ServerJsonInputLegacyGateLive(unittest.TestCase):
