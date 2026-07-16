@@ -16,6 +16,8 @@
 
 using crispembed_server::json_decode_string;
 using crispembed_server::json_extract_strings;
+using crispembed_server::json_extract_strings_escaped;
+using crispembed_server::json_extract_strings_legacy;
 
 static int g_failures = 0;
 
@@ -120,6 +122,65 @@ static int crispembed_test_main() {
         std::string body = S("{ \"input\" : [ \"x\" , \"y\" ] }");
         std::vector<std::string> out;
         check("whitespace tolerated", json_extract_strings(body, "input", out) == 2);
+    }
+
+    // -----------------------------------------------------------------
+    // A/B: legacy (CRISPEMBED_SERVER_LEGACY_JSON=1) vs escaped parser.
+    // Contract: IDENTICAL on payloads with no escapes/brackets (so the gate is
+    // output-neutral for normal traffic), and differing ONLY where the legacy
+    // scan was wrong. This is what makes the gate a safe bisection switch.
+    // -----------------------------------------------------------------
+    {
+        const char * benign[] = {
+            "{\"input\":[\"alpha\",\"beta\",\"gamma\"]}",
+            "{\"texts\":[\"one\"]}",
+            "{\"documents\":[\"doc a\",\"doc b\"]}",
+            "{\"labels\":[\"person\",\"org\"]}",
+            "{\"query\":\"find me\"}",
+            "{\"prompt\":\"hello\"}",
+            "{ \"input\" : [ \"x\" , \"y\" ] }",
+            "{\"input\":[]}",
+            "{\"model\":\"m\"}",
+        };
+        const char * keys[] = { "input", "texts", "documents", "labels", "query", "prompt", "input", "input", "input" };
+        bool all_same = true;
+        for (size_t i = 0; i < sizeof(benign) / sizeof(benign[0]); i++) {
+            std::vector<std::string> a, b;
+            json_extract_strings_legacy(S(benign[i]), keys[i], a);
+            json_extract_strings_escaped(S(benign[i]), keys[i], b);
+            if (a != b) {
+                all_same = false;
+                std::printf("      A/B differs on benign payload: %s\n", benign[i]);
+            }
+        }
+        check("A/B: legacy == escaped on all benign payloads", all_same);
+    }
+    {
+        // The bug cases: legacy is wrong, escaped is right. Documents exactly what
+        // flipping CRISPEMBED_SERVER_LEGACY_JSON=1 costs you.
+        std::string bracket = S("{\"input\":[\"a]a\",\"b\",\"c\"]}");
+        std::vector<std::string> la, ea;
+        json_extract_strings_legacy(bracket, "input", la);
+        json_extract_strings_escaped(bracket, "input", ea);
+        // Legacy takes the ']' *inside* "a]a" as the array end, leaving the
+        // fragment "a — which has no closing quote, so it drops every element.
+        std::printf("      (legacy yields %zu, escaped yields %zu)\n", la.size(), ea.size());
+        check("A/B: legacy is wrong on ]-in-string (drops all)", la.size() == 0);
+        check("A/B: escaped keeps all 3", ea.size() == 3);
+
+        std::string esc = S("{\"input\":[\"say \\\"hi\\\"\",\"b\"]}");
+        std::vector<std::string> lb, eb;
+        json_extract_strings_legacy(esc, "input", lb);
+        json_extract_strings_escaped(esc, "input", eb);
+        check("A/B: legacy mis-splits on \\\" (!=2)", lb.size() != 2);
+        check("A/B: escaped yields 2", eb.size() == 2);
+        check("A/B: escaped decodes the quote", eb.size() == 2 && eb[0] == "say \"hi\"");
+    }
+    {
+        // Default (no env var set in this process) must be the escaped parser.
+        std::vector<std::string> out;
+        json_extract_strings(S("{\"input\":[\"a]a\",\"b\",\"c\"]}"), "input", out);
+        check("gate defaults to escaped parser", out.size() == 3);
     }
 
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");

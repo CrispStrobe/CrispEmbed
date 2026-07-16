@@ -288,32 +288,9 @@ int main(int argc, char ** argv) {
         std::vector<std::string> texts;
         auto body = req.body;
 
-        // Quick parse: find "texts" array or "text" string
-        auto pos = body.find("\"texts\"");
-        if (pos != std::string::npos) {
-            auto arr_start = body.find('[', pos);
-            auto arr_end = body.find(']', arr_start);
-            if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                size_t i = 0;
-                while (i < arr.size()) {
-                    auto q1 = arr.find('"', i);
-                    if (q1 == std::string::npos) break;
-                    auto q2 = arr.find('"', q1 + 1);
-                    if (q2 == std::string::npos) break;
-                    texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                    i = q2 + 1;
-                }
-            }
-        } else {
-            pos = body.find("\"text\"");
-            if (pos != std::string::npos) {
-                auto q1 = body.find('"', pos + 6);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos) {
-                    texts.push_back(body.substr(q1 + 1, q2 - q1 - 1));
-                }
-            }
+        // "texts" array, else "text" string (JSON-escaping aware)
+        if (json_extract_strings(body, "texts", texts) == 0) {
+            json_extract_strings(body, "text", texts);
         }
 
         if (texts.empty()) {
@@ -1090,16 +1067,11 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        // Parse query text
+        // Parse query text (JSON-escaping aware)
         std::string query_text;
         {
-            auto qp = req.body.find("\"query\"");
-            if (qp != std::string::npos) {
-                auto q1 = req.body.find('"', qp + 7);
-                auto q2 = req.body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos)
-                    query_text = req.body.substr(q1 + 1, q2 - q1 - 1);
-            }
+            std::vector<std::string> q;
+            if (json_extract_strings(req.body, "query", q) > 0) query_text = q.front();
         }
         if (query_text.empty()) {
             res.status = 400;
@@ -1107,27 +1079,9 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        // Parse documents array
+        // Parse documents array (JSON-escaping aware)
         std::vector<std::string> doc_texts;
-        {
-            auto dp = req.body.find("\"documents\"");
-            if (dp != std::string::npos) {
-                auto arr_start = req.body.find('[', dp);
-                if (arr_start != std::string::npos) {
-                    auto arr_end = req.body.find(']', arr_start);
-                    std::string arr = req.body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        doc_texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            }
-        }
+        json_extract_strings(req.body, "documents", doc_texts);
         if (doc_texts.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"no documents provided\"}", "application/json");
@@ -1631,25 +1585,7 @@ int main(int argc, char ** argv) {
 
         // Parse "labels" array
         std::vector<std::string> labels;
-        {
-            auto pos = body.find("\"labels\"");
-            if (pos != std::string::npos) {
-                auto arr_start = body.find('[', pos);
-                auto arr_end = body.find(']', arr_start);
-                if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            }
-        }
+        json_extract_strings(body, "labels", labels);
 
         // Parse "threshold"
         float threshold = 0.5f;
@@ -1766,25 +1702,7 @@ int main(int argc, char ** argv) {
 
         // Parse "labels" array
         std::vector<std::string> labels;
-        {
-            auto pos = body.find("\"labels\"");
-            if (pos != std::string::npos) {
-                auto arr_start = body.find('[', pos);
-                auto arr_end = body.find(']', arr_start);
-                if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            }
-        }
+        json_extract_strings(body, "labels", labels);
 
         // Parse "threshold"
         float threshold = 0.5f;
