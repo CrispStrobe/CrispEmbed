@@ -351,6 +351,59 @@ drifted 6.0.2 → 6.0.3, and 6.0.3's clang segfaults compiling `layout_detect.cp
 "latest"-alias toolchain installs with the same drift exposure, and add a signal
 so a red `main` self-reports.
 
+### FOUND (2026-07-16): community `modern-bert` GGUFs fail to load — HANDOVER
+
+Wider matrix-coverage survey load-tested 3 new community GGUFs of shipped models:
+  - `intfloat/multilingual-e5-small` (arch **bert**, 12L/384d): LOADS ✓
+  - `bartowski/granite-embedding-107m-multilingual` (arch **bert**, 6L/384d): LOADS ✓
+  - `eranmazur/gte-modernbert-base-Q8_0` (arch **modern-bert**, 22L/768d): **FAILS** —
+    `missing required tensor layer=0 name=ln1.weight` (×22). A genuine new
+    #33-class bug: users who grab a community modern-bert GGUF can't load it.
+
+**crispembed ALREADY has the ModernBERT graph** (fused GeGLU `ggml_geglu`,
+sliding-window attention `modernbert_swa_enabled`, global-attn-every-N, dual RoPE
+theta) — so this is an alias + shape-detect gap, NOT a port. Fully diagnosed from
+the GGUF's tensors + metadata:
+
+Tensors (community modern-bert names → what the loader looks for):
+  - `blk.N.attn_norm.weight`  → add alias to `ln1_w` (currently ln1/attn_output_norm)
+  - `blk.N.ffn_norm.weight`   → add alias to `ln2_w` (currently ln2/layer_output_norm)
+  - `output_norm.weight`      → add alias to `final_norm_w`
+  - `blk.N.attn_qkv` / `attn_output` / `token_embd_norm`: already aliased ✓
+  - `blk.N.ffn_up.weight` is **[768, 2304] = [H, 2*inter]** — the fused GeGLU
+    weight, but named `ffn_up` (same name as a PLAIN ffn up). The loader must
+    DETECT GeGLU BY SHAPE (ne[1] == 2*n_intermediate) and route it to
+    `ffn_up_gate_w`, not `fc1_w`. feed_forward_length=1152, so 2304=2*1152.
+  - layer 0's attn_norm is Identity in ModernBERT (may be absent) — `ln1_w` must
+    be optional per-layer (the pre-LN path already guards `if (pre_ln && L.ln1_w)`).
+
+Metadata (modern-bert.* — A2 arch-derived already reads dims/pooling; these need
+mapping, and the RoPE theta is INVERTED vs crispembed's naming):
+  - `pre_ln = true` (architectural; ModernBERT is pre-LN — no metadata key, force
+    it for arch==modern-bert)
+  - `rope.freq_base = 160000` is the GLOBAL theta; `rope.freq_base_swa = 10000` is
+    the LOCAL theta. crispembed uses `rope_theta`=local base, `rope_theta_global`
+    for global layers → set rope_theta=10000, rope_theta_global=160000 (do NOT
+    just read freq_base into rope_theta — that's the bug crispembed currently has,
+    it reported theta=160000).
+  - `attention.sliding_window = 128`         → `local_attention_window`
+  - `attention.sliding_window_pattern = 3`   → `global_attn_every_n` (global at
+    il%3==0, matching ModernBERT's 0,3,6,…)
+  - `pooling_type = 2` (CLS) — A2 maps this ✓
+
+**Validation is MANDATORY before claiming (HARD RULE):** this is graph-routing
+(GeGLU-by-shape, dual-theta assignment, SWA pattern). Build, then per-stage vs the
+HF `Alibaba-NLP/gte-modernbert-base` (needs `trust_remote_code`) via
+`tools/dump_encoder_reference.py` + `tests/test_encoder_diff.py`, plus the q8_0
+final-embedding cosine, plus an f16 control (`prove_quant_control.py`). Add a
+matrix entry once it passes. **NOT done here:** diagnosed only — deferred because
+the fix touches the compute graph and the box was at load ~143 from other sessions
+(a build + HF-modernbert validation shouldn't be rushed/contended). Pick up on a
+quiet box with the recipe above.
+
+Also pending (lower priority): add e5-small + granite-107m matrix entries (both
+load; need HF parity runs) — they're the easy coverage wins once a box is free.
+
 ### Encoder ground-truth parity harness (A3 follow-on, 2026-07-16)
 
 A3 shipped with ONE model and no Python ground truth: its checks were rc/shape,
