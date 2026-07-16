@@ -1124,13 +1124,25 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             ggml_tensor * top_w = ggml_get_rows(gctx, probs_3d, ids); // [1, K, TB]
             top_w = ggml_reshape_2d(gctx, top_w, K, TB);              // [K, TB]
 
-            // Expand input for K expert slots: [H, TB] → [H, K, TB]
+            // Input for the K expert slots: [H, TB] → [H, 1, TB].
             ggml_tensor * cur_3d = ggml_reshape_3d(gctx, cur, H, 1, TB);
-            ggml_tensor * rep_tgt = ggml_new_tensor_3d(gctx, cur->type, H, K, TB);
-            ggml_tensor * cur_exp = ggml_repeat(gctx, cur_3d, rep_tgt);
+            // The explicit ggml_repeat to [H, K, TB] is (hypothesized) redundant:
+            // ggml_mul_mat_id broadcasts b's singleton slot dim over the K experts
+            // in `ids` (llama.cpp's canonical build_moe_ffn pattern). Gate the
+            // broadcast path behind CRISPEMBED_MOE_NO_REPEAT=1; default keeps the
+            // repeat until byte-identity + latency are validated (env-gate rule).
+            static const bool moe_no_repeat = [] {
+                const char * e = std::getenv("CRISPEMBED_MOE_NO_REPEAT");
+                return e && e[0] == '1';
+            }();
+            ggml_tensor * cur_slots = cur_3d;
+            if (!moe_no_repeat) {
+                ggml_tensor * rep_tgt = ggml_new_tensor_3d(gctx, cur->type, H, K, TB);
+                cur_slots = ggml_repeat(gctx, cur_3d, rep_tgt); // [H, K, TB]
+            }
 
-            // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, K, TB] → [inter, K, TB]
-            ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_exp, ids);
+            // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, {K|1}, TB] → [inter, K, TB]
+            ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_slots, ids);
 
             // Activation: exact erf-GELU (NomicBERT v2 uses nn.GELU(approximate='none'))
             up = ggml_gelu_erf(gctx, up);
