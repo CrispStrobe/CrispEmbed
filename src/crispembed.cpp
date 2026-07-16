@@ -1468,24 +1468,73 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
 
     // Dump per-layer intermediates for diff harness
     if (ctx->dump_layers) {
-        auto dump_tensor = [&](const char * name) {
-            ggml_tensor * t = ggml_graph_get_tensor(gf, name);
-            if (!t) return;
-            int64_t n = ggml_nelements(t);
+        // CRISPEMBED_DUMP_LAYERS=1 prints a 6-float peek per stage (eyeballing).
+        // CRISPEMBED_DUMP_LAYERS_GGUF=<path> writes the FULL tensors to a GGUF so
+        // they can be diffed against the Python reference per stage — a peek
+        // cannot be compared, and a final-embedding cosine only tells you THAT
+        // something diverged, not WHERE. Stage names match
+        // tools/dump_encoder_reference.py: emb_ln_out == HF hidden_states[0],
+        // layer_i == HF hidden_states[i+1].
+        const char * dump_gguf = std::getenv("CRISPEMBED_DUMP_LAYERS_GGUF");
+
+        std::vector<std::string> names;
+        names.push_back("emb_ln_out");
+        names.push_back("attn_out_0");
+        for (int il = 0; il < hp.n_layer; il++) names.push_back("layer_" + std::to_string(il));
+        // The LAST block's output is renamed "encoder_out" above, so "layer_{n-1}"
+        // does not exist in the graph. Without this the final block — the one that
+        // actually feeds pooling — would be silently absent from the dump.
+        names.push_back("encoder_out");
+
+        struct ggml_context * dctx = nullptr;
+        struct gguf_context * dg = nullptr;
+        if (dump_gguf) {
+            // no_alloc=false: tensors own their data so gguf_add_tensor can copy it.
+            struct ggml_init_params dip = { (names.size() + 2) * ggml_tensor_overhead() +
+                                                (size_t)hp.n_embd * 4096 * sizeof(float) * (names.size() + 1),
+                                            nullptr, false };
+            dctx = ggml_init(dip);
+            if (dctx) {
+                dg = gguf_init_empty();
+                gguf_set_val_str(dg, "general.architecture", "crispembed-encoder-dump");
+                gguf_set_val_u32(dg, "dump.n_layer", (uint32_t)hp.n_layer);
+                gguf_set_val_u32(dg, "dump.n_embd", (uint32_t)hp.n_embd);
+            }
+        }
+
+        for (const std::string & name : names) {
+            ggml_tensor * t = ggml_graph_get_tensor(gf, name.c_str());
+            if (!t) continue;
+            const int64_t n = ggml_nelements(t);
             std::vector<float> buf(n);
             ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-            fprintf(stderr, "DUMP %s shape=[%lld,%lld] data=", name, (long long)t->ne[0], (long long)t->ne[1]);
-            int show = n < 6 ? (int)n : 6;
+
+            fprintf(stderr, "DUMP %s shape=[%lld,%lld] data=", name.c_str(), (long long)t->ne[0], (long long)t->ne[1]);
+            const int show = n < 6 ? (int)n : 6;
             for (int i = 0; i < show; i++) fprintf(stderr, " %.6f", buf[i]);
             fprintf(stderr, " ...\n");
-        };
-        dump_tensor("emb_ln_out");
-        dump_tensor("attn_out_0");
-        for (int il = 0; il < hp.n_layer; il++) {
-            char lname[32];
-            snprintf(lname, sizeof(lname), "layer_%d", il);
-            dump_tensor(lname);
+
+            if (dg && dctx) {
+                // Keep ggml's [H, T] layout: ne[0] is the fast axis, so the flat
+                // memory is already row-major (T, H) — the same as HF's
+                // hidden_states[layer][0]. No transpose on either side.
+                ggml_tensor * d = ggml_new_tensor_2d(dctx, GGML_TYPE_F32, t->ne[0], t->ne[1]);
+                if (!d) continue;
+                ggml_set_name(d, name.c_str());
+                memcpy(d->data, buf.data(), n * sizeof(float));
+                gguf_add_tensor(dg, d);
+            }
         }
+
+        if (dg) {
+            if (!gguf_write_to_file(dg, dump_gguf, /*only_meta*/ false)) {
+                fprintf(stderr, "crispembed: failed to write layer dump '%s'\n", dump_gguf);
+            } else {
+                fprintf(stderr, "crispembed: wrote layer dump -> %s\n", dump_gguf);
+            }
+            gguf_free(dg);
+        }
+        if (dctx) ggml_free(dctx);
     }
 
     // Read output (works whether tensor is on GPU or CPU)
