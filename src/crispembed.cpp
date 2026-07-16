@@ -330,16 +330,29 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     // CrispEmbed: bert.hidden_size, bert.num_hidden_layers, ...
     // Ollama:     {arch}.embedding_length, {arch}.block_count, ...
     //             where arch = "bert" or "xlmr"
+    // nomic-bert-moe (nomic-embed-text-v2-moe) exports its hyperparameters under
+    // the arch-prefixed "nomic-bert-moe.*" keys — read them as a fallback alongside
+    // the bert.*/xlmr.* variants so the model loads with correct dims instead of
+    // the 384-dim/6-layer defaults (issue #33).
     hp.n_vocab = u32("bert.vocab_size", 30522);
-    hp.n_max_tokens = u32("bert.max_position_embeddings", u32("bert.context_length", u32("xlmr.context_length", 512)));
-    hp.n_embd = u32("bert.hidden_size", u32("bert.embedding_length", u32("xlmr.embedding_length", 384)));
-    hp.n_head = u32("bert.num_attention_heads", u32("bert.attention.head_count", u32("xlmr.attention.head_count", 12)));
-    hp.n_layer = u32("bert.num_hidden_layers", u32("bert.block_count", u32("xlmr.block_count", 6)));
-    hp.n_intermediate =
-        u32("bert.intermediate_size", u32("bert.feed_forward_length", u32("xlmr.feed_forward_length", 1536)));
+    hp.n_max_tokens =
+        u32("bert.max_position_embeddings",
+            u32("bert.context_length", u32("xlmr.context_length", u32("nomic-bert-moe.context_length", 512))));
+    hp.n_embd = u32("bert.hidden_size", u32("bert.embedding_length",
+                                            u32("xlmr.embedding_length", u32("nomic-bert-moe.embedding_length", 384))));
+    hp.n_head = u32("bert.num_attention_heads",
+                    u32("bert.attention.head_count",
+                        u32("xlmr.attention.head_count", u32("nomic-bert-moe.attention.head_count", 12))));
+    hp.n_layer = u32("bert.num_hidden_layers",
+                     u32("bert.block_count", u32("xlmr.block_count", u32("nomic-bert-moe.block_count", 6))));
+    hp.n_intermediate = u32("bert.intermediate_size",
+                            u32("bert.feed_forward_length",
+                                u32("xlmr.feed_forward_length", u32("nomic-bert-moe.feed_forward_length", 1536))));
     hp.n_output = u32("bert.output_dim", hp.n_embd);
-    hp.layer_norm_eps = f32("bert.layer_norm_eps",
-                            f32("bert.attention.layer_norm_epsilon", f32("xlmr.attention.layer_norm_epsilon", 1e-12f)));
+    hp.layer_norm_eps =
+        f32("bert.layer_norm_eps",
+            f32("bert.attention.layer_norm_epsilon",
+                f32("xlmr.attention.layer_norm_epsilon", f32("nomic-bert-moe.attention.layer_norm_epsilon", 1e-12f))));
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
     // CrispEmbed format: bert.pooling_method (0=mean, 1=cls, 2=last)
@@ -349,8 +362,9 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         if (pm < 0) {
             // Try Ollama format and convert: Ollama{1=mean,2=cls,3=last} → CE{0,1,2}
             int pt = u32("bert.pooling_type", -1);
-            // Also check arch-prefixed key (xlmr.pooling_type, bert.pooling_type)
+            // Also check arch-prefixed keys (xlmr.*, nomic-bert-moe.* → mean=1)
             if (pt < 0) pt = u32("xlmr.pooling_type", -1);
+            if (pt < 0) pt = u32("nomic-bert-moe.pooling_type", -1);
             if (pt > 0)
                 pm = pt - 1; // Ollama 1→0(mean), 2→1(cls), 3→2(last)
             else
@@ -368,14 +382,15 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->colbert_similarity_fn = strv("colbert.similarity_fn_name");
     ctx->colbert_query_length = u32("colbert.query_length", 0);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
-    ctx->rope_theta = f32("bert.rope_theta", 10000.0f);
+    // nomic-bert-moe stores its RoPE base under nomic-bert-moe.rope.freq_base.
+    ctx->rope_theta = f32("bert.rope_theta", f32("nomic-bert-moe.rope.freq_base", 10000.0f));
     ctx->rope_theta_global = f32("bert.rope_theta_global", 0.0f);
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->local_attention_window = u32("bert.local_attention", 0);
     ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets = u32("bert.position_buckets", 0);
-    hp.n_experts = u32("bert.num_experts", 0);
-    hp.n_experts_per_tok = u32("bert.num_experts_per_tok", 0);
+    hp.n_experts = u32("bert.num_experts", u32("nomic-bert-moe.expert_count", 0));
+    hp.n_experts_per_tok = u32("bert.num_experts_per_tok", u32("nomic-bert-moe.expert_used_count", 0));
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -559,6 +574,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         auto & L = m.layers[il];
         L.ln1_w = get_any({ pfx + "ln1.weight", blk + "attn_output_norm.weight" });
         L.ln1_b = get_any({ pfx + "ln1.bias", blk + "attn_output_norm.bias" });
+        // Pre-fused QKV (nomic-bert-moe exports blk.N.attn_qkv.weight, rows q|k|v,
+        // possibly quantized). Consumed directly by the qkv graph path (issue #33).
+        L.qkv_w = get_any({ pfx + "attn.qkv.weight", blk + "attn_qkv.weight" });
+        L.qkv_b = get_any({ pfx + "attn.qkv.bias", blk + "attn_qkv.bias" });
         L.q_w = get_any({ pfx + "attn.q.weight", blk + "attn_q.weight" });
         L.q_b = get_any({ pfx + "attn.q.bias", blk + "attn_q.bias" });
         L.k_w = get_any({ pfx + "attn.k.weight", blk + "attn_k.weight" });
@@ -576,10 +595,12 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.ffn_gate_w = get_any({ pfx + "ffn_gate.weight", blk + "ffn_gate.weight" }); // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w =
             get_any({ pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight" }); // Fused gate+up (ModernBERT/GTE v1.5)
-        // MoE expert tensors (present only on MoE layers)
-        L.moe_gate_w = get(pfx + "ffn.moe_gate.weight");
-        L.expert_fc1_w = get(pfx + "ffn.expert_fc1.weight");
-        L.expert_fc2_w = get(pfx + "ffn.expert_fc2.weight");
+        // MoE expert tensors (present only on MoE layers). nomic-bert-moe uses the
+        // standard llama.cpp names: router ffn_gate_inp, stacked experts
+        // ffn_up_exps [H,inter,n_exp] / ffn_down_exps [inter,H,n_exp] (issue #33).
+        L.moe_gate_w = get_any({ pfx + "ffn.moe_gate.weight", blk + "ffn_gate_inp.weight" });
+        L.expert_fc1_w = get_any({ pfx + "ffn.expert_fc1.weight", blk + "ffn_up_exps.weight" });
+        L.expert_fc2_w = get_any({ pfx + "ffn.expert_fc2.weight", blk + "ffn_down_exps.weight" });
         L.moe_ffn_bias = get(pfx + "ffn.moe_bias");
     }
 
