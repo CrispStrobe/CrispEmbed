@@ -39,10 +39,12 @@ jobs:
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v14
         with:
-          # Pin to the known-good version (matches build-wasm-embed.yml). The
-          # unpinned "latest" emsdk ships a clang that segfaults compiling
-          # src/layout_detect.cpp (internal compiler crash, not our code).
-          version: '3.1.64'
+          # Pin to 6.0.2 — the last emsdk that built this repo green (CI was
+          # green on 6.0.2, red from 6.0.3 onward). 6.0.3's clang (23.0.0git)
+          # segfaults with an internal compiler crash on src/layout_detect.cpp.
+          # Do not use 3.1.64 here: it predates the emdawnwebgpu port that the
+          # WebGPU tier needs.
+          version: '6.0.2'
 
       # ---- OCR WASM ----
       - name: Build OCR WASM
