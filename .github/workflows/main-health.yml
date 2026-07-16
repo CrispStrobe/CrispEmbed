@@ -1,0 +1,83 @@
+name: Main health
+
+# Why this exists (A4): main went red 2026-07-14 and stayed red until 07-16,
+# when someone happened to push onto it. The cause was toolchain drift (an
+# unpinned setup-emsdk resolving `latest` to a broken 6.0.3), so NO commit
+# introduced it and nobody was notified — CI only speaks when you push.
+#
+# This job asks once a day whether main's key workflows are actually green and
+# FAILS if they are not, so a red main surfaces on its own (GitHub notifies on a
+# failed scheduled run). It deliberately does not open issues: per the repo's
+# workflow notes, internal tracking lives in PLAN.md/HISTORY.md and issues are
+# for outside reporters.
+#
+# tools/check_workflow_pins.sh prevents the specific drift class from returning;
+# this catches the general case (upstream rot, a dependency vanishing, etc.).
+
+on:
+  schedule:
+    - cron: '17 6 * * *'   # daily, offset off the hour
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  check:
+    name: main is green
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Report latest conclusion of key workflows on main
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Workflows whose red state means main is genuinely broken.
+          # EXACT names, matched with jq index() — NOT a regex. Two of these
+          # contain parentheses, which as regex metacharacters silently match
+          # nothing, so a test()-based filter quietly skips the very workflows
+          # this job exists to watch (they were the ones red in the outage).
+          WATCH_NAMES: >-
+            ["Build","Build WASM","Deploy WASM demo (GitHub Pages)","Lint",
+             "Build WASM (text embeddings)"]
+        run: |
+          set -uo pipefail
+          red=0
+          checked=0
+          while IFS=$'\t' read -r name conclusion sha; do
+            [ -z "${name:-}" ] && continue
+            checked=$((checked + 1))
+            printf '  %-38s %-10s %s\n' "$name" "$conclusion" "${sha:0:9}"
+            case "$conclusion" in
+              success|skipped|"") ;;
+              cancelled) ;;  # concurrent pushes cancel each other; not a real failure
+              *) red=$((red + 1)) ;;
+            esac
+          done < <(
+            gh api "repos/$GITHUB_REPOSITORY/actions/runs?branch=main&status=completed&per_page=100" 2>/dev/null \
+              | jq -r --argjson names "$WATCH_NAMES" \
+                  '[.workflow_runs[] | select(.name as $n | $names | index($n))]
+                   | group_by(.name)[]
+                   | max_by(.run_started_at)
+                   | [.name, .conclusion, .head_sha] | @tsv' 2>/dev/null || true
+          )
+
+          # A watched workflow that returns NO rows is itself a red flag: either
+          # it was renamed (so this list is stale) or it stopped running.
+          missing=$(jq -r --argjson n "$WATCH_NAMES" -n '$n | length')
+          if [ "$checked" -lt "$missing" ]; then
+            echo "::warning::only $checked of $missing watched workflows reported — renamed or not running?"
+          fi
+
+          if [ "$checked" -eq 0 ]; then
+            echo "::warning::no matching completed runs found on main — nothing to assert"
+            exit 0
+          fi
+          if [ "$red" -ne 0 ]; then
+            echo "::error::main is RED — $red of $checked watched workflow(s) last concluded in failure. \
+          Nobody has to push for this to matter: toolchain/upstream drift breaks main with no commit."
+            exit 1
+          fi
+          echo "OK: all $checked watched workflow(s) are green on main."
