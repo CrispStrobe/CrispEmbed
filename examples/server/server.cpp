@@ -59,6 +59,7 @@
 #include <vector>
 
 using core_json::json_escape;
+using core_json::json_extract_number;
 using core_json::json_extract_strings;
 
 int main(int argc, char ** argv) {
@@ -516,16 +517,8 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto cpos = body.find("\"conf\"");
-        if (cpos != std::string::npos) {
-            auto start = body.find_first_of("0123456789.", cpos + 6);
-            if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
-        }
-        auto dspos = body.find("\"det_size\"");
-        if (dspos != std::string::npos) {
-            auto start = body.find_first_of("0123456789", dspos + 10);
-            if (start != std::string::npos) det_size = atoi(body.c_str() + start);
-        }
+        conf = (float)json_extract_number(body, "conf", conf);
+        det_size = (int)json_extract_number(body, "det_size", det_size);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -574,16 +567,8 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto cpos = body.find("\"conf\"");
-        if (cpos != std::string::npos) {
-            auto start = body.find_first_of("0123456789.", cpos + 6);
-            if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
-        }
-        auto dspos = body.find("\"det_size\"");
-        if (dspos != std::string::npos) {
-            auto start = body.find_first_of("0123456789", dspos + 10);
-            if (start != std::string::npos) det_size = atoi(body.c_str() + start);
-        }
+        conf = (float)json_extract_number(body, "conf", conf);
+        det_size = (int)json_extract_number(body, "det_size", det_size);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -712,11 +697,7 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto mpos = body.find("\"max_tokens\"");
-        if (mpos != std::string::npos) {
-            auto colon = body.find(':', mpos + 12);
-            if (colon != std::string::npos) max_tokens = atoi(body.c_str() + colon + 1);
-        }
+        max_tokens = (int)json_extract_number(body, "max_tokens", max_tokens);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -1221,11 +1202,7 @@ int main(int argc, char ** argv) {
         }
 
         int req_max_tokens = 0;
-        auto mt_pos = body.find("\"max_tokens\"");
-        if (mt_pos != std::string::npos) {
-            auto colon = body.find(':', mt_pos + 12);
-            if (colon != std::string::npos) req_max_tokens = std::atoi(body.c_str() + colon + 1);
-        }
+        req_max_tokens = (int)json_extract_number(body, "max_tokens", req_max_tokens);
 
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
         if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
@@ -1394,11 +1371,7 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto tpos = body.find("\"threshold\"");
-        if (tpos != std::string::npos) {
-            auto colon = body.find(':', tpos);
-            if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-        }
+        threshold = (float)json_extract_number(body, "threshold", threshold);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -1500,11 +1473,7 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto tpos = body.find("\"threshold\"");
-        if (tpos != std::string::npos) {
-            auto colon = body.find(':', tpos);
-            if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-        }
+        threshold = (float)json_extract_number(body, "threshold", threshold);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -1575,13 +1544,7 @@ int main(int argc, char ** argv) {
 
         // Parse "threshold"
         float threshold = 0.5f;
-        {
-            auto pos = body.find("\"threshold\"");
-            if (pos != std::string::npos) {
-                auto colon = body.find(':', pos);
-                if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-            }
-        }
+        { threshold = (float)json_extract_number(body, "threshold", threshold); }
 
         if (text.empty() || labels.empty()) {
             res.status = 400;
@@ -1692,13 +1655,7 @@ int main(int argc, char ** argv) {
 
         // Parse "threshold"
         float threshold = 0.5f;
-        {
-            auto pos = body.find("\"threshold\"");
-            if (pos != std::string::npos) {
-                auto colon = body.find(':', pos);
-                if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-            }
-        }
+        { threshold = (float)json_extract_number(body, "threshold", threshold); }
 
         if (image_path.empty() || labels.empty()) {
             res.status = 400;
@@ -1808,14 +1765,12 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
-    // Shared helper: extract the "image" path from a JSON body.
+    // Shared helper: extract the "image" path from a JSON body (decoy-safe,
+    // escaping-aware — same depth-1 finder as every other field read).
     auto extract_image_path = [](const std::string & body) -> std::string {
-        auto pos = body.find("\"image\"");
-        if (pos == std::string::npos) return "";
-        auto q1 = body.find('"', pos + 7);
-        auto q2 = (q1 == std::string::npos) ? std::string::npos : body.find('"', q1 + 1);
-        if (q1 == std::string::npos || q2 == std::string::npos) return "";
-        return body.substr(q1 + 1, q2 - q1 - 1);
+        std::vector<std::string> v;
+        json_extract_strings(body, "image", v);
+        return v.empty() ? std::string() : v.front();
     };
 
     // POST /scan/split — detect a two-up book spread (no model needed)
@@ -2107,16 +2062,8 @@ int main(int argc, char ** argv) {
 
         // Parse page dimensions
         int page_w = 800, page_h = 600;
-        auto pw_pos = body.find("\"page_width\"");
-        if (pw_pos != std::string::npos) {
-            auto colon = body.find(':', pw_pos);
-            if (colon != std::string::npos) page_w = atoi(body.c_str() + colon + 1);
-        }
-        auto ph_pos = body.find("\"page_height\"");
-        if (ph_pos != std::string::npos) {
-            auto colon = body.find(':', ph_pos);
-            if (colon != std::string::npos) page_h = atoi(body.c_str() + colon + 1);
-        }
+        page_w = (int)json_extract_number(body, "page_width", page_w);
+        page_h = (int)json_extract_number(body, "page_height", page_h);
 
         // Parse results array (minimal JSON — extract text + bbox per entry)
         // Each result: {"text":"...","x":N,"y":N,"w":N,"h":N,"confidence":F}
@@ -2150,18 +2097,15 @@ int main(int argc, char ** argv) {
                         texts.push_back("");
                     r.text = texts.back().c_str();
                     r.text_len = (int)texts.back().size();
-                    // Extract numbers
+                    // Extract numbers (per-object; decoy-safe depth-1 finder)
                     auto parse_num = [&](const char * key) -> float {
-                        auto kp = obj.find(key);
-                        if (kp == std::string::npos) return 0;
-                        auto cp = obj.find(':', kp);
-                        return cp != std::string::npos ? (float)atof(obj.c_str() + cp + 1) : 0;
+                        return (float)json_extract_number(obj, key, 0.0);
                     };
-                    r.x = parse_num("\"x\"");
-                    r.y = parse_num("\"y\"");
-                    r.w = parse_num("\"w\"");
-                    r.h = parse_num("\"h\"");
-                    r.confidence = parse_num("\"confidence\"");
+                    r.x = parse_num("x");
+                    r.y = parse_num("y");
+                    r.w = parse_num("w");
+                    r.h = parse_num("h");
+                    r.confidence = parse_num("confidence");
                     if (r.confidence == 0) r.confidence = 1.0f;
                     results.push_back(r);
                 }
@@ -2962,11 +2906,7 @@ int main(int argc, char ** argv) {
 
         // Parse task (default 0 = denoise)
         int task = 0;
-        auto tpos = body.find("\"task\"");
-        if (tpos != std::string::npos) {
-            auto colon = body.find(':', tpos + 5);
-            if (colon != std::string::npos) task = atoi(body.c_str() + colon + 1);
-        }
+        task = (int)json_extract_number(body, "task", task);
         if (task < 0 || task > 6) {
             res.status = 400;
             res.set_content("{\"error\": \"task must be 0-6\"}", "application/json");

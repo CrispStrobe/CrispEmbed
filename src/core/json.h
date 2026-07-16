@@ -273,6 +273,46 @@ inline size_t json_extract_strings(const std::string & body, const char * key, s
 }
 
 // ---------------------------------------------------------------------------
+// Scalar number extraction — the server hand-rolled ~14 of these as
+// body.find("\"key\"") + atof/atoi, which carry the SAME key-decoy bug B2 fixed
+// for arrays (a string value equal to the key name is matched as the key). Route
+// them through the depth-1 finder so every JSON field read is location-correct.
+// ---------------------------------------------------------------------------
+inline double json_extract_number_structural(const std::string & body, const char * key, double def) {
+    const size_t p = json_find_key_value(body, key);
+    if (p == std::string::npos) return def;
+    // A JSON number starts with '-', a digit, or (leniently) '+'/'.'; a string
+    // ('"'), true/false/null, object/array here means "not a number" -> default.
+    const char c = body[p];
+    if (!(c == '-' || c == '+' || c == '.' || (c >= '0' && c <= '9'))) return def;
+    char * end = nullptr;
+    const double v = std::strtod(body.c_str() + p, &end);
+    if (end == body.c_str() + p) return def; // no conversion
+    return v;
+}
+
+// Legacy scalar parse (pre-fix): naive find of the key token, then the first
+// number-looking run after it. Reproduces the old behaviour (incl. the decoy
+// bug) for A/B behind CRISPEMBED_SERVER_LEGACY_JSON=1. Known-weak by design.
+inline double json_extract_number_legacy(const std::string & body, const char * key, double def) {
+    const std::string needle = std::string("\"") + key + "\"";
+    const size_t k = body.find(needle);
+    if (k == std::string::npos) return def;
+    const size_t start = body.find_first_of("-0123456789.", k + needle.size());
+    if (start == std::string::npos) return def;
+    char * end = nullptr;
+    const double v = std::strtod(body.c_str() + start, &end);
+    if (end == body.c_str() + start) return def;
+    return v;
+}
+
+// Gated entry point. Callers cast to float/int as before.
+inline double json_extract_number(const std::string & body, const char * key, double def) {
+    return json_legacy_enabled() ? json_extract_number_legacy(body, key, def)
+                                 : json_extract_number_structural(body, key, def);
+}
+
+// ---------------------------------------------------------------------------
 // Output escaping — the symmetric half of the input parser.
 //
 // The exact inverse of json_decode_string: escape ", \, and EVERY control
