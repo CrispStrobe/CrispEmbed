@@ -115,6 +115,29 @@
       "min_hf_cos": 0.95,
       "measured_hf_cos": 0.9919,
       "measured_note": "q4_k floor; per-stage profile is smooth monotonic decay 0.9994 -> 0.9897, no step-change"
+    },
+    {
+      "name": "gte-modernbert-base",
+      "repo": "eranmazur/gte-modernbert-base-Q8_0-GGUF",
+      "file": "gte-modernbert-base-q8_0.gguf",
+      "arch": "modern-bert",
+      "dim": 768,
+      "n_layer": 22,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "The FIRST modern-bert arch entry, and the one that proved community-BPE-encoder support is deeper than a #33 alias add. This llama.cpp export uses gpt2 byte-level BPE with merges in the tokenizer.ggml.merges KV ARRAY (not our tokenizer.merges tensor) and NO numeric tokenizer.ggml.type — only tokenizer.ggml.model='gpt2' + tokenizer.ggml.pre='modern-bert'. Before the fix the dispatch fell back to WordPiece (50368 vocab < the 100K SPM heuristic), tokenizing 'hello world' to the WRONG ids and emitting garbage (structural-gate emb_ln_out cos=0.58, cos(related) < cos(unrelated)). The fix: model-string-authoritative tokenizer dispatch, BPE merges from the KV array, the GPT-2 ByteLevel regex pre-tokenizer, plus loader aliases (attn_norm->ln1, ffn_norm->ln2, output_norm->final_norm, GeGLU-by-shape reroute of the fused ffn_up [H,2*inter]) and metadata (pre_ln, inverted dual RoPE theta: freq_base=global/160000, freq_base_swa=local/10000, sliding_window->local window, sliding_window_pattern->global_attn_every_n) and exact-erf GeGLU. Tokens now match HF exactly: [50281,25521,1533,50282].",
+      "hf_repo": "Alibaba-NLP/gte-modernbert-base",
+      "hf_trust_remote_code": true,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9996,
+      "measured_note": "SHIPPED IS Q8_0 (not q4_k like the other entries). Final-embedding (CLS-pool + L2) cos vs HF sentence-transformers = 0.999602; per-stage q8_0 vs HF fp32 = 0.999928 at the emb_ln_out structural gate and 0.99986-0.99998 across all 22 layers. The residual is quantization: the f16 control (below) is cos=1.000000 at EVERY stage AND 0.999999 final, proving the tokenizer + modern-bert graph (GeGLU-erf, dual-theta RoPE, sliding-window attn) are exact.",
+      "control_repo": "cstr/gte-modernbert-base-GGUF",
+      "control_file": "gte-modernbert-base-f16.gguf",
+      "control_min_cos": 0.9999
     }
   ]
 }

@@ -60,7 +60,10 @@ def _control_path(entry: dict) -> Path | None:
     import shutil
 
     p.parent.mkdir(parents=True, exist_ok=True)
-    src = hf_hub_download(entry["repo"], entry["control_file"])
+    # The higher-precision control may live in a DIFFERENT repo than the shipped
+    # community GGUF (e.g. eranmazur ships only q8_0, so the f16 comes from
+    # cstr/*-GGUF). control_repo overrides repo for the control download.
+    src = hf_hub_download(entry.get("control_repo", entry["repo"]), entry["control_file"])
     shutil.copy(src, p)
     return p
 

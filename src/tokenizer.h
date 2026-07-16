@@ -136,6 +136,12 @@ public:
 
     embed_tokens encode(const std::string & text) const;
 
+    // Enable the GPT-2 ByteLevel regex pre-tokenizer for the GPT-2 byte-level
+    // path (ModernBERT, tokenizer.ggml.pre = "modern-bert"). Off by default the
+    // GPT-2 path uses a simpler whitespace-split pre-tokenizer (Qwen3 decoder).
+    // Set separately from load() so a merges reload does not clear it.
+    void set_gpt2_regex_pretok(bool v) { gpt2_regex_pretok_ = v; }
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int bos_id() const { return bos_id_; }
     int eos_id() const { return eos_id_; }
@@ -148,11 +154,12 @@ private:
     std::vector<std::string> id_to_token_;
     int eos_id_ = 151645;
     int pad_id_ = 151643;
-    int suffix_id_ = 151643;        // token appended after text (model-specific)
-    int bos_id_ = -1;               // BOS token (-1 = none)
-    bool spm_style_ = false;        // SentencePiece BPE mode
-    bool spm_dummy_prefix_ = false; // SentencePiece add_dummy_prefix
-    bool clip_style_ = false;       // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    int suffix_id_ = 151643;         // token appended after text (model-specific)
+    int bos_id_ = -1;                // BOS token (-1 = none)
+    bool spm_style_ = false;         // SentencePiece BPE mode
+    bool spm_dummy_prefix_ = false;  // SentencePiece add_dummy_prefix
+    bool clip_style_ = false;        // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    bool gpt2_regex_pretok_ = false; // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
     int max_length_ = 8192;
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text
@@ -170,4 +177,10 @@ private:
     // Byte-encode one CLIP pre-token, append the </w> end-of-word marker to
     // the final symbol, rank-merge, and append the resulting vocab IDs.
     void clip_bpe_word(const std::string & pretoken, std::vector<int32_t> & out) const;
+
+    // GPT-2 ByteLevel regex pre-tokenizer (HF `ByteLevel` with use_regex=true):
+    //   's|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+
+    // Returns raw-byte pre-tokens (before byte-level encoding). Used by the
+    // GPT-2 path when gpt2_regex_pretok_ is set (ModernBERT).
+    std::vector<std::string> gpt2_pretokenize(const std::string & text) const;
 };
