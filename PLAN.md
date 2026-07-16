@@ -469,17 +469,32 @@ the fix touches the compute graph and the box was at load ~143 from other sessio
 (a build + HF-modernbert validation shouldn't be rushed/contended). Pick up on a
 quiet box with the recipe above.
 
-Also pending (lower priority): add e5-small + granite-107m matrix entries (both
-load; need HF parity runs) — they're the easy coverage wins once a box is free.
-**Update 2026-07-16 (`feat/modernbert-community-gguf`):** re-verified both still
-load correctly under the NEW model-string-authoritative tokenizer dispatch —
-`multilingual-e5-small` (250037-vocab) and `granite-embedding-107m-multilingual`
-(250002-vocab, 250002 scores) both still pick **SentencePiece** (the derivation
-falls through to the `n>100000→SPM` heuristic; unchanged), so the dispatch change
-did not regress the bert/SPM community models. Matrix ENTRIES + HF parity still
-deferred: the box was at load ~57 (CLI runs timing out at 2 min), and per the
-dev-guide quiet-load discipline these SPM/XLM-R parity numbers must be measured on
-a free box. Both would add the FIRST SentencePiece coverage to the matrix.
+e5-small + granite-107m matrix coverage — **RESOLVED 2026-07-16
+(`feat/modernbert-community-gguf`), one added, one is a genuine community-export
+bug:**
+  - **`granite-embedding-107m-multilingual` — ADDED + validated.** Community
+    `lmstudio-community` q4_k GGUF: arch `bert`, `tokenizer.ggml.model='t5'`
+    (250002-token unigram + scores) → SPM via the new model-string dispatch;
+    CLS pooling. **Per-stage q4_k vs HF fp32: emb_ln_out cos=0.999951 (gate PASS)
+    + 6 layers 0.9928–0.9969; final CLS-pool cos=0.996145; f16 control
+    cos=1.000000 at every stage + 1.000000 final.** Garbage-guard margin 0.31.
+    This is the matrix's FIRST SentencePiece entry.
+  - **`multilingual-e5-small` — NOT added; it does NOT parity-match, and it is an
+    under-specified community export, not our bug.** The `rodion-m` fp32 GGUF
+    (arch `bert`, `tokenizer.ggml.model='bert'` → 250037-vocab → SPM by the
+    `n>100000` heuristic) has a `position_embd.weight` tensor but NO
+    `bert.position_offset` key → crispembed uses offset 0, while
+    `intfloat/multilingual-e5-small` is XLM-RoBERTa (padding_idx=1 → position
+    offset **2**). Result: structural gate `emb_ln_out` cos=**0.467** (norms match
+    16.4/16.5, direction wrong = pure position-embedding shift). NOT generically
+    auto-detectable: granite has the SAME RoBERTa bos=0/eos=2 SPM tokenizer yet
+    needs offset 0, so there is no tokenizer-side signal to key offset-2 off. The
+    fix belongs upstream (the community GGUF must emit `position_offset`), or
+    users should use a GGUF that declares it (our `cstr/*` e5 sets it). Left as a
+    documented finding; no speculative heuristic shipped.
+  - Regression note: both still load as SentencePiece under the new
+    model-string-authoritative dispatch (t5→SPM directly; bert+250K→SPM via the
+    retained heuristic), so the dispatch change did not regress the bert/SPM path.
 
 ### Encoder ground-truth parity harness (A3 follow-on, 2026-07-16)
 

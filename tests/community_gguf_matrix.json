@@ -138,6 +138,29 @@
       "control_repo": "cstr/gte-modernbert-base-GGUF",
       "control_file": "gte-modernbert-base-f16.gguf",
       "control_min_cos": 0.9999
+    },
+    {
+      "name": "granite-embedding-107m-multilingual",
+      "repo": "lmstudio-community/granite-embedding-107m-multilingual-GGUF",
+      "file": "granite-embedding-107m-multilingual-Q4_K_M.gguf",
+      "arch": "bert",
+      "dim": 384,
+      "n_layer": 6,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "The FIRST SentencePiece entry in the matrix — an XLM-RoBERTa-family embedder exported as arch 'bert' with tokenizer.ggml.model='t5' (250002-token unigram vocab + scores). Exercises the model-string->SPM dispatch (t5->type 2) added for the modern-bert fix, plus pooling_type=2 (CLS). NOTE it uses absolute position offset 0 (unlike the intfloat multilingual-e5 XLM-R models, which need offset 2 and whose community GGUFs omit bert.position_offset -> those do NOT parity-match; see PLAN).",
+      "hf_repo": "ibm-granite/granite-embedding-107m-multilingual",
+      "hf_trust_remote_code": false,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9961,
+      "measured_note": "q4_k floor. Final-embedding (CLS-pool + L2) cos vs HF sentence-transformers = 0.996145; per-stage q4_k vs HF fp32 = 0.999951 at the emb_ln_out structural gate and 0.9928-0.9969 across all 6 layers. The f16 control (below) is cos=1.000000 at EVERY stage AND 1.000000 final, proving the SPM tokenizer + bert graph are exact and the q4_k gap is quantization.",
+      "control_repo": "mrutkows/granite-embedding-107m-multilingual-GGUF",
+      "control_file": "granite-embedding-107m-multilingual-f16.gguf",
+      "control_min_cos": 0.999
     }
   ]
 }
