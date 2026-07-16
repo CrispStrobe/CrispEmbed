@@ -5,6 +5,7 @@
 #include "tokenizer.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "core/hparam_keys.h"
 #include "imatrix.h"
 
 #include "ggml.h"
@@ -326,33 +327,71 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         return k >= 0 ? std::string(gguf_get_val_str(g, k)) : std::string();
     };
 
-    // Hyperparams — check CrispEmbed, Ollama bert.*, and Ollama xlmr.* keys.
-    // CrispEmbed: bert.hidden_size, bert.num_hidden_layers, ...
-    // Ollama:     {arch}.embedding_length, {arch}.block_count, ...
-    //             where arch = "bert" or "xlmr"
-    // nomic-bert-moe (nomic-embed-text-v2-moe) exports its hyperparameters under
-    // the arch-prefixed "nomic-bert-moe.*" keys — read them as a fallback alongside
-    // the bert.*/xlmr.* variants so the model loads with correct dims instead of
-    // the 384-dim/6-layer defaults (issue #33).
-    hp.n_vocab = u32("bert.vocab_size", 30522);
-    hp.n_max_tokens =
-        u32("bert.max_position_embeddings",
-            u32("bert.context_length", u32("xlmr.context_length", u32("nomic-bert-moe.context_length", 512))));
-    hp.n_embd = u32("bert.hidden_size", u32("bert.embedding_length",
-                                            u32("xlmr.embedding_length", u32("nomic-bert-moe.embedding_length", 384))));
-    hp.n_head = u32("bert.num_attention_heads",
-                    u32("bert.attention.head_count",
-                        u32("xlmr.attention.head_count", u32("nomic-bert-moe.attention.head_count", 12))));
-    hp.n_layer = u32("bert.num_hidden_layers",
-                     u32("bert.block_count", u32("xlmr.block_count", u32("nomic-bert-moe.block_count", 6))));
-    hp.n_intermediate = u32("bert.intermediate_size",
-                            u32("bert.feed_forward_length",
-                                u32("xlmr.feed_forward_length", u32("nomic-bert-moe.feed_forward_length", 1536))));
-    hp.n_output = u32("bert.output_dim", hp.n_embd);
-    hp.layer_norm_eps =
-        f32("bert.layer_norm_eps",
-            f32("bert.attention.layer_norm_epsilon",
-                f32("xlmr.attention.layer_norm_epsilon", f32("nomic-bert-moe.attention.layer_norm_epsilon", 1e-12f))));
+    // Hyperparams — CrispEmbed (bert.hidden_size, ...), Ollama/llama.cpp
+    // ({arch}.embedding_length, ...), plus the GGUF's OWN declared architecture.
+    //
+    // llama.cpp/Ollama always write <general.architecture>.<field>, so deriving
+    // the prefix from general.architecture resolves any community GGUF — e.g.
+    // nomic-embed-text-v2-moe's "nomic-bert-moe.*" keys (issue #33) — without a
+    // per-model alias list. See src/core/hparam_keys.h.
+    //
+    // Gates: CRISPEMBED_ARCH_HPARAMS=0 disables the arch-derived candidates
+    // (leaving exactly the legacy bert.*/xlmr.* behaviour, for A/B);
+    // CRISPEMBED_STRICT_HPARAMS=1 hard-fails instead of silently defaulting.
+    const std::string gguf_arch = strv("general.architecture");
+    const bool arch_hp_on = core_hparams::arch_keys_enabled();
+    auto ak = [&](const char * field) { return core_hparams::arch_key(gguf_arch, field, arch_hp_on); };
+
+    auto look_u32 = [&](const std::string & key, int & v) -> bool {
+        const int64_t k = gguf_find_key(g, key.c_str());
+        if (k < 0) return false;
+        v = (int)gguf_get_val_u32(g, k);
+        return true;
+    };
+    auto look_f32 = [&](const std::string & key, float & v) -> bool {
+        const int64_t k = gguf_find_key(g, key.c_str());
+        if (k < 0) return false;
+        v = gguf_get_val_f32(g, k);
+        return true;
+    };
+
+    // Required hparams: a wrong default here silently yields a garbage embedding,
+    // so record misses for the strict-mode report.
+    std::vector<std::string> missing_hp;
+    auto req_u32 = [&](const std::vector<std::string> & keys, int def, const char * what) -> int {
+        int v = def;
+        if (!core_hparams::resolve(look_u32, keys, v)) missing_hp.push_back(what);
+        return v;
+    };
+    auto opt_u32 = [&](const std::vector<std::string> & keys, int def) -> int {
+        int v = def;
+        core_hparams::resolve(look_u32, keys, v);
+        return v;
+    };
+    auto opt_f32 = [&](const std::vector<std::string> & keys, float def) -> float {
+        float v = def;
+        core_hparams::resolve(look_f32, keys, v);
+        return v;
+    };
+
+    hp.n_vocab = opt_u32({ "bert.vocab_size", ak("vocab_size") }, 30522);
+    hp.n_max_tokens = opt_u32(
+        { "bert.max_position_embeddings", "bert.context_length", "xlmr.context_length", ak("context_length") }, 512);
+    hp.n_embd = req_u32({ "bert.hidden_size", "bert.embedding_length", "xlmr.embedding_length", ak("embedding_length"),
+                          ak("hidden_size") },
+                        384, "embedding_length");
+    hp.n_head = req_u32({ "bert.num_attention_heads", "bert.attention.head_count", "xlmr.attention.head_count",
+                          ak("attention.head_count") },
+                        12, "attention.head_count");
+    hp.n_layer = req_u32({ "bert.num_hidden_layers", "bert.block_count", "xlmr.block_count", ak("block_count") }, 6,
+                         "block_count");
+    hp.n_intermediate = req_u32(
+        { "bert.intermediate_size", "bert.feed_forward_length", "xlmr.feed_forward_length", ak("feed_forward_length") },
+        1536, "feed_forward_length");
+    hp.n_output = opt_u32({ "bert.output_dim" }, hp.n_embd);
+    hp.layer_norm_eps = opt_f32({ "bert.layer_norm_eps", "bert.attention.layer_norm_epsilon",
+                                  "xlmr.attention.layer_norm_epsilon", ak("attention.layer_norm_epsilon") },
+                                1e-12f);
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
     // CrispEmbed format: bert.pooling_method (0=mean, 1=cls, 2=last)
@@ -361,10 +400,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         int pm = u32("bert.pooling_method", -1);
         if (pm < 0) {
             // Try Ollama format and convert: Ollama{1=mean,2=cls,3=last} → CE{0,1,2}
-            int pt = u32("bert.pooling_type", -1);
-            // Also check arch-prefixed keys (xlmr.*, nomic-bert-moe.* → mean=1)
-            if (pt < 0) pt = u32("xlmr.pooling_type", -1);
-            if (pt < 0) pt = u32("nomic-bert-moe.pooling_type", -1);
+            // Arch-derived key covers any community GGUF (nomic-bert-moe → 1=mean).
+            const int pt = opt_u32({ "bert.pooling_type", "xlmr.pooling_type", ak("pooling_type") }, -1);
             if (pt > 0)
                 pm = pt - 1; // Ollama 1→0(mean), 2→1(cls), 3→2(last)
             else
@@ -382,15 +419,35 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->colbert_similarity_fn = strv("colbert.similarity_fn_name");
     ctx->colbert_query_length = u32("colbert.query_length", 0);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
-    // nomic-bert-moe stores its RoPE base under nomic-bert-moe.rope.freq_base.
-    ctx->rope_theta = f32("bert.rope_theta", f32("nomic-bert-moe.rope.freq_base", 10000.0f));
+    // Community GGUFs write the RoPE base as <arch>.rope.freq_base.
+    ctx->rope_theta = opt_f32({ "bert.rope_theta", ak("rope.freq_base") }, 10000.0f);
     ctx->rope_theta_global = f32("bert.rope_theta_global", 0.0f);
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->local_attention_window = u32("bert.local_attention", 0);
     ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets = u32("bert.position_buckets", 0);
-    hp.n_experts = u32("bert.num_experts", u32("nomic-bert-moe.expert_count", 0));
-    hp.n_experts_per_tok = u32("bert.num_experts_per_tok", u32("nomic-bert-moe.expert_used_count", 0));
+    hp.n_experts = opt_u32({ "bert.num_experts", ak("expert_count") }, 0);
+    hp.n_experts_per_tok = opt_u32({ "bert.num_experts_per_tok", ak("expert_used_count") }, 0);
+
+    // Strict mode: a missing REQUIRED hparam means we are about to run with a
+    // fabricated default (384-dim / 6-layer / ...) and emit a silently-garbage
+    // embedding with exit code 0. Opt-in hard-fail instead (see hparam_keys.h).
+    if (!missing_hp.empty()) {
+        std::string joined;
+        for (size_t i = 0; i < missing_hp.size(); i++) joined += (i ? ", " : "") + missing_hp[i];
+        if (core_hparams::strict_hparams_enabled()) {
+            fprintf(stderr,
+                    "crispembed: missing required hyperparameter(s) [%s] for architecture '%s' — refusing to load "
+                    "with fabricated defaults (CRISPEMBED_STRICT_HPARAMS=1). Unset it to load anyway.\n",
+                    joined.c_str(), gguf_arch.empty() ? "(unset)" : gguf_arch.c_str());
+            gguf_free(g);
+            return false;
+        }
+        fprintf(stderr,
+                "crispembed: warning: hyperparameter(s) [%s] not found for architecture '%s' — using defaults; "
+                "embeddings may be wrong. Set CRISPEMBED_STRICT_HPARAMS=1 to make this fatal.\n",
+                joined.c_str(), gguf_arch.empty() ? "(unset)" : gguf_arch.c_str());
+    }
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
