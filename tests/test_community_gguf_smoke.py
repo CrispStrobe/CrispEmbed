@@ -26,7 +26,8 @@ sys.path.insert(0, str(HERE))
 
 import run_community_gguf as drv  # noqa: E402
 
-REQUIRED = ("name", "repo", "file", "arch", "dim", "n_layer", "query", "related", "unrelated")
+REQUIRED = ("name", "repo", "file", "arch", "dim", "n_layer", "query", "related", "unrelated",
+            "hf_repo", "min_hf_cos")
 
 
 class ManifestSchema(unittest.TestCase):
@@ -43,6 +44,18 @@ class ManifestSchema(unittest.TestCase):
             names.add(e["name"])
             self.assertTrue(e["file"].endswith(".gguf"))
             self.assertNotIn("/", e["file"], "file must be a bare filename")
+
+    def test_hf_thresholds_sit_under_the_measured_quant_floor(self) -> None:
+        # min_hf_cos must be loose enough not to fire on the q4_k floor we
+        # actually measured, or the matrix cries wolf and gets ignored.
+        for e in drv.load_manifest()["models"]:
+            meas = e.get("measured_hf_cos")
+            if meas is None:
+                continue
+            self.assertLessEqual(
+                e["min_hf_cos"], meas,
+                f"{e['name']}: threshold {e['min_hf_cos']} exceeds measured {meas} -> would fail on a healthy model",
+            )
 
     def test_nomic_entry_pins_the_issue33_shape(self) -> None:
         # The regression this matrix exists for: 768/12, not the 384/6 defaults.

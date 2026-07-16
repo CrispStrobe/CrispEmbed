@@ -20,7 +20,10 @@
     "  query_prefix / doc_prefix  task prefixes this model family requires",
     "  min_margin    cos(query, related) must exceed cos(query, unrelated) by at least this",
     "  ref_file      optional: our own conversion of the SAME model, for a cross-conversion A/B",
-    "  min_ref_cos   optional: required cosine between the two conversions"
+    "  min_ref_cos   optional: required cosine between the two conversions",
+    "",
+    "MEASURED (2026-07-16, q4_k GGUF vs HF fp32, tests/hf_parity_community.py): bge-small 0.9962 | MiniLM 0.9919 | nomic-v2-moe 0.9797 | nomic-v1.5 0.9515. min_hf_cos=0.95 is sized to sit under the q4_k floor while still catching a structural bug (wrong pooling/rope/dims), which craters cosine far below it.",
+    "PRECISION CONTROL — the only way to tell 'quant floor' from 'our bug': re-run the SAME code path at f16/f32. bge-small f32 and nomic-v1.5 f16 both give per-stage cos=1.000000 vs HF at EVERY layer, proving both encoder paths (bert split-QKV/abs-pos AND nomic-bert fused-QKV/RoPE) are exact and every q4_k delta is quantization. Do this before ever calling a low cosine a bug."
   ],
   "models": [
     {
@@ -36,7 +39,74 @@
       "related": "A step-by-step guide to baking sourdough loaves at home.",
       "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
       "min_margin": 0.05,
-      "notes": "Regression guard for issue #33: llama.cpp export uses fused attn_qkv + ffn_*_exps tensors and nomic-bert-moe.* hparam keys. Before the fix this aborted at load; with hparams missing it would have run at 384-dim/6-layer."
+      "notes": "Regression guard for issue #33: llama.cpp export uses fused attn_qkv + ffn_*_exps tensors and nomic-bert-moe.* hparam keys. Before the fix this aborted at load; with hparams missing it would have run at 384-dim/6-layer.",
+      "hf_repo": "nomic-ai/nomic-embed-text-v2-moe",
+      "hf_trust_remote_code": true,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9797,
+      "measured_note": "q4_k floor; f32/f16 control not run for this one (500MB+ HF model)"
+    },
+    {
+      "name": "nomic-embed-text-v1.5",
+      "repo": "nomic-ai/nomic-embed-text-v1.5-GGUF",
+      "file": "nomic-embed-text-v1.5.Q4_K_M.gguf",
+      "arch": "nomic-bert",
+      "dim": 768,
+      "n_layer": 12,
+      "query_prefix": "search_query: ",
+      "doc_prefix": "search_document: ",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "A THIRD arch string ('nomic-bert', distinct from nomic-bert-moe) — resolved by A2's arch-derived lookup with no new code. Guards a real latent bug: this GGUF declares nomic-bert.rope.freq_base=1000, but the pre-A2 loader read only bert.rope_theta and silently defaulted to 10000. Tensors resolve (fused attn_qkv), so it loaded, exited 0 and emitted a 768-dim vector — just a subtly wrong one. Effect is length-dependent: vs our cstr conversion (which also uses theta=1000), correct-vs-default cosine is a wash on a short query (0.9531 vs 0.9563, noise) but clearly better on long text (0.9435 vs 0.9278). That is exactly why rc+dim checks cannot catch it and the garbage guard/parity must.",
+      "hf_repo": "nomic-ai/nomic-embed-text-v1.5",
+      "hf_trust_remote_code": true,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9515,
+      "measured_note": "LOWEST of the matrix, and it is NOT a bug: per-stage f16 vs HF fp32 is cos=1.000000 at ALL 12 layers (norms identical), so the nomic-bert graph (fused QKV + RoPE) is exact. The q4_k drop is real but purely quantization, concentrated in the LAST block (layer_10 0.9977 -> layer_11 0.9499 — a step, not smooth drift). This model's final layer is unusually quant-sensitive; prefer f16/q8 for retrieval quality."
+    },
+    {
+      "name": "bge-small-en-v1.5",
+      "repo": "CompendiumLabs/bge-small-en-v1.5-gguf",
+      "file": "bge-small-en-v1.5-q4_k_m.gguf",
+      "arch": "bert",
+      "dim": 384,
+      "n_layer": 12,
+      "query_prefix": "Represent this sentence for searching relevant passages: ",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "Plain bert arch with SPLIT attn_q/k/v and absolute position embeddings — the opposite shape to the nomic entries, so the matrix covers both. Exercises pooling_type=2 (CLS), which maps to CrispEmbed pool_method=1; a mis-mapped pooling would still return a 384-dim vector, so only the garbage guard catches it.",
+      "hf_repo": "BAAI/bge-small-en-v1.5",
+      "hf_trust_remote_code": false,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9962,
+      "measured_note": "per-stage f32 vs HF fp32 is cos=1.000000 at ALL 12 layers — the bert path (split QKV + absolute positions) is exact; all q4_k deltas are quantization"
+    },
+    {
+      "name": "all-MiniLM-L6-v2",
+      "repo": "second-state/All-MiniLM-L6-v2-Embedding-GGUF",
+      "file": "all-MiniLM-L6-v2-Q4_K_M.gguf",
+      "arch": "bert",
+      "dim": 384,
+      "n_layer": 6,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "ref_file": "all-MiniLM-L6-v2-iq4_xs.gguf",
+      "min_ref_cos": 0.9,
+      "notes": "The one entry with a cross-conversion A/B: a community Q4_K_M vs our own cstr iq4_xs of the same model. min_ref_cos is deliberately loose (0.90) — the two differ in quant AND converter, so this gates 'same model' agreement, not bit-parity. NOTE its dim/n_layer (384/6) coincide with the loader's silent defaults, so for THIS entry the shape check proves little and the garbage guard carries the weight.",
+      "hf_repo": "sentence-transformers/all-MiniLM-L6-v2",
+      "hf_trust_remote_code": false,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9919,
+      "measured_note": "q4_k floor; per-stage profile is smooth monotonic decay 0.9994 -> 0.9897, no step-change"
     }
   ]
 }

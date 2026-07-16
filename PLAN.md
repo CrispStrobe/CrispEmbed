@@ -350,6 +350,54 @@ drifted 6.0.2 → 6.0.3, and 6.0.3's clang segfaults compiling `layout_detect.cp
 "latest"-alias toolchain installs with the same drift exposure, and add a signal
 so a red `main` self-reports.
 
+### Encoder ground-truth parity harness (A3 follow-on, 2026-07-16)
+
+A3 shipped with ONE model and no Python ground truth: its checks were rc/shape,
+a semantic garbage guard, and a cross-conversion A/B — none of which is ground
+truth (two of our own conversions can agree and both be wrong). Extended to 4
+community GGUFs, each now gated against the ORIGINAL HF/PyTorch model, per-stage
+as well as final.
+
+**Tools.** `tests/hf_parity_community.py` (final-embedding cosine vs
+sentence-transformers) · `tools/dump_encoder_reference.py` (HF per-stage
+intermediates -> GGUF) · `tests/test_encoder_diff.py` (per-stage compare) ·
+`CRISPEMBED_DUMP_LAYERS_GGUF=<path>` (our side dumps full tensors; the pre-existing
+`CRISPEMBED_DUMP_LAYERS=1` only printed a 6-float peek, which cannot be compared).
+
+**Measured q4_k vs HF fp32:** bge-small 0.9962 · MiniLM 0.9919 · nomic-v2-moe
+0.9797 · nomic-v1.5 **0.9515**.
+
+**The precision control is the whole method.** A low cosine alone never
+distinguishes "quant floor" from "our bug" — re-run the SAME code path at f16/f32:
+
+| model | q4_k vs HF | f16/f32 vs HF (per-stage) |
+|---|---|---|
+| bge-small-en-v1.5 (bert: split QKV, abs pos) | 0.9962 | **f32: cos=1.000000 at all 12 layers** |
+| nomic-embed-text-v1.5 (nomic-bert: fused QKV, RoPE) | 0.9515 | **f16: cos=1.000000 at all 12 layers** |
+
+So BOTH encoder paths are exactly correct and every q4_k delta is quantization.
+nomic-v1.5's 0.9515 is a real quality fact, not a bug: it is concentrated in the
+LAST block (layer_10 0.9977 -> layer_11 0.9499 — a step, not smooth drift), i.e.
+that model's final layer is unusually quant-sensitive. Prefer f16/q8 for it.
+
+**Three harness bugs this found — all invisible by reading the code:**
+1. `layer_{n-1}` never existed in our dump: the graph renames the last block's
+   output to `encoder_out`, so the block that FEEDS POOLING was silently absent —
+   and the comparer `continue`d past missing stages, so absence looked like a
+   pass. Missing stages now FAIL; `encoder_out` is dumped and aliased.
+2. `NomicBertModel.forward()` rejects `output_hidden_states`, so the dumper only
+   worked for stock HF models. Added a forward-hook fallback (finds the block
+   ModuleList by probing known paths).
+3. The structural gate read cos=0.69 on nomic while every layer read 1.000000 —
+   impossible for a real input mismatch, therefore the HARNESS was wrong: BERT's
+   `embeddings` module includes the LayerNorm, nomic's does not, so it compared
+   pre-LN against our post-LN. Fixed by capturing block 0's INPUT via a
+   forward_pre_hook (pre-block-0 by definition, architecture-agnostic). The gate
+   now prints |ours| and |ref| so this class of artifact is visible at a glance.
+
+**Backlog:** the f16/f32 control is manual; wiring a per-entry `control_file`
+into the matrix would make "prove it's quant, not a bug" a one-command check.
+
 ### Transcoda OMR decode enhancements (deferred, 2026-07-13)
 
 The shipped `transcoda_ocr` engine uses greedy decode (byte-identical to the HF
