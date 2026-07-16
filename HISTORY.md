@@ -52,14 +52,23 @@ community-GGUF loading, plus a ground-truth parity methodology. All on `main`.
   `layout_detect.cpp`). Pinned 6.0.2; added `tools/check_workflow_pins.sh` (fails
   on any unpinned toolchain step, self-tested both arms) + a daily `main-health`
   cron that self-reports a red `main`.
-- **Found (not fixed): community `modern-bert` GGUFs.** Wider matrix coverage
-  found gte-modernbert-base won't load. Attempted a loader fix, validated it
-  produced GARBAGE (structural gate `emb_ln_out` cos 0.58), traced the true first
-  divergence to the TOKENIZER (dispatch reads only crispembed's own
-  `tokenizer.ggml.type`, ignores the standard `tokenizer.ggml.model="gpt2"` →
-  WordPiece instead of BPE). **Deliberately NOT shipped** — the loader-alias part
-  alone turns a loud failure into silent garbage. Full validated diagnosis +
-  recipe in `handover-prompts/modernbert-community-gguf.md`.
+- **Fixed + shipped: community `modern-bert` GGUFs** (`feat/modernbert-community-gguf`,
+  `77b829b`). Wider matrix coverage found gte-modernbert-base won't load; a
+  loader-alias-only attempt produced GARBAGE (structural gate `emb_ln_out` cos
+  0.58), tracing the true first divergence to the TOKENIZER (dispatch read only
+  crispembed's own `tokenizer.ggml.type`, ignoring the standard
+  `tokenizer.ggml.model="gpt2"` → WordPiece instead of BPE). Fixed the tokenizer
+  FIRST, then the loader: (1) model-string-authoritative dispatch when the numeric
+  type is absent; (2) BPE merges from the `tokenizer.ggml.merges` KV array; (3) a
+  GPT-2 ByteLevel regex pre-tokenizer (arch-gated); (4) loader aliases
+  (attn_norm/ffn_norm/output_norm + GeGLU-by-shape reroute of the fused `ffn_up`
+  [H,2·inter]) + metadata (pre_ln, inverted dual RoPE theta, sliding-window→
+  local/global) + exact-erf GeGLU. **Per-stage q8_0 vs HF: emb_ln_out cos=0.999928
+  (gate PASS) + all 22 layers 0.9999+; f16 control cos=1.000000 at EVERY stage
+  (graph exact, gap is quant); final CLS-pool cos q8_0=0.999602 / f16=0.999999.**
+  Tokens match HF `[50281,25521,1533,50282]`. `tests/community_gguf_matrix.json`
+  entry `gte-modernbert-base` (garbage-guard margin 0.51, was −0.089); full
+  5-model matrix still PASS. Deep-dive in LEARNINGS.md.
 
 ## July 13, 2026 — DeepSeek-OCR-2 #4: converter-emitted stacked MoE experts (−1.3 GB resident)
 

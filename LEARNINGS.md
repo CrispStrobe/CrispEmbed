@@ -68,6 +68,58 @@ load + shape + a garbage guard + HF parity. Adding 3 entries immediately surface
 a 3rd arch string (`nomic-bert`), a latent RoPE default bug, and the modern-bert
 tokenizer bug — the coverage IS the bug-finder.
 
+## Fixing community modern-bert: the tokenizer, not the graph — and the gotchas that make each step lie (2026-07-16, `feat/modernbert-community-gguf`)
+
+The RESOLUTION of the modern-bert entry above (`gte-modernbert-base`, arch
+`modern-bert`). crispembed already had the ModernBERT compute graph; the fix was
+5 tokenizer/loader steps, each gated on the per-stage HF diff. Durable learnings:
+
+- **Make the tokenizer.ggml.model STRING authoritative, but only when the numeric
+  type is absent — and keep the legacy `n>100000→SPM` heuristic as the last
+  resort.** Changing the *dispatch* condition (not just the derivation) would flip
+  an explicit-`type=0`-huge-vocab GGUF from SPM to WordPiece. Derive the type from
+  the model string when `tokenizer.ggml.type` is missing, then leave the existing
+  dispatch conditions byte-identical. Net effect: only the previously-broken gpt2
+  GGUFs change behaviour; every bert model is unchanged (verified — full 5-model
+  matrix still PASS).
+- **Read the `tokenizer.ggml.merges` KV array BEFORE `gguf_free`, into a local
+  that survives to the post-weight-load merges site.** Community gpt2 GGUFs store
+  merges in that KV string array; our converter stores a `tokenizer.merges`
+  TENSOR. Prefer the tensor, fall back to the KV array. (Use-after-free landmine:
+  the vocab/merges must be pulled while the `gguf_context` is live.)
+- **The structural gate (`emb_ln_out` cos) is the ONLY thing that proves
+  tokenization — not the final embedding.** Wrong tokens → emb_ln_out cos 0.58;
+  right tokens → 0.9999. A final-embedding cosine can look "okay-ish" under a
+  token shift; the pre-block-0 gate cannot. Also assert the token IDS match HF
+  (`[50281,25521,1533,50282]` for "hello world") — a shifted token mimics numeric
+  drift.
+- **The GPT-2 ByteLevel regex pre-tokenizer coincidentally equals the simple
+  whitespace-split for `"hello world"` — do not let that fool you into skipping
+  it.** They diverge on punctuation/digits/contractions/multi-space. The HF
+  `ByteLevel(use_regex=true)` regex is
+  `'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+`;
+  the subtle part is whitespace: a run of ≥2 spaces before a word emits all-but-
+  the-last as one token and the LAST space rides into the next word's ` ?`
+  (a single non-0x20 whitespace like `\t` becomes its own token via the final
+  `\s+`). Gate the regex path on arch so Qwen3's whitespace-split path is
+  untouched.
+- **ModernBERT's GeGLU differs from the validated GTE-v1.5 path ONLY in the gelu
+  approximation.** ggml `ggml_geglu` (non-swapped) = `gelu_tanh(first_half) *
+  second_half`; ModernBERT's `hidden_activation="gelu"` is exact-erf, so
+  `ggml_geglu_erf`. Same layout, same split order — the fused `Wi` is stored
+  `[input; gate]` verbatim, so non-swapped is right. Gate `geglu_erf` on
+  `arch=="modern-bert"` so GTE-v1.5's tanh stays.
+- **The RoPE theta naming is INVERTED vs crispembed's fields.** llama.cpp's
+  `<arch>.rope.freq_base` is the GLOBAL theta (160000) and `rope.freq_base_swa`
+  is the LOCAL/sliding theta (10000). The generic `ak("rope.freq_base")` read
+  loads the global into `rope_theta` — override it in the `modern-bert` block.
+- **The f16 control is what turns "q8_0 = 0.9996" from *maybe a bug* into *proven
+  quant*.** Same code path at f16 gave cos=1.000000 at EVERY stage (and 0.999999
+  final) vs the HF fp32 reference — so the tokenizer AND the graph are exact and
+  the entire q8_0 gap is quantization. The control's f16 GGUF lived in a DIFFERENT
+  repo than the shipped q8_0 (eranmazur ships only q8_0; the f16 is in
+  `cstr/*-GGUF`), so `prove_quant_control.py` gained a `control_repo` override.
+
 ## Hand-rolled JSON drifts into N diverged copies — centralize in `core/` (2026-07-16)
 
 The HTTP server and the CLI each had their own `json_escape`, and they had already
