@@ -154,6 +154,19 @@ class ServerJsonInputLive(unittest.TestCase):
         embs = d.get("embeddings", d.get("data"))
         self.assertEqual(len(embs), 1)
 
+    def test_scan_split_image_field_decoy(self) -> None:
+        # core_json scalars/strings: /scan/split is model-free and reads the
+        # "image" field. A decoy key whose VALUE is the string "image" must not
+        # be mistaken for the image key (the pre-fix naive find() would grab it
+        # and fail to load the image). Skips cleanly if no test image is set.
+        img = os.environ.get("CRISPEMBED_TEST_IMAGE")
+        if not img or not Path(img).is_file():
+            self.skipTest("set CRISPEMBED_TEST_IMAGE to a readable image")
+        payload = json.dumps({"note": "image", "image": img})
+        d = _post(self._base() + "/scan/split", payload)
+        self.assertIn("width", d, "must have loaded the real image, not the decoy value")
+        self.assertGreater(d["width"], 0)
+
     def test_b2_decoy_key_value_ignored(self) -> None:
         # B2: an unrelated key whose VALUE array contains the literal "input"
         # must not be mistaken for the input key. The real "input" has 3 items.

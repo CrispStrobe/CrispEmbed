@@ -17,6 +17,9 @@
 using core_json::json_decode_string;
 using core_json::json_escape_legacy;
 using core_json::json_escape_strict;
+using core_json::json_extract_number;
+using core_json::json_extract_number_legacy;
+using core_json::json_extract_number_structural;
 using core_json::json_extract_strings;
 using core_json::json_extract_strings_escaped;
 using core_json::json_extract_strings_legacy;
@@ -263,6 +266,38 @@ static int crispembed_test_main() {
         check("A/B legacy leaves CR raw", json_escape_legacy(S("a\rb")) == "a\rb");
         check("A/B legacy == strict on tab-free text",
               json_escape_legacy(S("plain \"q\"")) == json_escape_strict(S("plain \"q\"")));
+    }
+
+    // =================================================================
+    // Scalar number extraction (json_extract_number) — same depth-1 finder as
+    // the array parser, so it shares the decoy-immunity and honours defaults.
+    // =================================================================
+    {
+        auto approx = [](double a, double b) { return (a - b) < 1e-9 && (b - a) < 1e-9; };
+        // Basic int / float / negative / exponent.
+        check("number: int", json_extract_number(S("{\"max_tokens\":128}"), "max_tokens", -1) == 128);
+        check("number: float", approx(json_extract_number(S("{\"conf\":0.35}"), "conf", -1), 0.35));
+        check("number: negative", approx(json_extract_number(S("{\"t\":-2.5}"), "t", 0), -2.5));
+        check("number: whitespace", json_extract_number(S("{ \"n\" : 42 }"), "n", -1) == 42);
+        // Absent / wrong-type -> default (a string/bool value is NOT a number).
+        check("number: absent -> default", json_extract_number(S("{\"a\":1}"), "conf", 7) == 7);
+        check("number: string value -> default", json_extract_number(S("{\"conf\":\"0.5\"}"), "conf", 7) == 7);
+        check("number: bool value -> default", json_extract_number(S("{\"conf\":true}"), "conf", 7) == 7);
+        // Decoy: a string VALUE equal to the key name must not be matched (B2).
+        check("number: decoy value ignored",
+              json_extract_number(S("{\"label\":\"threshold\",\"threshold\":0.9}"), "threshold", -1) > 0.89 &&
+                  json_extract_number(S("{\"label\":\"threshold\",\"threshold\":0.9}"), "threshold", -1) < 0.91);
+        check("number: decoy-only -> default (key truly absent)",
+              json_extract_number(S("{\"labels\":[\"conf\"]}"), "conf", 5) == 5);
+        // A/B: legacy naive scan latches onto the decoy; structural does not.
+        double leg = json_extract_number_legacy(S("{\"labels\":[\"conf\"],\"x\":0.1}"), "conf", -1);
+        double str = json_extract_number_structural(S("{\"labels\":[\"conf\"],\"x\":0.1}"), "conf", -1);
+        std::printf("      (legacy=%.3f structural=%.3f)\n", leg, str);
+        check("A/B number: structural returns default on decoy-only", str == -1);
+        check("A/B number: legacy is fooled by the decoy (!=default)", leg != -1);
+        // A/B: agree on a normal payload.
+        check("A/B number: agree on well-formed", json_extract_number_legacy(S("{\"conf\":0.75}"), "conf", 0) ==
+                                                      json_extract_number_structural(S("{\"conf\":0.75}"), "conf", 0));
     }
 
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");
