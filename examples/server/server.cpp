@@ -31,6 +31,7 @@
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
+#include "json_input.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "model_mgr.h"
@@ -71,6 +72,8 @@ static std::string json_escape(const std::string & s) {
     }
     return out;
 }
+
+using crispembed_server::json_extract_strings;
 
 int main(int argc, char ** argv) {
     std::string model_path;
@@ -380,28 +383,7 @@ int main(int argc, char ** argv) {
         }
         std::vector<std::string> texts;
         auto body = req.body;
-        auto pos = body.find("\"input\"");
-        if (pos != std::string::npos) {
-            auto arr_start = body.find('[', pos);
-            if (arr_start != std::string::npos) {
-                auto arr_end = body.find(']', arr_start);
-                std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                size_t i = 0;
-                while (i < arr.size()) {
-                    auto q1 = arr.find('"', i);
-                    if (q1 == std::string::npos) break;
-                    auto q2 = arr.find('"', q1 + 1);
-                    if (q2 == std::string::npos) break;
-                    texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                    i = q2 + 1;
-                }
-            } else {
-                auto q1 = body.find('"', pos + 7);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos)
-                    texts.push_back(body.substr(q1 + 1, q2 - q1 - 1));
-            }
-        }
+        json_extract_strings(body, "input", texts);
 
         if (texts.empty()) {
             res.status = 400;
@@ -450,32 +432,8 @@ int main(int argc, char ** argv) {
         std::vector<std::string> texts;
         auto body = req.body;
 
-        // Parse "input" — can be array or string
-        auto pos = body.find("\"input\"");
-        if (pos != std::string::npos) {
-            auto arr_start = body.find('[', pos);
-            auto str_start = body.find('"', pos + 7);
-            if (arr_start != std::string::npos && (str_start == std::string::npos || arr_start < str_start)) {
-                // Array of strings
-                auto arr_end = body.find(']', arr_start);
-                if (arr_end != std::string::npos) {
-                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            } else if (str_start != std::string::npos) {
-                // Single string
-                auto q2 = body.find('"', str_start + 1);
-                if (q2 != std::string::npos) texts.push_back(body.substr(str_start + 1, q2 - str_start - 1));
-            }
-        }
+        // Parse "input" — can be array or string (JSON-escaping aware)
+        json_extract_strings(body, "input", texts);
 
         if (texts.empty()) {
             res.status = 400;
@@ -529,12 +487,9 @@ int main(int argc, char ** argv) {
         std::string text;
         auto body = req.body;
 
-        auto pos = body.find("\"prompt\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 8);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) text = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        std::vector<std::string> prompt;
+        json_extract_strings(body, "prompt", prompt);
+        if (!prompt.empty()) text = prompt.front();
 
         if (text.empty()) {
             res.status = 400;
