@@ -351,7 +351,59 @@ drifted 6.0.2 → 6.0.3, and 6.0.3's clang segfaults compiling `layout_detect.cp
 "latest"-alias toolchain installs with the same drift exposure, and add a signal
 so a red `main` self-reports.
 
-### FOUND (2026-07-16): community `modern-bert` GGUFs fail to load — HANDOVER
+### FOUND (2026-07-16): community `modern-bert` GGUFs — DEEPER than aliases (validated diagnosis)
+
+**UPDATE after attempting the fix + HF per-stage validation (fix/modernbert-load,
+NOT shipped):** the loader-alias theory below is necessary but NOT sufficient, and
+the real first divergence is the TOKENIZER, not the graph. Sequence of findings:
+
+1. Added the aliases + metadata (attn_norm/ffn_norm/output_norm; pre_ln=true;
+   rope_theta=freq_base_swa/local + rope_theta_global=freq_base/global;
+   sliding_window→local_attention_window; sliding_window_pattern→global_attn_every_n;
+   GeGLU-by-shape reroute of `ffn_up` [H,2*inter]→ffn_up_gate_w). Result: it LOADS
+   (22L/768d, RoPE θ=10000 local, pre-LN) and EMITS a 768-dim vector.
+2. **But the embedding is garbage** — garbage-guard cos(related)=0.068 <
+   cos(unrelated)=0.157 (NEGATIVE margin). "Loads + emits" proved nothing (HARD
+   RULE #3), so I ran the per-stage HF diff vs `Alibaba-NLP/gte-modernbert-base`.
+3. **The STRUCTURAL GATE fails**: `emb_ln_out cos=0.583` (|ours|=40.8 |ref|=30.8),
+   i.e. divergence is BEFORE block 0 — tokenization/embeddings, not GeGLU/attn.
+4. **Root cause — tokenizer dispatch ignores the standard key.** The GGUF declares
+   `tokenizer.ggml.model = "gpt2"` (BPE) + `tokenizer.ggml.pre = "modern-bert"`, and
+   has NO `tokenizer.ggml.type`. crispembed's dispatch reads ONLY its own numeric
+   `tokenizer.ggml.type` (default 0) and the `n>100000→SPM` heuristic; 50368 vocab
+   + absent type → it picks **WordPiece**. HF tokenized to BPE ids
+   [50281,25521,1533,50282]; crispembed's WordPiece produces different ids →
+   different embeddings → garbage from token 0. (e5/granite only worked by luck:
+   their 250K vocab tripped the `n>100000→SPM` heuristic, which happened to be right.)
+
+**Why nothing was shipped:** the loader-alias change on its own turns a LOUD
+failure ("missing required tensor") into SILENT garbage (loads, exit 0, wrong
+embedding). That is strictly worse and is exactly the silent-default failure mode
+A2/STRICT_HPARAMS exists to prevent. So `src/crispembed.cpp` was reverted; only
+this diagnosis is recorded. Do NOT ship the aliases without the tokenizer fix.
+
+**Real fix (bigger than #33 — it's "support community BPE-tokenizer encoder
+GGUFs"), in order, each validated by the per-stage harness:**
+  a. Tokenizer dispatch: when `tokenizer.ggml.type` is absent, map
+     `tokenizer.ggml.model` string → type (`gpt2`→BPE, `bert`→WordPiece,
+     `t5`/`unigram`→SPM). Authoritative over the vocab-size heuristic.
+  b. BPE merges: community GGUFs store them in the `tokenizer.ggml.merges` KV
+     STRING ARRAY (confirmed present), not the `tokenizer.merges` TENSOR crispembed
+     reads. Load from the KV array for these.
+  c. gpt2 byte-level BPE + the `modern-bert` pre-tokenizer regex (verify
+     crispembed's BPE covers gpt2 byte-to-unicode + the pre-tokenizer). GATE:
+     emb_ln_out cos must reach ~0.99999 before trusting any layer.
+  d. ONLY THEN validate the graph: the 4 GeGLU variants
+     (`ggml_geglu`/`_swapped`/`_erf`/`_erf_swapped` — ModernBERT uses EXACT gelu, so
+     `_erf`; split order per llama.cpp's `ffn_up` layout), plus rope local/global
+     assignment and the SWA mask, via `tests/test_encoder_diff.py` +
+     `tools/dump_encoder_reference.py` (both dumps already reproduce for this model).
+
+Loader-alias code (correct, reverted — re-apply as step (d)'s prerequisite):
+tensors attn_norm→ln1, ffn_norm→ln2, output_norm→final_norm, GeGLU-by-shape when
+`fc1_w->ne[1]==2*n_intermediate`; metadata as in step 1 above.
+
+--- original (shallower) diagnosis below, superseded by the above ---
 
 Wider matrix-coverage survey load-tested 3 new community GGUFs of shipped models:
   - `intfloat/multilingual-e5-small` (arch **bert**, 12L/384d): LOADS ✓
