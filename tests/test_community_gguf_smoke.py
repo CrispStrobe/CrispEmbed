@@ -57,6 +57,18 @@ class ManifestSchema(unittest.TestCase):
                 f"{e['name']}: threshold {e['min_hf_cos']} exceeds measured {meas} -> would fail on a healthy model",
             )
 
+    def test_control_files_are_well_formed(self) -> None:
+        # Every control entry must name a .gguf and a plausible cos floor (a
+        # control proves the graph is exact, so the floor must be near 1.0).
+        for e in drv.load_manifest()["models"]:
+            if "control_file" not in e:
+                continue
+            self.assertTrue(e["control_file"].endswith(".gguf"))
+            self.assertNotIn("/", e["control_file"])
+            self.assertIn("control_min_cos", e)
+            self.assertGreaterEqual(e["control_min_cos"], 0.99, "a control floor below 0.99 proves nothing")
+            self.assertLess(e["control_min_cos"], 1.0 + 1e-9)
+
     def test_nomic_entry_pins_the_issue33_shape(self) -> None:
         # The regression this matrix exists for: 768/12, not the 384/6 defaults.
         e = next(m for m in drv.load_manifest()["models"] if m["name"] == "nomic-embed-text-v2-moe")
