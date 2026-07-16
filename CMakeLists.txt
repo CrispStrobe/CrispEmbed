@@ -351,6 +351,10 @@ set_target_properties(crispembed-quantize PROPERTIES
 )
 install(TARGETS crispembed-quantize RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+# Host-only unit test for the server's JSON input parser (issue #34) — no model/lib.
+add_executable(test-server-json-input tests/test_server_json_input.cpp)
+target_include_directories(test-server-json-input PRIVATE ${CMAKE_SOURCE_DIR}/examples/server)
+
 add_executable(test-hmer tests/test_hmer.cpp)
 target_link_libraries(test-hmer PRIVATE crispembed)
 
