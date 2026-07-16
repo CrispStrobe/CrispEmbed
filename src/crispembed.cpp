@@ -236,6 +236,7 @@ struct crispembed_context {
     int global_attn_every_n = 0;    // ModernBERT: every Nth layer uses global attention (0 = all same)
     int local_attention_window = 0; // ModernBERT: sliding-window size for local layers (0 = no window)
     bool pre_ln = false;            // pre-LN (ModernBERT) vs post-LN (BERT) ordering
+    bool geglu_erf = false;         // GeGLU uses exact-erf gelu (ModernBERT) vs tanh (GTE v1.5)
     bool dump_layers = false;       // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int position_buckets = 0;       // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;         // 0 = use model default
@@ -426,6 +427,24 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->local_attention_window = u32("bert.local_attention", 0);
     ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets = u32("bert.position_buckets", 0);
+
+    // Community `modern-bert` GGUFs (llama.cpp arch) name their metadata
+    // differently from CrispEmbed's own bert.* keys, and their RoPE theta is
+    // INVERTED vs our naming: `rope.freq_base` is the GLOBAL theta, while
+    // `rope.freq_base_swa` is the LOCAL (sliding-window) theta. The generic
+    // ak("rope.freq_base") read above therefore loaded the GLOBAL base into
+    // rope_theta — correct it here. ModernBERT is architecturally pre-LN and
+    // uses exact-erf GeGLU (see the graph builder). Layer 0's attn norm is
+    // Identity in HF so ln1 is per-layer optional (guarded downstream).
+    if (gguf_arch == "modern-bert") {
+        ctx->rope_theta = opt_f32({ ak("rope.freq_base_swa") }, 10000.0f);     // local / sliding
+        ctx->rope_theta_global = opt_f32({ ak("rope.freq_base") }, 160000.0f); // global
+        ctx->global_attn_every_n = opt_u32({ ak("attention.sliding_window_pattern") }, 3);
+        ctx->local_attention_window = opt_u32({ ak("attention.sliding_window") }, 128);
+        ctx->pre_ln = true;
+        ctx->geglu_erf = true;
+    }
+
     hp.n_experts = opt_u32({ "bert.num_experts", ak("expert_count") }, 0);
     hp.n_experts_per_tok = opt_u32({ "bert.num_experts_per_tok", ak("expert_used_count") }, 0);
 
@@ -449,6 +468,21 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                 joined.c_str(), gguf_arch.empty() ? "(unset)" : gguf_arch.c_str());
     }
 
+    // BPE merges may live in the `tokenizer.ggml.merges` KV STRING ARRAY
+    // (community gpt2/modern-bert GGUFs) instead of the `tokenizer.merges`
+    // TENSOR (CrispEmbed's own converter). Read the KV array here while `g`
+    // is live (gguf_free use-after-free landmine); it is consumed after weight
+    // loading, only if the tensor form is absent.
+    std::vector<std::string> kv_merges;
+    {
+        const int64_t mki = gguf_find_key(g, "tokenizer.ggml.merges");
+        if (mki >= 0 && gguf_get_arr_type(g, mki) == GGUF_TYPE_STRING) {
+            const int nm = (int)gguf_get_arr_n(g, mki);
+            kv_merges.resize(nm);
+            for (int i = 0; i < nm; i++) kv_merges[i] = gguf_get_arr_str(g, mki, i);
+        }
+    }
+
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
     if (ki >= 0) {
@@ -466,8 +500,25 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             std::memcpy(scores.data(), sd, sn * sizeof(float));
         }
 
-        // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece
+        // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece.
+        // CrispEmbed's own GGUFs write the numeric `tokenizer.ggml.type`.
+        // Community/llama.cpp GGUFs instead write the STRING `tokenizer.ggml.model`
+        // (gpt2 / bert / t5 / llama / unigram) with NO numeric type — for those the
+        // model string is AUTHORITATIVE over the old vocab-size heuristic. Without
+        // this a gpt2/modern-bert BPE GGUF (50368 vocab, no type) fell through to
+        // WordPiece and produced garbage embeddings from token 0.
         int tokenizer_type = u32("tokenizer.ggml.type", 0);
+        if (gguf_find_key(g, "tokenizer.ggml.type") < 0) {
+            const std::string tok_model = strv("tokenizer.ggml.model");
+            if (tok_model == "gpt2" || tok_model == "bpe")
+                tokenizer_type = 1; // BPE
+            else if (tok_model == "t5" || tok_model == "unigram" || tok_model == "spm" || tok_model == "llama")
+                tokenizer_type = 2; // SentencePiece
+            else if (tok_model == "bert" || tok_model == "wordpiece")
+                tokenizer_type = 0; // WordPiece
+            // else: leave 0 and let the legacy `n > 100000 → SPM` heuristic below
+            // decide (covers old GGUFs with neither type nor a known model string).
+        }
         // C2 behavior flags (llama.cpp convention, BOOL-typed; absent or
         // non-BOOL → default true = the historical wrap behavior, so every
         // shipped GGUF is byte-identical). Read while `g` is live (gguf_free
@@ -486,9 +537,11 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             ctx->use_sentencepiece = true;
             fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n", n, scores.size());
         } else if (tokenizer_type == 1) {
-            // BPE (GPT-2 style, ModernBERT, etc.)
-            int cls_id = u32("tokenizer.ggml.cls_token_id", 0);
-            int sep_id = u32("tokenizer.ggml.sep_token_id", 2);
+            // BPE (GPT-2 style, ModernBERT, etc.). Community gpt2 encoder GGUFs
+            // (e.g. modern-bert) declare CLS/SEP via bos/eos_token_id, not the
+            // cls/sep keys — fall back to bos/eos so the [CLS]…[SEP] wrap is right.
+            int cls_id = u32("tokenizer.ggml.cls_token_id", u32("tokenizer.ggml.bos_token_id", 0));
+            int sep_id = u32("tokenizer.ggml.sep_token_id", u32("tokenizer.ggml.eos_token_id", 2));
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
             // add_bos/add_eos=false disable the CLS/SEP wrap via the -1 id
             // convention (encode() only wraps ids that are >= 0); the merges
@@ -496,12 +549,17 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             if (!tok_add_bos) cls_id = -1;
             if (!tok_add_eos) sep_id = -1;
 
-            // BPE merges stored as tensor (newline-separated blob)
-            // Merges will be loaded after weight loading (from tensor "tokenizer.merges")
+            // BPE merges stored as tensor (newline blob) OR the tokenizer.ggml.merges
+            // KV array (kv_merges, read above) — applied after weight loading.
             std::vector<std::string> empty_merges;
             // For encoder BPE: eos=SEP, suffix=-1 (handled by encode), bos=CLS
             ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, -1, cls_id, false, hp.n_max_tokens);
             ctx->use_bpe = true;
+            // ModernBERT tokenizes with the GPT-2 ByteLevel regex pre-tokenizer
+            // (tokenizer.ggml.pre = "modern-bert"); the default whitespace-split
+            // pre-tokenizer mis-splits punctuation/digits. Enable the regex path.
+            if (gguf_arch == "modern-bert" || strv("tokenizer.ggml.pre") == "modern-bert")
+                ctx->bpe_tokenizer.set_gpt2_regex_pretok(true);
             fprintf(stderr, "crispembed: using BPE tokenizer (%d tokens)\n", n);
         } else {
             // WordPiece / BERT
@@ -581,7 +639,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.rel_embd = get("rel_embd.weight");
     m.encoder_ln_w = get("encoder_ln.weight");
     m.encoder_ln_b = get("encoder_ln.bias");
-    m.final_norm_w = get("final_norm.weight");
+    m.final_norm_w = get_any({ "final_norm.weight", "output_norm.weight" });
 
     if (!m.token_embd) {
         fprintf(stderr, "crispembed: missing token_embd.weight\n");
@@ -629,8 +687,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         auto pfx = "enc." + std::to_string(il) + ".";
         auto blk = "blk." + std::to_string(il) + ".";
         auto & L = m.layers[il];
-        L.ln1_w = get_any({ pfx + "ln1.weight", blk + "attn_output_norm.weight" });
-        L.ln1_b = get_any({ pfx + "ln1.bias", blk + "attn_output_norm.bias" });
+        L.ln1_w = get_any({ pfx + "ln1.weight", blk + "attn_output_norm.weight", blk + "attn_norm.weight" });
+        L.ln1_b = get_any({ pfx + "ln1.bias", blk + "attn_output_norm.bias", blk + "attn_norm.bias" });
         // Pre-fused QKV (nomic-bert-moe exports blk.N.attn_qkv.weight, rows q|k|v,
         // possibly quantized). Consumed directly by the qkv graph path (issue #33).
         L.qkv_w = get_any({ pfx + "attn.qkv.weight", blk + "attn_qkv.weight" });
@@ -643,8 +701,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.v_b = get_any({ pfx + "attn.v.bias", blk + "attn_v.bias" });
         L.o_w = get_any({ pfx + "attn.o.weight", blk + "attn_output.weight" });
         L.o_b = get_any({ pfx + "attn.o.bias", blk + "attn_output.bias" });
-        L.ln2_w = get_any({ pfx + "ln2.weight", blk + "layer_output_norm.weight" });
-        L.ln2_b = get_any({ pfx + "ln2.bias", blk + "layer_output_norm.bias" });
+        L.ln2_w = get_any({ pfx + "ln2.weight", blk + "layer_output_norm.weight", blk + "ffn_norm.weight" });
+        L.ln2_b = get_any({ pfx + "ln2.bias", blk + "layer_output_norm.bias", blk + "ffn_norm.bias" });
         L.fc1_w = get_any({ pfx + "ffn.fc1.weight", blk + "ffn_up.weight" });
         L.fc1_b = get_any({ pfx + "ffn.fc1.bias", blk + "ffn_up.bias" });
         L.fc2_w = get_any({ pfx + "ffn.fc2.weight", blk + "ffn_down.weight" });
@@ -652,6 +710,15 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.ffn_gate_w = get_any({ pfx + "ffn_gate.weight", blk + "ffn_gate.weight" }); // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w =
             get_any({ pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight" }); // Fused gate+up (ModernBERT/GTE v1.5)
+        // Community modern-bert GGUFs name the FUSED GeGLU weight `blk.N.ffn_up`
+        // (same name as a PLAIN up-proj) — detect it by shape: [H, 2*inter]
+        // instead of [H, inter]. Route it to ffn_up_gate_w so the graph takes the
+        // GeGLU path, and drop the plain fc1 so it isn't double-used.
+        if (!L.ffn_up_gate_w && L.fc1_w && L.fc1_w->ne[1] == 2 * (int64_t)hp.n_intermediate) {
+            L.ffn_up_gate_w = L.fc1_w;
+            L.fc1_w = nullptr;
+            L.fc1_b = nullptr;
+        }
         // MoE expert tensors (present only on MoE layers). nomic-bert-moe uses the
         // standard llama.cpp names: router ffn_gate_inp, stacked experts
         // ffn_up_exps [H,inter,n_exp] / ffn_down_exps [inter,H,n_exp] (issue #33).
@@ -750,15 +817,20 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         }
     }
 
-    // Load BPE merges from tensor (stored as newline-separated UTF-8 blob)
+    // Load BPE merges. Two on-disk forms: CrispEmbed's converter writes the
+    // `tokenizer.merges` TENSOR (newline-separated UTF-8 blob); community
+    // gpt2/modern-bert GGUFs write the `tokenizer.ggml.merges` KV STRING ARRAY
+    // (kv_merges, read above while `g` was live). Prefer the tensor, fall back
+    // to the KV array. The reload preserves the gpt2-regex pre-tokenizer flag
+    // (set_gpt2_regex_pretok is not a load() parameter, so it survives).
     if (ctx->use_bpe) {
-        ggml_tensor * merge_t = get("tokenizer.merges");
-        if (merge_t) {
+        std::vector<std::string> merges;
+        const char * src = nullptr;
+        if (ggml_tensor * merge_t = get("tokenizer.merges")) {
             size_t nbytes = ggml_nbytes(merge_t);
             std::vector<uint8_t> blob(nbytes);
             ggml_backend_tensor_get(merge_t, blob.data(), 0, nbytes);
             // Parse newline-separated merges
-            std::vector<std::string> merges;
             std::string current;
             for (size_t i = 0; i < nbytes; i++) {
                 if (blob[i] == '\n') {
@@ -769,13 +841,19 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                 }
             }
             if (!current.empty()) merges.push_back(current);
+            src = "tensor";
+        } else if (!kv_merges.empty()) {
+            merges = std::move(kv_merges);
+            src = "KV array";
+        }
+        if (!merges.empty()) {
             // Re-load BPE tokenizer with merges (preserve suffix_id=-1 for encoder)
             int cls_id = ctx->bpe_tokenizer.bos_id();
             int sep_id = ctx->bpe_tokenizer.eos_id();
             int pad_id = ctx->bpe_tokenizer.pad_id();
             ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges, sep_id, pad_id, -1, cls_id, false,
                                     hp.n_max_tokens);
-            fprintf(stderr, "crispembed: loaded %zu BPE merges from tensor\n", merges.size());
+            fprintf(stderr, "crispembed: loaded %zu BPE merges from %s\n", merges.size(), src);
         }
     }
 
@@ -1161,9 +1239,13 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             if (L.moe_ffn_bias) ffn = ggml_add(gctx, ffn, L.moe_ffn_bias);
 
         } else if (L.ffn_up_gate_w) {
-            // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down
-            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur); // [2*inter, T]
-            ffn = ggml_geglu(gctx, up_gate); // fused: gelu(first_half) * second_half → [inter, T]
+            // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down.
+            // Both use gelu(first_half)*second_half (non-swapped) layout; they
+            // differ only in the gelu approximation: GTE v1.5 = tanh, ModernBERT
+            // = exact erf (config hidden_activation="gelu"). geglu_erf is gated on
+            // arch so the validated GTE v1.5 path (tanh) is untouched.
+            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur);                 // [2*inter, T]
+            ffn = ctx->geglu_erf ? ggml_geglu_erf(gctx, up_gate) : ggml_geglu(gctx, up_gate); // → [inter, T]
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else if (L.ffn_gate_w) {
             // Separate SwiGLU (NomicBERT)

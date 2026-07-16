@@ -14,7 +14,7 @@ races). Remove the row when the branch lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-07-16 | (landed `main`) | **JSON I/O hardening + `core_json` + community-GGUF compat** — #34/#33, A1–A4, B1/B2, scalar migration, ground-truth HF parity + precision-control automation, CI drift guards. | **DONE — all on `main`** (see HISTORY.md 2026-07-16). |
-| 2026-07-16 | (handover) | **Community `modern-bert` GGUFs load to garbage** — real bug found by wider matrix coverage; true blocker is BPE-tokenizer support for community GGUFs (not loader aliases). Validated diagnosis. | **OPEN — NOT shipped** (loader-alias-only = silent garbage). Fresh-agent recipe: `handover-prompts/modernbert-community-gguf.md`. |
+| 2026-07-16 | `feat/modernbert-community-gguf` | **Community `modern-bert` GGUFs load to garbage** — true blocker was BPE-tokenizer support for community GGUFs (not just loader aliases). | **DONE — validated per-stage, merging to `main`.** Fixed in order: model-string-authoritative tokenizer dispatch (gpt2→BPE over the vocab-size heuristic), BPE merges from the `tokenizer.ggml.merges` KV array, GPT-2 ByteLevel regex pre-tokenizer, loader aliases (attn_norm/ffn_norm/output_norm, GeGLU-by-shape reroute of fused `ffn_up` [H,2*inter]) + metadata (pre_ln, inverted dual RoPE theta, sliding-window→local/global) + exact-erf GeGLU. **Per-stage q8_0 vs HF: emb_ln_out cos=0.999928 (structural gate PASS) + all 22 layers 0.9999+; final CLS-pool cos=0.999602. f16 control = cos=1.000000 at EVERY stage + 0.999999 final (graph exact, gap is quant).** Tokens now match HF `[50281,25521,1533,50282]`. Matrix entry `gte-modernbert-base` + garbage-guard margin 0.51 (was −0.089). Full 5-model matrix still PASS (no regression). |
 | 2026-07-15 | `chore/pub-crispembed-dart` | pub.dev quality: crispembed **0.15.1** to 160/160 pana points (add example/README, enable `lints/core` + brace/dangling-doc fixes) | **DONE — publishing 0.15.1.** Docs/lint only, no behaviour change. |
 | 2026-07-13 | `feat/handwritten-fixtures` | Close the bttr/hmer/posformer `expected_text: null` gap with in-domain CROHME fixtures | **DONE — validated, pending push.** Confirmed **no bug** — the 3 CROHME models were guarded on a *printed* image (out-of-domain); on correctly-rendered CROHME 2014 all three read simple formulas correctly + deterministically (CPU==Metal). Added a `sample_hf` harness mechanism: fetches one CROHME image from `Kitajiang/test2_CROHME2014` (pinned rev, row 23 `C_t=C+C=2C`) at test time so CC-BY-NC-SA data stays OUT of the MIT repo. Pinned `expected_text` for all 3 (`run_one` cer 0.000). |
 | 2026-07-13 | `feat/transcoda-omr` | Transcoda-59M zero-shot OMR (full-page score → Humdrum `**kern`; ConvNeXt-V2-tiny enc + 8-layer RoPE cross-attn decoder). **Clean-room** (weights CC-BY-4.0, code AGPL — engine written from paper + config + oracle only) | **DONE (on `main`).** Engine `src/transcoda_ocr.{h,cpp}` + converter + oracle + wiring (CMake/dispatcher/CLI/registry) + quantizer conv keep-guard. f32 `test-transcoda-diff` **all stages cos=1.000000** (CPU & Metal) + **argmax 191/191**, native preproc bit-exact. **Both f32 and q8_0 greedy decodes byte-identical to the HF reference** (460 chars / 203 tokens). HF `cstr/transcoda-omr-GGUF` (f32 224 MB + q8_0 65 MB + **CC-BY-4.0 card w/ attribution**, license verified landed). Registry entry + regression fixture (`page_transcoda.png` from CC-BY-4.0 verovio-synth-omr, **cer 0.000**, garbage-guard PASS). Fixed: KV view-stale, rep-penalty per-unique-token, `/`-separator. Full wiring (README/omr.dart; bindings auto-dispatch by arch). **Perf: persistent device-KV decode 2.4–4× faster, byte-identical** (host path behind `TRANSCODA_OCR_HOST_KV=1`). Deferred to backlog: beam-3 + `**kern` grammar-constrained decode. **Fully done** (milestone in HISTORY.md; deep-dive in LEARNINGS.md). |
@@ -351,6 +351,21 @@ drifted 6.0.2 → 6.0.3, and 6.0.3's clang segfaults compiling `layout_detect.cp
 so a red `main` self-reports.
 
 ### FOUND (2026-07-16): community `modern-bert` GGUFs — DEEPER than aliases (validated diagnosis)
+
+**RESOLVED + SHIPPED 2026-07-16 (`feat/modernbert-community-gguf`).** The fix
+followed the recipe below exactly, each step gated per-stage. Landed:
+`src/crispembed.cpp` (model-string-authoritative tokenizer dispatch; BPE merges
+from the `tokenizer.ggml.merges` KV array; modern-bert metadata block with the
+inverted dual RoPE theta + SWA + pre_ln + `geglu_erf`; loader aliases
+attn_norm→ln1/ffn_norm→ln2/output_norm→final_norm + GeGLU-by-shape reroute),
+`src/tokenizer.h` + `src/tokenizer_bpe.cpp` (`set_gpt2_regex_pretok` + the GPT-2
+ByteLevel regex pre-tokenizer), `tests/community_gguf_matrix.json`
+(`gte-modernbert-base` entry) + `tests/prove_quant_control.py` (`control_repo`
+override). **Validation: per-stage q8_0 vs HF fp32 emb_ln_out cos=0.999928 (gate
+PASS) + 22 layers 0.9999+; f16 control cos=1.000000 at EVERY stage (graph exact);
+final CLS-pool cos q8_0=0.999602 / f16=0.999999. Tokens match HF
+[50281,25521,1533,50282]. Full 5-model matrix PASS (no regression).** The recipe
+below is retained for reference.
 
 **Executable fresh-agent recipe: `handover-prompts/modernbert-community-gguf.md`.**
 
