@@ -201,6 +201,29 @@
       "min_hf_cos": 0.95,
       "measured_hf_cos": 0.9997,
       "measured_note": "Final-embedding cosine vs HF sentence-transformers (last-token pooling, which MATCHES crispembed — unlike LFM2's CLS/ST mismatch): q8_0 mean=0.999727 (per-text 0.99962-0.99977), f16 mean=1.000000 (per-text 1.000000 on all 4 texts) — the graph is EXACT and the q8 gap is quantization. Garbage-guard margin 0.58. No control_file: the prove_quant_control.py per-stage dumper is encoder-only; the f16 final-cosine=1.0 is the decoder-path control (Qwen3-Embedding-0.6B-f16.gguf, same repo)."
+    },
+    {
+      "name": "gte-base-en-v1.5",
+      "repo": "cstr/gte-base-en-v1.5-GGUF",
+      "file": "gte-base-en-v1.5-q8_0.gguf",
+      "arch": "bert",
+      "dim": 768,
+      "n_layer": 12,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "Covers the GTE-v1.5 `NewModel` path: BERT WordPiece + NTK-scaled RoPE (theta 1022611) + fused **tanh**-GeGLU + CLS pooling (pool_type=2). This is the ONLY matrix entry exercising the tanh-GeGLU branch — it guards that modern-bert's arch-gated geglu_erf did not disturb the validated GTE-v1.5 tanh path. NOTE: this is a cstr/* (our own) GGUF, NOT a third-party ecosystem export — llama.cpp has no NewModel support, so no community GGUF exists; the entry is arch COVERAGE, not the ecosystem-compat signal the other entries carry.",
+      "hf_repo": "Alibaba-NLP/gte-base-en-v1.5",
+      "hf_trust_remote_code": true,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.99,
+      "measured_note": "Validated per-stage (tests/test_encoder_diff.py) q8_0 vs HF fp32: emb_ln_out (structural gate) cos=0.999927, layer_0 0.9983, layer_5 0.9981, encoder_out (layer_11) 0.9926 — all PASS; the tanh-GeGLU NewModel graph is correct and the residual is q8 quant (concentrated in the last block, as usual). measured_hf_cos here is the encoder_out proxy; the structural gate confirms tokenization + graph.",
+      "control_repo": "cstr/gte-base-en-v1.5-GGUF",
+      "control_file": "gte-base-en-v1.5.gguf",
+      "control_min_cos": 0.999
     }
   ]
 }
