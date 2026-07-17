@@ -42,10 +42,19 @@ def main() -> int:
     arch = reader.fields["general.architecture"].contents()
     writer = GGUFWriter(args.output_gguf, arch)
 
-    # GGUFWriter's constructor already emits general.architecture; copy the rest.
+    # Copy the real KV. Two classes must NOT be re-emitted:
+    #   general.architecture — GGUFWriter's constructor already writes it.
+    #   GGUF.*               — NOT real metadata. GGUFReader synthesizes
+    #                          GGUF.version / GGUF.tensor_count / GGUF.kv_count
+    #                          from the file HEADER and exposes them in .fields
+    #                          alongside genuine KV. Copying them writes literal
+    #                          "GGUF.version" keys into the output, so readers
+    #                          then report 'Duplicate key GGUF.version' and the
+    #                          kv_count inflates (35 -> 38). The writer emits the
+    #                          real header itself.
     copied = 0
     for key, field in reader.fields.items():
-        if key == "general.architecture":
+        if key == "general.architecture" or key.startswith("GGUF."):
             continue
         writer.add_key_value(key, field.contents(), field.types[0])
         copied += 1
