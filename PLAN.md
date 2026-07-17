@@ -571,7 +571,7 @@ Availability probed 2026-07-16 (repos listed are candidates, not yet validated):
 | Candidate | arch / path it covers | Fits dense driver? | Candidate community GGUF | Watch-out |
 |---|---|---|---|---|
 | **Qwen3-Embedding-0.6B** | `qwen3` DECODER embed — last-token pool, **causal**, gpt2-BPE decoder path (distinct from modern-bert's ENCODER BPE) | ✅ (last-token) | `Qwen/Qwen3-Embedding-0.6B-GGUF` (official) + many | **ADDED + validated (2026-07-16), CLEAN — no loader change.** decoder_embed.cpp already takes blk.N.* + the gpt2-BPE KV-merges path is handled. Final cosine vs HF: q8 mean 0.999727, **f16 mean 1.000000** (graph exact); garbage margin 0.58 |
-| **EmbeddingGemma-300m** | `gemma-embedding` — mean pool, **Dense bottleneck + Matryoshka** projection (see LEARNINGS "non-orthogonal Dense bottleneck") | ✅ (mean) | `ggml-org/embeddinggemma-300m-qat-q8_0-GGUF`, `unsloth/…`, `lmstudio-community/…` | Dense modules must be in the GGUF; ~0.002 backbone discrepancy is amplified by the bottleneck (known) |
+| **EmbeddingGemma-300m** | `gemma-embedding` — mean pool, **Dense bottleneck + Matryoshka** projection (see LEARNINGS "non-orthogonal Dense bottleneck") | ✅ (mean) | `ggml-org/embeddinggemma-300m-qat-q8_0-GGUF`, `unsloth/…`, `lmstudio-community/…` | **FOUND TWO GAPS (2026-07-16), NOT a clean add — deferred to a dedicated session.** (1) The community GGUF CRASHES on load: routed through the encoder path (24L/768d), then `ggml.c:3713 GGML_ASSERT(nelements==ne0*ne1*ne2*ne3)` in a QKV reshape — the `gemma-embedding` GQA config (`head_count=3`, `head_count_kv=1`, `key/value_length=256`, so KV dim 256 ≠ Q dim 768) isn't handled by crispembed's encoder QKV reshape for this arch; also alternating global/local `sliding_window=512`. (2) The ggml-org GGUF has NO Dense/Matryoshka tensors (only `token_embd`+`output_norm`), so even once it loads it yields the RAW mean-pool, not EmbeddingGemma's Dense-projected embedding — full parity needs a GGUF that carries the Dense modules (check `unsloth/…F32`) or applying Dense out-of-band. crispembed's own gemma-embedding path also still has the open ~0.002 backbone discrepancy. GGUF downloaded (`embeddinggemma-300m-qat-Q8_0.gguf`). |
 | **LFM2.5-Embedding-350M** | `lfm2` bidirectional hybrid — ShortConv + attention, **BOS-only wrap** | ✅ (CLS, pooling_type=2) | `LiquidAI/LFM2.5-Embedding-350M-GGUF` (official) | **FIXED + SHIPPED (2026-07-16), added to matrix.** Was a loader gap — `lfm2_embed` requires our `lfm.*` tensor names + `lfm2.<our>` hparam keys + a `lfm2.layer_types` c/a string; the official llama.cpp export uses `blk.N.*` + canonical `lfm2.*` keys + no layer-types string. Same class as modern-bert (alias gap), bigger. **Complete fix recipe (exact tensor + hparam maps, layer-type-from-tensor-presence, per-stage gate) in the "FOUND (2026-07-16): official `lfm2`…" subsection just below.** GGUFs already downloaded. Needs a quiet box for the build + `test-lfm2-diff` per-stage validation |
 | **GTE-v1.5 (gte-base-en-v1.5)** | `NewModel` NTK-RoPE + GeGLU **tanh** (the path the modern-bert `geglu_erf` gate was explicitly kept OFF for) | ✅ | `cstr/gte-base-en-v1.5-GGUF` (our own; llama.cpp ❌ so third-party rare) | Guards the tanh-GeGLU branch stays correct next to modern-bert's erf branch |
 | **MPNet (all-mpnet-base-v2)** | MPNet two-stream / T5-style rel-attn bias — **we are unique** | ✅ | `cstr/all-mpnet-base-v2-GGUF` (our own; no third-party — llama.cpp ❌) | Not a true ecosystem gap (no community export exists); lower priority |
@@ -579,13 +579,16 @@ Availability probed 2026-07-16 (repos listed are candidates, not yet validated):
 | **SPLADE-v3 (sparse)** | MLM/sparse head — `has_sparse` path, NOT dense | ❌ (needs a sparse-specific check, not the garbage guard) | `mradermacher/Splade-V3-GGUF` | Driver has no sparse mode; would need a top-term overlap gate. Separate work |
 | **DeBERTa-v2** | disentangled c2p/p2c rel-attn (`rel_embd`, `position_buckets`) — **we are unique**, highest-complexity encoder path | ✅ | **none found** (llama.cpp ❌, no community GGUF exists) | Blocked on the absence of any third-party GGUF; only our own conversion exists |
 
-Highest-leverage next picks when a box is free: **Qwen3-Embedding** and
-**EmbeddingGemma** (both official GGUFs + genuinely new pooling/projection paths),
-then **LFM2.5-Embedding** and **GTE-v1.5**. XLM-R-large is expected to reproduce
-the e5 offset gap (add only as a documented negative or if a GGUF declares the
-offset). SPLADE needs a sparse-mode driver first; DeBERTa-v2 is blocked on GGUF
-availability. Do each on a quiet box (250K-vocab SPM reads + HF forwards are slow
-under contention) and gate on the per-stage structural cosine.
+Status (2026-07-16 autodownload sweep): **Qwen3-Embedding ADDED (clean)**,
+**LFM2.5-Embedding FIXED+ADDED** (loader gap), **granite-107m ADDED**, **e5-small
+CLOSED** (under-specified export), **EmbeddingGemma DEFERRED** (crashes on load +
+GGUF lacks Dense modules — see its row). Remaining candidates: **GTE-v1.5** (own
+GGUF, guards the tanh-GeGLU branch) is the cleanest next; **MPNet** (own GGUF only,
+no ecosystem export); **XLM-R-large** is expected to reproduce the e5 offset gap
+(add only as a documented negative or if a GGUF declares the offset); **SPLADE**
+needs a sparse-mode driver first; **DeBERTa-v2** is blocked on GGUF availability.
+Do each on a quiet box (250K-vocab SPM reads + HF forwards are slow under
+contention) and gate on the per-stage structural cosine.
 
 #### FOUND + FIXED (2026-07-16): official `lfm2` LFM2.5-Embedding GGUF now loads
 
