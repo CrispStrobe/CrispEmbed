@@ -148,6 +148,13 @@ Q8_0 = all PASS (cos ≥ 0.995). `—` in Q4_K = SwiGLU/GeGLU too sensitive for
 aggressive quants (defaults to Q8_0). The full table lives in
 [PERFORMANCE.md](PERFORMANCE.md).
 
+CrispEmbed also loads the **official/community `gemma-embedding` GGUFs** directly
+(llama.cpp SPM exports, e.g. `ggml-org/embeddinggemma-300m-*-GGUF`). These ship
+without the SentenceTransformers Dense head — llama.cpp applies it from an
+external file — so their raw output is the backbone mean-pool. Bake the Dense
+head in with `models/add-st-dense-to-gguf.py` for HF-compatible embeddings
+(cos 0.984 vs HF), or just pull the ready-made `embeddinggemma-300m-qat`.
+
 ### Sparse, ColBERT & reranking (BGE-M3)
 
 ```python

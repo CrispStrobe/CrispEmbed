@@ -224,6 +224,21 @@
       "control_repo": "cstr/gte-base-en-v1.5-GGUF",
       "control_file": "gte-base-en-v1.5.gguf",
       "control_min_cos": 0.999
+    },
+    {
+      "name": "embeddinggemma-300m-qat",
+      "repo": "cstr/embeddinggemma-300m-GGUF",
+      "file": "embeddinggemma-300m-qat-q8_0-dense.gguf",
+      "arch": "gemma-embedding",
+      "dim": 768,
+      "n_layer": 24,
+      "query_prefix": "task: search result | query: ",
+      "doc_prefix": "title: none | text: ",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "Regression guard for the community/official 'gemma-embedding' path (2026-07-17). The official ggml-org llama.cpp QAT export uses general.architecture=gemma-embedding (GQA 3 heads / 1 kv, head_dim 256) and a SentencePiece tokenizer (tokenizer.ggml.model=llama, scores, NO merges). Two bugs it caught: (1) it CRASHED on load — the hyphenated arch missed the decoder allow-list and fell through to the MHA encoder graph, whose QKV reshape overran the GQA K/V (GGML_ASSERT); (2) once routed, the decoder tokenizer loader hardcoded BPE and char-tokenized every input (0 merges) -> garbage embeddings (margin 0.038). Fix = arch-gated routing to decoder_embed + an SPM-BPE bigram-merge tokenizer mode. This file also has the SentenceTransformers Dense head baked in (dense.0/1.weight, via models/add-st-dense-to-gguf.py); with it cos(crispembed, HF full SentenceTransformer) = 0.984 vs vanilla google/embeddinggemma-300m (this derives from the QAT checkpoint, whose weights differ slightly from vanilla — not a defect). Guards routing + SPM-BPE tokenizer + Dense together. No hf_repo gate here: HF parity uses sentence-transformers (applies Dense) and was measured manually at 0.984; add hf_repo once that harness runs the ST pipeline for this entry."
     }
   ]
 }
