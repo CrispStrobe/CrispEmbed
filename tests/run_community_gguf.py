@@ -45,19 +45,25 @@ HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
 MANIFEST = HERE / "community_gguf_matrix.json"
 
-# "crispembed: loaded 12 layers, 768 dims, 250048 vocab"
+# "crispembed: loaded 12 layers, 768 dims, 250048 vocab" (encoder path)
 _BANNER = re.compile(r"loaded\s+(\d+)\s+layers,\s+(\d+)\s+dims")
+# "[lfm2_embed] loaded: hidden=1024, layers=16, ..." (LFM2 decoder path)
+_BANNER_LFM2 = re.compile(r"loaded:\s+hidden=(\d+),\s+layers=(\d+)")
 
 
 def parse_load_banner(stderr: str) -> dict:
     """Pull the reported shape out of the CLI's load banner.
 
     Returns {} when the banner is absent (model failed to load before printing).
+    Handles both the encoder banner and the LFM2 decoder banner (different format).
     """
     m = _BANNER.search(stderr or "")
-    if not m:
-        return {}
-    return {"n_layer": int(m.group(1)), "dim": int(m.group(2))}
+    if m:
+        return {"n_layer": int(m.group(1)), "dim": int(m.group(2))}
+    m = _BANNER_LFM2.search(stderr or "")
+    if m:
+        return {"n_layer": int(m.group(2)), "dim": int(m.group(1))}
+    return {}
 
 
 def cosine(a, b) -> float:

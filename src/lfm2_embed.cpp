@@ -129,6 +129,30 @@ struct lfm2_embed_ctx {
 // Load
 // ============================================================================
 
+// Read the number of KV heads. Our converter writes a scalar `lfm2.n_kv_heads`;
+// the llama.cpp lfm2 export writes `lfm2.attention.head_count_kv` as a PER-LAYER
+// array (0 for the ShortConv layers, the real value for attention layers). Take
+// the max so the GQA repeat in the attention layers is sized correctly.
+static uint32_t lfm2_read_n_kv_heads(gguf_context * gctx, uint32_t def) {
+    int64_t k = gguf_find_key(gctx, "lfm2.n_kv_heads");
+    if (k >= 0) return gguf_get_val_u32(gctx, k);
+    k = gguf_find_key(gctx, "lfm2.attention.head_count_kv");
+    if (k < 0) return def;
+    if (gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY) return gguf_get_val_u32(gctx, k);
+    const int n = (int)gguf_get_arr_n(gctx, k);
+    const enum gguf_type at = gguf_get_arr_type(gctx, k);
+    uint32_t mx = 0;
+    for (int i = 0; i < n; i++) {
+        uint32_t v = 0;
+        if (at == GGUF_TYPE_INT32)
+            v = (uint32_t)((const int32_t *)gguf_get_arr_data(gctx, k))[i];
+        else if (at == GGUF_TYPE_UINT32)
+            v = ((const uint32_t *)gguf_get_arr_data(gctx, k))[i];
+        if (v > mx) mx = v;
+    }
+    return mx ? mx : def;
+}
+
 lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     gguf_context * gctx = core_gguf::open_metadata(path);
     if (!gctx) {
@@ -141,16 +165,26 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     ctx->bench = (std::getenv("CRISPEMBED_LFM2_EMBED_BENCH") != nullptr);
     auto & hp = ctx->model.hparams;
 
-    hp.hidden_size = core_gguf::kv_u32(gctx, "lfm2.hidden_size", 1024);
-    hp.n_layers = core_gguf::kv_u32(gctx, "lfm2.n_layers", 16);
-    hp.n_heads = core_gguf::kv_u32(gctx, "lfm2.n_heads", 16);
-    hp.n_kv_heads = core_gguf::kv_u32(gctx, "lfm2.n_kv_heads", 8);
-    hp.head_dim = core_gguf::kv_u32(gctx, "lfm2.head_dim", 64);
-    hp.ff_dim = core_gguf::kv_u32(gctx, "lfm2.ff_dim", 4608);
-    hp.conv_kernel = core_gguf::kv_u32(gctx, "lfm2.conv_kernel", 3);
-    hp.rope_theta = core_gguf::kv_f32(gctx, "lfm2.rope_theta", 1000000.0f);
-    hp.norm_eps = core_gguf::kv_f32(gctx, "lfm2.norm_eps", 1e-5f);
-    hp.layer_types = core_gguf::kv_str(gctx, "lfm2.layer_types", "ccaccaccacacacac");
+    // Prefer our converter's `lfm2.<our>` keys; fall back to the canonical
+    // llama.cpp `lfm2.*` keys so the official LiquidAI GGUF (a llama.cpp export)
+    // loads too. Nested kv_* evaluates the inner (llama.cpp key or default) first,
+    // so a present our-key wins, else the llama.cpp key, else the default.
+    hp.hidden_size =
+        core_gguf::kv_u32(gctx, "lfm2.hidden_size", core_gguf::kv_u32(gctx, "lfm2.embedding_length", 1024));
+    hp.n_layers = core_gguf::kv_u32(gctx, "lfm2.n_layers", core_gguf::kv_u32(gctx, "lfm2.block_count", 16));
+    hp.n_heads = core_gguf::kv_u32(gctx, "lfm2.n_heads", core_gguf::kv_u32(gctx, "lfm2.attention.head_count", 16));
+    hp.n_kv_heads = lfm2_read_n_kv_heads(gctx, 8); // scalar (ours) or per-layer array max (llama.cpp)
+    hp.head_dim = core_gguf::kv_u32(gctx, "lfm2.head_dim", 0);
+    if (hp.head_dim == 0 && hp.n_heads > 0) hp.head_dim = hp.hidden_size / hp.n_heads;
+    hp.ff_dim = core_gguf::kv_u32(gctx, "lfm2.ff_dim", core_gguf::kv_u32(gctx, "lfm2.feed_forward_length", 4608));
+    hp.conv_kernel = core_gguf::kv_u32(gctx, "lfm2.conv_kernel", core_gguf::kv_u32(gctx, "lfm2.shortconv.l_cache", 3));
+    hp.rope_theta =
+        core_gguf::kv_f32(gctx, "lfm2.rope_theta", core_gguf::kv_f32(gctx, "lfm2.rope.freq_base", 1000000.0f));
+    hp.norm_eps = core_gguf::kv_f32(gctx, "lfm2.norm_eps",
+                                    core_gguf::kv_f32(gctx, "lfm2.attention.layer_norm_rms_epsilon", 1e-5f));
+    // Our converter writes a c/a `layer_types` string; llama.cpp does not — empty
+    // here → derived from tensor presence after weights load (below).
+    hp.layer_types = core_gguf::kv_str(gctx, "lfm2.layer_types", "");
     hp.vocab_size = core_gguf::kv_u32(gctx, "lfm2.vocab_size", 65536);
     hp.bos_id = core_gguf::kv_u32(gctx, "tokenizer.ggml.bos_token_id", 1);
     hp.eos_id = core_gguf::kv_u32(gctx, "tokenizer.ggml.eos_token_id", 7);
@@ -208,38 +242,64 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     ctx->model.buf = wl.buf;
     ctx->model.tensors = wl.tensors;
 
-    auto R = [&](const char * name) -> ggml_tensor * {
-        return core_gguf::require(ctx->model.tensors, name, "lfm2_embed");
+    // Tensor lookups accept BOTH our converter's `lfm.*` names AND the llama.cpp
+    // lfm2 export names (`token_embd`, `blk.N.*`), so the official LiquidAI GGUF
+    // loads on the same validated graph.
+    auto get1 = [&](const std::string & name) -> ggml_tensor * {
+        auto it = ctx->model.tensors.find(name);
+        return it != ctx->model.tensors.end() ? it->second : nullptr;
+    };
+    auto R2 = [&](const std::string & our_name, const std::string & llama_name) -> ggml_tensor * {
+        if (ggml_tensor * t = get1(our_name)) return t;
+        if (ggml_tensor * t = get1(llama_name)) return t;
+        fprintf(stderr, "[lfm2_embed] required tensor '%s' (or llama.cpp '%s') not found in GGUF\n", our_name.c_str(),
+                llama_name.c_str());
+        return nullptr;
     };
 
-    ctx->model.embed_tokens_w = R("lfm.embed_tokens.weight");
-    ctx->model.embedding_norm_w = R("lfm.embedding_norm.weight");
+    // Derive conv/attn layer types from tensor presence when the GGUF carried no
+    // c/a string (llama.cpp export): a layer with an attention query weight is
+    // 'a', else it is a ShortConv layer 'c'.
+    if (hp.layer_types.empty()) {
+        std::string lt(hp.n_layers, 'c');
+        for (uint32_t i = 0; i < hp.n_layers; i++) {
+            char a[128], b[128];
+            snprintf(a, sizeof(a), "lfm.layers.%u.attn.q_proj.weight", i);
+            snprintf(b, sizeof(b), "blk.%u.attn_q.weight", i);
+            if (ctx->model.tensors.count(a) || ctx->model.tensors.count(b)) lt[i] = 'a';
+        }
+        hp.layer_types = lt;
+    }
+
+    ctx->model.embed_tokens_w = R2("lfm.embed_tokens.weight", "token_embd.weight");
+    ctx->model.embedding_norm_w = R2("lfm.embedding_norm.weight", "token_embd_norm.weight");
 
     ctx->model.layers.resize(hp.n_layers);
     for (uint32_t i = 0; i < hp.n_layers; i++) {
         auto & l = ctx->model.layers[i];
-        auto ln = [&](const char * suffix) {
-            char name[128];
-            snprintf(name, sizeof(name), "lfm.layers.%u.%s", i, suffix);
-            return R(name);
+        auto ln = [&](const char * our_suffix, const char * llama_suffix) {
+            char a[128], b[128];
+            snprintf(a, sizeof(a), "lfm.layers.%u.%s", i, our_suffix);
+            snprintf(b, sizeof(b), "blk.%u.%s", i, llama_suffix);
+            return R2(a, b);
         };
-        l.operator_norm_w = ln("operator_norm.weight");
-        l.ffn_norm_w = ln("ffn_norm.weight");
-        l.ff_w1 = ln("ff.w1.weight");
-        l.ff_w2 = ln("ff.w2.weight");
-        l.ff_w3 = ln("ff.w3.weight");
+        l.operator_norm_w = ln("operator_norm.weight", "attn_norm.weight");
+        l.ffn_norm_w = ln("ffn_norm.weight", "ffn_norm.weight");
+        l.ff_w1 = ln("ff.w1.weight", "ffn_gate.weight"); // SwiGLU gate
+        l.ff_w2 = ln("ff.w2.weight", "ffn_down.weight"); // down
+        l.ff_w3 = ln("ff.w3.weight", "ffn_up.weight");   // up
         l.is_attention = (i < hp.layer_types.size() && hp.layer_types[i] == 'a');
         if (l.is_attention) {
-            l.attn_q_proj_w = ln("attn.q_proj.weight");
-            l.attn_k_proj_w = ln("attn.k_proj.weight");
-            l.attn_v_proj_w = ln("attn.v_proj.weight");
-            l.attn_out_proj_w = ln("attn.out_proj.weight");
-            l.attn_q_ln_w = ln("attn.q_layernorm.weight");
-            l.attn_k_ln_w = ln("attn.k_layernorm.weight");
+            l.attn_q_proj_w = ln("attn.q_proj.weight", "attn_q.weight");
+            l.attn_k_proj_w = ln("attn.k_proj.weight", "attn_k.weight");
+            l.attn_v_proj_w = ln("attn.v_proj.weight", "attn_v.weight");
+            l.attn_out_proj_w = ln("attn.out_proj.weight", "attn_output.weight");
+            l.attn_q_ln_w = ln("attn.q_layernorm.weight", "attn_q_norm.weight");
+            l.attn_k_ln_w = ln("attn.k_layernorm.weight", "attn_k_norm.weight");
         } else {
-            l.conv_conv_w = ln("conv.conv.weight");
-            l.conv_in_proj_w = ln("conv.in_proj.weight");
-            l.conv_out_proj_w = ln("conv.out_proj.weight");
+            l.conv_conv_w = ln("conv.conv.weight", "shortconv.conv.weight");
+            l.conv_in_proj_w = ln("conv.in_proj.weight", "shortconv.in_proj.weight");
+            l.conv_out_proj_w = ln("conv.out_proj.weight", "shortconv.out_proj.weight");
         }
     }
 
@@ -336,8 +396,13 @@ static ggml_tensor * lfm2_short_conv(ggml_context * g, ggml_tensor * x, const lf
     ggml_tensor * xi = ggml_cont(g, ggml_view_2d(g, bcx, H, T, bcx->nb[1], 2 * H * sizeof(float)));
     ggml_tensor * Bx = ggml_mul(g, ggml_cont(g, B), ggml_cont(g, xi));
 
-    // Symmetric depthwise conv1d, kernel=3, pad=1 → T_out == T
+    // Symmetric depthwise conv1d, kernel=3, pad=1 → T_out == T.
+    // ggml_conv_1d_dw needs the depthwise kernel as [K, 1, C] (ne[1]==1). Our
+    // converter emits it 3D; the llama.cpp lfm2 export emits it 2D [K, C]
+    // (ne[1]==C). Normalize to [K, 1, C] — memory-preserving, a no-op for the
+    // already-3D layout — so both feed conv_1d_dw.
     ggml_tensor * conv_w = ggml_cast(g, w.conv_conv_w, GGML_TYPE_F16);
+    conv_w = ggml_reshape_3d(g, conv_w, conv_w->ne[0], 1, H);
     ggml_tensor * Bx_t = ggml_cont(g, ggml_transpose(g, Bx)); // (T, H)
     ggml_tensor * co = ggml_conv_1d_dw(g, conv_w, Bx_t, 1, 1, 1);
     int T_conv = (int)co->ne[0];
