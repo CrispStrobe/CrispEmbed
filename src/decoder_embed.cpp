@@ -60,7 +60,7 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * 
         int64_t ki = gguf_find_key(g, "general.architecture");
         if (ki >= 0) {
             std::string arch = gguf_get_val_str(g, ki);
-            if (arch == "gemma3" || arch == "qwen3" || arch == "llama") arch_pfx = arch;
+            if (arch == "gemma3" || arch == "gemma-embedding" || arch == "qwen3" || arch == "llama") arch_pfx = arch;
         }
     }
     auto a_u32 = [&](const char * suffix, int def) -> int {
@@ -112,11 +112,17 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * 
     // so the correct computation is w*rms_norm(x) (gemma_norm stays false).
     // embed_scale and GELU activation still apply for both formats.
     m.gemma_norm = a_u32("gemma_norm", 0) != 0;
-    if (arch_pfx == "gemma3") {
+    const bool is_gemma = (arch_pfx == "gemma3" || arch_pfx == "gemma-embedding");
+    if (is_gemma) {
         if (m.embed_scale == 1.0f) m.embed_scale = std::sqrt((float)m.n_embd);
         // Gemma3 uses gelu_pytorch_tanh FFN activation (not SiLU)
         if (m.activation == 0) m.activation = 2;
         // gemma_norm intentionally NOT set here: Ollama GGUFs pre-bake the +1 offset.
+    }
+    if (arch_pfx == "gemma-embedding") {
+        // llama.cpp gemma-embedding exports encode bidirectionality as
+        // attention.causal=false and omit an is_bidirectional key; force it on.
+        m.is_bidirectional = true;
     }
     bool normalize_embeddings = a_u32("normalize_embeddings", 1) != 0;
 
