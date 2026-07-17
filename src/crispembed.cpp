@@ -2359,11 +2359,47 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
                 bool is_spm_bpe = u32g("tokenizer.ggml.is_spm_bpe", 0) != 0;
 
-                ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id, suffix_id, bos_id, is_spm_bpe,
-                                        ctx->dec->n_max_pos);
-                ctx->use_bpe = true;
-                fprintf(stderr, "crispembed: %s BPE tokenizer (%d tokens, %zu merges)\n",
-                        is_spm_bpe ? "SentencePiece" : "GPT-2", nv, merges.size());
+                // Community/official llama.cpp SPM exports (e.g. gemma-embedding,
+                // tokenizer.ggml.model="llama") store `scores` and NO `merges`.
+                // A real BPE always has merges; loading such a GGUF as
+                // BPE-with-empty-merges char-tokenizes every input → garbage
+                // embeddings. Route merge-less + scored vocabs to the
+                // SentencePiece tokenizer (which tokenizes from scores).
+                const int64_t si2 = gguf_find_key(g2, "tokenizer.ggml.scores");
+                const bool has_scores = (si2 >= 0 && gguf_get_arr_type(g2, si2) == GGUF_TYPE_FLOAT32);
+                const bool is_spm = merges.empty() && has_scores;
+
+                if (is_spm) {
+                    std::vector<float> scores((size_t)gguf_get_arr_n(g2, si2));
+                    std::memcpy(scores.data(), gguf_get_arr_data(g2, si2), scores.size() * sizeof(float));
+                    const int unk_id = u32g("tokenizer.ggml.unknown_token_id", 3);
+                    // `bos_id` above may be forced to -1 by add_bos_token=false;
+                    // sp_tokenizer gates the wrap via set_add_flags, so pass the raw id.
+                    const int sp_bos = u32g("tokenizer.ggml.bos_token_id", 2);
+                    const bool add_bos = core_gguf::kv_bool(g2, "tokenizer.ggml.add_bos_token", true);
+                    const bool add_eos = core_gguf::kv_bool(g2, "tokenizer.ggml.add_eos_token", true);
+                    // llama.cpp SPM (tokenizer.ggml.model="llama"/"gemma") uses
+                    // BPE-style merge ranks; T5-style unigram uses Viterbi.
+                    std::string tk_model;
+                    if (const int64_t km = gguf_find_key(g2, "tokenizer.ggml.model");
+                        km >= 0 && gguf_get_kv_type(g2, km) == GGUF_TYPE_STRING)
+                        tk_model = gguf_get_val_str(g2, km);
+                    const bool bpe_merge = (tk_model == "llama" || tk_model == "gemma");
+                    // Gemma sets add_space_prefix=false; llama.cpp default is true.
+                    const bool add_space_prefix = core_gguf::kv_bool(g2, "tokenizer.ggml.add_space_prefix", true);
+                    ctx->sp_tokenizer.load(vocab, scores, sp_bos, eos_id, unk_id, pad_id, ctx->dec->n_max_pos);
+                    ctx->sp_tokenizer.set_add_flags(add_bos, add_eos);
+                    ctx->sp_tokenizer.set_spm_mode(bpe_merge, add_space_prefix);
+                    ctx->use_sentencepiece = true;
+                    fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores, %s)\n", nv,
+                            scores.size(), bpe_merge ? "bpe-merge" : "unigram");
+                } else {
+                    ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id, suffix_id, bos_id, is_spm_bpe,
+                                            ctx->dec->n_max_pos);
+                    ctx->use_bpe = true;
+                    fprintf(stderr, "crispembed: %s BPE tokenizer (%d tokens, %zu merges)\n",
+                            is_spm_bpe ? "SentencePiece" : "GPT-2", nv, merges.size());
+                }
             }
             gguf_free(g2);
         }
@@ -2497,6 +2533,13 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
             tokens.type_ids.resize(actual_len);
             tokens.attn_mask.resize(actual_len);
         }
+    }
+
+    // CRISPEMBED_DEBUG_TOKENS=1 dumps the final token-id sequence (single encode).
+    if (const char * dv = std::getenv("CRISPEMBED_DEBUG_TOKENS"); dv && dv[0] && std::strcmp(dv, "0") != 0) {
+        fprintf(stderr, "crispembed: token_ids (n=%zu):", tokens.ids.size());
+        for (int32_t id : tokens.ids) fprintf(stderr, " %d", id);
+        fprintf(stderr, "\n");
     }
 
     if (ctx->is_decoder && ctx->dec) {
@@ -2653,6 +2696,13 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
             t.ids.resize(actual_len);
             t.type_ids.resize(actual_len);
             t.attn_mask.resize(actual_len);
+        }
+
+        // CRISPEMBED_DEBUG_TOKENS=1 dumps the final token-id sequence (decoder path).
+        if (const char * dv = std::getenv("CRISPEMBED_DEBUG_TOKENS"); dv && dv[0] && std::strcmp(dv, "0") != 0) {
+            fprintf(stderr, "crispembed: token_ids[%d] (n=%zu):", i, t.ids.size());
+            for (int32_t id : t.ids) fprintf(stderr, " %d", id);
+            fprintf(stderr, "\n");
         }
     }
 
