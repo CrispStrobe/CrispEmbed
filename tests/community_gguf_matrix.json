@@ -181,6 +181,26 @@
       "min_hf_cos": 0.90,
       "measured_hf_cos": 0.99,
       "measured_note": "AUTHORITATIVE gate is the LFM2-specific per-stage harness (build/test-lfm2-diff vs the raw HF Lfm2BidirectionalModel, same CLS pooling), NOT sentence-transformers: q8_0 per-stage = 0.9999 at every stage incl post_embed (structural gate) and cls_norm (final pooled) on both a short AND a long text; the f16 control (LFM2.5-Embedding-350M-F16.gguf) = cos=1.000000 at EVERY stage (graph exact, q8 gap is quant). The looser 0.99 here is the sentence-transformers final-embedding cosine (mean 0.9896, per-text 0.977-1.0) — lower ONLY because ST applies its own pooling config, not the GGUF's CLS; hence min_hf_cos=0.90 for the ST-based guard. Garbage-guard margin 0.76. No control_file: the encoder f16/f32 control mechanism (prove_quant_control.py) is for the bert-family per-stage dumper; LFM2 uses test-lfm2-diff."
+    },
+    {
+      "name": "Qwen3-Embedding-0.6B",
+      "repo": "Qwen/Qwen3-Embedding-0.6B-GGUF",
+      "file": "Qwen3-Embedding-0.6B-Q8_0.gguf",
+      "arch": "qwen3",
+      "dim": 1024,
+      "n_layer": 28,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "First qwen3 DECODER-embed entry (last-token pooling, causal, gpt2-BPE decoder path — distinct from modern-bert's ENCODER BPE and LFM2's hybrid). Loaded CLEANLY from the OFFICIAL Qwen GGUF with no loader change: decoder_embed.cpp already accepts both dec.N.* and llama.cpp blk.N.* names, and the gpt2-BPE KV-merges tokenizer path (151387 merges) is already handled. A clean matrix add (contrast e5 = under-specified export, LFM2 = needed a loader fix).",
+      "hf_repo": "Qwen/Qwen3-Embedding-0.6B",
+      "hf_trust_remote_code": false,
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.9997,
+      "measured_note": "Final-embedding cosine vs HF sentence-transformers (last-token pooling, which MATCHES crispembed — unlike LFM2's CLS/ST mismatch): q8_0 mean=0.999727 (per-text 0.99962-0.99977), f16 mean=1.000000 (per-text 1.000000 on all 4 texts) — the graph is EXACT and the q8 gap is quantization. Garbage-guard margin 0.58. No control_file: the prove_quant_control.py per-stage dumper is encoder-only; the f16 final-cosine=1.0 is the decoder-path control (Qwen3-Embedding-0.6B-f16.gguf, same repo)."
     }
   ]
 }
