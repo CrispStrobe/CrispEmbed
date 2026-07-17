@@ -572,7 +572,7 @@ Availability probed 2026-07-16 (repos listed are candidates, not yet validated):
 |---|---|---|---|---|
 | **Qwen3-Embedding-0.6B** | `qwen3` DECODER embed — last-token pool, **causal**, gpt2-BPE decoder path (distinct from modern-bert's ENCODER BPE) | ✅ (last-token) | `Qwen/Qwen3-Embedding-0.6B-GGUF` (official) + many | Instruct/query prefix is caller-side; confirm last-token pooling maps right |
 | **EmbeddingGemma-300m** | `gemma-embedding` — mean pool, **Dense bottleneck + Matryoshka** projection (see LEARNINGS "non-orthogonal Dense bottleneck") | ✅ (mean) | `ggml-org/embeddinggemma-300m-qat-q8_0-GGUF`, `unsloth/…`, `lmstudio-community/…` | Dense modules must be in the GGUF; ~0.002 backbone discrepancy is amplified by the bottleneck (known) |
-| **LFM2.5-Embedding-350M** | `lfm2` bidirectional hybrid — ShortConv + attention, **BOS-only wrap** | ✅ (CLS, pooling_type=2) | `LiquidAI/LFM2.5-Embedding-350M-GGUF` (official) | **FOUND BUG (2026-07-16): does NOT load** — `lfm2_embed` requires our `lfm.*` tensor names + `lfm2.<our>` hparam keys + a `lfm2.layer_types` c/a string; the official llama.cpp export uses `blk.N.*` + canonical `lfm2.*` keys + no layer-types string. Same class as modern-bert (alias gap), bigger. **Complete fix recipe (exact tensor + hparam maps, layer-type-from-tensor-presence, per-stage gate): `handover-prompts/lfm2-community-gguf.md`.** GGUFs already downloaded. Needs a quiet box for the build + `test-lfm2-diff` per-stage validation |
+| **LFM2.5-Embedding-350M** | `lfm2` bidirectional hybrid — ShortConv + attention, **BOS-only wrap** | ✅ (CLS, pooling_type=2) | `LiquidAI/LFM2.5-Embedding-350M-GGUF` (official) | **FOUND BUG (2026-07-16): does NOT load** — `lfm2_embed` requires our `lfm.*` tensor names + `lfm2.<our>` hparam keys + a `lfm2.layer_types` c/a string; the official llama.cpp export uses `blk.N.*` + canonical `lfm2.*` keys + no layer-types string. Same class as modern-bert (alias gap), bigger. **Complete fix recipe (exact tensor + hparam maps, layer-type-from-tensor-presence, per-stage gate) in the "FOUND (2026-07-16): official `lfm2`…" subsection just below.** GGUFs already downloaded. Needs a quiet box for the build + `test-lfm2-diff` per-stage validation |
 | **GTE-v1.5 (gte-base-en-v1.5)** | `NewModel` NTK-RoPE + GeGLU **tanh** (the path the modern-bert `geglu_erf` gate was explicitly kept OFF for) | ✅ | `cstr/gte-base-en-v1.5-GGUF` (our own; llama.cpp ❌ so third-party rare) | Guards the tanh-GeGLU branch stays correct next to modern-bert's erf branch |
 | **MPNet (all-mpnet-base-v2)** | MPNet two-stream / T5-style rel-attn bias — **we are unique** | ✅ | `cstr/all-mpnet-base-v2-GGUF` (our own; no third-party — llama.cpp ❌) | Not a true ecosystem gap (no community export exists); lower priority |
 | **XLM-R-large / multilingual-e5-large** | `bert`+SPM XLM-R at 1024-dim | ✅ | `soichisumi/…-Q8_0-GGUF`, `phate334/…`, `walsons/…` | **EXPECT the e5-small position-offset FAILURE** (XLM-R needs offset 2; community `bert`-arch GGUFs omit `position_offset`). Add ONLY if a community GGUF declares the offset — else it documents the same known gap |
@@ -586,6 +586,46 @@ the e5 offset gap (add only as a documented negative or if a GGUF declares the
 offset). SPLADE needs a sparse-mode driver first; DeBERTa-v2 is blocked on GGUF
 availability. Do each on a quiet box (250K-vocab SPM reads + HF forwards are slow
 under contention) and gate on the per-stage structural cosine.
+
+#### FOUND (2026-07-16): official `lfm2` LFM2.5-Embedding GGUF does NOT load — loader-alias gap
+
+Surfaced by the autodownload matrix work. `LiquidAI/LFM2.5-Embedding-350M-GGUF`
+(llama.cpp `lfm2` arch) aborts: `[lfm2_embed] required tensor
+'lfm.embed_tokens.weight' not found` (×many). `src/lfm2_embed.cpp` was written for
+OUR converter's `lfm.*` tensor names + `lfm2.<our>` hparam keys + a
+`lfm2.layer_types` `c`/`a` string; the llama.cpp export uses `blk.N.*` tensors,
+canonical `lfm2.*` keys, and no layer-types string. Same class as the shipped
+modern-bert fix, bigger. crispembed already has a validated LFM2 graph and the
+loader already reads the `tokenizer.ggml.merges` KV array (`:174`) + BOS-only wrap
+— so this is an alias/hparam/layer-type job, NOT a port. GGUFs (q8_0 + f16 control)
+already downloaded to `~/crispembed-live-cache/`. NOT shipped — loader aliases must
+not land without the per-stage `test-lfm2-diff` gate (modern-bert lesson), which
+needs a quiet box (this box was at load 78–130). Executable recipe:
+
+- **Tensor aliases** (crispembed `lfm.*` → llama.cpp): `embed_tokens`→`token_embd`;
+  `embedding_norm`→`token_embd_norm` (⚠ verify it's a FINAL vs INPUT norm — see
+  landmine); per-block `operator_norm`→`attn_norm`, `ffn_norm`→`ffn_norm`,
+  `ff.w1/w2/w3`→`ffn_gate`/`ffn_down`/`ffn_up` (⚠ verify the gate/up split per-stage),
+  `conv.{conv,in_proj,out_proj}`→`shortconv.{conv,in_proj,out_proj}`,
+  `attn.{q,k,v,out}_proj`→`attn_{q,k,v,output}`,
+  `attn.{q,k}_layernorm`→`attn_{q,k}_norm`. Implement as two-name `get_any` lookups.
+- **Hparam-key aliases** (`:144–154`): `hidden_size`→`embedding_length`,
+  `n_layers`→`block_count`, `n_heads`→`attention.head_count`,
+  `n_kv_heads`→`attention.head_count_kv`, `head_dim`→`attention.key_length`,
+  `ff_dim`→`feed_forward_length`, `rope_theta`→`rope.freq_base`,
+  `norm_eps`→`attention.layer_norm_rms_epsilon` (confirm exact names vs the GGUF KV).
+- **Layer types (conv vs attn): DERIVE from tensor presence** — `blk.N.attn_q.weight`
+  present → `'a'`, else `'c'` (llama.cpp doesn't write the string; the 350M pattern
+  is real: blk.0=shortconv, blk.2=attention).
+- **Validate (mandatory):** loads (16L/1024d) → `tools/dump_lfm2_reference.py` +
+  `build/test-lfm2-diff` vs HF `LiquidAI/LFM2.5-Embedding-350M` (trust_remote_code,
+  the BIDIRECTIONAL `Lfm2BidirectionalModel` — causal `AutoModel` gives ~0 cosine) →
+  f16 control ~1.0 per-stage → final CLS-pool cosine → matrix entry.
+- **Landmines:** never ship aliases without the per-stage gate; `token_embd_norm`
+  placement (input vs final norm — the diff catches a misplacement); a swapped
+  ff gate/up gives fluent garbage; Metal `ggml_mul` src[1] F32 (already handled in
+  `lfm2_rms_norm`). Local convenience copy: `handover-prompts/lfm2-community-gguf.md`
+  (gitignored — this section is the durable record).
 
 ### Transcoda OMR decode enhancements (deferred, 2026-07-13)
 
