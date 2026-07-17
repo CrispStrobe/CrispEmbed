@@ -746,6 +746,10 @@ static const ModelEntry k_registry[] = {
     { "embeddinggemma-300m-q8", "embeddinggemma-300m-q8_0.gguf",
       "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-q8_0.gguf",
       "Gemma3 768d 24-layer mean-pool (Q8_0)", "357 MB", "gemma", "https://huggingface.co/google/embeddinggemma-300m" },
+    { "embeddinggemma-300m-qat", "embeddinggemma-300m-qat-q8_0-dense.gguf",
+      "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-qat-q8_0-dense.gguf",
+      "Gemma3 768d 24-layer mean-pool, community gemma-embedding arch (QAT Q8_0 + baked Dense)", "347 MB", "gemma",
+      "https://huggingface.co/google/embeddinggemma-300m" },
 
     { "yunet", "yunet.gguf", "https://huggingface.co/cstr/yunet-GGUF/resolve/main/yunet.gguf",
       "YuNet face detection (ShuffleNetV2 640x640, 75K)", "0.2 MB", "apache-2.0",
