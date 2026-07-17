@@ -120,6 +120,74 @@ The RESOLUTION of the modern-bert entry above (`gte-modernbert-base`, arch
   repo than the shipped q8_0 (eranmazur ships only q8_0; the f16 is in
   `cstr/*-GGUF`), so `prove_quant_control.py` gained a `control_repo` override.
 
+## Community `gemma-embedding`: SentencePiece **BPE** needs merge-from-scores, not Viterbi — and the crash/tokenizer/Dense split (2026-07-17, `feat/embeddinggemma-community-gguf`)
+
+Same class as the modern-bert fix above: crispembed had the whole Gemma3 compute
+graph; the official llama.cpp EmbeddingGemma export
+(`ggml-org/embeddinggemma-300m-*-GGUF`, arch `gemma-embedding`) still failed, and
+the handover's diagnosis (missing Dense, or a gemma-norm `1+w` bug) was wrong.
+
+- **Loud crash → route to the decoder, but never ship routing alone.** The
+  hyphenated arch missed the `is_dec` allow-list and fell into the generic MHA
+  encoder graph, whose QKV reshape assumes `n_heads==n_kv_heads`; gemma-embedding
+  is GQA (3 heads / 1 kv, `head_dim=256`), so K/V hold `1*256` per token not
+  `3*256` → the reshape overruns → `GGML_ASSERT`. Routing it to `decoder_embed.cpp`
+  makes it LOAD, but with the broken tokenizer below it emits a silently-weak
+  embedding (margin 0.039) — the modern-bert anti-pattern. A loud crash is safer
+  than that; fix the tokenizer in the same change.
+- **The real bug: a SentencePiece export loaded as char-level BPE.** The GGUF has
+  `tokenizer.ggml.model=llama`, a `scores` array, and **no** `merges`. The decoder
+  loader hardcoded `use_bpe=true`; a BPE with 0 merges can't merge, so it falls to
+  single characters ("hello world" → BOS + 11 char tokens + pad). Detect this
+  (`merges.empty() && scores present` → SentencePiece) and route to
+  `SentencePieceTokenizer`.
+- **Gemma SentencePiece is BPE, and its `scores` are merge RANKS — Viterbi is the
+  WRONG algorithm.** This is the exact complement of the XLM-R/Unigram rule below.
+  crispembed's `SentencePieceTokenizer` was Viterbi-only (max-sum over scores,
+  correct for Unigram log-probs). Gemma's scores are large-negative ranks
+  (`▁world`=-1408 vs `▁w`+`or`+`ld` = -21-10-177 = -208), so max-sum picks the
+  3-way split over the single vocab token `▁world` → over-segmentation that still
+  looks plausible. Fix: add an `spm_bpe` mode implementing llama.cpp's SPM bigram
+  greedy-merge (priority queue, merge the adjacent pair whose concatenation has the
+  highest vocab score), selected when `tokenizer.ggml.model` is `llama`/`gemma`.
+  Keep Viterbi the default so XLM-R is untouched. Per-stage lie to avoid: judge on
+  the **exact token IDs** (`[2,23391,1902,1]` for "hello world"), not the final
+  cosine — a wrong segmentation that stays in-vocab gives a plausible-but-wrong
+  vector.
+- **`add_space_prefix` is a real per-model flag.** The Viterbi path hardcoded the
+  XLM-R dummy leading `▁`; Gemma sets `tokenizer.ggml.add_space_prefix=false`
+  (its first word matches the bare vocab token `hello`=23391, not `▁hello`). Read
+  the flag; wrong-prefix alone re-splits the first word.
+- **The GGUF has NO Dense head — and without it the output is orthogonal to real
+  EmbeddingGemma.** llama.cpp applies the SentenceTransformers Dense/Matryoshka
+  head from an external `--sentence-transformers-dense-modules` file, so the export
+  omits it. Right tokenizer + right backbone still gives cos **−0.02** vs HF full
+  output (the 768→3072→768 Dense remaps the space entirely) — it discriminates
+  in isolation (margin 0.39) but is not the published embedding. `decoder_embed.cpp`
+  already applies `dense.N.weight` post-pool; `models/add-st-dense-to-gguf.py` bakes
+  `2_Dense`/`3_Dense` (linear.weight `[out,in]`, F32, no transpose) into the GGUF →
+  cos vs the full HF `SentenceTransformer` = **0.985**. Disentangle A(Dense) vs
+  B(norm) with a **pre-Dense backbone control**: cos(crispembed, HF mean-pool
+  BEFORE Dense) = 0.9835 proves the backbone/norms are right (no bug B); the 0.985
+  ceiling is QAT-vs-vanilla checkpoint drift + the known EmbeddingGemma Dense-
+  bottleneck discrepancy ([[embeddinggemma-parity-state]], and the "EmbeddingGemma:
+  a non-orthogonal Dense bottleneck" section below) + q8_0, not a defect.
+- **GGUF surgery must skip `GGUFReader`'s synthetic pseudo-keys.** `.fields`
+  exposes `GGUF.version`/`GGUF.tensor_count`/`GGUF.kv_count` alongside real KV, but
+  those come from the file HEADER — copying them writes literal `"GGUF.version"`
+  metadata (readers then warn "Duplicate key", kv_count inflates 35→38). Skip
+  `key.startswith("GGUF.")`. Also verified the *reassuring* half by a raw-header
+  round-trip: all 35 real KV (tokens/scores/token_type arrays) copy with zero
+  type/value drift, so `GGUFWriter`'s array-element-type inference is faithful.
+  `models/gguf_merge_core.py` can NOT be used for this copy — its reader drops the
+  array element type.
+- **A "not installed" import can be the `USE_TF=0` gotcha.** `import
+  sentence_transformers` raised `ImportError: cannot import name 'TFPreTrainedModel'`
+  and I concluded it was absent, shipping the matrix entry without its HF-parity
+  gate. It IS installed — the import only fails via the TensorFlow integration
+  path; `USE_TF=0` (which `hf_parity_community.py` sets) fixes it. Test the real
+  cause before declaring a capability missing ([[dont-assume-env-capabilities]]).
+
 ## Position offset can NOT be inferred from the tokenizer — a community XLM-R "bert" GGUF that omits `position_offset` is under-specified (2026-07-16, e5 vs granite)
 
 Extending the community matrix to two XLM-RoBERTa-family SPM embedders exported as
@@ -2434,15 +2502,28 @@ to verify RoPE correctness.
 | BERT/MiniLM/GTE | WordPiece | Greedy longest-match with ## prefix |
 | XLM-RoBERTa/E5/Arctic/PIXIE | SentencePiece Unigram | Viterbi DP (NOT bigram merge) |
 | Qwen3/Octen/F2LLM | GPT-2 BPE | core_bpe byte-level BPE with merges |
-| Gemma3/Harrier-270M | SentencePiece BPE | BPE merges with ▁ space marker + BOS/EOS |
+| Gemma3/Harrier-270M (our GGUFs) | SentencePiece BPE | `BPETokenizer` spm_style: BPE **merges** + ▁ + BOS/EOS |
+| gemma-embedding (llama.cpp export) | SentencePiece BPE | `SentencePieceTokenizer` spm_bpe: bigram merge **from scores** (no merges array) |
 
-Auto-detected from GGUF metadata: `tokenizer.ggml.type` (0=WP, 1=BPE, 2=SP)
-or heuristic (vocab > 100K → SentencePiece).
+Auto-detected from GGUF metadata: `tokenizer.ggml.type` (0=WP, 1=BPE, 2=SP),
+`tokenizer.ggml.model` string, or heuristic (vocab > 100K → SentencePiece). Note
+the two Gemma rows: our own converter bakes a `merges` list (BPETokenizer path),
+but community llama.cpp SPM exports ship `scores` and NO merges, so the SP
+tokenizer reconstructs the same segmentation by bigram-merging on scores (see the
+gemma-embedding learning above).
 
-### Critical: SentencePiece Unigram needs Viterbi, not bigram merge
+### Critical: SentencePiece Unigram needs Viterbi; SentencePiece BPE needs bigram-merge
 
-The llama.cpp-style bigram merge (priority queue, highest-score-first)
-does NOT produce correct tokenization for Unigram models like XLM-R.
+Two SentencePiece algorithms, opposite requirements — pick by the model, not by
+"it's SentencePiece":
+
+- **Unigram (XLM-R/E5/T5):** scores are log-probs → **Viterbi DP** (max-sum path).
+  The llama.cpp-style bigram merge does NOT produce correct tokenization here.
+- **BPE (Gemma/Llama):** scores are merge RANKS → **bigram greedy-merge** (merge
+  the highest-scoring adjacent pair). Viterbi over ranks OVER-segments (it sums
+  ranks and prefers many small pieces to one big token — e.g. `▁w+or+ld` beats
+  `▁world`). `SentencePieceTokenizer` has both: default Viterbi, `spm_bpe` mode
+  for the merge algorithm (set from `tokenizer.ggml.model` ∈ {llama, gemma}).
 Example: "▁world" exists as token 8999, but bigram merge breaks it into
 ["▁w", "or", "ld"] because greedy pair merging can't find the global optimum.
 
