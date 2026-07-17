@@ -89,6 +89,19 @@ public:
         add_eos_ = add_eos;
     }
 
+    // Select the segmentation algorithm and space handling.
+    //   bpe_merge=false (default): Unigram / Viterbi max-score path — correct
+    //     for XLM-R and other Unigram SentencePiece models.
+    //   bpe_merge=true: SentencePiece-BPE bigram greedy-merge (llama.cpp SPM) —
+    //     correct for Gemma/Llama, whose `scores` are merge ranks, not unigram
+    //     log-probs (Viterbi over ranks over-segments).
+    //   add_space_prefix: prepend a leading ▁ dummy prefix (XLM-R convention).
+    //     Gemma sets tokenizer.ggml.add_space_prefix=false → no dummy prefix.
+    void set_spm_mode(bool bpe_merge, bool add_space_prefix) {
+        bpe_merge_ = bpe_merge;
+        add_space_prefix_ = add_space_prefix;
+    }
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
     // Look up the surface form of a token by id. Returns an empty string
@@ -113,9 +126,12 @@ private:
     bool add_bos_ = true; // wrap encode() with <s> (default = historical behavior)
     bool add_eos_ = true; // wrap encode() with </s>
     int max_length_ = 512;
-    int max_token_len_ = 64; // max byte length of any vocab token
+    int max_token_len_ = 64;       // max byte length of any vocab token
+    bool bpe_merge_ = false;       // SentencePiece-BPE bigram merge (Gemma/Llama)
+    bool add_space_prefix_ = true; // prepend leading ▁ dummy prefix (XLM-R)
 
-    std::vector<int> tokenize_text(const std::string & text) const;
+    std::vector<int> tokenize_text(const std::string & text) const; // Unigram / Viterbi
+    std::vector<int> tokenize_bpe(const std::string & text) const;  // SentencePiece-BPE merge
 };
 
 // BPE tokenizer for decoder embedding models.

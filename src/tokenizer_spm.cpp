@@ -11,6 +11,7 @@
 #include <cfloat>
 #include <cstdio>
 #include <cstring>
+#include <queue>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -125,11 +126,96 @@ std::vector<int> SentencePieceTokenizer::tokenize_text(const std::string & text)
     return tokens;
 }
 
+// SentencePiece-BPE segmentation (llama.cpp SPM algorithm). Unlike Viterbi,
+// this greedily merges the adjacent symbol pair whose concatenation exists in
+// the vocab with the highest score, until no more merges apply. Correct for
+// Gemma/Llama, whose `scores` are merge ranks (higher = merged earlier), for
+// which Viterbi max-sum over ranks over-segments. Unmatched final symbols fall
+// back to byte tokens (<0xXX>) or unk.
+std::vector<int> SentencePieceTokenizer::tokenize_bpe(const std::string & text) const {
+    if (text.empty()) return {};
+
+    struct Symbol {
+        int prev;
+        int next;
+        size_t pos;
+        size_t n;
+    };
+    std::vector<Symbol> syms;
+    for (size_t offs = 0; offs < text.size();) {
+        size_t len = std::min(utf8_len((unsigned char)text[offs]), text.size() - offs);
+        int idx = (int)syms.size();
+        size_t nextoff = offs + len;
+        syms.push_back({ idx - 1, nextoff >= text.size() ? -1 : idx + 1, offs, len });
+        offs = nextoff;
+    }
+
+    struct Bigram {
+        int left;
+        int right;
+        float score;
+        size_t size;
+    };
+    // Max-heap by score, tie-broken by leftmost position (llama.cpp SPM order).
+    auto cmp = [](const Bigram & a, const Bigram & b) {
+        return a.score < b.score || (a.score == b.score && a.left > b.left);
+    };
+    std::priority_queue<Bigram, std::vector<Bigram>, decltype(cmp)> work(cmp);
+
+    auto try_add = [&](int left, int right) {
+        if (left == -1 || right == -1) return;
+        std::string piece = text.substr(syms[left].pos, syms[left].n + syms[right].n);
+        auto it = token_to_id_.find(piece);
+        if (it == token_to_id_.end()) return;
+        int tid = it->second;
+        float sc = (tid < (int)scores_.size()) ? scores_[tid] : 0.0f;
+        work.push({ left, right, sc, piece.size() });
+    };
+
+    for (int i = 1; i < (int)syms.size(); i++) try_add(i - 1, i);
+
+    while (!work.empty()) {
+        Bigram b = work.top();
+        work.pop();
+        Symbol & l = syms[b.left];
+        Symbol & r = syms[b.right];
+        // Skip if either symbol was already merged, or the pair grew stale.
+        if (l.n == 0 || r.n == 0 || l.n + r.n != b.size) continue;
+        l.n += r.n;
+        r.n = 0;
+        l.next = r.next;
+        if (r.next >= 0) syms[r.next].prev = b.left;
+        try_add(l.prev, b.left);
+        try_add(b.left, l.next);
+    }
+
+    std::vector<int> out;
+    for (int i = 0; i >= 0; i = syms[i].next) {
+        if (syms[i].n == 0) continue;
+        std::string piece = text.substr(syms[i].pos, syms[i].n);
+        auto it = token_to_id_.find(piece);
+        if (it != token_to_id_.end()) {
+            out.push_back(it->second);
+        } else {
+            // Byte fallback: emit one <0xXX> token per byte (or unk).
+            for (size_t k = 0; k < syms[i].n; k++) {
+                unsigned char byte = (unsigned char)text[syms[i].pos + k];
+                char hex[8];
+                snprintf(hex, sizeof(hex), "<0x%02X>", byte);
+                auto bit = token_to_id_.find(hex);
+                out.push_back(bit != token_to_id_.end() ? bit->second : unk_id_);
+            }
+        }
+    }
+    return out;
+}
+
 embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
-    // SentencePiece convention for XLM-R: prepend a space to the text,
-    // then replace all spaces with ▁ (U+2581). The Viterbi algorithm
-    // then operates on the ▁-prefixed text.
-    std::string processed = " " + text; // leading space (XLM-R convention)
+    // SentencePiece: optionally prepend a dummy leading space (XLM-R / Llama
+    // add_space_prefix=true), then replace all spaces with ▁ (U+2581). Gemma
+    // sets add_space_prefix=false → no leading ▁ (its first word matches the
+    // bare vocab token, e.g. "hello" not "▁hello").
+    std::string processed = add_space_prefix_ ? (" " + text) : text;
     std::string with_marker;
     for (char c : processed) {
         if (c == ' ') {
@@ -140,7 +226,7 @@ embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
     }
     processed = with_marker;
 
-    auto token_ids = tokenize_text(processed);
+    auto token_ids = bpe_merge_ ? tokenize_bpe(processed) : tokenize_text(processed);
 
     // Build result: <s> + tokens + </s> (each wrap gated by the C2
     // add_bos/add_eos behavior flags; both default true)
