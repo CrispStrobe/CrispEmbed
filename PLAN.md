@@ -572,7 +572,7 @@ Availability probed 2026-07-16 (repos listed are candidates, not yet validated):
 |---|---|---|---|---|
 | **Qwen3-Embedding-0.6B** | `qwen3` DECODER embed — last-token pool, **causal**, gpt2-BPE decoder path (distinct from modern-bert's ENCODER BPE) | ✅ (last-token) | `Qwen/Qwen3-Embedding-0.6B-GGUF` (official) + many | Instruct/query prefix is caller-side; confirm last-token pooling maps right |
 | **EmbeddingGemma-300m** | `gemma-embedding` — mean pool, **Dense bottleneck + Matryoshka** projection (see LEARNINGS "non-orthogonal Dense bottleneck") | ✅ (mean) | `ggml-org/embeddinggemma-300m-qat-q8_0-GGUF`, `unsloth/…`, `lmstudio-community/…` | Dense modules must be in the GGUF; ~0.002 backbone discrepancy is amplified by the bottleneck (known) |
-| **LFM2.5-Embedding-350M** | `lfm2` bidirectional hybrid — ShortConv + attention, **BOS-only wrap** | ✅ (CLS, pooling_type=2) | `LiquidAI/LFM2.5-Embedding-350M-GGUF` (official) | **FOUND BUG (2026-07-16): does NOT load** — `lfm2_embed` requires our `lfm.*` tensor names + `lfm2.<our>` hparam keys + a `lfm2.layer_types` c/a string; the official llama.cpp export uses `blk.N.*` + canonical `lfm2.*` keys + no layer-types string. Same class as modern-bert (alias gap), bigger. **Complete fix recipe (exact tensor + hparam maps, layer-type-from-tensor-presence, per-stage gate) in the "FOUND (2026-07-16): official `lfm2`…" subsection just below.** GGUFs already downloaded. Needs a quiet box for the build + `test-lfm2-diff` per-stage validation |
+| **LFM2.5-Embedding-350M** | `lfm2` bidirectional hybrid — ShortConv + attention, **BOS-only wrap** | ✅ (CLS, pooling_type=2) | `LiquidAI/LFM2.5-Embedding-350M-GGUF` (official) | **FIXED + SHIPPED (2026-07-16), added to matrix.** Was a loader gap — `lfm2_embed` requires our `lfm.*` tensor names + `lfm2.<our>` hparam keys + a `lfm2.layer_types` c/a string; the official llama.cpp export uses `blk.N.*` + canonical `lfm2.*` keys + no layer-types string. Same class as modern-bert (alias gap), bigger. **Complete fix recipe (exact tensor + hparam maps, layer-type-from-tensor-presence, per-stage gate) in the "FOUND (2026-07-16): official `lfm2`…" subsection just below.** GGUFs already downloaded. Needs a quiet box for the build + `test-lfm2-diff` per-stage validation |
 | **GTE-v1.5 (gte-base-en-v1.5)** | `NewModel` NTK-RoPE + GeGLU **tanh** (the path the modern-bert `geglu_erf` gate was explicitly kept OFF for) | ✅ | `cstr/gte-base-en-v1.5-GGUF` (our own; llama.cpp ❌ so third-party rare) | Guards the tanh-GeGLU branch stays correct next to modern-bert's erf branch |
 | **MPNet (all-mpnet-base-v2)** | MPNet two-stream / T5-style rel-attn bias — **we are unique** | ✅ | `cstr/all-mpnet-base-v2-GGUF` (our own; no third-party — llama.cpp ❌) | Not a true ecosystem gap (no community export exists); lower priority |
 | **XLM-R-large / multilingual-e5-large** | `bert`+SPM XLM-R at 1024-dim | ✅ | `soichisumi/…-Q8_0-GGUF`, `phate334/…`, `walsons/…` | **EXPECT the e5-small position-offset FAILURE** (XLM-R needs offset 2; community `bert`-arch GGUFs omit `position_offset`). Add ONLY if a community GGUF declares the offset — else it documents the same known gap |
@@ -587,7 +587,23 @@ offset). SPLADE needs a sparse-mode driver first; DeBERTa-v2 is blocked on GGUF
 availability. Do each on a quiet box (250K-vocab SPM reads + HF forwards are slow
 under contention) and gate on the per-stage structural cosine.
 
-#### FOUND (2026-07-16): official `lfm2` LFM2.5-Embedding GGUF does NOT load — loader-alias gap
+#### FOUND + FIXED (2026-07-16): official `lfm2` LFM2.5-Embedding GGUF now loads
+
+**RESOLVED + SHIPPED (`feat/modernbert-community-gguf`).** Fixed in `src/lfm2_embed.cpp`
+exactly per the recipe below: tensor aliases (`lfm.*`↔`blk.N.*`/`token_embd*`),
+hparam-key fallbacks (`lfm2.<our>`↔canonical `lfm2.*`; `head_count_kv` read as a
+per-layer array → max), conv/attn layer-types derived from tensor presence, and a
+memory-preserving reshape of the depthwise-conv weight to `[K,1,C]` (the export
+ships it 2D `[K,C]`, which crashed `ggml_conv_1d_dw`). **Validated per-stage via
+`build/test-lfm2-diff` vs the raw HF `Lfm2BidirectionalModel`: q8_0 = 0.9999 at
+EVERY stage (post_embed structural gate + 16 layers + `cls_norm` final pooled) on
+a short AND a long text; f16 control = cos=1.000000 at every stage (graph exact,
+q8 gap is quant); garbage-guard margin 0.76.** Matrix entry `LFM2.5-Embedding-350M`
+added (+ an LFM2-banner regex in the driver). The ST final-cosine (0.99 mean) is
+looser only because sentence-transformers applies its own pooling, not the GGUF's
+CLS — `test-lfm2-diff` (same-pooling, vs the raw model) is the authoritative gate.
+
+--- original diagnosis (retained) ---
 
 Surfaced by the autodownload matrix work. `LiquidAI/LFM2.5-Embedding-350M-GGUF`
 (llama.cpp `lfm2` arch) aborts: `[lfm2_embed] required tensor

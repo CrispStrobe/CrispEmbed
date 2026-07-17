@@ -161,6 +161,26 @@
       "control_repo": "mrutkows/granite-embedding-107m-multilingual-GGUF",
       "control_file": "granite-embedding-107m-multilingual-f16.gguf",
       "control_min_cos": 0.999
+    },
+    {
+      "name": "LFM2.5-Embedding-350M",
+      "repo": "LiquidAI/LFM2.5-Embedding-350M-GGUF",
+      "file": "LFM2.5-Embedding-350M-Q8_0.gguf",
+      "arch": "lfm2",
+      "dim": 1024,
+      "n_layer": 16,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "First DECODER-family (lfm2 hybrid ShortConv+attention) entry. Found by the autodownload matrix work: the official LiquidAI GGUF (a llama.cpp export) did NOT load — crispembed's lfm2_embed loader required our converter's lfm.* tensor names + lfm2.<our> hparam keys + a c/a layer_types string; the export uses blk.N.* tensors, canonical lfm2.* keys, no layer-types string, and a 2D [K,C] depthwise-conv weight (ours is [K,1,C]). Fixed with tensor aliases + hparam-key fallbacks + layer-type-from-tensor-presence + a memory-preserving conv-weight reshape to [K,1,C]. Same class as the modern-bert fix.",
+      "hf_repo": "LiquidAI/LFM2.5-Embedding-350M",
+      "hf_trust_remote_code": true,
+      "min_hf_cos": 0.90,
+      "measured_hf_cos": 0.99,
+      "measured_note": "AUTHORITATIVE gate is the LFM2-specific per-stage harness (build/test-lfm2-diff vs the raw HF Lfm2BidirectionalModel, same CLS pooling), NOT sentence-transformers: q8_0 per-stage = 0.9999 at every stage incl post_embed (structural gate) and cls_norm (final pooled) on both a short AND a long text; the f16 control (LFM2.5-Embedding-350M-F16.gguf) = cos=1.000000 at EVERY stage (graph exact, q8 gap is quant). The looser 0.99 here is the sentence-transformers final-embedding cosine (mean 0.9896, per-text 0.977-1.0) — lower ONLY because ST applies its own pooling config, not the GGUF's CLS; hence min_hf_cos=0.90 for the ST-based guard. Garbage-guard margin 0.76. No control_file: the encoder f16/f32 control mechanism (prove_quant_control.py) is for the bert-family per-stage dumper; LFM2 uses test-lfm2-diff."
     }
   ]
 }
