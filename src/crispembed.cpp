@@ -2250,8 +2250,8 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
             int64_t ki = gguf_find_key(g, "general.architecture");
             if (ki >= 0) {
                 std::string arch = gguf_get_val_str(g, ki);
-                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "llama" || arch == "qwen2" ||
-                          arch == "mistral" || arch == "phi3");
+                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "gemma-embedding" || arch == "llama" ||
+                          arch == "qwen2" || arch == "mistral" || arch == "phi3");
                 is_lfm2 = (arch == "lfm2");
             }
         }
