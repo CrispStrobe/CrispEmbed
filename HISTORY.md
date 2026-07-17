@@ -4,6 +4,54 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 17, 2026 — Community/official `gemma-embedding` GGUFs load (routing + SPM-BPE tokenizer + Dense)
+
+crispembed could not load the official llama.cpp EmbeddingGemma export
+(`ggml-org/embeddinggemma-300m-*-GGUF`, `general.architecture=gemma-embedding`):
+it crashed, and the naive "make it load" fix produced silently-weak embeddings.
+The handover blamed missing Dense modules or a gemma-norm convention; both were
+wrong — the dominant bug was the **tokenizer**, same class as the modern-bert
+fix. All on `main`.
+
+- **Crash → routing (arch-gated, 3 edits).** The hyphenated `gemma-embedding`
+  missed the decoder allow-list and fell through to the generic MHA encoder
+  graph, whose QKV reshape overran the GQA K/V (3 heads / 1 kv, head_dim 256) →
+  `GGML_ASSERT`. Routed to `decoder_embed.cpp` (already a full Gemma3 block);
+  forced `is_bidirectional` (export sets `attention.causal=false`, no
+  `is_bidirectional` key).
+- **The real bug: SentencePiece loaded as char-level BPE.** The decoder
+  tokenizer loader hardcoded BPE, but the GGUF is a llama.cpp SPM export
+  (`tokenizer.ggml.model=llama`, `scores`, **no** `merges`). Loaded as
+  BPE-with-0-merges it char-tokenized every input ("hello world" → 11 single-char
+  tokens) → garbage (garbage-guard margin 0.038). Fix: detect merge-less+scored
+  vocabs → route to `SentencePieceTokenizer`, and add an **SPM-BPE bigram-merge**
+  mode (llama.cpp SPM algorithm). Gemma's `scores` are merge RANKS, not unigram
+  log-probs, so the existing Viterbi over-segments (picks `▁w+or+ld` over the
+  single token `▁world`). Viterbi kept as default (XLM-R Unigram untouched). Also
+  honor `add_space_prefix=false`. Tokens now match HF token-for-token; margin
+  0.038 → 0.39.
+- **Dense baked for HF-compatibility.** The `gemma-embedding` GGUF omits the
+  SentenceTransformers Dense head (llama.cpp applies it from an external file), so
+  raw output is orthogonal to real EmbeddingGemma (cos −0.02 vs HF). New tool
+  `models/add-st-dense-to-gguf.py` copies the GGUF verbatim (raw quant bytes, all
+  metadata) and appends `dense.0/1.weight` (F32) from `2_Dense`/`3_Dense` — which
+  `decoder_embed.cpp` already applies post-pool. Result: cos vs the full HF
+  `SentenceTransformer` pipeline = **0.985** (min 0.9852 / mean 0.9891 over the
+  parity triplet). Backbone control isolates it: cos(pre-Dense mean-pool) = 0.9835,
+  so no norm bug — the residual is the QAT-vs-vanilla checkpoint difference + the
+  known gemma3-backbone/Dense-bottleneck discrepancy + q8_0.
+- **Shipped:** HF `cstr/embeddinggemma-300m-GGUF/embeddinggemma-300m-qat-q8_0-dense.gguf`
+  (gemma-license card + provenance); registry `embeddinggemma-300m-qat`; matrix
+  entry `embeddinggemma-300m-qat` (arch `gemma-embedding`) with the HF-parity gate
+  — all **10** community-matrix entries PASS. The general routing+tokenizer fix
+  now loads any llama.cpp SPM decoder-embed GGUF, not just this one.
+- **Two self-corrections worth recording** (see LEARNINGS): I nearly shipped the
+  matrix entry without its HF-parity gate on a false premise (sentence-transformers
+  *is* installed — its bare import fails on the `USE_TF=0` TF-integration gotcha);
+  and the round-trip audit of `add-st-dense-to-gguf.py` caught it re-emitting
+  `GGUFReader`'s synthetic `GGUF.*` header pseudo-keys as literal metadata
+  (kv_count 35→38, "Duplicate key" warnings) — fixed, GGUF re-uploaded.
+
 ## July 16, 2026 — JSON I/O hardening + `core_json` + community-GGUF ecosystem compat
 
 Landed a cluster of correctness fixes around HTTP/CLI JSON handling and
