@@ -5,6 +5,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: pub.dev
     permissions:
       id-token: write  # OIDC auth to pub.dev (no stored secrets)
     steps:
