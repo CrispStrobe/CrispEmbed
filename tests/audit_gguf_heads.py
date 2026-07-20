@@ -42,6 +42,7 @@ MANIFEST = [
     ("xlmr-ner-hrl",        "cstr/xlmr-ner-hrl-GGUF",  ["ner.classifier.weight", "classifier.weight"]),
     # -- SPLADE: MLM head (transform + decode to vocab) --
     ("splade-pp-en-v1",     "cstr/splade-pp-en-v1-GGUF", ["mlm_transform.weight", "cls.predictions", "lm_head"]),
+    ("splade-v3",           "cstr/splade-v3-GGUF",       ["mlm_transform.weight", "cls.predictions", "lm_head"]),
     # -- GLiNER: span + prompt representation heads --
     ("gliner-deberta",      "cstr/gliner-deberta-GGUF",        ["prompt_rep", "span.out_project", "token_rep"]),
     ("gliner-lfm",          "cstr/sauerkraut-gliner-lfm-GGUF", ["prompt_rep", "span.out_project", "token_rep"]),

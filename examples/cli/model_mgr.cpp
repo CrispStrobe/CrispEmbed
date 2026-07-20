@@ -689,6 +689,14 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1-iq4_xs.gguf",
       "BERT sparse SPLADE English 109M (IQ4_XS+imatrix, sparse-cos 0.996)", "72 MB", "apache-2.0",
       "https://huggingface.co/prithivida/Splade_PP_en_v1" },
+    { "splade-v3", "splade-v3-iq4_xs.gguf",
+      "https://huggingface.co/cstr/splade-v3-GGUF/resolve/main/splade-v3-iq4_xs.gguf",
+      "BERT sparse SPLADE v3 English 110M (IQ4_XS+imatrix, sparse-cos 0.997)", "68 MB", "cc-by-nc-sa-4.0",
+      "https://huggingface.co/naver/splade-v3" },
+    { "splade-v3-q8", "splade-v3-q8_0.gguf",
+      "https://huggingface.co/cstr/splade-v3-GGUF/resolve/main/splade-v3-q8_0.gguf",
+      "BERT sparse SPLADE v3 English 110M (Q8_0, sparse-cos 1.000)", "111 MB", "cc-by-nc-sa-4.0",
+      "https://huggingface.co/naver/splade-v3" },
 
     // --- GTE v1.5 (new BERT) ---
 
