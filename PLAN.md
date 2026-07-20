@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-20 | `perf/gpu-ar-decode` | **GPU AR decode — scoping + code-audit.** Scope in "HEADLINE remaining lever" below. | **PIVOTED — qwen2vl (planned S1) is ALREADY DONE** (F16 GPU KV + flash, verified in code). PERFORMANCE.md maturity table is stale; genuine remaining laggards are `smoldocling`/`granite` LLM decode (still `core_vlm` CPU-scalar) + `deepseek` single-graph. Real Session-1 candidate = `smoldocling` (safer than granite). Awaiting go-ahead before the next heavy baseline. |
+| _(none in flight)_ | | | |
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -804,26 +804,29 @@ KV swap, the top layer is a **persistent single-step decode graph** (build once,
 compute** — the moonshine/OMR pattern; already proved here: smt-fp 18×, transcoda
 2.4–4×, byte-identical).
 
-**⚠ CODE-VERIFIED 2026-07-20 — PERFORMANCE.md's maturity table is STALE.** Auditing
-the actual LLM-decode path (not the table) found most of it already landed:
-- ✅ **`qwen2vl_ocr` — DONE.** Already F16 GPU KV (`GGML_TYPE_F16` on `ctx.backend`,
-  `alloc_kv_cache`) + `ggml_flash_attn_ext` decode + `build_decode_step_graph`
-  (8 ggml-decode refs, 0 `core_vlm`). The table's "F32 CPU KV re-uploaded + manual
-  attn" is wrong (the `feat/qwen2vl-kvcache` work landed).
-- ✅ **`pix2struct` — has KV cache + DequantCache** (Phase 2/3), not the "no KV,
-  O(T²)" the table claims. CPU-scalar but KV-cached; GPU port is low priority.
-- ~ **`deepseek_ocr2`** — ggml per-layer graphs + flash + `alloc_kv` (not `core_vlm`);
-  remaining = **single multi-layer LLM graph + F16 KV** (F16-KV grep = 0).
+**✅ CODE-VERIFIED 2026-07-20 — ALREADY DONE; PERFORMANCE.md's maturity table is
+STALE.** Auditing the actual LLM-decode path of every engine (not the table): they
+**all default to a ggml F16-KV GPU decode**, with the `core_vlm` CPU-scalar path
+kept only as a gated fallback. So this "headline project" is closed. Evidence:
+- **`qwen2vl_ocr`** — F16 GPU KV (`GGML_TYPE_F16` on `ctx.backend`) + `ggml_flash_attn_ext`
+  + `build_decode_step_graph` (0 `core_vlm`).
+- **`smoldocling_ocr`** — `sd_run_llm_body` ggml graph handles decode T=1 with F16
+  backend KV; `use_ggml = (llm_sched && sd_alloc_kv_cache())` is the DEFAULT,
+  `sd_llm_decode_step` (`core_vlm`) is the fallback.
+- **`granite_vision_ocr`** — `gv_run_llm_body` ggml + F16 backend KV is DEFAULT
+  (`if (!getenv("CRISPEMBED_GRANITE_LLM_SCALAR")) use_graph = gv_alloc_kv_cache()`),
+  diff-validated cos 0.9999 vs granite-llm-ref; `core_vlm` is the opt-out. The old
+  "10–50× / entire LLM CPU-scalar" is stale.
+- **`pix2struct`** — KV cache + DequantCache (Phase 2/3), not "no KV, O(T²)".
+- **`deepseek_ocr2`** — ggml per-layer graphs + flash + `alloc_kv` (not `core_vlm`).
+- **`internvl2`/`glm`/`got`/`lightonocr`** — the reference implementations.
 
-**GENUINE remaining laggards — LLM decode still CPU-scalar `core_vlm`:**
-- [ ] **`smoldocling_ocr`** — LLM decode via `core_vlm` (5 refs); vision tower is
-  already ggml/flash. → move the LLM decode to the internvl2/qwen2vl ggml template
-  (F16 KV + flash). *Safer real Session-1 target (no granite wrong-history risk).*
-- [ ] **`granite_vision_ocr`** — LLM decode via `core_vlm` (8 refs); PLAN's **10–50×**.
-  ⚠ **Instrument-don't-trust:** prior granite handovers had WRONG root causes (the
-  "LLM broken on Metal" claim was false; real bug was a Q8_0 ffn.down reshape —
-  [[verify-handover-claims-independently]], [[granite-vision-ocr-real-diagnosis]]).
-- [ ] **`deepseek_ocr2`** — single multi-layer LLM graph + F16 KV (above).
+**Only genuine sliver left (micro, not the headline):** `deepseek_ocr2` builds
+per-layer graphs (≈12 builds/token) rather than one multi-layer graph — a graph-shape
+tidy, F16 KV already present. And the *persistent single-step graph* (build once,
+reuse) is only in qwen2vl/lightonocr/deepseek; the others rebuild the step graph each
+token but already on-GPU. Both are marginal vs the closed headline. **PERFORMANCE.md's
+"Optimization maturity ranking" + "Opportunities" tables need a refresh to match.**
 
 **Tier 2 — polish:** `lightonocr` GPU dispatch (has persistent F16 KV, GPU=No);
 `internvl2` native GQA in flash (skip `ggml_repeat`).

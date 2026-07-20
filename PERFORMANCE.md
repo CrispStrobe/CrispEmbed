@@ -429,17 +429,23 @@ runtime category. "Existing" means the optimization is already implemented;
 
 #### Optimization maturity ranking
 
-| Rank | Runtime | Vision encoder | LLM attention | KV cache | GPU |
-|------|---------|---------------|---------------|----------|-----|
-| 1 | **internvl2_ocr** | ggml flash_attn | ggml flash_attn | F16 ggml tensor (zero-copy) | Yes |
-| 2 | **glm_ocr** | ggml flash_attn (monolithic graph) | ggml flash_attn | F16 ggml tensor | Yes |
-| 3 | **got_ocr** | ggml per-layer graphs | ggml flash_attn | F16 ggml tensor | Yes |
-| 4 | **qwen2vl_ocr** | ggml graph (mul_mat) | ggml graph (no flash) | F32 CPU vectors, re-uploaded each step | Yes |
-| 5 | **lightonocr** | ggml flash_attn (monolithic) | ggml flash_attn | F16 ggml persistent (ggml_cpy) | No |
-| 6 | **deepseek_ocr2** | ggml per-layer (SAM only) | ggml per-layer graphs | F32 CPU vectors, re-uploaded each step | Yes |
-| 7 | **smoldocling_ocr** | ggml flash_attn | CPU scalar (core_vlm) | F32 CPU flat vector | No |
-| 8 | **granite_vision_ocr** | CPU scalar loops | CPU scalar (core_vlm) | F32 CPU flat vector | No |
-| 9 | **pix2struct** | CPU scalar loops | CPU scalar, no KV cache | None | No |
+> **REFRESH 2026-07-20 (code-verified):** every VLM decoder below now DEFAULTS to a
+> ggml F16-KV GPU decode path; the `core_vlm` CPU-scalar decode survives only as a
+> gated fallback (`CRISPEMBED_*_SCALAR` / `use_ggml` guards). The pre-refresh columns
+> claiming "F32 CPU vectors" / "CPU scalar (core_vlm)" / "no KV cache" for
+> qwen2vl/smoldocling/granite/pix2struct were STALE. Corrected:
+
+| Rank | Runtime | LLM decode (default) | KV cache | GPU |
+|------|---------|----------------------|----------|-----|
+| 1 | **internvl2_ocr** | ggml flash_attn | F16 ggml tensor (zero-copy) | Yes |
+| 2 | **glm_ocr** | ggml flash_attn (monolithic) | F16 ggml tensor | Yes |
+| 3 | **got_ocr** | ggml flash_attn | F16 ggml tensor | Yes |
+| 4 | **qwen2vl_ocr** | ggml + `build_decode_step_graph` | **F16 ggml backend** (`alloc_kv_cache`) | Yes |
+| 5 | **lightonocr** | ggml flash_attn | F16 ggml persistent (`ggml_cpy`) | Yes |
+| 6 | **deepseek_ocr2** | ggml per-layer graphs + flash | F16 ggml (`alloc_kv`); per-layer graph = only tidy left | Yes |
+| 7 | **smoldocling_ocr** | `sd_run_llm_body` ggml (default; `use_ggml`) | **F16 ggml backend**; core_vlm = fallback | Yes |
+| 8 | **granite_vision_ocr** | `gv_run_llm_body` ggml (default; diff cos 0.9999) | **F16 ggml backend**; core_vlm = opt-out | Yes |
+| 9 | **pix2struct** | CPU scalar + DequantCache | KV cache (Phase 2) — CPU, GPU port low-priority | No |
 
 #### Already optimized (best practices found in at least one runtime)
 
@@ -461,7 +467,7 @@ runtime category. "Existing" means the optimization is already implemented;
 
 | Priority | Issue | Affected runtimes | Impact |
 |----------|-------|-------------------|--------|
-| **P0** | Adopt F16 ggml KV cache (internvl2 pattern) | qwen2vl, deepseek, smoldocling, granite | Eliminates O(seq_len) per-step re-upload; halves memory |
+| ~~**P0**~~ DONE | ~~Adopt F16 ggml KV cache (internvl2 pattern)~~ **— landed; all VLM decoders default to ggml F16-KV GPU decode (verified 2026-07-20, see maturity table)** | qwen2vl, deepseek, smoldocling, granite | Eliminates O(seq_len) per-step re-upload; halves memory |
 | **P0** | Use `ggml_flash_attn_ext` for LLM decode | qwen2vl, deepseek | qwen2vl uses manual Q@K+softmax+V; deepseek uses per-layer graphs |
 | **P0** | Move granite to ggml graphs | granite_vision_ocr | Entire engine is CPU-scalar — 10-50x potential speedup |
 | **P0** | Implement batched prefill for smoldocling/granite | smoldocling, granite | Token-at-a-time through 30-40 LLM layers is catastrophic |
