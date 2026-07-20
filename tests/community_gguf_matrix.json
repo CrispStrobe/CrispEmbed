@@ -226,6 +226,26 @@
       "control_min_cos": 0.999
     },
     {
+      "name": "all-mpnet-base-v2",
+      "repo": "cstr/all-mpnet-base-v2-GGUF",
+      "file": "all-mpnet-base-v2-q8_0.gguf",
+      "arch": "bert",
+      "dim": 768,
+      "n_layer": 12,
+      "query_prefix": "",
+      "doc_prefix": "",
+      "query": "how do I bake sourdough bread",
+      "related": "A step-by-step guide to baking sourdough loaves at home.",
+      "unrelated": "The 1998 amendment to the municipal zoning ordinance.",
+      "min_margin": 0.05,
+      "notes": "Covers the MPNet path: two-stream self-attention + T5-style relative-position-bias (detected within the `bert` arch by rel-attn-bias tensors) + mean pooling. CrispEmbed is UNIQUE here — llama.cpp has no MPNet support, so no community GGUF exists; this is a cstr/* (our own) GGUF and the entry is arch COVERAGE, not an ecosystem-compat signal. It is the ONLY regression guard on the MPNet rel-attn-bias graph.",
+      "hf_repo": "sentence-transformers/all-mpnet-base-v2",
+      "min_hf_cos": 0.95,
+      "measured_hf_cos": 0.997,
+      "measured_note": "Final-embedding cosine vs HF (AutoModel mean-pool + L2-norm): realistic sentences 0.9967–0.9983, short 2-word text 0.9873 (mean-pool amplifies per-token delta on very short input). PRECISION CONTROL RAN INFORMALLY: f32 == q8_0 (0.9875 vs 0.9873 min), so the small residual is STRUCTURAL (the unique two-stream/rel-attn-bias graph), NOT quantization — which is exactly why NO control_file is set: an f32 control must clear >=0.99 (dump_encoder_reference has no MPNet two-stream path to run a per-stage control anyway). Realistic-text parity is already 0.997+; the entry guards the MPNet graph against regression via min_hf_cos + garbage_guard.",
+      "no_control_reason": "f32 == q8_0 (~0.987 structural residual on short text), so an f32 control cannot clear the >=0.99 floor; MPNet has no dump_encoder_reference per-stage path"
+    },
+    {
       "name": "embeddinggemma-300m-qat",
       "repo": "cstr/embeddinggemma-300m-GGUF",
       "file": "embeddinggemma-300m-qat-q8_0-dense.gguf",
