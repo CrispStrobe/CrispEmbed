@@ -308,18 +308,20 @@ Availability probed 2026-07-16 (repos listed are candidates, not yet validated):
 | **GTE-v1.5 (gte-base-en-v1.5)** | `NewModel` NTK-RoPE + GeGLU **tanh** (the path the modern-bert `geglu_erf` gate was explicitly kept OFF for) | ✅ | `cstr/gte-base-en-v1.5-GGUF` (our own; llama.cpp ❌ so third-party rare) | **ADDED + validated per-stage (2026-07-16).** q8 vs HF fp32: emb_ln_out gate 0.999927, all layers PASS (encoder_out 0.9926). Guards the tanh-GeGLU branch stays correct next to modern-bert's erf branch. Arch coverage (own GGUF), not ecosystem-compat |
 | **MPNet (all-mpnet-base-v2)** | MPNet two-stream / T5-style rel-attn bias — **we are unique** | ✅ | `cstr/all-mpnet-base-v2-GGUF` (our own; no third-party — llama.cpp ❌) | Not a true ecosystem gap (no community export exists); lower priority |
 | **XLM-R-large / multilingual-e5-large** | `bert`+SPM XLM-R at 1024-dim | ✅ | `soichisumi/…-Q8_0-GGUF`, `phate334/…`, `walsons/…` | **EXPECT the e5-small position-offset FAILURE** (XLM-R needs offset 2; community `bert`-arch GGUFs omit `position_offset`). Add ONLY if a community GGUF declares the offset — else it documents the same known gap |
-| **SPLADE-v3 (sparse)** | MLM/sparse head — `has_sparse` path, NOT dense | ❌ (needs a sparse-specific check, not the garbage guard) | `mradermacher/Splade-V3-GGUF` | Driver has no sparse mode; would need a top-term overlap gate. Separate work |
+| **SPLADE-v3 (sparse)** | MLM/sparse head — `has_sparse` path, NOT dense | sparse metric (sparse-cos), not the garbage guard | `mradermacher/Splade-V3-GGUF` — **HEADLESS, unusable (2026-07-20)** | **Driver already does SPLADE** (CLI `--sparse`, `crispembed_encode_sparse`, `splade-pp-en-v1` ships at sparse-cos 0.996, `audit_gguf_heads` guards the head through quant). The COMMUNITY GGUF can't be supported: `mradermacher/Splade-V3-GGUF` (arch `bert`, 197 tensors, inspected) has **NO `cls.predictions.*`/MLM head** — llama.cpp drops it at convert, so it loads as a plain dense encoder (same class as e5-small/EmbeddingGemma "community export drops the head"; no loader alias recovers an absent tensor). Only OUR converter (`convert-bert --crisp`, reads checkpoint files) keeps the head. Remaining = an optional converter-add of `naver/splade-v3` to `cstr/splade-v3-GGUF` (NOT a driver project); marginal since `splade-pp-en-v1` already delivers SPLADE. |
 | **DeBERTa-v2** | disentangled c2p/p2c rel-attn (`rel_embd`, `position_buckets`) — **we are unique**, highest-complexity encoder path | ✅ | **none found** (llama.cpp ❌, no community GGUF exists) | Blocked on the absence of any third-party GGUF; only our own conversion exists |
 
 Status: **Qwen3-Embedding, LFM2.5-Embedding, granite-107m, GTE-v1.5, and
 EmbeddingGemma all ADDED**; **e5-small CLOSED** (under-specified export). **Genuinely
 remaining candidates:** **MPNet** (own GGUF only, no ecosystem export — low
 priority); **XLM-R-large** expected to reproduce the e5 offset gap (add only as a
-documented negative, or if a community GGUF declares `position_offset`); **SPLADE-v3**
-needs a sparse-mode driver first (a top-term-overlap gate, not the dense
-garbage-guard — separate work); **DeBERTa-v2** blocked on GGUF availability (no
-third-party export exists). Do each on a quiet box (250K-vocab SPM reads + HF
-forwards are slow under contention) and gate on the per-stage structural cosine.
+documented negative, or if a community GGUF declares `position_offset`);
+**DeBERTa-v2** blocked on GGUF availability (no third-party export exists). Do each
+on a quiet box (250K-vocab SPM reads + HF forwards are slow under contention) and
+gate on the per-stage structural cosine. **SPLADE-v3 is NOT a remaining driver
+gap** — sparse retrieval ships (`splade-pp-en-v1`, sparse-cos 0.996); the community
+`Splade-V3-GGUF` is headless (documented above), so only an optional converter-add
+of our own `naver/splade-v3` GGUF remains.
 
 ### Transcoda OMR decode enhancements (deferred, 2026-07-13)
 
