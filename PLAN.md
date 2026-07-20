@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| _(none in flight)_ | | | |
+| 2026-07-20 | `perf/gpu-ar-decode` | **GPU AR decode — Session 1: `qwen2vl_ocr`** F32-CPU-KV → F16 ggml KV (internvl2 template) + `ggml_flash_attn_ext`, env-gated. Scope: "HEADLINE remaining lever" below. | **STARTING** — establishing baseline (decoded output + decode-timing A/B ground truth) before touching the graph. |
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -790,14 +790,69 @@ var (see `../crispasr-crispembed-dev.md` "A/B every perf optimization").
     quality), a clean flip needs a genuine quiet box (load <3) for a back-to-back
     median; until then keep opt-in — correctness is no longer the blocker, only a
     trustworthy latency number is.
-- **HEADLINE remaining lever — GPU (Metal/WebGPU) recognizer AR decode.**
-  PERFORMANCE.md calls the per-region CPU-bound token loop "the real speed path".
-  Substantial project: a persistent single-step decode graph on the GPU (the
-  moonshine/OMR persistent-graph pattern in the dev guide — build once, gallocr
-  once at max KV, dispatch sched-free per step, re-set all inputs each compute).
-  Needs a quiet box + a real CUDA box (Kaggle) for the decoded-roundtrip gate
-  before flipping a GPU default (CUDA has stricter per-op contiguity asserts than
-  CPU/Metal — LEARNING 35). High value for document-OCR-at-volume.
+#### HEADLINE remaining lever — GPU recognizer AR decode (scoped 2026-07-20)
+
+PERFORMANCE.md calls the per-region CPU-bound token loop "the real speed path".
+**This is NOT greenfield:** `internvl2_ocr` (maturity rank 1) already ships the
+target pattern — `ggml_flash_attn_ext` LLM decode + **F16 KV in ggml tensors
+(zero-copy view + `ggml_cpy` writes)** + prefill/decode separation + sched GPU
+dispatch; `glm_ocr` (rank 2) and `got_ocr` (rank 3) confirm it. The project =
+**propagate that proven pattern to the laggard engines**, ranked by leverage
+(PERFORMANCE.md "Optimization maturity ranking" + "Opportunities"). Beyond the
+KV swap, the top layer is a **persistent single-step decode graph** (build once,
+`gallocr` once at max KV, dispatch sched-free per step, **re-set ALL inputs each
+compute** — the moonshine/OMR pattern; already proved here: smt-fp 18×, transcoda
+2.4–4×, byte-identical).
+
+**Tier 0 — GPU=Yes already, suboptimal KV (lowest risk, on-ramp):**
+- [ ] **`qwen2vl_ocr`** — F32 CPU KV re-uploaded each step + manual Q@K+softmax+V
+  → F16 ggml KV (internvl2 template) + `ggml_flash_attn_ext`. *Session 1.*
+- [ ] **`deepseek_ocr2`** — F32 CPU KV + 12 per-layer graph builds/token → F16 KV
+  + flash + single multi-layer LLM graph.
+
+**Tier 1 — fully CPU-scalar LLM decode (biggest raw wins, bigger rewrites):**
+- [ ] **`pix2struct`** — fully scalar, NO KV cache, O(T²) recompute/step → ggml +
+  KV (greenfield, no KV to migrate — do first of this tier).
+- [ ] **`smoldocling_ocr`** — CPU-scalar decode token-at-a-time through 30–40
+  layers → batched prefill + ggml graph.
+- [ ] **`granite_vision_ocr`** — entire LLM CPU-scalar; PLAN estimates **10–50×**.
+  ⚠ **Do LAST + instrument-don't-trust:** prior granite handovers had WRONG root
+  causes (the "LLM broken on Metal" claim was false; real bug was a Q8_0 ffn.down
+  reshape — see [[verify-handover-claims-independently]], [[granite-vision-ocr-real-diagnosis]]).
+
+**Tier 2 — polish:** `lightonocr` GPU dispatch (has persistent F16 KV, GPU=No);
+`internvl2` native GQA in flash (skip `ggml_repeat`).
+
+**Landmines (non-negotiable):**
+- **CUDA contiguity (LEARNING 35):** `ggml_get_rows` needs a contiguous index
+  (`ggml_cont` before it). "Correct on CPU AND Metal" is NOT sufficient — CUDA has
+  stricter per-op asserts; the decoded-roundtrip MUST run on a real CUDA box
+  (Kaggle P100) before flipping any GPU default. [[flashattn-ext-already-permutes]]
+- **Metal `set_output` snapshots LIE** on the sched — bisect on the genuine
+  truncated output (`..._MAX_LAYERS=N`), not per-intermediate snapshots.
+  [[set-output-on-view-stale]]
+- **Metal `mul_mm` F16 overflow** (large ×N activations) → scale 1/256 pre-matmul,
+  ×256 post. [[metal-mul-mm-f16-overflow]]
+- **CPU-pinned decode re-copies GPU weights every token** — `load_weights_split`
+  (encoder→GPU, decoder→CPU) to kill cross-backend traffic; **per-step GPU dispatch
+  is launch-bound for tiny models** — the persistent graph is the win, not
+  sched-free per-step. Measure the CPU baseline on the right BLAS first (parakeet
+  lesson: a "GPU idle" gap was half a CPU-BLAS artifact).
+- ggml scheduler: run side graphs before alloc; never reset between alloc and
+  compute on the same graph.
+
+**Validation gates (per change; env-gate every path, NEVER delete the scalar one):**
+1. Per-stage `crispembed_diff` structural parity (cos ≥ 0.999).
+2. **Decoded-output roundtrip is the ONLY acceptance test** — OCR a real doc, read
+   the text. Test BOTH f16 AND q4_k.
+3. A/B back-to-back under IDENTICAL load on a quiet box (loaded timing lies ±20%);
+   final GPU-default flip gated on a Kaggle CUDA decoded-roundtrip.
+4. Add a regression entry with `expected_text`; keep `<ENGINE>_CPU_DECODE=1` fallback.
+
+**Sequencing:** ~3–5 focused sessions, each needs a quiet box + one Kaggle run.
+S1 `qwen2vl_ocr` (proves harness + A/B method) → S2 `deepseek_ocr2` → S3 `pix2struct`
+→ S4 `smoldocling` → S5 `granite` (last). Highest value is Tier 1; Tier 0 de-risks
+the pattern first.
 
 - **SR/restoration — fused ggml graphs: COMPLETE (2026-07-13).** Every engine
   now runs a fused ggml graph, not per-conv mini-graphs. Ported this session:
