@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-20 | `perf/gpu-ar-decode` | **GPU AR decode — Session 1: `qwen2vl_ocr`** F32-CPU-KV → F16 ggml KV (internvl2 template) + `ggml_flash_attn_ext`, env-gated. Scope: "HEADLINE remaining lever" below. | **STARTING** — establishing baseline (decoded output + decode-timing A/B ground truth) before touching the graph. |
+| 2026-07-20 | `perf/gpu-ar-decode` | **GPU AR decode — scoping + code-audit.** Scope in "HEADLINE remaining lever" below. | **PIVOTED — qwen2vl (planned S1) is ALREADY DONE** (F16 GPU KV + flash, verified in code). PERFORMANCE.md maturity table is stale; genuine remaining laggards are `smoldocling`/`granite` LLM decode (still `core_vlm` CPU-scalar) + `deepseek` single-graph. Real Session-1 candidate = `smoldocling` (safer than granite). Awaiting go-ahead before the next heavy baseline. |
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -804,21 +804,26 @@ KV swap, the top layer is a **persistent single-step decode graph** (build once,
 compute** — the moonshine/OMR pattern; already proved here: smt-fp 18×, transcoda
 2.4–4×, byte-identical).
 
-**Tier 0 — GPU=Yes already, suboptimal KV (lowest risk, on-ramp):**
-- [ ] **`qwen2vl_ocr`** — F32 CPU KV re-uploaded each step + manual Q@K+softmax+V
-  → F16 ggml KV (internvl2 template) + `ggml_flash_attn_ext`. *Session 1.*
-- [ ] **`deepseek_ocr2`** — F32 CPU KV + 12 per-layer graph builds/token → F16 KV
-  + flash + single multi-layer LLM graph.
+**⚠ CODE-VERIFIED 2026-07-20 — PERFORMANCE.md's maturity table is STALE.** Auditing
+the actual LLM-decode path (not the table) found most of it already landed:
+- ✅ **`qwen2vl_ocr` — DONE.** Already F16 GPU KV (`GGML_TYPE_F16` on `ctx.backend`,
+  `alloc_kv_cache`) + `ggml_flash_attn_ext` decode + `build_decode_step_graph`
+  (8 ggml-decode refs, 0 `core_vlm`). The table's "F32 CPU KV re-uploaded + manual
+  attn" is wrong (the `feat/qwen2vl-kvcache` work landed).
+- ✅ **`pix2struct` — has KV cache + DequantCache** (Phase 2/3), not the "no KV,
+  O(T²)" the table claims. CPU-scalar but KV-cached; GPU port is low priority.
+- ~ **`deepseek_ocr2`** — ggml per-layer graphs + flash + `alloc_kv` (not `core_vlm`);
+  remaining = **single multi-layer LLM graph + F16 KV** (F16-KV grep = 0).
 
-**Tier 1 — fully CPU-scalar LLM decode (biggest raw wins, bigger rewrites):**
-- [ ] **`pix2struct`** — fully scalar, NO KV cache, O(T²) recompute/step → ggml +
-  KV (greenfield, no KV to migrate — do first of this tier).
-- [ ] **`smoldocling_ocr`** — CPU-scalar decode token-at-a-time through 30–40
-  layers → batched prefill + ggml graph.
-- [ ] **`granite_vision_ocr`** — entire LLM CPU-scalar; PLAN estimates **10–50×**.
-  ⚠ **Do LAST + instrument-don't-trust:** prior granite handovers had WRONG root
-  causes (the "LLM broken on Metal" claim was false; real bug was a Q8_0 ffn.down
-  reshape — see [[verify-handover-claims-independently]], [[granite-vision-ocr-real-diagnosis]]).
+**GENUINE remaining laggards — LLM decode still CPU-scalar `core_vlm`:**
+- [ ] **`smoldocling_ocr`** — LLM decode via `core_vlm` (5 refs); vision tower is
+  already ggml/flash. → move the LLM decode to the internvl2/qwen2vl ggml template
+  (F16 KV + flash). *Safer real Session-1 target (no granite wrong-history risk).*
+- [ ] **`granite_vision_ocr`** — LLM decode via `core_vlm` (8 refs); PLAN's **10–50×**.
+  ⚠ **Instrument-don't-trust:** prior granite handovers had WRONG root causes (the
+  "LLM broken on Metal" claim was false; real bug was a Q8_0 ffn.down reshape —
+  [[verify-handover-claims-independently]], [[granite-vision-ocr-real-diagnosis]]).
+- [ ] **`deepseek_ocr2`** — single multi-layer LLM graph + F16 KV (above).
 
 **Tier 2 — polish:** `lightonocr` GPU dispatch (has persistent F16 KV, GPU=No);
 `internvl2` native GQA in flash (skip `ggml_repeat`).
@@ -850,8 +855,8 @@ compute** — the moonshine/OMR pattern; already proved here: smt-fp 18×, trans
 4. Add a regression entry with `expected_text`; keep `<ENGINE>_CPU_DECODE=1` fallback.
 
 **Sequencing:** ~3–5 focused sessions, each needs a quiet box + one Kaggle run.
-S1 `qwen2vl_ocr` (proves harness + A/B method) → S2 `deepseek_ocr2` → S3 `pix2struct`
-→ S4 `smoldocling` → S5 `granite` (last). Highest value is Tier 1; Tier 0 de-risks
+S1 `smoldocling_ocr` (core_vlm→ggml LLM decode) → S2 `granite_vision_ocr` (10–50×, instrument-first)
+→ S3 `deepseek_ocr2` (single graph + F16 KV). qwen2vl/pix2struct already done; the
 the pattern first.
 
 - **SR/restoration — fused ggml graphs: COMPLETE (2026-07-13).** Every engine
