@@ -407,22 +407,16 @@ authorship**, which are independent of an upstream repo's *code* license:
 | ~~8~~ | ~~Clarity-OMR~~ | — | (unverified) | PDF→MusicXML **pipeline** | MusicXML | printed | High | Reference-only — multi-stage pipeline, not a single VED model |
 | ~~9~~ | ~~homr (liebharc)~~ | — | **AGPL-3.0** (code) | pipeline + TrOMR | MusicXML | printed/camera | — | **REJECTED** — pipeline (poor ggml fit); the underlying TrOMR is already shipped separately (Apache-2.0) |
 
-**Recommended priority (updated 2026-07-13 — SMT/TrOMR/Flova all shipped):**
+**Recommended priority (updated 2026-07-20 — SMT/SMT++/TrOMR/Flova/Transcoda ALL shipped):**
 
-1. **SMT++ full-page** — best permissive next step. MIT + public weights
-   (`PRAIG/smt-fp-grandstaff`), and it extends the *already-shipped* `smt_ocr.cpp`.
-   First task is cheap and decisive: **verify the arch delta vs base SMT** (the
-   deep-research verifier *refuted* the "curriculum-only, identical arch" claim
-   2-1, so don't assume free reuse). If the graph matches → near-free full-page
-   pianoform (no separate layout stage). If it differs → scope the delta.
-
-2. **Transcoda-59M** — accuracy leader + only permissive route to historical
-   scans. Weights are **CC BY 4.0** (redistribute the GGUF freely, attribute);
-   the code is AGPL so the engine is written **clean-room** (Python-as-oracle +
-   facts-spec — see "Licensing methodology" above). Arch is fully in-tree:
-   ConvNeXt-V2-Tiny ≈ SMT's ConvNext backbone, 8L RoPE decoder ≈ Qwen3 decoder;
-   the only new pieces are a 3000-token **kern BPE tokenizer and (optional) GBNF
-   grammar-constrained decode. Highest accuracy on the OMR-NED benchmark.
+1. ~~**SMT++ full-page**~~ **SHIPPED** — `smt_ocr.cpp` (arch reuse confirmed) +
+   registry `smt-fp`; HF `cstr/smt-fp-grandstaff-GGUF`. (Was the "best next step";
+   done.)
+2. ~~**Transcoda-59M**~~ **SHIPPED** — clean-room `src/transcoda_ocr.cpp` +
+   registry `transcoda`; HF `cstr/transcoda-omr-GGUF` (CC-BY-4.0). The only genuine
+   remaining Transcoda work is the *optional* beam-3 + GBNF `**kern`
+   grammar-constrained decode (still greedy-only; see "Transcoda OMR decode
+   enhancements" — the sole open OMR-engine lever).
 
 3. **Handwritten *polyphonic* — the real remaining gap.** No permissive model
    fills it: Flova (shipped) is monophonic-toy; the strong performers are all
@@ -440,8 +434,9 @@ authorship**, which are independent of an upstream repo's *code* license:
    **1.0** (backbone, ViT context, all 12 decoder blocks, all 4 logit heads),
    **100% per-position argmax agreement** teacher-forced (66/66, 85/85), greedy
    decode **byte-exact** vs the authors' `examples/{1,2,3}.txt`, Metal == CPU.
-   q8_0 also decodes byte-exact. **Remaining:** HF upload `cstr/tromr-GGUF`
-   (f32 + q8_0) + `model_mgr.cpp` registry entry.
+   q8_0 also decodes byte-exact. ~~**Remaining:** HF upload `cstr/tromr-GGUF`
+   (f32 + q8_0) + `model_mgr.cpp` registry entry.~~ **DONE** — `tromr` registry
+   entry (model_mgr.cpp) points at `cstr/tromr-GGUF`.
    Corrections vs the (now-removed) handover brief found in validation: ViT scale
    is **32^-0.5** not 64^-0.5; the converter emitted tensor names >64 chars that
    the ggml loader rejects (`GGML_MAX_NAME`) → shortened the backbone prefix to
@@ -619,9 +614,9 @@ homr [github.com/liebharc/homr (AGPL-3.0)](https://github.com/liebharc/homr).
 | ~~4~~ | ~~MinerU2.5-Pro~~ | ~~1.2B~~ | ~~90.7%~~ | ~~NOT pure Apache~~ | — | REJECTED: commercial thresholds, mandatory attribution, gated HF |
 | 5 | **SmolDocling** | 256M | — | Apache-2.0 | Idefics3/SmolVLM, IBM Research | DONE: engine + parity cos=0.9999, HF `cstr/smoldocling-GGUF` |
 | ~~6~~ | ~~Hunyuan-OCR~~ | ~~1B~~ | — | ~~Custom Tencent~~ | — | REJECTED: excludes EU/UK/South Korea |
-| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | Vision parity fixed; LLM Q4_K floor expected. Prompt: direct "output only text" instruction; general.name detection added (filename-independent). |
+| 7 | **Qari-OCR** | 4B | Apache-2.0 | Qwen2-VL fine-tune (Arabic only) | **DONE (shipped)** — registry `qari-ocr` → `qari-ocr-2b-q4_k.gguf`. Vision parity fixed; direct "output only text" prompt; filename-independent `general.name` detection. |
 
-**Remaining**: FireRed-OCR (Qwen3-VL 2B) and german-ocr-3 reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order.
+~~**Remaining**~~ **DONE (both shipped)**: FireRed-OCR (registry `firered-ocr` / `firered-ocr-q4k`, Qwen3-VL 2B) and german-ocr-3 (registry `german-ocr-3.1`, Qwen2.5-VL) both reuse the qwen2vl_ocr engine; runtime ne-fix handles GGUF converters that store weights in PyTorch (out, in) order. (NB: `src/fireredpunc.cpp` is a different model — BERT punctuation, not FireRed-OCR.)
 
 #### OCRBench leaderboard reference (small VLMs, ≤3B)
 
@@ -717,7 +712,7 @@ exists, and in `stable-diffusion.cpp`, not llama.cpp).
 
 | Gap | Impact | Effort | Notes |
 |---|---|---|---|
-| Qwen3-VL multimodal | Low | High | Reuse BidirLM-Omni scaffolding |
+| ~~Qwen3-VL multimodal~~ **DONE** | — | — | Qwen3-VL OCR/VLM shipped: engine (`qwen2vl_ocr.cpp` DeepStack + interleaved-mRoPE + qk-norm) + registry `qwen3vl-2b`. (Only a Qwen3-VL *embedding* model — not the OCR path — would still be open, if ever wanted.) |
 
 ### DeepSeek-OCR-2 performance (remaining levers)
 
@@ -735,12 +730,21 @@ enc+proj ~1.1 s. Remaining levers, ranked by leverage:
   holds ~5 GB (2.1 model + 1.3 stacked experts + 0.65 embed-f32 + Metal) on a
   16 GB box, so file pages and new allocations contend and swap. → the real load
   lever is **reducing the footprint** (#3, #4), not prefetch.
-- [x] **#2 Decode graph reuse (~1–1.5 s) — DONE.** Persistent T=1 decode graph
-  with fixed max-KV, incremental KV-cache mask; 2× faster decode stage.
-  (`fcb5b11 perf(ocr2): persistent T=1 decode graph reuse`)
-- [x] **#3 Per-row embedding dequant** — already done. `put_tok` lambda (~line
-  2604) and `get_embedding` lambda (~line 1950) both use per-row
-  `ggml_backend_tensor_get`. Item was stale.
+- [~] **#2 Decode graph reuse — PARTIAL (KV persistent; graph NOT).** Corrected
+  2026-07-20 (code-verified): the **KV cache is persistent** device tensors
+  (`alloc_ds_kv_cache`, written in-graph via `ggml_cpy`/views) — but the decode
+  **graph is still rebuilt + freed every layer, every token** (`build_llm_layer_attn`
+  → `ggml_free(lag.gctx)` in the per-layer loop). No persistent/single multi-layer
+  graph yet; the `g_ds_build_us`/`g_ds_compute_us` profiler exists precisely to
+  decide if the persistent-single-graph port is worth it. So **the persistent
+  single-step decode graph + F16 KV (cache is F32 today) are genuinely OPEN for
+  deepseek specifically** — the one engine the GPU-decode "done" note above does
+  NOT fully cover.
+- [x] **#3 Per-row embedding dequant — DONE (core win).** The decode hot path
+  `get_embedding` lambda is per-row (`ggml_backend_tensor_get` + `to_float`),
+  replacing the 655 MB full-table copy held across decode. (Sub-detail corrected:
+  the prompt-assembly `put_tok` still full-table-dequants once via `to_f32`, freed
+  after — not per-row; line refs drifted to ~2424/~1897.)
 - [x] **#4 Converter-emitted stacked experts (memory) — DONE
   (`feat/ds-ocr2-stacked-experts`).** Converter emits `ffn_{gate,up,down}_exps
   [in,out,n_exp]` (byte-identical to `stack_moe_experts`); loader loads them
