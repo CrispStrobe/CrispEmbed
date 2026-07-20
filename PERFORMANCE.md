@@ -442,7 +442,7 @@ runtime category. "Existing" means the optimization is already implemented;
 | 3 | **got_ocr** | ggml flash_attn | F16 ggml tensor | Yes |
 | 4 | **qwen2vl_ocr** | ggml + `build_decode_step_graph` | **F16 ggml backend** (`alloc_kv_cache`) | Yes |
 | 5 | **lightonocr** | ggml flash_attn | F16 ggml persistent (`ggml_cpy`) | Yes |
-| 6 | **deepseek_ocr2** | ggml per-layer graphs + flash | F16 ggml (`alloc_kv`); per-layer graph = only tidy left | Yes |
+| 6 | **deepseek_ocr2** | ggml per-layer graphs + flash | **F32** ggml (`alloc_ds_kv_cache`); F16 KV + persistent single-graph both still OPEN here | Yes |
 | 7 | **smoldocling_ocr** | `sd_run_llm_body` ggml (default; `use_ggml`) | **F16 ggml backend**; core_vlm = fallback | Yes |
 | 8 | **granite_vision_ocr** | `gv_run_llm_body` ggml (default; diff cos 0.9999) | **F16 ggml backend**; core_vlm = opt-out | Yes |
 | 9 | **pix2struct** | CPU scalar + DequantCache | KV cache (Phase 2) — CPU, GPU port low-priority | No |
