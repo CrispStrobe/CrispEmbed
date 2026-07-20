@@ -4,6 +4,153 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## July 20, 2026 — PLAN.md active-work board cleared (all in-flight items landed)
+
+The `PLAN.md` "🚧 Active work in flight" table had accumulated 18 rows, **every
+one marked DONE/landed**, plus a "Pending work" section whose A1–A4 items and the
+`modern-bert` "FOUND" diagnosis had all shipped but were still written as open
+(the same staleness that sent a fresh session chasing an already-shipped
+modern-bert task). Verified each against the live code, then cleared the board and
+the shipped "pending" blocks. No code changed. This entry indexes what was
+removed and preserves the specifics for items lacking their own dated section.
+
+**Already covered by a dedicated HISTORY section (pointers only):**
+- **`gemma-embedding` EmbeddingGemma GGUFs** — July 17 entry (`138ee0c`).
+- **JSON I/O hardening + `core_json` + community-GGUF compat (#34/#33, A1–A4,
+  B1/B2, scalar migration, parity + precision-control automation, CI drift
+  guards)** — July 16 entry. Re-verified in code: A1 all four endpoints
+  (`/embed`, `/rerank`, `/ner/extract`, `/kie/extract`) route through
+  `json_extract_strings`; A2 generic `general.architecture` hparam read +
+  `CRISPEMBED_ARCH_HPARAMS`/`CRISPEMBED_STRICT_HPARAMS` gates; A3 matrix has 10
+  entries with automated `prove_quant_control.py`; A4 emsdk pinned 6.0.2 across
+  workflows + `main-health.yml` red-`main` self-report. All shipped.
+- **Community `modern-bert` BPE-tokenizer GGUFs** — `77b829b`+`d3f447b` (recorded
+  in the July 16 entry + LEARNINGS). Model-string-authoritative tokenizer dispatch
+  (gpt2→BPE over the vocab-size heuristic), BPE merges from the
+  `tokenizer.ggml.merges` KV array, GPT-2 ByteLevel regex pre-tokenizer, loader
+  aliases + inverted dual-RoPE-theta/SWA metadata + exact-erf GeGLU (arch-gated so
+  the GTE-v1.5 tanh path is untouched). q8_0 vs HF `emb_ln_out` cos=0.999928, 22
+  layers 0.9999+, f16 control 1.000000 every stage, final CLS q8_0=0.999602;
+  tokens match HF `[50281,25521,1533,50282]`; matrix margin −0.089→0.51.
+- **Transcoda-59M OMR** — July 13 entry. **DeepSeek-OCR-2 #4 stacked MoE experts
+  (−1.3 GB)** — July 13 entry. **DBNet scanline box scoring (28×)** — July 13
+  entry. **QKV-fusion probe (negative) + detector-postprocess audit** — July 13
+  entry. **Kaggle CUDA Class-A/Gap-5 confirmation (portfolio 14→0)** — July 13
+  entry.
+
+**Encoder ground-truth parity harness (A3 follow-on, shipped 2026-07-16).**
+Extended the A3 matrix from rc/shape/garbage-guard to per-stage ground truth vs
+the original HF model. Tools: `tests/hf_parity_community.py`,
+`tools/dump_encoder_reference.py`, `tests/test_encoder_diff.py`,
+`CRISPEMBED_DUMP_LAYERS_GGUF`. Measured q4_k vs HF fp32: bge-small 0.9962, MiniLM
+0.9919, nomic-v2-moe 0.9797, nomic-v1.5 0.9515 — all confirmed **quant floor, not
+bug** by the f16/f32 control (both encoder paths cos=1.000000 at every layer;
+nomic-v1.5's drop is a sharp last-block step, layer_10 0.9977→layer_11 0.9499, a
+real quality fact → prefer f16/q8). Precision control automated: matrix entries
+carry `control_file`+`control_min_cos`, `prove_quant_control.py --all` proves
+quant-not-bug in one command. Found three code-invisible harness bugs: last block
+renamed to `encoder_out` (feeder-to-pooling silently absent; missing stages now
+FAIL), `NomicBertModel.forward()` rejects `output_hidden_states` (forward-hook
+fallback), and a pre-LN-vs-post-LN structural-gate mismatch (fixed by capturing
+block-0 input via `forward_pre_hook`; gate now prints `|ours|`/`|ref|`).
+
+**e5-small / granite community-matrix closure (2026-07-16).**
+`granite-embedding-107m-multilingual` ADDED (first SPM matrix entry, `bert` +
+`t5`/unigram → SPM via model-string dispatch, CLS): q4_k `emb_ln_out` cos=0.999951
++ 6 layers 0.9928–0.9969, final CLS 0.996145, f16 control 1.000000, margin 0.31.
+`multilingual-e5-small` **CLOSED as a won't-fix**: the `rodion-m` fp32 GGUF omits
+`bert.position_offset` so crispembed uses 0, but intfloat's XLM-RoBERTa e5 needs
+offset 2 → structural gate cos=0.467 (pure position shift, norms match). Not
+auto-detectable — granite shares the same RoBERTa bos=0/eos=2 SPM tokenizer yet
+needs offset 0, and a `position_embd` row-count heuristic was ruled out (e5,
+granite, bge GGUFs all `[384,512]` with ctx=512). The offset must be carried in
+the GGUF; no speculative heuristic shipped.
+
+**Official `lfm2` LFM2.5-Embedding GGUF now loads (2026-07-16).** Same class as the
+modern-bert fix, bigger: `src/lfm2_embed.cpp` was written for our converter's
+`lfm.*` tensor names + `lfm2.<our>` hparam keys + a `lfm2.layer_types` string, so
+`LiquidAI/LFM2.5-Embedding-350M-GGUF` (canonical `blk.N.*`/`lfm2.*`, no layer-types
+string) aborted on a missing tensor. Fixed with tensor/hparam aliases, conv/attn
+layer-types derived from tensor presence, `head_count_kv` read as a per-layer array
+→ max, and a memory-preserving reshape of the depthwise-conv weight to `[K,1,C]`
+(the export ships it 2D `[K,C]`, which crashed `ggml_conv_1d_dw`). Validated via
+`test-lfm2-diff` vs the raw HF `Lfm2BidirectionalModel`: q8_0 = 0.9999 at every
+stage (post_embed gate + 16 layers + `cls_norm` pooled) on short and long text;
+f16 control 1.000000 every stage; garbage-guard margin 0.76. Matrix entry
+`LFM2.5-Embedding-350M` added.
+
+**OMR engines + fixtures (shipped 2026-07-13, on `main`).**
+- **Polyphonic-TrOMR** (`feat/tromr-engine`) — `src/tromr_ocr.cpp` (cos 1.0 / 100%
+  argmax / byte-exact); HF `cstr/tromr-GGUF` (f32 + q8_0 31 MB, F16 backbone,
+  Apache-2.0 card); registry + regression fixture (cer 0.000).
+- **Flova / omr_transformer** (`feat/flova-omr`) — handwritten/whiteboard OMR
+  (donut-swin + mBART VED → LilyPond). `src/flova_ocr.cpp` (cos 1.0 / 40-40
+  argmax / byte-exact incl. native preproc), `test_flova_diff.cpp`, CMake,
+  dispatcher + registry. HF `cstr/flova-omr-GGUF` (f32 573 MB + q8_0 162 MB,
+  Apache-2.0). Fixture (`feat/flova-regression-fixture`, `67ddc99`): `staff_flova.png`
+  + golden LilyPond `c'2 a''8 c''8 r4 c'1 e'8 c'8 c'8 a''8 f'4 a'8 c'8`, cer 0.000.
+- **SMT regression fixture** (`feat/smt-regression-fixture`) — `staff_smt.png`;
+  `run_one.py --name smt` PASS (garbage-guard + cer 0.000 vs `smt-grandstaff-q8_0`
+  from `cstr/smt-grandstaff-GGUF`, CPU==Metal, deterministic bekern decode).
+  Completes the OMR guardrail trio (SMT/TrOMR/Flova).
+- **SMT++ full-page pianoform OMR** (`feat/smt-fp-fullpage`, `PRAIG/smt-fp-grandstaff`)
+  — fp checkpoint = `antoniorv6/SMT` main rewrite (scaled attn `d_head^-0.5`, no
+  pre-head ReLU, decoder tensor rename, head Linear, `reduce_ratio=1.0`).
+  **Correctness fix: NO invert** — the checkpoint's repo is plain Grayscale+ToTensor
+  (I'd wrongly copied SMT-plusplus `RandomInvert`); WITH invert even the real HF
+  model degenerates to `8 . r` repetition, WITHOUT it reads correctly and
+  terminates (per-stage cos was 1.0 either way — only the decoded roundtrip vs a
+  no-invert reference caught it). **Perf 485→~26 ms/step (~18×)** via persistent
+  device KV + reserved gallocr sched-free + cross-K/V stored once mul_mat-ready;
+  whole page ~2 min (was not finishing). Byte-identical CPU==Metal, f32==q8_0
+  (2312 tok). q5_k shipped (13 MB, 0.04% token-CER); q4_k not (degenerates).
+  Quantizer guards for `decoder.out_layer` + ConvNext encoder → Q8_0. HF
+  `cstr/smt-fp-grandstaff-GGUF` (invert=false), registry `smt-fp`. CI fixture
+  skipped (full-page decode too slow).
+- **CROHME handwritten-formula fixtures** (`feat/handwritten-fixtures`) — closed
+  the bttr/hmer/posformer `expected_text: null` gap. **No bug**: the 3 CROHME
+  models were guarded on a *printed* (out-of-domain) image; on rendered CROHME 2014
+  all three read simple formulas correctly + deterministically (CPU==Metal). Added
+  a `sample_hf` harness mechanism that fetches one CROHME image from
+  `Kitajiang/test2_CROHME2014` (pinned rev, row 23 `C_t=C+C=2C`) at test time so
+  the CC-BY-NC-SA data stays OUT of the MIT repo; pinned `expected_text` for all 3
+  (`run_one` cer 0.000).
+
+**Unlimited-OCR stacked MoE experts** (`feat/uocr-stacked-experts`, 2026-07-14).
+Verbatim port of the ds-ocr2 #4 stacked-experts win (same DeepSeek-V2 MoE).
+Kaggle-reconverted `baidu/Unlimited-OCR` (byte-validated vs source; the v1 3 h hang
+was fixed by the single-thread OMP/BLAS converter prefix), uploaded f16+q4_k
+`-stacked` to `cstr/unlimited-ocr-crispembed-GGUF` (rev `b11fef884fee`, non-clobber).
+M1 Metal q4_k A/B: output byte-identical on all 3 loader paths; peak footprint
+4.32→3.11 GB (−1.21 GB, −28%). Registry promoted to stacked-default; regression
+entry `unlimited-ocr-stacked`.
+
+**layout-heron `dec_0_cross_out` — the last portfolio FAIL** (`debug/layout-cross`,
+`d7f0480` fix + `e9bba14` docs). NOT an inference bug: the 300 decoder queries are
+picked by `partial_sort` over ~8400 near-tie encoder proposals
+(`layout_detect.cpp:1318`), so a tiny backend FP delta in `enc_output` (cos 0.99999)
+reorders near-tie ranks and the index-aligned `cross_out` cos craters (mean 0.79 /
+min −0.08 Metal) even though the VALUES are correct (final boxes unaffected —
+score-sort + NMS). Fixed by comparing `dec_0_cross_out` **permutation-tolerantly**
+(best-cosine match: PASS Metal 0.947/0.999, CPU 0.967/0.999; simulated scrambles
+still collapse to ≤0.08 vs the 0.85 gate). Portfolio **14→0 FAIL**.
+
+**Kaggle reranker τ-eval** (`crispembed-imatrix-quant`, 2026-07-13) — full
+7-reranker roster on the n=30 corpus. **imatrix always cuts q4_k score-drift (7/7)
+but its effect on ranking τ is model-dependent**: big win on ms-marco-L-12
+(0.853→0.929) + jina (0.929→0.942), neutral on bge, but **degrades** both mxbai
+rerankers −0.076 (iq4_xs beats q4_k+imatrix there). So `q4_k+imatrix` is **not** a
+universal reranker recommendation — validate per-model (the old n=5 corpus missed
+both the mxbai regression and the ms-marco-L-12 win). All imatrix quants
+re-uploaded to `cstr/*-GGUF`; jina q4_k-imatrix also validated locally on Metal
+(EN+DE rerank correct).
+
+**crispembed Dart pub.dev quality** (`chore/pub-crispembed-dart`, 2026-07-15) —
+crispembed **0.15.1** to 160/160 pana points (added example/README, enabled
+`lints/core`, brace/dangling-doc fixes). Docs/lint only, no behaviour change.
+
+---
+
 ## July 17, 2026 — Community/official `gemma-embedding` GGUFs load (routing + SPM-BPE tokenizer + Dense)
 
 crispembed could not load the official llama.cpp EmbeddingGemma export
