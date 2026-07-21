@@ -50,3 +50,4 @@ webgpu-build.log
 
 # Transcoda oracle dumper imports the AGPL reference package (clean-room: throwaway)
 tools/dump_transcoda_reference.py
+flutter/crispembed/macos/Libs/*.dylib
