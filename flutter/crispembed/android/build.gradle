@@ -1,12 +1,12 @@
 // CrispEmbed Flutter FFI plugin — Android
 //
-// Bundles pre-built libcrispembed.so for each ABI.
-// CI builds the .so files and places them in:
-//   android/src/main/jniLibs/<abi>/libcrispembed.so
-// See .github/workflows/build.yml (build-android job).
+// Bundles pre-built libcrispembed.so for each ABI. CI (release.yml, build-android
+// job) builds each self-contained .so and publishes it as a release asset; the
+// fetchCrispembedLibs task below downloads it into src/main/jniLibs/<abi>/ on
+// build (skipped if already present — e.g. a local dev drop).
 
 group 'com.crispstrobe.crispembed'
-version '0.15.0'
+version '0.16.0'
 
 buildscript {
     repositories {
@@ -42,4 +42,31 @@ android {
             jniLibs.srcDirs = ['src/main/jniLibs']
         }
     }
+}
+
+// Fetch the CI-built libcrispembed.so for each ABI from the matching GitHub
+// release, if not already present. Runs before the build so `flutter build apk`
+// works on a fresh checkout without any manual lib placement.
+def crispembedAbis = ['arm64-v8a', 'armeabi-v7a']
+tasks.register('fetchCrispembedLibs') {
+    doLast {
+        crispembedAbis.each { abi ->
+            def dst = file("src/main/jniLibs/${abi}/libcrispembed.so")
+            if (!dst.exists()) {
+                dst.parentFile.mkdirs()
+                def url = "https://github.com/CrispStrobe/CrispEmbed/releases/download/v${version}/crispembed-android-${abi}.tar.gz"
+                logger.lifecycle("crispembed: fetching prebuilt Android lib (${abi}) -> ${url}")
+                def tmp = File.createTempFile('crispembed', '.tgz')
+                new URL(url).withInputStream { input -> tmp.withOutputStream { out -> out << input } }
+                exec {
+                    commandLine 'tar', '-xzf', tmp.absolutePath, '-C',
+                            dst.parentFile.absolutePath, 'libcrispembed.so'
+                }
+                tmp.delete()
+            }
+        }
+    }
+}
+tasks.configureEach { task ->
+    if (task.name == 'preBuild') task.dependsOn('fetchCrispembedLibs')
 }
