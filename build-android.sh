@@ -67,7 +67,7 @@ for ABI in "${ABIS[@]}"; do
         -DGGML_BLAS=OFF \
         -DGGML_LLAMAFILE=OFF
 
-    cmake --build "$ABI_DIR" -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+    cmake --build "$ABI_DIR" --target crispembed-shared -j"$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
 
     # Show output
     if [ -f "$ABI_DIR/libcrispembed.so" ]; then
