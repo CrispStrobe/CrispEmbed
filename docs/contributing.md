@@ -230,6 +230,37 @@ If adding a new modality (not just a new OCR model variant), wire into the serve
 
 For OCR models: already wired via `--ocr` → `POST /math/ocr`.
 
+**⚠ Keep the HTTP surface in sync with the C ABI.** A capability can be resident in
+the loaded model yet unreachable over HTTP — e.g. a reranker's classifier head loads
+(`is_reranker=1`) but `/embed` on it returns backbone vectors, not scores (issue #37).
+When you add a `crispembed_*` capability to `src/crispembed.h`, add the matching
+route. Audit with:
+```bash
+# every capability entry point vs whether server.cpp reaches it
+grep -oE 'crispembed_(encode_sparse|encode_audio|rerank|rerank_batch|encode_multivec)' src/crispembed.h | sort -u
+grep -c crispembed_encode_sparse examples/server/server.cpp   # 0 == no route
+```
+Wire a retrieval route by mirroring the `/rerank` / `/sparse` / `/colbert/score`
+handlers: **capability guard** (`is_reranker` / `has_sparse` / `has_colbert` → 400)
+→ **escaping-aware parse** (`json_extract_strings` for text arrays,
+`json_extract_number` for scalars like `top_n`) → `std::lock_guard(model_mutex)` →
+call the batch C ABI (`crispembed_rerank_batch` caches classifier weights) → JSON out
+via `json_escape`. Also add the capability flag to `/health` and the startup listing.
+
+**Retrieval routes (current):**
+
+| Route | Capability guard | C ABI | Request → Response |
+|-------|------------------|-------|--------------------|
+| `POST /embed`, `/v1/embeddings`, `/api/embed` | (dense — always) | `crispembed_encode[_batch]` | `{"texts":[...]}` → embeddings |
+| `POST /rerank` | `is_reranker` | `crispembed_rerank_batch` | `{"query","documents","top_n"}` → `{"query","results":[{"index","score","document"}]}` |
+| `POST /sparse` | `has_sparse` | `crispembed_encode_sparse` | `{"texts":[...]}` → `{"results":[{"weights":{"<token_id>":w}}]}` (SPLADE/BGE-M3) |
+| `POST /colbert/score` | `has_colbert` | `crispembed_encode_multivec` | `{"query","documents"}` → per-doc MaxSim scores |
+
+`/health` reports `reranker` / `sparse` / `colbert` booleans so a sidecar client can
+discover the routes. **Still unrouted (lower priority):** `crispembed_encode_audio`
+(omnimodal audio embed) and a bi-encoder variant of `/rerank` — add them the same way
+if a use case appears.
+
 ### Python Bindings (`python/crispembed/_binding.py`)
 Add a class following the `CrispVit` / `CrispMathOcr` pattern:
 1. Add `_setup_yourmodel_signatures(lib)` function
