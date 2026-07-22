@@ -52,6 +52,7 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cmath>
 #include <iomanip>
 #include <mutex>
 #include <sstream>
@@ -1174,6 +1175,131 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "crispembed-server: /colbert/score %d docs in %.1f ms\n", (int)doc_texts.size(), ms);
             res.set_content(js.str(), "application/json");
         }
+    });
+
+    // POST /rerank — cross-encoder rerank (issue #37). Mirrors the CLI `--rerank
+    // --json` shape so sidecar users get cross-encoder precision without FFI or a
+    // per-call CLI spawn. The loaded model must be a reranker (is_reranker == 1).
+    // Request:  {"query": "...", "documents": ["...", "..."], "top_n": 10}
+    // Response: {"query": "...", "results": [{"index": 0, "score": 0.103284, "document": "..."}]}
+    svr.Post("/rerank", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
+            return;
+        }
+        if (!crispembed_is_reranker(ctx)) {
+            res.status = 400;
+            res.set_content("{\"error\": \"loaded model is not a cross-encoder reranker\"}", "application/json");
+            return;
+        }
+
+        std::string query_text;
+        {
+            std::vector<std::string> q;
+            if (json_extract_strings(req.body, "query", q) > 0) query_text = q.front();
+        }
+        if (query_text.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing query field\"}", "application/json");
+            return;
+        }
+
+        std::vector<std::string> doc_texts;
+        json_extract_strings(req.body, "documents", doc_texts);
+        if (doc_texts.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no documents provided\"}", "application/json");
+            return;
+        }
+        const int top_n = (int)json_extract_number(req.body, "top_n", 0);
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        // Batch rerank (caches the classifier weights → avoids a per-document
+        // GPU→CPU transfer; see crispembed_rerank_batch).
+        std::vector<const char *> doc_ptrs;
+        doc_ptrs.reserve(doc_texts.size());
+        for (const auto & d : doc_texts) doc_ptrs.push_back(d.c_str());
+        std::vector<float> scores(doc_texts.size(), 0.0f);
+        const int n_scored =
+            crispembed_rerank_batch(ctx, query_text.c_str(), doc_ptrs.data(), (int)doc_ptrs.size(), scores.data());
+        if (n_scored != (int)doc_texts.size()) {
+            res.status = 500;
+            res.set_content("{\"error\": \"rerank failed\"}", "application/json");
+            return;
+        }
+
+        std::vector<std::pair<size_t, float>> ranked;
+        ranked.reserve(doc_texts.size());
+        for (size_t i = 0; i < doc_texts.size(); ++i) {
+            if (std::isfinite(scores[i])) ranked.emplace_back(i, scores[i]);
+        }
+        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) { return a.second > b.second; });
+        if (top_n > 0 && (int)ranked.size() > top_n) ranked.resize(top_n);
+
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        std::ostringstream js;
+        js << "{\"query\": \"" << json_escape(query_text) << "\", \"results\": [";
+        for (size_t i = 0; i < ranked.size(); ++i) {
+            if (i > 0) js << ", ";
+            js << "{\"index\": " << ranked[i].first << ", \"score\": " << std::fixed << std::setprecision(6)
+               << ranked[i].second << ", \"document\": \"" << json_escape(doc_texts[ranked[i].first]) << "\"}";
+        }
+        js << "]}";
+        fprintf(stderr, "crispembed-server: /rerank %zu docs in %.1f ms\n", doc_texts.size(), ms);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /sparse — SPLADE / BGE-M3 sparse term-weight retrieval. The loaded model
+    // must expose a sparse head (has_sparse == 1). Returns the non-zero vocabulary
+    // term weights per input text (SPLADE-style bag of weighted expansion terms).
+    // Request:  {"texts": ["your query text"]}   (or {"text": "..."})
+    // Response: {"results": [{"weights": {"1996": 0.9532, "2938": 1.5153}}]}
+    svr.Post("/sparse", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
+            return;
+        }
+        if (!crispembed_has_sparse(ctx)) {
+            res.status = 400;
+            res.set_content("{\"error\": \"loaded model does not support sparse retrieval\"}", "application/json");
+            return;
+        }
+
+        std::vector<std::string> texts;
+        if (json_extract_strings(req.body, "texts", texts) == 0) {
+            json_extract_strings(req.body, "text", texts);
+        }
+        if (texts.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no texts provided\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        std::ostringstream js;
+        js << "{\"results\": [";
+        for (size_t t = 0; t < texts.size(); ++t) {
+            const int32_t * indices = nullptr;
+            const float * values = nullptr;
+            const int n = crispembed_encode_sparse(ctx, texts[t].c_str(), &indices, &values);
+            if (t > 0) js << ", ";
+            js << "{\"weights\": {";
+            for (int i = 0; i < n; ++i) {
+                if (i > 0) js << ", ";
+                js << "\"" << indices[i] << "\": " << std::fixed << std::setprecision(6) << values[i];
+            }
+            js << "}}";
+        }
+        js << "]}";
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        fprintf(stderr, "crispembed-server: /sparse %zu texts in %.1f ms\n", texts.size(), ms);
+        res.set_content(js.str(), "application/json");
     });
 
     // POST /ocr/model — single-model OCR recognition (math or text, auto-dispatched).
@@ -3235,6 +3361,10 @@ int main(int argc, char ** argv) {
         js << "{\"status\": \"ok\"";
         if (ctx) {
             js << ", \"dim\": " << dim << ", \"layers\": " << hp->n_layer << ", \"vocab\": " << hp->n_vocab;
+            // Retrieval capabilities of the loaded model → the matching POST routes.
+            if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank
+            if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse
+            if (crispembed_has_colbert(ctx)) js << ", \"colbert\": true";  // POST /colbert/score
         }
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
@@ -3333,6 +3463,10 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
     if (ctx && crispembed_has_colbert(ctx))
         fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
+    if (ctx && crispembed_is_reranker(ctx))
+        fprintf(stderr, "  POST /rerank          — {\"query\": \"...\", \"documents\": [...], \"top_n\": 10}\n");
+    if (ctx && crispembed_has_sparse(ctx))
+        fprintf(stderr, "  POST /sparse          — {\"texts\": [\"...\"]}  (SPLADE/BGE-M3 term weights)\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);
