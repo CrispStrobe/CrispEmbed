@@ -5,6 +5,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 20  # the 0.16.0 run hung ~6h in the publish step; fail fast instead
     environment: pub.dev
     permissions:
       id-token: write  # OIDC auth to pub.dev (no stored secrets)
@@ -15,6 +16,7 @@ jobs:
           channel: stable
       - name: Publish
         working-directory: flutter/crispembed
+        timeout-minutes: 10  # publish itself should take <2 min; bound it so a hang surfaces
         run: |
           flutter pub get
           flutter pub publish --force

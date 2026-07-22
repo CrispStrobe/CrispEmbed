@@ -1,3 +1,20 @@
+## 0.16.1
+
+- Native libraries are now fetched from the CI release on install (no manual
+  placement); iOS/Android build only the `crispembed` library target.
+- Server gains `POST /rerank` (cross-encoder) and `POST /sparse` (SPLADE/BGE-M3)
+  routes; `/health` reports `reranker`/`sparse`/`colbert` capabilities.
+- First pub.dev release carrying the v0.16.x native library (0.16.0 shipped as
+  GitHub release binaries only).
+
+## 0.16.0
+
+- Community & official GGUF interoperability: load third-party llama.cpp / Ollama
+  GGUFs across BPE/WordPiece/SentencePiece tokenizers (ModernBERT, EmbeddingGemma,
+  LFM2.5-Embedding, Qwen3-Embedding, granite-embedding, GTE-v1.5, nomic-v2-moe).
+- SPLADE-v3 sparse retrieval model; escaping-aware JSON server input; community-GGUF
+  regression matrix with HF ground-truth parity.
+
 ## 0.15.1
 
 - Docs/quality: add an example, and enable the flow-control brace lint with
