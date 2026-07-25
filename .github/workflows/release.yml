@@ -162,6 +162,27 @@ jobs:
                   done
                   install_name_tool -add_rpath '@loader_path' "$bin" 2>/dev/null || true
               done
+              # Make each dylib's SONAME a REAL file. cmake emits
+              # libX.<M>.<m>.<p>.dylib (real) + libX.<M>.dylib + libX.dylib
+              # (symlinks), but every install-name is @rpath/libX.<M>.dylib.
+              # CocoaPods DEREFERENCES symlinks when it embeds vendored_libraries
+              # (Flutter macOS), so a symlink-only SONAME is dropped and the app
+              # aborts at launch with "Library not loaded: @rpath/libX.<M>.dylib".
+              # Promote the real file to its SONAME so it survives embedding, and
+              # keep libX.dylib as a symlink for build-time `-l` linkers (Rust
+              # crispembed-sys). The fully-versioned filename is retired.
+              for f in pkg/libcrispembed.*.dylib pkg/libggml*.dylib; do
+                  [ -e "$f" ] || continue
+                  [ -L "$f" ] && continue                       # real files only
+                  soname=$(basename "$(otool -D "$f" 2>/dev/null | tail -1)")
+                  case "$soname" in lib*.dylib) ;; *) continue ;; esac
+                  [ "$(basename "$f")" = "$soname" ] && continue  # already SONAME
+                  stem=${soname%.*}; stem=${stem%.*}            # libX
+                  rm -f "pkg/$soname"
+                  mv -f "$f" "pkg/$soname"
+                  ln -sf "$soname" "pkg/$stem.dylib"
+              done
+              echo "macOS tarball dylib layout:"; ls -l pkg/*.dylib || true
           fi
 
           tar -czf ${{ matrix.archive }} -C pkg .
