@@ -48,17 +48,33 @@ android {
 // release, if not already present. Runs before the build so `flutter build apk`
 // works on a fresh checkout without any manual lib placement.
 def crispembedAbis = ['arm64-v8a', 'armeabi-v7a']
+
+// Gradle 9 removed Project.exec() from the EXECUTION phase, so the plain
+// `exec { }` this task used to call inside doLast now fails the whole build
+// with "Could not find method exec()". The supported replacement is the
+// injected ExecOperations service; ObjectFactory.newInstance fills the
+// @Inject for us. See https://docs.gradle.org/current/userguide/upgrading_version_8.html
+interface CrispembedExecOps {
+    @javax.inject.Inject
+    org.gradle.process.ExecOperations getExecOps()
+}
+
 tasks.register('fetchCrispembedLibs') {
+    // Resolve everything that touches `project` at CONFIGURATION time — reading
+    // it from doLast is the same class of error as exec() was.
+    def execOps = project.objects.newInstance(CrispembedExecOps).execOps
+    def jniLibsDir = file('src/main/jniLibs')
+    def releaseVersion = version.toString()
     doLast {
         crispembedAbis.each { abi ->
-            def dst = file("src/main/jniLibs/${abi}/libcrispembed.so")
+            def dst = new File(jniLibsDir, "${abi}/libcrispembed.so")
             if (!dst.exists()) {
                 dst.parentFile.mkdirs()
-                def url = "https://github.com/CrispStrobe/CrispEmbed/releases/download/v${version}/crispembed-android-${abi}.tar.gz"
+                def url = "https://github.com/CrispStrobe/CrispEmbed/releases/download/v${releaseVersion}/crispembed-android-${abi}.tar.gz"
                 logger.lifecycle("crispembed: fetching prebuilt Android lib (${abi}) -> ${url}")
                 def tmp = File.createTempFile('crispembed', '.tgz')
                 new URL(url).withInputStream { input -> tmp.withOutputStream { out -> out << input } }
-                exec {
+                execOps.exec {
                     commandLine 'tar', '-xzf', tmp.absolutePath, '-C',
                             dst.parentFile.absolutePath, 'libcrispembed.so'
                 }
