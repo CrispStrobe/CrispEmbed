@@ -444,6 +444,9 @@ downstream handoff parity, not detector-box similarity alone.
       Candidate artifact: `/Volumes/backups/ai/crispembed-gguf/
       tesseract-frk-int8-source-candidate.gguf`; it is not published or
       substituted for the validated F32/Q8 artifacts yet.
+      The quantizer policy now keeps every Tesseract `.weight` tensor lossless
+      in a deployment container; the source int8 matrices remain separate
+      host-side tensors, avoiding a second ggml quantization pass.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
