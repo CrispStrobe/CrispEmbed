@@ -48,6 +48,8 @@ struct Report {
     float rms = 0.0f;
     float cos_min = 1.0f;
     float cos_mean = 1.0f;
+    float mine_norm = 0.0f;
+    float ref_norm = 0.0f;
     std::vector<int64_t> shape;
 
     bool is_pass(float cos_threshold = 0.999f) const { return found && cos_min >= cos_threshold; }
@@ -350,6 +352,14 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
     r.n_elem = cmp_n;
 
     if (cmp_n == 0) return r;
+
+    double mine_sq = 0.0, ref_sq = 0.0;
+    for (size_t i = 0; i < cmp_n; ++i) {
+        mine_sq += (double)data[i] * data[i];
+        ref_sq += (double)ref[i] * ref[i];
+    }
+    r.mine_norm = (float)std::sqrt(mine_sq);
+    r.ref_norm = (float)std::sqrt(ref_sq);
 
     // Element-wise metrics
     double sum_abs = 0, sum_sq = 0;
