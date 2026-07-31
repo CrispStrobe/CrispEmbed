@@ -137,6 +137,15 @@ static float quantized_dot_cached_input(const int8_t * weights, float weight_sca
     return (float)sum * weight_scale * input_scale;
 }
 
+static inline int8_t quantize_activation(float value, bool image_input = false) {
+    const float factor = image_input ? 128.0f : 127.0f;
+    return (int8_t)std::max(-127.0f, std::min(127.0f, std::round(value * factor)));
+}
+
+static inline float dequantize_activation(int8_t value) {
+    return (float)value / 127.0f;
+}
+
 // ---------------------------------------------------------------------------
 // Tensor dequantization helper
 // ---------------------------------------------------------------------------
@@ -394,20 +403,14 @@ static void lstm_forward_int8(const float * input, float * output, int T, int ni
     for (int step = 0; step < T; ++step) {
         const int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * ni;
-        float xs = 1.0f, hs = 1.0f;
-        float max_x = 0.0f;
-        for (int i = 0; i < ni; ++i) max_x = std::max(max_x, std::fabs(xt[i]));
-        xs = max_x > 0.0f ? max_x / 127.0f : 1.0f;
-        for (int i = 0; i < ni; ++i) xq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(xt[i] / xs)));
-        float max_h = 0.0f;
-        for (int i = 0; i < ns; ++i) max_h = std::max(max_h, std::fabs(h[i]));
-        hs = max_h > 0.0f ? max_h / 127.0f : 1.0f;
-        for (int i = 0; i < ns; ++i) hq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(h[i] / hs)));
+        constexpr float activation_scale = 1.0f / 127.0f;
+        for (int i = 0; i < ni; ++i) xq[i] = quantize_activation(xt[i]);
+        for (int i = 0; i < ns; ++i) hq[i] = quantize_activation(h[i]);
         for (int g = 0; g < gs; ++g)
             gates[g] = lw.bias[g] + quantized_dot_cached_input(lw.W_ih_q.data() + (size_t)g * ni,
-                         lw.W_ih_scale[g], xq.data(), xs, ni) +
+                         lw.W_ih_scale[g], xq.data(), activation_scale, ni) +
                        quantized_dot_cached_input(lw.W_hh_q.data() + (size_t)g * ns,
-                         lw.W_hh_scale[g], hq.data(), hs, ns);
+                         lw.W_hh_scale[g], hq.data(), activation_scale, ns);
         for (int j = 0; j < ns; ++j) {
             const float i_gate = sigmoid_fast(gates[j]);
             const float f_gate = sigmoid_fast(gates[ns + j]);
@@ -415,7 +418,7 @@ static void lstm_forward_int8(const float * input, float * output, int T, int ni
             const float o_gate = sigmoid_fast(gates[3 * ns + j]);
             c[j] = f_gate * c[j] + i_gate * g_gate;
             c[j] = std::max(-100.0f, std::min(100.0f, c[j]));
-            h[j] = o_gate * tanhf(c[j]);
+            h[j] = dequantize_activation(quantize_activation(o_gate * tanhf(c[j])));
         }
         memcpy(output + (size_t)t * ns, h.data(), ns * sizeof(float));
     }
@@ -430,24 +433,19 @@ static void summ_lstm_forward_int8(const float * input, float * output, int heig
         std::fill(h.begin(), h.end(), 0.0f); std::fill(c.begin(), c.end(), 0.0f);
         for (int col = 0; col < width; ++col) {
             const float * xt = input + ((size_t)row * width + col) * channels;
-            float max_x = 0.0f;
-            for (int i = 0; i < channels; ++i) max_x = std::max(max_x, std::fabs(xt[i]));
-            const float xs = max_x > 0.0f ? max_x / 127.0f : 1.0f;
-            for (int i = 0; i < channels; ++i) xq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(xt[i] / xs)));
-            float max_h = 0.0f;
-            for (int i = 0; i < ns; ++i) max_h = std::max(max_h, std::fabs(h[i]));
-            const float hs = max_h > 0.0f ? max_h / 127.0f : 1.0f;
-            for (int i = 0; i < ns; ++i) hq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(h[i] / hs)));
+            constexpr float activation_scale = 1.0f / 127.0f;
+            for (int i = 0; i < channels; ++i) xq[i] = quantize_activation(xt[i]);
+            for (int i = 0; i < ns; ++i) hq[i] = quantize_activation(h[i]);
             for (int g = 0; g < gs; ++g)
                 gates[g] = lw.bias[g] + quantized_dot_cached_input(lw.W_ih_q.data() + (size_t)g * channels,
-                             lw.W_ih_scale[g], xq.data(), xs, channels) +
+                             lw.W_ih_scale[g], xq.data(), activation_scale, channels) +
                            quantized_dot_cached_input(lw.W_hh_q.data() + (size_t)g * ns,
-                             lw.W_hh_scale[g], hq.data(), hs, ns);
+                             lw.W_hh_scale[g], hq.data(), activation_scale, ns);
             for (int j = 0; j < ns; ++j) {
                 const float i_gate = sigmoid_fast(gates[j]), f_gate = sigmoid_fast(gates[ns + j]);
                 c[j] = f_gate * c[j] + i_gate * tanhf(gates[2 * ns + j]);
                 c[j] = std::max(-100.0f, std::min(100.0f, c[j]));
-                h[j] = sigmoid_fast(gates[3 * ns + j]) * tanhf(c[j]);
+                h[j] = dequantize_activation(quantize_activation(sigmoid_fast(gates[3 * ns + j]) * tanhf(c[j])));
             }
         }
         memcpy(output + (size_t)row * ns, h.data(), ns * sizeof(float));
@@ -541,13 +539,14 @@ static void forward(tesseract_lstm_context * ctx,
                     const float * w_row = ctx->conv_w.data() + o * 9;
                     if (ctx->int8_inference) {
                         std::vector<int8_t> sq(9);
-                        const float q = quantized_dot(ctx->conv_w_q.data() + (size_t)o * 9,
-                                                      ctx->conv_w_scale[o], stacked, 9, sq, val);
+                        for (int j = 0; j < 9; ++j) sq[j] = quantize_activation(stacked[j]);
+                        const float q = quantized_dot_cached_input(ctx->conv_w_q.data() + (size_t)o * 9,
+                                                                   ctx->conv_w_scale[o], sq.data(), 1.0f / 127.0f, 9);
                         val = ctx->conv_b[o] + q;
                     } else {
                         for (int j = 0; j < 9; j++) val += w_row[j] * stacked[j];
                     }
-                    dst[o] = tanhf(val);
+                    dst[o] = ctx->int8_inference ? dequantize_activation(quantize_activation(tanhf(val))) : tanhf(val);
                 }
             }
         }
@@ -640,11 +639,8 @@ static void forward(tesseract_lstm_context * ctx,
                 static thread_local float xs;
                 if ((int)xq.size() != cur_dim) xq.resize(cur_dim);
                 if (c == 0) {
-                    float max_abs = 0.0f;
-                    for (int j = 0; j < cur_dim; ++j) max_abs = std::max(max_abs, std::fabs(x[j]));
-                    xs = max_abs > 0.0f ? max_abs / 127.0f : 1.0f;
-                    for (int j = 0; j < cur_dim; ++j)
-                        xq[j] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(x[j] / xs)));
+                    xs = 1.0f / 127.0f;
+                    for (int j = 0; j < cur_dim; ++j) xq[j] = quantize_activation(x[j]);
                 }
                 val += quantized_dot_cached_input(ctx->out_w_q.data() + (size_t)c * cur_dim,
                                                   ctx->out_w_scale[c], xq.data(), xs, cur_dim);
