@@ -89,6 +89,20 @@ static int crispembed_test_main(int argc, char ** argv) {
             for (int i = 0; i < std::min(n, 8); ++i) printf(" %.6g", data[i]);
             printf("\n");
         }
+
+        if (ref.has("input_image")) {
+            auto [ref_data, ref_n] = ref.get_f32("input_image");
+            if (ref_data && ref_n > 0) {
+                float lo = ref_data[0], hi = ref_data[0];
+                for (size_t i = 1; i < ref_n; ++i) {
+                    lo = std::min(lo, ref_data[i]);
+                    hi = std::max(hi, ref_data[i]);
+                }
+                printf("Ref input debug: n=%zu min=%.6g max=%.6g first=", ref_n, lo, hi);
+                for (size_t i = 0; i < std::min<size_t>(ref_n, 8); ++i) printf(" %.6g", ref_data[i]);
+                printf("\n");
+            }
+        }
     }
 
     // Check Python result from reference metadata

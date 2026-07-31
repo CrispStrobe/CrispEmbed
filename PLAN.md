@@ -159,6 +159,11 @@ Required Fraktur implementation sequence:
 
 1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
    `/Volumes/backups/ai/crispembed-gguf/`; never commit large weights.
+   Apply the same policy to every `tesseract_lstm` language variant: all
+   quantized Q8/Q4 artifacts must retain `output.weight` and `output.bias` at
+   the source precision (F16 or F32), while only recurrent matrices may be
+   quantized. Existing multilingual artifacts must be regenerated if their
+   output projection was previously quantized.
 2. Add an explicit `tesseract-fraktur` stage/profile using DBNet line crops →
    grayscale crop → `tesseract_lstm` `frk` model, with the normal Tesseract
    path remaining available for modern German.
@@ -373,14 +378,23 @@ downstream handoff parity, not detector-box similarity alone.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and stage/output parity remain open.
-- [x] Align the diagnostic Tesseract reference dumper's resize contract with
-      native half-pixel bilinear uint8 rounding; this isolates graph parity
-      from the separate question of full Tesseract page preprocessing.
-- [x] Run the exact hashed Homebrew English diagnostic reference: decoded
-      native/Python output agrees (`a`), input cosine is `0.999658`, and all
-      9 captured stages pass the agreed `0.99` gate with mine/ref magnitude
-      reports; BiLSTM stages 1/2 remain below the stricter `0.999` review
-      threshold and are not claimed exact.
+- [x] Align the diagnostic Tesseract reference dumper and native recognizer
+      with the actual Leptonica `pixScaleGrayLI` fixed-16 bilinear contract
+      (top-left sampling, integer weights, replicated edges). The previous
+      half-pixel resize was wrong and caused the first real divergence on a
+      thin receipt crop.
+- [x] Trace the receipt discrepancy against upstream Tesseract/Leptonica:
+      `commons-receipt-line-3` moved from input cosine `0.990245` and
+      `after_conv_fc` `0.983611` to all 9 diff stages at cosine `1.000000`,
+      with matching mine/ref norms. Two additional CC0 Commons fixtures are
+      vendored with URLs, licenses, and SHA-256 metadata; full CLI page and
+      decoder-choice parity remain open.
+- [x] Run exact hashed Homebrew English references after the Leptonica fix:
+      the controlled line fixture decodes identically in native/Python as
+      `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
+      passing the 0.99 gate and logits cosine `0.999863`. The full-page image
+      is not a valid single-line recognizer fixture; page segmentation remains
+      a separate acceptance gate.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
