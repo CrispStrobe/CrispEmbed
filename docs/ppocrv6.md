@@ -35,8 +35,17 @@ F32 small/medium conversions match the native reference through logits, while
 the published F16 artifacts accumulate measurable drift through repeated
 layers. A first true Q8 experiment (pointwise CNN/SVTR weights quantized,
 sensitive tensors retained) degraded small-rec logit cosine to about 0.59, so
-Q8 is not enabled by default until a layer-selective scheme passes real
-line-crop quality tests. Q4 remains an explicit debug-only policy variant.
+Q8 is not enabled by default for the full graph. The supported compromise is
+head-only Q8 from an F32 source:
+
+```bash
+build/crispembed-quantize PP-OCRv6_small_rec-f32.gguf \
+  PP-OCRv6_small_rec-q8-head.gguf q8_0 --ppocrv6-q8-head
+```
+
+This keeps the CNN/SVTR backbone in F32 and quantizes only the final head;
+current logits cosine is 0.999987 (small) and 0.999934 (medium). Q4 remains
+an explicit debug-only policy variant.
 
 The official v6 preprocessing is also load-bearing: recognizers use a 48-pixel
 height, aspect-ratio-preserving width with padding up to 320 pixels, RGB
