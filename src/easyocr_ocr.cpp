@@ -255,7 +255,7 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
             const uint8_t * p = px + ((size_t)y * w + x) * ch;
-            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
+            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2]) / 1000);
         }
     std::vector<float> resized((size_t)c->height * c->width);
     const int rw = std::min(c->width, std::max(1, (int)std::ceil((double)c->height * w / h)));
