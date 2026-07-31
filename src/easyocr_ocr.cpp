@@ -208,7 +208,12 @@ static bool build_graph(easyocr_ocr_context * c) {
     ggml_set_name(c->logits, "logits");
     ggml_set_output(c->logits);
 
-    c->graph = ggml_new_graph_custom(g, 16384, false);
+    // The BiLSTM is statically unrolled over the input width. EasyOCR line
+    // crops can be substantially wider than the default 200px batch width.
+    // Scale graph capacity with time steps so dynamic-width line recognition
+    // remains a persistent ggml graph rather than falling back to CPU code.
+    const size_t graph_nodes = std::max<size_t>(16384, (size_t)c->time_steps * 700);
+    c->graph = ggml_new_graph_custom(g, graph_nodes, false);
     ggml_build_forward_expand(c->graph, c->logits);
     c->alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->backend));
     return c->alloc && ggml_gallocr_alloc_graph(c->alloc, c->graph);
@@ -240,6 +245,21 @@ easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
     return c;
 }
 
+bool easyocr_ocr_set_width(easyocr_ocr_context * c, int width) {
+    if (!c || width <= 0 || width == c->width) return c != nullptr;
+    if (c->alloc) {
+        ggml_gallocr_free(c->alloc);
+        c->alloc = nullptr;
+    }
+    if (c->graph_ctx) {
+        ggml_free(c->graph_ctx);
+        c->graph_ctx = nullptr;
+        c->graph = nullptr;
+    }
+    c->width = width;
+    return build_graph(c);
+}
+
 void easyocr_ocr_free(easyocr_ocr_context * c) {
     if (!c) return;
     if (c->alloc) ggml_gallocr_free(c->alloc);
@@ -255,7 +275,7 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
             const uint8_t * p = px + ((size_t)y * w + x) * ch;
-            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
+            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2]) / 1000);
         }
     std::vector<float> resized((size_t)c->height * c->width);
     const int rw = std::min(c->width, std::max(1, (int)std::ceil((double)c->height * w / h)));
