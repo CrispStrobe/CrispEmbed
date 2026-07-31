@@ -101,6 +101,8 @@ jobs:
         with: { python-version: '3.11' }
       - name: Driver smoke test
         run: python tests/regression/test_driver_smoke.py
+      - name: OCR engine matrix coverage
+        run: python tests/regression/test_engine_matrix.py
 
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:

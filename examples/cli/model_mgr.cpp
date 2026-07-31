@@ -887,9 +887,9 @@ static const ModelEntry k_registry[] = {
       "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "6 MB", "apache-2.0",
       "https://huggingface.co/cstr/parseq-GGUF" },
 
-    { "dbnet-det", "dbnet-ic15-q4_k.gguf",
-      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
-      "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
+    { "dbnet-det", "dbnet-ic15-q8_0.gguf",
+      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q8_0.gguf",
+      "DBNet text detection (ResNet-18+FPNC, ICDAR2015)", "13 MB", "apache-2.0",
       "https://huggingface.co/cstr/dbnet-ic15-GGUF" },
 
     { "ppocrv6-tiny-det", "PP-OCRv6_tiny_det-f16.gguf",
@@ -1447,7 +1447,17 @@ static bool file_exists(const std::string & path) {
 
 static void mkdirs(const std::string & path) {
     std::error_code ec;
-    std::filesystem::create_directories(std::filesystem::path(path), ec);
+    const std::filesystem::path requested(path);
+    const std::filesystem::file_status link_status = std::filesystem::symlink_status(requested, ec);
+    if (!ec && std::filesystem::is_symlink(link_status)) {
+        const std::filesystem::path target = std::filesystem::read_symlink(requested, ec);
+        if (!ec) {
+            const std::filesystem::path resolved = target.is_absolute() ? target : requested.parent_path() / target;
+            std::filesystem::create_directories(resolved, ec);
+            return;
+        }
+    }
+    std::filesystem::create_directories(requested, ec);
 }
 
 static long long file_size(const std::string & path) {
@@ -1474,9 +1484,8 @@ static bool download_file(const std::string & source_url, const std::string & de
     // and a missing cache dir otherwise fails with an opaque "No such file or
     // directory" while writing the .tmp.
     {
-        std::error_code mkdir_ec;
         std::filesystem::path parent = std::filesystem::path(dest_path).parent_path();
-        if (!parent.empty()) std::filesystem::create_directories(parent, mkdir_ec);
+        if (!parent.empty()) mkdirs(parent.string());
     }
 
     // Resume-aware: if a previous attempt left a partial .tmp, log the

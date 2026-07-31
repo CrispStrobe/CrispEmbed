@@ -205,6 +205,9 @@ list(APPEND CRISPEMBED_SOURCES src/ppocrv6_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_det.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_crop.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline_pool.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_region_router.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_orchestrator.cpp)
 list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/surya_det.cpp)
@@ -427,11 +430,20 @@ target_link_libraries(test-surya-det-diff PRIVATE crispembed)
 add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
 target_link_libraries(test-ocr-detect PRIVATE crispembed)
 
+add_executable(test-ocr-geometry tests/test_ocr_geometry.cpp)
+target_link_libraries(test-ocr-geometry PRIVATE crispembed)
+
+add_executable(test-ocr-crop tests/test_ocr_crop.cpp)
+target_link_libraries(test-ocr-crop PRIVATE crispembed)
+
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
 add_executable(test-ppocrv6-det-diff tests/test_ppocrv6_det_diff.cpp)
 target_link_libraries(test-ppocrv6-det-diff PRIVATE crispembed)
+
+add_executable(test-ocr-region-router tests/test_ocr_region_router.cpp)
+target_link_libraries(test-ocr-region-router PRIVATE crispembed)
 
 add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
 target_link_libraries(test-ocr-recognize PRIVATE crispembed)
@@ -490,6 +502,9 @@ target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)
 
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
+
+add_executable(test-ocr-pipeline-pool tests/test_ocr_pipeline_pool.cpp)
+target_link_libraries(test-ocr-pipeline-pool PRIVATE crispembed)
 
 add_executable(test-qwen2vl tests/test_qwen2vl.cpp)
 target_link_libraries(test-qwen2vl PRIVATE crispembed)

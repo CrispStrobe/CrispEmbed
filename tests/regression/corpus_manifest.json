@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "policy": "Every production stage gets at least one real public-domain/CC0 input; synthetic/reference inputs remain deterministic unit fixtures only.",
+  "stages": {
+    "text_detection": [
+      "cc0/receipt_example.png",
+      "cc0/simple_form.png"
+    ],
+    "text_recognition": [
+      "cc0/receipt_example.png",
+      "cc0/arabic_printed_line.png"
+    ],
+    "layout_detection": [
+      "cc0/receipt_example.png",
+      "cc0/simple_form.png",
+      "cc0/simple_table.jpg"
+    ],
+    "table_structure": [
+      "cc0/simple_table.jpg"
+    ],
+    "cleanup_deskew_binarize": [
+      "cc0/receipt_historical.png",
+      "cc0/arabic_handwriting.jpg"
+    ],
+    "orientation": [
+      "cc0/receipt_example.png",
+      "cc0/handwritten_letter.jpg"
+    ],
+    "handwriting": [
+      "cc0/arabic_handwriting.jpg",
+      "cc0/handwritten_letter.jpg"
+    ],
+    "multilingual": [
+      "cc0/arabic_printed_line.png",
+      "cc0/arabic_handwriting.jpg"
+    ],
+    "super_resolution": [
+      "cc0/receipt_historical.png",
+      "cc0/arabic_handwriting.jpg"
+    ],
+    "pdf_page_routing": [
+      "scan_page_pd.png"
+    ],
+    "formula": [
+      "cc0/public_domain_formula_photo.jpg",
+      "formula_quadratic.png"
+    ],
+    "music_omr": [
+      "cc0/public_domain_sheet_music.jpg",
+      "staff_smt.png",
+      "staff_flova.png",
+      "staff_tromr.jpg"
+    ],
+    "german": [
+      "cc0/german_official_document.jpg",
+      "cc0/german_official_print.jpg",
+      "cc0/german_kurrent_handwriting.jpg"
+    ]
+  },
+  "gold_status": {
+    "cc0": "source/license/checksum verified; transcription pending human verification",
+    "existing_reference": "deterministic model/reference fixture; not a real-world quality score"
+  }
+}

@@ -81,6 +81,22 @@ static void test_default_config() {
     }
 }
 
+static void test_structured_capability_validation() {
+    printf("── structured capability validation ──\n");
+    using namespace ocr_orchestrator;
+
+    config tables;
+    tables.route_tables = true;
+    context * ctx = nullptr;
+    CHECK(!load(&ctx, tables), "tables require configured layout and table models");
+    CHECK(ctx == nullptr, "failed capability validation does not allocate context");
+
+    config formulas;
+    formulas.route_formulas = true;
+    CHECK(!load(&ctx, formulas), "formulas require configured layout and formula models");
+    CHECK(ctx == nullptr, "formula validation does not allocate context");
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // 2. Source-type classifier
 // ═══════════════════════════════════════════════════════════════════════
@@ -184,6 +200,8 @@ static void test_accept_gate() {
         CHECK(load(&ctx, cfg), "load succeeds with no models");
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 1, "single stage tried");
+        CHECK(r.page_width == 100 && r.page_height == 100, "result carries page dimensions");
+        CHECK(r.routing.text_indices.empty(), "empty OCR result has empty routing plan");
         CHECK(r.full_text.empty(), "empty text (no models)");
         CHECK(r.mean_confidence == 0.0f, "zero confidence (no models)");
         ocr_orchestrator::free(ctx);
@@ -479,6 +497,9 @@ static void test_c_api() {
     CHECK(ctx != nullptr, "C API init with NULL models succeeds");
 
     if (ctx) {
+        crispembed_ocr_capabilities caps{};
+        CHECK(crispembed_ocr_pipeline_capabilities(ctx, &caps) == 1, "C API capabilities query succeeds");
+        CHECK(caps.layout == 0 && caps.tables == 0 && caps.formulas == 0, "default C API has no structured backends");
         // Run on a synthetic image → no crash, returns empty
         std::vector<uint8_t> img(100 * 100 * 3, 255);
         std::string path = write_temp(img, 100, 100, 3, "capi_test");
@@ -648,6 +669,7 @@ static void test_punctuation() {
 
 static int crispembed_test_main() {
     test_default_config();
+    test_structured_capability_validation();
     test_classifier();
     test_accept_gate();
     test_multi_stage();

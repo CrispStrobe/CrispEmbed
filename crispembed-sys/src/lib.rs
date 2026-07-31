@@ -49,6 +49,7 @@ pub struct CrispembedOcrResult {
     pub confidence: f32,
     pub text: *const c_char,
     pub text_len: c_int,
+    pub orientation_corrected: c_int,
 }
 
 /// Flat config for the OCR pipeline orchestrator (slice A: DBNet+TrOCR).
@@ -68,14 +69,20 @@ pub struct CrispembedOcrPipelineParams {
     pub lid_model: *const c_char,
     pub truecase_model: *const c_char,
     pub tess_model_dir: *const c_char,
+    pub layout_model: *const c_char,
+    pub table_model: *const c_char,
+    pub formula_model: *const c_char,
+    pub route_tables: c_int,
+    pub route_formulas: c_int,
+    pub image_text_fallback: c_int,
 }
 
 /// One fully-specified OCR pipeline stage (full per-stage builder). Field order
 /// must match `crispembed_ocr_stage` in crispembed.h exactly.
 #[repr(C)]
 pub struct CrispembedOcrStage {
-    pub source_type: c_int,   // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: c_int,        // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr 12=qwen3vl 13=smoldocling
+    pub source_type: c_int, // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    pub engine: c_int,      // 0..13 existing engines, 14=unified metadata-dispatched GGUF
     pub model_a: *const c_char,
     pub model_b: *const c_char,
     pub cleanup_enabled: c_int,
@@ -639,6 +646,14 @@ extern "C" {
         out_mean_confidence: *mut c_float,
     ) -> *const CrispembedOcrResult;
 
+    pub fn crispembed_ocr_pipeline_reading_order(
+        ctx: *mut c_void,
+        out_n: *mut c_int,
+    ) -> *const c_int;
+
+    pub fn crispembed_ocr_pipeline_markdown(ctx: *mut c_void, out_len: *mut c_int)
+        -> *const c_char;
+
     pub fn crispembed_ocr_pipeline_free(ctx: *mut c_void);
 
     /// Full per-stage builder: a flat array of stages grouped into per-source-
@@ -662,10 +677,7 @@ extern "C" {
 
     /// Initialize a standalone ViT context from a SigLIP/CLIP GGUF model.
     /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
-    pub fn crispembed_vit_init(
-        model_path: *const c_char,
-        n_threads: c_int,
-    ) -> *mut VitContext;
+    pub fn crispembed_vit_init(model_path: *const c_char, n_threads: c_int) -> *mut VitContext;
 
     /// Returns the embedding dimension produced by the ViT model.
     pub fn crispembed_vit_dim(ctx: *const VitContext) -> c_int;
@@ -697,10 +709,7 @@ extern "C" {
 
     /// Load a NER model from GGUF. Auto-detects architecture.
     /// Returns NULL on failure.
-    pub fn crispembed_ner_init(
-        model_path: *const c_char,
-        n_threads: c_int,
-    ) -> *mut NerContext;
+    pub fn crispembed_ner_init(model_path: *const c_char, n_threads: c_int) -> *mut NerContext;
 
     /// Free NER context. Safe to call with NULL.
     pub fn crispembed_ner_free(ctx: *mut NerContext);
@@ -869,10 +878,8 @@ pub struct ScanCleanupParams {
 extern "C" {
     pub fn crispembed_scan_cleanup_defaults() -> ScanCleanupParams;
 
-    pub fn crispembed_scan_cleanup_init(
-        model_path: *const c_char,
-        n_threads: c_int,
-    ) -> *mut c_void;
+    pub fn crispembed_scan_cleanup_init(model_path: *const c_char, n_threads: c_int)
+        -> *mut c_void;
 
     pub fn crispembed_scan_cleanup_free(ctx: *mut c_void);
 
@@ -1109,45 +1116,67 @@ extern "C" {
     /// PDF DPI profiling — analyse embedded images in a PDF page.
     /// Returns 0 on success, -1 on error.
     pub fn crispembed_pdf_page_dpi(
-        pdf_path: *const c_char, page: c_int,
-        out_dpi: *mut f32, out_n_images: *mut c_int,
+        pdf_path: *const c_char,
+        page: c_int,
+        out_dpi: *mut f32,
+        out_n_images: *mut c_int,
     ) -> c_int;
 
     pub fn crispembed_dewarp(
-        gray: *const u8, w: c_int, h: c_int,
-        out: *mut u8, out_w: *mut c_int, out_h: *mut c_int,
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        out: *mut u8,
+        out_w: *mut c_int,
+        out_h: *mut c_int,
     ) -> c_int;
 
     pub fn crispembed_tps_dewarp(
-        gray: *const u8, w: c_int, h: c_int,
-        src_x: *const f32, src_y: *const f32,
-        dst_x: *const f32, dst_y: *const f32, n: c_int,
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        src_x: *const f32,
+        src_y: *const f32,
+        dst_x: *const f32,
+        dst_y: *const f32,
+        n: c_int,
         out: *mut u8,
     ) -> c_int;
     pub fn crispembed_tps_auto_dewarp(
-        gray: *const u8, w: c_int, h: c_int,
-        model_path: *const c_char, out: *mut u8,
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        model_path: *const c_char,
+        out: *mut u8,
     ) -> c_int;
 
     pub fn crispembed_cc_detect(
-        gray: *const u8, w: c_int, h: c_int,
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
         out_n: *mut c_int,
     ) -> *mut CrispembedOcrResult;
 
     pub fn crispembed_find_skew(
-        gray: *const u8, w: c_int, h: c_int,
-        angle: *mut f32, confidence: *mut f32,
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        angle: *mut f32,
+        confidence: *mut f32,
     ) -> c_int;
 
-    pub fn crispembed_adaptive_binarize(
-        gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+    pub fn crispembed_adaptive_binarize(gray: *const u8, w: c_int, h: c_int, out: *mut u8);
 
-    pub fn crispembed_background_norm(
-        gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+    pub fn crispembed_background_norm(gray: *const u8, w: c_int, h: c_int, out: *mut u8);
 
     pub fn crispembed_despeckle(
-        gray: *const u8, w: c_int, h: c_int,
-        max_w: c_int, max_h: c_int, out: *mut u8);
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        max_w: c_int,
+        max_h: c_int,
+        out: *mut u8,
+    );
 
     // ── Table structure recognition ──
     pub fn crispembed_table_parse_init(
@@ -1210,20 +1239,34 @@ extern "C" {
     pub fn crispembed_hmer_ocr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
     pub fn crispembed_hmer_ocr_free(ctx: *mut c_void);
     pub fn crispembed_hmer_ocr_recognize(
-        ctx: *mut c_void, pixels: *const u8, width: c_int, height: c_int, channels: c_int,
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
     ) -> *const c_char;
     pub fn crispembed_hmer_ocr_recognize_gray(
-        ctx: *mut c_void, gray: *const u8, width: c_int, height: c_int,
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
     ) -> *const c_char;
 
     // ── BTTR handwritten math OCR ──
     pub fn crispembed_bttr_ocr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
     pub fn crispembed_bttr_ocr_free(ctx: *mut c_void);
     pub fn crispembed_bttr_ocr_recognize(
-        ctx: *mut c_void, pixels: *const u8, width: c_int, height: c_int, channels: c_int,
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
     ) -> *const c_char;
     pub fn crispembed_bttr_ocr_recognize_gray(
-        ctx: *mut c_void, gray: *const u8, width: c_int, height: c_int,
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
     ) -> *const c_char;
 
     // ── CLIP text encoder ──
@@ -1231,18 +1274,28 @@ extern "C" {
     pub fn crispembed_clip_text_free(ctx: *mut c_void);
     pub fn crispembed_clip_text_dim(ctx: *const c_void) -> c_int;
     pub fn crispembed_clip_text_encode(
-        ctx: *mut c_void, text: *const c_char, out_n: *mut c_int,
+        ctx: *mut c_void,
+        text: *const c_char,
+        out_n: *mut c_int,
     ) -> *const c_float;
 
     // ── Text detection (DBNet/Surya) ──
     pub fn crispembed_text_det_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
     pub fn crispembed_text_det_free(ctx: *mut c_void);
     pub fn crispembed_text_det(
-        ctx: *mut c_void, pixels: *const u8, width: c_int, height: c_int, channels: c_int,
-        text_threshold: c_float, low_threshold: c_float, out_n: *mut c_int,
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        text_threshold: c_float,
+        low_threshold: c_float,
+        out_n: *mut c_int,
     ) -> *const CrispembedTextDetResult;
     pub fn crispembed_text_det_heatmap(
-        ctx: *mut c_void, out_h: *mut c_int, out_w: *mut c_int,
+        ctx: *mut c_void,
+        out_h: *mut c_int,
+        out_w: *mut c_int,
     ) -> *const c_float;
 
     // ── Punctuation restoration ──
@@ -1252,27 +1305,41 @@ extern "C" {
 
     // ── ColBERT scoring ──
     pub fn crispembed_colbert_score(
-        query_vecs: *const c_float, n_query: c_int,
-        doc_vecs: *const c_float, n_doc: c_int,
+        query_vecs: *const c_float,
+        n_query: c_int,
+        doc_vecs: *const c_float,
+        n_doc: c_int,
         dim: c_int,
     ) -> c_float;
     pub fn crispembed_colbert_score_batch(
-        query_vecs: *const c_float, n_query: c_int,
-        doc_vecs_list: *const *const c_float, doc_n_tokens: *const c_int,
-        n_docs: c_int, dim: c_int, out_scores: *mut c_float,
+        query_vecs: *const c_float,
+        n_query: c_int,
+        doc_vecs_list: *const *const c_float,
+        doc_n_tokens: *const c_int,
+        n_docs: c_int,
+        dim: c_int,
+        out_scores: *mut c_float,
     ) -> c_int;
 
     // ── Raw token encoding ──
     pub fn crispembed_encode_tokens_raw(
-        ctx: *mut CrispembedContext, tokens: *const c_int, n_tokens: c_int,
+        ctx: *mut CrispembedContext,
+        tokens: *const c_int,
+        n_tokens: c_int,
         out_n: *mut c_int,
     ) -> *const c_float;
 
     // ── OCR pipeline detected language ──
-    pub fn crispembed_ocr_pipeline_detected_lang(ctx: *mut c_void, out_confidence: *mut c_float) -> *const c_char;
+    pub fn crispembed_ocr_pipeline_detected_lang(
+        ctx: *mut c_void,
+        out_confidence: *mut c_float,
+    ) -> *const c_char;
 
     // ── OCR pipeline per-region / per-character confidence (last run) ──
-    pub fn crispembed_ocr_pipeline_region_rec_confidence(ctx: *mut c_void, region_idx: c_int) -> c_float;
+    pub fn crispembed_ocr_pipeline_region_rec_confidence(
+        ctx: *mut c_void,
+        region_idx: c_int,
+    ) -> c_float;
     pub fn crispembed_ocr_pipeline_region_char_conf(
         ctx: *mut c_void,
         region_idx: c_int,
