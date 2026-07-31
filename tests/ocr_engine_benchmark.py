@@ -104,6 +104,8 @@ def model_is_complete(entry: dict, path: Path) -> bool:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--binary", default=str(ROOT / "build/crispembed"))
+    ap.add_argument("--gpu-backend", default="auto",
+                    help="backend passed to crispembed (auto, metal, cpu, ...)")
     ap.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR))
     ap.add_argument("--output", default="")
     ap.add_argument("--timeout", type=float, default=180)
@@ -153,6 +155,8 @@ def main() -> int:
                        "--ocr-det", str(detector_path), "--ocr-rec", str(model)]
         else:
             command = [args.binary, "-m", str(model), "--ocr", str(image)]
+        if args.gpu_backend:
+            command[1:1] = ["--gpu-backend", args.gpu_backend]
         timings, outputs = [], []
         errors = []
         for _ in range(max(1, args.repeats)):
