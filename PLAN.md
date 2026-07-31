@@ -176,7 +176,9 @@ Required Fraktur implementation sequence:
    full-page `german_official_print.jpg`; compare native GGUF, Python/
    Tesseract, and system Tesseract `-l frk` outputs with CER/WER where an
    oracle exists. Preserve `ſ`, `ß`, ligatures, and Unicode normalization in
-   the comparison.
+   the comparison. **In progress:** the full-page harness now groups DBNet
+   fragments into 21 line regions (down from 111 word-like regions); native
+   versus system-`frk` normalized CER baseline is 0.238 on the current fixture.
 4. Run crispasr-diff-style intermediate parity for the converted `frk` model,
    then test F32, head-only Q8, and debug Q4. Do not publish a quant until
    the Fraktur crop remains readable and the output-layer parity gate passes.
