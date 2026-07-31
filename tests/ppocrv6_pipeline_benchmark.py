@@ -25,32 +25,37 @@ def main() -> int:
     parser.add_argument("--test-binary", default="build/test-ocr-orchestrator", type=Path)
     parser.add_argument("--models-dir", required=True, type=Path)
     parser.add_argument("--json-out", type=Path)
+    parser.add_argument("--variants", nargs="+", default=["tiny", "small", "medium"],
+                        choices=["tiny", "small", "medium"])
     args = parser.parse_args()
-    required = (
-        "PP-OCRv6_tiny_det-f16.gguf",
-        "PP-OCRv6_tiny_rec-q8-head.gguf",
-        "PP-LCNet_x1_0_textline_ori-f16.gguf",
-    )
-    missing = [name for name in required if not (args.models_dir / name).is_file()]
-    if missing:
-        parser.error("missing required model(s): " + ", ".join(missing))
-    env = os.environ.copy()
-    env["CRISPEMBED_MODELS_DIR"] = str(args.models_dir)
-    proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False)
-    rows = []
-    for line in proc.stdout.splitlines():
-        match = ROW.match(line)
-        if match:
-            row = match.groupdict()
-            row["regions"] = int(row["regions"])
-            row["chars"] = int(row["chars"])
-            row["confidence"] = float(row["confidence"])
-            rows.append(row)
-    if proc.returncode != 0:
-        raise SystemExit(f"native PP-OCRv6 regression failed (exit {proc.returncode})\n{proc.stderr[-2000:]}")
-    if len(rows) != 10:
-        raise SystemExit(f"expected 10 PP-OCRv6 benchmark rows, got {len(rows)}")
-    result = {"version": 1, "engine": "ppocrv6", "orientation": "pplcnet-0-180", "rows": rows}
+    all_rows = []
+    for variant in args.variants:
+        required = (f"PP-OCRv6_{variant}_det-f16.gguf", f"PP-OCRv6_{variant}_rec-q8-head.gguf",
+                    "PP-LCNet_x1_0_textline_ori-f16.gguf")
+        missing = [name for name in required if not (args.models_dir / name).is_file()]
+        if missing:
+            parser.error(f"{variant}: missing required model(s): " + ", ".join(missing))
+        env = os.environ.copy()
+        env["CRISPEMBED_MODELS_DIR"] = str(args.models_dir)
+        env["CRISPEMBED_PPOCRV6_VARIANT"] = variant
+        proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False)
+        rows = []
+        for line in proc.stdout.splitlines():
+            match = ROW.match(line)
+            if match:
+                row = match.groupdict()
+                row["variant"] = variant
+                row["regions"] = int(row["regions"])
+                row["chars"] = int(row["chars"])
+                row["confidence"] = float(row["confidence"])
+                rows.append(row)
+        if proc.returncode != 0:
+            raise SystemExit(f"native PP-OCRv6 {variant} regression failed (exit {proc.returncode})\n"
+                             f"{proc.stderr[-2000:]}")
+        if len(rows) != 10:
+            raise SystemExit(f"expected 10 PP-OCRv6 {variant} benchmark rows, got {len(rows)}")
+        all_rows.extend(rows)
+    result = {"version": 1, "engine": "ppocrv6", "orientation": "pplcnet-0-180", "rows": all_rows}
     payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
     if args.json_out:
         args.json_out.parent.mkdir(parents=True, exist_ok=True)
