@@ -31,6 +31,12 @@ struct prepare_options {
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,
                              int crop_h, int padding, int * out_width, int * out_height);
 
+// Perspective-rectify an ordered or unordered quadrilateral (TL, TR, BR, BL
+// after canonicalization) into a recognizer crop.  This mirrors the crop
+// contract used by PaddleOCR/RapidOCR and preserves rotated text geometry.
+std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
+                                  const float qy[4], int padding, int * out_width, int * out_height);
+
 // Convert an extracted crop to one shared recognizer geometry. The function
 // is deterministic, does not mutate the input, and supports RGB or grayscale
 // output contracts. It is deliberately separate from model-specific tensor
