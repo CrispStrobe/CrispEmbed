@@ -43,6 +43,37 @@ static std::vector<line_box> group_lines(std::vector<ocr_detect::text_box> boxes
     return lines;
 }
 
+static std::vector<line_box> order_words(const std::vector<ocr_detect::text_box> & boxes) {
+    std::vector<std::vector<line_box>> groups;
+    for (const auto & b : boxes) {
+        const float cy = b.y + b.h * 0.5f;
+        int match = -1;
+        for (int i = 0; i < (int)groups.size(); ++i) {
+            float y0 = groups[i].front().y0, y1 = groups[i].front().y1;
+            for (const auto & word : groups[i]) {
+                y0 = std::min(y0, word.y0);
+                y1 = std::max(y1, word.y1);
+            }
+            if (std::abs(cy - (y0 + y1) * 0.5f) <= 0.5f * std::max(y1 - y0, b.h)) {
+                match = i;
+                break;
+            }
+        }
+        line_box word{ b.x, b.y, b.x + b.w, b.y + b.h };
+        if (match < 0)
+            groups.push_back({ word });
+        else
+            groups[match].push_back(word);
+    }
+    std::sort(groups.begin(), groups.end(), [](const auto & a, const auto & b) { return a.front().y0 < b.front().y0; });
+    std::vector<line_box> ordered;
+    for (auto & group : groups) {
+        std::sort(group.begin(), group.end(), [](const auto & a, const auto & b) { return a.x0 < b.x0; });
+        ordered.insert(ordered.end(), group.begin(), group.end());
+    }
+    return ordered;
+}
+
 int main(int argc, char ** argv) {
     if (argc != 4) {
         std::fprintf(stderr, "usage: %s <dbnet.gguf> <easyocr.gguf> <image>\n", argv[0]);
@@ -62,9 +93,7 @@ int main(int argc, char ** argv) {
             std::getenv("EASYOCR_DBNET_MODE") && std::string(std::getenv("EASYOCR_DBNET_MODE")) == "words";
         std::vector<line_box> lines = word_mode ? std::vector<line_box>() : group_lines(std::move(boxes));
         if (word_mode) {
-            for (const auto & b : boxes) lines.push_back({ b.x, b.y, b.x + b.w, b.y + b.h });
-            std::sort(lines.begin(), lines.end(),
-                      [](const auto & a, const auto & b) { return a.y0 == b.y0 ? a.x0 < b.x0 : a.y0 < b.y0; });
+            lines = order_words(boxes);
         }
         std::printf("dbnet-easyocr mode=%s units=%zu\n", word_mode ? "words" : "lines", lines.size());
         for (size_t i = 0; i < lines.size(); ++i) {
