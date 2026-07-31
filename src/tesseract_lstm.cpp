@@ -189,6 +189,26 @@ static const float * tensor_f32(tesseract_lstm_context * ctx, struct ggml_tensor
     return buf.data();
 }
 
+static bool tensor_i8(tesseract_lstm_context * ctx, struct ggml_tensor * t, std::vector<int8_t> & out) {
+    if (!t || t->type != GGML_TYPE_I8) return false;
+    out.resize(ggml_nelements(t));
+    if (t->buffer) ggml_backend_tensor_get(t, out.data(), 0, out.size());
+    else memcpy(out.data(), t->data, out.size());
+    return true;
+}
+
+template <typename TensorMap>
+static bool optional_source_int8(tesseract_lstm_context * ctx, const TensorMap & tensors,
+                                 const char * raw_name, const char * scale_name,
+                                 std::vector<int8_t> & raw, std::vector<float> & scales) {
+    auto ri = tensors.find(raw_name), si = tensors.find(scale_name);
+    if (ri == tensors.end() || si == tensors.end()) return false;
+    if (!tensor_i8(ctx, ri->second, raw)) return false;
+    const float * s = tensor_f32(ctx, si->second);
+    scales.assign(s, s + ggml_nelements(si->second));
+    return true;
+}
+
 // ---------------------------------------------------------------------------
 // Model loading
 // ---------------------------------------------------------------------------
@@ -246,6 +266,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->conv_w.assign(cw_f, cw_f + conv_ni * ctx->conv_out);
     ctx->conv_b.assign(cb_f, cb_f + ctx->conv_out);
     quantize_rows(ctx->conv_w, ctx->conv_out, conv_ni, ctx->conv_w_q, ctx->conv_w_scale);
+    (void)optional_source_int8(ctx, T, "conv.weight.int8", "conv.weight.int8_scale",
+                               ctx->conv_w_q, ctx->conv_w_scale);
 
     // LSTM layers
     ctx->lstm.resize(ctx->num_lstm_layers);
@@ -273,6 +295,13 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
         lw.bias.assign(b_f, b_f + gate_size);
         quantize_rows(lw.W_ih, gate_size, lw.ni, lw.W_ih_q, lw.W_ih_scale);
         quantize_rows(lw.W_hh, gate_size, lw.ns, lw.W_hh_q, lw.W_hh_scale);
+        char raw_name[128], scale_name[128];
+        snprintf(raw_name, sizeof(raw_name), "lstm.%d.weight_ih.int8", i);
+        snprintf(scale_name, sizeof(scale_name), "lstm.%d.weight_ih.int8_scale", i);
+        (void)optional_source_int8(ctx, T, raw_name, scale_name, lw.W_ih_q, lw.W_ih_scale);
+        snprintf(raw_name, sizeof(raw_name), "lstm.%d.weight_hh.int8", i);
+        snprintf(scale_name, sizeof(scale_name), "lstm.%d.weight_hh.int8_scale", i);
+        (void)optional_source_int8(ctx, T, raw_name, scale_name, lw.W_hh_q, lw.W_hh_scale);
     }
 
     // Output FC
@@ -286,6 +315,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->out_w.assign(ow_f, ow_f + out_ni * out_no);
     ctx->out_b.assign(ob_f, ob_f + out_no);
     quantize_rows(ctx->out_w, out_no, out_ni, ctx->out_w_q, ctx->out_w_scale);
+    (void)optional_source_int8(ctx, T, "output.weight.int8", "output.weight.int8_scale",
+                               ctx->out_w_q, ctx->out_w_scale);
 
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
