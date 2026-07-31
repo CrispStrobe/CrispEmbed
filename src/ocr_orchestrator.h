@@ -106,6 +106,11 @@ struct stage {
     engine_params params;
     std::string model_a; // det / single model GGUF (resolved by caller)
     std::string model_b; // rec model GGUF (engines that need a pair)
+    // Optional line-orientation model.  PP-OCRv6 uses PP-LCNet here; keeping
+    // it separate from the recognizer lets the stage report an explicit
+    // classifier fallback instead of silently treating orientation as part of
+    // recognition.
+    std::string model_c;
 };
 
 // Ordered stages for one source type. First passing stage wins; otherwise the
