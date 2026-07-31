@@ -84,11 +84,11 @@ struct context {
     config cfg;
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
-    ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
-    ppocrv6_det::context * ppdet = nullptr;    // PP-OCRv6 detector
-    ppocrv6_ocr_context * pprec = nullptr;     // PP-OCRv6 recognizer
+    ocr_pipeline::context * dbnet = nullptr;        // DBNet detection + TrOCR recognition
+    ppocrv6_det::context * ppdet = nullptr;         // PP-OCRv6 detector
+    ppocrv6_ocr_context * pprec = nullptr;          // PP-OCRv6 recognizer
     pplcnet_orientation::context * ppori = nullptr; // optional PP-LCNet line orientation
-    layout_detect::context * layout = nullptr; // optional document layout
+    layout_detect::context * layout = nullptr;      // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
@@ -373,7 +373,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
         if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
-        if (!ctx->ppori && !st.model_c.empty()) ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
+        if (!ctx->ppori && !st.model_c.empty())
+            ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
         if (!ctx->ppdet || !ctx->pprec) return {};
         // PP-OCRv6's official predictor applies resize_long=960/max-side and
         // rounds dimensions to a 32-pixel grid before inference.  Do not use
