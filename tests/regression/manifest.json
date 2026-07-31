@@ -1044,10 +1044,10 @@
     {
       "name": "ppocrv6-tiny",
       "engine": "ppocrv6",
-      "_comment": "PP-OCRv6 tiny detector + recognizer through the native detector→crop→recognizer orchestrator. Both F16 and policy-q4 artifacts are stored on the backup volume; expected_text remains null until a CC0 line fixture is restored.",
+      "_comment": "PP-OCRv6 tiny detector + quality recognizer through the native detector→crop→recognizer orchestrator. The recognizer is F32-backed with a head-only Q8 policy; expected_text remains null until a CC0 line fixture is restored.",
       "gguf": {
-        "repo": "mlx-community/PP-OCRv6-tiny-rec-GGUF",
-        "file": "PP-OCRv6_tiny_rec-f16.gguf",
+        "repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF",
+        "file": "PP-OCRv6_tiny_rec-q8-head.gguf",
         "revision": "main"
       },
       "detector": {
@@ -1060,7 +1060,7 @@
       "diff": {
         "binary": "test-ppocrv6-rec",
         "ref": {
-          "repo": "mlx-community/PP-OCRv6-tiny-rec-GGUF",
+          "repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF",
           "file": "PP-OCRv6_tiny_rec-fox-ref.gguf",
           "revision": "main"
         },
@@ -1071,10 +1071,10 @@
     {
       "name": "ppocrv6-small",
       "engine": "ppocrv6",
-      "_comment": "PP-OCRv6 small detector + recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
+      "_comment": "PP-OCRv6 small detector + quality recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
       "gguf": {
-        "repo": "mlx-community/PP-OCRv6-small-rec-GGUF",
-        "file": "PP-OCRv6_small_rec-f16.gguf",
+        "repo": "mlx-community/PP-OCRv6_small_rec-GGUF",
+        "file": "PP-OCRv6_small_rec-q8-head.gguf",
         "revision": "main"
       },
       "detector": {
@@ -1087,7 +1087,7 @@
       "diff": {
         "binary": "test-ppocrv6-rec",
         "ref": {
-          "repo": "mlx-community/PP-OCRv6-small-rec-GGUF",
+          "repo": "mlx-community/PP-OCRv6_small_rec-GGUF",
           "file": "PP-OCRv6_small_rec-fox-ref.gguf",
           "revision": "main"
         },
@@ -1098,10 +1098,10 @@
     {
       "name": "ppocrv6-medium",
       "engine": "ppocrv6",
-      "_comment": "PP-OCRv6 medium detector + recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
+      "_comment": "PP-OCRv6 medium detector + quality recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
       "gguf": {
-        "repo": "mlx-community/PP-OCRv6-medium-rec-GGUF",
-        "file": "PP-OCRv6_medium_rec-f16.gguf",
+        "repo": "mlx-community/PP-OCRv6_medium_rec-GGUF",
+        "file": "PP-OCRv6_medium_rec-q8-head.gguf",
         "revision": "main"
       },
       "detector": {
@@ -1114,7 +1114,7 @@
       "diff": {
         "binary": "test-ppocrv6-rec",
         "ref": {
-          "repo": "mlx-community/PP-OCRv6-medium-rec-GGUF",
+          "repo": "mlx-community/PP-OCRv6_medium_rec-GGUF",
           "file": "PP-OCRv6_medium_rec-fox-ref.gguf",
           "revision": "main"
         },
