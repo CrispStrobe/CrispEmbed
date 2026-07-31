@@ -195,6 +195,11 @@ recognizer and LayoutLM consumer.
 - [ ] Port and validate Tesseract recode/dictionary scoring separately from
       the now-proven network arithmetic; do not enable a production beam from
       the diagnostic implementation.
+- [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
+      prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
+      remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
+      top-N transition rules, and DAWG dictionary scoring are still not ported
+      or production-enabled.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages

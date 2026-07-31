@@ -422,6 +422,12 @@ downstream handoff parity, not detector-box similarity alone.
       the same `Brighton` path as official Tesseract. This closes arithmetic
       and preprocessing parity for this controlled line; recode/dictionary
       scoring and full-page segmentation remain separate gates.
+- [x] Preserve the serialized Tesseract recoder map/offsets in the runtime and
+      add an opt-in recoder-prefix legality layer to the diagnostic beam.
+      Width-25 constrained decoding reproduces `Brighton` on the official
+      crop with all 9 network diff stages still passing. Full RecodeBeamSearch
+      certainty aggregation and DAWG dictionary scoring remain pending and
+      are not enabled in production.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages

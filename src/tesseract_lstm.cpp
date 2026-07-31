@@ -108,6 +108,7 @@ struct tesseract_lstm_context {
 
     // Reverse recoder: output_class → unichar_id (-1 if unmapped)
     std::vector<int> output_to_unichar;
+    std::vector<std::vector<int>> recoder_codes;
 
     // Unicharset tokens
     std::vector<std::string> tokens;
@@ -201,6 +202,18 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // Reverse recoder
     std::vector<int> rev = core_gguf::kv_i32_array(meta, "tesseract_lstm.output_to_unichar");
     ctx->output_to_unichar = std::move(rev);
+    std::vector<int> recoder_flat = core_gguf::kv_i32_array(meta, "tesseract_lstm.recoder_map");
+    std::vector<int> recoder_offsets = core_gguf::kv_i32_array(meta, "tesseract_lstm.recoder_offsets");
+    if (recoder_offsets.size() >= 2) {
+        ctx->recoder_codes.reserve(recoder_offsets.size() - 1);
+        for (size_t i = 0; i + 1 < recoder_offsets.size(); ++i) {
+            const int begin = recoder_offsets[i];
+            const int end = recoder_offsets[i + 1];
+            if (begin >= 0 && end >= begin && end <= (int)recoder_flat.size()) {
+                ctx->recoder_codes.emplace_back(recoder_flat.begin() + begin, recoder_flat.begin() + end);
+            }
+        }
+    }
 
     // LSTM types
     ctx->lstm_types = core_gguf::kv_str_array(meta, "tesseract_lstm.lstm_types");
@@ -500,8 +513,34 @@ static float beam_add(float a, float b, bool viterbi) {
     return viterbi ? std::max(a, b) : log_add(a, b);
 }
 
+// Return whether a collapsed code prefix can be segmented into serialized
+// recoder entries, with the final entry optionally incomplete. This is the
+// legality layer of Tesseract's RecodeBeamSearch; dictionary/DAWG scoring is
+// intentionally separate and is not represented by this helper.
+static bool recode_prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
+                                bool allow_partial) {
+    if (codes.empty()) return true;
+    const int n = (int)prefix.size();
+    std::vector<uint8_t> reachable(n + 1, 0);
+    reachable[0] = 1;
+    for (int pos = 0; pos <= n; ++pos) {
+        if (!reachable[pos]) continue;
+        for (const auto & code : codes) {
+            if (code.empty() || pos + (int)code.size() > n) {
+                if (allow_partial && pos < n && !code.empty() && pos + (int)code.size() > n) {
+                    if (std::equal(prefix.begin() + pos, prefix.end(), code.begin())) return true;
+                }
+                continue;
+            }
+            if (std::equal(code.begin(), code.end(), prefix.begin() + pos)) reachable[pos + code.size()] = 1;
+        }
+    }
+    return reachable[n] != 0;
+}
+
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
-                                               int beam_width, bool viterbi) {
+                                               int beam_width, bool viterbi,
+                                               const std::vector<std::vector<int>> * recoder = nullptr) {
     std::vector<ctc_beam_state> beam(1);
     beam[0].p_blank = 0.0f;
     for (int t = 0; t < timesteps; ++t) {
@@ -527,13 +566,17 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
                     same.p_nonblank = beam_add(same.p_nonblank, state.p_nonblank + lp, viterbi);
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    auto & dst = find_or_add(extended);
-                    dst.p_nonblank = beam_add(dst.p_nonblank, state.p_blank + lp, viterbi);
+                    if (recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) {
+                        auto & dst = find_or_add(extended);
+                        dst.p_nonblank = beam_add(dst.p_nonblank, state.p_blank + lp, viterbi);
+                    }
                 } else {
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    auto & dst = find_or_add(extended);
-                    dst.p_nonblank = beam_add(dst.p_nonblank, total + lp, viterbi);
+                    if (recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) {
+                        auto & dst = find_or_add(extended);
+                        dst.p_nonblank = beam_add(dst.p_nonblank, total + lp, viterbi);
+                    }
                 }
             }
         }
@@ -546,6 +589,12 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     }
 
     if (beam.empty()) return {};
+    if (recoder != nullptr) {
+        for (const auto & state : beam) {
+            if (recode_prefix_legal(state.prefix, *recoder, false)) return state.prefix;
+        }
+        return {};
+    }
     return beam.front().prefix;
 }
 
@@ -717,7 +766,7 @@ static void forward(tesseract_lstm_context * ctx,
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
     bool beam_decoded = false;
     if (recode_width > 1) {
-        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, true);
+        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false, &ctx->recoder_codes);
         beam_decoded = true;
     } else if (beam_width > 1) {
         labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false);
