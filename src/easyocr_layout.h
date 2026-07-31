@@ -31,6 +31,11 @@ enum class ordering_mode {
 // EasyOCR-style y grouping into line crops.
 std::vector<region> group_lines(const std::vector<region> & regions);
 
+// DBNet emits fragmented horizontal regions on the current IC15 artifact.
+// This adapter deliberately groups by y-band without EasyOCR's horizontal-gap
+// split, preserving a complete line crop for the downstream CRNN.
+std::vector<region> group_dbnet_lines(const std::vector<region> & regions);
+
 // Tesseract/LayoutLM-style y-band grouping with left-to-right word order.
 std::vector<region> order_words(const std::vector<region> & regions);
 

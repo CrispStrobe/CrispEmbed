@@ -27,6 +27,7 @@ static int crispembed_test_main() {
     if (ordered.size() != 3 || ordered[0].x != 10 || ordered[1].x != 100 || ordered[2].line != 1) return 5;
     if (easyocr_layout::order_regions(regions, easyocr_layout::ordering_mode::lines).size() != 2) return 6;
     if (easyocr_layout::order_regions(regions, easyocr_layout::ordering_mode::words).size() != 3) return 7;
+    if (easyocr_layout::group_dbnet_lines(regions).size() != 2) return 8;
     std::printf("easyocr-layout PASS words=%zu normalized=%d,%d,%d,%d\n", words.size(), boxes[0].x0, boxes[0].y0,
                 boxes[0].x1, boxes[0].y1);
     return 0;
