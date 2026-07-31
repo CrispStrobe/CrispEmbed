@@ -7,7 +7,7 @@ static int crispembed_test_main() {
     const uint8_t pixels[] = {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
     }; // 3x2, RGB
-    int w = 0, h = 0;
+    int w = 0, h = 0, channels = 0;
     auto crop = ocr_crop::extract(pixels, 2, 3, 3, 1, 1, 1, 1, 1, &w, &h);
     assert(w == 2 && h == 3);
     assert(crop.size() == 18);
@@ -19,6 +19,23 @@ static int crispembed_test_main() {
     assert(!ocr_crop::orient_180_rgb(clipped, w, h));
     std::vector<uint8_t> gray((size_t)w * h, 255);
     assert(!ocr_crop::orient_180_gray(gray, w, h));
+
+    ocr_crop::prepare_options prep;
+    prep.target_height = 4;
+    prep.max_width = 6;
+    prep.grayscale = true;
+    auto prepared = ocr_crop::prepare(pixels, 2, 3, 3, prep, &w, &h, &channels);
+    assert(w == 3 && h == 4 && channels == 1);
+    assert(prepared.size() == 12);
+
+    prep = {};
+    prep.target_width = 6;
+    prep.target_height = 6;
+    prep.mode = ocr_crop::resize_mode::stretch;
+    prep.pad_to_target = true;
+    auto stretched = ocr_crop::prepare(pixels, 2, 3, 3, prep, &w, &h, &channels);
+    assert(w == 6 && h == 6 && channels == 3);
+    assert(stretched.size() == 108);
     return 0;
 }
 
