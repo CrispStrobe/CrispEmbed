@@ -23,7 +23,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation parity gates | **PENDING** |
 | 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **PENDING** |
 | 2026-07-31 | `main` | O11.4 OCR portfolio graph audit: port or explicitly classify CPU-bound FormulaNet, MixTeX, SmolDocling, HMER/BTTR/PosFormer, and VLM vision necks | **PENDING** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | O11.5 backend build/device matrix: Metal macOS, CUDA Linux, CPU reference; graph-compute smoke test landed, Metal/CUDA CI execution pending | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | O11.5 backend build/device matrix: Metal macOS, CUDA Linux, CPU reference; graph-compute smoke test is wired into Unix/Windows build CI, Metal/CUDA execution pending | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.6 graph performance/parity gates: per-engine latency, peak memory, GPU residency, cosine/logit parity, CER/WER, and no-harm quality thresholds | **PENDING** |
 | 2026-07-31 | `main` | O11.7 persistent graph and weight-cache optimization: reuse static shapes, scheduler buffers, dequantized critical weights, and batched line crops | **PENDING** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
