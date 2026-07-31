@@ -23,6 +23,6 @@
     {"name":"Unlimited-OCR","lane":"full-page-vlm-layout","runtime":"unlimited_ocr","fixture":"fox.png","status":"runnable","note":"M1 Metal live run succeeded from the system volume: 45,967 ms total, two regions, complete fox text."},
     {"name":"SmolDocling","lane":"full-page-doc-tags","runtime":"smoldocling_ocr","fixture":"fox.png","status":"runnable"},
     {"name":"Qari-OCR","lane":"arabic-vlm","runtime":"qwen2vl_ocr","fixture":"cc0/arabic_handwriting.jpg","status":"model-needed"},
-    {"name":"PP-OCRv6","lane":"document-det-rec","runtime":"metadata-dispatch","fixture":"cc0/german_official_document.jpg","status":"port/model-needed"}
+    {"name":"PP-OCRv6","lane":"document-det-rec","runtime":"metadata-dispatch","fixture":"fox.png","status":"runnable","note":"PP-OCRv6 tiny/small/medium detector + Q8-head recognizer live regressions pass through the public detector/recognizer C API."}
   ]
 }

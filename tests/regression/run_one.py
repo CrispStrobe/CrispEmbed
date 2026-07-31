@@ -41,6 +41,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -97,20 +98,36 @@ def hf_download(repo: str, file_in_repo: str, revision: str, dest_dir: Path,
     # process-wide /tmp is unavailable. Keep hub staging beside the external
     # artifact cache instead.
     dest_dir.mkdir(parents=True, exist_ok=True)
-    os.environ["TMPDIR"] = str(dest_dir)
+    # The HF/Xet client concatenates TMPDIR with a generated filename in one
+    # path. Keep the separator explicit; without it a sandbox path such as
+    # /tmp/crispembed-regression becomes /tmpcrispembed-regressionXXXX.
+    tmp_root = str(dest_dir) + os.sep
+    os.environ["TMPDIR"] = tmp_root
     import tempfile
-    tempfile.tempdir = str(dest_dir)
-    os.environ.setdefault("HF_HOME", str(dest_dir / ".hf"))
-    os.environ.setdefault("HF_HUB_CACHE", str(dest_dir / ".hf" / "hub"))
-    os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(dest_dir / ".hf" / "hub"))
-    os.environ.setdefault("HF_XET_CACHE", str(dest_dir / ".hf" / "xet"))
+    tempfile.tempdir = tmp_root
+    # Override inherited cache locations as well. CI runners can export a
+    # read-only /tmp cache, and huggingface_hub's symlink probe then creates
+    # malformed paths such as /tmpXXXX.
+    os.environ["HF_HOME"] = str(dest_dir / ".hf")
+    os.environ["HF_HUB_CACHE"] = str(dest_dir / ".hf" / "hub")
+    os.environ["HUGGINGFACE_HUB_CACHE"] = str(dest_dir / ".hf" / "hub")
+    os.environ["HF_XET_CACHE"] = str(dest_dir / ".hf" / "xet")
     from huggingface_hub import hf_hub_download
     from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
     token = os.environ.get("HF_TOKEN")
     try:
-        return Path(hf_hub_download(
+        # Download into the hub cache and copy the resolved blob into the
+        # regression directory.  Using ``local_dir`` makes huggingface_hub
+        # probe symlink support against the common parent (often /tmp), which
+        # is read-only in some CI/sandbox environments.
+        cached = Path(hf_hub_download(
             repo_id=repo, filename=file_in_repo, revision=revision,
-            local_dir=str(dest_dir), token=token))
+            cache_dir=str(dest_dir / ".hf" / "hub"), token=token))
+        target = dest_dir / file_in_repo
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if cached.resolve() != target.resolve():
+            shutil.copyfile(cached, target)
+        return target
     except (EntryNotFoundError, RepositoryNotFoundError) as e:
         if optional:
             print(f"  (optional artifact absent on HF: {repo}/{file_in_repo}) — skipping")

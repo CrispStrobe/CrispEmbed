@@ -1,9 +1,10 @@
 #include "easyocr_ocr.h"
 #include "stb_image.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 3) {
         fprintf(stderr, "usage: %s <easyocr.gguf> <image>\n", argv[0]);
         return 2;
@@ -27,4 +28,8 @@ int main(int argc, char ** argv) {
     easyocr_ocr_free(ctx);
     stbi_image_free(px);
     return n >= 0 ? 0 : 6;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
