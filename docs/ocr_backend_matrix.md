@@ -21,7 +21,10 @@ build alone does not promote a CPU implementation.
 | SMT / SMT++ / Polyphonic-TrOMR / Transcoda | ggml graph inference with backend selection | Yes, when backend enabled | O11.6 perf gate |
 | Classical cleanup, SR, dewarp | varies; several dedicated CPU paths | Partial | O11.3 benchmark before porting |
 
-The local diagnostic build used for CPU parity currently has `GGML_METAL=OFF`
-and `GGML_CUDA=OFF`. CI’s macOS release configuration enables Metal, but each
-row above still requires an engine-specific residency test before it may be
-described as GPU-accelerated.
+The default local diagnostic build used for CPU parity has `GGML_METAL=OFF`
+and `GGML_CUDA=OFF`. A separate macOS build with `GGML_METAL=ON` now passes
+the backend graph smoke on Apple M1, both in auto mode (`MTL0`) and with an
+explicit `test-backend-smoke metal` request. This validates backend/device
+selection only; it does not promote any OCR row to “Full graph” without an
+engine-specific residency and parity test. Explicit requests fail when the
+requested GPU is unavailable instead of silently passing on CPU.
