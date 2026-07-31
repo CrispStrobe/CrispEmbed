@@ -132,7 +132,29 @@ def main():
         block = block0.channel_conv2(block) + block_residual
         stem_values["block0_out"] = block
         backbone = model.model.backbone(tensor)
-        neck = model.model.neck(backbone)
+        if variant == "medium":
+            neck_model = model.model.neck
+            adjusted = [layer(feature) for layer, feature in zip(neck_model.input_channel_adjustment_convolution, backbone)]
+            top = [None] * 4
+            top[3] = adjusted[3]
+            for i in range(2, -1, -1):
+                top[i] = adjusted[i] + paddle.nn.functional.interpolate(top[i + 1], scale_factor=2, mode="nearest")
+            projected = [layer(top[i] if i < 3 else adjusted[3]) for i, layer in enumerate(neck_model.input_feature_projection_convolution)]
+            bottom = [projected[0]]
+            for i, layer in enumerate(neck_model.path_aggregation_head_convolution, 1):
+                bottom.append(projected[i] + layer(bottom[i - 1]))
+            lateral = [layer(projected[0] if i == 0 else bottom[i]) for i, layer in enumerate(neck_model.path_aggregation_lateral_convolution)]
+            refined = [block(feature) for block, feature in zip(neck_model.intraclass_blocks, lateral)]
+            for i in range(4):
+                stem_values[f"med_adjust{i}"] = adjusted[i]
+                stem_values[f"med_top{i}"] = top[i]
+                stem_values[f"med_project{i}"] = projected[i]
+                stem_values[f"med_bottom{i}"] = bottom[i]
+                stem_values[f"med_lateral{i}"] = lateral[i]
+                stem_values[f"med_refined{i}"] = refined[i]
+            neck = paddle.concat([paddle.nn.functional.interpolate(refined[i], scale_factor=neck_model.scale_factor_list[i], mode="nearest") if neck_model.scale_factor_list[i] > 1 else refined[i] for i in range(3, -1, -1)], axis=1)
+        else:
+            neck = model.model.neck(backbone)
         head_down = model.head.conv_down(neck)
         head_up_pre = model.head.conv_up.convolution(head_down)
         head_up = model.head.conv_up(head_down)

@@ -17,6 +17,19 @@ static int run(int argc, char ** argv) {
     auto boxes = ppocrv6_det::detect_file(ctx, argv[3], 0.2f);
     bool pass = true;
     for (const char * name :
+         { "med_adjust0",  "med_adjust1",  "med_adjust2",  "med_adjust3",  "med_top0",     "med_top1",
+           "med_top2",     "med_top3",     "med_project0", "med_project1", "med_project2", "med_project3",
+           "med_bottom0",  "med_bottom1",  "med_bottom2",  "med_bottom3",  "med_lateral0", "med_lateral1",
+           "med_lateral2", "med_lateral3", "med_refined0", "med_refined1", "med_refined2", "med_refined3" }) {
+        size_t n = 0;
+        const float * data = ppocrv6_det::last_stage(ctx, name, &n);
+        if (!data) continue;
+        auto r = ref.compare("ppocrv6." + std::string(name), data, n);
+        printf("%s cos_min=%.9f cos_mean=%.9f |mine|=%.9g |ref|=%.9g max_abs=%.9g rms=%.9g %s\n", name, r.cos_min,
+               r.cos_mean, r.mine_norm, r.ref_norm, r.max_abs, r.rms, r.found && r.is_pass(0.999f) ? "PASS" : "FAIL");
+        pass = pass && r.found && r.is_pass(0.999f);
+    }
+    for (const char * name :
          { "stem1", "stem2b", "stem_pooled", "stem3", "stem4", "block0_dw", "block0_pool", "block0_gate", "block0_se",
            "block0_cm1", "block0_out", "head_down", "head_up", "head_final" }) {
         size_t n = 0;
