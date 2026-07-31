@@ -3,10 +3,55 @@
 
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <string>
+
+static std::string json_escape(const std::string & text) {
+    std::string out;
+    for (const char c : text) {
+        if (c == '\\')
+            out += "\\\\";
+        else if (c == '"')
+            out += "\\\"";
+        else if (c == '\n')
+            out += "\\n";
+        else if (c == '\r')
+            out += "\\r";
+        else if (c == '\t')
+            out += "\\t";
+        else
+            out += c;
+    }
+    return out;
+}
+
+static bool write_manifest(const char * path, const char * image, easyocr_layout::ordering_mode mode,
+                           const std::vector<easyocr_pipeline::result> & results) {
+    std::ofstream out(path);
+    if (!out) return false;
+    out << "{\n  \"schema\": \"crispembed.easyocr.postprocess.v1\",\n"
+           "  \"source\": \"CrispEmbed native easyocr_pipeline\",\n"
+        << "  \"image\": \"" << json_escape(image ? image : "") << "\",\n"
+        << "  \"mode\": \"" << (mode == easyocr_layout::ordering_mode::words ? "words" : "lines")
+        << "\",\n"
+           "  \"records\": [\n";
+    for (size_t i = 0; i < results.size(); ++i) {
+        const auto & item = results[i];
+        out << "    {\"index\": " << i << ", \"line\": " << item.word.line << ", \"text\": \""
+            << json_escape(item.word.text) << "\", \"confidence\": " << item.word.confidence
+            << ", \"detector_confidence\": " << item.detector_confidence << ", \"box\": [" << item.word.x << ", "
+            << item.word.y << ", " << item.word.w << ", " << item.word.h << "], \"crop\": [" << item.crop_x << ", "
+            << item.crop_y << ", " << item.crop_w << ", " << item.crop_h << "], \"normalized_box\": ["
+            << item.normalized.x0 << ", " << item.normalized.y0 << ", " << item.normalized.x1 << ", "
+            << item.normalized.y1 << "]}" << (i + 1 == results.size() ? "\n" : ",\n");
+    }
+    out << "  ]\n}\n";
+    return out.good();
+}
 
 static int crispembed_test_main(int argc, char ** argv) {
-    if (argc != 5) {
-        std::fprintf(stderr, "usage: %s <dbnet.gguf> <easyocr.gguf> <image> <lines|words>\n", argv[0]);
+    if (argc != 5 && argc != 6) {
+        std::fprintf(stderr, "usage: %s <dbnet.gguf> <easyocr.gguf> <image> <lines|words> [manifest.json]\n", argv[0]);
         return 2;
     }
     easyocr_pipeline::context * ctx = nullptr;
@@ -27,6 +72,10 @@ static int crispembed_test_main(int argc, char ** argv) {
                     i, item.word.line, item.word.x, item.word.y, item.word.w, item.word.h, item.detector_confidence,
                     item.word.confidence, item.normalized.x0, item.normalized.y0, item.normalized.x1,
                     item.normalized.y1, item.word.text.c_str());
+    }
+    if (argc == 6 && !write_manifest(argv[5], argv[3], mode, results)) {
+        easyocr_pipeline::free(ctx);
+        return 5;
     }
     easyocr_pipeline::free(ctx);
     return 0;

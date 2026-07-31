@@ -93,6 +93,12 @@ The harness-blind postprocessing reference is now explicit: Python EasyOCR
 ordering, crop geometry, text, confidence, and LayoutLM normalization. Its
 model-free test passes both line and word policies.
 
+The native `test-easyocr-pipeline` can emit the same manifest schema, and
+`tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
+The serializer self-check passes on the 98-word DBNet page run; an independent
+Python detector/recognizer page manifest is still required before parity is
+claimed.
+
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
 > PLAN.md active-work board cleared". Add a row here when you START a task; remove
