@@ -4990,6 +4990,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::unlimited_ocr;
     case 14:
         return E::unified;
+    case 15:
+        return E::tesseract_fraktur;
     default:
         return E::dbnet_trocr;
     }

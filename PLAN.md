@@ -28,6 +28,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | O11.7 persistent graph and weight-cache optimization: reuse static shapes, scheduler buffers, dequantized critical weights, and batched line crops | **PENDING** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
+| 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** explicit Tesseract Fraktur profile: DBNet page detection, grayscale line crops, and `tesseract-frk` GGUF recognition; preserve the existing generic Tesseract path | **IN PROGRESS — code complete; full-page model smoke pending** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **COMPLETED** |
@@ -298,6 +299,16 @@ against parsed weights, but does not by itself prove full Tesseract CLI parity.
 Do not mark this lane green until the exact source model is hashed, the
 reference dump and native diff pass every captured stage with magnitudes
 inspected, and the decoded line output is compared with the original engine.
+
+The explicit Fraktur lane is now exposed as `ocr_orchestrator::tesseract_fraktur`
+(C API engine value `15`) and `tesseract_fraktur_stage()`. It keeps DBNet page
+detection and line grouping, disables binarization, lowers the detector's
+minimum line height for historical scans, and recognizes grayscale crops with
+the caller-provided `tesseract-frk-{f32|q8_0}.gguf`. The existing generic
+`tesseract` engine/value `6` is unchanged. The model-gated regression accepts
+`CRISPEMBED_FRAKTUR_DET_MODEL`, `CRISPEMBED_FRAKTUR_MODEL`, and
+`CRISPEMBED_FRAKTUR_IMAGE`; it must be run from a complete configured build
+before this row is marked complete.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
