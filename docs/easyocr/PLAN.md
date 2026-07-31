@@ -76,7 +76,11 @@ metadata, not learned parameters.
 - [ ] Store convolution weights in the ggml `conv_2d` layout rather than the
       converter's temporary flattened CPU layout; validate Metal/CUDA/Vulkan
       kernel support before quantizing them.
-- [ ] Verify decoded strings and confidence against Python on real crops.
+- [x] Verify decoded strings against the Python reference metadata on real
+      crops; the diff test separately covers the harness-blind CTC token table
+      and greedy collapse by requiring `easyocr.decoded` parity.
+- [ ] Add confidence, dictionary, grouping, and paragraph-postprocessing tests
+      once detector/orchestration outputs are wired.
 - [ ] Add quantization rules and CPU/Metal parity before orchestration wiring.
 - [ ] Port CRAFT detector and preserve its upstream license notice.
 - [ ] Audit and port DBNet-18 and DBNet-50 detector checkpoints.
