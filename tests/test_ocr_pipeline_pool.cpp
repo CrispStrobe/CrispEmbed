@@ -4,13 +4,31 @@
 #include <cstdlib>
 #include "core/clean_exit.h"
 
+#ifdef _WIN32
+static void set_test_env(const char * name, const char * value) {
+    _putenv_s(name, value);
+}
+
+static void unset_test_env(const char * name) {
+    _putenv_s(name, "");
+}
+#else
+static void set_test_env(const char * name, const char * value) {
+    setenv(name, value, 1);
+}
+
+static void unset_test_env(const char * name) {
+    unsetenv(name);
+}
+#endif
+
 static bool expect(bool value, const char * label) {
     if (!value) std::fprintf(stderr, "FAIL: %s\n", label);
     return value;
 }
 
 static int crispembed_test_main() {
-    unsetenv("CRISPEMBED_DEBUG_ALLOW_OCR_Q4");
+    unset_test_env("CRISPEMBED_DEBUG_ALLOW_OCR_Q4");
     if (!expect(ocr_pipeline::is_dangerous_q4_recognizer_path("trocr-small-printed-q4_k.gguf"),
                 "detect dangerous TrOCR Q4 path"))
         return 1;
@@ -21,7 +39,7 @@ static int crispembed_test_main() {
         return 1;
     if (!expect(rejected == nullptr, "rejected Q4 leaves null context")) return 1;
 
-    setenv("CRISPEMBED_DEBUG_ALLOW_OCR_Q4", "1", 1);
+    set_test_env("CRISPEMBED_DEBUG_ALLOW_OCR_Q4", "1");
     if (!expect(ocr_pipeline::dangerous_q4_override_enabled(), "Q4 override enabled explicitly")) return 1;
 
     ocr_pipeline_pool::context * ctx = nullptr;
