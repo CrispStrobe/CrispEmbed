@@ -18,6 +18,7 @@ extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, con
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -715,7 +716,9 @@ static void test_ppocrv6_pipeline_regression() {
             continue;
         }
         fclose(input);
+        const auto started = std::chrono::steady_clock::now();
         result r = run_file(ctx, fixture);
+        const double elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
         cases++;
         total_regions += (int)r.regions.size();
         CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
@@ -726,8 +729,8 @@ static void test_ppocrv6_pipeline_regression() {
             CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
                   "PP-OCRv6 line orientation confidence is bounded");
         }
-        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f)\n", fixture, r.regions.size(), (int)r.full_text.size(),
-               r.mean_confidence);
+        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f, time_ms=%.1f)\n", fixture, r.regions.size(),
+               (int)r.full_text.size(), r.mean_confidence, elapsed_ms);
     }
     CHECK(cases == fixture_limit, "PP-OCRv6 live corpus fixtures ran");
     CHECK(total_regions > 0, "PP-OCRv6 live corpus produced regions");

@@ -18,7 +18,8 @@ from pathlib import Path
 
 
 ROW = re.compile(r"^  INFO: (?P<fixture>.+): (?P<regions>\d+) regions, "
-                 r"(?P<chars>\d+) chars \(conf=(?P<confidence>[0-9.]+)\)$")
+                 r"(?P<chars>\d+) chars \(conf=(?P<confidence>[0-9.]+), "
+                 r"time_ms=(?P<time_ms>[0-9.]+)\)$")
 
 
 def main() -> int:
@@ -65,6 +66,7 @@ def main() -> int:
                 row["regions"] = int(row["regions"])
                 row["chars"] = int(row["chars"])
                 row["confidence"] = float(row["confidence"])
+                row["time_ms"] = float(row["time_ms"])
                 rows.append(row)
         if proc.returncode != 0:
             raise SystemExit(f"native PP-OCRv6 {variant} regression failed (exit {proc.returncode})\n"
