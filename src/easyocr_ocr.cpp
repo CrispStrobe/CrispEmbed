@@ -124,7 +124,9 @@ static bool build_graph(easyocr_ocr_context * c) {
         x = block(x, "layer2.0", true);
         x = block(x, "layer2.1", false);
         x = conv_named(x, root + "conv2", 3, 3, 1, 1, 1, 1, true);
-        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+        // PyTorch maxpool3 is kernel=(2,2), stride=(H=2,W=1), padding=(H=0,W=1).
+        // ggml orders the spatial arguments as width, height.
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 1, 2, 1, 0);
         for (int i = 0; i < 5; ++i) x = block(x, "layer3." + std::to_string(i), i == 0);
         x = conv_named(x, root + "conv3", 3, 3, 1, 1, 1, 1, true);
         for (int i = 0; i < 3; ++i) x = block(x, "layer4." + std::to_string(i), false);
@@ -224,6 +226,7 @@ easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
         c->width = (int)core_gguf::kv_u32(meta, "easyocr.input_width", 200);
         c->height = (int)core_gguf::kv_u32(meta, "easyocr.input_height", 64);
         c->classes = (int)core_gguf::kv_u32(meta, "easyocr.num_classes", 0);
+        c->hidden = (int)core_gguf::kv_u32(meta, "easyocr.hidden_size", c->hidden);
         c->output_channels = (int)core_gguf::kv_u32(meta, "easyocr.output_channels", c->output_channels);
         c->network = (int)core_gguf::kv_u32(meta, "easyocr.network", 0);
         c->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");

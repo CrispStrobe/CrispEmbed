@@ -77,6 +77,10 @@ def main():
                 cp = bp.rsplit(".", 1)[0] + ".conv" + bp[-3:]
             elif bp.endswith(".bn1") or bp.endswith(".bn2"):
                 cp = bp.rsplit(".", 1)[0] + ".conv" + bp[-1]
+            elif bp.endswith(".bn3"):
+                cp = bp.rsplit(".", 1)[0] + ".conv3"
+            elif bp.endswith(".bn4_1") or bp.endswith(".bn4_2"):
+                cp = bp.rsplit(".", 1)[0] + ".conv" + bp[-3:]
             elif bp.endswith(".downsample.1"):
                 cp = bp.rsplit(".", 1)[0] + ".0"
             else:
