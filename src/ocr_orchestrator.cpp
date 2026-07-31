@@ -372,9 +372,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
         if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
         if (!ctx->ppdet || !ctx->pprec) return {};
-        auto boxes = (px && pw > 0 && ph > 0)
-                         ? ppocrv6_det::detect_raw(ctx->ppdet, px, pw, ph, 3, st.params.det_prob_threshold)
-                         : ppocrv6_det::detect_file(ctx->ppdet, path, st.params.det_prob_threshold);
+        // PP-OCRv6's official predictor applies resize_long=960/max-side and
+        // rounds dimensions to a 32-pixel grid before inference.  Do not use
+        // detect_raw here: the routed C API has the original page pixels, and
+        // bypassing this geometry produces a different probability map and
+        // materially different region counts on large fixtures.
+        auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
         if (boxes.empty()) return {};
         int w = pw, h = ph;
         std::vector<uint8_t> owned;

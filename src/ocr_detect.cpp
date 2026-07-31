@@ -836,10 +836,12 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
                     if (cy < min_y) min_y = cy;
                     if (cy > max_y) max_y = cy;
 
-                    // 4-connected neighbors
-                    int dx[] = { -1, 1, 0, 0 };
-                    int dy[] = { 0, 0, -1, 1 };
-                    for (int d = 0; d < 4; d++) {
+                    // OpenCV's DBPostProcess findContours uses 8-connectivity
+                    // for the binarized bitmap.  Four-connectivity splits
+                    // diagonal stroke joins into separate native regions.
+                    for (int d = 0; d < 8; d++) {
+                        static constexpr int dx[] = { -1, 1, 0, 0, -1, -1, 1, 1 };
+                        static constexpr int dy[] = { 0, 0, -1, 1, -1, 1, -1, 1 };
                         int nx = cx + dx[d], ny = cy + dy[d];
                         if (nx >= 0 && nx < map_w && ny >= 0 && ny < map_h) {
                             int ni = nx + ny * map_w;
@@ -870,8 +872,20 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
                 }
 
                 // Score against probability map (polygon interior only)
+                // PaddleX's DBPostProcess fast score averages the probability
+                // map over the min-area box, including the background inside
+                // that box.  Averaging only positive component pixels makes
+                // native F16 maps over-emit small fragments near box_thresh.
+                float bbox_sum = 0.0f;
+                int bbox_count = 0;
+                for (int yy = min_y; yy <= max_y; ++yy) {
+                    for (int xx = min_x; xx <= max_x; ++xx) {
+                        bbox_sum += prob_map[xx + yy * map_w];
+                        ++bbox_count;
+                    }
+                }
                 float poly_score = scoring == score_mode::fast
-                                       ? mean_score
+                                       ? (bbox_count ? bbox_sum / bbox_count : mean_score)
                                        : score_polygon(prob_map, map_w, map_h, contour, min_x, min_y, max_x, max_y);
                 // A 4-connected component can have an isolated extreme pixel
                 // that the contour tracer cannot continue from (for example
@@ -959,6 +973,14 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
+
+std::vector<text_box> postprocess_probability_map(const float * prob_map, int map_h, int map_w, float prob_threshold,
+                                                  float box_threshold, float unclip_ratio, int min_area, float scale_x,
+                                                  float scale_y, int dilation, int max_candidates, score_mode scoring) {
+    if (!prob_map || map_h <= 0 || map_w <= 0) return {};
+    return extract_boxes(prob_map, map_w, map_h, prob_threshold, box_threshold, unclip_ratio, min_area, scale_x,
+                         scale_y, dilation, max_candidates, scoring);
+}
 
 static std::vector<text_box> detect_with_options(context * ctx, const float * pixels, int H, int W,
                                                  float prob_threshold, float box_threshold, float unclip_ratio,

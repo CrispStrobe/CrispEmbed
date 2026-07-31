@@ -81,9 +81,14 @@ def load_model(root: Path, model_dir: Path):
 def preprocess(image: Path):
     rgb = np.asarray(Image.open(image).convert("RGB"))
     h, w = rgb.shape[:2]
-    rw = max(32, int(np.ceil(w / 32) * 32))
-    rh = max(32, int(np.ceil(h / 32) * 32))
-    resized = np.asarray(Image.fromarray(rgb).resize((rw, rh), Image.BILINEAR))[:, :, ::-1].astype("float32") / 255
+    # PP-OCRv6's PaddleX predictor uses resize_long=960, limit_type=max,
+    # then rounds each side to the nearest 32-pixel grid.  The former
+    # reference path only padded the original image, which made its detector
+    # tensors incomparable with both PaddleX and native inference on pages.
+    scale = min(1.0, 960.0 / max(h, w))
+    rw = max(32, int(np.floor(w * scale / 32.0 + 0.5)) * 32)
+    rh = max(32, int(np.floor(h * scale / 32.0 + 0.5)) * 32)
+    resized = np.asarray(Image.fromarray(rgb).resize((rw, rh), Image.Resampling.BILINEAR))[:, :, ::-1].astype("float32") / 255
     x = (resized - np.asarray([.485, .456, .406], dtype="float32")) / np.asarray([.229, .224, .225], dtype="float32")
     return x.transpose(2, 0, 1)[None], (h, w)
 
