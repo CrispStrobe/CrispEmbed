@@ -18,6 +18,14 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny and small live sweeps validated, medium pending | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
+| 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
+| 2026-07-31 | `main` | O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation parity gates | **PENDING** |
+| 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **PENDING** |
+| 2026-07-31 | `main` | O11.4 OCR portfolio graph audit: port or explicitly classify CPU-bound FormulaNet, MixTeX, SmolDocling, HMER/BTTR/PosFormer, and VLM vision necks | **PENDING** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | O11.5 backend build/device matrix: Metal macOS, CUDA Linux, CPU reference; graph-compute smoke test is wired into Unix/Windows build CI, Metal/CUDA execution pending | **IN PROGRESS** |
+| 2026-07-31 | `main` | O11.6 graph performance/parity gates: per-engine latency, peak memory, GPU residency, cosine/logit parity, CER/WER, and no-harm quality thresholds | **PENDING** |
+| 2026-07-31 | `main` | O11.7 persistent graph and weight-cache optimization: reuse static shapes, scheduler buffers, dequantized critical weights, and batched line crops | **PENDING** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
@@ -85,6 +93,142 @@ PP-det→PP-rec integration; DBNet fallback adapter; per-stage diff fixtures;
 benchmark and regression manifest; then publish only to `cstr/` from the
 external model volume. This work must be merged from remote `main` before
 each landing checkpoint and pushed back to remote `main` after the checkpoint.
+
+### Historical German Fraktur OCR inventory and port plan (2026-07-31)
+
+The directly portable German-Fraktur model is the official Tesseract `frk`
+traineddata shipped by `tesseract-lang`. Local inspection with
+`combine_tessdata -u` confirms an LSTM network, `lstm-unicharset`, and
+`lstm-recoder`; the existing converter successfully produced
+`/Volumes/backups/ai/crispembed-gguf/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
+parameters). This is the first Fraktur model to use in the native
+`tesseract_lstm` GGUF path. Preserve the output alphabet, including long-s
+and historical characters, and keep the sensitive output layer at F32 for
+the first quantization gate. The upstream Tesseract language data and
+runtime are Apache-2.0; retain the exact source checksum and attribution in
+the eventual model README.
+
+| Source | What it contains | License/provenance | GGML/GGUF decision |
+|---|---|---|---|
+| [Tesseract `frk`](https://github.com/tesseract-ocr/tessdata) | Current LSTM Fraktur recognizer; local `frk.traineddata` is the 4.00-alpha synthetic-trained network with 100 output codes | Apache-2.0 Tesseract language data; verify exact tessdata revision/checksum per artifact | **Port now:** existing `convert-tesseract-to-gguf.py` and `tesseract_lstm.cpp`; test on German Fraktur crops and full pages |
+| [`paalberti/tesseract-dan-fraktur`](https://github.com/paalberti/tesseract-dan-fraktur) `deu_frak` | German Fraktur Tesseract 3.02 package containing the compiled `deu_frak.traineddata`, `deu_frak.config`, `unicharambigs`, dictionaries/lists, build script, and many paired `.tif`/`.box` training samples (including font and scanned-page examples) | Repository `COPYING` says Apache-2.0; retain attribution and separately verify provenance of the historical source scans and annotations before redistributing or using them as a new corpus | **Compatibility and training-data candidate:** the legacy package is not an LSTM GGUF input and must not be passed to the current converter as if it were; use it with a legacy Tesseract 3.02 path, or use the paired image/box material for clean-room retraining into a supported LSTM format after provenance review |
+| [`jze/ocropus-model_fraktur`](https://github.com/jze/ocropus-model_fraktur) | OCRopus `pyrnn.gz` and CLSTM Fraktur character models; reports 1.089% held-out error on its own test set | No explicit license found in repository; source books/datasets also need provenance review | **Do not redistribute/port yet:** license clarification required; format is not Tesseract LSTM |
+| [`chreul/19th-century-fraktur-OCR`](https://github.com/chreul/19th-century-fraktur-OCR) | MIT Calamari five-model voting ensemble, single Calamari model, and OCRopus model for 19th-century German Fraktur; models expect binarized line images; repository includes at most 50 lines per book so users can adapt transcription guidelines, while the complete corpus is obtained from the linked GT publication | Repository MIT; the supplied model/adaptation files are distinct from the complete training corpus, whose source and ground-truth licensing must be checked independently | **Benchmark/retraining candidate:** no current GGUF importer; use the supplied samples for reproducible adaptation tests, then retrain into a supported LSTM graph if the full corpus permissions and target transcription policy are clear |
+| [`yingyangle/fraktur`](https://github.com/yingyangle/fraktur) | Research project using GT4HistOCR line data, character segmentation, zoning/black-pixel features, and a k-NN classifier; reports about 92% character accuracy | **No repository license or explicit reuse grant found.** GT4HistOCR itself is CC-BY-4.0, but that does not license this repository's code, pickles, feature data, or derived artifacts | **Reference only:** do not copy, train from its artifacts, or redistribute until the authors clarify licensing; independently reproduce the simple feature baseline from the separately licensed GT4HistOCR data if useful |
+| [`UB-Mannheim/AustrianNewspapers`](https://github.com/UB-Mannheim/AustrianNewspapers) | NewsEye/READ Austrian newspaper ground truth, 1864–1911; revised PAGE-XML with Fraktur/Antiqua, baselines, regions, and long-s transcription | Original dataset explicitly CC BY 4.0; preserve attribution to Mühlberger/Hackl, Austrian National Library, and the repository revision | **Eligible training source:** strong Fraktur/Antiqua classifier and Tesseract fine-tuning corpus after source/page split and attribution manifest |
+| [`UB-Mannheim/reichsanzeiger-gt`](https://github.com/UB-Mannheim/reichsanzeiger-gt) | 119,429 lines from 197 German newspaper pages, 1820–1939; Fraktur and Latin, with long-s and historical characters | Current GitHub repository advertises CC0-1.0; verify the exact revision and downloaded scan URLs before redistribution | **Highest-priority training/evaluation source:** large, directly relevant Fraktur corpus; use for classifier and Tesseract fine-tuning, preserving its transcription conventions |
+| [`ulb-sachsen-anhalt/ulb-groundtruth-eval-odem-ger`](https://github.com/ulb-sachsen-anhalt/ulb-groundtruth-eval-odem-ger) | OCR-D Phase III ULB VD18 German-Fraktur Page-XML ground truth: 39,823 text lines across 1,026 pages and 6,298 text regions, dated 1700–1799, with non-text region annotations | Repository metadata says CC-BY-4.0, while the GitHub license badge says CC-BY-SA-4.0; treat it conservatively as CC-BY-SA-4.0 until ULB resolves the discrepancy, and preserve the repository citation | **Highest-priority training/evaluation source:** convert Page-XML lines/regions into explicit line crops and manifests; useful for 18th-century Fraktur, layout/region evaluation, and clean-room LSTM fine-tuning once the license is settled |
+| [`UB-Mannheim/dach-gt`](https://github.com/UB-Mannheim/dach-gt) | Ground truth and full text for selected prints from German libraries; repository ships data plus image-download tooling and supports PAGE/ALTO/escriptorium workflows | CC0-1.0 repository license; retain institution/source URLs and verify any remote scan terms | **Eligible broad training source:** mine Fraktur lines and full-text alignment for detector/recognizer evaluation and clean-room training; keep each institution as a separate provenance split |
+| [`jbaiter/archiscribe-corpus`](https://github.com/jbaiter/archiscribe-corpus) | 4,255 German-Fraktur lines from 112 works across 73 years (1800s–1890s), with transcription directories and Archive.org/IIIF source links | CC-BY-4.0; attribution and source-work provenance are required | **Eligible evaluation/adaptation source:** strong chronological/style diversity; import the line images and transcriptions only with an attribution manifest and use work-level splits to avoid leakage |
+| [`UB-Mannheim/charlottenburger-amtsschrifttum`](https://github.com/UB-Mannheim/charlottenburger-amtsschrifttum) | 26 pages of German Fraktur ground truth from 1879–1919, including long-s (ſ), German Mark (ℳ), double oblique hyphen (⸗), fractions, and downloadable image URLs | CC0-1.0 | **Small but valuable regression/adaptation fixture:** use for historical-character coverage, line-recognition tests, and domain adaptation; do not treat its 26 pages as a standalone general corpus |
+| [`UB-Mannheim/Reichsanzeiger`](https://github.com/UB-Mannheim/Reichsanzeiger) | Apache-licensed software/data support for the digital edition of *Deutscher Reichsanzeiger und Preußischer Staatsanzeiger*, including the SQL image/issue mapping and project metadata | Apache-2.0 repository; the underlying scans, full text, and linked digital-edition assets must retain their own terms | **Pipeline/provenance reference, not a recognizer:** use the issue/image mapping to locate and reproduce evaluation pages; keep this Apache repository separate from the `reichsanzeiger-gt` CC0 ground-truth corpus |
+| [`SimoneRebora/OCRFraktur`](https://github.com/SimoneRebora/OCRFraktur) | OCRopus Fraktur training project: 4,287 real lines from *Tiroler Soldaten-Zeitung*, 3,000 synthetically generated lines from three Fraktur fonts, a 410-line test set, and a `TSZ_Fraktur_model.pyrnn.gz` model reporting 0.479% CER on its own test set | **No repository license found.** The README cites the Musil edition and source texts/fonts; those inputs have independent provenance and must not be assumed redistributable | **Reference only until licensing is clarified:** valuable for synthetic-data design and an OCRopus baseline, but no redistribution, training, or GGUF conversion from its artifacts; independently recreate the experiment from cleared sources if needed |
+| [`phildiderichsen/MeMo-Fraktur-OCR-code`](https://github.com/phildiderichsen/MeMo-Fraktur-OCR-code) | Rule-based correction/evaluation workflow: Tesseract re-OCR with `frk`, `fraktur`, and `dan`, alternative OCR comparison, regex/context rules, SymSpell, VRT alignment, and staged intermediate outputs | **No repository license found.** Its PDFs, OCR outputs, dictionaries, and external corpora require separate permission review | **Concepts only:** reproduce the error-analysis, multi-model voting, historical spelling, hyphenation, and correction stages in our own code; do not copy source or derived artifacts into a distributable model/data package |
+| [`muratyanasoglu/AI-Powered-OCR-Project-for-Ancient-Languages-Ancient-Greek-Fraktur-Old-German-Classical-Latin`](https://github.com/muratyanasoglu/AI-Powered-OCR-Project-for-Ancient-Languages-Ancient-Greek-Fraktur-Old-German-Classical-Latin) | Django/PyTesseract application using Tesseract 5, OpenCV/Pillow preprocessing, configurable PSM/OEM, `deu_latf`/`frk`/other language packs, and optional Gemini translation/analysis; no custom OCR weights | No explicit repository license found in the inspected tree; Tesseract language data and Gemini service have separate terms | **Workflow reference only:** useful ideas for script-specific preprocessing and output export, but it contributes no native recognizer, detector, or GGUF-compatible weights; do not bundle its external language packs or API integration without review |
+| [`Nargizi/oppy`](https://github.com/Nargizi/oppy) | Small German-Fraktur PDF OCR wrapper; dependencies show PyMuPDF, OpenCV, `pytesseract`, and `fsspec`, with package modules for PDF/image/text handling | MIT repository license; Tesseract and any downloaded language data remain separately licensed | **Reference only:** it uses the system Tesseract executable through PyTesseract rather than a custom model; compare its PDF rasterization/preprocessing ideas with our native pipeline, but there is nothing to convert to GGUF |
+| [`UB-Mannheim/digitue-gt`](https://github.com/UB-Mannheim/digitue-gt) | CC0 transcriptions for digitized Tübingen books/journals, including Fraktur-tagged material; images fetched from UB Tübingen URLs | Repository advertises CC0-1.0; confirm that downloaded image endpoints carry compatible reuse terms and keep source URLs | **Eligible source:** mine Fraktur/Antiqua line crops for clean-room classifier training and evaluation; retain provenance even under CC0 |
+| [`samprietoserrano/archival-ocr-transcription`](https://github.com/samprietoserrano/archival-ocr-transcription) | MIT-licensed Python workflow and outputs for a 1719 German Fraktur book by Peter Kolb; extraction used Google Document AI and Transkribus, followed by local cleanup, historical spell-checking, and reading-order assembly | Repository MIT; Internet Archive scans, DTA corpora, CLARIN GeMiCorpus, and Transkribus/Google outputs retain their own terms | **Reference/evaluation source, not a model port:** useful for a historical Fraktur page fixture, reading-order and post-correction tests, but it supplies no portable LSTM/CNN weights. Audit source-image and corpus permissions before using its text/images for training |
+| SchriftLotse `party-v4` | Swin-base vision encoder plus 40M-parameter Llama decoder; page-wise recognition with line prompts | Apache-2.0 model release | **Not a near-term port:** custom Kraken multimodal architecture; potentially reusable after a dedicated Swin/Llama graph and tokenizer audit |
+| SchriftLotse Kraken BLLA | Trainable neural baseline/line segmenter | Apache-2.0 via Kraken/model release | **Not a near-term port:** PyTorch Kraken BLLA format and baseline geometry are separate from DBNet; evaluate as an external segmentation oracle first |
+| SchriftLotse `orli` | ConvNeXtV2-tiny encoder, multi-scale adapter, autoregressive transformer decoder for baselines and reading order | Apache-2.0 model release | **Not a near-term port:** new autoregressive layout graph; consider only after native line/ordering gates |
+| SchriftLotse `trocr-kurrent-19`, `trocr-kurrent-early`, `trocr-medieval` | Historical handwriting TrOCR checkpoints | MIT according to the inventory | **Potential later port:** assess against existing TrOCR encoder/decoder implementation; verify exact HF architecture and tokenizer before conversion |
+| SchriftLotse `trocr-modern` | German handwritten TrOCR checkpoint | AFL-3.0 according to the inventory | **Potential later port with license review:** same TrOCR compatibility check, but AFL-3.0 obligations must be documented |
+| SchriftLotse Microsoft TrOCR processor | Processor/tokenizer only, not a recognizer model | MIT according to the inventory | **Reuse only as preprocessing/tokenizer reference;** no standalone GGUF model |
+| SchriftLotse `qwen-embed` | Qwen3 Embedding 0.6B semantic search model | Apache-2.0 | **Already covered by decoder embedding infrastructure;** not an OCR recognizer |
+| [Xilinx `LSTM-PYNQ`](https://github.com/Xilinx/LSTM-PYNQ) `Fraktur_OCR.ipynb` | Quantized BiLSTM Fraktur OCR overlay for PYNQ; notebook constructs `PynqFrakturOCR`, downloads FPGA bitstream and Fraktur weights, and recognizes lines from *Wanderungen durch die Mark Brandenburg* | Repository BSD-3-Clause; the notebook cites the FINN-L paper and an Insiders Technologies text dataset, whose data/model provenance must be audited separately | **Reference only for now:** the model is coupled to FINN/PYNQ fixed-point hardware and does not expose a standard Tesseract/PyTorch checkpoint. Porting would require recovering the quantized layer weights, codec, preprocessing, and CTC decode from `lstm/src/network/fraktur`; do not assume it is interchangeable with `tesseract_lstm` GGUF |
+
+OCR-D’s historical-print catalogue narrows the practical Tesseract targets:
+
+| OCR-D/Tesseract resource | Meaning | Port status |
+|---|---|---|
+| `deu_latf` (formerly `frk`) | Current German Fraktur language model with some Antiqua coverage | **Directly portable:** use the local `frk.traineddata` LSTM conversion already validated; preserve the upstream name/revision mapping in metadata |
+| `Fraktur` | Broader Fraktur script model, including non-German characters and some Antiqua | **Candidate:** obtain the exact `.traineddata`, verify its `lstm` component, then run the same converter/parity/Fraktur regression gates |
+| GT4HistOCR-derived models (`GT4HistOCR_*`, `frak2021`, UB Mannheim models) | Historical-print models trained from GT4HistOCR and related German/Fraktur corpora; OCR-D recommends these for broad historical coverage | **Highest next priority:** locate the exact `.traineddata` artifact and license/attribution terms, convert if it contains an LSTM component, and compare against `deu_latf` on our corpus |
+| `deu_frak` | Older Tesseract 3 German Fraktur model | **Legacy benchmark only:** OCR-D explicitly says it is no longer recommended; it is not a current LSTM conversion input |
+
+OCR-D documents that Tesseract 4.1+ `.traineddata` files contain an
+`unicharset` and neural `lstm` weights, and that models can be combined (for
+example `deu+deu_latf` or `Fraktur+Latin`) at an accuracy/runtime cost. The
+official Tesseract language data is Apache-2.0, but GT4HistOCR training data is
+CC-BY-4.0 and individual UB Mannheim derivatives may have additional
+attribution or release conditions. Record the exact model URL, checksum,
+training corpus, and license before placing any derivative in the shared
+model volume or publishing a GGUF.
+
+Required Fraktur implementation sequence:
+
+1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
+   `/Volumes/backups/ai/crispembed-gguf/`; never commit large weights.
+   Apply the same policy to every `tesseract_lstm` language variant: all
+   quantized Q8/Q4 artifacts must retain `output.weight` and `output.bias` at
+   the source precision (F16 or F32), while only recurrent matrices may be
+   quantized. Existing multilingual artifacts must be regenerated if their
+   output projection was previously quantized.
+2. Add an explicit `tesseract-fraktur` stage/profile using DBNet line crops →
+   grayscale crop → `tesseract_lstm` `frk` model, with the normal Tesseract
+   path remaining available for modern German.
+3. Add a Fraktur regression fixture containing the German title crop and
+   full-page `german_official_print.jpg`; compare native GGUF, Python/
+   Tesseract, and system Tesseract `-l frk` outputs with CER/WER where an
+   oracle exists. Preserve `ſ`, `ß`, ligatures, and Unicode normalization in
+   the comparison.
+4. Run crispasr-diff-style intermediate parity for the converted `frk` model,
+   then test F32, head-only Q8, and debug Q4. Do not publish a quant until
+   the Fraktur crop remains readable and the output-layer parity gate passes.
+5. Keep `deu_frak` and the Calamari/OCRopus models as separately licensed
+   external benchmarks; do not silently convert or redistribute them as
+   Apache artifacts.
+6. Add OCR-D/GT4HistOCR model comparisons (`deu_latf`, `Fraktur`, and the
+   best available `frak2021`/GT4HistOCR derivative) before deciding whether
+   `tesseract-frk-f32.gguf` is the production default. Include the Xilinx
+   LSTM-PYNQ result only as a hardware-reference baseline unless its weights
+   and codec can be legally and technically recovered.
+
+### Fraktur line-classifier retraining (clean-room alternative to AGPL model)
+
+`impresso-project/frakturline-classification-cnn` is useful as a routing
+component, not as a recognizer: it classifies a grayscale line crop as
+`fraktur` or `other`. Its published architecture is small and reproducible:
+approximately 2.1M parameters, input `1x60x800`, three convolutional stages
+with ReLU/max-pooling and LayerNorm, adaptive max-pooling to `1x8`, then
+`1024 -> 128 -> 1` fully connected layers. The model card reports a 99.75%
+accuracy result on its held-out test set, but the model and the linked
+Impresso datasets are AGPL-3.0. Do not copy its weights, code, or dataset
+into a permissively licensed CrispEmbed artifact.
+
+We can train an independent equivalent classifier from the published
+architecture and independently licensed data:
+
+1. Use CC-BY-4.0 GT4HistOCR Fraktur lines and the MIT-licensed
+   [`chreul/19th-century-fraktur-OCR`](https://github.com/chreul/19th-century-fraktur-OCR)
+   repository's included sample/model-training material for the positive
+   class, with attribution and source revision/checksum. The chreul
+   repository is MIT-licensed and explicitly supplies small training samples,
+   Calamari/OCRopus models, and source-book provenance; that MIT grant does
+   not automatically relicense the original historical scans or every
+   upstream source corpus, so audit each selected file before redistribution.
+   Build the `other` class from separately licensed Antiqua/Latin line corpora,
+   or annotate our own public-domain CC0 fixtures. Do not derive a replacement
+   dataset by relabeling or mirroring the AGPL Impresso dataset.
+2. Split by source publication/page, never by individual crop, to prevent
+   font/page leakage. Add hard negatives: ornate Antiqua, mixed lines,
+   ornaments, headers, low-DPI scans, skew, bleed-through, and short lines.
+3. Reimplement the architecture independently in the existing Python
+   training/reference tooling, export an ONNX/PyTorch state dict, and write a
+   small GGUF converter with F32 classifier head and F16 convolution weights.
+   The native runtime should use the existing crop helper and expose
+   `fraktur_probability`, `script_class`, and an abstain/uncertain state.
+4. Use the classifier only to route line crops: `fraktur` → `frk`/`deu_latf`
+   or a GT4HistOCR-derived Tesseract model; `other` → modern German/Latin
+   recognizer. It must not replace recognition or silently alter text.
+5. Validate on an independently held-out Fraktur/Antiqua corpus and our
+   German page fixtures. Report balanced accuracy, precision/recall/F1,
+   calibration, abstention rate, and downstream OCR CER/WER against always
+   `frk`, always `deu`, and the classifier route. A 99% classifier score is
+   not sufficient if routing worsens recognition.
+6. Publish only the independently trained weights and a complete data/
+   attribution manifest. Keep the AGPL Impresso model as an external
+   benchmark/reference, not as a CrispEmbed dependency.
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
