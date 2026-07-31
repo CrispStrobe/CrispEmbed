@@ -90,6 +90,7 @@ def dump(model_dir: Path, image: Path, output: Path):
     x = preprocess(image)
     stages["input"] = x
     x = ref.layer(x, "model.backbone.encoder.convolution.conv1", stride=2)
+    stages["stem1_pre"] = x
     x = F.gelu(x)
     stages["stem1"] = x
     x = ref.layer(x, "model.backbone.encoder.convolution.conv2", stride=2)
@@ -116,7 +117,10 @@ def dump(model_dir: Path, image: Path, output: Path):
     writer.add_string("ppocrv6.kind", "rec")
     writer.add_uint32("ppocrv6.reference", 1)
     for name, value in stages.items():
-        writer.add_tensor("ppocrv6." + name, value[0].detach().numpy().astype(np.float32))
+        # Store activations as one flat row.  The gguf Python writer reverses
+        # multidimensional metadata axes; a flat reference keeps the C++ diff
+        # harness from accidentally treating CHW pixels as RGB rows.
+        writer.add_tensor("ppocrv6." + name, value[0].detach().numpy().reshape(-1).astype(np.float32))
     writer.write_header_to_file(); writer.write_kv_data_to_file(); writer.write_tensors_to_file(); writer.close()
     print(f"wrote {output} ({len(stages)} stages)")
 
