@@ -4777,6 +4777,7 @@ struct ocr_pipeline_orch_wrapper {
     ocr_orchestrator::context * ctx = nullptr;
     ocr_orchestrator::result last;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::string full_text;
     std::string markdown;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
