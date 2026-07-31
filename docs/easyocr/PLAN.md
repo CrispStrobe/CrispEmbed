@@ -136,6 +136,9 @@ recognizer and LayoutLM consumer.
 - [x] Add native handoff invariants for word-mode line/x ordering and
       normalized-box bounds; external Tesseract TSV geometry/text parity is
       still pending.
+- [x] Add a standard-library Tesseract TSV geometry/order comparator and
+      self-test; a real page comparison remains an evidence gate, not a claim
+      of Tesseract text parity.
 - [x] Add independent postprocessing tests: grouping, reading order, CTC
       collapse, dictionary/vocabulary validation, EasyOCR custom-mean
       confidence, and box normalization. The production recognizer now uses

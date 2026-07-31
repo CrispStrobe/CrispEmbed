@@ -209,6 +209,9 @@ downstream handoff parity, not detector-box similarity alone.
 - [x] Add native handoff invariants for word-mode line/x ordering and
       normalized-box bounds; external Tesseract TSV geometry/text parity is
       still pending.
+- [x] Add a standard-library Tesseract TSV geometry/order comparator and
+      self-test; a real page comparison remains an evidence gate, not a claim
+      of Tesseract text parity.
 - [ ] Run the same structured words through LayoutLMv2/v3 with
       `apply_ocr=False`; verify serialization and ordering independently of
       logits.
