@@ -12,6 +12,7 @@
 #include "scan_cleanup.h"
 #include "ocr_pipeline.h"
 #include "ocr_crop.h"
+#include "easyocr_layout.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -672,13 +673,28 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         auto boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
         if (boxes.empty()) return {};
+        // The IC15 DBNet artifact returns fragmented word-like regions on
+        // historical pages. Tesseract-LSTM is a line recognizer, so preserve
+        // the detector boxes for geometry but merge same-baseline fragments
+        // into complete line crops before recognition.
+        std::vector<easyocr_layout::region> detected_regions;
+        detected_regions.reserve(boxes.size());
+        for (const auto & box : boxes)
+            detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+        const auto line_regions = easyocr_layout::group_dbnet_lines(detected_regions);
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
         if (!gray) return {};
         std::vector<ocr_pipeline::ocr_result> results;
-        results.reserve(boxes.size());
+        results.reserve(line_regions.size());
         const int pad = 2;
-        for (auto & b : boxes) {
+        for (const auto & line : line_regions) {
+            ocr_detect::text_box b{};
+            b.x = line.x;
+            b.y = line.y;
+            b.w = line.w;
+            b.h = line.h;
+            b.score = line.score;
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;

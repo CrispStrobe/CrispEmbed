@@ -685,9 +685,13 @@ static void test_tesseract_fraktur_regression() {
     }
     result r = run_file(ctx, image_env);
     CHECK(!r.regions.empty(), "Fraktur pipeline detects at least one line");
+    CHECK(r.regions.size() < 40, "Fraktur DBNet fragments are grouped into line regions");
     CHECK(!r.full_text.empty(), "Fraktur pipeline returns text");
     printf("  INFO: regions=%zu chars=%zu confidence=%.3f\n", r.regions.size(), r.full_text.size(),
            r.mean_confidence);
+    if (getenv("CRISPEMBED_FRAKTUR_DUMP")) {
+        printf("  BEGIN native Fraktur full_text\n%s\n  END native Fraktur full_text\n", r.full_text.c_str());
+    }
     ocr_orchestrator::free(ctx);
 }
 
