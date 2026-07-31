@@ -767,6 +767,11 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
                                            float box_threshold, float unclip_ratio, int min_area, float scale_x,
                                            float scale_y) {
     std::vector<text_box> results;
+    const bool debug = std::getenv("OCR_DETECT_DEBUG") != nullptr;
+    int component_count = 0;
+    int area_pass_count = 0;
+    int mean_pass_count = 0;
+    float max_poly_score = 0.0f;
 
     // Binarize
     std::vector<uint8_t> binary(map_w * map_h, 0);
@@ -784,6 +789,7 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
         for (int x = 0; x < map_w; x++) {
             int idx = x + y * map_w;
             if (binary[idx] && labels[idx] == 0) {
+                component_count++;
                 // BFS flood fill
                 int label = next_label++;
                 stack.clear();
@@ -824,20 +830,43 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 
                 // Filter by area
                 if (count < min_area) continue;
+                area_pass_count++;
 
                 // Filter by mean score
                 float mean_score = sum_prob / count;
                 if (mean_score < box_threshold) continue;
+                mean_pass_count++;
 
                 // Trace contour of this component
                 auto contour = trace_contour(binary.data(), map_w, map_h, labels.data(), label, min_x, min_y);
 
                 // Score against probability map (polygon interior only)
                 float poly_score = score_polygon(prob_map, map_w, map_h, contour, min_x, min_y, max_x, max_y);
+                // A 4-connected component can have an isolated extreme pixel
+                // that the contour tracer cannot continue from (for example
+                // where a thin segmentation bridge meets a large blob). The
+                // component itself is still valid; use its axis-aligned
+                // extent and mean probability rather than discarding it.
+                const bool degenerate_contour = contour.size() < 3;
+                if (degenerate_contour) poly_score = mean_score;
+                if (poly_score > max_poly_score) max_poly_score = poly_score;
+                if (debug && area_pass_count <= 8)
+                    fprintf(stderr, "ocr_detect: component area=%d mean=%.4f contour=%zu poly=%.4f bbox=%dx%d\n", count,
+                            mean_score, contour.size(), poly_score, max_x - min_x + 1, max_y - min_y + 1);
                 if (poly_score < box_threshold) continue;
 
-                // Compute minimum-area rotated rectangle
-                min_rect mr = min_area_rect(contour);
+                // Compute minimum-area rotated rectangle. Degenerate contours
+                // fall back to the connected component's bounding box.
+                min_rect mr;
+                if (degenerate_contour) {
+                    mr.cx = (min_x + max_x) * 0.5f;
+                    mr.cy = (min_y + max_y) * 0.5f;
+                    mr.w = (float)(max_x - min_x + 1);
+                    mr.h = (float)(max_y - min_y + 1);
+                    mr.angle = 0.0f;
+                } else {
+                    mr = min_area_rect(contour);
+                }
 
                 // Apply unclip expansion
                 float bw = mr.w, bh = mr.h;
@@ -883,6 +912,10 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
         return a.x < b.x;
     });
 
+    if (debug)
+        fprintf(stderr, "ocr_detect: components=%d area_pass=%d mean_pass=%d max_poly=%.4f emitted=%zu\n",
+                component_count, area_pass_count, mean_pass_count, max_poly_score, results.size());
+
     return results;
 }
 
@@ -924,17 +957,9 @@ std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, 
     return result;
 }
 
-std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold, float box_threshold,
-                                  float unclip_ratio, int target_short_side) {
-    if (!ctx || !path) return {};
-
-    // Load image
-    int img_w, img_h, img_c;
-    unsigned char * raw = stbi_load(path, &img_w, &img_h, &img_c, 3);
-    if (!raw) {
-        fprintf(stderr, "ocr_detect: cannot load image: %s\n", path);
-        return {};
-    }
+std::vector<text_box> detect_rgb(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                 float prob_threshold, float box_threshold, float unclip_ratio, int target_short_side) {
+    if (!ctx || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0 || target_short_side <= 0) return {};
 
     // Resize (keep aspect ratio, short side = target)
     float scale = (float)target_short_side / std::min(img_w, img_h);
@@ -964,10 +989,11 @@ std::vector<text_box> detect_file(context * ctx, const char * path, float prob_t
                 int sx1 = std::min(sx0 + 1, img_w - 1);
                 float fx = src_x - sx0;
 
-                float v00 = raw[(sy0 * img_w + sx0) * 3 + c];
-                float v01 = raw[(sy0 * img_w + sx1) * 3 + c];
-                float v10 = raw[(sy1 * img_w + sx0) * 3 + c];
-                float v11 = raw[(sy1 * img_w + sx1) * 3 + c];
+                const int src_c = img_c == 1 ? 0 : c;
+                float v00 = raw[(sy0 * img_w + sx0) * img_c + src_c];
+                float v01 = raw[(sy0 * img_w + sx1) * img_c + src_c];
+                float v10 = raw[(sy1 * img_w + sx0) * img_c + src_c];
+                float v11 = raw[(sy1 * img_w + sx1) * img_c + src_c];
                 float val = v00 * (1 - fx) * (1 - fy) + v01 * fx * (1 - fy) + v10 * (1 - fx) * fy + v11 * fx * fy;
 
                 // Normalize: (pixel - mean) / std
@@ -979,10 +1005,8 @@ std::vector<text_box> detect_file(context * ctx, const char * path, float prob_t
         }
     }
 
-    stbi_image_free(raw);
-
     if (ctx->bench)
-        fprintf(stderr, "ocr_detect: %s %dx%d → %dx%d (padded %dx%d)\n", path, img_w, img_h, new_w, new_h, padded_w,
+        fprintf(stderr, "ocr_detect: raw %dx%d → %dx%d (padded %dx%d)\n", img_w, img_h, new_w, new_h, padded_w,
                 padded_h);
 
     // Run detection
@@ -1001,6 +1025,21 @@ std::vector<text_box> detect_file(context * ctx, const char * path, float prob_t
         }
     }
 
+    return boxes;
+}
+
+std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold, float box_threshold,
+                                  float unclip_ratio, int target_short_side) {
+    if (!ctx || !path) return {};
+
+    int img_w = 0, img_h = 0, img_c = 0;
+    unsigned char * raw = stbi_load(path, &img_w, &img_h, &img_c, 3);
+    if (!raw) {
+        fprintf(stderr, "ocr_detect: cannot load image: %s\n", path);
+        return {};
+    }
+    auto boxes = detect_rgb(ctx, raw, img_w, img_h, 3, prob_threshold, box_threshold, unclip_ratio, target_short_side);
+    stbi_image_free(raw);
     return boxes;
 }
 

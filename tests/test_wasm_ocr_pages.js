@@ -101,7 +101,7 @@ function section(name) { console.log(`\n=== ${name} ===`); }
 
     section('Pipeline detection on scan_page_pd.png');
 
-    const recModelPath = path.join(MODELS_DIR, 'trocr-small-printed-q4_k.gguf');
+    const recModelPath = path.join(MODELS_DIR, 'trocr-small-printed-q8_0.gguf');
     if (fs.existsSync(detModelPath) && fs.existsSync(recModelPath)) {
       loadToMemfs(detModelPath, '/models/det.gguf');
       loadToMemfs(recModelPath, '/models/rec.gguf');

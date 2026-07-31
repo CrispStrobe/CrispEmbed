@@ -13,6 +13,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "ocr_pipeline.h"
 
 #include <algorithm>
 #include <chrono>
@@ -4068,6 +4069,13 @@ static ocr_model_type detect_arch(const char * path) {
 }
 
 extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
+    if (ocr_pipeline::is_dangerous_q4_recognizer_path(path) && !ocr_pipeline::dangerous_q4_override_enabled()) {
+        fprintf(stderr,
+                "crispembed_ocr_model: refusing TrOCR Q4_K model '%s'; use Q8_0 or explicitly set "
+                "CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1\n",
+                path ? path : "(null)");
+        return nullptr;
+    }
     auto type = detect_arch(path);
     void * inner = nullptr;
     switch (type) {
@@ -4619,11 +4627,12 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 // ---------------------------------------------------------------------------
 
 #include "ocr_pipeline.h"
+#include "ocr_pipeline_pool.h"
 #include "ocr_orchestrator.h"
 #include "layout_detect.h"
 
 struct ocr_pipeline_wrapper {
-    ocr_pipeline::context * ctx = nullptr;
+    ocr_pipeline_pool::context * pool = nullptr;
     std::vector<ocr_pipeline::ocr_result> results;
     std::vector<crispembed_ocr_result> c_results;
     std::string rec_buf;
@@ -4631,7 +4640,13 @@ struct ocr_pipeline_wrapper {
 
 extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_path, int n_threads) {
     auto * w = new ocr_pipeline_wrapper();
-    if (!ocr_pipeline::load(&w->ctx, det_path, rec_path, n_threads)) {
+    int pool_size = 1;
+    if (const char * env = std::getenv("CRISPEMBED_OCR_POOL_SIZE")) {
+        char * end = nullptr;
+        long parsed = std::strtol(env, &end, 10);
+        if (end != env && *end == '\0' && parsed >= 1 && parsed <= 64) pool_size = (int)parsed;
+    }
+    if (!ocr_pipeline_pool::load(&w->pool, det_path, rec_path, pool_size, n_threads)) {
         delete w;
         return nullptr;
     }
@@ -4641,7 +4656,7 @@ extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_pa
 extern "C" void crispembed_ocr_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    if (w->ctx) ocr_pipeline::free(w->ctx);
+    if (w->pool) ocr_pipeline_pool::free(w->pool);
     delete w;
 }
 
@@ -4651,7 +4666,7 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         return nullptr;
     }
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    w->results = ocr_pipeline::run_file(w->ctx, image_path);
+    w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
     w->c_results.resize(w->results.size());
     for (size_t i = 0; i < w->results.size(); i++) {
         auto & r = w->results[i];
@@ -4674,7 +4689,7 @@ extern "C" const char * crispembed_ocr_recognize(void * ctx, const char * image_
         return nullptr;
     }
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    w->rec_buf = ocr_pipeline::recognize_file(w->ctx, image_path);
+    w->rec_buf = ocr_pipeline_pool::recognize_file(w->pool, image_path);
     if (out_len) *out_len = (int)w->rec_buf.size();
     return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
 }
@@ -4688,6 +4703,7 @@ struct ocr_pipeline_orch_wrapper {
     ocr_orchestrator::result last;
     std::vector<crispembed_ocr_result> c_results;
     std::string full_text;
+    std::string markdown;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
 };
 
@@ -4707,6 +4723,12 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
     p.lid_model = nullptr;
     p.truecase_model = nullptr;
     p.tess_model_dir = nullptr;
+    p.layout_model = nullptr;
+    p.table_model = nullptr;
+    p.formula_model = nullptr;
+    p.route_tables = 0;
+    p.route_formulas = 0;
+    p.image_text_fallback = 1;
     return p;
 }
 
@@ -4770,6 +4792,12 @@ extern "C" void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline_par
     if (params->lid_model && *params->lid_model) cfg.lid_model = params->lid_model;
     if (params->truecase_model && *params->truecase_model) cfg.truecase_model = params->truecase_model;
     if (params->tess_model_dir && *params->tess_model_dir) cfg.tess_model_dir = params->tess_model_dir;
+    if (params->layout_model && *params->layout_model) cfg.layout_model = params->layout_model;
+    if (params->table_model && *params->table_model) cfg.table_model = params->table_model;
+    if (params->formula_model && *params->formula_model) cfg.formula_model = params->formula_model;
+    cfg.route_tables = params->route_tables != 0;
+    cfg.route_formulas = params->route_formulas != 0;
+    cfg.image_text_fallback = params->image_text_fallback != 0;
 
     // Enable verbose logging via environment variable
     if (const char * v = std::getenv("CRISPEMBED_VERBOSE_OCR"))
@@ -4796,6 +4824,7 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     w->last = ocr_orchestrator::run_file(w->ctx, image_path);
     w->full_text = w->last.full_text;
+    w->markdown = w->last.markdown;
     // Optional post-OCR restore: punctuation / capitalization / spacing.
     if (w->punct && !w->full_text.empty()) {
         const char * restored = crispembed_punct_process(w->punct, w->full_text.c_str());
@@ -4817,6 +4846,22 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     if (out_full_text) *out_full_text = w->full_text.c_str();
     if (out_mean_conf) *out_mean_conf = w->last.mean_confidence;
     return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (out_n) *out_n = (int)w->last.reading_order.size();
+    return w->last.reading_order.empty() ? nullptr : w->last.reading_order.data();
+}
+
+extern "C" const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (out_len) *out_len = (int)w->markdown.size();
+    return w->markdown.empty() ? nullptr : w->markdown.c_str();
 }
 
 static ocr_orchestrator::engine map_engine(int e) {
@@ -4850,6 +4895,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::qwen3vl;
     case 13:
         return E::unlimited_ocr;
+    case 14:
+        return E::unified;
     default:
         return E::dbnet_trocr;
     }
@@ -4962,6 +5009,19 @@ extern "C" const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float 
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (out_confidence) *out_confidence = w->last.lang_confidence;
     return w->last.detected_lang.c_str();
+}
+
+extern "C" int crispembed_ocr_pipeline_capabilities(void * ctx, crispembed_ocr_capabilities * out) {
+    if (!out) return 0;
+    *out = {};
+    if (!ctx) return 0;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    const auto caps = ocr_orchestrator::get_capabilities(w->ctx);
+    out->layout = caps.layout;
+    out->tables = caps.tables;
+    out->formulas = caps.formulas;
+    out->image_text_fallback = caps.image_text_fallback;
+    return 1;
 }
 
 // Per-region recognition confidence (mean per-char softmax) from the last run.

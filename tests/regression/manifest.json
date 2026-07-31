@@ -994,6 +994,63 @@
       }
     },
     {
+      "name": "smoldocling",
+      "engine": "smoldocling",
+      "_comment": "Full-page DocTags OCR. Included in the engine inventory even when its GGUF is not in the local cache.",
+      "gguf": {
+        "repo": "cstr/smoldocling-GGUF",
+        "file": "smoldocling-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 261
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "match": {
+        "max_cer": 0.20
+      }
+    },
+    {
+      "name": "texo-distill",
+      "engine": "texo-distill",
+      "_comment": "Printed math small model; uses the PP-FormulaNet/Texo-compatible GGML path.",
+      "gguf": {"repo": "cstr/texo-distill-GGUF", "file": "texo-distill-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "bttr-live",
+      "engine": "bttr",
+      "gguf": {"repo": "cstr/bttr-hw-GGUF", "file": "bttr-hw-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "hmer-live",
+      "engine": "hmer",
+      "gguf": {"repo": "cstr/hmer-hw-GGUF", "file": "hmer-hw-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "posformer-live",
+      "engine": "posformer",
+      "gguf": {"repo": "cstr/posformer-hw-GGUF", "file": "posformer-hw-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "ppformulanet-l-q4-live",
+      "engine": "ppformulanet-l",
+      "gguf": {"repo": "cstr/ppformulanet-l-GGUF", "file": "ppformulanet-l-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.20}
+    },
+    {
       "name": "smt",
       "engine": "smt",
       "_comment": "Sheet Music Transformer OMR (ConvNeXt encoder + cross-attn Transformer decoder -> bekern staff notation). Deterministic greedy argmax over the 20578-token bekern vocab. expected_text is the byte-exact q8_0 decode on a GrandStaff test image (antoniorv6/grandstaff, MIT), captured 2026-07-13: CPU==Metal identical, q8_0 == f32 (96.3% vs the dataset GT). Guards the whole VED OMR path (ConvNeXt patch-embed + stages, 2-D sinusoidal PE on cross-attn KEYS only, UNSCALED attention, greedy argmax, detok). The no-garbage guard passes with margin (top layout token '<b>' -> 'b' repeats 40/152 < the 0.5 repetition floor).",
@@ -1037,6 +1094,38 @@
       },
       "sample": "tests/regression/images/formula_quadratic.png",
       "expected_text": "\\[x= \\frac{-b \\pm \\sqrt{b^{2}-4ac}}{2a}\\]",
+      "match": {
+        "max_cer": 0.1
+      }
+    },
+    {
+      "name": "tesseract-lstm",
+      "engine": "tesseract-lstm",
+      "_comment": "Recognizer-only engine measured through the DBNet detection + line-crop + Tesseract-LSTM pipeline.",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "file": "tesseract-eng-f16.gguf",
+        "revision": "main"
+      },
+      "detector": "dbnet-ic15-q4_k.gguf",
+      "pipeline_engine": "tesseract",
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "match": {
+        "max_cer": 0.1
+      }
+    },
+    {
+      "name": "parseq",
+      "engine": "parseq",
+      "_comment": "Scene-text recognizer smoke. Quality is unscored until a line-crop fixture and transcription are added.",
+      "gguf": {
+        "repo": "cstr/parseq-tiny-GGUF",
+        "file": "parseq-tiny-q8_0.gguf",
+        "revision": "main"
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null,
       "match": {
         "max_cer": 0.1
       }
