@@ -4,10 +4,9 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Status: architecture/source audit and diff fixture are complete; English Gen-2
-  now decodes `5a`, but tensor parity is not yet passed
-- Next: resolve the remaining CNN/input tolerance and f16-stage differences,
-  then generalize the validated graph to all recognizers and detectors
+- Status: English Gen-2 graph and diff fixture pass the agreed 0.99 cosine
+  gate in F32 and folded-F16 forms; decoded output is `5a`
+- Next: generalize the validated graph to all recognizers, then port detectors
 
 ## Scope
 
@@ -56,8 +55,9 @@ metadata, not learned parameters.
       generated `-ref.gguf` tensors.
 - [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit
       layout conversion and cosine/magnitude reports for every captured stage.
-- [ ] Fix the current graph/output divergence before any model-family
-      generalization.
+- [x] Fix the current graph/output divergence before model-family
+      generalization; accept per-stage cosine >= 0.99 and inspect global
+      cosine plus mine/ref magnitudes for sparse CNN captures.
 - [ ] Implement the recognizer as reusable ggml graphs on CPU/Metal/CUDA/
       Vulkan, including GPU-resident CNN + BiLSTM and CTC logits. A CPU-scalar
       forward is permitted only as a temporary diagnostic oracle, not as the
