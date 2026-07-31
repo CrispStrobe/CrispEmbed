@@ -16,6 +16,7 @@ Example:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -51,9 +52,11 @@ def image_info(path: Path) -> dict:
             pixels = list(im.convert("L").getdata())
             return {"width": im.width, "height": im.height, "channels": len(im.getbands()),
                     "mean_gray": sum(pixels) / len(pixels),
-                    "min_gray": min(pixels), "max_gray": max(pixels)}
+                    "min_gray": min(pixels), "max_gray": max(pixels),
+                    "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     except Exception:  # noqa: BLE001 - metadata is best effort
-        return {"width": None, "height": None, "channels": None}
+        return {"width": None, "height": None, "channels": None,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest() if path.exists() else None}
 
 
 def parse_results(stdout: str) -> tuple[str, int]:
@@ -65,6 +68,20 @@ def parse_results(stdout: str) -> tuple[str, int]:
     if not texts and "(no text detected)" not in stdout:
         texts = [line.strip() for line in stdout.splitlines() if line.strip()]
     return "\n".join(texts), len(texts)
+
+
+def outcome(row: dict, raw: dict) -> str:
+    if row.get("status") != "ok":
+        return "error"
+    if row.get("cleanup") == ["raw"]:
+        return "neutral"
+    change = row.get("text_delta_vs_raw")
+    if change is None:
+        return "unavailable"
+    # Without a verified transcription, only a near-identical output is safe
+    # to call neutral. A changed output needs gold text before it can be
+    # promoted to helped or harmed.
+    return "neutral" if change <= 0.02 else "unavailable"
 
 
 def one(cli: Path, det: Path, rec: Path, image: Path, env: dict[str, str], cleanup: list[str], tmp: Path) -> dict:
@@ -85,6 +102,7 @@ def one(cli: Path, det: Path, rec: Path, image: Path, env: dict[str, str], clean
     text, regions = parse_results(p.stdout)
     return {"status": "ok" if p.returncode == 0 else "error", "cleanup": cleanup or ["raw"],
             "source": str(source), "elapsed_ms": round(elapsed, 2), "regions": regions,
+            "output": image_info(source),
             "text": text, "returncode": p.returncode,
             "stderr_tail": p.stderr[-800:]}
 
@@ -126,6 +144,7 @@ def main() -> int:
                 row["image"] = str(image)
                 row["input"] = image_info(image)
                 row["text_delta_vs_raw"] = delta(raw_text, row.get("text", ""))
+                row["outcome"] = outcome(row, raw)
                 rows.append(row)
     result = {"version": 1, "detector": str(det), "recognizer": str(rec), "rows": rows}
     if args.json:
