@@ -32,8 +32,10 @@ end-to-end OCR.
 | F16 | 119 MB | exact same tokens |
 | **Q8_0** | **65 MB** | **exact same tokens** |
 
-**Recommended: Q8_0** (65 MB). Q4_K is not provided — the 256-dim decoder
-bottleneck is too narrow for 4-bit quantization, causing recognition errors.
+**Recommended: Q8_0** (65 MB). Q4_K is unsafe for the pipeline: the 256-dim
+decoder bottleneck is too narrow for 4-bit quantization and causes recognition
+errors. CrispEmbed rejects TrOCR Q4_K by default; explicitly set
+`CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1` only for experimentation.
 
 ### Verification (all variants produce identical output)
 

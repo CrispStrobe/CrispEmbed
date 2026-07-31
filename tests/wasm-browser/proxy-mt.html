@@ -15,7 +15,7 @@
       document.title = 'worker ready — loading models + running…';
       worker.postMessage({
         detUrl: '/models/dbnet-ic15-q4_k.gguf',
-        recUrl: '/models/trocr-small-printed-q4_k.gguf',
+        recUrl: '/models/trocr-small-printed-q8_0.gguf',
         imageUrl: IMAGE,
         nThreads: 4
       });

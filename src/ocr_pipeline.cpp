@@ -7,11 +7,10 @@
 //   4. Return results sorted in reading order
 
 #include "ocr_pipeline.h"
+#include "ocr_crop.h"
 #include "ocr_detect.h"
 #include "math_ocr.h"
-#include "ppocrv6_det.h"
-#include "ppocrv6_ocr.h"
-#include "core/gguf_loader.h"
+#include "classical_preproc.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -21,52 +20,51 @@ void stbi_image_free(void * retval_from_stbi_load);
 }
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
+#include <string>
 #include <vector>
 
 namespace ocr_pipeline {
+
+bool is_dangerous_q4_recognizer_path(const char * rec_path) {
+    if (!rec_path) return false;
+    std::string path(rec_path);
+    std::transform(path.begin(), path.end(), path.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+    return path.find("trocr-") != std::string::npos && path.find("q4_k") != std::string::npos;
+}
+
+bool dangerous_q4_override_enabled() {
+    const char * value = std::getenv("CRISPEMBED_DEBUG_ALLOW_OCR_Q4");
+    return value && (!std::strcmp(value, "1") || !std::strcmp(value, "true") || !std::strcmp(value, "yes"));
+}
 
 struct context {
     ocr_detect::context * det = nullptr;
     math_ocr_context * rec = nullptr;
     int n_threads = 1;
     bool bench = false;
-    ppocrv6_det::context * ppdet = nullptr;
-    ppocrv6_ocr_context * pprec = nullptr;
-    bool ppocrv6 = false;
+    std::mutex infer_mutex; // decoder/context state is mutable across calls
 };
 
-static bool is_ppocrv6(const char * path) {
-    gguf_context * g = core_gguf::open_metadata(path);
-    if (!g) return false;
-    bool yes = core_gguf::kv_str(g, "general.architecture", "") == "ppocrv6";
-    core_gguf::free_metadata(g);
-    return yes;
-}
-
 bool load(context ** out, const char * det_path, const char * rec_path, int n_threads) {
+    if (is_dangerous_q4_recognizer_path(rec_path) && !dangerous_q4_override_enabled()) {
+        fprintf(stderr,
+                "ocr_pipeline: refusing TrOCR Q4_K recognizer '%s'; use trocr-small-printed-q8_0.gguf "
+                "or explicitly set CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1\n",
+                rec_path ? rec_path : "(null)");
+        if (out) *out = nullptr;
+        return false;
+    }
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
     ctx->bench = (std::getenv("CRISPEMBED_OCR_PIPELINE_BENCH") != nullptr);
-
-    if (is_ppocrv6(det_path) && is_ppocrv6(rec_path)) {
-        ctx->ppdet = ppocrv6_det::init(det_path, n_threads);
-        ctx->pprec = ppocrv6_ocr_init(rec_path, n_threads);
-        if (!ctx->ppdet || !ctx->pprec) {
-            if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
-            if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
-            delete ctx;
-            *out = nullptr;
-            return false;
-        }
-        ctx->ppocrv6 = true;
-        return true;
-    }
 
     // Load detection model
     if (!ocr_detect::load(&ctx->det, det_path, n_threads)) {
@@ -91,87 +89,39 @@ bool load(context ** out, const char * det_path, const char * rec_path, int n_th
     return true;
 }
 
-// Crop a region from an RGB image. Returns RGB uint8 buffer.
-static std::vector<uint8_t> crop_image(const unsigned char * img, int img_w, int img_h, int crop_x, int crop_y,
-                                       int crop_w, int crop_h) {
-    // Clamp to image bounds
-    crop_x = std::max(0, crop_x);
-    crop_y = std::max(0, crop_y);
-    if (crop_x + crop_w > img_w) crop_w = img_w - crop_x;
-    if (crop_y + crop_h > img_h) crop_h = img_h - crop_y;
-    if (crop_w <= 0 || crop_h <= 0) return {};
-
-    std::vector<uint8_t> crop(crop_w * crop_h * 3);
-    for (int y = 0; y < crop_h; y++) {
-        const uint8_t * src = img + ((crop_y + y) * img_w + crop_x) * 3;
-        uint8_t * dst = crop.data() + y * crop_w * 3;
-        memcpy(dst, src, crop_w * 3);
-    }
-    return crop;
-}
-
-std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold, float box_threshold,
-                                 int target_short_side) {
-    if (!ctx || !image_path) return {};
-    if (ctx->ppocrv6) {
-        auto boxes = ppocrv6_det::detect_file(ctx->ppdet, image_path, std::min(prob_threshold, 0.2f));
-        int iw, ih, ic;
-        unsigned char * img = stbi_load(image_path, &iw, &ih, &ic, 3);
-        if (!img) return {};
-        std::vector<ocr_result> results;
-        for (const auto & b : boxes) {
-            int x = std::max(0, (int)b.x - 2), y = std::max(0, (int)b.y - 2);
-            int cw = std::min(iw - x, (int)b.w + 4), ch = std::min(ih - y, (int)b.h + 4);
-            auto crop = crop_image(img, iw, ih, x, y, cw, ch);
-            if (crop.empty()) continue;
-            int out_len = 0;
-            const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &out_len);
-            if (!text || out_len <= 0) continue;
-            ocr_result r;
-            r.box = { b.x, b.y, b.w, b.h, b.score, 0.0f, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
-            r.confidence = b.score;
-            r.rec_confidence = 0.0f;
-            r.text.assign(text, out_len);
-            results.push_back(std::move(r));
-        }
-        stbi_image_free(img);
-        std::sort(results.begin(), results.end(), [](const ocr_result & a, const ocr_result & b) {
-            return a.box.y == b.box.y ? a.box.x < b.box.x : a.box.y < b.box.y;
-        });
-        return results;
-    }
-    if (!ctx->det || !ctx->rec) return {};
+std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                float prob_threshold, float box_threshold, int target_short_side,
+                                const ocr_detect::detect_options * geometry) {
+    if (!ctx || !ctx->det || !ctx->rec || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0) return {};
+    std::lock_guard<std::mutex> lock(ctx->infer_mutex);
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
     // Step 1: Detect text regions
     auto t_detect = std::chrono::steady_clock::now();
-    auto boxes = ocr_detect::detect_file(ctx->det, image_path, prob_threshold, box_threshold, 1.5f, target_short_side);
+    ocr_detect::detect_options detector_options = geometry ? *geometry : ocr_detect::rapid_defaults();
+    detector_options.prob_threshold = prob_threshold;
+    detector_options.box_threshold = box_threshold;
+    detector_options.target_short_side = target_short_side;
+    auto boxes = ocr_detect::detect_rgb_ex(ctx->det, raw, img_w, img_h, img_c, detector_options);
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_detect).count();
         fprintf(stderr, "[ocr_pipeline-bench] detect: %.1f ms (%zu boxes)\n", ms, boxes.size());
     }
 
     if (boxes.empty()) {
-        fprintf(stderr, "ocr_pipeline: no text detected in %s\n", image_path);
+        fprintf(stderr, "ocr_pipeline: no text detected\n");
         return {};
     }
     fprintf(stderr, "ocr_pipeline: detected %zu text regions\n", boxes.size());
 
-    // Step 2: Load original image for cropping
-    int img_w, img_h, img_c;
-    unsigned char * img = stbi_load(image_path, &img_w, &img_h, &img_c, 3);
-    if (!img) {
-        fprintf(stderr, "ocr_pipeline: cannot load image for cropping: %s\n", image_path);
-        return {};
-    }
-
-    // Step 3: Collect valid crops, batch-encode, then decode sequentially.
+    // Step 2: Collect valid crops, batch-encode, then decode sequentially.
     struct crop_entry {
         std::vector<uint8_t> data;
         int w, h;
         size_t box_idx;
+        bool orientation_corrected;
     };
     std::vector<crop_entry> crop_entries;
     crop_entries.reserve(boxes.size());
@@ -184,17 +134,13 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
         int cw = (int)b.w + 2 * pad;
         int ch = (int)b.h + 2 * pad;
 
-        auto crop = crop_image(img, img_w, img_h, cx, cy, cw, ch);
+        int actual_w = 0, actual_h = 0;
+        auto crop = ocr_crop::extract(raw, img_w, img_h, 3, cx, cy, cw, ch, 0, &actual_w, &actual_h);
         if (crop.empty()) continue;
 
-        int actual_w = std::min(cw, img_w - cx);
-        int actual_h = std::min(ch, img_h - cy);
-        if (actual_w <= 0 || actual_h <= 0) continue;
-
-        crop_entries.push_back({ std::move(crop), actual_w, actual_h, i });
+        const bool orientation_corrected = ocr_crop::orient_180_rgb(crop, actual_w, actual_h);
+        crop_entries.push_back({ std::move(crop), actual_w, actual_h, i, orientation_corrected });
     }
-
-    stbi_image_free(img);
 
     std::vector<ocr_result> results;
     results.reserve(crop_entries.size());
@@ -231,8 +177,13 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
                 if (text && out_len > 0) {
                     ocr_result r;
                     r.box = boxes[crop_entries[i].box_idx];
+                    r.orientation_corrected = crop_entries[i].orientation_corrected;
                     r.confidence = r.box.score;
                     r.text = std::string(text, out_len);
+                    r.rec_confidence = math_ocr_mean_confidence(ctx->rec);
+                    int n_conf = 0;
+                    const float * conf = math_ocr_confidences(ctx->rec, &n_conf);
+                    if (conf && n_conf > 0) r.char_conf.assign(conf, conf + n_conf);
                     results.push_back(std::move(r));
                 }
             }
@@ -246,8 +197,13 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
                 if (text && out_len > 0) {
                     ocr_result r;
                     r.box = boxes[crop_entries[i].box_idx];
+                    r.orientation_corrected = crop_entries[i].orientation_corrected;
                     r.confidence = r.box.score;
                     r.text = std::string(text, out_len);
+                    r.rec_confidence = math_ocr_mean_confidence(ctx->rec);
+                    int n_conf = 0;
+                    const float * conf = math_ocr_confidences(ctx->rec, &n_conf);
+                    if (conf && n_conf > 0) r.char_conf.assign(conf, conf + n_conf);
                     results.push_back(std::move(r));
                 }
             }
@@ -265,8 +221,23 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
     return results;
 }
 
+std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold, float box_threshold,
+                                 int target_short_side, const ocr_detect::detect_options * geometry) {
+    if (!ctx || !image_path) return {};
+    int img_w = 0, img_h = 0, img_c = 0;
+    unsigned char * raw = stbi_load(image_path, &img_w, &img_h, &img_c, 3);
+    if (!raw) {
+        fprintf(stderr, "ocr_pipeline: cannot load image for cropping: %s\n", image_path);
+        return {};
+    }
+    auto results = run_raw(ctx, raw, img_w, img_h, 3, prob_threshold, box_threshold, target_short_side, geometry);
+    stbi_image_free(raw);
+    return results;
+}
+
 std::string recognize_file(context * ctx, const char * image_path) {
     if (!ctx || !ctx->rec || !image_path) return "";
+    std::lock_guard<std::mutex> lock(ctx->infer_mutex);
     int out_len = 0;
     const char * text = math_ocr_recognize_file(ctx->rec, image_path, &out_len);
     return text ? std::string(text, out_len) : "";
@@ -274,12 +245,6 @@ std::string recognize_file(context * ctx, const char * image_path) {
 
 void free(context * ctx) {
     if (!ctx) return;
-    if (ctx->ppocrv6) {
-        ppocrv6_det::free(ctx->ppdet);
-        ppocrv6_ocr_free(ctx->pprec);
-        delete ctx;
-        return;
-    }
     if (ctx->det) ocr_detect::free(ctx->det);
     if (ctx->rec) math_ocr_free(ctx->rec);
     delete ctx;

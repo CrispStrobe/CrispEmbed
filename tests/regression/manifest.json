@@ -994,6 +994,63 @@
       }
     },
     {
+      "name": "smoldocling",
+      "engine": "smoldocling",
+      "_comment": "Full-page DocTags OCR. Included in the engine inventory even when its GGUF is not in the local cache.",
+      "gguf": {
+        "repo": "cstr/smoldocling-GGUF",
+        "file": "smoldocling-q8_0.gguf",
+        "revision": "main",
+        "approx_size_mb": 261
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "match": {
+        "max_cer": 0.20
+      }
+    },
+    {
+      "name": "texo-distill",
+      "engine": "texo-distill",
+      "_comment": "Printed math small model; uses the PP-FormulaNet/Texo-compatible GGML path.",
+      "gguf": {"repo": "cstr/texo-distill-GGUF", "file": "texo-distill-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "bttr-live",
+      "engine": "bttr",
+      "gguf": {"repo": "cstr/bttr-hw-GGUF", "file": "bttr-hw-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "hmer-live",
+      "engine": "hmer",
+      "gguf": {"repo": "cstr/hmer-hw-GGUF", "file": "hmer-hw-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "posformer-live",
+      "engine": "posformer",
+      "gguf": {"repo": "cstr/posformer-hw-GGUF", "file": "posformer-hw-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.20}
+    },
+    {
+      "name": "ppformulanet-l-q4-live",
+      "engine": "ppformulanet-l",
+      "gguf": {"repo": "cstr/ppformulanet-l-GGUF", "file": "ppformulanet-l-q4_k.gguf", "revision": "main"},
+      "sample": "tests/regression/images/formula_quadratic.png",
+      "expected_text": null,
+      "match": {"max_cer": 0.20}
+    },
+    {
       "name": "smt",
       "engine": "smt",
       "_comment": "Sheet Music Transformer OMR (ConvNeXt encoder + cross-attn Transformer decoder -> bekern staff notation). Deterministic greedy argmax over the 20578-token bekern vocab. expected_text is the byte-exact q8_0 decode on a GrandStaff test image (antoniorv6/grandstaff, MIT), captured 2026-07-13: CPU==Metal identical, q8_0 == f32 (96.3% vs the dataset GT). Guards the whole VED OMR path (ConvNeXt patch-embed + stages, 2-D sinusoidal PE on cross-attn KEYS only, UNSCALED attention, greedy argmax, detok). The no-garbage guard passes with margin (top layout token '<b>' -> 'b' repeats 40/152 < the 0.5 repetition floor).",
@@ -1042,84 +1099,48 @@
       }
     },
     {
-      "name": "ppocrv6-tiny",
-      "engine": "ppocrv6",
-      "_comment": "PP-OCRv6 tiny detector + recognizer through the native detector→crop→recognizer orchestrator. Both F16 and policy-q4 artifacts are stored on the backup volume; expected_text remains null until a CC0 line fixture is restored.",
+      "name": "tesseract-lstm",
+      "engine": "tesseract-lstm",
+      "_comment": "Recognizer-only engine measured through the DBNet detection + line-crop + Tesseract-LSTM pipeline.",
       "gguf": {
-        "repo": "mlx-community/PP-OCRv6-tiny-rec-GGUF",
-        "file": "PP-OCRv6_tiny_rec-f16.gguf",
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "file": "tesseract-eng-f16.gguf",
         "revision": "main"
       },
-      "detector": {
-        "repo": "mlx-community/PP-OCRv6-tiny-det-GGUF",
-        "file": "PP-OCRv6_tiny_det-f16.gguf",
-        "revision": "main"
-      },
+      "detector": "dbnet-ic15-f16.gguf",
+      "pipeline_engine": "tesseract",
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
-      "diff": {
-        "binary": "test-ppocrv6-rec",
-        "ref": {
-          "repo": "mlx-community/PP-OCRv6-tiny-rec-GGUF",
-          "file": "PP-OCRv6_tiny_rec-fox-ref.gguf",
-          "revision": "main"
-        },
-        "args": ["tests/regression/images/fox.png"],
-        "thresholds": {"*": 0.999}
+      "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
+      "match": {
+        "max_cer": 0.1
       }
     },
     {
-      "name": "ppocrv6-small",
-      "engine": "ppocrv6",
-      "_comment": "PP-OCRv6 small detector + recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
+      "name": "tesseract-lstm-deu",
+      "engine": "tesseract-lstm",
+      "_comment": "German detector + line-crop recognizer smoke/benchmark; quality is recorded without a full-page transcription oracle.",
       "gguf": {
-        "repo": "mlx-community/PP-OCRv6-small-rec-GGUF",
-        "file": "PP-OCRv6_small_rec-f16.gguf",
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "file": "tesseract-deu-q8_0.gguf",
         "revision": "main"
       },
-      "detector": {
-        "repo": "mlx-community/PP-OCRv6-small-det-GGUF",
-        "file": "PP-OCRv6_small_det-f16.gguf",
-        "revision": "main"
-      },
-      "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
-      "diff": {
-        "binary": "test-ppocrv6-rec",
-        "ref": {
-          "repo": "mlx-community/PP-OCRv6-small-rec-GGUF",
-          "file": "PP-OCRv6_small_rec-fox-ref.gguf",
-          "revision": "main"
-        },
-        "args": ["tests/regression/images/fox.png"],
-        "thresholds": {"*": 0.999}
-      }
+      "detector": "dbnet-ic15-f16.gguf",
+      "pipeline_engine": "tesseract",
+      "sample": "tests/regression/images/cc0/german_official_print.jpg"
     },
     {
-      "name": "ppocrv6-medium",
-      "engine": "ppocrv6",
-      "_comment": "PP-OCRv6 medium detector + recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
+      "name": "parseq",
+      "engine": "parseq",
+      "_comment": "Scene-text recognizer smoke. Quality is unscored until a line-crop fixture and transcription are added.",
       "gguf": {
-        "repo": "mlx-community/PP-OCRv6-medium-rec-GGUF",
-        "file": "PP-OCRv6_medium_rec-f16.gguf",
-        "revision": "main"
-      },
-      "detector": {
-        "repo": "mlx-community/PP-OCRv6-medium-det-GGUF",
-        "file": "PP-OCRv6_medium_det-f16.gguf",
+        "repo": "cstr/parseq-tiny-GGUF",
+        "file": "parseq-tiny-q8_0.gguf",
         "revision": "main"
       },
       "sample": "tests/regression/images/fox.png",
       "expected_text": null,
-      "diff": {
-        "binary": "test-ppocrv6-rec",
-        "ref": {
-          "repo": "mlx-community/PP-OCRv6-medium-rec-GGUF",
-          "file": "PP-OCRv6_medium_rec-fox-ref.gguf",
-          "revision": "main"
-        },
-        "args": ["tests/regression/images/fox.png"],
-        "thresholds": {"*": 0.999}
+      "match": {
+        "max_cer": 0.1
       }
     }
   ]

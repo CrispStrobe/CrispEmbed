@@ -13,7 +13,9 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| _(none in flight)_ | | | |
+| 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
+| 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
+| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | PP-OCRv6 large-stem parity and CC0 quality diagnosis; integrate validated fixes into main | **IN PROGRESS** |
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -23,6 +25,477 @@ races). Remove the row when the branch lands.
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
 > still **pending**.
+
+## OCR pipeline workstream — actionable items
+
+This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
+ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each
+can land and be measured independently.
+
+### O1 — Restore a trustworthy OCR baseline [COMPLETED]
+
+- Fix duplicate region emission in the batched DBNet + TrOCR path.
+- Add a regression test for one output region per detected region and no
+  duplicated reading-order text.
+- Record baseline latency and region/text counts in `PERFORMANCE.md`.
+
+**Started:** DBNet postprocessing now handles degenerate one-point contours;
+the local fox fixture improves from 0 to 10 detected regions. The remaining
+baseline work is an automated model-backed assertion and sequential/batched
+comparison.
+
+**Done when:** batch and sequential recognition produce equivalent region counts
+and no duplicate text on the OCR fixture set. The benchmark harness now accepts
+`--expect-regions` and repeated `--expect-text` assertions for CI.
+
+### O2 — Define a structured document result contract [COMPLETED]
+
+- Add a C++ `ocr_document` result containing page dimensions, text regions,
+  layout regions, tables, formulas, confidence, and engine provenance.
+- Keep the existing orchestrator result and C API source-compatible; provide an
+  adapter first, then migrate callers.
+- Add serialization tests for empty, text-only, and mixed structured results.
+
+**Started:** `ocr_orchestrator::result` now carries page dimensions and optional
+layout regions. Layout inference is lazy and remains disabled unless
+`config.layout_model` is set; existing callers and default latency are unchanged.
+
+**Done when:** callers can consume one structured result without depending on a
+specific OCR engine.
+
+### O3 — Add CPU-only region routing after layout detection [COMPLETED]
+
+- Introduce a pure routing module with `text`, `table`, `formula`, and
+  `fallback` destinations.
+- Route by layout label, confidence tier, containment/overlap, and explicit
+  per-request feature policy; suppress duplicate text when a specialized
+  recognizer owns a region.
+- Unit-test every decision seam without model weights.
+
+**Started:** `ocr_orchestrator::result` now carries the model-free routing plan;
+table/formula/image policy is explicit in `config` and text-only by default.
+
+**Done when:** a synthetic page produces a deterministic routing plan and the
+existing specialized engines can be dispatched from it.
+
+### O4 — Remove temporary image files from stage handoffs [COMPLETED]
+
+- Add an in-memory RGB image/crop view shared by cleanup, detection, and
+  recognizers; retain file APIs as load-and-forward wrappers.
+- Make cleanup output ownership explicit and avoid unnecessary copies.
+
+**Started:** `ocr_detect::detect_rgb` and `ocr_pipeline::run_raw` now accept
+borrowed interleaved pixels; file APIs forward through them. The orchestrator
+cleanup handoff still uses a temporary PNG and is the next O4 slice.
+
+**Done when:** cleanup → detection/recognition runs without creating
+`/tmp/crispembed_ocr_*.png`, with CPU/Metal output parity.
+
+### O5 — Make capabilities and failures explicit [COMPLETED]
+
+- Add an OCR capability query for loaded engines, languages, output types, and
+  structure stages.
+- Validate incompatible requests before inference; use stable errors instead of
+  silent empty structure results.
+- Add image dimension/pixel guards and per-item batch error isolation.
+
+**Started:** enabling table/formula routing now fails at initialization unless
+the required layout and specialized GGUF backends are configured.
+
+**Done when:** every advertised feature is executable or rejected with a stable,
+test-covered reason.
+
+### O6 — Add reusable pipeline pooling and batch execution [COMPLETED]
+
+- Define a bounded OCR pipeline pool for server use; retain the current path for
+  single-threaded and WASM builds.
+- Batch compatible crop recognition, cap batch size, and isolate bad inputs.
+- Add queue/deadline metrics before changing defaults.
+
+**Started:** DBNet+TrOCR inference contexts now serialize mutable decoder state
+with an internal mutex, preventing concurrent callers from corrupting KV/cache
+state. `ocr_pipeline_pool` now provides bounded isolated contexts with blocking
+slot acquisition. The basic C OCR API selects the pool size from
+`CRISPEMBED_OCR_POOL_SIZE` (default `1`); server-level queue/deadline metrics
+remain a follow-up operational enhancement.
+
+**Done when:** concurrent requests do not share mutable decoder state and batch
+  throughput improves without changing decoded text.
+
+### O7 — Establish unified accuracy/performance gates [COMPLETED]
+
+- Add fixtures for receipt, form, dense page, screenshot, photo, table, and
+  formula workloads.
+- Measure CER/WER or exact-match, region recall, structure accuracy, p50/p95
+  latency, memory, and batch throughput.
+- Add regression thresholds and decoded-output checks for optimizations.
+
+**Started:** `tests/ocr_benchmark.py` runs the real detector and pipeline test
+binaries and reports region counts, decoded regions, and stage timings as text
+or JSON. It uses local GGUFs and does not download models implicitly.
+
+**Done when:** one reproducible command reports OCR quality and cost, suitable
+for CI. **Complete:** `tests/ocr_benchmark.py` provides this command and JSON
+output.
+
+### O8 — Make corpus provenance and real-world coverage explicit [IN PROGRESS]
+
+- Keep deterministic/reference fixtures for unit and per-stage parity checks,
+  but do not use them as claims about real-world OCR quality.
+- Add at least one public-domain/CC0 input for every production stage: text
+  detection/recognition, layout, tables, cleanup, orientation, handwriting,
+  multilingual routing, super-resolution, PDF routing, formulas, and OMR.
+- Record source page, license, URL, SHA-256, and annotation status for every
+  vendored asset. Add derived rotation/skew variants only from public-domain
+  inputs.
+- Acquire larger CC0 receipt and Arabic document sets separately, with a
+  documented acceptance/download step instead of silently bundling them.
+
+**Started:** `tests/regression/cc0_sources.json`, the fetched
+`tests/regression/images/cc0/` seed set, and `corpus_manifest.json` now cover
+receipts, forms, tables, Arabic printed/handwritten text, handwriting, cleanup,
+orientation, layout, specialist lanes, and a dedicated German lane (modern
+photo document, historical German print, and Kurrent handwriting). Gold
+transcription review remains open for these robustness fixtures.
+
+### O9 — Benchmark every available engine on shared inputs [IN PROGRESS]
+
+- Use the checked-in regression manifest to enumerate every engine with a
+  sample and local GGUF; report missing samples/models as explicit skips.
+- Record cold load and warm inference time, return status, output excerpt, and
+  CER/exact match when a gold transcription exists.
+- Keep full-page VLM, ordinary OCR, math, and OMR scores separate; do not
+  compare specialist outputs as plain-text OCR.
+- Run the same engine sweep on the public-domain corpus after human gold
+  annotations land, then add per-engine quality/latency thresholds.
+- Maintain a complete matrix for model-backed engines even when a GGUF is not
+  cached; the benchmark can fetch the manifest-pinned artifact with
+  `--download-missing`.
+
+**Started:** `tests/ocr_engine_benchmark.py` completed the local M1 Metal
+sweep: 11 engines completed, 2 timed out/errored, and the remaining entries
+were explicitly reported as missing samples, missing models, or model-needed
+ports. SmolDocling is live-tested; Tesseract-LSTM is measured through DBNet
+line crops; Unlimited-OCR is being fetched for its live run. Tesseract-LSTM
+and PARSeq are present as recognizer-only rows; the DBNet+TrOCR document
+baseline is measured separately by `tests/ocr_benchmark.py`. Results are
+written as JSON with no silent omission. Unlimited-OCR subsequently completed
+on M1 Metal from the system volume in 45,967 ms with correct two-region text
+output; its GGUF was restored to the backup volume afterward.
+
+The checked-in matrix now has a model-free CI coverage guard at
+`tests/regression/test_engine_matrix.py`: all 23 portfolio engines must remain
+present with a lane, runtime, fixture, and explicit availability status.
+
+### O10 — Preprocessing inventory, parity, and live outcome gates [IN PROGRESS]
+
+The OCR front-end needs its own measured regression track. Our restoration
+inventory is broader than the lightweight OCR reference pipelines, but we are
+missing several inexpensive geometry/orientation safeguards that often matter
+more than another restoration model.
+
+#### Existing CrispEmbed preprocessing
+
+- Classical scan cleanup: dual-detector deskew consensus, border/content crop,
+  background whitening, Otsu/Sauvola binarization, and fast binary morphology.
+- Page analysis: PDF effective-DPI profiling, page split detection, content
+  bounding box detection, source-type classification, and classical dewarp.
+- Orientation: heuristic 0°/180° text-crop correction and rotated detection
+  boxes; no learned page-orientation model yet.
+- Learned restoration: NAFNet denoise, SCUNet, Restormer, InstructIR, and
+  AdaIR.
+- Super-resolution: PAN, TBSRN, HAT, DAT, ESRGAN, SwinIR, and SAFMN.
+- Learned/classical dewarp: TPS dewarp and the classical baseline.
+- VLM policy: full-page VLMs skip destructive scan cleanup and perform their
+  own letterboxing/resizing; variable-resolution VLMs honor the max-pixels
+  budget.
+
+#### Reference capabilities to reproduce or explicitly reject
+
+- Detector geometry: configurable minimum/maximum side limits, short-side
+  target sizing, minimum-height padding, wide/short-image padding, and
+  aspect-ratio-preserving letterbox policy.
+- DB postprocessing: configurable segmentation threshold, box threshold,
+  unclip ratio, optional dilation, candidate cap, and fast/accurate score mode.
+- Line orientation: a dedicated 0°/180° classifier, confidence threshold, and
+  an explicit all-lines mode for mixed-orientation documents.
+- Page orientation: a learned 0°/90°/180°/270° classifier for PDF pages and
+  photographed pages.
+- Crop preparation: one shared policy for classifier geometry, recognizer
+  geometry, aspect-preserving padding, and full-resolution recognition crops.
+- PDF ingestion: native page rendering, page-image rotation, worker-pool
+  accumulation, and the same preprocessing/OCR path as image inputs.
+- Operational controls: per-stage enable/disable flags, hard errors for
+  unavailable optional stages, request deadlines, and stage-level metrics.
+
+#### Implementation slices
+
+1. **O10.1 — Live preprocessor benchmark harness.** Add
+   `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
+   run raw input, classical cleanup variants, deskew, binarization, dewarp,
+   denoise, and every locally available SR/restoration model. Record stage
+   latency, output dimensions, pixel statistics, detector regions, OCR text,
+   confidence, and CER/exact match when gold text exists. Also report text
+   delta versus the raw-image baseline when no verified gold transcription is
+   available. Synthetic degradations remain unit stress tests, not quality
+   claims.
+
+2. **O10.2 — Problematic-input corpus.** Extend the public-domain corpus with
+   verified derived variants: ±4°/±8° skew, dark border, uneven illumination,
+   haze, speckle, low-DPI downsample, JPEG damage, 90°/180°/270° rotation,
+   perspective/curved-page distortion, and mixed upright/upside-down lines.
+   Every derived file must retain its parent SHA-256 and transformation recipe.
+
+3. **O10.3 — Detector geometry policy.** **Implemented in `cf5f79b` and the
+   follow-up routed-stage wiring.** Add a shared configuration object and
+   C API fields for `min_side_len`, `max_side_len`, `min_height`,
+   `width_height_ratio`, padding mode, `unclip_ratio`, dilation, score mode,
+   and candidate cap. Default to safe current behavior; expose compatibility
+   presets for short text strips, wide receipts, dense scans, and photos.
+   The detector now provides `detect_options`/`rapid_defaults`, and the C API
+   stage struct forwards these controls through DBNet, Tesseract, and PARSeq
+   detector paths. Fast mode avoids pathological contour tracing; accurate
+   polygon scoring remains available explicitly.
+
+4. **O10.4 — Learned line orientation.** Port a small permissively licensed
+   0°/180° line-angle classifier to GGUF/ggml. Integrate it after detection
+   and before every line recognizer, including Tesseract-LSTM crops. Retain
+   the current heuristic as a no-model fallback. Add per-line angle,
+   confidence, and whether a rotation was applied to structured results.
+   The existing classical 0°/180° safeguard is now shared by TrOCR,
+   Tesseract-LSTM, and PARSeq line crops; the learned classifier and
+   structured rotation metadata remain outstanding.
+
+5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
+   model. Apply it before PDF/image routing only when confidence clears a
+   configurable threshold. Never rotate VLM inputs implicitly unless the
+   caller enables the option, because VLM letterboxing is model-specific.
+
+6. **O10.6 — Shared crop preprocessing.** Consolidate classifier and
+   recognizer crop resizing/padding into one tested module. Support
+   aspect-preserving and stretch modes, fixed height, maximum width, and
+   grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
+   upside-down, and tightly clipped lines.
+
+7. **O10.7 — PDF render/autorotate path.** Add native page rendering and
+   page-level accumulation where the platform supports it. Reuse PDF DPI
+   profiling to select render DPI, then apply page orientation and the normal
+   document pipeline. Keep the existing parser-only path for minimal builds.
+
+8. **O10.8 — Stage routing and safeguards.** Make preprocessing selection
+   evidence-based: classical cleanup for scans, no destructive cleanup for
+   VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
+   orientation only above confidence thresholds. Add accept-gate comparisons
+   so a preprocessor is rejected when it lowers confidence or worsens CER
+   beyond the configured tolerance.
+
+#### Required benchmark output
+
+Each fixture/stage row must include:
+
+- input and output dimensions, channels, and file checksum;
+- cold load time, warm stage time, and peak/working-set estimate where
+  available;
+- detector box count, recognized region count, mean confidence, and text;
+
+The live engine benchmark now includes both English and German
+Tesseract-LSTM detector+line-crop rows, with the German model downloaded from
+the pinned permissive registry entry when requested. Tesseract benchmark rows
+use the F16 DB detector rather than a policy-disallowed Q4 detector.
+- gold CER/exact match when verified, otherwise raw-baseline text delta;
+- `helped`, `neutral`, `harmed`, `unavailable`, or `error` classification;
+- stderr tail and stable failure reason for model/backend failures.
+
+#### Acceptance gates
+
+- Every production preprocessor has at least one real CC0/German live fixture.
+- Every problematic-input variant runs through raw plus all applicable stages.
+- No default preprocessor may worsen verified CER beyond its configured gate.
+- A stage that cannot run is reported explicitly; it is never silently skipped.
+- Orientation, geometry, cleanup, and restoration effects are reported
+  separately, so a strong recognizer cannot hide a harmful preprocessor.
+- Results are reproducible from one command and committed as benchmark JSON;
+  large GGUFs support the external-volume no-copy path via `UOCR_MMAP=1`.
+
+#### O10.9 — Named model candidates, licensing, and quality tiers
+
+License policy: MIT, Apache-2.0, BSD-2/3-Clause, ISC, and similarly
+permissive licenses are acceptable candidates for the core distribution. Do
+not add NC/ND, research-only, or unclear checkpoint artifacts to the default
+model registry. Repository-code licensing and pretrained-weight licensing must
+be recorded separately before publishing a GGUF.
+
+| Stage | Candidate model | License/reuse status | Quality position | Decision |
+|---|---|---|---|---|
+| Page orientation | `PP-LCNet_x1_0_doc_ori` | PaddleOCR is Apache-2.0; verify the exact exported checkpoint terms | Strong practical choice: four-way 0°/90°/180°/270° classifier, official docs report 99.06% on its test set | First port candidate |
+| Line orientation | `PP-LCNet_x1_0_textline_ori` | Same Apache-2.0 project/weight-provenance audit required | Strong practical choice for per-line 0°/180° correction | First port candidate |
+| Text detection | `PP-OCRv6` det | Apache-2.0 PaddleOCR code; model artifact provenance must be pinned and audited | Current practical high-quality/throughput baseline; supports multilingual deployment | Port/benchmark when PP-OCRv6 branch lands |
+| Text recognition | `PP-OCRv6` rec | Same code/weight distinction as detector | Current practical high-quality/throughput baseline; one unified family is preferable to many language-specific recognizers | Port/benchmark with detector |
+| Text detection fallback | `cstr/dbnet-ic15-GGUF` (`DBNet` ResNet-18) | Apache-2.0 declared for the converted artifact; source and dataset provenance documented; Challenge 4 is distinct from ICDAR2015-TextSR ODbL | Mature, reliable fallback; generally below current PP-OCR quality on difficult documents | Cleared; Q8/F16 default, Q4_K debug-only |
+| Denoising | `NAFNet` | Upstream repository/checkpoint terms require explicit audit before redistribution | Strong efficient restoration baseline; upstream describes it as state-of-the-art for its restoration tasks | Keep only with artifact audit |
+| Denoising/deblurring | `Restormer` | MIT repository license | Strong high-resolution denoising/deblurring/deraining model; official repo calls it SOTA for those tasks | Safe preferred learned restorer |
+| Denoising | `SCUNet` | Verify upstream repository and checkpoint terms before registry inclusion | Lightweight practical denoiser, attractive for CPU/Metal | Keep as optional pending audit |
+| Super-resolution | `HAT` / `HAT-S` | Apache-2.0 repository | Stronger quality-oriented SR candidate; HAT-S is a useful smaller tier | Safe preferred quality SR candidate |
+| Super-resolution | `SwinIR` | Apache-2.0 repository; verify model-data/checkpoint terms | Strong broad baseline for classical/real-world SR, denoising, and JPEG artifact reduction | Safe preferred general SR candidate |
+| Super-resolution | `Real-ESRGAN` | BSD-3-Clause repository; each released checkpoint still needs provenance audit | Strong practical real-world SR, but can hallucinate texture and harm OCR | Optional photo-only fallback, never unconditional |
+| Super-resolution | `DAT` | Use only an explicitly permissive checkpoint/export; otherwise audit-required | High-quality transformer SR candidate, heavier than HAT-S/SwinIR | Optional quality tier after license audit |
+| Super-resolution | `PAN` | Apache-2.0 model card/export candidate available | Very small and fast; useful low-resolution baseline, not current SOTA | Keep as fast CPU tier |
+| Super-resolution | `SAFMN` | Apache-2.0 source/export; current GGUF card records Apache-2.0 | Excellent efficiency/size tradeoff, not absolute SOTA | Keep as default lightweight SR candidate |
+| Text SR | `TBSRN` | Checkpoint license/provenance must be audited | Text-focused SR is more relevant to OCR than generic photorealistic SR | Keep only behind OCR CER gate |
+| Learned dewarp | `UVDoc` / document-unwarping models | Candidate only after exact checkpoint license audit | Better fit than generic image restoration for curved pages | Prefer classical dewarp first; port if real fixtures show need |
+| PDF orientation/render | PDFium + `PP-LCNet_x1_0_doc_ori` | PDFium and classifier terms must be retained in notices; classifier checkpoint audit required | Strong operational solution rather than an image-restoration model | Implement native render/autorotate path |
+
+#### O10.9a — MMOCR model/checkpoint license audit
+
+MMOCR's repository is Apache-2.0, but that is the license of the toolbox
+code, not automatically the license of every downloaded checkpoint. The
+official model-zoo page lists 48 checkpoints and links the weights separately,
+without providing a per-checkpoint SPDX grant. Therefore every MMOCR weight
+below is **audit-required**, unless a separately verified checkpoint license
+is recorded in `tests/regression/manifest.json` and the model registry.
+
+| MMOCR model family | Checkpoints in the official zoo | Current reuse status | CrispEmbed decision |
+|---|---|---|---|
+| DBNet | ResNet-18/50, DCNv2, oCLIP; ICDAR2015/SynthText/TotalText | The specific `cstr/dbnet-ic15-GGUF` ResNet-18 artifact declares Apache-2.0 and documents MMOCR + ICDAR2015 Incidental Scene Text provenance; other zoo checkpoints remain separate audits | Existing port remains; Q8/F16 default | Cleared for the specific cstr artifact; do not generalize to every zoo checkpoint |
+| DBNet++ | ResNet-50, DCNv2, oCLIP; ICDAR2015 | Same checkpoint uncertainty; stronger detector but larger | Optional quality tier only after audit |
+| Mask R-CNN | CTW1500/ICDAR2015, ResNet-50/oCLIP | Code/framework may be Apache-2.0; checkpoint and backbone provenance unresolved | Do not add yet |
+| DRRG | CTW1500 | Checkpoint license not stated in zoo | Do not add yet |
+| FCENet | CTW1500/ICDAR2015/TotalText, ResNet-50/DCNv2/oCLIP | Checkpoint license not stated in zoo | Candidate for curved text only after audit |
+| PANet | CTW1500/ICDAR2015, ResNet-18 | Checkpoint license not stated in zoo | Low priority; audit before use |
+| PSENet | CTW1500/ICDAR2015, ResNet-50/oCLIP | Checkpoint license not stated in zoo | Low priority; audit before use |
+| TextSnake | CTW1500, ResNet-50/oCLIP | Checkpoint license not stated in zoo | Candidate for arbitrary shapes only after audit |
+| ABINet | Vision-only and iterative; ST/MJ | Checkpoint license not stated in zoo; language-model/data provenance especially important | Do not bundle pending full audit |
+| ASTER | ResNet-45, ST/MJ | Checkpoint license not stated in zoo | Rectification idea is reusable; checkpoint excluded pending audit |
+| CRNN | Mini-VGG, MJ | Checkpoint license not stated in zoo; dataset/training terms unresolved | Do not add; Tesseract remains the tiny permissive lane |
+| MASTER | ResNet-31, ST/MJ/SA | Checkpoint license not stated in zoo | Do not add pending audit |
+| NRTR | Modality-transform and ResNet-31 variants, ST/MJ | Checkpoint license not stated in zoo | Do not add pending audit |
+| RobustScanner | ResNet-31, ST-sub/MJ-sub/SA-real | Checkpoint license not stated in zoo | Do not add pending audit |
+| SAR | ResNet-31 parallel/sequential, ST-sub/MJ-sub/SA-real | Checkpoint license not stated in zoo | Do not add pending audit |
+| SATRN | Shallow and small, ST/MJ | Checkpoint license not stated in zoo | Do not add pending audit |
+| SVTR | Small/base, ST/MJ | Checkpoint license not stated in zoo; promising scene-text quality/size tradeoff | First new MMOCR recognizer to investigate, but no auto-download until weights are cleared |
+| SDMGR | Visual/novisual/open-set, WildReceipt | Checkpoint, dataset, and KIE-label provenance unresolved | Do not add; existing KIE pipeline is preferred |
+
+The official zoo reports the strongest listed detection result for DBNet++
+ResNet-50-oCLIP at 0.8882 ICDAR2015 hmean-IoU, and lists SVTR-small/base as
+scene-text recognizers; these are quality signals only, not license grants.
+The architecture/code may be studied or clean-room reimplemented, but the
+specific weights remain blocked until their provenance is documented.
+
+#### Explicitly excluded or non-default candidates
+
+- `Texo-Distill` is AGPL-3.0 and remains outside the permissive core model
+  registry; use `PP-FormulaNet-L`, `PP-FormulaNet-S`, or another audited
+  Apache/MIT/BSD formula model instead.
+- Any `CC-BY-NC`, `CC-BY-NC-SA`, research-only, or unclear checkpoint is not a
+  default alternative even when its architecture is attractive. It may be
+  supported in a user-supplied/private model path if the caller accepts the
+  license, but it must not be bundled or auto-downloaded by the default
+  registry.
+- Generic GAN/diffusion SR models must not be called automatically on OCR
+  inputs. They can create plausible but incorrect glyph detail; acceptance is
+  downstream OCR CER/confidence, not visual sharpness.
+
+#### Quality/SOTA policy
+
+“SOTA” is task-specific and must not be treated as a blanket OCR claim. The
+selection policy is:
+
+1. `PP-LCNet_x1_0_doc_ori` and `PP-LCNet_x1_0_textline_ori` for cheap learned
+   orientation;
+2. `PP-OCRv6` det/rec for the primary practical OCR baseline;
+3. `Restormer` or `NAFNet` for restoration when live CER proves it helps;
+4. `HAT`/`SwinIR` for quality SR and `SAFMN`/`PAN` for low-resource SR;
+5. `Real-ESRGAN` only for photo inputs and only behind a no-harm gate;
+6. classical cleanup and no preprocessing remain valid winners when the raw
+   or VLM path scores better.
+
+Every named model must receive a matrix row with: exact source URL, revision,
+license, weight license, parameter count, GGUF quantization, live latency,
+CER delta on problematic fixtures, and a human-reviewed accept/reject result.
+
+#### O10.10 — Existing-model reconciliation
+
+The following are not new port candidates: the repository already contains
+runtime implementations, converters, tests, and local GGUF artifacts for them:
+
+| Already available | Runtime / artifact status |
+|---|---|
+| `NAFNet` | `src/nafnet_denoise.cpp`; `models/convert-nafnet-to-gguf.py`; local `nafnet-sidd-w32-q8_0.gguf` |
+| `SCUNet` | `src/scunet_denoise.cpp`; `models/convert-scunet-to-gguf.py`; local `scunet-color-f32.gguf` |
+| `Restormer` | `src/restormer.cpp`; `models/convert-restormer-to-gguf.py`; local `restormer-denoise-f16.gguf` |
+| `HAT` | `src/hat_sr.cpp`; `models/convert-hat-to-gguf.py`; local `hat-sr-x4-f16.gguf` |
+| `SwinIR` | `src/swinir_sr.cpp`; `models/convert-swinir-to-gguf.py`; local `swinir-light-x4-f16.gguf` |
+| `Real-ESRGAN` | `src/esrgan_sr.cpp`; `models/convert-esrgan-to-gguf.py`; local `esrgan-x4-f32.gguf` |
+| `DAT` | `src/dat_sr.cpp`; `models/convert-dat-to-gguf.py`; local `dat-light-x2-f16.gguf` |
+| `PAN` | `src/pan_sr.cpp`; `models/convert-pan-to-gguf.py`; local `pan-x4-f16.gguf` |
+| `SAFMN` | `src/safmn_sr.cpp`; `models/convert-safmn-to-gguf.py`; local `safmn-x4-f32.gguf` |
+| `TBSRN` | `src/tbsrn_sr.cpp`; `models/convert-tbsrn-to-gguf.py`; local `tbsrn-telescope-f16.gguf` |
+
+PP-OCRv6 detector/recognizer GGUF files also exist in the shared model volume
+(`PP-OCRv6_{tiny,small,medium}_{det,rec}-*.gguf`), including policy Q4_K and
+Q8_0 variants. They are **not yet integrated into the current main-branch
+runtime**; the PP-OCRv6 task remains an integration/port task, not a model
+acquisition task. The port must include detector postprocessing, recognizer
+dictionary handling, line orientation, and live German/Arabic/receipt tests.
+
+The genuinely new preprocessing ports are therefore:
+
+- `PP-LCNet_x1_0_doc_ori` — four-way page orientation;
+- `PP-LCNet_x1_0_textline_ori` — learned 0°/180° line orientation;
+- `UVDoc` or an equivalently permissive document-unwarping model — only if
+  classical/TPS dewarp fails the curved-page fixtures;
+- native PDFium rendering/autorotation integration, which is pipeline plumbing
+  rather than a new image-restoration model.
+
+Before adding another restoration model, O10 must benchmark the existing ten
+models on the same degraded fixtures and promote only models that improve
+downstream OCR CER/confidence. The current default candidates are therefore
+`SAFMN`/`PAN` for cheap SR, `NAFNet`/`Restormer` for denoise, and `SwinIR` or
+`HAT` for quality SR, subject to the license and no-harm gates above.
+
+### Validation follow-up — external document parser [COMPLETED]
+
+- Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
+  render tests.
+- Live M1 Metal gate passed: DBNet detected 10/10 fox fixture regions and
+  TrOCR recognized 10/10; measured warm total was 5.0–5.3 s/image, with 8/10
+  exact words and 6.1% CER.
+- The comparison implementation's live execution is environment-blocked, not silently skipped: the
+  CPU configure probe lacks OpenCV development files, while the production
+  path requires CUDA/TensorRT and this host has no NVIDIA device/usable Docker
+  daemon. The documented NVIDIA numbers are recorded in
+  `PERFORMANCE.md` as reference claims only.
+- Next actionable benchmark item: run both engines on a shared corpus on an
+  NVIDIA host, then add detector/recognizer quality and throughput thresholds
+  to `tests/ocr_benchmark.py`.
+- Quantization A/B resolved the current fox errors: TrOCR-small-printed Q4_K
+  produced 8/10 exact words, while the same ggml pipeline with the recommended
+  Q8_0 model produced 10/10. Keep Q8_0 as the default quality model; do not
+  treat Q4_K as a quality-preserving OCR quantization.
+- Q8 is now the benchmark/WASM/example default. The pipeline rejects filenames
+  identifying TrOCR Q4_K unless `CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1` is set.
+  Text crops also receive a classical 0°/180° orientation check, and results
+  now expose TrOCR mean/per-character confidence values.
+- Added parity-facing structured output: deterministic reading-order indices
+  and lightweight Markdown export are available from the orchestrator result
+  and C API after each page run.
+- Added modular server/API discovery: `/capabilities`, `/health/live`, and
+  `/health/ready`; structured pipeline responses now include reading order and
+  Markdown. Pipeline params and native server flags can independently enable
+  layout, Tesseract-backed table cells, and PP-FormulaNet formulas.
+- Added a `unified` pipeline stage backed by `crispembed_ocr_model_*`: any
+  metadata-dispatched GGUF engine can now be selected as an escalation or
+  specialist stage without adding another orchestrator-specific enum. This
+  preserves the existing modular engine matrix, including Tesseract-LSTM,
+  PARSeq, VLMs, math, and music engines where full-page/crop routing makes
+  sense.
+
+### Sequencing and boundaries
+
+Land O1 first, then O2/O3 as the structured result and router foundation. O4 is
+the first performance refactor; O5/O6 apply mainly to server builds. O7 starts
+with CPU fixtures and expands to Metal/CUDA where hardware is available. Do not
+replace ggml with TensorRT or make the core runtime NVIDIA-only.
 
 ## Goal
 

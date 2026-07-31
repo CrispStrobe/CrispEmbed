@@ -82,6 +82,61 @@ the old path). dbnet-ic15-q4_k, forced CPU, a 10-line page:
 Note the decode is not the pipeline bottleneck here — the detection conv graph
 and the ViT crop encoder are (both inherent compute). See LEARNINGS / HISTORY.
 
+### DBNet degenerate-component fallback (2026-07-31, Apple M1 Metal)
+
+The existing scanline scorer exposed a second postprocessing failure: valid
+4-connected DBNet components could produce a one-point contour, making polygon
+score zero and rejecting every box at the default `box_threshold=0.5`. The
+postprocessor now falls back to the component bounding box and mean probability
+for contours with fewer than three points.
+
+On `tests/regression/images/fox.png` with
+`dbnet-ic15-q4_k.gguf`, this changes detection from **0 to 10 boxes**. The
+full DBNet+TrOCR pipeline recognizes 10 regions in about **5.0 s warm** on the
+M1 Metal path (detection ~3.0 s, batched crop encoding ~1.8 s, decoding ~0.2 s).
+
+### External document-parser comparison (2026-07-31)
+
+The local CrispEmbed live check used the repeatable `fox.png` fixture and
+GGUF models from `/Volumes/backups/ai/crispembed-gguf/`:
+
+| Engine / environment | Detection | Recognition | Timing | Quality check |
+|---|---:|---:|---:|---|
+| CrispEmbed DBNet + TrOCR, Apple M1 Metal | 10 regions | 10 regions | ~5.0–5.3 s/image warm | 8/10 words exact, CER 6.1% |
+
+Expected text was `THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 12345`; the two
+word errors were `TAX` for `FOX` and `IAZY` for `LAZY`.
+
+The comparison implementation could not be executed on this host: its CPU probe requires the
+OpenCV development package, its live production path requires the documented
+CUDA/TensorRT stack, and no usable Docker daemon or NVIDIA device is available.
+Its repository reports **520–559 images/s** for forms/receipts and **200+
+images/s** for dense documents on one RTX 5090, plus **92% FUNSD / 93% CORD
+word-F1** and **0.90 OmniDocBench-125 overall at 20 pages/s**. Those are
+The external NVIDIA benchmark claims are not measurements from this machine, and
+are not directly comparable to the M1 single-image fixture above.
+
+The actionable conclusion is to keep CrispEmbed's portable GGUF/Metal path,
+but prioritize OCR quality and detector/recognizer batching before claiming
+production parity. A fair head-to-head requires the same document corpus,
+warmup policy, output metric, and an NVIDIA CUDA/TensorRT host.
+
+#### TrOCR quantization A/B
+
+This was not a TrOCR-vs-Python failure. The same detector, crops, decoder, and
+ggml runtime were run with the recommended Q8 recognizer versus the locally
+available Q4 model:
+
+| Recognizer | Model size | Output on fox fixture | Warm total |
+|---|---:|---|---:|
+| TrOCR-small-printed Q4_K | 43 MB | `TAX`, `IAZY` errors | 4.75 s |
+| TrOCR-small-printed Q8_0 | 64 MB | exact 10/10 words | 5.13 s |
+
+The model card explicitly warns that Q4_K degrades this narrow 256-dimensional
+decoder and recommends Q8_0. Q8_0 is therefore the immediate quality fix;
+the ~8% end-to-end cost increase is small because detection and the encoder
+dominate this fixture.
+
 ## Ollama Integration (Q8_0, Apple M1)
 
 All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export.
@@ -836,3 +891,74 @@ End-to-end OCR on 800×300 invoice image. `QWEN_DBG=1` for per-stage timing.
 `CRISPEMBED_MAX_PIXELS` reduces input resolution before patch extraction.
 Useful for CPU-only deployment where speed matters more than pixel-perfect OCR.
 Applies to all VLM OCR engines that use `image_preprocess.cpp`.
+
+## Local M1 Metal OCR engine sweep (2026-07-31)
+
+Command: `python3 tests/ocr_engine_benchmark.py --repeats 1 --timeout 45
+--output /tmp/crispembed-ocr-benchmark.json`.  These are cold end-to-end
+process times on the local Apple M1; they include model loading and should not
+be read as steady-state service throughput.  Quality is scored only against
+the manifest's known fixture text.
+
+| Engine | Status | Cold ms | Quality |
+|---|---:|---:|---|
+| GOT-OCR2 | ok | 15,662 | exact |
+| GLM-OCR | ok | 32,884 | exact |
+| InternVL2-1B | ok | 24,908 | CER 0.540 (prompt text included) |
+| Qwen2-VL-3B | timeout/error | 70,757 | no transcript before 45 s |
+| LightOnOCR | ok | 31,561 | unscored; plausible transcript |
+| MixTeX | ok | 7,523 | exact specialist formula |
+| Flova | ok | 16,153 | exact specialist LilyPond |
+| Pix2TeX | ok | 5,520 | exact specialist formula |
+| Texteller-3 | ok | 11,403 | CER 7.293; unusable on this fixture |
+| Tesseract-LSTM line-crop pipeline | ok | 7,552 | CER 0.040; 10 DBNet regions, all recognized |
+| PARSeq-tiny | ok | 921 | unscored full-page smoke (`Gooducalicanos.com`); scene-line recognizer |
+
+The proper DBNet+TrOCR Q8 pipeline remains the ordinary document baseline:
+10/10 regions, 10/10 recognized regions, 8.05 s cold on the same M1 run. The
+Tesseract result is now measured through the actual DBNet→line-crop→LSTM
+pipeline: 10 regions, all recognized, 7.55 s cold / 8.09 s warm, CER 0.040
+(punctuation-only drift). PARSeq remains recognizer-only and still needs a
+line-crop orchestrator benchmark.
+
+The manifest contained 51 entries: 8 completed, 1 timed out, and 42 explicit
+skips because a sample or local model was unavailable.  This is a coverage
+report, not a claim that the skipped engines are unsupported.  The reusable
+driver stores all output and stderr tails in JSON for follow-up runs.
+
+The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
+seven CC0/public-domain images through Tesseract plus skew/content detection:
+all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
+format gap (`cannot load`); a PNG derivative is now included for the OCR
+pipeline while the source TIFF remains available for a future native TIFF
+decoder test.
+
+### Full local matrix comparison (M1 Metal, 2026-07-31)
+
+The expanded manifest sweep completed 11 engines, recorded 2 errors, and
+reported 41 explicit non-sample/non-model skips. Representative outputs:
+
+| Engine/lane | Cold ms | Result |
+|---|---:|---|
+| GOT-OCR2 | 22,073 | exact fox transcript |
+| GLM-OCR | 38,086 | exact fox transcript |
+| InternVL2-1B | 28,523 | transcript plus prompt wrapper; CER 0.54 |
+| Qwen2-VL-3B | 90,113 timeout | no output within limit |
+| LightOnOCR | 69,289 | plausible transcript; currently unscored |
+| Tesseract via DBNet line crops | 32,041 | 10 regions; CER 0.040 |
+| PARSeq | 6,252 | `Gooducalicanos.com`; recognizer-only smoke |
+| SmolDocling | 16,334 | text present but duplicated DocTags regions; payload CER 0.86 |
+| MixTeX | 13,286 | exact specialist LaTeX |
+| Flova | 36,293 | exact LilyPond |
+| Pix2TeX | 8,980 | exact LaTeX |
+| TexTeller | 18,491 | CER 7.293; unusable on fixture |
+
+SmolDocling is therefore supported and live-tested; its next fix is structural
+deduplication/DocTags parsing, not model discovery. Unlimited-OCR's Q4_K stacked
+artifact is complete at 2,252,419,328 bytes and now has a successful M1 Metal
+run when loaded from the system volume: 45,967 ms total (SAM 15,663 ms, CLIP
+2,260 ms, projection/assembly 5,835 ms, decoder 22,205 ms), with two correctly
+decoded text regions. The external backup-volume no-copy path (`UOCR_MMAP=1`)
+also completes: 40,391 ms cold benchmark time and CER 0.010, with the one
+character difference being a harmless title-box coordinate drift. Qwen2-VL is
+runnable but did not complete this M1 budget.

@@ -66,14 +66,18 @@ using core_json::json_extract_strings;
 int main(int argc, char ** argv) {
     std::string model_path;
     std::string host = "127.0.0.1";
-    std::string det_model_path;        // face detection model
-    std::string rec_model_path;        // face recognition model
-    std::string vit_model_path;        // standalone ViT model (SigLIP/CLIP)
-    std::string clip_text_model_path;  // CLIP text encoder
-    std::string ocr_model_path;        // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
-    std::string ocr_det_model_path;    // general OCR: text detection model (DBNet)
-    std::string ocr_rec_model_path;    // general OCR: text recognition model (TrOCR)
-    std::string layout_model_path;     // layout detection model (RT-DETRv2)
+    std::string det_model_path;       // face detection model
+    std::string rec_model_path;       // face recognition model
+    std::string vit_model_path;       // standalone ViT model (SigLIP/CLIP)
+    std::string clip_text_model_path; // CLIP text encoder
+    std::string ocr_model_path;       // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
+    std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
+    std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
+    std::string layout_model_path;    // layout detection model (RT-DETRv2)
+    std::string table_model_path;     // table cell OCR model (Tesseract-LSTM GGUF)
+    std::string formula_model_path;   // formula OCR model (PP-FormulaNet GGUF)
+    bool route_tables = false;
+    bool route_formulas = false;
     std::string text_det_model_path;   // surya text detection model
     std::string ner_model_path;        // NER model (GLiNER)
     std::string lid_model_path;        // text LID model
@@ -126,6 +130,14 @@ int main(int argc, char ** argv) {
             ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc)
             layout_model_path = argv[++i];
+        else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc)
+            table_model_path = argv[++i];
+        else if (strcmp(argv[i], "--formula") == 0 && i + 1 < argc)
+            formula_model_path = argv[++i];
+        else if (strcmp(argv[i], "--tables") == 0)
+            route_tables = true;
+        else if (strcmp(argv[i], "--formulas") == 0)
+            route_formulas = true;
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc)
             text_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc)
@@ -194,6 +206,10 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline)\n");
+        fprintf(stderr, "  --table MODEL     Tesseract-LSTM table-cell model (optional)\n");
+        fprintf(stderr, "  --formula MODEL   PP-FormulaNet model (optional)\n");
+        fprintf(stderr, "  --tables          route layout tables to --table\n");
+        fprintf(stderr, "  --formulas        route layout formulas to --formula\n");
         fprintf(stderr, "  --vlm-model MODEL VLM escalation fallback GGUF (optional)\n");
         fprintf(stderr, "  --vlm-engine N    VLM backend: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2\n");
         fprintf(stderr, "  --punct-model M   post-OCR punctuation/spacing GGUF (optional)\n");
@@ -788,6 +804,23 @@ int main(int argc, char ** argv) {
         if (!sr_model_path.empty()) {
             pp.sr_model = sr_model_path.c_str();
         }
+        if (!layout_model_path.empty()) {
+            std::string layout_r = crispembed_mgr::resolve_model(layout_model_path, true);
+            if (!layout_r.empty()) layout_model_path = layout_r;
+            pp.layout_model = layout_model_path.c_str();
+        }
+        if (!table_model_path.empty()) {
+            std::string table_r = crispembed_mgr::resolve_model(table_model_path, true);
+            if (!table_r.empty()) table_model_path = table_r;
+            pp.table_model = table_model_path.c_str();
+        }
+        if (!formula_model_path.empty()) {
+            std::string formula_r = crispembed_mgr::resolve_model(formula_model_path, true);
+            if (!formula_r.empty()) formula_model_path = formula_r;
+            pp.formula_model = formula_model_path.c_str();
+        }
+        pp.route_tables = route_tables ? 1 : 0;
+        pp.route_formulas = route_formulas ? 1 : 0;
         ocr_orch_ctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         if (!ocr_orch_ctx) fprintf(stderr, "Warning: failed to init OCR orchestrator\n");
     }
@@ -1470,7 +1503,17 @@ int main(int argc, char ** argv) {
                << ",\"confidence\":" << results[i].confidence << ",\"rec_confidence\":" << std::fixed
                << std::setprecision(4) << rec_conf << "}";
         }
-        js << "],\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
+        int n_order = 0;
+        const int * order = crispembed_ocr_pipeline_reading_order(ocr_orch_ctx, &n_order);
+        int markdown_len = 0;
+        const char * markdown = crispembed_ocr_pipeline_markdown(ocr_orch_ctx, &markdown_len);
+        js << "],\"reading_order\":[";
+        for (int i = 0; i < n_order; ++i) {
+            if (i) js << ",";
+            js << order[i];
+        }
+        js << "],\"markdown\":\"" << json_escape(markdown ? markdown : "") << "\""
+           << ",\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /ocr/pipeline in %.1f ms (%d regions, conf=%.2f)\n", ms, n_results,
                 mean_conf);
@@ -3397,6 +3440,46 @@ int main(int argc, char ** argv) {
         js << ", \"scan_cleanup\": true"; // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
+    });
+
+    // Runtime discovery. Every capability is reported from loaded contexts, so
+    // clients can select modular routes without guessing which optional GGUF
+    // backends are present.
+    svr.Get("/capabilities", [&](const httplib::Request &, httplib::Response & res) {
+        crispembed_ocr_capabilities oc{};
+        const bool have_orch_caps = ocr_orch_ctx && crispembed_ocr_pipeline_capabilities(ocr_orch_ctx, &oc);
+        std::ostringstream js;
+        js << "{\"status\":\"ok\",\"routes\":{";
+        js << "\"ocr\":" << (ocr_pipeline_ctx ? "true" : "false");
+        js << ",\"ocr_pipeline\":" << (ocr_orch_ctx ? "true" : "false");
+        js << ",\"layout\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
+        js << ",\"tables\":" << (have_orch_caps && oc.tables ? "true" : "false");
+        js << ",\"formulas\":" << (have_orch_caps && oc.formulas ? "true" : "false");
+        js << ",\"batch\":true,\"markdown\":" << (ocr_orch_ctx ? "true" : "false") << "}";
+        js << ",\"modules\":{";
+        js << "\"generic_ocr\":" << (ocr_model_ctx ? "true" : "false");
+        js << ",\"dbnet_trocr\":" << (ocr_pipeline_ctx || ocr_orch_ctx ? "true" : "false");
+        js << ",\"tesseract_lstm\":" << ((ocr_model_ctx || (have_orch_caps && oc.tables)) ? "true" : "false");
+        js << ",\"layout_detector\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
+        js << ",\"vlm_escalation\":" << (!vlm_model_path.empty() ? "true" : "false");
+        js << "},\"config\":{";
+        js << "\"route_tables\":" << (route_tables ? "true" : "false");
+        js << ",\"route_formulas\":" << (route_formulas ? "true" : "false");
+        js << ",\"pooling\":false";
+        js << "}}";
+        res.set_content(js.str(), "application/json");
+    });
+
+    svr.Get("/health/live", [&](const httplib::Request &, httplib::Response & res) {
+        res.status = 200;
+        res.set_content("{\"status\":\"live\"}", "application/json");
+    });
+
+    svr.Get("/health/ready", [&](const httplib::Request &, httplib::Response & res) {
+        const bool ready = ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx || ocr_orch_ctx ||
+                           layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
+        res.status = ready ? 200 : 503;
+        res.set_content(ready ? "{\"status\":\"ready\"}" : "{\"status\":\"not_ready\"}", "application/json");
     });
 
     fprintf(stderr, "\ncrispembed-server: listening on %s:%d\n", host.c_str(), port);

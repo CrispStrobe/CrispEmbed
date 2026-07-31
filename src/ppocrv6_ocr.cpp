@@ -176,6 +176,30 @@ static void silu(std::vector<float> & x) {
     for (float & v : x) v = v / (1.0f + std::exp(-v));
 }
 
+static void pad_right_bottom(const std::vector<float> & in, int channels, int h, int w, std::vector<float> & out,
+                             int & oh, int & ow) {
+    oh = h + 1;
+    ow = w + 1;
+    out.assign((size_t)channels * oh * ow, 0.0f);
+    for (int c = 0; c < channels; ++c)
+        for (int y = 0; y < h; ++y)
+            std::memcpy(out.data() + (size_t)c * oh * ow + y * ow, in.data() + (size_t)c * h * w + y * w,
+                        sizeof(float) * w);
+}
+
+static void maxpool2x2_stride1(const std::vector<float> & in, int channels, int h, int w, std::vector<float> & out,
+                               int & oh, int & ow) {
+    oh = std::max(1, h - 1);
+    ow = std::max(1, w - 1);
+    out.assign((size_t)channels * oh * ow, 0.0f);
+    for (int c = 0; c < channels; ++c)
+        for (int y = 0; y < oh; ++y)
+            for (int x = 0; x < ow; ++x) {
+                const float * p = in.data() + (size_t)c * h * w + y * w + x;
+                out[(size_t)c * oh * ow + y * ow + x] = std::max(std::max(p[0], p[1]), std::max(p[w], p[w + 1]));
+            }
+}
+
 static void layernorm_tokens(std::vector<float> & x, int tokens, int channels, ggml_tensor * w, ggml_tensor * b) {
     auto ww = to_f32(w), bb = to_f32(b);
     for (int t = 0; t < tokens; ++t) {
@@ -289,6 +313,7 @@ static bool map_model(ppocrv6_ocr_context * c) {
         c->stem.push_back(conv(m, "rec.bb.stem.stem2a.conv", s, s / 2, 2, 1));
         c->stem.back().pad_h = c->stem.back().pad_w = 0;
         c->stem.push_back(conv(m, "rec.bb.stem.stem2b.conv", s / 2, s, 2, 1));
+        c->stem.back().pad_h = c->stem.back().pad_w = 0;
         c->stem.push_back(conv(m, "rec.bb.stem.stem3.conv", s * 2, s, 3, 2));
         c->stem.push_back(conv(m, "rec.bb.stem.stem4.conv", s, stem2, 1, 1));
     }
@@ -331,7 +356,9 @@ static bool map_model(ppocrv6_ocr_context * c) {
                 b.se2 = conv(m, q + ".se2", std::max(1, in / 4), in, 1, 1);
             }
             b.residual = in == out && b.dw.stride == 1;
-            b.silu_act = !tiny;
+            // PPLCNetV4 uses the configured activation in the stem (SILU for
+            // PP-OCRv6) but the channel mixer activation is GELU.
+            b.silu_act = false;
             c->stages[si].push_back(b);
         }
     }
@@ -544,19 +571,28 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         h = oh;
         w = ow;
         diff_stem("ppocrv6.large_stem1", x);
+        std::vector<float> padded_stem;
+        int ph, pw;
+        pad_right_bottom(x, c->stem[0].out_ch, h, w, padded_stem, ph, pw);
         std::vector<float> branch;
-        if (!apply_conv(c->stem[1], x, h, w, branch, oh, ow)) return nullptr;
+        if (!apply_conv(c->stem[1], padded_stem, ph, pw, branch, oh, ow)) return nullptr;
         silu(branch);
         diff_stem("ppocrv6.large_stem2a", branch);
-        if (!apply_conv(c->stem[2], branch, oh, ow, y, oh, ow)) return nullptr;
+        std::vector<float> padded_branch;
+        int bph, bpw;
+        pad_right_bottom(branch, c->stem[1].out_ch, oh, ow, padded_branch, bph, bpw);
+        if (!apply_conv(c->stem[2], padded_branch, bph, bpw, y, oh, ow)) return nullptr;
         silu(y);
         branch.swap(y);
         diff_stem("ppocrv6.large_stem2b", branch);
-        std::vector<float> cat((size_t)(x.size() + branch.size()));
-        std::memcpy(cat.data(), x.data(), x.size() * sizeof(float));
-        std::memcpy(cat.data() + x.size(), branch.data(), branch.size() * sizeof(float));
+        std::vector<float> pooled;
+        int poh, pow;
+        maxpool2x2_stride1(padded_stem, c->stem[0].out_ch, ph, pw, pooled, poh, pow);
+        std::vector<float> cat((size_t)(pooled.size() + branch.size()));
+        std::memcpy(cat.data(), pooled.data(), pooled.size() * sizeof(float));
+        std::memcpy(cat.data() + pooled.size(), branch.data(), branch.size() * sizeof(float));
         diff_stem("ppocrv6.large_cat", cat);
-        if (!apply_conv(c->stem[3], cat, h, w, y, oh, ow)) return nullptr;
+        if (!apply_conv(c->stem[3], cat, poh, pow, y, oh, ow)) return nullptr;
         silu(y);
         x.swap(y);
         h = oh;
