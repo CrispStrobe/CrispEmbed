@@ -180,11 +180,17 @@ into a permissively licensed CrispEmbed artifact.
 We can train an independent equivalent classifier from the published
 architecture and independently licensed data:
 
-1. Use CC-BY-4.0 GT4HistOCR Fraktur lines for the positive class, with full
-   attribution and source revision/checksum. Build the `other` class from
-   separately licensed Antiqua/Latin line corpora, or annotate our own
-   public-domain CC0 fixtures. Do not derive a replacement dataset by
-   relabeling or mirroring the AGPL Impresso dataset.
+1. Use CC-BY-4.0 GT4HistOCR Fraktur lines and the MIT-licensed
+   [`chreul/19th-century-fraktur-OCR`](https://github.com/chreul/19th-century-fraktur-OCR)
+   repository's included sample/model-training material for the positive
+   class, with attribution and source revision/checksum. The chreul
+   repository is MIT-licensed and explicitly supplies small training samples,
+   Calamari/OCRopus models, and source-book provenance; that MIT grant does
+   not automatically relicense the original historical scans or every
+   upstream source corpus, so audit each selected file before redistribution.
+   Build the `other` class from separately licensed Antiqua/Latin line corpora,
+   or annotate our own public-domain CC0 fixtures. Do not derive a replacement
+   dataset by relabeling or mirroring the AGPL Impresso dataset.
 2. Split by source publication/page, never by individual crop, to prevent
    font/page leakage. Add hard negatives: ornate Antiqua, mixed lines,
    ornaments, headers, low-DPI scans, skew, bleed-through, and short lines.
