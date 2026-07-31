@@ -223,7 +223,7 @@ static bool run_block(const block & b, std::vector<float> & x, int & h, int & w)
             for (int i = 0; i < oh * ow; ++i) pooled[c] += y[(size_t)c * oh * ow + i] / float(oh * ow);
         if (!run_se(b.gate, pooled, b.dw.ic)) return false;
         for (int c = 0; c < b.dw.ic; ++c)
-            for (int i = 0; i < oh * ow; ++i) y[(size_t)c * oh * ow + i] *= pooled[c];
+            for (int i = 0; i < oh * ow; ++i) y[(size_t)c * oh * ow + i] += y[(size_t)c * oh * ow + i] * pooled[c];
     }
     if (!apply_conv(b.cm1, y, oh, ow, z, nh, nw)) return false;
     gelu(z);
@@ -276,14 +276,15 @@ static bool run_medium_ic(const medium_ic & b, std::vector<float> & x, int h, in
     for (int j = 0; j < 3; ++j) {
         std::vector<float> v, q, s;
         int vh, vw;
-        if (!apply_conv(b.vertical[j], r, h, w, v, vh, vw) || !apply_conv(b.horizontal[j], r, h, w, q, vh, vw) ||
-            !apply_conv(b.symmetric[j], r, h, w, s, vh, vw))
+        const std::vector<float> & source = j == 0 ? r : a[j - 1];
+        if (!apply_conv(b.vertical[j], source, h, w, v, vh, vw) ||
+            !apply_conv(b.horizontal[j], source, h, w, q, vh, vw) ||
+            !apply_conv(b.symmetric[j], source, h, w, s, vh, vw))
             return false;
         a[j].resize(s.size());
         for (size_t k = 0; k < s.size(); ++k) a[j][k] = v[k] + q[k] + s[k];
     }
-    std::vector<float> z(a[0].size());
-    for (size_t k = 0; k < z.size(); ++k) z[k] = a[0][k] + a[1][k] + a[2][k];
+    std::vector<float> z = a[2];
     std::vector<float> y;
     if (!apply_conv(b.final, z, h, w, y, rh, rw)) return false;
     for (size_t k = 0; k < y.size(); ++k) y[k] += x[k];
