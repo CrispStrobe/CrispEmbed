@@ -314,6 +314,7 @@ static bool run_medium_ic(const medium_ic & b, std::vector<float> & x, int h, in
     std::vector<float> z = a[2];
     std::vector<float> y;
     if (!apply_conv(b.final, z, h, w, y, rh, rw)) return false;
+    relu(y);
     for (size_t k = 0; k < y.size(); ++k) y[k] += x[k];
     x.swap(y);
     return true;
@@ -326,6 +327,7 @@ static bool run_medium_neck(const context * c, const std::vector<std::vector<flo
     std::vector<int> ah(4), aw(4);
     for (int i = 0; i < 4; ++i)
         if (!apply_conv(c->med_adjust[i], stages[i], hs[i], ws[i], adjusted[i], ah[i], aw[i])) return false;
+    c->last_stages["med_adjust0"] = adjusted[0];
     top[3] = adjusted[3];
     for (int i = 2; i >= 0; --i) {
         std::vector<float> up;
@@ -333,10 +335,12 @@ static bool run_medium_neck(const context * c, const std::vector<std::vector<flo
         top[i] = adjusted[i];
         add_inplace(top[i], up);
     }
+    c->last_stages["med_top0"] = top[0];
     for (int i = 0; i < 4; ++i) {
         const auto & source = i < 3 ? top[i] : adjusted[3];
         if (!apply_conv(c->med_project[i], source, ah[i], aw[i], projected[i], ah[i], aw[i])) return false;
     }
+    c->last_stages["med_project0"] = projected[0];
     bottom[0] = projected[0];
     for (int i = 1; i < 4; ++i) {
         std::vector<float> down;
@@ -346,6 +350,7 @@ static bool run_medium_neck(const context * c, const std::vector<std::vector<flo
         bottom[i] = projected[i];
         add_inplace(bottom[i], down);
     }
+    c->last_stages["med_bottom0"] = bottom[0];
     for (int i = 0; i < 4; ++i) {
         const auto & source = i == 0 ? projected[0] : bottom[i];
         int sh = ah[i], sw = aw[i];
@@ -353,6 +358,8 @@ static bool run_medium_neck(const context * c, const std::vector<std::vector<flo
         refined[i] = lateral[i];
         if (!run_medium_ic(c->med_ic[i], refined[i], sh, sw)) return false;
     }
+    c->last_stages["med_lateral0"] = lateral[0];
+    c->last_stages["med_refined0"] = refined[0];
     nh = ah[0];
     nw = aw[0];
     neck.clear();
