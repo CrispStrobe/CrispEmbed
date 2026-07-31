@@ -98,7 +98,8 @@ The native `test-easyocr-pipeline` can emit the same manifest schema, and
 `tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
 The serializer self-check passes on the 98-word DBNet page run; an independent
 Python detector/recognizer page manifest is still required before parity is
-claimed.
+claimed. The current local Python environment lacks torch, numpy, and cv2, so
+that reference run remains an explicit external/dependency gate.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
