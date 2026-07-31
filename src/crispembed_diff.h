@@ -48,6 +48,7 @@ struct Report {
     float rms = 0.0f;
     float cos_min = 1.0f;
     float cos_mean = 1.0f;
+    float cos_global = 1.0f;
     float mine_norm = 0.0f;
     float ref_norm = 0.0f;
     std::vector<int64_t> shape;
@@ -386,7 +387,7 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
         D = cmp_n;
     }
 
-    double cos_sum = 0;
+    double cos_sum = 0, global_dot = 0, global_na = 0, global_nb = 0;
     float cos_worst = 2.0f;
     for (size_t row = 0; row < n_rows; row++) {
         const float * a = data + row * D;
@@ -396,6 +397,9 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
             dot += (double)a[j] * b[j];
             na += (double)a[j] * a[j];
             nb += (double)b[j] * b[j];
+            global_dot += (double)a[j] * b[j];
+            global_na += (double)a[j] * a[j];
+            global_nb += (double)b[j] * b[j];
         }
         float cos = na > 1e-18 && nb > 1e-18 ? (float)(dot / (std::sqrt(na) * std::sqrt(nb)))
                                              : (na <= 1e-18 && nb <= 1e-18 ? 1.0f : 0.0f);
@@ -404,6 +408,9 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
     }
     r.cos_min = cos_worst;
     r.cos_mean = (float)(cos_sum / n_rows);
+    r.cos_global = global_na > 1e-18 && global_nb > 1e-18
+                       ? (float)(global_dot / (std::sqrt(global_na) * std::sqrt(global_nb)))
+                       : (global_na <= 1e-18 && global_nb <= 1e-18 ? 1.0f : 0.0f);
 
     return r;
 }
