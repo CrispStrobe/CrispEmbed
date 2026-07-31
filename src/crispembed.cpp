@@ -4653,6 +4653,7 @@ struct ocr_pipeline_wrapper {
     bool is_ppocrv6 = false;
     std::vector<ocr_pipeline::ocr_result> results;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::vector<std::string> text_storage;
     std::string rec_buf;
 };
@@ -4931,6 +4932,20 @@ extern "C" const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * o
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (out_n) *out_n = (int)w->last.reading_order.size();
     return w->last.reading_order.empty() ? nullptr : w->last.reading_order.data();
+}
+
+extern "C" const crispembed_ocr_stage_metric * crispembed_ocr_pipeline_stage_metrics(void * ctx, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    w->c_stage_metrics.clear();
+    w->c_stage_metrics.reserve(w->last.stage_metrics.size());
+    for (const auto & m : w->last.stage_metrics) {
+        w->c_stage_metrics.push_back({ m.index, m.engine.c_str(), m.elapsed_ms, m.cleanup_applied ? 1 : 0,
+                                       m.accepted ? 1 : 0, m.text_chars, m.mean_confidence });
+    }
+    if (out_n) *out_n = (int)w->c_stage_metrics.size();
+    return w->c_stage_metrics.empty() ? nullptr : w->c_stage_metrics.data();
 }
 
 extern "C" const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len) {
