@@ -19,6 +19,8 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
@@ -337,14 +339,15 @@ more than another restoration model.
    detector paths. Fast mode avoids pathological contour tracing; accurate
    polygon scoring remains available explicitly.
 
-4. **O10.4 — Learned line orientation.** Port a small permissively licensed
+4. **O10.4 — Learned line orientation.** **Classical telemetry slice implemented
+   in `feat/ppocr-next-20260731`;** port a small permissively licensed
    0°/180° line-angle classifier to GGUF/ggml. Integrate it after detection
    and before every line recognizer, including Tesseract-LSTM crops. Retain
    the current heuristic as a no-model fallback. Add per-line angle,
    confidence, and whether a rotation was applied to structured results.
    The existing classical 0°/180° safeguard is now shared by TrOCR,
-   Tesseract-LSTM, and PARSeq line crops; the learned classifier and
-   structured rotation metadata remain outstanding.
+   Tesseract-LSTM, and PARSeq line crops, and structured angle/confidence
+   metadata is exposed per region. The learned classifier remains outstanding.
 
 5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
@@ -363,12 +366,16 @@ more than another restoration model.
    profiling to select render DPI, then apply page orientation and the normal
    document pipeline. Keep the existing parser-only path for minimal builds.
 
-8. **O10.8 — Stage routing and safeguards.** Make preprocessing selection
+8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate slice
+   implemented in `feat/ppocr-next-20260731`;** make preprocessing selection
    evidence-based: classical cleanup for scans, no destructive cleanup for
    VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
    orientation only above confidence thresholds. Add accept-gate comparisons
    so a preprocessor is rejected when it lowers confidence or worsens CER
-   beyond the configured tolerance.
+   beyond the configured tolerance. The benchmark now records input/output
+   checksums and dimensions plus conservative helped/neutral/harmed/
+   unavailable/error outcome labels; changed text without verified gold is
+   reported as unavailable rather than claimed as an improvement.
 
 #### Required benchmark output
 
