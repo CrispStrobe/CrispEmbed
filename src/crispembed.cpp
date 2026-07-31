@@ -4968,6 +4968,12 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         st.params.det_prob_threshold = s.det_prob_threshold;
         st.params.det_box_threshold = s.det_box_threshold;
         st.params.det_target_short = s.det_target_short > 0 ? s.det_target_short : 736;
+        st.params.det_max_side = s.det_max_side > 0 ? s.det_max_side : 2000;
+        st.params.det_min_height = s.det_min_height > 0 ? s.det_min_height : 30;
+        st.params.det_width_height_ratio = s.det_width_height_ratio == 0.0f ? 8.0f : s.det_width_height_ratio;
+        st.params.det_max_candidates = s.det_max_candidates == 0 ? 1000 : s.det_max_candidates;
+        st.params.det_dilation = s.det_dilation == 0 ? 1 : s.det_dilation;
+        st.params.det_scoring = s.det_score_mode == 1 ? ocr_detect::score_mode::accurate : ocr_detect::score_mode::fast;
         st.params.vlm_max_tokens = s.vlm_max_tokens;
         if (s.vlm_prompt && *s.vlm_prompt) st.params.vlm_prompt = s.vlm_prompt;
         st.accept.min_chars = s.min_chars;

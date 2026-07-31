@@ -129,7 +129,8 @@ static void orient_text_crop(std::vector<uint8_t> & crop, int w, int h) {
 }
 
 std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
-                                float prob_threshold, float box_threshold, int target_short_side) {
+                                float prob_threshold, float box_threshold, int target_short_side,
+                                const ocr_detect::detect_options * geometry) {
     if (!ctx || !ctx->det || !ctx->rec || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0) return {};
     std::lock_guard<std::mutex> lock(ctx->infer_mutex);
 
@@ -138,8 +139,11 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
 
     // Step 1: Detect text regions
     auto t_detect = std::chrono::steady_clock::now();
-    auto boxes = ocr_detect::detect_rgb(ctx->det, raw, img_w, img_h, img_c, prob_threshold, box_threshold, 1.5f,
-                                        target_short_side);
+    ocr_detect::detect_options detector_options = geometry ? *geometry : ocr_detect::rapid_defaults();
+    detector_options.prob_threshold = prob_threshold;
+    detector_options.box_threshold = box_threshold;
+    detector_options.target_short_side = target_short_side;
+    auto boxes = ocr_detect::detect_rgb_ex(ctx->det, raw, img_w, img_h, img_c, detector_options);
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_detect).count();
         fprintf(stderr, "[ocr_pipeline-bench] detect: %.1f ms (%zu boxes)\n", ms, boxes.size());
@@ -257,7 +261,7 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
 }
 
 std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold, float box_threshold,
-                                 int target_short_side) {
+                                 int target_short_side, const ocr_detect::detect_options * geometry) {
     if (!ctx || !image_path) return {};
     int img_w = 0, img_h = 0, img_c = 0;
     unsigned char * raw = stbi_load(image_path, &img_w, &img_h, &img_c, 3);
@@ -265,7 +269,7 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
         fprintf(stderr, "ocr_pipeline: cannot load image for cropping: %s\n", image_path);
         return {};
     }
-    auto results = run_raw(ctx, raw, img_w, img_h, 3, prob_threshold, box_threshold, target_short_side);
+    auto results = run_raw(ctx, raw, img_w, img_h, 3, prob_threshold, box_threshold, target_short_side, geometry);
     stbi_image_free(raw);
     return results;
 }

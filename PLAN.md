@@ -245,11 +245,16 @@ more than another restoration model.
    perspective/curved-page distortion, and mixed upright/upside-down lines.
    Every derived file must retain its parent SHA-256 and transformation recipe.
 
-3. **O10.3 — Detector geometry policy.** Add a shared configuration object and
+3. **O10.3 — Detector geometry policy.** **Implemented in `cf5f79b` and the
+   follow-up routed-stage wiring.** Add a shared configuration object and
    C API fields for `min_side_len`, `max_side_len`, `min_height`,
    `width_height_ratio`, padding mode, `unclip_ratio`, dilation, score mode,
    and candidate cap. Default to safe current behavior; expose compatibility
    presets for short text strips, wide receipts, dense scans, and photos.
+   The detector now provides `detect_options`/`rapid_defaults`, and the C API
+   stage struct forwards these controls through DBNet, Tesseract, and PARSeq
+   detector paths. Fast mode avoids pathological contour tracing; accurate
+   polygon scoring remains available explicitly.
 
 4. **O10.4 — Learned line orientation.** Port a small permissively licensed
    0°/180° line-angle classifier to GGUF/ggml. Integrate it after detection
