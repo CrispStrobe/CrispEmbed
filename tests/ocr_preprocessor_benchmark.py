@@ -89,7 +89,7 @@ def ppm_stats(data: bytes) -> dict:
 def run(cmd: list[str], timeout: float, *, capture_stdout: bool = True) -> dict:
     started = time.perf_counter()
     try:
-        p = subprocess.run(cmd, cwd=ROOT, capture_output=True,
+        p = subprocess.run(cmd, cwd=ROOT,
                            stdout=subprocess.PIPE if capture_stdout else subprocess.DEVNULL,
                            stderr=subprocess.PIPE, timeout=timeout, env=os.environ.copy())
         timed_out = False
