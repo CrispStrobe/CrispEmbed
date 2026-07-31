@@ -86,6 +86,12 @@ metadata, and normalized LayoutLM boxes. The model-backed regression produces
 12 line records and 98 word records on `scan_strip.png`; Python box/text
 reference parity remains a separate pending gate.
 
+The harness-blind postprocessing reference is now explicit: Python EasyOCR
+`readtext(detail=1)` JSON is converted by
+`tools/easyocr_postprocess_reference.py` into a versioned manifest covering
+ordering, crop geometry, text, confidence, and LayoutLM normalization. Its
+model-free test passes both line and word policies.
+
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
 > PLAN.md active-work board cleared". Add a row here when you START a task; remove
