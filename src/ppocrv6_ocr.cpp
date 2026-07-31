@@ -41,6 +41,8 @@ struct pp_svtr {
     ggml_tensor *ln2_w = nullptr, *ln2_b = nullptr;
     ggml_tensor *fc1_w = nullptr, *fc1_b = nullptr;
     ggml_tensor *fc2_w = nullptr, *fc2_b = nullptr;
+    std::vector<float> ln1_wf, ln1_bf, qkv_wf, qkv_bf, proj_wf, proj_bf;
+    std::vector<float> ln2_wf, ln2_bf, fc1_wf, fc1_bf, fc2_wf, fc2_bf;
 };
 
 struct ppocrv6_ocr_context {
@@ -66,6 +68,7 @@ struct ppocrv6_ocr_context {
     ggml_tensor *svtr_norm_w = nullptr, *svtr_norm_b = nullptr;
     ggml_tensor *svtr_head_w = nullptr, *svtr_head_b = nullptr;
     std::vector<pp_svtr> svtr;
+    std::vector<float> svtr_norm_wf, svtr_norm_bf, svtr_head_wf, svtr_head_bf;
     std::unique_ptr<crispembed_diff::Ref> diff;
 };
 
@@ -190,11 +193,34 @@ static void layernorm_tokens(std::vector<float> & x, int tokens, int channels, g
     }
 }
 
+static void layernorm_tokens(std::vector<float> & x, int tokens, int channels, const std::vector<float> & w,
+                             const std::vector<float> & b) {
+    for (int t = 0; t < tokens; ++t) {
+        float mean = 0.0f;
+        for (int c = 0; c < channels; ++c) mean += x[t * channels + c];
+        mean /= channels;
+        float var = 0.0f;
+        for (int c = 0; c < channels; ++c) {
+            const float d = x[t * channels + c] - mean;
+            var += d * d;
+        }
+        var /= channels;
+        for (int c = 0; c < channels; ++c)
+            x[t * channels + c] = (x[t * channels + c] - mean) / std::sqrt(var + 1e-5f) * w[c] + b[c];
+    }
+}
+
 static void linear_vec(const std::vector<float> & x, std::vector<float> & y, ggml_tensor * w, ggml_tensor * b) {
     auto ww = to_f32(w), bb = to_f32(b);
     const int out = (int)bb.size(), in = (int)x.size();
     y.resize(out);
     linear_cpu(x.data(), y.data(), in, out, ww.data(), bb.data());
+}
+
+static void linear_vec(const std::vector<float> & x, std::vector<float> & y, const std::vector<float> & w,
+                       const std::vector<float> & b) {
+    y.resize(b.size());
+    linear_cpu(x.data(), y.data(), (int)x.size(), (int)b.size(), w.data(), b.data());
 }
 
 static void bn1d(std::vector<float> & x, int channels, int length, ggml_tensor * w, ggml_tensor * b, ggml_tensor * mean,
@@ -346,6 +372,18 @@ static bool map_model(ppocrv6_ocr_context * c) {
             b.fc1_b = get(m, q + "mlp.fc1.bias");
             b.fc2_w = get(m, q + "mlp.fc2.weight");
             b.fc2_b = get(m, q + "mlp.fc2.bias");
+            b.ln1_wf = to_f32(b.ln1_w);
+            b.ln1_bf = to_f32(b.ln1_b);
+            b.qkv_wf = to_f32(b.qkv_w);
+            b.qkv_bf = to_f32(b.qkv_b);
+            b.proj_wf = to_f32(b.proj_w);
+            b.proj_bf = to_f32(b.proj_b);
+            b.ln2_wf = to_f32(b.ln2_w);
+            b.ln2_bf = to_f32(b.ln2_b);
+            b.fc1_wf = to_f32(b.fc1_w);
+            b.fc1_bf = to_f32(b.fc1_b);
+            b.fc2_wf = to_f32(b.fc2_w);
+            b.fc2_bf = to_f32(b.fc2_b);
             c->svtr.push_back(b);
         };
         load_svtr(0);
@@ -354,6 +392,10 @@ static bool map_model(ppocrv6_ocr_context * c) {
         c->svtr_norm_b = get(m, p + "norm.bias");
         c->svtr_head_w = get(m, "rec.head.head.weight");
         c->svtr_head_b = get(m, "rec.head.head.bias");
+        c->svtr_norm_wf = to_f32(c->svtr_norm_w);
+        c->svtr_norm_bf = to_f32(c->svtr_norm_b);
+        c->svtr_head_wf = to_f32(c->svtr_head_w);
+        c->svtr_head_bf = to_f32(c->svtr_head_b);
     }
     return !c->stem.empty() && (tiny ? c->fc2_w != nullptr : c->svtr_head_w != nullptr && c->svtr.size() == 2);
 }
@@ -421,9 +463,9 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         std::vector<float> a = tok, qkv, attn((size_t)ow * c->hidden, 0.0f), proj, mlp;
         for (int t = 0; t < ow; ++t) {
             std::vector<float> one(tok.begin() + (size_t)t * c->hidden, tok.begin() + (size_t)(t + 1) * c->hidden);
-            layernorm_tokens(one, 1, c->hidden, b.ln1_w, b.ln1_b);
+            layernorm_tokens(one, 1, c->hidden, b.ln1_wf, b.ln1_bf);
             std::vector<float> qrow;
-            linear_vec(one, qrow, b.qkv_w, b.qkv_b);
+            linear_vec(one, qrow, b.qkv_wf, b.qkv_bf);
             qkv.insert(qkv.end(), qrow.begin(), qrow.end());
         }
         for (int head = 0; head < heads; ++head)
@@ -445,20 +487,20 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         for (int t = 0; t < ow; ++t) {
             std::vector<float> one(attn.begin() + (size_t)t * c->hidden, attn.begin() + (size_t)(t + 1) * c->hidden),
                 out;
-            linear_vec(one, out, b.proj_w, b.proj_b);
+            linear_vec(one, out, b.proj_wf, b.proj_bf);
             for (int k = 0; k < c->hidden; ++k) tok[(size_t)t * c->hidden + k] += out[k];
         }
         for (int t = 0; t < ow; ++t) {
             std::vector<float> one(tok.begin() + (size_t)t * c->hidden, tok.begin() + (size_t)(t + 1) * c->hidden), n,
                 out;
-            layernorm_tokens(one, 1, c->hidden, b.ln2_w, b.ln2_b);
-            linear_vec(one, n, b.fc1_w, b.fc1_b);
+            layernorm_tokens(one, 1, c->hidden, b.ln2_wf, b.ln2_bf);
+            linear_vec(one, n, b.fc1_wf, b.fc1_bf);
             silu(n);
-            linear_vec(n, out, b.fc2_w, b.fc2_b);
+            linear_vec(n, out, b.fc2_wf, b.fc2_bf);
             for (int k = 0; k < c->hidden; ++k) tok[(size_t)t * c->hidden + k] += out[k];
         }
     }
-    layernorm_tokens(tok, ow, c->hidden, c->svtr_norm_w, c->svtr_norm_b);
+    layernorm_tokens(tok, ow, c->hidden, c->svtr_norm_wf, c->svtr_norm_bf);
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.head_input", tok.data(), tok.size(), -1);
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
@@ -466,11 +508,10 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
     }
     c->result.clear();
     int last = -1;
-    auto hw = to_f32(c->svtr_head_w), hb = to_f32(c->svtr_head_b);
     std::vector<float> logits((size_t)ow * c->vocab_size);
     for (int t = 0; t < ow; ++t) {
         linear_cpu(tok.data() + (size_t)t * c->hidden, logits.data() + (size_t)t * c->vocab_size, c->hidden,
-                   c->vocab_size, hw.data(), hb.data());
+                   c->vocab_size, c->svtr_head_wf.data(), c->svtr_head_bf.data());
         int best = int(std::max_element(logits.begin() + (size_t)t * c->vocab_size,
                                         logits.begin() + (size_t)(t + 1) * c->vocab_size) -
                        (logits.begin() + (size_t)t * c->vocab_size));
