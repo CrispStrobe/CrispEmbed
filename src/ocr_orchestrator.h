@@ -27,8 +27,10 @@
 
 #pragma once
 
-#include "ocr_pipeline.h" // ocr_pipeline::ocr_result (box + text + confidence)
-#include "scan_cleanup.h" // scan_cleanup_params
+#include "ocr_pipeline.h"      // ocr_pipeline::ocr_result (box + text + confidence)
+#include "layout_detect.h"     // optional document layout regions
+#include "ocr_region_router.h" // deterministic structured-region dispatch
+#include "scan_cleanup.h"      // scan_cleanup_params
 #include <string>
 #include <vector>
 
@@ -51,6 +53,7 @@ enum class engine {
     lightonocr,     // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
     qwen3vl,        // qwen2vl_ocr.cpp (Qwen3-VL, DeepStack + IMROPE)
     unlimited_ocr,  // unlimited_ocr.cpp (SAM + CLIP + MoE VLM)
+    unified,        // metadata-dispatched crispembed_ocr_model_* GGUF
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.
@@ -106,15 +109,21 @@ struct chain {
 };
 
 struct config {
-    bool router = true;         // classify + route; false → first chain
-    std::string nafnet_model;   // shared NAFNet GGUF path ("" = no tier-2)
-    std::string sr_model;       // text SR GGUF path ("" = disabled)
-    int sr_target_dpi = 200;    // auto-trigger SR when estimated DPI < this
-    std::string lid_model;      // text LID GGUF path ("" = no LID)
-    std::string truecase_model; // truecaser GGUF path ("" = no truecasing)
-    std::string tess_model_dir; // directory of tesseract-{lang}-q8_0.gguf files for auto-select
-    std::vector<chain> chains;  // one per source_type, or a single chain
-    bool verbose = false;       // log stage transitions, gate decisions, failures
+    bool router = true;          // classify + route; false → first chain
+    std::string nafnet_model;    // shared NAFNet GGUF path ("" = no tier-2)
+    std::string sr_model;        // text SR GGUF path ("" = disabled)
+    int sr_target_dpi = 200;     // auto-trigger SR when estimated DPI < this
+    std::string lid_model;       // text LID GGUF path ("" = no LID)
+    std::string truecase_model;  // truecaser GGUF path ("" = no truecasing)
+    std::string tess_model_dir;  // directory of tesseract-{lang}-q8_0.gguf files for auto-select
+    std::string layout_model;    // optional RT-DETR layout GGUF ("" = disabled)
+    bool route_tables = false;   // route table regions when layout is enabled
+    bool route_formulas = false; // route formula regions when layout is enabled
+    bool image_text_fallback = true;
+    std::string table_model;   // optional Tesseract-LSTM GGUF for table cells
+    std::string formula_model; // optional PP-FormulaNet GGUF
+    std::vector<chain> chains; // one per source_type, or a single chain
+    bool verbose = false;      // log stage transitions, gate decisions, failures
 };
 
 // Sensible defaults: router on; per-source chains with binarize for classical
@@ -122,8 +131,28 @@ struct config {
 config default_config();
 
 struct result {
+    int page_width = 0;
+    int page_height = 0;
     std::vector<ocr_pipeline::ocr_result> regions; // reading-order regions
-    std::string full_text;                         // regions joined in reading order
+    std::vector<layout_detect::region> layout;     // optional structured regions
+    ocr_region_router::routing_plan routing;       // deterministic dispatch plan
+    struct table_output {
+        int layout_index = -1;
+        float confidence = 0.0f;
+        float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+        std::string html;
+    };
+    struct formula_output {
+        int layout_index = -1;
+        float confidence = 0.0f;
+        float x1 = 0, y1 = 0, x2 = 0, y2 = 0;
+        std::string latex;
+    };
+    std::vector<table_output> tables;
+    std::vector<formula_output> formulas;
+    std::vector<int> reading_order; // region indices in document order
+    std::string full_text;          // regions joined in reading order
+    std::string markdown;           // lightweight structured page export
     float mean_confidence = 0.0f;
     engine used_engine = engine::dbnet_trocr;
     source_type used_type = source_type::auto_detect;
@@ -134,9 +163,18 @@ struct result {
 
 struct context;
 
+struct capabilities {
+    bool layout = false;
+    bool tables = false;
+    bool formulas = false;
+    bool image_text_fallback = true;
+};
+
 // Build a pipeline context. Engines/models are lazily loaded on first use so an
 // absent GGUF for one stage just skips that stage rather than failing load.
 bool load(context ** ctx, const config & cfg, int n_threads = 1);
+
+capabilities get_capabilities(const context * ctx);
 
 // Run the full pipeline on an image file.
 result run_file(context * ctx, const char * image_path);

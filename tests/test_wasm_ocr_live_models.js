@@ -417,9 +417,9 @@ function createMathImage(width, height) {
 
     section('OCR pipeline (DBNet 6.6MB + TrOCR 44MB)');
 
-    if (modelExists('dbnet-ic15-q4_k.gguf') && modelExists('trocr-small-printed-q4_k.gguf')) {
+    if (modelExists('dbnet-ic15-q4_k.gguf') && modelExists('trocr-small-printed-q8_0.gguf')) {
       const detSize = loadModel('/models/det.gguf', modelPath('dbnet-ic15-q4_k.gguf'));
-      const recSize = loadModel('/models/rec.gguf', modelPath('trocr-small-printed-q4_k.gguf'));
+      const recSize = loadModel('/models/rec.gguf', modelPath('trocr-small-printed-q8_0.gguf'));
       console.log(`  Detection model: ${(detSize / 1e6).toFixed(1)} MB`);
       console.log(`  Recognition model: ${(recSize / 1e6).toFixed(1)} MB`);
 
@@ -509,7 +509,7 @@ function createMathImage(width, height) {
         try { module.FS.unlink(imgPath); } catch (_) {}
       }
     } else {
-      skip('dbnet-ic15-q4_k.gguf or trocr-small-printed-q4_k.gguf not found');
+      skip('dbnet-ic15-q4_k.gguf or trocr-small-printed-q8_0.gguf not found');
     }
 
     // ── Test 5: PARSeq tiny scene text (6.3 MB) ────────────────────

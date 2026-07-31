@@ -22,6 +22,11 @@
 
 namespace ocr_pipeline {
 
+// TrOCR's narrow decoder loses recognition quality under Q4_K. Q4 is accepted
+// only when the caller explicitly sets CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1.
+bool is_dangerous_q4_recognizer_path(const char * rec_path);
+bool dangerous_q4_override_enabled();
+
 struct ocr_result {
     ocr_detect::text_box box;     // bounding box in original image coords
     std::string text;             // recognized text
@@ -33,13 +38,19 @@ struct ocr_result {
 struct context;
 
 // Load both detection and recognition models.
-// det_path: DBNet GGUF, rec_path: TrOCR GGUF.
+// det_path: DBNet GGUF, rec_path: TrOCR GGUF. The recommended recognizer is
+// trocr-small-printed-q8_0.gguf; TrOCR Q4_K is rejected by default.
 bool load(context ** ctx, const char * det_path, const char * rec_path, int n_threads = 1);
 
 // Run full pipeline on an image file.
 // Returns detected text regions sorted in reading order (top→bottom, left→right).
 std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold = 0.3f,
                                  float box_threshold = 0.5f, int target_short_side = 736);
+
+// Run detection and recognition on interleaved uint8 pixels. The input is
+// borrowed for the duration of the call and may be RGB or grayscale.
+std::vector<ocr_result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels,
+                                float prob_threshold = 0.3f, float box_threshold = 0.5f, int target_short_side = 736);
 
 // Run recognition only on a single crop (no detection).
 // Useful when you have pre-cropped text regions.

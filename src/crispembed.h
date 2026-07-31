@@ -675,6 +675,12 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * lid_model;      // optional text LID GGUF for language detection (NULL/"" = off)
     const char * truecase_model; // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
     const char * tess_model_dir; // directory of tesseract-{lang}-q8_0.gguf for LID auto-select (NULL/"" = off)
+    const char * layout_model;   // optional RT-DETR layout GGUF (NULL/"" = off)
+    const char * table_model;    // optional Tesseract-LSTM GGUF for table cells
+    const char * formula_model;  // optional PP-FormulaNet GGUF
+    int route_tables;            // route layout table regions when non-zero
+    int route_formulas;          // route layout formula regions when non-zero
+    int image_text_fallback;     // keep text OCR for layout regions without a specialized route
 } crispembed_ocr_pipeline_params;
 
 CRISPEMBED_API crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void);
@@ -690,10 +696,28 @@ CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * 
                                                                          const char ** out_full_text,
                                                                          float * out_mean_confidence);
 
+/// Reading-order region indices from the most recent pipeline run.
+CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * out_n);
+
+/// Lightweight Markdown export from the most recent pipeline run.
+CRISPEMBED_API const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len);
+
 /// Get the detected language from the last pipeline run (via LID).
 /// Returns ISO 639-1 code (e.g. "en", "de") or "" if LID not configured.
 /// confidence is written to *out_confidence if non-NULL.
 CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float * out_confidence);
+
+/// Runtime OCR capabilities. Values are 1 only when the corresponding
+/// backend was configured for this context; callers should not infer support
+/// from an empty result.
+typedef struct crispembed_ocr_capabilities {
+    int layout;
+    int tables;
+    int formulas;
+    int image_text_fallback;
+} crispembed_ocr_capabilities;
+
+CRISPEMBED_API int crispembed_ocr_pipeline_capabilities(void * ctx, crispembed_ocr_capabilities * out);
 
 /// Per-region recognition confidence (mean per-char softmax) from the last run.
 CRISPEMBED_API float crispembed_ocr_pipeline_region_rec_confidence(void * ctx, int region_idx);
@@ -1127,8 +1151,8 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
-    int source_type; // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int engine; // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr (matches map_engine)
+    int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    int engine;           // 0..13 existing engines, 14=unified metadata-dispatched GGUF (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     int cleanup_enabled;

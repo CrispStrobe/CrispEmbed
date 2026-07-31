@@ -71,6 +71,22 @@ cmake -S . -B build && cmake --build build -j        # macOS: ./build-macos.sh (
 curl -X POST http://localhost:8080/embed -d '{"texts": ["Hello world"]}'
 ```
 
+For modular document parsing, start the orchestrator with independent layout,
+table, and formula modules:
+
+```bash
+./build/crispembed-server --ocr-pipeline \
+  --ocr-det dbnet-ic15-q4_k.gguf --ocr-rec trocr-small-printed-q8_0.gguf \
+  --layout layout-heron-f32.gguf \
+  --table tesseract-eng-f16.gguf --tables \
+  --formula ppformulanet-l-q4_k.gguf --formulas
+curl http://localhost:8080/capabilities
+```
+
+The server also provides `/health/live` and `/health/ready`. Text recognition
+can be swapped independently for TrOCR, Tesseract-LSTM, PARSeq, a VLM, or a
+future PP-OCRv6 GGUF backend.
+
 ---
 
 ## Install & build

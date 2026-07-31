@@ -171,12 +171,12 @@ function norm(s) { return (s || '').replace(/\s+/g, ' ').trim(); }
     // Optional: full det+rec pipeline through the UI (slow in single-threaded
     // WASM). Enabled when both models are present and WASM_E2E_PIPELINE=1.
     const det = path.join(MODELS_DIR, 'dbnet-ic15-q4_k.gguf');
-    const rec = path.join(MODELS_DIR, 'trocr-small-printed-q4_k.gguf');
+        const rec = path.join(MODELS_DIR, 'trocr-small-printed-q8_0.gguf');
     if (process.env.WASM_E2E_PIPELINE === '1' && fs.existsSync(det) && fs.existsSync(rec)) {
       console.log('\n=== Pipeline (DBNet + TrOCR) through the UI ===');
       await page.click('#tab-pipeline');
       await page.fill('#det-url', BASE + '/models/dbnet-ic15-q4_k.gguf');
-      await page.fill('#rec-url', BASE + '/models/trocr-small-printed-q4_k.gguf');
+      await page.fill('#rec-url', BASE + '/models/trocr-small-printed-q8_0.gguf');
       await page.click('#btn-init');
       await page.waitForFunction(
         () => document.getElementById('status').textContent.includes('Pipeline loaded')

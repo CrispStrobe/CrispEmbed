@@ -13,7 +13,8 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| _(none in flight)_ | | | |
+| 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
+| 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -23,6 +24,205 @@ races). Remove the row when the branch lands.
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
 > still **pending**.
+
+## OCR pipeline workstream — actionable items
+
+This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
+ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each
+can land and be measured independently.
+
+### O1 — Restore a trustworthy OCR baseline [COMPLETED]
+
+- Fix duplicate region emission in the batched DBNet + TrOCR path.
+- Add a regression test for one output region per detected region and no
+  duplicated reading-order text.
+- Record baseline latency and region/text counts in `PERFORMANCE.md`.
+
+**Started:** DBNet postprocessing now handles degenerate one-point contours;
+the local fox fixture improves from 0 to 10 detected regions. The remaining
+baseline work is an automated model-backed assertion and sequential/batched
+comparison.
+
+**Done when:** batch and sequential recognition produce equivalent region counts
+and no duplicate text on the OCR fixture set. The benchmark harness now accepts
+`--expect-regions` and repeated `--expect-text` assertions for CI.
+
+### O2 — Define a structured document result contract [COMPLETED]
+
+- Add a C++ `ocr_document` result containing page dimensions, text regions,
+  layout regions, tables, formulas, confidence, and engine provenance.
+- Keep the existing orchestrator result and C API source-compatible; provide an
+  adapter first, then migrate callers.
+- Add serialization tests for empty, text-only, and mixed structured results.
+
+**Started:** `ocr_orchestrator::result` now carries page dimensions and optional
+layout regions. Layout inference is lazy and remains disabled unless
+`config.layout_model` is set; existing callers and default latency are unchanged.
+
+**Done when:** callers can consume one structured result without depending on a
+specific OCR engine.
+
+### O3 — Add CPU-only region routing after layout detection [COMPLETED]
+
+- Introduce a pure routing module with `text`, `table`, `formula`, and
+  `fallback` destinations.
+- Route by layout label, confidence tier, containment/overlap, and explicit
+  per-request feature policy; suppress duplicate text when a specialized
+  recognizer owns a region.
+- Unit-test every decision seam without model weights.
+
+**Started:** `ocr_orchestrator::result` now carries the model-free routing plan;
+table/formula/image policy is explicit in `config` and text-only by default.
+
+**Done when:** a synthetic page produces a deterministic routing plan and the
+existing specialized engines can be dispatched from it.
+
+### O4 — Remove temporary image files from stage handoffs [COMPLETED]
+
+- Add an in-memory RGB image/crop view shared by cleanup, detection, and
+  recognizers; retain file APIs as load-and-forward wrappers.
+- Make cleanup output ownership explicit and avoid unnecessary copies.
+
+**Started:** `ocr_detect::detect_rgb` and `ocr_pipeline::run_raw` now accept
+borrowed interleaved pixels; file APIs forward through them. The orchestrator
+cleanup handoff still uses a temporary PNG and is the next O4 slice.
+
+**Done when:** cleanup → detection/recognition runs without creating
+`/tmp/crispembed_ocr_*.png`, with CPU/Metal output parity.
+
+### O5 — Make capabilities and failures explicit [COMPLETED]
+
+- Add an OCR capability query for loaded engines, languages, output types, and
+  structure stages.
+- Validate incompatible requests before inference; use stable errors instead of
+  silent empty structure results.
+- Add image dimension/pixel guards and per-item batch error isolation.
+
+**Started:** enabling table/formula routing now fails at initialization unless
+the required layout and specialized GGUF backends are configured.
+
+**Done when:** every advertised feature is executable or rejected with a stable,
+test-covered reason.
+
+### O6 — Add reusable pipeline pooling and batch execution [COMPLETED]
+
+- Define a bounded OCR pipeline pool for server use; retain the current path for
+  single-threaded and WASM builds.
+- Batch compatible crop recognition, cap batch size, and isolate bad inputs.
+- Add queue/deadline metrics before changing defaults.
+
+**Started:** DBNet+TrOCR inference contexts now serialize mutable decoder state
+with an internal mutex, preventing concurrent callers from corrupting KV/cache
+state. `ocr_pipeline_pool` now provides bounded isolated contexts with blocking
+slot acquisition. The basic C OCR API selects the pool size from
+`CRISPEMBED_OCR_POOL_SIZE` (default `1`); server-level queue/deadline metrics
+remain a follow-up operational enhancement.
+
+**Done when:** concurrent requests do not share mutable decoder state and batch
+  throughput improves without changing decoded text.
+
+### O7 — Establish unified accuracy/performance gates [COMPLETED]
+
+- Add fixtures for receipt, form, dense page, screenshot, photo, table, and
+  formula workloads.
+- Measure CER/WER or exact-match, region recall, structure accuracy, p50/p95
+  latency, memory, and batch throughput.
+- Add regression thresholds and decoded-output checks for optimizations.
+
+**Started:** `tests/ocr_benchmark.py` runs the real detector and pipeline test
+binaries and reports region counts, decoded regions, and stage timings as text
+or JSON. It uses local GGUFs and does not download models implicitly.
+
+**Done when:** one reproducible command reports OCR quality and cost, suitable
+for CI. **Complete:** `tests/ocr_benchmark.py` provides this command and JSON
+output.
+
+### O8 — Make corpus provenance and real-world coverage explicit [IN PROGRESS]
+
+- Keep deterministic/reference fixtures for unit and per-stage parity checks,
+  but do not use them as claims about real-world OCR quality.
+- Add at least one public-domain/CC0 input for every production stage: text
+  detection/recognition, layout, tables, cleanup, orientation, handwriting,
+  multilingual routing, super-resolution, PDF routing, formulas, and OMR.
+- Record source page, license, URL, SHA-256, and annotation status for every
+  vendored asset. Add derived rotation/skew variants only from public-domain
+  inputs.
+- Acquire larger CC0 receipt and Arabic document sets separately, with a
+  documented acceptance/download step instead of silently bundling them.
+
+**Started:** `tests/regression/cc0_sources.json`, the fetched
+`tests/regression/images/cc0/` seed set, and `corpus_manifest.json` now cover
+receipts, forms, tables, Arabic printed/handwritten text, handwriting, cleanup,
+orientation, layout, specialist lanes, and a dedicated German lane (modern
+photo document, historical German print, and Kurrent handwriting). Gold
+transcription review remains open for these robustness fixtures.
+
+### O9 — Benchmark every available engine on shared inputs [IN PROGRESS]
+
+- Use the checked-in regression manifest to enumerate every engine with a
+  sample and local GGUF; report missing samples/models as explicit skips.
+- Record cold load and warm inference time, return status, output excerpt, and
+  CER/exact match when a gold transcription exists.
+- Keep full-page VLM, ordinary OCR, math, and OMR scores separate; do not
+  compare specialist outputs as plain-text OCR.
+- Run the same engine sweep on the public-domain corpus after human gold
+  annotations land, then add per-engine quality/latency thresholds.
+- Maintain a complete matrix for model-backed engines even when a GGUF is not
+  cached; the benchmark can fetch the manifest-pinned artifact with
+  `--download-missing`.
+
+**Started:** `tests/ocr_engine_benchmark.py` completed the local M1 Metal
+sweep: 11 engines completed, 2 timed out/errored, and the remaining entries
+were explicitly reported as missing samples, missing models, or model-needed
+ports. SmolDocling is live-tested; Tesseract-LSTM is measured through DBNet
+line crops; Unlimited-OCR is being fetched for its live run. Tesseract-LSTM
+and PARSeq are present as recognizer-only rows; the DBNet+TrOCR document
+baseline is measured separately by `tests/ocr_benchmark.py`. Results are
+written as JSON with no silent omission.
+
+### Validation follow-up — external document parser [COMPLETED]
+
+- Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
+  render tests.
+- Live M1 Metal gate passed: DBNet detected 10/10 fox fixture regions and
+  TrOCR recognized 10/10; measured warm total was 5.0–5.3 s/image, with 8/10
+  exact words and 6.1% CER.
+- The comparison implementation's live execution is environment-blocked, not silently skipped: the
+  CPU configure probe lacks OpenCV development files, while the production
+  path requires CUDA/TensorRT and this host has no NVIDIA device/usable Docker
+  daemon. The documented NVIDIA numbers are recorded in
+  `PERFORMANCE.md` as reference claims only.
+- Next actionable benchmark item: run both engines on a shared corpus on an
+  NVIDIA host, then add detector/recognizer quality and throughput thresholds
+  to `tests/ocr_benchmark.py`.
+- Quantization A/B resolved the current fox errors: TrOCR-small-printed Q4_K
+  produced 8/10 exact words, while the same ggml pipeline with the recommended
+  Q8_0 model produced 10/10. Keep Q8_0 as the default quality model; do not
+  treat Q4_K as a quality-preserving OCR quantization.
+- Q8 is now the benchmark/WASM/example default. The pipeline rejects filenames
+  identifying TrOCR Q4_K unless `CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1` is set.
+  Text crops also receive a classical 0°/180° orientation check, and results
+  now expose TrOCR mean/per-character confidence values.
+- Added parity-facing structured output: deterministic reading-order indices
+  and lightweight Markdown export are available from the orchestrator result
+  and C API after each page run.
+- Added modular server/API discovery: `/capabilities`, `/health/live`, and
+  `/health/ready`; structured pipeline responses now include reading order and
+  Markdown. Pipeline params and native server flags can independently enable
+  layout, Tesseract-backed table cells, and PP-FormulaNet formulas.
+- Added a `unified` pipeline stage backed by `crispembed_ocr_model_*`: any
+  metadata-dispatched GGUF engine can now be selected as an escalation or
+  specialist stage without adding another orchestrator-specific enum. This
+  preserves the existing modular engine matrix, including Tesseract-LSTM,
+  PARSeq, VLMs, math, and music engines where full-page/crop routing makes
+  sense.
+
+### Sequencing and boundaries
+
+Land O1 first, then O2/O3 as the structured result and router foundation. O4 is
+the first performance refactor; O5/O6 apply mainly to server builds. O7 starts
+with CPU fixtures and expands to Metal/CUDA where hardware is available. Do not
+replace ggml with TensorRT or make the core runtime NVIDIA-only.
 
 ## Goal
 

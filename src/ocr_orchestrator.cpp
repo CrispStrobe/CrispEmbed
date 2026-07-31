@@ -7,6 +7,7 @@
 // (slice B wires the remaining ggml engines into `run_engine`).
 
 #include "ocr_orchestrator.h"
+#include "crispembed.h"
 
 #include "scan_cleanup.h"
 #include "ocr_pipeline.h"
@@ -25,6 +26,9 @@
 #include "tesseract_lstm.h"
 #include "parseq_ocr.h"
 #include "ocr_detect.h"
+#include "table_parse.h"
+#include "ppformulanet_ocr.h"
+#include "ppformulanet_l_ocr.h"
 // Text super-resolution (low-DPI upscale before OCR).
 #include "text_sr.h"
 #include "pan_sr.h"
@@ -53,6 +57,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <numeric>
 #include <string>
 #include <vector>
 #ifdef _WIN32
@@ -74,7 +79,11 @@ struct context {
     config cfg;
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
-    ocr_pipeline::context * dbnet = nullptr;    // DBNet detection + TrOCR recognition
+    ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
+    layout_detect::context * layout = nullptr; // optional document layout
+    table_parse_context * table = nullptr;
+    ppformulanet_ocr_context * formula = nullptr;
+    ppformulanet_l_ocr_context * formula_l = nullptr;
     got_ocr_context * got = nullptr;            // GOT-OCR2 (single-shot VLM)
     glm_ocr_context * glm = nullptr;            // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context * qwen = nullptr;       // Qwen2.5-VL (single-shot VLM)
@@ -85,6 +94,7 @@ struct context {
     granite_vision_context * gv = nullptr;      // Granite Vision (LLaVA-Next)
     lightonocr_context * locr = nullptr;        // LightOnOCR (Pixtral ViT + Qwen3)
     unlimited_ocr_context * uocr = nullptr;     // Unlimited-OCR (SAM + CLIP + MoE)
+    void * unified = nullptr;                   // metadata-dispatched OCR model
     ocr_detect::context * tess_det = nullptr;   // DBNet detection for the tesseract engine
     tesseract_lstm_context * tess = nullptr;    // Tesseract-LSTM line recognizer
     ocr_detect::context * parseq_det = nullptr; // DBNet detection for the parseq engine
@@ -211,13 +221,18 @@ static std::string temp_png_path() {
     return std::string(dir) + buf;
 }
 
-// Run scan cleanup on `src` and write the result to a temp PNG; returns the
-// temp path (empty on failure → caller falls back to the original image).
-static std::string clean_to_temp(context * ctx, const cleanup_profile & cp, const char * src) {
-    if (!cp.enabled) return "";
+// Run scan cleanup on `src` and return an owned RGB buffer. The caller owns the
+// vector, so raw-image engines can consume cleanup output without a disk round
+// trip. `ow`/`oh` are set only on success.
+static bool clean_to_pixels(context * ctx, const cleanup_profile & cp, const char * src, std::vector<uint8_t> & pixels,
+                            int * ow, int * oh) {
+    if (ow) *ow = 0;
+    if (oh) *oh = 0;
+    pixels.clear();
+    if (!cp.enabled) return false;
     int w = 0, h = 0, c = 0;
     unsigned char * d = stbi_load(src, &w, &h, &c, 0);
-    if (!d) return "";
+    if (!d) return false;
 
     scan_cleanup_ctx ** slot = cp.denoise ? &ctx->clean2 : &ctx->clean1;
     if (!*slot) {
@@ -226,17 +241,27 @@ static std::string clean_to_temp(context * ctx, const cleanup_profile & cp, cons
         *slot = scan_cleanup_init(model, ctx->n_threads);
     }
 
-    std::string out_path;
     uint8_t * out = nullptr;
-    int ow = 0, oh = 0;
-    if (*slot && scan_cleanup_process(*slot, d, w, h, c, cp.params, &out, &ow, &oh) == 0 && out) {
-        out_path = temp_png_path();
-        if (stbi_write_png(out_path.c_str(), ow, oh, 3, out, ow * 3) == 0) {
-            out_path.clear(); // write failed
-        }
+    int out_w = 0, out_h = 0;
+    const bool ok = *slot && scan_cleanup_process(*slot, d, w, h, c, cp.params, &out, &out_w, &out_h) == 0 && out;
+    if (ok) {
+        pixels.assign(out, out + (size_t)out_w * out_h * 3);
+        if (ow) *ow = out_w;
+        if (oh) *oh = out_h;
         scan_cleanup_free_image(out);
     }
     stbi_image_free(d);
+    return ok;
+}
+
+// Path-only engines still use the legacy temporary-file handoff. Raw-image
+// engines should use clean_to_pixels instead.
+static std::string clean_to_temp(context * ctx, const cleanup_profile & cp, const char * src) {
+    std::vector<uint8_t> pixels;
+    int w = 0, h = 0;
+    if (!clean_to_pixels(ctx, cp, src, pixels, &w, &h)) return "";
+    const std::string out_path = temp_png_path();
+    if (stbi_write_png(out_path.c_str(), w, h, 3, pixels.data(), w * 3) == 0) return "";
     return out_path;
 }
 
@@ -312,6 +337,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        if (px && pw > 0 && ph > 0)
+            return ocr_pipeline::run_raw(ctx->dbnet, px, pw, ph, 3, st.params.det_prob_threshold,
+                                         st.params.det_box_threshold, st.params.det_target_short);
         return ocr_pipeline::run_file(ctx->dbnet, path, st.params.det_prob_threshold, st.params.det_box_threshold,
                                       st.params.det_target_short);
     }
@@ -766,27 +794,216 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
+    case engine::unified: {
+        if (!ctx->unified) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: unified OCR stage missing model_a\n");
+                return {};
+            }
+            ctx->unified = crispembed_ocr_model_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->unified) {
+                fprintf(stderr, "ocr_orchestrator: unified OCR model load failed: %s\n", st.model_a.c_str());
+                return {};
+            }
+        }
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int c = 0;
+            loaded = stbi_load(path, &w, &h, &c, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int len = 0;
+        const char * t = crispembed_ocr_model_recognize(ctx->unified, img, w, h, 3, &len);
+        int nconf = 0;
+        const float * conf = crispembed_ocr_model_confidences(ctx->unified, &nconf);
+        auto out = wrap_fulltext(t, w, h, conf, nconf, crispembed_ocr_model_mean_confidence(ctx->unified));
+        if (loaded) stbi_image_free(loaded);
+        return out;
+    }
     default:
         fprintf(stderr, "ocr_orchestrator: engine %d not wired\n", (int)st.eng);
         return {};
     }
 }
 
+static std::vector<layout_detect::region> detect_layout(context * ctx, const char * path) {
+    if (!ctx || ctx->cfg.layout_model.empty() || !path) return {};
+    if (!ctx->layout) {
+        if (!layout_detect::load(&ctx->layout, ctx->cfg.layout_model.c_str(), ctx->n_threads)) {
+            fprintf(stderr, "ocr_orchestrator: layout load failed: %s\n", ctx->cfg.layout_model.c_str());
+            ctx->layout = nullptr;
+            return {};
+        }
+    }
+    return layout_detect::detect_file(ctx->layout, path);
+}
+
+static bool crop_region_rgb(const unsigned char * pixels, int width, int height, const layout_detect::region & region,
+                            std::vector<uint8_t> & out, int * out_w, int * out_h) {
+    if (!pixels || width <= 0 || height <= 0) return false;
+    const int x0 = std::max(0, std::min(width - 1, (int)std::floor(region.x1)));
+    const int y0 = std::max(0, std::min(height - 1, (int)std::floor(region.y1)));
+    const int x1 = std::max(x0 + 1, std::min(width, (int)std::ceil(region.x2)));
+    const int y1 = std::max(y0 + 1, std::min(height, (int)std::ceil(region.y2)));
+    const int w = x1 - x0, h = y1 - y0;
+    out.resize((size_t)w * h * 3);
+    for (int y = 0; y < h; ++y)
+        std::memcpy(out.data() + (size_t)y * w * 3, pixels + ((size_t)(y0 + y) * width + x0) * 3, (size_t)w * 3);
+    if (out_w) *out_w = w;
+    if (out_h) *out_h = h;
+    return true;
+}
+
+static void run_specialized(context * ctx, result & out, const unsigned char * pixels, int width, int height) {
+    if (!ctx || !pixels) return;
+
+    if (ctx->cfg.route_tables && !ctx->cfg.table_model.empty() && !out.routing.table_layout_indices.empty()) {
+        if (!ctx->table) ctx->table = table_parse_init(ctx->cfg.table_model.c_str(), ctx->n_threads);
+        if (ctx->table) {
+            std::vector<uint8_t> rgb;
+            for (int li : out.routing.table_layout_indices) {
+                if (li < 0 || li >= (int)out.layout.size()) continue;
+                int w = 0, h = 0;
+                if (!crop_region_rgb(pixels, width, height, out.layout[li], rgb, &w, &h)) continue;
+                std::vector<uint8_t> gray((size_t)w * h);
+                for (int i = 0; i < w * h; ++i)
+                    gray[i] = (uint8_t)((299 * rgb[i * 3] + 587 * rgb[i * 3 + 1] + 114 * rgb[i * 3 + 2] + 500) / 1000);
+                char * html = table_parse_to_html(ctx->table, gray.data(), w, h);
+                if (!html) continue;
+                result::table_output item;
+                item.layout_index = li;
+                item.confidence = out.layout[li].score;
+                item.x1 = out.layout[li].x1;
+                item.y1 = out.layout[li].y1;
+                item.x2 = out.layout[li].x2;
+                item.y2 = out.layout[li].y2;
+                item.html = html;
+                out.tables.push_back(std::move(item));
+                table_parse_free_string(html);
+            }
+        }
+    }
+
+    if (ctx->cfg.route_formulas && !ctx->cfg.formula_model.empty() && !out.routing.formula_layout_indices.empty()) {
+        if (!ctx->formula) ctx->formula = ppformulanet_ocr_init(ctx->cfg.formula_model.c_str(), ctx->n_threads);
+        if (!ctx->formula && !ctx->formula_l)
+            ctx->formula_l = ppformulanet_l_ocr_init(ctx->cfg.formula_model.c_str(), ctx->n_threads);
+        if (ctx->formula || ctx->formula_l) {
+            std::vector<uint8_t> crop;
+            for (int li : out.routing.formula_layout_indices) {
+                if (li < 0 || li >= (int)out.layout.size()) continue;
+                int w = 0, h = 0;
+                if (!crop_region_rgb(pixels, width, height, out.layout[li], crop, &w, &h)) continue;
+                int len = 0;
+                const char * latex = ctx->formula
+                                         ? ppformulanet_ocr_recognize_raw(ctx->formula, crop.data(), w, h, 3, &len)
+                                         : ppformulanet_l_ocr_recognize_raw(ctx->formula_l, crop.data(), w, h, 3, &len);
+                if (!latex || len <= 0) continue;
+                result::formula_output item;
+                item.layout_index = li;
+                item.confidence = ctx->formula ? ppformulanet_ocr_mean_confidence(ctx->formula)
+                                               : ppformulanet_l_ocr_mean_confidence(ctx->formula_l);
+                item.x1 = out.layout[li].x1;
+                item.y1 = out.layout[li].y1;
+                item.x2 = out.layout[li].x2;
+                item.y2 = out.layout[li].y2;
+                item.latex.assign(latex, len);
+                out.formulas.push_back(std::move(item));
+            }
+        }
+    }
+}
+
 static result assemble(std::vector<ocr_pipeline::ocr_result> regions, engine eng, source_type st) {
+    double conf_sum = 0.0;
     result r;
     r.used_engine = eng;
     r.used_type = st;
-    double conf_sum = 0.0;
+    r.regions = std::move(regions);
+    r.reading_order.resize(r.regions.size());
+    std::iota(r.reading_order.begin(), r.reading_order.end(), 0);
+    std::stable_sort(r.reading_order.begin(), r.reading_order.end(), [&](int a, int b) {
+        const auto & x = r.regions[(size_t)a].box;
+        const auto & y = r.regions[(size_t)b].box;
+        const float row = std::max(8.0f, std::min(x.h, y.h) * 0.65f);
+        if (std::fabs(x.y - y.y) > row) return x.y < y.y;
+        return x.x < y.x;
+    });
     std::string joined;
-    for (auto & reg : regions) {
+    for (int index : r.reading_order) {
+        auto & reg = r.regions[(size_t)index];
         if (!joined.empty()) joined += "\n";
         joined += reg.text;
         conf_sum += reg.confidence;
     }
-    r.mean_confidence = regions.empty() ? 0.0f : (float)(conf_sum / (double)regions.size());
+    r.mean_confidence = r.regions.empty() ? 0.0f : (float)(conf_sum / (double)r.regions.size());
     r.full_text = std::move(joined);
-    r.regions = std::move(regions);
     return r;
+}
+
+static void build_markdown(result & r) {
+    r.markdown.clear();
+    if (!r.layout.empty()) {
+        std::vector<int> layout_order(r.layout.size());
+        std::iota(layout_order.begin(), layout_order.end(), 0);
+        std::stable_sort(layout_order.begin(), layout_order.end(), [&](int a, int b) {
+            const auto & x = r.layout[(size_t)a];
+            const auto & y = r.layout[(size_t)b];
+            if (std::fabs(x.y1 - y.y1) > 8.0f) return x.y1 < y.y1;
+            return x.x1 < y.x1;
+        });
+        std::vector<uint8_t> used(r.regions.size(), 0);
+        for (int li : layout_order) {
+            const auto & box = r.layout[(size_t)li];
+            for (const auto & table : r.tables) {
+                if (table.layout_index == li && !table.html.empty()) r.markdown += table.html + "\n\n";
+            }
+            for (const auto & formula : r.formulas) {
+                if (formula.layout_index == li && !formula.latex.empty())
+                    r.markdown += "$$\n" + formula.latex + "\n$$\n\n";
+            }
+            std::vector<int> inside;
+            for (int ri : r.reading_order) {
+                const auto & text = r.regions[(size_t)ri].box;
+                const float cx = text.x + text.w * 0.5f;
+                const float cy = text.y + text.h * 0.5f;
+                if (cx >= box.x1 && cx <= box.x2 && cy >= box.y1 && cy <= box.y2) inside.push_back(ri);
+            }
+            for (int ri : inside) {
+                if (used[(size_t)ri]) continue;
+                used[(size_t)ri] = 1;
+                const auto & text = r.regions[(size_t)ri].text;
+                if (text.empty()) continue;
+                if (box.label == layout_detect::label_id::title)
+                    r.markdown += "# " + text + "\n\n";
+                else if (box.label == layout_detect::label_id::section_header)
+                    r.markdown += "## " + text + "\n\n";
+                else
+                    r.markdown += text + "\n\n";
+            }
+        }
+        for (int ri : r.reading_order) {
+            if (ri >= 0 && ri < (int)used.size() && !used[(size_t)ri] && !r.regions[(size_t)ri].text.empty())
+                r.markdown += r.regions[(size_t)ri].text + "\n\n";
+        }
+        return;
+    }
+    for (int index : r.reading_order) {
+        if (index < 0 || index >= (int)r.regions.size()) continue;
+        const auto & region = r.regions[(size_t)index];
+        if (region.text.empty()) continue;
+        r.markdown += region.text;
+        r.markdown += "\n\n";
+    }
+    for (const auto & table : r.tables) {
+        if (!table.html.empty()) r.markdown += table.html + "\n\n";
+    }
+    for (const auto & formula : r.formulas) {
+        if (!formula.latex.empty()) r.markdown += "$$\n" + formula.latex + "\n$$\n\n";
+    }
 }
 
 static bool passes_gate(const result & r, const accept_gate & g) {
@@ -897,6 +1114,14 @@ static const chain * pick_chain(const config & cfg, source_type st) {
 
 bool load(context ** out, const config & cfg, int n_threads) {
     if (!out) return false;
+    if (cfg.route_tables && (cfg.layout_model.empty() || cfg.table_model.empty())) {
+        fprintf(stderr, "ocr_orchestrator: route_tables requires layout_model and table_model\n");
+        return false;
+    }
+    if (cfg.route_formulas && (cfg.layout_model.empty() || cfg.formula_model.empty())) {
+        fprintf(stderr, "ocr_orchestrator: route_formulas requires layout_model and formula_model\n");
+        return false;
+    }
     auto * ctx = new context();
     ctx->cfg = cfg;
     ctx->n_threads = n_threads;
@@ -927,6 +1152,16 @@ bool load(context ** out, const config & cfg, int n_threads) {
     return true;
 }
 
+capabilities get_capabilities(const context * ctx) {
+    capabilities out;
+    if (!ctx) return out;
+    out.layout = !ctx->cfg.layout_model.empty();
+    out.tables = ctx->cfg.route_tables && !ctx->cfg.table_model.empty();
+    out.formulas = ctx->cfg.route_formulas && !ctx->cfg.formula_model.empty();
+    out.image_text_fallback = ctx->cfg.image_text_fallback;
+    return out;
+}
+
 static const char * engine_name(engine e) {
     switch (e) {
     case engine::dbnet_trocr:
@@ -955,6 +1190,8 @@ static const char * engine_name(engine e) {
         return "lightonocr";
     case engine::unlimited_ocr:
         return "unlimited_ocr";
+    case engine::unified:
+        return "unified";
     default:
         return "unknown";
     }
@@ -1023,6 +1260,14 @@ result run_file(context * ctx, const char * image_path) {
     }
     const char * effective_path = sr_path.empty() ? image_path : sr_path.c_str();
 
+    int page_width = 0, page_height = 0, page_channels = 0;
+    unsigned char * page_pixels = stbi_load(effective_path, &page_width, &page_height, &page_channels, 3);
+    if (page_pixels) stbi_image_free(page_pixels);
+    const auto layout_regions = detect_layout(ctx, effective_path);
+    best.page_width = page_width;
+    best.page_height = page_height;
+    best.layout = layout_regions;
+
     int tried = 0;
     for (const stage & s : ch->stages) {
         if (!s.enabled) continue;
@@ -1033,15 +1278,44 @@ result run_file(context * ctx, const char * image_path) {
                     s.cleanup.enabled ? "on" : "off");
 
         auto t_stage = std::chrono::steady_clock::now();
-        std::string tmp = clean_to_temp(ctx, s.cleanup, effective_path);
+        const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
+        std::vector<uint8_t> cleaned_pixels;
+        int cleaned_w = 0, cleaned_h = 0;
+        const bool cleaned_in_memory =
+            raw_stage && clean_to_pixels(ctx, s.cleanup, effective_path, cleaned_pixels, &cleaned_w, &cleaned_h);
+        std::string tmp;
+        if (!cleaned_in_memory) tmp = clean_to_temp(ctx, s.cleanup, effective_path);
         const char * ocr_path = tmp.empty() ? effective_path : tmp.c_str();
 
         // Pre-load image once for VLM engines (avoids redundant stbi_load
         // inside each engine case when multiple stages use the same image)
         int img_w = 0, img_h = 0, img_c = 0;
-        unsigned char * img_px = stbi_load(ocr_path, &img_w, &img_h, &img_c, 3);
+        unsigned char * loaded_px = nullptr;
+        const unsigned char * img_px = nullptr;
+        if (cleaned_in_memory) {
+            img_px = cleaned_pixels.data();
+            img_w = cleaned_w;
+            img_h = cleaned_h;
+            img_c = 3;
+        } else {
+            loaded_px = stbi_load(ocr_path, &img_w, &img_h, &img_c, 3);
+            img_px = loaded_px;
+        }
         result r = assemble(run_engine(ctx, s, ocr_path, img_px, img_w, img_h), s.eng, st);
-        if (img_px) stbi_image_free(img_px);
+        r.page_width = page_width;
+        r.page_height = page_height;
+        r.layout = layout_regions;
+        std::vector<ocr_detect::text_box> text_boxes;
+        text_boxes.reserve(r.regions.size());
+        for (const auto & region : r.regions) text_boxes.push_back(region.box);
+        ocr_region_router::request_policy route_policy;
+        route_policy.want_tables = ctx->cfg.route_tables && !ctx->cfg.table_model.empty();
+        route_policy.want_formulas = ctx->cfg.route_formulas && !ctx->cfg.formula_model.empty();
+        route_policy.image_text_fallback = ctx->cfg.image_text_fallback;
+        ocr_region_router::build(r.layout, text_boxes, route_policy, r.routing);
+        run_specialized(ctx, r, img_px, img_w, img_h);
+        build_markdown(r);
+        if (loaded_px) stbi_image_free(loaded_px);
         r.used_type = st;
         r.stages_tried = tried;
 
@@ -1129,6 +1403,10 @@ result run_file(context * ctx, const char * image_path) {
 void free(context * ctx) {
     if (!ctx) return;
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
+    if (ctx->layout) layout_detect::free(ctx->layout);
+    if (ctx->table) table_parse_free(ctx->table);
+    if (ctx->formula) ppformulanet_ocr_free(ctx->formula);
+    if (ctx->formula_l) ppformulanet_l_ocr_free(ctx->formula_l);
     if (ctx->got) got_ocr_free(ctx->got);
     if (ctx->glm) glm_ocr_free(ctx->glm);
     if (ctx->qwen) qwen2vl_ocr_free(ctx->qwen);
@@ -1139,6 +1417,7 @@ void free(context * ctx) {
     if (ctx->gv) granite_vision_free(ctx->gv);
     if (ctx->locr) lightonocr_free(ctx->locr);
     if (ctx->uocr) unlimited_ocr_free(ctx->uocr);
+    if (ctx->unified) crispembed_ocr_model_free(ctx->unified);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess) tesseract_lstm_free(ctx->tess);
     if (ctx->parseq_det) ocr_detect::free(ctx->parseq_det);

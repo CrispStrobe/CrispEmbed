@@ -9,6 +9,7 @@
 #include "ocr_pipeline.h"
 #include "ocr_detect.h"
 #include "math_ocr.h"
+#include "classical_preproc.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -18,23 +19,47 @@ void stbi_image_free(void * retval_from_stbi_load);
 }
 
 #include <algorithm>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
+#include <string>
 #include <vector>
 
 namespace ocr_pipeline {
+
+bool is_dangerous_q4_recognizer_path(const char * rec_path) {
+    if (!rec_path) return false;
+    std::string path(rec_path);
+    std::transform(path.begin(), path.end(), path.begin(), [](unsigned char c) { return (char)std::tolower(c); });
+    return path.find("trocr-") != std::string::npos && path.find("q4_k") != std::string::npos;
+}
+
+bool dangerous_q4_override_enabled() {
+    const char * value = std::getenv("CRISPEMBED_DEBUG_ALLOW_OCR_Q4");
+    return value && (!std::strcmp(value, "1") || !std::strcmp(value, "true") || !std::strcmp(value, "yes"));
+}
 
 struct context {
     ocr_detect::context * det = nullptr;
     math_ocr_context * rec = nullptr;
     int n_threads = 1;
     bool bench = false;
+    std::mutex infer_mutex; // decoder/context state is mutable across calls
 };
 
 bool load(context ** out, const char * det_path, const char * rec_path, int n_threads) {
+    if (is_dangerous_q4_recognizer_path(rec_path) && !dangerous_q4_override_enabled()) {
+        fprintf(stderr,
+                "ocr_pipeline: refusing TrOCR Q4_K recognizer '%s'; use trocr-small-printed-q8_0.gguf "
+                "or explicitly set CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1\n",
+                rec_path ? rec_path : "(null)");
+        if (out) *out = nullptr;
+        return false;
+    }
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
@@ -82,36 +107,51 @@ static std::vector<uint8_t> crop_image(const unsigned char * img, int img_w, int
     return crop;
 }
 
-std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold, float box_threshold,
-                                 int target_short_side) {
-    if (!ctx || !ctx->det || !ctx->rec || !image_path) return {};
+static void orient_text_crop(std::vector<uint8_t> & crop, int w, int h) {
+    if (w < 8 || h < 8) return;
+    std::vector<uint8_t> gray((size_t)w * h);
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const uint8_t * p = crop.data() + ((size_t)y * w + x) * 3;
+            gray[(size_t)y * w + x] = (uint8_t)((77 * p[0] + 150 * p[1] + 29 * p[2] + 128) >> 8);
+        }
+    }
+    float confidence = 0.0f;
+    if (detect_text_angle(gray.data(), w, h, &confidence) != 180 || confidence < 0.75f) return;
+    for (int y = 0; y < h / 2 + (h & 1); ++y) {
+        for (int x = 0; x < w; ++x) {
+            const size_t a = ((size_t)y * w + x) * 3;
+            const size_t b = ((size_t)(h - 1 - y) * w + (w - 1 - x)) * 3;
+            if (a >= b) continue;
+            for (int c = 0; c < 3; ++c) std::swap(crop[a + c], crop[b + c]);
+        }
+    }
+}
+
+std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                float prob_threshold, float box_threshold, int target_short_side) {
+    if (!ctx || !ctx->det || !ctx->rec || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0) return {};
+    std::lock_guard<std::mutex> lock(ctx->infer_mutex);
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
     // Step 1: Detect text regions
     auto t_detect = std::chrono::steady_clock::now();
-    auto boxes = ocr_detect::detect_file(ctx->det, image_path, prob_threshold, box_threshold, 1.5f, target_short_side);
+    auto boxes = ocr_detect::detect_rgb(ctx->det, raw, img_w, img_h, img_c, prob_threshold, box_threshold, 1.5f,
+                                        target_short_side);
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_detect).count();
         fprintf(stderr, "[ocr_pipeline-bench] detect: %.1f ms (%zu boxes)\n", ms, boxes.size());
     }
 
     if (boxes.empty()) {
-        fprintf(stderr, "ocr_pipeline: no text detected in %s\n", image_path);
+        fprintf(stderr, "ocr_pipeline: no text detected\n");
         return {};
     }
     fprintf(stderr, "ocr_pipeline: detected %zu text regions\n", boxes.size());
 
-    // Step 2: Load original image for cropping
-    int img_w, img_h, img_c;
-    unsigned char * img = stbi_load(image_path, &img_w, &img_h, &img_c, 3);
-    if (!img) {
-        fprintf(stderr, "ocr_pipeline: cannot load image for cropping: %s\n", image_path);
-        return {};
-    }
-
-    // Step 3: Collect valid crops, batch-encode, then decode sequentially.
+    // Step 2: Collect valid crops, batch-encode, then decode sequentially.
     struct crop_entry {
         std::vector<uint8_t> data;
         int w, h;
@@ -128,17 +168,16 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
         int cw = (int)b.w + 2 * pad;
         int ch = (int)b.h + 2 * pad;
 
-        auto crop = crop_image(img, img_w, img_h, cx, cy, cw, ch);
+        auto crop = crop_image(raw, img_w, img_h, cx, cy, cw, ch);
         if (crop.empty()) continue;
 
         int actual_w = std::min(cw, img_w - cx);
         int actual_h = std::min(ch, img_h - cy);
         if (actual_w <= 0 || actual_h <= 0) continue;
 
+        orient_text_crop(crop, actual_w, actual_h);
         crop_entries.push_back({ std::move(crop), actual_w, actual_h, i });
     }
-
-    stbi_image_free(img);
 
     std::vector<ocr_result> results;
     results.reserve(crop_entries.size());
@@ -177,6 +216,10 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
                     r.box = boxes[crop_entries[i].box_idx];
                     r.confidence = r.box.score;
                     r.text = std::string(text, out_len);
+                    r.rec_confidence = math_ocr_mean_confidence(ctx->rec);
+                    int n_conf = 0;
+                    const float * conf = math_ocr_confidences(ctx->rec, &n_conf);
+                    if (conf && n_conf > 0) r.char_conf.assign(conf, conf + n_conf);
                     results.push_back(std::move(r));
                 }
             }
@@ -192,6 +235,10 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
                     r.box = boxes[crop_entries[i].box_idx];
                     r.confidence = r.box.score;
                     r.text = std::string(text, out_len);
+                    r.rec_confidence = math_ocr_mean_confidence(ctx->rec);
+                    int n_conf = 0;
+                    const float * conf = math_ocr_confidences(ctx->rec, &n_conf);
+                    if (conf && n_conf > 0) r.char_conf.assign(conf, conf + n_conf);
                     results.push_back(std::move(r));
                 }
             }
@@ -209,8 +256,23 @@ std::vector<ocr_result> run_file(context * ctx, const char * image_path, float p
     return results;
 }
 
+std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold, float box_threshold,
+                                 int target_short_side) {
+    if (!ctx || !image_path) return {};
+    int img_w = 0, img_h = 0, img_c = 0;
+    unsigned char * raw = stbi_load(image_path, &img_w, &img_h, &img_c, 3);
+    if (!raw) {
+        fprintf(stderr, "ocr_pipeline: cannot load image for cropping: %s\n", image_path);
+        return {};
+    }
+    auto results = run_raw(ctx, raw, img_w, img_h, 3, prob_threshold, box_threshold, target_short_side);
+    stbi_image_free(raw);
+    return results;
+}
+
 std::string recognize_file(context * ctx, const char * image_path) {
     if (!ctx || !ctx->rec || !image_path) return "";
+    std::lock_guard<std::mutex> lock(ctx->infer_mutex);
     int out_len = 0;
     const char * text = math_ocr_recognize_file(ctx->rec, image_path, &out_len);
     return text ? std::string(text, out_len) : "";

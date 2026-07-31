@@ -45,6 +45,12 @@ std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, 
 std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold = 0.3f,
                                   float box_threshold = 0.5f, float unclip_ratio = 1.5f, int target_short_side = 736);
 
+// Detect from interleaved uint8 pixels. RGB and grayscale input are accepted;
+// coordinates in the returned boxes refer to the original image dimensions.
+std::vector<text_box> detect_rgb(context * ctx, const uint8_t * pixels, int width, int height, int channels,
+                                 float prob_threshold = 0.3f, float box_threshold = 0.5f, float unclip_ratio = 1.5f,
+                                 int target_short_side = 736);
+
 // Get probability map from last detection (for debugging/visualization).
 // Returns nullptr if no detection has been run yet.
 // Shape: [H_padded, W_padded], row-major, values in [0, 1].
