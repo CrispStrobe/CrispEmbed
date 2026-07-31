@@ -1718,6 +1718,7 @@ class OcrResult {
   final String text;
   final double x, y, w, h;
   final double confidence;
+  final bool orientationCorrected;
 
   const OcrResult({
     required this.text,
@@ -1726,6 +1727,7 @@ class OcrResult {
     required this.w,
     required this.h,
     required this.confidence,
+    this.orientationCorrected = false,
   });
 
   @override
@@ -1790,11 +1792,10 @@ class CrispOcrPipeline {
     if (ptr == nullptr || n <= 0) return [];
 
     // The C API returns crispembed_ocr_result structs:
-    //   float x, y, w, h, confidence; const char* text; int text_len;
-    // Total struct size: 5 floats + 1 pointer + 1 int = 28 bytes on 32-bit, 32 on 64-bit
+    //   float x, y, w, h, confidence; const char* text; int text_len; int orientation_corrected;
     final results = <OcrResult>[];
     final structSize =
-        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
     for (var i = 0; i < n; i++) {
       final base = ptr.cast<Uint8>() + i * structSize;
       final floats = base.cast<Float>();
@@ -1807,6 +1808,7 @@ class CrispOcrPipeline {
       final textPtrAddr = (base + 5 * sizeOf<Float>()).cast<Pointer<Utf8>>();
       final textPtr = textPtrAddr.value;
       final text = textPtr != nullptr ? textPtr.toDartString() : '';
+      final orientation = (base + 5 * sizeOf<Float>() + sizeOf<Pointer>() + sizeOf<Int32>()).cast<Int32>().value != 0;
       results.add(OcrResult(
         text: text,
         x: x,
@@ -1814,6 +1816,7 @@ class CrispOcrPipeline {
         w: w,
         h: h,
         confidence: confidence,
+        orientationCorrected: orientation,
       ));
     }
     return results;
@@ -3912,7 +3915,7 @@ class CrispPreprocess {
     if (ptr == nullptr || n <= 0) return [];
     // Parse crispembed_ocr_result structs (same layout as OcrResult)
     final structSize =
-        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
     final results = <({int x, int y, int w, int h})>[];
     for (var i = 0; i < n; i++) {
       final base = ptr.cast<Uint8>() + i * structSize;
@@ -4103,8 +4106,8 @@ String? ocrRender(DynamicLibrary lib, List<OcrResult> results, int pageWidth,
           'crispembed_ocr_render');
 
   // Build the C result array. crispembed_ocr_result layout:
-  // 5 floats (x,y,w,h,conf) + pointer (text) + int32 (text_len)
-  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+  // 5 floats (x,y,w,h,conf) + pointer (text) + two int32 fields
+  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
   final arr = calloc<Uint8>(results.length * structSize);
   final textPtrs = <Pointer<Utf8>>[];
 
@@ -4122,6 +4125,8 @@ String? ocrRender(DynamicLibrary lib, List<OcrResult> results, int pageWidth,
     (base + sizeOf<Float>() * 5).cast<Pointer<Utf8>>()[0] = textPtr;
     (base + sizeOf<Float>() * 5 + sizeOf<Pointer>()).cast<Int32>()[0] =
         r.text.length;
+    (base + sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>()).cast<Int32>()[0] =
+        r.orientationCorrected ? 1 : 0;
   }
 
   final fmtPtr = format.toNativeUtf8();

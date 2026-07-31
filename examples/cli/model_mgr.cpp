@@ -887,9 +887,9 @@ static const ModelEntry k_registry[] = {
       "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "6 MB", "apache-2.0",
       "https://huggingface.co/cstr/parseq-GGUF" },
 
-    { "dbnet-det", "dbnet-ic15-q4_k.gguf",
-      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
-      "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
+    { "dbnet-det", "dbnet-ic15-q8_0.gguf",
+      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q8_0.gguf",
+      "DBNet text detection (ResNet-18+FPNC, ICDAR2015)", "13 MB", "apache-2.0",
       "https://huggingface.co/cstr/dbnet-ic15-GGUF" },
 
     { "surya-det", "surya-det-f16.gguf", "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",

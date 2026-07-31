@@ -49,6 +49,7 @@ pub struct CrispembedOcrResult {
     pub confidence: f32,
     pub text: *const c_char,
     pub text_len: c_int,
+    pub orientation_corrected: c_int,
 }
 
 /// Flat config for the OCR pipeline orchestrator (slice A: DBNet+TrOCR).
@@ -81,7 +82,7 @@ pub struct CrispembedOcrPipelineParams {
 #[repr(C)]
 pub struct CrispembedOcrStage {
     pub source_type: c_int, // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: c_int, // 0..13 existing engines, 14=unified metadata-dispatched GGUF
+    pub engine: c_int,      // 0..13 existing engines, 14=unified metadata-dispatched GGUF
     pub model_a: *const c_char,
     pub model_b: *const c_char,
     pub cleanup_enabled: c_int,
@@ -645,9 +646,13 @@ extern "C" {
         out_mean_confidence: *mut c_float,
     ) -> *const CrispembedOcrResult;
 
-    pub fn crispembed_ocr_pipeline_reading_order(ctx: *mut c_void, out_n: *mut c_int) -> *const c_int;
+    pub fn crispembed_ocr_pipeline_reading_order(
+        ctx: *mut c_void,
+        out_n: *mut c_int,
+    ) -> *const c_int;
 
-    pub fn crispembed_ocr_pipeline_markdown(ctx: *mut c_void, out_len: *mut c_int) -> *const c_char;
+    pub fn crispembed_ocr_pipeline_markdown(ctx: *mut c_void, out_len: *mut c_int)
+        -> *const c_char;
 
     pub fn crispembed_ocr_pipeline_free(ctx: *mut c_void);
 
