@@ -6136,6 +6136,10 @@ extern "C" int crispembed_find_skew(const uint8_t * gray, int w, int h, float * 
     return find_skew_angle(gray, w, h, angle, confidence);
 }
 
+extern "C" int crispembed_detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence) {
+    return detect_page_orientation(gray, w, h, confidence);
+}
+
 extern "C" void crispembed_adaptive_binarize(const uint8_t * gray, int w, int h, uint8_t * out) {
     adaptive_otsu(gray, w, h, 0, 0, 0, out);
 }
