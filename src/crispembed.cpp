@@ -4729,25 +4729,21 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         return w->c_results.empty() ? nullptr : w->c_results.data();
     }
     w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
-}
-else {
-    w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
-}
-w->c_results.resize(w->results.size());
-for (size_t i = 0; i < w->results.size(); i++) {
-    auto & r = w->results[i];
-    auto & c = w->c_results[i];
-    c.x = r.box.x;
-    c.y = r.box.y;
-    c.w = r.box.w;
-    c.h = r.box.h;
-    c.confidence = r.confidence;
-    c.text = r.text.c_str();
-    c.text_len = (int)r.text.size();
-    c.orientation_corrected = r.orientation_corrected ? 1 : 0;
-}
-if (out_n) *out_n = (int)w->c_results.size();
-return w->c_results.empty() ? nullptr : w->c_results.data();
+    w->c_results.resize(w->results.size());
+    for (size_t i = 0; i < w->results.size(); i++) {
+        auto & r = w->results[i];
+        auto & c = w->c_results[i];
+        c.x = r.box.x;
+        c.y = r.box.y;
+        c.w = r.box.w;
+        c.h = r.box.h;
+        c.confidence = r.confidence;
+        c.text = r.text.c_str();
+        c.text_len = (int)r.text.size();
+        c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+    }
+    if (out_n) *out_n = (int)w->c_results.size();
+    return w->c_results.empty() ? nullptr : w->c_results.data();
 }
 
 extern "C" const char * crispembed_ocr_recognize(void * ctx, const char * image_path, int * out_len) {
