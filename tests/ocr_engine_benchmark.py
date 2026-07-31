@@ -106,6 +106,8 @@ def main() -> int:
     ap.add_argument("--binary", default=str(ROOT / "build/crispembed"))
     ap.add_argument("--gpu-backend", default="auto",
                     help="backend passed to crispembed (auto, metal, cpu, ...)")
+    ap.add_argument("--mmap", action="store_true",
+                    help="set UOCR_MMAP=1 for engines supporting no-copy GGUF loading")
     ap.add_argument("--model-dir", default=str(DEFAULT_MODEL_DIR))
     ap.add_argument("--output", default="")
     ap.add_argument("--timeout", type=float, default=180)
@@ -114,6 +116,10 @@ def main() -> int:
                     help="download manifest GGUFs from their pinned HF repo")
     ap.add_argument("--only", nargs="*", help="manifest names to run")
     args = ap.parse_args()
+    if args.mmap:
+        # Unlimited-OCR and future large VLM loaders consume this opt-in; it
+        # is harmless for engines that do not inspect the variable.
+        os.environ["UOCR_MMAP"] = "1"
 
     manifest = json.loads(MANIFEST.read_text())
     model_dir = Path(args.model_dir)

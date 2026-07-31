@@ -22,6 +22,14 @@ GGUF still needs downloading or porting—is in `ocr_engine_matrix.json`.
 from their Hugging Face repositories instead of treating an empty local cache
 as lack of support.
 
+For large GGUFs on an external volume, add `--mmap` to use the no-copy loader
+when the engine supports it:
+
+```sh
+python tests/ocr_engine_benchmark.py --only unlimited-ocr-stacked \
+  --gpu-backend metal --mmap --repeats 1 --timeout 300
+```
+
 The seed set now also includes German public-domain/CC0 inputs: an 1848 Berlin
 citizenship document, a German official-print page, and German Kurrent
 handwriting.  These are sourced from Wikimedia Commons and are tracked with
