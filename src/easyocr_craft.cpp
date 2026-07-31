@@ -37,8 +37,18 @@ static ggml_tensor * req(easyocr_craft_context * c, const std::string & name) {
 
 static ggml_tensor * conv(ggml_context * g, easyocr_craft_context * c, ggml_tensor * x, const std::string & name,
                           int kw, int kh, int pw, int ph, int dw = 1, int dh = 1, bool relu = true) {
-    ggml_tensor * y = ggml_conv_2d(g, req(c, name + ".weight"), x, 1, 1, pw, ph, dw, dh);
-    y = ggml_add(g, y, ggml_reshape_4d(g, req(c, name + ".bias"), 1, 1, req(c, name + ".bias")->ne[0], 1));
+    const std::string raw_weight = name + ".raw_weight";
+    const bool runtime_bn = c->wl.tensors.count(raw_weight) != 0;
+    ggml_tensor * weight = req(c, runtime_bn ? raw_weight : name + ".weight");
+    ggml_tensor * bias = req(c, runtime_bn ? name + ".raw_bias" : name + ".bias");
+    ggml_tensor * y = ggml_conv_2d(g, weight, x, 1, 1, pw, ph, dw, dh);
+    y = ggml_add(g, y, ggml_reshape_4d(g, bias, 1, 1, bias->ne[0], 1));
+    if (runtime_bn) {
+        ggml_tensor * scale = req(c, name + ".bn_scale");
+        ggml_tensor * shift = req(c, name + ".bn_shift");
+        y = ggml_mul(g, y, ggml_reshape_4d(g, scale, 1, 1, scale->ne[0], 1));
+        y = ggml_add(g, y, ggml_reshape_4d(g, shift, 1, 1, shift->ne[0], 1));
+    }
     return relu ? ggml_relu(g, y) : y;
 }
 
@@ -60,9 +70,7 @@ static bool build_graph(easyocr_craft_context * c) {
     auto pool = [&](int k, int s, int p) { x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, k, k, s, s, p, p); };
 
     // VGG-16 BN feature taps used by EasyOCR's CRAFT implementation.
-    x = ggml_conv_2d(g, req(c, "basenet.slice1.0.weight"), x, 1, 1, 1, 1, 1, 1);
-    x = ggml_add(g, x, ggml_reshape_4d(g, req(c, "basenet.slice1.0.bias"), 1, 1, 64, 1));
-    x = ggml_relu(g, x);
+    x = conv(g, c, x, "basenet.slice1.0", 3, 3, 1, 1);
     x = conv(g, c, x, "basenet.slice1.3", 3, 3, 1, 1);
     pool(2, 2, 0);
     x = conv(g, c, x, "basenet.slice1.7", 3, 3, 1, 1);
