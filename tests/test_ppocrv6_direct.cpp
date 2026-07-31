@@ -4,11 +4,13 @@
 #include "ppocrv6_ocr.h"
 #include "pplcnet_orientation.h"
 #include "stb_image.h"
+#include "../ggml/examples/stb_image_write.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <chrono>
 #include <algorithm>
+#include <fstream>
 #include <string>
 
 int main(int argc, char ** argv) {
@@ -30,6 +32,7 @@ int main(int argc, char ** argv) {
         if (const char * env = std::getenv("PPOCRV6_DIRECT_MAX_REGIONS"))
             region_limit = std::min(region_limit, std::strtoul(env, nullptr, 10));
         size_t rotated = 0;
+        const char * crop_prefix = std::getenv("PPOCRV6_DIRECT_SAVE_CROPS");
         std::printf("ppocrv6-direct detector_regions=%zu image=%dx%d orientation=%s\n", boxes.size(), w, h,
                     ori ? "pplcnet" : "heuristic-disabled");
         for (size_t i = 0; i < region_limit; ++i) {
@@ -37,6 +40,13 @@ int main(int argc, char ** argv) {
             int cw = 0, ch = 0;
             auto crop = ocr_crop::extract_quad(pixels, w, h, 3, b.qx, b.qy, 2, &cw, &ch);
             if (crop.empty()) continue;
+            if (crop_prefix && *crop_prefix) {
+                const std::string path = std::string(crop_prefix) + "-" + std::to_string(i) + ".ppm";
+                std::ofstream out(path, std::ios::binary);
+                out << "P6\n" << cw << " " << ch << "\n255\n";
+                out.write(reinterpret_cast<const char *>(crop.data()), (std::streamsize)crop.size());
+                if (!out) std::fprintf(stderr, "failed to save crop %s\n", path.c_str());
+            }
             int angle = 0;
             float orientation_confidence = 0.0f;
             if (ori) {

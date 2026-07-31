@@ -487,6 +487,24 @@ def _tesseract_normalize(img_u8):
     return result
 
 
+def _native_compatible_resize(img_u8, width, height):
+    """Match tesseract_lstm.cpp half-pixel bilinear uint8 resizing."""
+    src_h, src_w = img_u8.shape
+    source_y = ((np.arange(height, dtype=np.float64) + 0.5) * src_h / height) - 0.5
+    source_x = ((np.arange(width, dtype=np.float64) + 0.5) * src_w / width) - 0.5
+    y_floor = np.floor(source_y)
+    x_floor = np.floor(source_x)
+    y0 = np.clip(y_floor.astype(np.int64), 0, src_h - 1)
+    y1 = np.clip(y0 + 1, 0, src_h - 1)
+    x0 = np.clip(x_floor.astype(np.int64), 0, src_w - 1)
+    x1 = np.clip(x0 + 1, 0, src_w - 1)
+    fy = np.clip(source_y - y_floor, 0.0, 1.0)
+    fx = np.clip(source_x - x_floor, 0.0, 1.0)
+    top = img_u8[y0[:, None], x0[None, :]] * (1.0 - fx)[None, :] + img_u8[y0[:, None], x1[None, :]] * fx[None, :]
+    bottom = img_u8[y1[:, None], x0[None, :]] * (1.0 - fx)[None, :] + img_u8[y1[:, None], x1[None, :]] * fx[None, :]
+    return np.floor(top * (1.0 - fy)[:, None] + bottom * fy[:, None] + 0.5).astype(np.uint8)
+
+
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
@@ -547,10 +565,7 @@ def main():
     h_orig, w_orig = img_u8.shape
     scale = input_height / h_orig
     new_w = max(1, int(w_orig * scale + 0.5))
-    from PIL import Image as PILImage
-    img_resized = PILImage.fromarray(img_u8)
-    img_resized = img_resized.resize((new_w, input_height), PILImage.BILINEAR)
-    img_u8_resized = np.array(img_resized, dtype=np.uint8)
+    img_u8_resized = _native_compatible_resize(img_u8, new_w, input_height)
     print(f"Resized: {new_w}x{input_height}")
 
     # ── Tesseract-style pixel normalization ───────────────────────────
@@ -611,6 +626,7 @@ def main():
     writer.add_string("general.name", "tesseract-lstm-reference")
     writer.add_string("tesseract_lstm_ref.model_path", str(args.model))
     writer.add_string("tesseract_lstm_ref.model_sha256", source_sha256)
+    writer.add_string("tesseract_lstm_ref.resize", "native_half_pixel_bilinear_u8_round")
     writer.add_string("tesseract_lstm_ref.image_path", str(args.image))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)
     writer.add_uint32("tesseract_lstm_ref.input_height", input_height)

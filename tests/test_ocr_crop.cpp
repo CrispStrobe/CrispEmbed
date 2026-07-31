@@ -28,6 +28,13 @@ static int crispembed_test_main() {
     assert(w == 3 && h == 4 && channels == 1);
     assert(prepared.size() == 12);
 
+    const float qx[4] = { 5, 15, 15, 5 };
+    const float qy[4] = { 6, 6, 10, 10 };
+    std::vector<uint8_t> quad_pixels(20 * 20, 128);
+    auto quad = ocr_crop::extract_quad(quad_pixels.data(), 20, 20, 1, qx, qy, 2, &w, &h);
+    assert(w == 14 && h == 8);
+    assert(quad.size() == (size_t)w * h);
+
     prep = {};
     prep.target_width = 6;
     prep.target_height = 6;

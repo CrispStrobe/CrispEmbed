@@ -78,6 +78,16 @@ Requirements:
    the complete pipeline no longer emits full-page recognizer garbage on the
    German fixtures.
 
+Parity note (2026-07-31): `inference.yml` declares `DecodeImage(img_mode=BGR)`;
+the public crop handoff remains RGB, with the recognizer swapping to BGR at
+its model boundary. Exact native detector crops now reproduce the visible
+German title geometry. On the Fraktur crop, Python and native logits agree at
+cosine 0.99998--0.99999, but both decode `Rieilhs–刊臂懒s²ł1&tt.`; this is a
+source-model recognition-quality limitation, not a native crop/inference
+parity failure. Do not publish a quality claim for this fixture until a
+Paddle/Python official run confirms whether the model itself has the same
+limitation.
+
 Implementation order: shared quad warp and telemetry; PP-LCNet classifier;
 PP-det→PP-rec integration; DBNet fallback adapter; per-stage diff fixtures;
 benchmark and regression manifest; then publish only to `cstr/` from the
@@ -232,6 +242,14 @@ downstream handoff parity, not detector-box similarity alone.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and stage/output parity remain open.
+- [x] Align the diagnostic Tesseract reference dumper's resize contract with
+      native half-pixel bilinear uint8 rounding; this isolates graph parity
+      from the separate question of full Tesseract page preprocessing.
+- [x] Run the exact hashed Homebrew English diagnostic reference: decoded
+      native/Python output agrees (`a`), input cosine is `0.999658`, and all
+      9 captured stages pass the agreed `0.99` gate with mine/ref magnitude
+      reports; BiLSTM stages 1/2 remain below the stricter `0.999` review
+      threshold and are not claimed exact.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
