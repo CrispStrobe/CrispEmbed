@@ -87,6 +87,7 @@ struct tesseract_lstm_context {
     int null_char;
     int num_lstm_layers;
     uint32_t training_flags;
+    int32_t sample_iteration;
     bool int_mode;
     std::string vgsl_spec;
 
@@ -184,6 +185,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->null_char = (int)core_gguf::kv_u32(meta, "tesseract_lstm.null_char", 110);
     ctx->num_lstm_layers = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_lstm_layers", 4);
     ctx->training_flags = core_gguf::kv_u32(meta, "tesseract_lstm.training_flags", 0);
+    ctx->sample_iteration = core_gguf::kv_i32(meta, "tesseract_lstm.sample_iteration", 0);
     ctx->int_mode = core_gguf::kv_bool(meta, "tesseract_lstm.int_mode", (ctx->training_flags & 1) != 0);
     ctx->vgsl_spec = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
 
@@ -441,20 +443,29 @@ static void normalize_image(const uint8_t * pixels, int width, int height,
     if (mins.empty()) mins.push_back(0.0f);
     if (maxes.empty()) maxes.push_back(255.0f);
 
-    // NumPy's default percentile method is linear interpolation between the
-    // surrounding sorted samples. Use the same rule as the Python reference;
-    // selecting floor(index) changes the normalization before the first NN op.
-    std::sort(mins.begin(), mins.end());
-    std::sort(maxes.begin(), maxes.end());
-    auto percentile_linear = [](const std::vector<float> & values, float q) {
-        const float position = q * (float)(values.size() - 1);
-        const size_t lower = (size_t)std::floor(position);
-        const size_t upper = std::min(values.size() - 1, lower + 1);
-        const float fraction = position - (float)lower;
-        return values[lower] + fraction * (values[upper] - values[lower]);
+    // Tesseract's STATS::ile uses a 0..255 histogram and interpolates within
+    // the bucket containing frac * total_count. It is not a sorted-sample
+    // percentile; that distinction changes the int8 input rounding.
+    auto percentile_histogram = [](const std::vector<float> & values, float q) {
+        int buckets[256] = {};
+        for (float value : values) {
+            const int bucket = std::max(0, std::min(255, (int)value));
+            buckets[bucket]++;
+        }
+        const int total = (int)values.size();
+        const double target = std::max(1.0, std::min((double)total, (double)q * total));
+        int sum = 0;
+        for (int index = 0; index <= 255 && sum < target; ++index) {
+            sum += buckets[index];
+            if (sum >= target && buckets[index] > 0) {
+                // STATS::ile increments its loop index before returning.
+                return (float)(index + 1) - (float)((sum - target) / buckets[index]);
+            }
+        }
+        return 0.0f;
     };
-    float black = percentile_linear(mins, 0.25f);
-    float white = percentile_linear(maxes, 0.75f);
+    float black = percentile_histogram(mins, 0.25f);
+    float white = percentile_histogram(maxes, 0.75f);
     float contrast = (white - black) / 2.0f;
     if (contrast <= 0.0f) contrast = 1.0f;
 
@@ -556,6 +567,15 @@ static void forward(tesseract_lstm_context * ctx,
     // Then FC: out = tanh(W @ stacked + bias)
     std::vector<float> convolve_out(H * W * 9);
     std::vector<float> fc_out(H * W * conv_out);
+    uint64_t rng_seed = (uint64_t)((int64_t)ctx->sample_iteration * 0x10000001LL);
+    auto random_int = [&]() -> int32_t {
+        rng_seed = rng_seed * 6364136223846793005ULL + 1442695040888963407ULL;
+        return (int32_t)(rng_seed >> 33);
+    };
+    auto random_signed = [&](float range) -> float {
+        return range * (2.0f * (float)random_int() / 2147483647.0f - 1.0f);
+    };
+    random_int(); // LSTMRecognizer::SetRandomSeed discards one value.
     {
         for (int y = 0; y < H; y++) {
             for (int x = 0; x < W; x++) {
@@ -564,7 +584,13 @@ static void forward(tesseract_lstm_context * ctx,
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dy = -1; dy <= 1; dy++) {
                         int sx = x + dx, sy = y + dy;
-                        stacked[idx++] = (sx >= 0 && sx < W && sy >= 0 && sy < H) ? input_values[sy * W + sx] : 0.0f;
+                        if (sx >= 0 && sx < W && sy >= 0 && sy < H) {
+                            stacked[idx++] = input_values[sy * W + sx];
+                        } else if (int_mode) {
+                            stacked[idx++] = (float)tesseract_round_int(random_signed(127.0f)) / 127.0f;
+                        } else {
+                            stacked[idx++] = random_signed(1.0f);
+                        }
                     }
                 }
                 // FC: tanh(W @ stacked + bias)

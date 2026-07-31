@@ -404,17 +404,24 @@ downstream handoff parity, not detector-box similarity alone.
       test widths 2, 3, 5, 10, 16, 25, and 50. It leaves the int-mode result
       unchanged, proving generic CTC beam search alone is not the CLI choice
       mechanism.
-- [ ] Close the remaining int-mode logit gap (including Tesseract's lookup
-      table nonlinearities and exact quantized matrix arithmetic), then port
-      the Tesseract recode beam/dictionary scoring and diff its decoded path.
+- [x] Close the int-mode network logit gap with Tesseract's lookup-table
+      nonlinearities and exact quantized matrix arithmetic. Recode/dictionary
+      scoring remains a separate pending gate below.
 - [x] Added Tesseract's 1/256 LUT nonlinearities and reconstructed per-row
       int8 matrix accumulation. Native/Python int-mode parity improved to
       logits cosine `0.998405` with identical decoded output; CTC and
       Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
       the CLI's `Brighton`.
-- [ ] Compare native against official Tesseract internal activations or raw
-      int8 rows to close the remaining `Brighton` gap; the current reference
-      is not yet a proof of CLI-logit parity.
+- [x] Compare native against an instrumented official Tesseract PSM7 run at
+      the internal activation boundary. The earliest divergence was the
+      `Convolve` layer's out-of-image cells: Tesseract fills them with its
+      seeded `TRand`, not zeros. GGUF now preserves `sample_iteration`, and
+      both converter/reference/native paths reproduce the exact seeded padding.
+      On the 601x36 official PSM7 crop, every captured stage passes at cosine
+      1.000000 (logits max error 6.6e-7, cosine 1.000000), and native decodes
+      the same `Brighton` path as official Tesseract. This closes arithmetic
+      and preprocessing parity for this controlled line; recode/dictionary
+      scoring and full-page segmentation remain separate gates.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
