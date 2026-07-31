@@ -681,17 +681,43 @@ static void test_ppocrv6_pipeline_regression() {
         printf("  SKIP: failed to load PP-OCRv6 pipeline\n");
         return;
     }
-    result r = run_file(ctx, image_path);
-    CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
-    CHECK(r.mean_confidence >= 0.0f, "PP-OCRv6 pipeline confidence >= 0");
-    for (const auto & region : r.regions) {
-        CHECK(region.orientation_angle == 0 || region.orientation_angle == 180,
-              "PP-OCRv6 line orientation is 0° or 180°");
-        CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
-              "PP-OCRv6 line orientation confidence is bounded");
+    const char * fixtures[] = {
+        image_path,
+        "tests/regression/images/derived/german_official_document__skew-p04.png",
+        "tests/regression/images/derived/german_official_document__low-dpi.png",
+        "tests/regression/images/derived/german_official_document__rot180.png",
+        "tests/regression/images/derived/german_official_document__perspective.png",
+        "tests/regression/images/derived/german_official_document__mixed-orientation.png",
+        "tests/regression/images/cc0/receipt_example.png",
+        "tests/regression/images/derived/receipt_example__rot90.png",
+        "tests/regression/images/cc0/arabic_printed_line.png",
+        "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
+    };
+    int cases = 0;
+    int total_regions = 0;
+    for (const char * fixture : fixtures) {
+        FILE * input = fopen(fixture, "r");
+        if (!input) {
+            printf("  SKIP: fixture not found: %s\n", fixture);
+            continue;
+        }
+        fclose(input);
+        result r = run_file(ctx, fixture);
+        cases++;
+        total_regions += (int)r.regions.size();
+        CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
+        CHECK(r.mean_confidence >= 0.0f, "PP-OCRv6 pipeline confidence >= 0");
+        for (const auto & region : r.regions) {
+            CHECK(region.orientation_angle == 0 || region.orientation_angle == 180,
+                  "PP-OCRv6 line orientation is 0° or 180°");
+            CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
+                  "PP-OCRv6 line orientation confidence is bounded");
+        }
+        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f)\n", fixture, r.regions.size(), (int)r.full_text.size(),
+               r.mean_confidence);
     }
-    printf("  INFO: PP-OCRv6 output: %zu regions, %d chars (conf=%.2f)\n", r.regions.size(), (int)r.full_text.size(),
-           r.mean_confidence);
+    CHECK(cases == 10, "PP-OCRv6 live corpus fixtures ran");
+    CHECK(total_regions > 0, "PP-OCRv6 live corpus produced regions");
     free(ctx);
 }
 
