@@ -121,6 +121,7 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
         std::vector<uint8_t> data;
         int w, h;
         size_t box_idx;
+        bool orientation_corrected;
     };
     std::vector<crop_entry> crop_entries;
     crop_entries.reserve(boxes.size());
@@ -137,8 +138,8 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
         auto crop = ocr_crop::extract(raw, img_w, img_h, 3, cx, cy, cw, ch, 0, &actual_w, &actual_h);
         if (crop.empty()) continue;
 
-        ocr_crop::orient_180_rgb(crop, actual_w, actual_h);
-        crop_entries.push_back({ std::move(crop), actual_w, actual_h, i });
+        const bool orientation_corrected = ocr_crop::orient_180_rgb(crop, actual_w, actual_h);
+        crop_entries.push_back({ std::move(crop), actual_w, actual_h, i, orientation_corrected });
     }
 
     std::vector<ocr_result> results;
@@ -176,6 +177,7 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
                 if (text && out_len > 0) {
                     ocr_result r;
                     r.box = boxes[crop_entries[i].box_idx];
+                    r.orientation_corrected = crop_entries[i].orientation_corrected;
                     r.confidence = r.box.score;
                     r.text = std::string(text, out_len);
                     r.rec_confidence = math_ocr_mean_confidence(ctx->rec);
@@ -195,6 +197,7 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
                 if (text && out_len > 0) {
                     ocr_result r;
                     r.box = boxes[crop_entries[i].box_idx];
+                    r.orientation_corrected = crop_entries[i].orientation_corrected;
                     r.confidence = r.box.score;
                     r.text = std::string(text, out_len);
                     r.rec_confidence = math_ocr_mean_confidence(ctx->rec);

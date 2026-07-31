@@ -28,11 +28,12 @@ bool is_dangerous_q4_recognizer_path(const char * rec_path);
 bool dangerous_q4_override_enabled();
 
 struct ocr_result {
-    ocr_detect::text_box box;     // bounding box in original image coords
-    std::string text;             // recognized text
-    float confidence;             // detection confidence (from DBNet score)
-    float rec_confidence;         // recognition confidence (mean per-char softmax)
-    std::vector<float> char_conf; // per-character confidence (empty if unavailable)
+    ocr_detect::text_box box;           // bounding box in original image coords
+    std::string text;                   // recognized text
+    float confidence;                   // detection confidence (from DBNet score)
+    float rec_confidence;               // recognition confidence (mean per-char softmax)
+    std::vector<float> char_conf;       // per-character confidence (empty if unavailable)
+    bool orientation_corrected = false; // classical 180° line correction applied
 };
 
 struct context;
