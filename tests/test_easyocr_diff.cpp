@@ -34,16 +34,12 @@ static int easyocr_diff_main(int argc, char ** argv) {
         return 6;
     }
     const std::string expected = reference.meta("easyocr.decoded");
-    if (!expected.empty() && expected != text) {
-        fprintf(stderr, "decoded output mismatch: mine=%s ref=%s\n", text, expected.c_str());
-        stbi_image_free(pixels);
-        easyocr_ocr_free(ctx);
-        return 6;
-    }
+    const bool decoded_match = expected.empty() || expected == text;
     const int failures = easyocr_ocr_diff(ctx, argv[2]);
+    if (!decoded_match) fprintf(stderr, "decoded output mismatch: mine=%s ref=%s\n", text, expected.c_str());
     stbi_image_free(pixels);
     easyocr_ocr_free(ctx);
-    return failures == 0 ? 0 : 6;
+    return failures == 0 && decoded_match ? 0 : 6;
 }
 
 int main(int argc, char ** argv) {
