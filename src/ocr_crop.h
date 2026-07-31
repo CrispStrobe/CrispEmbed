@@ -31,9 +31,9 @@ struct prepare_options {
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,
                              int crop_h, int padding, int * out_width, int * out_height);
 
-// Perspective-rectify an ordered or unordered quadrilateral (TL, TR, BR, BL
-// after canonicalization) into a recognizer crop.  This mirrors the crop
-// contract used by PaddleOCR/RapidOCR and preserves rotated text geometry.
+// Perspective-rectify an ordered quadrilateral (TL, TR, BR, BL).  This is
+// the crop contract used by PaddleOCR/RapidOCR after DBPostProcess; retaining
+// the polygon is essential for skewed and rotated text lines.
 std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
                                   const float qy[4], int padding, int * out_width, int * out_height);
 
@@ -48,6 +48,7 @@ std::vector<uint8_t> prepare(const uint8_t * pixels, int width, int height, int 
 // when a 180° rotation was applied.
 bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height);
 bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height);
+void rotate_180_rgb(std::vector<uint8_t> & pixels, int width, int height);
 orientation_info orient_180_rgb_info(std::vector<uint8_t> & pixels, int width, int height);
 orientation_info orient_180_gray_info(std::vector<uint8_t> & pixels, int width, int height);
 

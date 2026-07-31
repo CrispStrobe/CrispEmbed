@@ -29,6 +29,7 @@
 #include "ocr_detect.h"
 #include "ppocrv6_det.h"
 #include "ppocrv6_ocr.h"
+#include "pplcnet_orientation.h"
 #include "table_parse.h"
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
@@ -83,10 +84,11 @@ struct context {
     config cfg;
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
-    ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
-    ppocrv6_det::context * ppdet = nullptr;    // PP-OCRv6 detector
-    ppocrv6_ocr_context * pprec = nullptr;     // PP-OCRv6 recognizer
-    layout_detect::context * layout = nullptr; // optional document layout
+    ocr_pipeline::context * dbnet = nullptr;        // DBNet detection + TrOCR recognition
+    ppocrv6_det::context * ppdet = nullptr;         // PP-OCRv6 detector
+    ppocrv6_ocr_context * pprec = nullptr;          // PP-OCRv6 recognizer
+    pplcnet_orientation::context * ppori = nullptr; // optional PP-LCNet line orientation
+    layout_detect::context * layout = nullptr;      // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
@@ -371,6 +373,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
         if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
+        if (!ctx->ppori && !st.model_c.empty())
+            ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
         if (!ctx->ppdet || !ctx->pprec) return {};
         // PP-OCRv6's official predictor applies resize_long=960/max-side and
         // rounds dimensions to a 32-pixel grid before inference.  Do not use
@@ -393,12 +397,22 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         std::vector<ocr_pipeline::ocr_result> results;
         for (const auto & b : boxes) {
             int cw = 0, ch = 0;
-            bool has_quad = false;
-            for (int i = 0; i < 4; ++i) has_quad = has_quad || b.qx[i] != 0.0f || b.qy[i] != 0.0f;
+            const bool has_quad = std::hypot(b.qx[1] - b.qx[0], b.qy[1] - b.qy[0]) > 1.0f;
             auto crop = has_quad ? ocr_crop::extract_quad(rgb, w, h, 3, b.qx, b.qy, 2, &cw, &ch)
                                  : ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
             if (crop.empty()) continue;
-            const auto orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
+            ocr_crop::orientation_info orientation;
+            if (ctx->ppori) {
+                const auto classified = pplcnet_orientation::classify_raw(ctx->ppori, crop.data(), cw, ch, 3);
+                orientation.angle = classified.angle;
+                orientation.confidence = classified.confidence;
+                if (classified.angle == 180) {
+                    ocr_crop::rotate_180_rgb(crop, cw, ch);
+                    orientation.corrected = true;
+                }
+            } else {
+                orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
+            }
             int len = 0;
             const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
             if (!text || len <= 0) continue;
@@ -1279,6 +1293,24 @@ static const char * source_type_name(source_type t) {
     }
 }
 
+static bool is_vlm_engine(engine e) {
+    switch (e) {
+    case engine::qwen2vl:
+    case engine::qwen3vl:
+    case engine::got:
+    case engine::glm:
+    case engine::internvl2:
+    case engine::deepseek_ocr2:
+    case engine::pix2struct:
+    case engine::granite_vision:
+    case engine::lightonocr:
+    case engine::unlimited_ocr:
+        return true;
+    default:
+        return false;
+    }
+}
+
 // Apply optional post-processing (truecasing) to OCR result.
 static void postprocess(context * ctx, result & r) {
 #if CRISPEMBED_HAS_TRUECASE
@@ -1336,6 +1368,7 @@ result run_file(context * ctx, const char * image_path) {
     best.layout = layout_regions;
 
     int tried = 0;
+    std::vector<result::stage_metric> stage_metrics;
     for (const stage & s : ch->stages) {
         if (!s.enabled) continue;
         tried++;
@@ -1346,12 +1379,21 @@ result run_file(context * ctx, const char * image_path) {
 
         auto t_stage = std::chrono::steady_clock::now();
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
+        cleanup_profile stage_cleanup = s.cleanup;
+        if (is_vlm_engine(s.eng) && stage_cleanup.enabled) {
+            // VLMs perform their own letterboxing/resizing. Classical deskew,
+            // binarization, or denoise can destroy the visual distribution the
+            // vision encoder expects, so cleanup is opt-in only for VLM stages.
+            if (verbose) fprintf(stderr, "ocr_orchestrator: VLM stage skips destructive cleanup\n");
+            stage_cleanup.enabled = false;
+            stage_cleanup.denoise = false;
+        }
         std::vector<uint8_t> cleaned_pixels;
         int cleaned_w = 0, cleaned_h = 0;
         const bool cleaned_in_memory =
-            raw_stage && clean_to_pixels(ctx, s.cleanup, effective_path, cleaned_pixels, &cleaned_w, &cleaned_h);
+            raw_stage && clean_to_pixels(ctx, stage_cleanup, effective_path, cleaned_pixels, &cleaned_w, &cleaned_h);
         std::string tmp;
-        if (!cleaned_in_memory) tmp = clean_to_temp(ctx, s.cleanup, effective_path);
+        if (!cleaned_in_memory) tmp = clean_to_temp(ctx, stage_cleanup, effective_path);
         const char * ocr_path = tmp.empty() ? effective_path : tmp.c_str();
 
         // Pre-load image once for VLM engines (avoids redundant stbi_load
@@ -1388,10 +1430,14 @@ result run_file(context * ctx, const char * image_path) {
 
         if (!tmp.empty()) std::remove(tmp.c_str());
 
+        const float stage_ms =
+            (float)std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_stage).count();
         bool passed = passes_gate(r, s.accept);
+        stage_metrics.push_back({ tried, engine_name(s.eng), stage_ms, stage_cleanup.enabled, passed,
+                                  (int)r.full_text.size(), r.mean_confidence });
+        r.stage_metrics = stage_metrics;
         if (bench) {
-            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_stage).count();
-            fprintf(stderr, "[ocr_orch-bench] stage %d (%s): %.1f ms, gate=%s\n", tried, engine_name(s.eng), ms,
+            fprintf(stderr, "[ocr_orch-bench] stage %d (%s): %.1f ms, gate=%s\n", tried, engine_name(s.eng), stage_ms,
                     passed ? "PASS" : "FAIL");
         }
         if (verbose)
@@ -1435,6 +1481,7 @@ result run_file(context * ctx, const char * image_path) {
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
     }
     if (!sr_path.empty()) std::remove(sr_path.c_str());
+    best.stage_metrics = std::move(stage_metrics);
 
     if (verbose)
         fprintf(stderr, "ocr_orchestrator: all %d stages failed gate, returning best (%d chars)\n", tried,
@@ -1472,6 +1519,7 @@ void free(context * ctx) {
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
     if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
     if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
+    if (ctx->ppori) pplcnet_orientation::free(ctx->ppori);
     if (ctx->layout) layout_detect::free(ctx->layout);
     if (ctx->table) table_parse_free(ctx->table);
     if (ctx->formula) ppformulanet_ocr_free(ctx->formula);

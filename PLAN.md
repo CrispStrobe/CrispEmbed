@@ -16,12 +16,19 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
-| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
+| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 structured stage metrics through the native/C pipeline API | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.7 explicit multi-page autorotate option for `/ocr/document`, with confidence gate and temporary rotated page handoff | **COMPLETED** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -76,6 +83,67 @@ artifact. The next slice explicitly separates detector geometry from ordering:
 EasyOCR line grouping, Tesseract/LayoutLM word ordering, and one structured
 handoff contract. DBNet Python box/text parity and production orchestration
 remain pending.
+
+The reusable `easyocr_pipeline` now exposes the selected `lines` and `words`
+policies, runs native DBNet detection plus GPU-resident EasyOCR recognition,
+and returns text, detector/recognizer confidence, pixel boxes, reading-order
+metadata, and normalized LayoutLM boxes. The model-backed regression produces
+12 line records and 98 word records on `scan_strip.png`; Python box/text
+reference parity remains a separate pending gate.
+
+The harness-blind postprocessing reference is now explicit: Python EasyOCR
+`readtext(detail=1)` JSON is converted by
+`tools/easyocr_postprocess_reference.py` into a versioned manifest covering
+ordering, crop geometry, text, confidence, and LayoutLM normalization. Its
+model-free test passes both line and word policies.
+
+The native `test-easyocr-pipeline` can emit the same manifest schema, and
+`tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
+The serializer self-check passes on the 98-word DBNet page run; an independent
+Python detector/recognizer page manifest is still required before parity is
+claimed. The current local Python environment lacks torch, numpy, and cv2, so
+that reference run remains an explicit external/dependency gate.
+
+The harness-blind CTC/vocabulary/confidence gate is now covered by the native
+`easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
+with repeated-token collapse, vocabulary entries are 1-based and validated,
+and confidence follows EasyOCR's nonblank `custom_mean` formula.
+
+The page-pipeline audit found that EasyOCR's `get_image_list` uses OpenCV
+`resize(..., interpolation=1)` (bilinear), whereas the standalone recognizer
+fixture was generated with PIL bicubic. An experimental native bilinear
+substitution failed the existing diff at `sequence_input`, `bilstm_0`, and
+`logits` (`Ea` versus `5a`), so it is not retained in production until a
+matching bilinear `-ref.gguf` is regenerated.
+
+An experimental strict port of EasyOCR's horizontal gap thresholds was also
+rejected: applied directly to the DBNet artifact it split the 98 fragmented
+regions into 26 recognition units instead of the existing 12 line units.
+DBNet therefore needs a detector-specific line adapter before those thresholds
+can replace the current y-band grouping.
+
+The first DBNet adapter is now explicit in `easyocr_layout`: it preserves the
+fragment-tolerant y-band aggregation for DBNet line crops, while word mode
+continues to use left-to-right y-band ordering. The adapter is covered by the
+layout regression and the model-backed page smoke; horizontal-gap splitting is
+still a later detector-specific refinement.
+
+### Tesseract parity status — NOT PROVEN
+
+The repository contains a `.traineddata` → GGUF converter, a pure-Python
+Tesseract LSTM reference dumper, and `test-tesseract-lstm-diff`. That is an
+available validation path, not evidence that the shipped models match the
+original Tesseract engine. No completed `-ref.gguf` run is recorded for the
+exact installed `eng.traineddata`, and the backup GGUF metadata only identifies
+the `tessdata_best` source; it does not record a verified source-file hash.
+
+The native implementation is also a line recognizer. Tesseract's page
+segmentation, word boundaries, spacing, and reading order are separate
+postprocessing behavior. A Python forward pass can prove GGUF/runtime math
+against parsed weights, but does not by itself prove full Tesseract CLI parity.
+Do not mark this lane green until the exact source model is hashed, the
+reference dump and native diff pass every captured stage with magnitudes
+inspected, and the decoded line output is compared with the original engine.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -138,12 +206,21 @@ downstream handoff parity, not detector-box similarity alone.
       page fixture with a Python reference manifest.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
       confidence, pixel boxes, and normalized LayoutLM boxes.
+- [x] Add native handoff invariants for word-mode line/x ordering and
+      normalized-box bounds; external Tesseract TSV geometry/text parity is
+      still pending.
+- [x] Add a standard-library Tesseract TSV geometry/order comparator and
+      self-test; a real page comparison remains an evidence gate, not a claim
+      of Tesseract text parity.
 - [ ] Run the same structured words through LayoutLMv2/v3 with
       `apply_ocr=False`; verify serialization and ordering independently of
       logits.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
       it with EasyOCR CRNN on identical crops rather than treating either
       recognizer as the detector.
+- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
+      its `-ref.gguf`, pass all captured stages and decoded line output, then
+      compare page segmentation/spacing independently.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
@@ -358,10 +435,12 @@ more than another restoration model.
 #### Implementation slices
 
 1. **O10.1 — Live preprocessor benchmark harness.** **Implemented in
-   `feat/ppocr-next-20260731`; pending merge.** Add
+   `feat/ppocr-next-20260731`; merged to `main`.** Add
    `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
    run raw input, classical cleanup variants, deskew, binarization, dewarp,
-   denoise, and every locally available SR/restoration model. Record stage
+   denoise, and every locally available SR/restoration model. The harness
+   accepts `--include-derived` to sweep every traced O10.2 robustness variant.
+   Record stage
    latency, output dimensions, pixel statistics, detector regions, OCR text,
    confidence, and CER/exact match when gold text exists. Also report text
    delta versus the raw-image baseline when no verified gold transcription is
@@ -396,10 +475,14 @@ more than another restoration model.
    Tesseract-LSTM, and PARSeq line crops, and structured angle/confidence
    metadata is exposed per region. The learned classifier remains outstanding.
 
-5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
+5. **O10.5 — Learned page orientation.** **Model-free fallback implemented in
+   `feat/ppocr-next-20260731`;** port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
    configurable threshold. Never rotate VLM inputs implicitly unless the
-   caller enables the option, because VLM letterboxing is model-specific.
+   caller enables the option, because VLM letterboxing is model-specific. The
+   fallback exposes `crispembed_detect_page_orientation` and
+   `/preprocess/orientation`, and never rotates
+   input implicitly; a learned PP-LCNet classifier remains outstanding.
 
 6. **O10.6 — Shared crop preprocessing.** **Implemented in
    `feat/ppocr-next-20260731`;** consolidate classifier and
@@ -408,12 +491,21 @@ more than another restoration model.
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
    upside-down, and tightly clipped lines.
 
-7. **O10.7 — PDF render/autorotate path.** Add native page rendering and
+7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation and
+   multi-page DPI API slices
+   implemented in `feat/ppocr-next-20260731`;** add native page rendering and
    page-level accumulation where the platform supports it. Reuse PDF DPI
    profiling to select render DPI, then apply page orientation and the normal
-   document pipeline. Keep the existing parser-only path for minimal builds.
+   document pipeline. `/ocr/document` now accepts explicit
+   `"autorotate": true`, applies the confidence-gated fallback, and hands
+   rotated temporary pages through the normal renderer. Keep the existing
+   parser-only path for minimal builds. Bindings can now request all-page DPI
+   metadata with ownership-safe `crispembed_pdf_all_pages_dpi` APIs.
 
-8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate slice
+8. **O10.8 — Stage routing, safeguards, and metrics.** **Benchmark accept-gate,
+   VLM cleanup safeguard, and structured stage-metrics slices implemented in
+   `feat/ppocr-next-20260731`;**
+   **benchmark accept-gate slice
    implemented in `feat/ppocr-next-20260731`;** make preprocessing selection
    evidence-based: classical cleanup for scans, no destructive cleanup for
    VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
@@ -422,7 +514,11 @@ more than another restoration model.
    beyond the configured tolerance. The benchmark now records input/output
    checksums and dimensions plus conservative helped/neutral/harmed/
    unavailable/error outcome labels; changed text without verified gold is
-   reported as unavailable rather than claimed as an improvement.
+   reported as unavailable rather than claimed as an improvement. Full-page
+   VLM stages now skip destructive cleanup unless a future explicit VLM
+   preprocessing override is added. The native/C pipeline API now exposes
+   per-stage elapsed time, cleanup-applied flag, gate result, text yield, and
+   confidence.
 
 #### Required benchmark output
 
