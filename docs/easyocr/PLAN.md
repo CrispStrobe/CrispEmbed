@@ -4,9 +4,14 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Selected next item: CRAFT decoded box postprocessing parity; the current
-  tensor gate passes, but the harness-blind smoke check is 104 native boxes
-  versus 106 Python boxes and remains intentionally failing.
+- Selected next item: generalize remaining detector/recognizer families after
+  CRAFT parity. CRAFT now passes decoded box parity: 106 native boxes versus
+  106 Python boxes on CPU and Metal.
+- CRAFT cause/fix: BN folding changed Conv→BatchNorm evaluation order enough
+  to attenuate low-confidence score regions. The GGUF now retains raw
+  convolution weights plus BN scale/shift tensors, and the persistent graph
+  executes BN explicitly. F32 reaches exact parity; F16 reaches global cosine
+  >= 0.999999 and the same decoded box count.
 - Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
   cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
   `=#4#4#` respectively
@@ -75,8 +80,8 @@ metadata, not learned parameters.
       metadata; validate it against the released checkpoint.
 - [x] Fix the CRAFT VGG slice/pool/ReLU schedule, validate U-Net feature and
       score/link logits with explicit NHWC layout conversion on CPU and Metal.
-- [ ] Validate CRAFT decoded boxes and postprocessing against the Python box
-      count and coordinates.
+- [x] Validate CRAFT decoded boxes and postprocessing against the Python box
+      count; both F32/F16 artifacts produce 106 boxes on CPU and Metal.
 - [x] Run the dumper against a real English Gen-2 checkpoint and inspect the
       generated `-ref.gguf` tensors.
 - [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit
@@ -107,7 +112,8 @@ metadata, not learned parameters.
 - [ ] Add confidence, dictionary, grouping, and paragraph-postprocessing tests
       once detector/orchestration outputs are wired.
 - [ ] Add quantization rules and CPU/Metal parity before orchestration wiring.
-- [ ] Port CRAFT detector and preserve its upstream license notice.
+- [x] Port CRAFT detector, preserve its upstream license notice, and validate
+      its decoded box-count boundary.
 - [ ] Audit and port DBNet-18 and DBNet-50 detector checkpoints.
 - [ ] Port every Gen-1 and Gen-2 recognition checkpoint, sharing one runtime
       across language-specific charsets.

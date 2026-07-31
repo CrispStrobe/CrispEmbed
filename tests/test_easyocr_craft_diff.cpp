@@ -3,6 +3,8 @@
 #include "crispembed_diff.h"
 
 #include <cstdio>
+#include <cstdlib>
+#include <string>
 
 int main(int argc, char ** argv) {
     if (argc != 3) {
@@ -21,6 +23,12 @@ int main(int argc, char ** argv) {
         return 5;
     }
     int rc = easyocr_craft_diff(ctx, argv[2]);
+    const int native_boxes = easyocr_craft_box_count(ctx, 0.7f, 0.4f, 0.4f);
+    const std::string expected_text = ref.meta("easyocr.decoded");
+    const int expected_boxes = expected_text.empty() ? -1 : std::atoi(expected_text.c_str());
+    printf("easyocr-craft-decoded boxes=%d expected=%d %s\n", native_boxes, expected_boxes,
+           native_boxes == expected_boxes ? "PASS" : "FAIL");
+    if (native_boxes != expected_boxes) rc = 1;
     easyocr_craft_free(ctx);
     core_util::clean_exit(rc ? 6 : 0);
     return rc ? 6 : 0;
