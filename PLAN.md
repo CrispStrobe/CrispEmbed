@@ -178,7 +178,9 @@ ports. SmolDocling is live-tested; Tesseract-LSTM is measured through DBNet
 line crops; Unlimited-OCR is being fetched for its live run. Tesseract-LSTM
 and PARSeq are present as recognizer-only rows; the DBNet+TrOCR document
 baseline is measured separately by `tests/ocr_benchmark.py`. Results are
-written as JSON with no silent omission.
+written as JSON with no silent omission. Unlimited-OCR subsequently completed
+on M1 Metal from the system volume in 45,967 ms with correct two-region text
+output; its GGUF was restored to the backup volume afterward.
 
 The checked-in matrix now has a model-free CI coverage guard at
 `tests/regression/test_engine_matrix.py`: all 23 portfolio engines must remain

@@ -955,7 +955,7 @@ reported 41 explicit non-sample/non-model skips. Representative outputs:
 
 SmolDocling is therefore supported and live-tested; its next fix is structural
 deduplication/DocTags parsing, not model discovery. Unlimited-OCR's Q4_K stacked
-artifact is complete at 2,252,419,328 bytes, but the live run stalls during
-model mapping/residency before inference on the M1 host, including explicit
-Metal. This is recorded as `runtime-load-blocked`, not as a speed or quality
-result. Qwen2-VL is runnable but did not complete this M1 budget.
+artifact is complete at 2,252,419,328 bytes and now has a successful M1 Metal
+run when loaded from the system volume: 45,967 ms total (SAM 15,663 ms, CLIP
+2,260 ms, projection/assembly 5,835 ms, decoder 22,205 ms), with two correctly
+decoded text regions. Qwen2-VL is runnable but did not complete this M1 budget.
