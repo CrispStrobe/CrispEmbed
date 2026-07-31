@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -364,6 +365,30 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         const bool sparse_feature_pass = !strcmp(name, "features") && report.cos_global >= 0.99f;
         const bool pass = report.is_pass(0.99f) || sparse_feature_pass;
         print_diff_report(name, report, pass);
+        if (!strcmp(name, "logits") && std::getenv("EASYOCR_DIFF_DEBUG")) {
+            auto ref_logits = ref.get_f32(name);
+            const int vocab = (int)t->ne[0];
+            const int steps = (int)t->ne[1];
+            int mismatches = 0;
+            for (int step = 0; step < steps; ++step) {
+                int mine_best = 0;
+                int ref_best = 0;
+                for (int cls = 1; cls < vocab; ++cls) {
+                    if (ordered[(size_t)step * vocab + cls] > ordered[(size_t)step * vocab + mine_best])
+                        mine_best = cls;
+                    if (ref_logits.first[(size_t)step * vocab + cls] >
+                        ref_logits.first[(size_t)step * vocab + ref_best])
+                        ref_best = cls;
+                }
+                if (mine_best != ref_best) {
+                    printf("easyocr-diff logits-debug step=%d mine=%d ref=%d mine_value=%.7g ref_value=%.7g\n", step,
+                           mine_best, ref_best, ordered[(size_t)step * vocab + mine_best],
+                           ref_logits.first[(size_t)step * vocab + ref_best]);
+                    mismatches++;
+                }
+            }
+            printf("easyocr-diff logits-debug argmax_mismatches=%d/%d\n", mismatches, steps);
+        }
         if (!pass) failures++;
     }
     return failures;
