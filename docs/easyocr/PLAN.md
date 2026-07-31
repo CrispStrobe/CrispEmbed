@@ -42,6 +42,11 @@
   An experimental native bilinear substitution failed the existing diff at
   `sequence_input`, `bilstm_0`, and `logits` (`Ea` versus `5a`), so it is not
   retained in production until a matching bilinear `-ref.gguf` is regenerated.
+- A strict port of EasyOCR's horizontal gap thresholds was rejected for the
+  current DBNet artifact: it split 98 fragmented detector regions into 26
+  recognition units instead of the existing 12 line units. DBNet therefore
+  needs a detector-specific line adapter before those thresholds can replace
+  the current y-band grouping.
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.

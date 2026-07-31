@@ -114,6 +114,12 @@ substitution failed the existing diff at `sequence_input`, `bilstm_0`, and
 `logits` (`Ea` versus `5a`), so it is not retained in production until a
 matching bilinear `-ref.gguf` is regenerated.
 
+An experimental strict port of EasyOCR's horizontal gap thresholds was also
+rejected: applied directly to the DBNet artifact it split the 98 fragmented
+regions into 26 recognition units instead of the existing 12 line units.
+DBNet therefore needs a detector-specific line adapter before those thresholds
+can replace the current y-band grouping.
+
 ### Tesseract parity status — NOT PROVEN
 
 The repository contains a `.traineddata` → GGUF converter, a pure-Python
