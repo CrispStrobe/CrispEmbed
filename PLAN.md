@@ -17,7 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
-| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures | **IN PROGRESS** |
+| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added | **IN PROGRESS** |
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
