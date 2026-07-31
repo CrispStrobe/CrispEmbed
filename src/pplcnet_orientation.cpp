@@ -2,11 +2,15 @@
 
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h"
+#include "ggml-alloc.h"
+#include "ggml.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -50,6 +54,15 @@ struct context {
     std::vector<block> blocks;
     ggml_tensor * fc_w = nullptr;
     ggml_tensor * fc_b = nullptr;
+    bool use_graph = false;
+    std::vector<uint8_t> graph_meta;
+    ggml_context * graph_ctx = nullptr;
+    ggml_gallocr_t graph_alloc = nullptr;
+    ggml_cgraph * graph = nullptr;
+    ggml_tensor * graph_input = nullptr;
+    ggml_tensor * graph_stem_conv = nullptr;
+    ggml_tensor * graph_stem = nullptr;
+    ggml_tensor * graph_logits = nullptr;
 };
 
 static ggml_tensor * prefix(const core_gguf::tensor_map & m, const std::string & p) {
@@ -124,6 +137,9 @@ static bool run_conv_bn(const conv & c, const bn & b, std::vector<float> & x, in
     std::vector<float> y;
     int oh = 0, ow = 0;
     if (!apply_conv(c, x, h, w, y, oh, ow)) return false;
+    static int debug_first_conv = 0;
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG") && debug_first_conv++ == 0)
+        fprintf(stderr, "pplcnet cpu conv %.7g %.7g %.7g %.7g\n", y[0], y[1], y[2], y[3]);
     apply_bn(y, b, c.out);
     h = oh;
     w = ow;
@@ -171,9 +187,124 @@ static std::vector<float> preprocess(const uint8_t * px, int width, int height, 
     return out;
 }
 
+static ggml_tensor * graph_conv(ggml_context * g, ggml_tensor * x, const conv & c) {
+    if (!c.w) return nullptr;
+    ggml_tensor * w = c.w;
+    const int channels = c.groups == c.in ? 1 : c.in / c.groups;
+    // Mapped weights retain the CPU reference's contiguous [OC,IC/G,KH,KW]
+    // bytes.  The direct ggml kernels consume [KW,KH,IC/G,OC], so explicitly
+    // transpose into that layout while keeping the graph input [W,H,C,N].
+    w = ggml_reshape_4d(g, w, c.out, channels, c.k, c.k);
+    w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
+    if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+    x = c.groups == c.in ? ggml_conv_2d_dw_direct(g, w, x, c.stride, c.stride, c.k / 2, c.k / 2, 1, 1)
+                         : ggml_conv_2d_direct(g, w, x, c.stride, c.stride, c.k / 2, c.k / 2, 1, 1);
+    if (c.b) x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, c.out));
+    return x;
+}
+
+static ggml_tensor * graph_bn(ggml_context * g, ggml_tensor * x, const bn & b, int channels) {
+    if (!b.mean || !b.var || !b.scale || !b.bias) return x;
+    auto vec = [&](ggml_tensor * t) { return ggml_reshape_3d(g, t, 1, 1, channels); };
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        fprintf(stderr, "pplcnet bn x=%lld,%lld,%lld,%lld c=%d\n", (long long)x->ne[0], (long long)x->ne[1],
+                (long long)x->ne[2], (long long)x->ne[3], channels);
+    ggml_tensor * variance = ggml_scale_bias(g, vec(b.var), 1.0f, 1e-5f);
+    ggml_tensor * inv = ggml_div(g, vec(b.scale), ggml_sqrt(g, variance));
+    return ggml_add(g, ggml_mul(g, ggml_sub(g, x, vec(b.mean)), inv), vec(b.bias));
+}
+
+static ggml_tensor * graph_act(ggml_context * g, ggml_tensor * x) {
+    return ggml_hardswish(g, x);
+}
+
+static ggml_tensor * graph_conv_bn(ggml_context * g, ggml_tensor * x, const conv & c, const bn & b) {
+    x = graph_conv(g, x, c);
+    return x ? graph_act(g, graph_bn(g, x, b, c.out)) : nullptr;
+}
+
+static ggml_tensor * graph_block(ggml_context * g, ggml_tensor * x, const block & b) {
+    ggml_tensor * identity = x;
+    x = graph_conv_bn(g, x, b.dw, b.dw_bn);
+    if (!x) return nullptr;
+    if (b.se) {
+        const int spatial = (int)(x->ne[0] * x->ne[1]);
+        ggml_tensor * pooled =
+            ggml_scale(g, ggml_sum_rows(g, ggml_reshape_2d(g, x, spatial, b.dw.out)), 1.0f / float(spatial));
+        pooled = ggml_reshape_3d(g, pooled, 1, 1, b.dw.out);
+        pooled = graph_conv(g, pooled, b.se1);
+        if (!pooled) return nullptr;
+        pooled = ggml_relu(g, pooled);
+        pooled = graph_conv(g, pooled, b.se2);
+        if (!pooled) return nullptr;
+        pooled = ggml_clamp(g, ggml_scale_bias(g, pooled, 1.0f / 6.0f, 0.5f), 0.0f, 1.0f);
+        x = ggml_mul(g, x, pooled);
+    }
+    x = graph_conv_bn(g, x, b.pw, b.pw_bn);
+    if (!x) return nullptr;
+    return b.residual ? ggml_add(g, x, identity) : x;
+}
+
+static std::vector<float> preprocess_graph(const uint8_t * px, int width, int height, int channels) {
+    constexpr int H = 80, W = 160;
+    // ggml's [W,H,C] tensor stores each channel plane contiguously (CHW).
+    std::vector<float> out((size_t)W * H * 3);
+    constexpr float mean[3] = { 0.485f, 0.456f, 0.406f };
+    constexpr float stdev[3] = { 0.229f, 0.224f, 0.225f };
+    for (int y = 0; y < H; ++y)
+        for (int x = 0; x < W; ++x) {
+            const int sx = std::min(width - 1, std::max(0, (int)std::floor((x + 0.5f) * width / float(W))));
+            const int sy = std::min(height - 1, std::max(0, (int)std::floor((y + 0.5f) * height / float(H))));
+            const uint8_t * p = px + ((size_t)sy * width + sx) * channels;
+            for (int c = 0; c < 3; ++c)
+                out[(size_t)c * W * H + y * W + x] = (p[std::min(c, channels - 1)] / 255.0f - mean[c]) / stdev[c];
+        }
+    return out;
+}
+
+static bool build_graph(context * c) {
+    c->graph_meta.resize(8 * 1024 * 1024);
+    ggml_init_params params{ c->graph_meta.size(), c->graph_meta.data(), true };
+    c->graph_ctx = ggml_init(params);
+    if (!c->graph_ctx) return false;
+    ggml_context * g = c->graph_ctx;
+    // Convolution graphs use the canonical ggml image layout [W,H,C,N].
+    c->graph_input = ggml_new_tensor_4d(g, GGML_TYPE_F32, 160, 80, 3, 1);
+    ggml_set_name(c->graph_input, "pplcnet_input");
+    ggml_set_input(c->graph_input);
+    ggml_tensor * stem_conv = graph_conv(g, c->graph_input, c->stem);
+    c->graph_stem_conv = stem_conv;
+    ggml_tensor * x = stem_conv ? graph_act(g, graph_bn(g, stem_conv, c->stem_bn, c->stem.out)) : nullptr;
+    if (!x) return false;
+    c->graph_stem = x;
+    for (const auto & b : c->blocks) {
+        x = graph_block(g, x, b);
+        if (!x) return false;
+    }
+    const int spatial = (int)(x->ne[0] * x->ne[1]);
+    x = ggml_scale(g, ggml_sum_rows(g, ggml_reshape_2d(g, x, spatial, 512)), 1.0f / float(spatial));
+    x = ggml_reshape_3d(g, x, 1, 1, 512);
+    x = graph_conv(g, x, c->head);
+    if (!x) return false;
+    x = graph_act(g, x);
+    const int head_spatial = (int)(x->ne[0] * x->ne[1]);
+    x = ggml_scale(g, ggml_sum_rows(g, ggml_reshape_2d(g, x, head_spatial, 1280)), 1.0f / float(head_spatial));
+    x = ggml_reshape_1d(g, x, 1280);
+    // GGUF stores Paddle's linear head as [out,in]; ggml_mul_mat expects
+    // [in,out] for its left operand.
+    c->graph_logits = ggml_add(g, ggml_mul_mat(g, ggml_cont(g, ggml_transpose(g, c->fc_w)), x), c->fc_b);
+    ggml_set_name(c->graph_logits, "pplcnet_logits");
+    ggml_set_output(c->graph_logits);
+    c->graph = ggml_new_graph_custom(g, 4096, false);
+    ggml_build_forward_expand(c->graph, c->graph_logits);
+    c->graph_alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->backend));
+    return c->graph_alloc && ggml_gallocr_alloc_graph(c->graph_alloc, c->graph);
+}
+
 context * init(const char * path, int) {
     auto * c = new context();
-    c->backend = ggml_backend_cpu_init();
+    c->use_graph = std::getenv("PPLCNET_ORIENTATION_GRAPH") != nullptr;
+    c->backend = c->use_graph ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, c->backend, "pplcnet_orientation", c->wl)) {
         free(c);
         return nullptr;
@@ -212,11 +343,21 @@ context * init(const char * path, int) {
     c->head = make_conv(m, 31, 512, 1280, 1, 1, 1);
     c->fc_w = prefix(m, "ori.linear_0.w_0");
     c->fc_b = prefix(m, "ori.linear_0.b_0");
+    if (c->use_graph && !build_graph(c)) {
+        if (c->graph_alloc) ggml_gallocr_free(c->graph_alloc);
+        c->graph_alloc = nullptr;
+        if (c->graph_ctx) ggml_free(c->graph_ctx);
+        c->graph_ctx = nullptr;
+        c->use_graph = false;
+        fprintf(stderr, "pplcnet-orientation: graph build failed; using CPU reference\n");
+    }
     return c;
 }
 
 void free(context * c) {
     if (!c) return;
+    if (c->graph_alloc) ggml_gallocr_free(c->graph_alloc);
+    if (c->graph_ctx) ggml_free(c->graph_ctx);
     core_gguf::free_weights(c->wl);
     if (c->backend) ggml_backend_free(c->backend);
     delete c;
@@ -225,9 +366,41 @@ void free(context * c) {
 result classify_raw(context * c, const uint8_t * px, int width, int height, int channels) {
     result r;
     if (!c || !px || width <= 0 || height <= 0 || channels <= 0) return r;
+    if (c->use_graph) {
+        auto input = preprocess_graph(px, width, height, channels);
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+            fprintf(stderr, "pplcnet graph input %.7g %.7g %.7g %.7g\n", input[0], input[1], input[2], input[3]);
+        ggml_backend_tensor_set(c->graph_input, input.data(), 0, input.size() * sizeof(float));
+        if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return r;
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
+            float tap[4] = {};
+            float conv_tap[4] = {};
+            ggml_backend_tensor_get(c->graph_stem_conv, conv_tap, 0, sizeof(conv_tap));
+            ggml_backend_tensor_get(c->graph_stem, tap, 0, sizeof(tap));
+            fprintf(stderr, "pplcnet graph conv %.7g %.7g %.7g %.7g\n", conv_tap[0], conv_tap[1], conv_tap[2],
+                    conv_tap[3]);
+            fprintf(stderr, "pplcnet graph stem %.7g %.7g %.7g %.7g\n", tap[0], tap[1], tap[2], tap[3]);
+        }
+        float logits[2] = {};
+        ggml_backend_tensor_get(c->graph_logits, logits, 0, sizeof(logits));
+        r.logits[0] = logits[0];
+        r.logits[1] = logits[1];
+        const float mx = std::max(logits[0], logits[1]);
+        const float e0 = std::exp(logits[0] - mx), e1 = std::exp(logits[1] - mx);
+        const float z = e0 + e1;
+        r.probabilities[0] = e0 / z;
+        r.probabilities[1] = e1 / z;
+        r.angle = r.probabilities[1] > r.probabilities[0] ? 180 : 0;
+        r.confidence = std::max(r.probabilities[0], r.probabilities[1]);
+        return r;
+    }
     auto x = preprocess(px, width, height, channels);
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        fprintf(stderr, "pplcnet cpu input %.7g %.7g %.7g %.7g\n", x[0], x[1], x[2], x[3]);
     int h = 80, w = 160;
     if (!run_conv_bn(c->stem, c->stem_bn, x, h, w)) return r;
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        fprintf(stderr, "pplcnet cpu stem %.7g %.7g %.7g %.7g\n", x[0], x[1], x[2], x[3]);
     for (const auto & b : c->blocks)
         if (!run_block(b, x, h, w)) return r;
     std::vector<float> pooled(512, 0.0f);
