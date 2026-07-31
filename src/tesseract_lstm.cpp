@@ -117,19 +117,6 @@ static void quantize_rows(const std::vector<float> & src, int rows, int cols,
     }
 }
 
-static float quantized_dot(const int8_t * weights, float weight_scale, const float * input,
-                           int n, std::vector<int8_t> & input_q, float & input_scale) {
-    float max_abs = 0.0f;
-    for (int i = 0; i < n; ++i) max_abs = std::max(max_abs, std::fabs(input[i]));
-    input_scale = max_abs > 0.0f ? max_abs / 127.0f : 1.0f;
-    int32_t sum = 0;
-    for (int i = 0; i < n; ++i) {
-        input_q[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(input[i] / input_scale)));
-        sum += (int32_t)weights[i] * (int32_t)input_q[i];
-    }
-    return (float)sum * weight_scale * input_scale;
-}
-
 static float quantized_dot_cached_input(const int8_t * weights, float weight_scale,
                                         const int8_t * input_q, float input_scale, int n) {
     int32_t sum = 0;
@@ -552,6 +539,7 @@ static void forward(tesseract_lstm_context * ctx,
     // Then FC: out = tanh(W @ stacked + bias)
     std::vector<float> convolve_out(H * W * 9);
     std::vector<float> fc_out(H * W * conv_out);
+    std::vector<int8_t> conv_input_q(9);
     {
         for (int y = 0; y < H; y++) {
             for (int x = 0; x < W; x++) {
@@ -569,10 +557,10 @@ static void forward(tesseract_lstm_context * ctx,
                     float val = ctx->conv_b[o];
                     const float * w_row = ctx->conv_w.data() + o * 9;
                     if (ctx->int8_inference) {
-                        std::vector<int8_t> sq(9);
-                        for (int j = 0; j < 9; ++j) sq[j] = quantize_activation(stacked[j]);
+                        for (int j = 0; j < 9; ++j) conv_input_q[j] = quantize_activation(stacked[j]);
                         const float q = quantized_dot_cached_input(ctx->conv_w_q.data() + (size_t)o * 9,
-                                                                   ctx->conv_w_scale[o], sq.data(), 1.0f / 127.0f, 9);
+                                                                   ctx->conv_w_scale[o], conv_input_q.data(),
+                                                                   1.0f / 127.0f, 9);
                         val = ctx->conv_b[o] + q;
                     } else {
                         for (int j = 0; j < 9; j++) val += w_row[j] * stacked[j];
