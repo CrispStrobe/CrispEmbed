@@ -1278,6 +1278,24 @@ static const char * source_type_name(source_type t) {
     }
 }
 
+static bool is_vlm_engine(engine e) {
+    switch (e) {
+    case engine::qwen2vl:
+    case engine::qwen3vl:
+    case engine::got:
+    case engine::glm:
+    case engine::internvl2:
+    case engine::deepseek_ocr2:
+    case engine::pix2struct:
+    case engine::granite_vision:
+    case engine::lightonocr:
+    case engine::unlimited_ocr:
+        return true;
+    default:
+        return false;
+    }
+}
+
 // Apply optional post-processing (truecasing) to OCR result.
 static void postprocess(context * ctx, result & r) {
 #if CRISPEMBED_HAS_TRUECASE
@@ -1345,12 +1363,21 @@ result run_file(context * ctx, const char * image_path) {
 
         auto t_stage = std::chrono::steady_clock::now();
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
+        cleanup_profile stage_cleanup = s.cleanup;
+        if (is_vlm_engine(s.eng) && stage_cleanup.enabled) {
+            // VLMs perform their own letterboxing/resizing. Classical deskew,
+            // binarization, or denoise can destroy the visual distribution the
+            // vision encoder expects, so cleanup is opt-in only for VLM stages.
+            if (verbose) fprintf(stderr, "ocr_orchestrator: VLM stage skips destructive cleanup\n");
+            stage_cleanup.enabled = false;
+            stage_cleanup.denoise = false;
+        }
         std::vector<uint8_t> cleaned_pixels;
         int cleaned_w = 0, cleaned_h = 0;
         const bool cleaned_in_memory =
-            raw_stage && clean_to_pixels(ctx, s.cleanup, effective_path, cleaned_pixels, &cleaned_w, &cleaned_h);
+            raw_stage && clean_to_pixels(ctx, stage_cleanup, effective_path, cleaned_pixels, &cleaned_w, &cleaned_h);
         std::string tmp;
-        if (!cleaned_in_memory) tmp = clean_to_temp(ctx, s.cleanup, effective_path);
+        if (!cleaned_in_memory) tmp = clean_to_temp(ctx, stage_cleanup, effective_path);
         const char * ocr_path = tmp.empty() ? effective_path : tmp.c_str();
 
         // Pre-load image once for VLM engines (avoids redundant stbi_load

@@ -105,6 +105,8 @@ jobs:
         run: python tests/regression/test_engine_matrix.py
       - name: Derived public-domain fixture integrity
         run: python tests/regression/test_derived_fixtures.py
+      - name: Preprocessor benchmark policy
+        run: python tests/test_ocr_preprocessor_benchmark.py
 
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:
