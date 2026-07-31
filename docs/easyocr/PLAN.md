@@ -104,8 +104,10 @@ recognizer and LayoutLM consumer.
 - [x] Move `lines` and `words` policy selection into the reusable
       `easyocr_pipeline` configuration API; retain the smoke test as a
       model-backed regression caller.
-- [ ] Add a manifest-driven Python reference for boxes, order, crops, text,
-      confidence, and normalized boxes.
+- [x] Add a manifest-driven Python reference for boxes, order, crops, text,
+      confidence, and normalized boxes. `tools/easyocr_postprocess_reference.py`
+      consumes EasyOCR Python `readtext(detail=1)` output and
+      `tests/test_easyocr_postprocess_reference.py` covers both modes.
 - [ ] Add independent postprocessing tests: grouping, reading order, CTC
       collapse, dictionary lookup, confidence, and box normalization.
 - [ ] Exercise the structured handoff with LayoutLMv2/v3 using
