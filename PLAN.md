@@ -407,6 +407,14 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Close the remaining int-mode logit gap (including Tesseract's lookup
       table nonlinearities and exact quantized matrix arithmetic), then port
       the Tesseract recode beam/dictionary scoring and diff its decoded path.
+- [x] Added Tesseract's 1/256 LUT nonlinearities and reconstructed per-row
+      int8 matrix accumulation. Native/Python int-mode parity improved to
+      logits cosine `0.998405` with identical decoded output; CTC and
+      Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
+      the CLI's `Brighton`.
+- [ ] Compare native against official Tesseract internal activations or raw
+      int8 rows to close the remaining `Brighton` gap; the current reference
+      is not yet a proof of CLI-logit parity.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages

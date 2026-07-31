@@ -202,6 +202,36 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -50, 50)))
 
 
+def tesseract_tanh(x):
+    """Tesseract's 1/256-spaced tanh lookup-table interpolation."""
+    x = np.asarray(x, dtype=np.float32)
+    negative = x < 0
+    ax = np.abs(x) * np.float32(256.0)
+    index = np.floor(ax).astype(np.int64)
+    frac = ax - index.astype(np.float32)
+    i0 = np.minimum(index, 4094).astype(np.float32)
+    y0 = np.tanh(i0 / np.float32(256.0))
+    y1 = np.tanh((i0 + 1.0) / np.float32(256.0))
+    result = y0 + (y1 - y0) * frac
+    result = np.where(index >= 4095, 1.0, result)
+    return np.where(negative, -result, result).astype(np.float32)
+
+
+def tesseract_logistic(x):
+    """Tesseract's 1/256-spaced logistic lookup-table interpolation."""
+    x = np.asarray(x, dtype=np.float32)
+    negative = x < 0
+    ax = np.abs(x) * np.float32(256.0)
+    index = np.floor(ax).astype(np.int64)
+    frac = ax - index.astype(np.float32)
+    i0 = np.minimum(index, 4094).astype(np.float32)
+    y0 = 1.0 / (1.0 + np.exp(-i0 / np.float32(256.0)))
+    y1 = 1.0 / (1.0 + np.exp(-(i0 + 1.0) / np.float32(256.0)))
+    result = y0 + (y1 - y0) * frac
+    result = np.where(index >= 4095, 1.0, result)
+    return np.where(negative, 1.0 - result, result).astype(np.float32)
+
+
 def _quantize_int_activation(x):
     """Match NetworkIO::WriteTimeStepPart (signed int8 / 127)."""
     x = np.asarray(x, dtype=np.float32)
@@ -243,13 +273,15 @@ def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False, int_mode=False):
         # gates = W_ih @ x + W_hh @ h + bias
         gates = W_ih @ xt + W_hh @ h + bias
 
-        i_gate = sigmoid(gates[0*ns:1*ns])
-        f_gate = sigmoid(gates[1*ns:2*ns])
-        g_gate = np.tanh(gates[2*ns:3*ns])
-        o_gate = sigmoid(gates[3*ns:4*ns])
+        logistic = tesseract_logistic if int_mode else sigmoid
+        nonlinear_tanh = tesseract_tanh if int_mode else np.tanh
+        i_gate = logistic(gates[0*ns:1*ns])
+        f_gate = logistic(gates[1*ns:2*ns])
+        g_gate = nonlinear_tanh(gates[2*ns:3*ns])
+        o_gate = logistic(gates[3*ns:4*ns])
 
         c = f_gate * c + i_gate * g_gate
-        h = o_gate * np.tanh(c)
+        h = o_gate * nonlinear_tanh(c)
         if int_mode:
             h = _quantize_int_activation(h)
 
@@ -369,7 +401,11 @@ def run_forward(root, image_gray, captures, int_mode=False):
             x_flat = x.reshape(H * W, C)
             wm = layer["weights"]["fc"]
             act = "tanh" if layer["type"] == "Tanh" else "linear"
-            x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
+            if int_mode and act == "tanh":
+                x_flat = x_flat @ wm["weight"].T + wm["bias"]
+                x_flat = tesseract_tanh(x_flat)
+            else:
+                x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
             if int_mode:
                 x_flat = _quantize_int_activation(x_flat)
             x = x_flat.reshape(H, W, -1)
@@ -500,9 +536,19 @@ def _tesseract_normalize(img_u8):
     if not maxes:
         maxes = [255.0]
 
-    # 25th percentile of mins, 75th percentile of maxes
-    black = float(np.percentile(mins, 25))
-    white = float(np.percentile(maxes, 75))
+    # Match the C++ float implementation, rather than NumPy's float64
+    # percentile path. A one-ulp change here can cross Tesseract's int8 input
+    # rounding boundary.
+    def percentile_float(values, q):
+        values = np.sort(np.asarray(values, dtype=np.float32))
+        position = np.float32(q) * np.float32(values.size - 1)
+        lower = int(np.floor(position))
+        upper = min(values.size - 1, lower + 1)
+        fraction = np.float32(position - np.float32(lower))
+        return np.float32(values[lower] + fraction * (values[upper] - values[lower]))
+
+    black = float(percentile_float(mins, 0.25))
+    white = float(percentile_float(maxes, 0.75))
     contrast = (white - black) / 2.0
     if contrast <= 0:
         contrast = 1.0
