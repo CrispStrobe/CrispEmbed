@@ -4,9 +4,10 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Selected next item: generalize remaining detector/recognizer families after
-  CRAFT parity. CRAFT now passes decoded box parity: 106 native boxes versus
-  106 Python boxes on CPU and Metal.
+- Selected next item: unify detector geometry with explicit EasyOCR line mode
+  and Tesseract/LayoutLM word mode, then promote the DBNet smoke path into a
+  production handoff. CRAFT now passes decoded box parity: 106 native boxes
+  versus 106 Python boxes on CPU and Metal.
 - CRAFT cause/fix: BN folding changed Conv→BatchNorm evaluation order enough
   to attenuate low-confidence score regions. The GGUF now retains raw
   convolution weights plus BN scale/shift tensors, and the persistent graph
@@ -19,8 +20,9 @@
   `formula_quadratic.png` crop end to end (`x =644 ~`). A separate
   `scan_strip.png` crop has one explicitly diagnosed CTC near-tie at timestep
   12 (`(2a` native vs `(a` Python) and remains unaccepted.
-- Next: resolve Latin Gen-2 decoded parity, then validate remaining
-  VGG/ResNet recognizers and port detectors
+- Next: resolve Latin Gen-2 decoded parity, validate remaining VGG/ResNet
+  recognizers, and promote the two OCR ordering policies into production
+  adapters before broad detector/model expansion.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
@@ -50,6 +52,66 @@ EasyOCR is a pipeline, not a single checkpoint:
    boxes, matching the Transformers processor contract. Transformers' default
    `apply_ocr=True` path uses PyTesseract; it is not an additional LayoutLM OCR
    model to convert.
+
+## Interoperability design: detector, ordering, recognizer, handoff
+
+Tesseract does not use DBNet. Its page-segmentation modes use image
+preprocessing and connected-component/block/line analysis before its own LSTM
+recognizer. EasyOCR uses CRAFT by default, supports DBNet18/50 as detector
+alternatives, and normally turns detected boxes into ordered line crops for a
+CRNN or Transformer recognizer. LayoutLMv2/v3 are downstream document models:
+their Transformers processors normally invoke PyTesseract and pass words plus
+normalized boxes; with `apply_ocr=False`, callers supply those fields. The
+Transformers library has no single OCR detector, and TrOCR is a recognizer,
+not a page detector.
+
+We will port the compatible contracts, not pretend these are identical model
+architectures:
+
+```text
+CRAFT | DBNet | Tesseract-compatible geometry
+                    ↓
+             boxes + scores
+                    ↓
+       ordering/grouping policy
+          ↙                       ↘
+  EasyOCR lines                 word records
+  dynamic CRNN                 Tesseract/LayoutLM
+          ↓                       ↓
+       line text       text + pixel/normalized boxes
+                    ↘       ↙
+             structured OCR handoff
+```
+
+The stable handoff record is `text`, pixel coordinates, confidence, block,
+line, reading-order index, and optional LayoutLM `[0,1000]` coordinates. The
+two supported policies are deliberately separate and independently tested:
+
+1. `lines`: EasyOCR-style y clustering plus x sorting, crop each line, and
+   run the native dynamic-width EasyOCR recognizer.
+2. `words`: Tesseract/LayoutLM-style y-band and x ordering, retain each
+   detector box, recognize each crop, and export words for downstream models.
+
+DBNet remains a native detector adapter. Tesseract-style ordering is a
+postprocessing adapter, not a replacement DBNet checkpoint. This lets us
+compare CRAFT, DBNet, and external/Tesseract geometry against the same
+recognizer and LayoutLM consumer.
+
+### Selected implementation sequence
+
+- [ ] Extract detector boxes/scores into a reusable production adapter API.
+- [ ] Move `lines` and `words` policy selection out of the smoke test and into
+      the OCR pipeline configuration.
+- [ ] Add a manifest-driven Python reference for boxes, order, crops, text,
+      confidence, and normalized boxes.
+- [ ] Add independent postprocessing tests: grouping, reading order, CTC
+      collapse, dictionary lookup, confidence, and box normalization.
+- [ ] Exercise the structured handoff with LayoutLMv2/v3 using
+      `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
+- [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
+      it with EasyOCR CRNN on identical detector crops.
+- [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
+      languages, then run GPU performance A/B.
 
 The first implementation slice targets the Generation-2 VGG recognizer
 (`english_g2`), then expands to every shipped recognizer and both detector
