@@ -700,9 +700,15 @@ static void test_ppocrv6_pipeline_regression() {
         "tests/regression/images/cc0/arabic_printed_line.png",
         "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
     };
+    int fixture_limit = 10;
+    if (const char * limit_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_LIMIT")) {
+        const int parsed = atoi(limit_env);
+        if (parsed > 0 && parsed < fixture_limit) fixture_limit = parsed;
+    }
     int cases = 0;
     int total_regions = 0;
-    for (const char * fixture : fixtures) {
+    for (int fixture_index = 0; fixture_index < fixture_limit; ++fixture_index) {
+        const char * fixture = fixtures[fixture_index];
         FILE * input = fopen(fixture, "r");
         if (!input) {
             printf("  SKIP: fixture not found: %s\n", fixture);
@@ -723,7 +729,7 @@ static void test_ppocrv6_pipeline_regression() {
         printf("  INFO: %s: %zu regions, %d chars (conf=%.2f)\n", fixture, r.regions.size(), (int)r.full_text.size(),
                r.mean_confidence);
     }
-    CHECK(cases == 10, "PP-OCRv6 live corpus fixtures ran");
+    CHECK(cases == fixture_limit, "PP-OCRv6 live corpus fixtures ran");
     CHECK(total_regions > 0, "PP-OCRv6 live corpus produced regions");
     free(ctx);
 }
