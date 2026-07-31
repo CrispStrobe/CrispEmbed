@@ -159,6 +159,11 @@ Required Fraktur implementation sequence:
 
 1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
    `/Volumes/backups/ai/crispembed-gguf/`; never commit large weights.
+   Apply the same policy to every `tesseract_lstm` language variant: all
+   quantized Q8/Q4 artifacts must retain `output.weight` and `output.bias` at
+   the source precision (F16 or F32), while only recurrent matrices may be
+   quantized. Existing multilingual artifacts must be regenerated if their
+   output projection was previously quantized.
 2. Add an explicit `tesseract-fraktur` stage/profile using DBNet line crops →
    grayscale crop → `tesseract_lstm` `frk` model, with the normal Tesseract
    path remaining available for modern German.
