@@ -28,9 +28,10 @@ int main(int argc, char ** argv) {
             if (crop.empty()) continue;
             int n = 0;
             const char * text = ppocrv6_ocr_recognize_raw(rec, crop.data(), cw, ch, 3, &n);
-            std::printf("ppocrv6-direct region=%zu score=%.4f quad=(%.1f,%.1f)(%.1f,%.1f)(%.1f,%.1f)(%.1f,%.1f) crop=%dx%d text=%.*s\n",
-                        i, b.score, b.qx[0], b.qy[0], b.qx[1], b.qy[1], b.qx[2], b.qy[2], b.qx[3], b.qy[3], cw, ch,
-                        n, text ? text : "");
+            std::printf("ppocrv6-direct region=%zu score=%.4f quad=(%.1f,%.1f)(%.1f,%.1f)(%.1f,%.1f)(%.1f,%.1f) "
+                        "crop=%dx%d text=%.*s\n",
+                        i, b.score, b.qx[0], b.qy[0], b.qx[1], b.qy[1], b.qx[2], b.qy[2], b.qx[3], b.qy[3], cw, ch, n,
+                        text ? text : "");
         }
         if (boxes.empty()) rc = 5;
     }
