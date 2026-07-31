@@ -8,3 +8,4 @@ easyocr_craft_context * easyocr_craft_init(const char * model_path, int width, i
 void easyocr_craft_free(easyocr_craft_context * ctx);
 bool easyocr_craft_forward(easyocr_craft_context * ctx, const float * chw_input, size_t n_elem);
 int easyocr_craft_diff(easyocr_craft_context * ctx, const char * ref_path);
+int easyocr_craft_box_count(easyocr_craft_context * ctx, float text_threshold, float link_threshold, float low_text);
