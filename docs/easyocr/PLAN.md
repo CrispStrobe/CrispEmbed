@@ -133,6 +133,12 @@ recognizer and LayoutLM consumer.
       `tools/compare_easyocr_manifests.py`; native serialization and comparator
       self-check pass on the 98-word DBNet page run, with explicit mismatch
       coverage in `tests/test_easyocr_manifest_compare.py`.
+- [x] Add native handoff invariants for word-mode line/x ordering and
+      normalized-box bounds; external Tesseract TSV geometry/text parity is
+      still pending.
+- [x] Add a standard-library Tesseract TSV geometry/order comparator and
+      self-test; a real page comparison remains an evidence gate, not a claim
+      of Tesseract text parity.
 - [x] Add independent postprocessing tests: grouping, reading order, CTC
       collapse, dictionary/vocabulary validation, EasyOCR custom-mean
       confidence, and box normalization. The production recognizer now uses
@@ -144,6 +150,8 @@ recognizer and LayoutLM consumer.
 - [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
       its `-ref.gguf`, pass all captured stages and decoded line output, then
       compare page segmentation/spacing independently.
+- [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
+      metadata; the actual reference run and stage/output parity remain open.
 - [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
       languages, then run GPU performance A/B.
 
