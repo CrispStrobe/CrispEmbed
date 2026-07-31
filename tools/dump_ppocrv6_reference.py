@@ -49,7 +49,7 @@ class Ref:
         elif activation == "hs": x = F.hardswish(x)
         return x
 
-    def block(self, x, si, bi, in_ch, out_ch, stride, se):
+    def block(self, x, si, bi, in_ch, out_ch, stride, se, stages=None):
         p = f"model.backbone.encoder.blocks.{si}.blocks.{bi}"
         token = p + ".token_conv"
         if token + ".weight" not in self.d:
@@ -57,14 +57,15 @@ class Ref:
         y = self.conv(x, token, stride, groups=in_ch)
         if token.endswith(".convolution"):
             y = self.bn(y, token[:-len(".convolution")] + ".normalization")
-        if token + ".bias" in self.d:
-            y = y + self.w(token + ".bias").view(1, -1, 1, 1)
+        if stages is not None and si == 0 and bi == 0: stages["block0_dw"] = y
         if se:
             g = y.mean(dim=(2, 3), keepdim=True)
             g = F.relu(self.conv(g, p + ".token_squeeze_excitation.convolutions.0", pad=0))
             g = torch.clamp((self.conv(g, p + ".token_squeeze_excitation.convolutions.2", pad=0) + 3) / 6, 0, 1)
             y = y * g
+            if stages is not None and si == 0 and bi == 0: stages["block0_se"] = y
         z = self.layer(y, p + ".channel_conv1", activation="gelu")
+        if stages is not None and si == 0 and bi == 0: stages["block0_cm1"] = z
         z = self.layer(z, p + ".channel_conv2")
         return y + z if in_ch == out_ch and stride == 1 else z
 
@@ -100,12 +101,17 @@ def dump(model_dir: Path, image: Path, output: Path):
                [(3, 96, 160, 2, False), (3, 160, 160, 1, True), (3, 160, 160, 1, False), (3, 160, 160, 1, False)]]
     for si, blocks in enumerate(configs):
         for bi, (_, inc, outc, stride, se) in enumerate(blocks):
-            x = ref.block(x, si, bi, inc, outc, stride if isinstance(stride, int) else stride[0], se)
+            x = ref.block(x, si, bi, inc, outc, stride if isinstance(stride, int) else stride[0], se, stages)
         stages[f"stage{si + 1}"] = x
     x = F.avg_pool2d(x, (3, 2))
     x = x.squeeze(2)
     x = F.hardswish(ref.bn(F.conv1d(x, ref.w("head.conv1.weight"), padding=2, groups=160), "head.norm1"))
-    x = F.hardswish(ref.bn(F.conv1d(x, ref.w("head.conv2.weight")), "head.norm2"))
+    stages["head_conv1"] = x
+    x = F.conv1d(x, ref.w("head.conv2.weight"))
+    stages["head_conv2_pre"] = x
+    x = ref.bn(x, "head.norm2")
+    stages["head_norm2"] = x
+    x = F.hardswish(x)
     x = x.transpose(1, 2)
     hidden = F.linear(x, ref.w("head.fc1.weight"), ref.w("head.fc1.bias"))
     logits = F.linear(hidden, ref.w("head.fc2.weight"), ref.w("head.fc2.bias"))
