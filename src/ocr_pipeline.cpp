@@ -9,6 +9,9 @@
 #include "ocr_pipeline.h"
 #include "ocr_detect.h"
 #include "math_ocr.h"
+#include "ppocrv6_det.h"
+#include "ppocrv6_ocr.h"
+#include "core/gguf_loader.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -32,13 +35,38 @@ struct context {
     math_ocr_context * rec = nullptr;
     int n_threads = 1;
     bool bench = false;
+    ppocrv6_det::context * ppdet = nullptr;
+    ppocrv6_ocr_context * pprec = nullptr;
+    bool ppocrv6 = false;
 };
+
+static bool is_ppocrv6(const char * path) {
+    gguf_context * g = core_gguf::open_metadata(path);
+    if (!g) return false;
+    bool yes = core_gguf::kv_str(g, "general.architecture", "") == "ppocrv6";
+    core_gguf::free_metadata(g);
+    return yes;
+}
 
 bool load(context ** out, const char * det_path, const char * rec_path, int n_threads) {
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
     ctx->bench = (std::getenv("CRISPEMBED_OCR_PIPELINE_BENCH") != nullptr);
+
+    if (is_ppocrv6(det_path) && is_ppocrv6(rec_path)) {
+        ctx->ppdet = ppocrv6_det::init(det_path, n_threads);
+        ctx->pprec = ppocrv6_ocr_init(rec_path, n_threads);
+        if (!ctx->ppdet || !ctx->pprec) {
+            if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
+            if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
+            delete ctx;
+            *out = nullptr;
+            return false;
+        }
+        ctx->ppocrv6 = true;
+        return true;
+    }
 
     // Load detection model
     if (!ocr_detect::load(&ctx->det, det_path, n_threads)) {
@@ -84,7 +112,35 @@ static std::vector<uint8_t> crop_image(const unsigned char * img, int img_w, int
 
 std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold, float box_threshold,
                                  int target_short_side) {
-    if (!ctx || !ctx->det || !ctx->rec || !image_path) return {};
+    if (!ctx || !image_path) return {};
+    if (ctx->ppocrv6) {
+        auto boxes = ppocrv6_det::detect_file(ctx->ppdet, image_path, std::min(prob_threshold, 0.2f));
+        int iw, ih, ic;
+        unsigned char * img = stbi_load(image_path, &iw, &ih, &ic, 3);
+        if (!img) return {};
+        std::vector<ocr_result> results;
+        for (const auto & b : boxes) {
+            int x = std::max(0, (int)b.x - 2), y = std::max(0, (int)b.y - 2);
+            int cw = std::min(iw - x, (int)b.w + 4), ch = std::min(ih - y, (int)b.h + 4);
+            auto crop = crop_image(img, iw, ih, x, y, cw, ch);
+            if (crop.empty()) continue;
+            int out_len = 0;
+            const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &out_len);
+            if (!text || out_len <= 0) continue;
+            ocr_result r;
+            r.box = { b.x, b.y, b.w, b.h, b.score, 0.0f, { 0, 0, 0, 0 }, { 0, 0, 0, 0 } };
+            r.confidence = b.score;
+            r.rec_confidence = 0.0f;
+            r.text.assign(text, out_len);
+            results.push_back(std::move(r));
+        }
+        stbi_image_free(img);
+        std::sort(results.begin(), results.end(), [](const ocr_result & a, const ocr_result & b) {
+            return a.box.y == b.box.y ? a.box.x < b.box.x : a.box.y < b.box.y;
+        });
+        return results;
+    }
+    if (!ctx->det || !ctx->rec) return {};
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
@@ -218,6 +274,12 @@ std::string recognize_file(context * ctx, const char * image_path) {
 
 void free(context * ctx) {
     if (!ctx) return;
+    if (ctx->ppocrv6) {
+        ppocrv6_det::free(ctx->ppdet);
+        ppocrv6_ocr_free(ctx->pprec);
+        delete ctx;
+        return;
+    }
     if (ctx->det) ocr_detect::free(ctx->det);
     if (ctx->rec) math_ocr_free(ctx->rec);
     delete ctx;
