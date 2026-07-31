@@ -66,6 +66,19 @@ STAGE=MODEL` for an explicitly selected learned stage, for example
 are reported as explicit rows; they are not treated as passing quality
 results.
 
+Generate auditable problematic-input variants with:
+
+```bash
+python3 tests/regression/generate_problematic_variants.py \
+  --output-dir tests/regression/images/derived \
+  --source german_official_document.jpg \
+  --source receipt_example.png
+```
+
+The generated `MANIFEST.json` records each parent checksum and exact recipe;
+the derived images inherit the parent CC0/public-domain status and are not
+gold transcriptions.
+
 A model-output regression suite for the OCR engines. It exists because a
 vision-neck permute regression (`3fb1f8e`, Jun 2026) shipped **garbage OCR**
 (`colorcolorcolor…`) that the existing Kaggle `ocr-gpu-bench` kernel could not
