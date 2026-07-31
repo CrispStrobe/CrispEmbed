@@ -24,6 +24,20 @@ sys.path.insert(0, str(Path(__file__).parents[1] / "ggml" / "scripts"))
 import gguf
 
 
+def trace_stages(stages):
+    if not __import__("os").environ.get("PPOCRV6_TRACE"):
+        return
+    for name, value in stages.items():
+        a = value.detach().float().cpu().numpy()
+        print(f"[python-stage] {name} shape={tuple(a.shape)} n={a.size} "
+              f"min={a.min():.7g} max={a.max():.7g} mean={a.mean():.7g} "
+              f"std={a.std():.7g}", flush=True)
+    logits = stages.get("logits")
+    if logits is not None:
+        ids = logits[0].argmax(dim=-1).detach().cpu().tolist()
+        print("[python-logits] ids=" + ",".join(map(str, ids)), flush=True)
+
+
 class Ref:
     def __init__(self, path: Path):
         self.d = {k: torch.from_numpy(v.astype(np.float32, copy=False)) for k, v in load_file(str(path)).items()}
@@ -74,6 +88,8 @@ class Ref:
 
 def preprocess(path: Path):
     im = np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
+    if __import__("os").environ.get("PPOCRV6_BGR"):
+        im = im[:, :, ::-1]
     h, w = im.shape[:2]
     rw = min(320, max(1, round(w * 48 / h)))
     yy = np.maximum(0.0, (np.arange(48, dtype=np.float32) + 0.5) * h / 48.0 - 0.5)
@@ -85,7 +101,10 @@ def preprocess(path: Path):
          im[y0[:, None], x1[None, :]] * (1-wy) * wx +
          im[y1[:, None], x0[None, :]] * wy * (1-wx) +
          im[y1[:, None], x1[None, :]] * wy * wx).astype(np.float32) / 255.0
-    a = (a - 0.5) / 0.5
+    if __import__("os").environ.get("PPOCRV6_IMAGENET"):
+        a = (a - np.asarray([0.485, 0.456, 0.406], dtype=np.float32)) / np.asarray([0.229, 0.224, 0.225], dtype=np.float32)
+    else:
+        a = (a - 0.5) / 0.5
     out = np.zeros((48, 320, 3), dtype=np.float32)
     out[:, :rw] = a
     return torch.from_numpy(out.transpose(2, 0, 1))[None]
@@ -98,12 +117,19 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
     stages["input"] = x
     stem = "model.backbone.encoder.convolution."
     x = ref.layer(x, stem + "stem1", stride=2); x = F.silu(x); stages["large_stem1"] = x
-    branch = ref.conv(x, stem + "stem2a.convolution", stride=1, pad=0)
+    # PPLCNetV4LargeStem explicitly pads both even-kernel branches and uses a
+    # ceil-mode 2x2 max-pool on the stem1 branch before concatenation.
+    padded = F.pad(x, (0, 1, 0, 1))
+    branch = ref.conv(padded, stem + "stem2a.convolution", stride=1, pad=0)
     branch = F.silu(ref.bn(branch, stem + "stem2a.normalization"))
     stages["large_stem2a"] = branch
-    branch = ref.layer(branch, stem + "stem2b", stride=1); branch = F.silu(branch)
+    branch = F.pad(branch, (0, 1, 0, 1))
+    branch = ref.conv(branch, stem + "stem2b.convolution", stride=1, pad=0)
+    branch = F.silu(ref.bn(branch, stem + "stem2b.normalization"))
     stages["large_stem2b"] = branch
-    x = torch.cat((x, branch), dim=1)
+    pooled = F.max_pool2d(padded, kernel_size=2, stride=1, ceil_mode=True)
+    stages["large_stem_pooled"] = pooled
+    x = torch.cat((pooled, branch), dim=1)
     stages["large_cat"] = x
     x = ref.layer(x, stem + "stem3", stride=2); x = F.silu(x)
     stages["large_stem3"] = x
@@ -120,7 +146,7 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
             _, spec_in, out_ch, stride, se = spec
             stride = tuple(stride) if isinstance(stride, list) else stride
             x = ref.block(x, si, bi, int(spec_in), int(out_ch), stride, bool(se), stages,
-                          activation="silu")
+            activation="gelu")
             in_ch = int(out_ch)
         stages[f"stage{si + 1}"] = x
 
@@ -157,6 +183,7 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
     stages["head_input"] = x
     logits = F.linear(x, ref.w("head.head.weight"), ref.w("head.head.bias"))
     stages["logits"] = logits
+    trace_stages(stages)
     writer = gguf.GGUFWriter(str(output), arch="ppocrv6")
     writer.add_string("general.name", cfg["model_type"])
     writer.add_string("ppocrv6.variant", "small" if cfg["model_type"] == "pp_ocrv6_small_rec" else "medium")
@@ -203,6 +230,7 @@ def dump(model_dir: Path, image: Path, output: Path):
     logits = F.linear(hidden, ref.w("head.fc2.weight"), ref.w("head.fc2.bias"))
     stages["head_input"] = x
     stages["logits"] = logits
+    trace_stages(stages)
     writer = gguf.GGUFWriter(str(output), arch="ppocrv6")
     writer.add_string("general.name", cfg["model_type"])
     writer.add_string("ppocrv6.variant", "tiny")

@@ -27,11 +27,11 @@
 #include "tesseract_lstm.h"
 #include "parseq_ocr.h"
 #include "ocr_detect.h"
+#include "ppocrv6_det.h"
+#include "ppocrv6_ocr.h"
 #include "table_parse.h"
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
-#include "ppocrv6_det.h"
-#include "ppocrv6_ocr.h"
 // Text super-resolution (low-DPI upscale before OCR).
 #include "text_sr.h"
 #include "pan_sr.h"
@@ -83,8 +83,8 @@ struct context {
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
-    ppocrv6_det::context * ppdet = nullptr;     // PP-OCRv6 detector
-    ppocrv6_ocr_context * pprec = nullptr;      // PP-OCRv6 recognizer
+    ppocrv6_det::context * ppdet = nullptr;    // PP-OCRv6 detector
+    ppocrv6_ocr_context * pprec = nullptr;     // PP-OCRv6 recognizer
     layout_detect::context * layout = nullptr; // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
@@ -368,50 +368,43 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             fprintf(stderr, "ocr_orchestrator: ppocrv6 stage missing models (model_a=det, model_b=rec)\n");
             return {};
         }
-        if (!ctx->ppdet) {
-            ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
-            if (!ctx->ppdet) return {};
-        }
-        if (!ctx->pprec) {
-            ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
-            if (!ctx->pprec) return {};
-        }
+        if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
+        if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
+        if (!ctx->ppdet || !ctx->pprec) return {};
+        auto boxes = (px && pw > 0 && ph > 0)
+                         ? ppocrv6_det::detect_raw(ctx->ppdet, px, pw, ph, 3, st.params.det_prob_threshold)
+                         : ppocrv6_det::detect_file(ctx->ppdet, path, st.params.det_prob_threshold);
+        if (boxes.empty()) return {};
         int w = pw, h = ph;
-        unsigned char * loaded = nullptr;
+        std::vector<uint8_t> owned;
         const unsigned char * rgb = px;
         if (!rgb) {
-            int channels = 0;
-            loaded = stbi_load(path, &w, &h, &channels, 3);
-            rgb = loaded;
+            int c = 0;
+            rgb = stbi_load(path, &w, &h, &c, 3);
+            owned.assign(rgb, rgb ? rgb + (size_t)w * h * 3 : nullptr);
+            if (rgb) stbi_image_free((void *)rgb);
+            rgb = owned.data();
         }
-        if (!rgb || w <= 0 || h <= 0) {
-            if (loaded) stbi_image_free(loaded);
-            return {};
-        }
-        auto boxes = ppocrv6_det::detect_raw(ctx->ppdet, rgb, w, h, 3, st.params.det_prob_threshold);
+        if (!rgb || w <= 0 || h <= 0) return {};
         std::vector<ocr_pipeline::ocr_result> results;
-        results.reserve(boxes.size());
         for (const auto & b : boxes) {
-            const int pad = 2;
-            const int x0 = std::max(0, (int)b.x - pad), y0 = std::max(0, (int)b.y - pad);
-            const int cw = std::min((int)b.w + 2 * pad, w - x0), ch = std::min((int)b.h + 2 * pad, h - y0);
+            int x0 = std::max(0, (int)b.x - 2), y0 = std::max(0, (int)b.y - 2);
+            int x1 = std::min(w, (int)(b.x + b.w) + 2), y1 = std::min(h, (int)(b.y + b.h) + 2);
+            int cw = x1 - x0, ch = y1 - y0;
             if (cw <= 0 || ch <= 0) continue;
             std::vector<uint8_t> crop((size_t)cw * ch * 3);
             for (int y = 0; y < ch; ++y)
-                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(y0 + y) * w + x0) * 3,
-                            (size_t)cw * 3);
+                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(y0 + y) * w + x0) * 3, (size_t)cw * 3);
             int len = 0;
             const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
             if (!text || len <= 0) continue;
             ocr_pipeline::ocr_result r;
-            r.box = { b.x, b.y, b.w, b.h, b.score, 0.0f, { b.x, b.x + b.w, b.x + b.w, b.x },
-                      { b.y, b.y, b.y + b.h, b.y + b.h } };
-            r.text.assign(text, len);
+            r.box = { b.x, b.y, b.w, b.h, b.score };
+            r.text.assign(text, (size_t)len);
             r.confidence = b.score;
             r.rec_confidence = b.score;
             results.push_back(std::move(r));
         }
-        if (loaded) stbi_image_free(loaded);
         return results;
     }
     case engine::got: {

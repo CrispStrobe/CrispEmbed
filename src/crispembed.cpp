@@ -3988,7 +3988,6 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "bttr_ocr.h"
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
-#include "ppocrv6_ocr.h"
 #include "posformer_ocr.h"
 #include "mixtex_ocr.h"
 #include "qwen2vl_ocr.h"
@@ -4007,7 +4006,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "tromr_ocr.h"
 #include "flova_ocr.h"
 #include "transcoda_ocr.h"
-#include "ppocrv6_det.h"
+#include "ppocrv6_ocr.h"
 #include "core/gguf_loader.h"
 
 enum ocr_model_type {
@@ -4016,7 +4015,6 @@ enum ocr_model_type {
     OCR_MODEL_BTTR,
     OCR_MODEL_PPFORMULANET,
     OCR_MODEL_PPFORMULANET_L,
-    OCR_MODEL_PPOCRV6,
     OCR_MODEL_POSFORMER,
     OCR_MODEL_MIXTEX,
     OCR_MODEL_QWEN2VL,
@@ -4033,7 +4031,8 @@ enum ocr_model_type {
     OCR_MODEL_SMT,
     OCR_MODEL_TROMR,
     OCR_MODEL_FLOVA,
-    OCR_MODEL_TRANSCODA
+    OCR_MODEL_TRANSCODA,
+    OCR_MODEL_PPOCRV6
 };
 
 struct ocr_model {
@@ -4050,7 +4049,6 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "bttr") return OCR_MODEL_BTTR;
     if (arch == "ppformulanet") return OCR_MODEL_PPFORMULANET;
     if (arch == "ppformulanet_l") return OCR_MODEL_PPFORMULANET_L;
-    if (arch == "ppocrv6") return OCR_MODEL_PPOCRV6;
     if (arch == "posformer") return OCR_MODEL_POSFORMER;
     if (arch == "mixtex") return OCR_MODEL_MIXTEX;
     if (arch == "qwen2vl" || arch == "qwen3vl") return OCR_MODEL_QWEN2VL;
@@ -4069,6 +4067,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "tromr_ocr") return OCR_MODEL_TROMR;
     if (arch == "flova_ocr") return OCR_MODEL_FLOVA;
     if (arch == "transcoda_ocr") return OCR_MODEL_TRANSCODA;
+    if (arch == "ppocrv6") return OCR_MODEL_PPOCRV6;
     return OCR_MODEL_PIX2TEX;
 }
 
@@ -4097,9 +4096,6 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
         break;
     case OCR_MODEL_PPFORMULANET_L:
         inner = ppformulanet_l_ocr_init(path, n_threads);
-        break;
-    case OCR_MODEL_PPOCRV6:
-        inner = ppocrv6_ocr_init(path, n_threads);
         break;
     case OCR_MODEL_POSFORMER:
         inner = posformer_ocr_init(path, n_threads);
@@ -4152,6 +4148,9 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
     case OCR_MODEL_TRANSCODA:
         inner = transcoda_ocr_init(path, n_threads);
         break;
+    case OCR_MODEL_PPOCRV6:
+        inner = ppocrv6_ocr_init(path, n_threads);
+        break;
     }
     if (!inner) return nullptr;
     auto * u = new ocr_model{ type, inner };
@@ -4176,9 +4175,6 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
         break;
     case OCR_MODEL_PPFORMULANET_L:
         ppformulanet_l_ocr_free((ppformulanet_l_ocr_context *)u->ctx);
-        break;
-    case OCR_MODEL_PPOCRV6:
-        ppocrv6_ocr_free((ppocrv6_ocr_context *)u->ctx);
         break;
     case OCR_MODEL_POSFORMER:
         posformer_ocr_free((posformer_ocr_context *)u->ctx);
@@ -4231,6 +4227,9 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_TRANSCODA:
         transcoda_ocr_free((transcoda_ocr_context *)u->ctx);
         break;
+    case OCR_MODEL_PPOCRV6:
+        ppocrv6_ocr_free((ppocrv6_ocr_context *)u->ctx);
+        break;
     }
     delete u;
 }
@@ -4249,8 +4248,6 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return ppformulanet_ocr_recognize_raw((ppformulanet_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_PPFORMULANET_L:
         return ppformulanet_l_ocr_recognize_raw((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ch, ol);
-    case OCR_MODEL_PPOCRV6:
-        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_POSFORMER:
         return posformer_ocr_recognize_raw((posformer_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_MIXTEX:
@@ -4295,6 +4292,8 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return flova_ocr_recognize_raw((flova_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_TRANSCODA:
         return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_PPOCRV6:
+        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -4313,11 +4312,6 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         return ppformulanet_ocr_recognize((ppformulanet_ocr_context *)u->ctx, px, w, h, ol);
     case OCR_MODEL_PPFORMULANET_L:
         return ppformulanet_l_ocr_recognize((ppformulanet_l_ocr_context *)u->ctx, px, w, h, ol);
-    case OCR_MODEL_PPOCRV6: {
-        std::vector<uint8_t> gray(w * h);
-        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)std::clamp(int(px[i] * 255.0f + 0.5f), 0, 255);
-        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
-    }
     case OCR_MODEL_POSFORMER:
         return posformer_ocr_recognize((posformer_ocr_context *)u->ctx, px, w, h, ol);
     case OCR_MODEL_MIXTEX:
@@ -4389,6 +4383,11 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         std::vector<uint8_t> gray(w * h);
         for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
         return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_PPOCRV6: {
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)std::clamp(int(px[i] * 255.0f + 0.5f), 0, 255);
+        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
     }
     }
     return nullptr;

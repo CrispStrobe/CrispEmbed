@@ -1147,82 +1147,28 @@
       "name": "ppocrv6-tiny",
       "engine": "ppocrv6",
       "_comment": "PP-OCRv6 tiny detector + Q8-head recognizer through the native detector-to-line-crop pipeline.",
-      "gguf": {
-        "repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF",
-        "file": "PP-OCRv6_tiny_rec-q8-head.gguf",
-        "revision": "main"
-      },
-      "detector": {
-        "repo": "mlx-community/PP-OCRv6-tiny-det-GGUF",
-        "file": "PP-OCRv6_tiny_det-f16.gguf",
-        "revision": "main"
-      },
-      "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
-      "diff": {
-        "binary": "test-ppocrv6-rec",
-        "ref": {
-          "repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF",
-          "file": "PP-OCRv6_tiny_rec-fox-ref.gguf",
-          "revision": "main"
-        },
-        "args": ["tests/regression/images/fox.png"],
-        "thresholds": {"*": 0.999}
-      }
+      "gguf": {"repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF", "file": "PP-OCRv6_tiny_rec-q8-head.gguf", "revision": "main"},
+      "detector": {"repo": "mlx-community/PP-OCRv6-tiny-det-GGUF", "file": "PP-OCRv6_tiny_det-f16.gguf", "revision": "main"},
+      "sample": "tests/regression/images/fox.png", "expected_text": null,
+      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF", "file": "PP-OCRv6_tiny_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
     },
     {
       "name": "ppocrv6-small",
       "engine": "ppocrv6",
       "_comment": "PP-OCRv6 small detector + Q8-head recognizer through the native detector-to-line-crop pipeline.",
-      "gguf": {
-        "repo": "mlx-community/PP-OCRv6_small_rec-GGUF",
-        "file": "PP-OCRv6_small_rec-q8-head.gguf",
-        "revision": "main"
-      },
-      "detector": {
-        "repo": "mlx-community/PP-OCRv6-small-det-GGUF",
-        "file": "PP-OCRv6_small_det-f16.gguf",
-        "revision": "main"
-      },
-      "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
-      "diff": {
-        "binary": "test-ppocrv6-rec",
-        "ref": {
-          "repo": "mlx-community/PP-OCRv6_small_rec-GGUF",
-          "file": "PP-OCRv6_small_rec-fox-ref.gguf",
-          "revision": "main"
-        },
-        "args": ["tests/regression/images/fox.png"],
-        "thresholds": {"*": 0.999}
-      }
+      "gguf": {"repo": "mlx-community/PP-OCRv6_small_rec-GGUF", "file": "PP-OCRv6_small_rec-q8-head.gguf", "revision": "main"},
+      "detector": {"repo": "mlx-community/PP-OCRv6-small-det-GGUF", "file": "PP-OCRv6_small_det-f16.gguf", "revision": "main"},
+      "sample": "tests/regression/images/fox.png", "expected_text": null,
+      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "mlx-community/PP-OCRv6_small_rec-GGUF", "file": "PP-OCRv6_small_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
     },
     {
       "name": "ppocrv6-medium",
       "engine": "ppocrv6",
       "_comment": "PP-OCRv6 medium detector + Q8-head recognizer through the native detector-to-line-crop pipeline.",
-      "gguf": {
-        "repo": "mlx-community/PP-OCRv6_medium_rec-GGUF",
-        "file": "PP-OCRv6_medium_rec-q8-head.gguf",
-        "revision": "main"
-      },
-      "detector": {
-        "repo": "mlx-community/PP-OCRv6-medium-det-GGUF",
-        "file": "PP-OCRv6_medium_det-f16.gguf",
-        "revision": "main"
-      },
-      "sample": "tests/regression/images/fox.png",
-      "expected_text": null,
-      "diff": {
-        "binary": "test-ppocrv6-rec",
-        "ref": {
-          "repo": "mlx-community/PP-OCRv6_medium_rec-GGUF",
-          "file": "PP-OCRv6_medium_rec-fox-ref.gguf",
-          "revision": "main"
-        },
-        "args": ["tests/regression/images/fox.png"],
-        "thresholds": {"*": 0.999}
-      }
+      "gguf": {"repo": "mlx-community/PP-OCRv6_medium_rec-GGUF", "file": "PP-OCRv6_medium_rec-q8-head.gguf", "revision": "main"},
+      "detector": {"repo": "mlx-community/PP-OCRv6-medium-det-GGUF", "file": "PP-OCRv6_medium_det-f16.gguf", "revision": "main"},
+      "sample": "tests/regression/images/fox.png", "expected_text": null,
+      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "mlx-community/PP-OCRv6_medium_rec-GGUF", "file": "PP-OCRv6_medium_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
     }
   ]
 }
