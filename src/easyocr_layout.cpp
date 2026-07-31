@@ -38,6 +38,10 @@ std::vector<region> group_lines(const std::vector<region> & input) {
     return lines;
 }
 
+std::vector<region> group_dbnet_lines(const std::vector<region> & input) {
+    return group_lines(input);
+}
+
 std::vector<region> order_words(const std::vector<region> & input) {
     std::vector<std::vector<region>> groups;
     for (const auto & b : input) {
