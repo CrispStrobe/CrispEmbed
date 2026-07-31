@@ -1848,6 +1848,7 @@ class _CrispOcrResult(ctypes.Structure):
         ("confidence", ctypes.c_float),
         ("text", ctypes.c_char_p),
         ("text_len", ctypes.c_int),
+        ("orientation_corrected", ctypes.c_int),
     ]
 
 
@@ -4411,6 +4412,7 @@ def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
         text_bufs.append(ctypes.c_char_p(text_bytes))
         arr[i].text = text_bufs[-1]
         arr[i].text_len = len(text_bytes)
+        arr[i].orientation_corrected = int(r.get("orientation_corrected", 0))
 
     fmt = format.encode("utf-8")
     ptr = lib.crispembed_ocr_render(arr, n, page_w, page_h, fmt)

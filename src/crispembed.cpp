@@ -6048,6 +6048,7 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
         results[i].confidence = 1.0f;
         results[i].text = nullptr;
         results[i].text_len = 0;
+        results[i].orientation_corrected = 0;
     }
     cc_detect_free(regions);
     if (out_n) *out_n = n;
