@@ -1,0 +1,2909 @@
+{
+  "version": 1,
+  "binary": "build/crispembed",
+  "rows": [
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "raw",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 1275,
+        "height": 1650,
+        "channels": 3
+      },
+      "checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "cleanup",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650
+      },
+      "status": "ok",
+      "ms": 4791.687,
+      "output": {
+        "width": 1304,
+        "height": 1673,
+        "channels": 3,
+        "mean": 0.914131,
+        "min": 0.09803921568627451,
+        "max": 1.0
+      },
+      "checksum": "710d4b67b36160f9f9793977d1a593d0c5941cf6036438a7e74c5bb2d7749a0f",
+      "stderr_tail": "cleaned: 1275x1650 -> 1304x1673\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650
+      },
+      "status": "ok",
+      "ms": 4263.9,
+      "output": {
+        "width": 1304,
+        "height": 1673,
+        "channels": 3,
+        "mean": 0.923212,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d0c9b2d546ada4a12099bf32cb53f6c2a5298085b2e127309036b4ebbe5555c4",
+      "stderr_tail": "cleaned: 1275x1650 -> 1304x1673\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650
+      },
+      "status": "ok",
+      "ms": 2745.544,
+      "output": {
+        "width": 1269,
+        "height": 1650,
+        "channels": 3,
+        "mean": 0.916737,
+        "min": 0.06274509803921569,
+        "max": 1.0
+      },
+      "checksum": "8423e59ee1de9e3adfbf630a064061754d7c4deea267f10aba388296b3301624",
+      "stderr_tail": "cleaned: 1275x1650 -> 1269x1650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650
+      },
+      "status": "ok",
+      "ms": 2711.663,
+      "output": {
+        "width": 1304,
+        "height": 1673,
+        "channels": 3,
+        "mean": 0.914131,
+        "min": 0.09803921568627451,
+        "max": 1.0
+      },
+      "checksum": "710d4b67b36160f9f9793977d1a593d0c5941cf6036438a7e74c5bb2d7749a0f",
+      "stderr_tail": "cleaned: 1275x1650 -> 1304x1673\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650
+      },
+      "status": "ok",
+      "ms": 2271.146,
+      "output": {
+        "width": 1304,
+        "height": 1673,
+        "channels": 3,
+        "mean": 0.864169,
+        "min": 0.09019607843137255,
+        "max": 1.0
+      },
+      "checksum": "bed59822971c71640d9a5e307a40cbf509ddac162b0493689f81057639c141a8",
+      "stderr_tail": "cleaned: 1275x1650 -> 1304x1673\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650
+      },
+      "status": "ok",
+      "ms": 2084.659,
+      "output": {
+        "width": 1304,
+        "height": 1673,
+        "channels": 3,
+        "mean": 0.914131,
+        "min": 0.09803921568627451,
+        "max": 1.0
+      },
+      "checksum": "710d4b67b36160f9f9793977d1a593d0c5941cf6036438a7e74c5bb2d7749a0f",
+      "stderr_tail": "cleaned: 1275x1650 -> 1304x1673\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_handwriting.jpg",
+      "stage": "dewarp",
+      "input_checksum": "a0c5b8101eca8f96fb80da75879f8309f8c999e8e733ee02fd4192fa84c2ee48",
+      "input": {
+        "width": 1275,
+        "height": 1650,
+        "channels": 3
+      },
+      "status": "unavailable",
+      "ms": 99.727,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "raw",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 119,
+        "height": 29,
+        "channels": 4
+      },
+      "checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "cleanup",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29
+      },
+      "status": "ok",
+      "ms": 94.671,
+      "output": {
+        "width": 120,
+        "height": 31,
+        "channels": 3,
+        "mean": 0.879453,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "236deee9a6b24fc5688c21261750c67ae9c50c47d03bcb418c4ce413f63f5ef0",
+      "stderr_tail": "cleaned: 119x29 -> 120x31\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29
+      },
+      "status": "ok",
+      "ms": 105.121,
+      "output": {
+        "width": 120,
+        "height": 31,
+        "channels": 3,
+        "mean": 0.873656,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "041c2077af88eed8d88aa9b03ff0c6a31eecfe0db26dbe7b4a7de48aadb3bc59",
+      "stderr_tail": "cleaned: 119x29 -> 120x31\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29
+      },
+      "status": "ok",
+      "ms": 89.081,
+      "output": {
+        "width": 119,
+        "height": 29,
+        "channels": 3,
+        "mean": 0.868481,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "f626ac834ef479a01a2d36564e021b17bdd1cc7e6e9a4e6116fbac8cca14dbc0",
+      "stderr_tail": "cleaned: 119x29 -> 119x29\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29
+      },
+      "status": "ok",
+      "ms": 72.077,
+      "output": {
+        "width": 120,
+        "height": 31,
+        "channels": 3,
+        "mean": 0.879453,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "236deee9a6b24fc5688c21261750c67ae9c50c47d03bcb418c4ce413f63f5ef0",
+      "stderr_tail": "cleaned: 119x29 -> 120x31\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29
+      },
+      "status": "ok",
+      "ms": 60.073,
+      "output": {
+        "width": 120,
+        "height": 31,
+        "channels": 3,
+        "mean": 0.879453,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "236deee9a6b24fc5688c21261750c67ae9c50c47d03bcb418c4ce413f63f5ef0",
+      "stderr_tail": "cleaned: 119x29 -> 120x31\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29
+      },
+      "status": "ok",
+      "ms": 58.901,
+      "output": {
+        "width": 120,
+        "height": 31,
+        "channels": 3,
+        "mean": 0.879453,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "236deee9a6b24fc5688c21261750c67ae9c50c47d03bcb418c4ce413f63f5ef0",
+      "stderr_tail": "cleaned: 119x29 -> 120x31\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/arabic_printed_line.png",
+      "stage": "dewarp",
+      "input_checksum": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "input": {
+        "width": 119,
+        "height": 29,
+        "channels": 4
+      },
+      "status": "unavailable",
+      "ms": 26.195,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "raw",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3
+      },
+      "checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "cleanup",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672
+      },
+      "status": "ok",
+      "ms": 746.812,
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3,
+        "mean": 0.871781,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "a7643920c2134f9082f5f14e8a577dee769bccf14740bf694af5f1ab0ea14f93",
+      "stderr_tail": "cleaned: 1064x672 -> 1064x672\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672
+      },
+      "status": "ok",
+      "ms": 521.485,
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3,
+        "mean": 0.743626,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "a0e038512cd1effaf2431e11fa01c043328b7d7da10591ee53722bd3a79ea9f9",
+      "stderr_tail": "cleaned: 1064x672 -> 1064x672\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672
+      },
+      "status": "ok",
+      "ms": 555.638,
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3,
+        "mean": 0.871781,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "a7643920c2134f9082f5f14e8a577dee769bccf14740bf694af5f1ab0ea14f93",
+      "stderr_tail": "cleaned: 1064x672 -> 1064x672\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672
+      },
+      "status": "ok",
+      "ms": 788.176,
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3,
+        "mean": 0.871781,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "a7643920c2134f9082f5f14e8a577dee769bccf14740bf694af5f1ab0ea14f93",
+      "stderr_tail": "cleaned: 1064x672 -> 1064x672\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672
+      },
+      "status": "ok",
+      "ms": 526.368,
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3,
+        "mean": 0.653155,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "e744bd45840aba066b16b08b79b2c5dcd4dbafa8d0a3ced5089c962985749ed6",
+      "stderr_tail": "cleaned: 1064x672 -> 1064x672\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672
+      },
+      "status": "ok",
+      "ms": 797.62,
+      "output": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3,
+        "mean": 0.871781,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "a7643920c2134f9082f5f14e8a577dee769bccf14740bf694af5f1ab0ea14f93",
+      "stderr_tail": "cleaned: 1064x672 -> 1064x672\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
+      "stage": "dewarp",
+      "input_checksum": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
+      "input": {
+        "width": 1064,
+        "height": 672,
+        "channels": 3
+      },
+      "status": "unavailable",
+      "ms": 69.036,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "raw",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3
+      },
+      "checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "cleanup",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280
+      },
+      "status": "ok",
+      "ms": 2015.236,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3,
+        "mean": 0.91227,
+        "min": 0.03529411764705882,
+        "max": 1.0
+      },
+      "checksum": "0c34d547eb48d2589c858a6c58e7369e77230641eceab178aa46dfd1e03f05ca",
+      "stderr_tail": "cleaned: 960x1280 -> 960x1280\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280
+      },
+      "status": "ok",
+      "ms": 1834.855,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3,
+        "mean": 0.944722,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "0ad134762a823762fa17a2128e6775a7a116e28b586a4bc9d5d23b5a07a652ce",
+      "stderr_tail": "cleaned: 960x1280 -> 960x1280\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280
+      },
+      "status": "ok",
+      "ms": 1059.138,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3,
+        "mean": 0.91227,
+        "min": 0.03529411764705882,
+        "max": 1.0
+      },
+      "checksum": "0c34d547eb48d2589c858a6c58e7369e77230641eceab178aa46dfd1e03f05ca",
+      "stderr_tail": "cleaned: 960x1280 -> 960x1280\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280
+      },
+      "status": "ok",
+      "ms": 1883.911,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3,
+        "mean": 0.91227,
+        "min": 0.03529411764705882,
+        "max": 1.0
+      },
+      "checksum": "0c34d547eb48d2589c858a6c58e7369e77230641eceab178aa46dfd1e03f05ca",
+      "stderr_tail": "cleaned: 960x1280 -> 960x1280\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280
+      },
+      "status": "ok",
+      "ms": 1234.367,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3,
+        "mean": 0.639813,
+        "min": 0.023529411764705882,
+        "max": 0.9607843137254902
+      },
+      "checksum": "c7f73d6c625c977ef3d9c4ca0eb407181f3af9d982f069c662babc3f92714507",
+      "stderr_tail": "cleaned: 960x1280 -> 960x1280\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280
+      },
+      "status": "ok",
+      "ms": 1770.946,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3,
+        "mean": 0.91227,
+        "min": 0.03529411764705882,
+        "max": 1.0
+      },
+      "checksum": "0c34d547eb48d2589c858a6c58e7369e77230641eceab178aa46dfd1e03f05ca",
+      "stderr_tail": "cleaned: 960x1280 -> 960x1280\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_document.jpg",
+      "stage": "dewarp",
+      "input_checksum": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "input": {
+        "width": 960,
+        "height": 1280,
+        "channels": 3
+      },
+      "status": "ok",
+      "ms": 434.986,
+      "output": {
+        "width": 960,
+        "height": 1280,
+        "channels": 1,
+        "mean": 0.767653,
+        "min": 0.00784313725490196,
+        "max": 1.0
+      },
+      "checksum": "1d4a7c420bd83674f72a39541dcb7e8cefc6ed651c06cc609d7c0b179602a858",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "raw",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518,
+        "channels": 1
+      },
+      "status": "ok",
+      "output": {
+        "width": 1920,
+        "height": 2518,
+        "channels": 1
+      },
+      "checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "cleanup",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518
+      },
+      "status": "ok",
+      "ms": 7310.288,
+      "output": {
+        "width": 1938,
+        "height": 2532,
+        "channels": 3,
+        "mean": 0.946363,
+        "min": 0.2235294117647059,
+        "max": 1.0
+      },
+      "checksum": "673c67f081d6367704e7852f3c0ceb3db74c5c7738b3fb14152aa891936ff03b",
+      "stderr_tail": "cleaned: 1920x2518 -> 1938x2532\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518
+      },
+      "status": "ok",
+      "ms": 8640.758,
+      "output": {
+        "width": 1938,
+        "height": 2532,
+        "channels": 3,
+        "mean": 0.960245,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "289a21380b29d9dfe5503de2a1feeba75751860efb9c898468c272db537cf646",
+      "stderr_tail": "cleaned: 1920x2518 -> 1938x2532\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518
+      },
+      "status": "ok",
+      "ms": 6203.928,
+      "output": {
+        "width": 1920,
+        "height": 2518,
+        "channels": 3,
+        "mean": 0.944824,
+        "min": 0.2549019607843137,
+        "max": 1.0
+      },
+      "checksum": "4f5e2d03ae56495c90204d5043c92ac395aee29f57423deeb4bbc0b26705f180",
+      "stderr_tail": "cleaned: 1920x2518 -> 1920x2518\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518
+      },
+      "status": "ok",
+      "ms": 6242.052,
+      "output": {
+        "width": 1938,
+        "height": 2532,
+        "channels": 3,
+        "mean": 0.946363,
+        "min": 0.2235294117647059,
+        "max": 1.0
+      },
+      "checksum": "673c67f081d6367704e7852f3c0ceb3db74c5c7738b3fb14152aa891936ff03b",
+      "stderr_tail": "cleaned: 1920x2518 -> 1938x2532\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518
+      },
+      "status": "ok",
+      "ms": 3813.964,
+      "output": {
+        "width": 1938,
+        "height": 2532,
+        "channels": 3,
+        "mean": 0.834815,
+        "min": 0.1803921568627451,
+        "max": 1.0
+      },
+      "checksum": "a7117e98fd452186c61eeadde683a1f68eb1ebb73c8fb5a61a89070abfd47834",
+      "stderr_tail": "cleaned: 1920x2518 -> 1938x2532\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518
+      },
+      "status": "ok",
+      "ms": 5941.074,
+      "output": {
+        "width": 1938,
+        "height": 2532,
+        "channels": 3,
+        "mean": 0.946363,
+        "min": 0.2235294117647059,
+        "max": 1.0
+      },
+      "checksum": "673c67f081d6367704e7852f3c0ceb3db74c5c7738b3fb14152aa891936ff03b",
+      "stderr_tail": "cleaned: 1920x2518 -> 1938x2532\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/german_official_print.jpg",
+      "stage": "dewarp",
+      "input_checksum": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "input": {
+        "width": 1920,
+        "height": 2518,
+        "channels": 1
+      },
+      "status": "ok",
+      "ms": 2037.813,
+      "output": {
+        "width": 1920,
+        "height": 2518,
+        "channels": 1,
+        "mean": 0.936065,
+        "min": 0.23137254901960785,
+        "max": 1.0
+      },
+      "checksum": "42d88c2ef8f36dc4ff0e473d8cbfa2fb879d5fca2920543bc4bf42920517d0f8",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "raw",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3
+      },
+      "checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "cleanup",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920
+      },
+      "status": "ok",
+      "ms": 2014.094,
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3,
+        "mean": 0.983952,
+        "min": 0.2196078431372549,
+        "max": 1.0
+      },
+      "checksum": "97931dafcdf2f5bf9a292da46aa5d0b61cfe441bd6f9972e219fb02f2ef302c6",
+      "stderr_tail": "cleaned: 1920x1920 -> 1920x1920\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920
+      },
+      "status": "ok",
+      "ms": 2032.103,
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3,
+        "mean": 0.977854,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "4587a42777827a1be82fb23803999e5aeafee09888084f3ed2b7fa765eac7655",
+      "stderr_tail": "cleaned: 1920x1920 -> 1920x1920\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920
+      },
+      "status": "ok",
+      "ms": 1813.682,
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3,
+        "mean": 0.983952,
+        "min": 0.2196078431372549,
+        "max": 1.0
+      },
+      "checksum": "97931dafcdf2f5bf9a292da46aa5d0b61cfe441bd6f9972e219fb02f2ef302c6",
+      "stderr_tail": "cleaned: 1920x1920 -> 1920x1920\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920
+      },
+      "status": "ok",
+      "ms": 2453.893,
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3,
+        "mean": 0.983952,
+        "min": 0.2196078431372549,
+        "max": 1.0
+      },
+      "checksum": "97931dafcdf2f5bf9a292da46aa5d0b61cfe441bd6f9972e219fb02f2ef302c6",
+      "stderr_tail": "cleaned: 1920x1920 -> 1920x1920\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920
+      },
+      "status": "ok",
+      "ms": 1447.808,
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3,
+        "mean": 0.927177,
+        "min": 0.21568627450980393,
+        "max": 1.0
+      },
+      "checksum": "ab3f9199ccf8e5f86a8c74df1226aea237b3aa50e98447ffb37015fb53b0afd3",
+      "stderr_tail": "cleaned: 1920x1920 -> 1920x1920\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920
+      },
+      "status": "ok",
+      "ms": 1938.163,
+      "output": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3,
+        "mean": 0.983952,
+        "min": 0.2196078431372549,
+        "max": 1.0
+      },
+      "checksum": "97931dafcdf2f5bf9a292da46aa5d0b61cfe441bd6f9972e219fb02f2ef302c6",
+      "stderr_tail": "cleaned: 1920x1920 -> 1920x1920\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/handwritten_letter.jpg",
+      "stage": "dewarp",
+      "input_checksum": "a2bf46ca2b3a6e8c8069e782751424bb986be155f828dc0be69b94c9af2a2123",
+      "input": {
+        "width": 1920,
+        "height": 1920,
+        "channels": 3
+      },
+      "status": "unavailable",
+      "ms": 119.764,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "raw",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 1600,
+        "height": 1200,
+        "channels": 3
+      },
+      "checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "cleanup",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200
+      },
+      "status": "ok",
+      "ms": 1680.807,
+      "output": {
+        "width": 1359,
+        "height": 952,
+        "channels": 3,
+        "mean": 0.444644,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d3feeb5b0f6785653f8fcaf57efd8253b14886528139f510229ecfc84c5dfc31",
+      "stderr_tail": "cleaned: 1600x1200 -> 1359x952\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200
+      },
+      "status": "ok",
+      "ms": 1202.773,
+      "output": {
+        "width": 1359,
+        "height": 952,
+        "channels": 3,
+        "mean": 0.225357,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "63e604a1c1ca091388a9e4de0c40bcecf32a915f02ed419830a4e838e3b31f49",
+      "stderr_tail": "cleaned: 1600x1200 -> 1359x952\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200
+      },
+      "status": "ok",
+      "ms": 914.072,
+      "output": {
+        "width": 1359,
+        "height": 952,
+        "channels": 3,
+        "mean": 0.444644,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d3feeb5b0f6785653f8fcaf57efd8253b14886528139f510229ecfc84c5dfc31",
+      "stderr_tail": "cleaned: 1600x1200 -> 1359x952\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200
+      },
+      "status": "ok",
+      "ms": 1621.989,
+      "output": {
+        "width": 1600,
+        "height": 1200,
+        "channels": 3,
+        "mean": 0.448614,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "74865eb2d97f50a0827d5626b267c8337d67fce2c65b679a75109846e47d5a12",
+      "stderr_tail": "cleaned: 1600x1200 -> 1600x1200\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200
+      },
+      "status": "ok",
+      "ms": 1194.567,
+      "output": {
+        "width": 1359,
+        "height": 952,
+        "channels": 3,
+        "mean": 0.102,
+        "min": 0.0,
+        "max": 0.996078431372549
+      },
+      "checksum": "3849de87a6ba6a9018ec701796bcdf7711b9d39c8bf38e03b1feb91ef337fa16",
+      "stderr_tail": "cleaned: 1600x1200 -> 1359x952\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200
+      },
+      "status": "ok",
+      "ms": 1442.446,
+      "output": {
+        "width": 1359,
+        "height": 952,
+        "channels": 3,
+        "mean": 0.444644,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d3feeb5b0f6785653f8fcaf57efd8253b14886528139f510229ecfc84c5dfc31",
+      "stderr_tail": "cleaned: 1600x1200 -> 1359x952\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+      "stage": "dewarp",
+      "input_checksum": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+      "input": {
+        "width": 1600,
+        "height": 1200,
+        "channels": 3
+      },
+      "status": "unavailable",
+      "ms": 157.265,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "raw",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 552,
+        "height": 759,
+        "channels": 3
+      },
+      "checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "cleanup",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759
+      },
+      "status": "ok",
+      "ms": 458.447,
+      "output": {
+        "width": 559,
+        "height": 764,
+        "channels": 3,
+        "mean": 0.96725,
+        "min": 0.08235294117647059,
+        "max": 1.0
+      },
+      "checksum": "02bd6b0d3f50633aa134763c79c6ded536c0b4df0fe228fc922ee3d2091670e5",
+      "stderr_tail": "cleaned: 552x759 -> 559x764\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759
+      },
+      "status": "ok",
+      "ms": 784.532,
+      "output": {
+        "width": 559,
+        "height": 764,
+        "channels": 3,
+        "mean": 0.975939,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "3691603631f338aae740ca5c99b3c409a4974ba9ac356eac94f25efcc0f06fea",
+      "stderr_tail": "cleaned: 552x759 -> 559x764\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759
+      },
+      "status": "ok",
+      "ms": 564.816,
+      "output": {
+        "width": 552,
+        "height": 759,
+        "channels": 3,
+        "mean": 0.969401,
+        "min": 0.0784313725490196,
+        "max": 1.0
+      },
+      "checksum": "2e7a0912f9f9f0d8d7a46ab4d121c9e672f9daa3ef470665c1bbf1b5d735ce4b",
+      "stderr_tail": "cleaned: 552x759 -> 552x759\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759
+      },
+      "status": "ok",
+      "ms": 572.466,
+      "output": {
+        "width": 559,
+        "height": 764,
+        "channels": 3,
+        "mean": 0.96725,
+        "min": 0.08235294117647059,
+        "max": 1.0
+      },
+      "checksum": "02bd6b0d3f50633aa134763c79c6ded536c0b4df0fe228fc922ee3d2091670e5",
+      "stderr_tail": "cleaned: 552x759 -> 559x764\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759
+      },
+      "status": "ok",
+      "ms": 553.936,
+      "output": {
+        "width": 559,
+        "height": 764,
+        "channels": 3,
+        "mean": 0.951649,
+        "min": 0.08235294117647059,
+        "max": 1.0
+      },
+      "checksum": "cfbcaf254df8326ee9a10105ae15cf6f9d8de3fcf5e0e315179ddee78bc4b486",
+      "stderr_tail": "cleaned: 552x759 -> 559x764\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759
+      },
+      "status": "ok",
+      "ms": 374.063,
+      "output": {
+        "width": 552,
+        "height": 759,
+        "channels": 3,
+        "mean": 0.969401,
+        "min": 0.0784313725490196,
+        "max": 1.0
+      },
+      "checksum": "2e7a0912f9f9f0d8d7a46ab4d121c9e672f9daa3ef470665c1bbf1b5d735ce4b",
+      "stderr_tail": "cleaned: 552x759 -> 552x759\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/public_domain_sheet_music.jpg",
+      "stage": "dewarp",
+      "input_checksum": "ad8e7efa1bd15c2d725859f13ceef39fc7967456dc3cdf39f20aece539c19c1a",
+      "input": {
+        "width": 552,
+        "height": 759,
+        "channels": 3
+      },
+      "status": "unavailable",
+      "ms": 24.202,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "raw",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 4
+      },
+      "checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "cleanup",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650
+      },
+      "status": "ok",
+      "ms": 143.267,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 3,
+        "mean": 0.982468,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d6030c59aba9ad453351d69051eed27f5e4e09ead86c07450e28289ac6527491",
+      "stderr_tail": "cleaned: 500x650 -> 500x650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650
+      },
+      "status": "ok",
+      "ms": 510.99,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 3,
+        "mean": 0.973703,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "14da598e3270a809152a7394db1581496c7ed188fa4f6c3e3b498b7968902f20",
+      "stderr_tail": "cleaned: 500x650 -> 500x650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650
+      },
+      "status": "ok",
+      "ms": 148.911,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 3,
+        "mean": 0.982468,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d6030c59aba9ad453351d69051eed27f5e4e09ead86c07450e28289ac6527491",
+      "stderr_tail": "cleaned: 500x650 -> 500x650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650
+      },
+      "status": "ok",
+      "ms": 147.332,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 3,
+        "mean": 0.982468,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d6030c59aba9ad453351d69051eed27f5e4e09ead86c07450e28289ac6527491",
+      "stderr_tail": "cleaned: 500x650 -> 500x650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650
+      },
+      "status": "ok",
+      "ms": 269.678,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 3,
+        "mean": 0.963197,
+        "min": 0.0,
+        "max": 0.9803921568627451
+      },
+      "checksum": "8db0234d5732f3bcdc390920ce6d9f6b0ab482c86e4ee686f050097a055775ca",
+      "stderr_tail": "cleaned: 500x650 -> 500x650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650
+      },
+      "status": "ok",
+      "ms": 274.354,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 3,
+        "mean": 0.982468,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "d6030c59aba9ad453351d69051eed27f5e4e09ead86c07450e28289ac6527491",
+      "stderr_tail": "cleaned: 500x650 -> 500x650\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_example.png",
+      "stage": "dewarp",
+      "input_checksum": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "input": {
+        "width": 500,
+        "height": 650,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 114.436,
+      "output": {
+        "width": 500,
+        "height": 650,
+        "channels": 1,
+        "mean": 0.955342,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "5946efc9c5f0680a496f67ee40432a18b827e985051fc0afe36b16baf8acb2fa",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "raw",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 4
+      },
+      "checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "cleanup",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552
+      },
+      "status": "ok",
+      "ms": 1081.607,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 3,
+        "mean": 0.95844,
+        "min": 0.21568627450980393,
+        "max": 1.0
+      },
+      "checksum": "33176e16395c6b45a66b5469e2419861d23fc5c42442fce8976a4850045425c7",
+      "stderr_tail": "cleaned: 768x1552 -> 768x1552\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552
+      },
+      "status": "ok",
+      "ms": 1199.07,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 3,
+        "mean": 0.945494,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "5a6255006ff2e04b2e7001bc824d6667446dc99141a1e07d531bc0b11350307e",
+      "stderr_tail": "cleaned: 768x1552 -> 768x1552\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552
+      },
+      "status": "ok",
+      "ms": 885.156,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 3,
+        "mean": 0.95844,
+        "min": 0.21568627450980393,
+        "max": 1.0
+      },
+      "checksum": "33176e16395c6b45a66b5469e2419861d23fc5c42442fce8976a4850045425c7",
+      "stderr_tail": "cleaned: 768x1552 -> 768x1552\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552
+      },
+      "status": "ok",
+      "ms": 1101.356,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 3,
+        "mean": 0.95844,
+        "min": 0.21568627450980393,
+        "max": 1.0
+      },
+      "checksum": "33176e16395c6b45a66b5469e2419861d23fc5c42442fce8976a4850045425c7",
+      "stderr_tail": "cleaned: 768x1552 -> 768x1552\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552
+      },
+      "status": "ok",
+      "ms": 922.989,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 3,
+        "mean": 0.943366,
+        "min": 0.21568627450980393,
+        "max": 1.0
+      },
+      "checksum": "74f9954c63a45b1bb876fd850e51f66e7c7db68f3b9a6650dcf7cf50f2d9b414",
+      "stderr_tail": "cleaned: 768x1552 -> 768x1552\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552
+      },
+      "status": "ok",
+      "ms": 1055.771,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 3,
+        "mean": 0.95844,
+        "min": 0.21568627450980393,
+        "max": 1.0
+      },
+      "checksum": "33176e16395c6b45a66b5469e2419861d23fc5c42442fce8976a4850045425c7",
+      "stderr_tail": "cleaned: 768x1552 -> 768x1552\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/receipt_historical.png",
+      "stage": "dewarp",
+      "input_checksum": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "input": {
+        "width": 768,
+        "height": 1552,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 778.63,
+      "output": {
+        "width": 768,
+        "height": 1552,
+        "channels": 1,
+        "mean": 0.960743,
+        "min": 0.10588235294117647,
+        "max": 1.0
+      },
+      "checksum": "904b6a1369094b5cd77874a09dbf1c6d98fe27e64277c50b36018a8645191462",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "raw",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 4
+      },
+      "checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "cleanup",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317
+      },
+      "status": "ok",
+      "ms": 50.926,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 3,
+        "mean": 0.975868,
+        "min": 0.18823529411764706,
+        "max": 1.0
+      },
+      "checksum": "e16b3343550e425e75d9786cf1bd60ec463698da79d2b49b183aa5c7cf5b5ae8",
+      "stderr_tail": "cleaned: 452x317 -> 452x317\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317
+      },
+      "status": "ok",
+      "ms": 53.89,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 3,
+        "mean": 0.953886,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "8fb5f5f8bc689af15208d35658b46c739f9351d4be7fa8e126d1b7c3bc75c4d8",
+      "stderr_tail": "cleaned: 452x317 -> 452x317\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317
+      },
+      "status": "ok",
+      "ms": 38.39,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 3,
+        "mean": 0.975868,
+        "min": 0.18823529411764706,
+        "max": 1.0
+      },
+      "checksum": "e16b3343550e425e75d9786cf1bd60ec463698da79d2b49b183aa5c7cf5b5ae8",
+      "stderr_tail": "cleaned: 452x317 -> 452x317\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317
+      },
+      "status": "ok",
+      "ms": 52.414,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 3,
+        "mean": 0.975868,
+        "min": 0.18823529411764706,
+        "max": 1.0
+      },
+      "checksum": "e16b3343550e425e75d9786cf1bd60ec463698da79d2b49b183aa5c7cf5b5ae8",
+      "stderr_tail": "cleaned: 452x317 -> 452x317\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317
+      },
+      "status": "ok",
+      "ms": 43.812,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 3,
+        "mean": 0.944014,
+        "min": 0.18823529411764706,
+        "max": 1.0
+      },
+      "checksum": "bfc56b811d14a4d90c3ca6a870b358db63e437d83d2b204777bd2e9ad9b076dd",
+      "stderr_tail": "cleaned: 452x317 -> 452x317\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317
+      },
+      "status": "ok",
+      "ms": 49.097,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 3,
+        "mean": 0.975868,
+        "min": 0.18823529411764706,
+        "max": 1.0
+      },
+      "checksum": "e16b3343550e425e75d9786cf1bd60ec463698da79d2b49b183aa5c7cf5b5ae8",
+      "stderr_tail": "cleaned: 452x317 -> 452x317\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_form.png",
+      "stage": "dewarp",
+      "input_checksum": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "input": {
+        "width": 452,
+        "height": 317,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 18.114,
+      "output": {
+        "width": 452,
+        "height": 317,
+        "channels": 1,
+        "mean": 0.969142,
+        "min": 0.18823529411764706,
+        "max": 1.0
+      },
+      "checksum": "cb78e1a5d87b0021b7120c637921a075516a40a5513af7d2d7c22350b6f39618",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "raw",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3
+      },
+      "checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "cleanup",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102
+      },
+      "status": "ok",
+      "ms": 31.749,
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3,
+        "mean": 0.949217,
+        "min": 0.26666666666666666,
+        "max": 1.0
+      },
+      "checksum": "ef8d4d098a3aa378220bbaa3dd48195eb0421b5b89d5877a90c43bb08ce9f686",
+      "stderr_tail": "cleaned: 200x102 -> 200x102\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102
+      },
+      "status": "ok",
+      "ms": 30.84,
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3,
+        "mean": 0.880784,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "5db2c75c5fd567a81156e2c4628ce0c693db6db539a7f2961fb771227c50c5d0",
+      "stderr_tail": "cleaned: 200x102 -> 200x102\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102
+      },
+      "status": "ok",
+      "ms": 27.976,
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3,
+        "mean": 0.949217,
+        "min": 0.26666666666666666,
+        "max": 1.0
+      },
+      "checksum": "ef8d4d098a3aa378220bbaa3dd48195eb0421b5b89d5877a90c43bb08ce9f686",
+      "stderr_tail": "cleaned: 200x102 -> 200x102\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102
+      },
+      "status": "ok",
+      "ms": 36.442,
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3,
+        "mean": 0.949217,
+        "min": 0.26666666666666666,
+        "max": 1.0
+      },
+      "checksum": "ef8d4d098a3aa378220bbaa3dd48195eb0421b5b89d5877a90c43bb08ce9f686",
+      "stderr_tail": "cleaned: 200x102 -> 200x102\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102
+      },
+      "status": "ok",
+      "ms": 41.805,
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3,
+        "mean": 0.948089,
+        "min": 0.26666666666666666,
+        "max": 1.0
+      },
+      "checksum": "618f204330c5537f1f78557b25652cc907d75f5c33dbb3e3bdddd75fba8b3fde",
+      "stderr_tail": "cleaned: 200x102 -> 200x102\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102
+      },
+      "status": "ok",
+      "ms": 49.626,
+      "output": {
+        "width": 200,
+        "height": 102,
+        "channels": 3,
+        "mean": 0.949217,
+        "min": 0.26666666666666666,
+        "max": 1.0
+      },
+      "checksum": "ef8d4d098a3aa378220bbaa3dd48195eb0421b5b89d5877a90c43bb08ce9f686",
+      "stderr_tail": "cleaned: 200x102 -> 200x102\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/cc0/simple_table.jpg",
+      "stage": "dewarp",
+      "input_checksum": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8",
+      "input": {
+        "width": 200,
+        "height": 102,
+        "channels": 3
+      },
+      "status": "unavailable",
+      "ms": 20.921,
+      "reason": "not applicable: too few textlines",
+      "stderr_tail": "dewarp failed (too few textlines?)\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "raw",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 4
+      },
+      "checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "cleanup",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145
+      },
+      "status": "ok",
+      "ms": 70.302,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 3,
+        "mean": 0.971169,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "7a3a9ffdb8fdb82cc4c5d882ccee4dcafac30c49afc94fe3a9a19d478b712b69",
+      "stderr_tail": "cleaned: 409x145 -> 409x145\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145
+      },
+      "status": "ok",
+      "ms": 65.759,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 3,
+        "mean": 0.969008,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "f392ff60235017b548464b0f87102a914e909805d5c6d606e7da62d01042cd14",
+      "stderr_tail": "cleaned: 409x145 -> 409x145\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145
+      },
+      "status": "ok",
+      "ms": 38.443,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 3,
+        "mean": 0.971169,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "7a3a9ffdb8fdb82cc4c5d882ccee4dcafac30c49afc94fe3a9a19d478b712b69",
+      "stderr_tail": "cleaned: 409x145 -> 409x145\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145
+      },
+      "status": "ok",
+      "ms": 36.744,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 3,
+        "mean": 0.971169,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "7a3a9ffdb8fdb82cc4c5d882ccee4dcafac30c49afc94fe3a9a19d478b712b69",
+      "stderr_tail": "cleaned: 409x145 -> 409x145\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145
+      },
+      "status": "ok",
+      "ms": 30.612,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 3,
+        "mean": 0.971169,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "7a3a9ffdb8fdb82cc4c5d882ccee4dcafac30c49afc94fe3a9a19d478b712b69",
+      "stderr_tail": "cleaned: 409x145 -> 409x145\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145
+      },
+      "status": "ok",
+      "ms": 31.511,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 3,
+        "mean": 0.971169,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "7a3a9ffdb8fdb82cc4c5d882ccee4dcafac30c49afc94fe3a9a19d478b712b69",
+      "stderr_tail": "cleaned: 409x145 -> 409x145\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/formula_quadratic.png",
+      "stage": "dewarp",
+      "input_checksum": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901",
+      "input": {
+        "width": 409,
+        "height": 145,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 12.292,
+      "output": {
+        "width": 409,
+        "height": 145,
+        "channels": 1,
+        "mean": 0.976935,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "abade35773b4f873ce867f76e59f9816b58bf253ab8863199fb664c2e61bc793",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "raw",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 4
+      },
+      "checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "cleanup",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000
+      },
+      "status": "ok",
+      "ms": 384.503,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 3,
+        "mean": 0.883727,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "6be3a312abf96ae0384530aeb2d683935279ad665b87c12478b5404d73dca306",
+      "stderr_tail": "cleaned: 606x1000 -> 606x1000\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000
+      },
+      "status": "ok",
+      "ms": 565.069,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 3,
+        "mean": 0.901168,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "4687c2df3922cf5efd1e7d1f6f8030b87fb197206733dfd27bdc340d95b4b818",
+      "stderr_tail": "cleaned: 606x1000 -> 606x1000\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000
+      },
+      "status": "ok",
+      "ms": 259.742,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 3,
+        "mean": 0.883727,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "6be3a312abf96ae0384530aeb2d683935279ad665b87c12478b5404d73dca306",
+      "stderr_tail": "cleaned: 606x1000 -> 606x1000\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000
+      },
+      "status": "ok",
+      "ms": 527.012,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 3,
+        "mean": 0.883727,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "6be3a312abf96ae0384530aeb2d683935279ad665b87c12478b5404d73dca306",
+      "stderr_tail": "cleaned: 606x1000 -> 606x1000\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000
+      },
+      "status": "ok",
+      "ms": 291.367,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 3,
+        "mean": 0.527117,
+        "min": 0.0,
+        "max": 0.7019607843137254
+      },
+      "checksum": "7024f6f5a4d02da6ac34d227262d9dbd5a80dc40a7d48f34912253563a35bf1d",
+      "stderr_tail": "cleaned: 606x1000 -> 606x1000\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000
+      },
+      "status": "ok",
+      "ms": 628.16,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 3,
+        "mean": 0.883727,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "6be3a312abf96ae0384530aeb2d683935279ad665b87c12478b5404d73dca306",
+      "stderr_tail": "cleaned: 606x1000 -> 606x1000\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/scan_page_pd.png",
+      "stage": "dewarp",
+      "input_checksum": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1",
+      "input": {
+        "width": 606,
+        "height": 1000,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 154.12,
+      "output": {
+        "width": 606,
+        "height": 1000,
+        "channels": 1,
+        "mean": 0.571968,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "5beaa00358cd21e36b36be8cb9d0aae4abf1a218e8dd02b1dfcaf8ae206e1c61",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "raw",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 640,
+        "height": 480,
+        "channels": 4
+      },
+      "checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "cleanup",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480
+      },
+      "status": "ok",
+      "ms": 200.986,
+      "output": {
+        "width": 673,
+        "height": 525,
+        "channels": 3,
+        "mean": 0.861909,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "c7cb0e8707092a0d69d1d3499fd2e78c547196e86c3f647ad1a9deb2d3cc2ef5",
+      "stderr_tail": "cleaned: 640x480 -> 673x525\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480
+      },
+      "status": "ok",
+      "ms": 218.68,
+      "output": {
+        "width": 673,
+        "height": 525,
+        "channels": 3,
+        "mean": 0.867426,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "623bea4b33686e1ea6e744d6960a8d4196ae6429359955b3b0bf819bfbd397f4",
+      "stderr_tail": "cleaned: 640x480 -> 673x525\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480
+      },
+      "status": "ok",
+      "ms": 409.921,
+      "output": {
+        "width": 640,
+        "height": 480,
+        "channels": 3,
+        "mean": 0.879179,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "32296293f666a18b61e941ce7b6af1f2d43659410250cc7455157c4d94c6804d",
+      "stderr_tail": "cleaned: 640x480 -> 640x480\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480
+      },
+      "status": "ok",
+      "ms": 267.113,
+      "output": {
+        "width": 673,
+        "height": 525,
+        "channels": 3,
+        "mean": 0.861909,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "c7cb0e8707092a0d69d1d3499fd2e78c547196e86c3f647ad1a9deb2d3cc2ef5",
+      "stderr_tail": "cleaned: 640x480 -> 673x525\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480
+      },
+      "status": "ok",
+      "ms": 447.404,
+      "output": {
+        "width": 673,
+        "height": 525,
+        "channels": 3,
+        "mean": 0.5382,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "a7b83bcdf9a74fdfd63277f55ee95ed469cafc53f52a817d0fa7faa795e75625",
+      "stderr_tail": "cleaned: 640x480 -> 673x525\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480
+      },
+      "status": "ok",
+      "ms": 383.081,
+      "output": {
+        "width": 673,
+        "height": 525,
+        "channels": 3,
+        "mean": 0.861909,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "c7cb0e8707092a0d69d1d3499fd2e78c547196e86c3f647ad1a9deb2d3cc2ef5",
+      "stderr_tail": "cleaned: 640x480 -> 673x525\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_flova.png",
+      "stage": "dewarp",
+      "input_checksum": "38a2efc1a56b723687003cdd9b25220b4f5960dfe0dec0c99eb909b5fcf54e47",
+      "input": {
+        "width": 640,
+        "height": 480,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 42.475,
+      "output": {
+        "width": 640,
+        "height": 480,
+        "channels": 1,
+        "mean": 0.669835,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "64a0e5ad12316c1a11fa202b23cb2bc66494d640f05263d1ee183b1429aabf54",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "raw",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256,
+        "channels": 4
+      },
+      "status": "ok",
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 4
+      },
+      "checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "cleanup",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256
+      },
+      "status": "ok",
+      "ms": 107.449,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 3,
+        "mean": 0.906611,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "eac2cf4d907a8018d38233082c4a361b00cad40040702de268319e87e0d9bc27",
+      "stderr_tail": "cleaned: 672x256 -> 672x256\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "cleanup-binarize",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256
+      },
+      "status": "ok",
+      "ms": 261.63,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 3,
+        "mean": 0.904584,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "5c42b8e83e306abe520212fd43800c08115cdc7e75bb3cd48a94c2a0801c907d",
+      "stderr_tail": "cleaned: 672x256 -> 672x256\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256
+      },
+      "status": "ok",
+      "ms": 173.489,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 3,
+        "mean": 0.906611,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "eac2cf4d907a8018d38233082c4a361b00cad40040702de268319e87e0d9bc27",
+      "stderr_tail": "cleaned: 672x256 -> 672x256\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256
+      },
+      "status": "ok",
+      "ms": 172.071,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 3,
+        "mean": 0.906611,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "eac2cf4d907a8018d38233082c4a361b00cad40040702de268319e87e0d9bc27",
+      "stderr_tail": "cleaned: 672x256 -> 672x256\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256
+      },
+      "status": "ok",
+      "ms": 92.733,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 3,
+        "mean": 0.906611,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "eac2cf4d907a8018d38233082c4a361b00cad40040702de268319e87e0d9bc27",
+      "stderr_tail": "cleaned: 672x256 -> 672x256\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256
+      },
+      "status": "ok",
+      "ms": 88.366,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 3,
+        "mean": 0.906611,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "eac2cf4d907a8018d38233082c4a361b00cad40040702de268319e87e0d9bc27",
+      "stderr_tail": "cleaned: 672x256 -> 672x256\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_smt.png",
+      "stage": "dewarp",
+      "input_checksum": "224f595d3e212453309c69dde15208d0df64cb3b789b1cafffcc318ab36ed4fa",
+      "input": {
+        "width": 672,
+        "height": 256,
+        "channels": 4
+      },
+      "status": "ok",
+      "ms": 30.011,
+      "output": {
+        "width": 672,
+        "height": 256,
+        "channels": 1,
+        "mean": 0.970476,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "3bbe38d0950585320602b3214823beb677a068919bbe177a51fbc8798debf220",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "raw",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3
+      },
+      "status": "ok",
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3
+      },
+      "checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "ms": 0.0,
+      "effect_vs_raw": "baseline"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "cleanup",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144
+      },
+      "status": "ok",
+      "ms": 169.837,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3,
+        "mean": 0.901799,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "63a8dd8ecbd5d8a1af13d34f513897c48d82ee2f06a2b8ec54add43bd7de6321",
+      "stderr_tail": "cleaned: 1000x144 -> 1000x144\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "cleanup-binarize",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144
+      },
+      "status": "ok",
+      "ms": 241.614,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3,
+        "mean": 0.890449,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "0b58cdb5444d92b18f1fab9a5512a8df917b5acdf51d083eb25f2e876934437a",
+      "stderr_tail": "cleaned: 1000x144 -> 1000x144\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "cleanup-no-deskew",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144
+      },
+      "status": "ok",
+      "ms": 197.34,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3,
+        "mean": 0.901799,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "63a8dd8ecbd5d8a1af13d34f513897c48d82ee2f06a2b8ec54add43bd7de6321",
+      "stderr_tail": "cleaned: 1000x144 -> 1000x144\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "cleanup-no-crop-borders",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144
+      },
+      "status": "ok",
+      "ms": 146.949,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3,
+        "mean": 0.901799,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "63a8dd8ecbd5d8a1af13d34f513897c48d82ee2f06a2b8ec54add43bd7de6321",
+      "stderr_tail": "cleaned: 1000x144 -> 1000x144\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "cleanup-no-whiten",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144
+      },
+      "status": "ok",
+      "ms": 81.583,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3,
+        "mean": 0.590575,
+        "min": 0.0,
+        "max": 0.7176470588235294
+      },
+      "checksum": "32b4104c2a4a4904b7f24e44b976d45a511e74345a62701558f8ac70f8f3a95f",
+      "stderr_tail": "cleaned: 1000x144 -> 1000x144\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "cleanup-no-consensus",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144
+      },
+      "status": "ok",
+      "ms": 128.093,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3,
+        "mean": 0.901799,
+        "min": 0.0,
+        "max": 1.0
+      },
+      "checksum": "63a8dd8ecbd5d8a1af13d34f513897c48d82ee2f06a2b8ec54add43bd7de6321",
+      "stderr_tail": "cleaned: 1000x144 -> 1000x144\n",
+      "effect_vs_raw": "unavailable"
+    },
+    {
+      "fixture": "tests/regression/images/staff_tromr.jpg",
+      "stage": "dewarp",
+      "input_checksum": "cbdb731b3cf2d2d59ad9e5d66264b53aa378bec401490ae2e47145639b57d12c",
+      "input": {
+        "width": 1000,
+        "height": 144,
+        "channels": 3
+      },
+      "status": "ok",
+      "ms": 130.549,
+      "output": {
+        "width": 1000,
+        "height": 144,
+        "channels": 1,
+        "mean": 0.931114,
+        "min": 0.00784313725490196,
+        "max": 1.0
+      },
+      "checksum": "e4bd8686501d64e50347ad102fb4de0a602e8d8a04715c76563b3da5f9d0d873",
+      "stderr_tail": "",
+      "effect_vs_raw": "unavailable"
+    }
+  ],
+  "policy": "raw and each preprocessor are measured independently; missing stages are explicit"
+}
