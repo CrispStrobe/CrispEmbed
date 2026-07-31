@@ -137,6 +137,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     gguf_set_val_u32(ctx_out, "general.file_type", ftype);
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
+    const int arch_key = gguf_find_key(ctx_in, "general.architecture");
+    const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
+    if (is_ppocrv6) {
+        fprintf(stderr, "PP-OCRv6 precision policy: biases/SE/depthwise/early-head tensors stay F16/F32; CTC logits "
+                        "head is Q8_0 minimum\n");
+    }
 
     // CNN/face model detection: scan tensor names for known prefixes
     {
@@ -236,12 +242,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // and the depthwise convs (enc.st*.l*.dw) are reshaped to 4D in-engine, so
         // quantizing them yields an ne[0] not %32 → ggml_dup/cast abort. The
         // pointwise convs (pw1/pw2) are matmuls in-engine and quantize fine.
-        if (sname.find("patch_embed") != std::string::npos || sname.find("downsample") != std::string::npos ||
-            sname.find("downsampling") != std::string::npos || sname.find("dwconv") != std::string::npos ||
-            sname.find("enc.bb") != std::string::npos || sname.find("enc.proj") != std::string::npos ||
-            sname.find("enc.embed.patch") != std::string::npos || sname.find(".ds.conv") != std::string::npos ||
-            sname.find(".dw.") != std::string::npos || sname.find("positional") != std::string::npos ||
-            sname.find("merger") != std::string::npos) {
+        const bool ppocr_keep =
+            is_ppocrv6 &&
+            (sname.find(".bias") != std::string::npos || sname.find("normalization") != std::string::npos ||
+             sname.find("squeeze_excitation") != std::string::npos ||
+             sname.find("token_squeeze") != std::string::npos || sname.find("token_conv") != std::string::npos ||
+             sname.find(".se1.") != std::string::npos || sname.find(".se2.") != std::string::npos ||
+             sname.find(".dw.") != std::string::npos ||
+             (sname.find("head.") != std::string::npos && sname.find("head.fc2.weight") == std::string::npos));
+        if (ppocr_keep || sname.find("patch_embed") != std::string::npos ||
+            sname.find("downsample") != std::string::npos || sname.find("downsampling") != std::string::npos ||
+            sname.find("dwconv") != std::string::npos || sname.find("enc.bb") != std::string::npos ||
+            sname.find("enc.proj") != std::string::npos || sname.find("enc.embed.patch") != std::string::npos ||
+            sname.find(".ds.conv") != std::string::npos || sname.find(".dw.") != std::string::npos ||
+            sname.find("positional") != std::string::npos || sname.find("merger") != std::string::npos) {
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 #ifdef _WIN32
             _fseeki64(fin, (int64_t)off, SEEK_SET);
@@ -447,6 +461,18 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(lm-head→Q8_0) ");
+        }
+
+        // PP-OCRv6 CTC fc2 is the direct per-timestep logit projection.  It is
+        // the OCR equivalent of an LM head: Q4_K error can flip adjacent
+        // character ties and then CTC collapse turns that into visible text
+        // errors.  Q8_0 is still a substantial reduction and is the minimum
+        // precision accepted for the shipped aggressive quantizations.
+        const bool is_ppocr_logits = is_ppocrv6 && sname.find("head.fc2.weight") != std::string::npos;
+        if (quantize && is_ppocr_logits && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(ppocrv6-ctc-head→Q8_0) ");
         }
 
         // SMT OMR ConvNext encoder (encoder.encoder.stages.*.pwconv{1,2}) is the
