@@ -22,6 +22,8 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **IN PROGRESS** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -76,6 +78,13 @@ artifact. The next slice explicitly separates detector geometry from ordering:
 EasyOCR line grouping, Tesseract/LayoutLM word ordering, and one structured
 handoff contract. DBNet Python box/text parity and production orchestration
 remain pending.
+
+The reusable `easyocr_pipeline` now exposes the selected `lines` and `words`
+policies, runs native DBNet detection plus GPU-resident EasyOCR recognition,
+and returns text, detector/recognizer confidence, pixel boxes, reading-order
+metadata, and normalized LayoutLM boxes. The model-backed regression produces
+12 line records and 98 word records on `scan_strip.png`; Python box/text
+reference parity remains a separate pending gate.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -396,10 +405,13 @@ more than another restoration model.
    Tesseract-LSTM, and PARSeq line crops, and structured angle/confidence
    metadata is exposed per region. The learned classifier remains outstanding.
 
-5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
+5. **O10.5 — Learned page orientation.** **Model-free fallback implemented in
+   `feat/ppocr-next-20260731`;** port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
    configurable threshold. Never rotate VLM inputs implicitly unless the
-   caller enables the option, because VLM letterboxing is model-specific.
+   caller enables the option, because VLM letterboxing is model-specific. The
+   fallback exposes `crispembed_detect_page_orientation` and never rotates
+   input implicitly; a learned PP-LCNet classifier remains outstanding.
 
 6. **O10.6 — Shared crop preprocessing.** **Implemented in
    `feat/ppocr-next-20260731`;** consolidate classifier and
@@ -413,7 +425,9 @@ more than another restoration model.
    profiling to select render DPI, then apply page orientation and the normal
    document pipeline. Keep the existing parser-only path for minimal builds.
 
-8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate slice
+8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate and VLM
+   cleanup safeguard slices implemented in `feat/ppocr-next-20260731`;**
+   **benchmark accept-gate slice
    implemented in `feat/ppocr-next-20260731`;** make preprocessing selection
    evidence-based: classical cleanup for scans, no destructive cleanup for
    VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
@@ -422,7 +436,9 @@ more than another restoration model.
    beyond the configured tolerance. The benchmark now records input/output
    checksums and dimensions plus conservative helped/neutral/harmed/
    unavailable/error outcome labels; changed text without verified gold is
-   reported as unavailable rather than claimed as an improvement.
+   reported as unavailable rather than claimed as an improvement. Full-page
+   VLM stages now skip destructive cleanup unless a future explicit VLM
+   preprocessing override is added.
 
 #### Required benchmark output
 

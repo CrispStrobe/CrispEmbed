@@ -683,6 +683,55 @@ int detect_text_angle(const uint8_t * gray, int w, int h, float * confidence) {
     return score_normal >= score_flipped ? 0 : 180;
 }
 
+static double page_axis_score(const uint8_t * gray, int w, int h, bool quarter_turn) {
+    const int n = quarter_turn ? w : h;
+    const int span = quarter_turn ? h : w;
+    std::vector<int> counts(n, 0);
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            if (gray[y * w + x] >= 200) continue;
+            counts[quarter_turn ? x : y]++;
+        }
+    }
+    double mean = 0.0;
+    for (int value : counts) mean += value;
+    mean /= std::max(1, n);
+    double variance = 0.0;
+    for (int value : counts) {
+        const double d = value - mean;
+        variance += d * d;
+    }
+    // Normalize away page dimensions so confidence is comparable across
+    // portrait/landscape inputs.
+    return variance / std::max(1.0, (double)n * span * span);
+}
+
+int detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence) {
+    if (confidence) *confidence = 0.0f;
+    if (!gray || w < 20 || h < 20) return 0;
+    const double horizontal = page_axis_score(gray, w, h, false);
+    const double vertical = page_axis_score(gray, w, h, true);
+    const bool quarter_turn = vertical > horizontal;
+    const double best_axis = std::max(horizontal, vertical);
+    const double second_axis = std::min(horizontal, vertical);
+    float angle_conf = 0.0f;
+    int angle = detect_text_angle(gray, w, h, &angle_conf);
+    if (quarter_turn) {
+        std::vector<uint8_t> rotated((size_t)w * h);
+        for (int y = 0; y < h; y++)
+            for (int x = 0; x < w; x++) rotated[(size_t)x * h + (h - 1 - y)] = gray[(size_t)y * w + x];
+        float rotated_conf = 0.0f;
+        const int rotated_angle = detect_text_angle(rotated.data(), h, w, &rotated_conf);
+        angle = rotated_angle == 180 ? 270 : 90;
+        angle_conf = rotated_conf;
+    }
+    if (confidence) {
+        const double axis_margin = best_axis > 1e-9 ? (best_axis - second_axis) / best_axis : 0.0;
+        *confidence = (float)(0.5 * axis_margin + 0.5 * std::min(1.0f, angle_conf));
+    }
+    return angle;
+}
+
 // =========================================================================
 // 8. TPS spatial transformer (learned dewarping)
 // =========================================================================

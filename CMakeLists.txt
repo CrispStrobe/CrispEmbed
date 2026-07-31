@@ -205,6 +205,7 @@ list(APPEND CRISPEMBED_SOURCES src/ppocrv6_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_det.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_layout.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_craft.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
@@ -400,6 +401,9 @@ target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
 
 add_executable(test-easyocr-layout tests/test_easyocr_layout.cpp)
 target_link_libraries(test-easyocr-layout PRIVATE crispembed)
+
+add_executable(test-easyocr-pipeline tests/test_easyocr_pipeline.cpp)
+target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
 
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
