@@ -110,8 +110,9 @@ int main(int argc, char ** argv) {
             }
             int out_len = 0;
             const char * text = easyocr_ocr_recognize(rec, crop.data(), ow, oh, 3, &out_len);
-            std::printf("dbnet-easyocr line=%zu box=%.1f,%.1f %.1fx%.1f text=%.*s\n", i, line.x0, line.y0,
-                        line.x1 - line.x0, line.y1 - line.y0, out_len, text ? text : "");
+            std::printf("dbnet-easyocr unit=%zu box=%.1f,%.1f %.1fx%.1f rec_conf=%.4f text=%.*s\n", i, line.x0, line.y0,
+                        line.x1 - line.x0, line.y1 - line.y0, easyocr_ocr_last_confidence(rec), out_len,
+                        text ? text : "");
         }
         if (lines.empty()) rc = 5;
     }

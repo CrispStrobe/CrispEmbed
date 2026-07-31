@@ -39,6 +39,7 @@ struct easyocr_ocr_context {
     std::vector<std::string> tokens;
     std::vector<float> input_host;
     std::string result;
+    float last_confidence = 0.0f;
 };
 
 static ggml_tensor * req(easyocr_ocr_context * c, const char * name) {
@@ -298,16 +299,33 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     std::vector<float> logits((size_t)c->classes * c->time_steps);
     ggml_backend_tensor_get(c->logits, logits.data(), 0, logits.size() * sizeof(float));
     c->result.clear();
+    c->last_confidence = 0.0f;
     int prev = 0;
     for (int t = 0; t < c->time_steps; ++t) {
+        float max_logit = logits[(size_t)t * c->classes];
+        for (int k = 1; k < c->classes; ++k) max_logit = std::max(max_logit, logits[(size_t)t * c->classes + k]);
+        float sum_exp = 0.0f;
+        for (int k = 0; k < c->classes; ++k) sum_exp += std::exp(logits[(size_t)t * c->classes + k] - max_logit);
+        float best_probability = 0.0f;
         int best = 0;
-        for (int k = 1; k < c->classes; ++k)
-            if (logits[(size_t)t * c->classes + k] > logits[(size_t)t * c->classes + best]) best = k;
+        for (int k = 0; k < c->classes; ++k) {
+            const float probability = std::exp(logits[(size_t)t * c->classes + k] - max_logit) / sum_exp;
+            if (probability > best_probability) {
+                best_probability = probability;
+                best = k;
+            }
+        }
+        c->last_confidence += best_probability;
         if (best && best != prev && best < (int)c->tokens.size()) c->result += c->tokens[(size_t)best];
         prev = best;
     }
+    c->last_confidence /= std::max(1, c->time_steps);
     if (out_len) *out_len = (int)c->result.size();
     return c->result.c_str();
+}
+
+float easyocr_ocr_last_confidence(const easyocr_ocr_context * c) {
+    return c ? c->last_confidence : 0.0f;
 }
 
 static bool copy_graph_tensor(ggml_cgraph * graph, const char * name, std::vector<float> & raw,
