@@ -152,6 +152,14 @@ recognizer and LayoutLM consumer.
       compare page segmentation/spacing independently.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the actual reference run and stage/output parity remain open.
+- [x] Align the diagnostic reference dumper's resize contract with native
+      half-pixel bilinear uint8 rounding; full Tesseract page preprocessing
+      parity remains a separate acceptance gate.
+- [x] Run the exact hashed Homebrew English diagnostic reference: decoded
+      native/Python output agrees (`a`), input cosine is `0.999658`, and all
+      9 captured stages pass the agreed `0.99` gate with mine/ref magnitude
+      reports; BiLSTM stages 1/2 remain below the stricter `0.999` review
+      threshold and are not claimed exact.
 - [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
       languages, then run GPU performance A/B.
 

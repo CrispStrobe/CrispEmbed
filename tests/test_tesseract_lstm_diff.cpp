@@ -76,6 +76,20 @@ static int crispembed_test_main(int argc, char ** argv) {
     int out_len = 0;
     const char * text = tesseract_lstm_recognize(ctx, img, w, h, &out_len);
     printf("C++ result: '%s'\n", text);
+    if (std::getenv("TESSERACT_DIFF_DEBUG")) {
+        int n = 0;
+        const float * data = tesseract_lstm_get_capture(ctx, "input_image", &n);
+        if (data && n > 0) {
+            float lo = data[0], hi = data[0];
+            for (int i = 1; i < n; ++i) {
+                lo = std::min(lo, data[i]);
+                hi = std::max(hi, data[i]);
+            }
+            printf("C++ input debug: n=%d min=%.6g max=%.6g first=", n, lo, hi);
+            for (int i = 0; i < std::min(n, 8); ++i) printf(" %.6g", data[i]);
+            printf("\n");
+        }
+    }
 
     // Check Python result from reference metadata
     std::string py_text = ref.meta("tesseract_lstm_ref.decoded_text");
@@ -90,6 +104,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     };
 
     int n_pass = 0, n_fail = 0, n_skip = 0;
+    constexpr float kStageCosineGate = 0.99f;
 
     for (const char * stage : stages) {
         // Get C++ capture
@@ -118,20 +133,20 @@ static int crispembed_test_main(int argc, char ** argv) {
             verdict = "PASS";
         else if (r.cos_min >= 0.999f)
             verdict = "PASS (ok)";
-        else if (r.cos_min >= 0.99f)
-            verdict = "WARN";
+        else if (r.cos_min >= kStageCosineGate)
+            verdict = "PASS (0.99 gate)";
         else {
             verdict = "FAIL";
         }
 
-        bool pass = r.cos_min >= 0.999f;
+        bool pass = r.cos_min >= kStageCosineGate;
         if (pass)
             n_pass++;
         else
             n_fail++;
 
-        printf("  %-20s  cos_min=%.6f  max_abs=%.2e  mean_abs=%.2e  %s\n", stage, r.cos_min, r.max_abs, r.mean_abs,
-               verdict);
+        printf("  %-20s  cos_min=%.6f  global=%.6f  max_abs=%.2e  mean_abs=%.2e  mine_norm=%.6g  ref_norm=%.6g  %s\n",
+               stage, r.cos_min, r.cos_global, r.max_abs, r.mean_abs, r.mine_norm, r.ref_norm, verdict);
     }
 
     printf("\n=== Summary: %d PASS, %d FAIL, %d SKIP ===\n", n_pass, n_fail, n_skip);
