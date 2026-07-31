@@ -150,6 +150,8 @@ recognizer and LayoutLM consumer.
 - [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
       its `-ref.gguf`, pass all captured stages and decoded line output, then
       compare page segmentation/spacing independently.
+- [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
+      metadata; the actual reference run and stage/output parity remain open.
 - [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
       languages, then run GPU performance A/B.
 

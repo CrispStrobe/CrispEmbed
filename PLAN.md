@@ -221,6 +221,9 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
       its `-ref.gguf`, pass all captured stages and decoded line output, then
       compare page segmentation/spacing independently.
+- [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
+      GGUF metadata and dumped reference GGUF metadata; the actual reference
+      run and stage/output parity remain open.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
