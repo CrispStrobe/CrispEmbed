@@ -435,8 +435,8 @@ downstream handoff parity, not detector-box similarity alone.
       the CLI result. An initial implementation is opt-in via
       `CRISPEMBED_TESSERACT_INT8=1`; it uses row-wise symmetric int8 weights
       and per-vector activation scales. On the official full-page fixture it
-      produced 1,016 characters in 18.8 s versus the current F32-math path's
-      1,017 characters in 11.1 s, and its direct logits are not parity-safe.
+      produced 1,016 characters in 9.8 s versus the current F32-math path's
+      1,017 characters in 11.1 s, but its direct logits are not parity-safe.
       It must not become the default; exact Tesseract int-mode scales/kernels
       are still required.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
