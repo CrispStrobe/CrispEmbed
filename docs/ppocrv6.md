@@ -29,7 +29,9 @@ The converter folds inference BatchNorm into convolution weights. PP-OCRv6's
 policy-q4 deployment files intentionally retain the complete detector or
 recognizer graph in F16: quantizing intermediate CNN/SVTR weights compounds
 error through the CTC path and fails parity. The policy therefore prioritizes
-quality over file-size reduction for these compact models.
+quality over file-size reduction for these compact models. In the published
+F16 artifacts, the detector/recognizer output head is additionally retained
+in F32 because it is the most sensitive part of the DB/CTC decision boundary.
 
 F32 small/medium conversions match the native reference through logits, while
 the published F16 artifacts accumulate measurable drift through repeated
