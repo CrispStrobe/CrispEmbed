@@ -1,10 +1,11 @@
 #include "ppocrv6_ocr.h"
+#include "core/clean_exit.h"
 
 #include "../ggml/examples/stb_image.h"
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char ** argv) {
+static int run(int argc, char ** argv) {
     if (argc != 3) {
         std::fprintf(stderr, "usage: %s MODEL IMAGE\n", argv[0]);
         return 2;
@@ -23,4 +24,8 @@ int main(int argc, char ** argv) {
     ppocrv6_ocr_free(ctx);
     stbi_image_free(pixels);
     return text ? 0 : 5;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(run(argc, argv));
 }
