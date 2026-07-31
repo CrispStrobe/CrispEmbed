@@ -4,9 +4,10 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Status: English Gen-2 graph and diff fixture pass the agreed 0.99 cosine
-  gate in F32 and folded-F16 forms; decoded output is `5a`
-- Next: generalize the validated graph to all recognizers, then port detectors
+- Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
+  cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
+  `=#4#4#` respectively
+- Next: validate remaining VGG/ResNet recognizers, then port detectors
 
 ## Scope
 
@@ -61,8 +62,8 @@ metadata, not learned parameters.
 - [x] Remove VGG graph hardcodes for feature channels and sequence width;
       derive them from the built CNN tensor and GGUF metadata.
 - [x] Add the Gen1 ResNet converter BatchNorm folding and residual graph path;
-      checkpoint conversion and per-stage parity remain to be run against a
-      real Gen1 asset.
+      convert the real Latin Gen-1 release checkpoint, generate its Python
+      `-ref.gguf`, and pass all captured stages at the 0.99 gate.
 - [ ] Implement the recognizer as reusable ggml graphs on CPU/Metal/CUDA/
       Vulkan, including GPU-resident CNN + BiLSTM and CTC logits. A CPU-scalar
       forward is permitted only as a temporary diagnostic oracle, not as the

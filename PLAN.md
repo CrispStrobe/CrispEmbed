@@ -45,8 +45,9 @@ English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
 The VGG graph now derives feature channels and sequence width dynamically for
 the remaining VGG recognizer variants.
-Gen1 ResNet naming/folding and its residual graph path are now present; real
-Gen1 checkpoint conversion and reference parity remain pending.
+Gen1 ResNet naming/folding and its residual graph path now pass a real Latin
+Gen-1 checkpoint through conversion, Python reference dumping, per-stage
+`crispembed-diff` (including magnitudes), and decoded-output parity (`=#4#4#`).
 
 This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
 ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each
