@@ -9,6 +9,7 @@ struct result {
     int angle = 0;
     float confidence = 0.0f;
     float probabilities[2] = {};
+    float logits[2] = {};
 };
 
 struct context;
