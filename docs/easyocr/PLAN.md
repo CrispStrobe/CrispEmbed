@@ -162,6 +162,14 @@ recognizer and LayoutLM consumer.
       receipt crop that previously failed at `after_conv_fc` now passes all
       9 diff stages at cosine `1.000000`; native/Python raw greedy output is
       still distinct from the CLI's normal choice-search output.
+- [x] Trace the remaining CLI discrepancy: the exact Homebrew model carries
+      `training_flags=65` (`TF_INT_MODE` enabled). Tesseract CLI therefore
+      quantizes activations and per-output weight rows to int8 before its
+      recode beam; our current F32 graph is not expected to reproduce those
+      logits. Metadata now preserves the flag in both GGUF and references.
+- [ ] Implement and diff int8-equivalent inference first; only then add an
+      optional Tesseract-style recode/dictionary beam. A generic CTC prefix
+      beam over current F32 logits still selects `Drighton`.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages

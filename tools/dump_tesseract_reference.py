@@ -551,7 +551,7 @@ def main():
 
     # Read LSTMRecognizer metadata
     vgsl = r.read_string()
-    _ = r.read_i32()  # training_flags
+    training_flags = r.read_i32()
     _ = r.read_i32()  # training_iteration
     _ = r.read_i32()  # sample_iteration
     null_char = r.read_i32()
@@ -635,6 +635,8 @@ def main():
     writer.add_string("general.name", "tesseract-lstm-reference")
     writer.add_string("tesseract_lstm_ref.model_path", str(args.model))
     writer.add_string("tesseract_lstm_ref.model_sha256", source_sha256)
+    writer.add_uint32("tesseract_lstm_ref.training_flags", training_flags)
+    writer.add_bool("tesseract_lstm_ref.int_mode", bool(training_flags & 1))
     writer.add_string("tesseract_lstm_ref.resize", "leptonica_pixScaleGrayLI_fixed16_u8_round")
     writer.add_string("tesseract_lstm_ref.image_path", str(args.image))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)

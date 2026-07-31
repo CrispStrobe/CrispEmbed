@@ -520,6 +520,8 @@ def main():
     writer.add_string("general.source",
                       "https://github.com/tesseract-ocr/tessdata_best")
     writer.add_string("tesseract_lstm.source_sha256", source_sha256)
+    writer.add_uint32("tesseract_lstm.training_flags", training_flags)
+    writer.add_bool("tesseract_lstm.int_mode", bool(training_flags & 1))
 
     # Network hyperparameters
     writer.add_string("tesseract_lstm.vgsl_spec", vgsl_spec)
