@@ -58,6 +58,8 @@ metadata, not learned parameters.
 - [x] Fix the current graph/output divergence before model-family
       generalization; accept per-stage cosine >= 0.99 and inspect global
       cosine plus mine/ref magnitudes for sparse CNN captures.
+- [x] Remove VGG graph hardcodes for feature channels and sequence width;
+      derive them from the built CNN tensor and GGUF metadata.
 - [ ] Implement the recognizer as reusable ggml graphs on CPU/Metal/CUDA/
       Vulkan, including GPU-resident CNN + BiLSTM and CTC logits. A CPU-scalar
       forward is permitted only as a temporary diagnostic oracle, not as the
