@@ -171,6 +171,16 @@ struct result {
     int stages_tried = 0;
     std::string detected_lang; // ISO 639-1 code from LID ("" if no LID)
     float lang_confidence = 0.0f;
+    struct stage_metric {
+        int index = 0;
+        std::string engine;
+        float elapsed_ms = 0.0f;
+        bool cleanup_applied = false;
+        bool accepted = false;
+        int text_chars = 0;
+        float mean_confidence = 0.0f;
+    };
+    std::vector<stage_metric> stage_metrics;
 };
 
 struct context;

@@ -705,6 +705,20 @@ CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int
 /// Lightweight Markdown export from the most recent pipeline run.
 CRISPEMBED_API const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len);
 
+typedef struct crispembed_ocr_stage_metric {
+    int index;
+    const char * engine;
+    float elapsed_ms;
+    int cleanup_applied;
+    int accepted;
+    int text_chars;
+    float mean_confidence;
+} crispembed_ocr_stage_metric;
+
+/// Per-stage metrics from the most recent pipeline run. The array is owned by
+/// the pipeline context and is valid until its next run/free call.
+CRISPEMBED_API const crispembed_ocr_stage_metric * crispembed_ocr_pipeline_stage_metrics(void * ctx, int * out_n);
+
 /// Get the detected language from the last pipeline run (via LID).
 /// Returns ISO 639-1 code (e.g. "en", "de") or "" if LID not configured.
 /// confidence is written to *out_confidence if non-NULL.

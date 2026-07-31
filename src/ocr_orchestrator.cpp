@@ -1353,6 +1353,7 @@ result run_file(context * ctx, const char * image_path) {
     best.layout = layout_regions;
 
     int tried = 0;
+    std::vector<result::stage_metric> stage_metrics;
     for (const stage & s : ch->stages) {
         if (!s.enabled) continue;
         tried++;
@@ -1414,10 +1415,14 @@ result run_file(context * ctx, const char * image_path) {
 
         if (!tmp.empty()) std::remove(tmp.c_str());
 
+        const float stage_ms =
+            (float)std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_stage).count();
         bool passed = passes_gate(r, s.accept);
+        stage_metrics.push_back({ tried, engine_name(s.eng), stage_ms, stage_cleanup.enabled, passed,
+                                  (int)r.full_text.size(), r.mean_confidence });
+        r.stage_metrics = stage_metrics;
         if (bench) {
-            double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_stage).count();
-            fprintf(stderr, "[ocr_orch-bench] stage %d (%s): %.1f ms, gate=%s\n", tried, engine_name(s.eng), ms,
+            fprintf(stderr, "[ocr_orch-bench] stage %d (%s): %.1f ms, gate=%s\n", tried, engine_name(s.eng), stage_ms,
                     passed ? "PASS" : "FAIL");
         }
         if (verbose)
@@ -1461,6 +1466,7 @@ result run_file(context * ctx, const char * image_path) {
         if (r.full_text.size() > best.full_text.size()) best = std::move(r);
     }
     if (!sr_path.empty()) std::remove(sr_path.c_str());
+    best.stage_metrics = std::move(stage_metrics);
 
     if (verbose)
         fprintf(stderr, "ocr_orchestrator: all %d stages failed gate, returning best (%d chars)\n", tried,
