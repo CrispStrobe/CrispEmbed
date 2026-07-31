@@ -55,6 +55,7 @@
 #include "../ggml/examples/stb_image_write.h"
 
 #include <atomic>
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
