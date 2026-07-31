@@ -13,8 +13,13 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** CRAFT decoded box postprocessing parity (104 native vs 106 Python); full EasyOCR detector + recognizer port | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
+
+EasyOCR checkpoint: the initial CRAFT detector graph now passes its Python
+reference input, VGG taps, U-Net feature map, and NHWC score-map boundary on
+CPU and Metal; decoded boxes and DBNet remain pending.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -26,6 +31,27 @@ races). Remove the row when the branch lands.
 > still **pending**.
 
 ## OCR pipeline workstream — actionable items
+
+### EasyOCR / LayoutLM compatibility — IN PROGRESS
+
+- Port all EasyOCR detector assets (CRAFT, DBNet18, DBNet50) and all shipped
+  Gen-1/Gen-2 CRNN recognizers through the GGUF → `-ref.gguf` →
+  `crispembed-diff` → decoded-output protocol.
+- Preserve per-artifact source/license metadata; do not infer a fine-tuned
+  checkpoint's license solely from its backbone.
+- Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
+  words and normalized boxes. Transformers' `apply_ocr=True` path uses
+  PyTesseract; LayoutLM is not itself an OCR checkpoint.
+- Acceptance requires reference parity, decoded text, and real pipeline output
+  checks before quantization or registry integration.
+
+English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
+0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
+The VGG graph now derives feature channels and sequence width dynamically for
+the remaining VGG recognizer variants.
+Gen1 ResNet naming/folding and its residual graph path now pass a real Latin
+Gen-1 checkpoint through conversion, Python reference dumping, per-stage
+`crispembed-diff` (including magnitudes), and decoded-output parity (`=#4#4#`).
 
 This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
 ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each
