@@ -28,9 +28,10 @@ from safetensors import safe_open
 
 def _fuse(w: np.ndarray, b: np.ndarray | None, gamma: np.ndarray,
           beta: np.ndarray, mean: np.ndarray, var: np.ndarray,
-          eps: float) -> tuple[np.ndarray, np.ndarray]:
+          eps: float, channel_axis: int = 0) -> tuple[np.ndarray, np.ndarray]:
     scale = gamma / np.sqrt(var + eps)
-    shape = (scale.shape[0],) + (1,) * (w.ndim - 1)
+    shape = [1] * w.ndim
+    shape[channel_axis] = scale.shape[0]
     centered_bias = (np.zeros_like(mean) if b is None else b) - mean
     return w * scale.reshape(shape), centered_bias * scale + beta
 
@@ -117,9 +118,13 @@ def main() -> None:
         norm = stem + ("normalization." if stem + "normalization.weight" in data else "norm.")
         if all(norm + x in data for x in ("weight", "bias", "running_mean", "running_var")):
             bias_name = stem + "convolution.bias"
+            # Paddle Conv2DTranspose kernels are [in, out, kh, kw], while
+            # ordinary convolutions are [out, in, kh, kw].  Its BN therefore
+            # scales axis 1, not axis 0.
+            transpose_bn = "head.conv_up.convolution.weight" in name
             w, b = _fuse(value, data.get(bias_name), data[norm + "weight"],
                          data[norm + "bias"], data[norm + "running_mean"],
-                         data[norm + "running_var"], eps)
+                         data[norm + "running_var"], eps, 1 if transpose_bn else 0)
             fused[name] = w
             fused[bias_name] = b
             consumed.update({name, bias_name, norm + "weight", norm + "bias",

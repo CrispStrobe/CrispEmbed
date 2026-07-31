@@ -124,15 +124,26 @@ def main():
         stem_values["block0_pool"] = se_pool
         stem_values["block0_gate"] = se_gate
         block = block * se_gate
+        block_residual = block
         stem_values["block0_se"] = block
         block = block0.channel_conv1(block)
         block = block0.channel_act_fn(block)
         stem_values["block0_cm1"] = block
-        block = block0.channel_conv2(block) + embedding
+        block = block0.channel_conv2(block) + block_residual
         stem_values["block0_out"] = block
         backbone = model.model.backbone(tensor)
         neck = model.model.neck(backbone)
-        out = model.head(neck)
+        head_down = model.head.conv_down(neck)
+        head_up_pre = model.head.conv_up.convolution(head_down)
+        head_up = model.head.conv_up(head_down)
+        head_final_pre = model.head.conv_final(head_up)
+        head_final = head_final_pre
+        stem_values["head_up_pre"] = head_up_pre
+        stem_values["head_final_pre"] = head_final_pre
+        stem_values["head_down"] = head_down
+        stem_values["head_up"] = head_up
+        stem_values["head_final"] = head_final
+        out = paddle.nn.functional.sigmoid(head_final)
     out = np.asarray(out, dtype="float32")[0, 0]
     writer = gguf.GGUFWriter(str(args.output), arch="ppocrv6")
     writer.add_string("general.name", f"PP-OCRv6_{variant}_det-reference")
