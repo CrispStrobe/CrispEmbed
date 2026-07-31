@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "engines": [
+    {"name":"PARSeq","lane":"scene-text-line","runtime":"parseq_ocr","fixture":"fox.png","status":"runnable"},
+    {"name":"DBNet + TrOCR","lane":"document","runtime":"ocr_pipeline","fixture":"fox.png","status":"runnable"},
+    {"name":"Tesseract-LSTM","lane":"document-line-crop","runtime":"ocr_orchestrator","fixture":"fox.png","status":"runnable"},
+    {"name":"PP-FormulaNet-L","lane":"printed-math","runtime":"ppformulanet_l_ocr","fixture":"formula_quadratic.png","status":"runnable"},
+    {"name":"MixTeX","lane":"printed-math","runtime":"mixtex_ocr","fixture":"mixtex_pow.png","status":"runnable"},
+    {"name":"Texo-Distill","lane":"printed-math","runtime":"ppformulanet_ocr","fixture":"formula_quadratic.png","status":"runnable"},
+    {"name":"PosFormer","lane":"handwritten-math","runtime":"posformer_ocr","fixture":"formula_quadratic.png","status":"runnable"},
+    {"name":"BTTR","lane":"handwritten-math","runtime":"bttr_ocr","fixture":"formula_quadratic.png","status":"runnable"},
+    {"name":"HMER","lane":"handwritten-math","runtime":"hmer_ocr","fixture":"formula_quadratic.png","status":"runnable"},
+    {"name":"SMT","lane":"omr-staff","runtime":"smt_ocr","fixture":"staff_smt.png","status":"runnable"},
+    {"name":"SMT++ full-page","lane":"omr-full-page","runtime":"smt_ocr","fixture":"page_transcoda.png","status":"model-needed"},
+    {"name":"Polyphonic-TrOMR","lane":"omr-photo","runtime":"tromr_ocr","fixture":"staff_tromr.jpg","status":"model-needed"},
+    {"name":"Flova/omr_transformer","lane":"omr-handwritten","runtime":"flova_ocr","fixture":"staff_flova.png","status":"runnable"},
+    {"name":"Transcoda-59M","lane":"omr-full-page","runtime":"transcoda_ocr","fixture":"page_transcoda.png","status":"model-needed"},
+    {"name":"GOT-OCR2","lane":"full-page-vlm","runtime":"got_ocr","fixture":"fox.png","status":"runnable"},
+    {"name":"GLM-OCR","lane":"full-page-vlm","runtime":"glm_ocr","fixture":"fox.png","status":"runnable"},
+    {"name":"InternVL2/2.5","lane":"full-page-vlm","runtime":"internvl2_ocr","fixture":"fox.png","status":"runnable"},
+    {"name":"Qwen2.5-VL/Qwen3-VL","lane":"full-page-vlm","runtime":"qwen2vl_ocr","fixture":"fox.png","status":"model-needed"},
+    {"name":"DeepSeek-OCR-2","lane":"full-page-vlm","runtime":"deepseek_ocr2","fixture":"fox.png","status":"model-needed"},
+    {"name":"Unlimited-OCR","lane":"full-page-vlm-layout","runtime":"unlimited_ocr","fixture":"fox.png","status":"runnable","note":"M1 Metal live run succeeded from the system volume: 45,967 ms total, two regions, complete fox text."},
+    {"name":"SmolDocling","lane":"full-page-doc-tags","runtime":"smoldocling_ocr","fixture":"fox.png","status":"runnable"},
+    {"name":"Qari-OCR","lane":"arabic-vlm","runtime":"qwen2vl_ocr","fixture":"cc0/arabic_handwriting.jpg","status":"model-needed"},
+    {"name":"PP-OCRv6","lane":"document-det-rec","runtime":"metadata-dispatch","fixture":"fox.png","status":"runnable","note":"PP-OCRv6 tiny/small/medium detector + Q8-head recognizer live regressions pass through the public detector/recognizer C API."}
+  ]
+}
