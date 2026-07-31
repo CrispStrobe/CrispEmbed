@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import subprocess
 import struct
 import sys
@@ -512,6 +513,8 @@ def main():
 
     # ── Parse traineddata ─────────────────────────────────────────────
     data = Path(args.model).read_bytes()
+    source_sha256 = hashlib.sha256(data).hexdigest()
+    print(f"Source SHA-256: {source_sha256}")
     comps = parse_traineddata(data)
     tokens = parse_unicharset(comps["lstm-unicharset"]) if "lstm-unicharset" in comps else []
     recoder = parse_recoder(comps["lstm-recoder"]) if "lstm-recoder" in comps else []
@@ -607,6 +610,7 @@ def main():
 
     writer.add_string("general.name", "tesseract-lstm-reference")
     writer.add_string("tesseract_lstm_ref.model_path", str(args.model))
+    writer.add_string("tesseract_lstm_ref.model_sha256", source_sha256)
     writer.add_string("tesseract_lstm_ref.image_path", str(args.image))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)
     writer.add_uint32("tesseract_lstm_ref.input_height", input_height)
