@@ -60,6 +60,17 @@ bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height) {
     return orient_180_gray_info(pixels, width, height).corrected;
 }
 
+void rotate_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
+    if (width <= 0 || height <= 0 || pixels.size() != (size_t)width * height * 3) return;
+    for (int y = 0; y < (height + 1) / 2; ++y)
+        for (int x = 0; x < width; ++x) {
+            const size_t a = ((size_t)y * width + x) * 3;
+            const size_t b = ((size_t)(height - 1 - y) * width + (width - 1 - x)) * 3;
+            if (a >= b) continue;
+            for (int c = 0; c < 3; ++c) std::swap(pixels[a + c], pixels[b + c]);
+        }
+}
+
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,
                              int crop_h, int padding, int * out_width, int * out_height) {
     if (out_width) *out_width = 0;
