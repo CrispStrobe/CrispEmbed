@@ -27,6 +27,8 @@
 #include "tesseract_lstm.h"
 #include "parseq_ocr.h"
 #include "ocr_detect.h"
+#include "ppocrv6_det.h"
+#include "ppocrv6_ocr.h"
 #include "table_parse.h"
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
@@ -81,6 +83,8 @@ struct context {
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
+    ppocrv6_det::context * ppdet = nullptr;    // PP-OCRv6 detector
+    ppocrv6_ocr_context * pprec = nullptr;     // PP-OCRv6 recognizer
     layout_detect::context * layout = nullptr; // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
@@ -358,6 +362,48 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                                          st.params.det_box_threshold, st.params.det_target_short, &geometry);
         return ocr_pipeline::run_file(ctx->dbnet, path, st.params.det_prob_threshold, st.params.det_box_threshold,
                                       st.params.det_target_short, &geometry);
+    }
+    case engine::ppocrv6: {
+        if (st.model_a.empty() || st.model_b.empty()) {
+            fprintf(stderr, "ocr_orchestrator: ppocrv6 stage missing models (model_a=det, model_b=rec)\n");
+            return {};
+        }
+        if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
+        if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
+        if (!ctx->ppdet || !ctx->pprec) return {};
+        auto boxes = (px && pw > 0 && ph > 0)
+                         ? ppocrv6_det::detect_raw(ctx->ppdet, px, pw, ph, 3, st.params.det_prob_threshold)
+                         : ppocrv6_det::detect_file(ctx->ppdet, path, st.params.det_prob_threshold);
+        if (boxes.empty()) return {};
+        int w = pw, h = ph;
+        std::vector<uint8_t> owned;
+        const unsigned char * rgb = px;
+        if (!rgb) {
+            int c = 0;
+            rgb = stbi_load(path, &w, &h, &c, 3);
+            owned.assign(rgb, rgb ? rgb + (size_t)w * h * 3 : nullptr);
+            if (rgb) stbi_image_free((void *)rgb);
+            rgb = owned.data();
+        }
+        if (!rgb || w <= 0 || h <= 0) return {};
+        std::vector<ocr_pipeline::ocr_result> results;
+        for (const auto & b : boxes) {
+            int cw = 0, ch = 0;
+            auto crop = ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
+            if (crop.empty()) continue;
+            const bool orientation_corrected = ocr_crop::orient_180_rgb(crop, cw, ch);
+            int len = 0;
+            const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
+            if (!text || len <= 0) continue;
+            ocr_pipeline::ocr_result r;
+            r.box = { b.x, b.y, b.w, b.h, b.score };
+            r.text.assign(text, (size_t)len);
+            r.confidence = b.score;
+            r.rec_confidence = b.score;
+            r.orientation_corrected = orientation_corrected;
+            results.push_back(std::move(r));
+        }
+        return results;
     }
     case engine::got: {
         if (!ctx->got) {
@@ -1172,6 +1218,8 @@ static const char * engine_name(engine e) {
     switch (e) {
     case engine::dbnet_trocr:
         return "dbnet_trocr";
+    case engine::ppocrv6:
+        return "ppocrv6";
     case engine::surya:
         return "surya";
     case engine::got:
@@ -1409,6 +1457,8 @@ result run_file(context * ctx, const char * image_path) {
 void free(context * ctx) {
     if (!ctx) return;
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
+    if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
+    if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
     if (ctx->layout) layout_detect::free(ctx->layout);
     if (ctx->table) table_parse_free(ctx->table);
     if (ctx->formula) ppformulanet_ocr_free(ctx->formula);

@@ -40,6 +40,7 @@ namespace ocr_orchestrator {
 // in this repo; `dbnet_trocr` is the general `ocr_pipeline` (detect+recognize).
 enum class engine {
     dbnet_trocr,    // ocr_pipeline.cpp  (DBNet detection + TrOCR recognition)
+    ppocrv6,        // PP-OCRv6 detector + recognizer
     surya,          // surya_det.cpp + recognizer
     qwen2vl,        // qwen2vl_ocr.cpp   (VLM)
     got,            // got_ocr.cpp

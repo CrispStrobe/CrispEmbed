@@ -41,6 +41,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -93,13 +94,40 @@ def hf_download(repo: str, file_in_repo: str, revision: str, dest_dir: Path,
                 optional: bool = False):
     """Download one file at a pinned revision. Return Path, or None if
     `optional` and the file/repo is absent (404)."""
+    # The regression runner may execute in a read-only sandbox where the
+    # process-wide /tmp is unavailable. Keep hub staging beside the external
+    # artifact cache instead.
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    # The HF/Xet client concatenates TMPDIR with a generated filename in one
+    # path. Keep the separator explicit; without it a sandbox path such as
+    # /tmp/crispembed-regression becomes /tmpcrispembed-regressionXXXX.
+    tmp_root = str(dest_dir) + os.sep
+    os.environ["TMPDIR"] = tmp_root
+    import tempfile
+    tempfile.tempdir = tmp_root
+    # Override inherited cache locations as well. CI runners can export a
+    # read-only /tmp cache, and huggingface_hub's symlink probe then creates
+    # malformed paths such as /tmpXXXX.
+    os.environ["HF_HOME"] = str(dest_dir / ".hf")
+    os.environ["HF_HUB_CACHE"] = str(dest_dir / ".hf" / "hub")
+    os.environ["HUGGINGFACE_HUB_CACHE"] = str(dest_dir / ".hf" / "hub")
+    os.environ["HF_XET_CACHE"] = str(dest_dir / ".hf" / "xet")
     from huggingface_hub import hf_hub_download
     from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
     token = os.environ.get("HF_TOKEN")
     try:
-        return Path(hf_hub_download(
+        # Download into the hub cache and copy the resolved blob into the
+        # regression directory.  Using ``local_dir`` makes huggingface_hub
+        # probe symlink support against the common parent (often /tmp), which
+        # is read-only in some CI/sandbox environments.
+        cached = Path(hf_hub_download(
             repo_id=repo, filename=file_in_repo, revision=revision,
-            local_dir=str(dest_dir), token=token))
+            cache_dir=str(dest_dir / ".hf" / "hub"), token=token))
+        target = dest_dir / file_in_repo
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if cached.resolve() != target.resolve():
+            shutil.copyfile(cached, target)
+        return target
     except (EntryNotFoundError, RepositoryNotFoundError) as e:
         if optional:
             print(f"  (optional artifact absent on HF: {repo}/{file_in_repo}) — skipping")
@@ -222,11 +250,17 @@ def detect_garbage(text: str, min_len: int = 12) -> str | None:
 
 # ── OCR run ──────────────────────────────────────────────────────────
 def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
-            timeout: int = 900) -> str:
+            timeout: int = 900, detector: Path | None = None) -> str:
     if not bin_path.exists():
         die(f"crispembed binary not found: {bin_path}")
-    cmd = [str(bin_path), "-m", str(gguf), "--ocr", str(image), *extra_args]
-    proc = subprocess.run(cmd, capture_output=True, text=True,
+    cmd = [str(bin_path), "-m", str(gguf)]
+    if detector is not None:
+        cmd += ["--ocr-det", str(detector), "--ocr-rec", str(gguf)]
+    cmd += ["--ocr", str(image), *extra_args]
+    # OCR may emit arbitrary model-derived bytes for an invalid/untrained
+    # character sequence.  The regression guard must inspect that output and
+    # report it, rather than crashing while decoding the child pipe as UTF-8.
+    proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace",
                           check=False, timeout=timeout)
     if proc.returncode != 0:
         die(f"crispembed --ocr exited {proc.returncode}\n"
@@ -246,6 +280,8 @@ def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 _DIFF_PATTERNS = [
+    # PP-OCRv6 native activation harness: "[ppocrv6-diff] stage cos=…".
+    re.compile(r"^\s*\[ppocrv6-diff\]\s+(\S+)\s+cos=([-+0-9.eE]+)"),
     # got-ocr "stage: cos_min=…" AND hat/pan/tbsrn "output   cos_min=…" (the colon
     # is optional — the SR binaries pad the name with spaces, no colon).
     re.compile(r"^\s*([^\s:]+):?\s+cos(?:_min)?=([-+0-9.eE]+)\s+max_abs="),
@@ -326,8 +362,16 @@ def run_diff(diff_binary: Path, gguf: Path, ref: Path,
              extra_args: list[str], timeout: int = 900) -> dict[str, float]:
     if not diff_binary.exists():
         die(f"diff binary not found: {diff_binary}")
-    cmd = [str(diff_binary), str(gguf), str(ref), *extra_args]
+    # PP-OCRv6's native diff harness takes MODEL + IMAGE and receives the
+    # Python activation fixture through PPOCRV6_REF; other diff binaries use
+    # the conventional MODEL + REF argv shape.
+    if diff_binary.name == "test-ppocrv6-rec":
+        cmd = [str(diff_binary), str(gguf), *extra_args]
+    else:
+        cmd = [str(diff_binary), str(gguf), str(ref), *extra_args]
     env = dict(os.environ)
+    if diff_binary.name == "test-ppocrv6-rec":
+        env["PPOCRV6_REF"] = str(ref)
     env.setdefault("DYLD_LIBRARY_PATH", str(diff_binary.parent))
     env.setdefault("LD_LIBRARY_PATH", str(diff_binary.parent))
     proc = subprocess.run(cmd, capture_output=True, text=True,
@@ -363,6 +407,10 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
 
     g = entry["gguf"]
     gguf = hf_download(g["repo"], g["file"], g.get("revision", "main"), work_dir)
+    detector = None
+    if entry.get("detector"):
+        d = entry["detector"]
+        detector = hf_download(d["repo"], d["file"], d.get("revision", "main"), work_dir)
 
     # Restoration/SR engines (restormer, scunet, …) have no --ocr path: their only
     # regression signal is the diff harness (golden output vs a PyTorch reference).
@@ -409,7 +457,7 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
 
     extra = entry.get("ocr_args", [])
     print(f"[{name}] running crispembed --ocr {sample.name} ...")
-    text = run_ocr(crispembed_bin(), gguf, sample, extra)
+    text = run_ocr(crispembed_bin(), gguf, sample, extra, detector=detector)
 
     if rebake:
         print(f"[{name}] CAPTURED OUTPUT:\n{text}\n")

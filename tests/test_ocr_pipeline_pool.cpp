@@ -2,13 +2,14 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include "core/clean_exit.h"
 
 static bool expect(bool value, const char * label) {
     if (!value) std::fprintf(stderr, "FAIL: %s\n", label);
     return value;
 }
 
-int main() {
+static int crispembed_test_main() {
     unsetenv("CRISPEMBED_DEBUG_ALLOW_OCR_Q4");
     if (!expect(ocr_pipeline::is_dangerous_q4_recognizer_path("trocr-small-printed-q4_k.gguf"),
                 "detect dangerous TrOCR Q4 path"))
@@ -35,4 +36,8 @@ int main() {
         return 1;
     }
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
