@@ -24,8 +24,10 @@
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
-  `Brighton` region. This is a pipeline smoke gate only; Python box/text
-  parity and production orchestration remain open.
+  `Brighton` region. The harness now has explicit `lines` mode (EasyOCR
+  grouping plus dynamic-width CRNN graphs) and `words` mode (LayoutLM/Tesseract
+  handoff style). This is a pipeline smoke gate only; Python box/text parity
+  and production orchestration remain open.
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
