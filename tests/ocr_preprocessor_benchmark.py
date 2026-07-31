@@ -283,8 +283,11 @@ def main() -> int:
                                     "stderr_tail": result["stderr_tail"]})
                         out = outpath
                     else:
-                        row.update({"status": "error", "ms": result["ms"],
-                                    "reason": "dewarp failed", "stderr_tail": result["stderr_tail"]})
+                        not_applicable = "too few textlines" in result["stderr_tail"].lower()
+                        row.update({"status": "unavailable" if not_applicable else "error",
+                                    "ms": result["ms"],
+                                    "reason": "not applicable: too few textlines" if not_applicable else "dewarp failed",
+                                    "stderr_tail": result["stderr_tail"]})
                         out = None
                 else:
                     outpath = tmpdir / f"{len(rows)}.ppm"

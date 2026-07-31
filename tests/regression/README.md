@@ -79,6 +79,12 @@ The generated `MANIFEST.json` records each parent checksum and exact recipe;
 the derived images inherit the parent CC0/public-domain status and are not
 gold transcriptions.
 
+The latest CPU preprocessor-only run across 17 fixtures is checked in at
+`tests/regression/results/ocr_preprocessors-20260731.json`: 136 rows, 129
+successful stages, and 7 explicitly `unavailable` dewarp rows where the input
+does not contain enough text-line geometry. No stage returned an unexpected
+runtime error.
+
 A model-output regression suite for the OCR engines. It exists because a
 vision-neck permute regression (`3fb1f8e`, Jun 2026) shipped **garbage OCR**
 (`colorcolorcolor…`) that the existing Kaggle `ocr-gpu-bench` kernel could not
