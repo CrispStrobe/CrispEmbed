@@ -107,10 +107,12 @@ static void bn1d(std::vector<float> & x, int channels, int length, ggml_tensor *
     }
 }
 
-static bool run_block(pp_block & b, std::vector<float> & x, int & h, int & w) {
+static bool run_block(pp_block & b, std::vector<float> & x, int & h, int & w, std::vector<float> * tap_dw = nullptr,
+                      std::vector<float> * tap_cm1 = nullptr) {
     std::vector<float> y, z;
     int oh, ow;
     if (!apply_conv(b.dw, x, h, w, y, oh, ow)) return false;
+    if (tap_dw) *tap_dw = y;
     if (b.se) {
         // The SE convolutions operate on the global average, then scale the
         // depthwise output. Both gates are kept at F16/F32 by the quantizer.
@@ -129,6 +131,7 @@ static bool run_block(pp_block & b, std::vector<float> & x, int & h, int & w) {
     }
     if (!apply_conv(b.cm1, y, oh, ow, z, oh, ow)) return false;
     activate(z, false);
+    if (tap_cm1) *tap_cm1 = z;
     std::vector<float> out;
     int nh, nw;
     if (!apply_conv(b.cm2, z, oh, ow, out, nh, nw)) return false;
@@ -243,8 +246,23 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         }
     }
     for (size_t si = 0; si < c->stages.size(); ++si) {
-        for (auto & b : c->stages[si])
-            if (!run_block(b, x, h, w)) return nullptr;
+        for (size_t bi = 0; bi < c->stages[si].size(); ++bi) {
+            std::vector<float> tap_dw, tap_cm1;
+            if (!run_block(c->stages[si][bi], x, h, w, si == 0 && bi == 0 ? &tap_dw : nullptr,
+                           si == 0 && bi == 0 ? &tap_cm1 : nullptr))
+                return nullptr;
+            if (c->diff && si == 0 && bi == 0) {
+                for (auto pair :
+                     { std::pair<const char *, const std::vector<float> *>("ppocrv6.block0_dw", &tap_dw),
+                       std::pair<const char *, const std::vector<float> *>("ppocrv6.block0_cm1", &tap_cm1) }) {
+                    auto r = c->diff->compare(pair.first, pair.second->data(), pair.second->size(), -1);
+                    fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", pair.first, r.cos_min,
+                            std::sqrt(std::inner_product(pair.second->begin(), pair.second->end(), pair.second->begin(),
+                                                         0.0)),
+                            r.is_pass() ? "PASS" : "FAIL");
+                }
+            }
+        }
         if (c->diff) {
             std::string name = "ppocrv6.stage" + std::to_string(si + 1);
             auto r = c->diff->compare(name, x.data(), x.size(), -1);
@@ -252,26 +270,61 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
                     std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
         }
     }
+    const int pooled_h = std::max(1, h / 3), pooled_w = std::max(1, w / 2);
+    std::vector<float> pooled((size_t)c->head_dw.in_ch * pooled_h * pooled_w, 0.0f);
+    for (int cc = 0; cc < c->head_dw.in_ch; ++cc)
+        for (int yy = 0; yy < pooled_h; ++yy)
+            for (int xx = 0; xx < pooled_w; ++xx) {
+                float sum = 0.0f;
+                for (int ky = 0; ky < 3; ++ky)
+                    for (int kx = 0; kx < 2; ++kx) sum += x[cc * h * w + (yy * 3 + ky) * w + xx * 2 + kx];
+                pooled[cc * pooled_h * pooled_w + yy * pooled_w + xx] = sum / 6.0f;
+            }
+    x.swap(pooled);
+    h = pooled_h;
+    w = pooled_w;
+    std::vector<float> padded((size_t)c->head_dw.in_ch * h * (w + 4), 0.0f);
+    for (int cc = 0; cc < c->head_dw.in_ch; ++cc)
+        for (int yy = 0; yy < h; ++yy)
+            std::memcpy(padded.data() + cc * h * (w + 4) + yy * (w + 4) + 2, x.data() + cc * h * w + yy * w,
+                        sizeof(float) * w);
     int oh, ow;
-    if (!apply_conv(c->head_dw, x, h, w, y, oh, ow)) return nullptr;
+    if (!apply_conv(c->head_dw, padded, h, w + 4, y, oh, ow)) return nullptr;
     bn1d(y, c->head_dw.out_ch, oh * ow, c->norm1_w, c->norm1_b, c->norm1_mean, c->norm1_var);
     hardswish_inplace(y.data(), (int)y.size());
     x.swap(y);
     h = oh;
     w = ow;
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.head_conv1", x.data(), x.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_conv1 cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+    }
     if (!apply_conv(c->head_pw, x, h, w, y, oh, ow)) return nullptr;
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.head_conv2_pre", y.data(), y.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_conv2_pre cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(y.begin(), y.end(), y.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+    }
     bn1d(y, c->head_pw.out_ch, oh * ow, c->norm2_w, c->norm2_b, c->norm2_mean, c->norm2_var);
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.head_norm2", y.data(), y.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_norm2 cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(y.begin(), y.end(), y.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+    }
     hardswish_inplace(y.data(), (int)y.size());
     x.swap(y);
     h = oh;
     w = ow;
-    // Pooling is (3,2), then the tiny head's Conv1D keeps the sequence width.
-    const int ph = std::max(1, h / 3), pw = std::max(1, w / 2);
-    std::vector<float> seq((size_t)c->head_dw.in_ch * pw, 0.0f);
-    for (int cc = 0; cc < c->head_dw.in_ch; ++cc)
-        for (int xx = 0; xx < pw; ++xx)
-            for (int yy = 0; yy < ph; ++yy) seq[cc * pw + xx] += x[cc * h * w + (yy * 3) * w + xx * 2];
-    for (float & v : seq) v /= float(ph);
+    const int pw = w;
+    std::vector<float> seq((size_t)pw * c->head_dw.in_ch);
+    for (int t = 0; t < pw; ++t)
+        for (int cc = 0; cc < c->head_dw.in_ch; ++cc) seq[t * c->head_dw.in_ch + cc] = x[cc * h * w + t];
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.head_input", seq.data(), seq.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(seq.begin(), seq.end(), seq.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+    }
     auto f1 = to_f32(c->fc1_w), b1 = to_f32(c->fc1_b), f2 = to_f32(c->fc2_w), b2 = to_f32(c->fc2_b);
     c->result.clear();
     std::vector<float> all_logits;
@@ -279,7 +332,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     int last = -1;
     for (int t = 0; t < pw; ++t) {
         std::vector<float> hidden(c->hidden), logits(c->vocab_size);
-        linear_cpu(seq.data() + t, hidden.data(), c->head_dw.in_ch, c->hidden, f1.data(), b1.data());
+        linear_cpu(seq.data() + t * c->head_dw.in_ch, hidden.data(), c->head_dw.in_ch, c->hidden, f1.data(), b1.data());
         linear_cpu(hidden.data(), logits.data(), c->hidden, c->vocab_size, f2.data(), b2.data());
         all_logits.insert(all_logits.end(), logits.begin(), logits.end());
         int best = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
