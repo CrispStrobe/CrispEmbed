@@ -1021,7 +1021,7 @@
     {
       "name": "bttr-live",
       "engine": "bttr",
-      "gguf": {"repo": "cstr/bttr-hw-GGUF", "file": "bttr-hw-q4_k.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/bttr-handwritten-math-gguf", "file": "bttr-hw-q4_k.gguf", "revision": "main"},
       "sample": "tests/regression/images/formula_quadratic.png",
       "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
       "match": {"max_cer": 0.20}
@@ -1029,7 +1029,7 @@
     {
       "name": "hmer-live",
       "engine": "hmer",
-      "gguf": {"repo": "cstr/hmer-hw-GGUF", "file": "hmer-hw-q4_k.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/hmer-handwritten-math-gguf", "file": "hmer-hw-q4_k.gguf", "revision": "main"},
       "sample": "tests/regression/images/formula_quadratic.png",
       "expected_text": null,
       "match": {"max_cer": 0.20}
@@ -1126,14 +1126,15 @@
       },
       "detector": "dbnet-ic15-f16.gguf",
       "pipeline_engine": "tesseract",
-      "sample": "tests/regression/images/cc0/german_official_print.jpg"
+      "sample": "tests/regression/images/cc0/german_official_print.jpg",
+      "expected_text": null
     },
     {
       "name": "parseq",
       "engine": "parseq",
       "_comment": "Scene-text recognizer smoke. Quality is unscored until a line-crop fixture and transcription are added.",
       "gguf": {
-        "repo": "cstr/parseq-tiny-GGUF",
+        "repo": "cstr/parseq-GGUF",
         "file": "parseq-tiny-q8_0.gguf",
         "revision": "main"
       },
@@ -1147,28 +1148,28 @@
       "name": "ppocrv6-tiny",
       "engine": "ppocrv6",
       "_comment": "PP-OCRv6 tiny detector + Q8-head recognizer through the native detector-to-line-crop pipeline.",
-      "gguf": {"repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF", "file": "PP-OCRv6_tiny_rec-q8-head.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/PP-OCRv6_tiny_rec-GGUF", "file": "PP-OCRv6_tiny_rec-q8-head.gguf", "revision": "main"},
       "detector": {"repo": "mlx-community/PP-OCRv6-tiny-det-GGUF", "file": "PP-OCRv6_tiny_det-f16.gguf", "revision": "main"},
       "sample": "tests/regression/images/fox.png", "expected_text": null,
-      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF", "file": "PP-OCRv6_tiny_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
+      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "cstr/PP-OCRv6_tiny_rec-GGUF", "file": "PP-OCRv6_tiny_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
     },
     {
       "name": "ppocrv6-small",
       "engine": "ppocrv6",
       "_comment": "PP-OCRv6 small detector + Q8-head recognizer through the native detector-to-line-crop pipeline.",
-      "gguf": {"repo": "mlx-community/PP-OCRv6_small_rec-GGUF", "file": "PP-OCRv6_small_rec-q8-head.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/PP-OCRv6_small_rec-GGUF", "file": "PP-OCRv6_small_rec-q8-head.gguf", "revision": "main"},
       "detector": {"repo": "mlx-community/PP-OCRv6-small-det-GGUF", "file": "PP-OCRv6_small_det-f16.gguf", "revision": "main"},
       "sample": "tests/regression/images/fox.png", "expected_text": null,
-      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "mlx-community/PP-OCRv6_small_rec-GGUF", "file": "PP-OCRv6_small_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
+      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "cstr/PP-OCRv6_small_rec-GGUF", "file": "PP-OCRv6_small_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
     },
     {
       "name": "ppocrv6-medium",
       "engine": "ppocrv6",
       "_comment": "PP-OCRv6 medium detector + Q8-head recognizer through the native detector-to-line-crop pipeline.",
-      "gguf": {"repo": "mlx-community/PP-OCRv6_medium_rec-GGUF", "file": "PP-OCRv6_medium_rec-q8-head.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/PP-OCRv6_medium_rec-GGUF", "file": "PP-OCRv6_medium_rec-q8-head.gguf", "revision": "main"},
       "detector": {"repo": "mlx-community/PP-OCRv6-medium-det-GGUF", "file": "PP-OCRv6_medium_det-f16.gguf", "revision": "main"},
       "sample": "tests/regression/images/fox.png", "expected_text": null,
-      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "mlx-community/PP-OCRv6_medium_rec-GGUF", "file": "PP-OCRv6_medium_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
+      "diff": {"binary": "test-ppocrv6-rec", "ref": {"repo": "cstr/PP-OCRv6_medium_rec-GGUF", "file": "PP-OCRv6_medium_rec-fox-ref.gguf", "revision": "main"}, "args": ["tests/regression/images/fox.png"], "thresholds": {"*": 0.999}}
     }
   ]
 }

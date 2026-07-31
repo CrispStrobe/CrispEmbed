@@ -8,6 +8,8 @@
 #include "ggml-cpu.h"
 #include "ggml.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -35,8 +37,18 @@ static ggml_tensor * req(easyocr_craft_context * c, const std::string & name) {
 
 static ggml_tensor * conv(ggml_context * g, easyocr_craft_context * c, ggml_tensor * x, const std::string & name,
                           int kw, int kh, int pw, int ph, int dw = 1, int dh = 1, bool relu = true) {
-    ggml_tensor * y = ggml_conv_2d(g, req(c, name + ".weight"), x, 1, 1, pw, ph, dw, dh);
-    y = ggml_add(g, y, ggml_reshape_4d(g, req(c, name + ".bias"), 1, 1, req(c, name + ".bias")->ne[0], 1));
+    const std::string raw_weight = name + ".raw_weight";
+    const bool runtime_bn = c->wl.tensors.count(raw_weight) != 0;
+    ggml_tensor * weight = req(c, runtime_bn ? raw_weight : name + ".weight");
+    ggml_tensor * bias = req(c, runtime_bn ? name + ".raw_bias" : name + ".bias");
+    ggml_tensor * y = ggml_conv_2d(g, weight, x, 1, 1, pw, ph, dw, dh);
+    y = ggml_add(g, y, ggml_reshape_4d(g, bias, 1, 1, bias->ne[0], 1));
+    if (runtime_bn) {
+        ggml_tensor * scale = req(c, name + ".bn_scale");
+        ggml_tensor * shift = req(c, name + ".bn_shift");
+        y = ggml_mul(g, y, ggml_reshape_4d(g, scale, 1, 1, scale->ne[0], 1));
+        y = ggml_add(g, y, ggml_reshape_4d(g, shift, 1, 1, shift->ne[0], 1));
+    }
     return relu ? ggml_relu(g, y) : y;
 }
 
@@ -58,9 +70,7 @@ static bool build_graph(easyocr_craft_context * c) {
     auto pool = [&](int k, int s, int p) { x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, k, k, s, s, p, p); };
 
     // VGG-16 BN feature taps used by EasyOCR's CRAFT implementation.
-    x = ggml_conv_2d(g, req(c, "basenet.slice1.0.weight"), x, 1, 1, 1, 1, 1, 1);
-    x = ggml_add(g, x, ggml_reshape_4d(g, req(c, "basenet.slice1.0.bias"), 1, 1, 64, 1));
-    x = ggml_relu(g, x);
+    x = conv(g, c, x, "basenet.slice1.0", 3, 3, 1, 1);
     x = conv(g, c, x, "basenet.slice1.3", 3, 3, 1, 1);
     pool(2, 2, 0);
     x = conv(g, c, x, "basenet.slice1.7", 3, 3, 1, 1);
@@ -199,4 +209,47 @@ int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
         if (report.cos_global < 0.99f) failures++;
     }
     return failures;
+}
+
+int easyocr_craft_box_count(easyocr_craft_context * c, float text_threshold, float link_threshold, float low_text) {
+    if (!c || !c->scores) return -1;
+    const int w = (int)c->scores->ne[0];
+    const int h = (int)c->scores->ne[1];
+    const size_t plane = (size_t)w * h;
+    std::vector<float> scores(plane * 2);
+    ggml_backend_tensor_get(c->scores, scores.data(), 0, scores.size() * sizeof(float));
+    std::vector<uint8_t> active(plane, 0), seen(plane, 0);
+    for (size_t i = 0; i < plane; ++i) active[i] = scores[i] > low_text || scores[plane + i] > link_threshold;
+    int count = 0;
+    std::vector<size_t> stack;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const size_t start = (size_t)y * w + x;
+            if (!active[start] || seen[start]) continue;
+            seen[start] = 1;
+            stack.clear();
+            stack.push_back(start);
+            int area = 0;
+            float max_text = 0.0f;
+            while (!stack.empty()) {
+                const size_t p = stack.back();
+                stack.pop_back();
+                const int px = (int)(p % w), py = (int)(p / w);
+                ++area;
+                max_text = std::max(max_text, scores[p]);
+                for (const auto & d : std::array<int, 4>{ -1, 1, -w, w }) {
+                    const int nx = px + (d == -1 ? -1 : d == 1 ? 1 : 0);
+                    const int ny = py + (d == -w ? -1 : d == w ? 1 : 0);
+                    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+                    const size_t q = (size_t)ny * w + nx;
+                    if (active[q] && !seen[q]) {
+                        seen[q] = 1;
+                        stack.push_back(q);
+                    }
+                }
+            }
+            if (area >= 10 && max_text >= text_threshold) ++count;
+        }
+    }
+    return count;
 }

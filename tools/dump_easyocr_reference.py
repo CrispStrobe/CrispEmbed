@@ -39,8 +39,48 @@ def main():
     sys.path.insert(0, args.easyocr_repo)
     import torch
     from PIL import Image
-    from easyocr.model import model as gen1_model
-    from easyocr.model import vgg_model as gen2_model
+    try:
+        from easyocr.model import model as gen1_model
+        from easyocr.model import vgg_model as gen2_model
+    except ModuleNotFoundError as exc:
+        if exc.name != "torchvision":
+            raise
+        # The model definitions import torchvision for optional pretrained
+        # VGG construction, but the released EasyOCR CRNN checkpoints do not
+        # use that path. Keep the reference dumper usable in a torch-only
+        # conversion environment without adding a runtime dependency.
+        import importlib.util
+        import types
+        tv = types.ModuleType("torchvision")
+        tv.__version__ = "0.0"
+        tv.models = types.SimpleNamespace()
+        transforms = types.ModuleType("torchvision.transforms")
+        transforms.ToTensor = object
+        tv.transforms = transforms
+        sys.modules["torchvision"] = tv
+        sys.modules["torchvision.transforms"] = transforms
+        # Import only easyocr/model/*.py; importing the top-level package also
+        # pulls in scipy, cv2, and the full Reader stack unnecessarily.
+        root = Path(args.easyocr_repo) / "easyocr"
+        pkg = types.ModuleType("easyocr")
+        pkg.__path__ = [str(root)]
+        model_pkg = types.ModuleType("easyocr.model")
+        model_pkg.__path__ = [str(root / "model")]
+        sys.modules["easyocr"] = pkg
+        sys.modules["easyocr.model"] = model_pkg
+
+        def load_model_module(name):
+            fullname = f"easyocr.model.{name}"
+            spec = importlib.util.spec_from_file_location(fullname, root / "model" / f"{name}.py")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[fullname] = module
+            spec.loader.exec_module(module)
+            setattr(model_pkg, name, module)
+            return module
+
+        load_model_module("modules")
+        gen1_model = load_model_module("model")
+        gen2_model = load_model_module("vgg_model")
 
     chars = read_charset(args.charset)
     output_channel = 512 if args.generation == 1 else 256
