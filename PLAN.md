@@ -18,6 +18,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep | **COMPLETED** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity harness | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
@@ -657,10 +658,10 @@ runtime implementations, converters, tests, and local GGUF artifacts for them:
 
 PP-OCRv6 detector/recognizer GGUF files also exist in the shared model volume
 (`PP-OCRv6_{tiny,small,medium}_{det,rec}-*.gguf`), including policy Q4_K and
-Q8_0 variants. They are **not yet integrated into the current main-branch
-runtime**; the PP-OCRv6 task remains an integration/port task, not a model
-acquisition task. The port must include detector postprocessing, recognizer
-dictionary handling, line orientation, and live German/Arabic/receipt tests.
+Q8_0 variants. The tiny detector/recognizer path is integrated into the native
+orchestrator with quadrilateral postprocessing, shared crop preparation,
+optional PP-LCNet line orientation, and live German/Arabic/receipt tests.
+Small/medium remain in the manifest and require the same live acceptance sweep.
 
 The genuinely new preprocessing ports are therefore:
 
