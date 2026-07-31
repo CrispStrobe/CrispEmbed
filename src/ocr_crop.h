@@ -30,8 +30,7 @@ std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int 
 // output contracts. It is deliberately separate from model-specific tensor
 // normalization, which remains inside each recognizer implementation.
 std::vector<uint8_t> prepare(const uint8_t * pixels, int width, int height, int channels,
-                             const prepare_options & options, int * out_width, int * out_height,
-                             int * out_channels);
+                             const prepare_options & options, int * out_width, int * out_height, int * out_channels);
 
 // Apply the existing classical 0°/180° text-line check in place. Returns true
 // when a 180° rotation was applied.
