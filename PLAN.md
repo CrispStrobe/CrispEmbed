@@ -438,14 +438,16 @@ more than another restoration model.
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
    upside-down, and tightly clipped lines.
 
-7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation slice
+7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation and
+   multi-page DPI API slices
    implemented in `feat/ppocr-next-20260731`;** add native page rendering and
    page-level accumulation where the platform supports it. Reuse PDF DPI
    profiling to select render DPI, then apply page orientation and the normal
    document pipeline. `/ocr/document` now accepts explicit
    `"autorotate": true`, applies the confidence-gated fallback, and hands
    rotated temporary pages through the normal renderer. Keep the existing
-   parser-only path for minimal builds.
+   parser-only path for minimal builds. Bindings can now request all-page DPI
+   metadata with ownership-safe `crispembed_pdf_all_pages_dpi` APIs.
 
 8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate and VLM
    cleanup safeguard slices implemented in `feat/ppocr-next-20260731`;**
