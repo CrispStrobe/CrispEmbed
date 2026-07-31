@@ -31,6 +31,27 @@ struct text_box {
 
 struct context;
 
+enum class score_mode {
+    fast,
+    accurate,
+};
+
+// Geometry and DB post-processing controls shared by routed detector callers.
+struct detect_options {
+    float prob_threshold = 0.3f;
+    float box_threshold = 0.5f;
+    float unclip_ratio = 1.5f;
+    int target_short_side = 736;
+    int max_side = 2000;
+    int min_height = 30;
+    float width_height_ratio = 8.0f;
+    int max_candidates = 1000;
+    int dilation = 1;
+    score_mode scoring = score_mode::fast;
+};
+
+detect_options rapid_defaults();
+
 // Load DBNet GGUF. Returns true on success.
 bool load(context ** ctx, const char * path, int n_threads = 1);
 
@@ -50,6 +71,11 @@ std::vector<text_box> detect_file(context * ctx, const char * path, float prob_t
 std::vector<text_box> detect_rgb(context * ctx, const uint8_t * pixels, int width, int height, int channels,
                                  float prob_threshold = 0.3f, float box_threshold = 0.5f, float unclip_ratio = 1.5f,
                                  int target_short_side = 736);
+
+std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * pixels, int width, int height, int channels,
+                                    const detect_options & options);
+
+std::vector<text_box> detect_file_ex(context * ctx, const char * path, const detect_options & options);
 
 // Get probability map from last detection (for debugging/visualization).
 // Returns nullptr if no detection has been run yet.
