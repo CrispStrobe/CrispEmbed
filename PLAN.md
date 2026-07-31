@@ -241,11 +241,15 @@ more than another restoration model.
    never silently skipped. Synthetic degradations remain unit stress tests,
    not quality claims.
 
-2. **O10.2 — Problematic-input corpus.** Extend the public-domain corpus with
-   verified derived variants: ±4°/±8° skew, dark border, uneven illumination,
-   haze, speckle, low-DPI downsample, JPEG damage, 90°/180°/270° rotation,
-   perspective/curved-page distortion, and mixed upright/upside-down lines.
-   Every derived file must retain its parent SHA-256 and transformation recipe.
+2. **O10.2 — Problematic-input corpus.** **Generator implemented in
+   `tests/regression/generate_problematic_variants.py` (2026-07-31).** It
+   deterministically produces ±4°/±8° skew, dark border, uneven illumination,
+   speckle, low-DPI downsample, JPEG damage, 90°/180°/270° rotation, and mild
+   perspective variants from the real CC0/German parents. Every derived row
+   retains parent and derived SHA-256 values, a transformation recipe, and
+   seed. Haze and mixed upright/upside-down line fixtures remain follow-up
+   additions because they need source-specific geometry rather than a
+   page-wide transform.
 
 3. **O10.3 — Detector geometry policy.** **Implemented in `cf5f79b` and the
    follow-up routed-stage wiring.** Add a shared configuration object and
