@@ -107,6 +107,23 @@ The harness-blind CTC/vocabulary/confidence gate is now covered by the native
 with repeated-token collapse, vocabulary entries are 1-based and validated,
 and confidence follows EasyOCR's nonblank `custom_mean` formula.
 
+### Tesseract parity status — NOT PROVEN
+
+The repository contains a `.traineddata` → GGUF converter, a pure-Python
+Tesseract LSTM reference dumper, and `test-tesseract-lstm-diff`. That is an
+available validation path, not evidence that the shipped models match the
+original Tesseract engine. No completed `-ref.gguf` run is recorded for the
+exact installed `eng.traineddata`, and the backup GGUF metadata only identifies
+the `tessdata_best` source; it does not record a verified source-file hash.
+
+The native implementation is also a line recognizer. Tesseract's page
+segmentation, word boundaries, spacing, and reading order are separate
+postprocessing behavior. A Python forward pass can prove GGUF/runtime math
+against parsed weights, but does not by itself prove full Tesseract CLI parity.
+Do not mark this lane green until the exact source model is hashed, the
+reference dump and native diff pass every captured stage with magnitudes
+inspected, and the decoded line output is compared with the original engine.
+
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
 > PLAN.md active-work board cleared". Add a row here when you START a task; remove
@@ -174,6 +191,9 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
       it with EasyOCR CRNN on identical crops rather than treating either
       recognizer as the detector.
+- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
+      its `-ref.gguf`, pass all captured stages and decoded line output, then
+      compare page segmentation/spacing independently.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
