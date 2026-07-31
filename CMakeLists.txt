@@ -203,6 +203,8 @@ list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_det.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_craft.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_crop.cpp)
@@ -382,6 +384,18 @@ target_link_libraries(test-posformer PRIVATE crispembed)
 
 add_executable(test-parseq tests/test_parseq.cpp)
 target_link_libraries(test-parseq PRIVATE crispembed)
+
+add_executable(test-easyocr tests/test_easyocr.cpp)
+target_include_directories(test-easyocr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr PRIVATE crispembed)
+
+add_executable(test-easyocr-diff tests/test_easyocr_diff.cpp)
+target_include_directories(test-easyocr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-diff PRIVATE crispembed)
+
+add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
+target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-craft-diff PRIVATE crispembed)
 
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
