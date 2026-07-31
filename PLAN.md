@@ -165,6 +165,46 @@ Required Fraktur implementation sequence:
    LSTM-PYNQ result only as a hardware-reference baseline unless its weights
    and codec can be legally and technically recovered.
 
+### Fraktur line-classifier retraining (clean-room alternative to AGPL model)
+
+`impresso-project/frakturline-classification-cnn` is useful as a routing
+component, not as a recognizer: it classifies a grayscale line crop as
+`fraktur` or `other`. Its published architecture is small and reproducible:
+approximately 2.1M parameters, input `1x60x800`, three convolutional stages
+with ReLU/max-pooling and LayerNorm, adaptive max-pooling to `1x8`, then
+`1024 -> 128 -> 1` fully connected layers. The model card reports a 99.75%
+accuracy result on its held-out test set, but the model and the linked
+Impresso datasets are AGPL-3.0. Do not copy its weights, code, or dataset
+into a permissively licensed CrispEmbed artifact.
+
+We can train an independent equivalent classifier from the published
+architecture and independently licensed data:
+
+1. Use CC-BY-4.0 GT4HistOCR Fraktur lines for the positive class, with full
+   attribution and source revision/checksum. Build the `other` class from
+   separately licensed Antiqua/Latin line corpora, or annotate our own
+   public-domain CC0 fixtures. Do not derive a replacement dataset by
+   relabeling or mirroring the AGPL Impresso dataset.
+2. Split by source publication/page, never by individual crop, to prevent
+   font/page leakage. Add hard negatives: ornate Antiqua, mixed lines,
+   ornaments, headers, low-DPI scans, skew, bleed-through, and short lines.
+3. Reimplement the architecture independently in the existing Python
+   training/reference tooling, export an ONNX/PyTorch state dict, and write a
+   small GGUF converter with F32 classifier head and F16 convolution weights.
+   The native runtime should use the existing crop helper and expose
+   `fraktur_probability`, `script_class`, and an abstain/uncertain state.
+4. Use the classifier only to route line crops: `fraktur` → `frk`/`deu_latf`
+   or a GT4HistOCR-derived Tesseract model; `other` → modern German/Latin
+   recognizer. It must not replace recognition or silently alter text.
+5. Validate on an independently held-out Fraktur/Antiqua corpus and our
+   German page fixtures. Report balanced accuracy, precision/recall/F1,
+   calibration, abstention rate, and downstream OCR CER/WER against always
+   `frk`, always `deu`, and the classifier route. A 99% classifier score is
+   not sufficient if routing worsens recognition.
+6. Publish only the independently trained weights and a complete data/
+   attribution manifest. Keep the AGPL Impresso model as an external
+   benchmark/reference, not as a CrispEmbed dependency.
+
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
 Metal; DBNet→EasyOCR crop smoke now runs with the existing cstr/dbnet-ic15
