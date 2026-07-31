@@ -15,12 +15,13 @@ SPEC.loader.exec_module(MODULE)
 
 
 def main() -> int:
-    match = MODULE.ROW.match("  INFO: fixture.png: 4 regions, 33 chars (conf=0.91)")
+    match = MODULE.ROW.match("  INFO: fixture.png: 4 regions, 33 chars (conf=0.91, time_ms=123.4)")
     assert match is not None
     assert match.group("fixture") == "fixture.png"
     assert int(match.group("regions")) == 4
     assert int(match.group("chars")) == 33
     assert float(match.group("confidence")) == 0.91
+    assert float(match.group("time_ms")) == 123.4
     print("PP-OCRv6 benchmark parser OK")
     return 0
 
