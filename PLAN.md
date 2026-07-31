@@ -229,15 +229,17 @@ more than another restoration model.
 
 #### Implementation slices
 
-1. **O10.1 — Live preprocessor benchmark harness.** Add
-   `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
-   run raw input, classical cleanup variants, deskew, binarization, dewarp,
-   denoise, and every locally available SR/restoration model. Record stage
-   latency, output dimensions, pixel statistics, detector regions, OCR text,
-   confidence, and CER/exact match when gold text exists. Also report text
-   delta versus the raw-image baseline when no verified gold transcription is
-   available. Synthetic degradations remain unit stress tests, not quality
-   claims.
+1. **O10.1 — Live preprocessor benchmark harness.** **Implemented in
+   `tests/ocr_preprocessor_benchmark.py` (2026-07-31).** For every real CC0/
+   German fixture it runs raw input and independently materialized classical
+   cleanup variants (default, binarize, no-deskew, no-border-crop,
+   no-whiten, and no-consensus). Optional classical dewarp and explicitly
+   supplied learned denoise/SR models are measured as separate rows. Each row
+   records stage latency, output dimensions, checksums, pixel statistics,
+   stderr/failure reason, and optional detector-pipeline regions, confidence,
+   OCR text, and CER. Missing optional models are reported as `unavailable`,
+   never silently skipped. Synthetic degradations remain unit stress tests,
+   not quality claims.
 
 2. **O10.2 — Problematic-input corpus.** Extend the public-domain corpus with
    verified derived variants: ±4°/±8° skew, dark border, uneven illumination,
