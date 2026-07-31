@@ -443,7 +443,10 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
             const float wy = std::clamp(fy - std::floor(fy), 0.0f, 1.0f);
             const float wx = std::clamp(fx - std::floor(fx), 0.0f, 1.0f);
             for (int c = 0; c < 3; ++c) {
-                int sc = ch == 1 ? 0 : std::min(c, ch - 1);
+                // Paddle's PP-OCRv6 inference.yml uses DecodeImage(img_mode=BGR).
+                // stbi_load delivers RGB, so keep the public crop API RGB and
+                // swap only at the model input boundary.
+                int sc = ch == 1 ? 0 : (ch >= 3 ? (2 - c) : std::min(c, ch - 1));
                 const float a = px[(y0 * w + x0) * ch + sc] * (1 - wx) + px[(y0 * w + x1) * ch + sc] * wx;
                 const float b = px[(y1 * w + x0) * ch + sc] * (1 - wx) + px[(y1 * w + x1) * ch + sc] * wx;
                 out[c * H * W + y * W + x] = ((a * (1 - wy) + b * wy) / 255.0f - 0.5f) / 0.5f;
