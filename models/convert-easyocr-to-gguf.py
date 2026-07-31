@@ -52,10 +52,9 @@ def main():
             continue
         clean[name] = value.detach().float().cpu().numpy()
 
-    # VGG Generation-2 is always evaluated in inference mode. Fold its two
-    # BatchNorm layers into the preceding bias-less convolutions so the runtime
-    # graph only needs conv → ReLU. This also keeps the convolution tensors in
-    # their native 4-D [out, in, kh, kw] layout for ggml_conv_2d.
+    # EasyOCR inference is always eval-mode. Fold BatchNorm layers into their
+    # preceding convolutions so the runtime graph only needs conv → ReLU. This
+    # keeps both VGG and ResNet tensors in native [out, in, kh, kw] layout.
     if args.network == "vgg":
         for conv_idx, bn_idx in ((11, 12), (14, 15)):
             cp = f"FeatureExtraction.ConvNet.{conv_idx}"
@@ -71,6 +70,29 @@ def main():
                 clean[f"{cp}.bias"] = beta - mean * scale
                 for suffix in ("weight", "bias", "running_mean", "running_var", "num_batches_tracked"):
                     clean.pop(f"{bp}.{suffix}", None)
+    else:
+        bn_prefixes = sorted({name.rsplit(".", 1)[0] for name in clean if name.endswith(".running_var")})
+        for bp in bn_prefixes:
+            if bp.endswith(".bn0_1") or bp.endswith(".bn0_2"):
+                cp = bp.rsplit(".", 1)[0] + ".conv" + bp[-3:]
+            elif bp.endswith(".bn1") or bp.endswith(".bn2"):
+                cp = bp.rsplit(".", 1)[0] + ".conv" + bp[-1]
+            elif bp.endswith(".downsample.1"):
+                cp = bp.rsplit(".", 1)[0] + ".0"
+            else:
+                raise KeyError(f"unmapped ResNet BatchNorm: {bp}")
+            wp = f"{cp}.weight"
+            if wp not in clean:
+                raise KeyError(f"missing convolution for {bp}: {wp}")
+            gamma = clean[f"{bp}.weight"]
+            beta = clean[f"{bp}.bias"]
+            mean = clean[f"{bp}.running_mean"]
+            var = clean[f"{bp}.running_var"]
+            scale = gamma / np.sqrt(var + 1.0e-5)
+            clean[wp] = clean[wp] * scale[:, None, None, None]
+            clean[f"{cp}.bias"] = beta - mean * scale
+            for suffix in ("weight", "bias", "running_mean", "running_var", "num_batches_tracked"):
+                clean.pop(f"{bp}.{suffix}", None)
 
     chars = Path(args.charset).read_text(encoding="utf-8")
     if "\n" in chars:
@@ -90,10 +112,12 @@ def main():
         raise ValueError(f"charset has {len(charset)} chars but checkpoint has "
                          f"{num_class} classes (expected {expected})")
 
-    feature = clean.get("FeatureExtraction.ConvNet.0.weight")
+    feature_key = "FeatureExtraction.ConvNet.0.weight" if args.network == "vgg" else "FeatureExtraction.ConvNet.conv0_1.weight"
+    feature = clean.get(feature_key)
     if feature is None:
-        raise KeyError("FeatureExtraction.ConvNet.0.weight (not a stock VGG model)")
-    output_channel = int(clean["FeatureExtraction.ConvNet.11.weight"].shape[0])
+        raise KeyError(f"{feature_key} (unsupported EasyOCR feature extractor)")
+    output_key = "FeatureExtraction.ConvNet.11.weight" if args.network == "vgg" else "FeatureExtraction.ConvNet.conv4_2.weight"
+    output_channel = int(clean[output_key].shape[0])
     sequence = clean["SequenceModeling.0.rnn.weight_ih_l0"]
     hidden_size = int(sequence.shape[0] // 4)
     input_channel = int(feature.shape[1])

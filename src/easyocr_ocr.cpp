@@ -34,6 +34,7 @@ struct easyocr_ocr_context {
     int hidden = 256;
     int output_channels = 256;
     int time_steps = 0;
+    int network = 0;
     std::vector<std::string> tokens;
     std::vector<float> input_host;
     std::string result;
@@ -96,27 +97,62 @@ static bool build_graph(easyocr_ocr_context * c) {
     ggml_set_input(c->input);
     ggml_tensor * x = c->input;
 
-    auto conv = [&](int i, int sw, int sh, int pw, int ph) {
-        char n[96];
-        snprintf(n, sizeof(n), "FeatureExtraction.ConvNet.%d.weight", i);
-        ggml_tensor * w = req(c, n);
-        snprintf(n, sizeof(n), "FeatureExtraction.ConvNet.%d.bias", i);
-        ggml_tensor * b = req(c, n);
-        x = ggml_conv_2d(g, w, x, sw, sh, pw, ph, 1, 1);
-        if (b) x = ggml_add(g, x, ggml_reshape_4d(g, b, 1, 1, b->ne[0], 1));
-        x = ggml_relu(g, x);
+    auto conv_named = [&](ggml_tensor * in, const std::string & base, int kw, int kh, int sw, int sh, int pw, int ph,
+                          bool activate) {
+        ggml_tensor * w = req(c, (base + ".weight").c_str());
+        ggml_tensor * b = req(c, (base + ".bias").c_str());
+        ggml_tensor * y = ggml_conv_2d(g, w, in, sw, sh, pw, ph, 1, 1);
+        if (b) y = ggml_add(g, y, ggml_reshape_4d(g, b, 1, 1, b->ne[0], 1));
+        return activate ? ggml_relu(g, y) : y;
     };
-    conv(0, 1, 1, 1, 1);
-    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
-    conv(3, 1, 1, 1, 1);
-    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
-    conv(6, 1, 1, 1, 1);
-    conv(8, 1, 1, 1, 1);
-    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 1, 2, 1, 2, 0, 0);
-    conv(11, 1, 1, 1, 1);
-    conv(14, 1, 1, 1, 1);
-    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 1, 2, 1, 2, 0, 0);
-    conv(18, 1, 1, 0, 0);
+
+    if (c->network == 1) {
+        const std::string root = "FeatureExtraction.ConvNet.";
+        auto block = [&](ggml_tensor * in, const std::string & prefix, bool downsample) {
+            ggml_tensor * y = conv_named(in, root + prefix + ".conv1", 3, 3, 1, 1, 1, 1, true);
+            y = conv_named(y, root + prefix + ".conv2", 3, 3, 1, 1, 1, 1, false);
+            ggml_tensor * skip =
+                downsample ? conv_named(in, root + prefix + ".downsample.0", 1, 1, 1, 1, 0, 0, false) : in;
+            return ggml_relu(g, ggml_add(g, y, skip));
+        };
+        x = conv_named(x, root + "conv0_1", 3, 3, 1, 1, 1, 1, true);
+        x = conv_named(x, root + "conv0_2", 3, 3, 1, 1, 1, 1, true);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+        x = block(x, "layer1.0", true);
+        x = conv_named(x, root + "conv1", 3, 3, 1, 1, 1, 1, true);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+        x = block(x, "layer2.0", true);
+        x = block(x, "layer2.1", false);
+        x = conv_named(x, root + "conv2", 3, 3, 1, 1, 1, 1, true);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+        for (int i = 0; i < 5; ++i) x = block(x, "layer3." + std::to_string(i), i == 0);
+        x = conv_named(x, root + "conv3", 3, 3, 1, 1, 1, 1, true);
+        for (int i = 0; i < 3; ++i) x = block(x, "layer4." + std::to_string(i), false);
+        x = conv_named(x, root + "conv4_1", 2, 2, 1, 2, 1, 0, true);
+        x = conv_named(x, root + "conv4_2", 2, 2, 1, 1, 0, 0, true);
+    } else {
+        auto conv = [&](int i, int sw, int sh, int pw, int ph) {
+            char n[96];
+            snprintf(n, sizeof(n), "FeatureExtraction.ConvNet.%d.weight", i);
+            ggml_tensor * w = req(c, n);
+            snprintf(n, sizeof(n), "FeatureExtraction.ConvNet.%d.bias", i);
+            ggml_tensor * b = req(c, n);
+            x = ggml_conv_2d(g, w, x, sw, sh, pw, ph, 1, 1);
+            if (b) x = ggml_add(g, x, ggml_reshape_4d(g, b, 1, 1, b->ne[0], 1));
+            x = ggml_relu(g, x);
+        };
+        conv(0, 1, 1, 1, 1);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+        conv(3, 1, 1, 1, 1);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 2, 2, 2, 2, 0, 0);
+        conv(6, 1, 1, 1, 1);
+        conv(8, 1, 1, 1, 1);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 1, 2, 1, 2, 0, 0);
+        conv(11, 1, 1, 1, 1);
+        conv(14, 1, 1, 1, 1);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 1, 2, 1, 2, 0, 0);
+        conv(18, 1, 1, 0, 0);
+    }
     x = ggml_cont(g, x);
     ggml_set_name(x, "features");
     ggml_set_output(x);
@@ -189,6 +225,7 @@ easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
         c->height = (int)core_gguf::kv_u32(meta, "easyocr.input_height", 64);
         c->classes = (int)core_gguf::kv_u32(meta, "easyocr.num_classes", 0);
         c->output_channels = (int)core_gguf::kv_u32(meta, "easyocr.output_channels", c->output_channels);
+        c->network = (int)core_gguf::kv_u32(meta, "easyocr.network", 0);
         c->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");
         core_gguf::free_metadata(meta);
     }
