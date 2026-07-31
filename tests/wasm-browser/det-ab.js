@@ -60,7 +60,7 @@ const fs = require('fs');
     });
     const copts = useGpu ? { async: true } : {};
     try { m.FS.mkdir('/models'); } catch (_) {}
-    for (const f of ['dbnet-ic15-q4_k.gguf', 'trocr-small-printed-q4_k.gguf']) {
+    for (const f of ['dbnet-ic15-q4_k.gguf', 'trocr-small-printed-q8_0.gguf']) {
       const buf = await (await fetch('/models/' + f)).arrayBuffer();
       m.FS.writeFile('/models/' + (f.startsWith('dbnet') ? 'det.gguf' : 'rec.gguf'), new Uint8Array(buf));
     }

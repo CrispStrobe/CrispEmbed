@@ -109,7 +109,7 @@
       placeholder="https://...det.gguf">
     <label for="rec-url">Recognition Model (TrOCR GGUF)</label>
     <input type="text" id="rec-url"
-      value="https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q4_k.gguf"
+      value="https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf"
       placeholder="https://...rec.gguf">
   </div>
 
@@ -205,7 +205,7 @@ if ('serviceWorker' in navigator && !crossOriginIsolated
 // run through engine-sweep.js to join the CPU+WebGPU-verified set.
 const MODEL_PRESETS = [
   { group: 'Printed text', name: 'TrOCR small printed (45 MB)',
-    url: 'https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q4_k.gguf' },
+    url: 'https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf' },
   { group: 'Printed text', name: 'Tesseract LSTM eng (3 MB)',
     url: 'https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-f16.gguf' },
   { group: 'Printed text', name: 'Tesseract LSTM deu (2 MB)',

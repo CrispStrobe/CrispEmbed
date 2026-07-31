@@ -1,0 +1,101 @@
+[
+  {
+    "name": "receipt_example",
+    "file": "receipt_example.png",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Example%20Reciept%20001.png?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Example_Reciept_001.png",
+    "license": "CC0-1.0",
+    "tracks": ["receipt", "printed", "layout"]
+  },
+  {
+    "name": "receipt_historical",
+    "file": "receipt_historical.tif",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Alexander%27s%20Supermarket%20receipt%2C%20late%20twentieth%20century.tif",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Alexander%27s_Supermarket_receipt,_late_twentieth_century.tif",
+    "license": "CC0-1.0",
+    "tracks": ["receipt", "printed", "low-quality"]
+  },
+  {
+    "name": "arabic_handwriting",
+    "file": "arabic_handwriting.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Arabic%20handwriting.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Arabic_handwriting.jpg",
+    "license": "CC0-1.0",
+    "tracks": ["arabic", "handwriting", "photo-or-scan"]
+  },
+  {
+    "name": "arabic_printed_line",
+    "file": "arabic_printed_line.png",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Example%20of%20Arabic%20text.png?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Example_of_Arabic_text.png",
+    "license": "CC0-1.0",
+    "tracks": ["arabic", "printed"]
+  },
+  {
+    "name": "handwritten_letter",
+    "file": "handwritten_letter.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/A%20Letter%20LZNQBD.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:A_Letter_LZNQBD.jpg",
+    "license": "CC0-1.0",
+    "tracks": ["handwriting", "historical"]
+  },
+  {
+    "name": "simple_form",
+    "file": "simple_form.png",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Form.png?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Form.png",
+    "license": "Public-Domain",
+    "tracks": ["form", "layout"]
+  },
+  {
+    "name": "simple_table",
+    "file": "simple_table.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Table%20Example.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Table_Example.jpg",
+    "license": "Public-Domain",
+    "tracks": ["table", "printed", "layout"]
+  },
+  {
+    "name": "public_domain_formula_photo",
+    "file": "public_domain_formula_photo.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Pure-mathematics-formul%C3%A6-blackboard.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Pure-mathematics-formul%C3%A6-blackboard.jpg",
+    "license": "Public-Domain",
+    "tracks": ["formula", "photo"]
+  },
+  {
+    "name": "public_domain_sheet_music",
+    "file": "public_domain_sheet_music.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Erik%20Satie%2C%20%22Gymnopedies%27%20piano%20sheet%20music%2C%20first%20edition.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Erik_Satie,_Gymnopedies%27_piano_sheet_music,_first_edition.jpg",
+    "license": "Public-Domain",
+    "tracks": ["music-omr", "printed", "photo-or-scan"]
+  },
+  {
+    "name": "german_official_document",
+    "file": "german_official_document.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Bernhard%20Freudenberg%20%281823-1877%29%20citizenship%20document%20from%201848.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Bernhard_Freudenberg_(1823-1877)_citizenship_document_from_1848.jpg",
+    "license": "Public-Domain",
+    "language": "de",
+    "tracks": ["german", "printed", "photo", "layout", "cleanup", "orientation"]
+  },
+  {
+    "name": "german_official_print",
+    "file": "german_official_print.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Deutsches%20Reichsgesetzblatt%201900%20001%200001.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Deutsches_Reichsgesetzblatt_1900_001_0001.jpg",
+    "license": "Public-Domain",
+    "language": "de",
+    "tracks": ["german", "printed", "page", "layout"]
+  },
+  {
+    "name": "german_kurrent_handwriting",
+    "file": "german_kurrent_handwriting.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Keferstein-handwriting-German-Kurrent-lower-case-word-endings.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Keferstein-handwriting-German-Kurrent-lower-case-word-endings.jpg",
+    "license": "CC0-1.0",
+    "language": "de",
+    "tracks": ["german", "handwriting", "historical"]
+  }
+]
