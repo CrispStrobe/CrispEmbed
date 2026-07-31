@@ -240,6 +240,8 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
     auto fw = to_f32(c->fc_w), fb = to_f32(c->fc_b);
     float logits[2] = {};
     linear_cpu(y.data(), logits, 1280, 2, fw.data(), fb.data());
+    r.logits[0] = logits[0];
+    r.logits[1] = logits[1];
     const float mx = std::max(logits[0], logits[1]);
     const float e0 = std::exp(logits[0] - mx), e1 = std::exp(logits[1] - mx);
     const float z = e0 + e1;
