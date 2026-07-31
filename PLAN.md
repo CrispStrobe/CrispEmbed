@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** CRAFT decoded box postprocessing parity (104 native vs 106 Python); full EasyOCR detector + recognizer port | **IN PROGRESS** |
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
@@ -23,7 +23,10 @@ races). Remove the row when the branch lands.
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
 Metal; DBNet→EasyOCR crop smoke now runs with the existing cstr/dbnet-ic15
-artifact, while DBNet Python box/text parity and production orchestration remain pending.
+artifact. The next slice explicitly separates detector geometry from ordering:
+EasyOCR line grouping, Tesseract/LayoutLM word ordering, and one structured
+handoff contract. DBNet Python box/text parity and production orchestration
+remain pending.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -48,6 +51,52 @@ artifact, while DBNet Python box/text parity and production orchestration remain
   PyTesseract; LayoutLM is not itself an OCR checkpoint.
 - Acceptance requires reference parity, decoded text, and real pipeline output
   checks before quantization or registry integration.
+
+#### OCR interoperability blueprint — selected item
+
+The engines do not share one detector. Tesseract supplies page segmentation and
+LSTM line recognition; EasyOCR uses CRAFT by default and optionally DBNet, then
+groups boxes into line crops for its recognizer; LayoutLMv2/v3 processors normally
+call PyTesseract and consume words plus normalized boxes, while
+`apply_ocr=False` accepts an external OCR result. Transformers as a library has
+no universal OCR detector: TrOCR is recognizer-only and OCR-free image-language
+models use their own visual encoder.
+
+The native boundary is therefore:
+
+`detector (CRAFT | DBNet | external/Tesseract geometry) → boxes/scores →
+ordering/grouping policy → word or line crops → recognizer → structured words`
+
+Every production path must emit the same weight-free record: text, pixel box,
+confidence, block, line, reading-order index, and optional `[0,1000]`
+normalized box. The selected implementation keeps two explicit policies:
+
+- `lines`: EasyOCR-compatible y-grouping and x-order, followed by dynamic-width
+  EasyOCR CRNN recognition.
+- `words`: Tesseract/LayoutLM-compatible word ordering, preserving individual
+  boxes and confidence for downstream processors.
+
+Do not port Tesseract as a DBNet checkpoint. Port its segmentation/order
+semantics where useful, retain native CRAFT/DBNet inference, and compare the
+policies on the same page fixtures. Acceptance is decoded page text and
+downstream handoff parity, not detector-box similarity alone.
+
+#### Interoperability gates
+
+- [ ] Make detector output and ordering policy first-class production adapters;
+      no test-only DBNet→EasyOCR orchestration.
+- [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
+      page fixture with a Python reference manifest.
+- [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
+      confidence, pixel boxes, and normalized LayoutLM boxes.
+- [ ] Run the same structured words through LayoutLMv2/v3 with
+      `apply_ocr=False`; verify serialization and ordering independently of
+      logits.
+- [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
+      it with EasyOCR CRNN on identical crops rather than treating either
+      recognizer as the detector.
+- [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
+      never relabel the cstr DBNet artifact or publish it under another account.
 
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
