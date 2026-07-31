@@ -363,6 +363,46 @@ Every named model must receive a matrix row with: exact source URL, revision,
 license, weight license, parameter count, GGUF quantization, live latency,
 CER delta on problematic fixtures, and a human-reviewed accept/reject result.
 
+#### O10.10 — Existing-model reconciliation
+
+The following are not new port candidates: the repository already contains
+runtime implementations, converters, tests, and local GGUF artifacts for them:
+
+| Already available | Runtime / artifact status |
+|---|---|
+| `NAFNet` | `src/nafnet_denoise.cpp`; `models/convert-nafnet-to-gguf.py`; local `nafnet-sidd-w32-q8_0.gguf` |
+| `SCUNet` | `src/scunet_denoise.cpp`; `models/convert-scunet-to-gguf.py`; local `scunet-color-f32.gguf` |
+| `Restormer` | `src/restormer.cpp`; `models/convert-restormer-to-gguf.py`; local `restormer-denoise-f16.gguf` |
+| `HAT` | `src/hat_sr.cpp`; `models/convert-hat-to-gguf.py`; local `hat-sr-x4-f16.gguf` |
+| `SwinIR` | `src/swinir_sr.cpp`; `models/convert-swinir-to-gguf.py`; local `swinir-light-x4-f16.gguf` |
+| `Real-ESRGAN` | `src/esrgan_sr.cpp`; `models/convert-esrgan-to-gguf.py`; local `esrgan-x4-f32.gguf` |
+| `DAT` | `src/dat_sr.cpp`; `models/convert-dat-to-gguf.py`; local `dat-light-x2-f16.gguf` |
+| `PAN` | `src/pan_sr.cpp`; `models/convert-pan-to-gguf.py`; local `pan-x4-f16.gguf` |
+| `SAFMN` | `src/safmn_sr.cpp`; `models/convert-safmn-to-gguf.py`; local `safmn-x4-f32.gguf` |
+| `TBSRN` | `src/tbsrn_sr.cpp`; `models/convert-tbsrn-to-gguf.py`; local `tbsrn-telescope-f16.gguf` |
+
+PP-OCRv6 detector/recognizer GGUF files also exist in the shared model volume
+(`PP-OCRv6_{tiny,small,medium}_{det,rec}-*.gguf`), including policy Q4_K and
+Q8_0 variants. They are **not yet integrated into the current main-branch
+runtime**; the PP-OCRv6 task remains an integration/port task, not a model
+acquisition task. The port must include detector postprocessing, recognizer
+dictionary handling, line orientation, and live German/Arabic/receipt tests.
+
+The genuinely new preprocessing ports are therefore:
+
+- `PP-LCNet_x1_0_doc_ori` — four-way page orientation;
+- `PP-LCNet_x1_0_textline_ori` — learned 0°/180° line orientation;
+- `UVDoc` or an equivalently permissive document-unwarping model — only if
+  classical/TPS dewarp fails the curved-page fixtures;
+- native PDFium rendering/autorotation integration, which is pipeline plumbing
+  rather than a new image-restoration model.
+
+Before adding another restoration model, O10 must benchmark the existing ten
+models on the same degraded fixtures and promote only models that improve
+downstream OCR CER/confidence. The current default candidates are therefore
+`SAFMN`/`PAN` for cheap SR, `NAFNet`/`Restormer` for denoise, and `SwinIR` or
+`HAT` for quality SR, subject to the license and no-harm gates above.
+
 ### Validation follow-up — external document parser [COMPLETED]
 
 - Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
