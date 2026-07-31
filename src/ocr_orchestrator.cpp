@@ -155,6 +155,19 @@ static stage dbnet_stage(cleanup_profile cp) {
     return s;
 }
 
+stage tesseract_fraktur_stage() {
+    stage s;
+    s.eng = engine::tesseract_fraktur;
+    s.enabled = true;
+    s.cleanup = classical_profile(false);
+    // Historical Fraktur pages contain narrow glyphs and long text lines.
+    s.params.det_min_height = 18;
+    s.params.det_width_height_ratio = 20.0f;
+    s.accept.min_chars = 4;
+    s.accept.min_confidence = 0.25f;
+    return s;
+}
+
 config default_config() {
     config cfg;
     cfg.router = true;
@@ -608,7 +621,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
-    case engine::tesseract: {
+    case engine::tesseract:
+    case engine::tesseract_fraktur: {
         // DBNet detection (model_a) + per-line Tesseract-LSTM recognition
         // (model_b). Tesseract-LSTM recognizes a single text line, so each
         // detected region is cropped (grayscale) and recognized in turn.
@@ -1261,6 +1275,8 @@ static const char * engine_name(engine e) {
         return "internvl2";
     case engine::tesseract:
         return "tesseract";
+    case engine::tesseract_fraktur:
+        return "tesseract_fraktur";
     case engine::deepseek_ocr2:
         return "deepseek_ocr2";
     case engine::pix2struct:
