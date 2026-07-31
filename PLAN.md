@@ -98,7 +98,8 @@ The native `test-easyocr-pipeline` can emit the same manifest schema, and
 `tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
 The serializer self-check passes on the 98-word DBNet page run; an independent
 Python detector/recognizer page manifest is still required before parity is
-claimed.
+claimed. The current local Python environment lacks torch, numpy, and cv2, so
+that reference run remains an explicit external/dependency gate.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -384,7 +385,9 @@ more than another restoration model.
    `feat/ppocr-next-20260731`; pending merge.** Add
    `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
    run raw input, classical cleanup variants, deskew, binarization, dewarp,
-   denoise, and every locally available SR/restoration model. Record stage
+   denoise, and every locally available SR/restoration model. The harness
+   accepts `--include-derived` to sweep every traced O10.2 robustness variant.
+   Record stage
    latency, output dimensions, pixel statistics, detector regions, OCR text,
    confidence, and CER/exact match when gold text exists. Also report text
    delta versus the raw-image baseline when no verified gold transcription is

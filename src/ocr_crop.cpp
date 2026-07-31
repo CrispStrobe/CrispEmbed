@@ -84,9 +84,8 @@ std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int 
     return result;
 }
 
-std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels,
-                                  const float qx[4], const float qy[4], int padding,
-                                  int * out_width, int * out_height) {
+std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
+                                  const float qy[4], int padding, int * out_width, int * out_height) {
     if (out_width) *out_width = 0;
     if (out_height) *out_height = 0;
     if (!pixels || !qx || !qy || width <= 0 || height <= 0 || channels <= 0) return {};
@@ -97,13 +96,28 @@ std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height,
     float min_sum = INFINITY, max_sum = -INFINITY, min_diff = INFINITY, max_diff = -INFINITY;
     for (int i = 0; i < 4; ++i) {
         const float sum = qx[i] + qy[i], diff = qx[i] - qy[i];
-        if (sum < min_sum) { min_sum = sum; order[0] = i; }
-        if (diff > max_diff) { max_diff = diff; order[1] = i; }
-        if (sum > max_sum) { max_sum = sum; order[2] = i; }
-        if (diff < min_diff) { min_diff = diff; order[3] = i; }
+        if (sum < min_sum) {
+            min_sum = sum;
+            order[0] = i;
+        }
+        if (diff > max_diff) {
+            max_diff = diff;
+            order[1] = i;
+        }
+        if (sum > max_sum) {
+            max_sum = sum;
+            order[2] = i;
+        }
+        if (diff < min_diff) {
+            min_diff = diff;
+            order[3] = i;
+        }
     }
     std::array<float, 4> x{}, y{};
-    for (int i = 0; i < 4; ++i) { x[i] = qx[order[i]]; y[i] = qy[order[i]]; }
+    for (int i = 0; i < 4; ++i) {
+        x[i] = qx[order[i]];
+        y[i] = qy[order[i]];
+    }
     auto dist = [&](int a, int b) { return std::hypot(x[a] - x[b], y[a] - y[b]); };
     const int pad = std::max(0, padding);
     const int ow = std::max(1, (int)std::lround(std::max(dist(0, 1), dist(3, 2))) + 2 * pad);
