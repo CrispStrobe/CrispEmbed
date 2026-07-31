@@ -107,6 +107,13 @@ The harness-blind CTC/vocabulary/confidence gate is now covered by the native
 with repeated-token collapse, vocabulary entries are 1-based and validated,
 and confidence follows EasyOCR's nonblank `custom_mean` formula.
 
+The page-pipeline audit found that EasyOCR's `get_image_list` uses OpenCV
+`resize(..., interpolation=1)` (bilinear), whereas the standalone recognizer
+fixture was generated with PIL bicubic. An experimental native bilinear
+substitution failed the existing diff at `sequence_input`, `bilstm_0`, and
+`logits` (`Ea` versus `5a`), so it is not retained in production until a
+matching bilinear `-ref.gguf` is regenerated.
+
 ### Tesseract parity status — NOT PROVEN
 
 The repository contains a `.traineddata` → GGUF converter, a pure-Python

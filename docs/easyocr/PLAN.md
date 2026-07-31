@@ -36,6 +36,12 @@
   no verified source hash for the backup GGUF, and no full page-segmentation or
   word-spacing parity. Tesseract remains a separate recognizer/segmentation
   acceptance lane, not ground truth for the EasyOCR page smoke.
+- The page path audit found a separate preprocessing boundary: EasyOCR's
+  `get_image_list` uses OpenCV `resize(..., interpolation=1)` (bilinear), while
+  the standalone recognizer reference fixture was generated with PIL bicubic.
+  An experimental native bilinear substitution failed the existing diff at
+  `sequence_input`, `bilstm_0`, and `logits` (`Ea` versus `5a`), so it is not
+  retained in production until a matching bilinear `-ref.gguf` is regenerated.
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
