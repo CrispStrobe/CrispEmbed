@@ -666,6 +666,10 @@ target_link_libraries(test-confidence PRIVATE crispembed)
 add_executable(test-ppocrv6-rec tests/test_ppocrv6_rec.cpp)
 target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)
 
+add_executable(test-ppocrv6-dbnet tests/test_ppocrv6_dbnet.cpp)
+target_include_directories(test-ppocrv6-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ppocrv6-dbnet PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
