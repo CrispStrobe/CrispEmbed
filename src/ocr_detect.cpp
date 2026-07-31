@@ -765,7 +765,7 @@ static float score_polygon(const float * prob_map, int map_w, int map_h,
 // Connected-component labeling + contour-based bounding box extraction.
 static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, int map_h, float prob_threshold,
                                            float box_threshold, float unclip_ratio, int min_area, float scale_x,
-                                           float scale_y) {
+                                           float scale_y, int dilation, int max_candidates, score_mode scoring) {
     std::vector<text_box> results;
     const bool debug = std::getenv("OCR_DETECT_DEBUG") != nullptr;
     int component_count = 0;
@@ -778,6 +778,29 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
     for (int i = 0; i < map_w * map_h; i++) {
         // prob_map is [W, H] in ggml layout (column-major: prob_map[x + y*W])
         if (prob_map[i] > prob_threshold) binary[i] = 1;
+    }
+
+    // A one-pixel dilation closes the small gaps produced by text strokes and
+    // is the inexpensive equivalent of the detector-side morphology used by
+    // common DBNet pipelines. Keep it bounded: larger kernels tend to merge
+    // adjacent lines and are better handled by the recognizer cropper.
+    for (int pass = 0; pass < std::min(dilation, 2); pass++) {
+        std::vector<uint8_t> expanded = binary;
+        for (int y = 0; y < map_h; y++) {
+            for (int x = 0; x < map_w; x++) {
+                if (binary[x + y * map_w]) continue;
+                for (int dy = -1; dy <= 1 && !expanded[x + y * map_w]; dy++) {
+                    for (int dx = -1; dx <= 1; dx++) {
+                        int nx = x + dx, ny = y + dy;
+                        if (nx >= 0 && nx < map_w && ny >= 0 && ny < map_h && binary[nx + ny * map_w]) {
+                            expanded[x + y * map_w] = 1;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        binary.swap(expanded);
     }
 
     // Flood-fill connected components
@@ -832,16 +855,24 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
                 if (count < min_area) continue;
                 area_pass_count++;
 
-                // Filter by mean score
+                // Filter by mean score before the more expensive contour
+                // score. This also avoids spending geometry time on noise.
                 float mean_score = sum_prob / count;
                 if (mean_score < box_threshold) continue;
                 mean_pass_count++;
 
-                // Trace contour of this component
-                auto contour = trace_contour(binary.data(), map_w, map_h, labels.data(), label, min_x, min_y);
+                // Fast mode deliberately avoids contour tracing. The legacy
+                // tracer is useful for accurate polygon scoring, but can
+                // revisit a very large dilated component many times.
+                std::vector<std::pair<int, int>> contour;
+                if (scoring == score_mode::accurate) {
+                    contour = trace_contour(binary.data(), map_w, map_h, labels.data(), label, min_x, min_y);
+                }
 
                 // Score against probability map (polygon interior only)
-                float poly_score = score_polygon(prob_map, map_w, map_h, contour, min_x, min_y, max_x, max_y);
+                float poly_score = scoring == score_mode::fast
+                                       ? mean_score
+                                       : score_polygon(prob_map, map_w, map_h, contour, min_x, min_y, max_x, max_y);
                 // A 4-connected component can have an isolated extreme pixel
                 // that the contour tracer cannot continue from (for example
                 // where a thin segmentation bridge meets a large blob). The
@@ -906,6 +937,12 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
         }
     }
 
+    if (max_candidates > 0 && (int)results.size() > max_candidates) {
+        std::partial_sort(results.begin(), results.begin() + max_candidates, results.end(),
+                          [](const text_box & a, const text_box & b) { return a.score > b.score; });
+        results.resize(max_candidates);
+    }
+
     // Sort by y then x (reading order)
     std::sort(results.begin(), results.end(), [](const text_box & a, const text_box & b) {
         if (std::abs(a.y - b.y) > std::min(a.h, b.h) * 0.5f) return a.y < b.y;
@@ -923,8 +960,9 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
 // Public API
 // ---------------------------------------------------------------------------
 
-std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, float prob_threshold,
-                             float box_threshold, float unclip_ratio) {
+static std::vector<text_box> detect_with_options(context * ctx, const float * pixels, int H, int W,
+                                                 float prob_threshold, float box_threshold, float unclip_ratio,
+                                                 int dilation, int max_candidates, score_mode scoring) {
     if (!ctx || !pixels) return {};
 
     const bool bench = ctx->bench;
@@ -945,7 +983,7 @@ std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, 
 
     t0 = std::chrono::steady_clock::now();
     auto result = extract_boxes(prob_map.data(), ctx->last_prob_w, ctx->last_prob_h, prob_threshold, box_threshold,
-                                unclip_ratio, ctx->min_area, scale_x, scale_y);
+                                unclip_ratio, ctx->min_area, scale_x, scale_y, dilation, max_candidates, scoring);
     if (bench)
         fprintf(stderr, "[ocr-detect-bench] postprocess: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
@@ -957,20 +995,43 @@ std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, 
     return result;
 }
 
-std::vector<text_box> detect_rgb(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
-                                 float prob_threshold, float box_threshold, float unclip_ratio, int target_short_side) {
-    if (!ctx || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0 || target_short_side <= 0) return {};
+std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, float prob_threshold,
+                             float box_threshold, float unclip_ratio) {
+    return detect_with_options(ctx, pixels, H, W, prob_threshold, box_threshold, unclip_ratio, 0, 0,
+                               score_mode::accurate);
+}
+
+detect_options rapid_defaults() {
+    return {};
+}
+
+std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                    const detect_options & options) {
+    if (!ctx || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0 || options.target_short_side <= 0) return {};
 
     // Resize (keep aspect ratio, short side = target)
-    float scale = (float)target_short_side / std::min(img_w, img_h);
+    float scale = (float)options.target_short_side / std::min(img_w, img_h);
+    if (options.max_side > 0) {
+        scale = std::min(scale, (float)options.max_side / std::max(img_w, img_h));
+    }
+    scale = std::max(scale, 1.0f / std::max(img_w, img_h));
     int new_w = (int)(img_w * scale);
     int new_h = (int)(img_h * scale);
 
+    // Keep very short lines visible to the detector and avoid the extreme
+    // aspect-ratio failure mode common on receipt/document strips.
+    int content_h = new_h;
+    if (options.min_height > 0) content_h = std::max(content_h, options.min_height);
+    if (options.width_height_ratio > 0.0f) {
+        content_h = std::max(content_h, (int)std::ceil(new_w / options.width_height_ratio));
+    }
+    const int top_pad = (content_h - new_h) / 2;
+
     // Pad to multiple of pad_divisor
     int pad_w = (ctx->pad_divisor - new_w % ctx->pad_divisor) % ctx->pad_divisor;
-    int pad_h = (ctx->pad_divisor - new_h % ctx->pad_divisor) % ctx->pad_divisor;
+    int pad_h = (ctx->pad_divisor - content_h % ctx->pad_divisor) % ctx->pad_divisor;
     int padded_w = new_w + pad_w;
-    int padded_h = new_h + pad_h;
+    int padded_h = content_h + pad_h;
 
     // Allocate CHW buffer
     std::vector<float> pixels(3 * padded_h * padded_w, 0.0f);
@@ -1000,36 +1061,55 @@ std::vector<text_box> detect_rgb(context * ctx, const uint8_t * raw, int img_w, 
                 val = (val - ctx->img_mean[c]) / ctx->img_std[c];
 
                 // Store in CHW layout: [c * H * W + y * W + x]
-                pixels[c * padded_h * padded_w + y * padded_w + x] = val;
+                pixels[c * padded_h * padded_w + (y + top_pad) * padded_w + x] = val;
             }
         }
     }
 
     if (ctx->bench)
-        fprintf(stderr, "ocr_detect: raw %dx%d → %dx%d (padded %dx%d)\n", img_w, img_h, new_w, new_h, padded_w,
-                padded_h);
+        fprintf(stderr, "ocr_detect: raw %dx%d -> %dx%d (content %dx%d, pad-top %d, padded %dx%d, max-side %d)\n",
+                img_w, img_h, new_w, new_h, new_w, content_h, top_pad, padded_w, padded_h, options.max_side);
 
     // Run detection
-    auto boxes = detect(ctx, pixels.data(), padded_h, padded_w, prob_threshold, box_threshold, unclip_ratio);
+    auto boxes =
+        detect_with_options(ctx, pixels.data(), padded_h, padded_w, options.prob_threshold, options.box_threshold,
+                            options.unclip_ratio, options.dilation, options.max_candidates, options.scoring);
 
     // Scale coordinates back to original image space
     float inv_scale = 1.0f / scale;
     for (auto & b : boxes) {
         b.x *= inv_scale;
-        b.y *= inv_scale;
+        b.y = (b.y - top_pad) * inv_scale;
         b.w *= inv_scale;
         b.h *= inv_scale;
         for (int i = 0; i < 4; i++) {
             b.qx[i] *= inv_scale;
-            b.qy[i] *= inv_scale;
+            b.qy[i] = (b.qy[i] - top_pad) * inv_scale;
+        }
+        b.x = std::max(0.0f, std::min(b.x, (float)img_w));
+        b.y = std::max(0.0f, std::min(b.y, (float)img_h));
+        b.w = std::max(0.0f, std::min(b.w, (float)img_w - b.x));
+        b.h = std::max(0.0f, std::min(b.h, (float)img_h - b.y));
+        for (int i = 0; i < 4; i++) {
+            b.qx[i] = std::max(0.0f, std::min(b.qx[i], (float)img_w));
+            b.qy[i] = std::max(0.0f, std::min(b.qy[i], (float)img_h));
         }
     }
 
     return boxes;
 }
 
-std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold, float box_threshold,
-                                  float unclip_ratio, int target_short_side) {
+std::vector<text_box> detect_rgb(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                 float prob_threshold, float box_threshold, float unclip_ratio, int target_short_side) {
+    detect_options options = rapid_defaults();
+    options.prob_threshold = prob_threshold;
+    options.box_threshold = box_threshold;
+    options.unclip_ratio = unclip_ratio;
+    options.target_short_side = target_short_side;
+    return detect_rgb_ex(ctx, raw, img_w, img_h, img_c, options);
+}
+
+std::vector<text_box> detect_file_ex(context * ctx, const char * path, const detect_options & options) {
     if (!ctx || !path) return {};
 
     int img_w = 0, img_h = 0, img_c = 0;
@@ -1038,9 +1118,19 @@ std::vector<text_box> detect_file(context * ctx, const char * path, float prob_t
         fprintf(stderr, "ocr_detect: cannot load image: %s\n", path);
         return {};
     }
-    auto boxes = detect_rgb(ctx, raw, img_w, img_h, 3, prob_threshold, box_threshold, unclip_ratio, target_short_side);
+    auto boxes = detect_rgb_ex(ctx, raw, img_w, img_h, 3, options);
     stbi_image_free(raw);
     return boxes;
+}
+
+std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold, float box_threshold,
+                                  float unclip_ratio, int target_short_side) {
+    detect_options options = rapid_defaults();
+    options.prob_threshold = prob_threshold;
+    options.box_threshold = box_threshold;
+    options.unclip_ratio = unclip_ratio;
+    options.target_short_side = target_short_side;
+    return detect_file_ex(ctx, path, options);
 }
 
 const float * get_prob_map(const context * ctx, int * out_h, int * out_w) {
