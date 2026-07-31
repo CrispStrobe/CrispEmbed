@@ -48,6 +48,8 @@ struct Report {
     float rms = 0.0f;
     float cos_min = 1.0f;
     float cos_mean = 1.0f;
+    float mine_norm = 0.0f;
+    float ref_norm = 0.0f;
     std::vector<int64_t> shape;
 
     bool is_pass(float cos_threshold = 0.999f) const { return found && cos_min >= cos_threshold; }
@@ -352,17 +354,21 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
     if (cmp_n == 0) return r;
 
     // Element-wise metrics
-    double sum_abs = 0, sum_sq = 0;
+    double sum_abs = 0, sum_sq = 0, mine_sq = 0, ref_sq = 0;
     float max_a = 0;
     for (size_t i = 0; i < cmp_n; i++) {
         float d = std::fabs(data[i] - ref[i]);
         if (d > max_a) max_a = d;
         sum_abs += d;
         sum_sq += (double)d * d;
+        mine_sq += (double)data[i] * data[i];
+        ref_sq += (double)ref[i] * ref[i];
     }
     r.max_abs = max_a;
     r.mean_abs = (float)(sum_abs / cmp_n);
     r.rms = (float)std::sqrt(sum_sq / cmp_n);
+    r.mine_norm = (float)std::sqrt(mine_sq);
+    r.ref_norm = (float)std::sqrt(ref_sq);
 
     // Per-row cosine similarity
     // Determine row size from shape or row_dim
@@ -391,7 +397,8 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
             na += (double)a[j] * a[j];
             nb += (double)b[j] * b[j];
         }
-        float cos = (na > 1e-18 && nb > 1e-18) ? (float)(dot / (std::sqrt(na) * std::sqrt(nb))) : 0.0f;
+        float cos = na > 1e-18 && nb > 1e-18 ? (float)(dot / (std::sqrt(na) * std::sqrt(nb)))
+                                             : (na <= 1e-18 && nb <= 1e-18 ? 1.0f : 0.0f);
         cos_sum += cos;
         if (cos < cos_worst) cos_worst = cos;
     }
