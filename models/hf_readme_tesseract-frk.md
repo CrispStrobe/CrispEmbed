@@ -59,7 +59,7 @@ from the same `frk.traineddata` and the same 200×80 grayscale crop:
 | Variant | Worst stage cosine | Logits cosine | Result |
 |---|---:|---:|---|
 | F32 | 1.000000 | 1.000000 | Pass |
-| Q8_0 mixed precision | 0.999860 | 0.999914 | Pass |
+| Q8_0 mixed precision | 0.999873 | 0.999945 | Pass |
 
 The reference activation dump is retained outside Git at
 `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-line.gguf`.
