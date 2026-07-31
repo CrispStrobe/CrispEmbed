@@ -350,11 +350,20 @@ static void normalize_image(const uint8_t * pixels, int width, int height,
     if (mins.empty()) mins.push_back(0.0f);
     if (maxes.empty()) maxes.push_back(255.0f);
 
-    // 25th percentile of mins, 75th percentile of maxes
+    // NumPy's default percentile method is linear interpolation between the
+    // surrounding sorted samples. Use the same rule as the Python reference;
+    // selecting floor(index) changes the normalization before the first NN op.
     std::sort(mins.begin(), mins.end());
     std::sort(maxes.begin(), maxes.end());
-    float black = mins[(int)(mins.size() * 0.25f)];
-    float white = maxes[(int)(maxes.size() * 0.75f)];
+    auto percentile_linear = [](const std::vector<float> & values, float q) {
+        const float position = q * (float)(values.size() - 1);
+        const size_t lower = (size_t)std::floor(position);
+        const size_t upper = std::min(values.size() - 1, lower + 1);
+        const float fraction = position - (float)lower;
+        return values[lower] + fraction * (values[upper] - values[lower]);
+    };
+    float black = percentile_linear(mins, 0.25f);
+    float white = percentile_linear(maxes, 0.75f);
     float contrast = (white - black) / 2.0f;
     if (contrast <= 0.0f) contrast = 1.0f;
 
@@ -383,12 +392,13 @@ static void forward(tesseract_lstm_context * ctx,
     // 1. Convolve 3×3 stacking (no learned weights) + FC+tanh
     // For each pixel (y,x): stack 3×3 neighborhood → 9 features
     // Then FC: out = tanh(W @ stacked + bias)
+    std::vector<float> convolve_out(H * W * 9);
     std::vector<float> fc_out(H * W * conv_out);
     {
-        std::vector<float> stacked(9);
         for (int y = 0; y < H; y++) {
             for (int x = 0; x < W; x++) {
                 int idx = 0;
+                float * stacked = convolve_out.data() + (y * W + x) * 9;
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dy = -1; dy <= 1; dy++) {
                         int sx = x + dx, sy = y + dy;
@@ -407,6 +417,7 @@ static void forward(tesseract_lstm_context * ctx,
         }
     }
 
+    capture(ctx, "after_convolve", convolve_out.data(), convolve_out.size());
     capture(ctx, "after_conv_fc", fc_out.data(), fc_out.size());
 
     // 2. MaxPool 3×3

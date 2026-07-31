@@ -224,6 +224,14 @@ downstream handoff parity, not detector-box similarity alone.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and stage/output parity remain open.
+- [x] Align the diagnostic Tesseract reference dumper's resize contract with
+      native half-pixel bilinear uint8 rounding; this isolates graph parity
+      from the separate question of full Tesseract page preprocessing.
+- [x] Run the exact hashed Homebrew English diagnostic reference: decoded
+      native/Python output agrees (`a`), input cosine is `0.999658`, and all
+      9 captured stages pass the agreed `0.99` gate with mine/ref magnitude
+      reports; BiLSTM stages 1/2 remain below the stricter `0.999` review
+      threshold and are not claimed exact.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
