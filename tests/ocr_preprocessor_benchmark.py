@@ -127,6 +127,34 @@ def cer(got: str, want: str | None) -> dict:
             "cer": d / max(1, len(b)), "edit_distance": d}
 
 
+def effect(candidate: dict, baseline: dict | None) -> str:
+    """Classify an OCR stage against raw input with conservative margins."""
+    if not candidate.get("ocr") or not baseline or not baseline.get("ocr"):
+        return "unavailable"
+    a, b = candidate["ocr"], baseline["ocr"]
+    if a.get("status") != "ok" or b.get("status") != "ok":
+        return "error"
+    if a.get("cer") is not None and b.get("cer") is not None:
+        delta = a["cer"] - b["cer"]
+        if delta < -0.01:
+            return "helped"
+        if delta > 0.01:
+            return "harmed"
+        return "neutral"
+    # Without verified gold text, only call a stage helpful when it improves
+    # both confidence and usable text yield; a confidence drop or empty text
+    # is harmful.  Otherwise the result stays neutral.
+    ac, bc = a.get("mean_confidence") or 0.0, b.get("mean_confidence") or 0.0
+    al, bl = len(a.get("text", "").strip()), len(b.get("text", "").strip())
+    if not al:
+        return "harmed"
+    if ac >= bc + 0.03 and al >= max(1, bl - 2):
+        return "helped"
+    if ac + 0.03 < bc or al + 8 < bl:
+        return "harmed"
+    return "neutral"
+
+
 def fixture_paths(args: argparse.Namespace) -> list[Path]:
     if args.only:
         result = []
@@ -202,6 +230,8 @@ def main() -> int:
     ap.add_argument("--engine", default="trocr")
     ap.add_argument("--expected", default=None)
     ap.add_argument("--include-dewarp", action="store_true")
+    ap.add_argument("--stage", action="append", default=[],
+                    help="limit the run to named stages; repeat (default: all)")
     ap.add_argument("--model", action="append", default=[], metavar="STAGE=MODEL",
                     help="optional learned stage: nafnet,pan,dat,hat,safmn,esrgan,swinir,tbsrn")
     args = ap.parse_args()
@@ -219,6 +249,9 @@ def main() -> int:
                ("cleanup-no-consensus", ["--no-deskew-consensus"])]
     if args.include_dewarp:
         stages.append(("dewarp", ["--dewarp"]))
+    if args.stage:
+        wanted = set(args.stage) | {"raw"}
+        stages = [(name, flags) for name, flags in stages if name in wanted]
     rows = []
     with tempfile.TemporaryDirectory(prefix="crispembed-preproc-") as tmp:
         tmpdir = Path(tmp)
@@ -227,6 +260,7 @@ def main() -> int:
                 rows.append({"fixture": str(image), "stage": "raw",
                              "status": "unavailable", "reason": "missing fixture"})
                 continue
+            start = len(rows)
             iw, ih, ic = dimensions(image)
             expected = args.expected
             for name, flags in stages:
@@ -306,6 +340,9 @@ def main() -> int:
                     if args.pipeline_binary:
                         result["ocr"] = ocr_stage(Path(args.pipeline_binary), outpath, args)
                 rows.append(result)
+            baseline = next((r for r in rows[start:] if r.get("stage") == "raw"), None)
+            for result in rows[start:]:
+                result["effect_vs_raw"] = "baseline" if result is baseline else effect(result, baseline)
     report = {"version": 1, "binary": str(binary), "rows": rows,
               "policy": "raw and each preprocessor are measured independently; missing stages are explicit"}
     if args.output:

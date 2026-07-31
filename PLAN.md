@@ -237,7 +237,9 @@ more than another restoration model.
    supplied learned denoise/SR models are measured as separate rows. Each row
    records stage latency, output dimensions, checksums, pixel statistics,
    stderr/failure reason, and optional detector-pipeline regions, confidence,
-   OCR text, and CER. Missing optional models are reported as `unavailable`,
+   OCR text, CER, and conservative `helped`/`neutral`/`harmed` effects versus
+   the raw baseline. `--stage` limits expensive live OCR comparisons to a
+   selected subset; missing optional models are reported as `unavailable`,
    never silently skipped. Synthetic degradations remain unit stress tests,
    not quality claims.
 
