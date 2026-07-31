@@ -29,6 +29,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
 | 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** explicit Tesseract Fraktur profile: DBNet page detection, grayscale line crops, and `tesseract-frk` GGUF recognition; preserve the existing generic Tesseract path | **COMPLETED — grouped full-page smoke: 21 regions, 1,017 chars, mean confidence 0.872; 74/74 tests** |
+| 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** reproducible native-vs-system Fraktur CER/WER harness for exact line and full-page fixtures, preserving long-s and Unicode NFC | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **COMPLETED** |
@@ -178,7 +179,9 @@ Required Fraktur implementation sequence:
    oracle exists. Preserve `ſ`, `ß`, ligatures, and Unicode normalization in
    the comparison. **In progress:** the full-page harness now groups DBNet
    fragments into 21 line regions (down from 111 word-like regions); native
-   versus system-`frk` normalized CER baseline is 0.238 on the current fixture.
+   versus system-`frk` baseline is CER `0.2380`, WER `0.4113` on the current
+   fixture; `tools/compare_tesseract_fraktur.py` emits this NFC-preserving
+   comparison as JSON. System OCR remains a baseline, not a gold transcription.
 4. Run crispasr-diff-style intermediate parity for the converted `frk` model,
   then test F32, head-only Q8, and debug Q4. Do not publish a quant until
    the Fraktur crop remains readable and the output-layer parity gate passes.
