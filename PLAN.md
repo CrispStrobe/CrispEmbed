@@ -303,6 +303,66 @@ Each fixture/stage row must include:
 - Results are reproducible from one command and committed as benchmark JSON;
   large GGUFs support the external-volume no-copy path via `UOCR_MMAP=1`.
 
+#### O10.9 — Named model candidates, licensing, and quality tiers
+
+License policy: MIT, Apache-2.0, BSD-2/3-Clause, ISC, and similarly
+permissive licenses are acceptable candidates for the core distribution. Do
+not add NC/ND, research-only, or unclear checkpoint artifacts to the default
+model registry. Repository-code licensing and pretrained-weight licensing must
+be recorded separately before publishing a GGUF.
+
+| Stage | Candidate model | License/reuse status | Quality position | Decision |
+|---|---|---|---|---|
+| Page orientation | `PP-LCNet_x1_0_doc_ori` | PaddleOCR is Apache-2.0; verify the exact exported checkpoint terms | Strong practical choice: four-way 0°/90°/180°/270° classifier, official docs report 99.06% on its test set | First port candidate |
+| Line orientation | `PP-LCNet_x1_0_textline_ori` | Same Apache-2.0 project/weight-provenance audit required | Strong practical choice for per-line 0°/180° correction | First port candidate |
+| Text detection | `PP-OCRv6` det | Apache-2.0 PaddleOCR code; model artifact provenance must be pinned and audited | Current practical high-quality/throughput baseline; supports multilingual deployment | Port/benchmark when PP-OCRv6 branch lands |
+| Text recognition | `PP-OCRv6` rec | Same code/weight distinction as detector | Current practical high-quality/throughput baseline; one unified family is preferable to many language-specific recognizers | Port/benchmark with detector |
+| Text detection fallback | `DBNet` / `DBNet++` | Select MIT/Apache/BSD implementation and audit weights | Mature, reliable fallback; generally below current PP-OCR quality on difficult documents | Keep as CPU/portable fallback |
+| Denoising | `NAFNet` | Upstream repository/checkpoint terms require explicit audit before redistribution | Strong efficient restoration baseline; upstream describes it as state-of-the-art for its restoration tasks | Keep only with artifact audit |
+| Denoising/deblurring | `Restormer` | MIT repository license | Strong high-resolution denoising/deblurring/deraining model; official repo calls it SOTA for those tasks | Safe preferred learned restorer |
+| Denoising | `SCUNet` | Verify upstream repository and checkpoint terms before registry inclusion | Lightweight practical denoiser, attractive for CPU/Metal | Keep as optional pending audit |
+| Super-resolution | `HAT` / `HAT-S` | Apache-2.0 repository | Stronger quality-oriented SR candidate; HAT-S is a useful smaller tier | Safe preferred quality SR candidate |
+| Super-resolution | `SwinIR` | Apache-2.0 repository; verify model-data/checkpoint terms | Strong broad baseline for classical/real-world SR, denoising, and JPEG artifact reduction | Safe preferred general SR candidate |
+| Super-resolution | `Real-ESRGAN` | BSD-3-Clause repository; each released checkpoint still needs provenance audit | Strong practical real-world SR, but can hallucinate texture and harm OCR | Optional photo-only fallback, never unconditional |
+| Super-resolution | `DAT` | Use only an explicitly permissive checkpoint/export; otherwise audit-required | High-quality transformer SR candidate, heavier than HAT-S/SwinIR | Optional quality tier after license audit |
+| Super-resolution | `PAN` | Apache-2.0 model card/export candidate available | Very small and fast; useful low-resolution baseline, not current SOTA | Keep as fast CPU tier |
+| Super-resolution | `SAFMN` | Apache-2.0 source/export; current GGUF card records Apache-2.0 | Excellent efficiency/size tradeoff, not absolute SOTA | Keep as default lightweight SR candidate |
+| Text SR | `TBSRN` | Checkpoint license/provenance must be audited | Text-focused SR is more relevant to OCR than generic photorealistic SR | Keep only behind OCR CER gate |
+| Learned dewarp | `UVDoc` / document-unwarping models | Candidate only after exact checkpoint license audit | Better fit than generic image restoration for curved pages | Prefer classical dewarp first; port if real fixtures show need |
+| PDF orientation/render | PDFium + `PP-LCNet_x1_0_doc_ori` | PDFium and classifier terms must be retained in notices; classifier checkpoint audit required | Strong operational solution rather than an image-restoration model | Implement native render/autorotate path |
+
+#### Explicitly excluded or non-default candidates
+
+- `Texo-Distill` is AGPL-3.0 and remains outside the permissive core model
+  registry; use `PP-FormulaNet-L`, `PP-FormulaNet-S`, or another audited
+  Apache/MIT/BSD formula model instead.
+- Any `CC-BY-NC`, `CC-BY-NC-SA`, research-only, or unclear checkpoint is not a
+  default alternative even when its architecture is attractive. It may be
+  supported in a user-supplied/private model path if the caller accepts the
+  license, but it must not be bundled or auto-downloaded by the default
+  registry.
+- Generic GAN/diffusion SR models must not be called automatically on OCR
+  inputs. They can create plausible but incorrect glyph detail; acceptance is
+  downstream OCR CER/confidence, not visual sharpness.
+
+#### Quality/SOTA policy
+
+“SOTA” is task-specific and must not be treated as a blanket OCR claim. The
+selection policy is:
+
+1. `PP-LCNet_x1_0_doc_ori` and `PP-LCNet_x1_0_textline_ori` for cheap learned
+   orientation;
+2. `PP-OCRv6` det/rec for the primary practical OCR baseline;
+3. `Restormer` or `NAFNet` for restoration when live CER proves it helps;
+4. `HAT`/`SwinIR` for quality SR and `SAFMN`/`PAN` for low-resource SR;
+5. `Real-ESRGAN` only for photo inputs and only behind a no-harm gate;
+6. classical cleanup and no preprocessing remain valid winners when the raw
+   or VLM path scores better.
+
+Every named model must receive a matrix row with: exact source URL, revision,
+license, weight license, parameter count, GGUF quantization, live latency,
+CER delta on problematic fixtures, and a human-reviewed accept/reject result.
+
 ### Validation follow-up — external document parser [COMPLETED]
 
 - Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
