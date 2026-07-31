@@ -114,6 +114,7 @@ static bool build_graph(easyocr_ocr_context * c) {
     conv(14, 1, 1, 1, 1);
     x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 1, 2, 1, 2, 0, 0);
     conv(18, 1, 1, 0, 0);
+    x = ggml_cont(g, x);
     ggml_set_name(x, "features");
     ggml_set_output(x);
 
