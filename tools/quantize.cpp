@@ -266,7 +266,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // it at F32 avoids changing near-tied character logits even when the
         // recurrent matrices are quantized. The output bias is already kept
         // by the generic bias rule below.
-        const bool tesseract_keep = is_tesseract_lstm && sname == "output.weight";
+        // Tesseract's native int-mode uses the separately preserved source
+        // int8 matrices. Keep every float matrix lossless in the container so
+        // the F32 path and the bias/activation reference do not acquire a
+        // second, unrelated ggml quantization error.
+        const bool tesseract_keep = is_tesseract_lstm &&
+                                     (sname == "output.weight" || sname.find(".weight") != std::string::npos);
         if (ppocr_keep || tesseract_keep || sname.find("patch_embed") != std::string::npos ||
             sname.find("downsample") != std::string::npos || sname.find("downsampling") != std::string::npos ||
             sname.find("dwconv") != std::string::npos || sname.find("enc.bb") != std::string::npos ||
