@@ -2,6 +2,7 @@
 
 #include "core/gpu_backend_pref.h"
 #include "core/gguf_loader.h"
+#include "crispembed_diff.h"
 #include "image_preprocess.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -12,6 +13,11 @@
 #include <cstring>
 #include <string>
 #include <vector>
+
+static void print_diff_report(const char * name, const crispembed_diff::Report & r) {
+    printf("easyocr-diff %-16s n=%zu max=%.6g mean=%.6g rms=%.6g cos=%.7f mine=%.6g ref=%.6g %s\n", name, r.n_elem,
+           r.max_abs, r.mean_abs, r.rms, r.cos_min, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
+}
 
 struct easyocr_ocr_context {
     core_gguf::WeightLoad wl;
@@ -113,17 +119,17 @@ static bool build_graph(easyocr_ocr_context * c) {
 
     const int T = 49;
     const int D = 256;
-    // EasyOCR applies AdaptiveAvgPool2d((None, 1)) after permuting
-    // [B,C,H,W] -> [B,W,C,H]. In ggml layout this is [W,H,C,B] ->
-    // [H,C,W,B], average over the H axis, then restore [C,W].
-    x = ggml_cont(g, ggml_permute(g, x, 2, 0, 1, 3));
+    // EasyOCR applies AdaptiveAvgPool2d((None, 1)) to [B,C,H,W], averaging
+    // the height axis while preserving width. In ggml's [W,H,C,B] layout,
+    // move H to the pooler's x axis, average it, then restore [C,W].
+    x = ggml_cont(g, ggml_permute(g, x, 1, 0, 2, 3)); // [H,W,C,B]
     x = ggml_pool_2d(g, x, GGML_OP_POOL_AVG, x->ne[0], 1, x->ne[0], 1, 0, 0);
-    x = ggml_cont(g, ggml_permute(g, x, 0, 2, 1, 3));
+    x = ggml_cont(g, ggml_permute(g, x, 2, 1, 0, 3)); // [C,W,1,B]
     if (ggml_nelements(x) != D * T) {
         fprintf(stderr, "easyocr: sequence shape is %lld, expected %d\n", (long long)ggml_nelements(x), D * T);
         return false;
     }
-    x = ggml_reshape_2d(g, x, D, T);
+    x = ggml_cont(g, ggml_reshape_2d(g, x, D, T));
     ggml_set_name(x, "sequence_input");
     ggml_set_output(x);
 
@@ -197,20 +203,19 @@ void easyocr_ocr_free(easyocr_ocr_context * c) {
 
 const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, int w, int h, int ch, int * out_len) {
     if (!c || !px || w <= 0 || h <= 0 || ch <= 0) return nullptr;
-    std::vector<uint8_t> rgb((size_t)w * h * 3);
+    std::vector<uint8_t> gray((size_t)w * h);
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
             const uint8_t * p = px + ((size_t)y * w + x) * ch;
-            uint8_t * q = rgb.data() + ((size_t)y * w + x) * 3;
-            q[0] = q[1] = q[2] = ch == 1 ? p[0] : (uint8_t)((77 * p[0] + 150 * p[1] + 29 * p[2]) >> 8);
+            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
         }
-    std::vector<float> resized((size_t)c->height * c->width * 3);
+    std::vector<float> resized((size_t)c->height * c->width);
     const int rw = std::min(c->width, std::max(1, (int)std::ceil((double)c->height * w / h)));
-    image_preproc::resize_bicubic_u8_hwc(rgb.data(), h, w, resized.data(), c->height, rw, 3);
+    image_preproc::resize_bicubic_u8_hwc(gray.data(), h, w, resized.data(), c->height, rw, 1);
     c->input_host.assign((size_t)c->height * c->width, 0.0f);
     for (int y = 0; y < c->height; ++y)
         for (int x = 0; x < rw; ++x) {
-            float v = resized[((size_t)y * rw + x) * 3] / 255.0f;
+            float v = resized[(size_t)y * rw + x] / 255.0f;
             c->input_host[(size_t)y * c->width + x] = v * 2.0f - 1.0f;
         }
     for (int y = 0; y < c->height; ++y)
@@ -235,4 +240,81 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     }
     if (out_len) *out_len = (int)c->result.size();
     return c->result.c_str();
+}
+
+static bool copy_graph_tensor(ggml_cgraph * graph, const char * name, std::vector<float> & raw,
+                              ggml_tensor ** out_tensor) {
+    ggml_tensor * t = ggml_graph_get_tensor(graph, name);
+    if (!t || t->type != GGML_TYPE_F32) {
+        fprintf(stderr, "easyocr-diff: missing/non-F32 graph tensor '%s'\n", name);
+        return false;
+    }
+    raw.resize((size_t)ggml_nelements(t));
+    ggml_backend_tensor_get(t, raw.data(), 0, raw.size() * sizeof(float));
+    if (out_tensor) *out_tensor = t;
+    return true;
+}
+
+// Convert GGML's fastest-dimension-first graph views to the contiguous
+// PyTorch tensors emitted by dump_easyocr_reference.py.  The mappings are
+// explicit even where contiguous storage makes the resulting byte order equal:
+// [W,H,C] -> [C,H,W], [D,T] -> [T,D], and [V,T] -> [T,V].
+static bool to_reference_layout(const char * name, const ggml_tensor * t, const std::vector<float> & raw,
+                                std::vector<float> & ordered) {
+    const int64_t n0 = t->ne[0], n1 = t->ne[1], n2 = t->ne[2], n3 = t->ne[3];
+    ordered.resize(raw.size());
+    if (!strcmp(name, "features") || !strcmp(name, "input_image")) {
+        for (int64_t b = 0; b < n3; ++b)
+            for (int64_t c = 0; c < n2; ++c)
+                for (int64_t y = 0; y < n1; ++y)
+                    for (int64_t x = 0; x < n0; ++x) {
+                        const size_t i = (size_t)x + (size_t)n0 * (y + n1 * (c + n2 * b));
+                        ordered[i] = raw[i];
+                    }
+        return true;
+    }
+    if (!strcmp(name, "sequence_input") || !strcmp(name, "bilstm_0") || !strcmp(name, "bilstm_1") ||
+        !strcmp(name, "logits")) {
+        const int64_t d = n0, tlen = n1;
+        for (int64_t tpos = 0; tpos < tlen; ++tpos)
+            for (int64_t dim = 0; dim < d; ++dim) ordered[(size_t)tpos * d + dim] = raw[(size_t)dim + (size_t)d * tpos];
+        return true;
+    }
+    return false;
+}
+
+int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
+    if (!c || !c->graph || !ref_path) return 1;
+    crispembed_diff::Ref ref;
+    if (!ref.load(ref_path)) return 1;
+
+    static const char * names[] = {
+        "input_image", "features", "sequence_input", "bilstm_0", "bilstm_1", "logits",
+    };
+    int failures = 0;
+    for (const char * name : names) {
+        if (!ref.has(name)) {
+            fprintf(stderr, "easyocr-diff: reference is missing '%s'\n", name);
+            failures++;
+            continue;
+        }
+        std::vector<float> raw, ordered;
+        if (!strcmp(name, "input_image")) {
+            ordered = c->input_host;
+            auto report = ref.compare(name, ordered.data(), ordered.size(), 0);
+            print_diff_report(name, report);
+            if (!report.is_pass()) failures++;
+            continue;
+        }
+        ggml_tensor * t = nullptr;
+        if (!copy_graph_tensor(c->graph, name, raw, &t) || !to_reference_layout(name, t, raw, ordered)) {
+            failures++;
+            continue;
+        }
+        const int row_dim = !strcmp(name, "features") ? 0 : !strcmp(name, "sequence_input") ? 1 : 0;
+        auto report = ref.compare(name, ordered.data(), ordered.size(), row_dim);
+        print_diff_report(name, report);
+        if (!report.is_pass()) failures++;
+    }
+    return failures;
 }

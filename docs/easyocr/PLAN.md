@@ -4,10 +4,10 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Status: architecture/source audit complete; full detector + recognizer port selected
-- Next: debug the first graph against the English Gen-2 `-ref.gguf` logits;
-  graph allocation/build now works, but the smoke decode is blank instead of
-  Python's `5a`, so parity is not yet passed
+- Status: architecture/source audit and diff fixture are complete; English Gen-2
+  now decodes `5a`, but tensor parity is not yet passed
+- Next: resolve the remaining CNN/input tolerance and f16-stage differences,
+  then generalize the validated graph to all recognizers and detectors
 
 ## Scope
 
@@ -54,7 +54,8 @@ metadata, not learned parameters.
 - [x] Add a per-stage reference dumper and license manifest skeleton.
 - [x] Run the dumper against a real English Gen-2 checkpoint and inspect the
       generated `-ref.gguf` tensors.
-- [ ] Add a C++ diff fixture using `crispembed_diff::Ref`.
+- [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit
+      layout conversion and cosine/magnitude reports for every captured stage.
 - [ ] Fix the current graph/output divergence before any model-family
       generalization.
 - [ ] Implement the recognizer as reusable ggml graphs on CPU/Metal/CUDA/

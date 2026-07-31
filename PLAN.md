@@ -41,6 +41,10 @@ races). Remove the row when the branch lands.
 - Acceptance requires reference parity, decoded text, and real pipeline output
   checks before quantization or registry integration.
 
+English Gen-2 now has a committed `test-easyocr-diff` harness and decodes the
+Python fixture text `5a`; CNN/input and f16 tensor parity remain open, so this
+is not an acceptance milestone yet.
+
 This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
 ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each
 can land and be measured independently.

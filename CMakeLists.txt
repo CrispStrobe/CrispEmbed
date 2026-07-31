@@ -386,6 +386,10 @@ add_executable(test-easyocr tests/test_easyocr.cpp)
 target_include_directories(test-easyocr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr PRIVATE crispembed)
 
+add_executable(test-easyocr-diff tests/test_easyocr_diff.cpp)
+target_include_directories(test-easyocr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-diff PRIVATE crispembed)
+
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
     target_link_libraries(test-posformer-batch PRIVATE crispembed)
