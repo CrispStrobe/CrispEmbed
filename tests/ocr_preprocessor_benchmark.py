@@ -114,6 +114,8 @@ def main() -> int:
     ap.add_argument("--det", default="dbnet-ic15-f16.gguf")
     ap.add_argument("--rec", default="trocr-small-printed-q8_0.gguf")
     ap.add_argument("--image", action="append", default=[])
+    ap.add_argument("--include-derived", action="store_true",
+                    help="also benchmark deterministic CC0/PD-derived robustness fixtures")
     ap.add_argument("--corpus-manifest", default="tests/regression/corpus_manifest.json")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
@@ -123,6 +125,11 @@ def main() -> int:
         corpus = json.loads((root / args.corpus_manifest).read_text())
         images = [root / "tests/regression/images" / value
                   for values in corpus["stages"].values() for value in values]
+    if args.include_derived:
+        derived_manifest = root / "tests/regression/images/derived/MANIFEST.json"
+        if derived_manifest.exists():
+            derived = json.loads(derived_manifest.read_text())
+            images.extend(root / record["file"] for record in derived["records"])
     images = list(dict.fromkeys(images))
     cli = Path(args.build_dir) / "crispembed"
     det, rec = Path(args.models_dir) / args.det, Path(args.models_dir) / args.rec
