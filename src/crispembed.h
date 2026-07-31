@@ -1158,6 +1158,7 @@ typedef struct crispembed_ocr_stage {
     int engine;           // 0..13 existing engines, 14=unified metadata-dispatched GGUF (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
+    const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)
     int cleanup_enabled;
     int denoise;                            // NAFNet tier-2 for this stage
     crispembed_scan_cleanup_params cleanup; // the 10 classical knobs
