@@ -240,7 +240,10 @@ def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
     if detector is not None:
         cmd += ["--ocr-det", str(detector), "--ocr-rec", str(gguf)]
     cmd += ["--ocr", str(image), *extra_args]
-    proc = subprocess.run(cmd, capture_output=True, text=True,
+    # OCR may emit arbitrary model-derived bytes for an invalid/untrained
+    # character sequence.  The regression guard must inspect that output and
+    # report it, rather than crashing while decoding the child pipe as UTF-8.
+    proc = subprocess.run(cmd, capture_output=True, text=True, errors="replace",
                           check=False, timeout=timeout)
     if proc.returncode != 0:
         die(f"crispembed --ocr exited {proc.returncode}\n"
