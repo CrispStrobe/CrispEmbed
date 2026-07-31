@@ -97,7 +97,13 @@ def hf_download(repo: str, file_in_repo: str, revision: str, dest_dir: Path,
     # process-wide /tmp is unavailable. Keep hub staging beside the external
     # artifact cache instead.
     dest_dir.mkdir(parents=True, exist_ok=True)
-    os.environ.setdefault("TMPDIR", str(dest_dir))
+    os.environ["TMPDIR"] = str(dest_dir)
+    import tempfile
+    tempfile.tempdir = str(dest_dir)
+    os.environ.setdefault("HF_HOME", str(dest_dir / ".hf"))
+    os.environ.setdefault("HF_HUB_CACHE", str(dest_dir / ".hf" / "hub"))
+    os.environ.setdefault("HUGGINGFACE_HUB_CACHE", str(dest_dir / ".hf" / "hub"))
+    os.environ.setdefault("HF_XET_CACHE", str(dest_dir / ".hf" / "xet"))
     from huggingface_hub import hf_hub_download
     from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
     token = os.environ.get("HF_TOKEN")
