@@ -687,8 +687,9 @@ static void test_tesseract_fraktur_regression() {
     CHECK(!r.regions.empty(), "Fraktur pipeline detects at least one line");
     CHECK(r.regions.size() < 40, "Fraktur DBNet fragments are grouped into line regions");
     CHECK(!r.full_text.empty(), "Fraktur pipeline returns text");
-    printf("  INFO: regions=%zu chars=%zu confidence=%.3f\n", r.regions.size(), r.full_text.size(),
-           r.mean_confidence);
+    const float elapsed_ms = r.stage_metrics.empty() ? 0.0f : r.stage_metrics.back().elapsed_ms;
+    printf("  INFO: regions=%zu chars=%zu confidence=%.3f stage_ms=%.1f\n", r.regions.size(), r.full_text.size(),
+           r.mean_confidence, elapsed_ms);
     if (getenv("CRISPEMBED_FRAKTUR_DUMP")) {
         printf("  BEGIN native Fraktur full_text\n%s\n  END native Fraktur full_text\n", r.full_text.c_str());
     }
