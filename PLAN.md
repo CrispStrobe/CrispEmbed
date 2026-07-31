@@ -16,6 +16,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** CRAFT decoded box postprocessing parity (104 native vs 106 Python); full EasyOCR detector + recognizer port | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
+| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 detector-to-recognizer crop contract; shared extraction, clipping, and 180° line safeguard | **IN PROGRESS** |
 
 EasyOCR checkpoint: the initial CRAFT detector graph now passes its Python
 reference input, VGG taps, U-Net feature map, and NHWC score-map boundary on

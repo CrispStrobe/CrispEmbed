@@ -363,15 +363,13 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
     r.ref_norm = (float)std::sqrt(ref_sq);
 
     // Element-wise metrics
-    double sum_abs = 0, sum_sq = 0, mine_sq = 0, ref_sq = 0;
+    double sum_abs = 0, sum_sq = 0;
     float max_a = 0;
     for (size_t i = 0; i < cmp_n; i++) {
         float d = std::fabs(data[i] - ref[i]);
         if (d > max_a) max_a = d;
         sum_abs += d;
         sum_sq += (double)d * d;
-        mine_sq += (double)data[i] * data[i];
-        ref_sq += (double)ref[i] * ref[i];
     }
     r.max_abs = max_a;
     r.mean_abs = (float)(sum_abs / cmp_n);
