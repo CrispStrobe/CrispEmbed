@@ -23,6 +23,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -36,6 +37,14 @@ struct lstm_weights {
     std::vector<float> bias; // (4*ns,)
     int ni;
     int ns; // hidden size
+
+    // Tesseract's int-mode uses signed 8-bit row weights.  The GGUF keeps
+    // dequantized weights for exact parity; these caches are an execution
+    // representation for the optional fast path.
+    std::vector<int8_t> W_ih_q;
+    std::vector<int8_t> W_hh_q;
+    std::vector<float> W_ih_scale;
+    std::vector<float> W_hh_scale;
 };
 
 // ---------------------------------------------------------------------------
@@ -63,6 +72,8 @@ struct tesseract_lstm_context {
     // Output FC weights
     std::vector<float> out_w; // (n_classes, last_lstm_ns)
     std::vector<float> out_b; // (n_classes,)
+    std::vector<int8_t> conv_w_q, out_w_q;
+    std::vector<float> conv_w_scale, out_w_scale;
 
     // Per-LSTM metadata
     std::vector<std::string> lstm_types; // "y_sum", "fwd", "rev"
@@ -82,12 +93,49 @@ struct tesseract_lstm_context {
     std::map<std::string, std::vector<float>> captures;
 
     bool bench = false;
+    bool int8_inference = false;
 
     // GGUF loader state
     core_gguf::WeightLoad wl;
     // Dequantized weight cache
     std::map<const void *, std::vector<float>> dequant_cache;
 };
+
+static void quantize_rows(const std::vector<float> & src, int rows, int cols,
+                          std::vector<int8_t> & dst, std::vector<float> & scales) {
+    dst.resize(src.size());
+    scales.resize(rows);
+    for (int r = 0; r < rows; ++r) {
+        float max_abs = 0.0f;
+        for (int c = 0; c < cols; ++c) max_abs = std::max(max_abs, std::fabs(src[(size_t)r * cols + c]));
+        const float scale = max_abs > 0.0f ? max_abs / 127.0f : 1.0f;
+        scales[r] = scale;
+        for (int c = 0; c < cols; ++c) {
+            const float q = src[(size_t)r * cols + c] / scale;
+            dst[(size_t)r * cols + c] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(q)));
+        }
+    }
+}
+
+static float quantized_dot(const int8_t * weights, float weight_scale, const float * input,
+                           int n, std::vector<int8_t> & input_q, float & input_scale) {
+    float max_abs = 0.0f;
+    for (int i = 0; i < n; ++i) max_abs = std::max(max_abs, std::fabs(input[i]));
+    input_scale = max_abs > 0.0f ? max_abs / 127.0f : 1.0f;
+    int32_t sum = 0;
+    for (int i = 0; i < n; ++i) {
+        input_q[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(input[i] / input_scale)));
+        sum += (int32_t)weights[i] * (int32_t)input_q[i];
+    }
+    return (float)sum * weight_scale * input_scale;
+}
+
+static float quantized_dot_cached_input(const int8_t * weights, float weight_scale,
+                                        const int8_t * input_q, float input_scale, int n) {
+    int32_t sum = 0;
+    for (int i = 0; i < n; ++i) sum += (int32_t)weights[i] * (int32_t)input_q[i];
+    return (float)sum * weight_scale * input_scale;
+}
 
 // ---------------------------------------------------------------------------
 // Tensor dequantization helper
@@ -188,6 +236,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->conv_out = (int)cw->ne[1]; // 16
     ctx->conv_w.assign(cw_f, cw_f + conv_ni * ctx->conv_out);
     ctx->conv_b.assign(cb_f, cb_f + ctx->conv_out);
+    quantize_rows(ctx->conv_w, ctx->conv_out, conv_ni, ctx->conv_w_q, ctx->conv_w_scale);
 
     // LSTM layers
     ctx->lstm.resize(ctx->num_lstm_layers);
@@ -213,6 +262,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
         lw.W_ih.assign(wih_f, wih_f + gate_size * lw.ni);
         lw.W_hh.assign(whh_f, whh_f + gate_size * lw.ns);
         lw.bias.assign(b_f, b_f + gate_size);
+        quantize_rows(lw.W_ih, gate_size, lw.ni, lw.W_ih_q, lw.W_ih_scale);
+        quantize_rows(lw.W_hh, gate_size, lw.ns, lw.W_hh_q, lw.W_hh_scale);
     }
 
     // Output FC
@@ -225,6 +276,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     int out_no = (int)ow->ne[1];
     ctx->out_w.assign(ow_f, ow_f + out_ni * out_no);
     ctx->out_b.assign(ob_f, ob_f + out_no);
+    quantize_rows(ctx->out_w, out_no, out_ni, ctx->out_w_q, ctx->out_w_scale);
 
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
@@ -330,6 +382,78 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
     }
 }
 
+static inline float sigmoid_fast(float x) {
+    return 1.0f / (1.0f + expf(-x));
+}
+
+static void lstm_forward_int8(const float * input, float * output, int T, int ni, int ns,
+                              const lstm_weights & lw, bool reverse) {
+    const int gs = 4 * ns;
+    std::vector<float> h(ns, 0.0f), c(ns, 0.0f), gates(gs);
+    std::vector<int8_t> xq(ni), hq(ns);
+    for (int step = 0; step < T; ++step) {
+        const int t = reverse ? (T - 1 - step) : step;
+        const float * xt = input + t * ni;
+        float xs = 1.0f, hs = 1.0f;
+        float max_x = 0.0f;
+        for (int i = 0; i < ni; ++i) max_x = std::max(max_x, std::fabs(xt[i]));
+        xs = max_x > 0.0f ? max_x / 127.0f : 1.0f;
+        for (int i = 0; i < ni; ++i) xq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(xt[i] / xs)));
+        float max_h = 0.0f;
+        for (int i = 0; i < ns; ++i) max_h = std::max(max_h, std::fabs(h[i]));
+        hs = max_h > 0.0f ? max_h / 127.0f : 1.0f;
+        for (int i = 0; i < ns; ++i) hq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(h[i] / hs)));
+        for (int g = 0; g < gs; ++g)
+            gates[g] = lw.bias[g] + quantized_dot_cached_input(lw.W_ih_q.data() + (size_t)g * ni,
+                         lw.W_ih_scale[g], xq.data(), xs, ni) +
+                       quantized_dot_cached_input(lw.W_hh_q.data() + (size_t)g * ns,
+                         lw.W_hh_scale[g], hq.data(), hs, ns);
+        for (int j = 0; j < ns; ++j) {
+            const float i_gate = sigmoid_fast(gates[j]);
+            const float f_gate = sigmoid_fast(gates[ns + j]);
+            const float g_gate = tanhf(gates[2 * ns + j]);
+            const float o_gate = sigmoid_fast(gates[3 * ns + j]);
+            c[j] = f_gate * c[j] + i_gate * g_gate;
+            c[j] = std::max(-100.0f, std::min(100.0f, c[j]));
+            h[j] = o_gate * tanhf(c[j]);
+        }
+        memcpy(output + (size_t)t * ns, h.data(), ns * sizeof(float));
+    }
+}
+
+static void summ_lstm_forward_int8(const float * input, float * output, int height, int width,
+                                   int channels, const lstm_weights & lw) {
+    const int ns = lw.ns, gs = 4 * ns;
+    std::vector<float> h(ns), c(ns), gates(gs);
+    std::vector<int8_t> xq(channels), hq(ns);
+    for (int row = 0; row < height; ++row) {
+        std::fill(h.begin(), h.end(), 0.0f); std::fill(c.begin(), c.end(), 0.0f);
+        for (int col = 0; col < width; ++col) {
+            const float * xt = input + ((size_t)row * width + col) * channels;
+            float max_x = 0.0f;
+            for (int i = 0; i < channels; ++i) max_x = std::max(max_x, std::fabs(xt[i]));
+            const float xs = max_x > 0.0f ? max_x / 127.0f : 1.0f;
+            for (int i = 0; i < channels; ++i) xq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(xt[i] / xs)));
+            float max_h = 0.0f;
+            for (int i = 0; i < ns; ++i) max_h = std::max(max_h, std::fabs(h[i]));
+            const float hs = max_h > 0.0f ? max_h / 127.0f : 1.0f;
+            for (int i = 0; i < ns; ++i) hq[i] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(h[i] / hs)));
+            for (int g = 0; g < gs; ++g)
+                gates[g] = lw.bias[g] + quantized_dot_cached_input(lw.W_ih_q.data() + (size_t)g * channels,
+                             lw.W_ih_scale[g], xq.data(), xs, channels) +
+                           quantized_dot_cached_input(lw.W_hh_q.data() + (size_t)g * ns,
+                             lw.W_hh_scale[g], hq.data(), hs, ns);
+            for (int j = 0; j < ns; ++j) {
+                const float i_gate = sigmoid_fast(gates[j]), f_gate = sigmoid_fast(gates[ns + j]);
+                c[j] = f_gate * c[j] + i_gate * tanhf(gates[2 * ns + j]);
+                c[j] = std::max(-100.0f, std::min(100.0f, c[j]));
+                h[j] = sigmoid_fast(gates[3 * ns + j]) * tanhf(c[j]);
+            }
+        }
+        memcpy(output + (size_t)row * ns, h.data(), ns * sizeof(float));
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Image normalization (matches Tesseract's ComputeBlackWhite + SetPixel)
 // ---------------------------------------------------------------------------
@@ -415,7 +539,14 @@ static void forward(tesseract_lstm_context * ctx,
                 for (int o = 0; o < conv_out; o++) {
                     float val = ctx->conv_b[o];
                     const float * w_row = ctx->conv_w.data() + o * 9;
-                    for (int j = 0; j < 9; j++) val += w_row[j] * stacked[j];
+                    if (ctx->int8_inference) {
+                        std::vector<int8_t> sq(9);
+                        const float q = quantized_dot(ctx->conv_w_q.data() + (size_t)o * 9,
+                                                      ctx->conv_w_scale[o], stacked, 9, sq, val);
+                        val = ctx->conv_b[o] + q;
+                    } else {
+                        for (int j = 0; j < 9; j++) val += w_row[j] * stacked[j];
+                    }
                     dst[o] = tanhf(val);
                 }
             }
@@ -460,8 +591,11 @@ static void forward(tesseract_lstm_context * ctx,
     int ns0 = lw0.ns;
 
     std::vector<float> summ_out(W2 * ns0);
-    summ_lstm_forward(transposed.data(), summ_out.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
-                      lw0.bias.data());
+    if (ctx->int8_inference)
+        summ_lstm_forward_int8(transposed.data(), summ_out.data(), W2, H2, conv_out, lw0);
+    else
+        summ_lstm_forward(transposed.data(), summ_out.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
+                          lw0.bias.data());
     lstm_idx++;
     capture(ctx, "after_lstm_0", summ_out.data(), summ_out.size());
 
@@ -475,8 +609,11 @@ static void forward(tesseract_lstm_context * ctx,
         bool rev = (lstm_idx < (int)ctx->lstm_types.size() && ctx->lstm_types[lstm_idx] == "rev");
 
         std::vector<float> next_seq(T * lw.ns);
-        lstm_forward(cur_seq.data(), next_seq.data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(), lw.bias.data(),
-                     rev);
+        if (ctx->int8_inference)
+            lstm_forward_int8(cur_seq.data(), next_seq.data(), T, cur_dim, lw.ns, lw, rev);
+        else
+            lstm_forward(cur_seq.data(), next_seq.data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(), lw.bias.data(),
+                         rev);
 
         cur_seq = std::move(next_seq);
         cur_dim = lw.ns;
@@ -498,7 +635,22 @@ static void forward(tesseract_lstm_context * ctx,
         for (int c = 0; c < n_classes; c++) {
             float val = ctx->out_b[c];
             const float * w_row = ctx->out_w.data() + c * cur_dim;
-            for (int j = 0; j < cur_dim; j++) val += w_row[j] * x[j];
+            if (ctx->int8_inference) {
+                static thread_local std::vector<int8_t> xq;
+                static thread_local float xs;
+                if ((int)xq.size() != cur_dim) xq.resize(cur_dim);
+                if (c == 0) {
+                    float max_abs = 0.0f;
+                    for (int j = 0; j < cur_dim; ++j) max_abs = std::max(max_abs, std::fabs(x[j]));
+                    xs = max_abs > 0.0f ? max_abs / 127.0f : 1.0f;
+                    for (int j = 0; j < cur_dim; ++j)
+                        xq[j] = (int8_t)std::max(-127.0f, std::min(127.0f, std::round(x[j] / xs)));
+                }
+                val += quantized_dot_cached_input(ctx->out_w_q.data() + (size_t)c * cur_dim,
+                                                  ctx->out_w_scale[c], xq.data(), xs, cur_dim);
+            } else {
+                for (int j = 0; j < cur_dim; j++) val += w_row[j] * x[j];
+            }
             dst[c] = val;
             if (val > max_val) max_val = val;
         }
@@ -553,6 +705,12 @@ tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_thre
         return nullptr;
     }
     ctx->bench = (std::getenv("CRISPEMBED_TESSERACT_BENCH") != nullptr);
+    // Keep exact F32/Q8 parity as the default. Enable the CLI-like execution
+    // experiment explicitly until its logits are validated against a true
+    // Tesseract int-mode reference.
+    ctx->int8_inference = ctx->int_mode && std::getenv("CRISPEMBED_TESSERACT_INT8") != nullptr;
+    if (ctx->int8_inference)
+        fprintf(stderr, "tesseract_lstm: int8 execution enabled (row-wise symmetric weights)\n");
     return ctx;
 }
 
