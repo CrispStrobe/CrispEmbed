@@ -599,6 +599,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
+            ocr_crop::orient_180_gray(crop, cw, chh);
             int len = 0;
             const char * t = tesseract_lstm_recognize(ctx->tess, crop.data(), cw, chh, &len);
             if (!t || len <= 0) continue;
@@ -658,6 +659,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
+            ocr_crop::orient_180_rgb(crop, cw, chh);
             int len = 0;
             const char * t = parseq_ocr_recognize_raw(ctx->parseq, crop.data(), cw, chh, 3, &len);
             if (!t || len <= 0) continue;

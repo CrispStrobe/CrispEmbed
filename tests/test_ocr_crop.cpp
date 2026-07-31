@@ -15,5 +15,8 @@ int main() {
     auto clipped = ocr_crop::extract(pixels, 2, 3, 3, 1, 2, 4, 4, 2, &w, &h);
     assert(w == 2 && h == 3);
     assert(clipped.size() == 18);
+    assert(!ocr_crop::orient_180_rgb(clipped, w, h));
+    std::vector<uint8_t> gray((size_t)w * h, 255);
+    assert(!ocr_crop::orient_180_gray(gray, w, h));
     return 0;
 }

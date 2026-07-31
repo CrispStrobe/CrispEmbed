@@ -89,27 +89,6 @@ bool load(context ** out, const char * det_path, const char * rec_path, int n_th
     return true;
 }
 
-static void orient_text_crop(std::vector<uint8_t> & crop, int w, int h) {
-    if (w < 8 || h < 8) return;
-    std::vector<uint8_t> gray((size_t)w * h);
-    for (int y = 0; y < h; ++y) {
-        for (int x = 0; x < w; ++x) {
-            const uint8_t * p = crop.data() + ((size_t)y * w + x) * 3;
-            gray[(size_t)y * w + x] = (uint8_t)((77 * p[0] + 150 * p[1] + 29 * p[2] + 128) >> 8);
-        }
-    }
-    float confidence = 0.0f;
-    if (detect_text_angle(gray.data(), w, h, &confidence) != 180 || confidence < 0.75f) return;
-    for (int y = 0; y < h / 2 + (h & 1); ++y) {
-        for (int x = 0; x < w; ++x) {
-            const size_t a = ((size_t)y * w + x) * 3;
-            const size_t b = ((size_t)(h - 1 - y) * w + (w - 1 - x)) * 3;
-            if (a >= b) continue;
-            for (int c = 0; c < 3; ++c) std::swap(crop[a + c], crop[b + c]);
-        }
-    }
-}
-
 std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
                                 float prob_threshold, float box_threshold, int target_short_side,
                                 const ocr_detect::detect_options * geometry) {
@@ -158,7 +137,7 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
         auto crop = ocr_crop::extract(raw, img_w, img_h, 3, cx, cy, cw, ch, 0, &actual_w, &actual_h);
         if (crop.empty()) continue;
 
-        orient_text_crop(crop, actual_w, actual_h);
+        ocr_crop::orient_180_rgb(crop, actual_w, actual_h);
         crop_entries.push_back({ std::move(crop), actual_w, actual_h, i });
     }
 
