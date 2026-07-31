@@ -4006,6 +4006,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "tromr_ocr.h"
 #include "flova_ocr.h"
 #include "transcoda_ocr.h"
+#include "ppocrv6_ocr.h"
 #include "core/gguf_loader.h"
 
 enum ocr_model_type {
@@ -4030,7 +4031,8 @@ enum ocr_model_type {
     OCR_MODEL_SMT,
     OCR_MODEL_TROMR,
     OCR_MODEL_FLOVA,
-    OCR_MODEL_TRANSCODA
+    OCR_MODEL_TRANSCODA,
+    OCR_MODEL_PPOCRV6
 };
 
 struct ocr_model {
@@ -4065,6 +4067,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "tromr_ocr") return OCR_MODEL_TROMR;
     if (arch == "flova_ocr") return OCR_MODEL_FLOVA;
     if (arch == "transcoda_ocr") return OCR_MODEL_TRANSCODA;
+    if (arch == "ppocrv6") return OCR_MODEL_PPOCRV6;
     return OCR_MODEL_PIX2TEX;
 }
 
@@ -4145,6 +4148,9 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
     case OCR_MODEL_TRANSCODA:
         inner = transcoda_ocr_init(path, n_threads);
         break;
+    case OCR_MODEL_PPOCRV6:
+        inner = ppocrv6_ocr_init(path, n_threads);
+        break;
     }
     if (!inner) return nullptr;
     auto * u = new ocr_model{ type, inner };
@@ -4221,6 +4227,9 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_TRANSCODA:
         transcoda_ocr_free((transcoda_ocr_context *)u->ctx);
         break;
+    case OCR_MODEL_PPOCRV6:
+        ppocrv6_ocr_free((ppocrv6_ocr_context *)u->ctx);
+        break;
     }
     delete u;
 }
@@ -4283,6 +4292,8 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return flova_ocr_recognize_raw((flova_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_TRANSCODA:
         return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_PPOCRV6:
+        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -4372,6 +4383,11 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         std::vector<uint8_t> gray(w * h);
         for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
         return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_PPOCRV6: {
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)std::clamp(int(px[i] * 255.0f + 0.5f), 0, 255);
+        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
     }
     }
     return nullptr;
@@ -4633,13 +4649,38 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 
 struct ocr_pipeline_wrapper {
     ocr_pipeline_pool::context * pool = nullptr;
+    ocr_orchestrator::context * pp_ctx = nullptr;
+    bool is_ppocrv6 = false;
     std::vector<ocr_pipeline::ocr_result> results;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<std::string> text_storage;
     std::string rec_buf;
 };
 
 extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_path, int n_threads) {
     auto * w = new ocr_pipeline_wrapper();
+    auto * meta = core_gguf::open_metadata(det_path);
+    const bool pp = meta && core_gguf::kv_str(meta, "ppocrv6.kind", "") == "det";
+    if (meta) core_gguf::free_metadata(meta);
+    if (pp) {
+        ocr_orchestrator::config cfg;
+        cfg.router = false;
+        ocr_orchestrator::chain ch;
+        ch.type = ocr_orchestrator::source_type::auto_detect;
+        ocr_orchestrator::stage st;
+        st.eng = ocr_orchestrator::engine::ppocrv6;
+        st.cleanup.enabled = false;
+        st.model_a = det_path;
+        st.model_b = rec_path;
+        ch.stages.push_back(std::move(st));
+        cfg.chains.push_back(std::move(ch));
+        if (!ocr_orchestrator::load(&w->pp_ctx, cfg, n_threads)) {
+            delete w;
+            return nullptr;
+        }
+        w->is_ppocrv6 = true;
+        return w;
+    }
     int pool_size = 1;
     if (const char * env = std::getenv("CRISPEMBED_OCR_POOL_SIZE")) {
         char * end = nullptr;
@@ -4656,6 +4697,7 @@ extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_pa
 extern "C" void crispembed_ocr_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_wrapper *)ctx;
+    if (w->pp_ctx) ocr_orchestrator::free(w->pp_ctx);
     if (w->pool) ocr_pipeline_pool::free(w->pool);
     delete w;
 }
@@ -4666,22 +4708,46 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         return nullptr;
     }
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
-    w->c_results.resize(w->results.size());
-    for (size_t i = 0; i < w->results.size(); i++) {
-        auto & r = w->results[i];
-        auto & c = w->c_results[i];
-        c.x = r.box.x;
-        c.y = r.box.y;
-        c.w = r.box.w;
-        c.h = r.box.h;
-        c.confidence = r.confidence;
-        c.text = r.text.c_str();
-        c.text_len = (int)r.text.size();
-        c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+    if (w->is_ppocrv6) {
+        auto result = ocr_orchestrator::run_file(w->pp_ctx, image_path);
+        w->c_results.resize(result.regions.size());
+        w->text_storage.resize(result.regions.size());
+        for (size_t i = 0; i < result.regions.size(); ++i) {
+            const auto & r = result.regions[i];
+            auto & c = w->c_results[i];
+            c.x = r.box.x;
+            c.y = r.box.y;
+            c.w = r.box.w;
+            c.h = r.box.h;
+            c.confidence = r.confidence;
+            w->text_storage[i] = r.text;
+            c.text = w->text_storage[i].c_str();
+            c.text_len = (int)w->text_storage[i].size();
+            c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+        }
+        if (out_n) *out_n = (int)w->c_results.size();
+        return w->c_results.empty() ? nullptr : w->c_results.data();
     }
-    if (out_n) *out_n = (int)w->c_results.size();
-    return w->c_results.empty() ? nullptr : w->c_results.data();
+    w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
+}
+else {
+    w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
+}
+w->c_results.resize(w->results.size());
+for (size_t i = 0; i < w->results.size(); i++) {
+    auto & r = w->results[i];
+    auto & c = w->c_results[i];
+    c.x = r.box.x;
+    c.y = r.box.y;
+    c.w = r.box.w;
+    c.h = r.box.h;
+    c.confidence = r.confidence;
+    c.text = r.text.c_str();
+    c.text_len = (int)r.text.size();
+    c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+}
+if (out_n) *out_n = (int)w->c_results.size();
+return w->c_results.empty() ? nullptr : w->c_results.data();
 }
 
 extern "C" const char * crispembed_ocr_recognize(void * ctx, const char * image_path, int * out_len) {
@@ -4690,7 +4756,14 @@ extern "C" const char * crispembed_ocr_recognize(void * ctx, const char * image_
         return nullptr;
     }
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    w->rec_buf = ocr_pipeline_pool::recognize_file(w->pool, image_path);
+    if (w->is_ppocrv6) {
+        auto result = ocr_orchestrator::run_file(w->pp_ctx, image_path);
+        w->rec_buf = result.full_text;
+        if (out_len) *out_len = (int)w->rec_buf.size();
+        return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
+    } else {
+        w->rec_buf = ocr_pipeline_pool::recognize_file(w->pool, image_path);
+    }
     if (out_len) *out_len = (int)w->rec_buf.size();
     return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
 }

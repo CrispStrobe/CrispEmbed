@@ -32,6 +32,7 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
 static bool g_decoder_f16 = false;
+static bool g_ppocrv6_q8_head = false;
 
 // Per-tensor importance vectors loaded from a CrispEmbed imatrix file
 // (see src/imatrix.cpp). Keyed by weight name; value length == n_per_row.
@@ -137,6 +138,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     gguf_set_val_u32(ctx_out, "general.file_type", ftype);
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
+    const int arch_key = gguf_find_key(ctx_in, "general.architecture");
+    const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
+    const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
+    if (is_ppocrv6) {
+        fprintf(stderr, "PP-OCRv6 precision policy: biases/SE/depthwise/early-head tensors stay F16/F32; CTC logits "
+                        "head is Q8_0 minimum\n");
+    }
 
     // CNN/face model detection: scan tensor names for known prefixes
     {
@@ -236,12 +244,29 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // and the depthwise convs (enc.st*.l*.dw) are reshaped to 4D in-engine, so
         // quantizing them yields an ne[0] not %32 → ggml_dup/cast abort. The
         // pointwise convs (pw1/pw2) are matmuls in-engine and quantize fine.
-        if (sname.find("patch_embed") != std::string::npos || sname.find("downsample") != std::string::npos ||
-            sname.find("downsampling") != std::string::npos || sname.find("dwconv") != std::string::npos ||
-            sname.find("enc.bb") != std::string::npos || sname.find("enc.proj") != std::string::npos ||
-            sname.find("enc.embed.patch") != std::string::npos || sname.find(".ds.conv") != std::string::npos ||
-            sname.find(".dw.") != std::string::npos || sname.find("positional") != std::string::npos ||
-            sname.find("merger") != std::string::npos) {
+        const bool ppocr_keep =
+            is_ppocrv6 &&
+            // PP-OCRv6 is a compact CNN/CTC graph: quantization error compounds
+            // through every block and changes greedy CTC ties. Keep both the
+            // detector and recognizer paths in F16; the policy-q4 container then
+            // quantizes only non-critical metadata/auxiliary tensors and remains
+            // a quality-preserving deployment variant.
+            (!ppocr_q8_late || (sname.find("rec.head.encoder.") == std::string::npos &&
+                                sname.find("rec.head.head.") == std::string::npos)) &&
+            (sname.rfind("det.", 0) == 0 || sname.rfind("rec.", 0) == 0 || sname.find(".bias") != std::string::npos ||
+             sname.find("normalization") != std::string::npos ||
+             sname.find("squeeze_excitation") != std::string::npos ||
+             sname.find("token_squeeze") != std::string::npos || sname.find("token_conv") != std::string::npos ||
+             sname.find(".se1.") != std::string::npos || sname.find(".se2.") != std::string::npos ||
+             sname.find(".dw.") != std::string::npos || sname.find("det.bb.stem") != std::string::npos ||
+             sname.find("det.neck.") != std::string::npos ||
+             (sname.find("head.") != std::string::npos && sname.find("head.fc2.weight") == std::string::npos));
+        if (ppocr_keep || sname.find("patch_embed") != std::string::npos ||
+            sname.find("downsample") != std::string::npos || sname.find("downsampling") != std::string::npos ||
+            sname.find("dwconv") != std::string::npos || sname.find("enc.bb") != std::string::npos ||
+            sname.find("enc.proj") != std::string::npos || sname.find("enc.embed.patch") != std::string::npos ||
+            sname.find(".ds.conv") != std::string::npos || sname.find(".dw.") != std::string::npos ||
+            sname.find("positional") != std::string::npos || sname.find("merger") != std::string::npos) {
             size_t off = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 #ifdef _WIN32
             _fseeki64(fin, (int64_t)off, SEEK_SET);
@@ -449,6 +474,18 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(lm-head→Q8_0) ");
         }
 
+        // PP-OCRv6 CTC fc2 is the direct per-timestep logit projection.  It is
+        // the OCR equivalent of an LM head: Q4_K error can flip adjacent
+        // character ties and then CTC collapse turns that into visible text
+        // errors.  Q8_0 is still a substantial reduction and is the minimum
+        // precision accepted for the shipped aggressive quantizations.
+        const bool is_ppocr_logits = is_ppocrv6 && sname.find("head.fc2.weight") != std::string::npos;
+        if (quantize && is_ppocr_logits && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(ppocrv6-ctc-head→Q8_0) ");
+        }
+
         // SMT OMR ConvNext encoder (encoder.encoder.stages.*.pwconv{1,2}) is the
         // "reading" half — its output directly determines the transcription, and
         // Q4_K drops enc_output cos to ~0.95 and derails the decode. Keep the
@@ -644,13 +681,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 }
 
 int main(int argc, char ** argv) {
-    // Collect positional args, allowing an optional --decoder-f16 flag anywhere.
+    // Collect positional args, allowing policy flags anywhere.
     std::vector<std::string> pos;
     std::string imatrix_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--decoder-f16")
             g_decoder_f16 = true;
+        else if (a == "--ppocrv6-q8-head")
+            g_ppocrv6_q8_head = true;
         else if (a == "--imatrix") {
             if (i + 1 >= argc) {
                 fprintf(stderr, "--imatrix requires a file path\n");
@@ -661,13 +700,15 @@ int main(int argc, char ** argv) {
             pos.push_back(a);
     }
     if (pos.size() != 3) {
-        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--imatrix <file>]\n\n", argv[0]);
+        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--ppocrv6-q8-head] [--imatrix <file>]\n\n", argv[0]);
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
         fprintf(stderr, "                  Retained for diagnostic/comparison use; see #25)\n\n");
+        fprintf(stderr, "  --ppocrv6-q8-head  for PP-OCRv6 Q8_0, keep the CNN/backbone F32 and\n");
+        fprintf(stderr, "                     quantize only the final SVTR/CTC head\n\n");
         fprintf(stderr, "Supported types:\n");
         for (auto & [name, _] : FTYPE_MAP) {
             fprintf(stderr, "  %s\n", name.c_str());

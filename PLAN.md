@@ -16,6 +16,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** CRAFT decoded box postprocessing parity (104 native vs 106 Python); full EasyOCR detector + recognizer port | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
@@ -255,7 +256,8 @@ more than another restoration model.
 
 #### Implementation slices
 
-1. **O10.1 — Live preprocessor benchmark harness.** Add
+1. **O10.1 — Live preprocessor benchmark harness.** **Implemented in
+   `feat/ppocr-next-20260731`; pending merge.** Add
    `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
    run raw input, classical cleanup variants, deskew, binarization, dewarp,
    denoise, and every locally available SR/restoration model. Record stage
