@@ -13,6 +13,9 @@
   12 (`(2a` native vs `(a` Python) and remains unaccepted.
 - Next: resolve Latin Gen-2 decoded parity, then validate remaining
   VGG/ResNet recognizers and port detectors
+- CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
+  implemented and produces an 80-stage reference archive with score-map and
+  decoded-box-count metadata on a 256x512 smoke input.
 
 ## Scope
 
@@ -57,6 +60,8 @@ metadata, not learned parameters.
 - [x] Add a PyTorch/safetensors-to-GGUF converter with explicit charset and
       model metadata.
 - [x] Add a per-stage reference dumper and license manifest skeleton.
+- [x] Add the CRAFT Python reference dumper with EasyOCR preprocessing,
+      score-map captures, and box-count metadata.
 - [x] Run the dumper against a real English Gen-2 checkpoint and inspect the
       generated `-ref.gguf` tensors.
 - [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit
