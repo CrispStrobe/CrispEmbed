@@ -121,6 +121,12 @@ regions into 26 recognition units instead of the existing 12 line units.
 DBNet therefore needs a detector-specific line adapter before those thresholds
 can replace the current y-band grouping.
 
+The first DBNet adapter is now explicit in `easyocr_layout`: it preserves the
+fragment-tolerant y-band aggregation for DBNet line crops, while word mode
+continues to use left-to-right y-band ordering. The adapter is covered by the
+layout regression and the model-backed page smoke; horizontal-gap splitting is
+still a later detector-specific refinement.
+
 ### Tesseract parity status — NOT PROVEN
 
 The repository contains a `.traineddata` → GGUF converter, a pure-Python
