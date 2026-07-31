@@ -5,6 +5,7 @@
 #include "crispembed_diff.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include "ggml.h"
 
 #include <cstdio>
@@ -23,7 +24,6 @@ struct easyocr_craft_context {
     ggml_tensor * feature = nullptr;
     ggml_tensor * scores = nullptr;
     ggml_tensor * basenet[5] = {};
-    ggml_tensor * first_conv = nullptr;
     int width = 0;
     int height = 0;
     std::vector<float> input_host;
@@ -55,19 +55,11 @@ static bool build_graph(easyocr_craft_context * c) {
     ggml_set_name(c->input, "input_image");
     ggml_set_input(c->input);
     ggml_tensor * x = c->input;
-    auto pool = [&](int k, int s, int p) {
-        if (std::getenv("EASYOCR_CRAFT_DEBUG"))
-            fprintf(stderr, "craft pool in=%lldx%lld k=%d s=%d p=%d\n", (long long)x->ne[0], (long long)x->ne[1], k, s,
-                    p);
-        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, k, k, s, s, p, p);
-    };
+    auto pool = [&](int k, int s, int p) { x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, k, k, s, s, p, p); };
 
     // VGG-16 BN feature taps used by EasyOCR's CRAFT implementation.
     x = ggml_conv_2d(g, req(c, "basenet.slice1.0.weight"), x, 1, 1, 1, 1, 1, 1);
     x = ggml_add(g, x, ggml_reshape_4d(g, req(c, "basenet.slice1.0.bias"), 1, 1, 64, 1));
-    c->first_conv = x;
-    ggml_set_name(x, "leaf_basenet_slice1_0");
-    ggml_set_output(x);
     x = ggml_relu(g, x);
     x = conv(g, c, x, "basenet.slice1.3", 3, 3, 1, 1);
     pool(2, 2, 0);
@@ -88,8 +80,9 @@ static bool build_graph(easyocr_craft_context * c) {
     ggml_set_name(source3, "basenet_3");
     ggml_set_output(source3);
 
-    pool(2, 2, 0);
     x = conv(g, c, x, "basenet.slice3.20", 3, 3, 1, 1);
+    x = ggml_relu(g, x);
+    pool(2, 2, 0);
     x = conv(g, c, x, "basenet.slice3.24", 3, 3, 1, 1);
     x = conv(g, c, x, "basenet.slice3.27", 3, 3, 1, 1, 1, 1, false);
     x = ggml_relu(g, x);
@@ -98,8 +91,9 @@ static bool build_graph(easyocr_craft_context * c) {
     ggml_set_name(source2, "basenet_2");
     ggml_set_output(source2);
 
-    pool(2, 2, 0);
+    x = ggml_relu(g, x);
     x = conv(g, c, x, "basenet.slice4.30", 3, 3, 1, 1);
+    pool(2, 2, 0);
     x = conv(g, c, x, "basenet.slice4.34", 3, 3, 1, 1);
     x = conv(g, c, x, "basenet.slice4.37", 3, 3, 1, 1, 1, 1, false);
     ggml_tensor * source1 = x;
@@ -108,8 +102,8 @@ static bool build_graph(easyocr_craft_context * c) {
     ggml_set_output(source1);
 
     x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 1, 1, 1, 1);
-    x = conv(g, c, x, "basenet.slice5.1", 3, 3, 6, 6, 6, 6);
-    x = conv(g, c, x, "basenet.slice5.2", 1, 1, 0, 0);
+    x = conv(g, c, x, "basenet.slice5.1", 3, 3, 6, 6, 6, 6, false);
+    x = conv(g, c, x, "basenet.slice5.2", 1, 1, 0, 0, 1, 1, false);
     ggml_tensor * source0 = x;
     c->basenet[0] = source0;
     ggml_set_name(source0, "basenet_0");
@@ -146,7 +140,7 @@ easyocr_craft_context * easyocr_craft_init(const char * model_path, int width, i
     auto * c = new easyocr_craft_context();
     c->width = width;
     c->height = height;
-    c->backend = crispasr_init_gpu_backend();
+    c->backend = std::getenv("EASYOCR_CRAFT_FORCE_CPU") ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!c->backend || !core_gguf::load_weights(model_path, c->backend, "easyocr-craft", c->wl) || !build_graph(c)) {
         easyocr_craft_free(c);
         return nullptr;
@@ -174,12 +168,11 @@ int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
     crispembed_diff::Ref ref;
     if (!c || !ref.load(path)) return 1;
     int failures = 0;
-    for (const char * name : { "input_image", "leaf_basenet_slice1_0", "basenet_0", "basenet_1", "basenet_2",
-                               "basenet_3", "basenet_4", "feature", "scores" }) {
+    for (const char * name :
+         { "input_image", "basenet_0", "basenet_1", "basenet_2", "basenet_3", "basenet_4", "feature", "scores" }) {
         auto rr = ref.get_f32(name);
         if (!rr.first) continue;
         ggml_tensor * t = !strcmp(name, "feature") ? c->feature : !strcmp(name, "scores") ? c->scores : c->input;
-        if (!strcmp(name, "leaf_basenet_slice1_0")) t = c->first_conv;
         if (!strncmp(name, "basenet_", 8)) t = c->basenet[name[8] - '0'];
         std::vector<float> data((size_t)ggml_nelements(t));
         if (!strcmp(name, "input_image")) {
@@ -187,17 +180,17 @@ int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
         } else {
             ggml_backend_tensor_get(t, data.data(), 0, data.size() * sizeof(float));
         }
-        if (std::getenv("EASYOCR_CRAFT_DEBUG") && !strcmp(name, "leaf_basenet_slice1_0")) {
-            fprintf(stderr, "craft first-conv mine:");
-            for (int i = 0; i < 8; ++i) fprintf(stderr, " %.7g", data[(size_t)i]);
-            fprintf(stderr, "\ncraft first-conv ref:");
-            for (int i = 0; i < 8; ++i) fprintf(stderr, " %.7g", rr.first[(size_t)i]);
-            fprintf(stderr, "\n");
-            FILE * dump = fopen(".codex/easyocr-scratch/craft-first-native.f32", "wb");
-            if (dump) {
-                fwrite(data.data(), sizeof(float), data.size(), dump);
-                fclose(dump);
-            }
+        if (!strcmp(name, "scores")) {
+            // EasyOCR returns [N,H,W,C] while GGML's score tensor is [W,H,C].
+            // Reorder to the Python output's contiguous NHWC layout before
+            // comparing the decoded detector boundary.
+            const int64_t w = t->ne[0], h = t->ne[1], channels = t->ne[2];
+            std::vector<float> nhwc(data.size());
+            for (int64_t y = 0; y < h; ++y)
+                for (int64_t x = 0; x < w; ++x)
+                    for (int64_t k = 0; k < channels; ++k)
+                        nhwc[(size_t)((y * w + x) * channels + k)] = data[(size_t)(x + w * y + w * h * k)];
+            data.swap(nhwc);
         }
         auto report = ref.compare(name, data.data(), data.size(), 0);
         printf("easyocr-craft-diff %-12s n=%zu cos=%.7f global=%.7f mine=%.6g ref=%.6g %s\n", name, report.n_elem,

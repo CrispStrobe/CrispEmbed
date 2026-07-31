@@ -14,12 +14,14 @@
 - Next: resolve Latin Gen-2 decoded parity, then validate remaining
   VGG/ResNet recognizers and port detectors
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
-  implemented and produces an 80-stage reference archive with score-map and
+  implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
 - The real CRAFT checkpoint now converts to a 54-tensor BN-folded F16 GGUF;
-  the persistent GPU graph builds and input parity is exact. The first open
-  graph divergence is localized to the VGG `basenet_2` tap; later taps recover
-  to global cosine above 0.999, so CRAFT parity is not yet accepted.
+  the persistent GPU graph builds and passes input, all VGG taps, U-Net feature,
+  and NHWC-reordered score-map parity at the agreed global cosine >= 0.99 gate
+  on both diagnostic CPU and default Metal backends. Score reports retain the
+  low sparse-tensor row cosine and mine/ref norms for review. Native decoded
+  box postprocessing remains open.
 
 ## Scope
 
@@ -68,8 +70,10 @@ metadata, not learned parameters.
       score-map captures, and box-count metadata.
 - [x] Add the CRAFT converter with explicit BN folding and source/license
       metadata; validate it against the released checkpoint.
-- [ ] Fix the first CRAFT VGG tap divergence, then validate U-Net feature,
-      score/link logits, and decoded boxes.
+- [x] Fix the CRAFT VGG slice/pool/ReLU schedule, validate U-Net feature and
+      score/link logits with explicit NHWC layout conversion on CPU and Metal.
+- [ ] Validate CRAFT decoded boxes and postprocessing against the Python box
+      count and coordinates.
 - [x] Run the dumper against a real English Gen-2 checkpoint and inspect the
       generated `-ref.gguf` tensors.
 - [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit
