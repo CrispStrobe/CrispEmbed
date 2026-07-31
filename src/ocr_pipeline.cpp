@@ -7,6 +7,7 @@
 //   4. Return results sorted in reading order
 
 #include "ocr_pipeline.h"
+#include "ocr_crop.h"
 #include "ocr_detect.h"
 #include "math_ocr.h"
 #include "classical_preproc.h"
@@ -88,25 +89,6 @@ bool load(context ** out, const char * det_path, const char * rec_path, int n_th
     return true;
 }
 
-// Crop a region from an RGB image. Returns RGB uint8 buffer.
-static std::vector<uint8_t> crop_image(const unsigned char * img, int img_w, int img_h, int crop_x, int crop_y,
-                                       int crop_w, int crop_h) {
-    // Clamp to image bounds
-    crop_x = std::max(0, crop_x);
-    crop_y = std::max(0, crop_y);
-    if (crop_x + crop_w > img_w) crop_w = img_w - crop_x;
-    if (crop_y + crop_h > img_h) crop_h = img_h - crop_y;
-    if (crop_w <= 0 || crop_h <= 0) return {};
-
-    std::vector<uint8_t> crop(crop_w * crop_h * 3);
-    for (int y = 0; y < crop_h; y++) {
-        const uint8_t * src = img + ((crop_y + y) * img_w + crop_x) * 3;
-        uint8_t * dst = crop.data() + y * crop_w * 3;
-        memcpy(dst, src, crop_w * 3);
-    }
-    return crop;
-}
-
 static void orient_text_crop(std::vector<uint8_t> & crop, int w, int h) {
     if (w < 8 || h < 8) return;
     std::vector<uint8_t> gray((size_t)w * h);
@@ -172,12 +154,9 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
         int cw = (int)b.w + 2 * pad;
         int ch = (int)b.h + 2 * pad;
 
-        auto crop = crop_image(raw, img_w, img_h, cx, cy, cw, ch);
+        int actual_w = 0, actual_h = 0;
+        auto crop = ocr_crop::extract(raw, img_w, img_h, 3, cx, cy, cw, ch, 0, &actual_w, &actual_h);
         if (crop.empty()) continue;
-
-        int actual_w = std::min(cw, img_w - cx);
-        int actual_h = std::min(ch, img_h - cy);
-        if (actual_w <= 0 || actual_h <= 0) continue;
 
         orient_text_crop(crop, actual_w, actual_h);
         crop_entries.push_back({ std::move(crop), actual_w, actual_h, i });

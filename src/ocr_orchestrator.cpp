@@ -11,6 +11,7 @@
 
 #include "scan_cleanup.h"
 #include "ocr_pipeline.h"
+#include "ocr_crop.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -595,15 +596,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         results.reserve(boxes.size());
         const int pad = 2;
         for (auto & b : boxes) {
-            int cx = std::max(0, (int)b.x - pad);
-            int cy = std::max(0, (int)b.y - pad);
-            int cw = std::min((int)b.w + 2 * pad, w - cx);
-            int chh = std::min((int)b.h + 2 * pad, h - cy);
-            if (cw <= 0 || chh <= 0) continue;
-            std::vector<uint8_t> crop((size_t)cw * chh);
-            for (int y = 0; y < chh; y++) {
-                std::memcpy(crop.data() + (size_t)y * cw, gray + (size_t)(cy + y) * w + cx, (size_t)cw);
-            }
+            int cw = 0, chh = 0;
+            auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
+            if (crop.empty()) continue;
             int len = 0;
             const char * t = tesseract_lstm_recognize(ctx->tess, crop.data(), cw, chh, &len);
             if (!t || len <= 0) continue;
@@ -660,15 +655,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         results.reserve(boxes.size());
         const int pad = 2;
         for (auto & b : boxes) {
-            int cx = std::max(0, (int)b.x - pad);
-            int cy = std::max(0, (int)b.y - pad);
-            int cw = std::min((int)b.w + 2 * pad, w - cx);
-            int chh = std::min((int)b.h + 2 * pad, h - cy);
-            if (cw <= 0 || chh <= 0) continue;
-            std::vector<uint8_t> crop((size_t)cw * chh * 3);
-            for (int y = 0; y < chh; y++) {
-                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(cy + y) * w + cx) * 3, (size_t)cw * 3);
-            }
+            int cw = 0, chh = 0;
+            auto crop = ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
+            if (crop.empty()) continue;
             int len = 0;
             const char * t = parseq_ocr_recognize_raw(ctx->parseq, crop.data(), cw, chh, 3, &len);
             if (!t || len <= 0) continue;
