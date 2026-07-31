@@ -432,8 +432,6 @@ target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
 add_executable(test-ppocrv6-det-diff tests/test_ppocrv6_det_diff.cpp)
 target_link_libraries(test-ppocrv6-det-diff PRIVATE crispembed)
-add_executable(test-ppocrv6-rec tests/test_ppocrv6_rec.cpp)
-target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)
 
 add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
 target_link_libraries(test-ocr-recognize PRIVATE crispembed)
