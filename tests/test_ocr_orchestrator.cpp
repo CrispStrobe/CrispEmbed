@@ -635,7 +635,13 @@ static void test_tesseract_regression() {
 // 9b. Model-dependent: PP-OCRv6 detector → orientation → recognizer (gated)
 // ═══════════════════════════════════════════════════════════════════════
 static void test_ppocrv6_pipeline_regression() {
-    printf("── PP-OCRv6 pipeline regression (model-gated) ──\n");
+    const char * variant_env = getenv("CRISPEMBED_PPOCRV6_VARIANT");
+    const std::string variant = variant_env && variant_env[0] ? variant_env : "tiny";
+    if (variant != "tiny" && variant != "small" && variant != "medium") {
+        printf("  SKIP: unsupported PP-OCRv6 variant: %s\n", variant.c_str());
+        return;
+    }
+    printf("── PP-OCRv6 %s pipeline regression (model-gated) ──\n", variant.c_str());
 
     const char * models_dir = getenv("CRISPEMBED_MODELS_DIR");
     if (!models_dir || !models_dir[0]) {
@@ -643,8 +649,9 @@ static void test_ppocrv6_pipeline_regression() {
         return;
     }
 
-    const std::string det_path = std::string(models_dir) + "/PP-OCRv6_tiny_det-f16.gguf";
-    const std::string rec_path = std::string(models_dir) + "/PP-OCRv6_tiny_rec-q8-head.gguf";
+    const std::string prefix = std::string(models_dir) + "/PP-OCRv6_" + variant;
+    const std::string det_path = prefix + "_det-f16.gguf";
+    const std::string rec_path = prefix + "_rec-q8-head.gguf";
     const std::string ori_path = std::string(models_dir) + "/PP-LCNet_x1_0_textline_ori-f16.gguf";
     const char * image_path = "tests/regression/images/cc0/german_official_document.jpg";
     FILE * det = fopen(det_path.c_str(), "r");
@@ -654,7 +661,7 @@ static void test_ppocrv6_pipeline_regression() {
         if (det) fclose(det);
         if (rec) fclose(rec);
         if (ori) fclose(ori);
-        printf("  SKIP: PP-OCRv6 tiny/orientation models not found in %s\n", models_dir);
+        printf("  SKIP: PP-OCRv6 %s/orientation models not found in %s\n", variant.c_str(), models_dir);
         return;
     }
     fclose(det);
