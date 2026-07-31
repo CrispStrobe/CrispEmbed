@@ -180,6 +180,10 @@ and PARSeq are present as recognizer-only rows; the DBNet+TrOCR document
 baseline is measured separately by `tests/ocr_benchmark.py`. Results are
 written as JSON with no silent omission.
 
+The checked-in matrix now has a model-free CI coverage guard at
+`tests/regression/test_engine_matrix.py`: all 23 portfolio engines must remain
+present with a lane, runtime, fixture, and explicit availability status.
+
 ### Validation follow-up — external document parser [COMPLETED]
 
 - Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
