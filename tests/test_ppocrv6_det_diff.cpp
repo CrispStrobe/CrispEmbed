@@ -3,6 +3,7 @@
 #include "ppocrv6_det.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <string>
 
 static int run(int argc, char ** argv) {
@@ -14,7 +15,9 @@ static int run(int argc, char ** argv) {
     if (!ref.load(argv[2])) return 1;
     auto * ctx = ppocrv6_det::init(argv[1], 1);
     if (!ctx) return 1;
-    auto boxes = ppocrv6_det::detect_file(ctx, argv[3], 0.2f);
+    const float det_threshold =
+        std::getenv("PPOCRV6_DET_THRESHOLD") ? std::strtof(std::getenv("PPOCRV6_DET_THRESHOLD"), nullptr) : 0.2f;
+    auto boxes = ppocrv6_det::detect_file(ctx, argv[3], det_threshold);
     bool pass = true;
     for (const char * name :
          { "med_adjust0",  "med_adjust1",  "med_adjust2",  "med_adjust3",  "med_top0",     "med_top1",
