@@ -143,7 +143,11 @@ def main() -> None:
     writer.add_uint32("ppocrv6.fused_batch_norm", 1)
     writer.add_uint32("ppocrv6.input_height", 48 if kind == "rec" else 0)
     writer.add_uint32("ppocrv6.input_width", 320 if kind == "rec" else 0)
-    writer.add_array("tokenizer.tokens", _tokens(args.model_dir, kind))
+    tokens = _tokens(args.model_dir, kind)
+    # Use the standard GGUF tokenizer key consumed by CrispEmbed.  Keep the
+    # short legacy alias for tools that used the first prototype converter.
+    writer.add_array("tokenizer.ggml.tokens", tokens)
+    writer.add_array("tokenizer.tokens", tokens)
     if kind == "rec":
         writer.add_uint32("ppocrv6.vocab_size", int(cfg.get("head_out_channels", 0)))
         writer.add_uint32("ppocrv6.hidden_size", int(cfg.get("hidden_size", 0)))
