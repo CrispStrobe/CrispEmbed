@@ -954,6 +954,8 @@ reported 41 explicit non-sample/non-model skips. Representative outputs:
 | TexTeller | 18,491 | CER 7.293; unusable on fixture |
 
 SmolDocling is therefore supported and live-tested; its next fix is structural
-deduplication/DocTags parsing, not model discovery. Unlimited-OCR is supported
-in the runtime and its 2.15 GiB GGUF is being fetched into the model cache for
-the final live run. Qwen2-VL is runnable but did not complete this M1 budget.
+deduplication/DocTags parsing, not model discovery. Unlimited-OCR's Q4_K stacked
+artifact is complete at 2,252,419,328 bytes, but the live run stalls during
+model mapping/residency before inference on the M1 host, including explicit
+Metal. This is recorded as `runtime-load-blocked`, not as a speed or quality
+result. Qwen2-VL is runnable but did not complete this M1 budget.
