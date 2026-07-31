@@ -111,7 +111,10 @@ def main() -> None:
         if not name.endswith(".convolution.weight"):
             continue
         stem = name[:-len("convolution.weight")]
-        norm = stem + "normalization."
+        # Backbone layers use `.normalization`; the detector neck/head uses
+        # `.norm`.  Both are inference BatchNorm and must be folded before
+        # writing GGUF so detector and recognizer share the same runtime path.
+        norm = stem + ("normalization." if stem + "normalization.weight" in data else "norm.")
         if all(norm + x in data for x in ("weight", "bias", "running_mean", "running_var")):
             bias_name = stem + "convolution.bias"
             w, b = _fuse(value, data.get(bias_name), data[norm + "weight"],
