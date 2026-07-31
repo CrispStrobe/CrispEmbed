@@ -70,6 +70,10 @@ std::vector<region> order_words(const std::vector<region> & input) {
     return ordered;
 }
 
+std::vector<region> order_regions(const std::vector<region> & regions, ordering_mode mode) {
+    return mode == ordering_mode::lines ? group_lines(regions) : order_words(regions);
+}
+
 std::vector<word> reading_order(std::vector<word> words) {
     std::stable_sort(words.begin(), words.end(), [](const word & a, const word & b) {
         if (a.block != b.block) return a.block < b.block;
