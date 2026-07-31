@@ -632,6 +632,70 @@ static void test_tesseract_regression() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// 9b. Model-dependent: PP-OCRv6 detector → orientation → recognizer (gated)
+// ═══════════════════════════════════════════════════════════════════════
+static void test_ppocrv6_pipeline_regression() {
+    printf("── PP-OCRv6 pipeline regression (model-gated) ──\n");
+
+    const char * models_dir = getenv("CRISPEMBED_MODELS_DIR");
+    if (!models_dir || !models_dir[0]) {
+        printf("  SKIP: CRISPEMBED_MODELS_DIR not set\n");
+        return;
+    }
+
+    const std::string det_path = std::string(models_dir) + "/PP-OCRv6_tiny_det-f16.gguf";
+    const std::string rec_path = std::string(models_dir) + "/PP-OCRv6_tiny_rec-q8-head.gguf";
+    const std::string ori_path = std::string(models_dir) + "/PP-LCNet_x1_0_textline_ori-f16.gguf";
+    const char * image_path = "tests/regression/images/cc0/german_official_document.jpg";
+    FILE * det = fopen(det_path.c_str(), "r");
+    FILE * rec = fopen(rec_path.c_str(), "r");
+    FILE * ori = fopen(ori_path.c_str(), "r");
+    if (!det || !rec || !ori) {
+        if (det) fclose(det);
+        if (rec) fclose(rec);
+        if (ori) fclose(ori);
+        printf("  SKIP: PP-OCRv6 tiny/orientation models not found in %s\n", models_dir);
+        return;
+    }
+    fclose(det);
+    fclose(rec);
+    fclose(ori);
+
+    using namespace ocr_orchestrator;
+    config cfg;
+    cfg.router = false;
+    chain ch;
+    ch.type = source_type::auto_detect;
+    stage s;
+    s.eng = engine::ppocrv6;
+    s.model_a = det_path;
+    s.model_b = rec_path;
+    s.model_c = ori_path;
+    s.accept.min_chars = 1;
+    s.accept.min_confidence = 0.0f;
+    ch.stages.push_back(s);
+    cfg.chains.push_back(ch);
+
+    context * ctx = nullptr;
+    if (!load(&ctx, cfg)) {
+        printf("  SKIP: failed to load PP-OCRv6 pipeline\n");
+        return;
+    }
+    result r = run_file(ctx, image_path);
+    CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
+    CHECK(r.mean_confidence >= 0.0f, "PP-OCRv6 pipeline confidence >= 0");
+    for (const auto & region : r.regions) {
+        CHECK(region.orientation_angle == 0 || region.orientation_angle == 180,
+              "PP-OCRv6 line orientation is 0° or 180°");
+        CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
+              "PP-OCRv6 line orientation confidence is bounded");
+    }
+    printf("  INFO: PP-OCRv6 output: %zu regions, %d chars (conf=%.2f)\n", r.regions.size(), (int)r.full_text.size(),
+           r.mean_confidence);
+    free(ctx);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // 10. Model-dependent: Punctuation post-process (gated)
 // ═══════════════════════════════════════════════════════════════════════
 static void test_punctuation() {
@@ -685,6 +749,7 @@ static int crispembed_test_main() {
     test_c_api();
     test_edge_cases();
     test_tesseract_regression();
+    test_ppocrv6_pipeline_regression();
     test_punctuation();
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
