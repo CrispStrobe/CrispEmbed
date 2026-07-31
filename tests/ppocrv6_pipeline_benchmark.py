@@ -32,7 +32,11 @@ def main() -> int:
                         choices=["tiny", "small", "medium"])
     parser.add_argument("--timeout", type=float, default=900.0,
                         help="maximum seconds per model variant (default: 900)")
+    parser.add_argument("--fixture-limit", type=int, default=10,
+                        help="run only the first N live fixtures for profiling (default: 10)")
     args = parser.parse_args()
+    if args.fixture_limit < 1 or args.fixture_limit > 10:
+        parser.error("--fixture-limit must be between 1 and 10")
     all_rows = []
     for variant in args.variants:
         required = (f"PP-OCRv6_{variant}_det-f16.gguf", f"PP-OCRv6_{variant}_rec-q8-head.gguf",
@@ -43,6 +47,7 @@ def main() -> int:
         env = os.environ.copy()
         env["CRISPEMBED_MODELS_DIR"] = str(args.models_dir)
         env["CRISPEMBED_PPOCRV6_VARIANT"] = variant
+        env["CRISPEMBED_PPOCRV6_FIXTURE_LIMIT"] = str(args.fixture_limit)
         started = time.monotonic()
         try:
             proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False,
@@ -64,8 +69,8 @@ def main() -> int:
         if proc.returncode != 0:
             raise SystemExit(f"native PP-OCRv6 {variant} regression failed (exit {proc.returncode})\n"
                              f"{proc.stderr[-2000:]}")
-        if len(rows) != 10:
-            raise SystemExit(f"expected 10 PP-OCRv6 {variant} benchmark rows, got {len(rows)}")
+        if len(rows) != args.fixture_limit:
+            raise SystemExit(f"expected {args.fixture_limit} PP-OCRv6 {variant} benchmark rows, got {len(rows)}")
         all_rows.extend(rows)
     result = {"version": 1, "engine": "ppocrv6", "orientation": "pplcnet-0-180", "rows": all_rows}
     payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
