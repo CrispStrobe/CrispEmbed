@@ -1,8 +1,10 @@
 #include "easyocr_ocr.h"
 #include "core/clean_exit.h"
+#include "crispembed_diff.h"
 #include "stb_image.h"
 
 #include <cstdio>
+#include <string>
 
 static int easyocr_diff_main(int argc, char ** argv) {
     if (argc != 4) {
@@ -25,6 +27,19 @@ static int easyocr_diff_main(int argc, char ** argv) {
         return 5;
     }
     printf("decoded=%s\n", text);
+    crispembed_diff::Ref reference;
+    if (!reference.load(argv[2])) {
+        stbi_image_free(pixels);
+        easyocr_ocr_free(ctx);
+        return 6;
+    }
+    const std::string expected = reference.meta("easyocr.decoded");
+    if (!expected.empty() && expected != text) {
+        fprintf(stderr, "decoded output mismatch: mine=%s ref=%s\n", text, expected.c_str());
+        stbi_image_free(pixels);
+        easyocr_ocr_free(ctx);
+        return 6;
+    }
     const int failures = easyocr_ocr_diff(ctx, argv[2]);
     stbi_image_free(pixels);
     easyocr_ocr_free(ctx);
