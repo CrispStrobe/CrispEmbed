@@ -18,6 +18,9 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
@@ -269,7 +272,8 @@ more than another restoration model.
    available. Synthetic degradations remain unit stress tests, not quality
    claims.
 
-2. **O10.2 — Problematic-input corpus.** Extend the public-domain corpus with
+2. **O10.2 — Problematic-input corpus.** **Implemented in
+   `feat/ppocr-next-20260731`;** extend the public-domain corpus with
    verified derived variants: ±4°/±8° skew, dark border, uneven illumination,
    haze, speckle, low-DPI downsample, JPEG damage, 90°/180°/270° rotation,
    perspective/curved-page distortion, and mixed upright/upside-down lines.
@@ -286,21 +290,23 @@ more than another restoration model.
    detector paths. Fast mode avoids pathological contour tracing; accurate
    polygon scoring remains available explicitly.
 
-4. **O10.4 — Learned line orientation.** Port a small permissively licensed
+4. **O10.4 — Learned line orientation.** **Classical telemetry slice implemented
+   in `feat/ppocr-next-20260731`;** port a small permissively licensed
    0°/180° line-angle classifier to GGUF/ggml. Integrate it after detection
    and before every line recognizer, including Tesseract-LSTM crops. Retain
    the current heuristic as a no-model fallback. Add per-line angle,
    confidence, and whether a rotation was applied to structured results.
    The existing classical 0°/180° safeguard is now shared by TrOCR,
-   Tesseract-LSTM, and PARSeq line crops; the learned classifier and
-   structured rotation metadata remain outstanding.
+   Tesseract-LSTM, and PARSeq line crops, and structured angle/confidence
+   metadata is exposed per region. The learned classifier remains outstanding.
 
 5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
    configurable threshold. Never rotate VLM inputs implicitly unless the
    caller enables the option, because VLM letterboxing is model-specific.
 
-6. **O10.6 — Shared crop preprocessing.** Consolidate classifier and
+6. **O10.6 — Shared crop preprocessing.** **Implemented in
+   `feat/ppocr-next-20260731`;** consolidate classifier and
    recognizer crop resizing/padding into one tested module. Support
    aspect-preserving and stretch modes, fixed height, maximum width, and
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,

@@ -636,6 +636,8 @@ typedef struct crispembed_ocr_result {
     const char * text; // recognized text (owned by pipeline ctx)
     int text_len;
     int orientation_corrected; // nonzero when a 180° line correction was applied
+    int orientation_angle;     // detected line angle in degrees, when available
+    float orientation_confidence;
 } crispembed_ocr_result;
 
 /// Load OCR pipeline (detection + recognition models).

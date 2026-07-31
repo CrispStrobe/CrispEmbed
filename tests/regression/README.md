@@ -16,6 +16,16 @@ python3 tests/regression/fetch_cc0_fixtures.py
 Stage coverage and the distinction between real-world and deterministic
 reference inputs are recorded in `corpus_manifest.json`.
 
+Deterministic robustness derivatives are under `images/derived/`. Their
+`MANIFEST.json` records the parent fixture hash and transformation recipe for
+each skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation,
+perspective, and mixed-orientation variant. Recreate them with:
+
+```sh
+python3 tests/regression/generate_derived_fixtures.py
+python3 tests/regression/test_derived_fixtures.py
+```
+
 The complete engine inventory—including engines whose runtime exists but whose
 GGUF still needs downloading or porting—is in `ocr_engine_matrix.json`.
 `ocr_engine_benchmark.py --download-missing` resolves manifest-pinned GGUFs
