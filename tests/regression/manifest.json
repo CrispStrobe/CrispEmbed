@@ -1021,7 +1021,7 @@
     {
       "name": "bttr-live",
       "engine": "bttr",
-      "gguf": {"repo": "cstr/bttr-hw-GGUF", "file": "bttr-hw-q4_k.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/bttr-handwritten-math-gguf", "file": "bttr-hw-q4_k.gguf", "revision": "main"},
       "sample": "tests/regression/images/formula_quadratic.png",
       "expected_text": "x = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c } } { 2 a }",
       "match": {"max_cer": 0.20}
@@ -1029,7 +1029,7 @@
     {
       "name": "hmer-live",
       "engine": "hmer",
-      "gguf": {"repo": "cstr/hmer-hw-GGUF", "file": "hmer-hw-q4_k.gguf", "revision": "main"},
+      "gguf": {"repo": "cstr/hmer-handwritten-math-gguf", "file": "hmer-hw-q4_k.gguf", "revision": "main"},
       "sample": "tests/regression/images/formula_quadratic.png",
       "expected_text": null,
       "match": {"max_cer": 0.20}
@@ -1134,7 +1134,7 @@
       "engine": "parseq",
       "_comment": "Scene-text recognizer smoke. Quality is unscored until a line-crop fixture and transcription are added.",
       "gguf": {
-        "repo": "cstr/parseq-tiny-GGUF",
+        "repo": "cstr/parseq-GGUF",
         "file": "parseq-tiny-q8_0.gguf",
         "revision": "main"
       },
