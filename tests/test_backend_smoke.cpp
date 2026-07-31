@@ -17,12 +17,24 @@ int main(int argc, char ** argv) {
     // Optional explicit backend makes the same smoke binary useful in the
     // device matrix: `test-backend-smoke metal`, `... cuda`, or `... vulkan`.
     // With no argument, preserve the normal auto-selection behavior.
-    if (argc > 2) {
-        std::fprintf(stderr, "usage: %s [backend]\n", argv[0]);
+    const char * requested = nullptr;
+    bool json_output = false;
+    for (int i = 1; i < argc; ++i) {
+        if (std::strcmp(argv[i], "--json") == 0) {
+            json_output = true;
+        } else if (!requested) {
+            requested = argv[i];
+        } else {
+            std::fprintf(stderr, "usage: %s [backend] [--json]\n", argv[0]);
+            return 2;
+        }
+    }
+    if (requested && std::strcmp(requested, "") == 0) {
+        std::fprintf(stderr, "usage: %s [backend] [--json]\n", argv[0]);
         return 2;
     }
-    const bool cpu_requested = argc == 2 && std::strcmp(argv[1], "cpu") == 0;
-    if (argc == 2 && !cpu_requested) crispasr_set_gpu_backend_pref(argv[1]);
+    const bool cpu_requested = requested && std::strcmp(requested, "cpu") == 0;
+    if (requested && !cpu_requested) crispasr_set_gpu_backend_pref(requested);
     ggml_backend_t backend = cpu_requested ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) {
         std::fprintf(stderr, "backend smoke: no backend available\n");
@@ -68,12 +80,19 @@ int main(int argc, char ** argv) {
         compute_ms = std::chrono::duration<double, std::milli>(end - begin).count() / measured_runs;
         computed = measured_ok;
     }
-    const bool requested_device_available = argc != 2 || cpu_requested || type != GGML_BACKEND_DEVICE_TYPE_CPU;
+    const bool requested_device_available = !requested || cpu_requested || type != GGML_BACKEND_DEVICE_TYPE_CPU;
     bool correct = computed && requested_device_available;
     for (float v : ov) correct = correct && v > 3.99f && v < 4.01f;
-    std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d compute_ms=%.3f device_available=%d correct=%d\n",
-                argc == 2 ? argv[1] : "auto", name ? name : "unknown", (int)type,
-                ggml_graph_n_nodes(graph), computed ? 1 : 0, compute_ms, requested_device_available ? 1 : 0, correct ? 1 : 0);
+    const char * request_name = requested ? requested : "auto";
+    if (json_output) {
+        std::printf("{\"requested\":\"%s\",\"name\":\"%s\",\"type\":%d,\"nodes\":%d,\"computed\":%s,\"compute_ms\":%.3f,\"device_available\":%s,\"correct\":%s}\n",
+                    request_name, name ? name : "unknown", (int)type, ggml_graph_n_nodes(graph), computed ? "true" : "false",
+                    compute_ms, requested_device_available ? "true" : "false", correct ? "true" : "false");
+    } else {
+        std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d compute_ms=%.3f device_available=%d correct=%d\n",
+                    request_name, name ? name : "unknown", (int)type, ggml_graph_n_nodes(graph), computed ? 1 : 0, compute_ms,
+                    requested_device_available ? 1 : 0, correct ? 1 : 0);
+    }
     if (alloc) ggml_gallocr_free(alloc);
     ggml_free(ctx);
     ggml_backend_free(backend);
