@@ -2,6 +2,7 @@
 #include "classical_preproc.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -80,6 +81,67 @@ std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int 
     }
     if (out_width) *out_width = w;
     if (out_height) *out_height = h;
+    return result;
+}
+
+std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
+                                  const float qy[4], int padding, int * out_width, int * out_height) {
+    if (out_width) *out_width = 0;
+    if (out_height) *out_height = 0;
+    if (!pixels || width <= 0 || height <= 0 || channels <= 0 || !qx || !qy) return {};
+    struct point {
+        float x, y;
+    };
+    std::array<point, 4> p{}, o{};
+    for (int i = 0; i < 4; ++i) p[i] = { qx[i], qy[i] };
+    float min_sum = INFINITY, max_sum = -INFINITY, min_diff = INFINITY, max_diff = -INFINITY;
+    for (const auto & v : p) {
+        const float sum = v.x + v.y, diff = v.x - v.y;
+        if (sum < min_sum) {
+            min_sum = sum;
+            o[0] = v;
+        }
+        if (sum > max_sum) {
+            max_sum = sum;
+            o[2] = v;
+        }
+        if (diff < min_diff) {
+            min_diff = diff;
+            o[1] = v;
+        }
+        if (diff > max_diff) {
+            max_diff = diff;
+            o[3] = v;
+        }
+    }
+    auto distance = [](point a, point b) { return std::hypot(a.x - b.x, a.y - b.y); };
+    const int pad = std::max(0, padding);
+    const int ow = std::max(1, (int)std::lround(std::max(distance(o[0], o[1]), distance(o[3], o[2]))) + 2 * pad);
+    const int oh = std::max(1, (int)std::lround(std::max(distance(o[0], o[3]), distance(o[1], o[2]))) + 2 * pad);
+    std::vector<uint8_t> result((size_t)ow * oh * channels);
+    auto sample = [&](float x, float y, int c) -> uint8_t {
+        x = std::clamp(x, 0.0f, (float)(width - 1));
+        y = std::clamp(y, 0.0f, (float)(height - 1));
+        const int x0 = (int)std::floor(x), y0 = (int)std::floor(y);
+        const int x1 = std::min(width - 1, x0 + 1), y1 = std::min(height - 1, y0 + 1);
+        const float fx = x - x0, fy = y - y0;
+        auto at = [&](int xx, int yy) { return pixels[((size_t)yy * width + xx) * channels + c]; };
+        const float a = at(x0, y0) * (1 - fx) + at(x1, y0) * fx;
+        const float b = at(x0, y1) * (1 - fx) + at(x1, y1) * fx;
+        return (uint8_t)std::lround(a * (1 - fy) + b * fy);
+    };
+    for (int y = 0; y < oh; ++y) {
+        const float v = std::clamp((y - pad) / (float)std::max(1, oh - 1 - 2 * pad), 0.0f, 1.0f);
+        for (int x = 0; x < ow; ++x) {
+            const float u = std::clamp((x - pad) / (float)std::max(1, ow - 1 - 2 * pad), 0.0f, 1.0f);
+            const float tx = o[0].x + u * (o[1].x - o[0].x), ty = o[0].y + u * (o[1].y - o[0].y);
+            const float bx = o[3].x + u * (o[2].x - o[3].x), by = o[3].y + u * (o[2].y - o[3].y);
+            for (int c = 0; c < channels; ++c)
+                result[((size_t)y * ow + x) * channels + c] = sample(tx + v * (bx - tx), ty + v * (by - ty), c);
+        }
+    }
+    if (out_width) *out_width = ow;
+    if (out_height) *out_height = oh;
     return result;
 }
 

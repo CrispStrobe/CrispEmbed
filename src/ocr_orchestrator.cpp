@@ -393,7 +393,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         std::vector<ocr_pipeline::ocr_result> results;
         for (const auto & b : boxes) {
             int cw = 0, ch = 0;
-            auto crop = ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
+            bool has_quad = false;
+            for (int i = 0; i < 4; ++i) has_quad = has_quad || b.qx[i] != 0.0f || b.qy[i] != 0.0f;
+            auto crop = has_quad ? ocr_crop::extract_quad(rgb, w, h, 3, b.qx, b.qy, 2, &cw, &ch)
+                                 : ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
             if (crop.empty()) continue;
             const auto orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
             int len = 0;
