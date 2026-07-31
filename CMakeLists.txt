@@ -203,6 +203,7 @@ list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_det.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pplcnet_orientation.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_layout.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_pipeline.cpp)
@@ -685,6 +686,10 @@ target_link_libraries(test-ppocrv6-dbnet PRIVATE crispembed)
 add_executable(test-ppocrv6-direct tests/test_ppocrv6_direct.cpp)
 target_include_directories(test-ppocrv6-direct PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-ppocrv6-direct PRIVATE crispembed)
+
+add_executable(test-pplcnet-orientation tests/test_pplcnet_orientation.cpp)
+target_include_directories(test-pplcnet-orientation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-pplcnet-orientation PRIVATE crispembed)
 
 endif() # NOT iOS
 

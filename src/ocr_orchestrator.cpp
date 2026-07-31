@@ -29,6 +29,7 @@
 #include "ocr_detect.h"
 #include "ppocrv6_det.h"
 #include "ppocrv6_ocr.h"
+#include "pplcnet_orientation.h"
 #include "table_parse.h"
 #include "ppformulanet_ocr.h"
 #include "ppformulanet_l_ocr.h"
@@ -86,6 +87,7 @@ struct context {
     ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
     ppocrv6_det::context * ppdet = nullptr;    // PP-OCRv6 detector
     ppocrv6_ocr_context * pprec = nullptr;     // PP-OCRv6 recognizer
+    pplcnet_orientation::context * ppori = nullptr; // optional PP-LCNet line orientation
     layout_detect::context * layout = nullptr; // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
@@ -371,6 +373,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
         if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
+        if (!ctx->ppori && !st.model_c.empty()) ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
         if (!ctx->ppdet || !ctx->pprec) return {};
         // PP-OCRv6's official predictor applies resize_long=960/max-side and
         // rounds dimensions to a 32-pixel grid before inference.  Do not use
@@ -397,7 +400,18 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             auto crop = has_quad ? ocr_crop::extract_quad(rgb, w, h, 3, b.qx, b.qy, 2, &cw, &ch)
                                  : ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
             if (crop.empty()) continue;
-            const auto orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
+            ocr_crop::orientation_info orientation;
+            if (ctx->ppori) {
+                const auto classified = pplcnet_orientation::classify_raw(ctx->ppori, crop.data(), cw, ch, 3);
+                orientation.angle = classified.angle;
+                orientation.confidence = classified.confidence;
+                if (classified.angle == 180) {
+                    ocr_crop::rotate_180_rgb(crop, cw, ch);
+                    orientation.corrected = true;
+                }
+            } else {
+                orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
+            }
             int len = 0;
             const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
             if (!text || len <= 0) continue;
@@ -1504,6 +1518,7 @@ void free(context * ctx) {
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
     if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
     if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
+    if (ctx->ppori) pplcnet_orientation::free(ctx->ppori);
     if (ctx->layout) layout_detect::free(ctx->layout);
     if (ctx->table) table_parse_free(ctx->table);
     if (ctx->formula) ppformulanet_ocr_free(ctx->formula);
