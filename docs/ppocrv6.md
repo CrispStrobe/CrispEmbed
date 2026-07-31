@@ -37,3 +37,15 @@ height, aspect-ratio-preserving width with padding up to 320 pixels, RGB
 conversion, rescaling by `1/255`, and the model's declared normalization. Text
 detection uses the v6 736-pixel minimum-side policy and ImageNet channel
 normalization. These values must remain part of the parity fixtures.
+
+Dump the current torch reference fixture and enable native comparisons with:
+
+```bash
+python tools/dump_ppocrv6_reference.py \
+  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_tiny_rec_safetensors \
+  --image /path/to/line.png \
+  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf
+PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
+  ./build/crispembed -m /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  --ocr /path/to/line.png
+```
