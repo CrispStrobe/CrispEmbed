@@ -132,7 +132,11 @@ def fixture_paths(args: argparse.Namespace) -> list[Path]:
         result = []
         for name in args.only:
             p = Path(name)
-            result.append(p if p.is_absolute() else CORPUS / name)
+            if p.is_absolute():
+                result.append(p)
+            else:
+                direct, cc0 = CORPUS / name, CORPUS / "cc0" / name
+                result.append(direct if direct.exists() else cc0)
         return result
     manifest = json.loads(DEFAULT_FIXTURES.read_text())
     names = set()
