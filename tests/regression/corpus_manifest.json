@@ -60,5 +60,10 @@
   "gold_status": {
     "cc0": "source/license/checksum verified; transcription pending human verification",
     "existing_reference": "deterministic model/reference fixture; not a real-world quality score"
+  },
+  "derived_robustness": {
+    "manifest": "images/derived/MANIFEST.json",
+    "source_policy": "Every record points to a verified CC0/public-domain parent and stores its parent SHA-256 plus deterministic recipe.",
+    "transformations": ["skew", "dark_border", "uneven_illumination", "haze", "speckle", "low_dpi", "jpeg_damage", "rotation", "perspective", "mixed_orientation_lines"]
   }
 }

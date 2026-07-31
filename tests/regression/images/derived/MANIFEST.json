@@ -1,0 +1,677 @@
+{
+  "version": 1,
+  "records": [
+    {
+      "file": "tests/regression/images/derived/receipt_example__skew-p04.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "43755550b995bc77b06feedd0c8d77028858344d1633c5864d2b942bcc563da5",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 4
+      },
+      "size": [
+        546,
+        684
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__skew-m04.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "4a72016f62efdd15cdebd5ce2ca3f6ef6c5066a70f906bb2638b3506a5e35180",
+      "recipe": {
+        "op": "rotate",
+        "degrees": -4
+      },
+      "size": [
+        546,
+        684
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__skew-p08.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "f5bed6e1e49d2bdedf2f60978800ef1656d40e88ab2814e5d5f12c9715d1b381",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 8
+      },
+      "size": [
+        586,
+        714
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__skew-m08.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "34d455ecdc5b35310c932e483817c47187743c5463ae4535fa7accca702ec966",
+      "recipe": {
+        "op": "rotate",
+        "degrees": -8
+      },
+      "size": [
+        586,
+        714
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__dark-border.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "17036393d8c624f1c4ed2fcfdb6c547c6663f59444a6cf11ff5eb75877d2b8e4",
+      "recipe": {
+        "op": "border",
+        "pixels": 11,
+        "rgb": [
+          35,
+          35,
+          35
+        ]
+      },
+      "size": [
+        522,
+        672
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__uneven-illumination.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "6bd1bc5830690ca0e02d50fbd955923034e0e0ce0e224ee93c7bbf4a702efa0e",
+      "recipe": {
+        "op": "gradient",
+        "minimum": 0.55,
+        "maximum": 1.0
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__haze.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "5084a86c3b5977c00d4c52c8e4f2952a44173080462b9a55531fd14ee1493eef",
+      "recipe": {
+        "op": "blend",
+        "color": "white",
+        "amount": 0.32
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__speckle.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "897d187006df927ebc60bff357a6c2291c8b8a36b2353c2ce0735c47a0085d9f",
+      "recipe": {
+        "op": "speckle",
+        "seed": 20260731
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__low-dpi.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "04ff5bacbfb81437850849730b0da442fd0934728f18e5f444de83f29df689dd",
+      "recipe": {
+        "op": "resize",
+        "downsample": [
+          166,
+          216
+        ],
+        "restore": [
+          500,
+          650
+        ]
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__jpeg-damage.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "5d1f036beaed2eb6fd91fc5cf0231233def4d47e7d818e62aa0f21812f053f3a",
+      "recipe": {
+        "op": "jpeg",
+        "quality": 28
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__rot90.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "420a3162ac84bbd1b0eabbfc95da69cf8a05d511a035218dfbb2dc6a12ba920c",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 90
+      },
+      "size": [
+        650,
+        500
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__rot180.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "0add7063b53674f7c1c236667395b0b6f3c09a3430738389c595d13a11b8be41",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 180
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__rot270.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "eebfee1790b1c0895eca99689be901e0047a5076af34aac863dd5359b55ebe92",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 270
+      },
+      "size": [
+        650,
+        500
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__perspective.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "0a98bf11cb1d24776dd01c8dfcae876ebeb6e57303601288267f6f3502f3a2bd",
+      "recipe": {
+        "op": "perspective",
+        "top_inset": 27
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/receipt_example__mixed-orientation.png",
+      "parent": "tests/regression/images/cc0/receipt_example.png",
+      "parent_sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "sha256": "9d72ec31e174ea85c47a1d7625ba7c6fd556173f85e7810dc4abc6bcc276b2f2",
+      "recipe": {
+        "op": "rotate-alternating-horizontal-bands",
+        "band_count": 5
+      },
+      "size": [
+        500,
+        650
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__skew-p04.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "099d98f77f1491655ad20ceb613c7c806834a29803230d5b61292625988fe396",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 4
+      },
+      "size": [
+        1048,
+        1344
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__skew-m04.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "d942f42db7df6d205e196bae48c265a3ffe4dd3c4f2291ccc745af66ed3efa99",
+      "recipe": {
+        "op": "rotate",
+        "degrees": -4
+      },
+      "size": [
+        1048,
+        1344
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__skew-p08.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "3ea5d49f1b2e651628f63478363d069a71b3dcfbb49a08d95a927e2f0c38126f",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 8
+      },
+      "size": [
+        1130,
+        1402
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__skew-m08.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "78fe5e03a28182205ae7397850ce6f0c7e43ba32af8969215e96ac5819fa2bf0",
+      "recipe": {
+        "op": "rotate",
+        "degrees": -8
+      },
+      "size": [
+        1130,
+        1402
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__dark-border.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "09b9bdd80a49e7e5754676cb3b874bf95ec8598661b66ee01c112d8f3d779fe7",
+      "recipe": {
+        "op": "border",
+        "pixels": 21,
+        "rgb": [
+          35,
+          35,
+          35
+        ]
+      },
+      "size": [
+        1002,
+        1322
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__uneven-illumination.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "52eff7d0b18f24dd9ec21138071b906a814608fc6018558d914fcdb71602eaee",
+      "recipe": {
+        "op": "gradient",
+        "minimum": 0.55,
+        "maximum": 1.0
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__haze.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "dbca22f4ec3b29674eae881f8e8a4f9f1d3118ec7f6d85c8f86b056949088d6e",
+      "recipe": {
+        "op": "blend",
+        "color": "white",
+        "amount": 0.32
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__speckle.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "93fe27c84437564a57c2cdcbb380f97535ddedc5be8b691144f8b074da491ff2",
+      "recipe": {
+        "op": "speckle",
+        "seed": 20260731
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__low-dpi.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "c49408fe98c0d9daebe4c234b21514af58825c5b3f23172d149d3af513f965e2",
+      "recipe": {
+        "op": "resize",
+        "downsample": [
+          320,
+          426
+        ],
+        "restore": [
+          960,
+          1280
+        ]
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__jpeg-damage.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "d890881ebcdcf973d79f2fbf85c328a4a736b0e4b78b2cb39cbbbeddaaa7728a",
+      "recipe": {
+        "op": "jpeg",
+        "quality": 28
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__rot90.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "61db6780b6035dd9102ac961bb5e24de01dc988ba07c88b85c43113fad63672b",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 90
+      },
+      "size": [
+        1280,
+        960
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__rot180.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "8ab4621864c133eb58bdac36f8ea916a7236151d682f946136cecf9cc4603911",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 180
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__rot270.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "872b9c367cd42c641d7c835e41e66af69e4c677f856df0e52bc297c27c2c3a89",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 270
+      },
+      "size": [
+        1280,
+        960
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__perspective.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "6d57303dc997aced069464b0750eeb91af315f3c9240a8d02b0e1db0582a0b82",
+      "recipe": {
+        "op": "perspective",
+        "top_inset": 53
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/german_official_document__mixed-orientation.png",
+      "parent": "tests/regression/images/cc0/german_official_document.jpg",
+      "parent_sha256": "0a3937d2ac3a33bf303fd77955226af73ec74e50787708e2d327c00371997377",
+      "sha256": "2aa188e75ebd553f8dad61fcf3f0f64b30be103d1101c61273da44d817e22b3f",
+      "recipe": {
+        "op": "rotate-alternating-horizontal-bands",
+        "band_count": 5
+      },
+      "size": [
+        960,
+        1280
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__skew-p04.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "b4ef9082a15fe8d985a4528e0caf300b3c66e8a69060725160f9cdf8503d4274",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 4
+      },
+      "size": [
+        121,
+        39
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__skew-m04.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "56d0ba6ccc41968cec3c715208a8f436f00506f5ef75acee6d3d1e3e488417ef",
+      "recipe": {
+        "op": "rotate",
+        "degrees": -4
+      },
+      "size": [
+        121,
+        39
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__skew-p08.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "a1dbeb68345667bfde56644899af7e0d803e8b87029edac73f6a04a55cf8f6d6",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 8
+      },
+      "size": [
+        123,
+        47
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__skew-m08.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "d4abd68ee2ab60a46226b63f8ef19398762fb805b58a9ead535bdce41c876161",
+      "recipe": {
+        "op": "rotate",
+        "degrees": -8
+      },
+      "size": [
+        123,
+        47
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__dark-border.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "ec04172deb19639d5f40a6c2556cc650d27da08a9084a6539236ae537de82c33",
+      "recipe": {
+        "op": "border",
+        "pixels": 8,
+        "rgb": [
+          35,
+          35,
+          35
+        ]
+      },
+      "size": [
+        135,
+        45
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__uneven-illumination.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "c8473c498487fb08e17159f08e73925fb9458554f31fd614397bc3436f3221ec",
+      "recipe": {
+        "op": "gradient",
+        "minimum": 0.55,
+        "maximum": 1.0
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__haze.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "4f63a918111755e28fdf6f039f59a66863d72dc16c7d5dc9dcd86aa76fbc3c5a",
+      "recipe": {
+        "op": "blend",
+        "color": "white",
+        "amount": 0.32
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__speckle.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "b38bd74b60fdeb99c699c928baf9882f6c0350c625412c24695b98b67dacbe1a",
+      "recipe": {
+        "op": "speckle",
+        "seed": 20260731
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__low-dpi.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "3f82e32c7c0fe5d5bb3780dd41f0e395989f9d963657fa0a423ce60d437ef55f",
+      "recipe": {
+        "op": "resize",
+        "downsample": [
+          39,
+          32
+        ],
+        "restore": [
+          119,
+          29
+        ]
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__jpeg-damage.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "99ec3bc40f670f4763e4b5a2619dc01bc4079ed0c298cb7d3ac034afae798111",
+      "recipe": {
+        "op": "jpeg",
+        "quality": 28
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__rot90.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "eb6b394023e45cea64e3ccb5a34fa9cf714b221ea1403997e35f1310c6d5c43d",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 90
+      },
+      "size": [
+        29,
+        119
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__rot180.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "2f16c2f4efb4ac5b026d01811c3e87e37a5e4da6c432e45c356c542ddb4bbebd",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 180
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__rot270.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "7a54554bf1def7747a38cc13bae60aedf79e0c7bbb3536e2d0d13a13bf9d85e1",
+      "recipe": {
+        "op": "rotate",
+        "degrees": 270
+      },
+      "size": [
+        29,
+        119
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__perspective.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "70817cc4a5290e7cee71eab61aa51acb804a74a030f7fe6753021aba28194fbf",
+      "recipe": {
+        "op": "perspective",
+        "top_inset": 6
+      },
+      "size": [
+        119,
+        29
+      ]
+    },
+    {
+      "file": "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
+      "parent": "tests/regression/images/cc0/arabic_printed_line.png",
+      "parent_sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789",
+      "sha256": "aba0478ede5e724604750eb74b62259e983af9cc7301cb4bf5012de99f1e59ca",
+      "recipe": {
+        "op": "rotate-alternating-horizontal-bands",
+        "band_count": 5
+      },
+      "size": [
+        119,
+        29
+      ]
+    }
+  ]
+}

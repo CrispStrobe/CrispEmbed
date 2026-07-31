@@ -17,6 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
@@ -268,7 +269,8 @@ more than another restoration model.
    available. Synthetic degradations remain unit stress tests, not quality
    claims.
 
-2. **O10.2 — Problematic-input corpus.** Extend the public-domain corpus with
+2. **O10.2 — Problematic-input corpus.** **Implemented in
+   `feat/ppocr-next-20260731`;** extend the public-domain corpus with
    verified derived variants: ±4°/±8° skew, dark border, uneven illumination,
    haze, speckle, low-DPI downsample, JPEG damage, 90°/180°/270° rotation,
    perspective/curved-page distortion, and mixed upright/upside-down lines.
