@@ -244,7 +244,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // pointwise convs (pw1/pw2) are matmuls in-engine and quantize fine.
         const bool ppocr_keep =
             is_ppocrv6 &&
-            (sname.rfind("det.", 0) == 0 || sname.find(".bias") != std::string::npos ||
+            // PP-OCRv6 is a compact CNN/CTC graph: quantization error compounds
+            // through every block and changes greedy CTC ties. Keep both the
+            // detector and recognizer paths in F16; the policy-q4 container then
+            // quantizes only non-critical metadata/auxiliary tensors and remains
+            // a quality-preserving deployment variant.
+            (sname.rfind("det.", 0) == 0 || sname.rfind("rec.", 0) == 0 || sname.find(".bias") != std::string::npos ||
              sname.find("normalization") != std::string::npos ||
              sname.find("squeeze_excitation") != std::string::npos ||
              sname.find("token_squeeze") != std::string::npos || sname.find("token_conv") != std::string::npos ||
