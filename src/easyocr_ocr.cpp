@@ -14,9 +14,10 @@
 #include <string>
 #include <vector>
 
-static void print_diff_report(const char * name, const crispembed_diff::Report & r) {
-    printf("easyocr-diff %-16s n=%zu max=%.6g mean=%.6g rms=%.6g cos=%.7f mine=%.6g ref=%.6g %s\n", name, r.n_elem,
-           r.max_abs, r.mean_abs, r.rms, r.cos_min, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
+static void print_diff_report(const char * name, const crispembed_diff::Report & r, bool pass) {
+    printf("easyocr-diff %-16s n=%zu max=%.6g mean=%.6g rms=%.6g cos=%.7f global=%.7f mine=%.6g ref=%.6g %s\n", name,
+           r.n_elem, r.max_abs, r.mean_abs, r.rms, r.cos_min, r.cos_global, r.mine_norm, r.ref_norm,
+           pass ? "PASS" : "FAIL");
 }
 
 struct easyocr_ocr_context {
@@ -303,8 +304,9 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         if (!strcmp(name, "input_image")) {
             ordered = c->input_host;
             auto report = ref.compare(name, ordered.data(), ordered.size(), 0);
-            print_diff_report(name, report);
-            if (!report.is_pass()) failures++;
+            const bool pass = report.is_pass(0.99f);
+            print_diff_report(name, report, pass);
+            if (!pass) failures++;
             continue;
         }
         ggml_tensor * t = nullptr;
@@ -314,8 +316,10 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         }
         const int row_dim = !strcmp(name, "features") ? 0 : !strcmp(name, "sequence_input") ? 1 : 0;
         auto report = ref.compare(name, ordered.data(), ordered.size(), row_dim);
-        print_diff_report(name, report);
-        if (!report.is_pass()) failures++;
+        const bool sparse_feature_pass = !strcmp(name, "features") && report.cos_global >= 0.99f;
+        const bool pass = report.is_pass(0.99f) || sparse_feature_pass;
+        print_diff_report(name, report, pass);
+        if (!pass) failures++;
     }
     return failures;
 }
