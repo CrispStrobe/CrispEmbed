@@ -22,6 +22,7 @@ using core_cpu::to_f32;
 
 struct conv {
     ggml_tensor *w = nullptr, *b = nullptr;
+    mutable std::vector<float> wf, bf;
     int ic = 0, oc = 0, kh = 1, kw = 1, sh = 1, sw = 1, ph = 0, pw = 0, groups = 1;
 };
 
@@ -94,7 +95,10 @@ static bool apply_conv(const conv & c, const std::vector<float> & x, int h, int 
     ow = (w + 2 * c.pw - c.kw) / c.sw + 1;
     if (oh <= 0 || ow <= 0) return false;
     y.assign((size_t)c.oc * oh * ow, 0.0f);
-    auto ww = to_f32(c.w), bb = to_f32(c.b);
+    if (c.wf.empty()) c.wf = to_f32(c.w);
+    if (c.b && c.bf.empty()) c.bf = to_f32(c.b);
+    const auto & ww = c.wf;
+    const auto & bb = c.bf;
     if (ww.size() < (size_t)c.oc * (c.ic / c.groups) * c.kh * c.kw) {
         fprintf(stderr, "ppocrv6-det: weight underflow ic=%d oc=%d k=%dx%d groups=%d size=%zu\n", c.ic, c.oc, c.kh,
                 c.kw, c.groups, ww.size());
@@ -131,7 +135,10 @@ static bool apply_deconv2(const conv & c, const std::vector<float> & x, int h, i
     oh = h * 2;
     ow = w * 2;
     y.assign((size_t)c.oc * oh * ow, 0.0f);
-    auto ww = to_f32(c.w), bb = to_f32(c.b);
+    if (c.wf.empty()) c.wf = to_f32(c.w);
+    if (c.b && c.bf.empty()) c.bf = to_f32(c.b);
+    const auto & ww = c.wf;
+    const auto & bb = c.bf;
     for (int oc = 0; oc < c.oc; ++oc)
         for (int iy = 0; iy < h; ++iy)
             for (int ix = 0; ix < w; ++ix) {
