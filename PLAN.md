@@ -24,6 +24,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **IN PROGRESS** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -85,6 +86,12 @@ and returns text, detector/recognizer confidence, pixel boxes, reading-order
 metadata, and normalized LayoutLM boxes. The model-backed regression produces
 12 line records and 98 word records on `scan_strip.png`; Python box/text
 reference parity remains a separate pending gate.
+
+The harness-blind postprocessing reference is now explicit: Python EasyOCR
+`readtext(detail=1)` JSON is converted by
+`tools/easyocr_postprocess_reference.py` into a versioned manifest covering
+ordering, crop geometry, text, confidence, and LayoutLM normalization. Its
+model-free test passes both line and word policies.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -410,7 +417,8 @@ more than another restoration model.
    model. Apply it before PDF/image routing only when confidence clears a
    configurable threshold. Never rotate VLM inputs implicitly unless the
    caller enables the option, because VLM letterboxing is model-specific. The
-   fallback exposes `crispembed_detect_page_orientation` and never rotates
+   fallback exposes `crispembed_detect_page_orientation` and
+   `/preprocess/orientation`, and never rotates
    input implicitly; a learned PP-LCNet classifier remains outstanding.
 
 6. **O10.6 — Shared crop preprocessing.** **Implemented in

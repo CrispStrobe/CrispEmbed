@@ -2064,6 +2064,37 @@ int main(int argc, char ** argv) {
         res.set_content(buf, "application/json");
     });
 
+    // POST /preprocess/orientation — model-free four-way page orientation.
+    // Detection is advisory: callers decide whether and how to rotate pages.
+    svr.Post("/preprocess/orientation", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w = 0, h = 0, ch = 0;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        float confidence = 0.0f;
+        const int angle = crispembed_detect_page_orientation(data, w, h, &confidence);
+        stbi_image_free(data);
+        char buf[160];
+        snprintf(buf, sizeof(buf), "{\"angle\":%d,\"confidence\":%.3f,\"rotated\":false}", angle, confidence);
+        res.set_content(buf, "application/json");
+    });
+
     // POST /preprocess/dewarp — straighten curved text (no model needed)
     // Request:  {"image": "/path/to/scan.png", "output": "/path/to/out.pgm"}
     //   - "output" is optional; if present, writes dewarped PGM to that path
@@ -3539,6 +3570,7 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
+    fprintf(stderr, "  POST /preprocess/orientation — {\"image\": \"...\"} (four-way orientation advisory)\n");
     fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
     fprintf(stderr, "  POST /preprocess/tps-dewarp — {\"image\": \"...\", \"model\": \"tps-loc.gguf\"}\n");
     fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
