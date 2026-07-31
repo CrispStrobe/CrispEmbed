@@ -202,7 +202,23 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -50, 50)))
 
 
-def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False):
+def _quantize_int_activation(x):
+    """Match NetworkIO::WriteTimeStepPart (signed int8 / 127)."""
+    x = np.asarray(x, dtype=np.float32)
+    scaled = x * np.float32(127.0)
+    rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+    return np.clip(rounded, -127, 127).astype(np.float32) / np.float32(127.0)
+
+
+def _quantize_int_input(x):
+    """Match NetworkIO::SetPixel (128 scale, clipped to signed int8)."""
+    x = np.asarray(x, dtype=np.float32)
+    scaled = x * np.float32(128.0)
+    rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+    return np.clip(rounded, -127, 127).astype(np.float32) / np.float32(127.0)
+
+
+def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False, int_mode=False):
     """LSTM forward pass over time axis.
 
     x:    (T, ni) input
@@ -234,6 +250,8 @@ def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False):
 
         c = f_gate * c + i_gate * g_gate
         h = o_gate * np.tanh(c)
+        if int_mode:
+            h = _quantize_int_activation(h)
 
         output[t] = h
 
@@ -296,7 +314,7 @@ def fc_forward(x, weight, bias, activation="tanh"):
     return y
 
 
-def run_forward(root, image_gray, captures):
+def run_forward(root, image_gray, captures, int_mode=False):
     """Run the full Tesseract LSTM forward pass, capturing intermediates.
 
     image_gray: (H, W) float32 grayscale [0, 1]
@@ -334,6 +352,8 @@ def run_forward(root, image_gray, captures):
     # Input: (H, W) → (H, W, 1)
     H, W = image_gray.shape
     x = image_gray[:, :, np.newaxis].astype(np.float32)
+    if int_mode:
+        x = _quantize_int_input(x)
     captures["input_image"] = x.flatten().copy()
 
     for layer in layers:
@@ -350,6 +370,8 @@ def run_forward(root, image_gray, captures):
             wm = layer["weights"]["fc"]
             act = "tanh" if layer["type"] == "Tanh" else "linear"
             x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
+            if int_mode:
+                x_flat = _quantize_int_activation(x_flat)
             x = x_flat.reshape(H, W, -1)
             captures["after_conv_fc"] = x.flatten().copy()
 
@@ -370,7 +392,8 @@ def run_forward(root, image_gray, captures):
             out_cols = np.zeros((W, ns), dtype=np.float32)
             for col in range(W):
                 col_input = x[:, col, :]  # (H, C) — run LSTM over H steps
-                h_seq = lstm_forward(col_input, W_ih, W_hh, bias, ns, reverse=False)
+                h_seq = lstm_forward(col_input, W_ih, W_hh, bias, ns, reverse=False,
+                                     int_mode=int_mode)
                 out_cols[col] = h_seq[-1]  # keep only last hidden state
 
             # Output: (1, W, ns) → squeeze height
@@ -389,7 +412,8 @@ def run_forward(root, image_gray, captures):
             wm = layer["weights"]
             W_ih, W_hh, bias = _pack_lstm_weights(wm, ns)
             rev = layer.get("_reversed", False)
-            x = lstm_forward(x, W_ih, W_hh, bias, ns, reverse=rev)
+            x = lstm_forward(x, W_ih, W_hh, bias, ns, reverse=rev,
+                             int_mode=int_mode)
             captures[f"after_lstm_{layer['_idx']}"] = x.flatten().copy()
 
         elif t in FC_TYPES and layer.get("_role") == "output":
@@ -587,7 +611,7 @@ def main():
 
     # ── Run forward pass ──────────────────────────────────────────────
     captures = {}
-    logits = run_forward(root, img_input, captures)
+    logits = run_forward(root, img_input, captures, int_mode=bool(training_flags & 1))
 
     # ── CTC decode ────────────────────────────────────────────────────
     decoded = ctc_greedy_decode(logits, null_char)

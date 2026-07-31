@@ -395,11 +395,18 @@ downstream handoff parity, not detector-box similarity alone.
       its recode beam. GGUF/reference metadata now records `training_flags`
       and `int_mode`; the current F32 graph remains measurable against the
       F32 Python reference but is not yet CLI-logit parity.
-- [ ] Add an int8-equivalent Tesseract inference path and diff its logits
-      against a reference produced with the same quantized arithmetic before
-      adding a recode/dictionary beam. A plain CTC prefix beam over current
-      F32 logits still returns `Drighton`, so beam search alone cannot explain
-      the CLI result.
+- [x] Add the first int8-equivalent Tesseract activation path and an int-mode
+      Python `-ref.gguf`; input/intermediate/output boundaries pass the 0.99
+      diff gate (int-mode logits cosine `0.997227`). This shifts native output
+      to `Lhey ... Drighton`, but does not yet reproduce the CLI's
+      `ihey ... Brighton`.
+- [x] Add an opt-in CTC prefix beam (`CRISPEMBED_TESSERACT_BEAM_WIDTH`) and
+      test widths 2, 3, 5, 10, 16, 25, and 50. It leaves the int-mode result
+      unchanged, proving generic CTC beam search alone is not the CLI choice
+      mechanism.
+- [ ] Close the remaining int-mode logit gap (including Tesseract's lookup
+      table nonlinearities and exact quantized matrix arithmetic), then port
+      the Tesseract recode beam/dictionary scoring and diff its decoded path.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages

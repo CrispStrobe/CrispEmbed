@@ -167,9 +167,16 @@ recognizer and LayoutLM consumer.
       quantizes activations and per-output weight rows to int8 before its
       recode beam; our current F32 graph is not expected to reproduce those
       logits. Metadata now preserves the flag in both GGUF and references.
-- [ ] Implement and diff int8-equivalent inference first; only then add an
-      optional Tesseract-style recode/dictionary beam. A generic CTC prefix
-      beam over current F32 logits still selects `Drighton`.
+- [x] Implement the first int8-equivalent activation path and a matching
+      quantized Python reference; all 9 captured stages pass the 0.99 gate
+      (int-mode logits cosine `0.997227`), but native still decodes
+      `Lhey ... Drighton` versus the CLI's `ihey ... Brighton`.
+- [x] Add and test an opt-in generic CTC prefix beam through
+      `CRISPEMBED_TESSERACT_BEAM_WIDTH` at widths 2, 3, 5, 10, 16, 25, and 50;
+      it does not change the native result, so it is not the CLI explanation.
+- [ ] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
+      quantized matrix arithmetic), then port its recode beam/dictionary
+      scoring and validate decoded output.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
