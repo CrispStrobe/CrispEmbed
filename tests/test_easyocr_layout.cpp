@@ -1,9 +1,10 @@
 #include "easyocr_layout.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <utility>
 
-int main() {
+static int crispembed_test_main() {
     std::vector<easyocr_layout::word> words = {
         { "world", 100, 20, 80, 20, .8f, 0, 1, 1 },
         { "hello", 10, 20, 80, 20, .9f, 0, 1, 0 },
@@ -17,4 +18,8 @@ int main() {
     std::printf("easyocr-layout PASS words=%zu normalized=%d,%d,%d,%d\n", words.size(), boxes[0].x0, boxes[0].y0,
                 boxes[0].x1, boxes[0].y1);
     return 0;
+}
+
+int main() {
+    return core_util::clean_exit(crispembed_test_main());
 }
