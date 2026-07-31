@@ -488,21 +488,25 @@ def _tesseract_normalize(img_u8):
 
 
 def _native_compatible_resize(img_u8, width, height):
-    """Match tesseract_lstm.cpp half-pixel bilinear uint8 resizing."""
+    """Match Tesseract's Leptonica pixScaleGrayLI resize."""
     src_h, src_w = img_u8.shape
-    source_y = ((np.arange(height, dtype=np.float64) + 0.5) * src_h / height) - 0.5
-    source_x = ((np.arange(width, dtype=np.float64) + 0.5) * src_w / width) - 0.5
-    y_floor = np.floor(source_y)
-    x_floor = np.floor(source_x)
-    y0 = np.clip(y_floor.astype(np.int64), 0, src_h - 1)
-    y1 = np.clip(y0 + 1, 0, src_h - 1)
-    x0 = np.clip(x_floor.astype(np.int64), 0, src_w - 1)
-    x1 = np.clip(x0 + 1, 0, src_w - 1)
-    fy = np.clip(source_y - y_floor, 0.0, 1.0)
-    fx = np.clip(source_x - x_floor, 0.0, 1.0)
-    top = img_u8[y0[:, None], x0[None, :]] * (1.0 - fx)[None, :] + img_u8[y0[:, None], x1[None, :]] * fx[None, :]
-    bottom = img_u8[y1[:, None], x0[None, :]] * (1.0 - fx)[None, :] + img_u8[y1[:, None], x1[None, :]] * fx[None, :]
-    return np.floor(top * (1.0 - fy)[:, None] + bottom * fy[:, None] + 0.5).astype(np.uint8)
+    scx = 16.0 * src_w / width
+    scy = 16.0 * src_h / height
+    xpm = np.floor(scx * np.arange(width)).astype(np.int64)
+    ypm = np.floor(scy * np.arange(height)).astype(np.int64)
+    xp, xf = xpm >> 4, xpm & 0xF
+    yp, yf = ypm >> 4, ypm & 0xF
+    out = np.empty((height, width), dtype=np.uint8)
+    for y in range(height):
+        sy, sy1, fy = int(yp[y]), min(int(yp[y]) + 1, src_h - 1), int(yf[y])
+        for x in range(width):
+            sx, sx1, fx = int(xp[x]), min(int(xp[x]) + 1, src_w - 1), int(xf[x])
+            value = ((16 - fx) * (16 - fy) * int(img_u8[sy, sx]) +
+                     fx * (16 - fy) * int(img_u8[sy, sx1]) +
+                     (16 - fx) * fy * int(img_u8[sy1, sx]) +
+                     fx * fy * int(img_u8[sy1, sx1]) + 128) // 256
+            out[y, x] = value
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -535,6 +539,11 @@ def main():
     print(f"Source SHA-256: {source_sha256}")
     comps = parse_traineddata(data)
     tokens = parse_unicharset(comps["lstm-unicharset"]) if "lstm-unicharset" in comps else []
+    # Tesseract reserves unichar id 0 for space. The serialized unicharset
+    # represents it as an empty string; restore the runtime token so the
+    # Python decoder has the same postprocessing contract as native code.
+    if tokens and tokens[0] == "":
+        tokens[0] = " "
     recoder = parse_recoder(comps["lstm-recoder"]) if "lstm-recoder" in comps else []
 
     r = TessReader(comps["lstm"])
@@ -626,7 +635,7 @@ def main():
     writer.add_string("general.name", "tesseract-lstm-reference")
     writer.add_string("tesseract_lstm_ref.model_path", str(args.model))
     writer.add_string("tesseract_lstm_ref.model_sha256", source_sha256)
-    writer.add_string("tesseract_lstm_ref.resize", "native_half_pixel_bilinear_u8_round")
+    writer.add_string("tesseract_lstm_ref.resize", "leptonica_pixScaleGrayLI_fixed16_u8_round")
     writer.add_string("tesseract_lstm_ref.image_path", str(args.image))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)
     writer.add_uint32("tesseract_lstm_ref.input_height", input_height)
