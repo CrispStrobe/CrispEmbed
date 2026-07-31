@@ -64,6 +64,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <numeric>
+#include <thread>
+#include <future>
 #include <string>
 #include <vector>
 #ifdef _WIN32
@@ -106,6 +108,7 @@ struct context {
     void * unified = nullptr;                   // metadata-dispatched OCR model
     ocr_detect::context * tess_det = nullptr;   // DBNet detection for the tesseract engine
     tesseract_lstm_context * tess = nullptr;    // Tesseract-LSTM line recognizer
+    std::vector<tesseract_lstm_context *> tess_workers;
     ocr_detect::context * parseq_det = nullptr; // DBNet detection for the parseq engine
     parseq_ocr_context * parseq = nullptr;      // PARSeq scene-text recognizer (per-char conf)
     scan_cleanup_ctx * clean1 = nullptr;        // tier-1 classical (model = NULL)
@@ -685,8 +688,15 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
         if (!gray) return {};
-        std::vector<ocr_pipeline::ocr_result> results;
-        results.reserve(line_regions.size());
+        struct line_crop {
+            ocr_detect::text_box box;
+            std::vector<uint8_t> pixels;
+            int width = 0;
+            int height = 0;
+            ocr_crop::orientation_info orientation{};
+        };
+        std::vector<line_crop> crops;
+        crops.reserve(line_regions.size());
         const int pad = 2;
         for (const auto & line : line_regions) {
             ocr_detect::text_box b{};
@@ -699,30 +709,61 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
-            int len = 0;
-            const char * t = tesseract_lstm_recognize(ctx->tess, crop.data(), cw, chh, &len);
-            if (!t || len <= 0) continue;
-            ocr_pipeline::ocr_result r;
-            r.box = b;
-            r.orientation_corrected = orientation.corrected;
-            r.orientation_angle = orientation.angle;
-            r.orientation_confidence = orientation.confidence;
-            // Mean per-character confidence from the last recognition.
-            int n_conf = 0;
-            const float * conf = tesseract_lstm_confidences(ctx->tess, &n_conf);
-            float mean = b.score;
-            if (conf && n_conf > 0) {
-                double s = 0.0;
-                for (int k = 0; k < n_conf; k++) s += conf[k];
-                mean = (float)(s / n_conf);
-                r.char_conf.assign(conf, conf + n_conf);
-            }
-            r.confidence = mean;
-            r.rec_confidence = mean;
-            r.text = std::string(t, len);
-            if (!r.text.empty()) results.push_back(std::move(r));
+            crops.push_back({b, std::move(crop), cw, chh, orientation});
         }
         stbi_image_free(gray);
+        if (crops.empty()) return {};
+
+        // The recognizer context is stateful (captures and confidences), so
+        // use one independent context per worker. Detection and crop order
+        // remain deterministic; only independent line inference is parallel.
+        int worker_count = 1;
+        if (const char * env = std::getenv("CRISPEMBED_TESSERACT_WORKERS"))
+            worker_count = std::max(1, std::atoi(env));
+        worker_count = std::min(worker_count, (int)crops.size());
+        while ((int)ctx->tess_workers.size() < worker_count - 1) {
+            auto * worker = tesseract_lstm_init(ctx->tess_resolved_model.c_str(), ctx->n_threads);
+            if (!worker) break;
+            ctx->tess_workers.push_back(worker);
+        }
+        worker_count = std::min(worker_count, (int)ctx->tess_workers.size() + 1);
+        std::vector<ocr_pipeline::ocr_result> slots(crops.size());
+        std::vector<char> valid(crops.size(), 0);
+        auto recognize_worker = [&](int worker_index) {
+            tesseract_lstm_context * tess = worker_index == 0 ? ctx->tess : ctx->tess_workers[worker_index - 1];
+            for (size_t i = (size_t)worker_index; i < crops.size(); i += (size_t)worker_count) {
+                auto & item = crops[i];
+                const auto orientation = item.orientation;
+                int len = 0;
+                const char * t = tesseract_lstm_recognize(tess, item.pixels.data(), item.width, item.height, &len);
+                if (!t || len <= 0) continue;
+                auto & r = slots[i];
+                r.box = item.box;
+                r.orientation_corrected = orientation.corrected;
+                r.orientation_angle = orientation.angle;
+                r.orientation_confidence = orientation.confidence;
+                int n_conf = 0;
+                const float * conf = tesseract_lstm_confidences(tess, &n_conf);
+                float mean = item.box.score;
+                if (conf && n_conf > 0) {
+                    double s = 0.0;
+                    for (int k = 0; k < n_conf; k++) s += conf[k];
+                    mean = (float)(s / n_conf);
+                    r.char_conf.assign(conf, conf + n_conf);
+                }
+                r.confidence = mean;
+                r.rec_confidence = mean;
+                r.text = std::string(t, len);
+                valid[i] = !r.text.empty();
+            }
+        };
+        std::vector<std::future<void>> jobs;
+        for (int i = 1; i < worker_count; ++i) jobs.push_back(std::async(std::launch::async, recognize_worker, i));
+        recognize_worker(0);
+        for (auto & job : jobs) job.get();
+        std::vector<ocr_pipeline::ocr_result> results;
+        results.reserve(crops.size());
+        for (size_t i = 0; i < slots.size(); ++i) if (valid[i]) results.push_back(std::move(slots[i]));
         return results;
     }
     case engine::parseq: {
@@ -1569,6 +1610,7 @@ void free(context * ctx) {
     if (ctx->unified) crispembed_ocr_model_free(ctx->unified);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess) tesseract_lstm_free(ctx->tess);
+    for (auto * worker : ctx->tess_workers) tesseract_lstm_free(worker);
     if (ctx->parseq_det) ocr_detect::free(ctx->parseq_det);
     if (ctx->parseq) parseq_ocr_free(ctx->parseq);
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);

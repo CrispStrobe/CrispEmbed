@@ -447,6 +447,12 @@ downstream handoff parity, not detector-box similarity alone.
       The quantizer policy now keeps every Tesseract `.weight` tensor lossless
       in a deployment container; the source int8 matrices remain separate
       host-side tensors, avoiding a second ggml quantization pass.
+- [x] Add independent line-recognition workers for the Fraktur page path.
+      `CRISPEMBED_TESSERACT_WORKERS=4` preserves detector order and output
+      text while reducing the official fixture's recognizer stage from 11.66 s
+      to 10.00 s; the 1,017-character result and 74-test regression remain
+      unchanged. It remains opt-in until worker-count policy is exposed in
+      the public configuration.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
