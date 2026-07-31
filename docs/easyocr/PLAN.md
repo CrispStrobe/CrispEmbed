@@ -110,7 +110,8 @@ recognizer and LayoutLM consumer.
       `tests/test_easyocr_postprocess_reference.py` covers both modes.
 - [x] Emit the same versioned manifest from `test-easyocr-pipeline` and add
       `tools/compare_easyocr_manifests.py`; native serialization and comparator
-      self-check pass on the 98-word DBNet page run.
+      self-check pass on the 98-word DBNet page run, with explicit mismatch
+      coverage in `tests/test_easyocr_manifest_compare.py`.
 - [ ] Add independent postprocessing tests: grouping, reading order, CTC
       collapse, dictionary lookup, confidence, and box normalization.
 - [ ] Exercise the structured handoff with LayoutLMv2/v3 using
