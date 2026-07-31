@@ -40,6 +40,10 @@ struct neck_feature {
     conv dw, pw, se1, se2;
 };
 
+struct medium_ic {
+    conv reduce, vertical[3], horizontal[3], symmetric[3], final;
+};
+
 struct context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
@@ -49,6 +53,8 @@ struct context {
     std::vector<conv> stem;
     std::vector<std::vector<block>> stages;
     std::vector<neck_feature> features;
+    std::vector<conv> med_adjust, med_project, med_bottom, med_lateral;
+    std::vector<medium_ic> med_ic;
     conv head_down, head_up, head_final;
 };
 
@@ -177,6 +183,16 @@ static void upsample2(const std::vector<float> & x, int c, int h, int w, std::ve
             }
 }
 
+static void resize_nearest(const std::vector<float> & x, int c, int h, int w, int oh, int ow, std::vector<float> & y) {
+    y.assign((size_t)c * oh * ow, 0.0f);
+    for (int cc = 0; cc < c; ++cc)
+        for (int yy = 0; yy < oh; ++yy)
+            for (int xx = 0; xx < ow; ++xx) {
+                int sy = std::min(h - 1, yy * h / oh), sx = std::min(w - 1, xx * w / ow);
+                y[(size_t)cc * oh * ow + yy * ow + xx] = x[(size_t)cc * h * w + sy * w + sx];
+            }
+}
+
 static void add_inplace(std::vector<float> & a, const std::vector<float> & b) {
     if (a.size() != b.size()) return;
     for (size_t i = 0; i < a.size(); ++i) a[i] += b[i];
@@ -224,17 +240,17 @@ static bool run_stem(const context * c, const std::vector<float> & input, int h,
     std::vector<float> x = input, y, branch;
     int H = h, W = w;
     if (!apply_conv(c->stem[0], x, H, W, y, oh, ow)) return false;
-    gelu(y);
+    relu(y);
     x.swap(y);
     H = oh;
     W = ow;
     std::vector<float> padded;
     pad_bottom_right(x, c->stem[0].oc, H, W, padded);
     if (!apply_conv(c->stem[1], padded, H + 1, W + 1, branch, oh, ow)) return false;
-    gelu(branch);
+    relu(branch);
     pad_bottom_right(branch, c->stem[1].oc, oh, ow, padded);
     if (!apply_conv(c->stem[2], padded, oh + 1, ow + 1, y, oh, ow)) return false;
-    gelu(y);
+    relu(y);
     branch.swap(y);
     std::vector<float> pooled;
     maxpool2_stride1(x, c->stem[0].oc, H, W, pooled);
@@ -243,12 +259,80 @@ static bool run_stem(const context * c, const std::vector<float> & input, int h,
     std::memcpy(cat.data(), pooled.data(), pooled.size() * sizeof(float));
     std::memcpy(cat.data() + pooled.size(), branch.data(), branch.size() * sizeof(float));
     if (!apply_conv(c->stem[3], cat, cat_h, cat_w, y, oh, ow)) return false;
-    gelu(y);
+    relu(y);
     x.swap(y);
     H = oh;
     W = ow;
     if (!apply_conv(c->stem[4], x, H, W, out, oh, ow)) return false;
-    gelu(out);
+    relu(out);
+    return true;
+}
+
+static bool run_medium_ic(const medium_ic & b, std::vector<float> & x, int h, int w) {
+    std::vector<float> r;
+    int rh, rw;
+    if (!apply_conv(b.reduce, x, h, w, r, rh, rw)) return false;
+    std::vector<float> a[3];
+    for (int j = 0; j < 3; ++j) {
+        std::vector<float> v, q, s;
+        int vh, vw;
+        if (!apply_conv(b.vertical[j], r, h, w, v, vh, vw) || !apply_conv(b.horizontal[j], r, h, w, q, vh, vw) ||
+            !apply_conv(b.symmetric[j], r, h, w, s, vh, vw))
+            return false;
+        a[j].resize(s.size());
+        for (size_t k = 0; k < s.size(); ++k) a[j][k] = v[k] + q[k] + s[k];
+    }
+    std::vector<float> z(a[0].size());
+    for (size_t k = 0; k < z.size(); ++k) z[k] = a[0][k] + a[1][k] + a[2][k];
+    std::vector<float> y;
+    if (!apply_conv(b.final, z, h, w, y, rh, rw)) return false;
+    for (size_t k = 0; k < y.size(); ++k) y[k] += x[k];
+    x.swap(y);
+    return true;
+}
+
+static bool run_medium_neck(const context * c, const std::vector<std::vector<float>> & stages,
+                            const std::vector<int> & hs, const std::vector<int> & ws, std::vector<float> & neck,
+                            int & nh, int & nw) {
+    std::vector<std::vector<float>> adjusted(4), top(4), projected(4), bottom(4), lateral(4), refined(4);
+    std::vector<int> ah(4), aw(4);
+    for (int i = 0; i < 4; ++i)
+        if (!apply_conv(c->med_adjust[i], stages[i], hs[i], ws[i], adjusted[i], ah[i], aw[i])) return false;
+    top[3] = adjusted[3];
+    for (int i = 2; i >= 0; --i) {
+        std::vector<float> up;
+        resize_nearest(top[i + 1], c->neck, ah[i + 1], aw[i + 1], ah[i], aw[i], up);
+        top[i] = adjusted[i];
+        add_inplace(top[i], up);
+    }
+    for (int i = 0; i < 4; ++i) {
+        const auto & source = i < 3 ? top[i] : adjusted[3];
+        if (!apply_conv(c->med_project[i], source, ah[i], aw[i], projected[i], ah[i], aw[i])) return false;
+    }
+    bottom[0] = projected[0];
+    for (int i = 1; i < 4; ++i) {
+        std::vector<float> down;
+        int dh, dw;
+        if (!apply_conv(c->med_bottom[i - 1], bottom[i - 1], ah[i - 1], aw[i - 1], down, dh, dw)) return false;
+        resize_nearest(down, c->neck / 4, dh, dw, (int)projected[i].size() / (c->neck / 4) / aw[i], aw[i], down);
+        bottom[i] = projected[i];
+        add_inplace(bottom[i], down);
+    }
+    for (int i = 0; i < 4; ++i) {
+        const auto & source = i == 0 ? projected[0] : bottom[i];
+        int sh = ah[i], sw = aw[i];
+        if (!apply_conv(c->med_lateral[i], source, sh, sw, lateral[i], sh, sw)) return false;
+        refined[i] = lateral[i];
+        if (!run_medium_ic(c->med_ic[i], refined[i], sh, sw)) return false;
+    }
+    nh = ah[0];
+    nw = aw[0];
+    neck.clear();
+    for (int i = 3; i >= 0; --i) {
+        std::vector<float> up;
+        resize_nearest(refined[i], c->neck / 4, ah[i], aw[i], nh, nw, up);
+        neck.insert(neck.end(), up.begin(), up.end());
+    }
     return true;
 }
 
@@ -294,18 +378,20 @@ context * init(const char * path, int) {
     }
     c->variant = core_gguf::kv_str(meta, "ppocrv6.variant", "tiny");
     core_gguf::free_metadata(meta);
-    if (c->variant == "medium" || !core_gguf::load_weights(path, c->backend, "ppocrv6", c->wl)) {
+    if (!core_gguf::load_weights(path, c->backend, "ppocrv6", c->wl)) {
         free(c);
         return nullptr;
     }
     const auto & m = c->wl.tensors;
-    const bool tiny = c->variant == "tiny";
-    int stem = tiny ? 16 : 24, stage[4] = { tiny ? 32 : 48, tiny ? 48 : 96, tiny ? 64 : 192, tiny ? 160 : 384 };
+    const bool tiny = c->variant == "tiny", medium = c->variant == "medium";
+    int stem = medium ? 64 : (tiny ? 16 : 24);
+    int stage[4] = { medium ? 128 : (tiny ? 32 : 48), medium ? 256 : (tiny ? 48 : 96), medium ? 512 : (tiny ? 64 : 192),
+                     medium ? 896 : (tiny ? 160 : 384) };
     c->stage_channels[0] = stage[0];
     c->stage_channels[1] = stage[1];
     c->stage_channels[2] = stage[2];
     c->stage_channels[3] = stage[3];
-    c->neck = tiny ? 64 : 96;
+    c->neck = medium ? 256 : (tiny ? 64 : 96);
     c->stem = { make_conv(m, "det.bb.stem.stem1.conv", 3, stem, 3, 3, 2),
                 make_conv(m, "det.bb.stem.stem2a.conv", stem, stem / 2, 2, 2, 1, 1, 1, 0, 0),
                 make_conv(m, "det.bb.stem.stem2b.conv", stem / 2, stem, 2, 2, 1, 1, 1, 0, 0),
@@ -329,6 +415,52 @@ context * init(const char * path, int) {
             }
             c->stages[si].push_back(b);
         }
+    if (medium) {
+        c->med_adjust.resize(4);
+        c->med_project.resize(4);
+        c->med_bottom.resize(3);
+        c->med_lateral.resize(4);
+        for (int i = 0; i < 4; ++i) {
+            c->med_adjust[i] = make_conv(m, "det.neck.input_channel_adjustment_convolution." + std::to_string(i),
+                                         stage[i], c->neck, 1);
+            c->med_project[i] = make_conv(m, "det.neck.input_feature_projection_convolution." + std::to_string(i),
+                                          c->neck, c->neck / 4, 9, 9, 1, 1, 1, 4, 4);
+            c->med_lateral[i] = make_conv(m, "det.neck.path_aggregation_lateral_convolution." + std::to_string(i),
+                                          c->neck / 4, c->neck / 4, 9, 9, 1, 1, 1, 4, 4);
+            if (i > 0)
+                c->med_bottom[i - 1] =
+                    make_conv(m, "det.neck.path_aggregation_head_convolution." + std::to_string(i - 1), c->neck / 4,
+                              c->neck / 4, 3, 3, 2, 2, 1, 1, 1);
+        }
+        c->med_ic.resize(4);
+        for (int i = 0; i < 4; ++i) {
+            auto & b = c->med_ic[i];
+            const std::string q = "det.nk.ic." + std::to_string(i);
+            b.reduce = make_conv(m, q + ".conv_reduce_channel", 64, 32, 1, 1, 1, 1, 1, 0, 0);
+            const int ks[3] = { 7, 5, 3 }, ps[3] = { 3, 2, 1 };
+            for (int j = 0; j < 3; ++j) {
+                b.vertical[j] = make_conv(m,
+                                          q + ".vl" +
+                                              (j == 0   ? "l"
+                                               : j == 1 ? "m"
+                                                        : "s"),
+                                          32, 32, ks[j], 1, 1, 1, 1, ps[j], 0);
+                b.horizontal[j] = make_conv(m,
+                                            q + ".hs" +
+                                                (j == 0   ? "l"
+                                                 : j == 1 ? "m"
+                                                          : "s"),
+                                            32, 32, 1, ks[j], 1, 1, 1, 0, ps[j]);
+                b.symmetric[j] = make_conv(m,
+                                           q + ".sl" +
+                                               (j == 0   ? "l"
+                                                : j == 1 ? "m"
+                                                         : "s"),
+                                           32, 32, ks[j], ks[j], 1, 1, 1, ps[j], ps[j]);
+            }
+            b.final = make_conv(m, q + ".conv_final.conv", 32, 64, 1, 1, 1, 1, 1, 0, 0);
+        }
+    }
     c->features.resize(4);
     for (int i = 0; i < 4; ++i) {
         auto & f = c->features[i];
@@ -361,7 +493,7 @@ void free(context * c) {
 }
 
 std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int channels, float threshold) {
-    if (!c || !px || c->variant == "medium") return {};
+    if (!c || !px) return {};
     static constexpr float mean[3] = { 0.485f, 0.456f, 0.406f };
     static constexpr float stdev[3] = { 0.229f, 0.224f, 0.225f };
     std::vector<float> input((size_t)3 * h * w);
@@ -385,6 +517,29 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         hs.push_back(H);
         ws.push_back(W);
     }
+    if (c->variant == "medium") {
+        std::vector<float> neck;
+        int nh, nw;
+        if (!run_medium_neck(c, stages, hs, ws, neck, nh, nw)) return {};
+        std::vector<float> y, z;
+        int oh, ow;
+        if (!apply_conv(c->head_down, neck, nh, nw, y, oh, ow)) return {};
+        relu(y);
+        if (!apply_deconv2(c->head_up, y, oh, ow, z, oh, ow)) return {};
+        relu(z);
+        if (!apply_deconv2(c->head_final, z, oh, ow, y, oh, ow)) return {};
+        for (float & v : y) v = 1 / (1 + std::exp(-v));
+        std::vector<box> out;
+        append_component(y, oh, ow, threshold, out);
+        float sx = float(w) / ow, sy = float(h) / oh;
+        for (auto & b : out) {
+            b.x *= sx;
+            b.w *= sx;
+            b.y *= sy;
+            b.h *= sy;
+        }
+        return out;
+    }
     std::vector<std::vector<float>> fused(4);
     std::vector<int> fh(4), fw(4);
     for (int i = 0; i < 4; i++) {
@@ -404,7 +559,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     }
     for (int i = 2; i >= 0; i--) {
         std::vector<float> u;
-        upsample2(fused[i + 1], c->neck, fh[i + 1], fw[i + 1], u);
+        resize_nearest(fused[i + 1], c->neck, fh[i + 1], fw[i + 1], fh[i], fw[i], u);
         add_inplace(fused[i], u);
     }
     std::vector<std::vector<float>> proc(4);
@@ -417,6 +572,17 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         std::vector<float> q;
         int qa, qb;
         if (!apply_conv(f.pw, z, a, b, q, qa, qb)) return {};
+        std::vector<float> pooled(c->neck / 4, 0.0f), gate, seout;
+        for (int ch = 0; ch < c->neck / 4; ++ch)
+            for (int j = 0; j < qa * qb; ++j) pooled[ch] += q[(size_t)ch * qa * qb + j] / float(qa * qb);
+        int gh, gw;
+        if (!apply_conv(f.se1, pooled, 1, 1, gate, gh, gw)) return {};
+        relu(gate);
+        if (!apply_conv(f.se2, gate, 1, 1, seout, gh, gw)) return {};
+        for (int ch = 0; ch < c->neck / 4; ++ch) {
+            const float scale = std::clamp(0.2f * seout[ch] + 0.5f, 0.0f, 1.0f);
+            for (int j = 0; j < qa * qb; ++j) q[(size_t)ch * qa * qb + j] += q[(size_t)ch * qa * qb + j] * scale;
+        }
         proc[i] = q;
         ph[i] = qa;
         pw[i] = qb;
@@ -426,11 +592,9 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     for (int i = 3; i >= 0; i--) {
         std::vector<float> u = proc[i];
         int uh = ph[i], uw = pw[i];
-        while (uh < nh) {
-            upsample2(u, c->neck / 4, uh, uw, u);
-            uh *= 2;
-            uw *= 2;
-        }
+        std::vector<float> resized;
+        resize_nearest(u, c->neck / 4, uh, uw, nh, nw, resized);
+        u.swap(resized);
         neck.insert(neck.end(), u.begin(), u.end());
     }
     std::vector<float> y, z;
@@ -457,7 +621,23 @@ std::vector<box> detect_file(context * c, const char * path, float threshold) {
     int w, h, ch;
     auto * p = stbi_load(path, &w, &h, &ch, 3);
     if (!p) return {};
-    auto r = detect_raw(c, p, w, h, 3, threshold);
+    float scale = std::min(1.0f, 960.0f / float(std::max(w, h)));
+    int rw = std::max(32, int(std::ceil(w * scale / 32.0f)) * 32);
+    int rh = std::max(32, int(std::ceil(h * scale / 32.0f)) * 32);
+    std::vector<uint8_t> resized((size_t)rw * rh * 3);
+    for (int y = 0; y < rh; ++y)
+        for (int x = 0; x < rw; ++x) {
+            int sx = std::min(w - 1, int((x + 0.5f) * w / rw));
+            int sy = std::min(h - 1, int((y + 0.5f) * h / rh));
+            std::memcpy(resized.data() + ((size_t)y * rw + x) * 3, p + ((size_t)sy * w + sx) * 3, 3);
+        }
+    auto r = detect_raw(c, resized.data(), rw, rh, 3, threshold);
+    for (auto & b : r) {
+        b.x *= float(w) / rw;
+        b.w *= float(w) / rw;
+        b.y *= float(h) / rh;
+        b.h *= float(h) / rh;
+    }
     stbi_image_free(p);
     return r;
 }
