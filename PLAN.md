@@ -13,6 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | Full EasyOCR detector + recognizer port with GGUF conversion, `-ref.gguf` fixtures, and `crispembed-diff` parity | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 
@@ -26,6 +27,19 @@ races). Remove the row when the branch lands.
 > still **pending**.
 
 ## OCR pipeline workstream — actionable items
+
+### EasyOCR / LayoutLM compatibility — IN PROGRESS
+
+- Port all EasyOCR detector assets (CRAFT, DBNet18, DBNet50) and all shipped
+  Gen-1/Gen-2 CRNN recognizers through the GGUF → `-ref.gguf` →
+  `crispembed-diff` → decoded-output protocol.
+- Preserve per-artifact source/license metadata; do not infer a fine-tuned
+  checkpoint's license solely from its backbone.
+- Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
+  words and normalized boxes. Transformers' `apply_ocr=True` path uses
+  PyTesseract; LayoutLM is not itself an OCR checkpoint.
+- Acceptance requires reference parity, decoded text, and real pipeline output
+  checks before quantization or registry integration.
 
 This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
 ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each
