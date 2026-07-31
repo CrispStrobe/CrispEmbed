@@ -628,6 +628,8 @@ add_executable(test-smoldocling-diff tests/test_smoldocling_diff.cpp)
 target_link_libraries(test-smoldocling-diff PRIVATE crispembed)
 
 add_executable(test-confidence tests/test_confidence.cpp)
+add_executable(test-ppocrv6-rec tests/test_ppocrv6_rec.cpp)
+target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)
 target_link_libraries(test-confidence PRIVATE crispembed)
 
 endif() # NOT iOS

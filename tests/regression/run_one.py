@@ -222,10 +222,13 @@ def detect_garbage(text: str, min_len: int = 12) -> str | None:
 
 # ── OCR run ──────────────────────────────────────────────────────────
 def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
-            timeout: int = 900) -> str:
+            timeout: int = 900, detector: Path | None = None) -> str:
     if not bin_path.exists():
         die(f"crispembed binary not found: {bin_path}")
-    cmd = [str(bin_path), "-m", str(gguf), "--ocr", str(image), *extra_args]
+    cmd = [str(bin_path), "-m", str(gguf)]
+    if detector is not None:
+        cmd += ["--ocr-det", str(detector), "--ocr-rec", str(gguf)]
+    cmd += ["--ocr", str(image), *extra_args]
     proc = subprocess.run(cmd, capture_output=True, text=True,
                           check=False, timeout=timeout)
     if proc.returncode != 0:
@@ -363,6 +366,10 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
 
     g = entry["gguf"]
     gguf = hf_download(g["repo"], g["file"], g.get("revision", "main"), work_dir)
+    detector = None
+    if entry.get("detector"):
+        d = entry["detector"]
+        detector = hf_download(d["repo"], d["file"], d.get("revision", "main"), work_dir)
 
     # Restoration/SR engines (restormer, scunet, …) have no --ocr path: their only
     # regression signal is the diff harness (golden output vs a PyTorch reference).
@@ -409,7 +416,7 @@ def regression_for(name: str, manifest: dict, work_dir: Path,
 
     extra = entry.get("ocr_args", [])
     print(f"[{name}] running crispembed --ocr {sample.name} ...")
-    text = run_ocr(crispembed_bin(), gguf, sample, extra)
+    text = run_ocr(crispembed_bin(), gguf, sample, extra, detector=detector)
 
     if rebake:
         print(f"[{name}] CAPTURED OUTPUT:\n{text}\n")

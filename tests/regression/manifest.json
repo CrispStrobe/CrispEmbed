@@ -1040,6 +1040,57 @@
       "match": {
         "max_cer": 0.1
       }
+    },
+    {
+      "name": "ppocrv6-tiny",
+      "engine": "ppocrv6",
+      "_comment": "PP-OCRv6 tiny detector + recognizer through the native detector→crop→recognizer orchestrator. Both F16 and policy-q4 artifacts are stored on the backup volume; expected_text remains null until a CC0 line fixture is restored.",
+      "gguf": {
+        "repo": "mlx-community/PP-OCRv6-tiny-rec-GGUF",
+        "file": "PP-OCRv6_tiny_rec-f16.gguf",
+        "revision": "main"
+      },
+      "detector": {
+        "repo": "mlx-community/PP-OCRv6_tiny-det-GGUF",
+        "file": "PP-OCRv6_tiny_det-f16.gguf",
+        "revision": "main"
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null
+    },
+    {
+      "name": "ppocrv6-small",
+      "engine": "ppocrv6",
+      "_comment": "PP-OCRv6 small detector + recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
+      "gguf": {
+        "repo": "mlx-community/PP-OCRv6-small-rec-GGUF",
+        "file": "PP-OCRv6_small_rec-f16.gguf",
+        "revision": "main"
+      },
+      "detector": {
+        "repo": "mlx-community/PP-OCRv6-small-det-GGUF",
+        "file": "PP-OCRv6_small_det-f16.gguf",
+        "revision": "main"
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null
+    },
+    {
+      "name": "ppocrv6-medium",
+      "engine": "ppocrv6",
+      "_comment": "PP-OCRv6 medium detector + recognizer native pipeline smoke; expected_text awaits the restored CC0 line fixture.",
+      "gguf": {
+        "repo": "mlx-community/PP-OCRv6-medium-rec-GGUF",
+        "file": "PP-OCRv6_medium_rec-f16.gguf",
+        "revision": "main"
+      },
+      "detector": {
+        "repo": "mlx-community/PP-OCRv6-medium-det-GGUF",
+        "file": "PP-OCRv6_medium_det-f16.gguf",
+        "revision": "main"
+      },
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null
     }
   ]
 }

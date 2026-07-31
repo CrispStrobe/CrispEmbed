@@ -341,8 +341,11 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
     const int rw = std::max(1, std::min(W, int(std::round(w * (H / float(std::max(1, h)))))));
     for (int y = 0; y < H; ++y)
         for (int x = 0; x < rw; ++x) {
-            const float fy = y * (h - 1.0f) / std::max(1, H - 1);
-            const float fx = x * (w - 1.0f) / std::max(1, rw - 1);
+            // Match Paddle/PIL's pixel-center resize used by the reference
+            // dumper. Endpoint-aligned interpolation produces visible drift
+            // on narrow text crops.
+            const float fy = std::max(0.0f, (y + 0.5f) * h / float(H) - 0.5f);
+            const float fx = std::max(0.0f, (x + 0.5f) * w / float(rw) - 0.5f);
             const int y0 = std::clamp((int)std::floor(fy), 0, h - 1), y1 = std::clamp(y0 + 1, 0, h - 1);
             const int x0 = std::clamp((int)std::floor(fx), 0, w - 1), x1 = std::clamp(x0 + 1, 0, w - 1);
             const float wy = std::clamp(fy - std::floor(fy), 0.0f, 1.0f);

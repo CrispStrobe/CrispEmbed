@@ -71,11 +71,18 @@ class Ref:
 
 
 def preprocess(path: Path):
-    im = Image.open(path).convert("RGB")
-    w, h = im.size
+    im = np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
+    h, w = im.shape[:2]
     rw = min(320, max(1, round(w * 48 / h)))
-    im = im.resize((rw, 48), Image.BILINEAR)
-    a = np.asarray(im, dtype=np.float32) / 255.0
+    yy = np.maximum(0.0, (np.arange(48, dtype=np.float32) + 0.5) * h / 48.0 - 0.5)
+    xx = np.maximum(0.0, (np.arange(rw, dtype=np.float32) + 0.5) * w / rw - 0.5)
+    y0 = np.floor(yy).astype(np.int32).clip(0, h - 1); y1 = np.minimum(y0 + 1, h - 1)
+    x0 = np.floor(xx).astype(np.int32).clip(0, w - 1); x1 = np.minimum(x0 + 1, w - 1)
+    wy = (yy - y0)[:, None, None]; wx = (xx - x0)[None, :, None]
+    a = (im[y0[:, None], x0[None, :]] * (1-wy) * (1-wx) +
+         im[y0[:, None], x1[None, :]] * (1-wy) * wx +
+         im[y1[:, None], x0[None, :]] * wy * (1-wx) +
+         im[y1[:, None], x1[None, :]] * wy * wx).astype(np.float32) / 255.0
     a = (a - 0.5) / 0.5
     out = np.zeros((48, 320, 3), dtype=np.float32)
     out[:, :rw] = a

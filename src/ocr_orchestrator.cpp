@@ -25,6 +25,8 @@
 #include "tesseract_lstm.h"
 #include "parseq_ocr.h"
 #include "ocr_detect.h"
+#include "ppocrv6_det.h"
+#include "ppocrv6_ocr.h"
 // Text super-resolution (low-DPI upscale before OCR).
 #include "text_sr.h"
 #include "pan_sr.h"
@@ -75,6 +77,8 @@ struct context {
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;    // DBNet detection + TrOCR recognition
+    ppocrv6_det::context * ppdet = nullptr;      // PP-OCRv6 detector
+    ppocrv6_ocr_context * pprec = nullptr;       // PP-OCRv6 recognizer
     got_ocr_context * got = nullptr;            // GOT-OCR2 (single-shot VLM)
     glm_ocr_context * glm = nullptr;            // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context * qwen = nullptr;       // Qwen2.5-VL (single-shot VLM)
@@ -314,6 +318,56 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         return ocr_pipeline::run_file(ctx->dbnet, path, st.params.det_prob_threshold, st.params.det_box_threshold,
                                       st.params.det_target_short);
+    }
+    case engine::ppocrv6: {
+        if (st.model_a.empty() || st.model_b.empty()) {
+            fprintf(stderr, "ocr_orchestrator: ppocrv6 stage missing models (model_a=det, model_b=rec)\n");
+            return {};
+        }
+        if (!ctx->ppdet) {
+            ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->ppdet) {
+                fprintf(stderr, "ocr_orchestrator: ppocrv6 detector load failed\n");
+                return {};
+            }
+        }
+        if (!ctx->pprec) {
+            ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
+            if (!ctx->pprec) {
+                fprintf(stderr, "ocr_orchestrator: ppocrv6 recognizer load failed\n");
+                return {};
+            }
+        }
+        auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, st.params.det_prob_threshold);
+        if (boxes.empty()) return {};
+        int w = 0, h = 0, c = 0;
+        unsigned char * rgb = stbi_load(path, &w, &h, &c, 3);
+        if (!rgb) return {};
+        std::vector<ocr_pipeline::ocr_result> results;
+        results.reserve(boxes.size());
+        for (const auto & b : boxes) {
+            const int pad = 2;
+            const int x0 = std::max(0, (int)b.x - pad), y0 = std::max(0, (int)b.y - pad);
+            const int cw = std::min((int)b.w + 2 * pad, w - x0), ch = std::min((int)b.h + 2 * pad, h - y0);
+            if (cw <= 0 || ch <= 0) continue;
+            std::vector<uint8_t> crop((size_t)cw * ch * 3);
+            for (int y = 0; y < ch; ++y)
+                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(y0 + y) * w + x0) * 3,
+                            (size_t)cw * 3);
+            int len = 0;
+            const char * t = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
+            if (!t || len <= 0) continue;
+            ocr_pipeline::ocr_result r;
+            r.box.x = b.x; r.box.y = b.y; r.box.w = b.w; r.box.h = b.h; r.box.score = b.score;
+            r.box.angle = 0.0f;
+            for (int k = 0; k < 4; ++k) { r.box.qx[k] = k == 1 || k == 2 ? b.x + b.w : b.x; r.box.qy[k] = k >= 2 ? b.y + b.h : b.y; }
+            r.text.assign(t, len);
+            r.confidence = b.score;
+            r.rec_confidence = b.score;
+            if (!r.text.empty()) results.push_back(std::move(r));
+        }
+        stbi_image_free(rgb);
+        return results;
     }
     case engine::got: {
         if (!ctx->got) {
@@ -931,6 +985,8 @@ static const char * engine_name(engine e) {
     switch (e) {
     case engine::dbnet_trocr:
         return "dbnet_trocr";
+    case engine::ppocrv6:
+        return "ppocrv6";
     case engine::surya:
         return "surya";
     case engine::got:
@@ -1129,6 +1185,8 @@ result run_file(context * ctx, const char * image_path) {
 void free(context * ctx) {
     if (!ctx) return;
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
+    if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
+    if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
     if (ctx->got) got_ocr_free(ctx->got);
     if (ctx->glm) glm_ocr_free(ctx->glm);
     if (ctx->qwen) qwen2vl_ocr_free(ctx->qwen);

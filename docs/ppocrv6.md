@@ -25,12 +25,11 @@ python models/convert-ppocrv6-to-gguf.py \
   --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_small_rec-f16.gguf
 ```
 
-The converter folds inference BatchNorm into convolution weights. The
-quantizer has an explicit PP-OCRv6 precision policy: biases, normalization
-parameters, SE gates, depthwise/local-context kernels, and the early OCR head
-remain F16/F32; the direct CTC output projection (`head.fc2.weight`) is kept at
-Q8_0 minimum for Q4-family requests. Large backbone/attention matrices are the
-only tensors eligible for aggressive quantization.
+The converter folds inference BatchNorm into convolution weights. PP-OCRv6's
+policy-q4 deployment files intentionally retain the complete detector or
+recognizer graph in F16: quantizing intermediate CNN/SVTR weights compounds
+error through the CTC path and fails parity. The policy therefore prioritizes
+quality over file-size reduction for these compact models.
 
 The official v6 preprocessing is also load-bearing: recognizers use a 48-pixel
 height, aspect-ratio-preserving width with padding up to 320 pixels, RGB
@@ -48,4 +47,13 @@ python tools/dump_ppocrv6_reference.py \
 PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
   ./build/crispembed -m /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
   --ocr /path/to/line.png
+```
+
+The same comparison is available as a standalone regression binary:
+
+```bash
+PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
+  ./build/test-ppocrv6-rec \
+  /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  /path/to/line.png
 ```
