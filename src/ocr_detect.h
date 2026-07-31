@@ -77,6 +77,15 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * pixels, int w
 
 std::vector<text_box> detect_file_ex(context * ctx, const char * path, const detect_options & options);
 
+// Apply the shared DB postprocessor to an already-computed probability map.
+// This is used by detector ports whose neural graph is not the legacy DBNet
+// graph, so Python/C++ geometry stays identical.
+std::vector<text_box> postprocess_probability_map(const float * prob_map, int map_h, int map_w,
+                                                  float prob_threshold = 0.3f, float box_threshold = 0.5f,
+                                                  float unclip_ratio = 1.5f, int min_area = 1, float scale_x = 1.0f,
+                                                  float scale_y = 1.0f, int dilation = 0, int max_candidates = 1000,
+                                                  score_mode scoring = score_mode::fast);
+
 // Get probability map from last detection (for debugging/visualization).
 // Returns nullptr if no detection has been run yet.
 // Shape: [H_padded, W_padded], row-major, values in [0, 1].

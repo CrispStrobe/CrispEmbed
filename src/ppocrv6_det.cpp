@@ -1,4 +1,5 @@
 #include "ppocrv6_det.h"
+#include "ocr_detect.h"
 
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
@@ -584,8 +585,15 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         c->last_prob = y;
         c->last_h = oh;
         c->last_w = ow;
+        // The f16 backbone has a small positive probability bias versus
+        // PaddleX (the map parity gate remains above 0.997 on the fixtures).
+        // Calibrate the DB box score while retaining the official 0.2 bitmap
+        // threshold; this restores region counts without changing logits.
+        auto native_boxes = ocr_detect::postprocess_probability_map(y.data(), oh, ow, threshold, 0.60f, 1.4f, 1, 1.0f,
+                                                                    1.0f, 0, 3000, ocr_detect::score_mode::fast);
         std::vector<box> out;
-        append_component(y, oh, ow, threshold, out);
+        out.reserve(native_boxes.size());
+        for (const auto & b : native_boxes) out.push_back({ b.x, b.y, b.w, b.h, b.score });
         float sx = float(w) / ow, sy = float(h) / oh;
         for (auto & b : out) {
             b.x *= sx;
@@ -669,8 +677,13 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     c->last_prob = y;
     c->last_h = oh;
     c->last_w = ow;
+    // See the medium path above: use the calibrated DB box score for the
+    // compact model's native probability map.
+    auto native_boxes = ocr_detect::postprocess_probability_map(y.data(), oh, ow, threshold, 0.60f, 1.4f, 1, 1.0f, 1.0f,
+                                                                0, 3000, ocr_detect::score_mode::fast);
     std::vector<box> out;
-    append_component(y, oh, ow, threshold, out);
+    out.reserve(native_boxes.size());
+    for (const auto & b : native_boxes) out.push_back({ b.x, b.y, b.w, b.h, b.score });
     float sx = float(w) / ow, sy = float(h) / oh;
     for (auto & b : out) {
         b.x *= sx;
@@ -701,8 +714,8 @@ std::vector<box> detect_file(context * c, const char * path, float threshold) {
     auto * p = stbi_load(path, &w, &h, &ch, 3);
     if (!p) return {};
     float scale = std::min(1.0f, 960.0f / float(std::max(w, h)));
-    int rw = std::max(32, int(std::ceil(w * scale / 32.0f)) * 32);
-    int rh = std::max(32, int(std::ceil(h * scale / 32.0f)) * 32);
+    int rw = std::max(32, int(std::floor(w * scale / 32.0f + 0.5f)) * 32);
+    int rh = std::max(32, int(std::floor(h * scale / 32.0f + 0.5f)) * 32);
     std::vector<uint8_t> resized((size_t)rw * rh * 3);
     for (int y = 0; y < rh; ++y)
         for (int x = 0; x < rw; ++x) {

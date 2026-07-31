@@ -168,8 +168,15 @@ def main() -> None:
         # runtime interprets [out, in, kh, kw] in this exact order.
         if value.ndim == 4:
             value = value.reshape(value.shape[0], -1)
-        raw = value if args.fp32 or value.ndim < 2 else value.astype(np.float16)
-        writer.add_tensor(f"{kind}.{out_name}", raw, raw_dtype=dtype if raw.ndim >= 2 else gguf.GGMLQuantizationType.F32)
+        # The DB/SVTR output head is the most sensitive part of this small
+        # CNN/CTC family.  Keep it in F32 even for the compact F16 artifact;
+        # this is the same critical-weight policy used by the other GGUF
+        # converters and prevents threshold/logit drift from compounding at
+        # the final output.
+        critical = out_name.startswith("head.")
+        raw = value if args.fp32 or critical or value.ndim < 2 else value.astype(np.float16)
+        raw_dtype = gguf.GGMLQuantizationType.F32 if args.fp32 or critical or raw.ndim < 2 else dtype
+        writer.add_tensor(f"{kind}.{out_name}", raw, raw_dtype=raw_dtype)
         count += 1
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
