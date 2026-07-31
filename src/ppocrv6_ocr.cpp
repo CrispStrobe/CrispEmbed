@@ -111,7 +111,6 @@ static bool run_block(pp_block & b, std::vector<float> & x, int & h, int & w) {
     std::vector<float> y, z;
     int oh, ow;
     if (!apply_conv(b.dw, x, h, w, y, oh, ow)) return false;
-    activate(y, true);
     if (b.se) {
         // The SE convolutions operate on the global average, then scale the
         // depthwise output. Both gates are kept at F16/F32 by the quantizer.
@@ -205,11 +204,17 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
     const int rw = std::max(1, std::min(W, int(std::round(w * (H / float(std::max(1, h)))))));
     for (int y = 0; y < H; ++y)
         for (int x = 0; x < rw; ++x) {
-            int sy = std::min(h - 1, int(y * h / float(H)));
-            int sx = std::min(w - 1, int(x * w / float(rw)));
+            const float fy = y * (h - 1.0f) / std::max(1, H - 1);
+            const float fx = x * (w - 1.0f) / std::max(1, rw - 1);
+            const int y0 = std::clamp((int)std::floor(fy), 0, h - 1), y1 = std::clamp(y0 + 1, 0, h - 1);
+            const int x0 = std::clamp((int)std::floor(fx), 0, w - 1), x1 = std::clamp(x0 + 1, 0, w - 1);
+            const float wy = std::clamp(fy - std::floor(fy), 0.0f, 1.0f);
+            const float wx = std::clamp(fx - std::floor(fx), 0.0f, 1.0f);
             for (int c = 0; c < 3; ++c) {
                 int sc = ch == 1 ? 0 : std::min(c, ch - 1);
-                out[c * H * W + y * W + x] = (px[(sy * w + sx) * ch + sc] / 255.0f - 0.5f) / 0.5f;
+                const float a = px[(y0 * w + x0) * ch + sc] * (1 - wx) + px[(y0 * w + x1) * ch + sc] * wx;
+                const float b = px[(y1 * w + x0) * ch + sc] * (1 - wx) + px[(y1 * w + x1) * ch + sc] * wx;
+                out[c * H * W + y * W + x] = ((a * (1 - wy) + b * wy) / 255.0f - 0.5f) / 0.5f;
             }
         }
 }
@@ -220,6 +225,11 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     for (const auto & s : c->stem) {
         int oh, ow;
         if (!apply_conv(s, x, h, w, y, oh, ow)) return nullptr;
+        if (c->diff && s.w == c->stem.front().w) {
+            auto r = c->diff->compare("ppocrv6.stem1_pre", y.data(), y.size(), -1);
+            fprintf(stderr, "[ppocrv6-diff] stem1_pre cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                    std::sqrt(std::inner_product(y.begin(), y.end(), y.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+        }
         if (s.w == c->stem.front().w) activate(y, false);
         x.swap(y);
         h = oh;
