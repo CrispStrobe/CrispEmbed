@@ -5,6 +5,10 @@
 
 namespace easyocr_postprocess {
 
+// EasyOCR get_image_list uses height 64 and rounds the recognizer canvas up
+// to a multiple of 64 while preserving the aspect-sized crop inside it.
+int recognizer_canvas_width(int crop_width, int crop_height);
+
 // EasyOCR's CTC convention: token 0 is blank and vocabulary entries are 1-based.
 bool ctc_greedy_decode(const std::vector<int> & tokens, const std::vector<std::string> & vocabulary,
                        std::string * output, int * invalid_token = nullptr);

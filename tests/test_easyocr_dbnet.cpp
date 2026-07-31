@@ -1,5 +1,6 @@
 #include "easyocr_ocr.h"
 #include "easyocr_layout.h"
+#include "easyocr_postprocess.h"
 #include "ocr_crop.h"
 #include "ocr_detect.h"
 #include "core/clean_exit.h"
@@ -43,7 +44,7 @@ int main(int argc, char ** argv) {
             const int ch = std::min(h - y, (int)line.h + 4);
             int ow = 0, oh = 0;
             auto crop = ocr_crop::extract(pixels, w, h, 3, x, y, cw, ch, 0, &ow, &oh);
-            const int recognizer_width = word_mode ? 200 : std::max(200, (int)std::ceil(64.0 * ow / std::max(1, oh)));
+            const int recognizer_width = easyocr_postprocess::recognizer_canvas_width(ow, oh);
             if (!easyocr_ocr_set_width(rec, recognizer_width)) {
                 rc = 6;
                 continue;
