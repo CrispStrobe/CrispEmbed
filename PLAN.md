@@ -439,6 +439,11 @@ downstream handoff parity, not detector-box similarity alone.
       1,017 characters in 11.1 s, but its direct logits are not parity-safe.
       It must not become the default; exact Tesseract int-mode scales/kernels
       are still required.
+      The converter now preserves source int8 matrices and row scales as
+      auxiliary `.int8`/`.int8_scale` tensors while retaining F32 tensors.
+      Candidate artifact: `/Volumes/backups/ai/crispembed-gguf/
+      tesseract-frk-int8-source-candidate.gguf`; it is not published or
+      substituted for the validated F32/Q8 artifacts yet.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
