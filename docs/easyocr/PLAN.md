@@ -177,6 +177,14 @@ recognizer and LayoutLM consumer.
 - [ ] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
       quantized matrix arithmetic), then port its recode beam/dictionary
       scoring and validate decoded output.
+- [x] Added the 1/256 Tesseract nonlinear LUT contract and reconstructed
+      per-row int8 dot products. Native/Python int-mode logits now reach
+      cosine `0.998405` with identical decoded output; generic CTC and
+      Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
+      CLI `Brighton`.
+- [ ] Obtain an official Tesseract internal activation/raw-row comparison to
+      resolve the remaining CLI-logit discrepancy before enabling any beam in
+      production.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
