@@ -40,6 +40,10 @@ def main():
         mean = tensors[f"{bp}.running_mean"]
         var = tensors[f"{bp}.running_var"]
         scale = gamma / np.sqrt(var + 1.0e-5)
+        tensors[f"{cp}.raw_weight"] = tensors[wp].copy()
+        tensors[f"{cp}.raw_bias"] = tensors[f"{cp}.bias"].copy()
+        tensors[f"{cp}.bn_scale"] = scale
+        tensors[f"{cp}.bn_shift"] = beta - mean * scale
         tensors[wp] = tensors[wp] * scale[:, None, None, None]
         tensors[f"{cp}.bias"] = beta - mean * scale
         for suffix in ("weight", "bias", "running_mean", "running_var", "num_batches_tracked"):
@@ -52,11 +56,16 @@ def main():
     writer.add_uint32("easyocr.input_channels", 3)
     writer.add_uint32("easyocr.craft.num_classes", 2)
     writer.add_uint32("easyocr.craft.bn_folded", 1)
+    writer.add_uint32("easyocr.craft.bn_runtime", 1)
 
     for name in sorted(tensors):
         data = tensors[name]
         dtype = gguf.GGMLQuantizationType.F32
-        if args.fp16 and data.ndim >= 2 and data.size >= 256:
+        # Keep the runtime-BN source weights in F32. The folded copies remain
+        # available for older consumers, while explicit BN preserves the
+        # Python Conv→BatchNorm evaluation order at decoded-output thresholds.
+        keep_f32 = name.endswith((".raw_weight", ".raw_bias", ".bn_scale", ".bn_shift"))
+        if args.fp16 and not keep_f32 and data.ndim >= 2 and data.size >= 256:
             data = data.astype(np.float16)
             dtype = gguf.GGMLQuantizationType.F16
         writer.add_tensor(name, data, raw_dtype=dtype)
