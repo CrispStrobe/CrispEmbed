@@ -1736,7 +1736,10 @@ static int cli_main(int argc, char ** argv) {
         }
         if (ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(octx, ocr_max_tokens);
         int w, h, ch;
-        unsigned char * data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 0);
+        // Normalize OCR input to RGB so model preprocessors see the same
+        // channel layout as the Python/PIL reference path.
+        unsigned char * data = stbi_load(ocr_path.c_str(), &w, &h, &ch, 3);
+        ch = 3;
         if (!data) {
             fprintf(stderr, "error: cannot load %s\n", ocr_path.c_str());
             crispembed_ocr_model_free(octx);
