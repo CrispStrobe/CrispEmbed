@@ -1107,13 +1107,26 @@
         "file": "tesseract-eng-f16.gguf",
         "revision": "main"
       },
-      "detector": "dbnet-ic15-q4_k.gguf",
+      "detector": "dbnet-ic15-f16.gguf",
       "pipeline_engine": "tesseract",
       "sample": "tests/regression/images/fox.png",
       "expected_text": "The quick brown fox jumps over the lazy dog. 12345",
       "match": {
         "max_cer": 0.1
       }
+    },
+    {
+      "name": "tesseract-lstm-deu",
+      "engine": "tesseract-lstm",
+      "_comment": "German detector + line-crop recognizer smoke/benchmark; quality is recorded without a full-page transcription oracle.",
+      "gguf": {
+        "repo": "cstr/tesseract-lstm-GGUF",
+        "file": "tesseract-deu-q8_0.gguf",
+        "revision": "main"
+      },
+      "detector": "dbnet-ic15-f16.gguf",
+      "pipeline_engine": "tesseract",
+      "sample": "tests/regression/images/cc0/german_official_print.jpg"
     },
     {
       "name": "parseq",

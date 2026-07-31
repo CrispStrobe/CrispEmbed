@@ -296,6 +296,11 @@ Each fixture/stage row must include:
 - cold load time, warm stage time, and peak/working-set estimate where
   available;
 - detector box count, recognized region count, mean confidence, and text;
+
+The live engine benchmark now includes both English and German
+Tesseract-LSTM detector+line-crop rows, with the German model downloaded from
+the pinned permissive registry entry when requested. Tesseract benchmark rows
+use the F16 DB detector rather than a policy-disallowed Q4 detector.
 - gold CER/exact match when verified, otherwise raw-baseline text delta;
 - `helped`, `neutral`, `harmed`, `unavailable`, or `error` classification;
 - stderr tail and stable failure reason for model/backend failures.
