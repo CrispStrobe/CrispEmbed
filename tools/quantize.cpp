@@ -244,11 +244,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // pointwise convs (pw1/pw2) are matmuls in-engine and quantize fine.
         const bool ppocr_keep =
             is_ppocrv6 &&
-            (sname.find(".bias") != std::string::npos || sname.find("normalization") != std::string::npos ||
+            (sname.rfind("det.", 0) == 0 || sname.find(".bias") != std::string::npos ||
+             sname.find("normalization") != std::string::npos ||
              sname.find("squeeze_excitation") != std::string::npos ||
              sname.find("token_squeeze") != std::string::npos || sname.find("token_conv") != std::string::npos ||
              sname.find(".se1.") != std::string::npos || sname.find(".se2.") != std::string::npos ||
-             sname.find(".dw.") != std::string::npos ||
+             sname.find(".dw.") != std::string::npos || sname.find("det.bb.stem") != std::string::npos ||
+             sname.find("det.neck.") != std::string::npos ||
              (sname.find("head.") != std::string::npos && sname.find("head.fc2.weight") == std::string::npos));
         if (ppocr_keep || sname.find("patch_embed") != std::string::npos ||
             sname.find("downsample") != std::string::npos || sname.find("downsampling") != std::string::npos ||
