@@ -356,7 +356,7 @@ be recorded separately before publishing a GGUF.
 | Line orientation | `PP-LCNet_x1_0_textline_ori` | Same Apache-2.0 project/weight-provenance audit required | Strong practical choice for per-line 0°/180° correction | First port candidate |
 | Text detection | `PP-OCRv6` det | Apache-2.0 PaddleOCR code; model artifact provenance must be pinned and audited | Current practical high-quality/throughput baseline; supports multilingual deployment | Port/benchmark when PP-OCRv6 branch lands |
 | Text recognition | `PP-OCRv6` rec | Same code/weight distinction as detector | Current practical high-quality/throughput baseline; one unified family is preferable to many language-specific recognizers | Port/benchmark with detector |
-| Text detection fallback | `DBNet` / `DBNet++` | Select MIT/Apache/BSD implementation and audit weights | Mature, reliable fallback; generally below current PP-OCR quality on difficult documents | Keep as CPU/portable fallback |
+| Text detection fallback | `cstr/dbnet-ic15-GGUF` (`DBNet` ResNet-18) | Apache-2.0 declared for the converted artifact; source and dataset provenance documented; Challenge 4 is distinct from ICDAR2015-TextSR ODbL | Mature, reliable fallback; generally below current PP-OCR quality on difficult documents | Cleared; Q8/F16 default, Q4_K debug-only |
 | Denoising | `NAFNet` | Upstream repository/checkpoint terms require explicit audit before redistribution | Strong efficient restoration baseline; upstream describes it as state-of-the-art for its restoration tasks | Keep only with artifact audit |
 | Denoising/deblurring | `Restormer` | MIT repository license | Strong high-resolution denoising/deblurring/deraining model; official repo calls it SOTA for those tasks | Safe preferred learned restorer |
 | Denoising | `SCUNet` | Verify upstream repository and checkpoint terms before registry inclusion | Lightweight practical denoiser, attractive for CPU/Metal | Keep as optional pending audit |
@@ -369,6 +369,42 @@ be recorded separately before publishing a GGUF.
 | Text SR | `TBSRN` | Checkpoint license/provenance must be audited | Text-focused SR is more relevant to OCR than generic photorealistic SR | Keep only behind OCR CER gate |
 | Learned dewarp | `UVDoc` / document-unwarping models | Candidate only after exact checkpoint license audit | Better fit than generic image restoration for curved pages | Prefer classical dewarp first; port if real fixtures show need |
 | PDF orientation/render | PDFium + `PP-LCNet_x1_0_doc_ori` | PDFium and classifier terms must be retained in notices; classifier checkpoint audit required | Strong operational solution rather than an image-restoration model | Implement native render/autorotate path |
+
+#### O10.9a — MMOCR model/checkpoint license audit
+
+MMOCR's repository is Apache-2.0, but that is the license of the toolbox
+code, not automatically the license of every downloaded checkpoint. The
+official model-zoo page lists 48 checkpoints and links the weights separately,
+without providing a per-checkpoint SPDX grant. Therefore every MMOCR weight
+below is **audit-required**, unless a separately verified checkpoint license
+is recorded in `tests/regression/manifest.json` and the model registry.
+
+| MMOCR model family | Checkpoints in the official zoo | Current reuse status | CrispEmbed decision |
+|---|---|---|---|
+| DBNet | ResNet-18/50, DCNv2, oCLIP; ICDAR2015/SynthText/TotalText | The specific `cstr/dbnet-ic15-GGUF` ResNet-18 artifact declares Apache-2.0 and documents MMOCR + ICDAR2015 Incidental Scene Text provenance; other zoo checkpoints remain separate audits | Existing port remains; Q8/F16 default | Cleared for the specific cstr artifact; do not generalize to every zoo checkpoint |
+| DBNet++ | ResNet-50, DCNv2, oCLIP; ICDAR2015 | Same checkpoint uncertainty; stronger detector but larger | Optional quality tier only after audit |
+| Mask R-CNN | CTW1500/ICDAR2015, ResNet-50/oCLIP | Code/framework may be Apache-2.0; checkpoint and backbone provenance unresolved | Do not add yet |
+| DRRG | CTW1500 | Checkpoint license not stated in zoo | Do not add yet |
+| FCENet | CTW1500/ICDAR2015/TotalText, ResNet-50/DCNv2/oCLIP | Checkpoint license not stated in zoo | Candidate for curved text only after audit |
+| PANet | CTW1500/ICDAR2015, ResNet-18 | Checkpoint license not stated in zoo | Low priority; audit before use |
+| PSENet | CTW1500/ICDAR2015, ResNet-50/oCLIP | Checkpoint license not stated in zoo | Low priority; audit before use |
+| TextSnake | CTW1500, ResNet-50/oCLIP | Checkpoint license not stated in zoo | Candidate for arbitrary shapes only after audit |
+| ABINet | Vision-only and iterative; ST/MJ | Checkpoint license not stated in zoo; language-model/data provenance especially important | Do not bundle pending full audit |
+| ASTER | ResNet-45, ST/MJ | Checkpoint license not stated in zoo | Rectification idea is reusable; checkpoint excluded pending audit |
+| CRNN | Mini-VGG, MJ | Checkpoint license not stated in zoo; dataset/training terms unresolved | Do not add; Tesseract remains the tiny permissive lane |
+| MASTER | ResNet-31, ST/MJ/SA | Checkpoint license not stated in zoo | Do not add pending audit |
+| NRTR | Modality-transform and ResNet-31 variants, ST/MJ | Checkpoint license not stated in zoo | Do not add pending audit |
+| RobustScanner | ResNet-31, ST-sub/MJ-sub/SA-real | Checkpoint license not stated in zoo | Do not add pending audit |
+| SAR | ResNet-31 parallel/sequential, ST-sub/MJ-sub/SA-real | Checkpoint license not stated in zoo | Do not add pending audit |
+| SATRN | Shallow and small, ST/MJ | Checkpoint license not stated in zoo | Do not add pending audit |
+| SVTR | Small/base, ST/MJ | Checkpoint license not stated in zoo; promising scene-text quality/size tradeoff | First new MMOCR recognizer to investigate, but no auto-download until weights are cleared |
+| SDMGR | Visual/novisual/open-set, WildReceipt | Checkpoint, dataset, and KIE-label provenance unresolved | Do not add; existing KIE pipeline is preferred |
+
+The official zoo reports the strongest listed detection result for DBNet++
+ResNet-50-oCLIP at 0.8882 ICDAR2015 hmean-IoU, and lists SVTR-small/base as
+scene-text recognizers; these are quality signals only, not license grants.
+The architecture/code may be studied or clean-room reimplemented, but the
+specific weights remain blocked until their provenance is documented.
 
 #### Explicitly excluded or non-default candidates
 

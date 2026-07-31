@@ -1260,6 +1260,7 @@ pub struct OcrResult {
     pub w: f32,
     pub h: f32,
     pub confidence: f32,
+    pub orientation_corrected: bool,
 }
 
 /// Alias used by the model-free detector (`cc_detect`) and the result
@@ -1307,6 +1308,7 @@ impl OcrPipeline {
                 w: r.w,
                 h: r.h,
                 confidence: r.confidence,
+                orientation_corrected: r.orientation_corrected != 0,
             });
         }
         results
@@ -3018,6 +3020,7 @@ pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str)
             confidence: r.confidence,
             text: texts[i].as_ptr(),
             text_len: texts[i].as_bytes().len() as i32,
+            orientation_corrected: if r.orientation_corrected { 1 } else { 0 },
         })
         .collect();
     let ptr = unsafe {
