@@ -32,6 +32,7 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
 static bool g_decoder_f16 = false;
+static bool g_ppocrv6_q8_head = false;
 
 // Per-tensor importance vectors loaded from a CrispEmbed imatrix file
 // (see src/imatrix.cpp). Keyed by weight name; value length == n_per_row.
@@ -139,6 +140,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const int n_tensors = gguf_get_n_tensors(ctx_in);
     const int arch_key = gguf_find_key(ctx_in, "general.architecture");
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
+    const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
     if (is_ppocrv6) {
         fprintf(stderr, "PP-OCRv6 precision policy: biases/SE/depthwise/early-head tensors stay F16/F32; CTC logits "
                         "head is Q8_0 minimum\n");
@@ -249,6 +251,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             // detector and recognizer paths in F16; the policy-q4 container then
             // quantizes only non-critical metadata/auxiliary tensors and remains
             // a quality-preserving deployment variant.
+            (!ppocr_q8_late || (sname.find("rec.head.encoder.") == std::string::npos &&
+                                sname.find("rec.head.head.") == std::string::npos)) &&
             (sname.rfind("det.", 0) == 0 || sname.rfind("rec.", 0) == 0 || sname.find(".bias") != std::string::npos ||
              sname.find("normalization") != std::string::npos ||
              sname.find("squeeze_excitation") != std::string::npos ||
@@ -677,13 +681,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
 }
 
 int main(int argc, char ** argv) {
-    // Collect positional args, allowing an optional --decoder-f16 flag anywhere.
+    // Collect positional args, allowing policy flags anywhere.
     std::vector<std::string> pos;
     std::string imatrix_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
         if (a == "--decoder-f16")
             g_decoder_f16 = true;
+        else if (a == "--ppocrv6-q8-head")
+            g_ppocrv6_q8_head = true;
         else if (a == "--imatrix") {
             if (i + 1 >= argc) {
                 fprintf(stderr, "--imatrix requires a file path\n");
@@ -694,13 +700,15 @@ int main(int argc, char ** argv) {
             pos.push_back(a);
     }
     if (pos.size() != 3) {
-        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--imatrix <file>]\n\n", argv[0]);
+        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--ppocrv6-q8-head] [--imatrix <file>]\n\n", argv[0]);
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
         fprintf(stderr, "                  Retained for diagnostic/comparison use; see #25)\n\n");
+        fprintf(stderr, "  --ppocrv6-q8-head  for PP-OCRv6 Q8_0, keep the CNN/backbone F32 and\n");
+        fprintf(stderr, "                     quantize only the final SVTR/CTC head\n\n");
         fprintf(stderr, "Supported types:\n");
         for (auto & [name, _] : FTYPE_MAP) {
             fprintf(stderr, "  %s\n", name.c_str());
