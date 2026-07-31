@@ -754,6 +754,10 @@ std::vector<box> detect_file(context * c, const char * path, float threshold) {
         b.w *= float(w) / rw;
         b.y *= float(h) / rh;
         b.h *= float(h) / rh;
+        for (int i = 0; i < 4; ++i) {
+            b.qx[i] *= float(w) / rw;
+            b.qy[i] *= float(h) / rh;
+        }
     }
     stbi_image_free(p);
     return r;
