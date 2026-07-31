@@ -1,6 +1,7 @@
 #include "easyocr_pipeline.h"
 
 #include "easyocr_ocr.h"
+#include "easyocr_postprocess.h"
 #include "ocr_crop.h"
 
 #include <algorithm>
@@ -82,9 +83,7 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
             ocr_crop::extract(pixels, width, height, channels, x, y, crop_w, crop_h, 0, &crop_width, &crop_height);
         if (crop.empty() || crop_width <= 0 || crop_height <= 0) continue;
 
-        const int recognizer_width = ctx->mode == easyocr_layout::ordering_mode::words
-                                         ? 200
-                                         : std::max(200, (int)std::ceil(64.0 * crop_width / crop_height));
+        const int recognizer_width = easyocr_postprocess::recognizer_canvas_width(crop_width, crop_height);
         if (!easyocr_ocr_set_width(ctx->recognizer, recognizer_width)) continue;
         int text_length = 0;
         const char * text =
