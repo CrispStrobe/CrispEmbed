@@ -47,6 +47,25 @@ and the CC0 Arabic Documents OCR set (10K images with page/text annotations),
 but those sources require a separate download/acceptance step and are therefore
 not vendored by default.
 
+To measure preprocessing independently on the real corpus, use the live
+preprocessor harness. It materializes each cleanup variant, records checksums,
+dimensions, pixel statistics, and timing, and can feed every variant through
+the detector/recognizer pipeline:
+
+```bash
+python3 tests/ocr_preprocessor_benchmark.py \
+  --output /tmp/ocr-preprocessors.json \
+  --pipeline-binary build/crispembed \
+  --det /Volumes/backups/ai/crispembed-gguf/dbnet-ic15-f16.gguf \
+  --rec /Volumes/backups/ai/crispembed-gguf/trocr-small-printed-q8_0.gguf
+```
+
+Use `--include-dewarp` for the classical dewarper and repeat `--model
+STAGE=MODEL` for an explicitly selected learned stage, for example
+`--model nafnet=/path/nafnet-sidd-w32-q8_0.gguf`. Missing fixtures or models
+are reported as explicit rows; they are not treated as passing quality
+results.
+
 A model-output regression suite for the OCR engines. It exists because a
 vision-neck permute regression (`3fb1f8e`, Jun 2026) shipped **garbage OCR**
 (`colorcolorcolor…`) that the existing Kaggle `ocr-gpu-bench` kernel could not
