@@ -101,6 +101,11 @@ Python detector/recognizer page manifest is still required before parity is
 claimed. The current local Python environment lacks torch, numpy, and cv2, so
 that reference run remains an explicit external/dependency gate.
 
+The harness-blind CTC/vocabulary/confidence gate is now covered by the native
+`easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
+with repeated-token collapse, vocabulary entries are 1-based and validated,
+and confidence follows EasyOCR's nonblank `custom_mean` formula.
+
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
 > PLAN.md active-work board cleared". Add a row here when you START a task; remove
