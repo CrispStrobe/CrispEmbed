@@ -18,9 +18,9 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
 
-EasyOCR checkpoint: the initial CRAFT detector graph now passes its Python
-reference input, VGG taps, U-Net feature map, and NHWC score-map boundary on
-CPU and Metal; decoded boxes and DBNet remain pending.
+EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
+U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
+Metal; DBNet remains pending.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
