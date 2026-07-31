@@ -43,6 +43,8 @@ races). Remove the row when the branch lands.
 
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
+The VGG graph now derives feature channels and sequence width dynamically for
+the remaining VGG recognizer variants.
 
 This workstream is informed by the external document-parser comparison, but keeps CrispEmbed's
 ggml portability (CPU, CUDA, Metal, Vulkan, and WASM). Items are scoped so each

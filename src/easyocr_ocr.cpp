@@ -32,6 +32,8 @@ struct easyocr_ocr_context {
     int height = 64;
     int classes = 0;
     int hidden = 256;
+    int output_channels = 256;
+    int time_steps = 0;
     std::vector<std::string> tokens;
     std::vector<float> input_host;
     std::string result;
@@ -119,8 +121,10 @@ static bool build_graph(easyocr_ocr_context * c) {
     ggml_set_name(x, "features");
     ggml_set_output(x);
 
-    const int T = 49;
-    const int D = 256;
+    const int T = (int)x->ne[0];
+    const int D = (int)x->ne[2];
+    c->time_steps = T;
+    c->output_channels = D;
     // EasyOCR applies AdaptiveAvgPool2d((None, 1)) to [B,C,H,W], averaging
     // the height axis while preserving width. In ggml's [W,H,C,B] layout,
     // move H to the pooler's x axis, average it, then restore [C,W].
@@ -184,6 +188,7 @@ easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
         c->width = (int)core_gguf::kv_u32(meta, "easyocr.input_width", 200);
         c->height = (int)core_gguf::kv_u32(meta, "easyocr.input_height", 64);
         c->classes = (int)core_gguf::kv_u32(meta, "easyocr.num_classes", 0);
+        c->output_channels = (int)core_gguf::kv_u32(meta, "easyocr.output_channels", c->output_channels);
         c->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");
         core_gguf::free_metadata(meta);
     }
@@ -229,11 +234,11 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
         ggml_backend_tensor_set(ggml_graph_get_tensor(c->graph, n), zero.data(), 0, zero.size() * sizeof(float));
     if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return nullptr;
 
-    std::vector<float> logits((size_t)c->classes * 49);
+    std::vector<float> logits((size_t)c->classes * c->time_steps);
     ggml_backend_tensor_get(c->logits, logits.data(), 0, logits.size() * sizeof(float));
     c->result.clear();
     int prev = 0;
-    for (int t = 0; t < 49; ++t) {
+    for (int t = 0; t < c->time_steps; ++t) {
         int best = 0;
         for (int k = 1; k < c->classes; ++k)
             if (logits[(size_t)t * c->classes + k] > logits[(size_t)t * c->classes + best]) best = k;
