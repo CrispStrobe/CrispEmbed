@@ -1231,6 +1231,22 @@ CRISPEMBED_API char * crispembed_ocr_render(const crispembed_ocr_result * result
 /// across all raster images on the page, and *out_n_images to the count.
 CRISPEMBED_API int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * out_dpi, int * out_n_images);
 
+/// Per-page PDF DPI result returned by crispembed_pdf_all_pages_dpi().
+typedef struct crispembed_pdf_page_dpi_result {
+    float dpi;
+    float dpi_min;
+    float dpi_max;
+    int n_images;
+    float page_width_pt;
+    float page_height_pt;
+} crispembed_pdf_page_dpi_result;
+
+/// Profile every page in a PDF. The returned array is owned by the caller and
+/// must be released with crispembed_pdf_all_pages_dpi_free().
+CRISPEMBED_API const crispembed_pdf_page_dpi_result * crispembed_pdf_all_pages_dpi(const char * pdf_path,
+                                                                                   int * out_n_pages);
+CRISPEMBED_API void crispembed_pdf_all_pages_dpi_free(const crispembed_pdf_page_dpi_result * results);
+
 /// Dewarp a grayscale page (straighten curved text lines).
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
 CRISPEMBED_API int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h);

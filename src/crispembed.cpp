@@ -6093,6 +6093,37 @@ extern "C" int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * 
     return ret;
 }
 
+extern "C" const crispembed_pdf_page_dpi_result * crispembed_pdf_all_pages_dpi(const char * pdf_path,
+                                                                               int * out_n_pages) {
+    if (out_n_pages) *out_n_pages = 0;
+    int n_pages = 0;
+    pdf_page_dpi_result * source = pdf_all_pages_dpi(pdf_path, &n_pages);
+    if (!source || n_pages <= 0) {
+        pdf_dpi_free(source);
+        return nullptr;
+    }
+    auto * results = (crispembed_pdf_page_dpi_result *)calloc((size_t)n_pages, sizeof(crispembed_pdf_page_dpi_result));
+    if (!results) {
+        pdf_dpi_free(source);
+        return nullptr;
+    }
+    for (int i = 0; i < n_pages; i++) {
+        results[i].dpi = source[i].dpi;
+        results[i].dpi_min = source[i].dpi_min;
+        results[i].dpi_max = source[i].dpi_max;
+        results[i].n_images = source[i].n_images;
+        results[i].page_width_pt = source[i].page_width_pt;
+        results[i].page_height_pt = source[i].page_height_pt;
+    }
+    pdf_dpi_free(source);
+    if (out_n_pages) *out_n_pages = n_pages;
+    return results;
+}
+
+extern "C" void crispembed_pdf_all_pages_dpi_free(const crispembed_pdf_page_dpi_result * results) {
+    free((void *)results);
+}
+
 extern "C" int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h) {
     return dewarp_page(gray, w, h, out, out_w, out_h);
 }

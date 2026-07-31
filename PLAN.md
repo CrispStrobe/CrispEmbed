@@ -17,7 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
-| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff now landed, learned PP-LCNet orientation port remains | **IN PROGRESS** |
+| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff landed; PP-LCNet PIR graph inventory added, native weight decoder/runtime remains | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
@@ -390,7 +390,9 @@ more than another restoration model.
    `feat/ppocr-next-20260731`; pending merge.** Add
    `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
    run raw input, classical cleanup variants, deskew, binarization, dewarp,
-   denoise, and every locally available SR/restoration model. Record stage
+   denoise, and every locally available SR/restoration model. The harness
+   accepts `--include-derived` to sweep every traced O10.2 robustness variant.
+   Record stage
    latency, output dimensions, pixel statistics, detector regions, OCR text,
    confidence, and CER/exact match when gold text exists. Also report text
    delta versus the raw-image baseline when no verified gold transcription is
@@ -441,14 +443,16 @@ more than another restoration model.
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
    upside-down, and tightly clipped lines.
 
-7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation slice
+7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation and
+   multi-page DPI API slices
    implemented in `feat/ppocr-next-20260731`;** add native page rendering and
    page-level accumulation where the platform supports it. Reuse PDF DPI
    profiling to select render DPI, then apply page orientation and the normal
    document pipeline. `/ocr/document` now accepts explicit
    `"autorotate": true`, applies the confidence-gated fallback, and hands
    rotated temporary pages through the normal renderer. Keep the existing
-   parser-only path for minimal builds.
+   parser-only path for minimal builds. Bindings can now request all-page DPI
+   metadata with ownership-safe `crispembed_pdf_all_pages_dpi` APIs.
 
 8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate and VLM
    cleanup safeguard slices implemented in `feat/ppocr-next-20260731`;**
