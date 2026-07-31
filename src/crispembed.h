@@ -1252,6 +1252,10 @@ CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray
 /// Returns 0 on success; *angle is the rotation needed to deskew.
 CRISPEMBED_API int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence);
 
+/// Model-free page orientation fallback. Returns 0/90/180/270 degrees
+/// clockwise and never rotates the input buffer.
+CRISPEMBED_API int crispembed_detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence);
+
 /// Adaptive Otsu binarization (handles uneven lighting).
 /// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
 CRISPEMBED_API void crispembed_adaptive_binarize(const uint8_t * gray, int w, int h, uint8_t * out);

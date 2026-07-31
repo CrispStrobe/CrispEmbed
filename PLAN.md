@@ -22,6 +22,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **IN PROGRESS** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -396,10 +397,13 @@ more than another restoration model.
    Tesseract-LSTM, and PARSeq line crops, and structured angle/confidence
    metadata is exposed per region. The learned classifier remains outstanding.
 
-5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
+5. **O10.5 — Learned page orientation.** **Model-free fallback implemented in
+   `feat/ppocr-next-20260731`;** port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
    configurable threshold. Never rotate VLM inputs implicitly unless the
-   caller enables the option, because VLM letterboxing is model-specific.
+   caller enables the option, because VLM letterboxing is model-specific. The
+   fallback exposes `crispembed_detect_page_orientation` and never rotates
+   input implicitly; a learned PP-LCNet classifier remains outstanding.
 
 6. **O10.6 — Shared crop preprocessing.** **Implemented in
    `feat/ppocr-next-20260731`;** consolidate classifier and
