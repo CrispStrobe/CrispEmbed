@@ -24,6 +24,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 structured stage metrics through the native/C pipeline API | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.7 explicit multi-page autorotate option for `/ocr/document`, with confidence gate and temporary rotated page handoff | **IN PROGRESS** |
 
@@ -454,8 +455,9 @@ more than another restoration model.
    parser-only path for minimal builds. Bindings can now request all-page DPI
    metadata with ownership-safe `crispembed_pdf_all_pages_dpi` APIs.
 
-8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate and VLM
-   cleanup safeguard slices implemented in `feat/ppocr-next-20260731`;**
+8. **O10.8 — Stage routing, safeguards, and metrics.** **Benchmark accept-gate,
+   VLM cleanup safeguard, and structured stage-metrics slices implemented in
+   `feat/ppocr-next-20260731`;**
    **benchmark accept-gate slice
    implemented in `feat/ppocr-next-20260731`;** make preprocessing selection
    evidence-based: classical cleanup for scans, no destructive cleanup for
@@ -467,7 +469,9 @@ more than another restoration model.
    unavailable/error outcome labels; changed text without verified gold is
    reported as unavailable rather than claimed as an improvement. Full-page
    VLM stages now skip destructive cleanup unless a future explicit VLM
-   preprocessing override is added.
+   preprocessing override is added. The native/C pipeline API now exposes
+   per-stage elapsed time, cleanup-applied flag, gate result, text yield, and
+   confidence.
 
 #### Required benchmark output
 
