@@ -99,7 +99,8 @@ recognizer and LayoutLM consumer.
 
 ### Selected implementation sequence
 
-- [ ] Extract detector boxes/scores into a reusable production adapter API.
+- [x] Extract detector boxes/scores into a reusable layout-region API with
+      explicit line and word ordering policies.
 - [ ] Move `lines` and `words` policy selection out of the smoke test and into
       the OCR pipeline configuration.
 - [ ] Add a manifest-driven Python reference for boxes, order, crops, text,
