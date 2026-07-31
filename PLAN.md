@@ -261,6 +261,9 @@ more than another restoration model.
    and before every line recognizer, including Tesseract-LSTM crops. Retain
    the current heuristic as a no-model fallback. Add per-line angle,
    confidence, and whether a rotation was applied to structured results.
+   The existing classical 0°/180° safeguard is now shared by TrOCR,
+   Tesseract-LSTM, and PARSeq line crops; the learned classifier and
+   structured rotation metadata remain outstanding.
 
 5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
