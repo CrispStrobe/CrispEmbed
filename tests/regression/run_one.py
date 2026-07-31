@@ -93,6 +93,11 @@ def hf_download(repo: str, file_in_repo: str, revision: str, dest_dir: Path,
                 optional: bool = False):
     """Download one file at a pinned revision. Return Path, or None if
     `optional` and the file/repo is absent (404)."""
+    # The regression runner may execute in a read-only sandbox where the
+    # process-wide /tmp is unavailable. Keep hub staging beside the external
+    # artifact cache instead.
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault("TMPDIR", str(dest_dir))
     from huggingface_hub import hf_hub_download
     from huggingface_hub.utils import EntryNotFoundError, RepositoryNotFoundError
     token = os.environ.get("HF_TOKEN")
@@ -249,6 +254,8 @@ def run_ocr(bin_path: Path, gguf: Path, image: Path, extra_args: list[str],
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 _DIFF_PATTERNS = [
+    # PP-OCRv6 native activation harness: "[ppocrv6-diff] stage cos=…".
+    re.compile(r"^\s*\[ppocrv6-diff\]\s+(\S+)\s+cos=([-+0-9.eE]+)"),
     # got-ocr "stage: cos_min=…" AND hat/pan/tbsrn "output   cos_min=…" (the colon
     # is optional — the SR binaries pad the name with spaces, no colon).
     re.compile(r"^\s*([^\s:]+):?\s+cos(?:_min)?=([-+0-9.eE]+)\s+max_abs="),
@@ -329,8 +336,16 @@ def run_diff(diff_binary: Path, gguf: Path, ref: Path,
              extra_args: list[str], timeout: int = 900) -> dict[str, float]:
     if not diff_binary.exists():
         die(f"diff binary not found: {diff_binary}")
-    cmd = [str(diff_binary), str(gguf), str(ref), *extra_args]
+    # PP-OCRv6's native diff harness takes MODEL + IMAGE and receives the
+    # Python activation fixture through PPOCRV6_REF; other diff binaries use
+    # the conventional MODEL + REF argv shape.
+    if diff_binary.name == "test-ppocrv6-rec":
+        cmd = [str(diff_binary), str(gguf), *extra_args]
+    else:
+        cmd = [str(diff_binary), str(gguf), str(ref), *extra_args]
     env = dict(os.environ)
+    if diff_binary.name == "test-ppocrv6-rec":
+        env["PPOCRV6_REF"] = str(ref)
     env.setdefault("DYLD_LIBRARY_PATH", str(diff_binary.parent))
     env.setdefault("LD_LIBRARY_PATH", str(diff_binary.parent))
     proc = subprocess.run(cmd, capture_output=True, text=True,
