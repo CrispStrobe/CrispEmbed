@@ -462,8 +462,7 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.head_input", tok.data(), tok.size(), -1);
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
-                std::sqrt(std::inner_product(tok.begin(), tok.end(), tok.begin(), 0.0)),
-                r.is_pass() ? "PASS" : "FAIL");
+                std::sqrt(std::inner_product(tok.begin(), tok.end(), tok.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
     }
     c->result.clear();
     int last = -1;
@@ -530,8 +529,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         if (c->diff) {
             auto r = c->diff->compare("ppocrv6.large_stem", x.data(), x.size(), -1);
             fprintf(stderr, "[ppocrv6-diff] ppocrv6.large_stem cos=%.6f |mine|=%.6g %s\n", r.cos_min,
-                    std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)),
-                    r.is_pass() ? "PASS" : "FAIL");
+                    std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
         }
     } else
         for (const auto & s : c->stem) {

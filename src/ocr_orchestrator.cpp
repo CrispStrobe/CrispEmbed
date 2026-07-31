@@ -77,8 +77,8 @@ struct context {
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;    // DBNet detection + TrOCR recognition
-    ppocrv6_det::context * ppdet = nullptr;      // PP-OCRv6 detector
-    ppocrv6_ocr_context * pprec = nullptr;       // PP-OCRv6 recognizer
+    ppocrv6_det::context * ppdet = nullptr;     // PP-OCRv6 detector
+    ppocrv6_ocr_context * pprec = nullptr;      // PP-OCRv6 recognizer
     got_ocr_context * got = nullptr;            // GOT-OCR2 (single-shot VLM)
     glm_ocr_context * glm = nullptr;            // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context * qwen = nullptr;       // Qwen2.5-VL (single-shot VLM)
@@ -352,15 +352,21 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             if (cw <= 0 || ch <= 0) continue;
             std::vector<uint8_t> crop((size_t)cw * ch * 3);
             for (int y = 0; y < ch; ++y)
-                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(y0 + y) * w + x0) * 3,
-                            (size_t)cw * 3);
+                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(y0 + y) * w + x0) * 3, (size_t)cw * 3);
             int len = 0;
             const char * t = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
             if (!t || len <= 0) continue;
             ocr_pipeline::ocr_result r;
-            r.box.x = b.x; r.box.y = b.y; r.box.w = b.w; r.box.h = b.h; r.box.score = b.score;
+            r.box.x = b.x;
+            r.box.y = b.y;
+            r.box.w = b.w;
+            r.box.h = b.h;
+            r.box.score = b.score;
             r.box.angle = 0.0f;
-            for (int k = 0; k < 4; ++k) { r.box.qx[k] = k == 1 || k == 2 ? b.x + b.w : b.x; r.box.qy[k] = k >= 2 ? b.y + b.h : b.y; }
+            for (int k = 0; k < 4; ++k) {
+                r.box.qx[k] = k == 1 || k == 2 ? b.x + b.w : b.x;
+                r.box.qy[k] = k >= 2 ? b.y + b.h : b.y;
+            }
             r.text.assign(t, len);
             r.confidence = b.score;
             r.rec_confidence = b.score;

@@ -4698,8 +4698,13 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         for (size_t i = 0; i < result.regions.size(); ++i) {
             const auto & r = result.regions[i];
             auto & c = w->c_results[i];
-            c.x = r.box.x; c.y = r.box.y; c.w = r.box.w; c.h = r.box.h;
-            c.confidence = r.confidence; c.text = r.text.c_str(); c.text_len = (int)r.text.size();
+            c.x = r.box.x;
+            c.y = r.box.y;
+            c.w = r.box.w;
+            c.h = r.box.h;
+            c.confidence = r.confidence;
+            c.text = r.text.c_str();
+            c.text_len = (int)r.text.size();
         }
         if (out_n) *out_n = (int)w->c_results.size();
         return w->c_results.empty() ? nullptr : w->c_results.data();

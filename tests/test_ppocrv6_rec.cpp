@@ -13,7 +13,10 @@ int main(int argc, char ** argv) {
     auto * pixels = stbi_load(argv[2], &w, &h, &ch, 3);
     if (!pixels) return 3;
     auto * ctx = ppocrv6_ocr_init(argv[1], 1);
-    if (!ctx) { stbi_image_free(pixels); return 4; }
+    if (!ctx) {
+        stbi_image_free(pixels);
+        return 4;
+    }
     int len = 0;
     const char * text = ppocrv6_ocr_recognize_raw(ctx, pixels, w, h, 3, &len);
     std::printf("text=%.*s\n", len, text ? text : "");
