@@ -186,6 +186,123 @@ The checked-in matrix now has a model-free CI coverage guard at
 `tests/regression/test_engine_matrix.py`: all 23 portfolio engines must remain
 present with a lane, runtime, fixture, and explicit availability status.
 
+### O10 — Preprocessing inventory, parity, and live outcome gates [IN PROGRESS]
+
+The OCR front-end needs its own measured regression track. Our restoration
+inventory is broader than the lightweight OCR reference pipelines, but we are
+missing several inexpensive geometry/orientation safeguards that often matter
+more than another restoration model.
+
+#### Existing CrispEmbed preprocessing
+
+- Classical scan cleanup: dual-detector deskew consensus, border/content crop,
+  background whitening, Otsu/Sauvola binarization, and fast binary morphology.
+- Page analysis: PDF effective-DPI profiling, page split detection, content
+  bounding box detection, source-type classification, and classical dewarp.
+- Orientation: heuristic 0°/180° text-crop correction and rotated detection
+  boxes; no learned page-orientation model yet.
+- Learned restoration: NAFNet denoise, SCUNet, Restormer, InstructIR, and
+  AdaIR.
+- Super-resolution: PAN, TBSRN, HAT, DAT, ESRGAN, SwinIR, and SAFMN.
+- Learned/classical dewarp: TPS dewarp and the classical baseline.
+- VLM policy: full-page VLMs skip destructive scan cleanup and perform their
+  own letterboxing/resizing; variable-resolution VLMs honor the max-pixels
+  budget.
+
+#### Reference capabilities to reproduce or explicitly reject
+
+- Detector geometry: configurable minimum/maximum side limits, short-side
+  target sizing, minimum-height padding, wide/short-image padding, and
+  aspect-ratio-preserving letterbox policy.
+- DB postprocessing: configurable segmentation threshold, box threshold,
+  unclip ratio, optional dilation, candidate cap, and fast/accurate score mode.
+- Line orientation: a dedicated 0°/180° classifier, confidence threshold, and
+  an explicit all-lines mode for mixed-orientation documents.
+- Page orientation: a learned 0°/90°/180°/270° classifier for PDF pages and
+  photographed pages.
+- Crop preparation: one shared policy for classifier geometry, recognizer
+  geometry, aspect-preserving padding, and full-resolution recognition crops.
+- PDF ingestion: native page rendering, page-image rotation, worker-pool
+  accumulation, and the same preprocessing/OCR path as image inputs.
+- Operational controls: per-stage enable/disable flags, hard errors for
+  unavailable optional stages, request deadlines, and stage-level metrics.
+
+#### Implementation slices
+
+1. **O10.1 — Live preprocessor benchmark harness.** Add
+   `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
+   run raw input, classical cleanup variants, deskew, binarization, dewarp,
+   denoise, and every locally available SR/restoration model. Record stage
+   latency, output dimensions, pixel statistics, detector regions, OCR text,
+   confidence, and CER/exact match when gold text exists. Also report text
+   delta versus the raw-image baseline when no verified gold transcription is
+   available. Synthetic degradations remain unit stress tests, not quality
+   claims.
+
+2. **O10.2 — Problematic-input corpus.** Extend the public-domain corpus with
+   verified derived variants: ±4°/±8° skew, dark border, uneven illumination,
+   haze, speckle, low-DPI downsample, JPEG damage, 90°/180°/270° rotation,
+   perspective/curved-page distortion, and mixed upright/upside-down lines.
+   Every derived file must retain its parent SHA-256 and transformation recipe.
+
+3. **O10.3 — Detector geometry policy.** Add a shared configuration object and
+   C API fields for `min_side_len`, `max_side_len`, `min_height`,
+   `width_height_ratio`, padding mode, `unclip_ratio`, dilation, score mode,
+   and candidate cap. Default to safe current behavior; expose compatibility
+   presets for short text strips, wide receipts, dense scans, and photos.
+
+4. **O10.4 — Learned line orientation.** Port a small permissively licensed
+   0°/180° line-angle classifier to GGUF/ggml. Integrate it after detection
+   and before every line recognizer, including Tesseract-LSTM crops. Retain
+   the current heuristic as a no-model fallback. Add per-line angle,
+   confidence, and whether a rotation was applied to structured results.
+
+5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
+   model. Apply it before PDF/image routing only when confidence clears a
+   configurable threshold. Never rotate VLM inputs implicitly unless the
+   caller enables the option, because VLM letterboxing is model-specific.
+
+6. **O10.6 — Shared crop preprocessing.** Consolidate classifier and
+   recognizer crop resizing/padding into one tested module. Support
+   aspect-preserving and stretch modes, fixed height, maximum width, and
+   grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
+   upside-down, and tightly clipped lines.
+
+7. **O10.7 — PDF render/autorotate path.** Add native page rendering and
+   page-level accumulation where the platform supports it. Reuse PDF DPI
+   profiling to select render DPI, then apply page orientation and the normal
+   document pipeline. Keep the existing parser-only path for minimal builds.
+
+8. **O10.8 — Stage routing and safeguards.** Make preprocessing selection
+   evidence-based: classical cleanup for scans, no destructive cleanup for
+   VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
+   orientation only above confidence thresholds. Add accept-gate comparisons
+   so a preprocessor is rejected when it lowers confidence or worsens CER
+   beyond the configured tolerance.
+
+#### Required benchmark output
+
+Each fixture/stage row must include:
+
+- input and output dimensions, channels, and file checksum;
+- cold load time, warm stage time, and peak/working-set estimate where
+  available;
+- detector box count, recognized region count, mean confidence, and text;
+- gold CER/exact match when verified, otherwise raw-baseline text delta;
+- `helped`, `neutral`, `harmed`, `unavailable`, or `error` classification;
+- stderr tail and stable failure reason for model/backend failures.
+
+#### Acceptance gates
+
+- Every production preprocessor has at least one real CC0/German live fixture.
+- Every problematic-input variant runs through raw plus all applicable stages.
+- No default preprocessor may worsen verified CER beyond its configured gate.
+- A stage that cannot run is reported explicitly; it is never silently skipped.
+- Orientation, geometry, cleanup, and restoration effects are reported
+  separately, so a strong recognizer cannot hide a harmful preprocessor.
+- Results are reproducible from one command and committed as benchmark JSON;
+  large GGUFs support the external-volume no-copy path via `UOCR_MMAP=1`.
+
 ### Validation follow-up — external document parser [COMPLETED]
 
 - Unit gates passed: region router, pipeline pool, orchestrator (62/62), and
