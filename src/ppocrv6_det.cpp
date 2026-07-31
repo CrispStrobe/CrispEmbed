@@ -138,8 +138,9 @@ static bool apply_deconv2(const conv & c, const std::vector<float> & x, int h, i
                 for (int ic = 0; ic < c.ic; ++ic)
                     for (int ky = 0; ky < 2; ++ky)
                         for (int kx = 0; kx < 2; ++kx)
+                            // Paddle Conv2DTranspose stores [in, out, kh, kw].
                             y[(size_t)oc * oh * ow + (iy * 2 + ky) * ow + ix * 2 + kx] +=
-                                x[(size_t)ic * h * w + iy * w + ix] * ww[((size_t)oc * c.ic + ic) * 4 + ky * 2 + kx];
+                                x[(size_t)ic * h * w + iy * w + ix] * ww[((size_t)ic * c.oc + oc) * 4 + ky * 2 + kx];
             }
     if (!bb.empty())
         for (int oc = 0; oc < c.oc; ++oc)
@@ -217,7 +218,7 @@ static bool run_se(const se & s, std::vector<float> & x, int channels, std::vect
     for (int c = 0; c < channels; ++c) {
         const float gate = std::clamp(p[c] / 6.0f + 0.5f, 0.0f, 1.0f);
         if (gate_out) (*gate_out)[c] = gate;
-        x[c] *= gate;
+        x[c] = gate;
     }
     return true;
 }
@@ -554,9 +555,14 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         int oh, ow;
         if (!apply_conv(c->head_down, neck, nh, nw, y, oh, ow)) return {};
         relu(y);
+        c->last_stages["head_down"] = y;
         if (!apply_deconv2(c->head_up, y, oh, ow, z, oh, ow)) return {};
+        c->last_stages["head_up_pre"] = z;
         relu(z);
+        c->last_stages["head_up"] = z;
         if (!apply_deconv2(c->head_final, z, oh, ow, y, oh, ow)) return {};
+        c->last_stages["head_final_pre"] = y;
+        c->last_stages["head_final"] = y;
         c->last_stages["neck_output"] = neck;
         for (float & v : y) v = 1 / (1 + std::exp(-v));
         c->last_prob = y;
@@ -635,9 +641,14 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     int oh, ow;
     if (!apply_conv(c->head_down, neck, nh, nw, y, oh, ow)) return {};
     relu(y);
+    c->last_stages["head_down"] = y;
     if (!apply_deconv2(c->head_up, y, oh, ow, z, oh, ow)) return {};
+    c->last_stages["head_up_pre"] = z;
     relu(z);
+    c->last_stages["head_up"] = z;
     if (!apply_deconv2(c->head_final, z, oh, ow, y, oh, ow)) return {};
+    c->last_stages["head_final_pre"] = y;
+    c->last_stages["head_final"] = y;
     for (float & v : y) v = 1 / (1 + std::exp(-v));
     c->last_prob = y;
     c->last_h = oh;
