@@ -9,6 +9,7 @@
 #include <cstring>
 #include <queue>
 #include <string>
+#include <unordered_map>
 
 extern "C" {
 unsigned char * stbi_load(const char *, int *, int *, int *, int);
@@ -56,6 +57,9 @@ struct context {
     std::vector<conv> med_adjust, med_project, med_bottom, med_lateral;
     std::vector<medium_ic> med_ic;
     conv head_down, head_up, head_final;
+    std::vector<float> last_prob;
+    int last_h = 0, last_w = 0;
+    std::unordered_map<std::string, std::vector<float>> last_stages;
 };
 
 static ggml_tensor * get(const core_gguf::tensor_map & m, const std::string & n) {
@@ -198,7 +202,7 @@ static void add_inplace(std::vector<float> & a, const std::vector<float> & b) {
     for (size_t i = 0; i < a.size(); ++i) a[i] += b[i];
 }
 
-static bool run_se(const se & s, std::vector<float> & x, int channels) {
+static bool run_se(const se & s, std::vector<float> & x, int channels, std::vector<float> * gate_out = nullptr) {
     if (!s.valid) return true;
     std::vector<float> p(channels, 0.0f), g;
     int gh, gw;
@@ -209,62 +213,84 @@ static bool run_se(const se & s, std::vector<float> & x, int channels) {
     if (!apply_conv(s.c1, p, 1, 1, g, gh, gw)) return false;
     relu(g);
     if (!apply_conv(s.c2, g, 1, 1, p, gh, gw)) return false;
-    for (int c = 0; c < channels; ++c) x[c] *= std::clamp(0.2f * p[c] + 0.5f, 0.0f, 1.0f);
+    if (gate_out) gate_out->resize(channels);
+    for (int c = 0; c < channels; ++c) {
+        const float gate = std::clamp(p[c] / 6.0f + 0.5f, 0.0f, 1.0f);
+        if (gate_out) (*gate_out)[c] = gate;
+        x[c] *= gate;
+    }
     return true;
 }
 
-static bool run_block(const block & b, std::vector<float> & x, int & h, int & w) {
+static bool run_block(const block & b, std::vector<float> & x, int & h, int & w, context * debug = nullptr,
+                      const std::string & prefix = {}) {
     std::vector<float> y, z, out;
     int oh, ow, nh, nw;
     if (!apply_conv(b.dw, x, h, w, y, oh, ow)) return false;
+    if (debug && !prefix.empty()) debug->last_stages[prefix + "_dw"] = y;
     if (b.gate.valid) {
         std::vector<float> pooled(b.dw.ic, 0.0f);
         for (int c = 0; c < b.dw.ic; ++c)
             for (int i = 0; i < oh * ow; ++i) pooled[c] += y[(size_t)c * oh * ow + i] / float(oh * ow);
-        if (!run_se(b.gate, pooled, b.dw.ic)) return false;
+        const std::vector<float> pooled_before = pooled;
+        std::vector<float> gate;
+        if (!run_se(b.gate, pooled, b.dw.ic, debug && !prefix.empty() ? &gate : nullptr)) return false;
+        if (debug && !prefix.empty()) {
+            debug->last_stages[prefix + "_pool"] = pooled_before;
+            debug->last_stages[prefix + "_gate"] = gate;
+        }
         for (int c = 0; c < b.dw.ic; ++c)
-            for (int i = 0; i < oh * ow; ++i) y[(size_t)c * oh * ow + i] += y[(size_t)c * oh * ow + i] * pooled[c];
+            for (int i = 0; i < oh * ow; ++i) y[(size_t)c * oh * ow + i] *= pooled[c];
+        if (debug && !prefix.empty()) debug->last_stages[prefix + "_se"] = y;
     }
     if (!apply_conv(b.cm1, y, oh, ow, z, nh, nw)) return false;
     gelu(z);
+    if (debug && !prefix.empty()) debug->last_stages[prefix + "_cm1"] = z;
     if (!apply_conv(b.cm2, z, nh, nw, out, nh, nw)) return false;
     if (b.residual && out.size() == y.size()) add_inplace(out, y);
     x.swap(out);
+    if (debug && !prefix.empty()) debug->last_stages[prefix + "_out"] = x;
     h = nh;
     w = nw;
     return true;
 }
 
-static bool run_stem(const context * c, const std::vector<float> & input, int h, int w, std::vector<float> & out,
-                     int & oh, int & ow) {
+static bool run_stem(context * c, const std::vector<float> & input, int h, int w, std::vector<float> & out, int & oh,
+                     int & ow) {
     std::vector<float> x = input, y, branch;
     int H = h, W = w;
     if (!apply_conv(c->stem[0], x, H, W, y, oh, ow)) return false;
     relu(y);
+    c->last_stages["stem1"] = y;
     x.swap(y);
     H = oh;
     W = ow;
     std::vector<float> padded;
     pad_bottom_right(x, c->stem[0].oc, H, W, padded);
+    std::vector<float> embedding_padded = padded;
     if (!apply_conv(c->stem[1], padded, H + 1, W + 1, branch, oh, ow)) return false;
     relu(branch);
     pad_bottom_right(branch, c->stem[1].oc, oh, ow, padded);
     if (!apply_conv(c->stem[2], padded, oh + 1, ow + 1, y, oh, ow)) return false;
     relu(y);
     branch.swap(y);
+    c->last_stages["stem2b"] = branch;
     std::vector<float> pooled;
-    maxpool2_stride1(x, c->stem[0].oc, H, W, pooled);
-    const int cat_h = H - 1, cat_w = W - 1;
+    maxpool2_stride1(embedding_padded, c->stem[0].oc, H + 1, W + 1, pooled);
+    c->last_stages["stem_pooled"] = pooled;
+    const int cat_h = H, cat_w = W;
     std::vector<float> cat(pooled.size() + branch.size());
     std::memcpy(cat.data(), pooled.data(), pooled.size() * sizeof(float));
     std::memcpy(cat.data() + pooled.size(), branch.data(), branch.size() * sizeof(float));
     if (!apply_conv(c->stem[3], cat, cat_h, cat_w, y, oh, ow)) return false;
     relu(y);
     x.swap(y);
+    c->last_stages["stem3"] = x;
     H = oh;
     W = ow;
     if (!apply_conv(c->stem[4], x, H, W, out, oh, ow)) return false;
     relu(out);
+    c->last_stages["stem4"] = out;
     return true;
 }
 
@@ -511,12 +537,14 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     if (!run_stem(c, input, h, w, x, H, W)) return {};
     std::vector<std::vector<float>> stages;
     std::vector<int> hs, ws;
-    for (auto & ss : c->stages) {
-        for (auto & b : ss)
-            if (!run_block(b, x, H, W)) return {};
+    for (size_t si = 0; si < c->stages.size(); ++si) {
+        auto & ss = c->stages[si];
+        for (size_t bi = 0; bi < ss.size(); ++bi)
+            if (!run_block(ss[bi], x, H, W, c, si == 0 && bi == 0 ? "block0" : "")) return {};
         stages.push_back(x);
         hs.push_back(H);
         ws.push_back(W);
+        c->last_stages["backbone_stage" + std::to_string(stages.size() - 1)] = x;
     }
     if (c->variant == "medium") {
         std::vector<float> neck;
@@ -529,7 +557,11 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         if (!apply_deconv2(c->head_up, y, oh, ow, z, oh, ow)) return {};
         relu(z);
         if (!apply_deconv2(c->head_final, z, oh, ow, y, oh, ow)) return {};
+        c->last_stages["neck_output"] = neck;
         for (float & v : y) v = 1 / (1 + std::exp(-v));
+        c->last_prob = y;
+        c->last_h = oh;
+        c->last_w = ow;
         std::vector<box> out;
         append_component(y, oh, ow, threshold, out);
         float sx = float(w) / ow, sy = float(h) / oh;
@@ -598,6 +630,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         u.swap(resized);
         neck.insert(neck.end(), u.begin(), u.end());
     }
+    c->last_stages["neck_output"] = neck;
     std::vector<float> y, z;
     int oh, ow;
     if (!apply_conv(c->head_down, neck, nh, nw, y, oh, ow)) return {};
@@ -606,6 +639,9 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     relu(z);
     if (!apply_deconv2(c->head_final, z, oh, ow, y, oh, ow)) return {};
     for (float & v : y) v = 1 / (1 + std::exp(-v));
+    c->last_prob = y;
+    c->last_h = oh;
+    c->last_w = ow;
     std::vector<box> out;
     append_component(y, oh, ow, threshold, out);
     float sx = float(w) / ow, sy = float(h) / oh;
@@ -618,6 +654,21 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     return out;
 }
 
+const float * last_probability(const context * c, int * height, int * width) {
+    if (!c || c->last_prob.empty()) return nullptr;
+    if (height) *height = c->last_h;
+    if (width) *width = c->last_w;
+    return c->last_prob.data();
+}
+
+const float * last_stage(const context * c, const char * name, size_t * n) {
+    if (!c || !name) return nullptr;
+    auto it = c->last_stages.find(name);
+    if (it == c->last_stages.end()) return nullptr;
+    if (n) *n = it->second.size();
+    return it->second.data();
+}
+
 std::vector<box> detect_file(context * c, const char * path, float threshold) {
     int w, h, ch;
     auto * p = stbi_load(path, &w, &h, &ch, 3);
@@ -628,9 +679,16 @@ std::vector<box> detect_file(context * c, const char * path, float threshold) {
     std::vector<uint8_t> resized((size_t)rw * rh * 3);
     for (int y = 0; y < rh; ++y)
         for (int x = 0; x < rw; ++x) {
-            int sx = std::min(w - 1, int((x + 0.5f) * w / rw));
-            int sy = std::min(h - 1, int((y + 0.5f) * h / rh));
-            std::memcpy(resized.data() + ((size_t)y * rw + x) * 3, p + ((size_t)sy * w + sx) * 3, 3);
+            const float fy = std::max(0.0f, (y + 0.5f) * h / rh - 0.5f);
+            const float fx = std::max(0.0f, (x + 0.5f) * w / rw - 0.5f);
+            const int y0 = std::min(h - 1, int(fy)), y1 = std::min(h - 1, y0 + 1);
+            const int x0 = std::min(w - 1, int(fx)), x1 = std::min(w - 1, x0 + 1);
+            const float wy = fy - y0, wx = fx - x0;
+            for (int ch = 0; ch < 3; ++ch) {
+                const float a = p[((size_t)y0 * w + x0) * 3 + ch] * (1 - wx) + p[((size_t)y0 * w + x1) * 3 + ch] * wx;
+                const float b = p[((size_t)y1 * w + x0) * 3 + ch] * (1 - wx) + p[((size_t)y1 * w + x1) * 3 + ch] * wx;
+                resized[((size_t)y * rw + x) * 3 + ch] = (uint8_t)std::clamp(a * (1 - wy) + b * wy, 0.0f, 255.0f);
+            }
         }
     auto r = detect_raw(c, resized.data(), rw, rh, 3, threshold);
     for (auto & b : r) {

@@ -439,6 +439,9 @@ target_link_libraries(test-ocr-crop PRIVATE crispembed)
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
 
+add_executable(test-ppocrv6-det-diff tests/test_ppocrv6_det_diff.cpp)
+target_link_libraries(test-ppocrv6-det-diff PRIVATE crispembed)
+
 add_executable(test-ocr-region-router tests/test_ocr_region_router.cpp)
 target_link_libraries(test-ocr-region-router PRIVATE crispembed)
 
