@@ -388,13 +388,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!rgb || w <= 0 || h <= 0) return {};
         std::vector<ocr_pipeline::ocr_result> results;
         for (const auto & b : boxes) {
-            int x0 = std::max(0, (int)b.x - 2), y0 = std::max(0, (int)b.y - 2);
-            int x1 = std::min(w, (int)(b.x + b.w) + 2), y1 = std::min(h, (int)(b.y + b.h) + 2);
-            int cw = x1 - x0, ch = y1 - y0;
-            if (cw <= 0 || ch <= 0) continue;
-            std::vector<uint8_t> crop((size_t)cw * ch * 3);
-            for (int y = 0; y < ch; ++y)
-                std::memcpy(crop.data() + (size_t)y * cw * 3, rgb + ((size_t)(y0 + y) * w + x0) * 3, (size_t)cw * 3);
+            int cw = 0, ch = 0;
+            auto crop = ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
+            if (crop.empty()) continue;
+            const bool orientation_corrected = ocr_crop::orient_180_rgb(crop, cw, ch);
             int len = 0;
             const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
             if (!text || len <= 0) continue;
@@ -403,6 +400,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             r.text.assign(text, (size_t)len);
             r.confidence = b.score;
             r.rec_confidence = b.score;
+            r.orientation_corrected = orientation_corrected;
             results.push_back(std::move(r));
         }
         return results;
