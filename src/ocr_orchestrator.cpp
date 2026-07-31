@@ -8,6 +8,8 @@
 
 #include "ocr_orchestrator.h"
 
+#include <algorithm>
+
 #include "scan_cleanup.h"
 #include "ocr_pipeline.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
