@@ -57,6 +57,7 @@ def main():
         data = tensors[name]
         dtype = gguf.GGMLQuantizationType.F32
         if args.fp16 and data.ndim >= 2 and data.size >= 256:
+            data = data.astype(np.float16)
             dtype = gguf.GGMLQuantizationType.F16
         writer.add_tensor(name, data, raw_dtype=dtype)
 

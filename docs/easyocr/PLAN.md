@@ -17,7 +17,9 @@
   implemented and produces an 80-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
 - The real CRAFT checkpoint now converts to a 54-tensor BN-folded F16 GGUF;
-  native graph implementation and tensor diff remain next.
+  the persistent GPU graph builds and input parity is exact. The first open
+  graph divergence is localized to the VGG `basenet_2` tap; later taps recover
+  to global cosine above 0.999, so CRAFT parity is not yet accepted.
 
 ## Scope
 
@@ -66,6 +68,8 @@ metadata, not learned parameters.
       score-map captures, and box-count metadata.
 - [x] Add the CRAFT converter with explicit BN folding and source/license
       metadata; validate it against the released checkpoint.
+- [ ] Fix the first CRAFT VGG tap divergence, then validate U-Net feature,
+      score/link logits, and decoded boxes.
 - [x] Run the dumper against a real English Gen-2 checkpoint and inspect the
       generated `-ref.gguf` tensors.
 - [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit

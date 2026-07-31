@@ -68,7 +68,11 @@ def main():
 
         return hook
 
-    hooks.append(net.basenet.register_forward_hook(capture("basenet")))
+    def capture_basenet(_module, _inputs, output):
+        for index, value in enumerate(output):
+            captures[f"basenet_{index}"] = value.detach().cpu().float().numpy()
+
+    hooks.append(net.basenet.register_forward_hook(capture_basenet))
     hooks.append(net.upconv4.register_forward_hook(capture("upconv4")))
     hooks.append(net.conv_cls.register_forward_hook(capture("scores")))
     for name, module in net.named_modules():
