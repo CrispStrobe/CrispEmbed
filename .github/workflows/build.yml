@@ -60,11 +60,15 @@ jobs:
 
       - name: Smoke test (Unix)
         if: runner.os != 'Windows'
-        run: ./build/crispembed --help 2>&1 || true
+        run: |
+          ./build/crispembed --help 2>&1 || true
+          ./build/test-backend-smoke
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
-        run: .\build\Release\crispembed.exe --help 2>&1 || true
+        run: |
+          .\build\Release\crispembed.exe --help 2>&1 || true
+          .\build\Release\test-backend-smoke.exe
         shell: pwsh
 
       # Install into a staging prefix so the shared library is bundled with its
