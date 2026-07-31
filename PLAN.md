@@ -94,6 +94,77 @@ benchmark and regression manifest; then publish only to `cstr/` from the
 external model volume. This work must be merged from remote `main` before
 each landing checkpoint and pushed back to remote `main` after the checkpoint.
 
+### Historical German Fraktur OCR inventory and port plan (2026-07-31)
+
+The directly portable German-Fraktur model is the official Tesseract `frk`
+traineddata shipped by `tesseract-lang`. Local inspection with
+`combine_tessdata -u` confirms an LSTM network, `lstm-unicharset`, and
+`lstm-recoder`; the existing converter successfully produced
+`/Volumes/backups/ai/crispembed-gguf/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
+parameters). This is the first Fraktur model to use in the native
+`tesseract_lstm` GGUF path. Preserve the output alphabet, including long-s
+and historical characters, and keep the sensitive output layer at F32 for
+the first quantization gate. The upstream Tesseract language data and
+runtime are Apache-2.0; retain the exact source checksum and attribution in
+the eventual model README.
+
+| Source | What it contains | License/provenance | GGML/GGUF decision |
+|---|---|---|---|
+| [Tesseract `frk`](https://github.com/tesseract-ocr/tessdata) | Current LSTM Fraktur recognizer; local `frk.traineddata` is the 4.00-alpha synthetic-trained network with 100 output codes | Apache-2.0 Tesseract language data; verify exact tessdata revision/checksum per artifact | **Port now:** existing `convert-tesseract-to-gguf.py` and `tesseract_lstm.cpp`; test on German Fraktur crops and full pages |
+| [`paalberti/tesseract-dan-fraktur`](https://github.com/paalberti/tesseract-dan-fraktur) `deu_frak` | German Fraktur Tesseract training data, explicitly for Tesseract 3.02 | Repository `COPYING` says Apache-2.0; training corpus provenance is historical and must remain attributed | **Compatibility path only:** legacy Tesseract 3.02 data is not an LSTM GGUF input; do not feed it to the current converter without a legacy engine |
+| [`jze/ocropus-model_fraktur`](https://github.com/jze/ocropus-model_fraktur) | OCRopus `pyrnn.gz` and CLSTM Fraktur character models; reports 1.089% held-out error on its own test set | No explicit license found in repository; source books/datasets also need provenance review | **Do not redistribute/port yet:** license clarification required; format is not Tesseract LSTM |
+| [`chreul/19th-century-fraktur-OCR`](https://github.com/chreul/19th-century-fraktur-OCR) | MIT Calamari five-model voting ensemble, single Calamari model, and OCRopus model for 19th-century German Fraktur; requires binary input | Repository MIT; training datasets and publications retain their own provenance | **Benchmark externally; port later only if needed:** Calamari/OCRopus formats require a new importer/runtime or retraining into a supported graph |
+| SchriftLotse `party-v4` | Swin-base vision encoder plus 40M-parameter Llama decoder; page-wise recognition with line prompts | Apache-2.0 model release | **Not a near-term port:** custom Kraken multimodal architecture; potentially reusable after a dedicated Swin/Llama graph and tokenizer audit |
+| SchriftLotse Kraken BLLA | Trainable neural baseline/line segmenter | Apache-2.0 via Kraken/model release | **Not a near-term port:** PyTorch Kraken BLLA format and baseline geometry are separate from DBNet; evaluate as an external segmentation oracle first |
+| SchriftLotse `orli` | ConvNeXtV2-tiny encoder, multi-scale adapter, autoregressive transformer decoder for baselines and reading order | Apache-2.0 model release | **Not a near-term port:** new autoregressive layout graph; consider only after native line/ordering gates |
+| SchriftLotse `trocr-kurrent-19`, `trocr-kurrent-early`, `trocr-medieval` | Historical handwriting TrOCR checkpoints | MIT according to the inventory | **Potential later port:** assess against existing TrOCR encoder/decoder implementation; verify exact HF architecture and tokenizer before conversion |
+| SchriftLotse `trocr-modern` | German handwritten TrOCR checkpoint | AFL-3.0 according to the inventory | **Potential later port with license review:** same TrOCR compatibility check, but AFL-3.0 obligations must be documented |
+| SchriftLotse Microsoft TrOCR processor | Processor/tokenizer only, not a recognizer model | MIT according to the inventory | **Reuse only as preprocessing/tokenizer reference;** no standalone GGUF model |
+| SchriftLotse `qwen-embed` | Qwen3 Embedding 0.6B semantic search model | Apache-2.0 | **Already covered by decoder embedding infrastructure;** not an OCR recognizer |
+| [Xilinx `LSTM-PYNQ`](https://github.com/Xilinx/LSTM-PYNQ) `Fraktur_OCR.ipynb` | Quantized BiLSTM Fraktur OCR overlay for PYNQ; notebook constructs `PynqFrakturOCR`, downloads FPGA bitstream and Fraktur weights, and recognizes lines from *Wanderungen durch die Mark Brandenburg* | Repository BSD-3-Clause; the notebook cites the FINN-L paper and an Insiders Technologies text dataset, whose data/model provenance must be audited separately | **Reference only for now:** the model is coupled to FINN/PYNQ fixed-point hardware and does not expose a standard Tesseract/PyTorch checkpoint. Porting would require recovering the quantized layer weights, codec, preprocessing, and CTC decode from `lstm/src/network/fraktur`; do not assume it is interchangeable with `tesseract_lstm` GGUF |
+
+OCR-D’s historical-print catalogue narrows the practical Tesseract targets:
+
+| OCR-D/Tesseract resource | Meaning | Port status |
+|---|---|---|
+| `deu_latf` (formerly `frk`) | Current German Fraktur language model with some Antiqua coverage | **Directly portable:** use the local `frk.traineddata` LSTM conversion already validated; preserve the upstream name/revision mapping in metadata |
+| `Fraktur` | Broader Fraktur script model, including non-German characters and some Antiqua | **Candidate:** obtain the exact `.traineddata`, verify its `lstm` component, then run the same converter/parity/Fraktur regression gates |
+| GT4HistOCR-derived models (`GT4HistOCR_*`, `frak2021`, UB Mannheim models) | Historical-print models trained from GT4HistOCR and related German/Fraktur corpora; OCR-D recommends these for broad historical coverage | **Highest next priority:** locate the exact `.traineddata` artifact and license/attribution terms, convert if it contains an LSTM component, and compare against `deu_latf` on our corpus |
+| `deu_frak` | Older Tesseract 3 German Fraktur model | **Legacy benchmark only:** OCR-D explicitly says it is no longer recommended; it is not a current LSTM conversion input |
+
+OCR-D documents that Tesseract 4.1+ `.traineddata` files contain an
+`unicharset` and neural `lstm` weights, and that models can be combined (for
+example `deu+deu_latf` or `Fraktur+Latin`) at an accuracy/runtime cost. The
+official Tesseract language data is Apache-2.0, but GT4HistOCR training data is
+CC-BY-4.0 and individual UB Mannheim derivatives may have additional
+attribution or release conditions. Record the exact model URL, checksum,
+training corpus, and license before placing any derivative in the shared
+model volume or publishing a GGUF.
+
+Required Fraktur implementation sequence:
+
+1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
+   `/Volumes/backups/ai/crispembed-gguf/`; never commit large weights.
+2. Add an explicit `tesseract-fraktur` stage/profile using DBNet line crops →
+   grayscale crop → `tesseract_lstm` `frk` model, with the normal Tesseract
+   path remaining available for modern German.
+3. Add a Fraktur regression fixture containing the German title crop and
+   full-page `german_official_print.jpg`; compare native GGUF, Python/
+   Tesseract, and system Tesseract `-l frk` outputs with CER/WER where an
+   oracle exists. Preserve `ſ`, `ß`, ligatures, and Unicode normalization in
+   the comparison.
+4. Run crispasr-diff-style intermediate parity for the converted `frk` model,
+   then test F32, head-only Q8, and debug Q4. Do not publish a quant until
+   the Fraktur crop remains readable and the output-layer parity gate passes.
+5. Keep `deu_frak` and the Calamari/OCRopus models as separately licensed
+   external benchmarks; do not silently convert or redistribute them as
+   Apache artifacts.
+6. Add OCR-D/GT4HistOCR model comparisons (`deu_latf`, `Fraktur`, and the
+   best available `frak2021`/GT4HistOCR derivative) before deciding whether
+   `tesseract-frk-f32.gguf` is the production default. Include the Xilinx
+   LSTM-PYNQ result only as a hardware-reference baseline unless its weights
+   and codec can be legally and technically recovered.
+
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
 Metal; DBNet→EasyOCR crop smoke now runs with the existing cstr/dbnet-ic15
