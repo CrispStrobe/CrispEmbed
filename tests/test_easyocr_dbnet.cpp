@@ -32,7 +32,8 @@ int main(int argc, char ** argv) {
         std::vector<easyocr_layout::region> regions;
         regions.reserve(boxes.size());
         for (const auto & b : boxes) regions.push_back({ b.x, b.y, b.w, b.h, b.score });
-        const auto lines = word_mode ? easyocr_layout::order_words(regions) : easyocr_layout::group_lines(regions);
+        const auto lines = easyocr_layout::order_regions(regions, word_mode ? easyocr_layout::ordering_mode::words
+                                                                            : easyocr_layout::ordering_mode::lines);
         std::vector<easyocr_layout::word> handoff;
         std::printf("dbnet-easyocr mode=%s units=%zu\n", word_mode ? "words" : "lines", lines.size());
         for (size_t i = 0; i < lines.size(); ++i) {
