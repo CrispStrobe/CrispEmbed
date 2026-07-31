@@ -9,6 +9,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <chrono>
 #include <vector>
 
 int main(int argc, char ** argv) {
@@ -51,16 +52,27 @@ int main(int argc, char ** argv) {
         ggml_backend_tensor_set(ggml_graph_get_tensor(graph, a->name), av.data(), 0, av.size() * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(graph, b->name), bv.data(), 0, bv.size() * sizeof(float));
     }
-    const bool computed = allocated && ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS;
+    bool computed = allocated && ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS;
     if (computed)
         ggml_backend_tensor_get(ggml_graph_get_tensor(graph, out->name), ov.data(), 0, ov.size() * sizeof(float));
+    double compute_ms = 0.0;
+    if (computed) {
+        constexpr int measured_runs = 5;
+        auto begin = std::chrono::steady_clock::now();
+        bool measured_ok = true;
+        for (int i = 0; i < measured_runs; ++i)
+            measured_ok = ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS && measured_ok;
+        auto end = std::chrono::steady_clock::now();
+        compute_ms = std::chrono::duration<double, std::milli>(end - begin).count() / measured_runs;
+        computed = measured_ok;
+    }
     const bool cpu_requested = argc == 2 && std::strcmp(argv[1], "cpu") == 0;
     const bool requested_device_available = argc != 2 || cpu_requested || type != GGML_BACKEND_DEVICE_TYPE_CPU;
     bool correct = computed && requested_device_available;
     for (float v : ov) correct = correct && v > 3.99f && v < 4.01f;
-    std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d device_available=%d correct=%d\n",
+    std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d compute_ms=%.3f device_available=%d correct=%d\n",
                 argc == 2 ? argv[1] : "auto", name ? name : "unknown", (int)type,
-                ggml_graph_n_nodes(graph), computed ? 1 : 0, requested_device_available ? 1 : 0, correct ? 1 : 0);
+                ggml_graph_n_nodes(graph), computed ? 1 : 0, compute_ms, requested_device_available ? 1 : 0, correct ? 1 : 0);
     if (alloc) ggml_gallocr_free(alloc);
     ggml_free(ctx);
     ggml_backend_free(backend);
