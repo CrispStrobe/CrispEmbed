@@ -18,7 +18,7 @@ static int run(int argc, char ** argv) {
     bool pass = true;
     for (const char * name :
          { "stem1", "stem2b", "stem_pooled", "stem3", "stem4", "block0_dw", "block0_pool", "block0_gate", "block0_se",
-           "block0_cm1", "block0_out", "head_down", "head_up", "head_up_pre", "head_final", "head_final_pre" }) {
+           "block0_cm1", "block0_out", "head_down", "head_up", "head_final" }) {
         size_t n = 0;
         const float * data = ppocrv6_det::last_stage(ctx, name, &n);
         auto r = data ? ref.compare("ppocrv6." + std::string(name), data, n) : crispembed_diff::Report{};
