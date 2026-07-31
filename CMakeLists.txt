@@ -691,6 +691,9 @@ add_executable(test-pplcnet-orientation tests/test_pplcnet_orientation.cpp)
 target_include_directories(test-pplcnet-orientation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-pplcnet-orientation PRIVATE crispembed)
 
+add_executable(test-backend-smoke tests/test_backend_smoke.cpp)
+target_link_libraries(test-backend-smoke PRIVATE crispembed)
+
 endif() # NOT iOS
 
 # ---------------------------------------------------------------------------
