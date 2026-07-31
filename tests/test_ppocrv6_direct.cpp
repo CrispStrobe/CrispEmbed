@@ -27,7 +27,8 @@ int main(int argc, char ** argv) {
         const auto started = std::chrono::steady_clock::now();
         const auto boxes = ppocrv6_det::detect_file(det, argv[3], 0.2f);
         size_t region_limit = boxes.size();
-        if (const char * env = std::getenv("PPOCRV6_DIRECT_MAX_REGIONS")) region_limit = std::min(region_limit, std::strtoul(env, nullptr, 10));
+        if (const char * env = std::getenv("PPOCRV6_DIRECT_MAX_REGIONS"))
+            region_limit = std::min(region_limit, std::strtoul(env, nullptr, 10));
         size_t rotated = 0;
         std::printf("ppocrv6-direct detector_regions=%zu image=%dx%d orientation=%s\n", boxes.size(), w, h,
                     ori ? "pplcnet" : "heuristic-disabled");
@@ -42,17 +43,22 @@ int main(int argc, char ** argv) {
                 const auto classified = pplcnet_orientation::classify_raw(ori, crop.data(), cw, ch, 3);
                 angle = classified.angle;
                 orientation_confidence = classified.confidence;
-                if (angle == 180) { ocr_crop::rotate_180_rgb(crop, cw, ch); rotated++; }
+                if (angle == 180) {
+                    ocr_crop::rotate_180_rgb(crop, cw, ch);
+                    rotated++;
+                }
             }
             int n = 0;
             const char * text = ppocrv6_ocr_recognize_raw(rec, crop.data(), cw, ch, 3, &n);
             std::printf("ppocrv6-direct region=%zu score=%.4f quad=(%.1f,%.1f)(%.1f,%.1f)(%.1f,%.1f)(%.1f,%.1f) "
-                        "crop=%dx%d angle=%d orientation_confidence=%.5f text=%.*s\n", i, b.score, b.qx[0], b.qy[0],
-                        b.qx[1], b.qy[1], b.qx[2], b.qy[2], b.qx[3], b.qy[3], cw, ch, angle, orientation_confidence, n,
-                        text ? text : "");
+                        "crop=%dx%d angle=%d orientation_confidence=%.5f text=%.*s\n",
+                        i, b.score, b.qx[0], b.qy[0], b.qx[1], b.qy[1], b.qx[2], b.qy[2], b.qx[3], b.qy[3], cw, ch,
+                        angle, orientation_confidence, n, text ? text : "");
         }
-        const double elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
-        std::printf("ppocrv6-direct summary processed=%zu rotated_180=%zu elapsed_ms=%.3f\n", region_limit, rotated, elapsed_ms);
+        const double elapsed_ms =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
+        std::printf("ppocrv6-direct summary processed=%zu rotated_180=%zu elapsed_ms=%.3f\n", region_limit, rotated,
+                    elapsed_ms);
         if (boxes.empty()) rc = 5;
     }
     ppocrv6_ocr_free(rec);
