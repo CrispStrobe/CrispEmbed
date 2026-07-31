@@ -133,6 +133,9 @@ recognizer and LayoutLM consumer.
       `tools/compare_easyocr_manifests.py`; native serialization and comparator
       self-check pass on the 98-word DBNet page run, with explicit mismatch
       coverage in `tests/test_easyocr_manifest_compare.py`.
+- [x] Add native handoff invariants for word-mode line/x ordering and
+      normalized-box bounds; external Tesseract TSV geometry/text parity is
+      still pending.
 - [x] Add independent postprocessing tests: grouping, reading order, CTC
       collapse, dictionary/vocabulary validation, EasyOCR custom-mean
       confidence, and box normalization. The production recognizer now uses

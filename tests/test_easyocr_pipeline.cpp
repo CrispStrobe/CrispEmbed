@@ -66,6 +66,23 @@ static int crispembed_test_main(int argc, char ** argv) {
         easyocr_pipeline::free(ctx);
         return 4;
     }
+    int previous_line = -1;
+    float previous_x = -1.0f;
+    for (const auto & item : results) {
+        const auto & box = item.normalized;
+        if (box.x0 < 0 || box.y0 < 0 || box.x1 < box.x0 || box.y1 < box.y0 || box.x1 > 1000 || box.y1 > 1000) {
+            easyocr_pipeline::free(ctx);
+            return 6;
+        }
+        if (mode == easyocr_layout::ordering_mode::words) {
+            if (item.word.line < previous_line || (item.word.line == previous_line && item.word.x < previous_x)) {
+                easyocr_pipeline::free(ctx);
+                return 7;
+            }
+            previous_line = item.word.line;
+            previous_x = item.word.x;
+        }
+    }
     for (size_t i = 0; i < results.size(); ++i) {
         const auto & item = results[i];
         std::printf("result=%zu line=%d box=%.1f,%.1f %.1fx%.1f det_conf=%.4f rec_conf=%.4f norm=%d,%d,%d,%d text=%s\n",
@@ -75,7 +92,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     if (argc == 6 && !write_manifest(argv[5], argv[3], mode, results)) {
         easyocr_pipeline::free(ctx);
-        return 5;
+        return 8;
     }
     easyocr_pipeline::free(ctx);
     return 0;
