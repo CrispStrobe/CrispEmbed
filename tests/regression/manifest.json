@@ -1051,7 +1051,7 @@
         "revision": "main"
       },
       "detector": {
-        "repo": "mlx-community/PP-OCRv6_tiny-det-GGUF",
+        "repo": "mlx-community/PP-OCRv6-tiny-det-GGUF",
         "file": "PP-OCRv6_tiny_det-f16.gguf",
         "revision": "main"
       },
