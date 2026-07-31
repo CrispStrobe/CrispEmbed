@@ -13,6 +13,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -27,6 +28,8 @@ def main() -> int:
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--variants", nargs="+", default=["tiny", "small", "medium"],
                         choices=["tiny", "small", "medium"])
+    parser.add_argument("--timeout", type=float, default=900.0,
+                        help="maximum seconds per model variant (default: 900)")
     args = parser.parse_args()
     all_rows = []
     for variant in args.variants:
@@ -38,7 +41,14 @@ def main() -> int:
         env = os.environ.copy()
         env["CRISPEMBED_MODELS_DIR"] = str(args.models_dir)
         env["CRISPEMBED_PPOCRV6_VARIANT"] = variant
-        proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False)
+        started = time.monotonic()
+        try:
+            proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False,
+                                  timeout=args.timeout)
+        except subprocess.TimeoutExpired as exc:
+            elapsed = round(time.monotonic() - started, 2)
+            raise SystemExit(f"native PP-OCRv6 {variant} regression timed out after {elapsed}s; "
+                             "use --timeout to override") from exc
         rows = []
         for line in proc.stdout.splitlines():
             match = ROW.match(line)
