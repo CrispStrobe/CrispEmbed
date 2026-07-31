@@ -25,6 +25,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.7 explicit multi-page autorotate option for `/ocr/document`, with confidence gate and temporary rotated page handoff | **IN PROGRESS** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -428,10 +429,14 @@ more than another restoration model.
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
    upside-down, and tightly clipped lines.
 
-7. **O10.7 — PDF render/autorotate path.** Add native page rendering and
+7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation slice
+   implemented in `feat/ppocr-next-20260731`;** add native page rendering and
    page-level accumulation where the platform supports it. Reuse PDF DPI
    profiling to select render DPI, then apply page orientation and the normal
-   document pipeline. Keep the existing parser-only path for minimal builds.
+   document pipeline. `/ocr/document` now accepts explicit
+   `"autorotate": true`, applies the confidence-gated fallback, and hands
+   rotated temporary pages through the normal renderer. Keep the existing
+   parser-only path for minimal builds.
 
 8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate and VLM
    cleanup safeguard slices implemented in `feat/ppocr-next-20260731`;**

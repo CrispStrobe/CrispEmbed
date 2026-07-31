@@ -63,6 +63,35 @@ using core_json::json_escape;
 using core_json::json_extract_number;
 using core_json::json_extract_strings;
 
+static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {
+    if (!path || !rgb || w <= 0 || h <= 0) return false;
+    const int out_w = (angle == 90 || angle == 270) ? h : w;
+    const int out_h = (angle == 90 || angle == 270) ? w : h;
+    std::vector<uint8_t> rotated((size_t)out_w * out_h * 3);
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            int ox = x, oy = y;
+            if (angle == 90) {
+                ox = h - 1 - y;
+                oy = x;
+            } else if (angle == 180) {
+                ox = w - 1 - x;
+                oy = h - 1 - y;
+            } else if (angle == 270) {
+                ox = y;
+                oy = w - 1 - x;
+            }
+            memcpy(rotated.data() + ((size_t)oy * out_w + ox) * 3, rgb + ((size_t)y * w + x) * 3, 3);
+        }
+    }
+    FILE * f = fopen(path, "wb");
+    if (!f) return false;
+    fprintf(f, "P6\n%d %d\n255\n", out_w, out_h);
+    const size_t written = fwrite(rotated.data(), 1, rotated.size(), f);
+    fclose(f);
+    return written == rotated.size();
+}
+
 int main(int argc, char ** argv) {
     std::string model_path;
     std::string host = "127.0.0.1";
@@ -3238,12 +3267,13 @@ int main(int argc, char ** argv) {
     //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
     //   OR application/json: {"images": ["/path/page1.png", "/path/page2.png"],
     //                         "format": "text|hocr|alto|pdf",
-    //                         "cleanup": true, "dewarp": false}
+    //                         "cleanup": true, "dewarp": false, "autorotate": false}
     // Returns: rendered document in the requested format
     svr.Post("/ocr/document", [&](const httplib::Request & req, httplib::Response & res) {
         std::string format = "text";
         bool do_cleanup = true;
         bool do_dewarp = false;
+        bool do_autorotate = false;
         std::vector<std::string> temp_files; // track files to clean up
 
         // Collect page images (either from multipart or JSON paths)
@@ -3266,6 +3296,10 @@ int main(int argc, char ** argv) {
                     do_dewarp = file.content == "true" || file.content == "1";
                     continue;
                 }
+                if (name == "autorotate") {
+                    do_autorotate = file.content == "true" || file.content == "1";
+                    continue;
+                }
                 // Must be a page image
                 char tmp_path[256];
                 snprintf(tmp_path, sizeof(tmp_path), "/tmp/crispembed_doc_%d_%d.img", (int)getpid(), page_idx++);
@@ -3285,6 +3319,11 @@ int main(int argc, char ** argv) {
                 auto q1 = body.find('"', fpos + 8);
                 auto q2 = body.find('"', q1 + 1);
                 if (q1 != std::string::npos && q2 != std::string::npos) format = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+            auto rpos = body.find("\"autorotate\"");
+            if (rpos != std::string::npos) {
+                auto value = body.find_first_not_of(" \t\r\n:", rpos + 12);
+                do_autorotate = value != std::string::npos && body.compare(value, 4, "true") == 0;
             }
             // Parse "images" array
             auto apos = body.find("\"images\"");
@@ -3333,8 +3372,28 @@ int main(int argc, char ** argv) {
 
         int total_regions = 0;
         for (size_t pi = 0; pi < page_paths.size(); pi++) {
+            std::string page_source = page_paths[pi];
+            if (do_autorotate) {
+                int ow = 0, oh = 0, och = 0;
+                unsigned char * gray = stbi_load(page_source.c_str(), &ow, &oh, &och, 1);
+                float orientation_confidence = 0.0f;
+                const int angle = gray ? crispembed_detect_page_orientation(gray, ow, oh, &orientation_confidence) : 0;
+                if (gray) stbi_image_free(gray);
+                if (angle != 0 && orientation_confidence >= 0.55f) {
+                    int rw = 0, rh = 0, rc = 0;
+                    unsigned char * rgb = stbi_load(page_source.c_str(), &rw, &rh, &rc, 3);
+                    char rotated_path[256];
+                    snprintf(rotated_path, sizeof(rotated_path), "/tmp/crispembed_doc_rot_%d_%zu.ppm", (int)getpid(),
+                             pi);
+                    if (rgb && write_rotated_ppm(rotated_path, rgb, rw, rh, angle)) {
+                        page_source = rotated_path;
+                        temp_files.push_back(page_source);
+                    }
+                    if (rgb) stbi_image_free(rgb);
+                }
+            }
             int w = 0, h = 0, ch = 0;
-            unsigned char * img = stbi_load(page_paths[pi].c_str(), &w, &h, &ch, 0);
+            unsigned char * img = stbi_load(page_source.c_str(), &w, &h, &ch, 0);
             if (!img) continue;
 
             // Optional dewarp (grayscale)
@@ -3364,8 +3423,8 @@ int main(int argc, char ** argv) {
 
             if (ocr_orch_ctx) {
                 std::lock_guard<std::mutex> lock(ocr_orch_mutex);
-                results = crispembed_ocr_pipeline_run(ocr_orch_ctx, page_paths[pi].c_str(), &n_results, &full_text,
-                                                      &mean_conf);
+                results =
+                    crispembed_ocr_pipeline_run(ocr_orch_ctx, page_source.c_str(), &n_results, &full_text, &mean_conf);
             } else if (ocr_model_ctx) {
                 std::lock_guard<std::mutex> lock(ocr_model_mutex);
                 int out_len = 0;
@@ -3393,11 +3452,11 @@ int main(int argc, char ** argv) {
                     lines[i] = { &words[i],        1, (int)results[i].x, (int)results[i].y, (int)results[i].w,
                                  (int)results[i].h };
                 }
-                ocr_render_page page = { lines.data(), n_results, w, h, page_paths[pi].c_str() };
+                ocr_render_page page = { lines.data(), n_results, w, h, page_source.c_str() };
                 ocr_render_add_page(renderer, &page);
             } else {
                 // Empty page
-                ocr_render_page page = { nullptr, 0, w, h, page_paths[pi].c_str() };
+                ocr_render_page page = { nullptr, 0, w, h, page_source.c_str() };
                 ocr_render_add_page(renderer, &page);
             }
         }
