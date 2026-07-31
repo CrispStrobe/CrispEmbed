@@ -5,6 +5,7 @@
 #include "core/gpu_backend_pref.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include "ggml.h"
 
 #include <cstdio>
@@ -20,8 +21,9 @@ int main(int argc, char ** argv) {
         std::fprintf(stderr, "usage: %s [backend]\n", argv[0]);
         return 2;
     }
-    if (argc == 2) crispasr_set_gpu_backend_pref(argv[1]);
-    ggml_backend_t backend = crispasr_init_gpu_backend();
+    const bool cpu_requested = argc == 2 && std::strcmp(argv[1], "cpu") == 0;
+    if (argc == 2 && !cpu_requested) crispasr_set_gpu_backend_pref(argv[1]);
+    ggml_backend_t backend = cpu_requested ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) {
         std::fprintf(stderr, "backend smoke: no backend available\n");
         return 1;
@@ -66,7 +68,6 @@ int main(int argc, char ** argv) {
         compute_ms = std::chrono::duration<double, std::milli>(end - begin).count() / measured_runs;
         computed = measured_ok;
     }
-    const bool cpu_requested = argc == 2 && std::strcmp(argv[1], "cpu") == 0;
     const bool requested_device_available = argc != 2 || cpu_requested || type != GGML_BACKEND_DEVICE_TYPE_CPU;
     bool correct = computed && requested_device_available;
     for (float v : ov) correct = correct && v > 3.99f && v < 4.01f;
