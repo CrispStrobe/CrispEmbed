@@ -24,7 +24,9 @@ ROW = re.compile(r"^  INFO: (?P<fixture>.+): (?P<regions>\d+) regions, "
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--test-binary", default="build/test-ocr-orchestrator", type=Path)
-    parser.add_argument("--models-dir", required=True, type=Path)
+    default_models_dir = Path(os.environ.get("CRISPEMBED_GGUF_DIR", "/Volumes/backups/ai/crispembed-gguf"))
+    parser.add_argument("--models-dir", type=Path, default=default_models_dir,
+                        help="GGUF cache directory (default: CRISPEMBED_GGUF_DIR or /Volumes/backups/ai/crispembed-gguf)")
     parser.add_argument("--json-out", type=Path)
     parser.add_argument("--variants", nargs="+", default=["tiny", "small", "medium"],
                         choices=["tiny", "small", "medium"])
