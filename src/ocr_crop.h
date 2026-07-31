@@ -48,6 +48,7 @@ std::vector<uint8_t> prepare(const uint8_t * pixels, int width, int height, int 
 // when a 180° rotation was applied.
 bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height);
 bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height);
+void rotate_180_rgb(std::vector<uint8_t> & pixels, int width, int height);
 orientation_info orient_180_rgb_info(std::vector<uint8_t> & pixels, int width, int height);
 orientation_info orient_180_gray_info(std::vector<uint8_t> & pixels, int width, int height);
 

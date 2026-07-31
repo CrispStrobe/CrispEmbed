@@ -512,6 +512,13 @@ static void test_c_api() {
         CHECK(n_res == 0, "C API run with no models → 0 regions");
         // full_text may be NULL or empty
         CHECK(!full_text || full_text[0] == '\0' || n_res == 0, "C API run → empty text");
+        int n_metrics = -1;
+        const crispembed_ocr_stage_metric * metrics = crispembed_ocr_pipeline_stage_metrics(ctx, &n_metrics);
+        CHECK(n_metrics >= 0, "C API stage metrics query succeeds");
+        if (n_metrics > 0) {
+            CHECK(metrics != nullptr, "C API stage metrics pointer is present");
+            CHECK(metrics[0].index >= 0 && metrics[0].elapsed_ms >= 0.0, "C API stage metric fields are valid");
+        }
 
         crispembed_ocr_pipeline_free(ctx);
     }
