@@ -112,8 +112,10 @@ recognizer and LayoutLM consumer.
       `tools/compare_easyocr_manifests.py`; native serialization and comparator
       self-check pass on the 98-word DBNet page run, with explicit mismatch
       coverage in `tests/test_easyocr_manifest_compare.py`.
-- [ ] Add independent postprocessing tests: grouping, reading order, CTC
-      collapse, dictionary lookup, confidence, and box normalization.
+- [x] Add independent postprocessing tests: grouping, reading order, CTC
+      collapse, dictionary/vocabulary validation, EasyOCR custom-mean
+      confidence, and box normalization. The production recognizer now uses
+      the same nonblank confidence convention.
 - [ ] Exercise the structured handoff with LayoutLMv2/v3 using
       `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare

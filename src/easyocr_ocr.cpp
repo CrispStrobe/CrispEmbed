@@ -3,6 +3,7 @@
 #include "core/gpu_backend_pref.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
+#include "easyocr_postprocess.h"
 #include "image_preprocess.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -298,9 +299,10 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
 
     std::vector<float> logits((size_t)c->classes * c->time_steps);
     ggml_backend_tensor_get(c->logits, logits.data(), 0, logits.size() * sizeof(float));
-    c->result.clear();
-    c->last_confidence = 0.0f;
-    int prev = 0;
+    std::vector<int> best_tokens;
+    std::vector<float> nonblank_probabilities;
+    best_tokens.reserve(c->time_steps);
+    nonblank_probabilities.reserve(c->time_steps);
     for (int t = 0; t < c->time_steps; ++t) {
         float max_logit = logits[(size_t)t * c->classes];
         for (int k = 1; k < c->classes; ++k) max_logit = std::max(max_logit, logits[(size_t)t * c->classes + k]);
@@ -315,11 +317,17 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
                 best = k;
             }
         }
-        c->last_confidence += best_probability;
-        if (best && best != prev && best < (int)c->tokens.size()) c->result += c->tokens[(size_t)best];
-        prev = best;
+        best_tokens.push_back(best);
+        if (best != 0) nonblank_probabilities.push_back(best_probability);
     }
-    c->last_confidence /= std::max(1, c->time_steps);
+    std::vector<std::string> vocabulary;
+    if (c->tokens.size() > 1) vocabulary.assign(c->tokens.begin() + 1, c->tokens.end());
+    int invalid_token = -1;
+    if (!easyocr_postprocess::ctc_greedy_decode(best_tokens, vocabulary, &c->result, &invalid_token)) {
+        fprintf(stderr, "easyocr: invalid CTC token %d (vocabulary size=%zu)\n", invalid_token, vocabulary.size());
+        c->result.clear();
+    }
+    c->last_confidence = easyocr_postprocess::confidence_custom_mean(nonblank_probabilities);
     if (out_len) *out_len = (int)c->result.size();
     return c->result.c_str();
 }
