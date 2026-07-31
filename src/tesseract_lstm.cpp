@@ -568,11 +568,9 @@ const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
-    // Tesseract's LSTM is trained on lines normalized to a fixed height
-    // (input_height, typically 36); the conv/maxpool + SummLSTM stack assumes
-    // it (H2 = H/3). Resize the input line to input_height (bilinear,
-    // aspect-preserving) before normalization — otherwise a differently-sized
-    // line produces garbage. (recognize() is documented to do this.)
+    // Tesseract's ImageData::PreScale calls Leptonica pixScale. For the usual
+    // upscaling path this is pixScaleGrayLI: top-left-corner linear
+    // interpolation on a 1/16 fixed-point grid, with edge replication.
     auto t0 = std::chrono::steady_clock::now();
     const uint8_t * src = pixels;
     int W = width, H = height;
@@ -582,30 +580,45 @@ const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_
         int dw = (int)std::lround((double)width * dh / (double)height);
         if (dw < 1) dw = 1;
         resized.resize((size_t)dw * dh);
+        const float scx = 16.0f * (float)width / (float)dw;
+        const float scy = 16.0f * (float)height / (float)dh;
         for (int y = 0; y < dh; y++) {
-            float sy = ((y + 0.5f) * height / dh) - 0.5f;
-            int y0 = (int)std::floor(sy);
-            float fy = sy - y0;
-            int y0c = std::min(std::max(y0, 0), height - 1);
-            int y1c = std::min(std::max(y0 + 1, 0), height - 1);
+            const int ypm = (int)(scy * (float)y);
+            const int yp = ypm >> 4;
+            const int yf = ypm & 0x0f;
+            const int y1 = std::min(yp + 1, height - 1);
             for (int x = 0; x < dw; x++) {
-                float sx = ((x + 0.5f) * width / dw) - 0.5f;
-                int x0 = (int)std::floor(sx);
-                float fx = sx - x0;
-                int x0c = std::min(std::max(x0, 0), width - 1);
-                int x1c = std::min(std::max(x0 + 1, 0), width - 1);
-                float p00 = pixels[y0c * width + x0c];
-                float p01 = pixels[y0c * width + x1c];
-                float p10 = pixels[y1c * width + x0c];
-                float p11 = pixels[y1c * width + x1c];
-                float top = p00 + (p01 - p00) * fx;
-                float bot = p10 + (p11 - p10) * fx;
-                resized[(size_t)y * dw + x] = (uint8_t)std::lround(top + (bot - top) * fy);
+                const int xpm = (int)(scx * (float)x);
+                const int xp = xpm >> 4;
+                const int xf = xpm & 0x0f;
+                const int x1 = std::min(xp + 1, width - 1);
+                const int v00 = pixels[yp * width + xp];
+                const int v10 = pixels[yp * width + x1];
+                const int v01 = pixels[y1 * width + xp];
+                const int v11 = pixels[y1 * width + x1];
+                resized[(size_t)y * dw + x] = (uint8_t)(((16 - xf) * (16 - yf) * v00 + xf * (16 - yf) * v10 +
+                                                         (16 - xf) * yf * v01 + xf * yf * v11 + 128) /
+                                                        256);
             }
         }
         src = resized.data();
         W = dw;
         H = dh;
+    }
+
+    if (std::getenv("TESSERACT_DIFF_DEBUG")) {
+        uint8_t lo = src[0], hi = src[0];
+        int lo_i = 0;
+        for (int i = 1; i < W * H; ++i) {
+            if (src[i] < lo) {
+                lo = src[i];
+                lo_i = i;
+            }
+            hi = std::max(hi, src[i]);
+        }
+        fprintf(stderr, "C++ resized debug: %dx%d min=%u max=%u first=%u %u %u %u\n", W, H, (unsigned)lo, (unsigned)hi,
+                (unsigned)src[0], (unsigned)src[1], (unsigned)src[2], (unsigned)src[3]);
+        fprintf(stderr, "C++ resized min location: x=%d y=%d\n", lo_i % W, lo_i / W);
     }
 
     // Normalize image (Tesseract-style ComputeBlackWhite + SetPixel)

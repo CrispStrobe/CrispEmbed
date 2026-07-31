@@ -152,14 +152,22 @@ recognizer and LayoutLM consumer.
       compare page segmentation/spacing independently.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the actual reference run and stage/output parity remain open.
-- [x] Align the diagnostic reference dumper's resize contract with native
-      half-pixel bilinear uint8 rounding; full Tesseract page preprocessing
-      parity remains a separate acceptance gate.
-- [x] Run the exact hashed Homebrew English diagnostic reference: decoded
-      native/Python output agrees (`a`), input cosine is `0.999658`, and all
-      9 captured stages pass the agreed `0.99` gate with mine/ref magnitude
-      reports; BiLSTM stages 1/2 remain below the stricter `0.999` review
-      threshold and are not claimed exact.
+- [x] Align the diagnostic reference dumper and native recognizer with
+      Tesseract's actual Leptonica `pixScaleGrayLI` fixed-16 bilinear
+      contract (top-left sampling and edge replication); the earlier
+      half-pixel resize was wrong. Full Tesseract page preprocessing parity
+      remains a separate acceptance gate.
+- [x] Expand the Tesseract lane with CC0 Commons OCR-document and receipt
+      fixtures, including source URLs, licenses, and SHA-256 metadata. The
+      receipt crop that previously failed at `after_conv_fc` now passes all
+      9 diff stages at cosine `1.000000`; native/Python raw greedy output is
+      still distinct from the CLI's normal choice-search output.
+- [x] Run exact hashed Homebrew English references after the Leptonica fix:
+      the controlled line fixture decodes identically in native/Python as
+      `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
+      passing the 0.99 gate and logits cosine `0.999863`. The full-page image
+      is not a valid single-line recognizer fixture; page segmentation remains
+      a separate acceptance gate.
 - [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
       languages, then run GPU performance A/B.
 
