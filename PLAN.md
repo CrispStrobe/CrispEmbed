@@ -30,6 +30,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
 | 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** explicit Tesseract Fraktur profile: DBNet page detection, grayscale line crops, and `tesseract-frk` GGUF recognition; preserve the existing generic Tesseract path | **COMPLETED — grouped full-page smoke: 21 regions, 1,017 chars, mean confidence 0.872; 74/74 tests** |
 | 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** reproducible native-vs-system Fraktur CER/WER harness for exact line and full-page fixtures, preserving long-s and Unicode NFC | **COMPLETED — page and direct-line modes** |
+| 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** regenerate Fraktur F32/Q8 artifacts with exact source `training_flags=65` / `int_mode=true`; retain F32 output head | **IN PROGRESS — metadata fixed; CLI-equivalent int8 arithmetic pending** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **COMPLETED** |
@@ -172,7 +173,8 @@ Required Fraktur implementation sequence:
    engine value 15, `tesseract_fraktur_stage()`, and a backup-volume smoke test
    on `german_official_print.jpg` using `dbnet-ic15-f16.gguf` plus
    `tesseract-frk-q8_0.gguf` (21 line regions, 1,017 characters, mean
-   confidence 0.872).
+   confidence 0.872, native stage 11.07 s; original Tesseract is 145 words,
+   1,021 characters, 1.84 s on the same page).
 3. Add a Fraktur regression fixture containing the German title crop and
    full-page `german_official_print.jpg`; compare native GGUF, Python/
    Tesseract, and system Tesseract `-l frk` outputs with CER/WER where an
@@ -192,7 +194,10 @@ Required Fraktur implementation sequence:
    **Completed for refreshed exact-image references:** F32 passes all 9 stages
    at cosine 1.000000; mixed Q8 passes all 9 with worst cosine 0.999873 and
    keeps the output head F32; debug Q4 is intentionally not publishable (worst
-   recurrent-stage cosine 0.846360, logits 0.928677).
+   recurrent-stage cosine 0.846360, logits 0.928677). Both deployed Fraktur
+   artifacts now also carry the exact source metadata `training_flags=65` and
+   `int_mode=true`; this records the source mode but does not yet reproduce
+   Tesseract CLI's int8 arithmetic.
 5. Keep `deu_frak` and the Calamari/OCRopus models as separately licensed
    external benchmarks; do not silently convert or redistribute them as
    Apache artifacts.
