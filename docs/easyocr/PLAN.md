@@ -7,7 +7,10 @@
 - Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
   cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
   `=#4#4#` respectively
-- Next: validate remaining VGG/ResNet recognizers, then port detectors
+- Latin Gen-2 conversion/reference generation works, but its current crop has
+  a near-tie CTC character (`(2a` native vs `(a` Python) and is not accepted.
+- Next: resolve Latin Gen-2 decoded parity, then validate remaining
+  VGG/ResNet recognizers and port detectors
 
 ## Scope
 
