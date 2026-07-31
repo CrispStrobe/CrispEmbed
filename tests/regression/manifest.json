@@ -1126,7 +1126,8 @@
       },
       "detector": "dbnet-ic15-f16.gguf",
       "pipeline_engine": "tesseract",
-      "sample": "tests/regression/images/cc0/german_official_print.jpg"
+      "sample": "tests/regression/images/cc0/german_official_print.jpg",
+      "expected_text": null
     },
     {
       "name": "parseq",
