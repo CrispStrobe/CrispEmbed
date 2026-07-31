@@ -593,13 +593,19 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                                                                     1.0f, 0, 3000, ocr_detect::score_mode::fast);
         std::vector<box> out;
         out.reserve(native_boxes.size());
-        for (const auto & b : native_boxes) out.push_back({ b.x, b.y, b.w, b.h, b.score });
+        for (const auto & b : native_boxes) {
+            box p{ b.x, b.y, b.w, b.h, b.score };
+            std::copy(std::begin(b.qx), std::end(b.qx), std::begin(p.qx));
+            std::copy(std::begin(b.qy), std::end(b.qy), std::begin(p.qy));
+            out.push_back(p);
+        }
         float sx = float(w) / ow, sy = float(h) / oh;
         for (auto & b : out) {
             b.x *= sx;
             b.w *= sx;
             b.y *= sy;
             b.h *= sy;
+            for (int i = 0; i < 4; ++i) { b.qx[i] *= sx; b.qy[i] *= sy; }
         }
         return out;
     }
@@ -683,13 +689,19 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                                                                 0, 3000, ocr_detect::score_mode::fast);
     std::vector<box> out;
     out.reserve(native_boxes.size());
-    for (const auto & b : native_boxes) out.push_back({ b.x, b.y, b.w, b.h, b.score });
+    for (const auto & b : native_boxes) {
+        box p{ b.x, b.y, b.w, b.h, b.score };
+        std::copy(std::begin(b.qx), std::end(b.qx), std::begin(p.qx));
+        std::copy(std::begin(b.qy), std::end(b.qy), std::begin(p.qy));
+        out.push_back(p);
+    }
     float sx = float(w) / ow, sy = float(h) / oh;
     for (auto & b : out) {
         b.x *= sx;
         b.w *= sx;
         b.y *= sy;
         b.h *= sy;
+        for (int i = 0; i < 4; ++i) { b.qx[i] *= sx; b.qy[i] *= sy; }
     }
     return out;
 }
