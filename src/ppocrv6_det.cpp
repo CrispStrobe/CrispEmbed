@@ -320,14 +320,13 @@ static bool run_medium_ic(const medium_ic & b, std::vector<float> & x, int h, in
     return true;
 }
 
-static bool run_medium_neck(const context * c, const std::vector<std::vector<float>> & stages,
-                            const std::vector<int> & hs, const std::vector<int> & ws, std::vector<float> & neck,
-                            int & nh, int & nw) {
+static bool run_medium_neck(context * c, const std::vector<std::vector<float>> & stages, const std::vector<int> & hs,
+                            const std::vector<int> & ws, std::vector<float> & neck, int & nh, int & nw) {
     std::vector<std::vector<float>> adjusted(4), top(4), projected(4), bottom(4), lateral(4), refined(4);
     std::vector<int> ah(4), aw(4);
     for (int i = 0; i < 4; ++i)
         if (!apply_conv(c->med_adjust[i], stages[i], hs[i], ws[i], adjusted[i], ah[i], aw[i])) return false;
-    c->last_stages["med_adjust0"] = adjusted[0];
+    for (int i = 0; i < 4; ++i) c->last_stages["med_adjust" + std::to_string(i)] = adjusted[i];
     top[3] = adjusted[3];
     for (int i = 2; i >= 0; --i) {
         std::vector<float> up;
@@ -335,22 +334,23 @@ static bool run_medium_neck(const context * c, const std::vector<std::vector<flo
         top[i] = adjusted[i];
         add_inplace(top[i], up);
     }
-    c->last_stages["med_top0"] = top[0];
+    for (int i = 0; i < 4; ++i) c->last_stages["med_top" + std::to_string(i)] = top[i];
     for (int i = 0; i < 4; ++i) {
         const auto & source = i < 3 ? top[i] : adjusted[3];
         if (!apply_conv(c->med_project[i], source, ah[i], aw[i], projected[i], ah[i], aw[i])) return false;
     }
-    c->last_stages["med_project0"] = projected[0];
+    for (int i = 0; i < 4; ++i) c->last_stages["med_project" + std::to_string(i)] = projected[i];
     bottom[0] = projected[0];
     for (int i = 1; i < 4; ++i) {
         std::vector<float> down;
         int dh, dw;
         if (!apply_conv(c->med_bottom[i - 1], bottom[i - 1], ah[i - 1], aw[i - 1], down, dh, dw)) return false;
-        resize_nearest(down, c->neck / 4, dh, dw, (int)projected[i].size() / (c->neck / 4) / aw[i], aw[i], down);
+        std::vector<float> resized;
+        resize_nearest(down, c->neck / 4, dh, dw, (int)projected[i].size() / (c->neck / 4) / aw[i], aw[i], resized);
         bottom[i] = projected[i];
-        add_inplace(bottom[i], down);
+        add_inplace(bottom[i], resized);
     }
-    c->last_stages["med_bottom0"] = bottom[0];
+    for (int i = 0; i < 4; ++i) c->last_stages["med_bottom" + std::to_string(i)] = bottom[i];
     for (int i = 0; i < 4; ++i) {
         const auto & source = i == 0 ? projected[0] : bottom[i];
         int sh = ah[i], sw = aw[i];
@@ -358,8 +358,10 @@ static bool run_medium_neck(const context * c, const std::vector<std::vector<flo
         refined[i] = lateral[i];
         if (!run_medium_ic(c->med_ic[i], refined[i], sh, sw)) return false;
     }
-    c->last_stages["med_lateral0"] = lateral[0];
-    c->last_stages["med_refined0"] = refined[0];
+    for (int i = 0; i < 4; ++i) {
+        c->last_stages["med_lateral" + std::to_string(i)] = lateral[i];
+        c->last_stages["med_refined" + std::to_string(i)] = refined[i];
+    }
     nh = ah[0];
     nw = aw[0];
     neck.clear();
