@@ -17,7 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression using cached Q8/F16 artifacts | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
@@ -120,6 +120,12 @@ rejected: applied directly to the DBNet artifact it split the 98 fragmented
 regions into 26 recognition units instead of the existing 12 line units.
 DBNet therefore needs a detector-specific line adapter before those thresholds
 can replace the current y-band grouping.
+
+The first DBNet adapter is now explicit in `easyocr_layout`: it preserves the
+fragment-tolerant y-band aggregation for DBNet line crops, while word mode
+continues to use left-to-right y-band ordering. The adapter is covered by the
+layout regression and the model-backed page smoke; horizontal-gap splitting is
+still a later detector-specific refinement.
 
 ### Tesseract parity status — NOT PROVEN
 

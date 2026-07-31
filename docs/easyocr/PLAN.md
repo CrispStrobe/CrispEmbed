@@ -45,8 +45,12 @@
 - A strict port of EasyOCR's horizontal gap thresholds was rejected for the
   current DBNet artifact: it split 98 fragmented detector regions into 26
   recognition units instead of the existing 12 line units. DBNet therefore
-  needs a detector-specific line adapter before those thresholds can replace
-  the current y-band grouping.
+needs a detector-specific line adapter before those thresholds can replace
+the current y-band grouping.
+- The first DBNet adapter is now explicit in `easyocr_layout`: it preserves
+  fragment-tolerant y-band aggregation for DBNet line crops, while word mode
+  remains left-to-right y-band ordering. Horizontal-gap splitting stays a
+  later detector-specific refinement.
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.

@@ -68,7 +68,8 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
     std::vector<easyocr_layout::region> regions;
     regions.reserve(detected.size());
     for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-    const auto ordered = easyocr_layout::order_regions(regions, ctx->mode);
+    const auto ordered = ctx->mode == easyocr_layout::ordering_mode::lines ? easyocr_layout::group_dbnet_lines(regions)
+                                                                           : easyocr_layout::order_words(regions);
 
     std::vector<result> results;
     results.reserve(ordered.size());
