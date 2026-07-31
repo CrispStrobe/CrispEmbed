@@ -605,7 +605,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             b.w *= sx;
             b.y *= sy;
             b.h *= sy;
-            for (int i = 0; i < 4; ++i) { b.qx[i] *= sx; b.qy[i] *= sy; }
+            for (int i = 0; i < 4; ++i) {
+                b.qx[i] *= sx;
+                b.qy[i] *= sy;
+            }
         }
         return out;
     }
@@ -701,7 +704,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         b.w *= sx;
         b.y *= sy;
         b.h *= sy;
-        for (int i = 0; i < 4; ++i) { b.qx[i] *= sx; b.qy[i] *= sy; }
+        for (int i = 0; i < 4; ++i) {
+            b.qx[i] *= sx;
+            b.qy[i] *= sy;
+        }
     }
     return out;
 }
