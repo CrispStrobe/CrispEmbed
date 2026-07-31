@@ -272,7 +272,7 @@ static bool map_model(ppocrv6_ocr_context * c) {
             int in = bi == 0 && si > 0 ? widths[si - 1] : widths[si];
             int out = widths[si];
             pp_block b;
-            const bool down = bi == 0 && (si == 2 || (!tiny && si == 3));
+            const bool down = bi == 0 && (si == 2 || si == 3);
             b.dw = conv(m, q + ".dw", in, in, 3, down ? 2 : 1, in, down && !tiny ? 1 : 0);
             b.cm1 = conv(m, q + ".cm1", in, in * 2, 1, 1);
             b.cm2 = conv(m, q + ".cm2", in * 2, out, 1, 1);
