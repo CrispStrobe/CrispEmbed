@@ -8,9 +8,18 @@
 #include "ggml.h"
 
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
-int main() {
+int main(int argc, char ** argv) {
+    // Optional explicit backend makes the same smoke binary useful in the
+    // device matrix: `test-backend-smoke metal`, `... cuda`, or `... vulkan`.
+    // With no argument, preserve the normal auto-selection behavior.
+    if (argc > 2) {
+        std::fprintf(stderr, "usage: %s [backend]\n", argv[0]);
+        return 2;
+    }
+    if (argc == 2) crispasr_set_gpu_backend_pref(argv[1]);
     ggml_backend_t backend = crispasr_init_gpu_backend();
     if (!backend) {
         std::fprintf(stderr, "backend smoke: no backend available\n");
@@ -45,10 +54,13 @@ int main() {
     const bool computed = allocated && ggml_backend_graph_compute(backend, graph) == GGML_STATUS_SUCCESS;
     if (computed)
         ggml_backend_tensor_get(ggml_graph_get_tensor(graph, out->name), ov.data(), 0, ov.size() * sizeof(float));
-    bool correct = computed;
+    const bool cpu_requested = argc == 2 && std::strcmp(argv[1], "cpu") == 0;
+    const bool requested_device_available = argc != 2 || cpu_requested || type != GGML_BACKEND_DEVICE_TYPE_CPU;
+    bool correct = computed && requested_device_available;
     for (float v : ov) correct = correct && v > 3.99f && v < 4.01f;
-    std::printf("backend-smoke name=%s type=%d nodes=%d computed=%d correct=%d\n", name ? name : "unknown", (int)type,
-                ggml_graph_n_nodes(graph), computed ? 1 : 0, correct ? 1 : 0);
+    std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d device_available=%d correct=%d\n",
+                argc == 2 ? argv[1] : "auto", name ? name : "unknown", (int)type,
+                ggml_graph_n_nodes(graph), computed ? 1 : 0, requested_device_available ? 1 : 0, correct ? 1 : 0);
     if (alloc) ggml_gallocr_free(alloc);
     ggml_free(ctx);
     ggml_backend_free(backend);
