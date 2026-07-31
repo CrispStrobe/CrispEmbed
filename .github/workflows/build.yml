@@ -71,6 +71,10 @@ jobs:
           .\build\Release\test-backend-smoke.exe
         shell: pwsh
 
+      - name: Smoke test (explicit Metal)
+        if: runner.os == 'macOS'
+        run: ./build/test-backend-smoke metal
+
       # Install into a staging prefix so the shared library is bundled with its
       # ggml runtime dylibs/sos and rewritten to a relocatable @loader_path /
       # $ORIGIN rpath. The build-tree library bakes in absolute runner paths and
