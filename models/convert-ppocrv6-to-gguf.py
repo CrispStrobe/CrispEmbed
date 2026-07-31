@@ -31,7 +31,8 @@ def _fuse(w: np.ndarray, b: np.ndarray | None, gamma: np.ndarray,
           eps: float) -> tuple[np.ndarray, np.ndarray]:
     scale = gamma / np.sqrt(var + eps)
     shape = (scale.shape[0],) + (1,) * (w.ndim - 1)
-    return w * scale.reshape(shape), (b if b is not None else 0.0 - mean) * scale + beta
+    centered_bias = (np.zeros_like(mean) if b is None else b) - mean
+    return w * scale.reshape(shape), centered_bias * scale + beta
 
 
 def _tokens(model_dir: Path, kind: str) -> list[str]:
