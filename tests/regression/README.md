@@ -85,6 +85,12 @@ successful stages, and 7 explicitly `unavailable` dewarp rows where the input
 does not contain enough text-line geometry. No stage returned an unexpected
 runtime error.
 
+The harness and provenance generator have a dependency-light unit guard:
+
+```bash
+python3 tests/regression/test_preprocessing_tools.py
+```
+
 A model-output regression suite for the OCR engines. It exists because a
 vision-neck permute regression (`3fb1f8e`, Jun 2026) shipped **garbage OCR**
 (`colorcolorcolor…`) that the existing Kaggle `ocr-gpu-bench` kernel could not
