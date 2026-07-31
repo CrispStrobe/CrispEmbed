@@ -81,6 +81,7 @@ struct context {
     int n_threads = 1;
     // Lazily-loaded engine + cleanup handles (loaded on first use).
     ocr_pipeline::context * dbnet = nullptr;   // DBNet detection + TrOCR recognition
+    ocr_pipeline::context * ppocrv6 = nullptr; // PP-OCRv6 detector + recognizer
     layout_detect::context * layout = nullptr; // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
@@ -338,6 +339,24 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                                                         const unsigned char * px = nullptr, int pw = 0, int ph = 0) {
     const auto geometry = detector_options(st.params);
     switch (st.eng) {
+    case engine::ppocrv6: {
+        if (!ctx->ppocrv6) {
+            if (st.model_a.empty() || st.model_b.empty()) {
+                fprintf(stderr, "ocr_orchestrator: ppocrv6 stage missing detector/recognizer models\n");
+                return {};
+            }
+            if (!ocr_pipeline::load(&ctx->ppocrv6, st.model_a.c_str(), st.model_b.c_str(), ctx->n_threads)) {
+                fprintf(stderr, "ocr_orchestrator: ppocrv6 load failed\n");
+                ctx->ppocrv6 = nullptr;
+                return {};
+            }
+        }
+        if (px && pw > 0 && ph > 0)
+            return ocr_pipeline::run_raw(ctx->ppocrv6, px, pw, ph, 3, st.params.det_prob_threshold,
+                                         st.params.det_box_threshold, st.params.det_target_short, &geometry);
+        return ocr_pipeline::run_file(ctx->ppocrv6, path, st.params.det_prob_threshold, st.params.det_box_threshold,
+                                      st.params.det_target_short, &geometry);
+    }
     case engine::dbnet_trocr:
     case engine::surya: {
         // DBNet/Surya detection + TrOCR recognition (model_a=det, model_b=rec).
@@ -1198,6 +1217,8 @@ static const char * engine_name(engine e) {
         return "unlimited_ocr";
     case engine::unified:
         return "unified";
+    case engine::ppocrv6:
+        return "ppocrv6";
     default:
         return "unknown";
     }
@@ -1409,6 +1430,7 @@ result run_file(context * ctx, const char * image_path) {
 void free(context * ctx) {
     if (!ctx) return;
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
+    if (ctx->ppocrv6) ocr_pipeline::free(ctx->ppocrv6);
     if (ctx->layout) layout_detect::free(ctx->layout);
     if (ctx->table) table_parse_free(ctx->table);
     if (ctx->formula) ppformulanet_ocr_free(ctx->formula);

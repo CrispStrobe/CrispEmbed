@@ -1153,7 +1153,7 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
     int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int engine;           // 0..13 existing engines, 14=unified metadata-dispatched GGUF (matches map_engine)
+    int engine;           // 0..13 existing engines, 14=unified, 15=ppocrv6 (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     int cleanup_enabled;

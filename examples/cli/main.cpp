@@ -1087,6 +1087,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "lightonocr") return 11;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
+            if (n == "ppocrv6") return 15;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
@@ -1114,7 +1115,9 @@ static int cli_main(int argc, char ** argv) {
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
                 ma = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
-                const char * rdflt = (eid == 6) ? "tesseract-eng" : "qwen2vl-ocr";
+                const char * rdflt = (eid == 6) ? "tesseract-eng"
+                                      : (eid == 15) ? "ppocrv6-medium-rec"
+                                                    : "qwen2vl-ocr";
                 mb = resolve(ocr_rec_path.empty() ? rdflt : ocr_rec_path);
             }
             crispembed_ocr_stage st;

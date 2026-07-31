@@ -131,10 +131,11 @@ std::vector<ocr_result> run_raw(context * ctx, const uint8_t * raw, int img_w, i
         for (const auto & b : boxes) {
             int x = std::max(0, (int)b.x - 2), y = std::max(0, (int)b.y - 2);
             int cw = std::min(img_w - x, (int)b.w + 4), ch = std::min(img_h - y, (int)b.h + 4);
-            auto crop = crop_image(raw, img_w, img_h, x, y, cw, ch);
+            int actual_w = 0, actual_h = 0;
+            auto crop = ocr_crop::extract(raw, img_w, img_h, 3, x, y, cw, ch, 0, &actual_w, &actual_h);
             if (crop.empty()) continue;
             int out_len = 0;
-            const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &out_len);
+            const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), actual_w, actual_h, 3, &out_len);
             if (!text || out_len <= 0) continue;
             ocr_result r;
             r.box = {b.x, b.y, b.w, b.h, b.score, 0.0f, {0, 0, 0, 0}, {0, 0, 0, 0}};

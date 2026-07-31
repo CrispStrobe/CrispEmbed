@@ -9,6 +9,27 @@ converter and one runtime family:
 | small | `PP-OCRv6_small_det` | `PP-OCRv6_small_rec` |
 | medium | `PP-OCRv6_medium_det` | `PP-OCRv6_medium_rec` |
 
+The paired detector→line-crop→recognizer path is selectable through the
+orchestrator as engine `15`, or from the CLI:
+
+```bash
+crispembed --ocr-pipeline page.png --ocr-engine ppocrv6 \
+  --ocr-det /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_det-f16.gguf \
+  --ocr-rec /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf
+```
+
+F16 is the default production artifact. The `crispasr-q4_k-policy` files are
+debug/experimental variants and are not selected by registry defaults.
+Detector parity is validated for all three tiers; live recognizer quality
+capture remains in the regression manifest and must be reviewed per tier.
+
+Initial live CPU smoke on `fox.png` (an out-of-domain synthetic English
+fixture) loaded all three paired pipelines successfully: tiny 571 ms, small
+2.33 s, medium 25.95 s cold. Each detected and recognized 2/2 regions, but
+the decoded text was not used as a quality claim because this fixture is not a
+PP-OCRv6 reference sample. In-domain line fixtures and German/receipt quality
+gates remain the next validation step.
+
 The source repositories are the official
 `PaddlePaddle/PP-OCRv6_*_safetensors` repositories. Keep source checkpoints,
 F16 GGUFs, quantized GGUFs, and parity fixtures on the external model volume:
