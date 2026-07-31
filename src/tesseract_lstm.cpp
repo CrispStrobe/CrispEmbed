@@ -48,6 +48,8 @@ struct tesseract_lstm_context {
     int num_classes;
     int null_char;
     int num_lstm_layers;
+    uint32_t training_flags;
+    bool int_mode;
     std::string vgsl_spec;
 
     // Conv FC weights
@@ -143,6 +145,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->num_classes = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_classes", 111);
     ctx->null_char = (int)core_gguf::kv_u32(meta, "tesseract_lstm.null_char", 110);
     ctx->num_lstm_layers = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_lstm_layers", 4);
+    ctx->training_flags = core_gguf::kv_u32(meta, "tesseract_lstm.training_flags", 0);
+    ctx->int_mode = core_gguf::kv_bool(meta, "tesseract_lstm.int_mode", (ctx->training_flags & 1) != 0);
     ctx->vgsl_spec = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
 
     // Tokens
@@ -225,8 +229,9 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
 
-    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d)\n", ctx->vgsl_spec.c_str(),
-            ctx->num_lstm_layers, ctx->num_classes, ctx->input_height);
+    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d, int_mode=%s)\n",
+            ctx->vgsl_spec.c_str(), ctx->num_lstm_layers, ctx->num_classes, ctx->input_height,
+            ctx->int_mode ? "true" : "false");
 
     return true;
 }

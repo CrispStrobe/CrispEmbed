@@ -389,6 +389,17 @@ downstream handoff parity, not detector-box similarity alone.
       with matching mine/ref norms. Two additional CC0 Commons fixtures are
       vendored with URLs, licenses, and SHA-256 metadata; full CLI page and
       decoder-choice parity remain open.
+- [x] Trace the remaining `Brighton`/`Drighton` discrepancy to the exact
+      installed model's `training_flags=65`: Tesseract's `TF_INT_MODE` is set,
+      so the CLI quantizes inputs and per-output weight rows to int8 before
+      its recode beam. GGUF/reference metadata now records `training_flags`
+      and `int_mode`; the current F32 graph remains measurable against the
+      F32 Python reference but is not yet CLI-logit parity.
+- [ ] Add an int8-equivalent Tesseract inference path and diff its logits
+      against a reference produced with the same quantized arithmetic before
+      adding a recode/dictionary beam. A plain CTC prefix beam over current
+      F32 logits still returns `Drighton`, so beam search alone cannot explain
+      the CLI result.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
