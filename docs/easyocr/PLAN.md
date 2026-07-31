@@ -7,6 +7,12 @@
 - Selected next item: CRAFT decoded box postprocessing parity; the current
   tensor gate passes, but the harness-blind smoke check is 104 native boxes
   versus 106 Python boxes and remains intentionally failing.
+- Diagnosis: the connected-component implementation agrees with Python; the
+  two missing components are low-confidence score regions. The native F32
+  GGML convolution/BN-fused path accumulates a small downstream attenuation
+  (the first U-Net input is 1460.09 native versus 1511.90 Python), so score
+  values fall below the 0.7 threshold. Direct-convolution dispatch did not
+  change the result; a precision-preserving fix is still required.
 - Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
   cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
   `=#4#4#` respectively

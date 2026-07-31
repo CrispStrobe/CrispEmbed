@@ -8,6 +8,8 @@
 #include "ggml-cpu.h"
 #include "ggml.h"
 
+#include <algorithm>
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -199,4 +201,47 @@ int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
         if (report.cos_global < 0.99f) failures++;
     }
     return failures;
+}
+
+int easyocr_craft_box_count(easyocr_craft_context * c, float text_threshold, float link_threshold, float low_text) {
+    if (!c || !c->scores) return -1;
+    const int w = (int)c->scores->ne[0];
+    const int h = (int)c->scores->ne[1];
+    const size_t plane = (size_t)w * h;
+    std::vector<float> scores(plane * 2);
+    ggml_backend_tensor_get(c->scores, scores.data(), 0, scores.size() * sizeof(float));
+    std::vector<uint8_t> active(plane, 0), seen(plane, 0);
+    for (size_t i = 0; i < plane; ++i) active[i] = scores[i] > low_text || scores[plane + i] > link_threshold;
+    int count = 0;
+    std::vector<size_t> stack;
+    for (int y = 0; y < h; ++y) {
+        for (int x = 0; x < w; ++x) {
+            const size_t start = (size_t)y * w + x;
+            if (!active[start] || seen[start]) continue;
+            seen[start] = 1;
+            stack.clear();
+            stack.push_back(start);
+            int area = 0;
+            float max_text = 0.0f;
+            while (!stack.empty()) {
+                const size_t p = stack.back();
+                stack.pop_back();
+                const int px = (int)(p % w), py = (int)(p / w);
+                ++area;
+                max_text = std::max(max_text, scores[p]);
+                for (const auto & d : std::array<int, 4>{ -1, 1, -w, w }) {
+                    const int nx = px + (d == -1 ? -1 : d == 1 ? 1 : 0);
+                    const int ny = py + (d == -w ? -1 : d == w ? 1 : 0);
+                    if (nx < 0 || nx >= w || ny < 0 || ny >= h) continue;
+                    const size_t q = (size_t)ny * w + nx;
+                    if (active[q] && !seen[q]) {
+                        seen[q] = 1;
+                        stack.push_back(q);
+                    }
+                }
+            }
+            if (area >= 10 && max_text >= text_threshold) ++count;
+        }
+    }
+    return count;
 }
