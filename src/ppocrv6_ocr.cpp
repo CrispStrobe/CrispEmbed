@@ -4,11 +4,13 @@
 #include "ggml-cpu.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "crispembed_diff.h"
 
 #include <algorithm>
 #include <cmath>
 #include <cstring>
 #include <memory>
+#include <numeric>
 #include <string>
 #include <vector>
 
@@ -48,6 +50,9 @@ struct ppocrv6_ocr_context {
     ggml_tensor * fc1_b = nullptr;
     ggml_tensor * fc2_w = nullptr;
     ggml_tensor * fc2_b = nullptr;
+    ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr, *norm1_mean = nullptr, *norm1_var = nullptr;
+    ggml_tensor *norm2_w = nullptr, *norm2_b = nullptr, *norm2_mean = nullptr, *norm2_var = nullptr;
+    std::unique_ptr<crispembed_diff::Ref> diff;
 };
 
 static ggml_tensor * get(const core_gguf::tensor_map & m, const std::string & n) {
@@ -89,6 +94,17 @@ static void activate(std::vector<float> & x, bool hs) {
         hardswish_inplace(x.data(), (int)x.size());
     else
         for (float & v : x) v = gelu(v);
+}
+
+static void bn1d(std::vector<float> & x, int channels, int length, ggml_tensor * w, ggml_tensor * b, ggml_tensor * mean,
+                 ggml_tensor * var) {
+    if (!w || !b || !mean || !var) return;
+    auto ww = to_f32(w), bb = to_f32(b), mm = to_f32(mean), vv = to_f32(var);
+    for (int c = 0; c < channels; ++c) {
+        const float scale = ww[c] / std::sqrt(vv[c] + 1e-5f);
+        const float shift = bb[c] - mm[c] * scale;
+        for (int i = 0; i < length; ++i) x[c * length + i] = x[c * length + i] * scale + shift;
+    }
 }
 
 static bool run_block(pp_block & b, std::vector<float> & x, int & h, int & w) {
@@ -172,14 +188,21 @@ static bool map_model(ppocrv6_ocr_context * c) {
     c->fc1_b = get(m, "rec.head.fc1.bias");
     c->fc2_w = get(m, "rec.head.fc2.weight");
     c->fc2_b = get(m, "rec.head.fc2.bias");
+    c->norm1_w = get(m, "rec.head.norm1.weight");
+    c->norm1_b = get(m, "rec.head.norm1.bias");
+    c->norm1_mean = get(m, "rec.head.norm1.running_mean");
+    c->norm1_var = get(m, "rec.head.norm1.running_var");
+    c->norm2_w = get(m, "rec.head.norm2.weight");
+    c->norm2_b = get(m, "rec.head.norm2.bias");
+    c->norm2_mean = get(m, "rec.head.norm2.running_mean");
+    c->norm2_var = get(m, "rec.head.norm2.running_var");
     return !c->stem.empty() && c->fc2_w;
 }
 
 static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vector<float> & out) {
     constexpr int H = 48, W = 320;
     out.assign(3 * H * W, 0.0f);
-    const float scale = std::min(1.0f, float(W) / std::max(1, w));
-    const int rw = std::max(1, std::min(W, int(std::round(w * scale))));
+    const int rw = std::max(1, std::min(W, int(std::round(w * (H / float(std::max(1, h)))))));
     for (int y = 0; y < H; ++y)
         for (int x = 0; x < rw; ++x) {
             int sy = std::min(h - 1, int(y * h / float(H)));
@@ -201,17 +224,33 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         x.swap(y);
         h = oh;
         w = ow;
+        if (c->diff) {
+            const char * name = s.w == c->stem.front().w ? "ppocrv6.stem1" : "ppocrv6.stem2";
+            auto r = c->diff->compare(name, x.data(), x.size(), -1);
+            auto refv = c->diff->get_f32(name);
+            fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", name, r.cos_min,
+                    std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+        }
     }
-    for (auto & stage : c->stages)
-        for (auto & b : stage)
+    for (size_t si = 0; si < c->stages.size(); ++si) {
+        for (auto & b : c->stages[si])
             if (!run_block(b, x, h, w)) return nullptr;
+        if (c->diff) {
+            std::string name = "ppocrv6.stage" + std::to_string(si + 1);
+            auto r = c->diff->compare(name, x.data(), x.size(), -1);
+            fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", name.c_str(), r.cos_min,
+                    std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
+        }
+    }
     int oh, ow;
     if (!apply_conv(c->head_dw, x, h, w, y, oh, ow)) return nullptr;
+    bn1d(y, c->head_dw.out_ch, oh * ow, c->norm1_w, c->norm1_b, c->norm1_mean, c->norm1_var);
     hardswish_inplace(y.data(), (int)y.size());
     x.swap(y);
     h = oh;
     w = ow;
     if (!apply_conv(c->head_pw, x, h, w, y, oh, ow)) return nullptr;
+    bn1d(y, c->head_pw.out_ch, oh * ow, c->norm2_w, c->norm2_b, c->norm2_mean, c->norm2_var);
     hardswish_inplace(y.data(), (int)y.size());
     x.swap(y);
     h = oh;
@@ -225,14 +264,27 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     for (float & v : seq) v /= float(ph);
     auto f1 = to_f32(c->fc1_w), b1 = to_f32(c->fc1_b), f2 = to_f32(c->fc2_w), b2 = to_f32(c->fc2_b);
     c->result.clear();
+    std::vector<float> all_logits;
+    all_logits.reserve((size_t)pw * c->vocab_size);
     int last = -1;
     for (int t = 0; t < pw; ++t) {
         std::vector<float> hidden(c->hidden), logits(c->vocab_size);
         linear_cpu(seq.data() + t, hidden.data(), c->head_dw.in_ch, c->hidden, f1.data(), b1.data());
         linear_cpu(hidden.data(), logits.data(), c->hidden, c->vocab_size, f2.data(), b2.data());
+        all_logits.insert(all_logits.end(), logits.begin(), logits.end());
         int best = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
         if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];
         last = best;
+    }
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.logits", all_logits.data(), all_logits.size(), 1);
+        fprintf(stderr, "[ppocrv6-diff] logits cos=%.6f |mine|=%.6g |ref|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(all_logits.begin(), all_logits.end(), all_logits.begin(), 0.0)),
+                std::sqrt(std::inner_product(c->diff->get_f32("ppocrv6.logits").first,
+                                             c->diff->get_f32("ppocrv6.logits").first +
+                                                 c->diff->get_f32("ppocrv6.logits").second,
+                                             c->diff->get_f32("ppocrv6.logits").first, 0.0)),
+                r.is_pass() ? "PASS" : "FAIL");
     }
     if (out_len) *out_len = (int)c->result.size();
     return c->result.c_str();
@@ -249,6 +301,10 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
     c->variant = core_gguf::kv_str(meta, "ppocrv6.variant", "tiny");
     c->vocab = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
     c->vocab_size = (int)core_gguf::kv_u32(meta, "ppocrv6.vocab_size", 0);
+    if (const char * ref = std::getenv("PPOCRV6_REF")) {
+        c->diff = std::make_unique<crispembed_diff::Ref>();
+        if (!c->diff->load(ref)) c->diff.reset();
+    }
     core_gguf::free_metadata(meta);
     if (!core_gguf::load_weights(path, c->backend, "ppocrv6", c->wl) || !map_model(c)) {
         ppocrv6_ocr_free(c);
@@ -269,6 +325,12 @@ extern "C" const char * ppocrv6_ocr_recognize_raw(ppocrv6_ocr_context * c, const
     if (!c || !px || w <= 0 || h <= 0 || (ch != 1 && ch != 3 && ch != 4)) return nullptr;
     std::vector<float> input;
     resize_normalize(px, w, h, ch, input);
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.input", input.data(), input.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(input.begin(), input.end(), input.begin(), 0.0)),
+                r.is_pass() ? "PASS" : "FAIL");
+    }
     return recognize_nchw(c, input, out_len);
 }
 
