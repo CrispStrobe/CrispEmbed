@@ -5039,6 +5039,7 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         st.enabled = true;
         if (s.model_a) st.model_a = s.model_a;
         if (s.model_b) st.model_b = s.model_b;
+        if (s.model_c) st.model_c = s.model_c;
         st.cleanup.enabled = s.cleanup_enabled != 0;
         st.cleanup.params = to_cleanup(s.cleanup);
         st.cleanup.denoise = s.denoise != 0;
