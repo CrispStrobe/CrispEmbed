@@ -85,6 +85,12 @@ struct engine_params {
     float det_prob_threshold = 0.3f;
     float det_box_threshold = 0.5f;
     int det_target_short = 736;
+    int det_max_side = 2000;
+    int det_min_height = 30;
+    float det_width_height_ratio = 8.0f;
+    int det_max_candidates = 1000;
+    int det_dilation = 1;
+    ocr_detect::score_mode det_scoring = ocr_detect::score_mode::fast;
     // VLM generation (GOT / GLM / Qwen2.5-VL / InternVL2).
     int vlm_max_tokens = 0; // 0 = engine default
     std::string vlm_prompt; // empty = engine default prompt

@@ -316,11 +316,26 @@ static std::string resolve_tess_model(const config & cfg, const char * iso1) {
     return path;
 }
 
+static ocr_detect::detect_options detector_options(const engine_params & p) {
+    auto o = ocr_detect::rapid_defaults();
+    o.prob_threshold = p.det_prob_threshold;
+    o.box_threshold = p.det_box_threshold;
+    o.target_short_side = p.det_target_short;
+    o.max_side = p.det_max_side;
+    o.min_height = p.det_min_height;
+    o.width_height_ratio = p.det_width_height_ratio;
+    o.max_candidates = p.det_max_candidates;
+    o.dilation = p.det_dilation;
+    o.scoring = p.det_scoring;
+    return o;
+}
+
 // Run one engine on a (already-cleaned) image. VLM engines use pre-loaded
 // pixels (px/pw/ph) when available to avoid redundant stbi_load from disk.
 // Falls back to loading from `path` if px is null.
 static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const stage & st, const char * path,
                                                         const unsigned char * px = nullptr, int pw = 0, int ph = 0) {
+    const auto geometry = detector_options(st.params);
     switch (st.eng) {
     case engine::dbnet_trocr:
     case engine::surya: {
@@ -339,9 +354,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (px && pw > 0 && ph > 0)
             return ocr_pipeline::run_raw(ctx->dbnet, px, pw, ph, 3, st.params.det_prob_threshold,
-                                         st.params.det_box_threshold, st.params.det_target_short);
+                                         st.params.det_box_threshold, st.params.det_target_short, &geometry);
         return ocr_pipeline::run_file(ctx->dbnet, path, st.params.det_prob_threshold, st.params.det_box_threshold,
-                                      st.params.det_target_short);
+                                      st.params.det_target_short, &geometry);
     }
     case engine::got: {
         if (!ctx->got) {
@@ -571,8 +586,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             }
             ctx->tess_resolved_model = tess_model;
         }
-        auto boxes = ocr_detect::detect_file(ctx->tess_det, path, st.params.det_prob_threshold,
-                                             st.params.det_box_threshold, 1.5f, st.params.det_target_short);
+        auto boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
         if (boxes.empty()) return {};
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
@@ -637,8 +651,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
-        auto boxes = ocr_detect::detect_file(ctx->parseq_det, path, st.params.det_prob_threshold,
-                                             st.params.det_box_threshold, 1.5f, st.params.det_target_short);
+        auto boxes = ocr_detect::detect_file_ex(ctx->parseq_det, path, geometry);
         if (boxes.empty()) return {};
         int w = 0, h = 0, c = 0;
         unsigned char * rgb = stbi_load(path, &w, &h, &c, 3); // force RGB

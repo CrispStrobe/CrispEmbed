@@ -1162,8 +1162,14 @@ typedef struct crispembed_ocr_stage {
     float det_prob_threshold;
     float det_box_threshold;
     int det_target_short;
-    int vlm_max_tokens;      // 0 = engine default
-    const char * vlm_prompt; // NULL/"" = engine default
+    int det_max_side;             // 0 = default 2000
+    int det_min_height;           // 0 = default 30
+    float det_width_height_ratio; // 0 = default 8; negative disables
+    int det_max_candidates;       // 0 = default 1000; negative disables
+    int det_dilation;             // 0 = default 1; negative disables
+    int det_score_mode;           // 0 = fast, 1 = accurate
+    int vlm_max_tokens;           // 0 = engine default
+    const char * vlm_prompt;      // NULL/"" = engine default
     // Accept-gate:
     int min_chars;
     float min_confidence;

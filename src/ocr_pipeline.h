@@ -45,12 +45,14 @@ bool load(context ** ctx, const char * det_path, const char * rec_path, int n_th
 // Run full pipeline on an image file.
 // Returns detected text regions sorted in reading order (top→bottom, left→right).
 std::vector<ocr_result> run_file(context * ctx, const char * image_path, float prob_threshold = 0.3f,
-                                 float box_threshold = 0.5f, int target_short_side = 736);
+                                 float box_threshold = 0.5f, int target_short_side = 736,
+                                 const ocr_detect::detect_options * geometry = nullptr);
 
 // Run detection and recognition on interleaved uint8 pixels. The input is
 // borrowed for the duration of the call and may be RGB or grayscale.
 std::vector<ocr_result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels,
-                                float prob_threshold = 0.3f, float box_threshold = 0.5f, int target_short_side = 736);
+                                float prob_threshold = 0.3f, float box_threshold = 0.5f, int target_short_side = 736,
+                                const ocr_detect::detect_options * geometry = nullptr);
 
 // Run recognition only on a single crop (no detection).
 // Useful when you have pre-cropped text regions.
