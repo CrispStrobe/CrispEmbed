@@ -20,7 +20,8 @@ races). Remove the row when the branch lands.
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
-Metal; DBNet remains pending.
+Metal; DBNet→EasyOCR crop smoke now runs with the existing cstr/dbnet-ic15
+artifact, while DBNet Python box/text parity and production orchestration remain pending.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
