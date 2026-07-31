@@ -1056,7 +1056,17 @@
         "revision": "main"
       },
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null
+      "expected_text": null,
+      "diff": {
+        "binary": "test-ppocrv6-rec",
+        "ref": {
+          "repo": "mlx-community/PP-OCRv6-tiny-rec-GGUF",
+          "file": "PP-OCRv6_tiny_rec-fox-ref.gguf",
+          "revision": "main"
+        },
+        "args": ["tests/regression/images/fox.png"],
+        "thresholds": {"*": 0.999}
+      }
     },
     {
       "name": "ppocrv6-small",
@@ -1073,7 +1083,17 @@
         "revision": "main"
       },
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null
+      "expected_text": null,
+      "diff": {
+        "binary": "test-ppocrv6-rec",
+        "ref": {
+          "repo": "mlx-community/PP-OCRv6-small-rec-GGUF",
+          "file": "PP-OCRv6_small_rec-fox-ref.gguf",
+          "revision": "main"
+        },
+        "args": ["tests/regression/images/fox.png"],
+        "thresholds": {"*": 0.999}
+      }
     },
     {
       "name": "ppocrv6-medium",
@@ -1090,7 +1110,17 @@
         "revision": "main"
       },
       "sample": "tests/regression/images/fox.png",
-      "expected_text": null
+      "expected_text": null,
+      "diff": {
+        "binary": "test-ppocrv6-rec",
+        "ref": {
+          "repo": "mlx-community/PP-OCRv6-medium-rec-GGUF",
+          "file": "PP-OCRv6_medium_rec-fox-ref.gguf",
+          "revision": "main"
+        },
+        "args": ["tests/regression/images/fox.png"],
+        "thresholds": {"*": 0.999}
+      }
     }
   ]
 }

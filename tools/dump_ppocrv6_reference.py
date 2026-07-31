@@ -46,10 +46,11 @@ class Ref:
         x = self.conv(x, key + ".convolution", stride, groups=groups)
         x = self.bn(x, key + ".normalization")
         if activation == "gelu": x = F.gelu(x)
+        elif activation == "silu": x = F.silu(x)
         elif activation == "hs": x = F.hardswish(x)
         return x
 
-    def block(self, x, si, bi, in_ch, out_ch, stride, se, stages=None):
+    def block(self, x, si, bi, in_ch, out_ch, stride, se, stages=None, activation="gelu"):
         p = f"model.backbone.encoder.blocks.{si}.blocks.{bi}"
         token = p + ".token_conv"
         if token + ".weight" not in self.d:
@@ -64,10 +65,11 @@ class Ref:
             g = torch.clamp((self.conv(g, p + ".token_squeeze_excitation.convolutions.2", pad=0) + 3) / 6, 0, 1)
             y = y * g
             if stages is not None and si == 0 and bi == 0: stages["block0_se"] = y
-        z = self.layer(y, p + ".channel_conv1", activation="gelu")
+        z = self.layer(y, p + ".channel_conv1", activation=activation)
         if stages is not None and si == 0 and bi == 0: stages["block0_cm1"] = z
         z = self.layer(z, p + ".channel_conv2")
-        return y + z if in_ch == out_ch and stride == 1 else z
+        unit = stride == 1 or (isinstance(stride, tuple) and stride == (1, 1))
+        return y + z if in_ch == out_ch and unit else z
 
 
 def preprocess(path: Path):
@@ -89,11 +91,88 @@ def preprocess(path: Path):
     return torch.from_numpy(out.transpose(2, 0, 1))[None]
 
 
+def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
+    """Mirror the large-stem + two-block SVTR recognizer used by small/medium."""
+    stages = {}
+    x = preprocess(image)
+    stages["input"] = x
+    stem = "model.backbone.encoder.convolution."
+    x = ref.layer(x, stem + "stem1", stride=2); x = F.silu(x); stages["large_stem1"] = x
+    branch = ref.conv(x, stem + "stem2a.convolution", stride=1, pad=0)
+    branch = F.silu(ref.bn(branch, stem + "stem2a.normalization"))
+    stages["large_stem2a"] = branch
+    branch = ref.layer(branch, stem + "stem2b", stride=1); branch = F.silu(branch)
+    stages["large_stem2b"] = branch
+    x = torch.cat((x, branch), dim=1)
+    stages["large_cat"] = x
+    x = ref.layer(x, stem + "stem3", stride=2); x = F.silu(x)
+    stages["large_stem3"] = x
+    x = ref.layer(x, stem + "stem4", stride=1); x = F.silu(x)
+    stages["large_stem"] = x
+
+    blocks = cfg["backbone_config"]["block_configs"]
+    channels = cfg["backbone_config"]["stem_channels"]
+    # The first stage receives stem_channels[-1]; subsequent stages receive
+    # the preceding stage's output width.
+    in_ch = int(channels[-1])
+    for si, stage_cfg in enumerate(blocks):
+        for bi, spec in enumerate(stage_cfg):
+            _, spec_in, out_ch, stride, se = spec
+            stride = tuple(stride) if isinstance(stride, list) else stride
+            x = ref.block(x, si, bi, int(spec_in), int(out_ch), stride, bool(se), stages,
+                          activation="silu")
+            in_ch = int(out_ch)
+        stages[f"stage{si + 1}"] = x
+
+    x = F.avg_pool2d(x, (3, 2))  # [B,C,1,W]
+    hidden = int(cfg["hidden_size"])
+    def conv_block(y, idx, groups=1, pad=0):
+        p = f"head.encoder.conv_block.{idx}"
+        y = ref.conv(y, p + ".convolution", pad=pad, groups=groups)
+        return ref.bn(y, p + ".normalization")
+    residual = F.silu(conv_block(x, 0))
+    y = F.silu(conv_block(x, 1))
+    y = F.silu(conv_block(y, 2, groups=hidden, pad=(0, 3)))
+    x = y + residual
+    x = x.squeeze(2).transpose(1, 2)  # [B,W,hidden]
+
+    heads = 8
+    head_dim = hidden // heads
+    for bi in range(int(cfg["depth"])):
+        p = f"head.encoder.svtr_block.{bi}"
+        n = F.layer_norm(x, (hidden,), ref.w(p + ".layer_norm1.weight"),
+                         ref.w(p + ".layer_norm1.bias"))
+        qkv = F.linear(n, ref.w(p + ".self_attn.qkv.weight"), ref.w(p + ".self_attn.qkv.bias"))
+        b, width, _ = qkv.shape
+        qkv = qkv.view(b, width, 3, heads, head_dim).permute(2, 0, 3, 1, 4)
+        attn = torch.softmax(torch.matmul(qkv[0], qkv[1].transpose(-2, -1)) / np.sqrt(head_dim), dim=-1)
+        a = torch.matmul(attn, qkv[2]).transpose(1, 2).reshape(b, width, hidden)
+        a = F.linear(a, ref.w(p + ".self_attn.projection.weight"), ref.w(p + ".self_attn.projection.bias"))
+        x = x + a
+        n = F.layer_norm(x, (hidden,), ref.w(p + ".layer_norm2.weight"),
+                         ref.w(p + ".layer_norm2.bias"))
+        n = F.silu(F.linear(n, ref.w(p + ".mlp.fc1.weight"), ref.w(p + ".mlp.fc1.bias")))
+        x = x + F.linear(n, ref.w(p + ".mlp.fc2.weight"), ref.w(p + ".mlp.fc2.bias"))
+    x = F.layer_norm(x, (hidden,), ref.w("head.encoder.norm.weight"), ref.w("head.encoder.norm.bias"))
+    stages["head_input"] = x
+    logits = F.linear(x, ref.w("head.head.weight"), ref.w("head.head.bias"))
+    stages["logits"] = logits
+    writer = gguf.GGUFWriter(str(output), arch="ppocrv6")
+    writer.add_string("general.name", cfg["model_type"])
+    writer.add_string("ppocrv6.variant", "small" if cfg["model_type"] == "pp_ocrv6_small_rec" else "medium")
+    writer.add_string("ppocrv6.kind", "rec")
+    writer.add_uint32("ppocrv6.reference", 1)
+    for name, value in stages.items():
+        writer.add_tensor("ppocrv6." + name, value[0].detach().numpy().reshape(-1).astype(np.float32))
+    writer.write_header_to_file(); writer.write_kv_data_to_file(); writer.write_tensors_to_file(); writer.close()
+    print(f"wrote {output} ({len(stages)} stages)")
+
+
 def dump(model_dir: Path, image: Path, output: Path):
     ref = Ref(model_dir / "model.safetensors")
     cfg = __import__("json").loads((model_dir / "config.json").read_text())
     if cfg["model_type"] != "pp_ocrv6_tiny_rec":
-        raise SystemExit("reference runner currently covers tiny_rec; extend SVTR/det before dumping those variants")
+        return dump_large(ref, cfg, image, output)
     stages = {}
     x = preprocess(image)
     stages["input"] = x

@@ -100,6 +100,30 @@ static bool apply_conv(const pp_conv & c, const std::vector<float> & in, int h, 
     out.assign((size_t)c.out_ch * oh * ow, 0.0f);
     auto ww = to_f32(c.w);
     auto bb = to_f32(c.b);
+    // Even 2x2 kernels in the large recognizer stem use asymmetric effective
+    // borders (one branch is valid, the other restores the spatial size).
+    // Keep this small path explicit; it also avoids backend-specific
+    // even-kernel padding behavior in the generic CPU helper.
+    if (c.kh == 2 && c.kw == 2) {
+        const int ci = c.in_ch / c.groups, co = c.out_ch / c.groups;
+        for (int g = 0; g < c.groups; ++g)
+            for (int oc = 0; oc < co; ++oc)
+                for (int oy = 0; oy < oh; ++oy)
+                    for (int ox = 0; ox < ow; ++ox) {
+                        float sum = bb.empty() ? 0.0f : bb[g * co + oc];
+                        for (int ic = 0; ic < ci; ++ic)
+                            for (int ky = 0; ky < 2; ++ky)
+                                for (int kx = 0; kx < 2; ++kx) {
+                                    const int iy = oy * c.stride_h + ky - c.pad_h;
+                                    const int ix = ox * c.stride_w + kx - c.pad_w;
+                                    if (iy >= 0 && iy < h && ix >= 0 && ix < w)
+                                        sum += in[(g * ci + ic) * h * w + iy * w + ix] *
+                                               ww[(g * co + oc) * ci * 4 + ic * 4 + ky * 2 + kx];
+                                }
+                        out[(g * co + oc) * oh * ow + oy * ow + ox] = sum;
+                    }
+        return true;
+    }
     if (c.pad_h == c.pad_w && c.stride_h == c.stride_w) {
         conv2d_cpu(in.data(), out.data(), ww.data(), bb.empty() ? nullptr : bb.data(), c.in_ch, c.out_ch, h, w, c.kh,
                    c.kw, c.stride, c.pad_h, c.groups);
@@ -239,7 +263,6 @@ static bool map_model(ppocrv6_ocr_context * c) {
         c->stem.push_back(conv(m, "rec.bb.stem.stem2a.conv", s, s / 2, 2, 1));
         c->stem.back().pad_h = c->stem.back().pad_w = 0;
         c->stem.push_back(conv(m, "rec.bb.stem.stem2b.conv", s / 2, s, 2, 1));
-        c->stem.back().pad_h = c->stem.back().pad_w = 0;
         c->stem.push_back(conv(m, "rec.bb.stem.stem3.conv", s * 2, s, 3, 2));
         c->stem.push_back(conv(m, "rec.bb.stem.stem4.conv", s, stem2, 1, 1));
     }
@@ -436,6 +459,12 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         }
     }
     layernorm_tokens(tok, ow, c->hidden, c->svtr_norm_w, c->svtr_norm_b);
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.head_input", tok.data(), tok.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(tok.begin(), tok.end(), tok.begin(), 0.0)),
+                r.is_pass() ? "PASS" : "FAIL");
+    }
     c->result.clear();
     int last = -1;
     auto hw = to_f32(c->svtr_head_w), hb = to_f32(c->svtr_head_b);
@@ -449,6 +478,12 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];
         last = best;
     }
+    if (c->diff) {
+        auto r = c->diff->compare("ppocrv6.logits", logits.data(), logits.size(), -1);
+        fprintf(stderr, "[ppocrv6-diff] logits cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                std::sqrt(std::inner_product(logits.begin(), logits.end(), logits.begin(), 0.0)),
+                r.is_pass() ? "PASS" : "FAIL");
+    }
     if (out_len) *out_len = (int)c->result.size();
     return c->result.c_str();
 }
@@ -458,30 +493,46 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     int h = 48, w = 320;
     if (c->large_stem) {
         int oh, ow;
+        auto diff_stem = [&](const char * name, const std::vector<float> & v) {
+            if (!c->diff) return;
+            auto r = c->diff->compare(name, v.data(), v.size(), -1);
+            fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f %s\n", name, r.cos_min, r.is_pass() ? "PASS" : "FAIL");
+        };
         if (!apply_conv(c->stem[0], x, h, w, y, oh, ow)) return nullptr;
         silu(y);
         x.swap(y);
         h = oh;
         w = ow;
+        diff_stem("ppocrv6.large_stem1", x);
         std::vector<float> branch;
         if (!apply_conv(c->stem[1], x, h, w, branch, oh, ow)) return nullptr;
         silu(branch);
+        diff_stem("ppocrv6.large_stem2a", branch);
         if (!apply_conv(c->stem[2], branch, oh, ow, y, oh, ow)) return nullptr;
         silu(y);
         branch.swap(y);
+        diff_stem("ppocrv6.large_stem2b", branch);
         std::vector<float> cat((size_t)(x.size() + branch.size()));
         std::memcpy(cat.data(), x.data(), x.size() * sizeof(float));
         std::memcpy(cat.data() + x.size(), branch.data(), branch.size() * sizeof(float));
+        diff_stem("ppocrv6.large_cat", cat);
         if (!apply_conv(c->stem[3], cat, h, w, y, oh, ow)) return nullptr;
         silu(y);
         x.swap(y);
         h = oh;
         w = ow;
+        diff_stem("ppocrv6.large_stem3", x);
         if (!apply_conv(c->stem[4], x, h, w, y, oh, ow)) return nullptr;
         silu(y);
         x.swap(y);
         h = oh;
         w = ow;
+        if (c->diff) {
+            auto r = c->diff->compare("ppocrv6.large_stem", x.data(), x.size(), -1);
+            fprintf(stderr, "[ppocrv6-diff] ppocrv6.large_stem cos=%.6f |mine|=%.6g %s\n", r.cos_min,
+                    std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)),
+                    r.is_pass() ? "PASS" : "FAIL");
+        }
     } else
         for (const auto & s : c->stem) {
             int oh, ow;
