@@ -30,6 +30,12 @@
   grouping plus dynamic-width CRNN graphs) and `words` mode (LayoutLM/Tesseract
   handoff style). This is a pipeline smoke gate only; Python box/text parity
   and production orchestration remain open.
+- Tesseract parity is explicitly **not proven**. The converter, Python
+  reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
+  recorded completed reference run for the exact installed `eng.traineddata`,
+  no verified source hash for the backup GGUF, and no full page-segmentation or
+  word-spacing parity. Tesseract remains a separate recognizer/segmentation
+  acceptance lane, not ground truth for the EasyOCR page smoke.
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
@@ -120,6 +126,9 @@ recognizer and LayoutLM consumer.
       `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
       it with EasyOCR CRNN on identical detector crops.
+- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
+      its `-ref.gguf`, pass all captured stages and decoded line output, then
+      compare page segmentation/spacing independently.
 - [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
       languages, then run GPU performance A/B.
 

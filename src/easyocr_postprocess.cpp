@@ -5,6 +5,12 @@
 
 namespace easyocr_postprocess {
 
+int recognizer_canvas_width(int crop_width, int crop_height) {
+    if (crop_width <= 0 || crop_height <= 0) return 0;
+    const int resized_width = std::max(1, (int)std::ceil(64.0 * crop_width / crop_height));
+    return std::max(64, ((resized_width + 63) / 64) * 64);
+}
+
 bool ctc_greedy_decode(const std::vector<int> & tokens, const std::vector<std::string> & vocabulary,
                        std::string * output, int * invalid_token) {
     if (!output) return false;
