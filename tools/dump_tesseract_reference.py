@@ -290,6 +290,27 @@ def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False, int_mode=False):
     return output
 
 
+class _TRand:
+    def __init__(self, seed):
+        self.seed = seed & ((1 << 64) - 1)
+
+    def next_int(self):
+        self.seed = (self.seed * 6364136223846793005 + 1442695040888963407) & ((1 << 64) - 1)
+        return self.seed >> 33
+
+    def signed_rand(self, scale):
+        return scale * (2.0 * self.next_int() / 2147483647.0 - 1.0)
+
+
+def _round_away(value):
+    return np.floor(value + 0.5) if value >= 0 else -np.floor(-value + 0.5)
+
+
+_CONVOLVE_RNG = None
+_CONVOLVE_INT_MODE = False
+_SAMPLE_ITERATION = 0
+
+
 def convolve_stack(x, half_x, half_y):
     """Tesseract 'Convolve' layer: stack 3x3 neighborhood (no learned weights).
 
@@ -301,18 +322,22 @@ def convolve_stack(x, half_x, half_y):
     kh = 2 * half_y + 1
     out = np.zeros((H, W, C * kw * kh), dtype=np.float32)
 
-    for dx in range(-half_x, half_x + 1):
-        for dy in range(-half_y, half_y + 1):
-            out_offset = ((dx + half_x) * kh + (dy + half_y)) * C
-            for y in range(H):
-                for xi in range(W):
+    for y in range(H):
+        for xi in range(W):
+            for dx in range(-half_x, half_x + 1):
+                for dy in range(-half_y, half_y + 1):
+                    out_offset = ((dx + half_x) * kh + (dy + half_y)) * C
                     sy = y + dy
                     sx = xi + dx
                     if 0 <= sy < H and 0 <= sx < W:
                         out[y, xi, out_offset:out_offset+C] = x[sy, sx, :]
                     else:
-                        # Random fill in Tesseract — use zeros for determinism
-                        pass
+                        for c in range(C):
+                            if _CONVOLVE_INT_MODE:
+                                value = _round_away(_CONVOLVE_RNG.signed_rand(127.0)) / 127.0
+                            else:
+                                value = _CONVOLVE_RNG.signed_rand(1.0)
+                            out[y, xi, out_offset + c] = value
     return out
 
 
@@ -380,6 +405,10 @@ def run_forward(root, image_gray, captures, int_mode=False):
         return layers
 
     layers = find_layers(root)
+    global _CONVOLVE_RNG, _CONVOLVE_INT_MODE
+    _CONVOLVE_RNG = _TRand(_SAMPLE_ITERATION * 0x10000001)
+    _CONVOLVE_RNG.next_int()  # LSTMRecognizer::SetRandomSeed discards one value.
+    _CONVOLVE_INT_MODE = int_mode
 
     # Input: (H, W) → (H, W, 1)
     H, W = image_gray.shape
@@ -536,19 +565,23 @@ def _tesseract_normalize(img_u8):
     if not maxes:
         maxes = [255.0]
 
-    # Match the C++ float implementation, rather than NumPy's float64
-    # percentile path. A one-ulp change here can cross Tesseract's int8 input
-    # rounding boundary.
-    def percentile_float(values, q):
-        values = np.sort(np.asarray(values, dtype=np.float32))
-        position = np.float32(q) * np.float32(values.size - 1)
-        lower = int(np.floor(position))
-        upper = min(values.size - 1, lower + 1)
-        fraction = np.float32(position - np.float32(lower))
-        return np.float32(values[lower] + fraction * (values[upper] - values[lower]))
+    # Match Tesseract's STATS::ile: histogram buckets 0..255, then linear
+    # interpolation within the bucket containing frac * total_count. A
+    # sorted-sample percentile crosses int8 input rounding boundaries.
+    def percentile_histogram(values, q):
+        buckets = np.bincount(np.asarray(values, dtype=np.uint8), minlength=256)
+        total = int(len(values))
+        target = max(1.0, min(float(total), float(q) * total))
+        cumulative = 0
+        for index, count in enumerate(buckets):
+            cumulative += int(count)
+            if cumulative >= target and count > 0:
+                # Tesseract's loop increments index before STATS::ile returns.
+                return float(index + 1 - (cumulative - target) / count)
+        return 0.0
 
-    black = float(percentile_float(mins, 0.25))
-    white = float(percentile_float(maxes, 0.75))
+    black = percentile_histogram(mins, 0.25)
+    white = percentile_histogram(maxes, 0.75)
     contrast = (white - black) / 2.0
     if contrast <= 0:
         contrast = 1.0
@@ -623,7 +656,9 @@ def main():
     vgsl = r.read_string()
     training_flags = r.read_i32()
     _ = r.read_i32()  # training_iteration
-    _ = r.read_i32()  # sample_iteration
+    sample_iteration = r.read_i32()
+    global _SAMPLE_ITERATION
+    _SAMPLE_ITERATION = sample_iteration
     null_char = r.read_i32()
 
     # Find input height

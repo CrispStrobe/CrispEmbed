@@ -182,9 +182,19 @@ recognizer and LayoutLM consumer.
       cosine `0.998405` with identical decoded output; generic CTC and
       Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
       CLI `Brighton`.
-- [ ] Obtain an official Tesseract internal activation/raw-row comparison to
-      resolve the remaining CLI-logit discrepancy before enabling any beam in
-      production.
+- [x] Obtain an official Tesseract internal activation/raw-row comparison;
+      the remaining discrepancy was traced to seeded Convolve padding and is
+      now resolved below.
+- [x] Resolve the official Tesseract discrepancy: PSM7 creates a 601x36
+      internal crop, and its first divergent tensor was `Convolve` boundary
+      padding. Tesseract uses a seeded `TRand` based on serialized
+      `sample_iteration` rather than zero padding. GGUF metadata, the Python
+      reference, and native path now preserve/replay that state. Fresh
+      official-vs-native comparison passes all 9 captured tensors at cosine
+      1.000000 (logits max error 6.6e-7) and decodes `Brighton` identically.
+- [ ] Port and validate Tesseract recode/dictionary scoring separately from
+      the now-proven network arithmetic; do not enable a production beam from
+      the diagnostic implementation.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
