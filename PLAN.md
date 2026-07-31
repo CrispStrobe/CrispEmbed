@@ -336,8 +336,8 @@ be recorded separately before publishing a GGUF.
 |---|---|---|---|---|
 | Page orientation | `PP-LCNet_x1_0_doc_ori` | PaddleOCR is Apache-2.0; verify the exact exported checkpoint terms | Strong practical choice: four-way 0°/90°/180°/270° classifier, official docs report 99.06% on its test set | First port candidate |
 | Line orientation | `PP-LCNet_x1_0_textline_ori` | Same Apache-2.0 project/weight-provenance audit required | Strong practical choice for per-line 0°/180° correction | First port candidate |
-| Text detection | `PP-OCRv6` det | Apache-2.0 PaddleOCR code; model artifact provenance must be pinned and audited | Current practical high-quality/throughput baseline; supports multilingual deployment | Port/benchmark when PP-OCRv6 branch lands |
-| Text recognition | `PP-OCRv6` rec | Same code/weight distinction as detector | Current practical high-quality/throughput baseline; one unified family is preferable to many language-specific recognizers | Port/benchmark with detector |
+| Text detection | `PP-OCRv6` det | Apache-2.0 PaddleOCR source; six `mlx-community` artifacts documented | Current practical high-quality/throughput baseline; tiny/small/medium parity validated | Integrated into pipeline; complete live matrix pending |
+| Text recognition | `PP-OCRv6` rec | Apache-2.0 source/artifacts; F16 default, policy Q4 debug-only | Unified CTC recognizer family for multilingual line crops | Integrated; tiny/small/medium live quality capture pending |
 | Text detection fallback | `DBNet` / `DBNet++` | Select MIT/Apache/BSD implementation and audit weights | Mature, reliable fallback; generally below current PP-OCR quality on difficult documents | Keep as CPU/portable fallback |
 | Denoising | `NAFNet` | Upstream repository/checkpoint terms require explicit audit before redistribution | Strong efficient restoration baseline; upstream describes it as state-of-the-art for its restoration tasks | Keep only with artifact audit |
 | Denoising/deblurring | `Restormer` | MIT repository license | Strong high-resolution denoising/deblurring/deraining model; official repo calls it SOTA for those tasks | Safe preferred learned restorer |
@@ -402,12 +402,13 @@ runtime implementations, converters, tests, and local GGUF artifacts for them:
 | `SAFMN` | `src/safmn_sr.cpp`; `models/convert-safmn-to-gguf.py`; local `safmn-x4-f32.gguf` |
 | `TBSRN` | `src/tbsrn_sr.cpp`; `models/convert-tbsrn-to-gguf.py`; local `tbsrn-telescope-f16.gguf` |
 
-PP-OCRv6 detector/recognizer GGUF files also exist in the shared model volume
-(`PP-OCRv6_{tiny,small,medium}_{det,rec}-*.gguf`), including policy Q4_K and
-Q8_0 variants. They are **not yet integrated into the current main-branch
-runtime**; the PP-OCRv6 task remains an integration/port task, not a model
-acquisition task. The port must include detector postprocessing, recognizer
-dictionary handling, line orientation, and live German/Arabic/receipt tests.
+PP-OCRv6 detector/recognizer GGUF files exist in the shared model volume
+(`PP-OCRv6_{tiny,small,medium}_{det,rec}-*.gguf`), including policy Q4_K
+artifacts. The F16 tiny/small/medium pairings are now integrated into the
+native detector→line-crop→CTC pipeline and exposed as orchestrator engine 15,
+CLI `--ocr-engine ppocrv6`, and six registry entries. Detector diff parity is
+validated; live German/Arabic/receipt quality capture and HF-card parity
+metrics remain pending.
 
 The genuinely new preprocessing ports are therefore:
 

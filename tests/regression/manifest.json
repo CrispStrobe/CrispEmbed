@@ -1142,6 +1142,51 @@
       "match": {
         "max_cer": 0.1
       }
+    },
+    {
+      "name": "ppocrv6-tiny",
+      "engine": "ppocrv6",
+      "_comment": "PP-OCRv6 tiny detector + CTC recognizer. Detector and recognizer are Apache-2.0 GGUF artifacts from mlx-community; expected_text remains null until the live fox/German output is captured and reviewed.",
+      "gguf": {
+        "repo": "mlx-community/PP-OCRv6_tiny_rec-GGUF",
+        "file": "PP-OCRv6_tiny_rec-f16.gguf",
+        "revision": "main",
+        "approx_size_mb": 2
+      },
+      "detector": "PP-OCRv6_tiny_det-f16.gguf",
+      "pipeline_engine": "ppocrv6",
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null
+    },
+    {
+      "name": "ppocrv6-small",
+      "engine": "ppocrv6",
+      "_comment": "PP-OCRv6 small detector + CTC recognizer; Apache-2.0 artifacts, quality capture pending.",
+      "gguf": {
+        "repo": "mlx-community/PP-OCRv6_small_rec-GGUF",
+        "file": "PP-OCRv6_small_rec-f16.gguf",
+        "revision": "main",
+        "approx_size_mb": 10
+      },
+      "detector": "PP-OCRv6_small_det-f16.gguf",
+      "pipeline_engine": "ppocrv6",
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null
+    },
+    {
+      "name": "ppocrv6-medium",
+      "engine": "ppocrv6",
+      "_comment": "PP-OCRv6 medium detector + CTC recognizer; detector parity cosine 0.999999940, Apache-2.0 artifacts, quality capture pending.",
+      "gguf": {
+        "repo": "mlx-community/PP-OCRv6_medium_rec-GGUF",
+        "file": "PP-OCRv6_medium_rec-f16.gguf",
+        "revision": "main",
+        "approx_size_mb": 35
+      },
+      "detector": "PP-OCRv6_medium_det-f16.gguf",
+      "pipeline_engine": "ppocrv6",
+      "sample": "tests/regression/images/fox.png",
+      "expected_text": null
     }
   ]
 }
