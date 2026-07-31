@@ -22,6 +22,52 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
 
+### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
+
+The PP-OCRv6 port must follow the official PaddleOCR/RapidOCR handoff rather
+than treating a segmentation result as an axis-aligned crop. The canonical
+path is:
+
+`PP-OCRv6 DB segmentation → DBPostProcess quadrilateral → ordered perspective
+warp → line-orientation classifier → PP-OCRv6 recognizer`
+
+Requirements:
+
+1. Keep the detector's four-point polygon through postprocessing, including
+   Paddle's contour score, `thresh=0.2`, `box_thresh=0.45`, `unclip_ratio=1.4`,
+   candidate cap, clipping, and reading-order sort. The external
+   `/Volumes/backups/ai/crispembed-gguf/dbnet-ic15-f16.gguf` remains a fallback
+   detector, not a replacement for the PP-OCRv6 detector.
+2. Add a shared quadrilateral crop helper equivalent to RapidOCR's
+   `get_rotate_crop_image`: canonical TL/TR/BR/BL ordering, perspective
+   transform, width/height derivation, clipping, and deterministic minimum
+   height padding. Do not collapse rotated or skewed regions to an
+   axis-aligned rectangle.
+3. Port the optional PP-LCNet text-line orientation classifier (0°/180°),
+   exposing predicted angle, confidence, and whether a rotation was applied
+   through native and C API results. The existing heuristic 180° detector is
+   only a fallback when the classifier is unavailable.
+4. Apply the official recognizer input contract after warping: RGB, height 48,
+   aspect-preserving width, cap/pad to 320, declared normalization, and the
+   model dictionary/CTC decode. Preserve sensitive head weights at higher
+   precision and keep `-ref.gguf` fixtures for each tier.
+5. Provide one comparison harness for four combinations: PP-det→PP-rec,
+   DBNet→PP-rec with grouped line boxes, DBNet→PP-rec word boxes, and the
+   direct legacy DBNet pipeline. Report detector polygons, crop dimensions,
+   orientation decisions, region/text counts, latency, CER/WER where an oracle
+   exists, and `crispembed-diff` cosine metrics.
+6. Gate tiny/small/medium on the 10 CC0 fixtures plus derived rotation,
+   skew, perspective, low-DPI, and mixed-orientation fixtures. A candidate is
+   not publishable until Python/PaddleX and native agree on crop geometry and
+   the complete pipeline no longer emits full-page recognizer garbage on the
+   German fixtures.
+
+Implementation order: shared quad warp and telemetry; PP-LCNet classifier;
+PP-det→PP-rec integration; DBNet fallback adapter; per-stage diff fixtures;
+benchmark and regression manifest; then publish only to `cstr/` from the
+external model volume. This work must be merged from remote `main` before
+each landing checkpoint and pushed back to remote `main` after the checkpoint.
+
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
 Metal; DBNet→EasyOCR crop smoke now runs with the existing cstr/dbnet-ic15
