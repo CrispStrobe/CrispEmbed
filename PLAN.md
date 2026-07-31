@@ -432,7 +432,13 @@ downstream handoff parity, not detector-box similarity alone.
       against a reference produced with the same quantized arithmetic before
       adding a recode/dictionary beam. A plain CTC prefix beam over current
       F32 logits still returns `Drighton`, so beam search alone cannot explain
-      the CLI result.
+      the CLI result. An initial implementation is opt-in via
+      `CRISPEMBED_TESSERACT_INT8=1`; it uses row-wise symmetric int8 weights
+      and per-vector activation scales. On the official full-page fixture it
+      produced 1,016 characters in 18.8 s versus the current F32-math path's
+      1,017 characters in 11.1 s, and its direct logits are not parity-safe.
+      It must not become the default; exact Tesseract int-mode scales/kernels
+      are still required.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
