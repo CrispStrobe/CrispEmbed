@@ -594,12 +594,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         std::vector<box> out;
         out.reserve(native_boxes.size());
         for (const auto & b : native_boxes) {
-            box v{ b.x, b.y, b.w, b.h, b.score };
-            for (int i = 0; i < 4; ++i) {
-                v.qx[i] = b.qx[i];
-                v.qy[i] = b.qy[i];
-            }
-            out.push_back(v);
+            box p{ b.x, b.y, b.w, b.h, b.score };
+            std::copy(std::begin(b.qx), std::end(b.qx), std::begin(p.qx));
+            std::copy(std::begin(b.qy), std::end(b.qy), std::begin(p.qy));
+            out.push_back(p);
         }
         float sx = float(w) / ow, sy = float(h) / oh;
         for (auto & b : out) {
@@ -695,12 +693,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     std::vector<box> out;
     out.reserve(native_boxes.size());
     for (const auto & b : native_boxes) {
-        box v{ b.x, b.y, b.w, b.h, b.score };
-        for (int i = 0; i < 4; ++i) {
-            v.qx[i] = b.qx[i];
-            v.qy[i] = b.qy[i];
-        }
-        out.push_back(v);
+        box p{ b.x, b.y, b.w, b.h, b.score };
+        std::copy(std::begin(b.qx), std::end(b.qx), std::begin(p.qx));
+        std::copy(std::begin(b.qy), std::end(b.qy), std::begin(p.qy));
+        out.push_back(p);
     }
     float sx = float(w) / ow, sy = float(h) / oh;
     for (auto & b : out) {
@@ -758,6 +754,10 @@ std::vector<box> detect_file(context * c, const char * path, float threshold) {
         b.w *= float(w) / rw;
         b.y *= float(h) / rh;
         b.h *= float(h) / rh;
+        for (int i = 0; i < 4; ++i) {
+            b.qx[i] *= float(w) / rw;
+            b.qy[i] *= float(h) / rh;
+        }
     }
     stbi_image_free(p);
     return r;

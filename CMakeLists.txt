@@ -203,8 +203,11 @@ list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppocrv6_det.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pplcnet_orientation.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_layout.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_postprocess.cpp)
 list(APPEND CRISPEMBED_SOURCES src/easyocr_craft.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
@@ -400,6 +403,12 @@ target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
 
 add_executable(test-easyocr-layout tests/test_easyocr_layout.cpp)
 target_link_libraries(test-easyocr-layout PRIVATE crispembed)
+
+add_executable(test-easyocr-postprocess tests/test_easyocr_postprocess.cpp)
+target_link_libraries(test-easyocr-postprocess PRIVATE crispembed)
+
+add_executable(test-easyocr-pipeline tests/test_easyocr_pipeline.cpp)
+target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
 
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
@@ -673,6 +682,14 @@ target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)
 add_executable(test-ppocrv6-dbnet tests/test_ppocrv6_dbnet.cpp)
 target_include_directories(test-ppocrv6-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-ppocrv6-dbnet PRIVATE crispembed)
+
+add_executable(test-ppocrv6-direct tests/test_ppocrv6_direct.cpp)
+target_include_directories(test-ppocrv6-direct PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ppocrv6-direct PRIVATE crispembed)
+
+add_executable(test-pplcnet-orientation tests/test_pplcnet_orientation.cpp)
+target_include_directories(test-pplcnet-orientation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-pplcnet-orientation PRIVATE crispembed)
 
 endif() # NOT iOS
 

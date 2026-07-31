@@ -4653,6 +4653,7 @@ struct ocr_pipeline_wrapper {
     bool is_ppocrv6 = false;
     std::vector<ocr_pipeline::ocr_result> results;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::vector<std::string> text_storage;
     std::string rec_buf;
 };
@@ -4776,6 +4777,7 @@ struct ocr_pipeline_orch_wrapper {
     ocr_orchestrator::context * ctx = nullptr;
     ocr_orchestrator::result last;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::string full_text;
     std::string markdown;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
@@ -4933,6 +4935,20 @@ extern "C" const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * o
     return w->last.reading_order.empty() ? nullptr : w->last.reading_order.data();
 }
 
+extern "C" const crispembed_ocr_stage_metric * crispembed_ocr_pipeline_stage_metrics(void * ctx, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    w->c_stage_metrics.clear();
+    w->c_stage_metrics.reserve(w->last.stage_metrics.size());
+    for (const auto & m : w->last.stage_metrics) {
+        w->c_stage_metrics.push_back({ m.index, m.engine.c_str(), m.elapsed_ms, m.cleanup_applied ? 1 : 0,
+                                       m.accepted ? 1 : 0, m.text_chars, m.mean_confidence });
+    }
+    if (out_n) *out_n = (int)w->c_stage_metrics.size();
+    return w->c_stage_metrics.empty() ? nullptr : w->c_stage_metrics.data();
+}
+
 extern "C" const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len) {
     if (out_len) *out_len = 0;
     if (!ctx) return nullptr;
@@ -5039,6 +5055,7 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         st.enabled = true;
         if (s.model_a) st.model_a = s.model_a;
         if (s.model_b) st.model_b = s.model_b;
+        if (s.model_c) st.model_c = s.model_c;
         st.cleanup.enabled = s.cleanup_enabled != 0;
         st.cleanup.params = to_cleanup(s.cleanup);
         st.cleanup.denoise = s.denoise != 0;
@@ -6092,6 +6109,37 @@ extern "C" int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * 
     return ret;
 }
 
+extern "C" const crispembed_pdf_page_dpi_result * crispembed_pdf_all_pages_dpi(const char * pdf_path,
+                                                                               int * out_n_pages) {
+    if (out_n_pages) *out_n_pages = 0;
+    int n_pages = 0;
+    pdf_page_dpi_result * source = pdf_all_pages_dpi(pdf_path, &n_pages);
+    if (!source || n_pages <= 0) {
+        pdf_dpi_free(source);
+        return nullptr;
+    }
+    auto * results = (crispembed_pdf_page_dpi_result *)calloc((size_t)n_pages, sizeof(crispembed_pdf_page_dpi_result));
+    if (!results) {
+        pdf_dpi_free(source);
+        return nullptr;
+    }
+    for (int i = 0; i < n_pages; i++) {
+        results[i].dpi = source[i].dpi;
+        results[i].dpi_min = source[i].dpi_min;
+        results[i].dpi_max = source[i].dpi_max;
+        results[i].n_images = source[i].n_images;
+        results[i].page_width_pt = source[i].page_width_pt;
+        results[i].page_height_pt = source[i].page_height_pt;
+    }
+    pdf_dpi_free(source);
+    if (out_n_pages) *out_n_pages = n_pages;
+    return results;
+}
+
+extern "C" void crispembed_pdf_all_pages_dpi_free(const crispembed_pdf_page_dpi_result * results) {
+    free((void *)results);
+}
+
 extern "C" int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h) {
     return dewarp_page(gray, w, h, out, out_w, out_h);
 }
@@ -6134,6 +6182,10 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
 
 extern "C" int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence) {
     return find_skew_angle(gray, w, h, angle, confidence);
+}
+
+extern "C" int crispembed_detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence) {
+    return detect_page_orientation(gray, w, h, confidence);
 }
 
 extern "C" void crispembed_adaptive_binarize(const uint8_t * gray, int w, int h, uint8_t * out) {

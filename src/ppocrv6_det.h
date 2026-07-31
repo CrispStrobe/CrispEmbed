@@ -8,7 +8,7 @@ namespace ppocrv6_det {
 
 struct box {
     float x, y, w, h, score;
-    float qx[4] = { 0, 0, 0, 0 }, qy[4] = { 0, 0, 0, 0 };
+    float qx[4] = {}, qy[4] = {};
 };
 struct context;
 

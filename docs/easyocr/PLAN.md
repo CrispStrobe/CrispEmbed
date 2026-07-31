@@ -30,6 +30,27 @@
   grouping plus dynamic-width CRNN graphs) and `words` mode (LayoutLM/Tesseract
   handoff style). This is a pipeline smoke gate only; Python box/text parity
   and production orchestration remain open.
+- Tesseract parity is explicitly **not proven**. The converter, Python
+  reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
+  recorded completed reference run for the exact installed `eng.traineddata`,
+  no verified source hash for the backup GGUF, and no full page-segmentation or
+  word-spacing parity. Tesseract remains a separate recognizer/segmentation
+  acceptance lane, not ground truth for the EasyOCR page smoke.
+- The page path audit found a separate preprocessing boundary: EasyOCR's
+  `get_image_list` uses OpenCV `resize(..., interpolation=1)` (bilinear), while
+  the standalone recognizer reference fixture was generated with PIL bicubic.
+  An experimental native bilinear substitution failed the existing diff at
+  `sequence_input`, `bilstm_0`, and `logits` (`Ea` versus `5a`), so it is not
+  retained in production until a matching bilinear `-ref.gguf` is regenerated.
+- A strict port of EasyOCR's horizontal gap thresholds was rejected for the
+  current DBNet artifact: it split 98 fragmented detector regions into 26
+  recognition units instead of the existing 12 line units. DBNet therefore
+needs a detector-specific line adapter before those thresholds can replace
+the current y-band grouping.
+- The first DBNet adapter is now explicit in `easyocr_layout`: it preserves
+  fragment-tolerant y-band aggregation for DBNet line crops, while word mode
+  remains left-to-right y-band ordering. Horizontal-gap splitting stays a
+  later detector-specific refinement.
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 84-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
@@ -99,17 +120,36 @@ recognizer and LayoutLM consumer.
 
 ### Selected implementation sequence
 
-- [ ] Extract detector boxes/scores into a reusable production adapter API.
-- [ ] Move `lines` and `words` policy selection out of the smoke test and into
-      the OCR pipeline configuration.
-- [ ] Add a manifest-driven Python reference for boxes, order, crops, text,
-      confidence, and normalized boxes.
-- [ ] Add independent postprocessing tests: grouping, reading order, CTC
-      collapse, dictionary lookup, confidence, and box normalization.
+- [x] Extract detector boxes/scores into a reusable layout-region API with
+      explicit line and word ordering policies.
+- [x] Move `lines` and `words` policy selection into the reusable
+      `easyocr_pipeline` configuration API; retain the smoke test as a
+      model-backed regression caller.
+- [x] Add a manifest-driven Python reference for boxes, order, crops, text,
+      confidence, and normalized boxes. `tools/easyocr_postprocess_reference.py`
+      consumes EasyOCR Python `readtext(detail=1)` output and
+      `tests/test_easyocr_postprocess_reference.py` covers both modes.
+- [x] Emit the same versioned manifest from `test-easyocr-pipeline` and add
+      `tools/compare_easyocr_manifests.py`; native serialization and comparator
+      self-check pass on the 98-word DBNet page run, with explicit mismatch
+      coverage in `tests/test_easyocr_manifest_compare.py`.
+- [x] Add native handoff invariants for word-mode line/x ordering and
+      normalized-box bounds; external Tesseract TSV geometry/text parity is
+      still pending.
+- [x] Add a standard-library Tesseract TSV geometry/order comparator and
+      self-test; a real page comparison remains an evidence gate, not a claim
+      of Tesseract text parity.
+- [x] Add independent postprocessing tests: grouping, reading order, CTC
+      collapse, dictionary/vocabulary validation, EasyOCR custom-mean
+      confidence, and box normalization. The production recognizer now uses
+      the same nonblank confidence convention.
 - [ ] Exercise the structured handoff with LayoutLMv2/v3 using
       `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
       it with EasyOCR CRNN on identical detector crops.
+- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
+      its `-ref.gguf`, pass all captured stages and decoded line output, then
+      compare page segmentation/spacing independently.
 - [ ] Only after these gates pass, generalize DBNet18/50 and all recognizer
       languages, then run GPU performance A/B.
 

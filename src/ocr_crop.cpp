@@ -60,6 +60,17 @@ bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height) {
     return orient_180_gray_info(pixels, width, height).corrected;
 }
 
+void rotate_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
+    if (width <= 0 || height <= 0 || pixels.size() != (size_t)width * height * 3) return;
+    for (int y = 0; y < (height + 1) / 2; ++y)
+        for (int x = 0; x < width; ++x) {
+            const size_t a = ((size_t)y * width + x) * 3;
+            const size_t b = ((size_t)(height - 1 - y) * width + (width - 1 - x)) * 3;
+            if (a >= b) continue;
+            for (int c = 0; c < 3; ++c) std::swap(pixels[a + c], pixels[b + c]);
+        }
+}
+
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,
                              int crop_h, int padding, int * out_width, int * out_height) {
     if (out_width) *out_width = 0;
@@ -88,56 +99,51 @@ std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height,
                                   const float qy[4], int padding, int * out_width, int * out_height) {
     if (out_width) *out_width = 0;
     if (out_height) *out_height = 0;
-    if (!pixels || width <= 0 || height <= 0 || channels <= 0 || !qx || !qy) return {};
-    struct point {
-        float x, y;
-    };
-    std::array<point, 4> p{}, o{};
-    for (int i = 0; i < 4; ++i) p[i] = { qx[i], qy[i] };
+    if (!pixels || !qx || !qy || width <= 0 || height <= 0 || channels <= 0) return {};
+
+    // DBPostProcess already emits clockwise points, but canonicalizing here
+    // makes this helper safe for adapters receiving arbitrary point order.
+    std::array<int, 4> order{};
     float min_sum = INFINITY, max_sum = -INFINITY, min_diff = INFINITY, max_diff = -INFINITY;
-    for (const auto & v : p) {
-        const float sum = v.x + v.y, diff = v.x - v.y;
+    for (int i = 0; i < 4; ++i) {
+        const float sum = qx[i] + qy[i], diff = qx[i] - qy[i];
         if (sum < min_sum) {
             min_sum = sum;
-            o[0] = v;
-        }
-        if (sum > max_sum) {
-            max_sum = sum;
-            o[2] = v;
-        }
-        if (diff < min_diff) {
-            min_diff = diff;
-            o[1] = v;
+            order[0] = i;
         }
         if (diff > max_diff) {
             max_diff = diff;
-            o[3] = v;
+            order[1] = i;
+        }
+        if (sum > max_sum) {
+            max_sum = sum;
+            order[2] = i;
+        }
+        if (diff < min_diff) {
+            min_diff = diff;
+            order[3] = i;
         }
     }
-    auto distance = [](point a, point b) { return std::hypot(a.x - b.x, a.y - b.y); };
+    std::array<float, 4> x{}, y{};
+    for (int i = 0; i < 4; ++i) {
+        x[i] = qx[order[i]];
+        y[i] = qy[order[i]];
+    }
+    auto dist = [&](int a, int b) { return std::hypot(x[a] - x[b], y[a] - y[b]); };
     const int pad = std::max(0, padding);
-    const int ow = std::max(1, (int)std::lround(std::max(distance(o[0], o[1]), distance(o[3], o[2]))) + 2 * pad);
-    const int oh = std::max(1, (int)std::lround(std::max(distance(o[0], o[3]), distance(o[1], o[2]))) + 2 * pad);
+    const int ow = std::max(1, (int)std::lround(std::max(dist(0, 1), dist(3, 2))) + 2 * pad);
+    const int oh = std::max(1, (int)std::lround(std::max(dist(0, 3), dist(1, 2))) + 2 * pad);
     std::vector<uint8_t> result((size_t)ow * oh * channels);
-    auto sample = [&](float x, float y, int c) -> uint8_t {
-        x = std::clamp(x, 0.0f, (float)(width - 1));
-        y = std::clamp(y, 0.0f, (float)(height - 1));
-        const int x0 = (int)std::floor(x), y0 = (int)std::floor(y);
-        const int x1 = std::min(width - 1, x0 + 1), y1 = std::min(height - 1, y0 + 1);
-        const float fx = x - x0, fy = y - y0;
-        auto at = [&](int xx, int yy) { return pixels[((size_t)yy * width + xx) * channels + c]; };
-        const float a = at(x0, y0) * (1 - fx) + at(x1, y0) * fx;
-        const float b = at(x0, y1) * (1 - fx) + at(x1, y1) * fx;
-        return (uint8_t)std::lround(a * (1 - fy) + b * fy);
-    };
-    for (int y = 0; y < oh; ++y) {
-        const float v = std::clamp((y - pad) / (float)std::max(1, oh - 1 - 2 * pad), 0.0f, 1.0f);
-        for (int x = 0; x < ow; ++x) {
-            const float u = std::clamp((x - pad) / (float)std::max(1, ow - 1 - 2 * pad), 0.0f, 1.0f);
-            const float tx = o[0].x + u * (o[1].x - o[0].x), ty = o[0].y + u * (o[1].y - o[0].y);
-            const float bx = o[3].x + u * (o[2].x - o[3].x), by = o[3].y + u * (o[2].y - o[3].y);
-            for (int c = 0; c < channels; ++c)
-                result[((size_t)y * ow + x) * channels + c] = sample(tx + v * (bx - tx), ty + v * (by - ty), c);
+    for (int oy = 0; oy < oh; ++oy) {
+        const float v = std::clamp((oy - pad) / float(std::max(1, oh - 1 - 2 * pad)), 0.0f, 1.0f);
+        for (int ox = 0; ox < ow; ++ox) {
+            const float u = std::clamp((ox - pad) / float(std::max(1, ow - 1 - 2 * pad)), 0.0f, 1.0f);
+            const float top_x = x[0] + u * (x[1] - x[0]), top_y = y[0] + u * (y[1] - y[0]);
+            const float bot_x = x[3] + u * (x[2] - x[3]), bot_y = y[3] + u * (y[2] - y[3]);
+            const int sx = std::clamp((int)std::lround(top_x + v * (bot_x - top_x)), 0, width - 1);
+            const int sy = std::clamp((int)std::lround(top_y + v * (bot_y - top_y)), 0, height - 1);
+            const uint8_t * src = pixels + ((size_t)sy * width + sx) * channels;
+            std::memcpy(result.data() + ((size_t)oy * ow + ox) * channels, src, (size_t)channels);
         }
     }
     if (out_width) *out_width = ow;
