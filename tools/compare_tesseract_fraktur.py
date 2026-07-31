@@ -32,6 +32,17 @@ def distance(left, right):
 
 
 def native_text(args):
+    if args.native_diff:
+        proc = subprocess.run(
+            [args.native_diff, args.model, args.reference, args.image],
+            text=True,
+            capture_output=True,
+            check=True,
+        )
+        match = re.search(r"C\+\+ result: '(.*)'", proc.stdout)
+        if not match:
+            raise RuntimeError("native diff did not emit a C++ result")
+        return match.group(1)
     env = os.environ.copy()
     env.update(
         CRISPEMBED_FRAKTUR_DET_MODEL=args.detector,
@@ -59,12 +70,19 @@ def system_text(args):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True)
-    parser.add_argument("--detector", required=True)
-    parser.add_argument("--model", required=True)
-    parser.add_argument("--native-test", required=True, help="built test-ocr-orchestrator executable")
+    parser.add_argument("--detector", help="DBNet GGUF for the page orchestrator mode")
+    parser.add_argument("--model", required=True, help="Tesseract Fraktur GGUF")
+    native = parser.add_mutually_exclusive_group(required=True)
+    native.add_argument("--native-test", help="built test-ocr-orchestrator executable")
+    native.add_argument("--native-diff", help="built test-tesseract-lstm-diff executable")
+    parser.add_argument("--reference", help="matching -ref.gguf for --native-diff")
     parser.add_argument("--tesseract", default="tesseract")
     parser.add_argument("--psm", type=int, default=3)
     args = parser.parse_args()
+    if args.native_test and not args.detector:
+        parser.error("--detector is required with --native-test")
+    if args.native_diff and not args.reference:
+        parser.error("--reference is required with --native-diff")
 
     native = normalize(native_text(args))
     system = normalize(system_text(args))
