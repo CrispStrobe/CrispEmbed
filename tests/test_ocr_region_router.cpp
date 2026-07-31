@@ -1,4 +1,5 @@
 #include "ocr_region_router.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <vector>
@@ -12,7 +13,7 @@ static int failures = 0;
         }                                                                                                              \
     } while (0)
 
-int main() {
+static int crispembed_test_main() {
     using namespace ocr_region_router;
     using layout_detect::label_id;
 
@@ -46,4 +47,8 @@ int main() {
     CHECK(no_layout.table_layout_indices.empty());
 
     return failures == 0 ? 0 : 1;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

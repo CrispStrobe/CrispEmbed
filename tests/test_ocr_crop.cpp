@@ -1,8 +1,9 @@
 #include "ocr_crop.h"
+#include "core/clean_exit.h"
 
 #include <cassert>
 
-int main() {
+static int crispembed_test_main() {
     const uint8_t pixels[] = {
         0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17,
     }; // 3x2, RGB
@@ -19,4 +20,8 @@ int main() {
     std::vector<uint8_t> gray((size_t)w * h, 255);
     assert(!ocr_crop::orient_180_gray(gray, w, h));
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
