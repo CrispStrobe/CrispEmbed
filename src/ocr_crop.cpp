@@ -7,8 +7,9 @@
 
 namespace ocr_crop {
 
-bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
-    if (width < 8 || height < 8 || pixels.size() != (size_t)width * height * 3) return false;
+orientation_info orient_180_rgb_info(std::vector<uint8_t> & pixels, int width, int height) {
+    orientation_info info;
+    if (width < 8 || height < 8 || pixels.size() != (size_t)width * height * 3) return info;
     std::vector<uint8_t> gray((size_t)width * height);
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
@@ -17,7 +18,9 @@ bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
         }
     }
     float confidence = 0.0f;
-    if (detect_text_angle(gray.data(), width, height, &confidence) != 180 || confidence < 0.75f) return false;
+    info.angle = detect_text_angle(gray.data(), width, height, &confidence);
+    info.confidence = confidence;
+    if (info.angle != 180 || confidence < 0.75f) return info;
     for (int y = 0; y < (height + 1) / 2; y++) {
         for (int x = 0; x < width; x++) {
             const size_t a = ((size_t)y * width + x) * 3;
@@ -26,13 +29,17 @@ bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
             for (int c = 0; c < 3; c++) std::swap(pixels[a + c], pixels[b + c]);
         }
     }
-    return true;
+    info.corrected = true;
+    return info;
 }
 
-bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height) {
-    if (width < 8 || height < 8 || pixels.size() != (size_t)width * height) return false;
+orientation_info orient_180_gray_info(std::vector<uint8_t> & pixels, int width, int height) {
+    orientation_info info;
+    if (width < 8 || height < 8 || pixels.size() != (size_t)width * height) return info;
     float confidence = 0.0f;
-    if (detect_text_angle(pixels.data(), width, height, &confidence) != 180 || confidence < 0.75f) return false;
+    info.angle = detect_text_angle(pixels.data(), width, height, &confidence);
+    info.confidence = confidence;
+    if (info.angle != 180 || confidence < 0.75f) return info;
     for (int y = 0; y < (height + 1) / 2; y++) {
         for (int x = 0; x < width; x++) {
             const size_t a = (size_t)y * width + x;
@@ -40,7 +47,16 @@ bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height) {
             if (a < b) std::swap(pixels[a], pixels[b]);
         }
     }
-    return true;
+    info.corrected = true;
+    return info;
+}
+
+bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
+    return orient_180_rgb_info(pixels, width, height).corrected;
+}
+
+bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height) {
+    return orient_180_gray_info(pixels, width, height).corrected;
 }
 
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,

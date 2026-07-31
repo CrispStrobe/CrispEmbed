@@ -34,6 +34,8 @@ struct ocr_result {
     float rec_confidence;               // recognition confidence (mean per-char softmax)
     std::vector<float> char_conf;       // per-character confidence (empty if unavailable)
     bool orientation_corrected = false; // classical 180° line correction applied
+    int orientation_angle = 0;          // detected line angle in degrees, when available
+    float orientation_confidence = 0.0f;
 };
 
 struct context;

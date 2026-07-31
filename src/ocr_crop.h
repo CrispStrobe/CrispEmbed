@@ -8,6 +8,12 @@ namespace ocr_crop {
 
 enum class resize_mode { stretch, preserve_aspect };
 
+struct orientation_info {
+    int angle = 0;
+    float confidence = 0.0f;
+    bool corrected = false;
+};
+
 // Shared line-crop preparation contract. A zero target dimension preserves
 // the corresponding input dimension; max_width=0 means no width limit.
 struct prepare_options {
@@ -36,5 +42,7 @@ std::vector<uint8_t> prepare(const uint8_t * pixels, int width, int height, int 
 // when a 180° rotation was applied.
 bool orient_180_rgb(std::vector<uint8_t> & pixels, int width, int height);
 bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height);
+orientation_info orient_180_rgb_info(std::vector<uint8_t> & pixels, int width, int height);
+orientation_info orient_180_gray_info(std::vector<uint8_t> & pixels, int width, int height);
 
 } // namespace ocr_crop
