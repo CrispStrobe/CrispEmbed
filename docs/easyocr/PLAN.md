@@ -16,6 +16,8 @@
 - CRAFT source/inference audit is complete; the Python `-ref.gguf` dumper is
   implemented and produces an 80-stage reference archive with score-map and
   decoded-box-count metadata on a 256x512 smoke input.
+- The real CRAFT checkpoint now converts to a 54-tensor BN-folded F16 GGUF;
+  native graph implementation and tensor diff remain next.
 
 ## Scope
 
@@ -62,6 +64,8 @@ metadata, not learned parameters.
 - [x] Add a per-stage reference dumper and license manifest skeleton.
 - [x] Add the CRAFT Python reference dumper with EasyOCR preprocessing,
       score-map captures, and box-count metadata.
+- [x] Add the CRAFT converter with explicit BN folding and source/license
+      metadata; validate it against the released checkpoint.
 - [x] Run the dumper against a real English Gen-2 checkpoint and inspect the
       generated `-ref.gguf` tensors.
 - [x] Add a C++ diff fixture using `crispembed_diff::Ref`, including explicit
