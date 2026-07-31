@@ -4,6 +4,9 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
+- Selected next item: CRAFT decoded box postprocessing parity; the current
+  tensor gate passes, but the harness-blind smoke check is 104 native boxes
+  versus 106 Python boxes and remains intentionally failing.
 - Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
   cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
   `=#4#4#` respectively
