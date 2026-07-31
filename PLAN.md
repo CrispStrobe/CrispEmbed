@@ -18,6 +18,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
@@ -301,7 +302,8 @@ more than another restoration model.
    configurable threshold. Never rotate VLM inputs implicitly unless the
    caller enables the option, because VLM letterboxing is model-specific.
 
-6. **O10.6 — Shared crop preprocessing.** Consolidate classifier and
+6. **O10.6 — Shared crop preprocessing.** **Implemented in
+   `feat/ppocr-next-20260731`;** consolidate classifier and
    recognizer crop resizing/padding into one tested module. Support
    aspect-preserving and stretch modes, fixed height, maximum width, and
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
