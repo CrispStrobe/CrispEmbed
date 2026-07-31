@@ -201,6 +201,7 @@ list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/posformer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_crop.cpp)
@@ -380,6 +381,10 @@ target_link_libraries(test-posformer PRIVATE crispembed)
 
 add_executable(test-parseq tests/test_parseq.cpp)
 target_link_libraries(test-parseq PRIVATE crispembed)
+
+add_executable(test-easyocr tests/test_easyocr.cpp)
+target_include_directories(test-easyocr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr PRIVATE crispembed)
 
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
