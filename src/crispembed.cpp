@@ -4724,6 +4724,8 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
             c.text = w->text_storage[i].c_str();
             c.text_len = (int)w->text_storage[i].size();
             c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+            c.orientation_angle = r.orientation_angle;
+            c.orientation_confidence = r.orientation_confidence;
         }
         if (out_n) *out_n = (int)w->c_results.size();
         return w->c_results.empty() ? nullptr : w->c_results.data();
@@ -4741,6 +4743,8 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         c.text = r.text.c_str();
         c.text_len = (int)r.text.size();
         c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+        c.orientation_angle = r.orientation_angle;
+        c.orientation_confidence = r.orientation_confidence;
     }
     if (out_n) *out_n = (int)w->c_results.size();
     return w->c_results.empty() ? nullptr : w->c_results.data();
@@ -4912,6 +4916,8 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
         c.text = r.text.c_str();
         c.text_len = (int)r.text.size();
         c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+        c.orientation_angle = r.orientation_angle;
+        c.orientation_confidence = r.orientation_confidence;
     }
     if (out_n) *out_n = (int)w->c_results.size();
     if (out_full_text) *out_full_text = w->full_text.c_str();
@@ -6118,6 +6124,8 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
         results[i].text = nullptr;
         results[i].text_len = 0;
         results[i].orientation_corrected = 0;
+        results[i].orientation_angle = 0;
+        results[i].orientation_confidence = 0.0f;
     }
     cc_detect_free(regions);
     if (out_n) *out_n = n;
