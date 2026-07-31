@@ -101,6 +101,10 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
         item.word.block = 0;
         item.word.line = region.line;
         item.word.index = (int)i;
+        item.crop_x = x;
+        item.crop_y = y;
+        item.crop_w = crop_width;
+        item.crop_h = crop_height;
         results.push_back(std::move(item));
     }
     const auto normalized = easyocr_layout::normalize_boxes(
