@@ -124,5 +124,5 @@ metadata, not learned parameters.
 - [ ] Audit and port DBNet-18 and DBNet-50 detector checkpoints.
 - [ ] Port every Gen-1 and Gen-2 recognition checkpoint, sharing one runtime
       across language-specific charsets.
-- [ ] Add a weight-free LayoutLMv2/v3 OCR handoff test: words + normalized
-      boxes in, tokenization-compatible structured output out.
+- [x] Add a weight-free LayoutLMv2/v3 OCR handoff contract test: ordered words,
+      confidence, pixel boxes, and normalized `[0,1000]` boxes are preserved.
