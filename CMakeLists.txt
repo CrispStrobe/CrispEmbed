@@ -393,6 +393,10 @@ add_executable(test-easyocr-diff tests/test_easyocr_diff.cpp)
 target_include_directories(test-easyocr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-diff PRIVATE crispembed)
 
+add_executable(test-easyocr-dbnet tests/test_easyocr_dbnet.cpp)
+target_include_directories(test-easyocr-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
+
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-craft-diff PRIVATE crispembed)
