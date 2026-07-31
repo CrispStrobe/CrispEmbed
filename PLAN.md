@@ -23,6 +23,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **IN PROGRESS** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -424,7 +425,9 @@ more than another restoration model.
    profiling to select render DPI, then apply page orientation and the normal
    document pipeline. Keep the existing parser-only path for minimal builds.
 
-8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate slice
+8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate and VLM
+   cleanup safeguard slices implemented in `feat/ppocr-next-20260731`;**
+   **benchmark accept-gate slice
    implemented in `feat/ppocr-next-20260731`;** make preprocessing selection
    evidence-based: classical cleanup for scans, no destructive cleanup for
    VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
@@ -433,7 +436,9 @@ more than another restoration model.
    beyond the configured tolerance. The benchmark now records input/output
    checksums and dimensions plus conservative helped/neutral/harmed/
    unavailable/error outcome labels; changed text without verified gold is
-   reported as unavailable rather than claimed as an improvement.
+   reported as unavailable rather than claimed as an improvement. Full-page
+   VLM stages now skip destructive cleanup unless a future explicit VLM
+   preprocessing override is added.
 
 #### Required benchmark output
 
