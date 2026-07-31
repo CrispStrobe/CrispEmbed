@@ -36,6 +36,13 @@ static int crispembed_test_main() {
     auto stretched = ocr_crop::prepare(pixels, 2, 3, 3, prep, &w, &h, &channels);
     assert(w == 6 && h == 6 && channels == 3);
     assert(stretched.size() == 108);
+
+    const uint8_t gray_pixels[20 * 20] = {};
+    const float qx[4] = { 5, 15, 15, 5 };
+    const float qy[4] = { 6, 6, 10, 10 };
+    auto rectified = ocr_crop::extract_quad(gray_pixels, 20, 20, 1, qx, qy, 2, &w, &h);
+    assert(w == 14 && h == 8);
+    assert(rectified.size() == 14 * 8);
     return 0;
 }
 
