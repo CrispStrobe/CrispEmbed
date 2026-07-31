@@ -78,6 +78,13 @@ EasyOCR line grouping, Tesseract/LayoutLM word ordering, and one structured
 handoff contract. DBNet Python box/text parity and production orchestration
 remain pending.
 
+The reusable `easyocr_pipeline` now exposes the selected `lines` and `words`
+policies, runs native DBNet detection plus GPU-resident EasyOCR recognition,
+and returns text, detector/recognizer confidence, pixel boxes, reading-order
+metadata, and normalized LayoutLM boxes. The model-backed regression produces
+12 line records and 98 word records on `scan_strip.png`; Python box/text
+reference parity remains a separate pending gate.
+
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
 > PLAN.md active-work board cleared". Add a row here when you START a task; remove
