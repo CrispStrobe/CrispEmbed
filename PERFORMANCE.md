@@ -1238,3 +1238,19 @@ Projection remains opt-in because its CER improvement is small and it does not
 reach official output parity; beam width 8 is retained only for diagnostics
 because it adds roughly 3x recognition cost without changing text. The next
 quality work is line-image/crop geometry and Tesseract decoder semantics.
+
+### Tesseract page-box geometry A/B (2026-08-01)
+
+`CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` now controls the symmetric expansion of
+legacy component rows; the default remains 3 px. On the scan-strip fixture,
+both tighter candidates preserved 12 regions and the same decoded text:
+
+| Box pad | Chars | CER | WER | Recognize ms |
+|---:|---:|---:|---:|---:|
+| 1 px | 566 | 0.03375 | 0.15044 | 17,453 |
+| 2 px | 566 | 0.03375 | 0.15044 | 12,155 |
+| 3 px (default) | 566 | 0.03375 | 0.15044 | 9,217 |
+
+The box geometry is therefore not the dominant error on this fixture. Keep
+the gate for other scan resolutions, but do not change the default or use
+tighter boxes as a quality claim.

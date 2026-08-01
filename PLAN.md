@@ -2557,3 +2557,11 @@ the pattern first.
   greedy (`0.03197/0.12389`) but increased recognition from `9.66 s` to
   `29.75 s`; keep it diagnostic-only. Next TODO: line-image/crop geometry and
   Tesseract-compatible decoder/recoder semantics.
+
+- **Tesseract page-box geometry A/B (2026-08-01).** Added gated
+  `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` with the existing 3 px expansion as
+  the default. Legacy-page tests at 1/2/3 px all emitted 12 regions, 566 chars,
+  and identical CER/WER `0.03375/0.15044`; 1 px and 2 px were also slower than
+  the default in the measured runs. Keep the control for alternate scan
+  resolutions, but the current fixture points away from box expansion and
+  toward line-image preprocessing/decoder semantics.
