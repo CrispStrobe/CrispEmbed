@@ -80,6 +80,23 @@ def set_gpu_backend(name: Optional[str], lib_path: Optional[str] = None) -> None
     lib.crispembed_set_gpu_backend((name or "").encode("utf-8"))
 
 
+def accept_biometric_use(lib_path: Optional[str] = None) -> None:
+    """Acknowledge that this process may run face *recognition* models.
+
+    A face template is biometric data — special-category personal data under
+    GDPR Art. 9, which generally needs an Art. 9(2) basis (e.g. explicit
+    consent) before you process it. Loading a recognition model without this
+    acknowledgement (or ``CRISPEMBED_ACCEPT_BIOMETRIC=1``) fails. Detection is
+    never gated: a bounding box is not a template. See POLICY.md.
+
+    This is a speed bump and an audit trail, not a security control.
+    """
+    lib = _load_library(lib_path)
+    lib.crispembed_accept_biometric_use.argtypes = []
+    lib.crispembed_accept_biometric_use.restype = None
+    lib.crispembed_accept_biometric_use()
+
+
 class _CrispEmbedHparams(ctypes.Structure):
     _fields_ = [
         ("n_vocab", ctypes.c_int32),
@@ -1102,6 +1119,9 @@ class _FaceResult(ctypes.Structure):
 
 def _setup_face_signatures(lib):
     """Register ctypes signatures for all crispembed_face_* functions."""
+    lib.crispembed_accept_biometric_use.argtypes = []
+    lib.crispembed_accept_biometric_use.restype = None
+
     lib.crispembed_face_init.argtypes = [ctypes.c_char_p, ctypes.c_int]
     lib.crispembed_face_init.restype = ctypes.c_void_p
 
