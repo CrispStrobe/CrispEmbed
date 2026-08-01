@@ -59,6 +59,20 @@ pub fn set_gpu_backend(name: &str) {
     unsafe { crispembed_sys::crispembed_set_gpu_backend(cn.as_ptr()) }
 }
 
+/// Acknowledge that this process may run face *recognition* models.
+///
+/// A face template is biometric data — special-category personal data under
+/// GDPR Art. 9, which generally needs an Art. 9(2) basis (e.g. explicit
+/// consent) before you process it. Constructing a [`CrispFace`] over a
+/// recognition model fails without this acknowledgement or the
+/// `CRISPEMBED_ACCEPT_BIOMETRIC=1` environment variable. Detection is never
+/// gated: a bounding box is not a template. See `POLICY.md`.
+///
+/// This is a speed bump and an audit trail, not a security control.
+pub fn accept_biometric_use() {
+    unsafe { crispembed_sys::crispembed_accept_biometric_use() }
+}
+
 impl CrispEmbed {
     /// Load a GGUF model file.
     ///

@@ -57,6 +57,9 @@ bool license_requires_acceptance(const char * spdx);
 // This is a deliberate speed bump and an audit trail, not a security control:
 // CrispEmbed is MIT-licensed and the check is trivially removable. It exists so
 // that biometric processing is never something a user starts by accident.
+//
+// On every success path this also calls crispembed_accept_biometric_use(), so
+// the library-level gate in crispembed_face_init() does not ask a second time.
 bool accept_biometric_use(const char * model_label, bool accepted_flag);
 
 // Prompt prefixes for optimal retrieval quality.
