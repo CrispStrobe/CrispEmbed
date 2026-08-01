@@ -12,7 +12,7 @@ from pathlib import Path
 
 
 NATIVE_RE = re.compile(r"text: '(?P<text>.*?)' \((?P<chars>\d+) chars\) char_conf=(?P<count>\d+) "
-                       r"sequence_conf=(?P<confidence>[0-9.]+)")
+                       r"sequence_conf=(?P<confidence>[0-9.]+) word_conf=(?P<word_confidence>[0-9.]+)")
 
 
 def run(command: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -51,13 +51,14 @@ def native(args: argparse.Namespace, beam: int) -> dict:
     matches = NATIVE_RE.findall(proc.stdout + proc.stderr)
     if not matches:
         raise RuntimeError("native confidence test emitted no result")
-    text, chars, count, confidence = matches[-1]
+    text, chars, count, confidence, word_confidence = matches[-1]
     return {
         "returncode": proc.returncode,
         "text": text,
         "chars": int(chars),
         "char_confidences": int(count),
         "sequence_confidence": float(confidence),
+        "word_confidence": float(word_confidence),
     }
 
 
@@ -83,6 +84,7 @@ def main() -> int:
         "comparison": {
             "greedy_text_matches": greedy["text"] == reference["text"],
             "greedy_confidence_delta": greedy["sequence_confidence"] - reference["mean_word_confidence"],
+            "greedy_word_confidence_delta": greedy["word_confidence"] - reference["mean_word_confidence"],
             "beam_text_matches": beam["text"] == reference["text"] if beam else None,
             "beam_confidence_delta": beam["sequence_confidence"] - reference["mean_word_confidence"] if beam else None,
         },

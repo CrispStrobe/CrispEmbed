@@ -171,7 +171,11 @@ recognizer and LayoutLM consumer.
 - [ ] Validate Tesseract beam confidence against official certainty
       aggregation. The new confidence comparator shows greedy text matching on
       two of three direct English lines; beam confidence remains a sequence
-      probability and is not treated as per-word certainty.
+      probability and is not treated as per-word certainty. Native greedy
+      `word_confidence` now follows Tesseract's source rule (minimum selected
+      path log-probability, then `100 + 5*certainty`); the direct second-line
+      result is `0.965889` versus official `0.959698`. Page-level aggregation
+      and beam certainty remain open.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
       Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
       text, and the official instrumented PSM7 internal crop all match.
