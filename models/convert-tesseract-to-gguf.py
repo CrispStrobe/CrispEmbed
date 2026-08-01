@@ -92,6 +92,11 @@ COMPONENT_NAMES = [
     "lstm-unicharset", "lstm-recoder", "version",
 ]
 
+# Optional language-model components used by Tesseract's LSTM recognizer.
+# The native line recognizer does not score DAWGs yet, but retaining the exact
+# bytes enables a future runtime implementation without reconverting weights.
+LSTM_DAWG_COMPONENTS = ("lstm-punc-dawg", "lstm-system-dawg", "lstm-number-dawg")
+
 
 def parse_traineddata(data: bytes) -> dict:
     """Parse .traineddata archive, return dict of component name → bytes."""
@@ -405,6 +410,8 @@ def main():
     p.add_argument("--output", required=True, help="Output GGUF path")
     p.add_argument("--fp16", action="store_true",
                    help="Store weights in FP16 (halves file size)")
+    p.add_argument("--embed-dawgs", action="store_true",
+                   help="Embed LSTM DAWG components as uint8 GGUF metadata arrays (runtime scoring is not enabled)")
     args = p.parse_args()
 
     model_path = Path(args.model)
@@ -566,6 +573,20 @@ def main():
                 rev[codes[0]] = uid
         writer.add_array("tesseract_lstm.output_to_unichar",
                          rev.tolist())
+
+    # GGUF metadata has no portable opaque-blob field in all supported Python
+    # writer versions, so preserve exact component bytes as uint8 arrays.
+    # This is opt-in and the runtime intentionally ignores these arrays.
+    if args.embed_dawgs:
+        embedded_dawgs = []
+        for name in LSTM_DAWG_COMPONENTS:
+            payload = components.get(name)
+            if payload is None:
+                continue
+            writer.add_array(f"tesseract_lstm.dawg.{name}", list(payload))
+            embedded_dawgs.append(name)
+        writer.add_array("tesseract_lstm.dawg_names", embedded_dawgs)
+        writer.add_bool("tesseract_lstm.dawg_embedded", bool(embedded_dawgs))
 
     # Count LSTM layers for metadata
     lstm_layers = [l for l in layers if l["type"] in ("LSTM", "SummLSTM")]

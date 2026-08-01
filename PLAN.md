@@ -2612,3 +2612,6 @@ the pattern first.
   dictionary/DAWG scoring remain open. The recoder’s exact segmentation and
   beam-prefix legality are now standalone-tested; dictionary/DAWG integration
   and a fixture that exercises a real multi-code decoded class remain TODO.
+  The converter now has an opt-in `--embed-dawgs` data-preservation mode that
+  stores the three LSTM DAWG components as uint8 metadata arrays; runtime
+  scoring remains disabled until a binary parser and parity fixture exist.
