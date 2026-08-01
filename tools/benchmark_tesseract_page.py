@@ -115,6 +115,7 @@ def main() -> int:
         "fixture": str(args.image),
         "policy": policy,
         "workers": args.workers,
+        "timeout": args.timeout,
         "scratch": args.scratch,
         "recode_beam": args.recode_beam,
         "dawg_score": args.dawg_score,
