@@ -2690,3 +2690,9 @@ the pattern first.
   mean/max crop deltas for the one-to-one IoU matches, and the comparator adds
   opt-in `--max-matched-mean-crop-delta`. This separates true x/y/width/height
   error from list-order artifacts; ten model-free geometry tests pass.
+
+- **Matched interline-gap metrics (2026-08-01).** Geometry JSON now also
+  reports one-to-one matched interline-gap deltas and exposes opt-in
+  `--max-matched-mean-gap-delta`. The metric follows reference-line order and
+  remains separate from the legacy indexed spacing metric; eleven model-free
+  geometry tests pass.

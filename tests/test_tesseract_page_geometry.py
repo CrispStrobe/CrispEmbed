@@ -64,6 +64,12 @@ class TesseractPageGeometryTest(unittest.TestCase):
         result = compare(reference, native)
         self.assertEqual(result["matched_mean_abs_crop_delta"], 0.25)
 
+    def test_matched_gap_delta_tracks_spacing_not_order(self) -> None:
+        reference = [(0.0, 0.0, 10.0, 5.0), (0.0, 10.0, 10.0, 5.0)]
+        native = [(0.0, 10.0, 10.0, 5.0), (0.0, 0.0, 10.0, 5.0)]
+        result = compare(reference, native)
+        self.assertEqual(result["matched_mean_abs_interline_gap_delta"], 0.0)
+
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
         passing = acceptance_checks(args, {"regions": 12}, {"cer": 0.019, "wer": 0.089})
