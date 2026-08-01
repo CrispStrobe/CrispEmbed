@@ -480,6 +480,21 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
 
+- [x] Fix native Tesseract confidence propagation. The converter/reference
+      already expose CTC softmax probabilities, but `src/tesseract_lstm.cpp`
+      discarded them and appended `0.0` for every decoded character. Greedy
+      decoding now returns the selected timestep probability, so page-level
+      confidence is no longer spuriously zero. This was a runtime bug, not a
+      GGUF conversion bug.
+- [ ] Define and validate beam confidence semantics. A prefix/recode beam
+      output is a sequence-level hypothesis assembled across timesteps, so a
+      per-character confidence cannot be copied from one timestep. Implement
+      posterior/marginal aggregation (or explicitly expose sequence score and
+      mark per-character confidence unavailable), then compare it with
+      Tesseract's certainty aggregation before enabling beam confidence in
+      production. Until then, the page path uses the segmentation score only
+      when an experimental beam returns no character posterior.
+
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
 The VGG graph now derives feature channels and sequence width dynamically for

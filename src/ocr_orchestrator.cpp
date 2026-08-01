@@ -683,7 +683,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int sw = 0, sh = 0, sc = 0;
             unsigned char * seg_gray = stbi_load(path, &sw, &sh, &sc, 1);
             if (seg_gray) {
-                boxes = tesseract_pageseg::segment_gray(seg_gray, sw, sh);
+                boxes = std::getenv("CRISPEMBED_TESSERACT_PAGESEG_PROJECTION")
+                            ? tesseract_pageseg::segment_gray(seg_gray, sw, sh)
+                            : tesseract_pageseg::segment_gray_components(seg_gray, sw, sh);
                 stbi_image_free(seg_gray);
             }
         } else {
@@ -786,6 +788,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     mean = (float)(s / n_conf);
                     r.char_conf.assign(conf, conf + n_conf);
                 }
+                // Some converted Tesseract models expose a confidence buffer
+                // whose values are all zero even though recognition succeeded.
+                // Preserve the detector/segmentation score in that case rather
+                // than reporting a misleading page confidence of exactly zero.
+                if (mean <= 0.0f) mean = item.box.score;
                 r.confidence = mean;
                 r.rec_confidence = mean;
                 r.text = std::string(t, len);
