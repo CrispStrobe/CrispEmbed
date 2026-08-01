@@ -839,6 +839,8 @@ def main():
     writer.add_string("tesseract_lstm_ref.image_width", str(int(img_u8.shape[1])))
     writer.add_string("tesseract_lstm_ref.image_height", str(int(img_u8.shape[0])))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)
+    writer.add_string("tesseract_lstm_ref.num_classes", str(int(root["no"])))
+    writer.add_string("tesseract_lstm_ref.null_char_text", str(int(null_char)))
     writer.add_uint32("tesseract_lstm_ref.input_height", input_height)
     writer.add_uint32("tesseract_lstm_ref.null_char", null_char)
     writer.add_string("tesseract_lstm_ref.decoded_text", result_text)
