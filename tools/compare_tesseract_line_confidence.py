@@ -30,9 +30,13 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def official(image: Path, lang: str, psm: int) -> dict:
+def official(image: Path, lang: str, psm: int, tessdata_dir: Path | None) -> dict:
     started = time.perf_counter()
-    proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang, "tsv"])
+    command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
+    if tessdata_dir is not None:
+        command.extend(["--tessdata-dir", str(tessdata_dir)])
+    command.append("tsv")
+    proc = run(command)
     words = []
     for raw in proc.stdout.splitlines()[1:]:
         fields = raw.split("\t", 11)
@@ -102,6 +106,8 @@ def main() -> int:
     parser.add_argument("--native-test", type=Path, default=Path("build/test-confidence"))
     parser.add_argument("--lang", default="frk")
     parser.add_argument("--psm", type=int, default=7)
+    parser.add_argument("--tessdata-dir", type=Path,
+                        help="explicit Tesseract tessdata directory for the official subprocess")
     parser.add_argument("--beam", type=int, default=8)
     parser.add_argument("--max-greedy-word-confidence-delta", type=float,
                         help="fail if absolute greedy word-confidence delta exceeds this value")
@@ -110,7 +116,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
-    reference = official(args.image, args.lang, args.psm)
+    reference = official(args.image, args.lang, args.psm, args.tessdata_dir)
     greedy = native(args, 0)
     beam = native(args, args.beam) if args.beam > 1 else None
     checks = confidence_acceptance_checks(args, reference, greedy, beam)

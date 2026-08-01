@@ -1241,3 +1241,12 @@ Projection remains opt-in because its CER improvement is small and it does not
 reach official output parity; beam width 8 is retained only for diagnostics
 because it adds roughly 3x recognition cost without changing text. The next
 quality work is line-image/crop geometry and Tesseract decoder semantics.
+
+The line-confidence comparator now accepts `--tessdata-dir` so official TSV
+results do not depend on a potentially stale `TESSDATA_PREFIX`. On the valid
+German tiny-line fixture with `/opt/homebrew/share/tessdata`, official output
+is `1` at word confidence `0.588557`; native greedy is `G` with word confidence
+`0.883064`, while beam-8 is `GEIEE` with sequence confidence `0.535476` and
+zero fabricated character confidences. The beam contract passes, but text and
+greedy confidence calibration are worse than the official reference and remain
+TODOs.

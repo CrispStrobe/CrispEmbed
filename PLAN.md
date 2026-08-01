@@ -733,6 +733,14 @@ downstream handoff parity, not detector-box similarity alone.
       It now records recognizer SHA-256 provenance and official word-confidence
       min/median/max alongside the mean, making calibration spread visible
       without treating those distributions as beam-character parity.
+      It now accepts an explicit `--tessdata-dir` for the official subprocess;
+      without that path, a stale `TESSDATA_PREFIX` can silently yield zero TSV
+      words and invalidate the confidence comparison. With the explicit
+      Homebrew tessdata directory on `german-line-tiny.png`, official output is
+      `1` at confidence `0.588557`, native greedy is `G` with word confidence
+      `0.883064`, and native beam-8 is `GEIEE` with sequence confidence
+      `0.535476` and no character confidences. The beam contract passes, but
+      text and greedy confidence calibration remain open quality TODOs.
       Both page-metrics and line-confidence comparators now emit elapsed
       milliseconds for each official subprocess and native subprocess/line
       run, so quality claims can be paired with measured cost.
