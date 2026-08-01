@@ -2764,6 +2764,17 @@ the pattern first.
   its matched deltas are diagnostic only until the row matcher accounts for
   true one-to-many merges.
 
+- **Nested-row classification (2026-08-01).** Source-pixel review shows the
+  German groups include official TSV decoration rows nested inside larger
+  boxes, not necessarily missing text lines. `merged_official_groups` now
+  identifies the largest primary official box and nested official indices;
+  do not split a native crop merely because TSV emitted nested marks.
+
+  On the German page, native row 0 has primary official index 1 with nested
+  indices 2 and 4; native row 9 has primary index 13 with nested index 12;
+  native row 22 has primary index 26 and no fully-contained nested row. The
+  remaining unmatched official row 0 is not explained by a nested decoration.
+
 - **One-to-many merge reporting (2026-08-01).** The geometry diagnostic now
   reports native rows whose vertical span covers multiple official rows as
   `merged_official_groups`, separating true row merges from simply missing
