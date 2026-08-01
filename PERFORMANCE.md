@@ -1166,3 +1166,10 @@ uncached int-mode decoding both returned `SEEEES`. The cached path measured
 `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1`, a `29.3x` speedup with identical
 decoded output. Cached mode is therefore the default; the environment gate is
 retained for parity diagnostics and alternate architectures.
+
+Full-page validation on `scan_strip.png` confirmed the same result: cached and
+uncached paths both produced 12 regions/566 chars with CER `0.03375` and WER
+`0.15044`. Cached native stage time was `22.11 s` versus `157.59 s` uncached,
+for a `7.1x` speedup; detect plus crop was only `46.1 ms` cached. The remaining
+Fraktur page-quality gap is therefore in recognition/output parity, not DBNet
+or crop throughput.
