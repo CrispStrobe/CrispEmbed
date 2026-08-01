@@ -20,6 +20,12 @@ from pathlib import Path
 ROW = re.compile(r"^  INFO: (?P<fixture>.+): (?P<regions>\d+) regions, "
                  r"(?P<chars>\d+) chars \(conf=(?P<confidence>[0-9.]+), "
                  r"time_ms=(?P<time_ms>[0-9.]+)\)$")
+STAGE_ROW = re.compile(
+    r"^\[ppocrv6-stage-bench\] detect=(?P<detect>[0-9.]+) ms "
+    r"crop=(?P<crop>[0-9.]+) ms orientation=(?P<orientation>[0-9.]+) ms "
+    r"recognize=(?P<recognize>[0-9.]+) ms total=(?P<total>[0-9.]+) ms "
+    r"boxes=(?P<boxes>\d+) results=(?P<results>\d+)$"
+)
 
 
 def parse_rows(text: str, variant: str) -> list[dict]:
@@ -33,6 +39,21 @@ def parse_rows(text: str, variant: str) -> list[dict]:
             row["chars"] = int(row["chars"])
             row["confidence"] = float(row["confidence"])
             row["time_ms"] = float(row["time_ms"])
+            rows.append(row)
+    return rows
+
+
+def parse_stage_rows(text: str) -> list[dict]:
+    """Parse one per-fixture stage record from native stderr."""
+    rows = []
+    for line in text.splitlines():
+        match = STAGE_ROW.match(line)
+        if match:
+            row = match.groupdict()
+            for name in ("detect", "crop", "orientation", "recognize", "total"):
+                row[f"{name}_ms"] = float(row.pop(name))
+            row["boxes"] = int(row.pop("boxes"))
+            row["results"] = int(row.pop("results"))
             rows.append(row)
     return rows
 
@@ -78,6 +99,7 @@ def main() -> int:
         env["CRISPEMBED_PPOCRV6_VARIANT"] = variant
         env["CRISPEMBED_PPOCRV6_FIXTURE_LIMIT"] = str(args.fixture_limit)
         env["CRISPEMBED_PPOCRV6_FIXTURE_START"] = str(args.fixture_start)
+        env["CRISPEMBED_PPOCRV6_BENCH"] = "1"
         started = time.monotonic()
         try:
             proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False,
@@ -85,10 +107,19 @@ def main() -> int:
         except subprocess.TimeoutExpired as exc:
             elapsed = round(time.monotonic() - started, 2)
             partial = exc.stdout or ""
+            partial_err = exc.stderr or ""
             if isinstance(partial, bytes):
                 partial = partial.decode(errors="replace")
+            if isinstance(partial_err, bytes):
+                partial_err = partial_err.decode(errors="replace")
+            timeout_rows = parse_rows(partial, variant)
+            stage_rows = parse_stage_rows(partial_err)
+            for row, stages in zip(timeout_rows, stage_rows):
+                row["stages"] = stages
+            for row in timeout_rows[len(stage_rows):]:
+                row["stages"] = None
             timeout_result = {
-                "version": 1,
+                "version": 2,
                 "status": "timeout",
                 "engine": "ppocrv6",
                 "orientation": "pplcnet-0-180",
@@ -97,20 +128,31 @@ def main() -> int:
                 "fixture_limit": args.fixture_limit,
                 "timeout_seconds": args.timeout,
                 "elapsed_seconds": elapsed,
-                "rows": parse_rows(partial, variant),
+                "rows": timeout_rows,
             }
             if args.json_out:
                 write_json(args.json_out, timeout_result)
             raise SystemExit(f"native PP-OCRv6 {variant} regression timed out after {elapsed}s; "
                              "use --timeout to override") from exc
         rows = parse_rows(proc.stdout, variant)
+        stage_rows = parse_stage_rows(proc.stderr)
+        if len(stage_rows) == len(rows):
+            for row, stages in zip(rows, stage_rows):
+                row["stages"] = stages
+                row["stage_telemetry_status"] = "complete"
+        else:
+            # Keep total-output compatibility for older binaries, but make a
+            # missing stage telemetry record explicit in the artifact.
+            for row in rows:
+                row["stages"] = None
+                row["stage_telemetry_status"] = f"unavailable:{len(stage_rows)}/{len(rows)}"
         if proc.returncode != 0:
             raise SystemExit(f"native PP-OCRv6 {variant} regression failed (exit {proc.returncode})\n"
                              f"{proc.stderr[-2000:]}")
         if len(rows) != args.fixture_limit:
             raise SystemExit(f"expected {args.fixture_limit} PP-OCRv6 {variant} benchmark rows, got {len(rows)}")
         all_rows.extend(rows)
-    write_json(args.json_out, {"version": 1, "status": "ok", "engine": "ppocrv6",
+    write_json(args.json_out, {"version": 2, "status": "ok", "engine": "ppocrv6",
                                "orientation": "pplcnet-0-180", "fixture_start": args.fixture_start,
                                "fixture_limit": args.fixture_limit, "rows": all_rows})
     return 0
