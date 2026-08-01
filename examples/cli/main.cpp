@@ -113,6 +113,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "                   JSON: {\"input_ids\": [...], \"bbox\": [[x0,y0,x1,y1], ...]}\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --accept-biometric  acknowledge face-recognition/biometric use (see POLICY.md)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
     fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
     fprintf(stderr, "  --pdf-dpi FILE     analyse PDF DPI (per-page image resolution profiling)\n");
@@ -228,6 +229,7 @@ static int cli_main(int argc, char ** argv) {
     float kie_threshold = 0.5f;
     std::string lilt_path;           // JSON file for LiLT token classification
     std::string det_model;           // detection model for --face-pipeline
+    bool accept_biometric = false;   // --accept-biometric: ack face-recognition use
     std::string ocr_det_path;        // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
     bool cleanup_mode = false;       // --cleanup: preprocess before OCR
@@ -365,6 +367,8 @@ static int cli_main(int argc, char ** argv) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--accept-biometric") == 0) {
+            accept_biometric = true;
         } else if (strcmp(argv[i], "--pdf-dpi") == 0 && i + 1 < argc) {
             pdf_dpi_path = argv[++i];
         } else if (strcmp(argv[i], "--find-skew") == 0 && i + 1 < argc) {
@@ -1319,6 +1323,11 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
 
+        if (!crispembed_mgr::accept_biometric_use(model_arg.c_str(), accept_biometric)) {
+            cnn_embed::free(det_ctx);
+            return 1;
+        }
+
         // Load recognition model (-m)
         cnn_embed::context * rec_ctx = nullptr;
         if (!cnn_embed::load(&rec_ctx, model_path.c_str(), n_threads)) {
@@ -1366,9 +1375,12 @@ static int cli_main(int argc, char ** argv) {
             all_images.push_back({ name, std::move(results) });
         }
 
-        // Cross-image face matching (if multiple images)
+        // Cross-image cosine similarity (if multiple images).
+        // Deliberately no accept/reject verdict: a usable threshold depends on the
+        // model, the population and the error rate you can tolerate, so it has to be
+        // calibrated and documented per deployment. See POLICY.md.
         if (all_images.size() > 1 && !json_output) {
-            fprintf(stderr, "\n=== Cross-image face matching ===\n");
+            fprintf(stderr, "\n=== Cross-image face similarity (cosine) ===\n");
             for (size_t i = 0; i < all_images.size(); i++) {
                 for (size_t j = i + 1; j < all_images.size(); j++) {
                     fprintf(stderr, "\n%s vs %s:\n", all_images[i].name.c_str(), all_images[j].name.c_str());
@@ -1379,8 +1391,7 @@ static int cli_main(int argc, char ** argv) {
                             if (ea.size() != eb.size() || ea.empty()) continue;
                             float cos = 0;
                             for (size_t k = 0; k < ea.size(); k++) cos += ea[k] * eb[k];
-                            const char * tag = cos > 0.4f ? "MATCH" : "no";
-                            fprintf(stderr, "  [%zu]vs[%zu] cos=%.4f %s\n", a, b, cos, tag);
+                            fprintf(stderr, "  [%zu]vs[%zu] cos=%.4f\n", a, b, cos);
                         }
                     }
                 }
@@ -1400,6 +1411,14 @@ static int cli_main(int argc, char ** argv) {
                 printf("%d\n", cnn_embed::dim(cctx));
                 cnn_embed::free(cctx);
                 return 0;
+            }
+            // Gate on the model's own declared type, so a recognition model is
+            // caught however it was named (registry alias or bare .gguf path).
+            const char * cnn_type = cnn_embed::model_type(cctx);
+            if (cnn_type && strcmp(cnn_type, "recognition") == 0 &&
+                !crispembed_mgr::accept_biometric_use(model_arg.c_str(), accept_biometric)) {
+                cnn_embed::free(cctx);
+                return 1;
             }
             // Face detection mode
             if (!detect_path.empty()) {
