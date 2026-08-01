@@ -2502,3 +2502,6 @@ the pattern first.
   quantize each input/hidden vector once per timestep. The prior implementation
   recomputed scales and rounded every weight inside every gate dot product.
   Benchmark and decoded-output parity must pass before promotion.
+
+  The cache now has an explicit `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE`
+  fallback for controlled parity comparisons; cached mode remains the default.
