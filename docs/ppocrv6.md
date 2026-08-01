@@ -59,11 +59,11 @@ normalization. These values must remain part of the parity fixtures.
 
 The default PP-OCRv6 detector, recognizer, and PP-LCNet orientation runtime
 remain correctness-first CPU implementations. An experimental persistent GGML
-backbone graph is available for tiny/small recognizers with
+full recognizer graph is available for tiny/small recognizers with
 `CRISPEMBED_PPOCRV6_GRAPH=1`; it covers the stem, depthwise/pointwise blocks,
-SE gates, activations, residuals, and all four backbone stages. The recognizer
-head and the detector/orientation paths remain on the CPU reference path until
-their parity gates are complete.
+SE gates, activations, residuals, all four backbone stages, pooled head,
+folded batch norms, and projection logits. The detector/orientation paths
+remain on the CPU reference path until their graph parity gates are complete.
 
 The graph port is staged: first reproduce detector, SVTR recognizer, and
 PP-LCNet logits with persistent ggml graphs and CPU parity taps; then enable
