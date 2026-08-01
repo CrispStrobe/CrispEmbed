@@ -517,9 +517,10 @@ downstream handoff parity, not detector-box similarity alone.
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
 The projection fallback gives 24 regions, 1,606 characters, and 0.702 mean
-confidence. The official Tesseract page run gives 21 line-level regions and
-about 1,021 normalized output characters; neither experimental path is yet a
-quality match, so DBNet remains the production default.
+confidence. The reproducible TSV comparison reports 25 official lines, 141
+words, 881 non-whitespace word characters, and 0.866 mean word confidence;
+neither experimental path is yet a quality match, so DBNet remains the
+production default.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
