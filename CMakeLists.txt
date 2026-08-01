@@ -578,6 +578,10 @@ add_executable(test-tesseract-lstm-diff tests/test_tesseract_lstm_diff.cpp)
 target_include_directories(test-tesseract-lstm-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-tesseract-lstm-diff PRIVATE crispembed)
 
+add_executable(test-ocr-identical-crops tests/test_ocr_identical_crops.cpp)
+target_include_directories(test-ocr-identical-crops PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ocr-identical-crops PRIVATE crispembed)
+
 add_executable(test-morph-fast tests/test_morph_fast.cpp)
 target_link_libraries(test-morph-fast PRIVATE crispembed)
 

@@ -163,8 +163,11 @@ recognizer and LayoutLM consumer.
       `apply_ocr=False`; `tools/validate_layoutlm_handoff.py` emits the
       processor's `words`/`boxes` payload and preserves confidence/pixel boxes
       in sidecar metadata. No LayoutLM weights are needed for this gate.
-- [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
-      it with EasyOCR CRNN on identical detector crops.
+- [x] Keep Tesseract LSTM as a separately measured recognizer lane. The
+      `test-ocr-identical-crops` harness feeds exact shared RGB crops to the
+      dynamic-width EasyOCR CRNN and grayscale Tesseract LSTM; three official
+      TSV boxes show structurally matching text with recognizer-specific
+      ambiguous-character and punctuation differences.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
       Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
       text, and the official instrumented PSM7 internal crop all match.
