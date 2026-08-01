@@ -2681,3 +2681,13 @@ the pattern first.
   controlled line; a Chinese smoke run passes both modes without crashes, but
   did not emit a multi-code class, so full composed-recoded quality parity and
   dictionary/DAWG scoring remain open.
+
+- **Per-line page comparator correction (2026-08-01).** Official TSV words
+  are now grouped by page/block/paragraph/line; the previous diagnostic
+  accidentally included `word_num` and compared 113 words as 113 lines. The
+  corrected row-bounds run still emits 12 native and 12 official lines, but
+  only 3/12 are exact. The first divergence is line 0 (`<< 4 ...` official
+  versus `“< A ...` native); lines 4, 7, and 9 match exactly. Page CER/WER
+  remains `0.03209/0.11504`. The active TODO is line crop/normalization or
+  decoder semantics; no recognizer math change is justified before a
+  tensor-level diff of the corresponding crop.
