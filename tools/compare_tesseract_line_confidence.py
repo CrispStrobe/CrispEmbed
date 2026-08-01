@@ -134,6 +134,7 @@ def main() -> int:
         "provenance": {
             "recognizer_model_sha256": sha256_file(args.model),
             "confidence_reference": "official-tsv-level5-word-confidence-vs-native-recognizer-contract",
+            "tessdata_dir": str(args.tessdata_dir) if args.tessdata_dir else None,
         },
         "official_tesseract": reference,
         "native_greedy": greedy,
