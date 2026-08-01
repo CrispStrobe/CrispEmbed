@@ -65,6 +65,7 @@ struct pp_graph_state {
     ggml_tensor * output = nullptr;
     bool logits_output = false;
     bool svtr_prefix_output = false;
+    bool svtr_decoder_output = false;
     std::vector<uint8_t> graph_meta;
     std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
     std::vector<ggml_context *> resident_ctxs;
@@ -629,6 +630,17 @@ static ggml_tensor * pp_graph_bn(ppocrv6_ocr_context * c, ggml_context * g, ggml
     return ggml_add(g, ggml_mul(g, x, scale), shift);
 }
 
+static ggml_tensor * pp_graph_layernorm(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, ggml_tensor * w_src,
+                                        ggml_tensor * b_src, int channels) {
+    if (!w_src || !b_src) return x;
+    ggml_tensor * w = pp_graph_resident(c, w_src, GGML_TYPE_F32, channels, 1, 1, 1);
+    ggml_tensor * b = pp_graph_resident(c, b_src, GGML_TYPE_F32, channels, 1, 1, 1);
+    if (!w || !b) return nullptr;
+    w = ggml_reshape_2d(g, w, channels, 1);
+    b = ggml_reshape_2d(g, b, channels, 1);
+    return ggml_add(g, ggml_mul(g, ggml_norm(g, x, 1e-5f), w), b);
+}
+
 static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, ggml_tensor * wt,
                                      ggml_tensor * bias) {
     if (!wt || ggml_n_dims(wt) < 2) {
@@ -785,6 +797,54 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         x = ggml_reshape_2d(c->graph.graph_ctx, x, c->hidden, tokens);
         c->graph.svtr_prefix_output = true;
     }
+    if (c->large_stem && c->graph.svtr_prefix_output && std::getenv("CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH")) {
+        const int heads = 8;
+        const int head_dim = c->hidden / heads;
+        const int tokens = (int)x->ne[1];
+        for (const auto & b : c->svtr) {
+            ggml_tensor * residual = x;
+            x = pp_graph_layernorm(c, c->graph.graph_ctx, x, b.ln1_w, b.ln1_b, c->hidden);
+            if (!x) return false;
+            ggml_tensor * qkv = pp_graph_linear(c, c->graph.graph_ctx, x, b.qkv_w, b.qkv_b);
+            if (!qkv) return false;
+            const size_t slice = (size_t)c->hidden * ggml_type_size(qkv->type);
+            ggml_tensor * q =
+                ggml_cont(c->graph.graph_ctx, ggml_view_2d(c->graph.graph_ctx, qkv, c->hidden, tokens, qkv->nb[1], 0));
+            ggml_tensor * k = ggml_cont(c->graph.graph_ctx,
+                                        ggml_view_2d(c->graph.graph_ctx, qkv, c->hidden, tokens, qkv->nb[1], slice));
+            ggml_tensor * v = ggml_cont(
+                c->graph.graph_ctx, ggml_view_2d(c->graph.graph_ctx, qkv, c->hidden, tokens, qkv->nb[1], 2 * slice));
+            q = ggml_permute(c->graph.graph_ctx, ggml_reshape_3d(c->graph.graph_ctx, q, head_dim, heads, tokens), 0, 2,
+                             1, 3);
+            k = ggml_permute(c->graph.graph_ctx, ggml_reshape_3d(c->graph.graph_ctx, k, head_dim, heads, tokens), 0, 2,
+                             1, 3);
+            v = ggml_permute(c->graph.graph_ctx, ggml_reshape_3d(c->graph.graph_ctx, v, head_dim, heads, tokens), 0, 2,
+                             1, 3);
+            const float scale = 1.0f / std::sqrt((float)head_dim);
+            ggml_tensor * scores =
+                ggml_mul_mat(c->graph.graph_ctx, ggml_cont(c->graph.graph_ctx, k), ggml_cont(c->graph.graph_ctx, q));
+            scores = ggml_soft_max_ext(c->graph.graph_ctx, scores, nullptr, scale, 0.0f);
+            ggml_tensor * vt = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, v, 1, 0, 2, 3));
+            ggml_tensor * attn = ggml_mul_mat(c->graph.graph_ctx, vt, scores);
+            attn = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, attn, 0, 2, 1, 3));
+            attn = ggml_reshape_2d(c->graph.graph_ctx, attn, c->hidden, tokens);
+            attn = pp_graph_linear(c, c->graph.graph_ctx, attn, b.proj_w, b.proj_b);
+            if (!attn) return false;
+            x = ggml_add(c->graph.graph_ctx, residual, attn);
+            residual = x;
+            x = pp_graph_layernorm(c, c->graph.graph_ctx, x, b.ln2_w, b.ln2_b, c->hidden);
+            if (!x) return false;
+            x = pp_graph_linear(c, c->graph.graph_ctx, x, b.fc1_w, b.fc1_b);
+            if (!x) return false;
+            x = ggml_silu(c->graph.graph_ctx, x);
+            x = pp_graph_linear(c, c->graph.graph_ctx, x, b.fc2_w, b.fc2_b);
+            if (!x) return false;
+            x = ggml_add(c->graph.graph_ctx, residual, x);
+        }
+        x = pp_graph_layernorm(c, c->graph.graph_ctx, x, c->svtr_norm_w, c->svtr_norm_b, c->hidden);
+        if (!x) return false;
+        c->graph.svtr_decoder_output = true;
+    }
     // Complete the tiny/small recognizer graph through logits.  The large
     // SVTR decoder remains on its established CPU path for now.  Keeping the
     // logits as the graph output also avoids copying the backbone feature map
@@ -860,9 +920,11 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     }
     c->graph.allocated = true;
     c->graph.ready = true;
+    const char * output_kind =
+        c->graph.logits_output ? "logits" : (c->graph.svtr_decoder_output ? "svtr-decoder" : "backbone");
     fprintf(stderr, "ppocrv6: persistent GGML graph ready (%s, %s, %lldx%lldx%lld)\n",
-            ggml_backend_name(c->graph.backend), c->graph.logits_output ? "logits" : "backbone", (long long)x->ne[0],
-            (long long)x->ne[1], (long long)x->ne[2]);
+            ggml_backend_name(c->graph.backend), output_kind, (long long)x->ne[0], (long long)x->ne[1],
+            (long long)x->ne[2]);
     return true;
 }
 
@@ -1002,11 +1064,11 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
 }
 
 static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> & x, int h, int w, int * out_len,
-                                   bool prefix_encoded = false) {
+                                   bool prefix_encoded = false, bool decoder_encoded = false) {
     const int in_ch = c->stages.back().back().cm2.out_ch;
     int ow = 0;
     std::vector<float> tok;
-    if (prefix_encoded) {
+    if (prefix_encoded || decoder_encoded) {
         // pp_graph_run exposes [hidden,tokens] as w=hidden,h=tokens.
         ow = h;
         tok = x;
@@ -1049,48 +1111,50 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
                 prefix_encoded ? "graph" : "cpu", ow, c->hidden, tok.size() > 0 ? tok[0] : 0.0f,
                 tok.size() > 1 ? tok[1] : 0.0f, tok.size() > 2 ? tok[2] : 0.0f, tok.size() > 3 ? tok[3] : 0.0f);
     const int heads = 8, hd = c->hidden / heads;
-    for (const auto & b : c->svtr) {
-        std::vector<float> a = tok, qkv, attn((size_t)ow * c->hidden, 0.0f), proj, mlp;
-        for (int t = 0; t < ow; ++t) {
-            std::vector<float> one(tok.begin() + (size_t)t * c->hidden, tok.begin() + (size_t)(t + 1) * c->hidden);
-            layernorm_tokens(one, 1, c->hidden, b.ln1_wf, b.ln1_bf);
-            std::vector<float> qrow;
-            linear_vec(one, qrow, b.qkv_wf, b.qkv_bf);
-            qkv.insert(qkv.end(), qrow.begin(), qrow.end());
-        }
-        for (int head = 0; head < heads; ++head)
+    if (!decoder_encoded)
+        for (const auto & b : c->svtr) {
+            std::vector<float> a = tok, qkv, attn((size_t)ow * c->hidden, 0.0f), proj, mlp;
             for (int t = 0; t < ow; ++t) {
-                std::vector<float> scores(ow);
-                for (int u = 0; u < ow; ++u) {
-                    float s = 0.0f;
-                    for (int k = 0; k < hd; ++k)
-                        s += qkv[(size_t)t * 3 * c->hidden + head * hd + k] *
-                             qkv[(size_t)u * 3 * c->hidden + c->hidden + head * hd + k];
-                    scores[u] = s / std::sqrt(float(hd));
-                }
-                softmax(scores.data(), ow);
-                for (int u = 0; u < ow; ++u)
-                    for (int k = 0; k < hd; ++k)
-                        attn[(size_t)t * c->hidden + head * hd + k] +=
-                            scores[u] * qkv[(size_t)u * 3 * c->hidden + 2 * c->hidden + head * hd + k];
+                std::vector<float> one(tok.begin() + (size_t)t * c->hidden, tok.begin() + (size_t)(t + 1) * c->hidden);
+                layernorm_tokens(one, 1, c->hidden, b.ln1_wf, b.ln1_bf);
+                std::vector<float> qrow;
+                linear_vec(one, qrow, b.qkv_wf, b.qkv_bf);
+                qkv.insert(qkv.end(), qrow.begin(), qrow.end());
             }
-        for (int t = 0; t < ow; ++t) {
-            std::vector<float> one(attn.begin() + (size_t)t * c->hidden, attn.begin() + (size_t)(t + 1) * c->hidden),
-                out;
-            linear_vec(one, out, b.proj_wf, b.proj_bf);
-            for (int k = 0; k < c->hidden; ++k) tok[(size_t)t * c->hidden + k] += out[k];
+            for (int head = 0; head < heads; ++head)
+                for (int t = 0; t < ow; ++t) {
+                    std::vector<float> scores(ow);
+                    for (int u = 0; u < ow; ++u) {
+                        float s = 0.0f;
+                        for (int k = 0; k < hd; ++k)
+                            s += qkv[(size_t)t * 3 * c->hidden + head * hd + k] *
+                                 qkv[(size_t)u * 3 * c->hidden + c->hidden + head * hd + k];
+                        scores[u] = s / std::sqrt(float(hd));
+                    }
+                    softmax(scores.data(), ow);
+                    for (int u = 0; u < ow; ++u)
+                        for (int k = 0; k < hd; ++k)
+                            attn[(size_t)t * c->hidden + head * hd + k] +=
+                                scores[u] * qkv[(size_t)u * 3 * c->hidden + 2 * c->hidden + head * hd + k];
+                }
+            for (int t = 0; t < ow; ++t) {
+                std::vector<float> one(attn.begin() + (size_t)t * c->hidden,
+                                       attn.begin() + (size_t)(t + 1) * c->hidden),
+                    out;
+                linear_vec(one, out, b.proj_wf, b.proj_bf);
+                for (int k = 0; k < c->hidden; ++k) tok[(size_t)t * c->hidden + k] += out[k];
+            }
+            for (int t = 0; t < ow; ++t) {
+                std::vector<float> one(tok.begin() + (size_t)t * c->hidden, tok.begin() + (size_t)(t + 1) * c->hidden),
+                    n, out;
+                layernorm_tokens(one, 1, c->hidden, b.ln2_wf, b.ln2_bf);
+                linear_vec(one, n, b.fc1_wf, b.fc1_bf);
+                silu(n);
+                linear_vec(n, out, b.fc2_wf, b.fc2_bf);
+                for (int k = 0; k < c->hidden; ++k) tok[(size_t)t * c->hidden + k] += out[k];
+            }
         }
-        for (int t = 0; t < ow; ++t) {
-            std::vector<float> one(tok.begin() + (size_t)t * c->hidden, tok.begin() + (size_t)(t + 1) * c->hidden), n,
-                out;
-            layernorm_tokens(one, 1, c->hidden, b.ln2_wf, b.ln2_bf);
-            linear_vec(one, n, b.fc1_wf, b.fc1_bf);
-            silu(n);
-            linear_vec(n, out, b.fc2_wf, b.fc2_bf);
-            for (int k = 0; k < c->hidden; ++k) tok[(size_t)t * c->hidden + k] += out[k];
-        }
-    }
-    layernorm_tokens(tok, ow, c->hidden, c->svtr_norm_wf, c->svtr_norm_bf);
+    if (!decoder_encoded) layernorm_tokens(tok, ow, c->hidden, c->svtr_norm_wf, c->svtr_norm_bf);
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.head_input", tok.data(), tok.size(), -1);
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
@@ -1268,7 +1332,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
                         r.is_pass() ? "PASS" : "FAIL");
             }
         }
-    if (c->large_stem) return recognize_svtr(c, x, h, w, out_len, c->graph.svtr_prefix_output);
+    if (c->large_stem)
+        return recognize_svtr(c, x, h, w, out_len, c->graph.svtr_prefix_output, c->graph.svtr_decoder_output);
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] backbone shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
