@@ -433,6 +433,11 @@ recognizer and LayoutLM consumer.
       cosine `0.998405` with identical decoded output; generic CTC and
       Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
       CLI `Brighton`.
+- [x] Re-run the gated mixed-precision GGUF mixer against the archived Fraktur
+      fixture. Q8 and mixed artifacts both diverge at `input_image` because
+      that archive contains stale out-of-range values (minimum `-28.6364`)
+      versus current native `[-1,1]` preprocessing; no precision conclusion
+      is accepted until a fresh reference is regenerated.
 - [x] Obtain an official Tesseract internal activation/raw-row comparison;
       the remaining discrepancy was traced to seeded Convolve padding and is
       now resolved below.
