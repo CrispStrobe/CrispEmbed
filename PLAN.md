@@ -48,6 +48,15 @@ locally, so DBNet reference timing/quality parity remains blocked; the 98-word
 output is readable and contains Brighton but is not on par with Tesseract's
 106-word segmentation. These are explicit quality/performance TODOs.
 
+Fresh DBNet reference checkpoint parity is now available: the official MMOCR
+IC15 ResNet-18 checkpoint was restored and dumped with Miniconda Python on the
+same 736x1472 preprocessed `scan_strip.png`. Native F16 passes the final
+probability-map boundary (`max_abs=0.00154233`, RMS `0.00008044`, cosine
+`0.9999974`, global `1.0000000`) and decodes 96 regions. Q4_K decodes the same
+96 regions but fails tensor parity (`cosine=0.9311001`, global `0.9986384`),
+so its prior README parity claim is stale for this reference. Intermediate
+DBNet taps and inference-only native/Python timing remain TODOs.
+
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
 and `850.018 ms` for native runtime-BN F16 Metal graph compute, with 106 boxes
