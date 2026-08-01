@@ -31,7 +31,7 @@ NATIVE_TEXT_RE = re.compile(r"BEGIN native Fraktur full_text\n(?P<text>.*?)\n  E
 
 
 def run(cmd: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, text=True, capture_output=True, env=env, timeout=900, check=False)
+    return subprocess.run(cmd, text=True, errors="replace", capture_output=True, env=env, timeout=900, check=False)
 
 
 def sha256_file(path: Path) -> str:
@@ -42,9 +42,19 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def official_metrics(image: Path, lang: str, psm: int) -> dict:
+def official_env() -> dict[str, str]:
+    env = os.environ.copy()
+    env.pop("TESSDATA_PREFIX", None)
+    return env
+
+
+def official_metrics(image: Path, lang: str, psm: int, tessdata_dir: Path | None) -> dict:
     started = time.perf_counter()
-    proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang, "tsv"])
+    command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
+    if tessdata_dir is not None:
+        command.extend(["--tessdata-dir", str(tessdata_dir)])
+    command.append("tsv")
+    proc = run(command, env=official_env())
     words = []
     lines = set()
     for line in proc.stdout.splitlines()[1:]:
@@ -75,8 +85,11 @@ def official_metrics(image: Path, lang: str, psm: int) -> dict:
     }
 
 
-def official_text(image: Path, lang: str, psm: int) -> str:
-    proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang])
+def official_text(image: Path, lang: str, psm: int, tessdata_dir: Path | None) -> str:
+    command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
+    if tessdata_dir is not None:
+        command.extend(["--tessdata-dir", str(tessdata_dir)])
+    proc = run(command, env=official_env())
     return " ".join(proc.stdout.split())
 
 
@@ -200,6 +213,8 @@ def main() -> int:
     parser.add_argument("--native-test", type=Path, default=Path("build/test-ocr-orchestrator"))
     parser.add_argument("--lang", default="frk")
     parser.add_argument("--psm", type=int, default=3)
+    parser.add_argument("--tessdata-dir", type=Path,
+                        help="explicit Tesseract tessdata directory for the official subprocess")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--beam", type=int, default=0)
     parser.add_argument("--benchmark", action="store_true", help="include native detect/group/crop/recognize timings")
@@ -213,8 +228,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
-    official = official_metrics(args.image, args.lang, args.psm)
-    reference_text = official_text(args.image, args.lang, args.psm)
+    official = official_metrics(args.image, args.lang, args.psm, args.tessdata_dir)
+    reference_text = official_text(args.image, args.lang, args.psm, args.tessdata_dir)
     official["text"] = reference_text
     native = native_metrics(args, args.image)
     native_text = native["text"]

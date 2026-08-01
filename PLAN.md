@@ -741,6 +741,11 @@ downstream handoff parity, not detector-box similarity alone.
       `0.883064`, and native beam-8 is `GEIEE` with sequence confidence
       `0.535476` and no character confidences. The beam contract passes, but
       text and greedy confidence calibration remain open quality TODOs.
+      The comparator also provides `--require-official-words`, and its model-
+      free contract test rejects empty official TSV references instead of
+      allowing a misconfigured data path to appear to pass.
+      It also provides `--require-greedy-text-match`; confidence/beam checks
+      must not be reported as OCR-quality acceptance when native text differs.
       Both page-metrics and line-confidence comparators now emit elapsed
       milliseconds for each official subprocess and native subprocess/line
       run, so quality claims can be paired with measured cost.
@@ -2557,6 +2562,23 @@ the pattern first.
   the default. Recognition output remains worse than official Tesseract in
   substitutions and punctuation despite matching region count; decoder,
   recoder, and line-image parity remain the active quality TODOs.
+
+- **Tesseract page comparator hardening (2026-08-01).** The page CER/WER
+  harness now supports explicit `--tessdata-dir`, clears stale inherited
+  `TESSDATA_PREFIX`, and decodes subprocess diagnostics with replacement for
+  invalid bytes. An explicit-tessdata scan-strip rerun remains stable at
+  official 12 lines/113 words/451 chars versus native 12 regions/566 chars,
+  CER `0.03375`, WER `0.15044`; no tessdata warning remains.
+
+- **Tesseract confidence harness hardening (2026-08-01).** The line-confidence
+  comparator now tolerates non-UTF-8 Tesseract diagnostics and removes stale
+  inherited `TESSDATA_PREFIX` when an explicit tessdata directory is supplied.
+  A valid cropped Fraktur line run produced official/native text differing only
+  by spacing (`1 hey` vs `1hey`), but official mean word confidence was
+  `0.7060` versus native greedy word confidence `0.9726`; beam sequence
+  confidence was `0.9924` with zero fabricated character confidences. Keep the
+  confidence calibration gate open until line-vs-word aggregation is compared
+  against the official certainty contract.
 
 - **Tesseract page-segmentation and beam A/B (2026-08-01).** Projection
   improved the scan-strip comparison to CER/WER `0.03197/0.12389` from the

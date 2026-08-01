@@ -35,6 +35,33 @@ class TesseractLineConfidenceTest(unittest.TestCase):
         self.assertEqual(confidence_acceptance_checks(args, {}, {}, {"char_confidences": 2}), {"beam_sequence_only": False})
         self.assertEqual(confidence_acceptance_checks(args, {}, {}, None), {"beam_sequence_only": False})
 
+    def test_official_word_gate_rejects_empty_reference(self) -> None:
+        args = type("Args", (), {
+            "max_greedy_word_confidence_delta": None,
+            "require_beam_sequence_only": False,
+            "require_official_words": True,
+        })()
+        self.assertEqual(
+            confidence_acceptance_checks(args, {"words": 0}, {}, None),
+            {"official_words_present": False},
+        )
+        self.assertEqual(
+            confidence_acceptance_checks(args, {"words": 1}, {}, None),
+            {"official_words_present": True},
+        )
+
+    def test_text_gate_rejects_quality_mismatch(self) -> None:
+        args = type("Args", (), {
+            "max_greedy_word_confidence_delta": None,
+            "require_beam_sequence_only": False,
+            "require_official_words": False,
+            "require_greedy_text_match": True,
+        })()
+        self.assertEqual(
+            confidence_acceptance_checks(args, {"text": "Brighton"}, {"text": "Drighton"}, None),
+            {"greedy_text_matches": False},
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

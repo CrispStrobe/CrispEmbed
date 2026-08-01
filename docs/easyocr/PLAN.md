@@ -20,7 +20,11 @@
   decoded output on the controlled line. The confidence comparator now accepts
   `--tessdata-dir`, eliminating silent zero-word official results caused by a
   stale `TESSDATA_PREFIX`; the German tiny-line diagnostic still shows native
-  text/calibration is not yet on par and beam remains diagnostic.
+  text/calibration is not yet on par and beam remains diagnostic. The
+  comparator now also has `--require-official-words` so an invalid official
+  reference cannot satisfy the beam-only contract accidentally. The new
+  `--require-greedy-text-match` gate keeps confidence semantics separate from
+  decoded OCR quality.
   The detector geometry/ordering handoff remains tracked below.
 - CRAFT cause/fix: the older folded-weight F16 artifact accumulated enough
   convolution/BN error to produce 107 boxes. Re-converting with raw
