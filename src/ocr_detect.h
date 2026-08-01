@@ -61,6 +61,9 @@ bool load(context ** ctx, const char * path, int n_threads = 1);
 std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, float prob_threshold = 0.3f,
                              float box_threshold = 0.5f, float unclip_ratio = 1.5f);
 
+std::vector<text_box> detect_preprocessed_ex(context * ctx, const float * pixels, int H, int W,
+                                             const detect_options & options);
+
 // Detect from image file. Handles resize, normalize, pad, and coordinate
 // rescaling back to original image space.
 std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold = 0.3f,

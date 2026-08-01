@@ -16,6 +16,7 @@ int main(int argc, char ** argv) {
     const auto input = ref.get_f32("input_image");
     const auto shape = ref.shape("input_image");
     if (!input.first || shape.size() != 3) return 4;
+    setenv("OCR_DETECT_CAPTURE_TAPS", "1", 1);
     ocr_detect::context * ctx = nullptr;
     if (!ocr_detect::load(&ctx, argv[1], 1)) return 5;
     const auto boxes = ocr_detect::detect(ctx, input.first, (int)shape[1], (int)shape[0], 0.3f, 0.5f, 1.5f);

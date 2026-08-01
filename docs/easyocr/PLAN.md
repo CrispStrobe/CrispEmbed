@@ -116,6 +116,10 @@
       slower and Metal is `3.90x` slower (`4732.1 ms` graph). Both native
       backends retain the F16 reference taps and 96 decoded regions. Graph and
       kernel optimization is a mandatory performance TODO for both backends.
+      The detector now uses a shape-keyed persistent graph, and tap retention
+      is opt-in via `OCR_DETECT_CAPTURE_TAPS=1`. Corrected rapid-mode repeated
+      benchmarking gives `2907.2 ms` warm CPU with 8 threads and `3499.4 ms`
+      warm Metal, still `2.40x` and `2.89x` slower than the reference.
       With `OCR_DETECT_THREADS=8`, native CPU improves to `2727.3 ms` graph,
       `9.3 ms` postprocess, `2736.7 ms` total, still `2.25x` slower than the
       reference; output remains 12 readable line units with `Brighton`.

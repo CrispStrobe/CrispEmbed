@@ -94,6 +94,14 @@ struct context {
     std::vector<float> last_prob_map;
     int last_prob_h = 0, last_prob_w = 0;
     std::unordered_map<std::string, std::vector<float>> last_intermediates;
+    std::vector<uint8_t> graph_buf;
+    ggml_context * graph_ctx = nullptr;
+    ggml_cgraph * graph = nullptr;
+    ggml_tensor * graph_input = nullptr;
+    ggml_tensor * graph_prob = nullptr;
+    std::vector<std::pair<std::string, ggml_tensor *>> graph_taps;
+    int graph_h = 0, graph_w = 0;
+    bool capture_intermediates = false;
 
     bool bench = false;
 };
@@ -224,6 +232,7 @@ bool load(context ** out, const char * path, int n_threads) {
 
     if (ocr_det_debug) fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_OCR_DETECT_BENCH") != nullptr);
+    ctx->capture_intermediates = (std::getenv("OCR_DETECT_CAPTURE_TAPS") != nullptr);
     return true;
 }
 
@@ -375,151 +384,167 @@ static ggml_tensor * sigmoid_op(ggml_context * g, ggml_tensor * x) {
 // pixels: [3, H, W] CHW float32, already preprocessed.
 // Returns prob_map as [H, W] in [0, 1].
 static std::vector<float> forward(context * ctx, const float * pixels, int H, int W) {
-    // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head, plus up to
-    // ~3 extra nodes (arange + cast + get_rows) per quantized weight dequant.
-    int max_nodes = 1024;
-    size_t buf_size = ggml_tensor_overhead() * (max_nodes + 100) + ggml_graph_overhead_custom(max_nodes, false);
-    std::vector<uint8_t> buf(buf_size);
-    struct ggml_init_params p = { buf_size, buf.data(), true };
-    ggml_context * g = ggml_init(p);
+    if (!ctx->graph_ctx || ctx->graph_h != H || ctx->graph_w != W) {
+        if (ctx->graph_ctx) ggml_free(ctx->graph_ctx);
+        // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head, plus
+        // extra nodes for quantized-weight dequantization.
+        const int max_nodes = 1024;
+        const size_t buf_size =
+            ggml_tensor_overhead() * (max_nodes + 100) + ggml_graph_overhead_custom(max_nodes, false);
+        ctx->graph_buf.resize(buf_size);
+        struct ggml_init_params p = { buf_size, ctx->graph_buf.data(), true };
+        ctx->graph_ctx = ggml_init(p);
+        if (!ctx->graph_ctx) return {};
+        ctx->graph_h = H;
+        ctx->graph_w = W;
+        ggml_context * g = ctx->graph_ctx;
 
-    // Input: [W, H, 3] in ggml layout (column-major: ne[0]=W, ne[1]=H, ne[2]=3)
-    ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
-    ggml_set_name(x, "input");
-    ggml_set_input(x);
+        // Input: [W, H, 3] in ggml layout (column-major: ne[0]=W, ne[1]=H, ne[2]=3)
+        ggml_tensor * x = ggml_new_tensor_3d(g, GGML_TYPE_F32, W, H, 3);
+        ggml_set_name(x, "input");
+        ggml_set_input(x);
+        ctx->graph_input = x;
+        ctx->graph_taps.clear();
 
-    // --- Backbone: ResNet-18 ---
+        // --- Backbone: ResNet-18 ---
 
-    // Stem: conv1(7×7, s2, p3) + relu + maxpool(3, s2, p1)
-    x = conv_bias_relu(g, x, ctx->stem, 3, 7, 7, 2, 3, true);
-    x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 2, 2, 1, 1);
+        // Stem: conv1(7×7, s2, p3) + relu + maxpool(3, s2, p1)
+        x = conv_bias_relu(g, x, ctx->stem, 3, 7, 7, 2, 3, true);
+        x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 2, 2, 1, 1);
 
-    // Stage outputs for FPN
-    ggml_tensor * stage_out[4];
-    std::vector<std::pair<std::string, ggml_tensor *>> taps;
-    int stage_ch[4] = { 64, 128, 256, 512 };
+        // Stage outputs for FPN
+        ggml_tensor * stage_out[4];
+        auto & taps = ctx->graph_taps;
+        int stage_ch[4] = { 64, 128, 256, 512 };
 
-    // Stage 0: 2 blocks, 64ch, no stride change
-    x = basic_block_fwd(g, x, ctx->stages[0][0], 64, 64, 1);
-    x = basic_block_fwd(g, x, ctx->stages[0][1], 64, 64, 1);
-    stage_out[0] = x;
-    taps.push_back({ "backbone_stage_0", x });
+        // Stage 0: 2 blocks, 64ch, no stride change
+        x = basic_block_fwd(g, x, ctx->stages[0][0], 64, 64, 1);
+        x = basic_block_fwd(g, x, ctx->stages[0][1], 64, 64, 1);
+        stage_out[0] = x;
+        taps.push_back({ "backbone_stage_0", x });
 
-    // Stage 1: 2 blocks, 128ch, first block stride 2
-    x = basic_block_fwd(g, x, ctx->stages[1][0], 64, 128, 2);
-    x = basic_block_fwd(g, x, ctx->stages[1][1], 128, 128, 1);
-    stage_out[1] = x;
-    taps.push_back({ "backbone_stage_1", x });
+        // Stage 1: 2 blocks, 128ch, first block stride 2
+        x = basic_block_fwd(g, x, ctx->stages[1][0], 64, 128, 2);
+        x = basic_block_fwd(g, x, ctx->stages[1][1], 128, 128, 1);
+        stage_out[1] = x;
+        taps.push_back({ "backbone_stage_1", x });
 
-    // Stage 2: 2 blocks, 256ch, first block stride 2
-    x = basic_block_fwd(g, x, ctx->stages[2][0], 128, 256, 2);
-    x = basic_block_fwd(g, x, ctx->stages[2][1], 256, 256, 1);
-    stage_out[2] = x;
-    taps.push_back({ "backbone_stage_2", x });
+        // Stage 2: 2 blocks, 256ch, first block stride 2
+        x = basic_block_fwd(g, x, ctx->stages[2][0], 128, 256, 2);
+        x = basic_block_fwd(g, x, ctx->stages[2][1], 256, 256, 1);
+        stage_out[2] = x;
+        taps.push_back({ "backbone_stage_2", x });
 
-    // Stage 3: 2 blocks, 512ch, first block stride 2
-    x = basic_block_fwd(g, x, ctx->stages[3][0], 256, 512, 2);
-    x = basic_block_fwd(g, x, ctx->stages[3][1], 512, 512, 1);
-    stage_out[3] = x;
-    taps.push_back({ "backbone_stage_3", x });
+        // Stage 3: 2 blocks, 512ch, first block stride 2
+        x = basic_block_fwd(g, x, ctx->stages[3][0], 256, 512, 2);
+        x = basic_block_fwd(g, x, ctx->stages[3][1], 512, 512, 1);
+        stage_out[3] = x;
+        taps.push_back({ "backbone_stage_3", x });
 
-    // --- Neck: FPNC ---
+        // --- Neck: FPNC ---
 
-    // Lateral 1×1 convs (no bias, no relu in FPNC default)
-    ggml_tensor * lat[4];
-    for (int i = 0; i < 4; i++) {
-        ggml_tensor * w = prep_conv_weight(g, ctx->lateral[i].w, stage_ch[i], 1, 1);
-        lat[i] = ggml_conv_2d(g, w, stage_out[i], 1, 1, 0, 0, 1, 1);
-        // Add bias if present
-        if (ctx->lateral[i].b) {
-            int OC = (int)ctx->lateral[i].b->ne[0];
-            ggml_tensor * bias = ggml_reshape_3d(g, ctx->lateral[i].b, 1, 1, OC);
-            lat[i] = ggml_add(g, lat[i], bias);
+        // Lateral 1×1 convs (no bias, no relu in FPNC default)
+        ggml_tensor * lat[4];
+        for (int i = 0; i < 4; i++) {
+            ggml_tensor * w = prep_conv_weight(g, ctx->lateral[i].w, stage_ch[i], 1, 1);
+            lat[i] = ggml_conv_2d(g, w, stage_out[i], 1, 1, 0, 0, 1, 1);
+            // Add bias if present
+            if (ctx->lateral[i].b) {
+                int OC = (int)ctx->lateral[i].b->ne[0];
+                ggml_tensor * bias = ggml_reshape_3d(g, ctx->lateral[i].b, 1, 1, OC);
+                lat[i] = ggml_add(g, lat[i], bias);
+            }
+            taps.push_back({ "neck_lateral_" + std::to_string(i), lat[i] });
         }
-        taps.push_back({ "neck_lateral_" + std::to_string(i), lat[i] });
-    }
 
-    // Top-down: add upsampled higher level to lower level
-    for (int i = 3; i > 0; i--) {
-        int target_w = (int)lat[i - 1]->ne[0];
-        int target_h = (int)lat[i - 1]->ne[1];
-        ggml_tensor * up = upsample_to(g, lat[i], target_w, target_h);
-        lat[i - 1] = ggml_add(g, lat[i - 1], up);
-    }
-
-    // Smooth 3×3 convs (256→64, no relu in FPNC default)
-    ggml_tensor * smoothed[4];
-    for (int i = 0; i < 4; i++) {
-        ggml_tensor * w = prep_conv_weight(g, ctx->smooth[i].w, 256, 3, 3);
-        smoothed[i] = ggml_conv_2d(g, w, lat[i], 1, 1, 1, 1, 1, 1);
-        if (ctx->smooth[i].b) {
-            int OC = (int)ctx->smooth[i].b->ne[0];
-            ggml_tensor * bias = ggml_reshape_3d(g, ctx->smooth[i].b, 1, 1, OC);
-            smoothed[i] = ggml_add(g, smoothed[i], bias);
+        // Top-down: add upsampled higher level to lower level
+        for (int i = 3; i > 0; i--) {
+            int target_w = (int)lat[i - 1]->ne[0];
+            int target_h = (int)lat[i - 1]->ne[1];
+            ggml_tensor * up = upsample_to(g, lat[i], target_w, target_h);
+            lat[i - 1] = ggml_add(g, lat[i - 1], up);
         }
-        taps.push_back({ "neck_smooth_" + std::to_string(i), smoothed[i] });
-    }
 
-    // Upsample all to stage 0 resolution and concatenate
-    int target_w = (int)smoothed[0]->ne[0];
-    int target_h = (int)smoothed[0]->ne[1];
-    for (int i = 1; i < 4; i++) {
-        smoothed[i] = upsample_to(g, smoothed[i], target_w, target_h);
-    }
-    // Concat along channel dim: 4 × 64 = 256
-    ggml_tensor * fused = ggml_concat(g, smoothed[0], smoothed[1], 2);
-    fused = ggml_concat(g, fused, smoothed[2], 2);
-    fused = ggml_concat(g, fused, smoothed[3], 2);
-    taps.push_back({ "neck_fused", fused });
+        // Smooth 3×3 convs (256→64, no relu in FPNC default)
+        ggml_tensor * smoothed[4];
+        for (int i = 0; i < 4; i++) {
+            ggml_tensor * w = prep_conv_weight(g, ctx->smooth[i].w, 256, 3, 3);
+            smoothed[i] = ggml_conv_2d(g, w, lat[i], 1, 1, 1, 1, 1, 1);
+            if (ctx->smooth[i].b) {
+                int OC = (int)ctx->smooth[i].b->ne[0];
+                ggml_tensor * bias = ggml_reshape_3d(g, ctx->smooth[i].b, 1, 1, OC);
+                smoothed[i] = ggml_add(g, smoothed[i], bias);
+            }
+            taps.push_back({ "neck_smooth_" + std::to_string(i), smoothed[i] });
+        }
 
-    // Optional output conv (if present in model)
-    if (ctx->neck_output.w) {
+        // Upsample all to stage 0 resolution and concatenate
+        int target_w = (int)smoothed[0]->ne[0];
+        int target_h = (int)smoothed[0]->ne[1];
+        for (int i = 1; i < 4; i++) {
+            smoothed[i] = upsample_to(g, smoothed[i], target_w, target_h);
+        }
+        // Concat along channel dim: 4 × 64 = 256
+        ggml_tensor * fused = ggml_concat(g, smoothed[0], smoothed[1], 2);
+        fused = ggml_concat(g, fused, smoothed[2], 2);
+        fused = ggml_concat(g, fused, smoothed[3], 2);
+        taps.push_back({ "neck_fused", fused });
+
+        // Optional output conv (if present in model)
+        if (ctx->neck_output.w) {
+            int fused_ch = (int)fused->ne[2];
+            fused = conv_bias_relu(g, fused, ctx->neck_output, fused_ch, 3, 3, 1, 1, true);
+        }
+
+        // --- Head: probability branch ---
+
+        // conv1: 3×3 (256→64) + relu (BN folded)
         int fused_ch = (int)fused->ne[2];
-        fused = conv_bias_relu(g, fused, ctx->neck_output, fused_ch, 3, 3, 1, 1, true);
+        x = conv_bias_relu(g, fused, ctx->head_conv1, fused_ch, 3, 3, 1, 1, true);
+        taps.push_back({ "head_conv1", x });
+
+        // deconv1: ConvTranspose2d (64→64, k=2, s=2) + relu (BN folded)
+        // OC=64 (output channels of the deconv)
+        x = conv_transpose_bias_relu(g, x, ctx->head_deconv1, 64, 2, 2, 2, true);
+        taps.push_back({ "head_deconv1", x });
+
+        // deconv2: ConvTranspose2d (64→1, k=2, s=2) — no relu
+        // OC=1 (output channels of the deconv)
+        x = conv_transpose_bias_relu(g, x, ctx->head_deconv2, 1, 2, 2, 2, false);
+
+        // Sigmoid → probability map
+        x = sigmoid_op(g, x);
+
+        ggml_set_name(x, "prob_map");
+        ggml_set_output(x);
+        ctx->graph_prob = x;
+        if (ctx->capture_intermediates) {
+            for (const auto & tap : taps) ggml_set_output(tap.second);
+        }
+
+        // Build the persistent graph once for this input shape.
+        ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
+        ggml_build_forward_expand(gf, x);
+
+        if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
+            fprintf(stderr, "ocr_detect: graph allocation failed\n");
+            ggml_free(g);
+            return {};
+        }
+        ctx->graph = gf;
     }
 
-    // --- Head: probability branch ---
-
-    // conv1: 3×3 (256→64) + relu (BN folded)
-    int fused_ch = (int)fused->ne[2];
-    x = conv_bias_relu(g, fused, ctx->head_conv1, fused_ch, 3, 3, 1, 1, true);
-    taps.push_back({ "head_conv1", x });
-
-    // deconv1: ConvTranspose2d (64→64, k=2, s=2) + relu (BN folded)
-    // OC=64 (output channels of the deconv)
-    x = conv_transpose_bias_relu(g, x, ctx->head_deconv1, 64, 2, 2, 2, true);
-    taps.push_back({ "head_deconv1", x });
-
-    // deconv2: ConvTranspose2d (64→1, k=2, s=2) — no relu
-    // OC=1 (output channels of the deconv)
-    x = conv_transpose_bias_relu(g, x, ctx->head_deconv2, 1, 2, 2, 2, false);
-
-    // Sigmoid → probability map
-    x = sigmoid_op(g, x);
-
-    ggml_set_name(x, "prob_map");
-    ggml_set_output(x);
-    for (const auto & tap : taps) ggml_set_output(tap.second);
-
-    // Build and compute graph
-    ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
-    ggml_build_forward_expand(gf, x);
-
-    if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
-        fprintf(stderr, "ocr_detect: graph allocation failed\n");
-        ggml_free(g);
-        return {};
-    }
+    // Reuse the shape-keyed graph and its backend-resident allocations.
+    ggml_cgraph * gf = ctx->graph;
 
     // Set input
-    ggml_tensor * inp = ggml_graph_get_tensor(gf, "input");
-    ggml_backend_tensor_set(inp, pixels, 0, 3 * H * W * sizeof(float));
+    ggml_backend_tensor_set(ctx->graph_input, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
     ggml_backend_graph_compute(ctx->backend, gf);
 
     // Read probability map
-    ggml_tensor * prob = ggml_graph_get_tensor(gf, "prob_map");
+    ggml_tensor * prob = ctx->graph_prob;
     int prob_w = (int)prob->ne[0];
     int prob_h = (int)prob->ne[1];
     // prob shape: [W, H, 1] in ggml — read as flat [W*H]
@@ -533,14 +558,15 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
     ctx->last_prob_w = prob_w;
 
     ctx->last_intermediates.clear();
-    for (const auto & tap : taps) {
-        auto & dst = ctx->last_intermediates[tap.first];
-        dst.resize((size_t)ggml_nelements(tap.second));
-        ggml_backend_tensor_get(tap.second, dst.data(), 0, dst.size() * sizeof(float));
+    if (ctx->capture_intermediates) {
+        for (const auto & tap : ctx->graph_taps) {
+            auto & dst = ctx->last_intermediates[tap.first];
+            dst.resize((size_t)ggml_nelements(tap.second));
+            ggml_backend_tensor_get(tap.second, dst.data(), 0, dst.size() * sizeof(float));
+        }
+        ctx->last_intermediates["prob_map_sigmoid"] = prob_map;
     }
-    ctx->last_intermediates["prob_map_sigmoid"] = prob_map;
 
-    ggml_free(g);
     return prob_map;
 }
 
@@ -1044,6 +1070,12 @@ std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, 
                                score_mode::accurate);
 }
 
+std::vector<text_box> detect_preprocessed_ex(context * ctx, const float * pixels, int H, int W,
+                                             const detect_options & options) {
+    return detect_with_options(ctx, pixels, H, W, options.prob_threshold, options.box_threshold, options.unclip_ratio,
+                               options.dilation, options.max_candidates, options.scoring);
+}
+
 detect_options rapid_defaults() {
     return {};
 }
@@ -1194,6 +1226,7 @@ bool get_intermediate(const context * ctx, const char * name, const float ** dat
 
 void free(context * ctx) {
     if (!ctx) return;
+    if (ctx->graph_ctx) ggml_free(ctx->graph_ctx);
     if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
