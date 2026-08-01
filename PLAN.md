@@ -427,16 +427,18 @@ downstream handoff parity, not detector-box similarity alone.
       in production.
       `tools/compare_tesseract_page_geometry.py` now measures the independent
       geometry boundary from official TSV level-4 rows. On `scan_strip.png`
-      the default baseline-clustered component adapter has 12/12 indexed rows
-      with mean IoU `0.916222` after vertical crop tightening; the projection
-      fallback has 12/12 with mean IoU `0.865993`. The first-line crop is now
-      `[48,0,434,20]` and the short final-row crop `[27,234,83,20]`; both page
-      ends decode coherently and `Meryton` is correct. Character choices and
-      quote/spacing differences (`They/Lhey`, `Brighton/Drighton`) remain a
+      The legacy component path remains the default because the German
+      official-print gate regressed under the newer baseline matcher. With
+      `CRISPEMBED_TESSERACT_COMPONENT_BASELINE=1`, the baseline experiment now
+      has 12/12 indexed rows with mean IoU `0.813562` after vertical crop
+      tightening; the projection fallback has 12/12 with mean IoU `0.865993`.
+      Its first-line crop is `[48,0,434,20]` and short final-row crop
+      `[27,237,72,22]`; both page ends decode coherently, although the
+      baseline variant drops the final exclamation mark. Character choices and
+      quote/spacing differences remain a
       decoded-text parity gate. A page-level beam A/B at widths 1, 5, 10, and
-      25 keeps the same first-line choices; it only changes an isolated spacing
-      decision, so generic CTC beam search remains opt-in and is not the cause
-      of the remaining CLI discrepancy.
+      25 keeps the same first-line choices; generic CTC beam search remains
+      opt-in and is not the cause of the remaining CLI discrepancy.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
