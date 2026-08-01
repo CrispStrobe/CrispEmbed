@@ -1088,7 +1088,15 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
         if (!c->diff->load(ref)) c->diff.reset();
     }
     core_gguf::free_metadata(meta);
-    if (!core_gguf::load_weights(path, c->backend, "ppocrv6", c->wl) || !map_model(c)) {
+    if (!core_gguf::load_weights(path, c->backend, "ppocrv6", c->wl)) {
+        fprintf(stderr, "ppocrv6: failed to load recognizer weights: %s (variant=%s)\n", path,
+                c->variant.c_str());
+        ppocrv6_ocr_free(c);
+        return nullptr;
+    }
+    if (!map_model(c)) {
+        fprintf(stderr, "ppocrv6: recognizer tensor map is incompatible: %s (variant=%s)\n", path,
+                c->variant.c_str());
         ppocrv6_ocr_free(c);
         return nullptr;
     }
