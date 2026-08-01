@@ -85,6 +85,11 @@ class TesseractPageGeometryTest(unittest.TestCase):
         args.native_pageseg = False
         self.assertEqual(selected_detector_route(args), "dbnet")
 
+    def test_benchmark_wrapper_exposes_native_route_flag(self) -> None:
+        wrapper = (ROOT / "tools" / "benchmark_tesseract_page.py").read_text()
+        self.assertIn('parser.add_argument("--native-pageseg"', wrapper)
+        self.assertIn('command.append("--native-pageseg")', wrapper)
+
     def test_repeated_benchmark_summary_is_deterministic(self) -> None:
         self.assertEqual(summarize([1.0, 2.0, 3.0]), {"min": 1.0, "median": 2.0, "p90": 3.0, "max": 3.0})
         self.assertEqual(summarize([]), {"min": 0.0, "median": 0.0, "p90": 0.0, "max": 0.0})
