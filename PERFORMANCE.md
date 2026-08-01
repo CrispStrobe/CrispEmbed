@@ -1295,3 +1295,8 @@ The page comparator now uses the same explicit tessdata/environment isolation.
 The scan-strip baseline is unchanged with that correction: official 12 lines,
 113 words, 451 chars versus native 12 regions and 566 chars, CER `0.03375`,
 WER `0.15044`.
+
+The page comparator now has an opt-in `--require-text-match` gate and retains
+the normalized official/native page strings in its comparison output. The
+scan-strip baseline therefore remains explicitly non-green for exact output
+parity even though its CER/WER metrics are measurable.
