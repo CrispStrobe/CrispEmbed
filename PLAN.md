@@ -2649,6 +2649,31 @@ the pattern first.
   mismatch; the next target is row-boundary construction and baseline
   assignment, not another crop-padding variant.
 
+- **Tesseract component-row A/B (2026-08-01).** The existing opt-in
+  `--component`/`CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` policy retained 12
+  regions but degraded scan-strip quality to CER/WER `0.10873/0.20354` and
+  corrupted the first line (`40eNArEBOg 10DE EES EEN`). Reject it; the legacy
+  row-clustering path remains the active baseline. A separate alternate run
+  with a malformed model path emitted no metrics and was discarded as invalid
+  evidence.
+
+- **Tesseract crop-geometry comparator (2026-08-01).** Added
+  `tools/compare_tesseract_crop_geometry.py`, which compares `crops.tsv`
+  against official Tesseract TSV level-4 rows. On the current 12-line
+  scan-strip fixture, counts match, but native boxes average `dx=-2.08`,
+  `dy=+1.83`, `dw=+4.33`, `dh=+1.50`; the largest deltas are row 5 width
+  `+80`, row 10 vertical offset `+14`, and row 5 height `+12`. This identifies
+  local row construction/splitting errors, not a global crop-padding issue.
+
+- **Tesseract row-blob-bounds A/B (2026-08-01).** Direct debug showed row 5
+  assigned blobs at `x=29..343` but the vertical ink scan widened its crop to
+  `x=27..428` using neighboring-row pixels. The gated
+  `CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS` mode prevents that expansion.
+  On scan-strip it improved CER/WER from `0.03922/0.13274` to
+  `0.03209/0.11504`; geometry mean `dw` improved from `+4.33` to `+2.42`,
+  worst width delta from `+80` to `+13`, while counts stayed 12/12. Keep it
+  gated pending additional page fixtures; exact text parity is still open.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
