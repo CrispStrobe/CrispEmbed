@@ -2614,4 +2614,7 @@ the pattern first.
   and a fixture that exercises a real multi-code decoded class remain TODO.
   The converter now has an opt-in `--embed-dawgs` data-preservation mode that
   stores the three LSTM DAWG components as uint8 metadata arrays; runtime
-  scoring remains disabled until a binary parser and parity fixture exist.
+  scoring remains disabled until a binary parser and parity fixture exist. A
+  bounded read-only parser and synthetic prefix matcher are now in-tree; the
+  remaining TODO is wiring it to embedded GGUF metadata and validating word
+  choices against official Tesseract on transcribed fixtures.
