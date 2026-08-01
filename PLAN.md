@@ -2540,3 +2540,13 @@ the pattern first.
   the default. Recognition output remains worse than official Tesseract in
   substitutions and punctuation despite matching region count; decoder,
   recoder, and line-image parity remain the active quality TODOs.
+
+- **Tesseract page-segmentation and beam A/B (2026-08-01).** Projection
+  improved the scan-strip comparison to CER/WER `0.03197/0.12389` from the
+  legacy `0.03375/0.15044`, with the same 12 regions; baseline matching was
+  unchanged and slower. Keep projection behind
+  `CRISPEMBED_TESSERACT_PAGESEG_PROJECTION` because the improvement is not yet
+  official-output parity. Beam width 8 on projection was text-identical to
+  greedy (`0.03197/0.12389`) but increased recognition from `9.66 s` to
+  `29.75 s`; keep it diagnostic-only. Next TODO: line-image/crop geometry and
+  Tesseract-compatible decoder/recoder semantics.
