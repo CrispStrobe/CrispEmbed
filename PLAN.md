@@ -2644,3 +2644,9 @@ the pattern first.
   measurements. It also rejects DAWG scoring without a recode beam wider than
   one, which would otherwise be a silent no-op. The source-level contract
   test covers both safeguards.
+
+- **DAWG parser hardening (2026-08-01).** The bounded SquishedDawg parser now
+  rejects unicharset sizes whose packed-field shifts cannot fit in its 64-bit
+  edge representation before constructing masks or reading edges. The parser
+  regression suite covers the malformed oversized header and the valid
+  membership path; no recognition behavior or default gate changed.

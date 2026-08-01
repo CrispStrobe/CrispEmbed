@@ -70,6 +70,15 @@ bool parse(const std::vector<uint8_t> & bytes, Dawg & out, std::string * error) 
         fail(error, "invalid dawg unicharset size");
         return false;
     }
+    // SquishedDawg packs the letter, marker, direction, word-end, and next
+    // node fields into one uint64_t. Reject sizes whose letter-field shift
+    // would make the masks undefined before allocating or reading edges.
+    const int flag_start = ceil_log2(unicharset_size);
+    const int next_start = flag_start + 3;
+    if (flag_start <= 0 || next_start >= 64) {
+        fail(error, "unsupported dawg unicharset size");
+        return false;
+    }
     if (num_edges == 0 || num_edges > kMaxEdges || num_edges > (bytes.size() - pos) / sizeof(uint64_t)) {
         fail(error, "invalid dawg edge count");
         return false;
@@ -85,8 +94,6 @@ bool parse(const std::vector<uint8_t> & bytes, Dawg & out, std::string * error) 
         }
     }
 
-    const int flag_start = ceil_log2(unicharset_size);
-    const int next_start = flag_start + 3;
     const uint64_t next_mask = ~((1ull << next_start) - 1);
     for (size_t i = 0; i < out.edges.size(); ++i) {
         const uint64_t edge = out.edges[i];
