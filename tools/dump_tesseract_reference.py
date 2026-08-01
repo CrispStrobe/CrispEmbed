@@ -628,8 +628,13 @@ def main():
     # ── Load image ────────────────────────────────────────────────────
     try:
         from PIL import Image
-        img = Image.open(args.image).convert("L")  # grayscale
-        img_u8 = np.array(img, dtype=np.uint8)     # [0, 255]
+        img = Image.open(args.image)
+        # Match stb_image's stbi_load(..., req_comp=1) conversion used by the
+        # native harness: integer RGB coefficients and truncation, rather than
+        # Pillow's rounded ITU-R 601 conversion. This matters at int8 input
+        # boundaries for RGB fixtures.
+        rgb = np.asarray(img.convert("RGB"), dtype=np.uint16)
+        img_u8 = ((77 * rgb[..., 0] + 150 * rgb[..., 1] + 29 * rgb[..., 2]) >> 8).astype(np.uint8)
     except ImportError:
         print("ERROR: Pillow required (pip install Pillow)")
         sys.exit(1)
