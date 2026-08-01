@@ -2696,3 +2696,9 @@ the pattern first.
   `--max-matched-mean-gap-delta`. The metric follows reference-line order and
   remains separate from the legacy indexed spacing metric; eleven model-free
   geometry tests pass.
+
+- **Geometry match-count diagnostics (2026-08-01).** The comparator now
+  reports total one-to-one matches plus positive- and zero-IoU match counts,
+  making non-overlapping/missing line candidates visible instead of hiding
+  them in a mean. Twelve model-free geometry tests pass; no threshold is
+  promoted without a real page run.

@@ -160,6 +160,7 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
     ]
     gap_deltas = [abs(native_gaps[index] - reference_gaps[index]) for index in range(min(len(reference_gaps), len(native_gaps)))]
     matched = greedy_iou_matches(reference, mine)
+    positive_matches = sum(1 for _, _, overlap in matched if overlap > 0.0)
     matched_component_deltas = [
         abs(mine[mine_index][component] - reference[ref_index][component])
         for ref_index, mine_index, _ in matched
@@ -192,6 +193,9 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         "matched_mean_abs_interline_gap_delta": round(sum(matched_gap_deltas) / len(matched_gap_deltas), 3)
         if matched_gap_deltas else 0.0,
         "matched_mean_iou": round(sum(item[2] for item in matched) / len(matched), 6) if matched else 0.0,
+        "matched_count": len(matched),
+        "matched_positive_iou_count": positive_matches,
+        "matched_zero_iou_count": len(matched) - positive_matches,
         "matched_pairs": [
             {"reference_index": ref_index, "native_index": mine_index, "iou": round(overlap, 6)}
             for ref_index, mine_index, overlap in matched
