@@ -1409,3 +1409,9 @@ characters. CER/WER stayed `0.32984/0.67974`; native timing was
 `detect=1014.9 ms`, `crop=605.7 ms`, `recognize=14263.4 ms`,
 `total=15885.6 ms`. This is a shared five-line geometry/coverage gap, not
 evidence that either recognizer is worse on aligned crops.
+
+The German native crop manifest has 23 rows versus 28 official TSV rows. The
+geometry comparator now marks this as `alignment_valid=false` and reports the
+number of index-paired rows; its former mean `dy=257.7` was an alignment
+artifact, not a measured crop offset. A merge-aware line matcher remains a
+detector/geometry TODO before using per-row geometry deltas on this fixture.

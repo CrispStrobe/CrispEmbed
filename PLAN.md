@@ -2745,3 +2745,11 @@ the pattern first.
   `total=15885.6 ms`. Thus both our DBNet and native row routes currently
   share the same five-line coverage gap on this fixture; neither result is a
   valid recognizer-quality comparison until line geometry is aligned.
+
+- **German crop geometry guard (2026-08-01).** The native-route crop manifest
+  has 23 rows while official TSV has 28. The old geometry tool's index-paired
+  summary therefore produced meaningless deltas (for example mean `dy=257.7`)
+  and exited nonzero only because of the count mismatch. It now reports
+  `alignment_valid=false` and `paired_rows`, so those deltas cannot be treated
+  as geometry measurements until a line-matching strategy handles merges and
+  missing rows.
