@@ -118,8 +118,10 @@
       kernel optimization is a mandatory performance TODO for both backends.
       The detector now uses a shape-keyed persistent graph, and tap retention
       is opt-in via `OCR_DETECT_CAPTURE_TAPS=1`. Corrected rapid-mode repeated
-      benchmarking gives `2907.2 ms` warm CPU with 8 threads and `3499.4 ms`
-      warm Metal, still `2.40x` and `2.89x` slower than the reference.
+      benchmarking gives `5661.1 ms` warm CPU with 4 threads and `2907.2 ms`
+      with 8 threads, versus `1213.450 ms` Python CPU; Metal is `3499.4 ms`.
+      Python uses 4 compute threads, so the native 8-thread result is still
+      `2.40x` slower despite twice the compute threads.
       With `OCR_DETECT_THREADS=8`, native CPU improves to `2727.3 ms` graph,
       `9.3 ms` postprocess, `2736.7 ms` total, still `2.25x` slower than the
       reference; output remains 12 readable line units with `Brighton`.
