@@ -470,6 +470,9 @@ downstream handoff parity, not detector-box similarity alone.
       Geometry reports now include detector/recognizer SHA-256 hashes and the
       indexed reading-order policy, matching the aggregate page-metrics
       provenance record without serializing local model paths.
+      The geometry comparator now also reports mean/max absolute crop deltas
+      and mean absolute inter-line gap deltas, with optional max-delta gates;
+      this keeps spacing/crop drift visible even when row count and IoU pass.
       The aggregate page-metrics harness now selects `legacy-fallback`,
       `component`, `baseline`, or `projection` explicitly and clears stale
       policy environment variables between runs. On `scan_strip.png`, the
