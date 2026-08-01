@@ -93,6 +93,11 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertIn('"--tessdata-dir"', source)
         self.assertIn('env.pop("TESSDATA_PREFIX", None)', source)
 
+    def test_geometry_harness_has_bounded_subprocess_timeout(self) -> None:
+        source = (ROOT / "tools/compare_tesseract_page_geometry.py").read_text()
+        self.assertIn('"--timeout"', source)
+        self.assertIn("subprocess.TimeoutExpired", source)
+
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
         passing = acceptance_checks(args, {"regions": 12}, {"cer": 0.019, "wer": 0.089})
