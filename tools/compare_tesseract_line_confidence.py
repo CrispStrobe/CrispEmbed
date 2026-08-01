@@ -65,6 +65,18 @@ def native(args: argparse.Namespace, beam: int) -> dict:
     }
 
 
+def confidence_acceptance_checks(args: argparse.Namespace, reference: dict, greedy: dict, beam: dict | None) -> dict[str, bool]:
+    checks: dict[str, bool] = {}
+    if args.max_greedy_word_confidence_delta is not None:
+        checks["max_greedy_word_confidence_delta"] = (
+            abs(greedy["word_confidence"] - reference["mean_word_confidence"])
+            <= args.max_greedy_word_confidence_delta
+        )
+    if args.require_beam_sequence_only:
+        checks["beam_sequence_only"] = beam is not None and beam["char_confidences"] == 0
+    return checks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", type=Path, required=True)
@@ -73,12 +85,17 @@ def main() -> int:
     parser.add_argument("--lang", default="frk")
     parser.add_argument("--psm", type=int, default=7)
     parser.add_argument("--beam", type=int, default=8)
+    parser.add_argument("--max-greedy-word-confidence-delta", type=float,
+                        help="fail if absolute greedy word-confidence delta exceeds this value")
+    parser.add_argument("--require-beam-sequence-only", action="store_true",
+                        help="fail unless beam output has no fabricated per-character confidences")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
     reference = official(args.image, args.lang, args.psm)
     greedy = native(args, 0)
     beam = native(args, args.beam) if args.beam > 1 else None
+    checks = confidence_acceptance_checks(args, reference, greedy, beam)
     result = {
         "fixture": str(args.image),
         "official_tesseract": reference,
@@ -91,12 +108,13 @@ def main() -> int:
             "beam_text_matches": beam["text"] == reference["text"] if beam else None,
             "beam_confidence_delta": beam["sequence_confidence"] - reference["mean_word_confidence"] if beam else None,
         },
+        "acceptance": {"passed": all(checks.values()) if checks else None, "checks": checks},
     }
     serialized = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if args.output:
         args.output.write_text(serialized)
     print(serialized, end="")
-    return 0 if reference["returncode"] == 0 and greedy["returncode"] == 0 and (not beam or beam["returncode"] == 0) else 1
+    return 0 if reference["returncode"] == 0 and greedy["returncode"] == 0 and (not beam or beam["returncode"] == 0) and all(checks.values()) else 1
 
 
 if __name__ == "__main__":
