@@ -62,8 +62,11 @@ timing remains a TODO. Q4_K's earliest divergence is already at
 through the neck to final-map cosine `0.9311001`; this is a quantization
 quality TODO, not a postprocessing issue. The fresh native CPU-forced page
 benchmark reports detector graph `4178.6 ms`, postprocess `8.3 ms`, total
-`4186.9 ms`, and 12 line units; Python inference-only timing is still missing,
-so no speed ratio is claimed.
+`4186.9 ms`, and 12 line units. Miniconda PyTorch CPU inference-only timing is
+`1213.450 ms` on the same 736x1472 input, versus native F16 `4178.6 ms` CPU
+and `4732.1 ms` Metal graph time (`3.45x` and `3.90x` slower). Both native
+backends pass all taps and decode 96 regions, so output quality is on par while
+graph/kernel speed is a mandatory TODO.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
