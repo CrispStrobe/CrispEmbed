@@ -63,7 +63,7 @@ from the same `frk.traineddata` and the same 200×80 grayscale crop:
 | Q8_0 mixed precision | 0.999873 | 0.999945 | Pass |
 
 The reference activation dump is retained outside Git at
-`/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-line.gguf`.
+`$CRISPEMBED_GGUF_DIR/tesseract-frk-ref-line.gguf`.
 
 ## License
 
