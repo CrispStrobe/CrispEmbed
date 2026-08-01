@@ -59,6 +59,14 @@
       one-level uint8 difference from OpenCV. Keep this sampler boundary
       isolated and do not weaken tensor parity or add OpenCV as a production
       dependency.
+- [x] Port the generic OpenCV CV_8U `INTER_LINEAR` sampler structure into the
+      native path: float coordinate tables are quantized to 11-bit coefficients,
+      horizontal interpolation is accumulated in 32-bit integers, and the
+      vertical result uses the 22-bit rounded cast. This is cleaner and more
+      faithful than the former float-only sampler, but the official macOS ARM
+      OpenCV build still emits a one-level residual on roughly 1.1k pixels;
+      the English width-128 logits row gate therefore remains open. The exact
+      raster control still passes, so no graph or LSTM change is justified.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
