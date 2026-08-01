@@ -745,6 +745,16 @@ German-page behavior while avoiding an empty classical result on harder
 layouts. The fallback remains behind the classical page-segmentation gate and
 DBNet is unchanged.
 
+Latest reproducible German-page rerun (2026-08-02, current `frk` Q8 artifact)
+measured official Tesseract at 25 lines/881 chars, confidence `0.8658`, and
+`9.34 s`; native measured 23 regions/1,235 chars, confidence `0.768`, CER
+`0.5279`, WER `0.5390`, and `38.69 s` native stage. Native per-stage timing was
+detect `102.0 ms`, crop `249.7 ms`, and recognize `38,338.3 ms`. This is worse
+in both output quality and speed. The older 21-region/`0.307` CER result is
+retained as a historical measurement because artifact/control conditions must
+be normalized before calling it a regression. TODO: pin the exact recognizer
+artifact and benchmark controls in the matrix, then fix the Fraktur page path.
+
 #### Cross-check survey — quality and cost status
 
 Every checked path must be classified by both decoded output quality and
