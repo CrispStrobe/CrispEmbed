@@ -576,15 +576,14 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
             fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
     }
-    // The generic depthwise im2col path returns channel-interleaved output
-    // for contiguous inputs, whereas the following ggml convolution consumes
-    // the canonical channel-plane strides. The direct path preserves those
-    // strides on CPU; retain im2col for GPU backends until direct-kernel
-    // availability is validated there.
-    ggml_tensor * y = dw ? (ggml_backend_is_cpu(c->graph.backend)
-                                ? ggml_conv_2d_dw_direct(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
-                                : ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1))
-                         : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
+    // Keep the generic depthwise im2col path here: it supports the explicit
+    // [W,H,C] graph layout on both CPU and accelerator backends. The direct
+    // depthwise kernel was tested but did not improve parity and remains out
+    // of the accepted path until its layout contract is independently gated.
+    // ggml names the spatial arguments x/y ([W,H]); pp_conv stores them as
+    // height/width to match the scalar reference.
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
+                         : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1);
     if (p.b) {
         ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
         if (!b) return nullptr;
@@ -788,7 +787,22 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                     c->backend ? ggml_backend_name(c->backend) : "none");
         return false;
     }
-    ggml_backend_tensor_set(c->graph.input, input.data(), 0, input.size() * sizeof(float));
+    // resize_normalize and the scalar reference use channel-plane storage
+    // [C,H,W], while a contiguous ggml image tensor is [W,H,C,N].  Keep the
+    // public/reference representation unchanged and transpose only at this
+    // backend boundary; otherwise every graph convolution receives channels
+    // interleaved across its spatial rows.
+    constexpr int H = 48, W = 320, C = 3;
+    std::vector<float> graph_input(input.size());
+    if (input.size() == size_t(C * H * W)) {
+        for (int cidx = 0; cidx < C; ++cidx)
+            for (int y = 0; y < H; ++y)
+                for (int x = 0; x < W; ++x)
+                    graph_input[(size_t(y) * W + x) * C + cidx] = input[(size_t(cidx) * H + y) * W + x];
+    } else {
+        graph_input = input;
+    }
+    ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
     // Reuse of mixed Metal/CPU scheduler allocations is unstable on the
     // current pre-tensor Apple backend across repeated line crops. Rebuild
     // the static allocation per crop until backend reuse is validated.
@@ -809,10 +823,29 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
         for (const auto & tap : c->graph.debug_taps) {
             std::vector<float> values(ggml_nelements(tap.second));
             ggml_backend_tensor_get(tap.second, values.data(), 0, values.size() * sizeof(float));
-            fprintf(stderr, "[ppocrv6-graph-tap] %s shape=%lldx%lld first=%.7g %.7g %.7g %.7g\n", tap.first,
-                    (long long)tap.second->ne[0], (long long)tap.second->ne[1], values.size() > 0 ? values[0] : 0.0f,
+            fprintf(stderr, "[ppocrv6-graph-tap] %s shape=%lldx%lldx%lldx%lld first=%.7g %.7g %.7g %.7g\n", tap.first,
+                    (long long)tap.second->ne[0], (long long)tap.second->ne[1], (long long)tap.second->ne[2],
+                    (long long)tap.second->ne[3], values.size() > 0 ? values[0] : 0.0f,
                     values.size() > 1 ? values[1] : 0.0f, values.size() > 2 ? values[2] : 0.0f,
                     values.size() > 3 ? values[3] : 0.0f);
+            if (c->diff && tap.second->ne[2] > 1) {
+                const int64_t tw = tap.second->ne[0], th = tap.second->ne[1], tc = tap.second->ne[2];
+                std::vector<float> channel_plane(values.size());
+                for (int64_t ch = 0; ch < tc; ++ch)
+                    for (int64_t yy = 0; yy < th; ++yy)
+                        for (int64_t xx = 0; xx < tw; ++xx)
+                            channel_plane[(size_t)ch * th * tw + (size_t)yy * tw + xx] =
+                                values[((size_t)yy * tw + xx) * tc + ch];
+                const char * ref_name = nullptr;
+                if (std::strcmp(tap.first, "backbone") == 0) ref_name = "ppocrv6.stage4";
+                if (std::strcmp(tap.first, "head_act1") == 0) ref_name = "ppocrv6.head_conv1";
+                if (std::strcmp(tap.first, "head_act2") == 0) ref_name = "ppocrv6.head_input";
+                if (ref_name) {
+                    const auto report = c->diff->compare(ref_name, channel_plane.data(), channel_plane.size(), -1);
+                    fprintf(stderr, "[ppocrv6-graph-diff] %s as %s cos=%.6f global=%.6f %s\n", tap.first, ref_name,
+                            report.cos_min, report.cos_global, report.is_pass() ? "PASS" : "FAIL");
+                }
+            }
         }
     }
     w = (int)c->graph.output->ne[0];
