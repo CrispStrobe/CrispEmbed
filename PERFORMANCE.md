@@ -1210,3 +1210,20 @@ The 2-pixel crop remains the best measured quality point. The gate is retained
 for other scan resolutions and architectures; the next quality TODO is
 Tesseract-compatible decode/recoder semantics for the residual substitutions
 and punctuation differences.
+
+### Tesseract page-segmentation and beam A/B (2026-08-01)
+
+The existing page-segmentation policies were compared on the same fixture and
+official reference. Every policy emitted 12 regions:
+
+| Policy | Chars | CER | WER | Recognize ms | Output result |
+|---|---:|---:|---:|---:|---|
+| Legacy fallback | 566 | 0.03375 | 0.15044 | 9,217 | baseline native text |
+| Projection | 567 | 0.03197 | 0.12389 | 9,661 | best measured WER/CER |
+| Baseline matcher | 566 | 0.03375 | 0.15044 | 14,720 | identical quality, slower |
+| Projection + beam 8 | 567 | 0.03197 | 0.12389 | 29,748 | text-identical to greedy |
+
+Projection remains opt-in because its CER improvement is small and it does not
+reach official output parity; beam width 8 is retained only for diagnostics
+because it adds roughly 3x recognition cost without changing text. The next
+quality work is line-image/crop geometry and Tesseract decoder semantics.
