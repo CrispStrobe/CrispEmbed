@@ -2,6 +2,7 @@
 
 from ._binding import (
     set_gpu_backend,
+    accept_biometric_use,
     CrispEmbed, CrispVit, CrispFace, CrispFacePipeline, CrispClipText,
     CrispOcrModel, CrispMathOcr, CrispOcrPipeline, CrispOcrOrchestrator, CrispPreprocess,
     CrispLayout, CrispTextDetect, CrispNER, CrispKIE, CrispLiLT,
@@ -14,6 +15,7 @@ from ._binding import (
 
 __all__ = [
     "set_gpu_backend",
+    "accept_biometric_use",
     "CrispEmbed", "CrispVit", "CrispFace", "CrispFacePipeline", "CrispClipText",
     "CrispOcrModel", "CrispMathOcr", "CrispOcrPipeline", "CrispOcrOrchestrator", "CrispPreprocess",
     "CrispLayout", "CrispTextDetect", "CrispNER", "CrispKIE", "CrispLiLT",

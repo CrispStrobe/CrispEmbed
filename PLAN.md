@@ -20,6 +20,7 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** generalize the PP-OCRv6 graph-gold harness from hard-coded small-only artifacts to explicit tiny/small/medium tier selections with tier-specific reference fixtures. The harness now supports all three tiers; tiny remains explicitly blocked until its legacy 16-tensor Arabic reference is regenerated as a full graph gold archive, while small remains the default accepted lane | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add opt-in PP-OCRv6 detector graph-vs-CPU box geometry diagnostics without changing the production CPU accept-gate; report count, greedy matches, mean IoU, and minimum IoU for each diagnostic run. Implemented and compiled; the available tiny fox fixture reports graph=0 vs CPU=2, so detector graph geometry remains a quality/performance TODO and is not accepted by default | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** repair the manifest-driven O9 engine benchmark so structured detector specs (`{repo,file,revision}`) are normalized like recognizer specs; add a contract test and rerun Tesseract/PARSeq/PP-OCRv6 rows. Fixed structured detector normalization; Tesseract-LSTM `175.7 s` CER `0.040`, German Tesseract `101.8 s` unscored, PARSeq `1.206 s` unscored. The PP-OCRv6 artifacts load-fail (`missing stem conv`) and are now correctly marked errors instead of false `ok` rows | **COMPLETED** |
+| 2026-08-01 | `chore/ai-act-audit-followups` / `.codex/worktrees/chore-ai-act-audit-followups` | **Picked:** close the five gaps a second AI Act audit found in the `chore/ai-act-policy` work. (1) biometric gate moved into `crispembed_face_init()` so the Python/Rust/Dart bindings are covered, not just CLI+server — new ABI `crispembed_accept_biometric_use()`; (2) `check_registry_licenses.py` read only HF's `license` tag and missed `license_name`, so the 4 correct lfm2 rows failed — fixed, now exit 0, and wired into `main-health.yml`; (3)(4)(5) POLICY.md: Art. 50(2) reframed as reasoned-position-not-settled-exemption, OCR-VLM text addressed, and the regulatory dates corrected — the Omnibus is **Reg (EU) 2026/1744, OJ 24 Jul 2026**, not "adopted June 2026". Touches `src/crispembed.{h,cpp}`, `examples/cli/model_mgr.*`, bindings, POLICY/README/PLAN, `tests/check_registry_licenses.py` — **no OCR/model/graph code**. Verified: CLI + Python both refuse a recognition model without acknowledgement and load it with one, byte-identical embeddings either way; licence check exits 0; `tools/format.sh` clean. | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
@@ -2747,3 +2748,32 @@ the pattern first.
   `total=15885.6 ms`. Thus both our DBNet and native row routes currently
   share the same five-line coverage gap on this fixture; neither result is a
   valid recognizer-quality comparison until line geometry is aligned.
+
+- **German crop geometry guard (2026-08-01).** The native-route crop manifest
+  has 23 rows while official TSV has 28. The old geometry tool's index-paired
+  summary therefore produced meaningless deltas (for example mean `dy=257.7`)
+  and exited nonzero only because of the count mismatch. It now reports
+  `alignment_valid=false` and `paired_rows`, so those deltas cannot be treated
+  as geometry measurements until a line-matching strategy handles merges and
+  missing rows.
+
+- **Merge-aware German geometry diagnostic (2026-08-01).** Added
+  `--match-by-geometry` to the crop comparator. On the native German manifest
+  it matched 23 native rows monotonically and identified five unmatched
+  official rows (`0,2,3,4,26`) instead of treating merged/missing lines as
+  same-index pairs. The tool remains strict (exit 1 while counts differ), and
+  its matched deltas are diagnostic only until the row matcher accounts for
+  true one-to-many merges.
+
+- **One-to-many merge reporting (2026-08-01).** The geometry diagnostic now
+  reports native rows whose vertical span covers multiple official rows as
+  `merged_official_groups`, separating true row merges from simply missing
+  official rows. This is diagnostic only; no production row-splitting default
+  is changed until the merged groups are reviewed against the source pixels.
+
+- **German merge candidates (2026-08-01).** On the native CC0 German
+  manifest, the diagnostic identifies native row 0 covering official rows
+  `1..4`, native row 9 covering `12..13`, and native row 22 covering `26..27`.
+  Official row 0 remains unmatched. These are the first concrete source-pixel
+  targets for a future row-splitting adapter; no production default changes
+  are justified from geometry alone.

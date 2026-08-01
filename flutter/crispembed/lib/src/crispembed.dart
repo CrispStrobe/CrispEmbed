@@ -849,6 +849,23 @@ class FaceResult {
   }
 }
 
+/// Acknowledge that this process may run face *recognition* models.
+///
+/// A face template is biometric data — special-category personal data under
+/// GDPR Art. 9, which generally needs an Art. 9(2) basis (e.g. explicit
+/// consent) before you process it. Constructing a [CrispFace] over a
+/// recognition model throws without this acknowledgement or the
+/// `CRISPEMBED_ACCEPT_BIOMETRIC=1` environment variable. Detection is never
+/// gated: a bounding box is not a template. See POLICY.md.
+///
+/// This is a speed bump and an audit trail, not a security control.
+void acceptBiometricUse({String? libPath}) {
+  _openNativeLib(libPath)
+      .lookupFunction<CrispembedAcceptBiometricUseNative,
+          CrispembedAcceptBiometricUseDart>('crispembed_accept_biometric_use')
+      .call();
+}
+
 /// Wraps a single face model (detector *or* recognizer) loaded via
 /// `crispembed_face_init`.
 ///
