@@ -46,7 +46,8 @@ int main() {
     const std::vector<int> two_words = { 4, 5, 6, 0, 4, 5, 6 };
     if (tesseract_dawg_score::word_bonus(two_words, codes, tokens, dawgs, false) != 0.25f ||
         tesseract_dawg_score::word_bonus(two_words, codes, tokens, dawgs, true) != 0.50f ||
-        tesseract_dawg_score::word_bonus({ 4, 5 }, codes, tokens, dawgs, true) != 0.0f) {
+        tesseract_dawg_score::word_bonus({ 4, 5 }, codes, tokens, dawgs, true) != 0.0f ||
+        tesseract_dawg_score::word_bonus({ 4, 5 }, codes, tokens, dawgs, true, true) != 0.02f) {
         std::fprintf(stderr, "multi-code DAWG score mismatch\n");
         return 1;
     }
