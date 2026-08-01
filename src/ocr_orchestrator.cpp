@@ -26,6 +26,7 @@
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
+#include "tesseract_pageseg.h"
 #include "parseq_ocr.h"
 #include "ocr_detect.h"
 #include "ppocrv6_det.h"
@@ -675,7 +676,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             ctx->tess_resolved_model = tess_model;
         }
         const auto tess_bench_start = std::chrono::steady_clock::now();
-        auto boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+        std::vector<ocr_detect::text_box> boxes;
+        if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG")) {
+            int sw = 0, sh = 0, sc = 0;
+            unsigned char * seg_gray = stbi_load(path, &sw, &sh, &sc, 1);
+            if (seg_gray) {
+                boxes = tesseract_pageseg::segment_gray(seg_gray, sw, sh);
+                stbi_image_free(seg_gray);
+            }
+        } else {
+            boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+        }
         const auto tess_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
         // The IC15 DBNet artifact returns fragmented word-like regions on
@@ -686,7 +697,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         detected_regions.reserve(boxes.size());
         for (const auto & box : boxes)
             detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-        const auto line_regions = easyocr_layout::group_dbnet_lines(detected_regions);
+        const bool classical_pageseg = std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+        const auto line_regions = classical_pageseg ? detected_regions
+                                                    : easyocr_layout::group_dbnet_lines(detected_regions);
         const auto tess_group_done = std::chrono::steady_clock::now();
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
