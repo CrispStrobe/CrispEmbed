@@ -2621,4 +2621,5 @@ the pattern first.
   backend-isolated parser/runtime diagnostics. The remaining TODO is actual
   scoring and validating word choices against official Tesseract on transcribed
   fixtures; the C ABI now exposes non-mutating complete/prefix membership for
-  the future scorer.
+  the future scorer, including a UTF-8 tokenizer wrapper. Candidate reranking
+  and official word-choice parity remain TODO.
