@@ -12,6 +12,7 @@ from pathlib import Path
 
 
 NATIVE_RE = re.compile(r"text: '(?P<text>.*?)' \((?P<chars>\d+) chars\) char_conf=(?P<count>\d+) "
+                       r"char_min=(?P<char_min>[0-9.]+) char_mean=(?P<char_mean>[0-9.]+) "
                        r"sequence_conf=(?P<confidence>[0-9.]+)")
 
 
@@ -51,12 +52,14 @@ def native(args: argparse.Namespace, beam: int) -> dict:
     matches = NATIVE_RE.findall(proc.stdout + proc.stderr)
     if not matches:
         raise RuntimeError("native confidence test emitted no result")
-    text, chars, count, confidence = matches[-1]
+    text, chars, count, char_min, char_mean, confidence = matches[-1]
     return {
         "returncode": proc.returncode,
         "text": text,
         "chars": int(chars),
         "char_confidences": int(count),
+        "char_confidence_min": float(char_min),
+        "char_confidence_mean": float(char_mean),
         "sequence_confidence": float(confidence),
     }
 

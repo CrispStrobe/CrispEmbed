@@ -560,6 +560,10 @@ downstream handoff parity, not detector-box similarity alone.
       native beam-8 produces `GIIEE` with sequence confidence `0.5808` and no
       per-character confidences. The confidence scale is close, but decoded
       text is not yet parity, so beam remains diagnostic and opt-in.
+      The diagnostic now also reports native character min/mean probabilities;
+      on the F32 artifact these are `0.0902`/`0.1978` for greedy, while beam
+      correctly reports zero per-character values and sequence confidence
+      `0.5592`. These are diagnostics only, not a production calibration.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
