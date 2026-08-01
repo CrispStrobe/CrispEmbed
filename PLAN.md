@@ -14,6 +14,18 @@ races). Remove the row when the branch lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
+
+EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
+width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
+200 `16.523/12.460 ms`, scan 128 `10.885/7.137 ms`, Latin Gen1 scan 128
+`154.082/78.648 ms`, English Gen2 scan 200 `16.536/10.035 ms`, and scan 128
+`10.697/7.287 ms` (native/reference totals). Outputs match in every case:
+`x=0442`, `82`, `==#`, `032`, and `@32`; the English width-128 strict
+row-wise logits gate is still open despite decoded parity. Native is slower in
+all measured graph/total paths, so graph/kernel and width optimization are
+performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
+timing/output manifests; their existing parity checks are not performance
+acceptance evidence.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
