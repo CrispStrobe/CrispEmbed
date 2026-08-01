@@ -1157,3 +1157,12 @@ source metadata. All 42 carry a nonzero seed. No speed or OCR-quality claim is
 made yet for quantized companions; per-language `crispembed-diff` and decoded
 output checks remain TODO. One old Fraktur mixed candidate is truncated and
 was excluded.
+
+### Tesseract cached-int8 recurrent kernel gate
+
+On the same scan-strip input and `tesseract-frk-q8_0.gguf`, cached and
+uncached int-mode decoding both returned `SEEEES`. The cached path measured
+`35.4 ms` LSTM time versus `1,035.6 ms` with
+`CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1`, a `29.3x` speedup with identical
+decoded output. Cached mode is therefore the default; the environment gate is
+retained for parity diagnostics and alternate architectures.

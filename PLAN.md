@@ -2505,3 +2505,7 @@ the pattern first.
 
   The cache now has an explicit `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE`
   fallback for controlled parity comparisons; cached mode remains the default.
+  Controlled scan-strip validation passed: cached and uncached decoded text
+  were both `SEEEES`; LSTM time was `35.4 ms` cached versus `1,035.6 ms`
+  uncached (`29.3x` faster). Promote the cache as the default and retain the
+  disable gate for future architecture-specific diagnostics.
