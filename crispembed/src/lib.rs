@@ -2710,6 +2710,7 @@ pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
             w: r.w,
             h: r.h,
             confidence: r.confidence,
+            orientation_corrected: r.orientation_corrected != 0,
         });
     }
     unsafe { libc::free(ptr as *mut std::ffi::c_void) };
