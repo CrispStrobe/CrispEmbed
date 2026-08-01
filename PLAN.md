@@ -553,7 +553,12 @@ downstream handoff parity, not detector-box similarity alone.
       greedy sequence-vs-official-mean-word confidence deltas were `+0.0053`,
       `-0.0847`, and `-0.0643`. Beam confidence is intentionally reported as a
       separate sequence probability (not a fabricated per-word certainty), so
-      this does not close the official certainty gate.
+      this does not close the official certainty gate. Tesseract source review
+      now confirms the native greedy `word_confidence` mapping: minimum
+      selected-path `log(probability)`, followed by `clamp(100 + 5*certainty,
+      0, 100)`. On the direct second-line fixture this is `0.965889` versus
+      official `0.959698`; page-level aggregation and beam certainty remain
+      open.
       On the available German Fraktur line fixture, official Tesseract
       produces `1` with mean word confidence `0.5886`; native greedy produces
       `GI` with sequence confidence `0.5985` and two timestep confidences;

@@ -117,6 +117,7 @@ struct tesseract_lstm_context {
     std::string result_buf;
     std::vector<float> char_confs;
     float sequence_confidence = 0.0f;
+    float word_confidence = 0.0f;
 
     // Diff mode: capture per-stage intermediates
     bool dump_mode = false;
@@ -766,6 +767,7 @@ static void forward(tesseract_lstm_context * ctx,
     ctx->result_buf.clear();
     ctx->char_confs.clear();
     ctx->sequence_confidence = 0.0f;
+    ctx->word_confidence = 0.0f;
     std::vector<int> labels;
     const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
@@ -826,8 +828,11 @@ static void forward(tesseract_lstm_context * ctx,
         ctx->sequence_confidence = std::clamp(expf(beam_log_score / std::max(1, T)), 0.0f, 1.0f);
     } else if (!greedy_label_confs.empty()) {
         double sum = 0.0;
+        float min_certainty = 0.0f;
         for (float p : greedy_label_confs) sum += p;
+        for (float p : greedy_label_confs) min_certainty = std::min(min_certainty, std::log(std::max(p, 1.0e-20f)));
         ctx->sequence_confidence = (float)(sum / greedy_label_confs.size());
+        ctx->word_confidence = std::clamp(1.0f + 0.05f * min_certainty, 0.0f, 1.0f);
     }
 }
 
@@ -950,6 +955,10 @@ const float * tesseract_lstm_confidences(const tesseract_lstm_context * ctx, int
 
 float tesseract_lstm_mean_confidence(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->sequence_confidence : 0.0f;
+}
+
+float tesseract_lstm_word_confidence(const tesseract_lstm_context * ctx) {
+    return ctx ? ctx->word_confidence : 0.0f;
 }
 
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx) {
