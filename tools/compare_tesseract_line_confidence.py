@@ -4,10 +4,12 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -20,7 +22,16 @@ def run(command: list[str], env: dict[str, str] | None = None) -> subprocess.Com
     return subprocess.run(command, text=True, capture_output=True, env=env, timeout=900, check=False)
 
 
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
 def official(image: Path, lang: str, psm: int) -> dict:
+    started = time.perf_counter()
     proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang, "tsv"])
     words = []
     for raw in proc.stdout.splitlines()[1:]:
@@ -32,16 +43,22 @@ def official(image: Path, lang: str, psm: int) -> dict:
         except ValueError:
             continue
         words.append((fields[11].strip(), confidence))
+    confidences = sorted(confidence for _, confidence in words)
     return {
         "returncode": proc.returncode,
         "text": " ".join(text for text, _ in words),
         "words": len(words),
         "mean_word_confidence": sum(conf for _, conf in words) / len(words) if words else 0.0,
+        "min_word_confidence": confidences[0] if confidences else 0.0,
+        "median_word_confidence": confidences[len(confidences) // 2] if confidences else 0.0,
+        "max_word_confidence": confidences[-1] if confidences else 0.0,
         "stderr": proc.stderr[-500:],
+        "elapsed_ms": round((time.perf_counter() - started) * 1000.0, 3),
     }
 
 
 def native(args: argparse.Namespace, beam: int) -> dict:
+    started = time.perf_counter()
     env = os.environ.copy()
     if beam:
         env["CRISPEMBED_TESSERACT_BEAM_WIDTH"] = str(beam)
@@ -62,6 +79,7 @@ def native(args: argparse.Namespace, beam: int) -> dict:
         "char_confidence_mean": float(char_mean),
         "sequence_confidence": float(confidence),
         "word_confidence": float(word_confidence),
+        "elapsed_ms": round((time.perf_counter() - started) * 1000.0, 3),
     }
 
 
@@ -98,6 +116,10 @@ def main() -> int:
     checks = confidence_acceptance_checks(args, reference, greedy, beam)
     result = {
         "fixture": str(args.image),
+        "provenance": {
+            "recognizer_model_sha256": sha256_file(args.model),
+            "confidence_reference": "official-tsv-level5-word-confidence-vs-native-recognizer-contract",
+        },
         "official_tesseract": reference,
         "native_greedy": greedy,
         "native_beam": beam,
