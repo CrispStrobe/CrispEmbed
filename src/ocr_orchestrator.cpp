@@ -725,10 +725,27 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (const char * env = std::getenv("CRISPEMBED_TESSERACT_WORKERS"))
             worker_count = std::max(1, std::atoi(env));
         worker_count = std::min(worker_count, (int)crops.size());
-        while ((int)ctx->tess_workers.size() < worker_count - 1) {
-            auto * worker = tesseract_lstm_init(ctx->tess_resolved_model.c_str(), ctx->n_threads);
-            if (!worker) break;
-            ctx->tess_workers.push_back(worker);
+        const int missing_workers = worker_count - 1 - (int)ctx->tess_workers.size();
+        const bool parallel_load = std::getenv("CRISPEMBED_TESSERACT_PARALLEL_LOAD") != nullptr;
+        if (parallel_load && missing_workers > 0) {
+            std::vector<std::future<tesseract_lstm_context *>> loads;
+            loads.reserve(missing_workers);
+            for (int i = 0; i < missing_workers; ++i) {
+                loads.push_back(std::async(std::launch::async, [model = ctx->tess_resolved_model,
+                                                                  threads = ctx->n_threads]() {
+                    return tesseract_lstm_init(model.c_str(), threads);
+                }));
+            }
+            for (auto & load : loads) {
+                auto * worker = load.get();
+                if (worker) ctx->tess_workers.push_back(worker);
+            }
+        } else {
+            while ((int)ctx->tess_workers.size() < worker_count - 1) {
+                auto * worker = tesseract_lstm_init(ctx->tess_resolved_model.c_str(), ctx->n_threads);
+                if (!worker) break;
+                ctx->tess_workers.push_back(worker);
+            }
         }
         worker_count = std::min(worker_count, (int)ctx->tess_workers.size() + 1);
         std::vector<ocr_pipeline::ocr_result> slots(crops.size());
