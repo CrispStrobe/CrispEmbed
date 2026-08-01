@@ -775,7 +775,14 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         };
         std::vector<line_crop> crops;
         crops.reserve(line_regions.size());
-        const int pad = 2;
+        int pad = 2;
+        if (const char * pad_env = std::getenv("CRISPEMBED_TESSERACT_CROP_PAD")) {
+            // Keep the production default unchanged while allowing controlled
+            // parity experiments: Tesseract's line box often includes a small
+            // amount of surrounding paper, but historical scans can need a
+            // tighter or wider border.
+            pad = std::clamp(std::atoi(pad_env), 0, 32);
+        }
         for (const auto & line : line_regions) {
             ocr_detect::text_box b{};
             b.x = line.x;

@@ -556,10 +556,9 @@ static ggml_tensor * pp_graph_resident_conv(ppocrv6_ocr_context * c, const pp_co
 }
 
 static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, const pp_conv & p) {
-    if (!p.w || p.stride_h != p.stride_w) {
+    if (!p.w) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
-            fprintf(stderr, "ppocrv6 graph unsupported conv weights=%d stride=%d/%d\n", p.w ? 1 : 0, p.stride_h,
-                    p.stride_w);
+            fprintf(stderr, "ppocrv6 graph unsupported conv weights=%d\n", p.w ? 1 : 0);
         return nullptr;
     }
     const bool dw = p.groups == p.in_ch;
@@ -652,9 +651,7 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
 static bool pp_graph_build(ppocrv6_ocr_context * c) {
     if (c->graph.attempted) return c->graph.ready;
     c->graph.attempted = true;
-    // Large/SVTR has asymmetric stem padding and a separate token decoder;
-    // keep it on the proven CPU path until that graph has its own parity taps.
-    if (c->large_stem || !std::getenv("CRISPEMBED_PPOCRV6_GRAPH")) return false;
+    if (!std::getenv("CRISPEMBED_PPOCRV6_GRAPH")) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
     if (ggml_backend_is_cpu(c->graph.backend)) {
@@ -683,25 +680,62 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     ggml_set_name(c->graph.input, "ppocrv6_graph_input");
     ggml_set_input(c->graph.input);
     ggml_tensor * x = c->graph.input;
-    for (size_t stem_idx = 0; stem_idx < c->stem.size(); ++stem_idx) {
-        const pp_conv & p = c->stem[stem_idx];
-        x = pp_graph_conv(c, c->graph.graph_ctx, x, p);
-        if (!x) {
-            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
-            return false;
-        }
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
-            const char * pre_name = stem_idx == 0 ? "stem1_pre" : "stem2_pre";
-            c->graph.debug_taps.push_back({ pre_name, x });
-            ggml_set_output(x);
-        }
-        // PP-OCRv6 applies GELU after the first stem convolution only; the
-        // second stem feeds the first backbone block directly.
-        if (stem_idx == 0) x = ggml_gelu(c->graph.graph_ctx, x);
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
-            const char * name = stem_idx == 0 ? "stem1" : "stem2";
-            c->graph.debug_taps.push_back({ name, x });
-            ggml_set_output(x);
+    if (c->large_stem) {
+        // PPLCNetV4 large stem: the two even-kernel branches use explicit
+        // right/bottom padding before valid convolution, then concatenate
+        // with ceil-mode max-pool output along the channel axis.
+        auto large_tap = [&](const char * name, ggml_tensor * value) {
+            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+                c->graph.debug_taps.push_back({ name, value });
+                ggml_set_output(value);
+            }
+        };
+        x = pp_graph_conv(c, c->graph.graph_ctx, x, c->stem[0]);
+        if (!x) return false;
+        x = ggml_silu(c->graph.graph_ctx, x);
+        large_tap("large_stem1", x);
+        ggml_tensor * padded = ggml_pad_ext(c->graph.graph_ctx, x, 0, 1, 0, 1, 0, 0, 0, 0);
+        ggml_tensor * branch = pp_graph_conv(c, c->graph.graph_ctx, padded, c->stem[1]);
+        if (!branch) return false;
+        branch = ggml_silu(c->graph.graph_ctx, branch);
+        large_tap("large_stem2a", branch);
+        branch = ggml_pad_ext(c->graph.graph_ctx, branch, 0, 1, 0, 1, 0, 0, 0, 0);
+        branch = pp_graph_conv(c, c->graph.graph_ctx, branch, c->stem[2]);
+        if (!branch) return false;
+        branch = ggml_silu(c->graph.graph_ctx, branch);
+        large_tap("large_stem2b", branch);
+        ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, padded, GGML_OP_POOL_MAX, 2, 2, 1, 1, 0, 0);
+        x = ggml_concat(c->graph.graph_ctx, pooled, branch, 2);
+        large_tap("large_cat", x);
+        x = pp_graph_conv(c, c->graph.graph_ctx, x, c->stem[3]);
+        if (!x) return false;
+        x = ggml_silu(c->graph.graph_ctx, x);
+        large_tap("large_stem3", x);
+        x = pp_graph_conv(c, c->graph.graph_ctx, x, c->stem[4]);
+        if (!x) return false;
+        x = ggml_silu(c->graph.graph_ctx, x);
+        large_tap("large_stem", x);
+    } else {
+        for (size_t stem_idx = 0; stem_idx < c->stem.size(); ++stem_idx) {
+            const pp_conv & p = c->stem[stem_idx];
+            x = pp_graph_conv(c, c->graph.graph_ctx, x, p);
+            if (!x) {
+                if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
+                return false;
+            }
+            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+                const char * pre_name = stem_idx == 0 ? "stem1_pre" : "stem2_pre";
+                c->graph.debug_taps.push_back({ pre_name, x });
+                ggml_set_output(x);
+            }
+            // PP-OCRv6 applies GELU after the first stem convolution only; the
+            // second stem feeds the first backbone block directly.
+            if (stem_idx == 0) x = ggml_gelu(c->graph.graph_ctx, x);
+            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+                const char * name = stem_idx == 0 ? "stem1" : "stem2";
+                c->graph.debug_taps.push_back({ name, x });
+                ggml_set_output(x);
+            }
         }
     }
     for (size_t stage_idx = 0; stage_idx < c->stages.size(); ++stage_idx) {
@@ -862,6 +896,12 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                 if (std::strcmp(tap.first, "backbone") == 0) ref_name = "ppocrv6.stage4";
                 if (std::strcmp(tap.first, "head_act1") == 0) ref_name = "ppocrv6.head_conv1";
                 if (std::strcmp(tap.first, "head_act2") == 0) ref_name = "ppocrv6.head_input";
+                if (std::strcmp(tap.first, "large_stem1") == 0) ref_name = "ppocrv6.large_stem1";
+                if (std::strcmp(tap.first, "large_stem2a") == 0) ref_name = "ppocrv6.large_stem2a";
+                if (std::strcmp(tap.first, "large_stem2b") == 0) ref_name = "ppocrv6.large_stem2b";
+                if (std::strcmp(tap.first, "large_cat") == 0) ref_name = "ppocrv6.large_cat";
+                if (std::strcmp(tap.first, "large_stem3") == 0) ref_name = "ppocrv6.large_stem3";
+                if (std::strcmp(tap.first, "large_stem") == 0) ref_name = "ppocrv6.large_stem";
                 if (ref_name) {
                     std::vector<float> token_major;
                     const float * compare_data = values.data();
@@ -1074,8 +1114,13 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         if (graph_done) {
             x.swap(graph_out);
             if (c->diff) {
-                auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
-                fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min,
+                // The compact reference archives predate the explicit
+                // graph_backbone alias; stage4 is the same tensor at this
+                // seam. Prefer the alias when a future archive provides it.
+                const char * ref_name =
+                    c->diff->has("ppocrv6.graph_backbone") ? "ppocrv6.graph_backbone" : "ppocrv6.stage4";
+                auto r = c->diff->compare(ref_name, x.data(), x.size(), -1);
+                fprintf(stderr, "[ppocrv6-diff] graph_backbone as %s cos=%.6f %s\n", ref_name, r.cos_min,
                         r.is_pass() ? "PASS" : "FAIL");
             }
         }
