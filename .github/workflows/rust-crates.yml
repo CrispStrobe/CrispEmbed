@@ -36,6 +36,8 @@ jobs:
           submodules: true
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95.0
 
       # Nothing in CI compiled the Rust wrapper before this job, which is how
       # `main` came to have a crispembed/src/lib.rs that did not build at all

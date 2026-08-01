@@ -31,6 +31,8 @@ jobs:
           submodules: true    # ggml, or the vendor step has nothing to copy
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.95.0
 
       # cargo only packages files under the crate root, so the C/C++ sources the
       # in-tree build reads from ../src, ../ggml etc. must be copied in first.
