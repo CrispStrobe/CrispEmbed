@@ -4,6 +4,7 @@
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h"
 #include "ggml-alloc.h"
+#include "ggml-backend.h"
 #include "ggml.h"
 #include "ggml-cpu.h"
 
@@ -49,6 +50,8 @@ struct block {
 struct context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
+    ggml_backend_t cpu_backend = nullptr;
+    ggml_backend_sched_t graph_sched = nullptr;
     conv stem, head;
     bn stem_bn;
     std::vector<block> blocks;
@@ -189,16 +192,16 @@ static std::vector<float> preprocess(const uint8_t * px, int width, int height, 
 
 static ggml_tensor * graph_conv(ggml_context * g, ggml_tensor * x, const conv & c) {
     if (!c.w) return nullptr;
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        fprintf(stderr, "pplcnet graph weight ne=%lld,%lld,%lld,%lld type=%d conv=%d->%d k=%d groups=%d\n",
+                (long long)c.w->ne[0], (long long)c.w->ne[1], (long long)c.w->ne[2], (long long)c.w->ne[3],
+                (int)c.w->type, c.in, c.out, c.k, c.groups);
+    // The converter already stores convolution weights in ggml's canonical
+    // [KW, KH, IC/G, OC] layout. Do not transpose them again here.
     ggml_tensor * w = c.w;
-    const int channels = c.groups == c.in ? 1 : c.in / c.groups;
-    // Mapped weights retain the CPU reference's contiguous [OC,IC/G,KH,KW]
-    // bytes.  The direct ggml kernels consume [KW,KH,IC/G,OC], so explicitly
-    // transpose into that layout while keeping the graph input [W,H,C,N].
-    w = ggml_reshape_4d(g, w, c.out, channels, c.k, c.k);
-    w = ggml_cont(g, ggml_permute(g, w, 3, 2, 1, 0));
     if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
-    x = c.groups == c.in ? ggml_conv_2d_dw_direct(g, w, x, c.stride, c.stride, c.k / 2, c.k / 2, 1, 1)
-                         : ggml_conv_2d_direct(g, w, x, c.stride, c.stride, c.k / 2, c.k / 2, 1, 1);
+    x = c.groups == c.in ? ggml_conv_2d_dw(g, w, x, c.stride, c.stride, c.k / 2, c.k / 2, 1, 1)
+                         : ggml_conv_2d(g, w, x, c.stride, c.stride, c.k / 2, c.k / 2, 1, 1);
     if (c.b) x = ggml_add(g, x, ggml_reshape_3d(g, c.b, 1, 1, c.out));
     return x;
 }
@@ -297,8 +300,17 @@ static bool build_graph(context * c) {
     ggml_set_output(c->graph_logits);
     c->graph = ggml_new_graph_custom(g, 4096, false);
     ggml_build_forward_expand(c->graph, c->graph_logits);
-    c->graph_alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->backend));
-    return c->graph_alloc && ggml_gallocr_alloc_graph(c->graph_alloc, c->graph);
+    if (ggml_backend_is_cpu(c->backend)) {
+        ggml_backend_t backends[] = { c->backend };
+        c->graph_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    } else {
+        c->cpu_backend = ggml_backend_cpu_init();
+        ggml_backend_t backends[] = { c->backend, c->cpu_backend };
+        c->graph_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+    }
+    if (!c->graph_sched) return false;
+    ggml_backend_sched_reset(c->graph_sched);
+    return ggml_backend_sched_alloc_graph(c->graph_sched, c->graph);
 }
 
 context * init(const char * path, int) {
@@ -346,6 +358,10 @@ context * init(const char * path, int) {
     if (c->use_graph && !build_graph(c)) {
         if (c->graph_alloc) ggml_gallocr_free(c->graph_alloc);
         c->graph_alloc = nullptr;
+        if (c->graph_sched) ggml_backend_sched_free(c->graph_sched);
+        c->graph_sched = nullptr;
+        if (c->cpu_backend) ggml_backend_free(c->cpu_backend);
+        c->cpu_backend = nullptr;
         if (c->graph_ctx) ggml_free(c->graph_ctx);
         c->graph_ctx = nullptr;
         c->use_graph = false;
@@ -357,6 +373,8 @@ context * init(const char * path, int) {
 void free(context * c) {
     if (!c) return;
     if (c->graph_alloc) ggml_gallocr_free(c->graph_alloc);
+    if (c->graph_sched) ggml_backend_sched_free(c->graph_sched);
+    if (c->cpu_backend) ggml_backend_free(c->cpu_backend);
     if (c->graph_ctx) ggml_free(c->graph_ctx);
     core_gguf::free_weights(c->wl);
     if (c->backend) ggml_backend_free(c->backend);
@@ -371,7 +389,7 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
             fprintf(stderr, "pplcnet graph input %.7g %.7g %.7g %.7g\n", input[0], input[1], input[2], input[3]);
         ggml_backend_tensor_set(c->graph_input, input.data(), 0, input.size() * sizeof(float));
-        if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return r;
+        if (!c->graph_sched || ggml_backend_sched_graph_compute(c->graph_sched, c->graph) != GGML_STATUS_SUCCESS) return r;
         if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
             float tap[4] = {};
             float conv_tap[4] = {};
@@ -390,6 +408,37 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         const float z = e0 + e1;
         r.probabilities[0] = e0 / z;
         r.probabilities[1] = e1 / z;
+        r.angle = r.probabilities[1] > r.probabilities[0] ? 180 : 0;
+        r.confidence = std::max(r.probabilities[0], r.probabilities[1]);
+        const result graph_result = r;
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_ACCEPT")) return graph_result;
+        // The graph is diagnostic-only until its logits agree with the CPU
+        // reference. This also makes unsupported/approximate backend kernels
+        // harmless to the production pipeline.
+        int h = 80, w = 160;
+        auto x = preprocess(px, width, height, channels);
+        std::vector<float> y;
+        if (!run_conv_bn(c->stem, c->stem_bn, x, h, w)) return {};
+        for (const auto & b : c->blocks)
+            if (!run_block(b, x, h, w)) return {};
+        std::vector<float> pooled(512, 0.0f);
+        for (int ch = 0; ch < 512; ++ch)
+            for (int i = 0; i < h * w; ++i) pooled[ch] += x[(size_t)ch * h * w + i] / float(h * w);
+        int oh = 0, ow = 0;
+        if (!apply_conv(c->head, pooled, 1, 1, y, oh, ow)) return {};
+        hardswish(y);
+        auto fw = to_f32(c->fc_w), fb = to_f32(c->fc_b);
+        float cpu_logits[2] = {};
+        linear_cpu(y.data(), cpu_logits, 1280, 2, fw.data(), fb.data());
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+            fprintf(stderr, "pplcnet graph diagnostic logits graph=(%.9g,%.9g) cpu=(%.9g,%.9g)\n",
+                    graph_result.logits[0], graph_result.logits[1], cpu_logits[0], cpu_logits[1]);
+        const float cpu_mx = std::max(cpu_logits[0], cpu_logits[1]);
+        const float ce0 = std::exp(cpu_logits[0] - cpu_mx), ce1 = std::exp(cpu_logits[1] - cpu_mx), cz = ce0 + ce1;
+        r.logits[0] = cpu_logits[0];
+        r.logits[1] = cpu_logits[1];
+        r.probabilities[0] = ce0 / cz;
+        r.probabilities[1] = ce1 / cz;
         r.angle = r.probabilities[1] > r.probabilities[0] ? 180 : 0;
         r.confidence = std::max(r.probabilities[0], r.probabilities[1]);
         return r;

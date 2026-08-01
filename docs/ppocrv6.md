@@ -103,6 +103,13 @@ high-precision backend comparison. On the Apple M1 probe this reduced the
 diagnostic detector graph from roughly 3.6 s to 3.3 s without changing the
 reported parity cosines.
 
+The PP-LCNet orientation graph is also opt-in with
+`PPLCNET_ORIENTATION_GRAPH=1`. It uses a backend scheduler with CPU fallback
+for ggml operations not implemented by the selected GPU backend. Its output is
+diagnostic-only unless `PPLCNET_ORIENTATION_GRAPH_ACCEPT=1` is set; the current
+Metal probe shows the graph executing safely, but its logits do not yet match
+the CPU reference, so production orientation remains on the CPU path.
+
 The current CPU parity probe reports detector probability-map cosine 0.99113
 and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
 produces one extra box (31 vs 30), so the explicit accept switch remains a
