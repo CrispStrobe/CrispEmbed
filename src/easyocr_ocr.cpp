@@ -55,23 +55,71 @@ static ggml_tensor * linear(ggml_context * g, ggml_tensor * w, ggml_tensor * b, 
 // EasyOCR's get_image_list() calls cv2.resize with Image.Resampling.LANCZOS.
 // That PIL enum has value 1, which OpenCV interprets as INTER_LINEAR. Keep the
 // native path byte-compatible with that actual upstream pipeline rather than
-// substituting the standalone reference dumper's bicubic resize.
+// substituting the standalone reference dumper's bicubic resize. OpenCV's
+// generic CV_8U INTER_LINEAR path uses 11-bit separable coefficients and an
+// integer horizontal buffer; keeping those details here avoids accumulating a
+// float interpolation residual before the recognizer sees the pixels.
 static void resize_easyocr_linear_u8(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w) {
+    constexpr int coef_bits = 11;
+    constexpr int coef_scale = 1 << coef_bits;
+    std::vector<int> xofs((size_t)dst_w), yofs((size_t)dst_h);
+    std::vector<int16_t> xalpha((size_t)dst_w * 2), ybeta((size_t)dst_h * 2);
     const float scale_x = (float)src_w / (float)dst_w;
     const float scale_y = (float)src_h / (float)dst_h;
+    for (int x = 0; x < dst_w; ++x) {
+        float f = ((float)x + 0.5f) * scale_x - 0.5f;
+        int sx = (int)std::floor(f);
+        f -= (float)sx;
+        if (sx < 0) {
+            f = 0.0f;
+            sx = 0;
+        }
+        if (sx >= src_w - 1) {
+            f = 0.0f;
+            sx = src_w - 1;
+        }
+        xofs[(size_t)x] = sx;
+        xalpha[(size_t)x * 2 + 0] = (int16_t)std::lround((1.0f - f) * coef_scale);
+        xalpha[(size_t)x * 2 + 1] = (int16_t)std::lround(f * coef_scale);
+    }
     for (int y = 0; y < dst_h; ++y) {
-        const float fy = ((float)y + 0.5f) * scale_y - 0.5f;
-        const int y0 = std::max(0, std::min(src_h - 1, (int)std::floor(fy)));
-        const int y1 = std::min(src_h - 1, y0 + 1);
-        const float wy = std::max(0.0f, std::min(1.0f, fy - (float)y0));
+        float f = ((float)y + 0.5f) * scale_y - 0.5f;
+        int sy = (int)std::floor(f);
+        f -= (float)sy;
+        if (sy < 0) {
+            f = 0.0f;
+            sy = 0;
+        }
+        if (sy >= src_h - 1) {
+            f = 0.0f;
+            sy = src_h - 1;
+        }
+        yofs[(size_t)y] = sy;
+        ybeta[(size_t)y * 2 + 0] = (int16_t)std::lround((1.0f - f) * coef_scale);
+        ybeta[(size_t)y * 2 + 1] = (int16_t)std::lround(f * coef_scale);
+    }
+
+    std::vector<int32_t> horizontal((size_t)src_h * dst_w);
+    for (int y = 0; y < src_h; ++y) {
         for (int x = 0; x < dst_w; ++x) {
-            const float fx = ((float)x + 0.5f) * scale_x - 0.5f;
-            const int x0 = std::max(0, std::min(src_w - 1, (int)std::floor(fx)));
-            const int x1 = std::min(src_w - 1, x0 + 1);
-            const float wx = std::max(0.0f, std::min(1.0f, fx - (float)x0));
-            const float top = (1.0f - wx) * src[(size_t)y0 * src_w + x0] + wx * src[(size_t)y0 * src_w + x1];
-            const float bot = (1.0f - wx) * src[(size_t)y1 * src_w + x0] + wx * src[(size_t)y1 * src_w + x1];
-            dst[(size_t)y * dst_w + x] = std::round((1.0f - wy) * top + wy * bot);
+            const int sx = xofs[(size_t)x];
+            const int a0 = xalpha[(size_t)x * 2 + 0];
+            const int a1 = xalpha[(size_t)x * 2 + 1];
+            const uint8_t * row = src + (size_t)y * src_w;
+            horizontal[(size_t)y * dst_w + x] = (int32_t)row[sx] * a0 + (int32_t)row[std::min(sx + 1, src_w - 1)] * a1;
+        }
+    }
+    constexpr int final_shift = coef_bits * 2;
+    constexpr int final_round = 1 << (final_shift - 1);
+    for (int y = 0; y < dst_h; ++y) {
+        const int sy = yofs[(size_t)y];
+        const int b0 = ybeta[(size_t)y * 2 + 0];
+        const int b1 = ybeta[(size_t)y * 2 + 1];
+        for (int x = 0; x < dst_w; ++x) {
+            const int64_t value = (int64_t)horizontal[(size_t)sy * dst_w + x] * b0 +
+                                  (int64_t)horizontal[(size_t)std::min(sy + 1, src_h - 1) * dst_w + x] * b1;
+            dst[(size_t)y * dst_w + x] =
+                (float)std::max<int64_t>(0, std::min<int64_t>(255, (value + final_round) >> final_shift));
         }
     }
 }
