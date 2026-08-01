@@ -339,9 +339,11 @@ and decoded page output are compared with the original engine.
   `crispembed-diff` → decoded-output protocol.
 - Preserve per-artifact source/license metadata; do not infer a fine-tuned
   checkpoint's license solely from its backbone.
-- Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
-  words and normalized boxes. Transformers' `apply_ocr=True` path uses
-  PyTesseract; LayoutLM is not itself an OCR checkpoint.
+- [x] Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
+  words and normalized boxes. `tools/validate_layoutlm_handoff.py` emits the
+  exact `apply_ocr=False` processor payload and retains confidence/pixel boxes
+  as sidecar metadata; Transformers' `apply_ocr=True` path uses PyTesseract.
+  A live model invocation remains unnecessary for this contract gate.
 - Acceptance requires reference parity, decoded text, and real pipeline output
   checks before quantization or registry integration.
 
