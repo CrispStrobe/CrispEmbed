@@ -65,7 +65,7 @@ jobs:
             archive: crispembed-windows-x86_64.zip
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -225,7 +225,7 @@ jobs:
           Compress-Archive -Path pkg/* -DestinationPath ${{ matrix.archive }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.archive }}
@@ -251,7 +251,7 @@ jobs:
     env:
       CUDA_VERSION: "12.8.0"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -316,7 +316,7 @@ jobs:
           tar -czf crispembed-linux-x86_64-cuda.tar.gz -C pkg .
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64-cuda
           path: crispembed-linux-x86_64-cuda.tar.gz
@@ -346,7 +346,7 @@ jobs:
     env:
       CUDA_VERSION: "12.8.0"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -452,7 +452,7 @@ jobs:
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-cuda.zip
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64-cuda
           path: crispembed-windows-x86_64-cuda.zip
@@ -473,7 +473,7 @@ jobs:
     name: Build windows-x86_64-vulkan
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -524,7 +524,7 @@ jobs:
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-vulkan.zip
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64-vulkan
           path: crispembed-windows-x86_64-vulkan.zip
@@ -546,7 +546,7 @@ jobs:
       matrix:
         abi: [arm64-v8a, armeabi-v7a]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build
@@ -560,7 +560,7 @@ jobs:
       - name: Package
         run: tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: android-${{ matrix.abi }}
           path: crispembed-android-${{ matrix.abi }}.tar.gz
@@ -578,7 +578,7 @@ jobs:
     name: Build ios-arm64
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build
@@ -598,7 +598,7 @@ jobs:
       - name: Package
         run: tar -czf crispembed-ios-arm64.tar.gz -C build libcrispembed-static.a
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ios-arm64
           path: crispembed-ios-arm64.tar.gz
@@ -630,10 +630,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           path: dist/
 

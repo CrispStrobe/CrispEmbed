@@ -718,7 +718,8 @@ static void test_ppocrv6_pipeline_regression() {
         fclose(input);
         const auto started = std::chrono::steady_clock::now();
         result r = run_file(ctx, fixture);
-        const double elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
+        const double elapsed_ms =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
         cases++;
         total_regions += (int)r.regions.size();
         CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
