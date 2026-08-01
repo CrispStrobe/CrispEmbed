@@ -15,3 +15,9 @@ def test_tesseract_runtime_keeps_int_mode_and_lut_path():
 def test_tesseract_runtime_keeps_gated_scratch_reuse():
     assert "CRISPEMBED_TESSERACT_REUSE_SCRATCH" in SOURCE
     assert "ctx->reuse_scratch" in SOURCE
+
+
+if __name__ == "__main__":
+    test_tesseract_runtime_keeps_int_mode_and_lut_path()
+    test_tesseract_runtime_keeps_gated_scratch_reuse()
+    print("tesseract runtime contract: PASS")
