@@ -110,6 +110,27 @@ def reading_order_is_monotonic(boxes: list[tuple[float, float, float, float]]) -
     )
 
 
+def greedy_iou_matches(reference: list[tuple[float, float, float, float]],
+                       mine: list[tuple[float, float, float, float]]) -> list[tuple[int, int, float]]:
+    """Return deterministic one-to-one matches, independent of list index."""
+    candidates = sorted(
+        ((iou(ref_box, mine_box), ref_index, mine_index)
+         for ref_index, ref_box in enumerate(reference)
+         for mine_index, mine_box in enumerate(mine)),
+        key=lambda item: (-item[0], item[1], item[2]),
+    )
+    used_reference: set[int] = set()
+    used_native: set[int] = set()
+    matches = []
+    for overlap, ref_index, mine_index in candidates:
+        if ref_index in used_reference or mine_index in used_native:
+            continue
+        used_reference.add(ref_index)
+        used_native.add(mine_index)
+        matches.append((ref_index, mine_index, overlap))
+    return sorted(matches)
+
+
 def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple[float, float, float, float]]) -> dict:
     pairs = []
     for index, ref_box in enumerate(reference):
@@ -138,6 +159,7 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         for index in range(max(0, len(mine) - 1))
     ]
     gap_deltas = [abs(native_gaps[index] - reference_gaps[index]) for index in range(min(len(reference_gaps), len(native_gaps)))]
+    matched = greedy_iou_matches(reference, mine)
     return {
         "reference_lines": len(reference),
         "native_lines": len(mine),
@@ -149,6 +171,11 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         "mean_abs_crop_delta": round(sum(component_deltas) / len(component_deltas), 3) if component_deltas else 0.0,
         "max_abs_crop_delta": round(max(component_deltas), 3) if component_deltas else 0.0,
         "mean_abs_interline_gap_delta": round(sum(gap_deltas) / len(gap_deltas), 3) if gap_deltas else 0.0,
+        "matched_mean_iou": round(sum(item[2] for item in matched) / len(matched), 6) if matched else 0.0,
+        "matched_pairs": [
+            {"reference_index": ref_index, "native_index": mine_index, "iou": round(overlap, 6)}
+            for ref_index, mine_index, overlap in matched
+        ],
         "pairs": pairs,
     }
 

@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from compare_tesseract_page_geometry import compare, reading_order_is_monotonic  # noqa: E402
+from compare_tesseract_page_geometry import compare, greedy_iou_matches, reading_order_is_monotonic  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
 from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
 from benchmark_tesseract_page import summarize  # noqa: E402
@@ -43,6 +43,13 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertEqual(result["count_delta"], 0)
         self.assertFalse(result["native_reading_order_monotonic"])
         self.assertFalse(result["paired_reading_order_consistent"])
+
+    def test_iou_matching_is_independent_of_index_order(self) -> None:
+        reference = [(0.0, 0.0, 10.0, 5.0), (0.0, 10.0, 10.0, 5.0)]
+        native = [reference[1], reference[0]]
+        matches = greedy_iou_matches(reference, native)
+        self.assertEqual([(r, n) for r, n, _ in matches], [(0, 1), (1, 0)])
+        self.assertEqual(compare(reference, native)["matched_mean_iou"], 1.0)
 
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
