@@ -2558,6 +2558,13 @@ the pattern first.
   substitutions and punctuation despite matching region count; decoder,
   recoder, and line-image parity remain the active quality TODOs.
 
+- **Tesseract page comparator hardening (2026-08-01).** The page CER/WER
+  harness now supports explicit `--tessdata-dir`, clears stale inherited
+  `TESSDATA_PREFIX`, and decodes subprocess diagnostics with replacement for
+  invalid bytes. An explicit-tessdata scan-strip rerun remains stable at
+  official 12 lines/113 words/451 chars versus native 12 regions/566 chars,
+  CER `0.03375`, WER `0.15044`; no tessdata warning remains.
+
 - **Tesseract confidence harness hardening (2026-08-01).** The line-confidence
   comparator now tolerates non-UTF-8 Tesseract diagnostics and removes stale
   inherited `TESSDATA_PREFIX` when an explicit tessdata directory is supplied.
