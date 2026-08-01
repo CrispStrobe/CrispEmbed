@@ -465,8 +465,8 @@ static bool map_model(ppocrv6_ocr_context * c) {
 // those leaves directly when they live on another backend, and convolution
 // kernels need an explicit [KW, KH, IC/group, OC] view.  Materialize each leaf
 // once on the graph backend, preserving the contiguous GGUF order.
-static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tensor * src, ggml_type type,
-                                       int64_t ne0, int64_t ne1, int64_t ne2, int64_t ne3) {
+static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tensor * src, ggml_type type, int64_t ne0,
+                                       int64_t ne1, int64_t ne2, int64_t ne3) {
     if (!src || !c->graph.backend) return nullptr;
     auto it = c->graph.resident.find(src);
     if (it != c->graph.resident.end()) return it->second;
@@ -639,8 +639,8 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
     c->graph.ready = true;
     fprintf(stderr, "ppocrv6: persistent GGML graph ready (%s, %s, %lldx%lldx%lld)\n",
-            ggml_backend_name(c->graph.backend), c->graph.logits_output ? "logits" : "backbone",
-            (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2]);
+            ggml_backend_name(c->graph.backend), c->graph.logits_output ? "logits" : "backbone", (long long)x->ne[0],
+            (long long)x->ne[1], (long long)x->ne[2]);
     return true;
 }
 
@@ -810,8 +810,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         x.swap(graph_out);
         if (c->diff) {
             auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
-            fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min,
-                    r.is_pass() ? "PASS" : "FAIL");
+            fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min, r.is_pass() ? "PASS" : "FAIL");
         }
     } else if (c->large_stem) {
         int oh, ow;
@@ -887,31 +886,33 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             }
         }
     }
-    if (!graph_done) for (size_t si = 0; si < c->stages.size(); ++si) {
-        for (size_t bi = 0; bi < c->stages[si].size(); ++bi) {
-            std::vector<float> tap_dw, tap_cm1;
-            if (!run_block(c->stages[si][bi], x, h, w, si == 0 && bi == 0 ? &tap_dw : nullptr,
-                           si == 0 && bi == 0 ? &tap_cm1 : nullptr))
-                return nullptr;
-            if (c->diff && si == 0 && bi == 0) {
-                for (auto pair :
-                     { std::pair<const char *, const std::vector<float> *>("ppocrv6.block0_dw", &tap_dw),
-                       std::pair<const char *, const std::vector<float> *>("ppocrv6.block0_cm1", &tap_cm1) }) {
-                    auto r = c->diff->compare(pair.first, pair.second->data(), pair.second->size(), -1);
-                    fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", pair.first, r.cos_min,
-                            std::sqrt(std::inner_product(pair.second->begin(), pair.second->end(), pair.second->begin(),
-                                                         0.0)),
-                            r.is_pass() ? "PASS" : "FAIL");
+    if (!graph_done)
+        for (size_t si = 0; si < c->stages.size(); ++si) {
+            for (size_t bi = 0; bi < c->stages[si].size(); ++bi) {
+                std::vector<float> tap_dw, tap_cm1;
+                if (!run_block(c->stages[si][bi], x, h, w, si == 0 && bi == 0 ? &tap_dw : nullptr,
+                               si == 0 && bi == 0 ? &tap_cm1 : nullptr))
+                    return nullptr;
+                if (c->diff && si == 0 && bi == 0) {
+                    for (auto pair :
+                         { std::pair<const char *, const std::vector<float> *>("ppocrv6.block0_dw", &tap_dw),
+                           std::pair<const char *, const std::vector<float> *>("ppocrv6.block0_cm1", &tap_cm1) }) {
+                        auto r = c->diff->compare(pair.first, pair.second->data(), pair.second->size(), -1);
+                        fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", pair.first, r.cos_min,
+                                std::sqrt(std::inner_product(pair.second->begin(), pair.second->end(),
+                                                             pair.second->begin(), 0.0)),
+                                r.is_pass() ? "PASS" : "FAIL");
+                    }
                 }
             }
+            if (c->diff) {
+                std::string name = "ppocrv6.stage" + std::to_string(si + 1);
+                auto r = c->diff->compare(name, x.data(), x.size(), -1);
+                fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", name.c_str(), r.cos_min,
+                        std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)),
+                        r.is_pass() ? "PASS" : "FAIL");
+            }
         }
-        if (c->diff) {
-            std::string name = "ppocrv6.stage" + std::to_string(si + 1);
-            auto r = c->diff->compare(name, x.data(), x.size(), -1);
-            fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f |mine|=%.6g %s\n", name.c_str(), r.cos_min,
-                    std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
-        }
-    }
     if (c->large_stem) return recognize_svtr(c, x, h, w, out_len);
     const int pooled_h = std::max(1, h / 3), pooled_w = std::max(1, w / 2);
     std::vector<float> pooled((size_t)c->head_dw.in_ch * pooled_h * pooled_w, 0.0f);

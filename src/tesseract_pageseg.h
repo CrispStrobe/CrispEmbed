@@ -12,4 +12,4 @@ namespace tesseract_pageseg {
 std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, int height);
 std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, int width, int height);
 
-}
+} // namespace tesseract_pageseg
