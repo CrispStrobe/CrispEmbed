@@ -15,9 +15,9 @@ build alone does not promote a CPU implementation.
 | Surya | CPU detector layers plus ggml graph stages | Partial | detector graph audit |
 | GOT/GLM/Qwen/InternVL/DeepSeek VLMs | graph decoder; some vision neck/preprocess CPU | Partial | O11.4 vision-neck audit |
 | Unlimited-OCR | mixed CPU neck and ggml graphs | Partial | O11.4 split residency gate |
-| SmolDocling | CPU backend graph path | No | evaluate backend port |
-| PP-FormulaNet / MixTeX | CPU CNN/encoder sections plus graph sections | Partial | O11.4 graph audit |
-| HMER / BTTR / PosFormer | CPU CNN sections plus graph decoder | Partial | O11.4 graph audit |
+| SmolDocling | CPU scalar preprocessing plus CPU ggml graphs for SigLIP/LLM | No | evaluate backend port |
+| PP-FormulaNet / MixTeX | CPU CNN/transformer sections; FormulaNet encoder graph and MixTeX batched linear graph are CPU-scheduled | No | O11.4 graph audit |
+| HMER / BTTR / PosFormer | CPU CNN sections plus CPU-scheduled ggml encoder graphs and decoder | No | evaluate backend residency port |
 | SMT / SMT++ / Polyphonic-TrOMR / Transcoda | ggml graph inference with backend selection | Yes, when backend enabled | O11.6 perf gate |
 | Classical cleanup, SR, dewarp | varies; several dedicated CPU paths | Partial | O11.3 benchmark before porting |
 
