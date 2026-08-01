@@ -98,6 +98,18 @@ static void test_structured_capability_validation() {
     CHECK(ctx == nullptr, "formula validation does not allocate context");
 }
 
+static void test_fraktur_stage_profile() {
+    printf("── Fraktur stage profile ──\n");
+    using namespace ocr_orchestrator;
+    const stage s = tesseract_fraktur_stage();
+    CHECK(s.eng == engine::tesseract_fraktur, "explicit tesseract_fraktur engine");
+    CHECK(s.cleanup.enabled, "Fraktur cleanup enabled");
+    CHECK(s.cleanup.params.binarize == 0, "Fraktur profile preserves grayscale page");
+    CHECK(s.params.det_min_height == 18, "Fraktur profile lowers detector line height");
+    CHECK(s.params.det_width_height_ratio == 20.0f, "Fraktur profile accepts long lines");
+    CHECK(s.accept.min_chars == 4 && s.accept.min_confidence == 0.25f, "Fraktur profile gate");
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // 2. Source-type classifier
 // ═══════════════════════════════════════════════════════════════════════
@@ -632,6 +644,59 @@ static void test_tesseract_regression() {
     free(ctx);
 }
 
+// Same path as the production Fraktur profile, but opt-in because the large
+// detector/recognizer artifacts are kept outside the repository.
+static void test_tesseract_fraktur_regression() {
+    printf("── tesseract Fraktur regression (model-gated) ──\n");
+    const char * det_env = getenv("CRISPEMBED_FRAKTUR_DET_MODEL");
+    const char * rec_env = getenv("CRISPEMBED_FRAKTUR_MODEL");
+    const char * image_env = getenv("CRISPEMBED_FRAKTUR_IMAGE");
+    if (!det_env || !rec_env || !image_env || !det_env[0] || !rec_env[0] || !image_env[0]) {
+        printf("  SKIP: CRISPEMBED_FRAKTUR_{DET_MODEL,MODEL,IMAGE} not set\n");
+        return;
+    }
+    FILE * f1 = fopen(det_env, "r");
+    FILE * f2 = fopen(rec_env, "r");
+    FILE * f3 = fopen(image_env, "r");
+    if (!f1 || !f2 || !f3) {
+        if (f1) fclose(f1);
+        if (f2) fclose(f2);
+        if (f3) fclose(f3);
+        printf("  SKIP: Fraktur fixture or model not found\n");
+        return;
+    }
+    fclose(f1);
+    fclose(f2);
+    fclose(f3);
+
+    using namespace ocr_orchestrator;
+    config cfg;
+    cfg.router = false;
+    chain ch;
+    ch.type = source_type::auto_detect;
+    stage s = tesseract_fraktur_stage();
+    s.model_a = det_env;
+    s.model_b = rec_env;
+    ch.stages.push_back(s);
+    cfg.chains.push_back(ch);
+    context * ctx = nullptr;
+    if (!load(&ctx, cfg)) {
+        printf("  SKIP: failed to load Fraktur pipeline\n");
+        return;
+    }
+    result r = run_file(ctx, image_env);
+    CHECK(!r.regions.empty(), "Fraktur pipeline detects at least one line");
+    CHECK(r.regions.size() < 40, "Fraktur DBNet fragments are grouped into line regions");
+    CHECK(!r.full_text.empty(), "Fraktur pipeline returns text");
+    const float elapsed_ms = r.stage_metrics.empty() ? 0.0f : r.stage_metrics.back().elapsed_ms;
+    printf("  INFO: regions=%zu chars=%zu confidence=%.3f stage_ms=%.1f\n", r.regions.size(), r.full_text.size(),
+           r.mean_confidence, elapsed_ms);
+    if (getenv("CRISPEMBED_FRAKTUR_DUMP")) {
+        printf("  BEGIN native Fraktur full_text\n%s\n  END native Fraktur full_text\n", r.full_text.c_str());
+    }
+    ocr_orchestrator::free(ctx);
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // 9b. Model-dependent: PP-OCRv6 detector → orientation → recognizer (gated)
 // ═══════════════════════════════════════════════════════════════════════
@@ -788,6 +853,7 @@ static void test_punctuation() {
 
 static int crispembed_test_main() {
     test_default_config();
+    test_fraktur_stage_profile();
     test_structured_capability_validation();
     test_classifier();
     test_accept_gate();
@@ -797,6 +863,7 @@ static int crispembed_test_main() {
     test_c_api();
     test_edge_cases();
     test_tesseract_regression();
+    test_tesseract_fraktur_regression();
     test_ppocrv6_pipeline_regression();
     test_punctuation();
 
