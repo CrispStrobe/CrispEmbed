@@ -1,0 +1,78 @@
+# Publish the Rust crates to crates.io on a `rust-v<version>` tag.
+#
+# Distinct from the `crispembed-v*` tag, which publishes the Flutter package to
+# pub.dev (publish-crispembed.yml) — the two registries release independently.
+#
+# Auth is crates.io Trusted Publishing (GitHub OIDC); no CARGO_REGISTRY_TOKEN is
+# stored. Same posture as the pub.dev workflow: the job runs in a rule-less
+# `crates.io` environment so the OIDC claim is scoped to it and a stray tag push
+# or a PR workflow with id-token:write cannot publish.
+#
+# One-time setup per crate, on crates.io -> Settings -> Trusted Publishing:
+# repository CrispStrobe/CrispEmbed, workflow publish-crates.yml, environment
+# crates.io. crates.io cannot pre-register a publisher for a name that does not
+# exist yet, so the FIRST version of each crate must be published with a token.
+name: Publish Rust crates to crates.io
+
+on:
+  push:
+    tags: ['rust-v[0-9]+.[0-9]+.[0-9]+']
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment: crates.io
+    timeout-minutes: 90   # the verify build compiles ggml + crispembed from source
+    permissions:
+      id-token: write     # OIDC auth to crates.io (no stored secrets)
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true    # ggml, or the vendor step has nothing to copy
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # cargo only packages files under the crate root, so the C/C++ sources the
+      # in-tree build reads from ../src, ../ggml etc. must be copied in first.
+      - name: Vendor the C/C++ sources into crispembed-sys
+        run: scripts/vendor_rust_sources.sh
+
+      - name: Check the tag matches the crate versions
+        run: |
+          TAG="${GITHUB_REF_NAME#rust-v}"
+          for c in crispembed-sys crispembed; do
+            V=$(awk '/^version *=/{gsub(/[" ]/,""); sub(/^version=/,""); print; exit}' "$c/Cargo.toml")
+            if [ "$V" != "$TAG" ]; then
+              echo "::error::$c is version $V but the tag says $TAG"
+              exit 1
+            fi
+          done
+          # VERSION is the repo-wide source of truth the crates track.
+          FILE_V=$(tr -d ' \n' < VERSION)
+          if [ "$FILE_V" != "$TAG" ]; then
+            echo "::error::/VERSION says $FILE_V but the tag says $TAG"
+            exit 1
+          fi
+          echo "crates and /VERSION agree at $TAG"
+
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+
+      # --allow-dirty: the vendored tree is gitignored but IS packaged (the
+      # `include` list overrides .gitignore), and cargo counts packaged files
+      # that git does not track as uncommitted changes. Everything not generated
+      # is committed; vendor/ was reproduced from tracked sources just above.
+      - name: Publish crispembed-sys
+        working-directory: crispembed-sys
+        run: cargo publish --allow-dirty
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+
+      # The wrapper goes second: cargo strips `path` from dependencies on
+      # publish, so it cannot even be packaged until crispembed-sys is in the
+      # index. cargo blocks until the new version is available.
+      - name: Publish crispembed
+        working-directory: crispembed
+        run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

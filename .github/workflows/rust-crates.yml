@@ -1,0 +1,47 @@
+# Guards the crates.io publishability of crispembed-sys / crispembed.
+#
+# The published crate builds from a VENDORED copy of the C/C++ sources, because
+# cargo only packages files under the crate root. `cargo package` verify-BUILDS
+# the unpacked tarball, so this job proves the vendoring is still complete.
+# Without it, a source file added to CMakeLists.txt builds fine in-tree and
+# breaks only the published crate — with no warning at publish time.
+#
+# Scoped to the paths that can invalidate the vendored set; the full build/test
+# matrix lives in build.yml.
+name: Rust crates
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'crispembed-sys/**'
+      - 'crispembed/**'
+      - 'scripts/vendor_rust_sources.sh'
+      - 'CMakeLists.txt'
+      - '.github/workflows/rust-crates.yml'
+  pull_request:
+    paths:
+      - 'crispembed-sys/**'
+      - 'crispembed/**'
+      - 'scripts/vendor_rust_sources.sh'
+      - 'CMakeLists.txt'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90   # compiles ggml + crispembed from the vendored sources
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Vendor the C/C++ sources
+        run: scripts/vendor_rust_sources.sh
+
+      # --allow-dirty: the vendored tree is gitignored yet packaged (`include`
+      # overrides .gitignore), which cargo reports as uncommitted changes.
+      - name: Verify the packaged crate builds standalone
+        working-directory: crispembed-sys
+        run: cargo package --allow-dirty
