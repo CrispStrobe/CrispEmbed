@@ -2730,3 +2730,8 @@ the pattern first.
   comparator and repeated benchmark now accept `--timeout` and report explicit
   timeout diagnostics instead of hanging on a contended full-page process.
   The default remains 900 seconds; the source contract passes.
+
+- **Timeout argument validation (2026-08-01).** Geometry, page-metrics, and
+  repeated benchmark wrappers now reject non-positive `--timeout` values at
+  argument parsing, avoiding ambiguous subprocess behavior. The page benchmark
+  source contract passes.

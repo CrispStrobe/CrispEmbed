@@ -52,6 +52,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats < 1:
         parser.error("--repeats must be positive")
+    if args.timeout <= 0:
+        parser.error("--timeout must be positive")
     if (args.dawg_score or args.dawg_prefix_score) and args.recode_beam <= 1:
         parser.error("DAWG scoring requires --recode-beam > 1")
     if sum((args.projection, args.component, args.baseline)) > 1:

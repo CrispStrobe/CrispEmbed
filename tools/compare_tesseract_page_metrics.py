@@ -255,6 +255,8 @@ def main() -> int:
     parser.add_argument("--max-wer", type=float, help="fail if word error rate exceeds this value")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    if args.timeout <= 0:
+        parser.error("--timeout must be positive")
     if (args.dawg_score or args.dawg_prefix_score) and args.recode_beam <= 1:
         parser.error("DAWG scoring requires --recode-beam > 1")
 

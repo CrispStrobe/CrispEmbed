@@ -251,6 +251,8 @@ def main() -> int:
     parser.add_argument("--require-reading-order", action="store_true", help="fail unless both box lists are top-to-bottom/left-to-right ordered")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    if args.timeout <= 0:
+        parser.error("--timeout must be positive")
     comparison = compare(
         official_lines(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout),
         native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline,
