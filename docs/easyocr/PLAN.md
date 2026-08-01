@@ -65,6 +65,13 @@
       but do not yet provide native/reference timing ratios. Any slower native
       stage and any worse text/box/ordering output must be recorded as a
       separate optimization or quality TODO before those lanes are accepted.
+- [x] Add the repeated CRAFT inference benchmark. On the fresh
+      `scan_strip.png` reference input, 10 warm runs produced 106 boxes in
+      both implementations: Miniconda PyTorch CPU averaged `396.027 ms`,
+      while native runtime-BN F16 Metal averaged `850.018 ms` graph time
+      (`2.15x` directional slowdown). This is not an apples-to-apples device
+      comparison, but the native graph/kernel path is a clear optimization
+      TODO; CRAFT output quality is currently on par for this fixture.
 - [x] Recheck CRAFT against a fresh official reference after the benchmark
       audit. The reference for `scan_strip.png` uses a 288x544 canvas and
       decodes 106 boxes. The old folded F16 GGUF decoded 107, while a freshly

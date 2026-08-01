@@ -48,6 +48,12 @@ locally, so DBNet reference timing/quality parity remains blocked; the 98-word
 output is readable and contains Brighton but is not on par with Tesseract's
 106-word segmentation. These are explicit quality/performance TODOs.
 
+CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
+288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
+and `850.018 ms` for native runtime-BN F16 Metal graph compute, with 106 boxes
+from both (`2.15x` native/reference directional slowdown). CRAFT quality is
+on par on this fixture; its graph/kernel path remains a performance TODO.
+
 The old folded-F16 CRAFT taps showed error accumulation through the VGG. The
 runtime-BN conversion removes that divergence: F32 captured taps match to
 floating-point noise, and F16 remains within the accepted global gate. The
