@@ -1067,6 +1067,15 @@ selected critical tensors are copied from F32. The selected
 until repeat benchmarks, page-region parity, and decoded-text quality gates
 improve.
 
+The mixer was re-run with Miniconda Python and the exact Fraktur GGUF fixture.
+Both the Q8 base and mixed candidate fail the archived reference at
+`input_image` (cosine `0.528198`, native norm `122.453` versus reference norm
+`488.914`); the archive contains out-of-range input values (minimum
+`-28.6364`) while current native preprocessing is `[-1,1]`. The mixed
+candidate changes later output, but this stale-reference input mismatch is not
+evidence for or against LSTM precision quality. A fresh reference using the
+current preprocessing is required before selecting a mixed artifact.
+
 The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
 seven CC0/public-domain images through Tesseract plus skew/content detection:
 all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
