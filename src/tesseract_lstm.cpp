@@ -11,6 +11,7 @@
 
 #include "tesseract_lstm.h"
 #include "tesseract_dawg.h"
+#include "tesseract_dawg_score.h"
 #include "tesseract_recoder.h"
 
 #include "core/cpu_ops.h"
@@ -627,31 +628,6 @@ static float beam_add(float a, float b, bool viterbi) {
     return viterbi ? std::max(a, b) : log_add(a, b);
 }
 
-// Diagnostic-only dictionary bonus. Tesseract's DAWG operates on unicharset
-// IDs, so score only exact composed words and never penalize partial words
-// while a beam is still being expanded. The small fixed bonus is intentionally
-// kept separate from the CTC probability reported as sequence confidence.
-static float dawg_word_bonus(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
-                             const std::vector<std::string> & tokens,
-                             const std::map<std::string, tesseract_dawg::Dawg> & dawgs, bool include_final) {
-    const auto it = dawgs.find("lstm-system-dawg");
-    if (it == dawgs.end()) return 0.0f;
-    std::vector<int> unichars, starts;
-    if (!tesseract_recoder::compose_classes(prefix, codes, unichars, starts)) return 0.0f;
-    float bonus = 0.0f;
-    std::vector<int> word;
-    for (int uid : unichars) {
-        if (uid == 0) {
-            if (!word.empty() && tesseract_dawg::prefix_matches(it->second, word, true)) bonus += 0.25f;
-            word.clear();
-        } else if (uid >= 0 && uid < (int)tokens.size()) {
-            word.push_back(uid);
-        }
-    }
-    if (include_final && !word.empty() && tesseract_dawg::prefix_matches(it->second, word, true)) bonus += 0.25f;
-    return bonus;
-}
-
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
                                                int beam_width, bool viterbi,
                                                const std::vector<std::vector<int>> * recoder = nullptr,
@@ -702,7 +678,8 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
                                                                                const ctc_beam_state & b) {
             auto rank = [&](const ctc_beam_state & state) {
                 float score = beam_add(state.p_blank, state.p_nonblank, viterbi);
-                if (recoder && dawgs && tokens) score += dawg_word_bonus(state.prefix, *recoder, *tokens, *dawgs, false);
+                if (recoder && dawgs && tokens)
+                    score += tesseract_dawg_score::word_bonus(state.prefix, *recoder, *tokens, *dawgs, false);
                 return score;
             };
             return rank(a) > rank(b);
@@ -718,7 +695,8 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
         for (const auto & state : beam) {
             if (tesseract_recoder::prefix_legal(state.prefix, *recoder, false)) {
                 float rank = beam_add(state.p_blank, state.p_nonblank, viterbi);
-                if (dawgs && tokens) rank += dawg_word_bonus(state.prefix, *recoder, *tokens, *dawgs, true);
+                if (dawgs && tokens)
+                    rank += tesseract_dawg_score::word_bonus(state.prefix, *recoder, *tokens, *dawgs, true);
                 if (!best || rank > best_rank) {
                     best = &state;
                     best_rank = rank;
