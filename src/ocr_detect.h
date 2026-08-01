@@ -91,6 +91,8 @@ std::vector<text_box> postprocess_probability_map(const float * prob_map, int ma
 // Shape: [H_padded, W_padded], row-major, values in [0, 1].
 const float * get_prob_map(const context * ctx, int * out_h, int * out_w);
 
+bool get_intermediate(const context * ctx, const char * name, const float ** data, size_t * n_elem);
+
 // Free resources.
 void free(context * ctx);
 

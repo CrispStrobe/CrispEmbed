@@ -80,14 +80,17 @@ def preprocess_image(img, target_short_side=736, pad_divisor=32,
     return img_chw, (new_h, new_w), scale
 
 
-def dump_with_hooks(checkpoint_path, img_chw):
+def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=None):
     """Run DBNet with forward hooks, capture all intermediates."""
     import torch
 
     # Load checkpoint
     print(f"Loading checkpoint: {checkpoint_path}")
-    ckpt = torch.load(str(checkpoint_path), map_location="cpu", weights_only=False)
-    sd = ckpt["state_dict"] if "state_dict" in ckpt else ckpt
+    if state_dict is None:
+        ckpt = torch.load(str(checkpoint_path), map_location="cpu", weights_only=False)
+        sd = ckpt["state_dict"] if "state_dict" in ckpt else ckpt
+    else:
+        sd = state_dict["state_dict"] if "state_dict" in state_dict else state_dict
 
     # We do a manual forward pass using the raw weights to avoid
     # requiring the full mmocr installation for inference.
@@ -96,8 +99,8 @@ def dump_with_hooks(checkpoint_path, img_chw):
     captured = {}
 
     # Convert to torch tensors
-    weights = {k: torch.tensor(v) if not isinstance(v, torch.Tensor) else v
-               for k, v in sd.items()}
+    weights = weights_override or {k: torch.tensor(v) if not isinstance(v, torch.Tensor) else v
+                                   for k, v in sd.items()}
 
     def get_w(key):
         for prefix in ["backbone.", "neck.", "det_head.", ""]:
