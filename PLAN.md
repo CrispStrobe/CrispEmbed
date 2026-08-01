@@ -2713,3 +2713,9 @@ the pattern first.
   accepts `--tessdata-dir` for the official TSV subprocess and clears ambient
   `TESSDATA_PREFIX` before invoking Tesseract. This aligns geometry provenance
   with the page/text comparator; fourteen model-free geometry tests pass.
+
+- **Geometry JSON provenance (2026-08-01).** Geometry results now include the
+  explicit tessdata directory used by the official TSV subprocess, making a
+  saved result self-describing when multiple language-data installations are
+  present. The live page run was attempted with the backup CLI but remained
+  resource-bound; no result was recorded as parity evidence.
