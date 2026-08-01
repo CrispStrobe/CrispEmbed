@@ -110,8 +110,10 @@ diagnostic-only unless `PPLCNET_ORIENTATION_GRAPH_ACCEPT=1` is set; the current
 Metal probe executes safely and matches the CPU reference within 0.026 logit
 absolute error on the German line fixture. Run
 `PPLCNET_ORIENTATION_GRAPH_PARITY=1` with the orientation test to enforce that
-gate. Production still requires the explicit accept switch until the full
-orientation corpus is covered.
+gate. The current expanded probe passes 9/10 German/Arabic/derived fixtures;
+the uneven-illumination Arabic fixture has a Metal delta of 1.07/3.22 while
+the CPU graph passes, so production still requires the explicit accept switch
+until that backend numerical case is resolved.
 
 The current CPU parity probe reports detector probability-map cosine 0.99113
 and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
