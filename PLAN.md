@@ -2693,3 +2693,15 @@ the pattern first.
   remains `0.03209/0.11504`. The active TODO is line crop/normalization or
   decoder semantics; no recognizer math change is justified before a
   tensor-level diff of the corresponding crop.
+
+- **Line-0 crop tensor diff (2026-08-01).** Dumped native crop 0 and created
+  a fresh Python reference from `/opt/homebrew/share/tessdata/frk.traineddata`.
+  `test-tesseract-lstm-diff` passed input, convolution, conv-FC, maxpool, all
+  four LSTM stages, and logits; the minimum cosine was `0.997755`, mine/ref
+  norms were `35.8611/35.8704` at the lowest recurrent stage, and both native
+  and Python decoded `“< A hey are gomg to be encamped near Brighton ;`.
+  The official Homebrew Tesseract CLI cannot reopen local image files in this
+  environment (PNG, PGM, and TIFF all fail in Leptonica), but its page TSV
+  line differs. This proves the line-0 quality discrepancy is in official
+  page segmentation/line normalization, not the native GGUF recognizer.
+  The page comparator now has `--crop-dump-dir` for fresh reproducible dumps.
