@@ -71,6 +71,10 @@ unichar-ID sequences. The minimal fixture covers a positive and negative
 lookup; this is traversal infrastructure only, with no score or production
 decoder behavior change.
 
+The diagnostic DAWG layer now distinguishes exact-word membership from legal
+prefix membership. Its fixture covers `1` as a legal non-terminal prefix and
+`1,2` as the complete word; neither path is used by production OCR yet.
+
 CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
 stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
 `0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,

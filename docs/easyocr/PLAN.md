@@ -502,6 +502,9 @@ recognizer and LayoutLM consumer.
 - [x] Add a read-only exact-word lookup primitive over validated DAWG payloads,
       keyed by Tesseract unichar IDs. It is covered by the minimal DAWG fixture
       and is not wired into OCR hypothesis scoring or production beam decode.
+- [x] Add a read-only DAWG prefix-legality lookup, including a fixture where a
+      non-terminal prefix is legal but not itself a complete word. This is the
+      next input to recoder/beam scoring, but remains diagnostic-only.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,

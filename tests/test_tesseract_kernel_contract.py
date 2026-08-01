@@ -21,6 +21,7 @@ def test_int_mode_cache_is_present():
     assert "kDawgMagicNumber" not in DAWG_SOURCE
     assert "unterminated forward edge run" in DAWG_SOURCE
     assert "tesseract_dawg_contains_base64" in DAWG_SOURCE
+    assert "tesseract_dawg_has_prefix_base64" in DAWG_SOURCE
 
 
 if __name__ == "__main__":

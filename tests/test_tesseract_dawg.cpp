@@ -4,8 +4,8 @@
 #include <cstring>
 
 int main() {
-    // magic=42, unicharset_size=2, one forward edge, letter=1, marker+EOW.
-    const char * valid = "KgACAAAAAQAAAAsAAAAAAAAA";
+    // magic=42, unicharset_size=3, two forward edges: 1 -> 2 (word end).
+    const char * valid = "KgADAAAAAgAAACUAAAAAAAAAFgAAAAAAAAA=";
     char compact[64];
     int out = 0;
     for (const char * p = valid; *p; ++p) {
@@ -19,7 +19,9 @@ int main() {
     }
     const int one[] = { 1 };
     const int two[] = { 2 };
-    if (!tesseract_dawg_contains_base64(compact, one, 1) || tesseract_dawg_contains_base64(compact, two, 1)) {
+    const int word[] = { 1, 2 };
+    if (tesseract_dawg_contains_base64(compact, one, 1) || !tesseract_dawg_has_prefix_base64(compact, one, 1) ||
+        !tesseract_dawg_contains_base64(compact, word, 2) || tesseract_dawg_has_prefix_base64(compact, two, 1)) {
         std::fprintf(stderr, "DAWG exact-word lookup failed\n");
         return 1;
     }
