@@ -534,6 +534,8 @@ downstream handoff parity, not detector-box similarity alone.
       CER/WER acceptance gates and reports their individual results, allowing
       page-quality regressions to fail explicitly instead of being hidden in
       diagnostic JSON.
+      The model-free geometry regression also covers aggregate gate pass/fail
+      semantics and verifies that all quality gates remain opt-in.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity

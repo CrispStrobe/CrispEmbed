@@ -145,6 +145,17 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
     }
 
 
+def acceptance_checks(args: argparse.Namespace, native: dict, comparison: dict) -> dict[str, bool]:
+    checks: dict[str, bool] = {}
+    if args.min_native_regions is not None:
+        checks["min_native_regions"] = native["regions"] >= args.min_native_regions
+    if args.max_cer is not None:
+        checks["max_cer"] = comparison["cer"] <= args.max_cer
+    if args.max_wer is not None:
+        checks["max_wer"] = comparison["wer"] <= args.max_wer
+    return checks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", type=Path, required=True)
@@ -179,13 +190,7 @@ def main() -> int:
         "cer": edit_distance(reference_text, native_text) / char_denominator,
         "wer": token_distance(word_reference, word_native) / max(1, len(word_reference)),
     }
-    checks = {}
-    if args.min_native_regions is not None:
-        checks["min_native_regions"] = native["regions"] >= args.min_native_regions
-    if args.max_cer is not None:
-        checks["max_cer"] = comparison["cer"] <= args.max_cer
-    if args.max_wer is not None:
-        checks["max_wer"] = comparison["wer"] <= args.max_wer
+    checks = acceptance_checks(args, native, comparison)
     result = {
         "fixture": str(args.image),
         "provenance": {

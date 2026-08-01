@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from compare_tesseract_page_geometry import compare, reading_order_is_monotonic  # noqa: E402
+from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
 
 
 class TesseractPageGeometryTest(unittest.TestCase):
@@ -40,6 +41,17 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertEqual(result["count_delta"], 0)
         self.assertFalse(result["native_reading_order_monotonic"])
         self.assertFalse(result["paired_reading_order_consistent"])
+
+    def test_page_quality_acceptance_gates(self) -> None:
+        args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
+        passing = acceptance_checks(args, {"regions": 12}, {"cer": 0.019, "wer": 0.089})
+        failing = acceptance_checks(args, {"regions": 11}, {"cer": 0.021, "wer": 0.091})
+        self.assertEqual(passing, {"min_native_regions": True, "max_cer": True, "max_wer": True})
+        self.assertEqual(failing, {"min_native_regions": False, "max_cer": False, "max_wer": False})
+
+    def test_page_quality_gates_are_opt_in(self) -> None:
+        args = type("Args", (), {"min_native_regions": None, "max_cer": None, "max_wer": None})()
+        self.assertEqual(acceptance_checks(args, {"regions": 0}, {"cer": 1.0, "wer": 1.0}), {})
 
 
 if __name__ == "__main__":
