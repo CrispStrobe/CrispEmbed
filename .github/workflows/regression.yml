@@ -30,6 +30,7 @@ on:
       - 'src/scan_cleanup.*'
       - 'tests/regression/**'
       - 'tests/test_tesseract_page_geometry.py'
+      - 'tests/test_tesseract_line_confidence.py'
       - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
       - 'models/merge-llamacpp-qwen2vl-gguf.py'
@@ -49,6 +50,7 @@ on:
       - 'src/scan_cleanup.*'
       - 'tests/regression/**'
       - 'tests/test_tesseract_page_geometry.py'
+      - 'tests/test_tesseract_line_confidence.py'
       - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
       - 'models/merge-llamacpp-qwen2vl-gguf.py'
@@ -111,6 +113,8 @@ jobs:
         run: python tests/test_ocr_preprocessor_benchmark.py
       - name: Tesseract page geometry comparator unit tests
         run: python tests/test_tesseract_page_geometry.py
+      - name: Tesseract line confidence comparator unit tests
+        run: python tests/test_tesseract_line_confidence.py
 
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:
