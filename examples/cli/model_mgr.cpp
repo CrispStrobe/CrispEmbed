@@ -919,6 +919,20 @@ static const ModelEntry k_registry[] = {
       "PP-OCRv6 medium CTC recognizer (F32 backbone, head-only Q8)", "63 MB", "apache-2.0",
       "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF" },
 
+    // EasyOCR CRNN recognizers and the PP-LCNet line-orientation classifier are
+    // produced locally by models/convert-easyocr-to-gguf.py and
+    // models/convert-pplcnet-orientation-to-gguf.py; no GGUF is published yet,
+    // so these entries name the artifact for --ocr-rec/--ocr-cls resolution
+    // without promising a download (same pattern as mixtex-zhen).
+    { "easyocr-english-g2", "easyocr-english-g2-f16.gguf", "",
+      "EasyOCR English Gen2 CRNN recognizer (local conversion)", "16 MB", "apache-2.0",
+      "https://github.com/JaidedAI/EasyOCR" },
+    { "easyocr-latin-g2", "easyocr-latin-g2-f16.gguf", "", "EasyOCR Latin Gen2 CRNN recognizer (local conversion)",
+      "16 MB", "apache-2.0", "https://github.com/JaidedAI/EasyOCR" },
+    { "pplcnet-textline-ori", "PP-LCNet_x1_0_textline_ori-f16.gguf", "",
+      "PP-LCNet x1.0 text-line 0/180 orientation classifier (local conversion)", "13 MB", "apache-2.0",
+      "https://github.com/PaddlePaddle/PaddleOCR" },
+
     { "surya-det", "surya-det-f16.gguf", "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",
       "surya-ocr-2 text detection (EfficientViT segformer, 38M, 91 langs)", "73 MB", "openrail-m",
       "https://huggingface.co/cstr/surya-det-GGUF" },

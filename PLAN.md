@@ -13,12 +13,14 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add a dependency-free EasyOCR interoperability contract test covering Python `lines`/`words` ordering, crop/normalized geometry, and LayoutLM `apply_ocr=False` serialization; keep real-page reference parity as the separate live gate. `tests/test_easyocr_interop_contract.py` passes with 3 words, 2 grouped lines, and ordered LayoutLM sidecar metadata | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** retain PP-OCRv6 detector/crop/orientation/recognizer per-stage timings in the reproducible benchmark JSON; parser and stderr-capture slice. `tests/ppocrv6_pipeline_benchmark.py` now sets the bench switch, parses native stderr, preserves partial timeout telemetry, and labels unavailable stage rows. A live tiny German fixture produced detector/crop/orientation/recognizer timings and 34 detector boxes → 30 recognized results; full 10-fixture/medium quality sweep remains pending | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add dependency-free PP-OCRv6 benchmark-parser, backend-capability, and OCR interoperability contract tests to the mandatory OCR regression smoke job; leave model/gold execution artifact-gated. Workflow YAML and all four smoke/contract checks pass locally; the gold step skips unless an artifact-equipped runner supplies `CRISPEMBED_GGUF_DIR` | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** generalize the PP-OCRv6 graph-gold harness from hard-coded small-only artifacts to explicit tiny/small/medium tier selections with tier-specific reference fixtures. The harness now supports all three tiers; tiny remains explicitly blocked until its legacy 16-tensor Arabic reference is regenerated as a full graph gold archive, while small remains the default accepted lane | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add opt-in PP-OCRv6 detector graph-vs-CPU box geometry diagnostics without changing the production CPU accept-gate; report count, greedy matches, mean IoU, and minimum IoU for each diagnostic run. Implemented and compiled; the available tiny fox fixture reports graph=0 vs CPU=2, so detector graph geometry remains a quality/performance TODO and is not accepted by default | **COMPLETED** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** repair the manifest-driven O9 engine benchmark so structured detector specs (`{repo,file,revision}`) are normalized like recognizer specs; add a contract test and rerun Tesseract/PARSeq/PP-OCRv6 rows. Fixed structured detector normalization; Tesseract-LSTM `175.7 s` CER `0.040`, German Tesseract `101.8 s` unscored, PARSeq `1.206 s` unscored. The PP-OCRv6 artifacts load-fail (`missing stem conv`) and are now correctly marked errors instead of false `ok` rows | **COMPLETED** |
 | 2026-08-01 | `chore/ai-act-audit-followups` / `.codex/worktrees/chore-ai-act-audit-followups` | **Picked:** close the five gaps a second AI Act audit found in the `chore/ai-act-policy` work. (1) biometric gate moved into `crispembed_face_init()` so the Python/Rust/Dart bindings are covered, not just CLI+server — new ABI `crispembed_accept_biometric_use()`; (2) `check_registry_licenses.py` read only HF's `license` tag and missed `license_name`, so the 4 correct lfm2 rows failed — fixed, now exit 0, and wired into `main-health.yml`; (3)(4)(5) POLICY.md: Art. 50(2) reframed as reasoned-position-not-settled-exemption, OCR-VLM text addressed, and the regulatory dates corrected — the Omnibus is **Reg (EU) 2026/1744, OJ 24 Jul 2026**, not "adopted June 2026". Touches `src/crispembed.{h,cpp}`, `examples/cli/model_mgr.*`, bindings, POLICY/README/PLAN, `tests/check_registry_licenses.py` — **no OCR/model/graph code**. Verified: CLI + Python both refuse a recognition model without acknowledgement and load it with one, byte-identical embeddings either way; licence check exits 0; `tools/format.sh` clean. | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
@@ -145,6 +147,105 @@ or graph topology—is the remaining quality blocker.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 structured stage metrics through the native/C pipeline API | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.7 explicit multi-page autorotate option for `/ocr/document`, with confidence gate and temporary rotated page handoff | **COMPLETED** |
+
+### OCR external head-to-head — CrispEmbed vs Tesseract / EasyOCR / PaddleOCR
+
+Every OCR parity artifact in this repo so far compares CrispEmbed against a
+*per-stage tensor reference*. That proves a graph is faithful to its blueprint;
+it does not answer whether the shipped pipeline reads a page as well or as fast
+as the engine it ports. Two new dependency-light scripts close that gap:
+
+- `tests/ocr_synth_corpus.py` — deterministic rendered corpus (20 fixtures: 4
+  paragraphs x clean/blur/noise/lowdpi/skew) carrying its own exact ground
+  truth, so CER/WER becomes an absolute number. On clean rendered text every
+  mature engine scores near zero, which makes a port bug separable from a hard
+  input.
+- `tests/ocr_external_parity.py` — runs system Tesseract, Python EasyOCR, Python
+  PaddleOCR and the native lanes over the same images. Reports absolute CER/WER
+  vs ground truth, *port-fidelity* CER vs the upstream engine's own reading of
+  the same image, and latency in two deliberately separate columns: `proc_ms`
+  (whole invocation, includes model load) and `engine_ms` (load-excluded, from
+  the native stage-bench stderr or from the in-process Python engines). The
+  columns are not comparable to each other; a non-zero exit is never timed as a
+  win.
+
+**Reachability fixes (the lanes were not runnable at all).** `engine::ppocrv6`
+is fully implemented in `ocr_orchestrator.cpp` — detector, quad crop, PP-LCNet
+orientation, recognizer, stage bench — but had **no `map_engine` C-ABI id and no
+`--ocr-engine` name**, so the PaddleOCR-parity lane could not be invoked from
+the CLI, the C ABI, or any binding. EasyOCR had a validated
+`easyocr_pipeline::{load,run_file}` but no orchestrator engine at all. Both are
+now wired: `--ocr-engine ppocrv6` (C-ABI id 16) and `--ocr-engine easyocr`
+(id 17), plus `--ocr-cls` for the optional PP-LCNet 0/180 classifier and
+registry entries naming the locally-converted artifacts.
+
+**Baseline table (20 synthetic fixtures, 3 repeats, uncontended M1 Metal).**
+`crispembed-ppocrv6` is excluded because it does not produce text at all (see
+below); every other arm ran clean with 0 failures.
+
+| engine | kind | CER | WER | CER vs tesseract-cli | proc ms | engine ms |
+|---|---|--:|--:|--:|--:|--:|
+| `tesseract-cli:eng` | external | **0.0256** | **0.0890** | — | **373** | — |
+| `paddleocr-py` | external | **0.0185** | 0.1153 | 0.0368 | 1074 | 1074 |
+| `easyocr-py` | external | 0.0769 | 0.2363 | 0.0928 | 746 | 746 |
+| `crispembed-tesseract` | native | 0.0814 | 0.2548 | 0.1005 | 6462 | — |
+| `crispembed-easyocr` | native | 0.1412 | 0.3802 | 0.1561 | 6640 | 6295 |
+
+Reading the columns correctly: `crispembed-tesseract` vs `tesseract-cli` is a
+fair wall-clock comparison (both are one subprocess per image, both pay model
+load), so **17x slower at 3.2x the character error** is the real gap. For
+`crispembed-easyocr` vs `easyocr-py` the fair column is `engine_ms`, which
+excludes load on both sides: **8.4x slower at 1.8x the character error**. The
+EasyOCR CER gap mixes detector and recognizer — our lane pairs the EasyOCR CRNN
+with DBNet while `easyocr-py` uses CRAFT — so it is not yet attributable.
+
+Three gaps follow, in priority order: (1) PP-OCRv6 produces no usable text at
+all; (2) both working native lanes are ~10x slower than the engines they port;
+(3) both carry roughly 2-3x the character error of their upstream.
+
+**PP-OCRv6 is not validated — its reference cannot read text either.**
+
+The accepted PP-OCRv6 parity evidence is per-stage cosine against
+`tools/dump_ppocrv6_reference.py`, a hand-written torch mirror of the Paddle
+blueprint. On `synth_00_clean.png` the native lane decodes `iiiiii` /
+`laúieyotiieieioieioni.` / `íotuinióniiaieiasaieró` at `mean_conf=0.94` — and
+running the *reference* on the very same crop yields the same class of garbage
+(`neiioiieioe…`). Detector geometry is not at fault: the dumped crops are
+pixel-perfect line images of the ground-truth text. So the native runtime is
+faithfully reproducing a wrong blueprint, which is exactly the failure mode
+HARD RULE #3 exists to catch — cosine 0.9999 against a reference that cannot
+read means nothing, and the earlier `涨RiI` decode recorded above for the fox
+crop was the same signal, read as acceptable.
+
+The divergence is structural, not a tunable. `config.json` pins
+hidden_size/depth/mlp_ratio/conv_kernel_size but **not** the attention head
+count, the activation placement, or the pre-head pooling, and the dumper guesses
+`heads=8` with SiLU/GELU. Sweeping those guesses by decoded output —
+16 head counts x 2 head activations x 3 poolings, then 4 stem x 5 depthwise x 4
+channel activations — never produces readable text; the best combination
+(`stem=relu, dw=none, cm1=gelu`) reaches CER 0.667 on a rendered `The quick`
+crop with fragments like `hea`/`ui` visible, and the current default is worse
+still. Output is largely insensitive to head count, which places the error in
+the PP-LCNetV4 backbone/stem topology rather than the SVTR head.
+
+Next step for this lane is therefore blueprint recovery, not tuning: obtain the
+real PP-OCRv6 modeling code (PaddleX, or a `transformers` release that
+recognises `model_type: pp_ocrv6_small_rec` — 4.57.6 does not) and rebuild
+`dump_ppocrv6_reference.py` against it. Until then no PP-OCRv6 parity or
+performance number in this file should be treated as evidence, and the lane
+must not be promoted to a default.
+
+**Original stage-bench observation (PP-OCRv6 small, Metal, `synth_00_clean.png`, 3 lines).**
+Decoded output is not text: `iiiiii` / `laúieyotiieieioieioni.` /
+`íotuinióniiaieiasaieró` against a ground truth of "The quick brown fox jumps
+over the lazy dog." — with `mean_conf=0.94`, so the confidence signal does not
+detect it. Detector geometry is plausible (3 boxes for 3 lines); the recognizer
+output is wrong. Stage bench on the same run: `detect=62177.3 ms
+recognize=35630.8 ms total=97844.2 ms`, i.e. ~98 s for a 600x200 image that
+PaddleOCR reads in a fraction of a second. That run was CPU-contended; uncontended,
+`test-ppocrv6-direct` reports 1774 ms total for the same three lines, so the
+98 s figure is contention and the standing latency question for this lane is
+moot until it produces text at all.
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 

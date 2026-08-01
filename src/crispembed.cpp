@@ -5033,6 +5033,10 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::unified;
     case 15:
         return E::tesseract_fraktur;
+    case 16:
+        return E::ppocrv6;
+    case 17:
+        return E::easyocr;
     default:
         return E::dbnet_trocr;
     }
