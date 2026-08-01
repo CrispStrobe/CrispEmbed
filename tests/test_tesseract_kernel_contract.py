@@ -15,6 +15,8 @@ def test_int_mode_cache_is_present():
     assert "CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD" in PAGESEG_SOURCE
     assert "CRISPEMBED_TESSERACT_RECODE_COMPOSE" in SOURCE
     assert "recode_classes_to_unichars" in SOURCE
+    assert "tesseract_lstm_dawg_component_count" in SOURCE
+    assert "tesseract_lstm.dawg_components" in SOURCE
 
 
 if __name__ == "__main__":

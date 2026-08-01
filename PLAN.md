@@ -54,6 +54,12 @@ future native dictionary scorer; it does not claim DAWG traversal, recoder
 beam, or output parity, and existing GGUFs must be regenerated before they can
 use the metadata.
 
+The native loader now reads the DAWG manifest, validates that every listed
+component has a nonempty payload, and reports the loaded count in its model
+diagnostic. Older GGUFs remain compatible with zero DAWG entries. This closes
+metadata integrity only; DAWG traversal/scoring and decoded-output parity are
+still open.
+
 CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
 stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
 `0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,
