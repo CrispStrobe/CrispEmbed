@@ -505,6 +505,9 @@ downstream handoff parity, not detector-box similarity alone.
       `tests/test_tesseract_page_geometry.py` covers the ordering, crop-delta,
       spacing-delta, and equal-count ordering-regression cases without model
       files.
+      The regression workflow now runs this test in the Tier 0 smoke job and
+      triggers on changes to the comparator test, keeping these gates active
+      in PR and `main` CI.
       The aggregate page-metrics harness now selects `legacy-fallback`,
       `component`, `baseline`, or `projection` explicitly and clears stale
       policy environment variables between runs. On `scan_strip.png`, the
