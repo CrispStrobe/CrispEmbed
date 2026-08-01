@@ -3,7 +3,6 @@
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h"
-#include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml.h"
 #include "ggml-cpu.h"
@@ -60,12 +59,14 @@ struct context {
     bool use_graph = false;
     std::vector<uint8_t> graph_meta;
     ggml_context * graph_ctx = nullptr;
-    ggml_gallocr_t graph_alloc = nullptr;
     ggml_cgraph * graph = nullptr;
     ggml_tensor * graph_input = nullptr;
     ggml_tensor * graph_stem_conv = nullptr;
     ggml_tensor * graph_stem = nullptr;
     ggml_tensor * graph_logits = nullptr;
+    ggml_tensor * graph_pooled = nullptr;
+    ggml_tensor * graph_head = nullptr;
+    std::vector<ggml_tensor *> graph_taps;
 };
 
 static ggml_tensor * prefix(const core_gguf::tensor_map & m, const std::string & p) {
@@ -280,22 +281,37 @@ static bool build_graph(context * c) {
     ggml_tensor * x = stem_conv ? graph_act(g, graph_bn(g, stem_conv, c->stem_bn, c->stem.out)) : nullptr;
     if (!x) return false;
     c->graph_stem = x;
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
+        ggml_set_output(c->graph_stem_conv);
+        ggml_set_output(c->graph_stem);
+    }
     for (const auto & b : c->blocks) {
         x = graph_block(g, x, b);
         if (!x) return false;
+        c->graph_taps.push_back(x);
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) ggml_set_output(x);
     }
     const int spatial = (int)(x->ne[0] * x->ne[1]);
     x = ggml_scale(g, ggml_sum_rows(g, ggml_reshape_2d(g, x, spatial, 512)), 1.0f / float(spatial));
+    c->graph_pooled = x;
     x = ggml_reshape_3d(g, x, 1, 1, 512);
     x = graph_conv(g, x, c->head);
     if (!x) return false;
     x = graph_act(g, x);
+    c->graph_head = x;
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
+        ggml_set_output(c->graph_pooled);
+        ggml_set_output(c->graph_head);
+    }
     const int head_spatial = (int)(x->ne[0] * x->ne[1]);
     x = ggml_scale(g, ggml_sum_rows(g, ggml_reshape_2d(g, x, head_spatial, 1280)), 1.0f / float(head_spatial));
     x = ggml_reshape_1d(g, x, 1280);
-    // GGUF stores Paddle's linear head as [out,in]; ggml_mul_mat expects
-    // [in,out] for its left operand.
-    c->graph_logits = ggml_add(g, ggml_mul_mat(g, ggml_cont(g, ggml_transpose(g, c->fc_w)), x), c->fc_b);
+    // The converted GGUF tensor is already laid out contiguously for the
+    // [in,out] matmul view; reshape the metadata without transposing values.
+    c->graph_logits = ggml_add(g, ggml_mul_mat(g, ggml_reshape_2d(g, c->fc_w, 1280, 2), x), c->fc_b);
+    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        fprintf(stderr, "pplcnet graph fc ne=%lld,%lld type=%d\n", (long long)c->fc_w->ne[0],
+                (long long)c->fc_w->ne[1], (int)c->fc_w->type);
     ggml_set_name(c->graph_logits, "pplcnet_logits");
     ggml_set_output(c->graph_logits);
     c->graph = ggml_new_graph_custom(g, 4096, false);
@@ -316,7 +332,8 @@ static bool build_graph(context * c) {
 context * init(const char * path, int) {
     auto * c = new context();
     c->use_graph = std::getenv("PPLCNET_ORIENTATION_GRAPH") != nullptr;
-    c->backend = c->use_graph ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    const bool graph_cpu = std::getenv("PPLCNET_ORIENTATION_GRAPH_CPU") != nullptr;
+    c->backend = c->use_graph && !graph_cpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, c->backend, "pplcnet_orientation", c->wl)) {
         free(c);
         return nullptr;
@@ -356,8 +373,6 @@ context * init(const char * path, int) {
     c->fc_w = prefix(m, "ori.linear_0.w_0");
     c->fc_b = prefix(m, "ori.linear_0.b_0");
     if (c->use_graph && !build_graph(c)) {
-        if (c->graph_alloc) ggml_gallocr_free(c->graph_alloc);
-        c->graph_alloc = nullptr;
         if (c->graph_sched) ggml_backend_sched_free(c->graph_sched);
         c->graph_sched = nullptr;
         if (c->cpu_backend) ggml_backend_free(c->cpu_backend);
@@ -372,7 +387,6 @@ context * init(const char * path, int) {
 
 void free(context * c) {
     if (!c) return;
-    if (c->graph_alloc) ggml_gallocr_free(c->graph_alloc);
     if (c->graph_sched) ggml_backend_sched_free(c->graph_sched);
     if (c->cpu_backend) ggml_backend_free(c->cpu_backend);
     if (c->graph_ctx) ggml_free(c->graph_ctx);
@@ -398,6 +412,17 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
             fprintf(stderr, "pplcnet graph conv %.7g %.7g %.7g %.7g\n", conv_tap[0], conv_tap[1], conv_tap[2],
                     conv_tap[3]);
             fprintf(stderr, "pplcnet graph stem %.7g %.7g %.7g %.7g\n", tap[0], tap[1], tap[2], tap[3]);
+            for (size_t i = 0; i < c->graph_taps.size(); ++i) {
+                float block_tap[4] = {};
+                ggml_backend_tensor_get(c->graph_taps[i], block_tap, 0, sizeof(block_tap));
+                fprintf(stderr, "pplcnet graph block%zu %.7g %.7g %.7g %.7g\n", i, block_tap[0], block_tap[1],
+                        block_tap[2], block_tap[3]);
+            }
+            float pooled_tap[4] = {}, head_tap[4] = {};
+            ggml_backend_tensor_get(c->graph_pooled, pooled_tap, 0, sizeof(pooled_tap));
+            ggml_backend_tensor_get(c->graph_head, head_tap, 0, sizeof(head_tap));
+            fprintf(stderr, "pplcnet graph pooled %.7g %.7g %.7g %.7g head %.7g %.7g %.7g %.7g\n", pooled_tap[0],
+                    pooled_tap[1], pooled_tap[2], pooled_tap[3], head_tap[0], head_tap[1], head_tap[2], head_tap[3]);
         }
         float logits[2] = {};
         ggml_backend_tensor_get(c->graph_logits, logits, 0, sizeof(logits));
@@ -419,14 +444,21 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         auto x = preprocess(px, width, height, channels);
         std::vector<float> y;
         if (!run_conv_bn(c->stem, c->stem_bn, x, h, w)) return {};
-        for (const auto & b : c->blocks)
-            if (!run_block(b, x, h, w)) return {};
+        for (size_t bi = 0; bi < c->blocks.size(); ++bi) {
+            if (!run_block(c->blocks[bi], x, h, w)) return {};
+            if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+                fprintf(stderr, "pplcnet cpu block%zu %.7g %.7g %.7g %.7g\n", bi, x[0], x[1], x[2], x[3]);
+        }
         std::vector<float> pooled(512, 0.0f);
         for (int ch = 0; ch < 512; ++ch)
             for (int i = 0; i < h * w; ++i) pooled[ch] += x[(size_t)ch * h * w + i] / float(h * w);
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+            fprintf(stderr, "pplcnet cpu pooled %.7g %.7g %.7g %.7g\n", pooled[0], pooled[1], pooled[2], pooled[3]);
         int oh = 0, ow = 0;
         if (!apply_conv(c->head, pooled, 1, 1, y, oh, ow)) return {};
         hardswish(y);
+        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+            fprintf(stderr, "pplcnet cpu head %.7g %.7g %.7g %.7g\n", y[0], y[1], y[2], y[3]);
         auto fw = to_f32(c->fc_w), fb = to_f32(c->fc_b);
         float cpu_logits[2] = {};
         linear_cpu(y.data(), cpu_logits, 1280, 2, fw.data(), fb.data());

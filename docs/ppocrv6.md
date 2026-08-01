@@ -107,8 +107,11 @@ The PP-LCNet orientation graph is also opt-in with
 `PPLCNET_ORIENTATION_GRAPH=1`. It uses a backend scheduler with CPU fallback
 for ggml operations not implemented by the selected GPU backend. Its output is
 diagnostic-only unless `PPLCNET_ORIENTATION_GRAPH_ACCEPT=1` is set; the current
-Metal probe shows the graph executing safely, but its logits do not yet match
-the CPU reference, so production orientation remains on the CPU path.
+Metal probe executes safely and matches the CPU reference within 0.026 logit
+absolute error on the German line fixture. Run
+`PPLCNET_ORIENTATION_GRAPH_PARITY=1` with the orientation test to enforce that
+gate. Production still requires the explicit accept switch until the full
+orientation corpus is covered.
 
 The current CPU parity probe reports detector probability-map cosine 0.99113
 and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
