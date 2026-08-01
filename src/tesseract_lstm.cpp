@@ -690,6 +690,45 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     return beam.front().prefix;
 }
 
+// Compose a collapsed output-class sequence back into unichar IDs. The
+// recoder stores one or more output classes per unichar; single-class reverse
+// lookup is insufficient for composed characters (notably Chinese). Keep this
+// opt-in until a broad decoded-output fixture set validates the policy.
+static bool recode_classes_to_unichars(const std::vector<int> & labels,
+                                       const std::vector<std::vector<int>> & codes,
+                                       std::vector<int> & unichars,
+                                       std::vector<int> & starts) {
+    const int n = (int)labels.size();
+    if (codes.empty()) return false;
+    std::vector<int> previous(n + 1, -1), previous_uid(n + 1, -1);
+    previous[0] = 0;
+    for (int pos = 0; pos < n; ++pos) {
+        if (previous[pos] < 0) continue;
+        for (int uid = 0; uid < (int)codes.size(); ++uid) {
+            const auto & code = codes[uid];
+            if (code.empty() || pos + (int)code.size() > n) continue;
+            if (!std::equal(code.begin(), code.end(), labels.begin() + pos)) continue;
+            const int end = pos + (int)code.size();
+            if (previous[end] < 0) {
+                previous[end] = pos;
+                previous_uid[end] = uid;
+            }
+        }
+    }
+    if (previous[n] < 0) return false;
+    for (int end = n; end > 0;) {
+        const int uid = previous_uid[end];
+        const int begin = previous[end];
+        if (uid < 0 || begin < 0) return false;
+        unichars.push_back(uid);
+        starts.push_back(begin);
+        end = begin;
+    }
+    std::reverse(unichars.begin(), unichars.end());
+    std::reverse(starts.begin(), starts.end());
+    return true;
+}
+
 static void forward(tesseract_lstm_context * ctx,
                     const float * image, // (H, W) normalized
                     int H, int W) {
@@ -900,34 +939,54 @@ static void forward(tesseract_lstm_context * ctx,
             greedy_label_confs.push_back(best_p);
         }
     }
-    int prev = -1;
-    size_t label_index = 0;
-    for (int best : labels) {
-        if (best != ctx->null_char && (beam_decoded || best != prev)) {
-            // Map output class → unichar via reverse recoder
+    std::vector<int> collapsed_labels;
+    std::vector<float> collapsed_confs;
+    if (beam_decoded) {
+        collapsed_labels = labels;
+    } else {
+        int prev = -1;
+        for (size_t i = 0; i < labels.size(); ++i) {
+            const int best = labels[i];
+            if (best != ctx->null_char && best != prev) {
+                collapsed_labels.push_back(best);
+                collapsed_confs.push_back(i < greedy_label_confs.size() ? greedy_label_confs[i] : 0.0f);
+            }
+            prev = best;
+        }
+    }
+
+    const bool compose_recoder = !ctx->recoder_codes.empty() &&
+                                 std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
+    std::vector<int> composed_uids, composed_starts;
+    const bool composed = compose_recoder &&
+                          recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes, composed_uids,
+                                                     composed_starts);
+    if (composed) {
+        for (size_t i = 0; i < composed_uids.size(); ++i) {
+            const int uid = composed_uids[i];
+            if (uid < 0 || uid >= (int)ctx->tokens.size()) continue;
+            ctx->result_buf += ctx->tokens[uid];
+            if (!beam_decoded) {
+                const int begin = composed_starts[i];
+                const int end = i + 1 < composed_starts.size() ? composed_starts[i + 1] : (int)collapsed_confs.size();
+                float confidence = 1.0f;
+                for (int j = begin; j < end && j < (int)collapsed_confs.size(); ++j)
+                    confidence = std::min(confidence, collapsed_confs[j]);
+                ctx->char_confs.push_back(confidence);
+            }
+        }
+    } else {
+        for (size_t i = 0; i < collapsed_labels.size(); ++i) {
+            const int best = collapsed_labels[i];
             int uid = -1;
-            if (best < (int)ctx->output_to_unichar.size()) uid = ctx->output_to_unichar[best];
+            if (best >= 0 && best < (int)ctx->output_to_unichar.size()) uid = ctx->output_to_unichar[best];
             if (uid >= 0 && uid < (int)ctx->tokens.size()) {
                 ctx->result_buf += ctx->tokens[uid];
-                // Greedy labels retain their actual softmax probability. A
-                // prefix beam label has no one-to-one timestep confidence;
-                // leave that path empty instead of returning fabricated zero
-                // entries that look like valid per-character scores.
-                if (!beam_decoded)
-                    ctx->char_confs.push_back(
-                        label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
+                if (!beam_decoded) ctx->char_confs.push_back(collapsed_confs[i]);
             } else {
-                // Keep the diagnostic greedy decoder aligned with the Python
-                // reference for recoder classes that are only one component
-                // of a multi-code unichar. Full Tesseract recode-beam
-                // composition remains a separate production-quality task;
-                // silently dropping the class makes tensor parity look like
-                // an empty OCR result.
                 ctx->result_buf += "<" + std::to_string(best) + ">";
             }
         }
-        prev = best;
-        ++label_index;
     }
     if (beam_decoded && std::isfinite(beam_log_score)) {
         // A CTC beam score is a sequence probability, not a character
