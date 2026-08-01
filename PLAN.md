@@ -569,6 +569,11 @@ downstream handoff parity, not detector-box similarity alone.
       on the F32 artifact these are `0.0902`/`0.1978` for greedy, while beam
       correctly reports zero per-character values and sequence confidence
       `0.5592`. These are diagnostics only, not a production calibration.
+      After correcting the aggregation to exclude blank/repeated CTC
+      timesteps, native Fraktur greedy `word_confidence` is `0.8797` versus
+      official TSV `0.5886`; beam remains `0`. Semantics now match the
+      min-emitted-character rule, but calibration and decoded-text parity are
+      still open.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
