@@ -546,6 +546,12 @@ quality gate: the best alternate produced 23 regions but lower confidence
 (0.805). The default row fitter remains unchanged and the tuning variable is
 not enabled in production.
 
+The subsequent baseline-row matcher regression produced 49 regions and failed
+the native gate. It is now preserved behind
+`CRISPEMBED_TESSERACT_COMPONENT_BASELINE`; the legacy component grouping is
+the default experimental component path again and restores 21 regions, 1,128
+characters, 0.836 confidence, and 78/78 model-gated orchestrator checks.
+
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
 normal greedy recognizer's sub-second-to-low-single-digit-second line timings.
