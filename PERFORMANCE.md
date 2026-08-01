@@ -1300,3 +1300,9 @@ The page comparator now has an opt-in `--require-text-match` gate and retains
 the normalized official/native page strings in its comparison output. The
 scan-strip baseline therefore remains explicitly non-green for exact output
 parity even though its CER/WER metrics are measurable.
+
+A seeded-artifact page-gate rerun with the published DBNet IC15 F16 detector
+produced only 2 boxes/lines with both corrected Fraktur F32 and Q8_0 models,
+versus the established 12-region baseline. This is rejected as a detector/page
+pipeline compatibility regression before comparing recognizer quality; the
+same count across F32 and Q8 rules out a precision-only recognizer cause.
