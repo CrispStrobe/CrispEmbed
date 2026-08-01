@@ -129,8 +129,11 @@ absolute error on the German line fixture. Run
 `PPLCNET_ORIENTATION_GRAPH_PARITY=1` with the orientation test to enforce that
 gate. The current expanded probe passes 9/10 German/Arabic/derived fixtures;
 the uneven-illumination Arabic fixture has a Metal delta of 1.07/3.22 while
-the CPU graph passes, so production still requires the explicit accept switch
-until that backend numerical case is resolved. The explicit pipeline graph now
+the CPU graph passes with 0.0046/0.0139. Tap diagnostics show the Metal drift
+starts around SE block 4 and accumulates through the later depthwise/SE blocks;
+it is therefore a backend numerical issue rather than preprocessing or graph
+topology. Production still requires the explicit accept switch until that
+backend case is resolved. The explicit pipeline graph now
 passes the full orchestrator smoke safely; on the German CC0 page it takes
 about 1.15 s for 30 crops versus 0.36 s for the CPU path because each crop
 currently reallocates the mixed scheduler. Without the pipeline switch, the
