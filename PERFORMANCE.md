@@ -1024,6 +1024,14 @@ remain TODOs. The Fraktur line diagnostic is also not a speed claim because its
 available input is a full page under PSM7 rather than an identical transcribed
 line crop.
 
+Latest normalized-artifact rerun (current Fraktur Q8 artifact) is worse still:
+official Tesseract took `9.34 s` for 25 lines/881 chars at confidence `0.8658`,
+while native took `38.69 s` of stage time for 23 regions/1,235 chars at
+confidence `0.768`, CER `0.5279`, and WER `0.5390`. Native recognition consumed
+`38.34 s`; detection was `102 ms` and crop `250 ms`. The earlier Q8/F16
+measurement is retained as historical until artifact and control conditions
+are pinned identically. This is an explicit speed and quality blocker.
+
 The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
 seven CC0/public-domain images through Tesseract plus skew/content detection:
 all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
