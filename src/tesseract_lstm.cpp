@@ -124,11 +124,23 @@ struct tesseract_lstm_context {
     std::map<std::string, std::vector<float>> captures;
 
     bool bench = false;
+    bool reuse_scratch = false;
 
     // GGUF loader state
     core_gguf::WeightLoad wl;
     // Dequantized weight cache
     std::map<const void *, std::vector<float>> dequant_cache;
+    // Per-context activation scratch. Each orchestrator worker owns one
+    // recognizer context, so these buffers can be reused across line crops
+    // without sharing mutable state between workers.
+    std::vector<float> scratch_input;
+    std::vector<float> scratch_convolve;
+    std::vector<float> scratch_fc;
+    std::vector<float> scratch_pool;
+    std::vector<float> scratch_transposed;
+    std::vector<float> scratch_seq_a;
+    std::vector<float> scratch_seq_b;
+    std::vector<float> scratch_logits;
 };
 
 // ---------------------------------------------------------------------------
@@ -612,7 +624,9 @@ static void forward(tesseract_lstm_context * ctx,
     const int conv_out = ctx->conv_out; // 16
     const bool int_mode = ctx->int_mode;
 
-    std::vector<float> input_values(image, image + H * W);
+    std::vector<float> local_input;
+    auto & input_values = ctx->reuse_scratch ? ctx->scratch_input : local_input;
+    input_values.assign(image, image + H * W);
     if (int_mode) {
         for (float & value : input_values) value = quantize_int_input(value);
     }
@@ -621,8 +635,11 @@ static void forward(tesseract_lstm_context * ctx,
     // 1. Convolve 3×3 stacking (no learned weights) + FC+tanh
     // For each pixel (y,x): stack 3×3 neighborhood → 9 features
     // Then FC: out = tanh(W @ stacked + bias)
-    std::vector<float> convolve_out(H * W * 9);
-    std::vector<float> fc_out(H * W * conv_out);
+    std::vector<float> local_convolve, local_fc;
+    auto & convolve_out = ctx->reuse_scratch ? ctx->scratch_convolve : local_convolve;
+    auto & fc_out = ctx->reuse_scratch ? ctx->scratch_fc : local_fc;
+    convolve_out.resize((size_t)H * W * 9);
+    fc_out.resize((size_t)H * W * conv_out);
     uint64_t rng_seed = (uint64_t)((int64_t)ctx->sample_iteration * 0x10000001LL);
     auto random_int = [&]() -> int32_t {
         rng_seed = rng_seed * 6364136223846793005ULL + 1442695040888963407ULL;
@@ -671,7 +688,9 @@ static void forward(tesseract_lstm_context * ctx,
 
     // 2. MaxPool 3×3
     int H2 = H / 3, W2 = W / 3;
-    std::vector<float> mp_out(H2 * W2 * conv_out, -1e30f);
+    std::vector<float> local_pool;
+    auto & mp_out = ctx->reuse_scratch ? ctx->scratch_pool : local_pool;
+    mp_out.assign((size_t)H2 * W2 * conv_out, -1e30f);
     for (int y = 0; y < H2; y++) {
         for (int x = 0; x < W2; x++) {
             float * dst = mp_out.data() + (y * W2 + x) * conv_out;
@@ -691,7 +710,9 @@ static void forward(tesseract_lstm_context * ctx,
 
     // 3. XYTranspose + SummLSTM
     // Transpose: (H2, W2, C) → (W2, H2, C)
-    std::vector<float> transposed(H2 * W2 * conv_out);
+    std::vector<float> local_transposed;
+    auto & transposed = ctx->reuse_scratch ? ctx->scratch_transposed : local_transposed;
+    transposed.resize((size_t)H2 * W2 * conv_out);
     for (int y = 0; y < H2; y++)
         for (int x = 0; x < W2; x++)
             memcpy(transposed.data() + (x * H2 + y) * conv_out, mp_out.data() + (y * W2 + x) * conv_out,
@@ -703,40 +724,46 @@ static void forward(tesseract_lstm_context * ctx,
     const auto & lw0 = ctx->lstm[lstm_idx];
     int ns0 = lw0.ns;
 
-    std::vector<float> summ_out(W2 * ns0);
-    summ_lstm_forward(transposed.data(), summ_out.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
+    std::vector<float> local_seq_a, local_seq_b;
+    auto & seq_a = ctx->reuse_scratch ? ctx->scratch_seq_a : local_seq_a;
+    auto & seq_b = ctx->reuse_scratch ? ctx->scratch_seq_b : local_seq_b;
+    seq_a.resize((size_t)W2 * ns0);
+    summ_lstm_forward(transposed.data(), seq_a.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
                       lw0.bias.data(), int_mode);
     lstm_idx++;
-    capture(ctx, "after_lstm_0", summ_out.data(), summ_out.size());
+    capture(ctx, "after_lstm_0", seq_a.data(), seq_a.size());
 
     // 4. Remaining LSTM layers (1-D over the time axis = W2)
     int T = W2;
-    std::vector<float> cur_seq = std::move(summ_out); // (T, ns0)
+    std::vector<float> * cur_seq = &seq_a;
+    std::vector<float> * next_seq = &seq_b;
     int cur_dim = ns0;
 
     while (lstm_idx < ctx->num_lstm_layers) {
         const auto & lw = ctx->lstm[lstm_idx];
         bool rev = (lstm_idx < (int)ctx->lstm_types.size() && ctx->lstm_types[lstm_idx] == "rev");
 
-        std::vector<float> next_seq(T * lw.ns);
-        lstm_forward(cur_seq.data(), next_seq.data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(), lw.bias.data(),
-                     rev, int_mode);
+        next_seq->resize((size_t)T * lw.ns);
+        lstm_forward(cur_seq->data(), next_seq->data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(),
+                     lw.bias.data(), rev, int_mode);
 
-        cur_seq = std::move(next_seq);
+        std::swap(cur_seq, next_seq);
         cur_dim = lw.ns;
         {
             char buf[32];
             snprintf(buf, sizeof(buf), "after_lstm_%d", lstm_idx);
-            capture(ctx, buf, cur_seq.data(), cur_seq.size());
+            capture(ctx, buf, cur_seq->data(), cur_seq->size());
         }
         lstm_idx++;
     }
 
     // 5. Softmax output
     int n_classes = ctx->num_classes;
-    std::vector<float> logits(T * n_classes);
+    std::vector<float> local_logits;
+    auto & logits = ctx->reuse_scratch ? ctx->scratch_logits : local_logits;
+    logits.resize((size_t)T * n_classes);
     for (int t = 0; t < T; t++) {
-        const float * x = cur_seq.data() + t * cur_dim;
+        const float * x = cur_seq->data() + t * cur_dim;
         float * dst = logits.data() + t * n_classes;
         float max_val = -1e30f;
         for (int c = 0; c < n_classes; c++) {
@@ -854,6 +881,7 @@ tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_thre
         return nullptr;
     }
     ctx->bench = (std::getenv("CRISPEMBED_TESSERACT_BENCH") != nullptr);
+    ctx->reuse_scratch = (std::getenv("CRISPEMBED_TESSERACT_REUSE_SCRATCH") != nullptr);
     return ctx;
 }
 
