@@ -10,6 +10,7 @@
 // Weights are dequantized to F32 on load and cached.
 
 #include "tesseract_lstm.h"
+#include "tesseract_dawg.h"
 
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
@@ -255,6 +256,12 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
         const std::string payload = core_gguf::kv_str(meta, key.c_str(), "");
         if (payload.empty()) {
             fprintf(stderr, "tesseract_lstm: DAWG manifest entry '%s' has no payload\n", name.c_str());
+            core_gguf::free_metadata(meta);
+            return false;
+        }
+        char dawg_error[128];
+        if (!tesseract_dawg_validate_base64(payload.c_str(), dawg_error, sizeof(dawg_error))) {
+            fprintf(stderr, "tesseract_lstm: invalid DAWG '%s': %s\n", name.c_str(), dawg_error);
             core_gguf::free_metadata(meta);
             return false;
         }

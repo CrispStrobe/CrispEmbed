@@ -488,11 +488,25 @@ recognizer and LayoutLM consumer.
       the next implementation and parity task.
 - [x] Load and validate the preserved DAWG manifest in the native context.
       Newer GGUFs report the component count and reject a manifest entry with
-      an empty payload; older GGUFs remain compatible with zero entries. This
-      is provenance validation only and does not enable dictionary scoring. A
+      an empty or structurally invalid SquishedDawg payload; older GGUFs remain
+      compatible with zero entries. This is provenance validation only and does
+      not enable dictionary scoring. A
       regenerated English smoke GGUF loaded with `dawg=3` and the live
       confidence target passed 35/35 checks; decoded `Se` is not a quality
       acceptance result.
+- [x] Add a standalone SquishedDawg wire validator and invoke it while loading
+      each preserved payload. It checks Tesseract's magic/header, dimensions,
+      edge-array bounds, next-node bounds, and forward-edge run markers. The
+      `test-tesseract-dawg` target passes; this remains structural validation,
+      not dictionary traversal or scoring.
+- [x] Add a read-only exact-word lookup primitive over validated DAWG payloads,
+      keyed by Tesseract unichar IDs. It is covered by the minimal DAWG fixture
+      and is not wired into OCR hypothesis scoring or production beam decode.
+- [x] Add a read-only DAWG prefix-legality lookup, including a fixture where a
+      non-terminal prefix is legal but not itself a complete word. This is the
+      next input to recoder/beam scoring, but remains diagnostic-only.
+- [x] Harden DAWG metadata decoding with strict base64 quartet/padding checks
+      and malformed-input tests. Corrupt payloads cannot reach traversal.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
