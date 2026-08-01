@@ -542,8 +542,7 @@ static ggml_tensor * pp_graph_bn(ppocrv6_ocr_context * c, ggml_context * g, ggml
     ggml_tensor * rm = pp_graph_resident(c, mean, GGML_TYPE_F32, channels, 1, 1, 1);
     ggml_tensor * rv = pp_graph_resident(c, var, GGML_TYPE_F32, channels, 1, 1, 1);
     if (!rw || !rb || !rm || !rv) return nullptr;
-    ggml_tensor * eps = ggml_new_f32(g, 1e-5f);
-    ggml_tensor * scale = ggml_div(g, rw, ggml_sqrt(g, ggml_add(g, rv, eps)));
+    ggml_tensor * scale = ggml_div(g, rw, ggml_sqrt(g, ggml_scale_bias(g, rv, 1.0f, 1e-5f)));
     ggml_tensor * shift = ggml_sub(g, rb, ggml_mul(g, rm, scale));
     scale = ggml_reshape_3d(g, scale, 1, 1, channels);
     shift = ggml_reshape_3d(g, shift, 1, 1, channels);
