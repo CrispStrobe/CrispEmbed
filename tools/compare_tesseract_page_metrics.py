@@ -100,6 +100,16 @@ def token_distance(left: list[str], right: list[str]) -> int:
     return previous[-1]
 
 
+def selected_pageseg_policy(args: argparse.Namespace) -> str:
+    if args.projection:
+        return "projection"
+    if args.component:
+        return "component"
+    if args.baseline:
+        return "baseline"
+    return "legacy-fallback"
+
+
 def native_metrics(args: argparse.Namespace, image: Path) -> dict:
     env = os.environ.copy()
     env.update(
@@ -139,7 +149,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "chars": int(chars),
         "mean_confidence": float(confidence),
         "stage_ms": float(stage_ms),
-        "pageseg_policy": "projection" if args.projection else "component" if args.component else "baseline" if args.baseline else "legacy-fallback",
+        "pageseg_policy": selected_pageseg_policy(args),
         "text": " ".join(text_match.group("text").split()) if text_match else "",
         "stderr": proc.stderr[-500:],
     }
