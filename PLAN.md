@@ -282,22 +282,21 @@ continues to use left-to-right y-band ordering. The adapter is covered by the
 layout regression and the model-backed page smoke; horizontal-gap splitting is
 still a later detector-specific refinement.
 
-### Tesseract parity status — NOT PROVEN
+### Tesseract parity status — controlled line proven; page/CLI parity pending
 
 The repository contains a `.traineddata` → GGUF converter, a pure-Python
 Tesseract LSTM reference dumper, and `test-tesseract-lstm-diff`. That is an
 available validation path, not evidence that the shipped models match the
-original Tesseract engine. No completed `-ref.gguf` run is recorded for the
-exact installed `eng.traineddata`, and the backup GGUF metadata only identifies
-the `tessdata_best` source; it does not record a verified source-file hash.
+original Tesseract engine. The controlled exact `eng.traineddata` line run is
+now complete; backup artifacts must still be regenerated consistently when
+model metadata changes, and page/CLI parity remains separate.
 
 The native implementation is also a line recognizer. Tesseract's page
 segmentation, word boundaries, spacing, and reading order are separate
 postprocessing behavior. A Python forward pass can prove GGUF/runtime math
 against parsed weights, but does not by itself prove full Tesseract CLI parity.
-Do not mark this lane green until the exact source model is hashed, the
-reference dump and native diff pass every captured stage with magnitudes
-inspected, and the decoded line output is compared with the original engine.
+Do not mark the full lane green until page segmentation, spacing, reading order,
+and decoded page output are compared with the original engine.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -372,12 +371,17 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
       it with EasyOCR CRNN on identical crops rather than treating either
       recognizer as the detector.
-- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
-      its `-ref.gguf`, pass all captured stages and decoded line output, then
-      compare page segmentation/spacing independently.
+- [x] Prove the controlled line-recognizer boundary separately: the exact
+      Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
+      decoded text, and official instrumented PSM7 internal crop all match;
+      logits differ by at most `6.6e-7` with cosine `1.000000`.
+- [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
+      this remains open because direct line fixtures are not the same internal
+      crops selected by official PSM7.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
-      run and stage/output parity remain open.
+      run and controlled-line stage/output parity are complete; page parity
+      remains open.
 - [x] Align the diagnostic Tesseract reference dumper and native recognizer
       with the actual Leptonica `pixScaleGrayLI` fixed-16 bilinear contract
       (top-left sampling, integer weights, replicated edges). The previous

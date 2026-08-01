@@ -108,6 +108,10 @@ static int crispembed_test_main(int argc, char ** argv) {
     // Check Python result from reference metadata
     std::string py_text = ref.meta("tesseract_lstm_ref.decoded_text");
     if (!py_text.empty()) printf("Py  result: '%s'\n", py_text.c_str());
+    const bool decoded_mismatch = !py_text.empty() && py_text != text;
+    if (decoded_mismatch) {
+        fprintf(stderr, "decoded output mismatch: native='%s' python='%s'\n", text, py_text.c_str());
+    }
 
     // Compare each stage
     printf("\n=== Per-stage parity ===\n");
@@ -168,7 +172,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     stbi_image_free(img);
     tesseract_lstm_free(ctx);
 
-    return n_fail > 0 ? 1 : 0;
+    return n_fail > 0 || decoded_mismatch ? 1 : 0;
 }
 
 int main(int argc, char ** argv) {

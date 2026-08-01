@@ -147,11 +147,14 @@ recognizer and LayoutLM consumer.
       `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
       it with EasyOCR CRNN on identical detector crops.
-- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
-      its `-ref.gguf`, pass all captured stages and decoded line output, then
-      compare page segmentation/spacing independently.
+- [x] Prove the controlled line-recognizer boundary separately: exact hashed
+      Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
+      text, and the official instrumented PSM7 internal crop all match.
+- [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
+      direct line fixtures are not the same internal crops selected by PSM7.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
-      metadata; the actual reference run and stage/output parity remain open.
+      metadata; the controlled-line reference and stage/output parity are
+      complete, while page parity remains open.
 - [x] Align the diagnostic reference dumper and native recognizer with
       Tesseract's actual Leptonica `pixScaleGrayLI` fixed-16 bilinear
       contract (top-left sampling and edge replication); the earlier
@@ -205,6 +208,11 @@ recognizer and LayoutLM consumer.
       for every line. This keeps DAWG scoring as an unproven pending feature,
       while documenting that the observed line differences are currently
       caused by CLI crop/spacing/case behavior.
+- [x] Harden `test-tesseract-lstm-diff` so decoded metadata mismatches fail the
+      test. The official 601x36 PSM7 crop remains 9/9 plus decoded-pass; the
+      direct six-line sweep correctly exposes line 4 as an input/preprocessing
+      mismatch (`cos=0.999946`, `max_abs=1.57e-2`) rather than accepting its
+      differing punctuation.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
