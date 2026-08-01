@@ -17,6 +17,7 @@
 #include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 
 #include <algorithm>
@@ -286,6 +287,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
                 fprintf(stderr, "tesseract_lstm: ignoring invalid DAWG %s: %s\n", name.c_str(), error.c_str());
             }
         }
+        fprintf(stderr, "tesseract_lstm: loaded %zu optional DAWG graph(s)\n", ctx->dawgs.size());
     }
 
     // LSTM types
@@ -294,7 +296,9 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: weights
-    ggml_backend_t backend = crispasr_init_gpu_backend();
+    const bool force_cpu = std::getenv("CRISPEMBED_TESSERACT_FORCE_CPU") != nullptr;
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, backend, "tesseract_lstm", ctx->wl)) {
         ggml_backend_free(backend);
         return false;
