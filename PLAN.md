@@ -424,6 +424,12 @@ downstream handoff parity, not detector-box similarity alone.
       rows on `scan_strip.png`, but its enlarged first-line crop currently
       worsens recognizer output, so it remains experimental and is not enabled
       in production.
+      `tools/compare_tesseract_page_geometry.py` now measures the independent
+      geometry boundary from official TSV level-4 rows. On `scan_strip.png`
+      the production adapter has 12/12 indexed rows with mean IoU `0.865993`;
+      the component prototype also has 12/12 but lower mean IoU `0.826222`.
+      These measurements confirm count/order parity only; crop geometry and
+      decoded-text parity remain open.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
