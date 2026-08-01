@@ -96,19 +96,19 @@ struct context {
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
-    got_ocr_context * got = nullptr;            // GOT-OCR2 (single-shot VLM)
-    glm_ocr_context * glm = nullptr;            // GLM-OCR (single-shot VLM)
-    qwen2vl_ocr_context * qwen = nullptr;       // Qwen2.5-VL (single-shot VLM)
-    qwen2vl_ocr_context * qwen3 = nullptr;      // Qwen3-VL (DeepStack + IMROPE)
-    internvl2_ocr_context * intern = nullptr;   // InternVL2 (single-shot VLM)
-    deepseek_ocr2_context * dsocr2 = nullptr;   // DeepSeek-OCR-2 (MoE VLM)
-    pix2struct_context * p2s = nullptr;         // Pix2Struct (doc/chart understanding)
-    granite_vision_context * gv = nullptr;      // Granite Vision (LLaVA-Next)
-    lightonocr_context * locr = nullptr;        // LightOnOCR (Pixtral ViT + Qwen3)
-    unlimited_ocr_context * uocr = nullptr;     // Unlimited-OCR (SAM + CLIP + MoE)
-    void * unified = nullptr;                   // metadata-dispatched OCR model
-    ocr_detect::context * tess_det = nullptr;   // DBNet detection for the tesseract engine
-    tesseract_lstm_context * tess = nullptr;    // Tesseract-LSTM line recognizer
+    got_ocr_context * got = nullptr;          // GOT-OCR2 (single-shot VLM)
+    glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
+    qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
+    internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
+    deepseek_ocr2_context * dsocr2 = nullptr; // DeepSeek-OCR-2 (MoE VLM)
+    pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
+    granite_vision_context * gv = nullptr;    // Granite Vision (LLaVA-Next)
+    lightonocr_context * locr = nullptr;      // LightOnOCR (Pixtral ViT + Qwen3)
+    unlimited_ocr_context * uocr = nullptr;   // Unlimited-OCR (SAM + CLIP + MoE)
+    void * unified = nullptr;                 // metadata-dispatched OCR model
+    ocr_detect::context * tess_det = nullptr; // DBNet detection for the tesseract engine
+    tesseract_lstm_context * tess = nullptr;  // Tesseract-LSTM line recognizer
     std::vector<tesseract_lstm_context *> tess_workers;
     ocr_detect::context * parseq_det = nullptr; // DBNet detection for the parseq engine
     parseq_ocr_context * parseq = nullptr;      // PARSeq scene-text recognizer (per-char conf)
@@ -677,8 +677,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         const auto tess_bench_start = std::chrono::steady_clock::now();
         std::vector<ocr_detect::text_box> boxes;
-        const bool classical_pageseg = st.params.page_segmentation != 0 ||
-                                       std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+        const bool classical_pageseg =
+            st.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
         if (classical_pageseg) {
             int sw = 0, sh = 0, sc = 0;
             unsigned char * seg_gray = stbi_load(path, &sw, &sh, &sc, 1);
@@ -697,10 +697,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // into complete line crops before recognition.
         std::vector<easyocr_layout::region> detected_regions;
         detected_regions.reserve(boxes.size());
-        for (const auto & box : boxes)
-            detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-        const auto line_regions = classical_pageseg ? detected_regions
-                                                    : easyocr_layout::group_dbnet_lines(detected_regions);
+        for (const auto & box : boxes) detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+        const auto line_regions =
+            classical_pageseg ? detected_regions : easyocr_layout::group_dbnet_lines(detected_regions);
         const auto tess_group_done = std::chrono::steady_clock::now();
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
@@ -726,7 +725,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
-            crops.push_back({b, std::move(crop), cw, chh, orientation});
+            crops.push_back({ b, std::move(crop), cw, chh, orientation });
         }
         stbi_image_free(gray);
         if (crops.empty()) return {};
@@ -736,8 +735,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // use one independent context per worker. Detection and crop order
         // remain deterministic; only independent line inference is parallel.
         int worker_count = 1;
-        if (const char * env = std::getenv("CRISPEMBED_TESSERACT_WORKERS"))
-            worker_count = std::max(1, std::atoi(env));
+        if (const char * env = std::getenv("CRISPEMBED_TESSERACT_WORKERS")) worker_count = std::max(1, std::atoi(env));
         worker_count = std::min(worker_count, (int)crops.size());
         const int missing_workers = worker_count - 1 - (int)ctx->tess_workers.size();
         const bool parallel_load = std::getenv("CRISPEMBED_TESSERACT_PARALLEL_LOAD") != nullptr;
@@ -745,10 +743,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             std::vector<std::future<tesseract_lstm_context *>> loads;
             loads.reserve(missing_workers);
             for (int i = 0; i < missing_workers; ++i) {
-                loads.push_back(std::async(std::launch::async, [model = ctx->tess_resolved_model,
-                                                                  threads = ctx->n_threads]() {
-                    return tesseract_lstm_init(model.c_str(), threads);
-                }));
+                loads.push_back(
+                    std::async(std::launch::async, [model = ctx->tess_resolved_model, threads = ctx->n_threads]() {
+                        return tesseract_lstm_init(model.c_str(), threads);
+                    }));
             }
             for (auto & load : loads) {
                 auto * worker = load.get();
@@ -798,16 +796,15 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         for (auto & job : jobs) job.get();
         std::vector<ocr_pipeline::ocr_result> results;
         results.reserve(crops.size());
-        for (size_t i = 0; i < slots.size(); ++i) if (valid[i]) results.push_back(std::move(slots[i]));
+        for (size_t i = 0; i < slots.size(); ++i)
+            if (valid[i]) results.push_back(std::move(slots[i]));
         if (ctx->bench) {
-            const auto ms = [](auto a, auto b) {
-                return std::chrono::duration<double, std::milli>(b - a).count();
-            };
-            fprintf(stderr, "[tesseract-stage-bench] detect=%.1f ms group=%.1f ms crop=%.1f ms recognize=%.1f ms total=%.1f ms boxes=%zu lines=%zu\n",
-                    ms(tess_bench_start, tess_detect_done),
-                    ms(tess_detect_done, tess_group_done),
-                    ms(tess_group_done, tess_crop_done),
-                    ms(tess_crop_done, std::chrono::steady_clock::now()),
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+            fprintf(stderr,
+                    "[tesseract-stage-bench] detect=%.1f ms group=%.1f ms crop=%.1f ms recognize=%.1f ms total=%.1f ms "
+                    "boxes=%zu lines=%zu\n",
+                    ms(tess_bench_start, tess_detect_done), ms(tess_detect_done, tess_group_done),
+                    ms(tess_group_done, tess_crop_done), ms(tess_crop_done, std::chrono::steady_clock::now()),
                     ms(tess_bench_start, std::chrono::steady_clock::now()), boxes.size(), line_regions.size());
         }
         return results;
@@ -1499,6 +1496,14 @@ result run_file(context * ctx, const char * image_path) {
         auto t_stage = std::chrono::steady_clock::now();
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
         cleanup_profile stage_cleanup = s.cleanup;
+        if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) && s.params.page_segmentation != 0) {
+            // Tesseract's page-segmentation path measures row ink on the
+            // original page. Generic deskew/crop/whiten cleanup changes those
+            // coordinates and can merge unrelated rows before segmentation.
+            if (verbose) fprintf(stderr, "ocr_orchestrator: Tesseract page segmentation skips cleanup\n");
+            stage_cleanup.enabled = false;
+            stage_cleanup.denoise = false;
+        }
         if (is_vlm_engine(s.eng) && stage_cleanup.enabled) {
             // VLMs perform their own letterboxing/resizing. Classical deskew,
             // binarization, or denoise can destroy the visual distribution the
