@@ -45,6 +45,12 @@
       This is a backend-independent numerical-sensitivity case, not an F16
       layout or tokenizer error. The strict per-row tensor gate remains open;
       decoded parity is recorded separately.
+- [x] Quantify the input-boundary residual behind the open row gate: the
+      native linear sampler differs from OpenCV by at most one uint8 level on
+      the scan fixture, across roughly 1.1k resized pixels. The new
+      `EASYOCR_FORCE_CPU=1` diagnostic confirms CPU and Metal are identical,
+      and class-level tracing shows the drift is amplified in blank-class
+      logits rather than caused by a token-table or backend mismatch.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
