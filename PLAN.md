@@ -14,6 +14,7 @@ races). Remove the row when the branch lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
+| 2026-08-01 | `chore/crates-publish` / `../CrispEmbed-crates` | **Picked:** publish `crispembed` + `crispembed-sys` to crates.io. Touches ONLY `crispembed-sys/` (build.rs, Cargo.toml), `crispembed/Cargo.toml`, a vendoring script and CI/publish workflows — no changes to `src/`, `ggml/` or any OCR/model code. Blocker being fixed: build.rs runs cmake on `manifest_dir.parent()` (the repo root) and `readme` points outside the crate root, so a published crate could not build for anyone. | **IN PROGRESS** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
@@ -99,6 +100,12 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
+
+Mixed-precision checkpoint: a fresh Miniconda reference was regenerated from
+the installed `frk.traineddata` and stored in the external GGUF backup. Input
+parity is exact; Q8 reaches 6/9 stage passes with logits cosine `0.983119`,
+while mixed `lstm.0.weight_hh` F32 reaches 6/9 with `0.982110`. Both decoded
+outputs differ from Python, so mixed precision is not promoted.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
@@ -787,6 +794,16 @@ chars, confidence `0.765`, CER `0.4603`, WER `0.5390`, and native recognition
 Q8 (`0.5279`) and is much faster than full F32, but remains worse than the
 reference in regions, text, confidence, WER, and speed. Keep it gated and
 test additional small recurrent critical sets before promotion.
+
+During the next sync, remote `main` had accidentally replaced the 1,025-line
+int-mode/scratch implementation with an older 659-line F32-only runtime. The
+regression was caught by the scan benchmark: recognition rose to `50.15 s`
+for 12 Fraktur lines. The known-good runtime was restored and protected by
+`tests/test_tesseract_runtime_contract.py`; the current LUT-enabled int-mode
+run is `34.32 s` recognition with unchanged output (12 regions, CER `0.03375`,
+WER `0.15044`). This remains slower than official Tesseract and is an active
+optimization TODO, but the critical fast path is now guarded against silent
+branch overwrites.
 
 The generic quantizer now accepts repeatable `--keep-pattern` fnmatch rules.
 This makes critical-weight retention reproducible for every model family while
