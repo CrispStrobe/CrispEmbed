@@ -486,6 +486,13 @@ recognizer and LayoutLM consumer.
       `tesseract_lstm.dawg.*`. Existing GGUFs are unchanged and do not gain
       dictionary scoring retroactively; native DAWG traversal/scoring remains
       the next implementation and parity task.
+- [x] Load and validate the preserved DAWG manifest in the native context.
+      Newer GGUFs report the component count and reject a manifest entry with
+      an empty payload; older GGUFs remain compatible with zero entries. This
+      is provenance validation only and does not enable dictionary scoring. A
+      regenerated English smoke GGUF loaded with `dawg=3` and the live
+      confidence target passed 35/35 checks; decoded `Se` is not a quality
+      acceptance result.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
