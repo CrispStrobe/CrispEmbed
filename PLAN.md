@@ -14,6 +14,7 @@ races). Remove the row when the branch lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
+| 2026-08-01 | `chore/crates-publish` / `../CrispEmbed-crates` | **Picked:** publish `crispembed` + `crispembed-sys` to crates.io. Touches ONLY `crispembed-sys/` (build.rs, Cargo.toml), `crispembed/Cargo.toml`, a vendoring script and CI/publish workflows — no changes to `src/`, `ggml/` or any OCR/model code. Blocker being fixed: build.rs runs cmake on `manifest_dir.parent()` (the repo root) and `readme` points outside the crate root, so a published crate could not build for anyone. | **IN PROGRESS** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
