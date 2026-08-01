@@ -22,6 +22,7 @@ Usage:
 """
 
 import argparse
+import base64
 import hashlib
 import struct
 import sys
@@ -90,6 +91,16 @@ COMPONENT_NAMES = [
     "bigram-dawg", "unambig-dawg", "params-model", "lstm",
     "lstm-punc-dawg", "lstm-system-dawg", "lstm-number-dawg",
     "lstm-unicharset", "lstm-recoder", "version",
+]
+
+# These are the language-model components consumed by Tesseract's DAWG and
+# recoder/word-choice paths.  Keep them in GGUF even though the native runtime
+# does not score them yet; dropping them at conversion time would make a later
+# faithful decoder impossible to implement from the GGUF alone.
+DAWG_COMPONENT_NAMES = [
+    "punc-dawg", "system-dawg", "number-dawg", "freq-dawg",
+    "fixed-length-dawg", "cube-word-dawg", "bigram-dawg", "unambig-dawg",
+    "lstm-punc-dawg", "lstm-system-dawg", "lstm-number-dawg",
 ]
 
 
@@ -530,6 +541,18 @@ def main():
     writer.add_uint32("tesseract_lstm.training_flags", training_flags)
     writer.add_int32("tesseract_lstm.sample_iteration", sample_iteration)
     writer.add_bool("tesseract_lstm.int_mode", bool(training_flags & 1))
+
+    # Preserve the original DAWG payloads losslessly.  GGUF metadata is
+    # UTF-8, so base64 is used instead of silently discarding binary trie
+    # records.  Runtime DAWG scoring remains opt-in work; these fields are the
+    # portable source material for that implementation.
+    dawg_components = [name for name in DAWG_COMPONENT_NAMES if name in components]
+    writer.add_array("tesseract_lstm.dawg_components", dawg_components)
+    for name in dawg_components:
+        payload = components[name]
+        encoded = base64.b64encode(payload).decode("ascii")
+        writer.add_string(f"tesseract_lstm.dawg.{name}.base64", encoded)
+        writer.add_string(f"tesseract_lstm.dawg.{name}.sha256", hashlib.sha256(payload).hexdigest())
 
     # Network hyperparameters
     writer.add_string("tesseract_lstm.vgsl_spec", vgsl_spec)
