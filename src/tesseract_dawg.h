@@ -15,6 +15,10 @@ int tesseract_dawg_validate_base64(const char * payload, char * error, size_t er
 // serialized DAWG contains the complete sequence; no score is produced.
 int tesseract_dawg_contains_base64(const char * payload, const int * unichar_ids, size_t count);
 
+// Diagnostic prefix legality lookup. Returns 1 when the sequence reaches a
+// DAWG node, regardless of whether that node is a complete word.
+int tesseract_dawg_has_prefix_base64(const char * payload, const int * unichar_ids, size_t count);
+
 #ifdef __cplusplus
 }
 #endif
