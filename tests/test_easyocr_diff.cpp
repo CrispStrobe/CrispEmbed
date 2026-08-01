@@ -7,12 +7,16 @@
 #include <string>
 
 static int easyocr_diff_main(int argc, char ** argv) {
-    if (argc != 4) {
-        fprintf(stderr, "usage: %s <easyocr.gguf> <reference.gguf> <image>\n", argv[0]);
+    if (argc != 4 && argc != 5) {
+        fprintf(stderr, "usage: %s <easyocr.gguf> <reference.gguf> <image> [width]\n", argv[0]);
         return 2;
     }
     easyocr_ocr_context * ctx = easyocr_ocr_init(argv[1], 1);
     if (!ctx) return 3;
+    if (argc == 5 && !easyocr_ocr_set_width(ctx, std::stoi(argv[4]))) {
+        easyocr_ocr_free(ctx);
+        return 3;
+    }
     int width = 0, height = 0, channels = 0;
     unsigned char * pixels = stbi_load(argv[3], &width, &height, &channels, 0);
     if (!pixels) {

@@ -16,11 +16,12 @@
 - Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
   cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
   `=#4#4#` respectively
-- Latin Gen-2 conversion/reference generation works and passes a real
-  `formula_quadratic.png` crop end to end (`x =644 ~`). A separate
-  `scan_strip.png` crop has one explicitly diagnosed CTC near-tie at timestep
-  12 (`(2a` native vs `(a` Python) and remains unaccepted.
-- Next: resolve Latin Gen-2 decoded parity, validate remaining VGG/ResNet
+- Latin Gen-2 conversion/reference generation and dynamic-width recognition
+  now pass real `formula_quadratic.png` and `scan_strip.png` references. The
+  scan uses EasyOCR's actual width 128 (`ceil(64 * 520 / 260)`), not the fixed
+  200-column standalone shape; all six captured stages pass and logits have
+  `0/31` argmax mismatches, with decoded output `82` matching Python.
+- Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
@@ -63,6 +64,11 @@
       minimum cosine, with global cosines and mine/ref magnitudes printed. The
       decoded output also matches (`032`). The previous divergence was the
       native/dumper bicubic preprocessing mismatch, not recurrent math.
+- [x] Add an optional width argument to `test-easyocr-diff` and verify the
+      dynamic-width Latin Gen2 page shape. At width 128, the fresh Python and
+      native references pass input, CNN, sequence, both BiLSTM layers, and
+      logits (minimum cosines `0.999682`, `0.999883`, `0.999781`, `0.999823`,
+      `0.999907`, `0.999998`) with identical decoded output `82`.
 - Tesseract parity is explicitly **not proven**. The converter, Python
   reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
   recorded completed reference run for the exact installed `eng.traineddata`,
