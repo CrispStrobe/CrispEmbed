@@ -2509,5 +2509,10 @@ the pattern first.
   diagnostic fallback now preserves `<class>`; full recode-beam composition
   and dictionary scoring remain a production-quality TODO.
 
+- **Tesseract HF artifact publication (2026-08-01).** The corrected canonical
+  F32/Q8_0/Q4_K files are uploaded to the intended `cstr/tesseract-lstm-GGUF`
+  and `cstr/tesseract-frk-GGUF` repositories. F16 remains pending fresh seeded
+  conversion and validation; no `mlx-community` repository was used.
+
   The cache now has an explicit `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE`
   fallback for controlled parity comparisons; cached mode remains the default.

@@ -581,3 +581,10 @@ metadata, not learned parameters.
       greedy decoding silently dropped it. Native now preserves an explicit
       `<class>` diagnostic fallback; true Tesseract recode-beam composition and
       dictionary scoring remain required before production quality acceptance.
+
+- [x] Upload the corrected canonical F32/Q8_0/Q4_K artifacts to the `cstr/`
+      Hugging Face repositories: 36 language files to
+      `cstr/tesseract-lstm-GGUF` and the two Fraktur files to
+      `cstr/tesseract-frk-GGUF`. No `mlx-community` upload was made. Corrected
+      F16 variants remain in flight and must be regenerated/uploaded before the
+      model-family artifact checklist is complete.
