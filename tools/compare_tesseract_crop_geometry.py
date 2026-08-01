@@ -59,6 +59,9 @@ def compare(native: list[dict[str, float]], official: list[dict[str, int]]) -> d
         "native_lines": len(native),
         "official_lines": len(official),
         "count_delta": len(native) - len(official),
+        "alignment": "reading-order-index",
+        "alignment_valid": len(native) == len(official),
+        "paired_rows": count,
         "summary": summary,
         "rows": deltas,
     }
