@@ -64,11 +64,12 @@ quality TODO, not a postprocessing issue. The detector now uses a shape-keyed
 persistent GGML graph, with diagnostic tap retention enabled only by
 `OCR_DETECT_CAPTURE_TAPS=1`. The fresh native CPU-forced page benchmark reports
 detector graph `4178.6 ms`, postprocess `8.3 ms`, total `4186.9 ms`, and 12 line
-units. In corrected rapid-mode repeated benchmarking, eight-thread native CPU
-averages `2907.2 ms` warm and Metal `3499.4 ms` warm, versus `1213.450 ms`
-Miniconda PyTorch CPU (`2.40x` and `2.89x` slower). Both native backends pass
-all taps in diff mode and retain readable output; graph/kernel speed remains a
-mandatory TODO.
+units. The Miniconda reference uses 4 compute threads and 8 interop threads.
+Corrected rapid-mode repeated benchmarking gives native CPU `5661.1 ms` warm
+with 4 threads (`4.67x` slower), `2907.2 ms` warm with 8 threads (`2.40x`),
+and Metal `3499.4 ms` warm (`2.89x`), versus `1213.450 ms` reference. Both
+native backends pass all taps in diff mode and retain readable output;
+graph/kernel speed remains a mandatory TODO.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
