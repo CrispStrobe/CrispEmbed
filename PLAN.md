@@ -80,6 +80,9 @@ disabled and is not parity/performance evidence. The default persistent
 im2col path is unchanged. A vectorized direct kernel is a future performance
 item. A later 8-thread baseline run was resource-contended (44.1 s cold,
 66.7 s warm) and is excluded from the stable benchmark ratios.
+An initial per-tap prefix-graph profiler was discarded because shared arena
+allocation changed the restored output to zero boxes. No stage timing from that
+experiment is evidence; profiling needs an isolated allocator before use.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU

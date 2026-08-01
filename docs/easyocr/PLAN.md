@@ -8,6 +8,9 @@
       persistent im2col path is unchanged. A vectorized direct kernel remains
       a performance TODO, and a resource-contended baseline is excluded from
       stable ratios.
+- [x] Reject the first DBNet per-tap profiling design: shared prefix-graph
+      allocation perturbed the persistent graph and returned zero boxes. No
+      timing was accepted; isolated-allocator profiling remains a TODO.
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
