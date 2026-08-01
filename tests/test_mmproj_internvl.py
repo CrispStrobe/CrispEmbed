@@ -41,6 +41,20 @@ VOCAB = 24
 IMG_TOKEN_ID = 20  # index of <IMG_CONTEXT> in the fixture vocab
 
 
+def _field_contents(field):
+    if hasattr(field, "contents"):
+        return field.contents()
+    type_names = [getattr(t, "name", str(t)) for t in field.types]
+    if type_names and type_names[0] == "STRING":
+        return bytes(field.parts[field.data[0]]).decode("utf-8")
+    if type_names and type_names[0] == "ARRAY":
+        if len(type_names) > 1 and type_names[1] == "STRING":
+            return [bytes(field.parts[i]).decode("utf-8") for i in field.data]
+        return [field.parts[i][0].item() for i in field.data]
+    value = field.parts[field.data[0]][0]
+    return value.item() if hasattr(value, "item") else value
+
+
 def _f(qt, *shape):
     n = int(np.prod(shape))
     npt = np.float16 if qt == F16 else np.float32
@@ -144,7 +158,7 @@ def main():
         if not cond:
             fails.append(msg)
 
-    with tempfile.TemporaryDirectory() as d:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
         llm = os.path.join(d, "llm.gguf")
         mmproj = os.path.join(d, "mmproj.gguf")
         out = os.path.join(d, "crisp.gguf")
@@ -158,7 +172,7 @@ def main():
             return 1
 
         rr = GGUFReader(out)
-        md = {f.name: f.contents() for f in rr.fields.values()}
+        md = {f.name: _field_contents(f) for f in rr.fields.values()}
         tn = {t.name: t for t in rr.tensors}
 
         check(md.get("general.architecture") == "internvl2", "arch == internvl2")
