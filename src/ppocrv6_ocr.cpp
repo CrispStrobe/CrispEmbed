@@ -62,6 +62,7 @@ struct pp_graph_state {
     ggml_cgraph * graph = nullptr;
     ggml_tensor * input = nullptr;
     ggml_tensor * output = nullptr;
+    bool logits_output = false;
     std::vector<uint8_t> graph_meta;
     std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
     std::vector<ggml_context *> resident_ctxs;
@@ -533,6 +534,36 @@ static ggml_tensor * pp_graph_block(ppocrv6_ocr_context * c, ggml_context * g, g
     return out;
 }
 
+static ggml_tensor * pp_graph_bn(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, ggml_tensor * w,
+                                 ggml_tensor * b, ggml_tensor * mean, ggml_tensor * var, int channels) {
+    if (!w || !b || !mean || !var) return x;
+    ggml_tensor * rw = pp_graph_resident(c, w, GGML_TYPE_F32, channels, 1, 1, 1);
+    ggml_tensor * rb = pp_graph_resident(c, b, GGML_TYPE_F32, channels, 1, 1, 1);
+    ggml_tensor * rm = pp_graph_resident(c, mean, GGML_TYPE_F32, channels, 1, 1, 1);
+    ggml_tensor * rv = pp_graph_resident(c, var, GGML_TYPE_F32, channels, 1, 1, 1);
+    if (!rw || !rb || !rm || !rv) return nullptr;
+    ggml_tensor * eps = ggml_new_f32(g, 1e-5f);
+    ggml_tensor * scale = ggml_div(g, rw, ggml_sqrt(g, ggml_add(g, rv, eps)));
+    ggml_tensor * shift = ggml_sub(g, rb, ggml_mul(g, rm, scale));
+    scale = ggml_reshape_3d(g, scale, 1, 1, channels);
+    shift = ggml_reshape_3d(g, shift, 1, 1, channels);
+    return ggml_add(g, ggml_mul(g, x, scale), shift);
+}
+
+static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, ggml_tensor * wt,
+                                     ggml_tensor * bias) {
+    if (!wt || ggml_n_dims(wt) < 2) return nullptr;
+    ggml_tensor * w = pp_graph_resident(c, wt, GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
+    if (!w) return nullptr;
+    ggml_tensor * y = ggml_mul_mat(g, w, x);
+    if (bias) {
+        ggml_tensor * b = pp_graph_resident(c, bias, GGML_TYPE_F32, bias->ne[0], 1, 1, 1);
+        if (!b) return nullptr;
+        y = ggml_add(g, y, b);
+    }
+    return y;
+}
+
 static bool pp_graph_build(ppocrv6_ocr_context * c) {
     if (c->graph.attempted) return c->graph.ready;
     c->graph.attempted = true;
@@ -572,6 +603,35 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
             if (!x) return false;
         }
     }
+    // Complete the tiny/small recognizer graph through logits.  The large
+    // SVTR decoder remains on its established CPU path for now.  Keeping the
+    // logits as the graph output also avoids copying the backbone feature map
+    // back to CPU merely to run two small projection layers.
+    if (!c->large_stem) {
+        x = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 3, 2, 3, 2, 0, 0);
+        pp_conv graph_head_dw = c->head_dw;
+        // The CPU reference materializes two zero columns on both sides and
+        // then performs a valid 1x5 convolution; express that equivalently as
+        // explicit graph padding.
+        graph_head_dw.pad_w = 2;
+        x = pp_graph_conv(c, c->graph.graph_ctx, x, graph_head_dw);
+        if (!x) return false;
+        x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm1_w, c->norm1_b, c->norm1_mean, c->norm1_var,
+                        c->head_dw.out_ch);
+        x = ggml_hardswish(c->graph.graph_ctx, x);
+        x = pp_graph_conv(c, c->graph.graph_ctx, x, c->head_pw);
+        if (!x) return false;
+        x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm2_w, c->norm2_b, c->norm2_mean, c->norm2_var,
+                        c->head_pw.out_ch);
+        x = ggml_hardswish(c->graph.graph_ctx, x);
+        x = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, x, 2, 0, 1, 3));
+        x = ggml_reshape_2d(c->graph.graph_ctx, x, c->head_pw.out_ch, x->ne[1]);
+        x = pp_graph_linear(c, c->graph.graph_ctx, x, c->fc1_w, c->fc1_b);
+        if (!x) return false;
+        x = pp_graph_linear(c, c->graph.graph_ctx, ggml_gelu(c->graph.graph_ctx, x), c->fc2_w, c->fc2_b);
+        if (!x) return false;
+        c->graph.logits_output = true;
+    }
     c->graph.output = x;
     ggml_set_name(x, "ppocrv6_graph_output");
     ggml_set_output(x);
@@ -579,8 +639,9 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     ggml_backend_sched_reset(c->graph.sched);
     if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
     c->graph.ready = true;
-    fprintf(stderr, "ppocrv6: persistent GGML backbone graph ready (%s, %lldx%lldx%lld)\n",
-            ggml_backend_name(c->graph.backend), (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2]);
+    fprintf(stderr, "ppocrv6: persistent GGML graph ready (%s, %s, %lldx%lldx%lld)\n",
+            ggml_backend_name(c->graph.backend), c->graph.logits_output ? "logits" : "backbone",
+            (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2]);
     return true;
 }
 
@@ -733,6 +794,20 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     std::vector<float> graph_out;
     const bool graph_done = pp_graph_run(c, input, graph_out, h, w);
     if (graph_done) {
+        if (c->graph.logits_output) {
+            const int tokens = h;
+            const int classes = w;
+            c->result.clear();
+            int last = -1;
+            for (int t = 0; t < tokens; ++t) {
+                const float * row = graph_out.data() + (size_t)t * classes;
+                const int best = int(std::max_element(row, row + classes) - row);
+                if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];
+                last = best;
+            }
+            if (out_len) *out_len = (int)c->result.size();
+            return c->result.c_str();
+        }
         x.swap(graph_out);
         if (c->diff) {
             auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
