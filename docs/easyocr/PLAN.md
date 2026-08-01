@@ -73,6 +73,14 @@
       checkpoint load and writing 84 tensors, so those timings are not an
       inference-only comparison. Exact CRAFT box parity and an isolated
       repeated inference benchmark remain open quality/performance TODOs.
+- [x] Extend the CRAFT diff report with max/mean/RMS error and magnitudes. The
+      fresh mismatch's earliest divergent captured stage is `basenet_0`
+      (`max_abs=1.52823`, `rms=0.195515`, global cosine `0.995623`); the score
+      map reaches `max_abs=0.06910`, `rms=0.008026`, global cosine `0.999716`.
+      A native component at text max `0.701290` crosses EasyOCR's `0.7`
+      threshold, while the Python component structure yields 106 boxes and
+      native yields 107. Do not tune the postprocessing threshold; fix the
+      first CNN/layout or numerical divergence before claiming box parity.
 - [ ] Add a DBNet Python reference checkpoint/timing fixture. The local backup
       has only the converted `cstr/dbnet-ic15-GGUF` GGUF, not the source PyTorch
       checkpoint; the native scan page currently emits 12 line units / 98 word

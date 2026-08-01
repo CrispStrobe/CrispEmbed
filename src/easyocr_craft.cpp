@@ -203,9 +203,10 @@ int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
             data.swap(nhwc);
         }
         auto report = ref.compare(name, data.data(), data.size(), 0);
-        printf("easyocr-craft-diff %-12s n=%zu cos=%.7f global=%.7f mine=%.6g ref=%.6g %s\n", name, report.n_elem,
-               report.cos_min, report.cos_global, report.mine_norm, report.ref_norm,
-               report.cos_global >= 0.99f ? "PASS" : "FAIL");
+        printf(
+            "easyocr-craft-diff %-12s n=%zu max=%.6g mean=%.6g rms=%.6g cos=%.7f global=%.7f mine=%.6g ref=%.6g %s\n",
+            name, report.n_elem, report.max_abs, report.mean_abs, report.rms, report.cos_min, report.cos_global,
+            report.mine_norm, report.ref_norm, report.cos_global >= 0.99f ? "PASS" : "FAIL");
         if (report.cos_global < 0.99f) failures++;
     }
     return failures;
