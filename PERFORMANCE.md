@@ -1331,3 +1331,9 @@ The opt-in vertical ink-trim A/B is a rejected quality optimization: native
 recognition improved from 11,351.6 ms to 10,407.1 ms, but CER/WER degraded
 from `0.03922/0.13274` to `0.04278/0.14159` and the character delta grew from
 116 to 121. Keep `CRISPEMBED_TESSERACT_CROP_TRIM_INK` diagnostic-only.
+
+The component page-box pad A/B is also neutral for quality: with
+`CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD=0`, native output remained byte-identical
+to the default and CER/WER stayed `0.03922/0.13274` with 12 regions. Do not
+count this as a speed win; the isolated run's timing was not stable enough for
+an optimization claim.
