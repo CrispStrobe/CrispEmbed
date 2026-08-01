@@ -31,7 +31,8 @@ def main() -> int:
     )
     for name in required:
         assert name in text, f"missing backend matrix row: {name}"
-    assert "PP-OCRv6 remains explicitly CPU-only" in PPOCR.read_text()
+    ppocr_text = PPOCR.read_text()
+    assert "CPU fallback" in ppocr_text and "diagnostic-only" in ppocr_text
     assert "GGML_METAL=OFF" in text and "GGML_CUDA=OFF" in text
     print(f"OCR backend matrix OK: {len(required)} required families, {len(rows)} schema-valid rows")
     return 0
