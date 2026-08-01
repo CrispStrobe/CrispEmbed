@@ -3,6 +3,7 @@ from pathlib import Path
 
 SOURCE = (Path(__file__).parents[1] / "src" / "tesseract_lstm.cpp").read_text()
 ORCHESTRATOR_SOURCE = (Path(__file__).parents[1] / "src" / "ocr_orchestrator.cpp").read_text()
+PAGESEG_SOURCE = (Path(__file__).parents[1] / "src" / "tesseract_pageseg.cpp").read_text()
 
 
 def test_int_mode_cache_is_present():
@@ -11,6 +12,7 @@ def test_int_mode_cache_is_present():
     assert "std::vector<int8_t> input_q" in SOURCE
     assert "CRISPEMBED_TESSERACT_DISABLE_INT_CACHE" in SOURCE
     assert "CRISPEMBED_TESSERACT_CROP_PAD" in ORCHESTRATOR_SOURCE
+    assert "CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD" in PAGESEG_SOURCE
 
 
 if __name__ == "__main__":

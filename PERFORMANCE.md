@@ -1250,3 +1250,19 @@ is `1` at word confidence `0.588557`; native greedy is `G` with word confidence
 zero fabricated character confidences. The beam contract passes, but text and
 greedy confidence calibration are worse than the official reference and remain
 TODOs.
+
+### Tesseract page-box geometry A/B (2026-08-01)
+
+`CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` now controls the symmetric expansion of
+legacy component rows; the default remains 3 px. On the scan-strip fixture,
+both tighter candidates preserved 12 regions and the same decoded text:
+
+| Box pad | Chars | CER | WER | Recognize ms |
+|---:|---:|---:|---:|---:|
+| 1 px | 566 | 0.03375 | 0.15044 | 17,453 |
+| 2 px | 566 | 0.03375 | 0.15044 | 12,155 |
+| 3 px (default) | 566 | 0.03375 | 0.15044 | 9,217 |
+
+The box geometry is therefore not the dominant error on this fixture. Keep
+the gate for other scan resolutions, but do not change the default or use
+tighter boxes as a quality claim.
