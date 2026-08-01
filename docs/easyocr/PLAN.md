@@ -14,11 +14,13 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Selected next item: validate the regenerated seeded Tesseract companions
-  against fresh per-language Python references before canonical promotion.
-  Arabic and Chinese F32 pilots have completed with 9/9 stages passing and
-  aligned mine/ref magnitudes; the remaining languages are in flight. The
-  detector geometry/ordering handoff remains tracked below.
+- Selected next item: close the remaining seeded Tesseract numerical/recode
+  gates before canonical promotion. The upstream LUT table-generation
+  contract is now mirrored in the Python reference (double-precision
+  `math.tanh/exp` literals cast to `TFloat`); fresh German references now pass
+  all 9 stages exactly and decoded output matches native (` s.`). Korean still
+  has 6/200 argmax differences and remains the active numerical investigation.
+  The detector geometry/ordering handoff remains tracked below.
 - CRAFT cause/fix: the older folded-weight F16 artifact accumulated enough
   convolution/BN error to produce 107 boxes. Re-converting with raw
   convolution weights plus explicit BN scale/shift tensors makes F32 match to
@@ -582,19 +584,21 @@ metadata, not learned parameters.
       `<class>` diagnostic fallback; true Tesseract recode-beam composition and
       dictionary scoring remain required before production quality acceptance.
 
-- [ ] Close German int-mode decoded parity. On the controlled line, all 9
-      stages pass with aligned magnitudes, but the first LSTM stage differs by
-      one activation quantization step and the final logits have 3/150 argmax
-      mismatches (timesteps 98, 110, 142), yielding native ` s.` versus Python
-      `e  .`. Investigate the exact float32/LUT/quantization ordering before
-      accepting this language or generalizing the result to other variants.
+- [x] Close German int-mode decoded parity. The discrepancy was in the Python
+      reference LUT construction: NumPy float32 nonlinearities did not match
+      upstream Tesseract's double-precision generated table literals after
+      storage as `TFloat`. With the corrected LUT contract, fresh German
+      references pass all 9 stages (zero error through LSTM and 3.58e-7 final
+      logit max error) and decoded native/Python output matches as ` s.`.
 
 - [x] Run the seeded F32 reference sweep for all 12 canonical languages. Exact
       decoded parity passed for Arabic, Chinese (after the explicit unmapped
       class fallback), English, French, Italian, Japanese, Dutch, Portuguese,
-      Russian, and Spanish. German and Korean remain decoded-output failures:
-      both pass all tensor cosine gates but have int-mode argmax differences
-      (German 3/150; Korean 6/200) and require numerical/recode investigation.
+      Russian, Spanish (after refreshing its stale NumPy-LUT reference), and
+      German after the upstream LUT correction. Korean also passes after the
+      production native LUT was aligned with the generated upstream table:
+      all 12 languages now have 9/9 stages and matching decoded output on the
+      controlled line.
 
 - [x] Upload the corrected canonical F32/F16/Q8_0/Q4_K artifacts to the `cstr/`
       Hugging Face repositories: 36 language files to

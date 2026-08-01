@@ -361,17 +361,41 @@ static float quantize_int_input(float value) {
 }
 
 // Tesseract uses generated 4096-entry LUTs with 1/256 input spacing for its
-// LSTM tanh/logistic functions. Reproduce the interpolation contract here;
-// direct tanhf/expf changes quantization boundaries in int mode.
+// LSTM tanh/logistic functions. The upstream generator evaluates math.tanh
+// and math.exp in double precision, then stores the literals as TFloat. Build
+// the same tables once; synthesizing float-math entries per call changes int8
+// quantization boundaries.
+static const std::array<float, 4096> & tesseract_tanh_table() {
+    static const std::array<float, 4096> table = [] {
+        std::array<float, 4096> values{};
+        for (size_t i = 0; i < values.size(); ++i) {
+            values[i] = static_cast<float>(std::tanh(static_cast<double>(i) / 256.0));
+        }
+        return values;
+    }();
+    return table;
+}
+
+static const std::array<float, 4096> & tesseract_logistic_table() {
+    static const std::array<float, 4096> table = [] {
+        std::array<float, 4096> values{};
+        for (size_t i = 0; i < values.size(); ++i) {
+            const double x = static_cast<double>(i) / 256.0;
+            values[i] = static_cast<float>(1.0 / (1.0 + std::exp(-x)));
+        }
+        return values;
+    }();
+    return table;
+}
+
 static float tesseract_tanh(float value) {
     const bool negative = value < 0.0f;
     const float x = fabsf(value) * 256.0f;
     const unsigned index = (unsigned)x;
     if (index >= 4095) return negative ? -1.0f : 1.0f;
     const float frac = x - (float)index;
-    const float y0 = tanhf((float)index / 256.0f);
-    const float y1 = tanhf((float)(index + 1) / 256.0f);
-    const float result = y0 + (y1 - y0) * frac;
+    const auto & table = tesseract_tanh_table();
+    const float result = table[index] + (table[index + 1] - table[index]) * frac;
     return negative ? -result : result;
 }
 
@@ -381,9 +405,8 @@ static float tesseract_logistic(float value) {
     const unsigned index = (unsigned)x;
     if (index >= 4095) return negative ? 0.0f : 1.0f;
     const float frac = x - (float)index;
-    const float y0 = 1.0f / (1.0f + expf(-(float)index / 256.0f));
-    const float y1 = 1.0f / (1.0f + expf(-(float)(index + 1) / 256.0f));
-    const float result = y0 + (y1 - y0) * frac;
+    const auto & table = tesseract_logistic_table();
+    const float result = table[index] + (table[index + 1] - table[index]) * frac;
     return negative ? 1.0f - result : result;
 }
 
