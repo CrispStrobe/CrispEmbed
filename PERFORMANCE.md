@@ -1301,8 +1301,14 @@ the normalized official/native page strings in its comparison output. The
 scan-strip baseline therefore remains explicitly non-green for exact output
 parity even though its CER/WER metrics are measurable.
 
-A seeded-artifact page-gate rerun with the published DBNet IC15 F16 detector
-produced only 2 boxes/lines with both corrected Fraktur F32 and Q8_0 models,
-versus the established 12-region baseline. This is rejected as a detector/page
-pipeline compatibility regression before comparing recognizer quality; the
-same count across F32 and Q8 rules out a precision-only recognizer cause.
+A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
+report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
+following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus
+corrected Fraktur seeded F32 and Q8_0 recognizers both emitted 12 boxes/lines
+and passed the pipeline gate. Exact text still fails: both runs measured
+CER/WER `0.03922/0.13274`; F32 took 12,373 ms total with confidence delta
+`0.01647`, and Q8 took 14,560 ms with confidence delta `0.01447`. The remaining
+quality gap is punctuation, spacing, and glyph output from line
+recognition/decoding, not detector box count or a precision-only failure. The
+stale 2-box result is rejected and should not be used as a performance or
+compatibility baseline.
