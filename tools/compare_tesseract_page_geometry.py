@@ -119,23 +119,32 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--component", action="store_true")
     parser.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
+    parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
+    parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    comparison = compare(
+        official_lines(args.image, args.lang, args.psm),
+        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.component, args.baseline),
+    )
+    checks = {}
+    if args.min_native_lines is not None:
+        checks["min_native_lines"] = comparison["native_lines"] >= args.min_native_lines
+    if args.min_iou is not None:
+        checks["min_iou"] = comparison["mean_indexed_iou"] >= args.min_iou
     result = {
         "image": str(args.image),
         "psm": args.psm,
         "component": args.component,
         "baseline": args.baseline,
-        "comparison": compare(
-            official_lines(args.image, args.lang, args.psm),
-            native_lines(args.cli, args.det_model, args.rec_model, args.image, args.component, args.baseline),
-        ),
+        "comparison": comparison,
+        "acceptance": {"passed": all(checks.values()) if checks else None, "checks": checks},
     }
     serialized = json.dumps(result, indent=2) + "\n"
     if args.output:
         args.output.write_text(serialized)
     print(serialized, end="")
-    return 0
+    return 0 if all(checks.values()) else 1
 
 
 if __name__ == "__main__":
