@@ -103,6 +103,13 @@ def iou(a: tuple[float, float, float, float], b: tuple[float, float, float, floa
     return intersection / union if union > 0 else 0.0
 
 
+def reading_order_is_monotonic(boxes: list[tuple[float, float, float, float]]) -> bool:
+    return all(
+        (boxes[index][1], boxes[index][0]) <= (boxes[index + 1][1], boxes[index + 1][0])
+        for index in range(max(0, len(boxes) - 1))
+    )
+
+
 def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple[float, float, float, float]]) -> dict:
     pairs = []
     for index, ref_box in enumerate(reference):
@@ -135,6 +142,9 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         "reference_lines": len(reference),
         "native_lines": len(mine),
         "count_delta": len(mine) - len(reference),
+        "reference_reading_order_monotonic": reading_order_is_monotonic(reference),
+        "native_reading_order_monotonic": reading_order_is_monotonic(mine),
+        "paired_reading_order_consistent": reading_order_is_monotonic(reference) and reading_order_is_monotonic(mine),
         "mean_indexed_iou": round(sum(pair["iou"] for pair in pairs) / len(pairs), 6) if pairs else 0.0,
         "mean_abs_crop_delta": round(sum(component_deltas) / len(component_deltas), 3) if component_deltas else 0.0,
         "max_abs_crop_delta": round(max(component_deltas), 3) if component_deltas else 0.0,
@@ -159,6 +169,7 @@ def main() -> int:
     parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
     parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
     parser.add_argument("--max-mean-gap-delta", type=float, help="fail if mean absolute inter-line gap delta exceeds this value")
+    parser.add_argument("--require-reading-order", action="store_true", help="fail unless both box lists are top-to-bottom/left-to-right ordered")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     comparison = compare(
@@ -174,6 +185,8 @@ def main() -> int:
         checks["max_mean_crop_delta"] = comparison["mean_abs_crop_delta"] <= args.max_mean_crop_delta
     if args.max_mean_gap_delta is not None:
         checks["max_mean_gap_delta"] = comparison["mean_abs_interline_gap_delta"] <= args.max_mean_gap_delta
+    if args.require_reading_order:
+        checks["reading_order"] = comparison["paired_reading_order_consistent"]
     result = {
         "image": str(args.image),
         "provenance": {
