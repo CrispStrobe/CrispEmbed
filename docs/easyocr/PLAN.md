@@ -366,7 +366,14 @@ recognizer and LayoutLM consumer.
       `word_confidence` now follows Tesseract's source rule (minimum selected
       path log-probability, then `100 + 5*certainty`); the direct second-line
       result is `0.965889` versus official `0.959698`. Page-level aggregation
-      and beam certainty remain open.
+      and beam certainty remain open. A fresh explicit-tessdata Fraktur
+      scan-strip run (`/opt/homebrew/share/tessdata`, `psm 7`, seeded Q8)
+      confirms the gap: official TSV reads `iE` at mean word confidence
+      `0.043433`, native greedy reads `BEEES` at word confidence `0.884625`,
+      and native beam-8 reads `BEEES` with sequence confidence `0.644788` and
+      no fabricated character confidences. The official-word validity gate
+      passes, but the decoded-text and calibration gates fail; beam remains a
+      diagnostic contract, not an accepted parity path.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
       Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
       text, and the official instrumented PSM7 internal crop all match.

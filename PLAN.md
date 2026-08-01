@@ -37,6 +37,16 @@ performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
 timing/output manifests; their existing parity checks are not performance
 acceptance evidence.
 
+Tesseract confidence checkpoint (2026-08-01): after rebuilding
+`test-confidence`, the explicit `/opt/homebrew/share/tessdata` Fraktur PSM 7
+comparison on `scan_strip.png` produced official `iE` (mean word confidence
+`0.043433`), native greedy `BEEES` (word confidence `0.884625`), and native
+beam-8 `BEEES` (sequence confidence `0.644788`, no fabricated character
+confidences). Official-word validity passed, but decoded text and confidence
+calibration failed; recoder/DAWG and page/line confidence aggregation remain
+quality TODOs. Timings were official `5881 ms`, native greedy `305 ms`, and
+beam `984 ms`; these whole-process values are diagnostic only.
+
 CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
 stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
 `0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,
