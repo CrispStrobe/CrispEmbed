@@ -58,7 +58,7 @@ def die(msg: str, code: int = 1):
 
 
 def load_manifest(path: Path) -> dict:
-    with open(path) as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 

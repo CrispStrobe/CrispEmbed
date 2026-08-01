@@ -18,6 +18,7 @@ extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, con
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -765,16 +766,30 @@ static void test_ppocrv6_pipeline_regression() {
         "tests/regression/images/cc0/arabic_printed_line.png",
         "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
     };
+    int fixture_start = 0;
+    if (const char * start_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_START")) {
+        const int parsed = atoi(start_env);
+        if (parsed >= 0 && parsed < 10) fixture_start = parsed;
+    }
+    int fixture_limit = 10 - fixture_start;
+    if (const char * limit_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_LIMIT")) {
+        const int parsed = atoi(limit_env);
+        if (parsed > 0 && parsed < fixture_limit) fixture_limit = parsed;
+    }
     int cases = 0;
     int total_regions = 0;
-    for (const char * fixture : fixtures) {
+    for (int fixture_index = fixture_start; fixture_index < fixture_start + fixture_limit; ++fixture_index) {
+        const char * fixture = fixtures[fixture_index];
         FILE * input = fopen(fixture, "r");
         if (!input) {
             printf("  SKIP: fixture not found: %s\n", fixture);
             continue;
         }
         fclose(input);
+        const auto started = std::chrono::steady_clock::now();
         result r = run_file(ctx, fixture);
+        const double elapsed_ms =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
         cases++;
         total_regions += (int)r.regions.size();
         CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
@@ -785,10 +800,10 @@ static void test_ppocrv6_pipeline_regression() {
             CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
                   "PP-OCRv6 line orientation confidence is bounded");
         }
-        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f)\n", fixture, r.regions.size(), (int)r.full_text.size(),
-               r.mean_confidence);
+        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f, time_ms=%.1f)\n", fixture, r.regions.size(),
+               (int)r.full_text.size(), r.mean_confidence, elapsed_ms);
     }
-    CHECK(cases == 10, "PP-OCRv6 live corpus fixtures ran");
+    CHECK(cases == fixture_limit, "PP-OCRv6 live corpus fixtures ran");
     CHECK(total_regions > 0, "PP-OCRv6 live corpus produced regions");
     free(ctx);
 }
