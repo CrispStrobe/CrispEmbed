@@ -9,6 +9,7 @@ decoded output even when the line ordering is correct.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -24,6 +25,14 @@ BOX_RE = re.compile(
 
 def run(command: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, text=True, capture_output=True, env=env, timeout=900, check=False)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float, float, float]]:
@@ -43,20 +52,35 @@ def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float,
     return lines
 
 
-def native_lines(cli: Path, model: Path, image: Path, component: bool) -> list[tuple[float, float, float, float]]:
+def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, projection: bool,
+                 component: bool, baseline: bool) -> list[tuple[float, float, float, float]]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
+    for key in (
+        "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
+        "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
+        "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
+    ):
+        env.pop(key, None)
+    if projection:
+        env["CRISPEMBED_TESSERACT_PAGESEG_PROJECTION"] = "1"
     if component:
         env["CRISPEMBED_TESSERACT_COMPONENT_PAGESEG"] = "1"
+    if baseline:
+        env["CRISPEMBED_TESSERACT_COMPONENT_BASELINE"] = "1"
     proc = run(
         [
             str(cli),
             "-m",
-            str(model),
+            str(rec_model),
             "--ocr-pipeline",
             str(image),
             "--ocr-engine",
             "tesseract",
+            "--ocr-det",
+            str(det_model),
+            "--ocr-rec",
+            str(rec_model),
             "--tesseract-pageseg",
         ],
         env,
@@ -79,6 +103,13 @@ def iou(a: tuple[float, float, float, float], b: tuple[float, float, float, floa
     return intersection / union if union > 0 else 0.0
 
 
+def reading_order_is_monotonic(boxes: list[tuple[float, float, float, float]]) -> bool:
+    return all(
+        (boxes[index][1], boxes[index][0]) <= (boxes[index + 1][1], boxes[index + 1][0])
+        for index in range(max(0, len(boxes) - 1))
+    )
+
+
 def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple[float, float, float, float]]) -> dict:
     pairs = []
     for index, ref_box in enumerate(reference):
@@ -93,11 +124,31 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
                     "delta": [round(mine_box[i] - ref_box[i], 3) for i in range(4)],
                 }
             )
+    component_deltas = [
+        abs(pair["delta"][component])
+        for pair in pairs
+        for component in range(4)
+    ]
+    reference_gaps = [
+        reference[index + 1][1] - (reference[index][1] + reference[index][3])
+        for index in range(max(0, len(reference) - 1))
+    ]
+    native_gaps = [
+        mine[index + 1][1] - (mine[index][1] + mine[index][3])
+        for index in range(max(0, len(mine) - 1))
+    ]
+    gap_deltas = [abs(native_gaps[index] - reference_gaps[index]) for index in range(min(len(reference_gaps), len(native_gaps)))]
     return {
         "reference_lines": len(reference),
         "native_lines": len(mine),
         "count_delta": len(mine) - len(reference),
+        "reference_reading_order_monotonic": reading_order_is_monotonic(reference),
+        "native_reading_order_monotonic": reading_order_is_monotonic(mine),
+        "paired_reading_order_consistent": reading_order_is_monotonic(reference) and reading_order_is_monotonic(mine),
         "mean_indexed_iou": round(sum(pair["iou"] for pair in pairs) / len(pairs), 6) if pairs else 0.0,
+        "mean_abs_crop_delta": round(sum(component_deltas) / len(component_deltas), 3) if component_deltas else 0.0,
+        "max_abs_crop_delta": round(max(component_deltas), 3) if component_deltas else 0.0,
+        "mean_abs_interline_gap_delta": round(sum(gap_deltas) / len(gap_deltas), 3) if gap_deltas else 0.0,
         "pairs": pairs,
     }
 
@@ -105,27 +156,56 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", type=Path, required=True)
-    parser.add_argument("--model", type=Path, required=True)
+    parser.add_argument("--det-model", type=Path, required=True)
+    parser.add_argument("--rec-model", type=Path, required=True)
     parser.add_argument("--cli", type=Path, default=Path("build/crispembed"))
     parser.add_argument("--lang", default="eng")
     parser.add_argument("--psm", type=int, default=3)
-    parser.add_argument("--component", action="store_true")
+    policy = parser.add_mutually_exclusive_group()
+    policy.add_argument("--projection", action="store_true", help="use the experimental projection splitter")
+    policy.add_argument("--component", action="store_true", help="use the experimental component prototype")
+    policy.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
+    parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
+    parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
+    parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
+    parser.add_argument("--max-mean-gap-delta", type=float, help="fail if mean absolute inter-line gap delta exceeds this value")
+    parser.add_argument("--require-reading-order", action="store_true", help="fail unless both box lists are top-to-bottom/left-to-right ordered")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    comparison = compare(
+        official_lines(args.image, args.lang, args.psm),
+        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline),
+    )
+    checks = {}
+    if args.min_native_lines is not None:
+        checks["min_native_lines"] = comparison["native_lines"] >= args.min_native_lines
+    if args.min_iou is not None:
+        checks["min_iou"] = comparison["mean_indexed_iou"] >= args.min_iou
+    if args.max_mean_crop_delta is not None:
+        checks["max_mean_crop_delta"] = comparison["mean_abs_crop_delta"] <= args.max_mean_crop_delta
+    if args.max_mean_gap_delta is not None:
+        checks["max_mean_gap_delta"] = comparison["mean_abs_interline_gap_delta"] <= args.max_mean_gap_delta
+    if args.require_reading_order:
+        checks["reading_order"] = comparison["paired_reading_order_consistent"]
     result = {
         "image": str(args.image),
+        "provenance": {
+            "detector_model_sha256": sha256_file(args.det_model),
+            "recognizer_model_sha256": sha256_file(args.rec_model),
+            "ordering": "official-tsv-level4-vs-native-debug-candidate-index",
+        },
         "psm": args.psm,
+        "projection": args.projection,
         "component": args.component,
-        "comparison": compare(
-            official_lines(args.image, args.lang, args.psm),
-            native_lines(args.cli, args.model, args.image, args.component),
-        ),
+        "baseline": args.baseline,
+        "comparison": comparison,
+        "acceptance": {"passed": all(checks.values()) if checks else None, "checks": checks},
     }
     serialized = json.dumps(result, indent=2) + "\n"
     if args.output:
         args.output.write_text(serialized)
     print(serialized, end="")
-    return 0
+    return 0 if all(checks.values()) else 1
 
 
 if __name__ == "__main__":

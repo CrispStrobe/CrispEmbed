@@ -398,9 +398,16 @@ add_executable(test-easyocr-diff tests/test_easyocr_diff.cpp)
 target_include_directories(test-easyocr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-diff PRIVATE crispembed)
 
+add_executable(test-easyocr-benchmark tests/test_easyocr_benchmark.cpp)
+target_include_directories(test-easyocr-benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-benchmark PRIVATE crispembed)
+
 add_executable(test-easyocr-dbnet tests/test_easyocr_dbnet.cpp)
 target_include_directories(test-easyocr-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
+
+add_executable(test-dbnet-diff tests/test_dbnet_diff.cpp)
+target_link_libraries(test-dbnet-diff PRIVATE crispembed)
 
 add_executable(test-easyocr-layout tests/test_easyocr_layout.cpp)
 target_link_libraries(test-easyocr-layout PRIVATE crispembed)
@@ -414,6 +421,10 @@ target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-craft-diff PRIVATE crispembed)
+
+add_executable(test-easyocr-craft-benchmark tests/test_easyocr_craft_benchmark.cpp)
+target_include_directories(test-easyocr-craft-benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-craft-benchmark PRIVATE crispembed)
 
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
@@ -577,6 +588,10 @@ target_link_libraries(test-clip-text-diff PRIVATE crispembed)
 add_executable(test-tesseract-lstm-diff tests/test_tesseract_lstm_diff.cpp)
 target_include_directories(test-tesseract-lstm-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-tesseract-lstm-diff PRIVATE crispembed)
+
+add_executable(test-ocr-identical-crops tests/test_ocr_identical_crops.cpp)
+target_include_directories(test-ocr-identical-crops PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ocr-identical-crops PRIVATE crispembed)
 
 add_executable(test-morph-fast tests/test_morph_fast.cpp)
 target_link_libraries(test-morph-fast PRIVATE crispembed)

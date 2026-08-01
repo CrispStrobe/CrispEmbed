@@ -31,9 +31,12 @@ static bool write_manifest(const char * path, const char * image, easyocr_layout
                            const std::vector<easyocr_pipeline::result> & results) {
     std::ofstream out(path);
     if (!out) return false;
+    int image_width = 0, image_height = 0, image_channels = 0;
+    if (!stbi_info(image, &image_width, &image_height, &image_channels)) return false;
     out << "{\n  \"schema\": \"crispembed.easyocr.postprocess.v1\",\n"
            "  \"source\": \"CrispEmbed native easyocr_pipeline\",\n"
         << "  \"image\": \"" << json_escape(image ? image : "") << "\",\n"
+        << "  \"width\": " << image_width << ",\n  \"height\": " << image_height << ",\n"
         << "  \"mode\": \"" << (mode == easyocr_layout::ordering_mode::words ? "words" : "lines")
         << "\",\n"
            "  \"records\": [\n";

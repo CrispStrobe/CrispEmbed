@@ -117,6 +117,7 @@ struct tesseract_lstm_context {
     std::string result_buf;
     std::vector<float> char_confs;
     float sequence_confidence = 0.0f;
+    float word_confidence = 0.0f;
 
     // Diff mode: capture per-stage intermediates
     bool dump_mode = false;
@@ -766,6 +767,7 @@ static void forward(tesseract_lstm_context * ctx,
     ctx->result_buf.clear();
     ctx->char_confs.clear();
     ctx->sequence_confidence = 0.0f;
+    ctx->word_confidence = 0.0f;
     std::vector<int> labels;
     const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
@@ -809,10 +811,11 @@ static void forward(tesseract_lstm_context * ctx,
                 ctx->result_buf += ctx->tokens[uid];
                 // Greedy labels retain their actual softmax probability. A
                 // prefix beam label has no one-to-one timestep confidence;
-                // leave that path empty until beam posterior aggregation is
-                // implemented instead of fabricating a probability.
-                ctx->char_confs.push_back(
-                    beam_decoded || label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
+                // leave that path empty instead of returning fabricated zero
+                // entries that look like valid per-character scores.
+                if (!beam_decoded)
+                    ctx->char_confs.push_back(
+                        label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
             }
         }
         prev = best;
@@ -827,6 +830,14 @@ static void forward(tesseract_lstm_context * ctx,
         double sum = 0.0;
         for (float p : greedy_label_confs) sum += p;
         ctx->sequence_confidence = (float)(sum / greedy_label_confs.size());
+        // Tesseract word certainty is the minimum over emitted characters,
+        // not over blank/repeated CTC timesteps. char_confs contains exactly
+        // the mapped, collapsed greedy output symbols.
+        if (!ctx->char_confs.empty()) {
+            float min_certainty = 0.0f;
+            for (float p : ctx->char_confs) min_certainty = std::min(min_certainty, std::log(std::max(p, 1.0e-20f)));
+            ctx->word_confidence = std::clamp(1.0f + 0.05f * min_certainty, 0.0f, 1.0f);
+        }
     }
 }
 
@@ -949,6 +960,10 @@ const float * tesseract_lstm_confidences(const tesseract_lstm_context * ctx, int
 
 float tesseract_lstm_mean_confidence(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->sequence_confidence : 0.0f;
+}
+
+float tesseract_lstm_word_confidence(const tesseract_lstm_context * ctx) {
+    return ctx ? ctx->word_confidence : 0.0f;
 }
 
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx) {

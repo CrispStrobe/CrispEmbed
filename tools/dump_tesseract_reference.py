@@ -749,6 +749,10 @@ def main():
     writer.add_bool("tesseract_lstm_ref.int_mode", bool(training_flags & 1))
     writer.add_string("tesseract_lstm_ref.resize", "leptonica_pixScaleGrayLI_fixed16_u8_round")
     writer.add_string("tesseract_lstm_ref.image_path", str(args.image))
+    # Keep these as strings: the lightweight C++ diff reader intentionally
+    # retains string metadata while skipping scalar values.
+    writer.add_string("tesseract_lstm_ref.image_width", str(int(img_u8.shape[1])))
+    writer.add_string("tesseract_lstm_ref.image_height", str(int(img_u8.shape[0])))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)
     writer.add_uint32("tesseract_lstm_ref.input_height", input_height)
     writer.add_uint32("tesseract_lstm_ref.null_char", null_char)

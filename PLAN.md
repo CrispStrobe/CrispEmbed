@@ -13,7 +13,73 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs | **IN PROGRESS** |
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
+
+EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
+width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
+200 `16.523/12.460 ms`, scan 128 `10.885/7.137 ms`, Latin Gen1 scan 128
+`154.082/78.648 ms`, English Gen2 scan 200 `16.536/10.035 ms`, and scan 128
+`10.697/7.287 ms` (native/reference totals). Outputs match in every case:
+`x=0442`, `82`, `==#`, `032`, and `@32`; the English width-128 strict
+row-wise logits gate is still open despite decoded parity. Native is slower in
+all measured graph/total paths, so graph/kernel and width optimization are
+performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
+timing/output manifests; their existing parity checks are not performance
+acceptance evidence.
+
+CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
+stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
+`0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,
+global cosine `0.999716` and changed the threshold-sensitive decoded box count
+from Python's 106 to native's 107. Re-converting with runtime BN (raw
+convolution weights plus explicit BN scale/shift) makes F32 match to
+floating-point noise; runtime-BN F16 reaches score-map global cosine
+`0.9999999` and 106 boxes. The CPU-forced and Metal outputs are byte-identical.
+The folded artifact is stale; threshold tuning is not the fix.
+
+Detector benchmark audit: the fresh CRAFT reference for `scan_strip.png` uses a
+288x544 canvas and decodes 106 boxes; runtime-BN F32/F16 native runs decode 106,
+so CRAFT box parity passes. Native diff runtime was ~2.34 s;
+the Python dump was ~9.13 s including model load and serializing 84 tensors, not
+an inference-only comparison. DBNet native page smoke measured 6.63 s in line
+mode (12 units, 1.34 s summed recognizer work) and 6.67 s in word mode (98
+units, 2.50 s summed recognizer work). The restored official DBNet checkpoint
+now has tensor parity evidence below; native's 98-word segmentation remains
+not comparable to Tesseract's 106-word segmentation. These are explicit
+quality/performance TODOs.
+
+Fresh DBNet reference checkpoint parity is now available: the official MMOCR
+IC15 ResNet-18 checkpoint was restored and dumped with Miniconda Python on the
+same 736x1472 preprocessed `scan_strip.png`. Native F16 passes the final
+probability-map boundary (`max_abs=0.00154233`, RMS `0.00008044`, cosine
+`0.9999974`, global `1.0000000`) and decodes 96 regions. Q4_K decodes the same
+96 regions but fails tensor parity (`cosine=0.9311001`, global `0.9986384`),
+so its prior README parity claim is stale for this reference. The DBNet diff
+harness now retains every backbone, lateral, smooth, fused, head, and final
+probability-map tap; F16 passes all of them. Inference-only native/Python
+timing remains a TODO. Q4_K's earliest divergence is already at
+`backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), and it worsens
+through the neck to final-map cosine `0.9311001`; this is a quantization
+quality TODO, not a postprocessing issue. The fresh native CPU-forced page
+benchmark reports detector graph `4178.6 ms`, postprocess `8.3 ms`, total
+`4186.9 ms`, and 12 line units. Miniconda PyTorch CPU inference-only timing is
+`1213.450 ms` on the same 736x1472 input, versus native F16 `4178.6 ms` CPU
+and `4732.1 ms` Metal graph time (`3.45x` and `3.90x` slower). Both native
+backends pass all taps and decode 96 regions, so output quality is on par while
+graph/kernel speed is a mandatory TODO.
+
+CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
+288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
+and `850.018 ms` for native runtime-BN F16 Metal graph compute, with 106 boxes
+from both (`2.15x` native/reference directional slowdown). CRAFT quality is
+on par on this fixture; its graph/kernel path remains a performance TODO.
+
+The old folded-F16 CRAFT taps showed error accumulation through the VGG. The
+runtime-BN conversion removes that divergence: F32 captured taps match to
+floating-point noise, and F16 remains within the accepted global gate. The
+CPU-forced and Metal runtime-BN runs are byte-identical, including taps, score
+map, and 106-box decoded result. Remaining CRAFT work is repeated inference
+benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
@@ -339,9 +405,11 @@ and decoded page output are compared with the original engine.
   `crispembed-diff` → decoded-output protocol.
 - Preserve per-artifact source/license metadata; do not infer a fine-tuned
   checkpoint's license solely from its backbone.
-- Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
-  words and normalized boxes. Transformers' `apply_ocr=True` path uses
-  PyTesseract; LayoutLM is not itself an OCR checkpoint.
+- [x] Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
+  words and normalized boxes. `tools/validate_layoutlm_handoff.py` emits the
+  exact `apply_ocr=False` processor payload and retains confidence/pixel boxes
+  as sidecar metadata; Transformers' `apply_ocr=True` path uses PyTesseract.
+  A live model invocation remains unnecessary for this contract gate.
 - Acceptance requires reference parity, decoded text, and real pipeline output
   checks before quantization or registry integration.
 
@@ -393,13 +461,21 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Run the same structured words through LayoutLMv2/v3 with
       `apply_ocr=False`; verify serialization and ordering independently of
       logits.
-- [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
-      it with EasyOCR CRNN on identical crops rather than treating either
-      recognizer as the detector.
+- [x] Keep Tesseract LSTM as a separately measured recognizer lane; the
+      `test-ocr-identical-crops` harness feeds the exact same RGB crop to the
+      dynamic-width EasyOCR CRNN and grayscale Tesseract LSTM, then reports both
+      confidence conventions. On three official TSV boxes, both lanes preserve
+      the text structure but differ in ambiguous characters/punctuation (for
+      example `I`/`[` and the final quote), confirming these are recognizer
+      outputs rather than detector/order differences.
 - [x] Prove the controlled line-recognizer boundary separately: the exact
       Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
       decoded text, and official instrumented PSM7 internal crop all match;
       logits differ by at most `6.6e-7` with cosine `1.000000`.
+      New reference dumps record the source image dimensions, and the native
+      diff harness rejects a mismatched fixture before reporting stage cosine
+      scores; this prevents stale `-ref.gguf` archives from masquerading as
+      model or runtime parity failures.
 - [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
       this remains open because direct line fixtures are not the same internal
       crops selected by official PSM7.
@@ -416,6 +492,17 @@ downstream handoff parity, not detector-box similarity alone.
       on `scan_strip.png`; crop widths are tightened per split band. Text still
       differs on `Meryton` and punctuation/quotes, so decoded page parity and
       official crop equivalence remain open.
+      The env-gated page-segmentation path now also bypasses cleanup (the
+      structured `page_segmentation` parameter already did), so it preserves
+      original-page coordinates. On `scan_strip.png` the component fallback
+      recovers 12 regions, 567 native characters, and CER/WER `0.0179/0.0841`
+      against official 12-line output; native mean confidence is `0.895` versus
+      official mean word confidence `0.9108`. This improves geometry and text
+      parity but does not make the experimental path production-default.
+      The `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` control now reaches the
+      documented component prototype through the orchestrator; its current
+      `scan_strip.png` result is 12 regions, 569 chars, and confidence `0.878`,
+      so the legacy/fallback adapter remains the default classical choice.
       Review of Tesseract `textord/makerow.cpp` confirms its authoritative
       boundary is connected blobs assigned by vertical overlap, line size,
       spacing, and fitted baselines; our projection splitter is only an
@@ -427,13 +514,60 @@ downstream handoff parity, not detector-box similarity alone.
       in production.
       `tools/compare_tesseract_page_geometry.py` now measures the independent
       geometry boundary from official TSV level-4 rows. On `scan_strip.png`
-      the default baseline-clustered component adapter has 12/12 indexed rows
-      with mean IoU `0.916222` after vertical crop tightening; the projection
-      fallback has 12/12 with mean IoU `0.865993`. The first-line crop is now
-      `[48,0,434,20]` and the short final-row crop `[27,234,83,20]`; both page
-      ends decode coherently and `Meryton` is correct. Character choices and
-      quote/spacing differences (`They/Lhey`, `Brighton/Drighton`) remain a
-      decoded-text parity gate.
+      The legacy component path remains the default because the German
+      official-print gate regressed under the newer baseline matcher. With
+      `CRISPEMBED_TESSERACT_COMPONENT_BASELINE=1`, the baseline experiment now
+      has 12/12 indexed rows with mean IoU `0.813562` after vertical crop
+      tightening; the projection fallback has 12/12 with mean IoU `0.865993`.
+      Its first-line crop is `[48,0,434,20]` and short final-row crop
+      `[27,237,72,22]`; both page ends decode coherently, although the
+      baseline variant drops the final exclamation mark. Character choices and
+      quote/spacing differences remain a
+      decoded-text parity gate. A page-level beam A/B at widths 1, 5, 10, and
+      25 keeps the same first-line choices; generic CTC beam search remains
+      opt-in and is not the cause of the remaining CLI discrepancy.
+      The geometry comparator now passes detector and recognizer models
+      separately through the CLI (`--ocr-det`/`--ocr-rec`); its component
+      prototype measurement is 12/12 lines with indexed mean IoU `0.826222` on
+      `scan_strip.png`, rather than the previous false zero-row result.
+      The comparator also accepts optional `--min-native-lines` and `--min-iou`
+      gates; the component fixture passes at 12 lines and IoU `0.82`, while
+      diagnostic runs without thresholds remain non-gating.
+      Geometry reports now include detector/recognizer SHA-256 hashes and the
+      indexed reading-order policy, matching the aggregate page-metrics
+      provenance record without serializing local model paths.
+      The geometry comparator now also reports mean/max absolute crop deltas
+      and mean absolute inter-line gap deltas, with optional max-delta gates;
+      this keeps spacing/crop drift visible even when row count and IoU pass.
+      Its projection/component/baseline policy flags are now mutually
+      exclusive and clear inherited policy variables before each run, so an
+      A/B result cannot silently use a stale segmentation mode.
+      It now reports monotonic reading-order checks for both TSV and native
+      boxes and can gate them with `--require-reading-order`; indexed IoU is
+      therefore no longer the only signal for an ordering regression.
+      `tests/test_tesseract_page_geometry.py` covers the ordering, crop-delta,
+      spacing-delta, and equal-count ordering-regression cases without model
+      files.
+      The regression workflow now runs this test in the Tier 0 smoke job and
+      triggers on changes to the comparator test, keeping these gates active
+      in PR and `main` CI.
+      The aggregate page-metrics harness now selects `legacy-fallback`,
+      `component`, `baseline`, or `projection` explicitly and clears stale
+      policy environment variables between runs. On `scan_strip.png`, the
+      measured CER/WER are `0.0179/0.0841`, `0.0322/0.1121`,
+      `0.0179/0.0841`, and `0.0250/0.1121` respectively; legacy-fallback
+      remains the best default.
+      Each aggregate JSON record now includes detector and recognizer
+      SHA-256 hashes plus the ordering-comparison policy, without writing
+      local model paths into reports.
+      The aggregate harness now supports opt-in minimum-region and maximum
+      CER/WER acceptance gates and reports their individual results, allowing
+      page-quality regressions to fail explicitly instead of being hidden in
+      diagnostic JSON.
+      The model-free geometry regression also covers aggregate gate pass/fail
+      semantics and verifies that all quality gates remain opt-in.
+      It also exercises all four page-segmentation policy labels, keeping the
+      legacy default and each experimental mode explicit in reports.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
@@ -532,6 +666,49 @@ downstream handoff parity, not detector-box similarity alone.
       direct recognizer contract for greedy/beam comparisons without page
       segmentation overhead; it is diagnostic until a non-empty, transcribed
       line fixture is wired into the acceptance gate.
+      `tools/compare_tesseract_line_confidence.py` now measures the same
+      contract against official TSV on three English line fixtures: greedy text
+      matches on two of three, while the first line remains `Lhey`/`Drighton`;
+      greedy sequence-vs-official-mean-word confidence deltas were `+0.0053`,
+      `-0.0847`, and `-0.0643`. Beam confidence is intentionally reported as a
+      separate sequence probability (not a fabricated per-word certainty), so
+      this does not close the official certainty gate. Tesseract source review
+      now confirms the native greedy `word_confidence` mapping: minimum
+      selected-path `log(probability)`, followed by `clamp(100 + 5*certainty,
+      0, 100)`. On the direct second-line fixture this is `0.965889` versus
+      official `0.959698`; page-level aggregation and beam certainty remain
+      open.
+      On the available German Fraktur line fixture, official Tesseract
+      produces `1` with mean word confidence `0.5886`; native greedy produces
+      `GI` with sequence confidence `0.5985` and two timestep confidences;
+      native beam-8 produces `GIIEE` with sequence confidence `0.5808` and no
+      per-character confidences. The confidence scale is close, but decoded
+      text is not yet parity, so beam remains diagnostic and opt-in.
+      The diagnostic now also reports native character min/mean probabilities;
+      on the F32 artifact these are `0.0902`/`0.1978` for greedy, while beam
+      correctly reports zero per-character values and sequence confidence
+      `0.5592`. These are diagnostics only, not a production calibration.
+      After correcting the aggregation to exclude blank/repeated CTC
+      timesteps, native Fraktur greedy `word_confidence` is `0.8797` versus
+      official TSV `0.5886`; beam remains `0`. Semantics now match the
+      min-emitted-character rule, but calibration and decoded-text parity are
+      still open.
+      The line-confidence comparator now provides opt-in gates for greedy
+      word-confidence calibration and the beam sequence-only contract; its
+      model-free tests cover pass, calibration failure, fabricated beam
+      character confidence, and missing-beam cases.
+      It now records recognizer SHA-256 provenance and official word-confidence
+      min/median/max alongside the mean, making calibration spread visible
+      without treating those distributions as beam-character parity.
+      Both page-metrics and line-confidence comparators now emit elapsed
+      milliseconds for each official subprocess and native subprocess/line
+      run, so quality claims can be paired with measured cost.
+      Page metrics can additionally request native detect/group/crop/recognize
+      timings with `--benchmark`; official Tesseract remains an external CLI
+      timing baseline unless built with matching internal instrumentation.
+      The comparator uses the orchestrator-level benchmark switch, keeping
+      recognizer-only timing separate from the full detector-to-recognizer
+      pipeline timing.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
@@ -557,6 +734,95 @@ characters, 0.836 confidence, and 78/78 model-gated orchestrator checks.
 The model-free orchestrator suite now also guards the two-row component
 geometry and reading order, preventing this default/gated-path regression from
 returning silently.
+The component adapter now falls through to the baseline matcher only when
+legacy grouping returns no boxes; this preserves the measured legacy
+German-page behavior while avoiding an empty classical result on harder
+layouts. The fallback remains behind the classical page-segmentation gate and
+DBNet is unchanged.
+
+#### Cross-check survey — quality and cost status
+
+Every checked path must be classified by both decoded output quality and
+measured cost; a cosine or successful exit code alone is not an OCR-quality
+claim.
+
+- **Controlled Tesseract line / Python reference / native GGUF:** on par for
+  the validated exact line contract. The captured stage tensors and logits
+  pass the existing `crispembed-diff` gates (cosines at or above `0.99`, with
+  the proven controlled run at `1.000000`), and decoded output matches. The
+  remaining gap is per-step timing: the diff harness records parity but does
+  not yet emit reference and native elapsed time for every graph stage. TODO:
+  add stage timing without weakening the cosine gate.
+- **English Tesseract line-confidence path:** mixed, not full parity. Greedy
+  decoded text matches two of three checked line fixtures; the remaining
+  outputs contain `Lhey`/`Drighton` substitutions. Previously measured greedy
+  sequence-confidence deltas versus official TSV word confidence were
+  `+0.0053`, `-0.0847`, and `-0.0643`. This is worse on the affected lines,
+  and the confidence calibration TODO remains open. The comparator now emits
+  official/native elapsed milliseconds, but a controlled same-crop timing
+  table for all three fixtures is still TODO.
+- **German Fraktur line-confidence path:** worse, not on par. Official output
+  is `1`; native greedy is `GI`, and native beam-8 is `GIIEE`. Native greedy
+  word confidence is `0.8797` versus official TSV `0.5886`; beam correctly
+  exposes sequence confidence only and zero character confidences, but that
+  semantic contract is not certainty parity. TODO: obtain a transcribed,
+  same-crop Fraktur line fixture and validate beam/greedy output and timing
+  against the official engine.
+- **`scan_strip.png` full-page legacy/fallback path:** close but worse. Both
+  paths produce 12 regions; native produces 567 characters versus official
+  453, CER is `0.0179`, WER is `0.0841`, and confidence is `0.895` versus
+  `0.9108`. The new timed run measured official TSV at `342.6 ms` and native
+  DBNet→Tesseract at `1105.2 ms` (`3.2x` slower). TODO: profile detector,
+  crop/warp, and recognizer separately; the native path must close this cost
+  gap before any default-path promotion.
+- **`scan_strip.png` gated alternatives:** projection and baseline preserve
+  12/12 rows but remain worse or non-superior in decoded output; measured
+  geometry means are projection IoU `0.865993`, baseline IoU `0.813562`, and
+  component IoU `0.826222`. Aggregate CER/WER are respectively
+  `0.0250/0.1121`, `0.0179/0.0841`, and `0.0322/0.1121` for projection,
+  baseline, and component. Per-policy native stage timings are now recorded
+  below; retain all modes gated because no alternate is a quality and speed
+  improvement.
+- **German official-print page:** worse, not on par. The native default
+  classical path reports 21 regions, 1,128 characters, confidence `0.836`,
+  CER `0.307`, and WER `0.404`; official Tesseract reports 25 lines, 881
+  non-whitespace word characters, and confidence `0.866`. Projection reports
+  24 regions, 1,606 characters, and confidence `0.702`. TODO: add paired
+  reference/native cold-load and warm per-stage timings for this fixture and
+  improve segmentation/text before considering promotion.
+- **Portfolio engine sweep:** this is a separate cross-engine benchmark, not
+  Tesseract parity. The local M1 Metal sweep completed 11 engines, with 2
+  timeout/error entries and explicit missing-model/sample statuses. TODO:
+  attach the same quality/cost classification to every available engine and
+  keep specialist/VLM outputs separate from plain-text OCR.
+
+The first per-stage `scan_strip.png` benchmark now exists for all four native
+policies. Official Tesseract TSV elapsed times were approximately
+`315.9–349.9 ms`; native pipeline stage totals were legacy `310.7 ms`,
+component `266.8 ms`, baseline `282.2 ms`, and projection `360.1 ms`.
+Recognizer time dominated each native stage (`260.3–353.8 ms`), while native
+detect and crop were each about `3–4 ms`. The comparator subprocess elapsed
+times are higher than those stage totals because the model-gated test binary
+also performs setup/fixture work; they must not be presented as pure OCR
+latency. Official internal detect/recognize split timings are still unavailable
+from the stock CLI, so a per-step apples-to-apples speed claim remains TODO.
+The quality/cost table is currently: legacy best quality and close stage cost;
+baseline same measured CER/WER but not a geometry/decoded-output improvement;
+component worse CER/WER; projection slower and worse CER/WER. None is ready for
+default promotion.
+
+The current line diagnostic on the available Fraktur full-page/PSM7 input
+measured official `278.6 ms`, native greedy `244.3 ms`, and native beam `110.3
+ms`; these are not a same-crop benchmark and must not be used as a speed claim.
+TODO: repeat timing on the cleared transcribed line fixtures and report cold
+load, warm greedy, warm beam, and per-stage reference/native costs together.
+
+The worker sweep on `scan_strip.png` preserves CER/WER while reducing native
+stage total from `690.3 ms` at one worker to `300.7 ms` at four and `292.1 ms`
+at eight. The next performance implementation task is therefore recognizer
+batching/graph and immutable-weight reuse; detector and crop are only a few
+milliseconds in the instrumented path. Do not trade away the recorded output
+quality gates while optimizing this hotspot.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
