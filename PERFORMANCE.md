@@ -1185,3 +1185,10 @@ uncached paths both produced 12 regions/566 chars with CER `0.03375` and WER
 for a `7.1x` speedup; detect plus crop was only `46.1 ms` cached. The remaining
 Fraktur page-quality gap is therefore in recognition/output parity, not DBNet
 or crop throughput.
+
+The comparator now stores both normalized decoded strings. The scan-strip
+official/native pair is 451/566 chars with CER `0.03375`; representative
+differences are `50`→`80`, `ay`→`8ay`, capitalization (`Such`/`such`,
+`Scheme`/`scheme`), and punctuation/hyphen spacing. This confirms the next
+quality work should inspect crop geometry and decode semantics, not detector
+throughput.

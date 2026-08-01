@@ -215,8 +215,9 @@ def main() -> int:
 
     official = official_metrics(args.image, args.lang, args.psm)
     reference_text = official_text(args.image, args.lang, args.psm)
+    official["text"] = reference_text
     native = native_metrics(args, args.image)
-    native_text = native.pop("text")
+    native_text = native["text"]
     char_denominator = max(1, len(reference_text))
     word_reference = reference_text.split()
     word_native = native_text.split()
