@@ -793,6 +793,36 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray.data(), w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
+            if (std::getenv("CRISPEMBED_TESSERACT_CROP_TRIM_INK")) {
+                int threshold = 128;
+                if (const char * threshold_env = std::getenv("CRISPEMBED_TESSERACT_CROP_TRIM_THRESHOLD"))
+                    threshold = std::clamp(std::atoi(threshold_env), 1, 254);
+                int first_ink = chh, last_ink = -1;
+                for (int row = 0; row < chh; ++row) {
+                    bool ink = false;
+                    for (int col = 0; col < cw; ++col) {
+                        if (crop[(size_t)row * cw + col] < threshold) {
+                            ink = true;
+                            break;
+                        }
+                    }
+                    if (ink) {
+                        first_ink = std::min(first_ink, row);
+                        last_ink = row;
+                    }
+                }
+                if (last_ink >= first_ink) {
+                    first_ink = std::max(0, first_ink - 1);
+                    last_ink = std::min(chh - 1, last_ink + 1);
+                    const int trimmed_height = last_ink - first_ink + 1;
+                    if (first_ink > 0 || trimmed_height < chh) {
+                        std::vector<uint8_t> trimmed((size_t)cw * trimmed_height);
+                        std::memcpy(trimmed.data(), crop.data() + (size_t)first_ink * cw, (size_t)cw * trimmed_height);
+                        crop.swap(trimmed);
+                        chh = trimmed_height;
+                    }
+                }
+            }
             if (const char * dump_dir = std::getenv("CRISPEMBED_TESSERACT_CROP_DUMP_DIR")) {
                 char crop_path[1024];
                 std::snprintf(crop_path, sizeof(crop_path), "%s/crop-%02zu.png", dump_dir, crops.size());

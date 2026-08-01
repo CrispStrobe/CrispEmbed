@@ -2631,6 +2631,15 @@ the pattern first.
   first line as an edge-clipped box at `y=0`. Compare this manifest against
   official TSV line geometry before changing recognizer preprocessing.
 
+- **Tesseract crop ink-trim A/B (2026-08-01).** The opt-in
+  `CRISPEMBED_TESSERACT_CROP_TRIM_INK` experiment trims vertical paper around
+  dark pixels while preserving native box geometry. On the canonical Q8
+  scan-strip run it reduced native recognition from `11,351.6 ms` to
+  `10,407.1 ms`, but worsened CER/WER from `0.03922/0.13274` to
+  `0.04278/0.14159` and increased the character delta from 116 to 121.
+  Reject this preprocessing for production; the remaining mismatch is not
+  explained by excess vertical paper alone.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
