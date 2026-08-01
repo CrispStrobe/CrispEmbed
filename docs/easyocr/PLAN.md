@@ -14,10 +14,11 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Selected next item: unify detector geometry with explicit EasyOCR line mode
-  and Tesseract/LayoutLM word mode, then promote the DBNet smoke path into a
-  production handoff. CRAFT decoded parity now passes with the runtime-BN
-  GGUF: 106 native boxes versus 106 Python boxes.
+- Selected next item: validate the regenerated seeded Tesseract companions
+  against fresh per-language Python references before canonical promotion.
+  Arabic and Chinese F32 pilots have completed with 9/9 stages passing and
+  aligned mine/ref magnitudes; the remaining languages are in flight. The
+  detector geometry/ordering handoff remains tracked below.
 - CRAFT cause/fix: the older folded-weight F16 artifact accumulated enough
   convolution/BN error to produce 107 boxes. Re-converting with raw
   convolution weights plus explicit BN scale/shift tensors makes F32 match to
