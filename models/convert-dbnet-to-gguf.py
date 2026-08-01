@@ -136,7 +136,6 @@ def main():
     writer = gguf.GGUFWriter(str(args.output), arch="dbnet")
 
     # Metadata
-    writer.add_string("general.architecture", "dbnet")
     writer.add_string("general.name", "dbnet-resnet18-fpnc-icdar2015")
     writer.add_string("general.license", "Apache-2.0")
     writer.add_string("general.source", "open-mmlab/mmocr")
