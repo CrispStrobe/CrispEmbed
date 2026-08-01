@@ -60,7 +60,10 @@ probability-map tap; F16 passes all of them. Inference-only native/Python
 timing remains a TODO. Q4_K's earliest divergence is already at
 `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), and it worsens
 through the neck to final-map cosine `0.9311001`; this is a quantization
-quality TODO, not a postprocessing issue.
+quality TODO, not a postprocessing issue. The fresh native CPU-forced page
+benchmark reports detector graph `4178.6 ms`, postprocess `8.3 ms`, total
+`4186.9 ms`, and 12 line units; Python inference-only timing is still missing,
+so no speed ratio is claimed.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
