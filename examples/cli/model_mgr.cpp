@@ -1555,6 +1555,33 @@ bool license_requires_acceptance(const char * spdx) {
     return false;
 }
 
+bool accept_biometric_use(const char * model_label, bool accepted_flag) {
+    if (accepted_flag) return true;
+    const char * env = std::getenv("CRISPEMBED_ACCEPT_BIOMETRIC");
+    if (env && *env && strcmp(env, "0") != 0) return true;
+
+    const char * label = (model_label && *model_label) ? model_label : "this model";
+    fprintf(stderr, "\n'%s' is a FACE RECOGNITION model.\n", label);
+    fprintf(stderr, "Its output is a biometric template — special-category personal data under\n");
+    fprintf(stderr, "GDPR Art. 9, which generally needs an Art. 9(2) basis (e.g. explicit consent)\n");
+    fprintf(stderr, "before you process it.\n");
+    fprintf(stderr, "Using it to search a gallery (1:N identification) builds a biometric\n");
+    fprintf(stderr, "identification system: high-risk under EU AI Act Annex III §1 from\n");
+    fprintf(stderr, "2 December 2027, and prohibited outright in some settings (Art. 5).\n");
+    fprintf(stderr, "See POLICY.md.\n\n");
+
+    if (isatty(fileno(stdin))) {
+        fprintf(stderr, "Acknowledge and continue? [y/N] ");
+        char c = 0;
+        if (scanf(" %c", &c) != 1 || (c != 'y' && c != 'Y')) return false;
+        return true;
+    }
+
+    fprintf(stderr, "error: refusing to run a face recognition model without acknowledgement.\n");
+    fprintf(stderr, "       Pass --accept-biometric (or set CRISPEMBED_ACCEPT_BIOMETRIC=1).\n");
+    return false;
+}
+
 static bool license_accepted(const char * spdx, const std::string & accepted_arg) {
     auto matches = [&](const std::string & accepted) {
         if (accepted.empty()) return false;
