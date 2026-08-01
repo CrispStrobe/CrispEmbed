@@ -2,6 +2,7 @@
 #include "pplcnet_orientation.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <vector>
 
@@ -20,6 +21,22 @@ int main(int argc, char ** argv) {
     const bool valid = (r.angle == 0 || r.angle == 180) && r.confidence >= 0.5f && r.probabilities[0] >= 0.0f &&
                        r.probabilities[1] >= 0.0f;
     pplcnet_orientation::free(ctx);
-    core_util::clean_exit(valid ? 0 : 4);
-    return valid ? 0 : 4;
+    bool parity = true;
+    if (argc == 3 && std::getenv("PPLCNET_ORIENTATION_GRAPH_PARITY")) {
+        auto * cpu = pplcnet_orientation::init(argv[1], 1);
+        const auto cpu_result = pplcnet_orientation::classify_file(cpu, argv[2]);
+        pplcnet_orientation::free(cpu);
+        setenv("PPLCNET_ORIENTATION_GRAPH", "1", 1);
+        setenv("PPLCNET_ORIENTATION_GRAPH_ACCEPT", "1", 1);
+        auto * graph = pplcnet_orientation::init(argv[1], 1);
+        const auto graph_result = pplcnet_orientation::classify_file(graph, argv[2]);
+        pplcnet_orientation::free(graph);
+        const float d0 = std::fabs(cpu_result.logits[0] - graph_result.logits[0]);
+        const float d1 = std::fabs(cpu_result.logits[1] - graph_result.logits[1]);
+        parity = cpu_result.angle == graph_result.angle && d0 < 0.1f && d1 < 0.1f;
+        std::printf("pplcnet-orientation parity angle=%d/%d logit_delta=%.6f/%.6f %s\n", cpu_result.angle,
+                    graph_result.angle, d0, d1, parity ? "PASS" : "FAIL");
+    }
+    core_util::clean_exit(valid && parity ? 0 : 4);
+    return valid && parity ? 0 : 4;
 }
