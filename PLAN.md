@@ -464,6 +464,9 @@ downstream handoff parity, not detector-box similarity alone.
       separately through the CLI (`--ocr-det`/`--ocr-rec`); its component
       prototype measurement is 12/12 lines with indexed mean IoU `0.826222` on
       `scan_strip.png`, rather than the previous false zero-row result.
+      The comparator also accepts optional `--min-native-lines` and `--min-iou`
+      gates; the component fixture passes at 12 lines and IoU `0.82`, while
+      diagnostic runs without thresholds remain non-gating.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
