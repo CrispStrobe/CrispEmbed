@@ -97,6 +97,7 @@ int main(int argc, char ** argv) {
     std::string host = "127.0.0.1";
     std::string det_model_path;       // face detection model
     std::string rec_model_path;       // face recognition model
+    bool accept_biometric = false;    // --accept-biometric: ack face-recognition use
     std::string vit_model_path;       // standalone ViT model (SigLIP/CLIP)
     std::string clip_text_model_path; // CLIP text encoder
     std::string ocr_model_path;       // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
@@ -145,6 +146,8 @@ int main(int argc, char ** argv) {
             det_model_path = argv[++i];
         else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc)
             rec_model_path = argv[++i];
+        else if (strcmp(argv[i], "--accept-biometric") == 0)
+            accept_biometric = true;
         else if (strcmp(argv[i], "--vit") == 0 && i + 1 < argc)
             vit_model_path = argv[++i];
         else if (strcmp(argv[i], "--pix2struct") == 0 && i + 1 < argc)
@@ -218,6 +221,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "\nFace pipeline:\n");
         fprintf(stderr, "  --det MODEL   face detection model (SCRFD GGUF)\n");
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
+        fprintf(stderr, "  --accept-biometric  acknowledge biometric processing (see POLICY.md)\n");
         fprintf(stderr, "\nStandalone ViT (SigLIP/CLIP):\n");
         fprintf(stderr, "  --vit MODEL   ViT image embedding model (SigLIP/CLIP GGUF)\n");
         fprintf(stderr, "  --pix2struct MODEL  Pix2Struct document understanding model GGUF\n");
@@ -538,6 +542,12 @@ int main(int argc, char ** argv) {
         if (!face_det) fprintf(stderr, "Warning: failed to load detection model '%s'\n", det_model_path.c_str());
     }
     if (!rec_model_path.empty()) {
+        // Fail closed: serving /face over HTTP exposes biometric templates to every
+        // client that can reach the port, so require acknowledgement before the
+        // model is loaded at all.
+        if (!crispembed_mgr::accept_biometric_use(rec_model_path.c_str(), accept_biometric)) {
+            return 1;
+        }
         face_rec = crispembed_face_init(rec_model_path.c_str(), n_threads);
         if (!face_rec) fprintf(stderr, "Warning: failed to load recognition model '%s'\n", rec_model_path.c_str());
     }
