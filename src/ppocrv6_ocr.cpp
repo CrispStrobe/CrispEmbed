@@ -695,7 +695,9 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
             c->graph.debug_taps.push_back({ pre_name, x });
             ggml_set_output(x);
         }
-        x = ggml_gelu(c->graph.graph_ctx, x);
+        // PP-OCRv6 applies GELU after the first stem convolution only; the
+        // second stem feeds the first backbone block directly.
+        if (stem_idx == 0) x = ggml_gelu(c->graph.graph_ctx, x);
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             const char * name = stem_idx == 0 ? "stem1" : "stem2";
             c->graph.debug_taps.push_back({ name, x });
@@ -777,7 +779,9 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         x = ggml_reshape_2d(c->graph.graph_ctx, x, c->head_pw.out_ch, tokens);
         x = pp_graph_linear(c, c->graph.graph_ctx, x, c->fc1_w, c->fc1_b);
         if (!x) return false;
-        x = pp_graph_linear(c, c->graph.graph_ctx, ggml_gelu(c->graph.graph_ctx, x), c->fc2_w, c->fc2_b);
+        // The tiny recognizer head is two linear projections with no
+        // activation between them (the reference decoder is F.linear twice).
+        x = pp_graph_linear(c, c->graph.graph_ctx, x, c->fc2_w, c->fc2_b);
         if (!x) return false;
         c->graph.logits_output = true;
     }
@@ -859,13 +863,21 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                 if (std::strcmp(tap.first, "head_act1") == 0) ref_name = "ppocrv6.head_conv1";
                 if (std::strcmp(tap.first, "head_act2") == 0) ref_name = "ppocrv6.head_input";
                 if (ref_name) {
+                    std::vector<float> token_major;
+                    const float * compare_data = values.data();
+                    if (std::strcmp(tap.first, "head_act2") == 0) {
+                        token_major.resize(values.size());
+                        for (int64_t t = 0; t < tw; ++t)
+                            for (int64_t ch = 0; ch < tc; ++ch) token_major[(size_t)t * tc + ch] = values[(size_t)ch * tw + t];
+                        compare_data = token_major.data();
+                    }
                     if (std::strcmp(tap.first, "backbone") == 0) {
-                        const auto raw_report = c->diff->compare(ref_name, values.data(), values.size(), -1);
+                        const auto raw_report = c->diff->compare(ref_name, compare_data, values.size(), -1);
                         fprintf(stderr, "[ppocrv6-graph-diff] %s raw-as-%s cos=%.6f global=%.6f %s\n", tap.first,
                                 ref_name, raw_report.cos_min, raw_report.cos_global,
                                 raw_report.is_pass() ? "PASS" : "FAIL");
                     }
-                    const auto report = c->diff->compare(ref_name, values.data(), values.size(), -1);
+                    const auto report = c->diff->compare(ref_name, compare_data, values.size(), -1);
                     fprintf(stderr, "[ppocrv6-graph-diff] %s as %s cos=%.6f global=%.6f %s\n", tap.first, ref_name,
                             report.cos_min, report.cos_global, report.is_pass() ? "PASS" : "FAIL");
                     if (std::strcmp(tap.first, "stem1_pre") == 0 || std::strcmp(tap.first, "stem1") == 0 ||
