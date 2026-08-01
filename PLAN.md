@@ -101,14 +101,11 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
 
-Mixed-precision checkpoint: a fresh Miniconda reference was regenerated from
-the installed `frk.traineddata` and stored in the external GGUF backup. Input
-parity is exact; Q8 reaches 6/9 stage passes with logits cosine `0.983119`,
-while mixed `lstm.0.weight_hh` F32 reaches 6/9 with `0.982110`. Both decoded
-outputs differ from Python, so mixed precision is not promoted.
-The Python blueprint now explicitly models the native row-wise int8 FC
-arithmetic; the rerun is unchanged, leaving randomized `after_convolve`
-(cosine `0.990050`) as the earliest remaining Tesseract parity TODO.
+Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
+Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
+seed-preserving mixed Q8/F32 candidate reaches 9/9 and `0.994876`. Both decoded
+outputs still differ from Python, so mixed precision is not promoted. The
+blueprint now explicitly models native row-wise int8 FC arithmetic.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |

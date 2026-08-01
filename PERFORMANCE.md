@@ -1069,14 +1069,14 @@ improve.
 
 Fresh Miniconda regeneration from `/opt/homebrew/share/tessdata/frk.traineddata`
 now gives exact input parity (`cosine=1.0`, both norms `122.453`). Against
-that valid reference, Q8 reaches 6/9 stage passes and logits cosine `0.983119`;
-the mixed `lstm.0.weight_hh` F32 candidate also reaches 6/9 but falls to
-`0.982110`. Both decoded texts differ from the Python reference, so the mixed
-candidate is not an improvement and remains gated. The fresh reference is
-stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`.
-The Python blueprint now explicitly uses the same row-wise int8 FC contract;
-the rerun is numerically unchanged, leaving randomized `after_convolve`
-(`cosine=0.990050`) as the earliest remaining mismatch on this Fraktur lane.
+now gives exact input parity (`cosine=1.0`, both norms `122.453`). The old Q8
+artifact lacked `sample_iteration`, causing the earlier `0.983119` logits
+result and seeded-padding mismatch. A freshly converted F32 model reaches
+9/9 stages with logits cosine `0.993819`; a mixed Q8/F32 candidate carrying
+the recovered seed reaches 9/9 and `0.994876`. Both still decode differently
+from Python, so the mixed candidate is not production-accepted. References are
+stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`
+and `tesseract-frk-ref-int8fc.gguf`.
 
 Quantization policy improvement: `models/quantize.py` now supports repeatable
 `--keep-pattern` rules, allowing callers to retain critical recurrent or
