@@ -194,6 +194,8 @@ def main() -> int:
     policy.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
     parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
     parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
+    parser.add_argument("--min-matched-iou", type=float,
+                        help="fail if one-to-one IoU-matched mean is below this value")
     parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
     parser.add_argument("--max-mean-gap-delta", type=float, help="fail if mean absolute inter-line gap delta exceeds this value")
     parser.add_argument("--require-reading-order", action="store_true", help="fail unless both box lists are top-to-bottom/left-to-right ordered")
@@ -208,6 +210,8 @@ def main() -> int:
         checks["min_native_lines"] = comparison["native_lines"] >= args.min_native_lines
     if args.min_iou is not None:
         checks["min_iou"] = comparison["mean_indexed_iou"] >= args.min_iou
+    if args.min_matched_iou is not None:
+        checks["min_matched_iou"] = comparison["matched_mean_iou"] >= args.min_matched_iou
     if args.max_mean_crop_delta is not None:
         checks["max_mean_crop_delta"] = comparison["mean_abs_crop_delta"] <= args.max_mean_crop_delta
     if args.max_mean_gap_delta is not None:
