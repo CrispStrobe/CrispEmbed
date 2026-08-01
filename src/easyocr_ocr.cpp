@@ -51,6 +51,30 @@ static ggml_tensor * linear(ggml_context * g, ggml_tensor * w, ggml_tensor * b, 
     return ggml_add(g, ggml_mul_mat(g, w, x), b);
 }
 
+// EasyOCR's get_image_list() calls cv2.resize with Image.Resampling.LANCZOS.
+// That PIL enum has value 1, which OpenCV interprets as INTER_LINEAR. Keep the
+// native path byte-compatible with that actual upstream pipeline rather than
+// substituting the standalone reference dumper's bicubic resize.
+static void resize_easyocr_linear_u8(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w) {
+    const float scale_x = (float)src_w / (float)dst_w;
+    const float scale_y = (float)src_h / (float)dst_h;
+    for (int y = 0; y < dst_h; ++y) {
+        const float fy = ((float)y + 0.5f) * scale_y - 0.5f;
+        const int y0 = std::max(0, std::min(src_h - 1, (int)std::floor(fy)));
+        const int y1 = std::min(src_h - 1, y0 + 1);
+        const float wy = std::max(0.0f, std::min(1.0f, fy - (float)y0));
+        for (int x = 0; x < dst_w; ++x) {
+            const float fx = ((float)x + 0.5f) * scale_x - 0.5f;
+            const int x0 = std::max(0, std::min(src_w - 1, (int)std::floor(fx)));
+            const int x1 = std::min(src_w - 1, x0 + 1);
+            const float wx = std::max(0.0f, std::min(1.0f, fx - (float)x0));
+            const float top = (1.0f - wx) * src[(size_t)y0 * src_w + x0] + wx * src[(size_t)y0 * src_w + x1];
+            const float bot = (1.0f - wx) * src[(size_t)y1 * src_w + x0] + wx * src[(size_t)y1 * src_w + x1];
+            dst[(size_t)y * dst_w + x] = std::round((1.0f - wy) * top + wy * bot);
+        }
+    }
+}
+
 static ggml_tensor * lstm_direction(ggml_context * g, ggml_tensor * seq, int T, int in_dim, int hidden,
                                     ggml_tensor * wih, ggml_tensor * whh, ggml_tensor * bih, ggml_tensor * bhh,
                                     bool reverse) {
@@ -277,11 +301,11 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
             const uint8_t * p = px + ((size_t)y * w + x) * ch;
-            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2]) / 1000);
+            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
         }
     std::vector<float> resized((size_t)c->height * c->width);
     const int rw = std::min(c->width, std::max(1, (int)std::ceil((double)c->height * w / h)));
-    image_preproc::resize_bicubic_u8_hwc(gray.data(), h, w, resized.data(), c->height, rw, 1);
+    resize_easyocr_linear_u8(gray.data(), h, w, resized.data(), c->height, rw);
     c->input_host.assign((size_t)c->height * c->width, 0.0f);
     for (int y = 0; y < c->height; ++y)
         for (int x = 0; x < rw; ++x) {

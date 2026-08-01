@@ -53,8 +53,16 @@
       line crops, Python and native recognition match exactly on 8/12 lines;
       the remaining differences are small CTC character/spacing choices, and
       both paths read `Brighton`. The previous Python-reference blocker was the
-      missing checkpoint asset, not a Miniconda/Torch problem. Tensor-level
-      `crispembed-diff` remains required before calling recognizer parity.
+      missing checkpoint asset, not a Miniconda/Torch problem.
+- [x] Correct the recognizer preprocessing to the actual EasyOCR page path:
+      rounded ITU-R 601 grayscale plus `cv2.resize` interpolation value 1
+      (`INTER_LINEAR`, because EasyOCR passes `Image.Resampling.LANCZOS` to
+      OpenCV). The fresh official Python `-ref.gguf` and native graph now pass
+      `crispembed-diff` at every captured stage: input `0.999084`, sequence
+      `0.991019`, BiLSTM-0 `0.998646`, BiLSTM-1 `0.999340`, logits `0.997985`
+      minimum cosine, with global cosines and mine/ref magnitudes printed. The
+      decoded output also matches (`032`). The previous divergence was the
+      native/dumper bicubic preprocessing mismatch, not recurrent math.
 - Tesseract parity is explicitly **not proven**. The converter, Python
   reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
   recorded completed reference run for the exact installed `eng.traineddata`,
