@@ -103,9 +103,9 @@
       RMS `0.00008044`, cosine `0.9999974`, global cosine `1.0000000`, and
       96 decoded regions. Q4_K produces the same 96 regions but fails tensor
       parity at cosine `0.9311001` / global `0.9986384`; do not repeat the
-      README's old blanket Q4 parity claim. The current diff covers the final
-      probability map; per-backbone/neck/head taps and inference-only timing
-      remain open.
+      README's old blanket Q4 parity claim. The diff now retains and compares
+      all backbone, neck, head, and final-map taps; F16 passes them all under
+      the global/magnitude gate. Inference-only timing remains open.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
