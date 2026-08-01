@@ -706,9 +706,16 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             std::vector<uint8_t> seg_gray;
             int sw = 0, sh = 0;
             if (load_gray_exact(path, seg_gray, &sw, &sh)) {
-                boxes = std::getenv("CRISPEMBED_TESSERACT_PAGESEG_PROJECTION")
-                            ? tesseract_pageseg::segment_gray(seg_gray.data(), sw, sh)
-                            : tesseract_pageseg::segment_gray_components(seg_gray.data(), sw, sh);
+                if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_PROJECTION") ||
+                    std::getenv("CRISPEMBED_TESSERACT_COMPONENT_PAGESEG")) {
+                    // segment_gray() owns the projection path and the
+                    // explicitly opt-in component prototype.
+                    boxes = tesseract_pageseg::segment_gray(seg_gray.data(), sw, sh);
+                } else {
+                    // Legacy component grouping remains the default classical
+                    // adapter and is separately gated from DBNet.
+                    boxes = tesseract_pageseg::segment_gray_components(seg_gray.data(), sw, sh);
+                }
             }
         } else {
             boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
@@ -1540,7 +1547,8 @@ result run_file(context * ctx, const char * image_path) {
         auto t_stage = std::chrono::steady_clock::now();
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
         cleanup_profile stage_cleanup = s.cleanup;
-        if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) && s.params.page_segmentation != 0) {
+        if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) &&
+            (s.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr)) {
             // Tesseract's page-segmentation path measures row ink on the
             // original page. Generic deskew/crop/whiten cleanup changes those
             // coordinates and can merge unrelated rows before segmentation.
