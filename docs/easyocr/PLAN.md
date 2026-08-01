@@ -366,7 +366,14 @@ recognizer and LayoutLM consumer.
       `word_confidence` now follows Tesseract's source rule (minimum selected
       path log-probability, then `100 + 5*certainty`); the direct second-line
       result is `0.965889` versus official `0.959698`. Page-level aggregation
-      and beam certainty remain open.
+      and beam certainty remain open. A fresh explicit-tessdata Fraktur
+      scan-strip run (`/opt/homebrew/share/tessdata`, `psm 7`, seeded Q8)
+      confirms the gap: official TSV reads `iE` at mean word confidence
+      `0.043433`, native greedy reads `BEEES` at word confidence `0.884625`,
+      and native beam-8 reads `BEEES` with sequence confidence `0.644788` and
+      no fabricated character confidences. The official-word validity gate
+      passes, but the decoded-text and calibration gates fail; beam remains a
+      diagnostic contract, not an accepted parity path.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
       Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
       text, and the official instrumented PSM7 internal crop all match.
@@ -473,6 +480,31 @@ recognizer and LayoutLM consumer.
 - [ ] Port and validate Tesseract recode/dictionary scoring separately from
       the now-proven network arithmetic; do not enable a production beam from
       the diagnostic implementation.
+- [x] Preserve Tesseract DAWG components losslessly in newly converted GGUFs.
+      `convert-tesseract-to-gguf.py` now records the present DAWG component
+      names, base64 payloads, and SHA-256 digests under
+      `tesseract_lstm.dawg.*`. Existing GGUFs are unchanged and do not gain
+      dictionary scoring retroactively; native DAWG traversal/scoring remains
+      the next implementation and parity task.
+- [x] Load and validate the preserved DAWG manifest in the native context.
+      Newer GGUFs report the component count and reject a manifest entry with
+      an empty or structurally invalid SquishedDawg payload; older GGUFs remain
+      compatible with zero entries. This is provenance validation only and does
+      not enable dictionary scoring. A
+      regenerated English smoke GGUF loaded with `dawg=3` and the live
+      confidence target passed 35/35 checks; decoded `Se` is not a quality
+      acceptance result.
+- [x] Add a standalone SquishedDawg wire validator and invoke it while loading
+      each preserved payload. It checks Tesseract's magic/header, dimensions,
+      edge-array bounds, next-node bounds, and forward-edge run markers. The
+      `test-tesseract-dawg` target passes; this remains structural validation,
+      not dictionary traversal or scoring.
+- [x] Add a read-only exact-word lookup primitive over validated DAWG payloads,
+      keyed by Tesseract unichar IDs. It is covered by the minimal DAWG fixture
+      and is not wired into OCR hypothesis scoring or production beam decode.
+- [x] Add a read-only DAWG prefix-legality lookup, including a fixture where a
+      non-terminal prefix is legal but not itself a complete word. This is the
+      next input to recoder/beam scoring, but remains diagnostic-only.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
