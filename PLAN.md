@@ -2721,3 +2721,19 @@ the pattern first.
   detector/line-geometry coverage gate. The comparator now marks such
   per-line alignment as invalid instead of implying a valid line-by-line
   pairing.
+
+- **Explicit native Tesseract-like route (2026-08-01).** Added
+  `--native-pageseg` to the page comparator; it sets the classical route and
+  reports `detector_route=native-tesseract-pageseg`, rather than silently
+  treating every run as DBNet. On `scan_strip.png`, the native route emitted
+  12/12 lines with CER/WER `0.03209/0.11504`, 3/12 exact lines, and stage
+  timing `detect=12.6 ms`, `crop=644.8 ms`, `recognize=11856.4 ms`,
+  `total=12513.8 ms`. This matches the prior classical result and confirms
+  that DBNet is not involved in this route; official-output parity remains
+  open at page segmentation/line normalization and decoder semantics.
+
+- **Native-route benchmark propagation (2026-08-01).** Extended
+  `tools/benchmark_tesseract_page.py` with `--native-pageseg` and explicit
+  `detector_route` output, so repeated A/B runs cannot silently fall back to
+  DBNet. The wrapper and route-selection behavior are covered by the focused
+  Miniconda test suite.

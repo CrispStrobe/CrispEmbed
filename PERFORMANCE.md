@@ -1389,3 +1389,16 @@ index-paired per-line errors are not a valid recognizer benchmark. The page
 comparator now reports `alignment_valid=false` when line counts differ. This
 fixture is a detector/line-geometry TODO, separate from the crop-level tensor
 parity proven on scan-strip.
+
+The comparator now exposes the native Tesseract-like route explicitly with
+`--native-pageseg`. On `scan_strip.png`, this route produced 12/12 lines,
+CER/WER `0.03209/0.11504`, and 3/12 exact lines. Its native stage timing was
+`detect=12.6 ms`, `crop=644.8 ms`, `recognize=11856.4 ms`,
+`total=12513.8 ms`. The route is not using DBNet for box generation; its
+quality is identical to the established classical row path, so the remaining
+gap is page segmentation/line normalization and decoder semantics.
+
+The repeated benchmark wrapper now accepts `--native-pageseg` and records
+`detector_route`, preserving the DBNet-versus-native distinction across
+multi-repeat timing runs. Its route flag and comparator selection are covered
+by the 10-test focused harness.
