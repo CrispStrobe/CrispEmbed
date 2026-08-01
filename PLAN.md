@@ -428,6 +428,14 @@ downstream handoff parity, not detector-box similarity alone.
       crop with all 9 network diff stages still passing. Full RecodeBeamSearch
       certainty aggregation and DAWG dictionary scoring remain pending and
       are not enabled in production.
+- [x] Sweep six existing CC0/public-domain English line fixtures through the
+      exact int-mode native/Python harness: all 6 references pass the
+      captured-stage 0.99 parity gate, and the constrained width-25 beam remains
+      stable on the official `Brighton` crop. Official CLI PSM7 output was
+      separately measured with `language_model_ngram_on=0` and `=1`; both
+      settings produced identical text on all six lines. The remaining
+      differences (crop width, spacing, and case) are page-segmentation/CLI
+      geometry, not DAWG scoring evidence.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
