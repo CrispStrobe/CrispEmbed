@@ -434,14 +434,15 @@ recognizer and LayoutLM consumer.
       Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
       CLI `Brighton`.
 - [x] Regenerate the Fraktur reference from installed `frk.traineddata` with
-      Miniconda and rerun the mixer. Input parity is exact; Q8 reaches 6/9
-      stage passes and logits cosine `0.983119`, while mixed
-      `lstm.0.weight_hh` F32 reaches 6/9 and `0.982110`. Both decoded outputs
-      differ from Python, so mixed precision is not promoted.
+      Miniconda and rerun the mixer. The old Q8 artifact lacked
+      `sample_iteration`; fresh F32 reaches 9/9 stages and logits cosine
+      `0.993819`, while seed-preserving mixed Q8/F32 reaches 9/9 and
+      `0.994876`. Both decoded outputs still differ from Python, so mixed
+      precision is not promoted.
 - [x] Align the Python ConvNL blueprint with native row-wise int8 FC
       arithmetic and rerun the fresh reference. Results are unchanged; the
-      earliest remaining Fraktur mismatch is randomized `after_convolve` at
-      cosine `0.990050`, so no FC parity fix is claimed.
+      the old seeded-padding mismatch is eliminated; decoded-output parity is
+      still open despite the improved `0.994876` mixed logits cosine.
 - [x] Obtain an official Tesseract internal activation/raw-row comparison;
       the remaining discrepancy was traced to seeded Convolve padding and is
       now resolved below.
