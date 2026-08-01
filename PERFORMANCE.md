@@ -1324,6 +1324,11 @@ runtime and reports `dawg=3`; the live confidence target passed `35/35` checks
 on `scan_strip.png`. The decoded smoke text was `Se`; this validates metadata
 acceptance only and is not a page-quality or DAWG-parity result.
 
+The native load path now performs the same structural checks in a standalone
+DAWG validator. `test-tesseract-dawg` passes the minimal valid edge fixture and
+rejects malformed input; this adds negligible load-time validation and no
+runtime OCR scoring cost because DAWG traversal remains disabled.
+
 A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
 report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
 following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus
