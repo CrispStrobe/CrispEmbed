@@ -1144,3 +1144,16 @@ decoded text regions. The external backup-volume no-copy path (`UOCR_MMAP=1`)
 also completes: 40,391 ms cold benchmark time and CER 0.010, with the one
 character difference being a harmless title-box coordinate drift. Qwen2-VL is
 runnable but did not complete this M1 budget.
+
+### Tesseract seeded model rebuild (2026-08-01)
+
+The 45 unseeded model artifacts were not all independently valid: missing
+`tesseract_lstm.sample_iteration` changes seeded out-of-bounds convolution
+padding. The 12 installed canonical sources were hash-matched to the old
+GGUFs, then freshly converted with Miniconda. The backup store now contains 42
+readable `*-seeded.gguf` companions: F32/F16 are freshly converted, while Q8_0
+and Q4_K retain the old quantized tensor bytes and receive only the verified
+source metadata. All 42 carry a nonzero seed. No speed or OCR-quality claim is
+made yet for quantized companions; per-language `crispembed-diff` and decoded
+output checks remain TODO. One old Fraktur mixed candidate is truncated and
+was excluded.

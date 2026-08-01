@@ -566,3 +566,10 @@ metadata, not learned parameters.
       across language-specific charsets.
 - [x] Add a weight-free LayoutLMv2/v3 OCR handoff contract test: ordered words,
       confidence, pixel boxes, and normalized `[0,1000]` boxes are preserved.
+
+- [x] Rebuild missing-seed Tesseract model companions from hash-verified
+      installed `.traineddata` sources using Miniconda. Forty-two F32/F16/Q8_0/
+      Q4_K or experimental companions in the backup store now carry nonzero
+      `tesseract_lstm.sample_iteration`; the old truncated Fraktur mixed-lstm0ih
+      candidate was excluded. Per-language stage/output parity remains the next
+      acceptance gate before canonical promotion.
