@@ -427,10 +427,12 @@ downstream handoff parity, not detector-box similarity alone.
       `tools/compare_tesseract_page_geometry.py` now measures the independent
       geometry boundary from official TSV level-4 rows. On `scan_strip.png`
       the default baseline-clustered component adapter has 12/12 indexed rows
-      with mean IoU `0.787761` after short-row noise tightening; the projection
-      fallback has 12/12 with mean IoU `0.865993`. The short final-row crop now
-      decodes `Meryton` correctly. These measurements confirm count/order parity
-      only; quote/spacing, first-line, and full decoded-text parity remain open.
+      with mean IoU `0.916222` after vertical crop tightening; the projection
+      fallback has 12/12 with mean IoU `0.865993`. The first-line crop is now
+      `[48,0,434,20]` and the short final-row crop `[27,234,83,20]`; both page
+      ends decode coherently and `Meryton` is correct. Character choices and
+      quote/spacing differences (`They/Lhey`, `Brighton/Drighton`) remain a
+      decoded-text parity gate.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
