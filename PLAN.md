@@ -2531,3 +2531,12 @@ the pattern first.
   `scheme`, and punctuation/hyphen spacing), not a region-count mismatch.
   Use these actual strings to guide crop and decoder fixes rather than treating
   CER/WER alone as a sufficient quality signal.
+
+- **Tesseract crop-border A/B (2026-08-01).** `CRISPEMBED_TESSERACT_CROP_PAD`
+  is now an opt-in gate around the Fraktur line-crop border; the production
+  default remains 2 pixels. On `scan_strip.png`, 0/1/2/4 pixels produced
+  12/12/12/12 regions and CER/WER `0.07460/0.30088`, `0.04796/0.20354`,
+  `0.03375/0.15044`, and `0.03552/0.15044`, respectively. Keep 2 pixels as
+  the default. Recognition output remains worse than official Tesseract in
+  substitutions and punctuation despite matching region count; decoder,
+  recoder, and line-image parity remain the active quality TODOs.

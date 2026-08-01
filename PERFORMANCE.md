@@ -1192,3 +1192,21 @@ differences are `50`→`80`, `ay`→`8ay`, capitalization (`Such`/`such`,
 `Scheme`/`scheme`), and punctuation/hyphen spacing. This confirms the next
 quality work should inspect crop geometry and decode semantics, not detector
 throughput.
+
+### Tesseract crop-border A/B (2026-08-01)
+
+The Fraktur line crop now has an opt-in `CRISPEMBED_TESSERACT_CROP_PAD` gate;
+the default remains 2 pixels. On `scan_strip.png`, all candidates produced 12
+regions, so this is not a segmentation-count issue:
+
+| Border | Chars | CER | WER | Recognize ms |
+|---:|---:|---:|---:|---:|
+| 0 px | 570 | 0.07460 | 0.30088 | 7,237.5 |
+| 1 px | 567 | 0.04796 | 0.20354 | 6,686.3 |
+| 2 px (default) | 566 | 0.03375 | 0.15044 | 9,217.4 |
+| 4 px | 571 | 0.03552 | 0.15044 | 10,666.3 |
+
+The 2-pixel crop remains the best measured quality point. The gate is retained
+for other scan resolutions and architectures; the next quality TODO is
+Tesseract-compatible decode/recoder semantics for the residual substitutions
+and punctuation differences.
