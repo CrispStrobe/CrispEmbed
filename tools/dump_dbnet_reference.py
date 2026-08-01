@@ -80,7 +80,8 @@ def preprocess_image(img, target_short_side=736, pad_divisor=32,
     return img_chw, (new_h, new_w), scale
 
 
-def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=None):
+def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=None, device="cpu",
+                    capture_outputs=True):
     """Run DBNet with forward hooks, capture all intermediates."""
     import torch
 
@@ -97,6 +98,11 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
     # This also gives us exact control over intermediates.
 
     captured = {}
+
+    def capture_tensor(value):
+        if not capture_outputs:
+            return None
+        return value.detach().cpu().numpy()
 
     # Convert to torch tensors
     weights = weights_override or {k: torch.tensor(v) if not isinstance(v, torch.Tensor) else v
@@ -157,7 +163,7 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
         return out
 
     # --- Forward pass ---
-    x = torch.tensor(img_chw).unsqueeze(0).float()  # (1, 3, H, W)
+    x = torch.tensor(img_chw, device=device).unsqueeze(0).float()  # (1, 3, H, W)
     captured["input_image"] = img_chw  # (3, H, W) numpy
 
     # Stem: conv1(7×7, s2, p3) + bn1 + relu + maxpool(3, s2, p1)
@@ -170,28 +176,28 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
     x = basic_block(x, "layer1.0", stride=1)
     x = basic_block(x, "layer1.1", stride=1)
     c2 = x  # stage 0 output
-    captured["backbone_stage_0"] = c2[0].detach().numpy()
+    captured["backbone_stage_0"] = capture_tensor(c2[0])
     print(f"  backbone stage 0: {list(c2.shape[1:])}")
 
     # Stage 1 (layer2): 2 blocks, stride 2, 128ch
     x = basic_block(x, "layer2.0", stride=2)
     x = basic_block(x, "layer2.1", stride=1)
     c3 = x
-    captured["backbone_stage_1"] = c3[0].detach().numpy()
+    captured["backbone_stage_1"] = capture_tensor(c3[0])
     print(f"  backbone stage 1: {list(c3.shape[1:])}")
 
     # Stage 2 (layer3): 2 blocks, stride 2, 256ch
     x = basic_block(x, "layer3.0", stride=2)
     x = basic_block(x, "layer3.1", stride=1)
     c4 = x
-    captured["backbone_stage_2"] = c4[0].detach().numpy()
+    captured["backbone_stage_2"] = capture_tensor(c4[0])
     print(f"  backbone stage 2: {list(c4.shape[1:])}")
 
     # Stage 3 (layer4): 2 blocks, stride 2, 512ch
     x = basic_block(x, "layer4.0", stride=2)
     x = basic_block(x, "layer4.1", stride=1)
     c5 = x
-    captured["backbone_stage_3"] = c5[0].detach().numpy()
+    captured["backbone_stage_3"] = capture_tensor(c5[0])
     print(f"  backbone stage 3: {list(c5.shape[1:])}")
 
     # --- Neck: FPNC ---
@@ -201,7 +207,7 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
         lat_w = get_w(f"lateral_convs.{i}.conv.weight")
         lat = conv2d(feat, lat_w)
         laterals.append(lat)
-        captured[f"neck_lateral_{i}"] = lat[0].detach().numpy()
+        captured[f"neck_lateral_{i}"] = capture_tensor(lat[0])
 
     # Top-down pathway (add upsampled higher level to lower level)
     for i in range(3, 0, -1):
@@ -216,7 +222,7 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
         sm_w = get_w(f"smooth_convs.{i}.conv.weight")
         sm = conv2d(laterals[i], sm_w, padding=1)
         smoothed.append(sm)
-        captured[f"neck_smooth_{i}"] = sm[0].detach().numpy()
+        captured[f"neck_smooth_{i}"] = capture_tensor(sm[0])
 
     # Upsample all to same size (1/4 of input = stage 0 size) and concat
     target_size = smoothed[0].shape[2:]
@@ -228,7 +234,7 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
         upsampled.append(sm)
 
     fused = torch.cat(upsampled, dim=1)  # (1, 4*64=256, H/4, W/4)
-    captured["neck_fused"] = fused[0].detach().numpy()
+    captured["neck_fused"] = capture_tensor(fused[0])
     print(f"  neck fused: {list(fused.shape[1:])}")
 
     # --- Head: probability branch ---
@@ -238,7 +244,7 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
     x = conv2d(fused, h_w, h_b, padding=1)
     x = bn(x, "binarize.1")
     x = torch.relu(x)
-    captured["head_conv1"] = x[0].detach().numpy()
+    captured["head_conv1"] = capture_tensor(x[0])
     print(f"  head conv1: {list(x.shape[1:])}")
 
     # deconv1: ConvTranspose2d(64→64, k=2, s=2) + BN + ReLU
@@ -247,18 +253,18 @@ def dump_with_hooks(checkpoint_path, img_chw, state_dict=None, weights_override=
     x = torch.nn.functional.conv_transpose2d(x, dc1_w, dc1_b, stride=2)
     x = bn(x, "binarize.4")
     x = torch.relu(x)
-    captured["head_deconv1"] = x[0].detach().numpy()
+    captured["head_deconv1"] = capture_tensor(x[0])
     print(f"  head deconv1: {list(x.shape[1:])}")
 
     # deconv2: ConvTranspose2d(64→1, k=2, s=2) → sigmoid
     dc2_w = get_w("binarize.6.weight")
     dc2_b = get_w("binarize.6.bias")
     x = torch.nn.functional.conv_transpose2d(x, dc2_w, dc2_b, stride=2)
-    captured["prob_map"] = x[0].detach().numpy()
+    captured["prob_map"] = capture_tensor(x[0])
     print(f"  prob_map (pre-sigmoid): {list(x.shape[1:])}")
 
     prob = torch.sigmoid(x)
-    captured["prob_map_sigmoid"] = prob[0].detach().numpy()
+    captured["prob_map_sigmoid"] = capture_tensor(prob[0])
     print(f"  prob_map_sigmoid: {list(prob.shape[1:])}, "
           f"range [{prob.min():.4f}, {prob.max():.4f}]")
 
