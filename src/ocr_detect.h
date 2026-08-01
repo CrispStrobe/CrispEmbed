@@ -43,6 +43,13 @@ struct detect_options {
     float unclip_ratio = 1.5f;
     int target_short_side = 736;
     int max_side = 2000;
+    // Cap on how far the short-side target may *enlarge* the source. The
+    // upstream DBNet/PaddleOCR convention (limit_type="max") only ever shrinks;
+    // resizing a small page up to short-side 736 can cost >10x the pixels for
+    // detail that was never in the scan. 0 keeps the historical uncapped
+    // behaviour; the CRISPEMBED_OCR_DET_MAX_UPSCALE env var overrides it so the
+    // two can be A/B'd without a rebuild.
+    float max_upscale = 0.0f;
     int min_height = 30;
     float width_height_ratio = 8.0f;
     int max_candidates = 1000;
