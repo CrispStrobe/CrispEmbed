@@ -241,6 +241,7 @@ list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tesseract_dawg.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_pageseg.cpp)
 if(NOT CRISPEMBED_HAS_CRISP_PUNC)
     list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
@@ -694,6 +695,9 @@ target_link_libraries(test-smoldocling-diff PRIVATE crispembed)
 
 add_executable(test-confidence tests/test_confidence.cpp)
 target_link_libraries(test-confidence PRIVATE crispembed)
+
+add_executable(test-tesseract-dawg tests/test_tesseract_dawg.cpp)
+target_link_libraries(test-tesseract-dawg PRIVATE crispembed)
 
 add_executable(test-ppocrv6-rec tests/test_ppocrv6_rec.cpp)
 target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)

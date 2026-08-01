@@ -1301,6 +1301,34 @@ the normalized official/native page strings in its comparison output. The
 scan-strip baseline therefore remains explicitly non-green for exact output
 parity even though its CER/WER metrics are measurable.
 
+The confidence harness was rerun after rebuilding `test-confidence`, using the
+explicit Homebrew tessdata directory and the seeded Fraktur Q8 GGUF. Official
+PSM 7 TSV returned `iE` at mean word confidence `0.043433` in `5,881 ms`;
+native greedy returned `BEEES` at word confidence `0.884625` in `305 ms`, and
+beam-8 returned the same `BEEES` with sequence confidence `0.644788` and zero
+per-character confidences in `984 ms`. The official-word check passed, but
+decoded text and greedy calibration did not. This is evidence for a remaining
+Tesseract decoder/recoder and confidence-aggregation quality TODO, not a
+performance acceptance result; the beam path remains diagnostic.
+
+Converter smoke (2026-08-01): Miniconda converted the installed Homebrew
+`eng.traineddata` to `/tmp/crispembed-eng-dawg-smoke.gguf` successfully. The
+6.6 MiB GGUF contains the three available LSTM DAWG payloads
+(`lstm-punc-dawg`, `lstm-system-dawg`, and `lstm-number-dawg`), each with a
+base64 payload and SHA-256 metadata. This verifies preservation only; the
+artifact is not a promoted backup model and native dictionary scoring is still
+unimplemented.
+
+The regenerated DAWG-bearing smoke GGUF loads successfully in the native
+runtime and reports `dawg=3`; the live confidence target passed `35/35` checks
+on `scan_strip.png`. The decoded smoke text was `Se`; this validates metadata
+acceptance only and is not a page-quality or DAWG-parity result.
+
+The native load path now performs the same structural checks in a standalone
+DAWG validator. `test-tesseract-dawg` passes the minimal valid edge fixture and
+rejects malformed input; this adds negligible load-time validation and no
+runtime OCR scoring cost because DAWG traversal remains disabled.
+
 A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
 report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
 following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus
@@ -1421,6 +1449,13 @@ matched 23 rows monotonically and exposed five unmatched official rows
 (`0,2,3,4,26`). It still exits 1 for the count mismatch, and the resulting
 matched deltas remain diagnostic until one-to-many merged-row matching is
 implemented.
+
+Source inspection indicates several official rows are nested decorative marks
+inside larger text boxes, so the merge report now labels a primary official
+box and nested rows. This prevents a speculative production split based only
+on TSV row count. On German, native row 0 has primary official index 1 and
+nested indices 2 and 4; native row 9 has primary index 13 and nested index 12;
+native row 22 has primary index 26 with no fully-contained nested row.
 
 The geometry report now exposes `merged_official_groups` when one native row
 covers at least half the vertical extent of multiple official rows. This

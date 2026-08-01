@@ -21,7 +21,9 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** generalize the PP-OCRv6 graph-gold harness from hard-coded small-only artifacts to explicit tiny/small/medium tier selections with tier-specific reference fixtures. The harness now supports all three tiers; tiny remains explicitly blocked until its legacy 16-tensor Arabic reference is regenerated as a full graph gold archive, while small remains the default accepted lane | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add opt-in PP-OCRv6 detector graph-vs-CPU box geometry diagnostics without changing the production CPU accept-gate; report count, greedy matches, mean IoU, and minimum IoU for each diagnostic run. Implemented and compiled; the available tiny fox fixture reports graph=0 vs CPU=2, so detector graph geometry remains a quality/performance TODO and is not accepted by default | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** repair the manifest-driven O9 engine benchmark so structured detector specs (`{repo,file,revision}`) are normalized like recognizer specs; add a contract test and rerun Tesseract/PARSeq/PP-OCRv6 rows. Fixed structured detector normalization; Tesseract-LSTM `175.7 s` CER `0.040`, German Tesseract `101.8 s` unscored, PARSeq `1.206 s` unscored. The PP-OCRv6 artifacts load-fail (`missing stem conv`) and are now correctly marked errors instead of false `ok` rows | **COMPLETED** |
+| 2026-08-01 | `chore/ai-act-hardening` / `.codex/worktrees/chore-ai-act-hardening` | **Picked:** third AI Act audit, run against `origin/main` after `f7f89032` landed. Re-verified the code-backed claims and found them all true: no 1:N/gallery primitive in the C ABI, no emotion/age/gender/ethnicity code anywhere, no scraping tooling, server gate fails closed before `crispembed_face_init()`, gate keyed on declared model type so a renamed `.gguf` is still caught, `/doc` temp uploads tracked and unlinked. Two gaps remained, both closed here: (1) the deployed GitHub Pages demo (`examples/wasm-ocr/index.html`) carried no notice at all while the HF Space had one — added an AI-output/data-locality/no-biometrics footer linking POLICY.md; (2) POLICY §3 and README asserted the absence of biometric-categorisation *models* in terms a reader could mistake for a guarantee about capability — CLIP/SigLIP zero-shot means the caller supplies the classifier, now stated. Also strengthened §7: Art. 53 does not engage for task-specific models at all (the quantization argument is the fallback), and Art. 53(2) does not waive the copyright policy or training-data summary. Docs/HTML only — no C/C++, no rebuild needed | **COMPLETED** |
 | 2026-08-01 | `chore/ai-act-audit-followups` / `.codex/worktrees/chore-ai-act-audit-followups` | **Picked:** close the five gaps a second AI Act audit found in the `chore/ai-act-policy` work. (1) biometric gate moved into `crispembed_face_init()` so the Python/Rust/Dart bindings are covered, not just CLI+server — new ABI `crispembed_accept_biometric_use()`; (2) `check_registry_licenses.py` read only HF's `license` tag and missed `license_name`, so the 4 correct lfm2 rows failed — fixed, now exit 0, and wired into `main-health.yml`; (3)(4)(5) POLICY.md: Art. 50(2) reframed as reasoned-position-not-settled-exemption, OCR-VLM text addressed, and the regulatory dates corrected — the Omnibus is **Reg (EU) 2026/1744, OJ 24 Jul 2026**, not "adopted June 2026". Touches `src/crispembed.{h,cpp}`, `examples/cli/model_mgr.*`, bindings, POLICY/README/PLAN, `tests/check_registry_licenses.py` — **no OCR/model/graph code**. Verified: CLI + Python both refuse a recognition model without acknowledgement and load it with one, byte-identical embeddings either way; licence check exits 0; `tools/format.sh` clean. | **COMPLETED** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** fix O9 pipeline benchmark routing to use each manifest entry’s engine family (`ppocrv6`) instead of the tiered display name (`ppocrv6-tiny`), which had sent PP-OCRv6 fixtures through generic DB postprocessing and produced false `missing stem conv` load failures. Rebuilt CLI and verified tiny `4.98 s`/2 regions, small `20.82 s`/2 regions; medium exceeded the `120 s` guard and is recorded as a timeout, not a quality pass | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
@@ -34,6 +36,44 @@ all measured graph/total paths, so graph/kernel and width optimization are
 performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
 timing/output manifests; their existing parity checks are not performance
 acceptance evidence.
+
+Tesseract confidence checkpoint (2026-08-01): after rebuilding
+`test-confidence`, the explicit `/opt/homebrew/share/tessdata` Fraktur PSM 7
+comparison on `scan_strip.png` produced official `iE` (mean word confidence
+`0.043433`), native greedy `BEEES` (word confidence `0.884625`), and native
+beam-8 `BEEES` (sequence confidence `0.644788`, no fabricated character
+confidences). Official-word validity passed, but decoded text and confidence
+calibration failed; recoder/DAWG and page/line confidence aggregation remain
+quality TODOs. Timings were official `5881 ms`, native greedy `305 ms`, and
+beam `984 ms`; these whole-process values are diagnostic only.
+
+Tesseract decoder groundwork (2026-08-01): the converter now preserves every
+present DAWG component from `.traineddata` as base64 GGUF metadata with a
+component SHA-256 digest. This supplies the missing serialized source for a
+future native dictionary scorer; it does not claim DAWG traversal, recoder
+beam, or output parity, and existing GGUFs must be regenerated before they can
+use the metadata.
+
+The native loader now reads the DAWG manifest, validates that every listed
+component has a nonempty payload, and reports the loaded count in its model
+diagnostic. Older GGUFs remain compatible with zero DAWG entries. This closes
+metadata integrity only; DAWG traversal/scoring and decoded-output parity are
+still open.
+
+The loader now also structurally validates each base64 SquishedDawg payload:
+magic/header, dimensions, edge-array bounds, next-node bounds, and forward-edge
+run termination. `test-tesseract-dawg` passes and the regenerated English
+smoke model loads with `dawg=3`; no dictionary score is applied and no
+production beam behavior changed.
+
+The DAWG diagnostic layer now also supports exact-word membership lookup over
+unichar-ID sequences. The minimal fixture covers a positive and negative
+lookup; this is traversal infrastructure only, with no score or production
+decoder behavior change.
+
+The diagnostic DAWG layer now distinguishes exact-word membership from legal
+prefix membership. Its fixture covers `1` as a legal non-terminal prefix and
+`1,2` as the complete word; neither path is used by production OCR yet.
 
 CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
 stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
@@ -124,7 +164,9 @@ LSTM row arithmetic. The seed-preserving mixed Q8/F32 candidate still fails at
 logits cosine `0.989655` and decoded output, so quantization—not preprocessing
 or graph topology—is the remaining quality blocker.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending). Fresh routed fox benchmark after engine-name fix: CPU tiny `4.98 s`, small `20.82 s`; Metal tiny `24.52 s`, small `34.28 s`; medium timed out at `120.6 s` on both routes because the medium detector remains CPU-only. | **IN PROGRESS** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** measure repeated warm p50/p95 timings for runnable PP-OCRv6 tiny/small lanes and preserve cold-vs-warm evidence in the O9 survey; medium remains excluded from the warm lane until its CPU detector path is optimized. Metal repeated fox runs: tiny cold `49.14 s`, warm p50 `42.91 s`; small cold `70.66 s`, warm p50 `84.87 s` (the harness now persists per-run timings and inclusive p95; the small run’s p95 is not claimed from the pre-field artifact) | **COMPLETED** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** audit the PP-OCRv6 recognizer quality gate after the external head-to-head invalidated cosine-only parity. Local PaddleX exposes PP-OCRv6 detector code but no recognizer blueprint; the current torch mirror still guesses head count/activation/pooling and reproduces unreadable text. Keep the lane unvalidated and block default promotion until the official recognizer implementation/config is recovered and text-gold parity passes | **COMPLETED — quality gate remains blocked** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims. The capability matrix covers all 12 required OCR families, concrete CPU seams, PP-OCRv6/PP-LCNet partial claims, and explicit Metal/CUDA build boundaries; `tests/test_ocr_backend_matrix.py` is a mandatory smoke guard. CUDA execution and per-engine performance remain separate follow-ups | **COMPLETED** |
 | 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny recognizer now runs one persistent graph through logits with CPU/Metal accepted-output parity on two fixtures, while the detector constructs an opt-in full stem/backbone/neck/head graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; corrected detector neck channel order brings graph-vs-CPU probability cosine to 0.99113 and head pre-sigmoid to 0.99898, but graph box count is still 31 vs CPU 30, so detector CPU accept-gate fallback remains. The regenerated small/medium fox references are valid (the prior small archive had `large_stem2a` length `87,768`); CPU logits parity is `0.999998` small and `0.999992` medium. The small and medium recognizers now build a persistent GGML stem+backbone graph on CPU: all six large-stem taps are `1.000000`, stage taps are `1.000000`/`0.999994` small and `1.000000`/`0.999983` medium, and the CPU SVTR decoder receives the graph backbone with end-to-end logits unchanged (`0.999998`/`0.999992`). The asymmetric stride transition is now supported. Metal reaches stage4 cosine `0.999907` small / `0.999969` medium and logits cosine `0.999982` / `0.999986`, decoding `涨RiI` in both cases. The opt-in `CRISPEMBED_PPOCRV6_SVTR_GRAPH=1` seam graphs SVTR tokenization, and `CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH=1` now graphs both SVTR attention/MLP blocks plus final norm; CPU and Metal small/medium runs preserve output parity, with Metal logits cosine `0.999982`/`0.999986` and full graph timing `214`/`512 ms` on the fox crop. Multi-fixture direct recognizer smoke now shows identical CPU fallback/CPU full-graph text on Arabic line, receipt, and German document fixtures, and Metal full-graph text matches CPU on all three. Regenerated gold archives for those fixtures are backed up under `/Volumes/backups/ai/crispembed-gguf/`; the new `tests/test_ppocrv6_graph_gold.py --require` lane passes CPU at `0.999995–0.999996` and Metal at `0.999956–0.999982` (lowest on German), with unchanged decoded text. Remaining work is detector geometry parity and wiring the artifact-backed lane into model-equipped CI; keep both graph gates opt-in until that lane is reproducible there | **IN PROGRESS** |
@@ -2902,6 +2944,17 @@ the pattern first.
   same-index pairs. The tool remains strict (exit 1 while counts differ), and
   its matched deltas are diagnostic only until the row matcher accounts for
   true one-to-many merges.
+
+- **Nested-row classification (2026-08-01).** Source-pixel review shows the
+  German groups include official TSV decoration rows nested inside larger
+  boxes, not necessarily missing text lines. `merged_official_groups` now
+  identifies the largest primary official box and nested official indices;
+  do not split a native crop merely because TSV emitted nested marks.
+
+  On the German page, native row 0 has primary official index 1 with nested
+  indices 2 and 4; native row 9 has primary index 13 with nested index 12;
+  native row 22 has primary index 26 and no fully-contained nested row. The
+  remaining unmatched official row 0 is not explained by a nested decoration.
 
 - **One-to-many merge reporting (2026-08-01).** The geometry diagnostic now
   reports native rows whose vertical span covers multiple official rows as
