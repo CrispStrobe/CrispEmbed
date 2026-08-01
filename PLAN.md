@@ -2736,3 +2736,12 @@ the pattern first.
   `detector_route` output, so repeated A/B runs cannot silently fall back to
   DBNet. The wrapper and route-selection behavior are covered by the focused
   Miniconda test suite.
+
+- **Native route on CC0 German page (2026-08-01).** The explicit
+  `--native-pageseg` route on `german_official_print.jpg` also emitted 23
+  lines/862 characters, versus official Tesseract's 28 lines/897 characters;
+  CER/WER remained `0.32984/0.67974`. Native stage timing was
+  `detect=1014.9 ms`, `crop=605.7 ms`, `recognize=14263.4 ms`,
+  `total=15885.6 ms`. Thus both our DBNet and native row routes currently
+  share the same five-line coverage gap on this fixture; neither result is a
+  valid recognizer-quality comparison until line geometry is aligned.

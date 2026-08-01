@@ -1402,3 +1402,10 @@ The repeated benchmark wrapper now accepts `--native-pageseg` and records
 `detector_route`, preserving the DBNet-versus-native distinction across
 multi-repeat timing runs. Its route flag and comparator selection are covered
 by the 10-test focused harness.
+
+On the CC0 German page, the explicit native route emitted the same 23 lines
+and 862 characters as the DBNet route, versus 28 official lines and 897
+characters. CER/WER stayed `0.32984/0.67974`; native timing was
+`detect=1014.9 ms`, `crop=605.7 ms`, `recognize=14263.4 ms`,
+`total=15885.6 ms`. This is a shared five-line geometry/coverage gap, not
+evidence that either recognizer is worse on aligned crops.
