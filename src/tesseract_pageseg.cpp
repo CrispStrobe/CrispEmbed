@@ -316,6 +316,14 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
     std::vector<blob> blobs;
     std::vector<int> stack;
     stack.reserve(256);
+    int box_pad = 3;
+    if (const char * pad_env = std::getenv("CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD")) {
+        // Keep the historical 3-pixel expansion by default. Official
+        // Tesseract line boxes are often tighter, so expose the geometry
+        // independently from recognizer crop padding for controlled parity
+        // experiments and alternate scan resolutions.
+        box_pad = std::clamp(std::atoi(pad_env), 0, 16);
+    }
     for (int y = 0; y < height; ++y)
         for (int x = 0; x < width; ++x) {
             const size_t seed = (size_t)y * width + x;
@@ -379,10 +387,10 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
         }
         if (x1 < x0) continue;
         ocr_detect::text_box box{};
-        box.x = (float)std::max(0, x0 - 3);
-        box.y = (float)std::max(0, r.y0 - 3);
-        box.w = (float)std::min(width - (int)box.x, x1 - x0 + 7);
-        box.h = (float)std::min(height - (int)box.y, r.y1 - r.y0 + 7);
+        box.x = (float)std::max(0, x0 - box_pad);
+        box.y = (float)std::max(0, r.y0 - box_pad);
+        box.w = (float)std::min(width - (int)box.x, x1 - x0 + 2 * box_pad + 1);
+        box.h = (float)std::min(height - (int)box.y, r.y1 - r.y0 + 2 * box_pad + 1);
         box.score = 1.0f;
         out.push_back(box);
     }
