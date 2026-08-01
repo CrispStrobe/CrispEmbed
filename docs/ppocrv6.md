@@ -110,7 +110,7 @@ diagnostic detector graph from roughly 3.6 s to 3.3 s without changing the
 reported parity cosines.
 
 The PP-LCNet orientation graph is also opt-in with
-`PPLCNET_ORIENTATION_GRAPH=1`. It uses a backend scheduler with CPU fallback
+`PPLCNET_ORIENTATION_GRAPH=1` and `PPLCNET_ORIENTATION_GRAPH_PIPELINE=1`. It uses a backend scheduler with CPU fallback
 for ggml operations not implemented by the selected GPU backend. Its output is
 diagnostic-only unless `PPLCNET_ORIENTATION_GRAPH_ACCEPT=1` is set; the current
 Metal probe executes safely and matches the CPU reference within 0.026 logit
@@ -119,7 +119,9 @@ absolute error on the German line fixture. Run
 gate. The current expanded probe passes 9/10 German/Arabic/derived fixtures;
 the uneven-illumination Arabic fixture has a Metal delta of 1.07/3.22 while
 the CPU graph passes, so production still requires the explicit accept switch
-until that backend numerical case is resolved.
+until that backend numerical case and multi-context Metal lifecycle issue are
+resolved. Without the pipeline switch, the orchestrator keeps the proven CPU
+orientation path.
 
 The current CPU parity probe reports detector probability-map cosine 0.99113
 and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still

@@ -331,7 +331,8 @@ static bool build_graph(context * c) {
 
 context * init(const char * path, int) {
     auto * c = new context();
-    c->use_graph = std::getenv("PPLCNET_ORIENTATION_GRAPH") != nullptr;
+    c->use_graph = std::getenv("PPLCNET_ORIENTATION_GRAPH") != nullptr &&
+                   std::getenv("PPLCNET_ORIENTATION_GRAPH_PIPELINE") != nullptr;
     const bool graph_cpu = std::getenv("PPLCNET_ORIENTATION_GRAPH_CPU") != nullptr;
     c->backend = c->use_graph && !graph_cpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, c->backend, "pplcnet_orientation", c->wl)) {
@@ -403,6 +404,11 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
             fprintf(stderr, "pplcnet graph input %.7g %.7g %.7g %.7g\n", input[0], input[1], input[2], input[3]);
         ggml_backend_tensor_set(c->graph_input, input.data(), 0, input.size() * sizeof(float));
+        // Metal's scheduler on pre-tensor Apple GPUs does not reliably reuse
+        // a mixed CPU/Metal allocation across repeated depthwise executions.
+        // Reallocate the static graph per crop until backend reuse is proven.
+        ggml_backend_sched_reset(c->graph_sched);
+        if (!ggml_backend_sched_alloc_graph(c->graph_sched, c->graph)) return r;
         if (!c->graph_sched || ggml_backend_sched_graph_compute(c->graph_sched, c->graph) != GGML_STATUS_SUCCESS) return r;
         if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
             float tap[4] = {};
