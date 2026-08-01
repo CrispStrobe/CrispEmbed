@@ -10,6 +10,7 @@
 // Weights are dequantized to F32 on load and cached.
 
 #include "tesseract_lstm.h"
+#include "tesseract_dawg.h"
 #include "tesseract_recoder.h"
 
 #include "core/cpu_ops.h"
@@ -146,6 +147,10 @@ struct tesseract_lstm_context {
     std::vector<int> output_to_unichar;
     std::vector<std::vector<int>> recoder_codes;
 
+    // Optional parsed language models. Loading is diagnostic-only until
+    // dictionary scoring has passed official-output parity.
+    std::map<std::string, tesseract_dawg::Dawg> dawgs;
+
     // Unicharset tokens
     std::vector<std::string> tokens;
 
@@ -262,6 +267,23 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
             const int end = recoder_offsets[i + 1];
             if (begin >= 0 && end >= begin && end <= (int)recoder_flat.size()) {
                 ctx->recoder_codes.emplace_back(recoder_flat.begin() + begin, recoder_flat.begin() + end);
+            }
+        }
+    }
+
+    // DAWG payloads are opt-in. Existing GGUFs do not contain them, and
+    // loading them must not alter the default recognition path.
+    if (std::getenv("CRISPEMBED_TESSERACT_DAWG_LOAD") != nullptr) {
+        const auto dawg_names = core_gguf::kv_str_array(meta, "tesseract_lstm.dawg_names");
+        for (const auto & name : dawg_names) {
+            const std::string key = "tesseract_lstm.dawg." + name;
+            const auto bytes = core_gguf::kv_u8_array(meta, key.c_str());
+            tesseract_dawg::Dawg dawg;
+            std::string error;
+            if (tesseract_dawg::parse(bytes, dawg, &error)) {
+                ctx->dawgs.emplace(name, std::move(dawg));
+            } else {
+                fprintf(stderr, "tesseract_lstm: ignoring invalid DAWG %s: %s\n", name.c_str(), error.c_str());
             }
         }
     }
@@ -1082,6 +1104,10 @@ int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx) {
 
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->vgsl_spec.c_str() : "";
+}
+
+int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx) {
+    return ctx ? (int)ctx->dawgs.size() : 0;
 }
 
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled) {
