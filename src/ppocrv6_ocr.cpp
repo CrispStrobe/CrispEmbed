@@ -70,6 +70,11 @@ struct pp_graph_state {
     std::vector<ggml_backend_buffer_t> resident_bufs;
     bool attempted = false;
     bool ready = false;
+    // The recognizer graph has fixed crop dimensions. Keep its scheduler
+    // allocation alive across line crops; rebuilding the allocation for every
+    // crop defeats the persistent-graph design and needlessly re-plans backend
+    // buffers.
+    bool allocated = false;
 };
 
 struct ppocrv6_ocr_context {
@@ -673,6 +678,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph allocation failed\n");
         return false;
     }
+    c->graph.allocated = true;
     c->graph.ready = true;
     fprintf(stderr, "ppocrv6: persistent GGML graph ready (%s, %s, %lldx%lldx%lld)\n",
             ggml_backend_name(c->graph.backend), c->graph.logits_output ? "logits" : "backbone", (long long)x->ne[0],
@@ -692,8 +698,14 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     // Reuse of mixed Metal/CPU scheduler allocations is unstable on the
     // current pre-tensor Apple backend across repeated line crops. Rebuild
     // the static allocation per crop until backend reuse is validated.
-    ggml_backend_sched_reset(c->graph.sched);
-    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+    // This is a static-shape graph, so retain the scheduler allocation between
+    // crops. If a future dynamic-shape path invalidates it, it must clear
+    // `allocated` before reaching this function.
+    if (!c->graph.allocated) {
+        ggml_backend_sched_reset(c->graph.sched);
+        if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+        c->graph.allocated = true;
+    }
     const auto started = std::chrono::steady_clock::now();
     if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
     const auto finished = std::chrono::steady_clock::now();
