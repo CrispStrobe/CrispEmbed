@@ -1,0 +1,11 @@
+{
+  "name": "crispembed-wasm-browser-tests",
+  "private": true,
+  "description": "Headless-Chromium end-to-end tests for the CrispEmbed WASM OCR demo",
+  "scripts": {
+    "test": "node e2e.test.js"
+  },
+  "devDependencies": {
+    "playwright": "^1.49.0"
+  }
+}

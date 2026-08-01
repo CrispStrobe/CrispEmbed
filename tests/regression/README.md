@@ -1,5 +1,66 @@
 # CrispEmbed OCR portfolio regression suite
 
+## Real-world public-domain robustness fixtures
+
+The checked-in corpus now has a small seed set under `images/cc0/` for cases
+that synthetic fixtures do not cover: receipts, a historical receipt scan,
+Arabic printed/handwritten text, a handwritten letter, and a form.  Sources,
+license declarations, URLs, and SHA-256 checksums are recorded in
+`images/cc0/MANIFEST.json`; the source catalog is
+`cc0_sources.json`.  Fetch or refresh them with:
+
+```sh
+python3 tests/regression/fetch_cc0_fixtures.py
+```
+
+Stage coverage and the distinction between real-world and deterministic
+reference inputs are recorded in `corpus_manifest.json`.
+
+Deterministic robustness derivatives are under `images/derived/`. Their
+`MANIFEST.json` records the parent fixture hash and transformation recipe for
+each skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation,
+perspective, and mixed-orientation variant. Recreate them with:
+
+```sh
+python3 tests/regression/generate_derived_fixtures.py
+python3 tests/regression/test_derived_fixtures.py
+```
+
+Include those variants in the live raw/cleanup/binarization sweep with
+`--include-derived`; the flag is opt-in because the 45-image run is much more
+expensive than the seed-corpus smoke pass.
+
+The complete engine inventory—including engines whose runtime exists but whose
+GGUF still needs downloading or porting—is in `ocr_engine_matrix.json`.
+`ocr_engine_benchmark.py --download-missing` resolves manifest-pinned GGUFs
+from their Hugging Face repositories instead of treating an empty local cache
+as lack of support.
+
+For large GGUFs on an external volume, add `--mmap` to use the no-copy loader
+when the engine supports it:
+
+```sh
+python tests/ocr_engine_benchmark.py --only unlimited-ocr-stacked \
+  --gpu-backend metal --mmap --repeats 1 --timeout 300
+```
+
+The seed set now also includes German public-domain/CC0 inputs: an 1848 Berlin
+citizenship document, a German official-print page, and German Kurrent
+handwriting.  These are sourced from Wikimedia Commons and are tracked with
+the same checksum/license metadata.  A larger German historical OCR source is
+the CC0/public-domain [German PD Newspapers dataset](https://huggingface.co/datasets/storytracer/German-PD-Newspapers),
+which should be sampled rather than vendored wholesale.
+
+The seed set is intentionally not treated as gold transcription data until a
+human verifies each transcription.  It is suitable immediately for live
+robustness, preprocessing, orientation, layout, and language-routing checks.
+Rotated and skewed derivatives may be generated from these public-domain
+images without adding third-party licensing obligations.  The next expansion
+should use the CC0 ExpressExpense receipt set (200 real restaurant receipts)
+and the CC0 Arabic Documents OCR set (10K images with page/text annotations),
+but those sources require a separate download/acceptance step and are therefore
+not vendored by default.
+
 A model-output regression suite for the OCR engines. It exists because a
 vision-neck permute regression (`3fb1f8e`, Jun 2026) shipped **garbage OCR**
 (`colorcolorcolor…`) that the existing Kaggle `ocr-gpu-bench` kernel could not
@@ -41,7 +102,7 @@ A model **passes** only if all applicable checks pass.
       "name": "got-ocr2",
       "engine": "got-ocr2",
       "gguf": { "repo": "cstr/…-GGUF", "file": "…-q4_k.gguf", "revision": "<sha>" },
-      "sample": "tests/regression/images/fox.png",
+      "sample": "tests/regression/images/fox.png",   // local image, OR use sample_hf (below)
       "expected_text": "The quick brown fox …",   // null = not captured yet
       "match": { "max_cer": 0.10 },
       "ocr_args": [],                                // extra CLI flags (optional)
@@ -57,6 +118,28 @@ A model **passes** only if all applicable checks pass.
 
 `expected_text: null` means "not captured yet" — the key is kept so gaps are
 visible. Seed it via the rebake workflow below.
+
+**`sample_hf` (license-restricted fixture images).** When the only in-domain
+test image is under a license we can't bundle into this MIT/Apache repo (e.g.
+CROHME handwritten-math = CC-BY-NC-SA), replace `sample` with a `sample_hf`
+block that extracts one image from an HF **dataset** parquet at test time (like
+the GGUFs, the image is fetched from its original source and never committed):
+
+```jsonc
+"sample_hf": {
+  "dataset": "Kitajiang/test2_CROHME2014",
+  "file": "CROHME2014/test-00000-of-00001.parquet",
+  "revision": "<commit-sha>",          // PIN it so the row is stable
+  "row": 23,                            // integer index into the parquet
+  "image_column": "image",
+  "label_column": "latex_formula",      // optional sanity gate:
+  "expect_label": "\\[C_{t}=C+C=2C\\]"  // fail loudly if the row shifts
+}
+```
+
+Needs `pandas` in the test env (present on Kaggle + the conda base). Pick a row
+the model reads correctly + deterministically (CPU==Metal) so the pinned
+`expected_text` is a real guard, and attribute the source dataset in `_comment`.
 
 ## Rebake → validate workflow (adding / updating a model)
 

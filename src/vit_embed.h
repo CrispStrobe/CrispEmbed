@@ -43,6 +43,11 @@ int image_size(const context * ctx);
 // Returns empty vector on failure.
 std::vector<float> encode_file(context * ctx, const char * image_path);
 
+// Optional document deskew for encode_file (scan_cleanup consensus detector +
+// bilinear rotation, white fill). Off by default; max_angle_deg <= 0 keeps
+// the current value (initial default 15°).
+void set_deskew(context * ctx, bool enable, float max_angle_deg);
+
 // Free resources.
 void free(context * ctx);
 

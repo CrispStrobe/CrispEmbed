@@ -2,6 +2,7 @@
 // See image_preprocess.h for the parity caveat (bilinear vs torchvision bicubic).
 
 #include "image_preprocess.h"
+#include "scan_cleanup.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 // NOT static — export symbols for use by ocr_detect, ocr_pipeline, math_ocr
@@ -48,7 +49,13 @@ bool smart_resize(int height, int width, int factor, int min_pixels, int max_pix
 
 namespace {
 
-// Catmull-Rom cubic kernel with a = -0.5 (matches torchvision / OpenCV / PIL).
+// Catmull-Rom cubic kernel with a = -0.5. This matches PIL (Pillow) and
+// torchvision.transforms with the PIL backend — the resize path HF vision
+// processors (Qwen2-VL etc.) actually use, so a = -0.5 is the correct choice
+// for HF parity (measured residual cos 0.999984). NOTE: OpenCV INTER_CUBIC and
+// torch.nn.functional.interpolate(mode='bicubic') use a = -0.75 instead; the
+// difference vs a = -0.5 is only cos ~0.99999 (max ~0.13/255), so it is not
+// worth a runtime toggle — see PLAN "C5 remnants (a)".
 //   |x| <  1: (a+2)|x|^3 - (a+3)|x|^2 + 1
 //   |x| <  2: a|x|^3 - 5a|x|^2 + 8a|x| - 4a
 //   else    : 0
@@ -260,6 +267,18 @@ bool preprocess_rgb(const uint8_t * rgb, int height, int width, int channels, co
     if (channels < 3) {
         std::fprintf(stderr, "image_preproc: expected RGB(A) input, got %d channels\n", channels);
         return false;
+    }
+    if (cfg.deskew) {
+        uint8_t * rot = nullptr;
+        int rw2 = 0, rh2 = 0;
+        if (scan_cleanup_deskew_rgb(rgb, width, height, channels, cfg.deskew_max_angle, &rot, &rw2, &rh2) == 0 && rot) {
+            config c2 = cfg;
+            c2.deskew = 0;
+            bool ok = preprocess_rgb(rot, rh2, rw2, channels, c2, out);
+            scan_cleanup_free_image(rot);
+            return ok;
+        }
+        // detector reported no skew (or bad input) — continue unrotated
     }
     const int factor = cfg.patch_size * cfg.merge_size;
     int rh = 0, rw = 0;

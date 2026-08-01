@@ -7,6 +7,10 @@ on:
       - 'src/**'
       - 'ggml/**'
       - 'wasm/**'
+      - 'examples/wasm-ocr/**'
+      - 'tests/wasm-browser/**'
+      - 'tests/test_wasm_ocr_live.js'
+      - 'tests/test_wasm_ocr_wrapper.js'
       - 'CMakeLists.txt'
       - 'build-wasm.sh'
       - 'cmake/FindThreads.cmake'
@@ -30,6 +34,13 @@ jobs:
 
       - name: Setup emsdk
         uses: mymindstorm/setup-emsdk@v14
+        with:
+          # Pin to 6.0.2 — the last emsdk that built this repo green (CI was
+          # green on 6.0.2, red from 6.0.3 onward). 6.0.3's clang (23.0.0git)
+          # segfaults with an internal compiler crash on src/layout_detect.cpp.
+          # Do not use 3.1.64 here: it predates the emdawnwebgpu port that the
+          # WebGPU tier needs.
+          version: '6.0.2'
 
       - name: Build WASM
         run: ./build-wasm.sh --clean
@@ -39,8 +50,23 @@ jobs:
           ls -lh build-wasm/crispembed_ocr.js build-wasm/crispembed_ocr.wasm
           echo "JS size: $(wc -c < build-wasm/crispembed_ocr.js) bytes"
           echo "WASM size: $(wc -c < build-wasm/crispembed_ocr.wasm) bytes"
-          # Sanity: WASM should be < 2 MB, JS < 200 KB
-          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 2097152 ] || (echo "WASM too large" && exit 1)
+          # Sanity: WASM should be < 4 MB (full OCR pipeline), JS < 200 KB
+          [ $(wc -c < build-wasm/crispembed_ocr.wasm) -lt 4194304 ] || (echo "WASM too large" && exit 1)
+
+      - name: Node smoke + wrapper unit tests (real WASM module)
+        run: |
+          node tests/test_wasm_ocr_live.js
+          node tests/test_wasm_ocr_wrapper.js
+
+      - name: Browser end-to-end test (headless Chromium, real model)
+        run: |
+          mkdir -p /tmp/wasm-models
+          curl -sL "https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf" \
+            -o /tmp/wasm-models/pix2tex-mfr-q4_k.gguf
+          cd tests/wasm-browser
+          npm install
+          npx playwright install --with-deps chromium
+          CRISPEMBED_MODELS_DIR=/tmp/wasm-models node e2e.test.js
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
@@ -49,4 +75,5 @@ jobs:
           path: |
             build-wasm/crispembed_ocr.js
             build-wasm/crispembed_ocr.wasm
+            wasm/crispembed-ocr.js
           retention-days: 30

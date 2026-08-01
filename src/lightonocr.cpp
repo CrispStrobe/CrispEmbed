@@ -7,6 +7,7 @@
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "ggml.h"
+#include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
@@ -116,6 +117,9 @@ struct context {
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad wl;
     ggml_backend_sched_t sched = nullptr;
+    // Decode-step graph cache (LOCR_DECODE_CACHE=1): dedicated gallocr reserved
+    // once for the max decode graph, computed sched-free — see run_decoder_prefill.
+    ggml_gallocr_t decode_galloc = nullptr;
     std::vector<char> compute_meta;
     int n_threads = 1;
     int max_tokens = 2048;
@@ -304,6 +308,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
 
 void free_(context & ctx) {
     free_kv_cache(ctx);
+    if (ctx.decode_galloc) ggml_gallocr_free(ctx.decode_galloc);
     if (ctx.sched) ggml_backend_sched_free(ctx.sched);
     core_gguf::free_weights(ctx.wl);
     if (ctx.backend) ggml_backend_free(ctx.backend);
@@ -1126,17 +1131,13 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     int decode_steps = 0;
     int kv_repeat = n_heads / n_kv_heads;
 
-    for (int step = 1; step < max_new_tokens && best != eos_id; step++) {
-        if (!kv_ok) break;
-
-        auto t_step_start = std::chrono::steady_clock::now();
-        int n_past = ctx.kvc.n_past;
-        int Lk = n_past + 1; // total KV length after this step
-
-        // Embed new token
-        auto tok_emb = embed_tokens_cpu({ (int32_t)best });
-
-        // Build single-token decode graph with persistent KV cache
+    // Build the single-token decode graph for a given n_past. Factored out of the
+    // loop so LOCR_DECODE_CACHE=1 can reserve a dedicated gallocr once at the max
+    // KV length (np = max_seq-1) and reuse the no-realloc fast path every step,
+    // computing sched-free. Structure is n_past-invariant (constant node count);
+    // only tensor shapes grow with Lk. Output-identical.
+    auto build_step_graph = [&](int np) -> std::pair<ggml_context *, ggml_cgraph *> {
+        int Lk = np + 1; // total KV length after this step
         ggml_init_params ip2{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
         ggml_context * g2 = ggml_init(ip2);
         ggml_cgraph * gf2 = ggml_new_graph_custom(g2, 16384, false);
@@ -1180,16 +1181,16 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
             K_new = ggml_rope_ext(g2, K_new, pos2, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, rope_theta, 1.0f, 0.0f,
                                   1.0f, 0.0f, 0.0f);
 
-            // Write new K/V into persistent cache at n_past
+            // Write new K/V into persistent cache at np
             ggml_tensor * K_new_perm = ggml_cont(g2, ggml_permute(g2, K_new, 0, 2, 1, 3)); // (hd, 1, nkv)
             ggml_tensor * V_new_perm = ggml_cont(g2, ggml_permute(g2, V_new, 0, 2, 1, 3));
 
             ggml_tensor * k_dst =
                 ggml_view_4d(g2, ctx.kvc.k, head_dim, 1, n_kv_heads, 1, ctx.kvc.k->nb[1], ctx.kvc.k->nb[2],
-                             ctx.kvc.k->nb[3], (size_t)il * ctx.kvc.k->nb[3] + (size_t)n_past * ctx.kvc.k->nb[1]);
+                             ctx.kvc.k->nb[3], (size_t)il * ctx.kvc.k->nb[3] + (size_t)np * ctx.kvc.k->nb[1]);
             ggml_tensor * v_dst =
                 ggml_view_4d(g2, ctx.kvc.v, head_dim, 1, n_kv_heads, 1, ctx.kvc.v->nb[1], ctx.kvc.v->nb[2],
-                             ctx.kvc.v->nb[3], (size_t)il * ctx.kvc.v->nb[3] + (size_t)n_past * ctx.kvc.v->nb[1]);
+                             ctx.kvc.v->nb[3], (size_t)il * ctx.kvc.v->nb[3] + (size_t)np * ctx.kvc.v->nb[1]);
 
             ggml_build_forward_expand(gf2, ggml_cpy(g2, K_new_perm, k_dst));
             ggml_build_forward_expand(gf2, ggml_cpy(g2, V_new_perm, v_dst));
@@ -1245,11 +1246,49 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         ggml_set_name(ll, "last_logits");
         ggml_set_output(ll);
         ggml_build_forward_expand(gf2, ll);
+        return { g2, gf2 };
+    };
 
-        ggml_backend_sched_reset(ctx.sched);
-        if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) {
-            ggml_free(g2);
-            break;
+    static const bool locr_cache = (std::getenv("LOCR_DECODE_CACHE") != nullptr);
+    if (locr_cache && !ctx.decode_galloc) {
+        ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
+        auto [rg, rgf] = build_step_graph(ctx.kvc.max_seq - 1);
+        bool reserved = ggml_gallocr_reserve(ctx.decode_galloc, rgf);
+        ggml_free(rg);
+        if (!reserved) {
+            fprintf(stderr, "lightonocr: decode gallocr reserve failed; using sched\n");
+            ggml_gallocr_free(ctx.decode_galloc);
+            ctx.decode_galloc = nullptr;
+        } else {
+            fprintf(stderr, "lightonocr: decode-step graph cache active (reserved at max_seq=%d)\n", ctx.kvc.max_seq);
+        }
+    }
+
+    for (int step = 1; step < max_new_tokens && best != eos_id; step++) {
+        if (!kv_ok) break;
+
+        auto t_step_start = std::chrono::steady_clock::now();
+        int n_past = ctx.kvc.n_past;
+
+        // Embed new token
+        auto tok_emb = embed_tokens_cpu({ (int32_t)best });
+
+        // Build single-token decode graph with persistent KV cache (shared with
+        // the LOCR_DECODE_CACHE reserve above).
+        auto [g2, gf2] = build_step_graph(n_past);
+
+        if (ctx.decode_galloc) {
+            // Cached path: reserved gallocr (no per-step realloc) + sched-free.
+            if (!ggml_gallocr_alloc_graph(ctx.decode_galloc, gf2)) {
+                ggml_free(g2);
+                break;
+            }
+        } else {
+            ggml_backend_sched_reset(ctx.sched);
+            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf2)) {
+                ggml_free(g2);
+                break;
+            }
         }
 
         // Set inputs
@@ -1258,7 +1297,9 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "pos_ids"), &pos_val, 0, sizeof(int32_t));
 
         ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
-        if (ggml_backend_sched_graph_compute(ctx.sched, gf2) != GGML_STATUS_SUCCESS) {
+        ggml_status st = ctx.decode_galloc ? ggml_backend_graph_compute(ctx.backend, gf2)
+                                           : ggml_backend_sched_graph_compute(ctx.sched, gf2);
+        if (st != GGML_STATUS_SUCCESS) {
             ggml_free(g2);
             break;
         }

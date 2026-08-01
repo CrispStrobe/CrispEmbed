@@ -60,6 +60,14 @@ typedef struct crispembed_hparams {
 // Returns NULL on failure.
 CRISPEMBED_API crispembed_context * crispembed_init(const char * model_path, int n_threads);
 
+// Set the process-global GPU backend preference (issue #214 semantics):
+// "metal", "cuda", "vulkan", ... matched case-insensitively against the ggml
+// device/registry names. Call once at startup, BEFORE any *_init. NULL or ""
+// = auto (ggml_backend_init_best). An unavailable preference warns on stderr
+// and falls back to auto. This selects among GPU backends only; use the
+// per-engine *_FORCE_CPU environment variables to force CPU.
+CRISPEMBED_API void crispembed_set_gpu_backend(const char * name);
+
 // Set Matryoshka output dimension. 0 = use model default.
 // Must be <= model's native dimension. The embedding is truncated
 // and re-normalized to the specified dimension.
@@ -353,6 +361,17 @@ CRISPEMBED_API const float * crispembed_preprocess_image_rgb(crispembed_context 
                                                              int width, int channels, int * out_n_patches,
                                                              int * out_row_dim, int32_t out_grid_thw[3]);
 
+// Optional document deskew for every file/RGB image path on this context
+// (crispembed_encode_image_file, crispembed_encode_text_with_image_file,
+// crispembed_preprocess_image, crispembed_preprocess_image_rgb). When enabled,
+// the decoded image runs through the scan_cleanup consensus skew detector
+// (Hough cross-checked against differential-square-sum) and is rotated
+// (bilinear, white fill) before smart_resize whenever a skew is confirmed.
+// Disabled by default — enable for scanned-document embeddings only; natural
+// photographs should stay un-rotated. `max_angle_deg` caps the correction
+// (pass <= 0 to keep the current value; initial default 15°).
+CRISPEMBED_API void crispembed_set_image_deskew(crispembed_context * ctx, int enable, float max_angle_deg);
+
 // ---------------------------------------------------------------------------
 // Standalone ViT image embedding (SigLIP, CLIP)
 // ---------------------------------------------------------------------------
@@ -369,6 +388,10 @@ CRISPEMBED_API int crispembed_vit_dim(const crispembed_vit_context * ctx);
 // owned by ctx, valid until next call. Returns NULL on failure.
 CRISPEMBED_API const float * crispembed_vit_encode_file(crispembed_vit_context * ctx, const char * image_path,
                                                         int * out_dim);
+
+// Optional document deskew for crispembed_vit_encode_file — same semantics
+// and default (off) as crispembed_set_image_deskew.
+CRISPEMBED_API void crispembed_vit_set_deskew(crispembed_vit_context * ctx, int enable, float max_angle_deg);
 
 // Free ViT context.
 CRISPEMBED_API void crispembed_vit_free(crispembed_vit_context * ctx);
@@ -612,6 +635,9 @@ typedef struct crispembed_ocr_result {
     float confidence;  // detection confidence
     const char * text; // recognized text (owned by pipeline ctx)
     int text_len;
+    int orientation_corrected; // nonzero when a 180° line correction was applied
+    int orientation_angle;     // detected line angle in degrees, when available
+    float orientation_confidence;
 } crispembed_ocr_result;
 
 /// Load OCR pipeline (detection + recognition models).
@@ -652,6 +678,12 @@ typedef struct crispembed_ocr_pipeline_params {
     const char * lid_model;      // optional text LID GGUF for language detection (NULL/"" = off)
     const char * truecase_model; // optional truecaser GGUF for post-OCR truecasing (NULL/"" = off)
     const char * tess_model_dir; // directory of tesseract-{lang}-q8_0.gguf for LID auto-select (NULL/"" = off)
+    const char * layout_model;   // optional RT-DETR layout GGUF (NULL/"" = off)
+    const char * table_model;    // optional Tesseract-LSTM GGUF for table cells
+    const char * formula_model;  // optional PP-FormulaNet GGUF
+    int route_tables;            // route layout table regions when non-zero
+    int route_formulas;          // route layout formula regions when non-zero
+    int image_text_fallback;     // keep text OCR for layout regions without a specialized route
 } crispembed_ocr_pipeline_params;
 
 CRISPEMBED_API crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void);
@@ -667,10 +699,42 @@ CRISPEMBED_API const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * 
                                                                          const char ** out_full_text,
                                                                          float * out_mean_confidence);
 
+/// Reading-order region indices from the most recent pipeline run.
+CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * out_n);
+
+/// Lightweight Markdown export from the most recent pipeline run.
+CRISPEMBED_API const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len);
+
+typedef struct crispembed_ocr_stage_metric {
+    int index;
+    const char * engine;
+    float elapsed_ms;
+    int cleanup_applied;
+    int accepted;
+    int text_chars;
+    float mean_confidence;
+} crispembed_ocr_stage_metric;
+
+/// Per-stage metrics from the most recent pipeline run. The array is owned by
+/// the pipeline context and is valid until its next run/free call.
+CRISPEMBED_API const crispembed_ocr_stage_metric * crispembed_ocr_pipeline_stage_metrics(void * ctx, int * out_n);
+
 /// Get the detected language from the last pipeline run (via LID).
 /// Returns ISO 639-1 code (e.g. "en", "de") or "" if LID not configured.
 /// confidence is written to *out_confidence if non-NULL.
 CRISPEMBED_API const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float * out_confidence);
+
+/// Runtime OCR capabilities. Values are 1 only when the corresponding
+/// backend was configured for this context; callers should not infer support
+/// from an empty result.
+typedef struct crispembed_ocr_capabilities {
+    int layout;
+    int tables;
+    int formulas;
+    int image_text_fallback;
+} crispembed_ocr_capabilities;
+
+CRISPEMBED_API int crispembed_ocr_pipeline_capabilities(void * ctx, crispembed_ocr_capabilities * out);
 
 /// Per-region recognition confidence (mean per-char softmax) from the last run.
 CRISPEMBED_API float crispembed_ocr_pipeline_region_rec_confidence(void * ctx, int region_idx);
@@ -879,6 +943,8 @@ typedef struct {
     float despeckle_thresh;   // speck vs local-median darkness gap 0..1, default 0.25
     int blackfilter;          // 1 = clear large SOLID dark regions (default: 1)
     float blackfilter_thresh; // dark-pixel threshold 0..1, default 0.20
+    int deskew_consensus;     // 1 = cross-check Hough vs differential-square-sum
+                              //     detectors; rotate only on agreement (default: 1)
 } crispembed_scan_cleanup_params;
 
 CRISPEMBED_API crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void);
@@ -1102,10 +1168,11 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
-    int source_type; // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int engine; // 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl(+PaddleOCR-VL) 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr (matches map_engine)
+    int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    int engine;           // 0..13 existing engines, 14=unified metadata-dispatched GGUF (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
+    const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)
     int cleanup_enabled;
     int denoise;                            // NAFNet tier-2 for this stage
     crispembed_scan_cleanup_params cleanup; // the 10 classical knobs
@@ -1113,8 +1180,14 @@ typedef struct crispembed_ocr_stage {
     float det_prob_threshold;
     float det_box_threshold;
     int det_target_short;
-    int vlm_max_tokens;      // 0 = engine default
-    const char * vlm_prompt; // NULL/"" = engine default
+    int det_max_side;             // 0 = default 2000
+    int det_min_height;           // 0 = default 30
+    float det_width_height_ratio; // 0 = default 8; negative disables
+    int det_max_candidates;       // 0 = default 1000; negative disables
+    int det_dilation;             // 0 = default 1; negative disables
+    int det_score_mode;           // 0 = fast, 1 = accurate
+    int vlm_max_tokens;           // 0 = engine default
+    const char * vlm_prompt;      // NULL/"" = engine default
     // Accept-gate:
     int min_chars;
     float min_confidence;
@@ -1172,6 +1245,22 @@ CRISPEMBED_API char * crispembed_ocr_render(const crispembed_ocr_result * result
 /// across all raster images on the page, and *out_n_images to the count.
 CRISPEMBED_API int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * out_dpi, int * out_n_images);
 
+/// Per-page PDF DPI result returned by crispembed_pdf_all_pages_dpi().
+typedef struct crispembed_pdf_page_dpi_result {
+    float dpi;
+    float dpi_min;
+    float dpi_max;
+    int n_images;
+    float page_width_pt;
+    float page_height_pt;
+} crispembed_pdf_page_dpi_result;
+
+/// Profile every page in a PDF. The returned array is owned by the caller and
+/// must be released with crispembed_pdf_all_pages_dpi_free().
+CRISPEMBED_API const crispembed_pdf_page_dpi_result * crispembed_pdf_all_pages_dpi(const char * pdf_path,
+                                                                                   int * out_n_pages);
+CRISPEMBED_API void crispembed_pdf_all_pages_dpi_free(const crispembed_pdf_page_dpi_result * results);
+
 /// Dewarp a grayscale page (straighten curved text lines).
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
 CRISPEMBED_API int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h);
@@ -1193,6 +1282,10 @@ CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray
 /// Find skew angle (degrees) of a document image.
 /// Returns 0 on success; *angle is the rotation needed to deskew.
 CRISPEMBED_API int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence);
+
+/// Model-free page orientation fallback. Returns 0/90/180/270 degrees
+/// clockwise and never rotates the input buffer.
+CRISPEMBED_API int crispembed_detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence);
 
 /// Adaptive Otsu binarization (handles uneven lighting).
 /// [out] must be pre-allocated (w*h bytes), receives 0/255 values.

@@ -26,6 +26,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdarg>
@@ -36,6 +37,7 @@
 #include <map>
 #include <unordered_map>
 #include <string>
+#include <thread>
 #include <vector>
 
 using core_cpu::gelu_erf;
@@ -738,13 +740,43 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context * ctx, const float
             int rpb_len = blk.rpb_table ? (int)blk.rpb_table->ne[1] : 0;
 
             std::vector<float> attn_out(n_windows * tokens_per_win * D);
-            for (int w = 0; w < n_windows; w++) {
+            // Each window's MHSA is independent (self-contained scratch, writes
+            // only its own output slice), so the window loop parallelizes across
+            // cores byte-identically. This honors ctx->n_threads (the window
+            // attention was previously single-threaded regardless of -t); default
+            // n_threads=1 keeps the old behavior. MIXTEX_WMSA_SCALAR=1 forces the
+            // single-threaded path even under -t (A/B baseline).
+            auto run_window = [&](int w) {
                 const float * win_mask =
                     (!attn_mask_all.empty()) ? attn_mask_all.data() + w * tokens_per_win * tokens_per_win : nullptr;
                 window_mhsa(windows.data() + w * tokens_per_win * D, attn_out.data() + w * tokens_per_win * D,
                             tokens_per_win, D, n_heads, q_w.data(), q_b.data(), k_w.data(), k_b.data(), v_w.data(),
                             v_b.data(), out_w.data(), out_b.data(), rpb_t.empty() ? nullptr : rpb_t.data(),
                             rpb_i.empty() ? nullptr : rpb_i.data(), rpb_len, win_mask);
+            };
+            static const bool wmsa_scalar = (std::getenv("MIXTEX_WMSA_SCALAR") != nullptr);
+            int n_thr = wmsa_scalar ? 1 : std::min(ctx->n_threads, n_windows);
+            if (ctx->bench) {
+                static bool printed = false;
+                if (!printed) {
+                    fprintf(stderr, "[mixtex-bench] wmsa n_threads=%d (ctx=%d, n_windows=%d)\n", n_thr, ctx->n_threads,
+                            n_windows);
+                    printed = true;
+                }
+            }
+            if (n_thr <= 1) {
+                for (int w = 0; w < n_windows; w++) run_window(w);
+            } else {
+                std::atomic<int> next{ 0 };
+                std::vector<std::thread> pool;
+                pool.reserve(n_thr);
+                for (int t = 0; t < n_thr; t++) {
+                    pool.emplace_back([&]() {
+                        int w;
+                        while ((w = next.fetch_add(1)) < n_windows) run_window(w);
+                    });
+                }
+                for (auto & th : pool) th.join();
             }
 
             // Diff: compare windowed attention output BEFORE window_reverse
@@ -956,6 +988,7 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
         std::vector<float> K, V;
     };
     std::vector<cross_kv> cross_kvs(n_layers);
+    auto _t_ckv = std::chrono::steady_clock::now();
     for (int li = 0; li < n_layers; li++) {
         auto & l = ctx->dec_layers[li];
         auto ck_w = to_f32(l.cross_k_w), ck_b = to_f32(l.cross_k_b);
@@ -991,12 +1024,40 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
     auto lm_n_w = to_f32(ctx->lm_ln_w), lm_n_b = to_f32(ctx->lm_ln_b);
     auto lm_bias = to_f32(ctx->lm_bias);
 
+    // Pre-dequantize all decoder-layer weights ONCE. They are constant across the
+    // autoregressive steps, but the old code re-ran ~11 to_f32() calls per layer
+    // on EVERY step (converting the same f16 weights 30× over) — which dominated
+    // the decode. Hoisting is byte-identical (same f32 values, same math).
+    struct dec_f32 {
+        std::vector<float> sq_w, sq_b, sk_w, sk_b, sv_w, sv_b, so_w, so_b, sln_w, sln_b;
+        std::vector<float> cq_w, cq_b, co_w, co_b, cln_w, cln_b;
+        std::vector<float> fu_w, fu_b, fd_w, fd_b, fln_w, fln_b;
+    };
+    std::vector<dec_f32> decw(n_layers);
+    for (int li = 0; li < n_layers; li++) {
+        auto & l = ctx->dec_layers[li];
+        auto & d = decw[li];
+        d.sq_w = to_f32(l.self_q_w), d.sq_b = to_f32(l.self_q_b);
+        d.sk_w = to_f32(l.self_k_w), d.sk_b = to_f32(l.self_k_b);
+        d.sv_w = to_f32(l.self_v_w), d.sv_b = to_f32(l.self_v_b);
+        d.so_w = to_f32(l.self_out_w), d.so_b = to_f32(l.self_out_b);
+        d.sln_w = to_f32(l.self_ln_w), d.sln_b = to_f32(l.self_ln_b);
+        d.cq_w = to_f32(l.cross_q_w), d.cq_b = to_f32(l.cross_q_b);
+        d.co_w = to_f32(l.cross_out_w), d.co_b = to_f32(l.cross_out_b);
+        d.cln_w = to_f32(l.cross_ln_w), d.cln_b = to_f32(l.cross_ln_b);
+        d.fu_w = to_f32(l.ffn_up_w), d.fu_b = to_f32(l.ffn_up_b);
+        d.fd_w = to_f32(l.ffn_down_w), d.fd_b = to_f32(l.ffn_down_b);
+        d.fln_w = to_f32(l.ffn_ln_w), d.fln_b = to_f32(l.ffn_ln_b);
+    }
+
     // Greedy decode
     std::vector<int> tokens;
     tokens.push_back(hp.sos_token);
     int max_len = hp.max_position;
     int vocab = hp.vocab_size;
 
+    double _ckv_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_ckv).count();
+    auto _t_steps = std::chrono::steady_clock::now();
     for (int step = 0; step < max_len; step++) {
         int token_id = tokens.back();
         int pos = step + 2; // RoBERTa position offset: padding_idx=1, positions start at 2
@@ -1023,15 +1084,32 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
         }
 
         // Decoder layers
+        static const bool dq_per_step = (std::getenv("MIXTEX_DEC_DEQUANT_PER_STEP") != nullptr);
         for (int li = 0; li < n_layers; li++) {
             auto & l = ctx->dec_layers[li];
+            if (dq_per_step) {
+                // A/B baseline: re-dequantize this layer's weights every step (the
+                // old behavior) so the cache win is measurable / bisectable.
+                auto & d = decw[li];
+                d.sq_w = to_f32(l.self_q_w), d.sq_b = to_f32(l.self_q_b);
+                d.sk_w = to_f32(l.self_k_w), d.sk_b = to_f32(l.self_k_b);
+                d.sv_w = to_f32(l.self_v_w), d.sv_b = to_f32(l.self_v_b);
+                d.so_w = to_f32(l.self_out_w), d.so_b = to_f32(l.self_out_b);
+                d.sln_w = to_f32(l.self_ln_w), d.sln_b = to_f32(l.self_ln_b);
+                d.cq_w = to_f32(l.cross_q_w), d.cq_b = to_f32(l.cross_q_b);
+                d.co_w = to_f32(l.cross_out_w), d.co_b = to_f32(l.cross_out_b);
+                d.cln_w = to_f32(l.cross_ln_w), d.cln_b = to_f32(l.cross_ln_b);
+                d.fu_w = to_f32(l.ffn_up_w), d.fu_b = to_f32(l.ffn_up_b);
+                d.fd_w = to_f32(l.ffn_down_w), d.fd_b = to_f32(l.ffn_down_b);
+                d.fln_w = to_f32(l.ffn_ln_w), d.fln_b = to_f32(l.ffn_ln_b);
+            }
 
-            // Self-attention
-            auto sq_w = to_f32(l.self_q_w), sq_b = to_f32(l.self_q_b);
-            auto sk_w = to_f32(l.self_k_w), sk_b = to_f32(l.self_k_b);
-            auto sv_w = to_f32(l.self_v_w), sv_b = to_f32(l.self_v_b);
-            auto so_w = to_f32(l.self_out_w), so_b = to_f32(l.self_out_b);
-            auto sln_w = to_f32(l.self_ln_w), sln_b = to_f32(l.self_ln_b);
+            // Self-attention (weights pre-dequantized in decw[li])
+            auto &sq_w = decw[li].sq_w, &sq_b = decw[li].sq_b;
+            auto &sk_w = decw[li].sk_w, &sk_b = decw[li].sk_b;
+            auto &sv_w = decw[li].sv_w, &sv_b = decw[li].sv_b;
+            auto &so_w = decw[li].so_w, &so_b = decw[li].so_b;
+            auto &sln_w = decw[li].sln_w, &sln_b = decw[li].sln_b;
 
             // Compute Q for current token, append K/V to cache
             std::vector<float> q(D), k(D), v(D);
@@ -1068,10 +1146,10 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
                         r.is_pass() ? "PASS" : "FAIL");
             }
 
-            // Cross-attention
-            auto cq_w = to_f32(l.cross_q_w), cq_b = to_f32(l.cross_q_b);
-            auto co_w = to_f32(l.cross_out_w), co_b = to_f32(l.cross_out_b);
-            auto cln_w = to_f32(l.cross_ln_w), cln_b = to_f32(l.cross_ln_b);
+            // Cross-attention (weights pre-dequantized in decw[li])
+            auto &cq_w = decw[li].cq_w, &cq_b = decw[li].cq_b;
+            auto &co_w = decw[li].co_w, &co_b = decw[li].co_b;
+            auto &cln_w = decw[li].cln_w, &cln_b = decw[li].cln_b;
 
             std::vector<float> cq(D);
             linear_cpu(hidden.data(), cq.data(), D, D, cq_w.data(), cq_b.data());
@@ -1117,10 +1195,10 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
                         r.is_pass() ? "PASS" : "FAIL");
             }
 
-            // FFN
-            auto fu_w = to_f32(l.ffn_up_w), fu_b = to_f32(l.ffn_up_b);
-            auto fd_w = to_f32(l.ffn_down_w), fd_b = to_f32(l.ffn_down_b);
-            auto fln_w = to_f32(l.ffn_ln_w), fln_b = to_f32(l.ffn_ln_b);
+            // FFN (weights pre-dequantized in decw[li])
+            auto &fu_w = decw[li].fu_w, &fu_b = decw[li].fu_b;
+            auto &fd_w = decw[li].fd_w, &fd_b = decw[li].fd_b;
+            auto &fln_w = decw[li].fln_w, &fln_b = decw[li].fln_b;
 
             std::vector<float> up(hp.dec_ffn), down(D);
             linear_cpu(hidden.data(), up.data(), D, hp.dec_ffn, fu_w.data(), fu_b.data());
@@ -1196,6 +1274,15 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
         }
 
         tokens.push_back(best);
+    }
+
+    if (ctx->bench) {
+        double _steps_ms =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_steps).count();
+        fprintf(
+            stderr,
+            "[mixtex-bench] decoder breakdown: cross-KV precompute=%.1f ms, step loop=%.1f ms (%d steps, enc_len=%d)\n",
+            _ckv_ms, _steps_ms, (int)tokens.size() - 1, enc_len);
     }
 
     // Decode tokens to string. MixTeX's decoder uses a GPT-2 byte-level BPE

@@ -7,6 +7,7 @@ library crispembed;
 export 'src/crispembed_bindings.dart';
 export 'src/crispembed.dart';
 export 'src/math_ocr.dart';
+export 'src/omr.dart';
 export 'src/hmer_ocr.dart';
 export 'src/bttr_ocr.dart';
 export 'src/text_detect.dart';

@@ -17,6 +17,7 @@
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -1304,7 +1305,7 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
 
     core_gguf::free_metadata(meta);
 
-    ggml_backend_t backend = ggml_backend_init_best();
+    ggml_backend_t backend = crispasr_init_gpu_backend();
     if (!core_gguf::load_weights(model_path, backend, "dat", ctx->wl)) {
         ggml_backend_free(backend);
         delete ctx;

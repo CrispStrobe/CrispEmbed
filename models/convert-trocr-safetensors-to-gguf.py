@@ -36,6 +36,16 @@ def main():
     p.add_argument("--output", required=True, help="Output GGUF path")
     p.add_argument("--fp16", action="store_true", help="Store weights in FP16")
     p.add_argument("--name", default=None, help="Model name for metadata")
+    p.add_argument("--image-mean", type=float, default=None,
+                   help="Grayscale input-normalization mean. Default: preprocessor_config.json "
+                        "image_mean[0] if present, else 0.5 (TrOCR/pix2tex). TexTeller: 0.9545467")
+    p.add_argument("--image-std", type=float, default=None,
+                   help="Grayscale input-normalization std. Default: preprocessor_config.json "
+                        "image_std[0] if present, else 0.5. TexTeller: 0.15394445")
+    p.add_argument("--preprocess", choices=["squash", "pad"], default=None,
+                   help="squash = resize to SxS ignoring aspect (TrOCR/pix2tex, default); "
+                        "pad = trim background border + aspect-preserving resize + white pad to SxS "
+                        "(TexTeller's torchvision transform)")
     args = p.parse_args()
 
     model_dir = Path(args.model_dir)
@@ -49,6 +59,17 @@ def main():
     with open(config_path) as f:
         config = json.load(f)
 
+    # generation_config.json is what HF generate() actually resolves
+    # decoder_start_token_id from — authoritative over config.json, which often
+    # leaves it unset at the top level (e.g. TrOCR: top-level None, but
+    # generation_config says 2). Reading only config.json wrongly fell back to
+    # bos=0 → the decoder started on the wrong token and emitted empty output.
+    gen_cfg = {}
+    gen_path = model_dir / "generation_config.json"
+    if gen_path.exists():
+        with open(gen_path) as f:
+            gen_cfg = json.load(f)
+
     enc_cfg = config.get("encoder", config)
     dec_cfg = config.get("decoder", config)
 
@@ -58,6 +79,30 @@ def main():
     enc_intermediate = enc_cfg.get("intermediate_size", 1536)
     image_size = enc_cfg.get("image_size", 384)
     patch_size = enc_cfg.get("patch_size", 16)
+
+    # ---- Input preprocessing (normalization + resize mode) ----
+    # Emitted so the engine reproduces the model's own transform. TrOCR/pix2tex
+    # ship a preprocessor_config.json (mean/std 0.5, squash-resize). TexTeller
+    # has NO preprocessor_config — its transform lives in source constants
+    # (mean 0.9545467, std 0.15394445, trim+aspect+white-pad) — pass those via
+    # --image-mean/--image-std/--preprocess pad.
+    pp = {}
+    pp_path = model_dir / "preprocessor_config.json"
+    if pp_path.exists():
+        with open(pp_path) as f:
+            pp = json.load(f)
+
+    def _scalar(v, default):
+        if isinstance(v, (list, tuple)) and v:
+            return float(v[0])
+        if isinstance(v, (int, float)):
+            return float(v)
+        return default
+
+    image_mean = args.image_mean if args.image_mean is not None else _scalar(pp.get("image_mean"), 0.5)
+    image_std = args.image_std if args.image_std is not None else _scalar(pp.get("image_std"), 0.5)
+    preprocess_pad = args.preprocess == "pad"  # default (None or "squash") → squash
+    print(f"Preprocess: mean={image_mean}, std={image_std}, mode={'pad' if preprocess_pad else 'squash'}")
 
     dec_layers = dec_cfg.get("decoder_layers", 6)
     dec_heads = dec_cfg.get("decoder_attention_heads", 8)
@@ -78,10 +123,14 @@ def main():
     # 2 — a wrong start poisons the position-0 KV and the decode repeats/degenerates).
     # Flat (non-nested) configs are unaffected: config is dec_cfg, so this reads
     # the same field as before.
-    dec_start = config.get("decoder_start_token_id")
+    # Priority: generation_config (what generate() uses) → top-level config → bos.
+    dec_start = gen_cfg.get("decoder_start_token_id")
+    if dec_start is None:
+        dec_start = config.get("decoder_start_token_id")
     if dec_start is None:
         dec_start = config.get("bos_token_id", bos)
     scale_embedding = dec_cfg.get("scale_embedding", True)
+    dec_activation = dec_cfg.get("activation_function", "relu")
 
     print(f"Encoder: {enc_layers}L/{enc_heads}H/{enc_hidden}d, image={image_size}, patch={patch_size}")
     print(f"Decoder: {dec_layers}L/{dec_heads}H/{dec_d_model}d, vocab={vocab_size}, ffn={dec_ffn_dim}")
@@ -113,6 +162,21 @@ def main():
                 if idx < len(tokens):
                     tokens[idx] = word
             print(f"Tokenizer: {len(tokens)} tokens from vocab.json")
+
+    # TrOCR-small (XLM-R/RoBERTa) ships NO tokenizer.json/vocab.json — only
+    # tokenizer_config.json — so the id→string mapping must come from
+    # AutoTokenizer, which also handles the fairseq vocab offset. Without this
+    # the vocab stays empty and every generated token detokenizes to "" (empty
+    # OCR output despite a correct encoder + decoder).
+    if not any(tokens):
+        try:
+            from transformers import AutoTokenizer
+            tk = AutoTokenizer.from_pretrained(str(model_dir))
+            n = dec_cfg.get("vocab_size") or vocab_size or tk.vocab_size
+            tokens = [(tk.convert_ids_to_tokens(i) or f"<unk_{i}>") for i in range(n)]
+            print(f"Tokenizer: {len(tokens)} tokens via AutoTokenizer (XLM-R/SentencePiece)")
+        except Exception as e:
+            print(f"WARNING: AutoTokenizer fallback failed: {e}")
 
     # Merge added_tokens.json (separate file, e.g. TexTeller Chinese chars)
     added_tok_path = model_dir / "added_tokens.json"
@@ -314,6 +378,9 @@ def main():
     writer.add_uint32("encoder.intermediate_size", enc_intermediate)
     writer.add_uint32("encoder.image_size", image_size)
     writer.add_uint32("encoder.patch_size", patch_size)
+    writer.add_float32("encoder.image_mean", image_mean)
+    writer.add_float32("encoder.image_std", image_std)
+    writer.add_bool("encoder.preprocess_pad", preprocess_pad)
     writer.add_uint32("decoder.decoder_layers", dec_layers)
     writer.add_uint32("decoder.decoder_attention_heads", dec_heads)
     writer.add_uint32("decoder.d_model", dec_d_model)
@@ -326,6 +393,10 @@ def main():
     writer.add_uint32("decoder.pad_token_id", pad)
     writer.add_uint32("decoder.decoder_start_token_id", dec_start)
     writer.add_bool("decoder.scale_embedding", scale_embedding)
+    # Decoder FFN activation (model-dependent): pix2tex/TrOCR-small = relu,
+    # TexTeller = gelu. The engine hardcoded relu; carrying it here lets the
+    # engine pick gelu vs relu per model instead of silently corrupting the FFN.
+    writer.add_string("decoder.activation_function", dec_activation)
 
     # Tokenizer — use the same key as pix2tex GGUF ("tokenizer.tokens")
     # NOT add_token_list() which writes "tokenizer.ggml.tokens"

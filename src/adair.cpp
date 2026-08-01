@@ -18,6 +18,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -810,7 +811,7 @@ adair_context * adair_init(const char * model_path, int n_threads) {
     if (!model_path) return nullptr;
 
     bool force_cpu = (getenv("ADAIR_FORCE_CPU") && atoi(getenv("ADAIR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!backend) return nullptr;
     core_gguf::WeightLoad wl;

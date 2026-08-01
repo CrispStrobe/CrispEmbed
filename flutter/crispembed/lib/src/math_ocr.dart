@@ -29,7 +29,9 @@ typedef _OcrRecognizeRawDart = Pointer<Utf8> Function(
 DynamicLibrary _openOcrLib([String? libPath]) {
   if (libPath != null) return DynamicLibrary.open(libPath);
   if (Platform.isIOS) return DynamicLibrary.process();
-  if (Platform.isAndroid || Platform.isLinux) return DynamicLibrary.open('libcrispembed.so');
+  if (Platform.isAndroid || Platform.isLinux) {
+    return DynamicLibrary.open('libcrispembed.so');
+  }
   if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
   if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
   return DynamicLibrary.open('libcrispembed.so');
@@ -53,14 +55,15 @@ class CrispEmbedOcr {
   CrispEmbedOcr(String modelPath, {int nThreads = 4, String? libPath}) {
     _lib = _openOcrLib(libPath);
 
-    final init = _lib.lookupFunction<_OcrInitC, _OcrInitDart>(
-        'crispembed_ocr_model_init');
-    _free = _lib.lookupFunction<_OcrFreeC, _OcrFreeDart>(
-        'crispembed_ocr_model_free');
+    final init = _lib
+        .lookupFunction<_OcrInitC, _OcrInitDart>('crispembed_ocr_model_init');
+    _free = _lib
+        .lookupFunction<_OcrFreeC, _OcrFreeDart>('crispembed_ocr_model_free');
     _recognize = _lib.lookupFunction<_OcrRecognizeC, _OcrRecognizeDart>(
         'crispembed_ocr_model_recognize_gray');
-    _recognizeRaw = _lib.lookupFunction<_OcrRecognizeRawC, _OcrRecognizeRawDart>(
-        'crispembed_ocr_model_recognize');
+    _recognizeRaw =
+        _lib.lookupFunction<_OcrRecognizeRawC, _OcrRecognizeRawDart>(
+            'crispembed_ocr_model_recognize');
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr, nThreads);

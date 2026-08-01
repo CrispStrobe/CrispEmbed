@@ -1,0 +1,16 @@
+Doctors recommend rest and fluids to recover from a mild fever.
+Ärzte empfehlen Ruhe und Flüssigkeit, um sich von leichtem Fieber zu erholen.
+The function returns an error when the input list is empty.
+Die Funktion gibt einen Fehler zurück, wenn die Eingabeliste leer ist.
+Cutting carbon emissions requires a shift toward cleaner transport.
+Die Senkung der CO2-Emissionen erfordert einen Wechsel zu saubererem Verkehr.
+The painting uses warm colours to convey a sense of calm.
+Das Gemälde verwendet warme Farben, um ein Gefühl der Ruhe zu vermitteln.
+Small class sizes let teachers give students more individual attention.
+Kleine Klassen ermöglichen es Lehrern, den Schülern mehr individuelle Aufmerksamkeit zu geben.
+Migratory birds travel thousands of kilometres between seasons.
+Zugvögel legen zwischen den Jahreszeiten Tausende von Kilometern zurück.
+The bridge was designed to withstand strong earthquakes.
+Die Brücke wurde so entworfen, dass sie starken Erdbeben standhält.
+Deep ocean currents move heat slowly around the entire planet.
+Tiefe Meeresströmungen transportieren Wärme langsam um den gesamten Planeten.

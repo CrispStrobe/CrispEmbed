@@ -360,9 +360,18 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q8_0.gguf",
       "Qwen3-Bidirectional 2048d 90+langs text+audio (2.5B)", "3.1 GB", "apache-2.0",
       "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
+    { "bidirlm-omni-2.5b-mm", "bidirlm-omni-2.5b-q4_k-imatrix-multimodal.gguf",
+      "https://huggingface.co/cstr/bidirlm-omni-2.5b-GGUF/resolve/main/bidirlm-omni-2.5b-q4_k-imatrix-multimodal.gguf",
+      "BidirLM-Omni 2.5B (Q4_K, MULTIMODAL imatrix: text +0.036 / image +0.007 / audio ~0 cos)", "1.6 GB", "apache-2.0",
+      "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
     { "bidirlm-omni-2.5b-textonly", "bidirlm-omni-2.5b-textonly-q8_0.gguf",
       "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
       "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB", "apache-2.0",
+      "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
+    { "bidirlm-omni-2.5b-textonly-q4k", "bidirlm-omni-2.5b-textonly-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/"
+      "bidirlm-omni-2.5b-textonly-q4_k-imatrix.gguf",
+      "BidirLM-Omni 2.5B text-only (Q4_K+imatrix — cos 0.948, size option; q8 for quality)", "1.1 GB", "apache-2.0",
       "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
 
     // --- RAG-critical models (Phase 3) ---
@@ -579,20 +588,36 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base-q8_0.gguf",
       "BERT reranker EN+ZH 278M (Q8_0)", "304 MB", "mit", "https://huggingface.co/BAAI/bge-reranker-base" },
 
-    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
+    // Reranker defaults are Q8_0: 4-bit keeps top-1 but reorders the tail (Kendall-τ
+    // 0.92–0.96 vs f16 on a 16×6 corpus; imatrix doesn't help — the score head is
+    // argmax-sensitive). The old iq4_xs/q4_k "τ=1.0" was a coarse-corpus artifact.
+    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2-q8_0.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-q8_0.gguf",
+      "BERT reranker English fast 22M (Q8_0 — exact ranking; iq4_xs τ=0.958)", "24 MB", "apache-2.0",
+      "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2" },
+    { "ms-marco-MiniLM-L-6-v2-iq4xs", "ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
       "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
-      "BERT reranker English fast 22M (IQ4_XS+imatrix)", "19 MB", "apache-2.0",
+      "BERT reranker English fast 22M (IQ4_XS+imatrix, smaller)", "19 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2" },
 
-    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
+    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2-q8_0.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-q8_0.gguf",
+      "BERT reranker English 33M (Q8_0 — exact ranking)", "36 MB", "apache-2.0",
+      "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2" },
+    { "ms-marco-MiniLM-L-12-v2-iq4xs", "ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
       "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
-      "BERT reranker English 33M (IQ4_XS+imatrix)", "25 MB", "apache-2.0",
+      "BERT reranker English 33M (IQ4_XS+imatrix, smaller)", "25 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2" },
 
-    { "jina-reranker-v2-base-multilingual", "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
+    { "jina-reranker-v2-base-multilingual", "jina-reranker-v2-base-multilingual-q8_0.gguf",
+      "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/"
+      "jina-reranker-v2-base-multilingual-q8_0.gguf",
+      "XLM-R reranker multilingual 278M (Q8_0 — exact ranking; q4_k+im τ=0.925)", "302 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
+    { "jina-reranker-v2-base-multilingual-q4k", "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/"
       "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
-      "XLM-R reranker multilingual 278M (Q4_K+imatrix)", "261 MB", "cc-by-nc-4.0",
+      "XLM-R reranker multilingual 278M (Q4_K+imatrix, smaller)", "261 MB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
 
     { "mxbai-rerank-xsmall-v1", "mxbai-rerank-xsmall-v1-q8_0.gguf",
@@ -664,6 +689,14 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/splade-pp-en-v1-GGUF/resolve/main/splade-pp-en-v1-iq4_xs.gguf",
       "BERT sparse SPLADE English 109M (IQ4_XS+imatrix, sparse-cos 0.996)", "72 MB", "apache-2.0",
       "https://huggingface.co/prithivida/Splade_PP_en_v1" },
+    { "splade-v3", "splade-v3-iq4_xs.gguf",
+      "https://huggingface.co/cstr/splade-v3-GGUF/resolve/main/splade-v3-iq4_xs.gguf",
+      "BERT sparse SPLADE v3 English 110M (IQ4_XS+imatrix, sparse-cos 0.997)", "68 MB", "cc-by-nc-sa-4.0",
+      "https://huggingface.co/naver/splade-v3" },
+    { "splade-v3-q8", "splade-v3-q8_0.gguf",
+      "https://huggingface.co/cstr/splade-v3-GGUF/resolve/main/splade-v3-q8_0.gguf",
+      "BERT sparse SPLADE v3 English 110M (Q8_0, sparse-cos 1.000)", "111 MB", "cc-by-nc-sa-4.0",
+      "https://huggingface.co/naver/splade-v3" },
 
     // --- GTE v1.5 (new BERT) ---
 
@@ -708,19 +741,22 @@ static const ModelEntry k_registry[] = {
 
     { "embeddinggemma-300m", "embeddinggemma-300m-iq4_xs.gguf",
       "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-iq4_xs.gguf",
-      "Gemma3 768d 24-layer last-token (IQ4_XS+imatrix)", "303 MB", "gemma",
+      "Gemma3 768d 24-layer mean-pool (IQ4_XS+imatrix)", "303 MB", "gemma",
       "https://huggingface.co/google/embeddinggemma-300m" },
     { "embeddinggemma-300m-q4k", "embeddinggemma-300m-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-q4_k-imatrix.gguf",
-      "Gemma3 768d 24-layer last-token (Q4_K+imatrix)", "306 MB", "gemma",
+      "Gemma3 768d 24-layer mean-pool (Q4_K+imatrix)", "306 MB", "gemma",
       "https://huggingface.co/google/embeddinggemma-300m" },
     { "embeddinggemma-300m-iq4xs", "embeddinggemma-300m-iq4_xs.gguf",
       "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-iq4_xs.gguf",
-      "Gemma3 768d 24-layer last-token (IQ4_XS+imatrix)", "303 MB", "gemma",
+      "Gemma3 768d 24-layer mean-pool (IQ4_XS+imatrix)", "303 MB", "gemma",
       "https://huggingface.co/google/embeddinggemma-300m" },
     { "embeddinggemma-300m-q8", "embeddinggemma-300m-q8_0.gguf",
       "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-q8_0.gguf",
-      "Gemma3 768d 24-layer last-token (Q8_0)", "357 MB", "gemma",
+      "Gemma3 768d 24-layer mean-pool (Q8_0)", "357 MB", "gemma", "https://huggingface.co/google/embeddinggemma-300m" },
+    { "embeddinggemma-300m-qat", "embeddinggemma-300m-qat-q8_0-dense.gguf",
+      "https://huggingface.co/cstr/embeddinggemma-300m-GGUF/resolve/main/embeddinggemma-300m-qat-q8_0-dense.gguf",
+      "Gemma3 768d 24-layer mean-pool, community gemma-embedding arch (QAT Q8_0 + baked Dense)", "347 MB", "gemma",
       "https://huggingface.co/google/embeddinggemma-300m" },
 
     { "yunet", "yunet.gguf", "https://huggingface.co/cstr/yunet-GGUF/resolve/main/yunet.gguf",
@@ -735,13 +771,35 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/clip-vit-large-patch14-GGUF/resolve/main/clip-vit-large-patch14.gguf",
       "CLIP ViT-L/14 vision encoder (304M)", "1.2 GB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
 
-    { "clip-text-base", "clip-text-base.gguf",
+    { "clip-text-base", "clip-text-base-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-q4_k-imatrix.gguf",
+      "CLIP text encoder base (63M, 512d, Q4_K+imatrix)", "50 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-base-patch16" },
+    { "clip-text-base-iq4xs", "clip-text-base-iq4_xs.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-iq4_xs.gguf",
+      "CLIP text encoder base (IQ4_XS+imatrix)", "49 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-base-patch16" },
+    { "clip-text-base-q8", "clip-text-base-q8_0.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-q8_0.gguf",
+      "CLIP text encoder base (Q8_0)", "70 MB", "mit", "https://huggingface.co/openai/clip-vit-base-patch16" },
+    { "clip-text-base-f32", "clip-text-base.gguf",
       "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base.gguf",
-      "CLIP text encoder base (63M, 512d)", "244 MB", "mit", "https://huggingface.co/openai/clip-vit-base-patch16" },
+      "CLIP text encoder base (F32)", "244 MB", "mit", "https://huggingface.co/openai/clip-vit-base-patch16" },
 
-    { "clip-text-large", "clip-text-large.gguf",
+    { "clip-text-large", "clip-text-large-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large-q4_k-imatrix.gguf",
+      "CLIP text encoder large (124M, 768d, Q4_K+imatrix)", "91 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-large-patch14" },
+    { "clip-text-large-iq4xs", "clip-text-large-iq4_xs.gguf",
+      "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large-iq4_xs.gguf",
+      "CLIP text encoder large (IQ4_XS+imatrix)", "88 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-large-patch14" },
+    { "clip-text-large-q8", "clip-text-large-q8_0.gguf",
+      "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large-q8_0.gguf",
+      "CLIP text encoder large (Q8_0)", "134 MB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
+    { "clip-text-large-f32", "clip-text-large.gguf",
       "https://huggingface.co/cstr/clip-text-large-GGUF/resolve/main/clip-text-large.gguf",
-      "CLIP text encoder large (124M, 768d)", "480 MB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
+      "CLIP text encoder large (F32)", "480 MB", "mit", "https://huggingface.co/openai/clip-vit-large-patch14" },
 
     { "siglip-large-256", "siglip-large-256.gguf",
       "https://huggingface.co/cstr/siglip-large-256-GGUF/resolve/main/siglip-large-256.gguf",
@@ -762,9 +820,21 @@ static const ModelEntry k_registry[] = {
       "SigLIP ViT-B/16 vision encoder 384x384 (93M)", "354 MB", "apache-2.0",
       "https://huggingface.co/google/siglip-base-patch16-384" },
 
-    { "siglip-text-base", "siglip-text-base.gguf",
+    { "siglip-text-base", "siglip-text-base-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base-q4_k-imatrix.gguf",
+      "SigLIP text encoder base (93M, 768d, Q4_K+imatrix; cos 0.962 — q8 for max fidelity)", "75 MB", "apache-2.0",
+      "https://huggingface.co/google/siglip-base-patch16-224" },
+    { "siglip-text-base-iq4xs", "siglip-text-base-iq4_xs.gguf",
+      "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base-iq4_xs.gguf",
+      "SigLIP text encoder base (IQ4_XS+imatrix)", "73 MB", "apache-2.0",
+      "https://huggingface.co/google/siglip-base-patch16-224" },
+    { "siglip-text-base-q8", "siglip-text-base-q8_0.gguf",
+      "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base-q8_0.gguf",
+      "SigLIP text encoder base (Q8_0, cos 0.9995)", "118 MB", "apache-2.0",
+      "https://huggingface.co/google/siglip-base-patch16-224" },
+    { "siglip-text-base-f32", "siglip-text-base.gguf",
       "https://huggingface.co/cstr/siglip-text-base-GGUF/resolve/main/siglip-text-base.gguf",
-      "SigLIP text encoder base (93M, 768d)", "421 MB", "apache-2.0",
+      "SigLIP text encoder base (F32)", "421 MB", "apache-2.0",
       "https://huggingface.co/google/siglip-base-patch16-224" },
 
     { "scrfd-det-10g", "scrfd-det-10g.gguf",
@@ -817,10 +887,35 @@ static const ModelEntry k_registry[] = {
       "PARSeq-tiny scene text OCR (ViT+Transformer, 6M, ECCV 2022)", "6 MB", "apache-2.0",
       "https://huggingface.co/cstr/parseq-GGUF" },
 
-    { "dbnet-det", "dbnet-ic15-q4_k.gguf",
-      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf",
-      "DBNet text detection (ResNet-18+FPNC, PP-OCRv4)", "7 MB", "apache-2.0",
+    { "dbnet-det", "dbnet-ic15-q8_0.gguf",
+      "https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q8_0.gguf",
+      "DBNet text detection (ResNet-18+FPNC, ICDAR2015)", "13 MB", "apache-2.0",
       "https://huggingface.co/cstr/dbnet-ic15-GGUF" },
+
+    { "ppocrv6-tiny-det", "PP-OCRv6_tiny_det-f16.gguf",
+      "https://huggingface.co/cstr/PP-OCRv6-tiny-det-GGUF/resolve/main/PP-OCRv6_tiny_det-f16.gguf",
+      "PP-OCRv6 tiny text detector (DB++ neck)", "1 MB", "apache-2.0",
+      "https://huggingface.co/cstr/PP-OCRv6-tiny-det-GGUF" },
+    { "ppocrv6-small-det", "PP-OCRv6_small_det-f16.gguf",
+      "https://huggingface.co/cstr/PP-OCRv6-small-det-GGUF/resolve/main/PP-OCRv6_small_det-f16.gguf",
+      "PP-OCRv6 small text detector (DB++ neck)", "5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/PP-OCRv6-small-det-GGUF" },
+    { "ppocrv6-medium-det", "PP-OCRv6_medium_det-f16.gguf",
+      "https://huggingface.co/cstr/PP-OCRv6-medium-det-GGUF/resolve/main/PP-OCRv6_medium_det-f16.gguf",
+      "PP-OCRv6 medium text detector (DB++ neck)", "42 MB", "apache-2.0",
+      "https://huggingface.co/cstr/PP-OCRv6-medium-det-GGUF" },
+    { "ppocrv6-tiny-rec", "PP-OCRv6_tiny_rec-q8-head.gguf",
+      "https://huggingface.co/cstr/PP-OCRv6_tiny_rec-GGUF/resolve/main/PP-OCRv6_tiny_rec-q8-head.gguf",
+      "PP-OCRv6 tiny CTC recognizer (F32 backbone, head-only Q8)", "5 MB", "apache-2.0",
+      "https://huggingface.co/cstr/PP-OCRv6_tiny_rec-GGUF" },
+    { "ppocrv6-small-rec", "PP-OCRv6_small_rec-q8-head.gguf",
+      "https://huggingface.co/cstr/PP-OCRv6_small_rec-GGUF/resolve/main/PP-OCRv6_small_rec-q8-head.gguf",
+      "PP-OCRv6 small CTC recognizer (F32 backbone, head-only Q8)", "20 MB", "apache-2.0",
+      "https://huggingface.co/cstr/PP-OCRv6_small_rec-GGUF" },
+    { "ppocrv6-medium-rec", "PP-OCRv6_medium_rec-q8-head.gguf",
+      "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF/resolve/main/PP-OCRv6_medium_rec-q8-head.gguf",
+      "PP-OCRv6 medium CTC recognizer (F32 backbone, head-only Q8)", "63 MB", "apache-2.0",
+      "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF" },
 
     { "surya-det", "surya-det-f16.gguf", "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",
       "surya-ocr-2 text detection (EfficientViT segformer, 38M, 91 langs)", "73 MB", "openrail-m",
@@ -995,14 +1090,20 @@ static const ModelEntry k_registry[] = {
       "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "300 MB", "apache-2.0",
       "https://huggingface.co/cstr/pix2struct-GGUF" },
 
-    { "deepseek-ocr2", "deepseek-ocr2-f16.gguf",
-      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-f16.gguf",
-      "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding)", "6.5 GB", "apache-2.0",
+    // Stacked MoE experts (converter #4): ~1.3 GB lower resident footprint than the
+    // per-expert layout; the loader falls back to per-expert for older GGUFs. Distinct
+    // cache filename so an existing per-expert cache re-downloads the stacked file.
+    { "deepseek-ocr2", "deepseek-ocr2-q4_k-stacked.gguf",
+      "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-q4_k-stacked.gguf",
+      "DeepSeek-OCR-2 (SAM + Qwen2-enc + MoE decoder, 3.4B, grounding; stacked experts)", "2.3 GB", "apache-2.0",
       "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF" },
 
-    { "unlimited-ocr", "unlimited-ocr-q4_k.gguf",
-      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k.gguf",
-      "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR)", "2.0 GB", "mit",
+    // Stacked MoE experts: ~1.2 GB lower resident footprint than the per-expert
+    // layout; the loader falls back to per-expert for older GGUFs. Distinct cache
+    // filename so an existing per-expert cache re-downloads the stacked file.
+    { "unlimited-ocr", "unlimited-ocr-q4_k-stacked.gguf",
+      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k-stacked.gguf",
+      "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 
     // PaddleOCR-VL-0.9B — NaViT ViT + ERNIE-4.5 LLM, 109 languages
@@ -1086,10 +1187,19 @@ static const ModelEntry k_registry[] = {
       "GLiNER zero-shot NER (DeBERTa-v3-base, Q4_K compact)", "152 MB", "apache-2.0",
       "https://huggingface.co/cstr/gliner-deberta-GGUF" },
 
-    { "lilt-funsd", "lilt-funsd-f32.gguf",
-      "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-f32.gguf",
-      "LiLT FUNSD form understanding (130M params, MIT)", "497 MB", "mit",
+    { "lilt-funsd", "lilt-funsd-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-q4_k-imatrix.gguf",
+      "LiLT FUNSD form understanding (130M, Q4_K+imatrix — 16/16 KIE labels vs f32)", "94 MB", "mit",
       "https://huggingface.co/cstr/lilt-funsd-GGUF" },
+    { "lilt-funsd-iq4xs", "lilt-funsd-iq4_xs.gguf",
+      "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-iq4_xs.gguf", "LiLT FUNSD (IQ4_XS+imatrix)",
+      "92 MB", "mit", "https://huggingface.co/cstr/lilt-funsd-GGUF" },
+    { "lilt-funsd-q8", "lilt-funsd-q8_0.gguf",
+      "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-q8_0.gguf", "LiLT FUNSD (Q8_0)", "140 MB",
+      "mit", "https://huggingface.co/cstr/lilt-funsd-GGUF" },
+    { "lilt-funsd-f32", "lilt-funsd-f32.gguf",
+      "https://huggingface.co/cstr/lilt-funsd-GGUF/resolve/main/lilt-funsd-f32.gguf", "LiLT FUNSD (F32)", "497 MB",
+      "mit", "https://huggingface.co/cstr/lilt-funsd-GGUF" },
 
     { "lilt-base", "lilt-base-f32.gguf", "https://huggingface.co/cstr/lilt-base-GGUF/resolve/main/lilt-base-f32.gguf",
       "LiLT base encoder (130M params, MIT)", "497 MB", "mit", "https://huggingface.co/cstr/lilt-base-GGUF" },
@@ -1182,10 +1292,21 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
 
     // Punctuation restoration models
-    { "fireredpunc", "fireredpunc-q4_k.gguf",
-      "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k.gguf",
-      "FireRedPunc punctuation restoration (BERT chinese-bert-wwm-ext, 5 classes)", "84 MB", "apache-2.0",
+    { "fireredpunc", "fireredpunc-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k-imatrix.gguf",
+      "FireRedPunc punctuation (chinese-bert-wwm-ext, 5 classes, Q4_K+imatrix — 2.8x lower KL vs f16)", "58 MB",
+      "apache-2.0", "https://huggingface.co/cstr/fireredpunc-GGUF" },
+    { "fireredpunc-iq4xs", "fireredpunc-iq4_xs.gguf",
+      "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-iq4_xs.gguf",
+      "FireRedPunc punctuation (IQ4_XS+imatrix)", "43 MB", "apache-2.0",
       "https://huggingface.co/cstr/fireredpunc-GGUF" },
+    { "fireredpunc-q4k", "fireredpunc-q4_k.gguf",
+      "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q4_k.gguf",
+      "FireRedPunc punctuation (Q4_K, no imatrix)", "58 MB", "apache-2.0",
+      "https://huggingface.co/cstr/fireredpunc-GGUF" },
+    { "fireredpunc-q8", "fireredpunc-q8_0.gguf",
+      "https://huggingface.co/cstr/fireredpunc-GGUF/resolve/main/fireredpunc-q8_0.gguf",
+      "FireRedPunc punctuation (Q8_0)", "109 MB", "apache-2.0", "https://huggingface.co/cstr/fireredpunc-GGUF" },
 
     { "fullstop-punc", "fullstop-punc-q4_k.gguf",
       "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF/resolve/main/fullstop-punc-q4_k.gguf",
@@ -1197,9 +1318,17 @@ static const ModelEntry k_registry[] = {
       "Fullstop punctuation restoration (XLM-R-large, q8_0 — exact HF parity)", "567 MB", "mit",
       "https://huggingface.co/cstr/fullstop-punc-multilang-GGUF" },
 
-    { "pcs", "pcs-xlmr-base-q4_k.gguf",
+    { "pcs", "pcs-xlmr-base-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k-imatrix.gguf",
+      "PCS punct+caps+segmentation (XLM-R-base, Q4_K+imatrix — 4.2x lower KL vs f32)", "163 MB", "mit",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF" },
+    { "pcs-iq4xs", "pcs-xlmr-base-iq4_xs.gguf",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-iq4_xs.gguf",
+      "PCS punct+caps+segmentation (IQ4_XS+imatrix)", "154 MB", "mit",
+      "https://huggingface.co/cstr/pcs-xlmr-base-GGUF" },
+    { "pcs-q4k", "pcs-xlmr-base-q4_k.gguf",
       "https://huggingface.co/cstr/pcs-xlmr-base-GGUF/resolve/main/pcs-xlmr-base-q4_k.gguf",
-      "PCS punct+caps+segmentation (XLM-R-base, multilingual)", "170 MB", "mit",
+      "PCS punct+caps+segmentation (Q4_K, no imatrix)", "163 MB", "mit",
       "https://huggingface.co/cstr/pcs-xlmr-base-GGUF" },
 
     { "pcs-q8", "pcs-xlmr-base-q8_0.gguf",
@@ -1223,6 +1352,53 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/texteller-3-GGUF/resolve/main/texteller-3-q8_0.gguf",
       "TexTeller 3.0 math→LaTeX (ViT+TrOCR, 310M, EN+CN)", "302 MB", "apache-2.0",
       "https://huggingface.co/cstr/texteller-3-GGUF" },
+
+    // Sheet Music Transformer — Optical Music Recognition (ConvNext + transformer,
+    // 21.4M). q8_0 decodes identically to HF; q4_k is too lossy for the AR decode.
+    { "smt-grandstaff", "smt-grandstaff-q8_0.gguf",
+      "https://huggingface.co/cstr/smt-grandstaff-GGUF/resolve/main/smt-grandstaff-q8_0.gguf",
+      "Sheet Music Transformer OMR: staff notation→bekern (pianoform, 21.4M)", "24 MB", "mit",
+      "https://huggingface.co/antoniorv6/smt-grandstaff" },
+
+    // SMT++ full-page pianoform OMR (antoniorv6/SMT rewrite, 10.9M). Same engine
+    // as smt-grandstaff but scaled config (maxlen 4353, 181-token vocab) + smt-main
+    // forward (scaled attn, no pre-head ReLU) + reduce_ratio=1.0/invert preproc.
+    // q8_0 per-stage cos ≥0.9998; greedy decode byte-identical to HF at f32/q8_0.
+    { "smt-fp", "smt-fp-grandstaff-q8_0.gguf",
+      "https://huggingface.co/cstr/smt-fp-grandstaff-GGUF/resolve/main/smt-fp-grandstaff-q8_0.gguf",
+      "SMT++ full-page OMR: whole pianoform page→bekern (10.9M)", "16 MB", "mit",
+      "https://huggingface.co/PRAIG/smt-fp-grandstaff" },
+
+    // Polyphonic-TrOMR — Optical Music Recognition (ResNetV2+ViT encoder +
+    // x-transformers decoder, ~22M). q8_0 decodes byte-identically to the
+    // reference; camera/photo-robust. rhythm/pitch/lift streams merged to notation.
+    { "tromr", "tromr-q8_0.gguf", "https://huggingface.co/cstr/tromr-GGUF/resolve/main/tromr-q8_0.gguf",
+      "Polyphonic-TrOMR OMR: staff image→rhythm/pitch/lift notation (~22M, camera-robust)", "31 MB", "apache-2.0",
+      "https://github.com/NetEase/Polyphonic-TrOMR" },
+
+    // Flova/omr_transformer — handwritten/whiteboard OMR (DonutSwin + 4L mBART VED,
+    // 143M). q8_0 decodes byte-identically to HF. Only permissive handwritten-music
+    // OMR model; "simple notes" → LilyPond.
+    { "flova", "flova-q8_0.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q8_0.gguf",
+      "Flova/omr_transformer OMR: handwritten/whiteboard music→LilyPond (143M)", "162 MB", "apache-2.0",
+      "https://huggingface.co/Flova/omr_transformer" },
+    // q4_k is half the size and decoded byte-exact on all three sample images
+    // (the encoder's per-token cosine drifts but the greedy decode never flips).
+    // q8_0 stays the default; q4_k is the smaller-download option (e.g. browser).
+    { "flova-q4k", "flova-q4_k.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q4_k.gguf",
+      "Flova/omr_transformer OMR: handwritten music→LilyPond (Q4_K, byte-exact on samples)", "88 MB", "apache-2.0",
+      "https://huggingface.co/Flova/omr_transformer" },
+    { "flova-q8", "flova-q8_0.gguf", "https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q8_0.gguf",
+      "Flova/omr_transformer OMR: handwritten music→LilyPond (Q8_0)", "162 MB", "apache-2.0",
+      "https://huggingface.co/Flova/omr_transformer" },
+
+    // Transcoda-59M — zero-shot full-page OMR (ConvNeXt-V2 enc + 8L RoPE cross-attn
+    // decoder, 59M). Score image→Humdrum **kern. OMR-NED SOTA on real historical
+    // scans. Weights cc-by-4.0 (attribution required).
+    { "transcoda", "transcoda-q8_0.gguf",
+      "https://huggingface.co/cstr/transcoda-omr-GGUF/resolve/main/transcoda-q8_0.gguf",
+      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M)", "120 MB", "cc-by-4.0",
+      "https://huggingface.co/btrkeks/transcoda-59M-zeroshot-v1" },
 
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
 };
@@ -1271,7 +1447,17 @@ static bool file_exists(const std::string & path) {
 
 static void mkdirs(const std::string & path) {
     std::error_code ec;
-    std::filesystem::create_directories(std::filesystem::path(path), ec);
+    const std::filesystem::path requested(path);
+    const std::filesystem::file_status link_status = std::filesystem::symlink_status(requested, ec);
+    if (!ec && std::filesystem::is_symlink(link_status)) {
+        const std::filesystem::path target = std::filesystem::read_symlink(requested, ec);
+        if (!ec) {
+            const std::filesystem::path resolved = target.is_absolute() ? target : requested.parent_path() / target;
+            std::filesystem::create_directories(resolved, ec);
+            return;
+        }
+    }
+    std::filesystem::create_directories(requested, ec);
 }
 
 static long long file_size(const std::string & path) {
@@ -1298,9 +1484,8 @@ static bool download_file(const std::string & source_url, const std::string & de
     // and a missing cache dir otherwise fails with an opaque "No such file or
     // directory" while writing the .tmp.
     {
-        std::error_code mkdir_ec;
         std::filesystem::path parent = std::filesystem::path(dest_path).parent_path();
-        if (!parent.empty()) std::filesystem::create_directories(parent, mkdir_ec);
+        if (!parent.empty()) mkdirs(parent.string());
     }
 
     // Resume-aware: if a previous attempt left a partial .tmp, log the

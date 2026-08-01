@@ -1,0 +1,97 @@
+name: Deploy WASM demo (GitHub Pages)
+
+# Builds the OCR WASM module and publishes the browser demo
+# (examples/wasm-ocr) to GitHub Pages. The demo is fully client-side;
+# models are fetched from Hugging Face (CORS-enabled) at runtime.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'ggml/**'
+      - 'wasm/**'
+      - 'examples/wasm-ocr/**'
+      - 'CMakeLists.txt'
+      - 'build-wasm.sh'
+      - '.github/workflows/deploy-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup emsdk
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          # Pin to 6.0.2 — the last emsdk that built this repo green (CI was
+          # green on 6.0.2, red from 6.0.3 onward). 6.0.3's clang (23.0.0git)
+          # segfaults with an internal compiler crash on src/layout_detect.cpp.
+          # Do not use 3.1.64 here: it predates the emdawnwebgpu port that the
+          # WebGPU tier needs.
+          version: '6.0.2'
+
+      - name: Build WASM (single-threaded)
+        run: ./build-wasm.sh --clean
+
+      - name: Build WASM (multithreaded)
+        run: ./build-wasm.sh --clean --threads
+
+      - name: Build WASM (multithreaded, PROXY_TO_PTHREAD — deadlock-free)
+        run: ./build-wasm.sh --clean --proxy-to-pthread
+
+      - name: Build WASM (WebGPU, experimental)
+        run: ./build-wasm.sh --clean --webgpu
+
+      - name: Build WASM (WebGPU compat/Asyncify, experimental)
+        run: ./build-wasm.sh --clean --webgpu-compat
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/threaded _site/proxy _site/webgpu _site/webgpu-compat
+          cp examples/wasm-ocr/index.html _site/
+          cp examples/wasm-ocr/ocr-worker.js _site/
+          cp examples/wasm-ocr/coi-sw.js _site/
+          cp build-wasm/crispembed_ocr.js _site/
+          cp build-wasm/crispembed_ocr.wasm _site/
+          cp build-wasm-threads/crispembed_ocr.js _site/threaded/
+          cp build-wasm-threads/crispembed_ocr.wasm _site/threaded/
+          cp build-wasm-proxy/crispembed_ocr.js _site/proxy/
+          cp build-wasm-proxy/crispembed_ocr.wasm _site/proxy/
+          cp build-wasm-webgpu/crispembed_ocr.js _site/webgpu/
+          cp build-wasm-webgpu/crispembed_ocr.wasm _site/webgpu/
+          cp build-wasm-webgpu-compat/crispembed_ocr.js _site/webgpu-compat/
+          cp build-wasm-webgpu-compat/crispembed_ocr.wasm _site/webgpu-compat/
+          cp wasm/crispembed-ocr.js _site/
+          ls -lhR _site/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

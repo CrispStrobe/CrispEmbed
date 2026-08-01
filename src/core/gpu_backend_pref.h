@@ -66,6 +66,10 @@ inline bool ci_starts_with(const char * haystack, const char * needle) {
 inline ggml_backend_t crispasr_init_gpu_backend() {
     std::string pref = crispasr_get_gpu_backend_pref();
 
+    // ggml names the Apple backend "MTL" (registry) / "MTL0" (device), so the
+    // natural `--gpu-backend metal` would never prefix-match. Alias it.
+    if (pref.size() >= 3 && ci_starts_with("metal", pref.c_str())) pref = "mtl";
+
     if (!pref.empty()) {
         // Iterate all registered devices and find the first GPU whose
         // name starts with the preference string.

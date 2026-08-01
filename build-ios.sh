@@ -47,7 +47,7 @@ if [ $SIM_ONLY -eq 0 ]; then
         -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
         "${CMAKE_COMMON[@]}"
-    cmake --build "$BUILD_DIR/device" --config Release -- -quiet
+    cmake --build "$BUILD_DIR/device" --config Release --target crispembed -- -quiet
 fi
 
 # --- Simulator (arm64 for Apple Silicon Macs) ---
@@ -60,7 +60,7 @@ if [ $DEVICE_ONLY -eq 0 ]; then
         -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 \
         -DCMAKE_OSX_ARCHITECTURES=arm64 \
         "${CMAKE_COMMON[@]}"
-    cmake --build "$BUILD_DIR/simulator" --config Release -- -quiet
+    cmake --build "$BUILD_DIR/simulator" --config Release --target crispembed -- -quiet
 fi
 
 # --- Create xcframework ---

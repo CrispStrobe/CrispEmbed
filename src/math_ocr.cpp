@@ -8,8 +8,10 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
+#include "crispembed_diff.h" // per-stage parity harness (env-gated: MATH_OCR_DIFF_REF)
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -25,6 +27,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <cstring>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
 #include <memory>
 #include <string>
 #include <vector>
@@ -103,15 +106,26 @@ struct math_ocr_context {
     // Infrastructure
     std::vector<std::string> vocab;
     core_gguf::WeightLoad wl;
+    // Optional CPU-resident copy of the decoder weights (MATH_OCR_DEC_CPU=1):
+    // on WebGPU-in-browser the autoregressive decode is ~5x slower on GPU
+    // (per-token submit/suspend overhead on tiny matrices), so the sched is
+    // steered to run decode on CPU by placing the decoder weights there.
+    core_gguf::WeightLoad wl_dec;
+    bool dec_on_cpu = false;
     core_cpu::DequantCache dcache; // per-context (replaces global _deq_cache)
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
+    // Decode-step graph cache (MATH_OCR_DECODE_CACHE=1): dedicated gallocr
+    // reserved once at max decode length, computed sched-free — see
+    // run_decoder_graph.
+    ggml_gallocr_t decode_galloc = nullptr;
     int n_threads;
     std::string result_buf;
     std::vector<float> char_confidences; // per-token softmax probabilities
 
     bool scale_embedding = true; // TrOCR: scale tok embed by sqrt(d_model)
+    bool ffn_gelu = false;       // decoder FFN activation: false=ReLU (pix2tex), true=GELU (TexTeller)
 
     // Cached encoder output + cross-attention K/V (precomputed once)
     std::vector<float> enc_out;
@@ -123,10 +137,12 @@ struct math_ocr_context {
     ggml_context * enc_graph_g = nullptr;
     ggml_cgraph * enc_graph = nullptr;
     int enc_graph_T = -1;
+    std::vector<uint8_t> enc_graph_meta; // backing memory for enc_graph_g
 
     // Batched encoder graph (cached per T×B)
     ggml_context * enc_batch_g = nullptr;
     ggml_cgraph * enc_batch = nullptr;
+    std::vector<uint8_t> enc_batch_meta; // backing memory for enc_batch_g
     int enc_batch_T = -1;
     int enc_batch_B = -1;
 
@@ -142,6 +158,20 @@ struct math_ocr_context {
         std::vector<float> scores; // for mha_1q
         bool allocated = false;
     } ds;
+
+    // Persistent decoder KV cache on the compute device (avoids per-step re-upload).
+    struct dec_kv_cache {
+        ggml_context * ctx = nullptr;
+        ggml_backend_buffer_t buf = nullptr;
+        ggml_tensor * self_k = nullptr; // [D, max_seq, n_layers]
+        ggml_tensor * self_v = nullptr;
+        ggml_tensor * cross_k = nullptr; // [D, n_enc, n_layers]
+        ggml_tensor * cross_v = nullptr;
+        int max_seq = 0;
+        int n_enc = 0;
+        int n_past = 0;
+        bool allocated = false;
+    } dkv;
 
     bool bench = false;
 };
@@ -162,6 +192,8 @@ static ggml_tensor * F(const std::unordered_map<std::string, ggml_tensor *> & m,
 
 static void map_tensors(math_ocr_context * ctx) {
     const auto & m = ctx->wl.tensors;
+    // Decoder-side tensors come from the CPU copy when the split is active.
+    const auto & md = ctx->dec_on_cpu ? ctx->wl_dec.tensors : ctx->wl.tensors;
     const auto & hp = ctx->hparams;
     char buf[256];
 
@@ -199,8 +231,8 @@ static void map_tensors(math_ocr_context * ctx) {
     }
 
     auto D2 = [&](const char * s, const char * f) {
-        auto * t = F(m, s);
-        return t ? t : F(m, f);
+        auto * t = F(md, s);
+        return t ? t : F(md, f);
     };
     ctx->tok_embed = D2("dec.d.embed_tokens.weight", "dec.decoder.model.decoder.embed_tokens.weight");
     ctx->pos_embed_dec = D2("dec.d.embed_positions.weight", "dec.decoder.model.decoder.embed_positions.weight");
@@ -209,8 +241,8 @@ static void map_tensors(math_ocr_context * ctx) {
     ctx->dec_embed_ln_b = D2("dec.d.layernorm_embedding.bias", "dec.decoder.model.decoder.layernorm_embedding.bias");
     ctx->dec_final_ln_w = D2("dec.d.layer_norm.weight", "dec.decoder.model.decoder.layer_norm.weight");
     ctx->dec_final_ln_b = D2("dec.d.layer_norm.bias", "dec.decoder.model.decoder.layer_norm.bias");
-    ctx->lm_head_w = F(m, "dec.lm_head.weight");
-    ctx->lm_head_b = F(m, "dec.lm_head.bias");
+    ctx->lm_head_w = F(md, "dec.lm_head.weight");
+    ctx->lm_head_b = F(md, "dec.lm_head.bias");
     // Tied embeddings: lm_head shares embed_tokens weight
     if (!ctx->lm_head_w && ctx->tok_embed) ctx->lm_head_w = ctx->tok_embed;
 
@@ -219,10 +251,10 @@ static void map_tensors(math_ocr_context * ctx) {
         auto & l = ctx->dec_layers[i];
         auto DL = [&](const char * s) {
             snprintf(buf, sizeof(buf), "dec.d.layers.%d.%s", i, s);
-            auto * t = F(m, buf);
+            auto * t = F(md, buf);
             if (t) return t;
             snprintf(buf, sizeof(buf), "dec.decoder.model.decoder.layers.%d.%s", i, s);
-            return F(m, buf);
+            return F(md, buf);
         };
         l.self_ln_w = DL("self_attn_layer_norm.weight");
         l.self_ln_b = DL("self_attn_layer_norm.bias");
@@ -287,8 +319,13 @@ static ggml_tensor * g_linear(ggml_context * g, ggml_tensor * x, ggml_tensor * w
 static ggml_tensor * g_mha(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, int n_heads, int T) {
     int H = Q->ne[0];
     int hd = H / n_heads;
-    // Reshape [H, T] → [hd, nh, T] → permute [hd, T, nh]
-    // Reshape [H, T] → [hd, nh, T] → permute → [hd, T, nh] → cont
+    // Reshape [H, T] → [hd, nh, T] → permute → [hd, T, nh] → cont.
+    // NOTE: this MUST stay manual F32 matmul + soft_max_ext. Converting the
+    // encoder to ggml_flash_attn_ext (F16 intermediate) is byte-identical on
+    // Metal but DIVERGES on the CPU kernel for this 578×578 full-attention shape
+    // (transcript changed: GOOD→DSP.90, CARDS→RECEIPT) — the mul_mat kernels
+    // also require contiguous src, so the conts are load-bearing here. Only the
+    // single-query decoder (g_mha_1q) can drop conts + use flash safely.
     Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, T), 0, 2, 1, 3));
     K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, T), 0, 2, 1, 3));
     V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, T), 0, 2, 1, 3));
@@ -354,7 +391,7 @@ static ggml_cgraph * build_encoder_graph_batch(math_ocr_context * ctx, ggml_cont
         residual = cur;
         cur = g_ln(g, cur, L.ln2_w, L.ln2_b);
         ggml_tensor * up = g_linear(g, cur, L.ff_up_w, L.ff_up_b);
-        up = ggml_gelu(g, up);
+        up = ggml_gelu_erf(g, up); // DeiT encoder: exact GELU (hidden_act="gelu")
         cur = g_linear(g, up, L.ff_down_w, L.ff_down_b);
         cur = ggml_add(g, residual, cur);
     }
@@ -374,12 +411,22 @@ static ggml_tensor * g_mha_1q(ggml_context * g, ggml_tensor * Q, ggml_tensor * K
                               int n_kv) {
     int H = (int)Q->ne[0];
     int hd = H / n_heads;
-    // Q: [H, 1] → [hd, nh, 1] → permute → [hd, 1, nh]
-    Q = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Q, hd, n_heads, 1), 0, 2, 1, 3));
-    // K: [H, n_kv] → [hd, nh, n_kv] → permute → [hd, n_kv, nh]
-    K = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, K, hd, n_heads, n_kv), 0, 2, 1, 3));
-    // V: [H, n_kv] → [hd, nh, n_kv] → permute → [hd, n_kv, nh]
-    V = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, V, hd, n_heads, n_kv), 0, 2, 1, 3));
+    // flash_attn_ext only requires row-contiguous src (nb0 == type_size), which
+    // permute(0,2,1,3) preserves — so the ggml_cont copies after each permute
+    // were unnecessary. Dropping them removes 3 copy-kernels per attention call
+    // (6/layer across self+cross): decode-step graph 355 -> 319 nodes and the
+    // decode step runs ~30% faster (interleaved trocr q8 Metal: 45.5 -> 31.5 ms,
+    // no overlap), transcript byte-identical on Metal AND CPU (fox + scan_strip).
+    // Default is now cont-off; MATH_OCR_ATTN_CONT=1 restores the old copies for
+    // regression bisection.
+    static const bool keep_cont = (std::getenv("MATH_OCR_ATTN_CONT") != nullptr);
+    auto shape = [&](ggml_tensor * t, int seq) {
+        t = ggml_permute(g, ggml_reshape_3d(g, t, hd, n_heads, seq), 0, 2, 1, 3); // [hd, seq, nh]
+        return keep_cont ? ggml_cont(g, t) : t;
+    };
+    Q = shape(Q, 1);
+    K = shape(K, n_kv);
+    V = shape(V, n_kv);
 
     // flash_attn_ext: Q [hd,1,nh], K [hd,n_kv,nh], V [hd,n_kv,nh] → output [hd,1,nh]
     ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
@@ -394,6 +441,12 @@ static ggml_tensor * g_mha_1q(ggml_context * g, ggml_tensor * Q, ggml_tensor * K
 static ggml_cgraph * build_encoder_graph(math_ocr_context * ctx, ggml_context * g, int T) {
     const auto & hp = ctx->hparams;
     const int H = hp.enc_hidden;
+
+    // Env-gated per-layer outputs for the crispembed_diff harness (MATH_OCR_DIFF_REF).
+    // ggml_set_output keeps each layer's activation live so run_encoder can read it
+    // back and compare it to the Python reference — the doc's "first layer < 0.999
+    // = the bug" recipe. Off by default (no perturbation of the normal forward).
+    const bool diff_layers = std::getenv("MATH_OCR_DIFF_REF") != nullptr;
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, hp.enc_layers * 60 + 512, false);
 
@@ -433,9 +486,16 @@ static ggml_cgraph * build_encoder_graph(math_ocr_context * ctx, ggml_context * 
         residual = cur;
         cur = g_ln(g, cur, L.ln2_w, L.ln2_b);
         ggml_tensor * up = g_linear(g, cur, L.ff_up_w, L.ff_up_b);
-        up = ggml_gelu(g, up);
+        up = ggml_gelu_erf(g, up); // DeiT uses exact GELU (hidden_act="gelu"), not the tanh approx
         cur = g_linear(g, up, L.ff_down_w, L.ff_down_b);
         cur = ggml_add(g, residual, cur);
+
+        if (diff_layers) {
+            char lname[24];
+            snprintf(lname, sizeof(lname), "enc_layer_%d", il);
+            ggml_set_name(cur, lname);
+            ggml_set_output(cur);
+        }
     }
 
     // Final LN
@@ -578,8 +638,13 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
         for (int i = 0; i < n; i++) embedded[i] += pe[i];
     }
 
-    // Step 2: Build (or reuse) ggml graph for transformer layers
-    if (ctx->enc_graph_T != T) {
+    // Step 2: Build the ggml graph for the transformer layers.
+    // Always rebuild: reusing a cached graph across ggml_backend_sched_reset
+    // + alloc cycles is not re-entrant (second compute traps 'unreachable'
+    // on WebGPU and returned empty output on other backends — same class as
+    // the Parakeet enc-cache collapse). Graph build cost is microseconds
+    // next to the encoder compute.
+    if (true) {
         // Free old cached graph if T changed (different image size)
         if (ctx->enc_graph_g) {
             ggml_free(ctx->enc_graph_g);
@@ -587,9 +652,16 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
         }
         ctx->enc_graph = nullptr;
 
+        // The graph + tensor structs are CACHED in ctx beyond this scope, so
+        // the metadata pool must be owned by the ggml context (mem_buffer =
+        // nullptr → ggml mallocs it, ggml_free releases it). A stack-local
+        // buffer here is a use-after-free: the CPU backend's work buffer
+        // reuses the freed block and mul_mat's quantized-activation writes
+        // clobber the cached tensor structs (hard crash on WASM, silent on
+        // macOS malloc).
         size_t meta_size = 16 * 1024 * 1024;
-        std::vector<uint8_t> meta(meta_size);
-        ggml_init_params ip = { meta_size, meta.data(), true };
+        ctx->enc_graph_meta.resize(meta_size);
+        ggml_init_params ip = { meta_size, ctx->enc_graph_meta.data(), true };
         ggml_context * g = ggml_init(ip);
         ctx->enc_graph = build_encoder_graph(ctx, g, T);
         ctx->enc_graph_g = g;
@@ -620,6 +692,45 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
     ggml_tensor * out = ggml_graph_get_tensor(ctx->enc_graph, "enc_output");
     ctx->enc_out.resize(T * H);
     if (out) ggml_backend_tensor_get(out, ctx->enc_out.data(), 0, T * H * sizeof(float));
+    if (const char * dp = std::getenv("MATH_OCR_DUMP_ENC")) { // DEBUG: dump encoder memory [T,H]
+        FILE * fp = fopen(dp, "wb");
+        if (fp) {
+            fwrite(ctx->enc_out.data(), sizeof(float), (size_t)T * H, fp);
+            fclose(fp);
+            fprintf(stderr, "math_ocr: dumped enc_out [%d,%d] to %s\n", T, H, dp);
+        }
+    }
+
+    // --- Per-stage parity harness (MATH_OCR_DIFF_REF=ref.gguf) ----------------
+    // Compare the input embed (structural gate FIRST), each encoder layer, and
+    // the final output vs the Python reference. Per-token cos (row_dim=0 → D=
+    // hidden, gguf dim order). If enc_embed < ~0.99999 the divergence is a
+    // structural input/preprocessing mismatch, not a per-layer numeric bug.
+    if (const char * diff_ref = std::getenv("MATH_OCR_DIFF_REF")) {
+        crispembed_diff::Ref ref;
+        if (ref.load(diff_ref)) {
+            auto report = [](const char * nm, const crispembed_diff::Report & r) {
+                fprintf(stderr, "[math-ocr-diff] %-13s cos_min=%.6f cos_mean=%.6f max_abs=%.2e %s\n", nm, r.cos_min,
+                        r.cos_mean, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+            };
+            if (ref.has("enc_embed")) {
+                report("enc_embed", ref.compare("enc_embed", embedded.data(), (size_t)T * H, 0));
+            }
+            std::vector<float> buf((size_t)T * H);
+            for (int il = 0; il < ctx->hparams.enc_layers; il++) {
+                char lname[24];
+                snprintf(lname, sizeof(lname), "enc_layer_%d", il);
+                if (!ref.has(lname)) continue;
+                ggml_tensor * lt = ggml_graph_get_tensor(ctx->enc_graph, lname);
+                if (!lt) continue;
+                ggml_backend_tensor_get(lt, buf.data(), 0, (size_t)T * H * sizeof(float));
+                report(lname, ref.compare(lname, buf.data(), (size_t)T * H, 0));
+            }
+            if (ref.has("enc_output")) {
+                report("enc_output", ref.compare("enc_output", ctx->enc_out.data(), (size_t)T * H, 0));
+            }
+        }
+    }
 
     ctx->n_enc_tokens = T;
 }
@@ -712,6 +823,70 @@ static void ensure_dec_scratch(math_ocr_context * ctx, int max_kv) {
     ctx->ds.allocated = true;
 }
 
+static bool alloc_dec_kv_cache(math_ocr_context * ctx, int max_seq, int n_enc) {
+    auto & kv = ctx->dkv;
+    if (kv.allocated && kv.max_seq >= max_seq && kv.n_enc >= n_enc) {
+        kv.n_past = 0;
+        if (kv.buf) ggml_backend_buffer_clear(kv.buf, 0);
+        return true;
+    }
+    if (kv.buf) {
+        ggml_backend_buffer_free(kv.buf);
+        kv.buf = nullptr;
+    }
+    if (kv.ctx) {
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
+    }
+    kv.allocated = false;
+
+    const int D = ctx->hparams.dec_d_model;
+    const int nl = ctx->hparams.dec_layers;
+
+    size_t mem = 4 * ggml_tensor_overhead() + ggml_graph_overhead();
+    ggml_init_params ip = { mem, nullptr, true };
+    kv.ctx = ggml_init(ip);
+    if (!kv.ctx) return false;
+
+    kv.self_k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, max_seq, nl);
+    kv.self_v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, max_seq, nl);
+    kv.cross_k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, n_enc, nl);
+    kv.cross_v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, D, n_enc, nl);
+
+    kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, ctx->backend);
+    if (!kv.buf) {
+        fprintf(stderr, "math_ocr: KV cache alloc failed\n");
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
+        return false;
+    }
+    ggml_backend_buffer_clear(kv.buf, 0);
+
+    kv.max_seq = max_seq;
+    kv.n_enc = n_enc;
+    kv.n_past = 0;
+    kv.allocated = true;
+
+    size_t bytes = ggml_backend_buffer_get_size(kv.buf);
+    fprintf(stderr, "math_ocr: decoder KV cache: %d layers, max_seq=%d, n_enc=%d, %.1f MB\n", nl, max_seq, n_enc,
+            (float)bytes / 1024 / 1024);
+    return true;
+}
+
+static void free_dec_kv_cache(math_ocr_context * ctx) {
+    auto & kv = ctx->dkv;
+    if (kv.buf) {
+        ggml_backend_buffer_free(kv.buf);
+        kv.buf = nullptr;
+    }
+    if (kv.ctx) {
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
+    }
+    kv.allocated = false;
+    kv.n_past = 0;
+}
+
 static std::vector<float> decoder_step_scalar(math_ocr_context * ctx, int tok, int step,
                                               std::vector<std::vector<float>> & kv_k,
                                               std::vector<std::vector<float>> & kv_v) {
@@ -724,7 +899,7 @@ static std::vector<float> decoder_step_scalar(math_ocr_context * ctx, int tok, i
     // Token + positional embedding
     if (ctx->tok_embed && tok >= 0 && tok < V) {
         auto emb = to_f32(ctx->tok_embed);
-        float sc = sqrtf((float)D);
+        float sc = ctx->scale_embedding ? sqrtf((float)D) : 1.0f;
         for (int i = 0; i < D; i++) ds.x[i] = emb[tok * D + i] * sc;
     }
     if (ctx->pos_embed_dec) {
@@ -774,7 +949,13 @@ static std::vector<float> decoder_step_scalar(math_ocr_context * ctx, int tok, i
         if (l.ff_up_w) {
             const int FF = hp.dec_ffn_dim;
             linear_cpu(ctx, ds.x.data(), ds.inter.data(), D, FF, l.ff_up_w, l.ff_up_b);
-            for (int i = 0; i < FF; i++) ds.inter[i] = ds.inter[i] > 0 ? ds.inter[i] : 0;
+            if (ctx->ffn_gelu)
+                for (int i = 0; i < FF; i++) {
+                    float v = ds.inter[i];
+                    ds.inter[i] = 0.5f * v * (1.0f + erff(v * 0.70710678f)); // exact GELU
+                }
+            else
+                for (int i = 0; i < FF; i++) ds.inter[i] = ds.inter[i] > 0 ? ds.inter[i] : 0;
             linear_cpu(ctx, ds.inter.data(), ds.ffn.data(), FF, D, l.ff_down_w, l.ff_down_b);
             for (int i = 0; i < D; i++) ds.x[i] += ds.ffn[i];
             layernorm_cpu(ctx, ds.x.data(), ds.x.data(), D, l.ff_ln_w, l.ff_ln_b);
@@ -915,21 +1096,23 @@ static std::vector<int> run_decoder_beam_scalar(math_ocr_context * ctx, int beam
 //   "self_k_out_L"  — [D, 1] new self-attn K for layer L (to append to cache)
 //   "self_v_out_L"  — [D, 1] new self-attn V for layer L
 
+// Build a ggml graph for one autoregressive decoder step.
+// Uses persistent device-side KV cache (ctx->dkv): new K/V are written
+// into the cache via ggml_cpy at position n_kv, and full K/V history
+// is read via ggml_view. Cross-attention K/V are also in the persistent
+// cache — no per-step CPU→GPU upload.
 static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_context * g, int n_kv, int n_enc) {
     const auto & hp = ctx->hparams;
     const int D = hp.dec_d_model;
     const int V = hp.vocab_size;
     const int n_dec = hp.dec_layers;
+    auto & kv = ctx->dkv;
 
-    // Generous node budget: per layer ~40 ops, plus embeddings + final
     ggml_cgraph * gf = ggml_new_graph_custom(g, n_dec * 100 + 512, false);
 
-    // Input: pre-computed token embedding (tok + pos + embed_ln), shape [D, 1]
     ggml_tensor * cur = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, 1);
     ggml_set_name(cur, "dec_tok_emb");
     ggml_set_input(cur);
-
-    char name[64];
 
     for (int li = 0; li < n_dec; li++) {
         const auto & l = ctx->dec_layers[li];
@@ -938,99 +1121,72 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
         ggml_tensor * residual = cur;
 
         // ---- Self-attention ----
-        // Project Q, K, V from current hidden state [D, 1]
-        ggml_tensor * q = g_linear(g, cur, l.self_q_w, l.self_q_b);     // [D, 1]
-        ggml_tensor * k_new = g_linear(g, cur, l.self_k_w, l.self_k_b); // [D, 1]
-        ggml_tensor * v_new = g_linear(g, cur, l.self_v_w, l.self_v_b); // [D, 1]
+        ggml_tensor * q = g_linear(g, cur, l.self_q_w, l.self_q_b);
+        ggml_tensor * k_new = g_linear(g, cur, l.self_k_w, l.self_k_b);
+        ggml_tensor * v_new = g_linear(g, cur, l.self_v_w, l.self_v_b);
 
-        // Output the new K/V so we can append to cache externally
-        snprintf(name, sizeof(name), "self_k_out_%d", li);
-        ggml_set_name(k_new, name);
-        ggml_set_output(k_new);
-        snprintf(name, sizeof(name), "self_v_out_%d", li);
-        ggml_set_name(v_new, name);
-        ggml_set_output(v_new);
+        // Write new K/V into persistent cache at position n_kv
+        size_t k_layer_off = (size_t)li * kv.self_k->nb[2];
+        ggml_tensor * k_dst =
+            ggml_view_2d(g, kv.self_k, D, 1, kv.self_k->nb[1], k_layer_off + (size_t)n_kv * kv.self_k->nb[1]);
+        ggml_tensor * v_dst = ggml_view_2d(g, kv.self_v, D, 1, kv.self_v->nb[1],
+                                           (size_t)li * kv.self_v->nb[2] + (size_t)n_kv * kv.self_v->nb[1]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, k_new, k_dst));
+        ggml_build_forward_expand(gf, ggml_cpy(g, v_new, v_dst));
 
-        // Build K_full / V_full: either just the new token (step 0) or
-        // concatenation of cache + new token
-        ggml_tensor * k_full;
-        ggml_tensor * v_full;
-        if (n_kv > 0) {
-            // Input: accumulated K/V cache [D, n_kv] (previous tokens)
-            ggml_tensor * k_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_kv);
-            snprintf(name, sizeof(name), "self_k_in_%d", li);
-            ggml_set_name(k_cache, name);
-            ggml_set_input(k_cache);
+        // Read full KV history [0..n_kv+1)
+        int Lk = n_kv + 1;
+        ggml_tensor * k_full = ggml_view_2d(g, kv.self_k, D, Lk, kv.self_k->nb[1], k_layer_off);
+        ggml_tensor * v_full = ggml_view_2d(g, kv.self_v, D, Lk, kv.self_v->nb[1], (size_t)li * kv.self_v->nb[2]);
 
-            ggml_tensor * v_cache = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_kv);
-            snprintf(name, sizeof(name), "self_v_in_%d", li);
-            ggml_set_name(v_cache, name);
-            ggml_set_input(v_cache);
+        ggml_tensor * sa = g_mha_1q(g, q, k_full, v_full, hp.dec_heads, Lk);
+        sa = g_linear(g, sa, l.self_out_w, l.self_out_b);
 
-            // Concatenate: K_full = [k_cache ; k_new] → [D, n_kv+1]
-            k_full = ggml_concat(g, k_cache, k_new, 1);
-            v_full = ggml_concat(g, v_cache, v_new, 1);
-        } else {
-            // First step: no cache, just use the new token
-            k_full = k_new; // [D, 1]
-            v_full = v_new;
-        }
-
-        // Single-query MHA: Q [D,1], K [D, n_kv+1], V [D, n_kv+1]
-        ggml_tensor * sa = g_mha_1q(g, q, k_full, v_full, hp.dec_heads, n_kv + 1);
-        sa = g_linear(g, sa, l.self_out_w, l.self_out_b); // [D, 1]
-
-        // Residual + post-LN
         cur = ggml_add(g, residual, sa);
         cur = g_ln(g, cur, l.self_ln_w, l.self_ln_b);
 
-        // ---- Cross-attention ----
+        // ---- Cross-attention (from persistent device cache) ----
         if (l.cross_q_w) {
             residual = cur;
+            ggml_tensor * cq = g_linear(g, cur, l.cross_q_w, l.cross_q_b);
 
-            ggml_tensor * cq = g_linear(g, cur, l.cross_q_w, l.cross_q_b); // [D, 1]
-
-            // Cross K/V are pre-computed and fixed
-            ggml_tensor * ck = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_enc);
-            snprintf(name, sizeof(name), "cross_k_%d", li);
-            ggml_set_name(ck, name);
-            ggml_set_input(ck);
-
-            ggml_tensor * cv = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_enc);
-            snprintf(name, sizeof(name), "cross_v_%d", li);
-            ggml_set_name(cv, name);
-            ggml_set_input(cv);
+            ggml_tensor * ck = ggml_view_2d(g, kv.cross_k, D, n_enc, kv.cross_k->nb[1], (size_t)li * kv.cross_k->nb[2]);
+            ggml_tensor * cv = ggml_view_2d(g, kv.cross_v, D, n_enc, kv.cross_v->nb[1], (size_t)li * kv.cross_v->nb[2]);
 
             ggml_tensor * ca = g_mha_1q(g, cq, ck, cv, hp.dec_heads, n_enc);
             ca = g_linear(g, ca, l.cross_out_w, l.cross_out_b);
 
-            // Residual + post-LN
             cur = ggml_add(g, residual, ca);
             cur = g_ln(g, cur, l.cross_ln_w, l.cross_ln_b);
         }
 
-        // ---- FFN (GELU) ----
+        // ---- FFN ----
         if (l.ff_up_w) {
             residual = cur;
             ggml_tensor * up = g_linear(g, cur, l.ff_up_w, l.ff_up_b);
-            up = ggml_gelu(g, up);
+            up = ctx->ffn_gelu ? ggml_gelu_erf(g, up) : ggml_relu(g, up);
             ggml_tensor * down = g_linear(g, up, l.ff_down_w, l.ff_down_b);
 
-            // Residual + post-LN
             cur = ggml_add(g, residual, down);
             cur = g_ln(g, cur, l.ff_ln_w, l.ff_ln_b);
         }
     }
 
-    // Final LayerNorm
     if (ctx->dec_final_ln_w) cur = g_ln(g, cur, ctx->dec_final_ln_w, ctx->dec_final_ln_b);
 
-    // LM head → logits [V, 1]
     cur = g_linear(g, cur, ctx->lm_head_w, ctx->lm_head_b);
     ggml_set_name(cur, "logits");
     ggml_set_output(cur);
 
     ggml_build_forward_expand(gf, cur);
+    if (std::getenv("MATH_OCR_NODES")) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fprintf(stderr, "[math_ocr] decode-step graph: n_nodes=%d (n_dec=%d, n_kv=%d, n_enc=%d)\n",
+                    ggml_graph_n_nodes(gf), n_dec, n_kv, n_enc);
+        }
+    }
     return gf;
 }
 
@@ -1046,8 +1202,8 @@ static float cosine_sim(const float * a, const float * b, int n) {
     return (float)(dot / (sqrt(na) * sqrt(nb)));
 }
 
-// Run the full decoder loop using graph-based computation.
-// Returns the generated tokens (excluding the start token).
+// Run the full decoder loop with persistent device-side KV cache.
+// Eliminates per-step CPU→GPU cache re-uploads.
 static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     ctx->char_confidences.clear();
     const auto & hp = ctx->hparams;
@@ -1056,47 +1212,61 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     const int n_dec = hp.dec_layers;
     const int n_enc = ctx->n_enc_tokens;
 
-    // --- Optimization 1: Pre-cache dequantized embeddings ---
-    // Dequantize once instead of every step (avoids full vocab table dequant per step)
+    int max_steps = std::min(hp.max_seq_len, 200);
+
+    // Allocate persistent KV cache on device (or reset if already allocated)
+    if (!alloc_dec_kv_cache(ctx, max_steps, n_enc)) {
+        fprintf(stderr, "math_ocr: failed to allocate decoder KV cache\n");
+        return {};
+    }
+
+    // Upload cross-attention K/V once (stays on device for all steps)
+    for (int li = 0; li < n_dec; li++) {
+        size_t off = (size_t)li * ctx->dkv.cross_k->nb[2];
+        ggml_backend_tensor_set(ctx->dkv.cross_k, ctx->cross_k_cache[li].data(), off, n_enc * D * sizeof(float));
+        ggml_backend_tensor_set(ctx->dkv.cross_v, ctx->cross_v_cache[li].data(), off, n_enc * D * sizeof(float));
+    }
+
+    // Pre-cache dequantized embeddings (once, not per step)
     std::vector<float> tok_emb_f32;
     std::vector<float> pos_emb_f32;
     if (ctx->tok_embed) tok_emb_f32 = to_f32(ctx->tok_embed);
     if (ctx->pos_embed_dec) pos_emb_f32 = to_f32(ctx->pos_embed_dec);
 
-    // --- Optimization: Use 1 thread for decoder (small tensors, threading overhead dominates) ---
-    // The decoder operates on [D,1] vectors where D=256, so matrix ops are tiny.
-    // Multi-threading adds massive synchronization overhead for these small ops.
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, 1);
 
-    // --- Optimization 2: Single metadata buffer (16MB, reused) ---
     const size_t meta_sz = 16 * 1024 * 1024;
     std::vector<uint8_t> meta_buf(meta_sz);
     ggml_init_params ip = { meta_sz, meta_buf.data(), true };
 
-    // Self-attention KV cache: per layer, grows by [D] each step
-    std::vector<std::vector<float>> self_k_cache(n_dec);
-    std::vector<std::vector<float>> self_v_cache(n_dec);
-
-    // --- Validation harness (scalar decoder for comparison) ---
-#ifdef DECODER_VALIDATE
-    std::vector<std::vector<float>> scalar_k_cache(n_dec);
-    std::vector<std::vector<float>> scalar_v_cache(n_dec);
-    std::vector<int> scalar_tokens = { hp.decoder_start_token };
-    float min_cos = 1.0f;
-    fprintf(stderr, "math_ocr: DECODER_VALIDATE enabled — comparing graph vs scalar\n");
-    ctx->ds.allocated = false;
-    ensure_dec_scratch(ctx, hp.max_seq_len);
-#endif
+    // MATH_OCR_DECODE_CACHE=1: reserve a dedicated gallocr once for the longest
+    // decode graph (n_kv = max_steps) and run each step sched-free — the decode
+    // graph is single-backend (weights + self/cross KV on ctx->backend) and its
+    // node count is constant per step (only the self-attn KV read length grows
+    // with n_kv), so every per-step alloc takes the no-realloc fast path and the
+    // sched's split_graph is skipped. Output-identical. Same trick as got_ocr.
+    static const bool use_cache = (std::getenv("MATH_OCR_DECODE_CACHE") != nullptr);
+    if (use_cache && !ctx->decode_galloc) {
+        ctx->decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+        ggml_context * rg = ggml_init(ip);
+        ggml_cgraph * rgf = build_decoder_step_graph(ctx, rg, max_steps - 1, n_enc);
+        bool reserved = ggml_gallocr_reserve(ctx->decode_galloc, rgf);
+        ggml_free(rg);
+        if (!reserved) {
+            fprintf(stderr, "math_ocr: decode gallocr reserve failed; using sched\n");
+            ggml_gallocr_free(ctx->decode_galloc);
+            ctx->decode_galloc = nullptr;
+        } else {
+            fprintf(stderr, "math_ocr: decode-step graph cache active (max_steps=%d)\n", max_steps);
+        }
+    }
 
     std::vector<int> tokens = { hp.decoder_start_token };
-    int max_steps = std::min(hp.max_seq_len, 200);
 
     for (int step = 0; step < max_steps; step++) {
         int tok = tokens.back();
-        int n_kv = step; // number of previously cached K/V tokens (0 on first step)
+        int n_kv = step;
 
-        // 1. CPU-side: compute token + positional embedding + embed LN
-        //    Uses pre-cached dequantized tables (Optimization 1)
         std::vector<float> emb(D, 0.0f);
         if (!tok_emb_f32.empty() && tok >= 0 && tok < V) {
             float sc = ctx->scale_embedding ? sqrtf((float)D) : 1.0f;
@@ -1114,100 +1284,70 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
                     emb[2], emb[3], emb[4]);
         }
 
-        // 2. Build the graph for this step (reuse metadata buffer — Optimization 2)
         ggml_context * g = ggml_init(ip);
-
         ggml_cgraph * gf = build_decoder_step_graph(ctx, g, n_kv, n_enc);
 
-        // 3. Allocate graph
-        ggml_backend_sched_reset(ctx->sched);
-        if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
-            fprintf(stderr, "math_ocr: decoder graph alloc failed at step %d\n", step);
-            ggml_free(g);
-            break;
+        if (ctx->decode_galloc) {
+            if (!ggml_gallocr_alloc_graph(ctx->decode_galloc, gf)) {
+                fprintf(stderr, "math_ocr: decoder gallocr alloc failed at step %d\n", step);
+                ggml_free(g);
+                break;
+            }
+        } else {
+            ggml_backend_sched_reset(ctx->sched);
+            if (!ggml_backend_sched_alloc_graph(ctx->sched, gf)) {
+                fprintf(stderr, "math_ocr: decoder graph alloc failed at step %d\n", step);
+                ggml_free(g);
+                break;
+            }
         }
 
-        // 4. Set input tensors
-
-        // Token embedding
+        // Only input: token embedding (KV cache is persistent, handled by graph)
         ggml_tensor * t_emb = ggml_graph_get_tensor(gf, "dec_tok_emb");
         if (t_emb) ggml_backend_tensor_set(t_emb, emb.data(), 0, D * sizeof(float));
 
-        // Self-attention KV caches
-        char name[64];
-        for (int li = 0; li < n_dec; li++) {
-            if (n_kv > 0) {
-                snprintf(name, sizeof(name), "self_k_in_%d", li);
-                ggml_tensor * kt = ggml_graph_get_tensor(gf, name);
-                if (kt) ggml_backend_tensor_set(kt, self_k_cache[li].data(), 0, n_kv * D * sizeof(float));
-
-                snprintf(name, sizeof(name), "self_v_in_%d", li);
-                ggml_tensor * vt = ggml_graph_get_tensor(gf, name);
-                if (vt) ggml_backend_tensor_set(vt, self_v_cache[li].data(), 0, n_kv * D * sizeof(float));
-            }
-
-            // Cross-attention K/V (constant, but must re-set after sched realloc)
-            snprintf(name, sizeof(name), "cross_k_%d", li);
-            ggml_tensor * ck = ggml_graph_get_tensor(gf, name);
-            if (ck) ggml_backend_tensor_set(ck, ctx->cross_k_cache[li].data(), 0, n_enc * D * sizeof(float));
-
-            snprintf(name, sizeof(name), "cross_v_%d", li);
-            ggml_tensor * cv = ggml_graph_get_tensor(gf, name);
-            if (cv) ggml_backend_tensor_set(cv, ctx->cross_v_cache[li].data(), 0, n_enc * D * sizeof(float));
+        if (ctx->decode_galloc) {
+            ggml_backend_graph_compute(ctx->backend, gf);
+        } else {
+            ggml_backend_sched_graph_compute(ctx->sched, gf);
         }
 
-        // 5. Compute
-        ggml_backend_sched_graph_compute(ctx->sched, gf);
-
-        // 6. Read logits
         std::vector<float> logits(V);
         ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
         if (logits_t) ggml_backend_tensor_get(logits_t, logits.data(), 0, V * sizeof(float));
 
-        // 7. Read new K/V and append to cache
-        for (int li = 0; li < n_dec; li++) {
-            std::vector<float> k_new(D), v_new(D);
-            snprintf(name, sizeof(name), "self_k_out_%d", li);
-            ggml_tensor * ko = ggml_graph_get_tensor(gf, name);
-            if (ko) ggml_backend_tensor_get(ko, k_new.data(), 0, D * sizeof(float));
-
-            snprintf(name, sizeof(name), "self_v_out_%d", li);
-            ggml_tensor * vo = ggml_graph_get_tensor(gf, name);
-            if (vo) ggml_backend_tensor_get(vo, v_new.data(), 0, D * sizeof(float));
-
-            self_k_cache[li].insert(self_k_cache[li].end(), k_new.begin(), k_new.end());
-            self_v_cache[li].insert(self_v_cache[li].end(), v_new.begin(), v_new.end());
-        }
-
         ggml_free(g);
 
-        // --- Validation: compare graph logits with scalar decoder ---
-#ifdef DECODER_VALIDATE
+        // Greedy argmax with no-repeat-ngram blocking (prevents TOOO→TOO loops).
+        // Ban any token that would complete an already-seen trigram.
+        const int no_repeat_ngram = 3;
+        int best = -1;
         {
-            int scalar_tok = scalar_tokens.back();
-            auto scalar_logits = decoder_step_scalar(ctx, scalar_tok, step, scalar_k_cache, scalar_v_cache);
-            float cs = cosine_sim(logits.data(), scalar_logits.data(), V);
-            if (cs < min_cos) min_cos = cs;
-            if (step < 10 || cs < 0.99f) {
-                int g_best = 0, s_best = 0;
-                for (int v = 1; v < V; v++) {
-                    if (logits[v] > logits[g_best]) g_best = v;
-                    if (scalar_logits[v] > scalar_logits[s_best]) s_best = v;
+            std::unordered_set<int> banned;
+            const int k = no_repeat_ngram - 1;
+            const int n = (int)tokens.size();
+            if (no_repeat_ngram > 1 && n >= k && k > 0) {
+                for (int i = 0; i + k < n; i++) {
+                    bool match = true;
+                    for (int j = 0; j < k; j++) {
+                        if (tokens[i + j] != tokens[n - k + j]) {
+                            match = false;
+                            break;
+                        }
+                    }
+                    if (match) banned.insert(tokens[i + k]);
                 }
-                fprintf(stderr, "math_ocr: [validate] step %d cosine=%.6f graph_best=%d scalar_best=%d\n", step, cs,
-                        g_best, s_best);
             }
+            float best_s = -INFINITY;
+            for (int v = 0; v < V; v++) {
+                if (!banned.empty() && banned.count(v)) continue;
+                if (logits[v] > best_s) {
+                    best_s = logits[v];
+                    best = v;
+                }
+            }
+            if (best < 0) best = 0; // fallback (all banned — shouldn't happen)
         }
-#endif
-
-        // 8. Greedy argmax
-        int best = 0;
-        float best_s = logits[0];
-        for (int v = 1; v < V; v++)
-            if (logits[v] > best_s) {
-                best_s = logits[v];
-                best = v;
-            }
 
         if (step < 5) {
             fprintf(stderr, "math_ocr: [graph] dec step %d: tok=%d logits[0..4]=[%.3f %.3f %.3f %.3f %.3f] best=%d\n",
@@ -1216,7 +1356,6 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
 
         if (best == hp.eos_token || best == hp.pad_token) break;
 
-        // Confidence: softmax of winning token
         {
             float max_l = logits[0];
             for (int v = 1; v < V; v++)
@@ -1227,17 +1366,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
         }
 
         tokens.push_back(best);
-
-#ifdef DECODER_VALIDATE
-        // Mirror the scalar decoder's token sequence to match graph decoder
-        scalar_tokens.push_back(best);
-#endif
     }
-
-#ifdef DECODER_VALIDATE
-    fprintf(stderr, "math_ocr: [validate] DONE — min cosine similarity across all steps: %.6f %s\n", min_cos,
-            min_cos >= 0.99f ? "PASS" : "FAIL");
-#endif
 
     // Restore multi-threading for subsequent encoder runs
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
@@ -1266,6 +1395,17 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
     hp.enc_intermediate = core_gguf::kv_u32(gctx, "encoder.intermediate_size", 1536);
     hp.image_size = core_gguf::kv_u32(gctx, "encoder.image_size", 384);
     hp.patch_size = core_gguf::kv_u32(gctx, "encoder.patch_size", 16);
+    // Input preprocessing (data-driven; defaults reproduce the historical
+    // pix2tex/TrOCR path: mean=std=0.5 with a plain squash-resize). TexTeller
+    // needs its own grayscale normalization + trim/aspect/white-pad — carried
+    // in the GGUF as encoder.image_mean/std/preprocess_pad. Env vars override
+    // for A/B on a GGUF that predates these keys (see LEARNINGS).
+    hp.image_mean = core_gguf::kv_f32(gctx, "encoder.image_mean", 0.5f);
+    hp.image_std = core_gguf::kv_f32(gctx, "encoder.image_std", 0.5f);
+    hp.preprocess_pad = core_gguf::kv_bool(gctx, "encoder.preprocess_pad", false) ? 1 : 0;
+    if (const char * e = std::getenv("MATH_OCR_MEAN")) hp.image_mean = (float)atof(e);
+    if (const char * e = std::getenv("MATH_OCR_STD")) hp.image_std = (float)atof(e);
+    if (const char * e = std::getenv("MATH_OCR_PAD")) hp.preprocess_pad = atoi(e) ? 1 : 0;
     hp.dec_layers = core_gguf::kv_u32(gctx, "decoder.decoder_layers", 6);
     hp.dec_heads = core_gguf::kv_u32(gctx, "decoder.decoder_attention_heads", 8);
     hp.dec_d_model = core_gguf::kv_u32(gctx, "decoder.d_model", 256);
@@ -1281,6 +1421,15 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
         int idx = gguf_find_key(gctx, "decoder.scale_embedding");
         ctx->scale_embedding = (idx < 0) ? true : gguf_get_val_bool(gctx, idx);
     }
+    // Decoder FFN activation is model-dependent: pix2tex/TrOCR-small use ReLU,
+    // TexTeller's TrOCR decoder uses GELU (config activation_function). Hardcoding
+    // ReLU silently corrupted the TexTeller FFN → drifting/garbled LaTeX. Read it
+    // from the GGUF (default ReLU); env override MATH_OCR_FFN_GELU for A/B.
+    {
+        std::string act = core_gguf::kv_str(gctx, "decoder.activation_function", "relu");
+        ctx->ffn_gelu = (act.find("gelu") != std::string::npos);
+        if (const char * e = std::getenv("MATH_OCR_FFN_GELU")) ctx->ffn_gelu = atoi(e) != 0;
+    }
     ctx->vocab = core_gguf::kv_str_array(gctx, "tokenizer.tokens");
     core_gguf::free_metadata(gctx);
 
@@ -1290,7 +1439,7 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
     // Init backend — prefer GPU when available
     fprintf(stderr, "math_ocr: init backend...\n");
     bool force_cpu = (getenv("MATH_OCR_FORCE_CPU") && atoi(getenv("MATH_OCR_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();
@@ -1301,6 +1450,17 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
     fprintf(stderr, "math_ocr: weights loaded (%zu tensors)\n", ctx->wl.tensors.size());
+
+    // Decoder-on-CPU split (opt-in, requires a GPU primary backend).
+    bool dec_cpu = (getenv("MATH_OCR_DEC_CPU") && atoi(getenv("MATH_OCR_DEC_CPU")));
+    if (dec_cpu && ctx->backend_cpu) {
+        if (core_gguf::load_weights(model_path, ctx->backend_cpu, "math_ocr(dec-cpu)", ctx->wl_dec)) {
+            ctx->dec_on_cpu = true;
+            fprintf(stderr, "math_ocr: decoder weights duplicated on CPU (decode runs on CPU)\n");
+        } else {
+            fprintf(stderr, "math_ocr: dec-cpu load failed — decoder stays on the primary backend\n");
+        }
+    }
 
     // Create scheduler — GPU + CPU fallback
     fprintf(stderr, "math_ocr: creating scheduler...\n");
@@ -1328,17 +1488,112 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
 
 void math_ocr_free(math_ocr_context * ctx) {
     if (!ctx) return;
+    free_dec_kv_cache(ctx);
     if (ctx->enc_graph_g) ggml_free(ctx->enc_graph_g);
     if (ctx->enc_batch_g) ggml_free(ctx->enc_batch_g);
+    if (ctx->decode_galloc) ggml_gallocr_free(ctx->decode_galloc);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     core_gguf::free_weights(ctx->wl);
+    if (ctx->dec_on_cpu) core_gguf::free_weights(ctx->wl_dec);
     delete ctx;
 }
 
 const math_ocr_hparams * math_ocr_get_hparams(const math_ocr_context * ctx) {
     return ctx ? &ctx->hparams : nullptr;
+}
+
+// Bilinear-sample the [0,1] grayscale source (sw×sh) into a dw×dh block.
+static float bilerp_gray(const float * g, int sw, int sh, float fx, float fy) {
+    int x0 = (int)fx, x1 = std::min(x0 + 1, sw - 1);
+    int y0 = (int)fy, y1 = std::min(y0 + 1, sh - 1);
+    float wx = fx - x0, wy = fy - y0;
+    return (1 - wy) * ((1 - wx) * g[y0 * sw + x0] + wx * g[y0 * sw + x1]) +
+           wy * ((1 - wx) * g[y1 * sw + x0] + wx * g[y1 * sw + x1]);
+}
+
+// Prepare the encoder input buffer `rgb` (n_channels × S × S, normalized,
+// grayscale replicated across channels) from a [0,1] grayscale image.
+//
+//   preprocess_pad==0 (pix2tex/TrOCR): squash-resize width×height → S×S.
+//   preprocess_pad==1 (TexTeller): trim the uniform background border, resize
+//     preserving aspect (short edge → S-1, long edge capped at S), then place
+//     top-left and white-pad the right/bottom to S×S. Matches TexTeller's
+//     torchvision transform (trim_white_border → Resize(S-1,max_size=S) →
+//     Normalize(mean,std) → pad). Pad value is 0 in normalized space == the
+//     mean grey (≈ white), exactly as v2.functional.pad(fill=0) after Normalize.
+static void preprocess_image(const math_ocr_hparams & hp, int n_channels, const float * gray, int width, int height,
+                             std::vector<float> & rgb) {
+    const int S = hp.image_size;
+    const float mean = hp.image_mean, std_ = hp.image_std;
+    rgb.assign((size_t)n_channels * S * S, 0.0f);
+
+    if (!hp.preprocess_pad) {
+        const float fsx = (float)width / S, fsy = (float)height / S;
+        for (int y = 0; y < S; y++) {
+            for (int x = 0; x < S; x++) {
+                float v = bilerp_gray(gray, width, height, x * fsx, y * fsy);
+                v = (v - mean) / std_;
+                for (int c = 0; c < n_channels; c++) rgb[(size_t)c * S * S + y * S + x] = v;
+            }
+        }
+        return;
+    }
+
+    // --- TexTeller path ---
+    // 1) trim uniform background border (bg = modal corner value; thresh 15/255).
+    auto q8 = [](float v) { return (int)std::lround(v * 255.0f); };
+    int c00 = q8(gray[0]), c01 = q8(gray[width - 1]), c10 = q8(gray[(height - 1) * width]),
+        c11 = q8(gray[(height - 1) * width + (width - 1)]);
+    int corners[4] = { c00, c01, c10, c11 }, bg = c00, best = 0;
+    for (int i = 0; i < 4; i++) {
+        int cnt = 0;
+        for (int j = 0; j < 4; j++)
+            if (corners[j] == corners[i]) cnt++;
+        if (cnt > best) {
+            best = cnt;
+            bg = corners[i];
+        }
+    }
+    int minx = width, miny = height, maxx = -1, maxy = -1;
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++)
+            if (std::abs(q8(gray[y * width + x]) - bg) > 15) {
+                minx = std::min(minx, x);
+                maxx = std::max(maxx, x);
+                miny = std::min(miny, y);
+                maxy = std::max(maxy, y);
+            }
+    if (maxx < minx) { // fully uniform image → keep as-is
+        minx = 0;
+        miny = 0;
+        maxx = width - 1;
+        maxy = height - 1;
+    }
+    const int tw = maxx - minx + 1, th = maxy - miny + 1;
+
+    // 2) aspect-preserving scale: short edge → S-1, but cap long edge at S.
+    float scale = (float)(S - 1) / std::min(tw, th);
+    if (std::max(tw, th) * scale > (float)S) scale = (float)S / std::max(tw, th);
+    int dw = std::max(1, std::min(S, (int)std::lround(tw * scale)));
+    int dh = std::max(1, std::min(S, (int)std::lround(th * scale)));
+
+    // 3) bilinear-resize the trimmed region into the top-left of the S×S buffer.
+    const float fsx = (float)tw / dw, fsy = (float)th / dh;
+    for (int y = 0; y < dh; y++) {
+        for (int x = 0; x < dw; x++) {
+            float sx = std::min((float)tw - 1, x * fsx), sy = std::min((float)th - 1, y * fsy);
+            int x0 = minx + (int)sx, x1 = std::min(x0 + 1, maxx);
+            int y0 = miny + (int)sy, y1 = std::min(y0 + 1, maxy);
+            float wx = sx - (int)sx, wy = sy - (int)sy;
+            float v = (1 - wy) * ((1 - wx) * gray[y0 * width + x0] + wx * gray[y0 * width + x1]) +
+                      wy * ((1 - wx) * gray[y1 * width + x0] + wx * gray[y1 * width + x1]);
+            v = (v - mean) / std_;
+            for (int c = 0; c < n_channels; c++) rgb[(size_t)c * S * S + y * S + x] = v;
+        }
+    }
+    // right/bottom padding stays 0.0f (== mean grey after Normalize).
 }
 
 const char * math_ocr_recognize(math_ocr_context * ctx, const float * pixels, int width, int height, int * out_len) {
@@ -1352,25 +1607,25 @@ const char * math_ocr_recognize(math_ocr_context * ctx, const float * pixels, in
     const int n_channels = ctx->patch_proj_w ? (int)(ggml_nelements(ctx->patch_proj_w) / ctx->hparams.enc_hidden) /
                                                    (ctx->hparams.patch_size * ctx->hparams.patch_size)
                                              : 3;
-    fprintf(stderr, "math_ocr: image_size S=%d, channels=%d, allocating buf(%d)\n", S, n_channels, n_channels * S * S);
-    // Resize + expand gray→CHW + normalize (mean=0.5, std=0.5)
+    fprintf(stderr, "math_ocr: image_size S=%d, channels=%d, mean=%.4f std=%.4f pad=%d\n", S, n_channels,
+            ctx->hparams.image_mean, ctx->hparams.image_std, ctx->hparams.preprocess_pad);
+    // Resize + expand gray→CHW + normalize (data-driven mean/std + preprocess mode)
     auto tb0 = std::chrono::steady_clock::now();
-    std::vector<float> rgb(n_channels * S * S);
-    fprintf(stderr, "math_ocr: buf allocated\n");
-    float fsx = (float)width / S, fsy = (float)height / S;
-    for (int y = 0; y < S; y++) {
-        float fy = y * fsy;
-        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
-        float wy = fy - y0;
-        for (int x = 0; x < S; x++) {
-            float fx = x * fsx;
-            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
-            float wx = fx - x0;
-            float v = (1 - wy) * ((1 - wx) * pixels[y0 * width + x0] + wx * pixels[y0 * width + x1]) +
-                      wy * ((1 - wx) * pixels[y1 * width + x0] + wx * pixels[y1 * width + x1]);
-            v = (v - 0.5f) / 0.5f;
-            for (int c = 0; c < n_channels; c++) rgb[c * S * S + y * S + x] = v;
+    std::vector<float> rgb;
+    // DEBUG: inject a raw normalized pixel_values buffer (S*S f32, replicated to
+    // n_channels) to isolate the graph from native preprocessing (see LEARNINGS).
+    if (const char * pv = std::getenv("MATH_OCR_PV_BIN")) {
+        FILE * fp = fopen(pv, "rb");
+        std::vector<float> plane((size_t)S * S);
+        if (fp && fread(plane.data(), sizeof(float), plane.size(), fp) == plane.size()) {
+            rgb.assign((size_t)n_channels * S * S, 0.0f);
+            for (int c = 0; c < n_channels; c++)
+                for (int i = 0; i < S * S; i++) rgb[(size_t)c * S * S + i] = plane[i];
+            fprintf(stderr, "math_ocr: injected pixel_values from %s\n", pv);
         }
+        if (fp) fclose(fp);
+    } else {
+        preprocess_image(ctx->hparams, n_channels, pixels, width, height, rgb);
     }
     if (bench)
         fprintf(stderr, "[math_ocr-bench] preprocess: %.1f ms\n",
@@ -1479,23 +1734,12 @@ const char * math_ocr_recognize_beam(math_ocr_context * ctx, const float * pixel
 
     const int S = ctx->hparams.image_size;
 
-    // Preprocess: resize + gray→3ch + normalize (mean=0.5, std=0.5)
-    std::vector<float> rgb(3 * S * S);
-    float fsx = (float)width / S, fsy = (float)height / S;
-    for (int y = 0; y < S; y++) {
-        float fy = y * fsy;
-        int y0 = (int)fy, y1 = std::min(y0 + 1, height - 1);
-        float wy = fy - y0;
-        for (int x = 0; x < S; x++) {
-            float fx = x * fsx;
-            int x0 = (int)fx, x1 = std::min(x0 + 1, width - 1);
-            float wx = fx - x0;
-            float v = (1 - wy) * ((1 - wx) * pixels[y0 * width + x0] + wx * pixels[y0 * width + x1]) +
-                      wy * ((1 - wx) * pixels[y1 * width + x0] + wx * pixels[y1 * width + x1]);
-            v = (v - 0.5f) / 0.5f;
-            rgb[0 * S * S + y * S + x] = rgb[1 * S * S + y * S + x] = rgb[2 * S * S + y * S + x] = v;
-        }
-    }
+    // Preprocess: resize + gray→CHW + normalize (data-driven mean/std + mode)
+    const int n_channels = ctx->patch_proj_w ? (int)(ggml_nelements(ctx->patch_proj_w) / ctx->hparams.enc_hidden) /
+                                                   (ctx->hparams.patch_size * ctx->hparams.patch_size)
+                                             : 3;
+    std::vector<float> rgb;
+    preprocess_image(ctx->hparams, n_channels, pixels, width, height, rgb);
 
     run_encoder(ctx, rgb.data(), S, S);
 
@@ -1657,7 +1901,8 @@ bool math_ocr_encode_batch_raw(math_ocr_context * ctx, const uint8_t * const * c
     }
 
     // --- Step 2: build/reuse batched encoder graph ---
-    if (ctx->enc_batch_T != T || ctx->enc_batch_B != B) {
+    if (true) { // always rebuild — see single-image encoder comment
+
         if (ctx->enc_batch_g) {
             ggml_free(ctx->enc_batch_g);
             ctx->enc_batch_g = nullptr;
@@ -1666,8 +1911,8 @@ bool math_ocr_encode_batch_raw(math_ocr_context * ctx, const uint8_t * const * c
 
         size_t meta_size = (size_t)(ctx->hparams.enc_layers * 80 + 512) * ggml_tensor_overhead() +
                            ggml_graph_overhead_custom(ctx->hparams.enc_layers * 80 + 512, false) + 4 * 1024 * 1024;
-        std::vector<uint8_t> meta(meta_size);
-        ggml_init_params ip = { meta_size, meta.data(), true };
+        ctx->enc_batch_meta.resize(meta_size);
+        ggml_init_params ip = { meta_size, ctx->enc_batch_meta.data(), true };
         ggml_context * g = ggml_init(ip);
         ctx->enc_batch = build_encoder_graph_batch(ctx, g, T, B);
         ctx->enc_batch_g = g;

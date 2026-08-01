@@ -58,10 +58,10 @@ class CrispEmbedHmerOcr {
   CrispEmbedHmerOcr(String modelPath, {int nThreads = 4, String? libPath}) {
     _lib = _openLib(libPath);
 
-    final init = _lib.lookupFunction<_HmerInitC, _HmerInitDart>(
-        'crispembed_hmer_ocr_init');
-    _free = _lib.lookupFunction<_HmerFreeC, _HmerFreeDart>(
-        'crispembed_hmer_ocr_free');
+    final init = _lib
+        .lookupFunction<_HmerInitC, _HmerInitDart>('crispembed_hmer_ocr_init');
+    _free = _lib
+        .lookupFunction<_HmerFreeC, _HmerFreeDart>('crispembed_hmer_ocr_free');
     _recognizeGray =
         _lib.lookupFunction<_HmerRecognizeGrayC, _HmerRecognizeGrayDart>(
             'crispembed_hmer_ocr_recognize_gray');

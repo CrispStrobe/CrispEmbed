@@ -1,0 +1,2 @@
+# pub.dev static-analysis parity: pana scores against the lints/core baseline.
+include: package:lints/core.yaml

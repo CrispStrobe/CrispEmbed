@@ -1,0 +1,18 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-deepseek-ocr2-stacked-convert",
+  "title": "crispembed deepseek ocr2 stacked convert",
+  "code_file": "deepseek_ocr2_convert.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [
+    "${KAGGLE_ACCOUNT}/crispasr-hf-token",
+    "${KAGGLE_ACCOUNT}/crispembed-ccache"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

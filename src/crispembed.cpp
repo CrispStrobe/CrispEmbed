@@ -5,12 +5,15 @@
 #include "tokenizer.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "core/hparam_keys.h"
 #include "imatrix.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
+#include "ocr_pipeline.h"
 
 #include <algorithm>
 #include <chrono>
@@ -78,7 +81,7 @@ static ggml_backend_t crispembed_init_backend(int n_threads) {
         }
         return cpu;
     }
-    return ggml_backend_init_best();
+    return crispasr_init_gpu_backend();
 }
 
 // ---------------------------------------------------------------------------
@@ -206,6 +209,13 @@ struct crispembed_context {
     embed_model model;
     std::unique_ptr<dec_model> dec; // non-null for decoder models
     bool is_decoder = false;
+    // C4 — cross-call prefix KV cache for the decoder-embedding path. Reuses a
+    // shared instruction prefix's per-layer K/V + hidden across consecutive
+    // encode() calls. prev_dec_tokens holds the previous call's ids (for LCP
+    // detection). Opt out via CRISPEMBED_DECODER_PREFIX_CACHE=0.
+    dec_prefix_cache dec_prefix;
+    std::vector<int32_t> prev_dec_tokens;
+    int prefix_cache_enabled = -1; // -1 = unresolved, 0 = off, 1 = on
     // LFM2.5 bidirectional embedding (arch="lfm2")
     lfm2_embed_ctx * lfm2_ctx = nullptr;
     bool is_lfm2 = false;
@@ -227,10 +237,13 @@ struct crispembed_context {
     int global_attn_every_n = 0;    // ModernBERT: every Nth layer uses global attention (0 = all same)
     int local_attention_window = 0; // ModernBERT: sliding-window size for local layers (0 = no window)
     bool pre_ln = false;            // pre-LN (ModernBERT) vs post-LN (BERT) ordering
+    bool geglu_erf = false;         // GeGLU uses exact-erf gelu (ModernBERT) vs tanh (GTE v1.5)
     bool dump_layers = false;       // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int position_buckets = 0;       // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;         // 0 = use model default
-    std::string prefix;             // prepended to text before tokenization (e.g. "query: ")
+    int image_deskew = 0;           // optional scan deskew on the file/RGB image paths
+    float image_deskew_max_angle = 15.0f;
+    std::string prefix; // prepended to text before tokenization (e.g. "query: ")
     // ColBERT self-describing metadata (read from GGUF, empty = not set)
     std::string colbert_query_prefix;
     std::string colbert_doc_prefix;
@@ -316,20 +329,71 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         return k >= 0 ? std::string(gguf_get_val_str(g, k)) : std::string();
     };
 
-    // Hyperparams — check CrispEmbed, Ollama bert.*, and Ollama xlmr.* keys.
-    // CrispEmbed: bert.hidden_size, bert.num_hidden_layers, ...
-    // Ollama:     {arch}.embedding_length, {arch}.block_count, ...
-    //             where arch = "bert" or "xlmr"
-    hp.n_vocab = u32("bert.vocab_size", 30522);
-    hp.n_max_tokens = u32("bert.max_position_embeddings", u32("bert.context_length", u32("xlmr.context_length", 512)));
-    hp.n_embd = u32("bert.hidden_size", u32("bert.embedding_length", u32("xlmr.embedding_length", 384)));
-    hp.n_head = u32("bert.num_attention_heads", u32("bert.attention.head_count", u32("xlmr.attention.head_count", 12)));
-    hp.n_layer = u32("bert.num_hidden_layers", u32("bert.block_count", u32("xlmr.block_count", 6)));
-    hp.n_intermediate =
-        u32("bert.intermediate_size", u32("bert.feed_forward_length", u32("xlmr.feed_forward_length", 1536)));
-    hp.n_output = u32("bert.output_dim", hp.n_embd);
-    hp.layer_norm_eps = f32("bert.layer_norm_eps",
-                            f32("bert.attention.layer_norm_epsilon", f32("xlmr.attention.layer_norm_epsilon", 1e-12f)));
+    // Hyperparams — CrispEmbed (bert.hidden_size, ...), Ollama/llama.cpp
+    // ({arch}.embedding_length, ...), plus the GGUF's OWN declared architecture.
+    //
+    // llama.cpp/Ollama always write <general.architecture>.<field>, so deriving
+    // the prefix from general.architecture resolves any community GGUF — e.g.
+    // nomic-embed-text-v2-moe's "nomic-bert-moe.*" keys (issue #33) — without a
+    // per-model alias list. See src/core/hparam_keys.h.
+    //
+    // Gates: CRISPEMBED_ARCH_HPARAMS=0 disables the arch-derived candidates
+    // (leaving exactly the legacy bert.*/xlmr.* behaviour, for A/B);
+    // CRISPEMBED_STRICT_HPARAMS=1 hard-fails instead of silently defaulting.
+    const std::string gguf_arch = strv("general.architecture");
+    const bool arch_hp_on = core_hparams::arch_keys_enabled();
+    auto ak = [&](const char * field) { return core_hparams::arch_key(gguf_arch, field, arch_hp_on); };
+
+    auto look_u32 = [&](const std::string & key, int & v) -> bool {
+        const int64_t k = gguf_find_key(g, key.c_str());
+        if (k < 0) return false;
+        v = (int)gguf_get_val_u32(g, k);
+        return true;
+    };
+    auto look_f32 = [&](const std::string & key, float & v) -> bool {
+        const int64_t k = gguf_find_key(g, key.c_str());
+        if (k < 0) return false;
+        v = gguf_get_val_f32(g, k);
+        return true;
+    };
+
+    // Required hparams: a wrong default here silently yields a garbage embedding,
+    // so record misses for the strict-mode report.
+    std::vector<std::string> missing_hp;
+    auto req_u32 = [&](const std::vector<std::string> & keys, int def, const char * what) -> int {
+        int v = def;
+        if (!core_hparams::resolve(look_u32, keys, v)) missing_hp.push_back(what);
+        return v;
+    };
+    auto opt_u32 = [&](const std::vector<std::string> & keys, int def) -> int {
+        int v = def;
+        core_hparams::resolve(look_u32, keys, v);
+        return v;
+    };
+    auto opt_f32 = [&](const std::vector<std::string> & keys, float def) -> float {
+        float v = def;
+        core_hparams::resolve(look_f32, keys, v);
+        return v;
+    };
+
+    hp.n_vocab = opt_u32({ "bert.vocab_size", ak("vocab_size") }, 30522);
+    hp.n_max_tokens = opt_u32(
+        { "bert.max_position_embeddings", "bert.context_length", "xlmr.context_length", ak("context_length") }, 512);
+    hp.n_embd = req_u32({ "bert.hidden_size", "bert.embedding_length", "xlmr.embedding_length", ak("embedding_length"),
+                          ak("hidden_size") },
+                        384, "embedding_length");
+    hp.n_head = req_u32({ "bert.num_attention_heads", "bert.attention.head_count", "xlmr.attention.head_count",
+                          ak("attention.head_count") },
+                        12, "attention.head_count");
+    hp.n_layer = req_u32({ "bert.num_hidden_layers", "bert.block_count", "xlmr.block_count", ak("block_count") }, 6,
+                         "block_count");
+    hp.n_intermediate = req_u32(
+        { "bert.intermediate_size", "bert.feed_forward_length", "xlmr.feed_forward_length", ak("feed_forward_length") },
+        1536, "feed_forward_length");
+    hp.n_output = opt_u32({ "bert.output_dim" }, hp.n_embd);
+    hp.layer_norm_eps = opt_f32({ "bert.layer_norm_eps", "bert.attention.layer_norm_epsilon",
+                                  "xlmr.attention.layer_norm_epsilon", ak("attention.layer_norm_epsilon") },
+                                1e-12f);
 
     // Pooling method: 0=mean (default), 1=cls, 2=last-token
     // CrispEmbed format: bert.pooling_method (0=mean, 1=cls, 2=last)
@@ -338,9 +402,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         int pm = u32("bert.pooling_method", -1);
         if (pm < 0) {
             // Try Ollama format and convert: Ollama{1=mean,2=cls,3=last} → CE{0,1,2}
-            int pt = u32("bert.pooling_type", -1);
-            // Also check arch-prefixed key (xlmr.pooling_type, bert.pooling_type)
-            if (pt < 0) pt = u32("xlmr.pooling_type", -1);
+            // Arch-derived key covers any community GGUF (nomic-bert-moe → 1=mean).
+            const int pt = opt_u32({ "bert.pooling_type", "xlmr.pooling_type", ak("pooling_type") }, -1);
             if (pt > 0)
                 pm = pt - 1; // Ollama 1→0(mean), 2→1(cls), 3→2(last)
             else
@@ -358,14 +421,68 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     ctx->colbert_similarity_fn = strv("colbert.similarity_fn_name");
     ctx->colbert_query_length = u32("colbert.query_length", 0);
     // RoPE and pre-LN flags — MUST be read before gguf_free(g)
-    ctx->rope_theta = f32("bert.rope_theta", 10000.0f);
+    // Community GGUFs write the RoPE base as <arch>.rope.freq_base.
+    ctx->rope_theta = opt_f32({ "bert.rope_theta", ak("rope.freq_base") }, 10000.0f);
     ctx->rope_theta_global = f32("bert.rope_theta_global", 0.0f);
     ctx->global_attn_every_n = u32("bert.global_attn_every_n", 0);
     ctx->local_attention_window = u32("bert.local_attention", 0);
     ctx->pre_ln = u32("bert.pre_ln", 0) != 0;
     ctx->position_buckets = u32("bert.position_buckets", 0);
-    hp.n_experts = u32("bert.num_experts", 0);
-    hp.n_experts_per_tok = u32("bert.num_experts_per_tok", 0);
+
+    // Community `modern-bert` GGUFs (llama.cpp arch) name their metadata
+    // differently from CrispEmbed's own bert.* keys, and their RoPE theta is
+    // INVERTED vs our naming: `rope.freq_base` is the GLOBAL theta, while
+    // `rope.freq_base_swa` is the LOCAL (sliding-window) theta. The generic
+    // ak("rope.freq_base") read above therefore loaded the GLOBAL base into
+    // rope_theta — correct it here. ModernBERT is architecturally pre-LN and
+    // uses exact-erf GeGLU (see the graph builder). Layer 0's attn norm is
+    // Identity in HF so ln1 is per-layer optional (guarded downstream).
+    if (gguf_arch == "modern-bert") {
+        ctx->rope_theta = opt_f32({ ak("rope.freq_base_swa") }, 10000.0f);     // local / sliding
+        ctx->rope_theta_global = opt_f32({ ak("rope.freq_base") }, 160000.0f); // global
+        ctx->global_attn_every_n = opt_u32({ ak("attention.sliding_window_pattern") }, 3);
+        ctx->local_attention_window = opt_u32({ ak("attention.sliding_window") }, 128);
+        ctx->pre_ln = true;
+        ctx->geglu_erf = true;
+    }
+
+    hp.n_experts = opt_u32({ "bert.num_experts", ak("expert_count") }, 0);
+    hp.n_experts_per_tok = opt_u32({ "bert.num_experts_per_tok", ak("expert_used_count") }, 0);
+
+    // Strict mode: a missing REQUIRED hparam means we are about to run with a
+    // fabricated default (384-dim / 6-layer / ...) and emit a silently-garbage
+    // embedding with exit code 0. Opt-in hard-fail instead (see hparam_keys.h).
+    if (!missing_hp.empty()) {
+        std::string joined;
+        for (size_t i = 0; i < missing_hp.size(); i++) joined += (i ? ", " : "") + missing_hp[i];
+        if (core_hparams::strict_hparams_enabled()) {
+            fprintf(stderr,
+                    "crispembed: missing required hyperparameter(s) [%s] for architecture '%s' — refusing to load "
+                    "with fabricated defaults (CRISPEMBED_STRICT_HPARAMS=1). Unset it to load anyway.\n",
+                    joined.c_str(), gguf_arch.empty() ? "(unset)" : gguf_arch.c_str());
+            gguf_free(g);
+            return false;
+        }
+        fprintf(stderr,
+                "crispembed: warning: hyperparameter(s) [%s] not found for architecture '%s' — using defaults; "
+                "embeddings may be wrong. Set CRISPEMBED_STRICT_HPARAMS=1 to make this fatal.\n",
+                joined.c_str(), gguf_arch.empty() ? "(unset)" : gguf_arch.c_str());
+    }
+
+    // BPE merges may live in the `tokenizer.ggml.merges` KV STRING ARRAY
+    // (community gpt2/modern-bert GGUFs) instead of the `tokenizer.merges`
+    // TENSOR (CrispEmbed's own converter). Read the KV array here while `g`
+    // is live (gguf_free use-after-free landmine); it is consumed after weight
+    // loading, only if the tensor form is absent.
+    std::vector<std::string> kv_merges;
+    {
+        const int64_t mki = gguf_find_key(g, "tokenizer.ggml.merges");
+        if (mki >= 0 && gguf_get_arr_type(g, mki) == GGUF_TYPE_STRING) {
+            const int nm = (int)gguf_get_arr_n(g, mki);
+            kv_merges.resize(nm);
+            for (int i = 0; i < nm; i++) kv_merges[i] = gguf_get_arr_str(g, mki, i);
+        }
+    }
 
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -384,8 +501,32 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             std::memcpy(scores.data(), sd, sn * sizeof(float));
         }
 
-        // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece
+        // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece.
+        // CrispEmbed's own GGUFs write the numeric `tokenizer.ggml.type`.
+        // Community/llama.cpp GGUFs instead write the STRING `tokenizer.ggml.model`
+        // (gpt2 / bert / t5 / llama / unigram) with NO numeric type — for those the
+        // model string is AUTHORITATIVE over the old vocab-size heuristic. Without
+        // this a gpt2/modern-bert BPE GGUF (50368 vocab, no type) fell through to
+        // WordPiece and produced garbage embeddings from token 0.
         int tokenizer_type = u32("tokenizer.ggml.type", 0);
+        if (gguf_find_key(g, "tokenizer.ggml.type") < 0) {
+            const std::string tok_model = strv("tokenizer.ggml.model");
+            if (tok_model == "gpt2" || tok_model == "bpe")
+                tokenizer_type = 1; // BPE
+            else if (tok_model == "t5" || tok_model == "unigram" || tok_model == "spm" || tok_model == "llama")
+                tokenizer_type = 2; // SentencePiece
+            else if (tok_model == "bert" || tok_model == "wordpiece")
+                tokenizer_type = 0; // WordPiece
+            // else: leave 0 and let the legacy `n > 100000 → SPM` heuristic below
+            // decide (covers old GGUFs with neither type nor a known model string).
+        }
+        // C2 behavior flags (llama.cpp convention, BOOL-typed; absent or
+        // non-BOOL → default true = the historical wrap behavior, so every
+        // shipped GGUF is byte-identical). Read while `g` is live (gguf_free
+        // use-after-free landmine).
+        const bool tok_add_bos = core_gguf::kv_bool(g, "tokenizer.ggml.add_bos_token", true);
+        const bool tok_add_eos = core_gguf::kv_bool(g, "tokenizer.ggml.add_eos_token", true);
+
         if (tokenizer_type == 2 || (tokenizer_type == 0 && n > 100000)) {
             // SentencePiece / XLM-RoBERTa
             int bos_id = u32("tokenizer.ggml.bos_token_id", 0);
@@ -393,20 +534,33 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
             ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
+            ctx->sp_tokenizer.set_add_flags(tok_add_bos, tok_add_eos);
             ctx->use_sentencepiece = true;
             fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n", n, scores.size());
         } else if (tokenizer_type == 1) {
-            // BPE (GPT-2 style, ModernBERT, etc.)
-            int cls_id = u32("tokenizer.ggml.cls_token_id", 0);
-            int sep_id = u32("tokenizer.ggml.sep_token_id", 2);
+            // BPE (GPT-2 style, ModernBERT, etc.). Community gpt2 encoder GGUFs
+            // (e.g. modern-bert) declare CLS/SEP via bos/eos_token_id, not the
+            // cls/sep keys — fall back to bos/eos so the [CLS]…[SEP] wrap is right.
+            int cls_id = u32("tokenizer.ggml.cls_token_id", u32("tokenizer.ggml.bos_token_id", 0));
+            int sep_id = u32("tokenizer.ggml.sep_token_id", u32("tokenizer.ggml.eos_token_id", 2));
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
+            // add_bos/add_eos=false disable the CLS/SEP wrap via the -1 id
+            // convention (encode() only wraps ids that are >= 0); the merges
+            // reload below re-reads bos_id()/eos_id(), so this persists.
+            if (!tok_add_bos) cls_id = -1;
+            if (!tok_add_eos) sep_id = -1;
 
-            // BPE merges stored as tensor (newline-separated blob)
-            // Merges will be loaded after weight loading (from tensor "tokenizer.merges")
+            // BPE merges stored as tensor (newline blob) OR the tokenizer.ggml.merges
+            // KV array (kv_merges, read above) — applied after weight loading.
             std::vector<std::string> empty_merges;
             // For encoder BPE: eos=SEP, suffix=-1 (handled by encode), bos=CLS
             ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, -1, cls_id, false, hp.n_max_tokens);
             ctx->use_bpe = true;
+            // ModernBERT tokenizes with the GPT-2 ByteLevel regex pre-tokenizer
+            // (tokenizer.ggml.pre = "modern-bert"); the default whitespace-split
+            // pre-tokenizer mis-splits punctuation/digits. Enable the regex path.
+            if (gguf_arch == "modern-bert" || strv("tokenizer.ggml.pre") == "modern-bert")
+                ctx->bpe_tokenizer.set_gpt2_regex_pretok(true);
             fprintf(stderr, "crispembed: using BPE tokenizer (%d tokens)\n", n);
         } else {
             // WordPiece / BERT
@@ -486,7 +640,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     m.rel_embd = get("rel_embd.weight");
     m.encoder_ln_w = get("encoder_ln.weight");
     m.encoder_ln_b = get("encoder_ln.bias");
-    m.final_norm_w = get("final_norm.weight");
+    m.final_norm_w = get_any({ "final_norm.weight", "output_norm.weight" });
 
     if (!m.token_embd) {
         fprintf(stderr, "crispembed: missing token_embd.weight\n");
@@ -534,8 +688,12 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         auto pfx = "enc." + std::to_string(il) + ".";
         auto blk = "blk." + std::to_string(il) + ".";
         auto & L = m.layers[il];
-        L.ln1_w = get_any({ pfx + "ln1.weight", blk + "attn_output_norm.weight" });
-        L.ln1_b = get_any({ pfx + "ln1.bias", blk + "attn_output_norm.bias" });
+        L.ln1_w = get_any({ pfx + "ln1.weight", blk + "attn_output_norm.weight", blk + "attn_norm.weight" });
+        L.ln1_b = get_any({ pfx + "ln1.bias", blk + "attn_output_norm.bias", blk + "attn_norm.bias" });
+        // Pre-fused QKV (nomic-bert-moe exports blk.N.attn_qkv.weight, rows q|k|v,
+        // possibly quantized). Consumed directly by the qkv graph path (issue #33).
+        L.qkv_w = get_any({ pfx + "attn.qkv.weight", blk + "attn_qkv.weight" });
+        L.qkv_b = get_any({ pfx + "attn.qkv.bias", blk + "attn_qkv.bias" });
         L.q_w = get_any({ pfx + "attn.q.weight", blk + "attn_q.weight" });
         L.q_b = get_any({ pfx + "attn.q.bias", blk + "attn_q.bias" });
         L.k_w = get_any({ pfx + "attn.k.weight", blk + "attn_k.weight" });
@@ -544,8 +702,8 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.v_b = get_any({ pfx + "attn.v.bias", blk + "attn_v.bias" });
         L.o_w = get_any({ pfx + "attn.o.weight", blk + "attn_output.weight" });
         L.o_b = get_any({ pfx + "attn.o.bias", blk + "attn_output.bias" });
-        L.ln2_w = get_any({ pfx + "ln2.weight", blk + "layer_output_norm.weight" });
-        L.ln2_b = get_any({ pfx + "ln2.bias", blk + "layer_output_norm.bias" });
+        L.ln2_w = get_any({ pfx + "ln2.weight", blk + "layer_output_norm.weight", blk + "ffn_norm.weight" });
+        L.ln2_b = get_any({ pfx + "ln2.bias", blk + "layer_output_norm.bias", blk + "ffn_norm.bias" });
         L.fc1_w = get_any({ pfx + "ffn.fc1.weight", blk + "ffn_up.weight" });
         L.fc1_b = get_any({ pfx + "ffn.fc1.bias", blk + "ffn_up.bias" });
         L.fc2_w = get_any({ pfx + "ffn.fc2.weight", blk + "ffn_down.weight" });
@@ -553,10 +711,21 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         L.ffn_gate_w = get_any({ pfx + "ffn_gate.weight", blk + "ffn_gate.weight" }); // SwiGLU gate (NomicBERT)
         L.ffn_up_gate_w =
             get_any({ pfx + "ffn_up_gate.weight", blk + "ffn_up_gate.weight" }); // Fused gate+up (ModernBERT/GTE v1.5)
-        // MoE expert tensors (present only on MoE layers)
-        L.moe_gate_w = get(pfx + "ffn.moe_gate.weight");
-        L.expert_fc1_w = get(pfx + "ffn.expert_fc1.weight");
-        L.expert_fc2_w = get(pfx + "ffn.expert_fc2.weight");
+        // Community modern-bert GGUFs name the FUSED GeGLU weight `blk.N.ffn_up`
+        // (same name as a PLAIN up-proj) — detect it by shape: [H, 2*inter]
+        // instead of [H, inter]. Route it to ffn_up_gate_w so the graph takes the
+        // GeGLU path, and drop the plain fc1 so it isn't double-used.
+        if (!L.ffn_up_gate_w && L.fc1_w && L.fc1_w->ne[1] == 2 * (int64_t)hp.n_intermediate) {
+            L.ffn_up_gate_w = L.fc1_w;
+            L.fc1_w = nullptr;
+            L.fc1_b = nullptr;
+        }
+        // MoE expert tensors (present only on MoE layers). nomic-bert-moe uses the
+        // standard llama.cpp names: router ffn_gate_inp, stacked experts
+        // ffn_up_exps [H,inter,n_exp] / ffn_down_exps [inter,H,n_exp] (issue #33).
+        L.moe_gate_w = get_any({ pfx + "ffn.moe_gate.weight", blk + "ffn_gate_inp.weight" });
+        L.expert_fc1_w = get_any({ pfx + "ffn.expert_fc1.weight", blk + "ffn_up_exps.weight" });
+        L.expert_fc2_w = get_any({ pfx + "ffn.expert_fc2.weight", blk + "ffn_down_exps.weight" });
         L.moe_ffn_bias = get(pfx + "ffn.moe_bias");
     }
 
@@ -649,15 +818,20 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         }
     }
 
-    // Load BPE merges from tensor (stored as newline-separated UTF-8 blob)
+    // Load BPE merges. Two on-disk forms: CrispEmbed's converter writes the
+    // `tokenizer.merges` TENSOR (newline-separated UTF-8 blob); community
+    // gpt2/modern-bert GGUFs write the `tokenizer.ggml.merges` KV STRING ARRAY
+    // (kv_merges, read above while `g` was live). Prefer the tensor, fall back
+    // to the KV array. The reload preserves the gpt2-regex pre-tokenizer flag
+    // (set_gpt2_regex_pretok is not a load() parameter, so it survives).
     if (ctx->use_bpe) {
-        ggml_tensor * merge_t = get("tokenizer.merges");
-        if (merge_t) {
+        std::vector<std::string> merges;
+        const char * src = nullptr;
+        if (ggml_tensor * merge_t = get("tokenizer.merges")) {
             size_t nbytes = ggml_nbytes(merge_t);
             std::vector<uint8_t> blob(nbytes);
             ggml_backend_tensor_get(merge_t, blob.data(), 0, nbytes);
             // Parse newline-separated merges
-            std::vector<std::string> merges;
             std::string current;
             for (size_t i = 0; i < nbytes; i++) {
                 if (blob[i] == '\n') {
@@ -668,13 +842,19 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                 }
             }
             if (!current.empty()) merges.push_back(current);
+            src = "tensor";
+        } else if (!kv_merges.empty()) {
+            merges = std::move(kv_merges);
+            src = "KV array";
+        }
+        if (!merges.empty()) {
             // Re-load BPE tokenizer with merges (preserve suffix_id=-1 for encoder)
             int cls_id = ctx->bpe_tokenizer.bos_id();
             int sep_id = ctx->bpe_tokenizer.eos_id();
             int pad_id = ctx->bpe_tokenizer.pad_id();
             ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges, sep_id, pad_id, -1, cls_id, false,
                                     hp.n_max_tokens);
-            fprintf(stderr, "crispembed: loaded %zu BPE merges from tensor\n", merges.size());
+            fprintf(stderr, "crispembed: loaded %zu BPE merges from %s\n", merges.size(), src);
         }
     }
 
@@ -1023,13 +1203,25 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             ggml_tensor * top_w = ggml_get_rows(gctx, probs_3d, ids); // [1, K, TB]
             top_w = ggml_reshape_2d(gctx, top_w, K, TB);              // [K, TB]
 
-            // Expand input for K expert slots: [H, TB] → [H, K, TB]
+            // Input for the K expert slots: [H, TB] → [H, 1, TB].
             ggml_tensor * cur_3d = ggml_reshape_3d(gctx, cur, H, 1, TB);
-            ggml_tensor * rep_tgt = ggml_new_tensor_3d(gctx, cur->type, H, K, TB);
-            ggml_tensor * cur_exp = ggml_repeat(gctx, cur_3d, rep_tgt);
+            // The explicit ggml_repeat to [H, K, TB] is (hypothesized) redundant:
+            // ggml_mul_mat_id broadcasts b's singleton slot dim over the K experts
+            // in `ids` (llama.cpp's canonical build_moe_ffn pattern). Gate the
+            // broadcast path behind CRISPEMBED_MOE_NO_REPEAT=1; default keeps the
+            // repeat until byte-identity + latency are validated (env-gate rule).
+            static const bool moe_no_repeat = [] {
+                const char * e = std::getenv("CRISPEMBED_MOE_NO_REPEAT");
+                return e && e[0] == '1';
+            }();
+            ggml_tensor * cur_slots = cur_3d;
+            if (!moe_no_repeat) {
+                ggml_tensor * rep_tgt = ggml_new_tensor_3d(gctx, cur->type, H, K, TB);
+                cur_slots = ggml_repeat(gctx, cur_3d, rep_tgt); // [H, K, TB]
+            }
 
-            // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, K, TB] → [inter, K, TB]
-            ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_exp, ids);
+            // Expert up projection: expert_fc1 [H, inter, n_exp] × [H, {K|1}, TB] → [inter, K, TB]
+            ggml_tensor * up = ggml_mul_mat_id(gctx, L.expert_fc1_w, cur_slots, ids);
 
             // Activation: exact erf-GELU (NomicBERT v2 uses nn.GELU(approximate='none'))
             up = ggml_gelu_erf(gctx, up);
@@ -1048,9 +1240,13 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             if (L.moe_ffn_bias) ffn = ggml_add(gctx, ffn, L.moe_ffn_bias);
 
         } else if (L.ffn_up_gate_w) {
-            // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down
-            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur); // [2*inter, T]
-            ffn = ggml_geglu(gctx, up_gate); // fused: gelu(first_half) * second_half → [inter, T]
+            // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down.
+            // Both use gelu(first_half)*second_half (non-swapped) layout; they
+            // differ only in the gelu approximation: GTE v1.5 = tanh, ModernBERT
+            // = exact erf (config hidden_activation="gelu"). geglu_erf is gated on
+            // arch so the validated GTE v1.5 path (tanh) is untouched.
+            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur);                 // [2*inter, T]
+            ffn = ctx->geglu_erf ? ggml_geglu_erf(gctx, up_gate) : ggml_geglu(gctx, up_gate); // → [inter, T]
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
         } else if (L.ffn_gate_w) {
             // Separate SwiGLU (NomicBERT)
@@ -1367,24 +1563,73 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
 
     // Dump per-layer intermediates for diff harness
     if (ctx->dump_layers) {
-        auto dump_tensor = [&](const char * name) {
-            ggml_tensor * t = ggml_graph_get_tensor(gf, name);
-            if (!t) return;
-            int64_t n = ggml_nelements(t);
+        // CRISPEMBED_DUMP_LAYERS=1 prints a 6-float peek per stage (eyeballing).
+        // CRISPEMBED_DUMP_LAYERS_GGUF=<path> writes the FULL tensors to a GGUF so
+        // they can be diffed against the Python reference per stage — a peek
+        // cannot be compared, and a final-embedding cosine only tells you THAT
+        // something diverged, not WHERE. Stage names match
+        // tools/dump_encoder_reference.py: emb_ln_out == HF hidden_states[0],
+        // layer_i == HF hidden_states[i+1].
+        const char * dump_gguf = std::getenv("CRISPEMBED_DUMP_LAYERS_GGUF");
+
+        std::vector<std::string> names;
+        names.push_back("emb_ln_out");
+        names.push_back("attn_out_0");
+        for (int il = 0; il < hp.n_layer; il++) names.push_back("layer_" + std::to_string(il));
+        // The LAST block's output is renamed "encoder_out" above, so "layer_{n-1}"
+        // does not exist in the graph. Without this the final block — the one that
+        // actually feeds pooling — would be silently absent from the dump.
+        names.push_back("encoder_out");
+
+        struct ggml_context * dctx = nullptr;
+        struct gguf_context * dg = nullptr;
+        if (dump_gguf) {
+            // no_alloc=false: tensors own their data so gguf_add_tensor can copy it.
+            struct ggml_init_params dip = { (names.size() + 2) * ggml_tensor_overhead() +
+                                                (size_t)hp.n_embd * 4096 * sizeof(float) * (names.size() + 1),
+                                            nullptr, false };
+            dctx = ggml_init(dip);
+            if (dctx) {
+                dg = gguf_init_empty();
+                gguf_set_val_str(dg, "general.architecture", "crispembed-encoder-dump");
+                gguf_set_val_u32(dg, "dump.n_layer", (uint32_t)hp.n_layer);
+                gguf_set_val_u32(dg, "dump.n_embd", (uint32_t)hp.n_embd);
+            }
+        }
+
+        for (const std::string & name : names) {
+            ggml_tensor * t = ggml_graph_get_tensor(gf, name.c_str());
+            if (!t) continue;
+            const int64_t n = ggml_nelements(t);
             std::vector<float> buf(n);
             ggml_backend_tensor_get(t, buf.data(), 0, n * sizeof(float));
-            fprintf(stderr, "DUMP %s shape=[%lld,%lld] data=", name, (long long)t->ne[0], (long long)t->ne[1]);
-            int show = n < 6 ? (int)n : 6;
+
+            fprintf(stderr, "DUMP %s shape=[%lld,%lld] data=", name.c_str(), (long long)t->ne[0], (long long)t->ne[1]);
+            const int show = n < 6 ? (int)n : 6;
             for (int i = 0; i < show; i++) fprintf(stderr, " %.6f", buf[i]);
             fprintf(stderr, " ...\n");
-        };
-        dump_tensor("emb_ln_out");
-        dump_tensor("attn_out_0");
-        for (int il = 0; il < hp.n_layer; il++) {
-            char lname[32];
-            snprintf(lname, sizeof(lname), "layer_%d", il);
-            dump_tensor(lname);
+
+            if (dg && dctx) {
+                // Keep ggml's [H, T] layout: ne[0] is the fast axis, so the flat
+                // memory is already row-major (T, H) — the same as HF's
+                // hidden_states[layer][0]. No transpose on either side.
+                ggml_tensor * d = ggml_new_tensor_2d(dctx, GGML_TYPE_F32, t->ne[0], t->ne[1]);
+                if (!d) continue;
+                ggml_set_name(d, name.c_str());
+                memcpy(d->data, buf.data(), n * sizeof(float));
+                gguf_add_tensor(dg, d);
+            }
         }
+
+        if (dg) {
+            if (!gguf_write_to_file(dg, dump_gguf, /*only_meta*/ false)) {
+                fprintf(stderr, "crispembed: failed to write layer dump '%s'\n", dump_gguf);
+            } else {
+                fprintf(stderr, "crispembed: wrote layer dump -> %s\n", dump_gguf);
+            }
+            gguf_free(dg);
+        }
+        if (dctx) ggml_free(dctx);
     }
 
     // Read output (works whether tensor is on GPU or CPU)
@@ -1457,14 +1702,17 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
 // C3: is the packed block-diagonal batch path eligible + enabled?
 // Only for absolute-position encoders (no MPNet rel-bias, no DeBERTa rel-embd,
 // no RoPE — those carry T×T / per-position structure that packing would need to
-// re-index per segment). Opt-in via CRISPEMBED_ENCODER_PACKED until A/B-proven,
-// then this becomes the default with CRISPEMBED_ENCODER_NOPACK as the opt-out.
+// re-index per segment). Default: ON when the primary backend is a GPU
+// (A/B-proven on Metal 2026-07-12: 5.2–7.4× vs sequential on uniform AND
+// mixed-length batches, parity cos 1.0 — see PLAN C3), OFF on CPU (measured
+// unstable 0.46×–2.07× there). CRISPEMBED_ENCODER_PACKED=1/0 overrides the
+// default in either direction.
 static bool packed_batch_enabled(const crispembed_context * ctx) {
     if (ctx->is_decoder) return false;
     if (ctx->model.rel_attn_bias || ctx->model.rel_embd || ctx->use_rope) return false;
     const char * v = std::getenv("CRISPEMBED_ENCODER_PACKED");
-    if (v && v[0] && std::strcmp(v, "0") != 0) return true; // explicit opt-in
-    return false;                                           // default OFF (flip after A/B)
+    if (v && v[0]) return std::strcmp(v, "0") != 0;            // explicit override, both ways
+    return ctx->backend && !ggml_backend_is_cpu(ctx->backend); // default: GPU on, CPU off
 }
 
 // Packed batched encoding (C3): pack all B sequences end-to-end into one graph of
@@ -2003,8 +2251,8 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
             int64_t ki = gguf_find_key(g, "general.architecture");
             if (ki >= 0) {
                 std::string arch = gguf_get_val_str(g, ki);
-                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "llama" || arch == "qwen2" ||
-                          arch == "mistral" || arch == "phi3");
+                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "gemma-embedding" || arch == "llama" ||
+                          arch == "qwen2" || arch == "mistral" || arch == "phi3");
                 is_lfm2 = (arch == "lfm2");
             }
         }
@@ -2112,11 +2360,47 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 int suffix_id = ki_sfx >= 0 ? (int)gguf_get_val_i32(g2, ki_sfx) : pad_id;
                 bool is_spm_bpe = u32g("tokenizer.ggml.is_spm_bpe", 0) != 0;
 
-                ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id, suffix_id, bos_id, is_spm_bpe,
-                                        ctx->dec->n_max_pos);
-                ctx->use_bpe = true;
-                fprintf(stderr, "crispembed: %s BPE tokenizer (%d tokens, %zu merges)\n",
-                        is_spm_bpe ? "SentencePiece" : "GPT-2", nv, merges.size());
+                // Community/official llama.cpp SPM exports (e.g. gemma-embedding,
+                // tokenizer.ggml.model="llama") store `scores` and NO `merges`.
+                // A real BPE always has merges; loading such a GGUF as
+                // BPE-with-empty-merges char-tokenizes every input → garbage
+                // embeddings. Route merge-less + scored vocabs to the
+                // SentencePiece tokenizer (which tokenizes from scores).
+                const int64_t si2 = gguf_find_key(g2, "tokenizer.ggml.scores");
+                const bool has_scores = (si2 >= 0 && gguf_get_arr_type(g2, si2) == GGUF_TYPE_FLOAT32);
+                const bool is_spm = merges.empty() && has_scores;
+
+                if (is_spm) {
+                    std::vector<float> scores((size_t)gguf_get_arr_n(g2, si2));
+                    std::memcpy(scores.data(), gguf_get_arr_data(g2, si2), scores.size() * sizeof(float));
+                    const int unk_id = u32g("tokenizer.ggml.unknown_token_id", 3);
+                    // `bos_id` above may be forced to -1 by add_bos_token=false;
+                    // sp_tokenizer gates the wrap via set_add_flags, so pass the raw id.
+                    const int sp_bos = u32g("tokenizer.ggml.bos_token_id", 2);
+                    const bool add_bos = core_gguf::kv_bool(g2, "tokenizer.ggml.add_bos_token", true);
+                    const bool add_eos = core_gguf::kv_bool(g2, "tokenizer.ggml.add_eos_token", true);
+                    // llama.cpp SPM (tokenizer.ggml.model="llama"/"gemma") uses
+                    // BPE-style merge ranks; T5-style unigram uses Viterbi.
+                    std::string tk_model;
+                    if (const int64_t km = gguf_find_key(g2, "tokenizer.ggml.model");
+                        km >= 0 && gguf_get_kv_type(g2, km) == GGUF_TYPE_STRING)
+                        tk_model = gguf_get_val_str(g2, km);
+                    const bool bpe_merge = (tk_model == "llama" || tk_model == "gemma");
+                    // Gemma sets add_space_prefix=false; llama.cpp default is true.
+                    const bool add_space_prefix = core_gguf::kv_bool(g2, "tokenizer.ggml.add_space_prefix", true);
+                    ctx->sp_tokenizer.load(vocab, scores, sp_bos, eos_id, unk_id, pad_id, ctx->dec->n_max_pos);
+                    ctx->sp_tokenizer.set_add_flags(add_bos, add_eos);
+                    ctx->sp_tokenizer.set_spm_mode(bpe_merge, add_space_prefix);
+                    ctx->use_sentencepiece = true;
+                    fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores, %s)\n", nv,
+                            scores.size(), bpe_merge ? "bpe-merge" : "unigram");
+                } else {
+                    ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id, suffix_id, bos_id, is_spm_bpe,
+                                            ctx->dec->n_max_pos);
+                    ctx->use_bpe = true;
+                    fprintf(stderr, "crispembed: %s BPE tokenizer (%d tokens, %zu merges)\n",
+                            is_spm_bpe ? "SentencePiece" : "GPT-2", nv, merges.size());
+                }
             }
             gguf_free(g2);
         }
@@ -2252,9 +2536,25 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
         }
     }
 
+    // CRISPEMBED_DEBUG_TOKENS=1 dumps the final token-id sequence (single encode).
+    if (const char * dv = std::getenv("CRISPEMBED_DEBUG_TOKENS"); dv && dv[0] && std::strcmp(dv, "0") != 0) {
+        fprintf(stderr, "crispembed: token_ids (n=%zu):", tokens.ids.size());
+        for (int32_t id : tokens.ids) fprintf(stderr, " %d", id);
+        fprintf(stderr, "\n");
+    }
+
     if (ctx->is_decoder && ctx->dec) {
-        ctx->last_output =
-            decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads, ctx->sched, &ctx->compute_meta);
+        if (ctx->prefix_cache_enabled < 0) {
+            const char * e = std::getenv("CRISPEMBED_DECODER_PREFIX_CACHE");
+            ctx->prefix_cache_enabled = (e && e[0] == '0') ? 0 : 1; // default ON
+        }
+        if (ctx->prefix_cache_enabled) {
+            ctx->last_output = decoder_encode_tokens_cached(*ctx->dec, ctx->backend, tokens, ctx->n_threads, ctx->sched,
+                                                            &ctx->compute_meta, ctx->dec_prefix, ctx->prev_dec_tokens);
+        } else {
+            ctx->last_output =
+                decoder_encode_tokens(*ctx->dec, ctx->backend, tokens, ctx->n_threads, ctx->sched, &ctx->compute_meta);
+        }
     } else {
         ctx->last_output = encode_tokens(ctx, tokens);
     }
@@ -2276,6 +2576,10 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
     return ctx->last_output.data();
 }
 
+extern "C" void crispembed_set_gpu_backend(const char * name) {
+    crispasr_set_gpu_backend_pref(name);
+}
+
 extern "C" void crispembed_set_dim(crispembed_context * ctx, int dim) {
     if (ctx) ctx->matryoshka_dim = dim;
 }
@@ -2292,6 +2596,10 @@ extern "C" int crispembed_set_lora(crispembed_context * ctx, const char * adapte
     if (!ctx || !ctx->is_decoder || !ctx->dec) return 0;
     if (ctx->dec->lora_adapters.empty()) return 0;
     std::string name = adapter_name ? adapter_name : "";
+    // Weights change under the prefix cache — invalidate it (its cached K/V
+    // were computed against the old weights).
+    ctx->dec_prefix.clear();
+    ctx->prev_dec_tokens.clear();
     return decoder_set_lora(*ctx->dec, ctx->backend, name) ? 1 : 0;
 }
 
@@ -2389,6 +2697,13 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
             t.ids.resize(actual_len);
             t.type_ids.resize(actual_len);
             t.attn_mask.resize(actual_len);
+        }
+
+        // CRISPEMBED_DEBUG_TOKENS=1 dumps the final token-id sequence (decoder path).
+        if (const char * dv = std::getenv("CRISPEMBED_DEBUG_TOKENS"); dv && dv[0] && std::strcmp(dv, "0") != 0) {
+            fprintf(stderr, "crispembed: token_ids[%d] (n=%zu):", i, t.ids.size());
+            for (int32_t id : t.ids) fprintf(stderr, " %d", id);
+            fprintf(stderr, "\n");
         }
     }
 
@@ -2873,20 +3188,22 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
 
     // Cache classifier weights on first call (avoids 4MB transfer per rerank)
     if (!ctx->rerank_cache_valid) {
+        // NOTE: the classifier/pooler *weights* are 2-D and the quantizer stores them
+        // Q8_0/Q4_K, so read them via core_cpu::to_f32 (dequant-safe) — a raw
+        // H*H*sizeof(float) get overruns ggml_nbytes and aborts ("tensor read out of
+        // bounds"), which crashed reranking on every quantized GGUF (jina-reranker-v2
+        // etc.). Biases stay F32.
         if (ctx->model.classifier_2layer) {
-            ctx->rerank_dw.resize(H * H);
             ctx->rerank_db.resize(H);
-            ctx->rerank_ow.resize(H);
-            ggml_backend_tensor_get(ctx->model.classifier_dense_w, ctx->rerank_dw.data(), 0, H * H * sizeof(float));
+            ctx->rerank_dw = core_cpu::to_f32(ctx->model.classifier_dense_w); // [H,H]
             ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H * sizeof(float));
-            ggml_backend_tensor_get(ctx->model.classifier_out_w, ctx->rerank_ow.data(), 0, H * sizeof(float));
+            ctx->rerank_ow = core_cpu::to_f32(ctx->model.classifier_out_w); // [H]
             ctx->rerank_out_has_bias = ctx->model.classifier_out_b != nullptr;
             if (ctx->rerank_out_has_bias) {
                 ggml_backend_tensor_get(ctx->model.classifier_out_b, &ctx->rerank_out_bias, 0, sizeof(float));
             }
         } else if (ctx->model.classifier_w) {
-            ctx->rerank_ow.resize(H);
-            ggml_backend_tensor_get(ctx->model.classifier_w, ctx->rerank_ow.data(), 0, H * sizeof(float));
+            ctx->rerank_ow = core_cpu::to_f32(ctx->model.classifier_w); // [H] or [H,1]
             ctx->rerank_out_has_bias = ctx->model.classifier_b != nullptr;
             if (ctx->rerank_out_has_bias) {
                 ggml_backend_tensor_get(ctx->model.classifier_b, &ctx->rerank_out_bias, 0, sizeof(float));
@@ -2895,9 +3212,8 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
         // Pooler (DeBERTa)
         ctx->rerank_has_pooler = ctx->model.pooler_w && ctx->model.pooler_b;
         if (ctx->rerank_has_pooler) {
-            ctx->rerank_pw.resize(H * H);
             ctx->rerank_pb.resize(H);
-            ggml_backend_tensor_get(ctx->model.pooler_w, ctx->rerank_pw.data(), 0, H * H * sizeof(float));
+            ctx->rerank_pw = core_cpu::to_f32(ctx->model.pooler_w); // [H,H]
             ggml_backend_tensor_get(ctx->model.pooler_b, ctx->rerank_pb.data(), 0, H * sizeof(float));
         }
         ctx->rerank_cache_valid = true;
@@ -3333,6 +3649,8 @@ extern "C" const float * crispembed_preprocess_image(crispembed_context * ctx, c
             cfg.merge_size = ctx->dec->spatial_merge_size;
         }
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_file(image_path, cfg, r)) {
         return nullptr;
@@ -3361,6 +3679,8 @@ extern "C" const float * crispembed_preprocess_image_rgb(crispembed_context * ct
     if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
         cfg.merge_size = ctx->dec->spatial_merge_size;
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_rgb(rgb, height, width, channels, cfg, r)) {
         return nullptr;
@@ -3385,6 +3705,8 @@ extern "C" const float * crispembed_encode_image_file(crispembed_context * ctx, 
     if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
         cfg.merge_size = ctx->dec->spatial_merge_size;
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_file(image_path, cfg, r)) return nullptr;
 
@@ -3400,11 +3722,19 @@ extern "C" const float * crispembed_encode_text_with_image_file(crispembed_conte
     if (ctx->dec && ctx->dec->spatial_merge_size > 0) {
         cfg.merge_size = ctx->dec->spatial_merge_size;
     }
+    cfg.deskew = ctx->image_deskew;
+    cfg.deskew_max_angle = ctx->image_deskew_max_angle;
     image_preproc::result r;
     if (!image_preproc::preprocess_file(image_path, cfg, r)) return nullptr;
 
     return crispembed_encode_text_with_image(ctx, text, r.patches.data(), r.n_patches, r.grid_thw, /*n_images=*/1,
                                              out_dim);
+}
+
+extern "C" void crispembed_set_image_deskew(crispembed_context * ctx, int enable, float max_angle_deg) {
+    if (!ctx) return;
+    ctx->image_deskew = enable;
+    if (max_angle_deg > 0.0f) ctx->image_deskew_max_angle = max_angle_deg;
 }
 
 // ---------------------------------------------------------------------------
@@ -3445,6 +3775,11 @@ extern "C" const float * crispembed_vit_encode_file(crispembed_vit_context * ctx
     }
     *out_dim = (int)ctx->last_output.size();
     return ctx->last_output.data();
+}
+
+extern "C" void crispembed_vit_set_deskew(crispembed_vit_context * ctx, int enable, float max_angle_deg) {
+    if (!ctx || !ctx->vit) return;
+    vit_embed::set_deskew(ctx->vit, enable != 0, max_angle_deg);
 }
 
 extern "C" void crispembed_vit_free(crispembed_vit_context * ctx) {
@@ -3667,6 +4002,11 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "deepseek_ocr2.h"
 #include "smoldocling_ocr.h"
 #include "unlimited_ocr.h"
+#include "smt_ocr.h"
+#include "tromr_ocr.h"
+#include "flova_ocr.h"
+#include "transcoda_ocr.h"
+#include "ppocrv6_ocr.h"
 #include "core/gguf_loader.h"
 
 enum ocr_model_type {
@@ -3687,7 +4027,12 @@ enum ocr_model_type {
     OCR_MODEL_LIGHTONOCR,
     OCR_MODEL_DEEPSEEK_OCR2,
     OCR_MODEL_SMOLDOCLING,
-    OCR_MODEL_UNLIMITED_OCR
+    OCR_MODEL_UNLIMITED_OCR,
+    OCR_MODEL_SMT,
+    OCR_MODEL_TROMR,
+    OCR_MODEL_FLOVA,
+    OCR_MODEL_TRANSCODA,
+    OCR_MODEL_PPOCRV6
 };
 
 struct ocr_model {
@@ -3718,10 +4063,22 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "smoldocling") return OCR_MODEL_SMOLDOCLING;
     if (arch == "math_ocr") return OCR_MODEL_PIX2TEX;
     if (arch == "unlimited_ocr") return OCR_MODEL_UNLIMITED_OCR;
+    if (arch == "smt_ocr") return OCR_MODEL_SMT;
+    if (arch == "tromr_ocr") return OCR_MODEL_TROMR;
+    if (arch == "flova_ocr") return OCR_MODEL_FLOVA;
+    if (arch == "transcoda_ocr") return OCR_MODEL_TRANSCODA;
+    if (arch == "ppocrv6") return OCR_MODEL_PPOCRV6;
     return OCR_MODEL_PIX2TEX;
 }
 
 extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
+    if (ocr_pipeline::is_dangerous_q4_recognizer_path(path) && !ocr_pipeline::dangerous_q4_override_enabled()) {
+        fprintf(stderr,
+                "crispembed_ocr_model: refusing TrOCR Q4_K model '%s'; use Q8_0 or explicitly set "
+                "CRISPEMBED_DEBUG_ALLOW_OCR_Q4=1\n",
+                path ? path : "(null)");
+        return nullptr;
+    }
     auto type = detect_arch(path);
     void * inner = nullptr;
     switch (type) {
@@ -3778,6 +4135,21 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
         break;
     case OCR_MODEL_UNLIMITED_OCR:
         inner = unlimited_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_SMT:
+        inner = smt_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_TROMR:
+        inner = tromr_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_FLOVA:
+        inner = flova_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_TRANSCODA:
+        inner = transcoda_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_PPOCRV6:
+        inner = ppocrv6_ocr_init(path, n_threads);
         break;
     }
     if (!inner) return nullptr;
@@ -3843,6 +4215,21 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_UNLIMITED_OCR:
         unlimited_ocr_free((unlimited_ocr_context *)u->ctx);
         break;
+    case OCR_MODEL_SMT:
+        smt_ocr_free((smt_ocr_context *)u->ctx);
+        break;
+    case OCR_MODEL_FLOVA:
+        flova_ocr_free((flova_ocr_context *)u->ctx);
+        break;
+    case OCR_MODEL_TROMR:
+        tromr_ocr_free((tromr_ocr_context *)u->ctx);
+        break;
+    case OCR_MODEL_TRANSCODA:
+        transcoda_ocr_free((transcoda_ocr_context *)u->ctx);
+        break;
+    case OCR_MODEL_PPOCRV6:
+        ppocrv6_ocr_free((ppocrv6_ocr_context *)u->ctx);
+        break;
     }
     delete u;
 }
@@ -3897,6 +4284,16 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return smoldocling_recognize_raw((smoldocling_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_UNLIMITED_OCR:
         return unlimited_ocr_recognize_raw((unlimited_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_SMT:
+        return smt_ocr_recognize_raw((smt_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_TROMR:
+        return tromr_ocr_recognize_raw((tromr_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_FLOVA:
+        return flova_ocr_recognize_raw((flova_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_TRANSCODA:
+        return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_PPOCRV6:
+        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -3958,6 +4355,39 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
             rgb[i * 3] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
         }
         return smoldocling_recognize_raw((smoldocling_context *)u->ctx, rgb.data(), w, h, 3, ol);
+    }
+    case OCR_MODEL_SMT: {
+        // SMT preprocessing (invert+resize) happens in recognize_raw; hand it a
+        // 1-channel uint8 image built from the [0,1] grayscale floats.
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+        return smt_ocr_recognize_raw((smt_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_TROMR: {
+        // TrOMR preprocessing (resize+gray+normalize) happens in recognize_raw;
+        // hand it a 1-channel uint8 image built from the [0,1] grayscale floats.
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+        return tromr_ocr_recognize_raw((tromr_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_FLOVA: {
+        // Flova's Donut preprocessing runs in recognize_raw; hand it a 1-channel
+        // uint8 image built from the [0,1] grayscale floats.
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+        return flova_ocr_recognize_raw((flova_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_TRANSCODA: {
+        // Transcoda's full-page preprocessing (resize/pad + [-1,1]) runs in
+        // recognize_raw; hand it a 1-channel uint8 image (broadcast to RGB there).
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)(px[i] * 255.0f + 0.5f);
+        return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
+    case OCR_MODEL_PPOCRV6: {
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)std::clamp(int(px[i] * 255.0f + 0.5f), 0, 255);
+        return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
     }
     }
     return nullptr;
@@ -4213,19 +4643,52 @@ extern "C" void crispembed_free(crispembed_context * ctx) {
 // ---------------------------------------------------------------------------
 
 #include "ocr_pipeline.h"
+#include "ocr_pipeline_pool.h"
 #include "ocr_orchestrator.h"
 #include "layout_detect.h"
 
 struct ocr_pipeline_wrapper {
-    ocr_pipeline::context * ctx = nullptr;
+    ocr_pipeline_pool::context * pool = nullptr;
+    ocr_orchestrator::context * pp_ctx = nullptr;
+    bool is_ppocrv6 = false;
     std::vector<ocr_pipeline::ocr_result> results;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
+    std::vector<std::string> text_storage;
     std::string rec_buf;
 };
 
 extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_path, int n_threads) {
     auto * w = new ocr_pipeline_wrapper();
-    if (!ocr_pipeline::load(&w->ctx, det_path, rec_path, n_threads)) {
+    auto * meta = core_gguf::open_metadata(det_path);
+    const bool pp = meta && core_gguf::kv_str(meta, "ppocrv6.kind", "") == "det";
+    if (meta) core_gguf::free_metadata(meta);
+    if (pp) {
+        ocr_orchestrator::config cfg;
+        cfg.router = false;
+        ocr_orchestrator::chain ch;
+        ch.type = ocr_orchestrator::source_type::auto_detect;
+        ocr_orchestrator::stage st;
+        st.eng = ocr_orchestrator::engine::ppocrv6;
+        st.cleanup.enabled = false;
+        st.model_a = det_path;
+        st.model_b = rec_path;
+        ch.stages.push_back(std::move(st));
+        cfg.chains.push_back(std::move(ch));
+        if (!ocr_orchestrator::load(&w->pp_ctx, cfg, n_threads)) {
+            delete w;
+            return nullptr;
+        }
+        w->is_ppocrv6 = true;
+        return w;
+    }
+    int pool_size = 1;
+    if (const char * env = std::getenv("CRISPEMBED_OCR_POOL_SIZE")) {
+        char * end = nullptr;
+        long parsed = std::strtol(env, &end, 10);
+        if (end != env && *end == '\0' && parsed >= 1 && parsed <= 64) pool_size = (int)parsed;
+    }
+    if (!ocr_pipeline_pool::load(&w->pool, det_path, rec_path, pool_size, n_threads)) {
         delete w;
         return nullptr;
     }
@@ -4235,7 +4698,8 @@ extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_pa
 extern "C" void crispembed_ocr_free(void * ctx) {
     if (!ctx) return;
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    if (w->ctx) ocr_pipeline::free(w->ctx);
+    if (w->pp_ctx) ocr_orchestrator::free(w->pp_ctx);
+    if (w->pool) ocr_pipeline_pool::free(w->pool);
     delete w;
 }
 
@@ -4245,7 +4709,29 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         return nullptr;
     }
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    w->results = ocr_pipeline::run_file(w->ctx, image_path);
+    if (w->is_ppocrv6) {
+        auto result = ocr_orchestrator::run_file(w->pp_ctx, image_path);
+        w->c_results.resize(result.regions.size());
+        w->text_storage.resize(result.regions.size());
+        for (size_t i = 0; i < result.regions.size(); ++i) {
+            const auto & r = result.regions[i];
+            auto & c = w->c_results[i];
+            c.x = r.box.x;
+            c.y = r.box.y;
+            c.w = r.box.w;
+            c.h = r.box.h;
+            c.confidence = r.confidence;
+            w->text_storage[i] = r.text;
+            c.text = w->text_storage[i].c_str();
+            c.text_len = (int)w->text_storage[i].size();
+            c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+            c.orientation_angle = r.orientation_angle;
+            c.orientation_confidence = r.orientation_confidence;
+        }
+        if (out_n) *out_n = (int)w->c_results.size();
+        return w->c_results.empty() ? nullptr : w->c_results.data();
+    }
+    w->results = ocr_pipeline_pool::run_file(w->pool, image_path);
     w->c_results.resize(w->results.size());
     for (size_t i = 0; i < w->results.size(); i++) {
         auto & r = w->results[i];
@@ -4257,6 +4743,9 @@ extern "C" const crispembed_ocr_result * crispembed_ocr(void * ctx, const char *
         c.confidence = r.confidence;
         c.text = r.text.c_str();
         c.text_len = (int)r.text.size();
+        c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+        c.orientation_angle = r.orientation_angle;
+        c.orientation_confidence = r.orientation_confidence;
     }
     if (out_n) *out_n = (int)w->c_results.size();
     return w->c_results.empty() ? nullptr : w->c_results.data();
@@ -4268,7 +4757,14 @@ extern "C" const char * crispembed_ocr_recognize(void * ctx, const char * image_
         return nullptr;
     }
     auto * w = (ocr_pipeline_wrapper *)ctx;
-    w->rec_buf = ocr_pipeline::recognize_file(w->ctx, image_path);
+    if (w->is_ppocrv6) {
+        auto result = ocr_orchestrator::run_file(w->pp_ctx, image_path);
+        w->rec_buf = result.full_text;
+        if (out_len) *out_len = (int)w->rec_buf.size();
+        return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
+    } else {
+        w->rec_buf = ocr_pipeline_pool::recognize_file(w->pool, image_path);
+    }
     if (out_len) *out_len = (int)w->rec_buf.size();
     return w->rec_buf.empty() ? nullptr : w->rec_buf.c_str();
 }
@@ -4281,7 +4777,9 @@ struct ocr_pipeline_orch_wrapper {
     ocr_orchestrator::context * ctx = nullptr;
     ocr_orchestrator::result last;
     std::vector<crispembed_ocr_result> c_results;
+    std::vector<crispembed_ocr_stage_metric> c_stage_metrics;
     std::string full_text;
+    std::string markdown;
     void * punct = nullptr; // optional post-OCR punctuation/spacing restorer
 };
 
@@ -4301,6 +4799,12 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
     p.lid_model = nullptr;
     p.truecase_model = nullptr;
     p.tess_model_dir = nullptr;
+    p.layout_model = nullptr;
+    p.table_model = nullptr;
+    p.formula_model = nullptr;
+    p.route_tables = 0;
+    p.route_formulas = 0;
+    p.image_text_fallback = 1;
     return p;
 }
 
@@ -4364,6 +4868,12 @@ extern "C" void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline_par
     if (params->lid_model && *params->lid_model) cfg.lid_model = params->lid_model;
     if (params->truecase_model && *params->truecase_model) cfg.truecase_model = params->truecase_model;
     if (params->tess_model_dir && *params->tess_model_dir) cfg.tess_model_dir = params->tess_model_dir;
+    if (params->layout_model && *params->layout_model) cfg.layout_model = params->layout_model;
+    if (params->table_model && *params->table_model) cfg.table_model = params->table_model;
+    if (params->formula_model && *params->formula_model) cfg.formula_model = params->formula_model;
+    cfg.route_tables = params->route_tables != 0;
+    cfg.route_formulas = params->route_formulas != 0;
+    cfg.image_text_fallback = params->image_text_fallback != 0;
 
     // Enable verbose logging via environment variable
     if (const char * v = std::getenv("CRISPEMBED_VERBOSE_OCR"))
@@ -4390,6 +4900,7 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     w->last = ocr_orchestrator::run_file(w->ctx, image_path);
     w->full_text = w->last.full_text;
+    w->markdown = w->last.markdown;
     // Optional post-OCR restore: punctuation / capitalization / spacing.
     if (w->punct && !w->full_text.empty()) {
         const char * restored = crispembed_punct_process(w->punct, w->full_text.c_str());
@@ -4406,11 +4917,44 @@ extern "C" const crispembed_ocr_result * crispembed_ocr_pipeline_run(void * ctx,
         c.confidence = r.confidence;
         c.text = r.text.c_str();
         c.text_len = (int)r.text.size();
+        c.orientation_corrected = r.orientation_corrected ? 1 : 0;
+        c.orientation_angle = r.orientation_angle;
+        c.orientation_confidence = r.orientation_confidence;
     }
     if (out_n) *out_n = (int)w->c_results.size();
     if (out_full_text) *out_full_text = w->full_text.c_str();
     if (out_mean_conf) *out_mean_conf = w->last.mean_confidence;
     return w->c_results.empty() ? nullptr : w->c_results.data();
+}
+
+extern "C" const int * crispembed_ocr_pipeline_reading_order(void * ctx, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (out_n) *out_n = (int)w->last.reading_order.size();
+    return w->last.reading_order.empty() ? nullptr : w->last.reading_order.data();
+}
+
+extern "C" const crispembed_ocr_stage_metric * crispembed_ocr_pipeline_stage_metrics(void * ctx, int * out_n) {
+    if (out_n) *out_n = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    w->c_stage_metrics.clear();
+    w->c_stage_metrics.reserve(w->last.stage_metrics.size());
+    for (const auto & m : w->last.stage_metrics) {
+        w->c_stage_metrics.push_back({ m.index, m.engine.c_str(), m.elapsed_ms, m.cleanup_applied ? 1 : 0,
+                                       m.accepted ? 1 : 0, m.text_chars, m.mean_confidence });
+    }
+    if (out_n) *out_n = (int)w->c_stage_metrics.size();
+    return w->c_stage_metrics.empty() ? nullptr : w->c_stage_metrics.data();
+}
+
+extern "C" const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    if (out_len) *out_len = (int)w->markdown.size();
+    return w->markdown.empty() ? nullptr : w->markdown.c_str();
 }
 
 static ocr_orchestrator::engine map_engine(int e) {
@@ -4444,6 +4988,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::qwen3vl;
     case 13:
         return E::unlimited_ocr;
+    case 14:
+        return E::unified;
     default:
         return E::dbnet_trocr;
     }
@@ -4482,6 +5028,7 @@ static scan_cleanup_params to_cleanup(const crispembed_scan_cleanup_params & p) 
     o.despeckle_thresh = p.despeckle_thresh;
     o.blackfilter = p.blackfilter;
     o.blackfilter_thresh = p.blackfilter_thresh;
+    o.deskew_consensus = p.deskew_consensus;
     return o;
 }
 
@@ -4508,12 +5055,19 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         st.enabled = true;
         if (s.model_a) st.model_a = s.model_a;
         if (s.model_b) st.model_b = s.model_b;
+        if (s.model_c) st.model_c = s.model_c;
         st.cleanup.enabled = s.cleanup_enabled != 0;
         st.cleanup.params = to_cleanup(s.cleanup);
         st.cleanup.denoise = s.denoise != 0;
         st.params.det_prob_threshold = s.det_prob_threshold;
         st.params.det_box_threshold = s.det_box_threshold;
         st.params.det_target_short = s.det_target_short > 0 ? s.det_target_short : 736;
+        st.params.det_max_side = s.det_max_side > 0 ? s.det_max_side : 2000;
+        st.params.det_min_height = s.det_min_height > 0 ? s.det_min_height : 30;
+        st.params.det_width_height_ratio = s.det_width_height_ratio == 0.0f ? 8.0f : s.det_width_height_ratio;
+        st.params.det_max_candidates = s.det_max_candidates == 0 ? 1000 : s.det_max_candidates;
+        st.params.det_dilation = s.det_dilation == 0 ? 1 : s.det_dilation;
+        st.params.det_scoring = s.det_score_mode == 1 ? ocr_detect::score_mode::accurate : ocr_detect::score_mode::fast;
         st.params.vlm_max_tokens = s.vlm_max_tokens;
         if (s.vlm_prompt && *s.vlm_prompt) st.params.vlm_prompt = s.vlm_prompt;
         st.accept.min_chars = s.min_chars;
@@ -4555,6 +5109,19 @@ extern "C" const char * crispembed_ocr_pipeline_detected_lang(void * ctx, float 
     auto * w = (ocr_pipeline_orch_wrapper *)ctx;
     if (out_confidence) *out_confidence = w->last.lang_confidence;
     return w->last.detected_lang.c_str();
+}
+
+extern "C" int crispembed_ocr_pipeline_capabilities(void * ctx, crispembed_ocr_capabilities * out) {
+    if (!out) return 0;
+    *out = {};
+    if (!ctx) return 0;
+    auto * w = (ocr_pipeline_orch_wrapper *)ctx;
+    const auto caps = ocr_orchestrator::get_capabilities(w->ctx);
+    out->layout = caps.layout;
+    out->tables = caps.tables;
+    out->formulas = caps.formulas;
+    out->image_text_fallback = caps.image_text_fallback;
+    return 1;
 }
 
 // Per-region recognition confidence (mean per-char softmax) from the last run.
@@ -5067,6 +5634,7 @@ extern "C" crispembed_scan_cleanup_params crispembed_scan_cleanup_defaults(void)
     cp.despeckle_thresh = p.despeckle_thresh;
     cp.blackfilter = p.blackfilter;
     cp.blackfilter_thresh = p.blackfilter_thresh;
+    cp.deskew_consensus = p.deskew_consensus;
     return cp;
 }
 
@@ -5541,6 +6109,37 @@ extern "C" int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * 
     return ret;
 }
 
+extern "C" const crispembed_pdf_page_dpi_result * crispembed_pdf_all_pages_dpi(const char * pdf_path,
+                                                                               int * out_n_pages) {
+    if (out_n_pages) *out_n_pages = 0;
+    int n_pages = 0;
+    pdf_page_dpi_result * source = pdf_all_pages_dpi(pdf_path, &n_pages);
+    if (!source || n_pages <= 0) {
+        pdf_dpi_free(source);
+        return nullptr;
+    }
+    auto * results = (crispembed_pdf_page_dpi_result *)calloc((size_t)n_pages, sizeof(crispembed_pdf_page_dpi_result));
+    if (!results) {
+        pdf_dpi_free(source);
+        return nullptr;
+    }
+    for (int i = 0; i < n_pages; i++) {
+        results[i].dpi = source[i].dpi;
+        results[i].dpi_min = source[i].dpi_min;
+        results[i].dpi_max = source[i].dpi_max;
+        results[i].n_images = source[i].n_images;
+        results[i].page_width_pt = source[i].page_width_pt;
+        results[i].page_height_pt = source[i].page_height_pt;
+    }
+    pdf_dpi_free(source);
+    if (out_n_pages) *out_n_pages = n_pages;
+    return results;
+}
+
+extern "C" void crispembed_pdf_all_pages_dpi_free(const crispembed_pdf_page_dpi_result * results) {
+    free((void *)results);
+}
+
 extern "C" int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h) {
     return dewarp_page(gray, w, h, out, out_w, out_h);
 }
@@ -5572,6 +6171,9 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
         results[i].confidence = 1.0f;
         results[i].text = nullptr;
         results[i].text_len = 0;
+        results[i].orientation_corrected = 0;
+        results[i].orientation_angle = 0;
+        results[i].orientation_confidence = 0.0f;
     }
     cc_detect_free(regions);
     if (out_n) *out_n = n;
@@ -5580,6 +6182,10 @@ extern "C" crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray, in
 
 extern "C" int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence) {
     return find_skew_angle(gray, w, h, angle, confidence);
+}
+
+extern "C" int crispembed_detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence) {
+    return detect_page_orientation(gray, w, h, confidence);
 }
 
 extern "C" void crispembed_adaptive_binarize(const uint8_t * gray, int w, int h, uint8_t * out) {

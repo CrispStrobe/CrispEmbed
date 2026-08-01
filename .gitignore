@@ -1,4 +1,6 @@
 build/
+.dart_tool/
+pubspec.lock
 __pycache__/
 *.pyc
 *.o
@@ -32,5 +34,22 @@ build-embed-wasm/
 .models-tmp/
 .ds-blueprints/
 
+# scratch/temp dir — was accidentally committed once (Tesseract tessdata,
+# ~113 MB of pack bloat purged from history); never track it again
+tmp/
+
 # scan_cleanup benchmark output
 scan-bench/
+
+# wasm browser e2e
+tests/wasm-browser/node_modules/
+tests/wasm-browser/package-lock.json
+
+# local build logs
+webgpu-build.log
+
+# Transcoda oracle dumper imports the AGPL reference package (clean-room: throwaway)
+tools/dump_transcoda_reference.py
+flutter/crispembed/macos/Libs/*.dylib
+
+.codex/easyocr-scratch/

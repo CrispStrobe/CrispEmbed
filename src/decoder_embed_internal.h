@@ -98,6 +98,46 @@ struct dec_model {
     std::map<std::string, std::vector<float>> base_weights_f32;
 };
 
+// Cross-call prefix KV cache (C4). When consecutive decoder-embedding calls
+// share a leading instruction prefix (Jina v5 / Qwen3-Embedding "Query: " /
+// "Instruct: ...\n" prompts), we compute the prefix once and reuse it: the
+// decoder-embed path is a single-shot prefill (flash-attn over the whole
+// sequence, no autoregressive KV cache), so with causal attention the prefix
+// tokens' per-layer post-rope K/V and final hidden states are INDEPENDENT of
+// whatever suffix follows. We cache those and run a suffix-only graph whose
+// queries attend to [cached prefix K/V | fresh suffix K/V].
+//
+// This state is per-context and mutable. Exact-prefix match only (the new
+// call's ids must start with `prefix_ids`). Invalidated on LoRA hot-swap
+// (weights change) and on any non-text (image) call.
+struct dec_prefix_cache {
+    std::vector<int32_t> prefix_ids; // cached prefix tokens (the match key)
+    int P = 0;                       // prefix length (== prefix_ids.size())
+    int n_layer = 0;
+    int head_dim = 0;
+    int n_kv_heads = 0;
+    int n_embd = 0;
+    // Per-layer prefix K/V, post-rope, pre-permute layout [head_dim, n_kv_heads, P],
+    // host-side F32. Uploaded into the suffix graph and concatenated ahead of
+    // the fresh suffix K/V along the token axis.
+    std::vector<std::vector<float>> K; // [n_layer][head_dim*n_kv_heads*P]
+    std::vector<std::vector<float>> V; // [n_layer][head_dim*n_kv_heads*P]
+    // Final output-normed hidden states of the prefix tokens, [n_embd*P] row-major
+    // (row t = token t). Needed only for mean pooling (BidirLM-style); last-token
+    // pooling reads the suffix only.
+    std::vector<float> prefix_hidden;
+    bool valid = false;
+
+    void clear() {
+        valid = false;
+        P = 0;
+        prefix_ids.clear();
+        K.clear();
+        V.clear();
+        prefix_hidden.clear();
+    }
+};
+
 bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * path, ggml_backend_t backend);
 
 // Optional multimodal extension: when `image_embeds` and friends are
@@ -126,6 +166,18 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
                                                             const std::vector<embed_tokens> & batch, int n_threads,
                                                             ggml_backend_sched_t sched = nullptr,
                                                             std::vector<uint8_t> * compute_meta = nullptr);
+
+// Prefix-cache-aware single-text encode (C4). Wraps decoder_encode_tokens:
+// on a cache hit it runs a suffix-only graph reusing `cache`; on a repeated
+// prefix (detected against `prev_tokens`) it builds the cache then reuses it;
+// otherwise it falls back to the untouched full-sequence path. `prev_tokens`
+// is updated to `tokens.ids` on return. Text-only (no image / no MRoPE);
+// bidirectional models are not eligible. Returns the same L2-normalized
+// pooled embedding as decoder_encode_tokens.
+std::vector<float> decoder_encode_tokens_cached(const dec_model & m, ggml_backend_t backend,
+                                                const embed_tokens & tokens, int n_threads, ggml_backend_sched_t sched,
+                                                std::vector<uint8_t> * compute_meta, dec_prefix_cache & cache,
+                                                std::vector<int32_t> & prev_tokens);
 
 // LoRA adapter hot-swap. Merges adapter weights into base weights on CPU
 // and writes the merged result back to the backend buffer. Pass "" or

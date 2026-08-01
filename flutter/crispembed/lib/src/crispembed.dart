@@ -14,7 +14,9 @@ import 'crispembed_bindings.dart';
 DynamicLibrary _openNativeLib([String? libPath]) {
   if (libPath != null) return DynamicLibrary.open(libPath);
   if (Platform.isIOS) return DynamicLibrary.process();
-  if (Platform.isAndroid || Platform.isLinux) return DynamicLibrary.open('libcrispembed.so');
+  if (Platform.isAndroid || Platform.isLinux) {
+    return DynamicLibrary.open('libcrispembed.so');
+  }
   if (Platform.isMacOS) return DynamicLibrary.open('libcrispembed.dylib');
   if (Platform.isWindows) return DynamicLibrary.open('crispembed.dll');
   return DynamicLibrary.open('libcrispembed.so');
@@ -29,7 +31,8 @@ class RerankResult {
   RerankResult({required this.index, required this.score, this.document});
 
   @override
-  String toString() => 'RerankResult(index=$index, score=${score.toStringAsFixed(4)})';
+  String toString() =>
+      'RerankResult(index=$index, score=${score.toStringAsFixed(4)})';
 }
 
 class ModelInfo {
@@ -105,11 +108,13 @@ class CrispEmbed {
   /// [nThreads] — CPU thread count (0 = auto-detect).
   /// [libPath] — optional path to the shared library. If omitted, searches
   ///   standard platform locations.
-  CrispEmbed(String modelPath, {int nThreads = 0, String? libPath, bool? autoDownload}) {
+  CrispEmbed(String modelPath,
+      {int nThreads = 0, String? libPath, bool? autoDownload}) {
     _lib = _openNativeLib(libPath);
     _bindFunctions();
 
-    final resolved = resolveModel(modelPath, libPath: libPath, autoDownload: autoDownload);
+    final resolved =
+        resolveModel(modelPath, libPath: libPath, autoDownload: autoDownload);
     final pathPtr = resolved.toNativeUtf8();
     _ctx = _lib
         .lookupFunction<CrispembedInitNative, CrispembedInit>('crispembed_init')
@@ -124,31 +129,30 @@ class CrispEmbed {
   void _bindFunctions() {
     _encode = _lib.lookupFunction<CrispembedEncodeNative, CrispembedEncode>(
         'crispembed_encode');
-    _encodeBatch = _lib
-        .lookupFunction<CrispembedEncodeBatchNative, CrispembedEncodeBatch>(
+    _encodeBatch =
+        _lib.lookupFunction<CrispembedEncodeBatchNative, CrispembedEncodeBatch>(
             'crispembed_encode_batch');
     _free = _lib.lookupFunction<CrispembedFreeNative, CrispembedFree>(
         'crispembed_free');
     _setDimFn = _lib.lookupFunction<CrispembedSetDimNative, CrispembedSetDim>(
         'crispembed_set_dim');
-    _setPrefixFn = _lib
-        .lookupFunction<CrispembedSetPrefixNative, CrispembedSetPrefix>(
+    _setPrefixFn =
+        _lib.lookupFunction<CrispembedSetPrefixNative, CrispembedSetPrefix>(
             'crispembed_set_prefix');
-    _getPrefixFn = _lib
-        .lookupFunction<CrispembedGetPrefixNative, CrispembedGetPrefix>(
+    _getPrefixFn =
+        _lib.lookupFunction<CrispembedGetPrefixNative, CrispembedGetPrefix>(
             'crispembed_get_prefix');
-    _hasSparseCheck = _lib
-        .lookupFunction<CrispembedHasSparseNative, CrispembedHasSparse>(
+    _hasSparseCheck =
+        _lib.lookupFunction<CrispembedHasSparseNative, CrispembedHasSparse>(
             'crispembed_has_sparse');
-    _hasColbertCheck = _lib
-        .lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>(
+    _hasColbertCheck =
+        _lib.lookupFunction<CrispembedHasColbertNative, CrispembedHasColbert>(
             'crispembed_has_colbert');
-    _isRerankerCheck = _lib
-        .lookupFunction<CrispembedIsRerankerNative, CrispembedIsReranker>(
+    _isRerankerCheck =
+        _lib.lookupFunction<CrispembedIsRerankerNative, CrispembedIsReranker>(
             'crispembed_is_reranker');
-    _encodeSparse = _lib
-        .lookupFunction<CrispembedEncodeSparseNative, CrispembedEncodeSparse>(
-            'crispembed_encode_sparse');
+    _encodeSparse = _lib.lookupFunction<CrispembedEncodeSparseNative,
+        CrispembedEncodeSparse>('crispembed_encode_sparse');
     _encodeMultivec = _lib.lookupFunction<CrispembedEncodeMultivecNative,
         CrispembedEncodeMultivec>('crispembed_encode_multivec');
     _rerankFn = _lib.lookupFunction<CrispembedRerankNative, CrispembedRerank>(
@@ -157,7 +161,8 @@ class CrispEmbed {
     try {
       _ctxQueryPrefixFn = _lib.lookupFunction<CrispembedCtxQueryPrefixNative,
           CrispembedCtxQueryPrefixDart>('crispembed_ctx_query_prefix');
-      _ctxPassagePrefixFn = _lib.lookupFunction<CrispembedCtxPassagePrefixNative,
+      _ctxPassagePrefixFn = _lib.lookupFunction<
+          CrispembedCtxPassagePrefixNative,
           CrispembedCtxPassagePrefixDart>('crispembed_ctx_passage_prefix');
     } catch (_) {
       _ctxQueryPrefixFn = null;
@@ -165,21 +170,23 @@ class CrispEmbed {
     }
     // Audio symbols are absent in builds without crisp_audio — bind lazily.
     try {
-      _hasAudioCheck = _lib.lookupFunction<CrispembedHasAudioNative, CrispembedHasAudio>(
-          'crispembed_has_audio');
-      _encodeAudioFn = _lib.lookupFunction<CrispembedEncodeAudioNative, CrispembedEncodeAudio>(
-          'crispembed_encode_audio');
+      _hasAudioCheck =
+          _lib.lookupFunction<CrispembedHasAudioNative, CrispembedHasAudio>(
+              'crispembed_has_audio');
+      _encodeAudioFn = _lib.lookupFunction<CrispembedEncodeAudioNative,
+          CrispembedEncodeAudio>('crispembed_encode_audio');
     } catch (_) {
       _hasAudioCheck = null;
       _encodeAudioFn = null;
     }
     try {
-      _hasVisionCheck = _lib.lookupFunction<CrispembedHasVisionNative, CrispembedHasVision>(
-          'crispembed_has_vision');
-      _encodeImageFn = _lib.lookupFunction<CrispembedEncodeImageNative, CrispembedEncodeImage>(
-          'crispembed_encode_image');
-      _encodeImageRawFn = _lib.lookupFunction<CrispembedEncodeImageRawNative, CrispembedEncodeImageRaw>(
-          'crispembed_encode_image_raw');
+      _hasVisionCheck =
+          _lib.lookupFunction<CrispembedHasVisionNative, CrispembedHasVision>(
+              'crispembed_has_vision');
+      _encodeImageFn = _lib.lookupFunction<CrispembedEncodeImageNative,
+          CrispembedEncodeImage>('crispembed_encode_image');
+      _encodeImageRawFn = _lib.lookupFunction<CrispembedEncodeImageRawNative,
+          CrispembedEncodeImageRaw>('crispembed_encode_image_raw');
     } catch (_) {
       _hasVisionCheck = null;
       _encodeImageFn = null;
@@ -189,8 +196,9 @@ class CrispEmbed {
       _encodeImageFileFn = _lib.lookupFunction<CrispembedEncodeImageFileNative,
           CrispembedEncodeImageFileDart>('crispembed_encode_image_file');
       _encodeTextWithImageFileFn = _lib.lookupFunction<
-          CrispembedEncodeTextWithImageFileNative,
-          CrispembedEncodeTextWithImageFileDart>('crispembed_encode_text_with_image_file');
+              CrispembedEncodeTextWithImageFileNative,
+              CrispembedEncodeTextWithImageFileDart>(
+          'crispembed_encode_text_with_image_file');
     } catch (_) {
       _encodeImageFileFn = null;
       _encodeTextWithImageFileFn = null;
@@ -255,7 +263,8 @@ class CrispEmbed {
     gridPtr.asTypedList(gridThw.length).setAll(0, gridThw);
     final dimPtr = calloc<Int32>();
     try {
-      final ptr = _encodeImageFn!(_ctx, pxPtr, nPatches, gridPtr, nImages, dimPtr);
+      final ptr =
+          _encodeImageFn!(_ctx, pxPtr, nPatches, gridPtr, nImages, dimPtr);
       if (ptr == nullptr || dimPtr.value <= 0) return Float32List(0);
       return Float32List.fromList(ptr.asTypedList(dimPtr.value));
     } finally {
@@ -377,7 +386,8 @@ class CrispEmbed {
     try {
       final ptr = _encode(_ctx, textPtr, dimPtr);
       if (ptr == nullptr) {
-        throw Exception('Encoding failed for: ${text.substring(0, min(50, text.length))}');
+        throw Exception(
+            'Encoding failed for: ${text.substring(0, min(50, text.length))}');
       }
       final dim = dimPtr.value;
       return Float32List.fromList(ptr.asTypedList(dim));
@@ -408,8 +418,8 @@ class CrispEmbed {
         if (ptr == nullptr) throw Exception('Batch encoding failed');
         final dim = dimPtr.value;
         final flat = ptr.asTypedList(n * dim);
-        return List.generate(
-            n, (i) => Float32List.fromList(flat.sublist(i * dim, (i + 1) * dim)));
+        return List.generate(n,
+            (i) => Float32List.fromList(flat.sublist(i * dim, (i + 1) * dim)));
       } finally {
         calloc.free(dimPtr);
       }
@@ -464,8 +474,8 @@ class CrispEmbed {
       final nTokens = nTokensPtr.value;
       final dim = dimPtr.value;
       final flat = ptr.asTypedList(nTokens * dim);
-      return List.generate(
-          nTokens, (i) => Float32List.fromList(flat.sublist(i * dim, (i + 1) * dim)));
+      return List.generate(nTokens,
+          (i) => Float32List.fromList(flat.sublist(i * dim, (i + 1) * dim)));
     } finally {
       calloc.free(textPtr);
       calloc.free(nTokensPtr);
@@ -477,13 +487,13 @@ class CrispEmbed {
   // ColBERT MaxSim scoring
   // ------------------------------------------------------------------
 
-  late final CrispembedColbertScore _colbertScore = _lib
-      .lookupFunction<CrispembedColbertScoreNative, CrispembedColbertScore>(
+  late final CrispembedColbertScore _colbertScore =
+      _lib.lookupFunction<CrispembedColbertScoreNative, CrispembedColbertScore>(
           'crispembed_colbert_score');
 
   /// Compute ColBERT MaxSim score between query and document token vectors.
-  double colbertScore(Float32List queryVecs, int nQuery,
-      Float32List docVecs, int nDoc, int dim) {
+  double colbertScore(Float32List queryVecs, int nQuery, Float32List docVecs,
+      int nDoc, int dim) {
     final qPtr = calloc<Float>(queryVecs.length);
     final dPtr = calloc<Float>(docVecs.length);
     qPtr.asTypedList(queryVecs.length).setAll(0, queryVecs);
@@ -611,6 +621,91 @@ class CrispEmbed {
   }
 
   // ------------------------------------------------------------------
+  // LoRA hot-swap (§12.6a)
+  // ------------------------------------------------------------------
+
+  // Lazily looked up — absent on older builds without LoRA support.
+  CrispembedSetLoraDart? _setLoraFn;
+  CrispembedGetLoraDart? _getLoraFn;
+  CrispembedListLoraDart? _listLoraFn;
+  bool _loraBound = false;
+
+  void _bindLora() {
+    if (_loraBound) return;
+    _loraBound = true;
+    try {
+      _setLoraFn =
+          _lib.lookupFunction<CrispembedSetLoraNative, CrispembedSetLoraDart>(
+              'crispembed_set_lora');
+      _getLoraFn =
+          _lib.lookupFunction<CrispembedGetLoraNative, CrispembedGetLoraDart>(
+              'crispembed_get_lora');
+      _listLoraFn =
+          _lib.lookupFunction<CrispembedListLoraNative, CrispembedListLoraDart>(
+              'crispembed_list_lora');
+    } catch (_) {
+      _setLoraFn = null;
+      _getLoraFn = null;
+      _listLoraFn = null;
+    }
+  }
+
+  /// True if this build supports LoRA hot-swap.
+  bool get hasLora {
+    _bindLora();
+    return _setLoraFn != null;
+  }
+
+  /// Switch to a named LoRA adapter at runtime (decoder models only).
+  ///
+  /// Pass empty string or null to deactivate all adapters (restore base).
+  /// Returns true on success, false on failure (no adapter, not a decoder).
+  bool setLora(String? adapterName) {
+    _checkDisposed();
+    _bindLora();
+    if (_setLoraFn == null) return false;
+    final name = (adapterName ?? '').toNativeUtf8();
+    try {
+      return _setLoraFn!(_ctx, name) != 0;
+    } finally {
+      calloc.free(name);
+    }
+  }
+
+  /// Get the currently active LoRA adapter name (empty if none).
+  String get activeLora {
+    _checkDisposed();
+    _bindLora();
+    if (_getLoraFn == null) return '';
+    final p = _getLoraFn!(_ctx);
+    return p == nullptr ? '' : p.toDartString();
+  }
+
+  /// List available LoRA adapters in this model.
+  List<String> listLora() {
+    _checkDisposed();
+    _bindLora();
+    if (_listLoraFn == null) return const [];
+    final namesPtr = calloc<Pointer<Pointer<Utf8>>>();
+    final countPtr = calloc<Int32>();
+    try {
+      final ok = _listLoraFn!(_ctx, namesPtr, countPtr);
+      if (ok == 0 || countPtr.value <= 0) return const [];
+      final count = countPtr.value;
+      final names = namesPtr.value;
+      final result = <String>[];
+      for (var i = 0; i < count; i++) {
+        final p = names[i];
+        if (p != nullptr) result.add(p.toDartString());
+      }
+      return result;
+    } finally {
+      calloc.free(namesPtr);
+      calloc.free(countPtr);
+    }
+  }
+
+  // ------------------------------------------------------------------
   // Lifecycle
   // ------------------------------------------------------------------
 
@@ -634,7 +729,8 @@ class CrispEmbed {
     return p == nullptr ? '' : p.toDartString();
   }
 
-  static String resolveModel(String modelPath, {String? libPath, bool? autoDownload}) {
+  static String resolveModel(String modelPath,
+      {String? libPath, bool? autoDownload}) {
     final lib = _openNativeLib(libPath);
     final fn = lib.lookupFunction<CrispembedResolveModelNative,
         CrispembedResolveModel>('crispembed_resolve_model');
@@ -657,8 +753,8 @@ class CrispEmbed {
 
   static String queryPrefix(String modelName, {String? libPath}) {
     final lib = _openNativeLib(libPath);
-    final fn = lib.lookupFunction<CrispembedPrefixNative,
-        CrispembedPrefix>('crispembed_query_prefix');
+    final fn = lib.lookupFunction<CrispembedPrefixNative, CrispembedPrefix>(
+        'crispembed_query_prefix');
     final arg = modelName.toNativeUtf8();
     try {
       final out = fn(arg);
@@ -670,8 +766,8 @@ class CrispEmbed {
 
   static String passagePrefix(String modelName, {String? libPath}) {
     final lib = _openNativeLib(libPath);
-    final fn = lib.lookupFunction<CrispembedPrefixNative,
-        CrispembedPrefix>('crispembed_passage_prefix');
+    final fn = lib.lookupFunction<CrispembedPrefixNative, CrispembedPrefix>(
+        'crispembed_passage_prefix');
     final arg = modelName.toNativeUtf8();
     try {
       final out = fn(arg);
@@ -683,20 +779,27 @@ class CrispEmbed {
 
   static List<ModelInfo> listModels({String? libPath}) {
     final lib = _openNativeLib(libPath);
-    final nModels = lib.lookupFunction<CrispembedNModelsNative, CrispembedNModels>(
-        'crispembed_n_models');
-    final modelName = lib.lookupFunction<CrispembedModelStringNative,
-        CrispembedModelString>('crispembed_model_name');
-    final modelDesc = lib.lookupFunction<CrispembedModelStringNative,
-        CrispembedModelString>('crispembed_model_desc');
-    final modelFilename = lib.lookupFunction<CrispembedModelStringNative,
-        CrispembedModelString>('crispembed_model_filename');
-    final modelSize = lib.lookupFunction<CrispembedModelStringNative,
-        CrispembedModelString>('crispembed_model_size');
-    final modelLicense = lib.lookupFunction<CrispembedModelStringNative,
-        CrispembedModelString>('crispembed_model_license');
-    final modelCardUrl = lib.lookupFunction<CrispembedModelStringNative,
-        CrispembedModelString>('crispembed_model_card_url');
+    final nModels =
+        lib.lookupFunction<CrispembedNModelsNative, CrispembedNModels>(
+            'crispembed_n_models');
+    final modelName =
+        lib.lookupFunction<CrispembedModelStringNative, CrispembedModelString>(
+            'crispembed_model_name');
+    final modelDesc =
+        lib.lookupFunction<CrispembedModelStringNative, CrispembedModelString>(
+            'crispembed_model_desc');
+    final modelFilename =
+        lib.lookupFunction<CrispembedModelStringNative, CrispembedModelString>(
+            'crispembed_model_filename');
+    final modelSize =
+        lib.lookupFunction<CrispembedModelStringNative, CrispembedModelString>(
+            'crispembed_model_size');
+    final modelLicense =
+        lib.lookupFunction<CrispembedModelStringNative, CrispembedModelString>(
+            'crispembed_model_license');
+    final modelCardUrl =
+        lib.lookupFunction<CrispembedModelStringNative, CrispembedModelString>(
+            'crispembed_model_card_url');
     final models = <ModelInfo>[];
     for (var i = 0; i < nModels(); i++) {
       models.add(ModelInfo(
@@ -789,19 +892,18 @@ class CrispFace {
   }
 
   void _bindFunctions() {
-    _dimFn = _lib.lookupFunction<CrispembedFaceDimNative, CrispembedFaceDimDart>(
-        'crispembed_face_dim');
-    _typeFn = _lib
-        .lookupFunction<CrispembedFaceTypeNative, CrispembedFaceTypeDart>(
+    _dimFn =
+        _lib.lookupFunction<CrispembedFaceDimNative, CrispembedFaceDimDart>(
+            'crispembed_face_dim');
+    _typeFn =
+        _lib.lookupFunction<CrispembedFaceTypeNative, CrispembedFaceTypeDart>(
             'crispembed_face_type');
-    _detectFn = _lib
-        .lookupFunction<CrispembedDetectFacesNative, CrispembedDetectFacesDart>(
-            'crispembed_detect_faces');
-    _encodeFn = _lib
-        .lookupFunction<CrispembedEncodeFaceNative, CrispembedEncodeFaceDart>(
-            'crispembed_encode_face');
-    _freeFn = _lib
-        .lookupFunction<CrispembedFaceFreeNative, CrispembedFaceFreeDart>(
+    _detectFn = _lib.lookupFunction<CrispembedDetectFacesNative,
+        CrispembedDetectFacesDart>('crispembed_detect_faces');
+    _encodeFn = _lib.lookupFunction<CrispembedEncodeFaceNative,
+        CrispembedEncodeFaceDart>('crispembed_encode_face');
+    _freeFn =
+        _lib.lookupFunction<CrispembedFaceFreeNative, CrispembedFaceFreeDart>(
             'crispembed_face_free');
   }
 
@@ -839,7 +941,8 @@ class CrispFace {
   /// The native side returns a packed Void buffer; layout is documented in
   /// `src/crispembed_face.h`. We decode it here so callers never touch raw
   /// pointers.
-  List<Map<String, dynamic>> detect(String imagePath, {double conf = 0.5, int detSize = 0}) {
+  List<Map<String, dynamic>> detect(String imagePath,
+      {double conf = 0.5, int detSize = 0}) {
     _checkDisposed();
     final pathPtr = imagePath.toNativeUtf8();
     final countPtr = calloc<Int32>();
@@ -901,7 +1004,6 @@ class CrispFace {
   void _checkDisposed() {
     if (_disposed) throw StateError('CrispFace has been disposed');
   }
-
 }
 
 /// Combines a detector [CrispFace] and a recognizer [CrispFace] into a
@@ -946,8 +1048,9 @@ class CrispFacePipeline {
     _lib = _openNativeLib(libPath);
     _pipelineFn = _lib.lookupFunction<CrispembedFacePipelineNative,
         CrispembedFacePipelineDart>('crispembed_face_pipeline');
-    _freeFn = _lib.lookupFunction<CrispembedFaceFreeNative,
-        CrispembedFaceFreeDart>('crispembed_face_free');
+    _freeFn =
+        _lib.lookupFunction<CrispembedFaceFreeNative, CrispembedFaceFreeDart>(
+            'crispembed_face_free');
   }
 
   /// Convenience constructor that loads both models from paths.
@@ -987,7 +1090,11 @@ class CrispFacePipeline {
           detector._ctx, recognizer._ctx, pathPtr, conf, detSize, countPtr);
       final n = countPtr.value;
       if (buf == nullptr || n <= 0) return [];
-      return _decodePipelineBuffer(buf, n, recognizer.dim);
+      try {
+        return _decodePipelineBuffer(buf, n, recognizer.dim);
+      } finally {
+        _freeFn(buf);
+      }
     } finally {
       calloc.free(pathPtr);
       calloc.free(countPtr);
@@ -1029,7 +1136,6 @@ class CrispFacePipeline {
   void _checkDisposed() {
     if (_disposed) throw StateError('CrispFacePipeline has been disposed');
   }
-
 }
 
 // ---------------------------------------------------------------------------
@@ -1050,7 +1156,8 @@ List<Map<String, dynamic>> _decodeFaceBuffer(Pointer<Void> buf, int n) {
     results.add({
       'bbox': flat.sublist(base, base + 4).map((v) => v.toDouble()).toList(),
       'score': flat[base + 4].toDouble(),
-      'landmarks': flat.sublist(base + 5, base + 15).map((v) => v.toDouble()).toList(),
+      'landmarks':
+          flat.sublist(base + 5, base + 15).map((v) => v.toDouble()).toList(),
     });
   }
   return results;
@@ -1061,7 +1168,8 @@ List<Map<String, dynamic>> _decodeFaceBuffer(Pointer<Void> buf, int n) {
 /// Layout per face (all float32):
 ///   [x, y, w, h, score, lm_x0, lm_y0, …, lm_x4, lm_y4, emb_0, …, emb_(dim-1)]
 List<FaceResult> _decodePipelineBuffer(Pointer<Void> buf, int n, int embDim) {
-  final floatsPerFace = 15 + embDim; // 4 bbox + 1 score + 10 landmarks + embedding
+  final floatsPerFace =
+      15 + embDim; // 4 bbox + 1 score + 10 landmarks + embedding
   final flat = buf.cast<Float>().asTypedList(n * floatsPerFace);
   final results = <FaceResult>[];
   for (var i = 0; i < n; i++) {
@@ -1246,8 +1354,9 @@ class CrispVit {
         'crispembed_vit_dim');
     _encodeFileFn = _lib.lookupFunction<CrispembedVitEncodeFileNative,
         CrispembedVitEncodeFileDart>('crispembed_vit_encode_file');
-    _freeFn = _lib.lookupFunction<CrispembedVitFreeNative,
-        CrispembedVitFreeDart>('crispembed_vit_free');
+    _freeFn =
+        _lib.lookupFunction<CrispembedVitFreeNative, CrispembedVitFreeDart>(
+            'crispembed_vit_free');
   }
 
   // ------------------------------------------------------------------
@@ -1392,7 +1501,8 @@ class CrispPix2Struct {
     final nPtr = calloc<Int32>();
     try {
       final fn = _lib.lookupFunction<CrispembedPix2StructConfidencesNative,
-          CrispembedPix2StructConfidencesDart>('crispembed_pix2struct_confidences');
+              CrispembedPix2StructConfidencesDart>(
+          'crispembed_pix2struct_confidences');
       final ptr = fn(_ctx, nPtr);
       final n = nPtr.value;
       if (ptr == nullptr || n <= 0) return [];
@@ -1406,7 +1516,8 @@ class CrispPix2Struct {
   double meanConfidence() {
     _checkDisposed();
     final fn = _lib.lookupFunction<CrispembedPix2StructMeanConfidenceNative,
-        CrispembedPix2StructMeanConfidenceDart>('crispembed_pix2struct_mean_confidence');
+            CrispembedPix2StructMeanConfidenceDart>(
+        'crispembed_pix2struct_mean_confidence');
     return fn(_ctx);
   }
 
@@ -1470,7 +1581,8 @@ class CrispGraniteVision {
 
   void _bindFunctions() {
     _recognizeFn = _lib.lookupFunction<CrispembedGraniteVisionRecognizeNative,
-        CrispembedGraniteVisionRecognizeDart>('crispembed_granite_vision_recognize');
+            CrispembedGraniteVisionRecognizeDart>(
+        'crispembed_granite_vision_recognize');
     _freeFn = _lib.lookupFunction<CrispembedGraniteVisionFreeNative,
         CrispembedGraniteVisionFreeDart>('crispembed_granite_vision_free');
   }
@@ -1491,8 +1603,8 @@ class CrispGraniteVision {
     if (prompt != null) promptPtr = prompt.toNativeUtf8();
 
     try {
-      final result = _recognizeFn(_ctx, pixPtr, width, height, channels,
-          promptPtr, outLen);
+      final result = _recognizeFn(
+          _ctx, pixPtr, width, height, channels, promptPtr, outLen);
       if (result == nullptr) return '';
       return result.toDartString();
     } finally {
@@ -1575,8 +1687,8 @@ class CrispLightOnOcr {
     final outLen = calloc<Int32>();
 
     try {
-      final result = _recognizeFn(_ctx, pixPtr, width, height, channels,
-          outLen);
+      final result =
+          _recognizeFn(_ctx, pixPtr, width, height, channels, outLen);
       if (result == nullptr) return '';
       return result.toDartString();
     } finally {
@@ -1606,6 +1718,7 @@ class OcrResult {
   final String text;
   final double x, y, w, h;
   final double confidence;
+  final bool orientationCorrected;
 
   const OcrResult({
     required this.text,
@@ -1614,6 +1727,7 @@ class OcrResult {
     required this.w,
     required this.h,
     required this.confidence,
+    this.orientationCorrected = false,
   });
 
   @override
@@ -1640,12 +1754,14 @@ class CrispOcrPipeline {
       {int nThreads = 4, String? libPath}) {
     _lib = _openNativeLib(libPath);
 
-    final init = _lib.lookupFunction<CrispembedOcrInitNative,
-        CrispembedOcrInitDart>('crispembed_ocr_init');
-    _freeFn = _lib.lookupFunction<CrispembedOcrFreeNative,
-        CrispembedOcrFreeDart>('crispembed_ocr_free');
-    _runFn = _lib.lookupFunction<CrispembedOcrRunNative,
-        CrispembedOcrRunDart>('crispembed_ocr');
+    final init =
+        _lib.lookupFunction<CrispembedOcrInitNative, CrispembedOcrInitDart>(
+            'crispembed_ocr_init');
+    _freeFn =
+        _lib.lookupFunction<CrispembedOcrFreeNative, CrispembedOcrFreeDart>(
+            'crispembed_ocr_free');
+    _runFn = _lib.lookupFunction<CrispembedOcrRunNative, CrispembedOcrRunDart>(
+        'crispembed_ocr');
     _recognizeFn = _lib.lookupFunction<CrispembedOcrRecognizeNative,
         CrispembedOcrRecognizeDart>('crispembed_ocr_recognize');
 
@@ -1656,7 +1772,8 @@ class CrispOcrPipeline {
     calloc.free(recPtr);
 
     if (_ctx == nullptr) {
-      throw Exception('Failed to load OCR pipeline: $detModelPath + $recModelPath');
+      throw Exception(
+          'Failed to load OCR pipeline: $detModelPath + $recModelPath');
     }
   }
 
@@ -1675,12 +1792,12 @@ class CrispOcrPipeline {
     if (ptr == nullptr || n <= 0) return [];
 
     // The C API returns crispembed_ocr_result structs:
-    //   float x, y, w, h, confidence; const char* text; int text_len;
-    // Total struct size: 5 floats + 1 pointer + 1 int = 28 bytes on 32-bit, 32 on 64-bit
+    //   float x, y, w, h, confidence; const char* text; int text_len; int orientation_corrected;
     final results = <OcrResult>[];
-    final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+    final structSize =
+        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
     for (var i = 0; i < n; i++) {
-      final base = ptr.cast<Uint8>().elementAt(i * structSize);
+      final base = ptr.cast<Uint8>() + i * structSize;
       final floats = base.cast<Float>();
       final x = floats[0];
       final y = floats[1];
@@ -1688,13 +1805,18 @@ class CrispOcrPipeline {
       final h = floats[3];
       final confidence = floats[4];
       // text pointer is at offset 5 * sizeof(float)
-      final textPtrAddr = base.elementAt(5 * sizeOf<Float>()).cast<Pointer<Utf8>>();
+      final textPtrAddr = (base + 5 * sizeOf<Float>()).cast<Pointer<Utf8>>();
       final textPtr = textPtrAddr.value;
       final text = textPtr != nullptr ? textPtr.toDartString() : '';
+      final orientation = (base + 5 * sizeOf<Float>() + sizeOf<Pointer>() + sizeOf<Int32>()).cast<Int32>().value != 0;
       results.add(OcrResult(
         text: text,
-        x: x, y: y, w: w, h: h,
+        x: x,
+        y: y,
+        w: w,
+        h: h,
         confidence: confidence,
+        orientationCorrected: orientation,
       ));
     }
     return results;
@@ -1775,10 +1897,12 @@ class CrispNER {
   CrispNER(String modelPath, {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
 
-    final init = _lib.lookupFunction<CrispembedNerInitNative,
-        CrispembedNerInitDart>('crispembed_ner_init');
-    _freeFn = _lib.lookupFunction<CrispembedNerFreeNative,
-        CrispembedNerFreeDart>('crispembed_ner_free');
+    final init =
+        _lib.lookupFunction<CrispembedNerInitNative, CrispembedNerInitDart>(
+            'crispembed_ner_init');
+    _freeFn =
+        _lib.lookupFunction<CrispembedNerFreeNative, CrispembedNerFreeDart>(
+            'crispembed_ner_free');
     _extractFn = _lib.lookupFunction<CrispembedNerExtractNative,
         CrispembedNerExtractDart>('crispembed_ner_extract');
 
@@ -1797,7 +1921,8 @@ class CrispNER {
   /// [threshold] -- confidence threshold in [0, 1] (default 0.5).
   ///
   /// Returns a list of [NerEntity] results.
-  List<NerEntity> extract(String text, {
+  List<NerEntity> extract(
+    String text, {
     List<String> labels = const ['person', 'organization', 'location'],
     double threshold = 0.5,
   }) {
@@ -1824,29 +1949,28 @@ class CrispNER {
 
       // crispembed_ner_entity layout:
       //   int start_char, int end_char, const char* text, const char* label, float score
-      final structSize = 2 * sizeOf<Int32>() + 2 * sizeOf<Pointer>() + sizeOf<Float>();
+      final structSize =
+          2 * sizeOf<Int32>() + 2 * sizeOf<Pointer>() + sizeOf<Float>();
       final results = <NerEntity>[];
       for (var i = 0; i < n; i++) {
-        final base = entPtr.cast<Uint8>().elementAt(i * structSize);
+        final base = entPtr.cast<Uint8>() + i * structSize;
         final ints = base.cast<Int32>();
         final startChar = ints[0];
         final endChar = ints[1];
         // text pointer at offset 2 * sizeof(int32)
-        final textPtrAddr = base.elementAt(2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
+        final textPtrAddr = (base + 2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
         final entityText = textPtrAddr.value != nullptr
             ? textPtrAddr.value.toDartString()
             : '';
         // label pointer at offset 2 * sizeof(int32) + sizeof(pointer)
-        final labelPtrAddr = base
-            .elementAt(2 * sizeOf<Int32>() + sizeOf<Pointer>())
+        final labelPtrAddr = (base + 2 * sizeOf<Int32>() + sizeOf<Pointer>())
             .cast<Pointer<Utf8>>();
         final entityLabel = labelPtrAddr.value != nullptr
             ? labelPtrAddr.value.toDartString()
             : '';
         // score at offset 2 * sizeof(int32) + 2 * sizeof(pointer)
-        final scorePtr = base
-            .elementAt(2 * sizeOf<Int32>() + 2 * sizeOf<Pointer>())
-            .cast<Float>();
+        final scorePtr =
+            (base + 2 * sizeOf<Int32>() + 2 * sizeOf<Pointer>()).cast<Float>();
         final score = scorePtr.value;
 
         results.add(NerEntity(
@@ -1900,7 +2024,8 @@ class LiltToken {
   });
 
   @override
-  String toString() => 'LiltToken($tokenId → $label, score=${score.toStringAsFixed(3)})';
+  String toString() =>
+      'LiltToken($tokenId → $label, score=${score.toStringAsFixed(3)})';
 }
 
 /// LiLT dual-stream encoder for layout-aware document understanding.
@@ -1924,10 +2049,12 @@ class CrispLiLT {
   CrispLiLT(String modelPath, {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
 
-    final init = _lib.lookupFunction<CrispembedLiltInitNative,
-        CrispembedLiltInitDart>('crispembed_lilt_init');
-    _freeFn = _lib.lookupFunction<CrispembedLiltFreeNative,
-        CrispembedLiltFreeDart>('crispembed_lilt_free');
+    final init =
+        _lib.lookupFunction<CrispembedLiltInitNative, CrispembedLiltInitDart>(
+            'crispembed_lilt_init');
+    _freeFn =
+        _lib.lookupFunction<CrispembedLiltFreeNative, CrispembedLiltFreeDart>(
+            'crispembed_lilt_free');
     _classifyFn = _lib.lookupFunction<CrispembedLiltClassifyNative,
         CrispembedLiltClassifyDart>('crispembed_lilt_classify');
     _numLabelsFn = _lib.lookupFunction<CrispembedLiltNumLabelsNative,
@@ -1944,15 +2071,19 @@ class CrispLiLT {
 
   int get numLabels => _numLabelsFn(_ctx);
 
-  List<LiltToken> classify(List<int> inputIds, {required List<List<int>> bbox}) {
+  List<LiltToken> classify(List<int> inputIds,
+      {required List<List<int>> bbox}) {
     _checkDisposed();
     final T = inputIds.length;
     final idsPtr = calloc<Int32>(T);
-    for (var i = 0; i < T; i++) idsPtr[i] = inputIds[i];
+    for (var i = 0; i < T; i++) {
+      idsPtr[i] = inputIds[i];
+    }
     final bboxPtr = calloc<Int32>(T * 4);
     for (var i = 0; i < T; i++) {
       for (var j = 0; j < 4; j++) {
-        bboxPtr[i * 4 + j] = (i < bbox.length && j < bbox[i].length) ? bbox[i][j] : 0;
+        bboxPtr[i * 4 + j] =
+            (i < bbox.length && j < bbox[i].length) ? bbox[i][j] : 0;
       }
     }
     final outN = calloc<Int32>();
@@ -1962,19 +2093,24 @@ class CrispLiLT {
       if (resultPtr == nullptr || outN.value <= 0) return [];
 
       // crispembed_lilt_token: int token_id, int label_id, char* label, float score
-      final structSize = 2 * sizeOf<Int32>() + sizeOf<Pointer>() + sizeOf<Float>();
+      final structSize =
+          2 * sizeOf<Int32>() + sizeOf<Pointer>() + sizeOf<Float>();
       final results = <LiltToken>[];
       for (var i = 0; i < outN.value; i++) {
-        final base = resultPtr.cast<Uint8>().elementAt(i * structSize);
+        final base = resultPtr.cast<Uint8>() + i * structSize;
         final ints = base.cast<Int32>();
         final tokenId = ints[0];
         final labelId = ints[1];
-        final labelPtr = base.elementAt(2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
-        final label = labelPtr.value != nullptr ? labelPtr.value.toDartString() : '';
-        final scorePtr = base.elementAt(2 * sizeOf<Int32>() + sizeOf<Pointer>()).cast<Float>();
+        final labelPtr = (base + 2 * sizeOf<Int32>()).cast<Pointer<Utf8>>();
+        final label =
+            labelPtr.value != nullptr ? labelPtr.value.toDartString() : '';
+        final scorePtr =
+            (base + 2 * sizeOf<Int32>() + sizeOf<Pointer>()).cast<Float>();
         results.add(LiltToken(
-          tokenId: tokenId, labelId: labelId,
-          label: label, score: scorePtr.value,
+          tokenId: tokenId,
+          labelId: labelId,
+          label: label,
+          score: scorePtr.value,
         ));
       }
       return results;
@@ -2015,8 +2151,8 @@ class CrispTextLID {
     _lib = _openNativeLib(libPath);
     final init = _lib.lookupFunction<TextLidInitNative, TextLidInitDart>(
         'text_lid_init_from_file');
-    _freeFn = _lib.lookupFunction<TextLidFreeNative, TextLidFreeDart>(
-        'text_lid_free');
+    _freeFn = _lib
+        .lookupFunction<TextLidFreeNative, TextLidFreeDart>('text_lid_free');
     _predictFn = _lib.lookupFunction<TextLidPredictNative, TextLidPredictDart>(
         'text_lid_predict');
     _nLabelsFn = _lib.lookupFunction<TextLidNLabelsNative, TextLidNLabelsDart>(
@@ -2024,7 +2160,9 @@ class CrispTextLID {
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr, nThreads);
     calloc.free(pathPtr);
-    if (_ctx == nullptr) throw Exception('Failed to load LID model: $modelPath');
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load LID model: $modelPath');
+    }
   }
 
   int get nLabels => _nLabelsFn(_ctx);
@@ -2045,7 +2183,10 @@ class CrispTextLID {
   }
 
   void dispose() {
-    if (!_disposed) { _freeFn(_ctx); _disposed = true; }
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
   }
 }
 
@@ -2064,16 +2205,20 @@ class CrispTruecaser {
 
   CrispTruecaser(String modelPath, {String? libPath}) {
     _lib = _openNativeLib(libPath);
-    final init = _lib.lookupFunction<TruecaserLstmInitNative,
-        TruecaserLstmInitDart>('truecaser_lstm_init');
-    _freeFn = _lib.lookupFunction<TruecaserLstmFreeNative,
-        TruecaserLstmFreeDart>('truecaser_lstm_free');
+    final init =
+        _lib.lookupFunction<TruecaserLstmInitNative, TruecaserLstmInitDart>(
+            'truecaser_lstm_init');
+    _freeFn =
+        _lib.lookupFunction<TruecaserLstmFreeNative, TruecaserLstmFreeDart>(
+            'truecaser_lstm_free');
     _processFn = _lib.lookupFunction<TruecaserLstmProcessNative,
         TruecaserLstmProcessDart>('truecaser_lstm_process');
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = init(pathPtr);
     calloc.free(pathPtr);
-    if (_ctx == nullptr) throw Exception('Failed to load truecaser: $modelPath');
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load truecaser: $modelPath');
+    }
   }
 
   /// Apply truecasing. Returns truecased text.
@@ -2089,7 +2234,10 @@ class CrispTruecaser {
   }
 
   void dispose() {
-    if (!_disposed) { _freeFn(_ctx); _disposed = true; }
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
   }
 }
 
@@ -2149,10 +2297,12 @@ class CrispKIE {
       {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
 
-    final init = _lib.lookupFunction<CrispembedKieInitNative,
-        CrispembedKieInitDart>('crispembed_kie_init');
-    _freeFn = _lib.lookupFunction<CrispembedKieFreeNative,
-        CrispembedKieFreeDart>('crispembed_kie_free');
+    final init =
+        _lib.lookupFunction<CrispembedKieInitNative, CrispembedKieInitDart>(
+            'crispembed_kie_init');
+    _freeFn =
+        _lib.lookupFunction<CrispembedKieFreeNative, CrispembedKieFreeDart>(
+            'crispembed_kie_free');
     _extractFn = _lib.lookupFunction<CrispembedKieExtractNative,
         CrispembedKieExtractDart>('crispembed_kie_extract');
 
@@ -2169,7 +2319,8 @@ class CrispKIE {
     }
   }
 
-  KieResult extract(String imagePath, {
+  KieResult extract(
+    String imagePath, {
     required List<String> labels,
     double threshold = 0.5,
   }) {
@@ -2192,10 +2343,11 @@ class CrispKIE {
       if (res.nFields > 0 && res.fields != nullptr) {
         final fieldSize = 2 * sizeOf<Pointer>() + 5 * sizeOf<Float>();
         for (var i = 0; i < res.nFields; i++) {
-          final base = res.fields.cast<Uint8>().elementAt(i * fieldSize);
+          final base = res.fields.cast<Uint8>() + i * fieldSize;
           final labelPtr = base.cast<Pointer<Utf8>>().value;
-          final valuePtr = base.elementAt(sizeOf<Pointer>()).cast<Pointer<Utf8>>().value;
-          final floats = base.elementAt(2 * sizeOf<Pointer>()).cast<Float>();
+          final valuePtr =
+              (base + sizeOf<Pointer>()).cast<Pointer<Utf8>>().value;
+          final floats = (base + 2 * sizeOf<Pointer>()).cast<Float>();
 
           fields.add(KieField(
             label: labelPtr != nullptr ? labelPtr.toDartString() : '',
@@ -2317,9 +2469,8 @@ class CrispTextSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height, tileSize, tileOverlap,
-          outPxPtr, outW, outH);
+      final rc = _processFn(_ctx, pxNative, width, height, tileSize,
+          tileOverlap, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('Text SR process failed (rc=$rc)');
@@ -2425,9 +2576,8 @@ class CrispTbsrnSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height,
-          outPxPtr, outW, outH);
+      final rc =
+          _processFn(_ctx, pxNative, width, height, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('TBSRN SR process failed (rc=$rc)');
@@ -2505,8 +2655,9 @@ class CrispPanSr {
   }
 
   void _bindFunctions() {
-    _freeFn = _lib.lookupFunction<CrispembedPanSrFreeNative,
-        CrispembedPanSrFreeDart>('crispembed_pan_sr_free');
+    _freeFn =
+        _lib.lookupFunction<CrispembedPanSrFreeNative, CrispembedPanSrFreeDart>(
+            'crispembed_pan_sr_free');
     _scaleFn = _lib.lookupFunction<CrispembedPanSrScaleNative,
         CrispembedPanSrScaleDart>('crispembed_pan_sr_scale');
     _processFn = _lib.lookupFunction<CrispembedPanSrProcessNative,
@@ -2541,9 +2692,8 @@ class CrispPanSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height, tileSize, tileOverlap,
-          outPxPtr, outW, outH);
+      final rc = _processFn(_ctx, pxNative, width, height, tileSize,
+          tileOverlap, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('PAN SR process failed (rc=$rc)');
@@ -2621,8 +2771,9 @@ class CrispHatSr {
   }
 
   void _bindFunctions() {
-    _freeFn = _lib.lookupFunction<CrispembedHatSrFreeNative,
-        CrispembedHatSrFreeDart>('crispembed_hat_sr_free');
+    _freeFn =
+        _lib.lookupFunction<CrispembedHatSrFreeNative, CrispembedHatSrFreeDart>(
+            'crispembed_hat_sr_free');
     _scaleFn = _lib.lookupFunction<CrispembedHatSrScaleNative,
         CrispembedHatSrScaleDart>('crispembed_hat_sr_scale');
     _processFn = _lib.lookupFunction<CrispembedHatSrProcessNative,
@@ -2657,9 +2808,8 @@ class CrispHatSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height, tileSize, tileOverlap,
-          outPxPtr, outW, outH);
+      final rc = _processFn(_ctx, pxNative, width, height, tileSize,
+          tileOverlap, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('HAT SR process failed (rc=$rc)');
@@ -2700,7 +2850,8 @@ class DatSrResult {
   final Uint8List pixels;
   final int width;
   final int height;
-  const DatSrResult({required this.pixels, required this.width, required this.height});
+  const DatSrResult(
+      {required this.pixels, required this.width, required this.height});
 }
 
 class CrispDatSr {
@@ -2714,17 +2865,27 @@ class CrispDatSr {
 
   CrispDatSr(String modelPath, {int nThreads = 0, String? libPath}) {
     _lib = _openNativeLib(libPath);
-    _freeFn = _lib.lookupFunction<CrispembedDatSrFreeNative, CrispembedDatSrFreeDart>('crispembed_dat_sr_free');
-    _processFn = _lib.lookupFunction<CrispembedDatSrProcessNative, CrispembedDatSrProcessDart>('crispembed_dat_sr_process');
-    _freeImageFn = _lib.lookupFunction<CrispembedDatSrFreeImageNative, CrispembedDatSrFreeImageDart>('crispembed_dat_sr_free_image');
+    _freeFn =
+        _lib.lookupFunction<CrispembedDatSrFreeNative, CrispembedDatSrFreeDart>(
+            'crispembed_dat_sr_free');
+    _processFn = _lib.lookupFunction<CrispembedDatSrProcessNative,
+        CrispembedDatSrProcessDart>('crispembed_dat_sr_process');
+    _freeImageFn = _lib.lookupFunction<CrispembedDatSrFreeImageNative,
+        CrispembedDatSrFreeImageDart>('crispembed_dat_sr_free_image');
 
     final pathPtr = modelPath.toNativeUtf8();
-    _ctx = _lib.lookupFunction<CrispembedDatSrInitNative, CrispembedDatSrInitDart>('crispembed_dat_sr_init').call(pathPtr, nThreads);
+    _ctx = _lib
+        .lookupFunction<CrispembedDatSrInitNative, CrispembedDatSrInitDart>(
+            'crispembed_dat_sr_init')
+        .call(pathPtr, nThreads);
     calloc.free(pathPtr);
-    if (_ctx == nullptr) throw Exception('Failed to load DAT SR model: $modelPath');
+    if (_ctx == nullptr) {
+      throw Exception('Failed to load DAT SR model: $modelPath');
+    }
   }
 
-  DatSrResult process(Uint8List pixels, int width, int height, {int tileW = 0, int tileH = 0}) {
+  DatSrResult process(Uint8List pixels, int width, int height,
+      {int tileW = 0, int tileH = 0}) {
     _checkDisposed();
     final pxNative = calloc<Uint8>(pixels.length);
     pxNative.asTypedList(pixels.length).setAll(0, pixels);
@@ -2732,10 +2893,14 @@ class CrispDatSr {
     final outW = calloc<Int32>();
     final outH = calloc<Int32>();
     try {
-      final rc = _processFn(_ctx, pxNative, width, height, tileW, tileH, outPxPtr, outW, outH);
-      if (rc != 0 || outPxPtr.value.address == 0) throw Exception('DAT SR process failed');
+      final rc = _processFn(
+          _ctx, pxNative, width, height, tileW, tileH, outPxPtr, outW, outH);
+      if (rc != 0 || outPxPtr.value.address == 0) {
+        throw Exception('DAT SR process failed');
+      }
       final ow = outW.value, oh = outH.value;
-      final result = Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
+      final result =
+          Uint8List.fromList(outPxPtr.value.asTypedList(ow * oh * 3));
       _freeImageFn(outPxPtr.value);
       return DatSrResult(pixels: result, width: ow, height: oh);
     } finally {
@@ -2747,7 +2912,10 @@ class CrispDatSr {
   }
 
   void dispose() {
-    if (!_disposed) { _freeFn(_ctx); _disposed = true; }
+    if (!_disposed) {
+      _freeFn(_ctx);
+      _disposed = true;
+    }
   }
 
   void _checkDisposed() {
@@ -2832,9 +3000,8 @@ class CrispSafmnSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height, tileSize, tileOverlap,
-          outPxPtr, outW, outH);
+      final rc = _processFn(_ctx, pxNative, width, height, tileSize,
+          tileOverlap, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('SAFMN SR process failed (rc=$rc)');
@@ -2901,8 +3068,8 @@ class CrispEsrganSr {
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = _lib
-        .lookupFunction<CrispembedEsrganSrInitNative, CrispembedEsrganSrInitDart>(
-            'crispembed_esrgan_sr_init')
+        .lookupFunction<CrispembedEsrganSrInitNative,
+            CrispembedEsrganSrInitDart>('crispembed_esrgan_sr_init')
         .call(pathPtr, nThreads);
     calloc.free(pathPtr);
 
@@ -2948,9 +3115,8 @@ class CrispEsrganSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height, tileSize, tileOverlap,
-          outPxPtr, outW, outH);
+      final rc = _processFn(_ctx, pxNative, width, height, tileSize,
+          tileOverlap, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('Real-ESRGAN SR process failed (rc=$rc)');
@@ -3017,8 +3183,8 @@ class CrispSwinirSr {
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = _lib
-        .lookupFunction<CrispembedSwinirSrInitNative, CrispembedSwinirSrInitDart>(
-            'crispembed_swinir_sr_init')
+        .lookupFunction<CrispembedSwinirSrInitNative,
+            CrispembedSwinirSrInitDart>('crispembed_swinir_sr_init')
         .call(pathPtr, nThreads);
     calloc.free(pathPtr);
 
@@ -3064,9 +3230,8 @@ class CrispSwinirSr {
     final outH = calloc<Int32>();
 
     try {
-      final rc = _processFn(
-          _ctx, pxNative, width, height, tileSize, tileOverlap,
-          outPxPtr, outW, outH);
+      final rc = _processFn(_ctx, pxNative, width, height, tileSize,
+          tileOverlap, outPxPtr, outW, outH);
 
       if (rc != 0 || outPxPtr.value.address == 0) {
         throw Exception('SwinIR SR process failed (rc=$rc)');
@@ -3204,8 +3369,8 @@ class CrispInstructIR {
 
     final pathPtr = modelPath.toNativeUtf8();
     _ctx = _lib
-        .lookupFunction<CrispembedInstructirInitNative, CrispembedInstructirInitDart>(
-            'crispembed_instructir_init')
+        .lookupFunction<CrispembedInstructirInitNative,
+            CrispembedInstructirInitDart>('crispembed_instructir_init')
         .call(pathPtr, nThreads);
     calloc.free(pathPtr);
 
@@ -3305,8 +3470,9 @@ class CrispAdaIR {
   }
 
   void _bindFunctions() {
-    _freeFn = _lib.lookupFunction<CrispembedAdairFreeNative,
-        CrispembedAdairFreeDart>('crispembed_adair_free');
+    _freeFn =
+        _lib.lookupFunction<CrispembedAdairFreeNative, CrispembedAdairFreeDart>(
+            'crispembed_adair_free');
     _processFn = _lib.lookupFunction<CrispembedAdairProcessNative,
         CrispembedAdairProcessDart>('crispembed_adair_process');
     _freeImageFn = _lib.lookupFunction<CrispembedAdairFreeImageNative,
@@ -3389,7 +3555,8 @@ class CrispTableParse {
     _lib = _openNativeLib(libPath);
     _bindFunctions();
 
-    final pathPtr = ocrModelPath != null ? ocrModelPath.toNativeUtf8() : nullptr;
+    final pathPtr =
+        ocrModelPath != null ? ocrModelPath.toNativeUtf8() : nullptr;
     _ctx = _lib
         .lookupFunction<CrispembedTableParseInitNative,
             CrispembedTableParseInitDart>('crispembed_table_parse_init')
@@ -3408,7 +3575,8 @@ class CrispTableParse {
     _toHtmlFn = _lib.lookupFunction<CrispembedTableParseToHtmlNative,
         CrispembedTableParseToHtmlDart>('crispembed_table_parse_to_html');
     _freeStringFn = _lib.lookupFunction<CrispembedTableParseFreeStringNative,
-        CrispembedTableParseFreeStringDart>('crispembed_table_parse_free_string');
+            CrispembedTableParseFreeStringDart>(
+        'crispembed_table_parse_free_string');
   }
 
   /// Parse a grayscale table image and return an HTML string.
@@ -3516,26 +3684,30 @@ class CrispOcrOrchestrator {
     params.cast<Int32>()[1] = cleanup ? 1 : 0;
     params.cast<Int32>()[2] = minChars;
     // Float at byte 12
-    params.elementAt(12).cast<Float>()[0] = minConfidence;
+    (params + 12).cast<Float>()[0] = minConfidence;
     // Pointers at byte 16 (aligned)
-    final ptrBase = params.elementAt(16).cast<Pointer<Utf8>>();
+    final ptrBase = (params + 16).cast<Pointer<Utf8>>();
     final detPtr = detModelPath.toNativeUtf8();
     final recPtr = recModelPath.toNativeUtf8();
-    final nafPtr = nafnetModel != null ? nafnetModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    final srPtr = srModel != null ? srModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    final vlmPtr = vlmModel != null ? vlmModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    ptrBase[0] = detPtr;      // det_model
-    ptrBase[1] = recPtr;      // rec_model
-    ptrBase[2] = nafPtr;      // nafnet_model
-    ptrBase[3] = srPtr;       // sr_model
-    ptrBase[4] = vlmPtr;      // vlm_model
+    final nafPtr =
+        nafnetModel != null ? nafnetModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    final srPtr =
+        srModel != null ? srModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    final vlmPtr =
+        vlmModel != null ? vlmModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    ptrBase[0] = detPtr; // det_model
+    ptrBase[1] = recPtr; // rec_model
+    ptrBase[2] = nafPtr; // nafnet_model
+    ptrBase[3] = srPtr; // sr_model
+    ptrBase[4] = vlmPtr; // vlm_model
     // vlm_engine at byte 16 + 5*ptrSize
     final vlmEngOff = 16 + 5 * ptrSize;
-    params.elementAt(vlmEngOff).cast<Int32>()[0] = vlmEngine;
+    (params + vlmEngOff).cast<Int32>()[0] = vlmEngine;
     // punct_model pointer at next aligned offset
     final punctOff = vlmEngOff + ptrSize; // aligned to pointer size
-    final punctPtr = punctModel != null ? punctModel.toNativeUtf8() : nullptr.cast<Utf8>();
-    params.elementAt(punctOff).cast<Pointer<Utf8>>()[0] = punctPtr;
+    final punctPtr =
+        punctModel != null ? punctModel.toNativeUtf8() : nullptr.cast<Utf8>();
+    (params + punctOff).cast<Pointer<Utf8>>()[0] = punctPtr;
 
     _ctx = initFn(params.cast<Void>(), nThreads);
 
@@ -3564,8 +3736,7 @@ class CrispOcrOrchestrator {
     _runFn(_ctx, pathPtr, outN, outText, outConf);
 
     final n = outN.value;
-    final text =
-        outText.value != nullptr ? outText.value.toDartString() : '';
+    final text = outText.value != nullptr ? outText.value.toDartString() : '';
     final conf = outConf.value;
 
     calloc.free(pathPtr);
@@ -3605,20 +3776,24 @@ class CrispPreprocess {
     _lib = _openNativeLib(libPath);
     _pdfPageDpiFn = _lib.lookupFunction<CrispembedPdfPageDpiNative,
         CrispembedPdfPageDpiDart>('crispembed_pdf_page_dpi');
-    _dewarpFn = _lib.lookupFunction<CrispembedDewarpNative,
-        CrispembedDewarpDart>('crispembed_dewarp');
+    _dewarpFn =
+        _lib.lookupFunction<CrispembedDewarpNative, CrispembedDewarpDart>(
+            'crispembed_dewarp');
     _tpsAutoDewarpFn = _lib.lookupFunction<CrispembedTpsAutoDewarpNative,
         CrispembedTpsAutoDewarpDart>('crispembed_tps_auto_dewarp');
-    _findSkewFn = _lib.lookupFunction<CrispembedFindSkewNative,
-        CrispembedFindSkewDart>('crispembed_find_skew');
+    _findSkewFn =
+        _lib.lookupFunction<CrispembedFindSkewNative, CrispembedFindSkewDart>(
+            'crispembed_find_skew');
     _binarizeFn = _lib.lookupFunction<CrispembedAdaptiveBinarizeNative,
         CrispembedAdaptiveBinarizeDart>('crispembed_adaptive_binarize');
     _bgNormFn = _lib.lookupFunction<CrispembedBackgroundNormNative,
         CrispembedBackgroundNormDart>('crispembed_background_norm');
-    _despeckleFn = _lib.lookupFunction<CrispembedDespeckleNative,
-        CrispembedDespeckleDart>('crispembed_despeckle');
-    _ccDetectFn = _lib.lookupFunction<CrispembedCcDetectNative,
-        CrispembedCcDetectDart>('crispembed_cc_detect');
+    _despeckleFn =
+        _lib.lookupFunction<CrispembedDespeckleNative, CrispembedDespeckleDart>(
+            'crispembed_despeckle');
+    _ccDetectFn =
+        _lib.lookupFunction<CrispembedCcDetectNative, CrispembedCcDetectDart>(
+            'crispembed_cc_detect');
   }
 
   /// PDF DPI profiling -- analyse embedded images on a PDF page.
@@ -3628,9 +3803,8 @@ class CrispPreprocess {
     final outDpi = calloc<Float>();
     final outN = calloc<Int32>();
     final ret = _pdfPageDpiFn(cPath, page, outDpi, outN);
-    final result = ret == 0
-        ? (dpi: outDpi.value.toDouble(), nImages: outN.value)
-        : null;
+    final result =
+        ret == 0 ? (dpi: outDpi.value.toDouble(), nImages: outN.value) : null;
     calloc.free(cPath);
     calloc.free(outDpi);
     calloc.free(outN);
@@ -3682,7 +3856,8 @@ class CrispPreprocess {
     final angle = calloc<Float>();
     final conf = calloc<Float>();
     _findSkewFn(inp, w, h, angle, conf);
-    final result = (angle: angle.value.toDouble(), confidence: conf.value.toDouble());
+    final result =
+        (angle: angle.value.toDouble(), confidence: conf.value.toDouble());
     calloc.free(inp);
     calloc.free(angle);
     calloc.free(conf);
@@ -3728,7 +3903,8 @@ class CrispPreprocess {
 
   /// Detect text line regions using connected components (model-free).
   /// Returns list of bounding boxes {x, y, w, h}.
-  List<({int x, int y, int w, int h})> ccDetect(Uint8List gray, int width, int height) {
+  List<({int x, int y, int w, int h})> ccDetect(
+      Uint8List gray, int width, int height) {
     final inp = calloc<Uint8>(width * height);
     inp.asTypedList(width * height).setAll(0, gray);
     final outN = calloc<Int32>();
@@ -3738,10 +3914,11 @@ class CrispPreprocess {
     calloc.free(outN);
     if (ptr == nullptr || n <= 0) return [];
     // Parse crispembed_ocr_result structs (same layout as OcrResult)
-    final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+    final structSize =
+        sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
     final results = <({int x, int y, int w, int h})>[];
     for (var i = 0; i < n; i++) {
-      final base = ptr.cast<Uint8>().elementAt(i * structSize);
+      final base = ptr.cast<Uint8>() + i * structSize;
       final floats = base.cast<Float>();
       results.add((
         x: floats[0].toInt(),
@@ -3770,10 +3947,12 @@ class CrispPunct {
 
   CrispPunct(String modelPath, {int nThreads = 4, String? libPath}) {
     _lib = _openNativeLib(libPath);
-    final initFn = _lib.lookupFunction<CrispembedPunctInitNative,
-        CrispembedPunctInitDart>('crispembed_punct_init');
-    _freeFn = _lib.lookupFunction<CrispembedPunctFreeNative,
-        CrispembedPunctFreeDart>('crispembed_punct_free');
+    final initFn =
+        _lib.lookupFunction<CrispembedPunctInitNative, CrispembedPunctInitDart>(
+            'crispembed_punct_init');
+    _freeFn =
+        _lib.lookupFunction<CrispembedPunctFreeNative, CrispembedPunctFreeDart>(
+            'crispembed_punct_free');
     _processFn = _lib.lookupFunction<CrispembedPunctProcessNative,
         CrispembedPunctProcessDart>('crispembed_punct_process');
 
@@ -3893,7 +4072,8 @@ class CrispRestormer {
       }
       _freeImageFn(outPtr);
 
-      return RestormerResult(pixels: resultPixels, width: width, height: height);
+      return RestormerResult(
+          pixels: resultPixels, width: width, height: height);
     } finally {
       calloc.free(pxNative);
       calloc.free(outPxPtr);
@@ -3918,21 +4098,22 @@ class CrispRestormer {
 
 /// Render OCR results to structured format (hOCR, ALTO, or plain text).
 /// This is a one-shot function — no persistent state needed.
-String? ocrRender(DynamicLibrary lib, List<OcrResult> results,
-    int pageWidth, int pageHeight, String format) {
+String? ocrRender(DynamicLibrary lib, List<OcrResult> results, int pageWidth,
+    int pageHeight, String format) {
   if (results.isEmpty) return null;
-  final renderFn = lib.lookupFunction<CrispembedOcrRenderNative,
-      CrispembedOcrRenderDart>('crispembed_ocr_render');
+  final renderFn =
+      lib.lookupFunction<CrispembedOcrRenderNative, CrispembedOcrRenderDart>(
+          'crispembed_ocr_render');
 
   // Build the C result array. crispembed_ocr_result layout:
-  // 5 floats (x,y,w,h,conf) + pointer (text) + int32 (text_len)
-  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>();
+  // 5 floats (x,y,w,h,conf) + pointer (text) + two int32 fields
+  final structSize = sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>() * 2;
   final arr = calloc<Uint8>(results.length * structSize);
   final textPtrs = <Pointer<Utf8>>[];
 
   for (var i = 0; i < results.length; i++) {
     final r = results[i];
-    final base = arr.elementAt(i * structSize);
+    final base = arr + i * structSize;
     final floats = base.cast<Float>();
     floats[0] = r.x.toDouble();
     floats[1] = r.y.toDouble();
@@ -3941,16 +4122,20 @@ String? ocrRender(DynamicLibrary lib, List<OcrResult> results,
     floats[4] = r.confidence.toDouble();
     final textPtr = r.text.toNativeUtf8();
     textPtrs.add(textPtr);
-    base.elementAt(sizeOf<Float>() * 5).cast<Pointer<Utf8>>()[0] = textPtr;
-    base.elementAt(sizeOf<Float>() * 5 + sizeOf<Pointer>()).cast<Int32>()[0] =
+    (base + sizeOf<Float>() * 5).cast<Pointer<Utf8>>()[0] = textPtr;
+    (base + sizeOf<Float>() * 5 + sizeOf<Pointer>()).cast<Int32>()[0] =
         r.text.length;
+    (base + sizeOf<Float>() * 5 + sizeOf<Pointer>() + sizeOf<Int32>()).cast<Int32>()[0] =
+        r.orientationCorrected ? 1 : 0;
   }
 
   final fmtPtr = format.toNativeUtf8();
-  final ptr = renderFn(
-      arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
+  final ptr =
+      renderFn(arr.cast<Void>(), results.length, pageWidth, pageHeight, fmtPtr);
   calloc.free(fmtPtr);
-  for (final tp in textPtrs) calloc.free(tp);
+  for (final tp in textPtrs) {
+    calloc.free(tp);
+  }
   calloc.free(arr);
 
   if (ptr == nullptr) return null;

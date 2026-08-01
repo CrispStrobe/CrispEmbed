@@ -18,6 +18,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "core/gguf_loader.h"
 
 #include <algorithm>
@@ -252,7 +253,7 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     auto * ctx = new parseq_ocr_context();
     ctx->n_threads = n_threads;
     bool force_cpu = (getenv("PARSEQ_OCR_FORCE_CPU") && atoi(getenv("PARSEQ_OCR_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
@@ -453,7 +454,10 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
     // Build encoder graph once, reuse on subsequent calls (fixed input dimensions)
     if (!ctx->enc_graph_allocated) {
         const int n_tensors = hp.enc_layers * 30 + 20;
-        const size_t buf_sz = n_tensors * ggml_tensor_overhead() + ggml_graph_overhead_custom(4096, false);
+        // +16 per layer covers the manual-attention path (Emscripten) which
+        // adds conts/matmuls/softmax over the flash_attn single node.
+        const size_t buf_sz =
+            (n_tensors + hp.enc_layers * 16 + 64) * ggml_tensor_overhead() + ggml_graph_overhead_custom(4096, false);
         ggml_init_params ip = { buf_sz, nullptr, true };
         ggml_context * g = ggml_init(ip);
 
@@ -479,7 +483,21 @@ static bool run_encoder(parseq_ocr_context * ctx, const float * pixels) {
             K = ggml_permute(g, K, 0, 2, 1, 3);
             V = ggml_permute(g, V, 0, 2, 1, 3);
             float scale = 1.0f / std::sqrt((float)hd);
+#ifdef __EMSCRIPTEN__
+            // ggml-webgpu has no FLASH_ATTN_EXT under Emscripten and silently
+            // no-ops it; this graph computes without a sched/CPU fallback, so
+            // use exact manual attention instead (same math, same output).
+            ggml_tensor * Qc = ggml_cont(g, Q);
+            ggml_tensor * Kc = ggml_cont(g, K);
+            ggml_tensor * Vc = ggml_cont(g, V);
+            ggml_tensor * scores = ggml_mul_mat(g, Kc, Qc); // [N, N, nh]
+            scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);
+            ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, Vc, 1, 0, 2, 3)); // [N, hd, nh]
+            ggml_tensor * attn = ggml_mul_mat(g, Vt, scores);                 // [hd, N, nh]
+            attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));           // [hd, nh, N]
+#else
             ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+#endif
             attn = ggml_reshape_2d(g, attn, D, N);
             attn = ggml_mul_mat(g, L.proj_w, attn);
             attn = ggml_add(g, attn, L.proj_b);

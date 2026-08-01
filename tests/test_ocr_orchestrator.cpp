@@ -18,6 +18,7 @@ extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, con
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -79,6 +80,22 @@ static void test_default_config() {
             CHECK(s.accept.min_confidence >= 0.0f, "accept gate min_confidence >= 0");
         }
     }
+}
+
+static void test_structured_capability_validation() {
+    printf("── structured capability validation ──\n");
+    using namespace ocr_orchestrator;
+
+    config tables;
+    tables.route_tables = true;
+    context * ctx = nullptr;
+    CHECK(!load(&ctx, tables), "tables require configured layout and table models");
+    CHECK(ctx == nullptr, "failed capability validation does not allocate context");
+
+    config formulas;
+    formulas.route_formulas = true;
+    CHECK(!load(&ctx, formulas), "formulas require configured layout and formula models");
+    CHECK(ctx == nullptr, "formula validation does not allocate context");
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -184,6 +201,8 @@ static void test_accept_gate() {
         CHECK(load(&ctx, cfg), "load succeeds with no models");
         result r = run_file(ctx, path.c_str());
         CHECK(r.stages_tried == 1, "single stage tried");
+        CHECK(r.page_width == 100 && r.page_height == 100, "result carries page dimensions");
+        CHECK(r.routing.text_indices.empty(), "empty OCR result has empty routing plan");
         CHECK(r.full_text.empty(), "empty text (no models)");
         CHECK(r.mean_confidence == 0.0f, "zero confidence (no models)");
         ocr_orchestrator::free(ctx);
@@ -479,6 +498,9 @@ static void test_c_api() {
     CHECK(ctx != nullptr, "C API init with NULL models succeeds");
 
     if (ctx) {
+        crispembed_ocr_capabilities caps{};
+        CHECK(crispembed_ocr_pipeline_capabilities(ctx, &caps) == 1, "C API capabilities query succeeds");
+        CHECK(caps.layout == 0 && caps.tables == 0 && caps.formulas == 0, "default C API has no structured backends");
         // Run on a synthetic image → no crash, returns empty
         std::vector<uint8_t> img(100 * 100 * 3, 255);
         std::string path = write_temp(img, 100, 100, 3, "capi_test");
@@ -491,6 +513,13 @@ static void test_c_api() {
         CHECK(n_res == 0, "C API run with no models → 0 regions");
         // full_text may be NULL or empty
         CHECK(!full_text || full_text[0] == '\0' || n_res == 0, "C API run → empty text");
+        int n_metrics = -1;
+        const crispembed_ocr_stage_metric * metrics = crispembed_ocr_pipeline_stage_metrics(ctx, &n_metrics);
+        CHECK(n_metrics >= 0, "C API stage metrics query succeeds");
+        if (n_metrics > 0) {
+            CHECK(metrics != nullptr, "C API stage metrics pointer is present");
+            CHECK(metrics[0].index >= 0 && metrics[0].elapsed_ms >= 0.0, "C API stage metric fields are valid");
+        }
 
         crispembed_ocr_pipeline_free(ctx);
     }
@@ -604,6 +633,111 @@ static void test_tesseract_regression() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// 9b. Model-dependent: PP-OCRv6 detector → orientation → recognizer (gated)
+// ═══════════════════════════════════════════════════════════════════════
+static void test_ppocrv6_pipeline_regression() {
+    const char * variant_env = getenv("CRISPEMBED_PPOCRV6_VARIANT");
+    const std::string variant = variant_env && variant_env[0] ? variant_env : "tiny";
+    if (variant != "tiny" && variant != "small" && variant != "medium") {
+        printf("  SKIP: unsupported PP-OCRv6 variant: %s\n", variant.c_str());
+        return;
+    }
+    printf("── PP-OCRv6 %s pipeline regression (model-gated) ──\n", variant.c_str());
+
+    const char * models_dir = getenv("CRISPEMBED_MODELS_DIR");
+    if (!models_dir || !models_dir[0]) {
+        printf("  SKIP: CRISPEMBED_MODELS_DIR not set\n");
+        return;
+    }
+
+    const std::string prefix = std::string(models_dir) + "/PP-OCRv6_" + variant;
+    const std::string det_path = prefix + "_det-f16.gguf";
+    const std::string rec_path = prefix + "_rec-q8-head.gguf";
+    const std::string ori_path = std::string(models_dir) + "/PP-LCNet_x1_0_textline_ori-f16.gguf";
+    const char * image_path = "tests/regression/images/cc0/german_official_document.jpg";
+    FILE * det = fopen(det_path.c_str(), "r");
+    FILE * rec = fopen(rec_path.c_str(), "r");
+    FILE * ori = fopen(ori_path.c_str(), "r");
+    if (!det || !rec || !ori) {
+        if (det) fclose(det);
+        if (rec) fclose(rec);
+        if (ori) fclose(ori);
+        printf("  SKIP: PP-OCRv6 %s/orientation models not found in %s\n", variant.c_str(), models_dir);
+        return;
+    }
+    fclose(det);
+    fclose(rec);
+    fclose(ori);
+
+    using namespace ocr_orchestrator;
+    config cfg;
+    cfg.router = false;
+    chain ch;
+    ch.type = source_type::auto_detect;
+    stage s;
+    s.eng = engine::ppocrv6;
+    s.model_a = det_path;
+    s.model_b = rec_path;
+    s.model_c = ori_path;
+    s.accept.min_chars = 1;
+    s.accept.min_confidence = 0.0f;
+    ch.stages.push_back(s);
+    cfg.chains.push_back(ch);
+
+    context * ctx = nullptr;
+    if (!load(&ctx, cfg)) {
+        printf("  SKIP: failed to load PP-OCRv6 pipeline\n");
+        return;
+    }
+    const char * fixtures[] = {
+        image_path,
+        "tests/regression/images/derived/german_official_document__skew-p04.png",
+        "tests/regression/images/derived/german_official_document__low-dpi.png",
+        "tests/regression/images/derived/german_official_document__rot180.png",
+        "tests/regression/images/derived/german_official_document__perspective.png",
+        "tests/regression/images/derived/german_official_document__mixed-orientation.png",
+        "tests/regression/images/cc0/receipt_example.png",
+        "tests/regression/images/derived/receipt_example__rot90.png",
+        "tests/regression/images/cc0/arabic_printed_line.png",
+        "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
+    };
+    int fixture_limit = 10;
+    if (const char * limit_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_LIMIT")) {
+        const int parsed = atoi(limit_env);
+        if (parsed > 0 && parsed < fixture_limit) fixture_limit = parsed;
+    }
+    int cases = 0;
+    int total_regions = 0;
+    for (int fixture_index = 0; fixture_index < fixture_limit; ++fixture_index) {
+        const char * fixture = fixtures[fixture_index];
+        FILE * input = fopen(fixture, "r");
+        if (!input) {
+            printf("  SKIP: fixture not found: %s\n", fixture);
+            continue;
+        }
+        fclose(input);
+        const auto started = std::chrono::steady_clock::now();
+        result r = run_file(ctx, fixture);
+        const double elapsed_ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
+        cases++;
+        total_regions += (int)r.regions.size();
+        CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
+        CHECK(r.mean_confidence >= 0.0f, "PP-OCRv6 pipeline confidence >= 0");
+        for (const auto & region : r.regions) {
+            CHECK(region.orientation_angle == 0 || region.orientation_angle == 180,
+                  "PP-OCRv6 line orientation is 0° or 180°");
+            CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
+                  "PP-OCRv6 line orientation confidence is bounded");
+        }
+        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f, time_ms=%.1f)\n", fixture, r.regions.size(),
+               (int)r.full_text.size(), r.mean_confidence, elapsed_ms);
+    }
+    CHECK(cases == fixture_limit, "PP-OCRv6 live corpus fixtures ran");
+    CHECK(total_regions > 0, "PP-OCRv6 live corpus produced regions");
+    free(ctx);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // 10. Model-dependent: Punctuation post-process (gated)
 // ═══════════════════════════════════════════════════════════════════════
 static void test_punctuation() {
@@ -648,6 +782,7 @@ static void test_punctuation() {
 
 static int crispembed_test_main() {
     test_default_config();
+    test_structured_capability_validation();
     test_classifier();
     test_accept_gate();
     test_multi_stage();
@@ -656,6 +791,7 @@ static int crispembed_test_main() {
     test_c_api();
     test_edge_cases();
     test_tesseract_regression();
+    test_ppocrv6_pipeline_regression();
     test_punctuation();
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);

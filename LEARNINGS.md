@@ -1,5 +1,757 @@
 # CrispEmbed — Technical Learnings
 
+## A low q4_k cosine is NOT a bug — prove it with a precision control (2026-07-16)
+
+When a shipped q4_k GGUF scores a low cosine vs the HF model (nomic-embed-text-v1.5
+hit **0.9515**), that number alone can NEVER distinguish "quant floor" from "our
+encoder graph is wrong" — both look identical at the output. The ONLY thing that
+separates them is re-running the **same code path at higher precision**: if the
+f16/f32 GGUF of the same model matches the original Python model to ~1.0 at EVERY
+per-stage layer, the graph is exact and the whole q4_k gap is quantization.
+
+Measured this way, all three encoder paths are proven exact:
+`bge-small f32` = 1.000000/stage, `nomic-v1.5 f16` = 1.000000/stage,
+`nomic-v2-moe f16` ≥ 0.9998/stage — so nomic-v1.5's 0.9515 is a real *quality*
+fact (that model's last block is unusually quant-sensitive; prefer f16/q8), NOT a
+port bug. Automated as `tests/prove_quant_control.py` (`control_file` per matrix
+entry). **Do this before ever calling a low cosine a bug.** Corollary: cross-
+comparing two of OUR OWN conversions (q4_k vs cstr-iq4_xs) is not ground truth —
+both can agree and both be wrong; only the original Python model is.
+
+## "Loads + emits" proves nothing; a loud failure beats silent garbage (2026-07-16)
+
+Two related discipline lessons from the community-GGUF work:
+
+1. **A model that loads and returns a same-shape vector can still be garbage.**
+   The community `modern-bert` loader fix made gte-modernbert-base load
+   (22L/768d, right dims) and emit a 768-dim embedding — yet cos(related)=0.068 <
+   cos(unrelated)=0.157 (negative margin). "It loads" and "the dim is right" are
+   necessary, never sufficient (HARD RULE #3). The per-stage HF diff then showed
+   the STRUCTURAL GATE itself failing (`emb_ln_out` cos 0.58 = divergence *before*
+   block 0), which localized the bug to tokenization, not the graph — the
+   opposite of where intuition (GeGLU/attention) pointed.
+
+2. **Do not "fix" a loud failure into a silent-wrong success.** The modern-bert
+   loader aliases turned a LOUD `missing required tensor` into a SILENT garbage
+   embedding (loads, exit 0). That is strictly worse and was NOT shipped — the
+   change was reverted, only the diagnosis kept. Same principle drives
+   `CRISPEMBED_STRICT_HPARAMS`: a missing required hparam that silently defaults to
+   384-dim/6-layer emits a plausible-but-wrong embedding with exit 0. A model that
+   won't load tells the user something is wrong; one that loads-and-lies does not.
+
+## Community GGUFs ≠ our own conversions — the ecosystem-compat gap (2026-07-16, #33)
+
+We ship registry entries pointing at our `cstr/*` GGUFs and test THOSE, so a model
+"works" while the *community* GGUF of the same model — a llama.cpp/Ollama export,
+which is what users reach for first — fails to load. That is exactly what issue
+#33 was (nomic-embed-text-v2-moe). The gaps are systematic:
+
+- **Metadata keys.** Our converter writes `bert.*`; llama.cpp writes
+  `<general.architecture>.*` (e.g. `nomic-bert-moe.embedding_length`). Fix once,
+  generally: read `general.architecture` and derive the prefix (`core_hparams`,
+  A2) — every future arch resolves with no new code. Appending one alias per model
+  (what #33's upstream PR did — it added only the 2 `expert_count` keys and would
+  still have loaded at 384-dim/6-layer) never finishes.
+- **Tensor names.** Fused `attn_qkv`, stacked `ffn_up_exps`/`ffn_down_exps`,
+  `attn_norm`/`ffn_norm`/`output_norm` (ModernBERT) — llama.cpp names differ from
+  ours. `get_any({...})` alias lists.
+- **Tokenizer selection (the deep one).** Our converter writes a numeric
+  `tokenizer.ggml.type`; community GGUFs write the standard STRING
+  `tokenizer.ggml.model` (`gpt2`/`bert`/`t5`) with merges in the
+  `tokenizer.ggml.merges` KV ARRAY, not a tensor. crispembed reading only
+  `tokenizer.ggml.type` (+ an `n>100000→SPM` vocab-size heuristic) silently picks
+  the WRONG tokenizer for a modern-bert `gpt2` GGUF → WordPiece not BPE → garbage
+  from token 0. (The heuristic only made e5/granite work by luck.)
+
+Guard it: `tests/community_gguf_matrix.json` loads THIRD-PARTY GGUFs and gates on
+load + shape + a garbage guard + HF parity. Adding 3 entries immediately surfaced
+a 3rd arch string (`nomic-bert`), a latent RoPE default bug, and the modern-bert
+tokenizer bug — the coverage IS the bug-finder.
+
+## Fixing community modern-bert: the tokenizer, not the graph — and the gotchas that make each step lie (2026-07-16, `feat/modernbert-community-gguf`)
+
+The RESOLUTION of the modern-bert entry above (`gte-modernbert-base`, arch
+`modern-bert`). crispembed already had the ModernBERT compute graph; the fix was
+5 tokenizer/loader steps, each gated on the per-stage HF diff. Durable learnings:
+
+- **Make the tokenizer.ggml.model STRING authoritative, but only when the numeric
+  type is absent — and keep the legacy `n>100000→SPM` heuristic as the last
+  resort.** Changing the *dispatch* condition (not just the derivation) would flip
+  an explicit-`type=0`-huge-vocab GGUF from SPM to WordPiece. Derive the type from
+  the model string when `tokenizer.ggml.type` is missing, then leave the existing
+  dispatch conditions byte-identical. Net effect: only the previously-broken gpt2
+  GGUFs change behaviour; every bert model is unchanged (verified — full 5-model
+  matrix still PASS).
+- **Read the `tokenizer.ggml.merges` KV array BEFORE `gguf_free`, into a local
+  that survives to the post-weight-load merges site.** Community gpt2 GGUFs store
+  merges in that KV string array; our converter stores a `tokenizer.merges`
+  TENSOR. Prefer the tensor, fall back to the KV array. (Use-after-free landmine:
+  the vocab/merges must be pulled while the `gguf_context` is live.)
+- **The structural gate (`emb_ln_out` cos) is the ONLY thing that proves
+  tokenization — not the final embedding.** Wrong tokens → emb_ln_out cos 0.58;
+  right tokens → 0.9999. A final-embedding cosine can look "okay-ish" under a
+  token shift; the pre-block-0 gate cannot. Also assert the token IDS match HF
+  (`[50281,25521,1533,50282]` for "hello world") — a shifted token mimics numeric
+  drift.
+- **The GPT-2 ByteLevel regex pre-tokenizer coincidentally equals the simple
+  whitespace-split for `"hello world"` — do not let that fool you into skipping
+  it.** They diverge on punctuation/digits/contractions/multi-space. The HF
+  `ByteLevel(use_regex=true)` regex is
+  `'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+`;
+  the subtle part is whitespace: a run of ≥2 spaces before a word emits all-but-
+  the-last as one token and the LAST space rides into the next word's ` ?`
+  (a single non-0x20 whitespace like `\t` becomes its own token via the final
+  `\s+`). Gate the regex path on arch so Qwen3's whitespace-split path is
+  untouched.
+- **ModernBERT's GeGLU differs from the validated GTE-v1.5 path ONLY in the gelu
+  approximation.** ggml `ggml_geglu` (non-swapped) = `gelu_tanh(first_half) *
+  second_half`; ModernBERT's `hidden_activation="gelu"` is exact-erf, so
+  `ggml_geglu_erf`. Same layout, same split order — the fused `Wi` is stored
+  `[input; gate]` verbatim, so non-swapped is right. Gate `geglu_erf` on
+  `arch=="modern-bert"` so GTE-v1.5's tanh stays.
+- **The RoPE theta naming is INVERTED vs crispembed's fields.** llama.cpp's
+  `<arch>.rope.freq_base` is the GLOBAL theta (160000) and `rope.freq_base_swa`
+  is the LOCAL/sliding theta (10000). The generic `ak("rope.freq_base")` read
+  loads the global into `rope_theta` — override it in the `modern-bert` block.
+- **The f16 control is what turns "q8_0 = 0.9996" from *maybe a bug* into *proven
+  quant*.** Same code path at f16 gave cos=1.000000 at EVERY stage (and 0.999999
+  final) vs the HF fp32 reference — so the tokenizer AND the graph are exact and
+  the entire q8_0 gap is quantization. The control's f16 GGUF lived in a DIFFERENT
+  repo than the shipped q8_0 (eranmazur ships only q8_0; the f16 is in
+  `cstr/*-GGUF`), so `prove_quant_control.py` gained a `control_repo` override.
+
+## Community `gemma-embedding`: SentencePiece **BPE** needs merge-from-scores, not Viterbi — and the crash/tokenizer/Dense split (2026-07-17, `feat/embeddinggemma-community-gguf`)
+
+Same class as the modern-bert fix above: crispembed had the whole Gemma3 compute
+graph; the official llama.cpp EmbeddingGemma export
+(`ggml-org/embeddinggemma-300m-*-GGUF`, arch `gemma-embedding`) still failed, and
+the handover's diagnosis (missing Dense, or a gemma-norm `1+w` bug) was wrong.
+
+- **Loud crash → route to the decoder, but never ship routing alone.** The
+  hyphenated arch missed the `is_dec` allow-list and fell into the generic MHA
+  encoder graph, whose QKV reshape assumes `n_heads==n_kv_heads`; gemma-embedding
+  is GQA (3 heads / 1 kv, `head_dim=256`), so K/V hold `1*256` per token not
+  `3*256` → the reshape overruns → `GGML_ASSERT`. Routing it to `decoder_embed.cpp`
+  makes it LOAD, but with the broken tokenizer below it emits a silently-weak
+  embedding (margin 0.039) — the modern-bert anti-pattern. A loud crash is safer
+  than that; fix the tokenizer in the same change.
+- **The real bug: a SentencePiece export loaded as char-level BPE.** The GGUF has
+  `tokenizer.ggml.model=llama`, a `scores` array, and **no** `merges`. The decoder
+  loader hardcoded `use_bpe=true`; a BPE with 0 merges can't merge, so it falls to
+  single characters ("hello world" → BOS + 11 char tokens + pad). Detect this
+  (`merges.empty() && scores present` → SentencePiece) and route to
+  `SentencePieceTokenizer`.
+- **Gemma SentencePiece is BPE, and its `scores` are merge RANKS — Viterbi is the
+  WRONG algorithm.** This is the exact complement of the XLM-R/Unigram rule below.
+  crispembed's `SentencePieceTokenizer` was Viterbi-only (max-sum over scores,
+  correct for Unigram log-probs). Gemma's scores are large-negative ranks
+  (`▁world`=-1408 vs `▁w`+`or`+`ld` = -21-10-177 = -208), so max-sum picks the
+  3-way split over the single vocab token `▁world` → over-segmentation that still
+  looks plausible. Fix: add an `spm_bpe` mode implementing llama.cpp's SPM bigram
+  greedy-merge (priority queue, merge the adjacent pair whose concatenation has the
+  highest vocab score), selected when `tokenizer.ggml.model` is `llama`/`gemma`.
+  Keep Viterbi the default so XLM-R is untouched. Per-stage lie to avoid: judge on
+  the **exact token IDs** (`[2,23391,1902,1]` for "hello world"), not the final
+  cosine — a wrong segmentation that stays in-vocab gives a plausible-but-wrong
+  vector.
+- **`add_space_prefix` is a real per-model flag.** The Viterbi path hardcoded the
+  XLM-R dummy leading `▁`; Gemma sets `tokenizer.ggml.add_space_prefix=false`
+  (its first word matches the bare vocab token `hello`=23391, not `▁hello`). Read
+  the flag; wrong-prefix alone re-splits the first word.
+- **The GGUF has NO Dense head — and without it the output is orthogonal to real
+  EmbeddingGemma.** llama.cpp applies the SentenceTransformers Dense/Matryoshka
+  head from an external `--sentence-transformers-dense-modules` file, so the export
+  omits it. Right tokenizer + right backbone still gives cos **−0.02** vs HF full
+  output (the 768→3072→768 Dense remaps the space entirely) — it discriminates
+  in isolation (margin 0.39) but is not the published embedding. `decoder_embed.cpp`
+  already applies `dense.N.weight` post-pool; `models/add-st-dense-to-gguf.py` bakes
+  `2_Dense`/`3_Dense` (linear.weight `[out,in]`, F32, no transpose) into the GGUF →
+  cos vs the full HF `SentenceTransformer` = **0.985**. Disentangle A(Dense) vs
+  B(norm) with a **pre-Dense backbone control**: cos(crispembed, HF mean-pool
+  BEFORE Dense) = 0.9835 proves the backbone/norms are right (no bug B); the 0.985
+  ceiling is QAT-vs-vanilla checkpoint drift + the known EmbeddingGemma Dense-
+  bottleneck discrepancy ([[embeddinggemma-parity-state]], and the "EmbeddingGemma:
+  a non-orthogonal Dense bottleneck" section below) + q8_0, not a defect.
+- **GGUF surgery must skip `GGUFReader`'s synthetic pseudo-keys.** `.fields`
+  exposes `GGUF.version`/`GGUF.tensor_count`/`GGUF.kv_count` alongside real KV, but
+  those come from the file HEADER — copying them writes literal `"GGUF.version"`
+  metadata (readers then warn "Duplicate key", kv_count inflates 35→38). Skip
+  `key.startswith("GGUF.")`. Also verified the *reassuring* half by a raw-header
+  round-trip: all 35 real KV (tokens/scores/token_type arrays) copy with zero
+  type/value drift, so `GGUFWriter`'s array-element-type inference is faithful.
+  `models/gguf_merge_core.py` can NOT be used for this copy — its reader drops the
+  array element type.
+- **A "not installed" import can be the `USE_TF=0` gotcha.** `import
+  sentence_transformers` raised `ImportError: cannot import name 'TFPreTrainedModel'`
+  and I concluded it was absent, shipping the matrix entry without its HF-parity
+  gate. It IS installed — the import only fails via the TensorFlow integration
+  path; `USE_TF=0` (which `hf_parity_community.py` sets) fixes it. Test the real
+  cause before declaring a capability missing ([[dont-assume-env-capabilities]]).
+
+## Position offset can NOT be inferred from the tokenizer — a community XLM-R "bert" GGUF that omits `position_offset` is under-specified (2026-07-16, e5 vs granite)
+
+Extending the community matrix to two XLM-RoBERTa-family SPM embedders exported as
+arch `bert` split them:
+- `granite-embedding-107m-multilingual` (community q4_k) parity-matches HF at the
+  structural gate (cos 0.9999) — it uses absolute position **offset 0**.
+- `multilingual-e5-small` (community `rodion-m` fp32) does NOT: gate cos **0.467**
+  with matching norms (16.4 vs 16.5) = a pure position-embedding SHIFT. HF
+  `intfloat/multilingual-e5-small` is XLM-RoBERTa (padding_idx=1 → position
+  **offset 2**), but the community `bert`-arch GGUF drops `bert.position_offset`,
+  so crispembed defaults to 0.
+
+The trap: **both models share the identical RoBERTa SentencePiece tokenizer**
+(bos=0/eos=2/pad=1, tokens `[0,33600,31,8999,2]` for "hello world"), yet need
+DIFFERENT position offsets. So there is no tokenizer-side signal to key an
+"offset 2" heuristic off — it would break granite. Position-embedding convention
+lives in the model config (`padding_idx`), which a `bert`-arch GGUF export can
+silently omit. Do NOT add a speculative auto-detect; it's an under-specified
+export (fix belongs upstream / use a GGUF that declares the offset — our `cstr/*`
+e5 does). The matrix is what surfaced it: granite ADDED + validated, e5
+documented as a found gap, no false "passing" entry shipped. (A garbage-guard-only
+check would have *passed* e5 on a self-consistent-but-wrong vector — only the HF
+per-stage structural gate caught the shift.)
+
+## Hand-rolled JSON drifts into N diverged copies — centralize in `core/` (2026-07-16)
+
+The HTTP server and the CLI each had their own `json_escape`, and they had already
+DIVERGED (server: `"`,`\`,`\n`; CLI added `\r`,`\t`) — both echoing OCR/KIE/NER
+text, both missing `\b`/`\f`/`\u00XX`, so both emitted invalid JSON on a control
+char (a tab in OCR'd table text breaks every strict client). Same class as the
+`pcs.cpp` two-copies-drift lesson. Unified into `src/core/json.h` (`core_json`,
+matching `core_util`/`core_gguf`). Two durable sub-lessons:
+
+- **The escaper must be the exact inverse of the decoder**, and the way to prove
+  it is a round-trip PROPERTY test — `decode(escape(x)) == x` over all 256 byte
+  values — not example cases. That property test would have caught the missing
+  `\t`/`\r` immediately; the example-based tests didn't.
+- **Locate JSON keys structurally (brace-depth 1), never `body.find("\"key\"")`.**
+  A string VALUE equal to the key name (legal unescaped, e.g. `["input"]` in a
+  labels array) makes `find` match the decoy and skip to the next colon — returning
+  another key's values, or values for a key that isn't present. Reachable via
+  user-controlled `/ner` labels.
+
+
+## Converter-emitted stacked MoE experts halve the resident expert memory — and measure the win by PEAK FOOTPRINT, not max RSS (2026-07-13, deepseek-ocr2 #4)
+
+The MoE decoders (deepseek_ocr2, unlimited_ocr) shipped per-expert 2D weight
+tensors (`l.blk.{i}.exp.{e}.ffn_{gate,up,down}.weight`) and `stack_moe_experts()`
+rebuilt them at load into 3D `[in,out,n_exp]` tensors for `ggml_mul_mat_id` — so
+BOTH the per-expert copies (in `model_buf`) AND the stacked copy (in `moe_buf`)
+sat resident: ~1.3 GB duplicated on a 2 GB q4_k model.
+
+**Fix: emit the stacked tensors from the CONVERTER, load them directly.** The key
+layout identity: `np.stack([expert_e for e], axis=0)` → numpy `[n_exp,out,in]`
+which gguf reverses to ggml `ne=[in,out,n_exp]` — **byte-identical** to what
+`stack_moe_experts` builds (expert `e` at slice offset `e*nb[2]`). So the loader
+just points `gate_exps` at the loaded tensor; no copy, no stacking pass. Verified
+the identity locally on a synthetic gguf before spending Kaggle compute, and
+byte-validated the real slices vs the source safetensors on Kaggle.
+
+Gotchas that mattered:
+- **`down_proj` has the opposite shape.** gate/up are hidden→moe_inter
+  (`ne=[1280,896,64]`); down is moe_inter→hidden (`ne=[896,1280,64]`). A validator
+  (or any per-tensor reshape) that hardcodes one shape breaks on down. And down's
+  `ne[0]=896` is not 256-divisible, so Q4_K falls back to Q4_0 — but the OLD
+  per-expert down tensors had the same `ne[0]=896`, so this is byte-for-byte the
+  same quantization, not a regression.
+- **DS_MOE_CPU fallback needs per-expert views, and the view's `->buffer` must be
+  set.** `ggml_backend_tensor_get` reads a view via `view_src->buffer`, but
+  `to_f32`'s fast path gates on `t->buffer` (null on a fresh view) and would then
+  deref the raw device pointer → Metal segfault. Set `view->buffer = parent->buffer`.
+- **The quantizer already handles 3D** (`n_dims>=5` copies as-is; 3D falls through
+  to the standard per-row path, `nrows = nelements/ne[0]`), so no quantizer change.
+- **Keep the loader backward-compatible** (probe `ffn_gate_exps`; else legacy
+  per-expert) so old GGUFs still load — HARD-RULE-4 "never delete the working path."
+
+**Metric lesson: judge process memory by PEAK FOOTPRINT (`phys_footprint`), not
+max RSS.** On the M1 A/B, `maximum resident set size` was *noisy and even inverted*
+(old 1.83 GB vs new 4.22 GB) because RSS counts mmap'd GGUF pages resident in the
+page cache, which swings with cache state. `peak memory footprint` — the process's
+own committed anonymous memory — was stable and showed the real win: **5.27 → 3.97
+GB (−1.30 GB, −25%)**, matching the removed duplication exactly. Decoded output was
+identical ("The quick brown fox…" cer 0.0) on all three loader paths. See the
+[[deepseek-stacked-experts-memory]] memory. On `main`, HF `-stacked` files.
+
+**Generalizes to any per-expert-load + runtime-stack engine.** Applied verbatim to
+`unlimited_ocr` (same DeepSeek-V2 MoE, `baidu/Unlimited-OCR`): output byte-identical
+on all 3 loader paths, peak footprint 4.32 → 3.11 GB (−1.21 GB). `crispembed.cpp`'s
+BERT/NLLB MoE embedders already load pre-stacked 3D experts (`expert_fc1_w
+[H,inter,N_exp]`) from their converter — no duplication, nothing to do. Those three
+are the *only* `ggml_mul_mat_id` paths in the tree. One Kaggle gotcha the port
+surfaced: the numpy expert **accumulate-then-stack** (holding ~10 GB of f32 experts)
+**thrashes for hours under multithreaded OpenBLAS** — the v1 reconvert hung ~3h with
+no progress. Prefix converters with `OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+MKL_NUM_THREADS=1 PYTHONUNBUFFERED=1` (the dev-guide HARD rule) — the deepseek run
+got lucky without it, unlimited did not.
+
+## A parity stage downstream of a topk/argsort selection craters by query PERMUTATION under tiny backend FP deltas — not a compute bug (2026-07-13, layout-heron dec_0_cross_out)
+
+`test-layout-diff`'s `dec_0_cross_out` stage looked like a flaky GPU bug:
+cos_min **−0.08 on Metal**, **0.977 on CPU**, and "non-deterministic" across
+Kaggle P100 runs (0.977 then −0.034 on the *same* box). Every instinct said
+"Metal/CUDA numerical divergence in the deformable cross-attention." All wrong.
+
+**The cross_out values are correct on every backend — they're just in a
+different order.** RT-DETRv2 selects its 300 decoder queries with a
+`std::partial_sort` over ~8400 **near-tie** encoder proposals
+(`layout_detect.cpp` ~1318). A minuscule backend FP delta in `enc_output`
+(Metal/CUDA vs the CPU/Python reference — max_abs 0.02, **cos 0.99999**, passes
+its own 0.99 gate) reshuffles the near-tie ranks. So "query *i*" in our output
+is a *different physical proposal* than "query *i*" in the reference. The
+per-query, index-aligned cosine the harness computed then craters purely from
+the reordering. The final detections are unaffected — they go through
+score-sort + NMS, which is order-invariant.
+
+**What nailed it (generalizable diagnostic):**
+1. **Dump the intermediate that FEEDS the stage.** The *initial* decoder queries
+   already showed per-query cos mean 0.78 / 111-of-300 below 0.9 — matching
+   cross_out's 0.79 mean exactly. That located the divergence *upstream* of the
+   CPU-side deformable sampling everyone suspected.
+2. **The bijection signature.** Best-cosine matching each reference query to our
+   output recovered **cos_mean 0.999 with 299/300 unique targets** — a clean
+   bijection is the fingerprint of "right values, wrong order." A real scramble
+   has no such matching (all best-matches collapse toward 0).
+3. **Backend-independent of the impl choice.** Both manual `layout_attn` and
+   `flash_attn_ext` gave the same ~0.79 — ruling out the attention kernel and
+   pointing at a *selection*, not a *computation*, difference.
+
+**Fix pattern (durable):** any parity stage downstream of a topk/argsort/greedy
+*selection* must be compared **permutation-tolerantly** — best-cosine match each
+reference vector against the full candidate set (`perm_tolerant_cos` in
+`tests/test_layout_diff.cpp`, gate 0.85). This still catches a genuine
+regression: simulated scrambles (feature-shuffle / sign-flip / spatial-roll) all
+collapse to ≤0.08. And the encoder-scramble class it nominally guarded is
+*already* covered strictly (0.99) by the upstream `s3..enc_output` stages, so the
+looser downstream gate loses no coverage. Same "the metric was wrong, not the
+model" class as the "bidirlm-vision parity: gate on per-token MEAN cosine" entry
+below (worst-row min misleads under a legitimate outlier). Fixed on `main`
+d7f0480.
+
+## `ggml_concat` silently corrupts q4_k weights — QKV fusion needs load-time byte-stacking (2026-07-13, got_ocr QKV probe)
+
+Tried to fuse got_ocr's LLM-decoder Q/K/V into one matmul via a graph-time
+`ggml_concat(q_w, k_w, v_w, dim=1)` on the q4_k projection weights. It **compiles
+and runs (no abort) but produces garbage** — the decode ran away to 1023 tokens
+and "recognition failed". `ggml_concat` has no k-quant path; it mishandles the
+super-block layout, so concatenating q4_k tensors yields wrong bytes. Two takeaways:
+
+- **Never `ggml_concat` (or any elementwise op) a k-quant weight** and feed it to
+  `mul_mat`. A correct QKV fusion must **byte-stack the row blocks at LOAD time**
+  (q4_k rows over ne[1]=out are whole blocks, so stacking output rows is a valid
+  q4_k tensor) into a persistent tensor — not rebuild it in the graph each step
+  (which was also **3× slower**: 42.8 vs 12.9 ms/step from re-concatenating).
+- **It isn't worth it anyway** on these decoders: a T=1 decode step is
+  memory-bound `mul_mv`, so 3 separate q4_k matmuls move the same bytes as one
+  fused q4_k matmul — fusion only saves ~2 kernel launches/layer (~4% of the
+  ~11% host slice on a compute-bound decode). Metal also auto-fuses the norm/GLU
+  elementwise chains already. `GOT_OCR_QKV_FUSE` probe reverted; see HISTORY.
+  (got_ocr's *vision* tower ships a fused `attn_qkv` from the converter — the
+  right place to fuse is the GGUF, not the runtime graph.)
+
+## Fusing per-conv graphs helps only OVERHEAD-bound models; measure first (2026-07-13, SR ports)
+
+CrispEmbed's SR/restoration engines dispatched a **fresh ggml graph per conv**
+(init → alloc → compute → read-back, scalar glue between). Fusing the forward
+into one graph is a real win **only when graph-setup overhead dominates**:
+
+- **SAFMN** (228K params, tiny convs) is *overhead-bound* → full fusion gave
+  **2.2× (6.1s→2.8s) + cos 1.0 vs 0.994**. Metal LOSES here (per-dispatch +
+  host↔device copy > the tiny compute) → default CPU.
+- **NAFNet / InstructIR** (32–256-ch convs) are *compute-bound* → per-block
+  fusion is correct (cos ≥ 0.999998, byte-identical output) but **perf-neutral**
+  (the conv math, not setup, is the cost). NAFNet defaults to Metal for a modest
+  ~15%; InstructIR stays CPU (GPU conv_2d hits a Metal f32×f16 mul_mv pipeline
+  issue on this arch).
+
+So **measure the baseline first** — `grep forward_expand / conv2d_ggml` to tell a
+genuinely per-conv engine from an already-fused one (Restormer, scunet, swinir,
+etc. were already single-graph, just mislabeled "CPU-scalar"), and time it to see
+if it's overhead- or compute-bound before investing in a fused-graph port.
+
+Two gotchas that cost real time on these ports:
+1. **erf vs tanh GELU.** SAFMN's reference uses exact erf GELU; `ggml_gelu` is the
+   **tanh approximation**, and using it alone dropped output cos 1.0 → 0.947. Use
+   `ggml_gelu_erf` when the reference does exact GELU (SAFM/SR/many ViTs).
+2. **Conv weight layout scramble.** GGUF stores conv weights as `[OC,IC,KH,KW]`
+   bytes, but `ggml_conv_2d` wants an `[KW,KH,IC,OC]` kernel. A plain
+   `ggml_reshape_4d` on the raw leaf claims the right ne but keeps the wrong byte
+   order → a reshape ASSERT or a silently scrambled kernel (cos ~0.5). Copy the
+   dequant bytes UNCHANGED into an explicit `[KW,KH,IC,OC]` tensor (nafnet_resident)
+   or replicate the engine's own axis-order detection (instructir `ir_kernel`).
+   Also: raw GGUF leaves live on `ctx->backend`; a CPU conv sched can't run ops on
+   a foreign-buffer leaf, so park weights on `enc_backend` or include their backend
+   in the sched. Env-gate every path (`<ENGINE>_LEGACY`/`_CPU`/`_METAL`).
+
+## "Reads structure but not detail" across independent models = a preprocessing/input bug on MY side, not model quality (2026-07-12, SMT + TrOMR OMR)
+
+Two published SOTA OMR models both scored ~30% vs ground truth through my harness
+— each reading the *structure* (clefs, barlines) right but the *detail* (pitches,
+key/time sig) wrong. That uniform cross-model failure was the tell: a **systematic
+input bug on my side**, not two coincidentally-weak models. Both were "wrong
+input," and fixing it took each from ~30% to ~96%:
+
+- **SMT: a spurious invert.** I used the **SMT-plusplus** fork's
+  `convert_img_to_tensor` (`RandomInvert(p=1.0)`), but `smt-grandstaff` is an
+  **SMT-main** model whose `convert_img_to_tensor` is `Grayscale→ToTensor` with
+  **NO invert**. Feeding white-on-black → 30%; black-on-white (correct) → **96.3%**.
+  Also from SMT-main `prepare_data`: RGB (not cv2 BGR), `reduce_ratio=1.0`,
+  `width=min(w,3056)`, `height=max(h,256)`.
+- **TrOMR: fed the wrong file.** The repo's `N.png` are 4-channel *reference
+  renderings*; `readimg`'s `255 - img[:,:,3]` on their opaque alpha yields an
+  all-black image (`gray range 0 0`). The real inputs are `photoN.jpg`. On the
+  photos, TrOMR reads clefs/keys/rhythms/pitches correctly.
+
+The **accuracy metric** was ALSO wrong at first: comparing the model's dot-stripped
+tokens (`8FL`) to raw GT with `·` (`8·F·L`). GT must be normalized exactly as the
+model's `prepare_data`: `re.sub(r'(?<=\=)\d+','')`, spaces→`<s>`, strip `·`,
+tabs→`<t>`, newlines→`<b>`.
+
+The SMT port itself was correct the whole time (per-stage cos=1.0, C++==Python
+100%, SMT-plusplus's unscaled forward confirmed vs SMT-main which gives 0% garbage
+on this checkpoint). "C++==Python==30%" proved only the PORT — both shared my bad
+preprocessing.
+
+**Durable rules:** (1) when a published SOTA model scores implausibly low, suspect
+your HARNESS, not the model; (2) a "reads-structure-not-detail" pattern — and
+*especially* the same pattern across independent models — is an input/preprocessing
+bug; (3) derive preprocessing from the model's OWN repo/commit (`smt-grandstaff`
+↔ SMT-main, not the same-named SMT-plusplus fork), and run the model on its OWN
+example images/expected outputs before trusting any number. See
+[[validate-intermediates-and-outputs]].
+
+## TrOMR engine port: three traps a "tested" converter + handover brief hid (2026-07-13, src/tromr_ocr.cpp)
+
+Porting Polyphonic-TrOMR (ResNetV2 SAME-pad backbone + hybrid ViT encoder →
+x-transformers 12-sublayer decoder with SIGLU attn-on-attn / GEGLU FF → 4 parallel
+heads) reached full parity (every diff-harness stage cos=1.0, 100% teacher-forced
+argmax agreement 66/66 & 85/85, byte-exact greedy decode vs the authors'
+`examples/{1,2,3}.txt`, Metal==CPU). Three non-obvious traps, none caught by the
+"tested" converter or the handover brief:
+
+- **The handover brief's ViT scale was wrong.** It said `64^-0.5`; the correct
+  value is **`32^-0.5`** because `head_dim = encoder_dim/heads = 256/8 = 32` (the
+  qkv weight is `[768,256]` = 3×256, so the inner dim is 256, not 512). The decoder
+  *is* `64^-0.5` (inner 512, 8 heads). `enc_context` cos only hits 1.0 with 32.
+  Corollary: [[verify-handover-claims-independently]] — the brief also mislabeled a
+  scale and I only caught it because the diff harness is the arbiter.
+- **The Python `gguf` writer does not enforce `GGML_MAX_NAME` (64), the ggml C
+  loader does.** The converter emitted 69-char names
+  (`encoder.patch_embed.backbone.stages.0.blocks.0.downsample.conv.weight`) and
+  every engine load aborted `tensor name … too long`. A converter can be "tested"
+  (writes fine, round-trips in Python) yet produce a GGUF **no ggml engine can
+  open** — because no engine existed yet to load it. Fix: shorten the prefix in the
+  converter (`→ enc.bb`) and mirror it in `map_tensors`.
+- **Quantizing flattened 4D conv weights breaks the in-engine reshape-to-4D.** The
+  quantizer flattens `[kw,kh,ic,oc] → [ic*kh*kw, oc]` then quantizes; reshaping a
+  q8_0 tensor back to 4D yields an `ne[0]` (e.g. 1 for a 1×1 conv) that is not a
+  multiple of the 32-element block → `ggml_dup` abort. Fix per the SMT precedent:
+  add the conv prefixes (`enc.bb`, `enc.proj`) to the `tools/quantize.cpp`
+  keep-guard so they stay F32. q8_0 then decodes byte-exact (argmax 66/66); the
+  backbone staying F32 costs compression (1.7x) but that is a correctness/size
+  tradeoff, not a bug.
+
+Also: the authors' `examples/N.txt` were sampled at **`temperature=0.2` (stochastic)**,
+so neither my argmax nor the reference dumper's argmax is *expected* to match them
+byte-for-byte on hard polyphonic passages — argmax faithfulness is proven by
+per-position agreement under teacher forcing (100%), not by exact-match to a
+stochastic sample. A single near-tie flip (F16 conv-cast, logits max_abs ~8e-3)
+cascades the greedy path once the prefixes diverge — expected, not a regression.
+
+## Flova engine port: the sibling-verbatim path, and a Donut patch-embed pad the handover glossed (2026-07-13, src/flova_ocr.cpp)
+
+Flova/omr_transformer (Donut VED: DonutSwin encoder → 4-layer **pre-norm** mBART
+decoder → LilyPond) is the only permissive handwritten-music OMR model. It reached
+full parity on the **first build** — every diff-harness stage cos=1.000000
+(enc_stage0..3, enc_output, dec_block0..3, logits), 40/40 teacher-forced argmax
+agreement, and byte-exact greedy decode (`c'2 a''8 c''8 r4 c'1 e'8 …`) matching the
+model card, including the native no-`transformers` Donut preprocessing path. What
+made it fast and the two things worth recording:
+
+- **The encoder was a config change, not a rewrite.** DonutSwin is the *same*
+  windowed-attention Swin already in `mixtex_ocr.cpp` (scalar window_partition /
+  cyclic_shift / window_mhsa + RPB, batched LN/linear on a small ggml CPU graph).
+  `run_swin_encoder` already reads embed_dim / depths / heads / window_size from
+  hparams generically, so copying it verbatim and pointing it at `flova.encoder.*`
+  (embed 128, depths [2,2,14,2], heads [4,8,16,32], window 10) Just Worked. The
+  `rpb_table [nh,361]` / `rpb_index [100,100]` tensors are read generically — no
+  code change, only the tensors differ.
+- **The one real encoder fix: patch-embed pads UP, mixtex truncated.** mixtex's
+  input (400×500) is divisible by patch_size 4, so it used `pH = img_h/ps` (floor).
+  Flova's 583×409 is not: DonutSwin zero-pads H,W up to a multiple of patch_size
+  (583→584, 409→412) → grid **146×103** (not 146/103-anything the brief spelled as
+  "584×416/104", an off-by-a-few). Use ceil-div `pH=(h+ps-1)/ps` and guard the conv
+  reads (`if (iy>=h||ix>=w) continue`). Stage-0 PatchMerging then pads the odd W
+  103→104 → 73×52 = 3796, matching `enc_stage0`. Getting this wrong shifts every
+  token and tanks stage 0 immediately — the diff harness localizes it in one run.
+- **The decoder is fresh but small: pre-norm mBART.** LN *before* each sublayer with
+  the residual around it (unlike BART/RoBERTa post-norm), embed = tokens·√1024 +
+  learned-positions[**pos+2**] then layernorm_embedding, GELU-erf FFN, untied
+  lm_head, eps 1e-5 throughout. Teacher-forced full-sequence forward (causal self +
+  unmasked cross) doubles as the greedy engine (re-run over the growing prefix; L≤128
+  so O(L²) is free). eos is the tokenizer's `</s>`=**54**, not generation_config's
+  stale mBART `2` — same class as the TexTeller decoder-start trap.
+- **q8_0 needs no keep-guard here (unlike TrOMR).** Flova's Swin is all linear; the
+  only conv is the patch embed, which the quantizer flattens to `[48,128]` — ncols
+  48 %32≠0 so Q8_0 auto-skips it (kept F32), and `rpb_index` (ncols 100) is likewise
+  auto-kept, preserving its integer indices. Result: byte-exact decode on all three
+  samples (573→162 MB, cos_mean 0.9997). The diff harness flags enc_stage3/enc_output
+  `cos_min` 0.987 — a single worst-token per-row cosine (max_abs 0.93 on one
+  high-activation token), the honest q8_0 floor, NOT a decode error (argmax 40/40,
+  greedy byte-exact). Don't chase it with F16; the output is already exact.
+
+## Transcoda engine port: clean-room from an oracle, and the four things that made greedy diverge despite cos=1.0 (2026-07-13, src/transcoda_ocr.cpp)
+
+Transcoda-59M (ConvNeXt-V2-Tiny encoder → 2-layer projector + 2D-sinusoidal-PE
+bridge → 8-layer pre-LN **RoPE** cross-attn decoder → Humdrum `**kern`) is the
+first CrispEmbed engine written **clean-room**: the weights are CC-BY-4.0 but the
+reference *code* is AGPL, so the engine was written only from the paper, the HF
+config/data files, and an activation **oracle** (running the AGPL model = facts).
+Every architecture question the handover left open was answered by the oracle in
+one probe, not by reading source:
+
+- **Introspection beats the handover.** `inspect.signature` + `named_modules` +
+  `VisionFrontendOutput` field dump pinned every fact: grid is **46×32=1472**
+  (handover said 47×33), norm is **[-1,1]** not ImageNet, RoPE is **torchtune
+  adjacent-pair = ggml `ROPE_TYPE_NORMAL`** (not NEOX like every HF port here),
+  cross-attn is **dual-memory** (K = projector-out+2D-PE, V = projector-out raw —
+  the SMT pattern), the final encoder `layernorm` is **dead** (proj_input ==
+  last_hidden_state exactly), and the 2D-PE matches SMT's `/C=512` formula. First
+  build: all stages cos=1.000000, argmax 191/191, native preproc bit-exact.
+- **Per-stage cos=1.0 does NOT mean the decode matches — four separate bugs made
+  free-running greedy diverge while teacher-forced parity was perfect:** (1) the
+  KV-step cached the RoPE'd K as a bare `reshape` **view**, whose source buffer is
+  clobbered post-compute ([[set-output-on-view-stale]]) → `ggml_cont` it; (2) the
+  output joined tokens with `/`, but kern tokens **contain** `/` (e.g. `*M2/4`) and
+  the structure lives in literal `\n`/`\t` vocab tokens → concatenate directly, no
+  separator; (3) `repetition_penalty=1.1` was applied once **per occurrence** of a
+  token in the running sequence, so frequent tokens (the `\n` record separator) got
+  ÷1.1^k and were crushed — HF applies it once **per unique token**
+  ([[repetition-penalty-per-unique-token]]); (4) the oracle dump was capped at 192
+  tokens, so "byte-exact for 442 chars then 18 extra" was the *oracle* truncating,
+  not the engine. The tell that unlocked (1)–(3): teacher-forced argmax was 191/191
+  but greedy still diverged ⇒ the bug is in the sampling loop / KV path, never the
+  graph. With all four fixed, greedy is byte-identical to the HF reference.
+- **q8_0 conv keep-guard, again.** Like TrOMR, the ConvNeXt-V2 stem/downsample/
+  depthwise conv2d kernels are reshaped to 4D in-engine; the downsample convs have
+  `IC·KH·KW`=384 (%32==0) so they slip past the `ncols%32` auto-skip and quantize
+  → `ggml_cpy(q8_0→F16)` aborts (`ggml_dup` "fatal error"; Metal/CPU have no
+  q8_0→F16 cast). The converter's short names (`enc.embed.patch`, `.ds.conv`,
+  `.dw.`) didn't match the quantizer keep patterns; added them. Pointwise convs
+  (pw1/pw2) are matmuls in-engine and quantize fine. q8_0 (65 MB): decode still
+  byte-identical to the reference (enc cos 0.988 = the honest q8_0 conv floor).
+- **Persistent device-KV cache = 2.4–4× faster decode, byte-identical.** The first
+  KV path shuttled everything through host vectors and re-uploaded the cross K/V +
+  growing self K/V **every step**, plus `ggml_concat`. Moving cross K/V (computed
+  once) and self K/V (written in-graph via `ggml_cpy` into a position-view, read
+  back via a `[C,pos+1]` view — the got_ocr pattern) into a persistent backend
+  buffer removed all per-step host traffic. Byte-exact vs the host path on Metal
+  AND CPU; 2.4–4× faster per back-to-back A/B (variance is machine load — measure
+  both arms back-to-back, never idle-vs-loaded). Default flipped; the host path
+  stays behind `TRANSCODA_OCR_HOST_KV=1` and the O(L²) recompute behind
+  `TRANSCODA_OCR_FULL_DECODE=1` for regression bisection.
+
+## Importing a llama.cpp LLM: un-permute q/k, because llama.cpp rewrites them for its interleaved RoPE (2026-07-12, SmolVLM import)
+
+Merging a stock llama.cpp **SmolVLM-256M** (arch=llama LLM + idefics3 mmproj)
+into CrispEmbed's `smoldocling` engine: the model loaded, ran the full vision +
+connector + LLM pipeline, and produced **fluent garbage** ("The The The [ [").
+Vision was fine; the LLM's attention was scrambled.
+
+Root cause: **llama.cpp's `convert_hf_to_gguf.py` permutes the q_proj/k_proj
+weights** (`LlamaModel.permute`: reshape `[n_head, 2, head_dim/2, …]` →
+swapaxes → reshape) so that ggml's *interleaved* RoPE (`GGML_ROPE_TYPE_NORMAL`)
+reproduces HF's *rotate_half* result. CrispEmbed's native converters read HF
+weights **verbatim** and apply rotate_half RoPE directly. So a llama.cpp LLM's
+q/k are in the wrong layout for a CrispEmbed loader → every RoPE'd dot product
+is wrong → the decoder loops on a few tokens. Fix: **un-permute q and k back to
+HF layout in the merge** (inverse of the reshape/swapaxes). It only reorders
+OUTPUT rows, and Q8_0 quantizes each row independently, so it's a byte-exact
+row-shuffle — no dequantization. q uses `n_head`, k uses `n_head_kv`; v and
+everything else copy verbatim. After un-permuting, the merged SmolVLM OCR'd
+`The quick brown fox…` correctly on Metal.
+
+Durable rule: **un-permute q/k when ingesting a llama.cpp NORMAL-RoPE LLM
+(`arch=llama`/mistral/gemma) into a CrispEmbed HF-layout graph.** Symptom is
+always "fluent but wrong / repetitive," never a crash — shapes are identical,
+only row order differs. (Same class as the [[flashattn-ext-already-permutes]]
+bugs: right values, wrong arrangement.)
+
+**CRUCIAL refinement (2026-07-12, InternVL import):** the un-permute is
+**arch-dependent**. llama.cpp permutes q/k ONLY for interleaved/NORMAL-RoPE
+arches; **NEOX-RoPE arches (`qwen2`) are already in HF layout** and must be copied
+**verbatim**. InternVL2.5-1B's LLM is `arch=qwen2` — un-permuting it produced
+"the! The title! It's not!" garbage; copying verbatim gave correct OCR + full
+diff-harness parity with the native converter. So: `needs_unpermute = arch in
+{llama, mistral, gemma}`, else verbatim. Two more recurring transforms: the
+ViT/SigLIP/InternViT FFN is **name-inverted** in llama.cpp's clip export (map
+fc1/fc2 by OUTPUT dim, NOT name — SmolVLM has `ffn_down`=fc1 while InternVL has
+`ffn_up`=fc1, opposite, so name-matching is guaranteed wrong), and the 4-D Conv2d
+patch weight flattens to 2-D by a pure C-order shape relabel (byte-identical).
+InternVL also needs **QKV re-fusion** (mmproj splits attn_q/k/v; the loader wants
+a fused `attn_qkv` — byte-concat [q;k;v], and vision has no RoPE so no permute).
+See `models/merge-llamacpp-{smolvlm,internvl}-gguf.py` + their tests.
+
+## Diff-harness: match the INPUT the harness feeds, and isolate against the native converter (2026-07-12, import validation)
+
+The user's standing rule — **"always test against the diff-harness intermediates
+AND ground-truth outputs, never just the output"** — earned its keep on the
+InternVL import, but ALSO showed how a mis-run harness lies. First read of
+`build/test-internvl2-diff` on my import showed `vis_patch_embed cos=-0.936`
+(near anti-correlation) while OCR was perfect — alarming. **Root cause was NOT a
+real defect: I dumped the HF reference with `--image test_text.png` (a real,
+tiled image) while `test-internvl2-diff` feeds a SYNTHETIC GRADIENT** (a clean
+single 448² tile, no dynamic tiling). Apples-to-oranges inputs → garbage cosine.
+Re-dumped WITHOUT `--image` (gradient, matching the harness): `vis_patch_embed`
+jumped to **cos 0.999999**, and my import was **identical to the native converter
+at every stage** (both 0.999999 patch-embed; both `vis_proj_output` −0.098; LLM
+identical modulo my Q8_0 vs native f16). So the import is genuinely correct.
+
+Fix (this commit): the dump tool stamps `diff.input_mode` (`gradient` or
+`image:<name>`) into the reference GGUF; the internvl2 harness **refuses** a
+non-gradient reference with a clear message instead of reporting a misleading
+anti-correlation. Prevents the exact trap.
+
+Two durable rules: (1) **a diff harness is only valid when both sides see the
+same input** — the gradient-vs-tiled-image mismatch produced a confident, wrong
+−0.936. (2) **Isolate my-bug-vs-baseline by running the native converter on the
+same HF model and diffing IT against the same reference**: identical cosines ⇒
+import ≡ the blessed path, and any residual gap is pre-existing. Here that gap is
+`vis_proj_output cos=-0.098` — a **pre-existing InternViT-vs-HF projector-stage
+parity gap present in the native converter too** (doesn't break OCR; the
+`pixel_unshuffle_v2` order matches between dump and engine, so it's a deeper
+layer/projector divergence, not the interop). Ground truth for an imported GGUF
+is the source engine itself: `llama-mtmd-cli` on the same file. And the original
+point still stands — the LLM read correct text over that mis-measured vision
+cosine, so the output check alone would have hidden it. See
+[[validate-intermediates-and-outputs]].
+
+## VL "runs but ignores the image": use the inject-embeds discriminator BEFORE diffing the vision tower (2026-07-12, mmproj reverse interop)
+
+Loading a stock llama.cpp Qwen2-VL-2B into CrispEmbed, `--ocr` ran and produced
+fluent-but-wrong output ("The text in the image is not visible"). I spent a long
+time building an HF diff-harness on the *vision tower* (fed CrispEmbed's exact
+patches to HF's Qwen2-VL vision model) and found cos 0.957 — close but imperfect,
+which nearly sent me chasing a phantom ViT bug for hours.
+
+**The decisive test was one line of thinking:** if the vision were the problem,
+better embeds would help. So I added a `CRISPEMBED_LOAD_MERGER=path` override
+that swaps the computed image embeds for a dumped tensor, and fed it three
+inputs: HF's *perfect* embeds, all-zeros, and random. **All three produced the
+IDENTICAL output.** That instantly proves the image is being *ignored entirely* —
+the bug is LLM-side conditioning (splice / prompt / positions), NOT the vision
+tower, and the cos-0.957 was a red herring.
+
+Root cause: `qwen2vl.image_token_id` is absent from llama.cpp GGUFs. CrispEmbed
+had **two mismatched defaults for the same concept** — the prompt builder's
+`image_pad_id` defaulted to `<|image_pad|>=151655`, while the vision-text splice's
+`image_token_id` defaulted to `0`. So the prompt emitted 151655 pads while the
+splice searched for token 0, matched nothing, and never replaced any embedding.
+Fix: default `image_token_id` to 151655 (match the prompt) + write the token IDs
+in the converter so the GGUF self-describes.
+
+Durable rule: **for any "multimodal model runs but ignores the modality," run the
+inject-{perfect, zeros, random} discriminator FIRST.** Identical outputs ⇒ the
+modality is dropped (conditioning bug — check the token-id/splice/positions);
+different outputs ⇒ the encoder is genuinely wrong (then diff the tower). It
+separates encoder bugs from conditioning bugs in a single cheap test, before any
+per-layer harness. Sibling gotcha from the same session: two independent
+defaults for one metadata key silently disagree — grep for every place a special
+token id is read and make the defaults identical (or better, write the key).
+
+Also from this port (llama.cpp qwen2vl mmproj → CrispEmbed): **llama.cpp INVERTS
+the ViT `ffn_up`/`ffn_down` names vs the projection direction** — `ffn_down` is
+fc1 (hidden→intermediate), `ffn_up` is fc2, provable by bias widths
+(`ffn_down.bias`=[intermediate], `ffn_up.bias`=[hidden]). Map fc1/fc2 by the
+output dim, never the name. And to localize a `ggml_can_mul_mat`/`ggml_can_repeat`
+abort, temporarily print `a->ne`/`b->ne` right before the assert in ggml.c
+(revert after) — it names the exact tensor + shapes in one run.
+
+## Two "inverse" interop scripts drift silently unless a round-trip test runs the REAL scripts end-to-end (2026-07-12, mmproj hardening)
+
+Adding a regression test for the llama.cpp⇆CrispEmbed Qwen2-VL mmproj interop
+immediately exposed two silent bugs that had shipped, both invisible to the
+existing per-script self-tests:
+
+1. **Name-map divergence.** The merge script (mmproj→CrispEmbed) was changed to
+   keep llama.cpp-native tensor names verbatim (`v.blk.*`, `mm.*`, `v.post_ln.*`)
+   because that's what the `qwen2vl_ocr` loader actually reads — but the export
+   script (CrispEmbed→mmproj) still read the *legacy* `vis.blocks.*`/`proj.*`
+   names the merge script no longer produces. So `export --in <real-merged-gguf>`
+   found **zero** vision tensors and errored. The export's own `--self-test`
+   passed the whole time because it round-tripped *synthetic legacy names it
+   generated itself*, never touching a file the merge script wrote. A per-script
+   self-test that fabricates its own input can't catch cross-script drift.
+
+2. **Hardcoded patch dtype.** The merge's temporal-patch concatenation did
+   `np.frombuffer(..., dtype=np.float16)`, silently corrupting any **F32**
+   `v.patch_embd.weight` (common in real mmproj files). Fix: view by the tensor's
+   real element *width* (`GGML_TYPE_META` byte size → `uint8/16/32/64`); the
+   concat only reorders whole elements, so a width-correct integer view is
+   byte-exact for any unquantized dtype and never interprets the float value.
+
+Durable rule: **for a pair of scripts claimed to be inverses (A→B, B→A), the
+only test that matters feeds a fixture through the REAL A then the REAL B (via
+subprocess) and asserts the output equals the input** — here, a synthesized tiny
+mmproj → `merge` → `export` → mmproj, all 40 vision tensors byte-identical, for
+each patch dtype (F16 and F32). Self-tests that validate one script against its
+own synthetic data give false confidence. See `tests/test_mmproj_interop.py`
+(pure Python, no model download, wired into the `regression.yml` smoke tier).
+
+## `ggml_set_output` on a reshape/view does NOT protect the underlying source buffer — snapshot reads back garbage (2026-07-12, C4)
+
+Building the C4 cross-call prefix KV cache, the plan was: run a prefix-only
+graph, mark each layer's post-rope **K** and **V** as outputs, read them back
+after compute, reuse them in a suffix-only graph. K read back correct; V read
+back *garbage* — and the corruption differed between a P=9 and a P=T=19 build of
+the same prefix, so it wasn't a value error, it was a **stale buffer**.
+
+Root cause: in the graph, `K = ggml_rope_ext(...)` is a **fresh contiguous
+tensor** (rope allocates its own output), so `ggml_set_output(K)` pins a buffer
+that is genuinely K's. But `V = ggml_reshape_3d(v_proj, ...)` is a **VIEW** that
+aliases the `v_proj` matmul output. `ggml_set_output` on the view flags the view
+tensor, not `v_proj`'s buffer — so gallocr freely reuses `v_proj`'s buffer for a
+later op, and the post-compute `tensor_get(V)` reads whatever overwrote it. The
+*forward* was fine (flash-attn consumed V via its permute-view before the reuse,
+so `prefix_hidden` read cos 1.0 vs the full path) — only the **snapshot** was
+stale. Symptom: reused-prefix embeddings cos ≈ 0 (orthogonal), while the cached
+K matched byte-for-byte and every other input (mask, positions, concat order,
+rectangular flash) checked out. Cost most of a debugging cycle precisely because
+the forward looked correct.
+
+Fix: `K = ggml_cont(g, K); V = ggml_cont(g, V);` immediately before
+`ggml_set_output` — `cont` materializes each into its own contiguous buffer that
+`set_output` then protects. Rule: **before snapshotting a graph intermediate for
+read-back, `ggml_cont` it if it is (or might be) a view** — reshape/permute/slice
+results are views; matmul/rope/norm/add results are fresh. This is the
+read-back-a-view sibling of the existing "sched aliases many set_output
+snapshots to one buffer" and "gallocr reuses input buffers as scratch" gotchas —
+localize it by printing per-layer norms (aliasing → identical norms) and by
+diffing the snapshot against an independent recompute (here: cache built with
+P=lcp vs P=T, first-P tokens must match; K L1=0, V L1=15075 pinpointed it).
+
+## Per-step CPU→device KV cache re-upload is the #1 autoregressive perf killer (2026-07)
+
+math_ocr's TrOCR decoder stored self-attention K/V in CPU `std::vector<float>`
+and re-uploaded the entire growing cache via `ggml_backend_tensor_set` every
+decode step. With 200 steps this is O(n²) total transfers — plus constant-cost
+cross-attention K/V re-uploads (6 layers × n_enc × D × 4B per step).
+
+On Metal/WebGPU this caused ~19s/region (device sync overhead dominates).
+On WASM it caused OOM (ggml hash table overflow from graph rebuild pressure).
+
+**Fix:** Adopt the lightonocr.cpp persistent KV cache pattern:
+- Allocate `ggml_tensor` for K/V on the compute device once at max_seq
+- Write new K/V per step via `ggml_cpy` into `ggml_view_2d` at offset `n_past` (O(1))
+- Read full history via `ggml_view_2d` (zero-copy on device)
+- Cross-attn K/V uploaded once before the decode loop
+
+**Result:** 19s→4.4s/region on CPU (4.3x), WASM crash eliminated.
+
+**Rule:** Any autoregressive decoder with `std::vector` KV cache + per-step
+`tensor_set` should be migrated to persistent device tensors. The pattern is
+in lightonocr.cpp (GQA + RoPE variant) and now math_ocr.cpp (simple MHA).
+
 ## A weight's `t->data` is a DEVICE pointer on CUDA/Vulkan — host reads SIGSEGV; Metal/CPU hide it; local Ampere reproduces the class but not arch-specific garbage (2026-07)
 
 A model weight loaded on a device-local backend (CUDA/Vulkan/SYCL/ROCm-HIP) has a
@@ -521,6 +1273,48 @@ never stops." Two *independent* bugs, and one handover claim that was wrong:
   **9** tokens (incl. HF's `\bigvee`=12724) vs **5** with bilinear; the residual flip is
   f16-vs-f32 (the GGUF is f16, HF f32), not preprocessing. Bilinear is retained behind
   `MIXTEX_BILINEAR=1` for A/B bisection (dev-guide "keep both paths" rule).
+
+### TexTeller was garbage: decoder FFN activation was hardcoded ReLU (2026-07-13)
+
+TexTeller (ViT + TrOCR VED on the shared `math_ocr.cpp` engine) shipped emitting
+garbled LaTeX, yet had a passing regression fixture-shaped history because it was
+only ever checked per-stage (encoder cos ~0.999), never on the **decoded output**
+(HARD RULE #3). Two pix2tex-specific constants were hardcoded in the shared engine:
+
+1. **Decoder FFN activation hardcoded `ggml_relu`** — but TexTeller's TrOCR decoder
+   uses **GELU** (`config.decoder.activation_function == "gelu"`; pix2tex/TrOCR-small
+   use relu). Wrong activation on every FFN layer accumulated into output that
+   *partially recovered structure* (`\[x \} \} = \frac{-b \pm \sqrt{...}}{2a}` — the
+   `\frac` skeleton is right, the rest drifts). **That partial-correctness is the
+   diagnostic signature of a small-but-systematic per-layer error** (wrong-but-similar
+   activation, subtle norm), NOT a gross wiring bug. Now data-driven from
+   `decoder.activation_function` (default relu → pix2tex unchanged); graph uses
+   `ggml_gelu_erf`, scalar uses exact `erff`. HF "gelu" == erf, not tanh.
+2. **Preprocessing hardcoded mean=std=0.5 + squash-resize** (TrOCR). TexTeller needs
+   mean=0.9545467/std=0.15394445 + trim-white-border + aspect-preserving resize
+   (short edge→S-1, long edge capped at S) + **white pad** to 448 (its torchvision
+   transform; pad value 0 in normalized space == mean grey). Now
+   `encoder.image_mean/std` + `encoder.preprocess_pad` from GGUF (defaults reproduce
+   pix2tex). TexTeller ships **no `preprocessor_config.json`** — constants live in its
+   source; the converter takes `--image-mean/--image-std/--preprocess pad`.
+
+**Isolation that nailed it (dev-guide diff-harness):** injecting the *reference*
+`pixel_values` still garbled → not preprocessing; dumping the encoder memory and
+diffing vs HF's `ViTModel.last_hidden_state` gave per-token cos mean **0.99933**
+(CLS 0.99997) → encoder correct → bug is in the decoder; f16 == q8_0 garbage → not
+quantization → graph. GELU flipped it to a **byte-exact** match on both formula
+fixtures, f16==q8_0, CPU==Metal; pix2tex-mfr stays byte-identical. Env A/B:
+`MATH_OCR_{MEAN,STD,PAD,FFN_GELU}`; graph-isolation hooks `MATH_OCR_{PV_BIN,DUMP_ENC}`.
+
+**Bug class — audit any converted-model engine for hardcoded, model-dependent
+constants** (activation fn, input mean/std, resize mode, prefix-token count, RoPE
+variant). Sibling status: `ppformulanet_ocr`/`ppformulanet_l` use **tanh-approx**
+GELU where MBart's `gelu` is **erf** (minor cos ~0.999 mismatch, and both carry
+`expected_text: null` fixtures — unvalidated end-to-end); `mixtex` correctly uses
+`gelu_erf`. **Root systemic hole: a fixture pinned from the engine's *own* output
+"passes" while enshrining garbage** — golden text must trace to the HF reference,
+and `expected_text: null` means "never validated," not "fine." See
+[[validate-intermediates-and-outputs]], [[never-blame-quantization]].
 
 ## DRY: byte-level BPE decode centralized in core/bpe.h (2026-07-02)
 
@@ -1077,6 +1871,50 @@ read model weights directly via `ggml_backend_tensor_get` assuming F32
 layout — this reads wrong data sizes from F16 tensors (`tensor read out
 of bounds`). Fix: use `tensor_to_f32()` helper that reads raw bytes via
 `ggml_nbytes()` then dequantizes via `ggml_get_type_traits()->to_float`.
+
+**Quantized version (2026-07-03): the same rule bites `position_embd` on
+quant.** clip_text/SigLIP-text quantized cleanly on paper (75 tensors, imatrix
+fired) but produced `cos_vs_f32 = 0.0000` and aborted at inference:
+`binary_op: unsupported types: dst f32, src0 f32, src1 q8_0`. The quantizer
+stores `position_embd.weight` (a 2-D embedding table) as Q8_0, and the graph
+added it via a raw `ggml_view_2d(pos_embd)` — `ggml_add`'s src1 must be F32, and
+a Q8_0 view is not. The token embedding next to it was *fine* because it goes
+through `ggml_get_rows`, which dequantizes to F32; only the position path used a
+raw view. Fix: `if (ggml_is_quantized(pe->type)) pe = ggml_cast(g, pe,
+GGML_TYPE_F32);` before the view+add. **Lessons:** (1) an embedding table added
+(not matmul'd) must reach the binary op as F32 — either `get_rows` it (LiLT does
+this for all of pos/x/y/w/h/type and never hits the bug) or `ggml_cast` it; a
+raw `view_2d` of a quantized weight is a latent crash that only appears once the
+model is quantized. (2) "the collector fired and quantize succeeded" does NOT
+mean the quantized model runs — always run inference on the quant and check
+cos-vs-f32, per CLAUDE.md "build verifies compile, not correctness."
+
+## Quant/imatrix A/B needs a CONTINUOUS metric, not a thresholded one (2026-07)
+
+Evaluating imatrix on a classification model (punctuation, NER, KIE) with a
+**thresholded** metric — restored-string exact-match, or per-token argmax-label
+agreement — is blind to it. The argmax saturates to "perfect" long before the
+model is lossless: fireredpunc scored 5/5 restored-string match for *both* plain
+q4_k and q4_k+imatrix, so imatrix looked worthless (n=5 → "no value").
+
+imatrix acts on the **logits / probability distribution**, not the argmax. Dump
+the pre-argmax per-token class logits (an env hook like `FIREREDPUNC_DUMP_LOGITS`)
+and, over HUNDREDS of tokens, compute **mean per-token prob-cosine** (softmax vs
+gold softmax, →1) and **mean KL(gold‖quant)** (→0). Over 490 tokens that showed
+q4_k+imatrix cutting KL-from-f16 ~2.8× (0.0093→0.0033) — a real, monotone win the
+exact-match hid. Report those, not exact-match. (Embedders already use cosine, a
+continuous metric — this gap only bit the discrete-output models.)
+
+Two corollaries burned real time here:
+1. **Never A/B a gguf that is still being quantized.** A half-written iq4_xs read
+   as 0/5 exact-match ("iq4_xs breaks punct"); the completed file is argmax-perfect.
+   Gate the eval on a DONE sentinel + a file-size-stable check.
+2. **Measure against the highest-precision gold you actually have, and say which.**
+   fullstop-punc has no f16 base on HF (only q8_0), so its imatrix could only be
+   calibrated+quantized from q8_0 and measured vs q8_0 — a near-lossless gap
+   (KL 0.0012) where imatrix genuinely can't help. That's a real "no benefit", but
+   for a different reason than fireredpunc's "exact-match can't see it"; don't
+   conflate the two.
 
 ## DeepSeek-OCR-2: from a never-run port to character-perfect OCR (2026-06)
 
@@ -1664,15 +2502,28 @@ to verify RoPE correctness.
 | BERT/MiniLM/GTE | WordPiece | Greedy longest-match with ## prefix |
 | XLM-RoBERTa/E5/Arctic/PIXIE | SentencePiece Unigram | Viterbi DP (NOT bigram merge) |
 | Qwen3/Octen/F2LLM | GPT-2 BPE | core_bpe byte-level BPE with merges |
-| Gemma3/Harrier-270M | SentencePiece BPE | BPE merges with ▁ space marker + BOS/EOS |
+| Gemma3/Harrier-270M (our GGUFs) | SentencePiece BPE | `BPETokenizer` spm_style: BPE **merges** + ▁ + BOS/EOS |
+| gemma-embedding (llama.cpp export) | SentencePiece BPE | `SentencePieceTokenizer` spm_bpe: bigram merge **from scores** (no merges array) |
 
-Auto-detected from GGUF metadata: `tokenizer.ggml.type` (0=WP, 1=BPE, 2=SP)
-or heuristic (vocab > 100K → SentencePiece).
+Auto-detected from GGUF metadata: `tokenizer.ggml.type` (0=WP, 1=BPE, 2=SP),
+`tokenizer.ggml.model` string, or heuristic (vocab > 100K → SentencePiece). Note
+the two Gemma rows: our own converter bakes a `merges` list (BPETokenizer path),
+but community llama.cpp SPM exports ship `scores` and NO merges, so the SP
+tokenizer reconstructs the same segmentation by bigram-merging on scores (see the
+gemma-embedding learning above).
 
-### Critical: SentencePiece Unigram needs Viterbi, not bigram merge
+### Critical: SentencePiece Unigram needs Viterbi; SentencePiece BPE needs bigram-merge
 
-The llama.cpp-style bigram merge (priority queue, highest-score-first)
-does NOT produce correct tokenization for Unigram models like XLM-R.
+Two SentencePiece algorithms, opposite requirements — pick by the model, not by
+"it's SentencePiece":
+
+- **Unigram (XLM-R/E5/T5):** scores are log-probs → **Viterbi DP** (max-sum path).
+  The llama.cpp-style bigram merge does NOT produce correct tokenization here.
+- **BPE (Gemma/Llama):** scores are merge RANKS → **bigram greedy-merge** (merge
+  the highest-scoring adjacent pair). Viterbi over ranks OVER-segments (it sums
+  ranks and prefers many small pieces to one big token — e.g. `▁w+or+ld` beats
+  `▁world`). `SentencePieceTokenizer` has both: default Viterbi, `spm_bpe` mode
+  for the merge algorithm (set from `tokenizer.ggml.model` ∈ {llama, gemma}).
 Example: "▁world" exists as token 8999, but bigram merge breaks it into
 ["▁w", "or", "ld"] because greedy pair merging can't find the global optimum.
 
@@ -1933,8 +2784,10 @@ train_swa`) — a clean reference if we ever add it.
 - **RANK** = pooled vector → `cls` matmul(+b) → activation → optional `cls_norm`
   LayerNorm → `cls_out` matmul(+b). The activation is **GELU for ModernBERT, tanh
   otherwise**; ModernBERT pools MEAN, others CLS; Qwen3 rerankers softmax + LAST.
-  Worth diffing against our reranker heads (cf. `LEARNINGS.md → "GELU variant
-  matters for token classification"`).
+  **VERIFIED (2026-07-03) our `apply_classifier` matches:** 2-layer BERT/XLM-R
+  rerankers (jina-v2, bge, ms-marco) use `tanh` (crispembed.cpp ~2926); the DeBERTa
+  ContextPooler (mxbai) uses GELU-tanh (~2915). No ModernBERT reranker is in the
+  roster (would need GELU), so no fix needed — the RANK heads are correct vs upstream.
 - Qwen3-Embedding is trained **causal** (last-token/EOS pooling) — llama.cpp runs
   it causal and is *correct*. EmbeddingGemma and the LFM2.5 retrievers are
   bidirectional. Don't assume "decoder embedder ⇒ force non-causal".
@@ -2120,10 +2973,26 @@ the Kaggle batch (`tools/kaggle/crispembed-imatrix-quant/`):
   loaded `state_dict` lies for *any* head-detection heuristic.
 - **SOTA permissive EN+DE eval corpora:** report scores against **MMTEB**
   (Apache-2.0 framework); for calibration/A/B *text* (no labels needed for the
-  quant-vs-full-precision agreement metric) use **MIRACL** (Apache-2.0) queries+
-  passages and **Tatoeba** (CC-BY-2.0) EN–DE pairs; GermanQuAD/GermanDPR are CC-BY-
-  4.0. Avoid XNLI/MultiNERD (NC), Flores/Wikipedia-derived (SA). No clean MIT/Apache
-  EN+DE *gold NER* exists → self-label permissive text with a teacher model.
+  quant-vs-full-precision agreement metric) real-data options are **MIRACL**
+  (Apache-2.0 card, but Wikipedia text underneath → effectively CC-BY-SA) and
+  **Tatoeba** (CC-BY-2.0) EN–DE pairs; GermanQuAD/GermanDPR are CC-BY-4.0. Avoid
+  XNLI/MultiNERD (NC), Flores/Wikipedia-derived (SA). **For a fully license-free
+  bundle (usable under MIT/Apache/BSD-3), self-author the text and release it CC0**
+  — that's what CrispEmbed ships (`tools/gen_eval_corpora.py`, EN+DE parallel pairs);
+  quant-agreement A/B only needs diverse realistic multilingual text, so hand-written
+  is as good as a benchmark here and carries no attribution burden. Practical trap:
+  `datasets` 4.x dropped script datasets, so MIRACL/germandpr won't `load_dataset` —
+  use their parquet mirrors or self-author.
+- **imatrix calibration is ~language-agnostic — calibrate in EN, it generalizes to
+  DE (2026-07-03).** Controlled A/B (`tools/kaggle/crispembed-calib-ab/`): quantize
+  q4_k twice, imatrix from English-only vs English+German calibration, evaluate both
+  on a German set. Deltas were **noise**: bge-m3 DE +0.0001 (EN −0.0007),
+  xlmr-ner-hrl 1.0→1.0. **Why:** the imatrix is per-*column* sum-of-squared
+  activations — which columns matter is set by the weights/architecture, not the
+  calibration language — so a bilingual calibration corpus is NOT worth a
+  re-calibration rollout. Use bilingual corpora for **A/B reporting** (they surface
+  a real EN-vs-DE quality gap in the *model*), not for calibration. The A/B itself
+  is the cheap way to check this before spending compute on any rollout.
 - **Big models: calibrate on the q8_0, quantize from the f32 base.** A 4B/8B f32
   base (16/30 GB) can't be *loaded for inference* on Kaggle's ~13 GB RAM, which
   calibration needs. But the imatrix is **activation statistics**, and q8_0 is
@@ -4267,3 +5136,573 @@ vision layers and both LLM layers at cos 0.9999 (late layers per the sink-token
 caveat above). See also the "Self-consistent crispembed-diff reference" and
 "Never blame quantization" entries — and the meta-lesson: **independently
 reproduce a handover's root-cause claim before building on it.**
+
+## 2026-07 — pcs full ONNX parity + an encoder-parity audit sweep
+
+Chasing a shipped q4_k crash in the `pcs` punctuation engine turned into full parity
+work against the ONNX source (`1-800-BAD-CODE/xlm-roberta_punctuation_fullstop_truecase`,
+run via onnxruntime — `tools/dump_pcs_reference.py`). Six root causes, each a distinct
+class:
+1. **q4_k crash** — the CPU-side SBD/truecase heads read quantized FC weights via raw
+   `ggml_backend_tensor_get(..., n*sizeof(float))`, overrunning `ggml_nbytes` → abort. Fix:
+   read via a per-row dequant (`to_float` trait, sized by `ggml_nbytes`), or the shared
+   `core_cpu::to_f32`. Quantizer DOES quantize 2-D weights incl. `token_embd`, so any
+   CPU-side weight read must dequantize.
+2. **Tokenizer (dominant)** — XLM-R is SP **Unigram**; greedy longest-match mis-split
+   multi-subword words → embeddings cos as low as 0.13. Fix: Unigram Viterbi over
+   `tokenizer.ggml.scores` (converter now emits them; new `core_gguf::kv_f32_array`).
+3. **Decode** re-counted subtokens greedily → dropped final punctuation on multi-subword
+   words; now partitions the actual token_ids by ▁ word-start.
+4. **SBD** used argmax; ONNX thresholds `softmax P(boundary) > 0.05`.
+5. **Truecase** conditioning used the current token's sbd; ONNX feeds the SHIFTED
+   is-sentence-initial flag (`argmax seg[t-1]`).
+6. **Encoder numerics**: `ggml_gelu` (tanh) where XLM-R uses exact erf → `ggml_gelu_erf`;
+   LayerNorm eps `1e-12` → `1e-5` (RoBERTa/XLM-R; BERT genuinely wants 1e-12).
+After all six, tok+post+pre+seg predictions match ONNX 11/11, encoder hidden cos 0.999997,
+q8_0/f32 exact. Diagnostics: `PCS_DEBUG`, `PCS_FORCE_CPU`, `PCS_DUMP_HIDDEN`,
+`PCS_DUMP_LAYER`, `PCS_FLASH_ATTN`. GGUFs re-uploaded to `cstr/pcs-xlmr-base-GGUF` (+q8_0).
+
+The pcs classes then generalised across the codebase:
+- **GELU tanh→erf** wherever `hidden_act="gelu"` (exact erf): `gliner_ner.cpp` (DeBERTa-v3),
+  `lilt_kie.cpp` layout FFN (text FFN was already erf — asymmetric miss). Verify each
+  against the real `config.json`; SigLIP/CLIP genuinely use tanh/quick_gelu.
+- **Quant-read crash class**: `crispembed.cpp`'s MLM/SPLADE head read the quantized
+  `token_embd` / `mlm_transform_w` as raw F32 → now `core_cpu::to_f32` (the shared
+  backend-safe dequant in `src/core/cpu_ops.h`). The fused-QKV merge was already guarded
+  (`if (L.q_w->type != GGML_TYPE_F32) continue`).
+- **fullstop-punc** (XLM-R via the fireredpunc SP path) had the full pcs set (greedy
+  tokenizer + eps 1e-12 + tanh GELU) — fixed (inline Viterbi + conditional eps + erf),
+  verified exact vs HF, GGUFs re-uploaded. The dead `src/{pcs,fireredpunc}.cpp` fallback
+  duplicates (built only when the shared `crisp_punc` lib is absent) were unified.
+Note the two `pcs.cpp` copies (CrispASR `crisp_punc` = shipped; CrispEmbed `src` = fallback)
+must stay logically in sync; each repo's `.clang-format` differs so byte-identity is
+impossible — sync the logic. See the memory `pcs-cpp-two-copies-diverged`.
+
+## Cached ggml graphs must own their metadata pool (WASM crash → native segfault, #31)
+
+`math_ocr` cached the encoder graph across calls (`ctx->enc_graph` /
+`ctx->enc_batch`) but built it inside a ggml context whose `mem_buffer` was a
+**stack-local `std::vector`** — freed as soon as the build block's scope
+closed, while the cached graph (and every tensor struct in it) still pointed
+into the dead buffer. Classic use-after-free with wildly different symptoms
+per allocator:
+
+- **WASM (dlmalloc)**: the freed 16 MB block is immediately handed back to
+  the CPU backend as its mul_mat work buffer, so quantize_row_q8_0's
+  activation writes land **on top of the cached tensor structs** —
+  `src1->data` becomes float garbage (odd pointer like `0x1f826019`) and the
+  next row read traps `memory access out of bounds`. This is why every
+  ViT-class OCR (pix2tex, TrOCR) "exceeded WASM limits" — it never did; it
+  was heap corruption.
+- **macOS malloc**: usually silent (different size class → freed region not
+  reused), but segfaulted reproducibly on some inputs (dbnet+trocr pipeline
+  on a 520×260 crop, exit 139).
+
+Fix (one line per site): pass `mem_buffer = nullptr` so **ggml owns the
+pool** and `ggml_free(ctx->enc_graph_g)` releases it —
+`ggml_init_params ip = { meta_size, nullptr, true };`
+
+Debug method that found it: Playwright browser e2e (weak node tests had
+`passed++` around the crash!) → emcc `-g2 -sASSERTIONS=2` build for a
+symbolized stack → per-row fprintf of `srcp/dstp/src1->data` in the mul_mat
+quantize loop, which showed wdata's write range covering the `src1` tensor
+struct address. Rule: **any** ggml graph cached beyond the building scope
+must have a context-owned (or ctx-member-owned) metadata pool; a local
+buffer is only safe when build + compute complete within the same scope.
+Audit note: `precompute_cross_kv` and the decoder loop use local pools but
+compute in-scope — legal. The scan for `std::vector<uint8_t> meta` +
+`ctx->…_g = g` found no other offenders.
+
+## Emscripten + ggml: CMAKE_SYSTEM_PROCESSOR is "x86" → WASM SIMD kernels silently dropped
+
+Under `emcmake`, the Emscripten toolchain sets `CMAKE_SYSTEM_PROCESSOR=x86`
+(bitness advertisement), so ggml-cpu's arch dispatch hits the "Unknown CPU
+architecture → generic implementations" branch and **never compiles
+`arch/wasm/quants.c`** — every quantized vec_dot/quantize ran scalar even
+though `-msimd128` was set (that flag only lit up the `__wasm_simd128__`
+blocks in TUs that have them; the generic quants file has none). Symptom in
+stacks: `quantize_row_q8_0` tail-calling `quantize_row_q8_0_ref`. Fix: pass
+`-DEMSCRIPTEN_SYSTEM_PROCESSOR=wasm` (officially supported toolchain
+override) → "Wasm detected", arch file compiles, ~1.5-2× on q4_0/q4_K
+OCR inference. Applies to any ggml-based wasm build (CrispASR too).
+
+Related wasm-demo architecture (same session): inference must run in a Web
+Worker — single-threaded WASM on the main thread freezes the tab for the
+whole compute and is indistinguishable from a hang (user report on #31).
+Engine stderr, forwarded via `CRISPEMBED_MODULE_OPTS.printErr` →
+postMessage, doubles as live progress ("ocr_pipeline: recognizing region
+i/N"). For threads on static hosting (GitHub Pages can't set headers), a
+COOP/COEP-injecting service worker (`coi-sw.js`) + one guarded reload makes
+the page crossOriginIsolated; `controllerchange` (the SW calls
+clients.claim()) is the reload signal — polling `controller === null` after
+`ready` is racy AND wrong (claim() sets the controller without the document
+having the headers).
+
+
+## Emscripten 6 pthreads inside a Web Worker — two deadlocks and their shims
+
+Running a `-pthread` Emscripten module INSIDE a dedicated worker (module
+importScripts'ed into our own worker script) hits two silent hangs:
+
+1. **Factory-inside-onmessage deadlock.** If `CrispEmbedOCR()` (the
+   MODULARIZE factory) is first invoked from within an active `onmessage`
+   handler, the pthread pool bootstrap never completes — the factory promise
+   just never resolves (no error). Same code at worker top level works.
+   Pattern: pass config via the worker's query string
+   (`ocr-worker.js?loader=...`), importScripts + instantiate at top level,
+   stash `globalThis.CRISPEMBED_MODULE_PROMISE`, and have the wrapper's
+   `_initModule` reuse it.
+
+2. **Pthread workers spawn OUR worker script.** `mainScriptUrlOrBlob` no
+   longer exists in emscripten 6; pthread workers are spawned from
+   `_scriptName = self.location.href` — which is the OUTER worker's URL when
+   the module was importScripts'ed. Symptom: N nested workers spawn running
+   the host worker script, the module's pool wait hangs, and the module
+   logs "worker sent an unknown command <x>" for the host's own postMessages.
+   Fix: make the host worker **pthread-transparent** — first thing in the
+   script: `if (self.name === 'em-pthread') { importScripts(LOADER); }` and
+   nothing else (the Emscripten loader, evaluated under that worker name,
+   runs its own pthread bootstrap and owns the worker).
+
+Also: `locateFile` must return ABSOLUTE URLs in worker contexts (relative
+paths abort with XHR "Invalid URL" in blob workers, and threaded builds live
+in a subdirectory). Debug recipe: wrap `self.Worker` before importScripts to
+log spawn URLs; forward `printErr` via postMessage.
+
+
+## ggml WebGPU backend in the browser (emscripten) — porting notes
+
+Shipped as an experimental opt-in tier for the WASM OCR demo (~2.2× vs the
+SIMD CPU build for pix2tex on M1, output byte-identical). What it took, in
+order of discovery:
+
+1. **ggml snapshot 8be60f8's WGSL templates break the shader embedder** —
+   `*.tmpl.wgsl` files get embedded as invalid C identifiers
+   (`wgsl_cpy.tmpl`). Upstream later renamed them to plain `*.tmpl` (the
+   embed script only globs `*.wgsl`); build-wasm.sh --webgpu mirrors that
+   rename in the submodule working tree (idempotent).
+2. **JSPI exports**: GGML_WEBGPU_JSPI defaults ON → any export that can
+   reach GPU work suspends and MUST be listed in `-sJSPI_EXPORTS` (else
+   "trying to suspend without WebAssembly.promising"), and JS must call it
+   via `ccall(..., {async:true})`. The wrapper's `_acall` awaits every
+   engine-touching call — `await` normalizes plain builds (raw value) and
+   JSPI builds (Promise), so one wrapper serves all variants.
+3. **Resizable-heap vs browser APIs, round 2**: Chrome rejects
+   `GPUQueue.writeBuffer` with views into a resizable ArrayBuffer — the
+   exact class as the issue-31 TextDecoder crash. WebGPU build uses
+   `-sALLOW_MEMORY_GROWTH=0 -sINITIAL_MEMORY=512MB`.
+4. **Encoder graph cache is NOT re-entrant across sched resets** (again —
+   same class as Parakeet §176s): 2nd recognize on the cached graph traps
+   `unreachable` on WebGPU. math_ocr now always rebuilds the encoder graph
+   (build cost is µs next to compute). This cache also caused the issue-31
+   UAF — it is a bug magnet; do not reintroduce without a re-entrancy test.
+
+Op coverage note: ggml-webgpu (this snapshot) has MUL_MAT/FLASH_ATTN/
+SOFT_MAX/ROPE/GET_ROWS/unary but NO GGML_OP_NORM (classic LayerNorm) and no
+IM2COL — ViT LayerNorms run on CPU via sched splits (still nets 2.2×);
+DBNet conv detection gains little until those shaders exist (upstream-able).
+
+
+## WebGPU LayerNorm kernel (patches/ggml-webgpu-layernorm.patch)
+
+ggml-webgpu's `row_norm.wgsl` is a clean template (RMS_NORM / L2_NORM
+variants); LayerNorm (GGML_OP_NORM) is a small delta: second workgroup
+accumulator for the plain sum, `var = E[x^2] - mean^2`, and the update
+helper gains a shift param (`dst = scale * (src + shift)`, shift = -mean;
+0 for the existing variants). Wiring: pipeline-getter case + encode dispatch
++ supports_op (eps already at op_params[0], same as RMS_NORM). Kept as a
+git patch applied idempotently by build-wasm.sh --webgpu (the submodule
+tracks upstream ggml-org/ggml). Same-conditions A/B, pix2tex e2e (M1,
+Chrome headless): 2.46-3.11 s -> 1.67-1.79 s (~1.4x; ~2.8x total vs SIMD
+CPU), output byte-identical. Candidate for upstreaming to
+ggml-org/llama.cpp (per AI-policy: mechanical disclosure, human-written
+prose). DBNet detection still runs its conv stack on CPU — needs IM2COL +
+CONV_TRANSPOSE_2D + POOL_2D + UPSCALE kernels (a real upstream project,
+deferred).
+
+
+## WebGPU OCR kernels round 2 — conv stack + the silent-skip trap
+
+Six WGSL kernels (NORM, IM2COL, POOL_2D, CONV_TRANSPOSE_2D, UPSCALE,
+ARANGE) now carried as patches/ggml-webgpu-ops.patch; upstream-PR draft at
+CrispASR tools/upstream-prs/22-webgpu-ocr-ops.{md,patch}. Hard-won lessons:
+
+- **ggml-webgpu's encoder silently SKIPS unhandled ops** (default: returns
+  nullopt = no-op). On the sched-less compute path (ocr_detect uses raw
+  ggml_backend_graph_compute) this yields silently wrong output — DBNet
+  "detected 0 regions" because its 7 UPSCALE nodes were dropped. The patch
+  adds a stderr warning; when debugging "wrong results on webgpu", grep for
+  SKIPPING first.
+- **ggml test-backend-ops runs in headless Chromium**: link
+  ggml/tests/test-backend-ops.cpp against the build-wasm-webgpu static libs
+  (em++ --use-port=emdawnwebgpu -sJSPI -fwasm-exceptions, fixed heap), load
+  in a page with Module.arguments=['test','-o',OP,'-b','WebGPU']. Per-op
+  validation vs CPU with proper tolerances — found real bugs decimal-literal
+  (-FLT_MAX must be bitcast<f32>(0xff7fffffu); WGSL rejects -3.4028235e38),
+  missing sf3 (batch-dim rescale), and non-contiguous src (stride_src0).
+  Nobody upstream executes browser tests in CI; this setup exceeds it.
+- **WebGPU dispatch is capped at 65535 workgroups/dimension** — conv
+  lowerings exceed it; dispatch 2D with an nwg_x uniform and linearize.
+- Pipeline A/B (scan strip, M1, back-to-back): CPU 291 s vs GPU 164 s
+  (1.78x); detection 90 s -> 1.5 s (~60x); same boxes, two borderline
+  region texts differ (F16 rounding; GPU text closer to native GT on one).
+  Autoregressive TrOCR decode is only mildly faster on GPU (JSPI round-trip
+  overhead per step) — batching decode steps is the next perf lever.
+
+
+## OCR-engine WebGPU sweep + OPFS cache (July 5)
+
+Per-engine CPU-vs-WebGPU sweep in headless Chromium
+(tests/wasm-browser/engine-sweep.js), single-model wasm API, warm numbers:
+
+| engine    | wasm CPU | WebGPU | note |
+|-----------|----------|--------|------|
+| pix2tex   | 6.3 s    | 2.4 s  | 2.6x |
+| trocr     | 6.9 s    | 1.7 s  | 4.0x — biggest win |
+| parseq    | 0.17 s   | 0.65 s | correct, but tiny model = CPU wins |
+| hmer      | 13.0 s   | 11.4 s | 1.15x |
+| bttr      | 7.8 s    | 9.0 s  | GPU slightly slower |
+| tesseract | 0.16 s   | 0.17 s | tiny LSTM, parity |
+
+All six now produce text matching CPU. Two bugs found:
+- **parseq returned garbage on WebGPU** ("MMM"): it computes on a raw
+  gallocr (no sched/CPU fallback) and uses ggml_flash_attn_ext, which
+  ggml-webgpu compiles OUT under Emscripten *inside its case* — so even our
+  default-case skip warning didn't fire. Fix: exact manual attention under
+  __EMSCRIPTEN__ in parseq_ocr.cpp (+ tensor-pool bump for the extra ~16
+  nodes/layer), and a warning added to the flash-attn Emscripten branch in
+  the ggml patch. Rule: any engine that computes WITHOUT a sched must not
+  emit ops the webgpu backend lacks — flash_attn_ext is the trap.
+- Manual attention overflowed parseq's exactly-sized ggml metadata pool —
+  "not enough space in the context's memory pool" — pools must budget for
+  per-platform graph variants.
+
+**OPFS model cache** (wllama-pattern, in wasm/crispembed-ocr.js):
+opfs://crispembed-models/<encoded-url>, awaited write (a fire-and-forget
+write is killed if the page navigates right after load — cost us a
+head-scratcher), navigator.storage.persist() attempt, clear API +
+demo link. Verified: second page load hits cache, zero network.
+
+
+## WebGPU compat tier + WebKit findings + decode profiling (July 5)
+
+- **--webgpu-compat** (GGML_WEBGPU_JSPI=OFF -> Asyncify, 4.6 MB vs 3.3 MB
+  JSPI): for browsers with WebGPU but no JSPI. Demo picks by
+  `typeof WebAssembly.Suspending === 'function'`; `?gpuCompat=1` forces it.
+  Verified 15/15 in Chromium (Asyncify path exercises the same wrapper
+  _acall contract — ccall {async:true} behaves on all three build flavors).
+- **WebKit (Playwright 26.5)**: JSPI **shipped** (WebAssembly.Suspending
+  exists — real Safari 26 may run the JSPI GPU build once WebGPU is
+  exposed); navigator.gpu absent in headless; OPFS reads work but writes
+  throw transient UnknownError in the ephemeral test profile (wrapper
+  degrades to no-cache correctly). CPU tier verified on WebKit:
+  ground-truth match.
+- **coi-sw must not proxy model downloads**: WebKit terminates service
+  workers mid-stream ("Service Worker context closed"), killing 17 MB
+  fetches routed through respondWith. The SW now only stamps same-origin
+  document/script/wasm responses — COEP on the document already covers
+  CORS-mode subresource fetches.
+- **TrOCR phase profiling (warm, M1)**: encoder CPU 3896 ms -> GPU 714 ms
+  (5.5x); decoder CPU 48 ms -> GPU 231 ms (5x SLOWER — per-token
+  JSPI/submit overhead on tiny matrices). Next lever, deferred with data:
+  encoder-on-GPU + decoder-on-CPU split (needs decoder weights resident on
+  both backends) or cross-region batched decode for the pipeline.
+
+
+## Decoder-on-CPU split for WebGPU (MATH_OCR_DEC_CPU=1)
+
+math_ocr can duplicate the decoder weights into a CPU buffer (second
+load_weights pass into wl_dec; `dec.*` lookups in map_tensors route there),
+which steers the sched to run the autoregressive decode on CPU while the
+encoder stays on GPU. Enabled by the demo worker for the webgpu tiers.
+
+Measured (M1, warm): single-model TrOCR decode 216 -> 48 ms (= pure-CPU
+decode speed; total 918 -> 886 ms). Pipeline (8 regions): 164 -> 160 s —
+essentially a wash: the pipeline's per-region decode does long cross-attn
+against 578-token encoder outputs, which amortizes the per-token GPU
+submit/suspend overhead that dominates short decodes. Bonus: region-text
+parity with CPU improved (7/8 vs 6/8). Kept ON for webgpu (small consistent
+win, strictly faster decode, ~model-size extra wasm-heap for the CPU copy).
+Prediction vs reality note: the profiling suggested a bigger pipeline win —
+always A/B the actual workload, not the microbench.
+
+
+## Engine sweep round 2 (12/12) + a wasm-CPU drift lesson
+
+posformer/texo/mixtex/ppformulanet/texteller all MATCH CPU on WebGPU;
+texteller-3 q4_k (177 MB) fits the fixed 512 MB webgpu heap and is the
+biggest GPU win (5.4x). trocr-small-handwritten DIFFERED between wasm-CPU
+and wasm-GPU on a printed-word (out-of-distribution) fixture — the NATIVE
+engine sided with the GPU output: the wasm-CPU SIMD accumulation was the
+drifting leg. Lesson: on borderline inputs, 'differs from wasm-CPU' is not
+'GPU is wrong' — always arbitrate with the native engine.
+
+## Two-detector consensus deskew: opposite signs and a resolution-dependent bias (2026-07-06)
+
+`scan_cleanup` gained a consensus mode (`deskew_consensus`, default on) that
+cross-checks the Hough-energy angle against the independent Leptonica-style
+differential-square-sum detector (`classical_preproc.h`, `find_skew_angle`)
+before rotating. Two empirical facts anyone touching this code needs
+(verified on synthetic rotations, `tests/test_scan_cleanup.cpp`):
+
+1. **The two detectors use OPPOSITE sign conventions.** After
+   `scan_cleanup_rotate(+3°)`, Hough reports `+3.0` while DSS reports
+   `-3.5`. Map with `-dss` before comparing.
+2. **DSS overestimates the magnitude with a resolution-dependent bias** —
+   ~0.5° on 800px pages, ~1.2° on 400px — because it binarizes and reduces
+   4× before the shear sweep. Its SIGN is always reliable. A fixed 1.0°
+   agreement tolerance therefore silently rejects genuine ~3° skews on
+   small images (the failure looked like "consensus never confirms"); the
+   shipped gate is sign agreement + a 1.5° magnitude band. DSS also only
+   sweeps ±7°, so Hough angles above 6° pass through uncross-checked.
+
+The consensus detector also backs `scan_cleanup_deskew_rgb` (bilinear,
+channel-preserving, white-fill rotation), which is the building block for
+the optional per-params deskew on all image-embedding paths
+(`crispembed_set_image_deskew`, `vit_embed::set_deskew`, CLI `--deskew`;
+off by default). One observed caveat: for CLIP-style photo models on a
+synthetic page, deskewing moved the embedding FURTHER from the straight
+original — the expanded white corner wedges perturb a square-resize photo
+model more than 3° of skew does. Deskew-for-embeddings is a
+scanned-document feature; keep it opt-in.
+
+While mirroring the new param into bindings: the Rust `from_stages`
+`ScanCleanupParams` literal was missing the four despeckle/blackfilter
+fields — an E0063 compile error, i.e. the crate could not have built since
+those fields were added (there is no Rust CI). Fixed by basing the literal
+on `crispembed_scan_cleanup_defaults()` via struct-update syntax so future
+field additions inherit defaults instead of breaking the build.
+
+## Runtime perf: measure the DOMINANT cost before "fixing" a flagged micro-gap (2026-07-11)
+
+An audit / code-review flags mechanical gaps — "weights re-dequantized every
+call", "`n_threads` ignored", "graph rebuilt every step". Each is real, but in a
+runtime that is **scalar-compute- or dispatch-bound**, fixing the gap moves a
+tiny fraction. A runtime re-verification sweep hit three in a row where the
+flagged gap was NOT the bottleneck:
+
+- **esrgan `n_threads`**: the real thread-count sink is `fn(be, 1)` at
+  `esrgan_sr.cpp:266`, which clobbers the init-time count before every compute.
+  Wiring it to honor `n_threads` made decode SLOWER — `-t 8` 33s vs `-t 1` 21s
+  (bit-identical output). esrgan tiles into 128px pieces; a per-tile conv is too
+  small to amortize thread overhead and oversubscribes 4 P-cores. Contrast
+  **safmn**, where the *same* one-line fix gave a real **2.3×** — because safmn
+  convolves the WHOLE image in one graph, so its convs thread-scale. Thread
+  scaling depends on op size, not on whether the flag is wired.
+- **decode-step graph cache** (billed the "#1 lever"): measured on trocr-small
+  (lightest decoder, D=256/V=1200) — build+alloc 0.47 ms/step vs compute
+  18.5 ms Metal / 6.9 ms CPU → **2–6%**. And build cost is ~constant per step
+  (fixed node count) while compute grows with `n_kv`, so the fraction only
+  shrinks. The real decode cost is per-op dispatch (Metal), not graph build.
+- **scunet uncached dequant**: `to_f32` per Swin block is O(weights); the block
+  itself is O(H·W·C) scalar WMSA+MLP per pixel. Caching saves a small fraction
+  × tiles — marginal.
+
+Also: the audit's "flip the CPU-pinned SR engines to `init_best` for free GPU"
+was a **mirage** — they are CPU-pinned *deliberately* (conv weight residency;
+`esrgan_sr.cpp:115`), and NO SR engine runs conv on GPU (all use a CPU
+`enc_sched`; `swinir_sr.cpp:447` literally prints `ggml_conv_2d (CPU sched)`).
+And tbsrn's PE2D was already cached (`tbsrn_sr.cpp:425`).
+
+**Rule:** before implementing a flagged micro-optimization, measure or reason
+about the DOMINANT cost of the hot path — build-vs-compute split (env-gated
+timers on a real model), thread-scaling (op size), tile count. The two real wins
+of the sweep (safmn whole-image threading 2.3×; tps_locnet dequant hoist for
+reuse-callers) were both where the gap WAS a meaningful fraction; the marginal
+ones were not. The genuine remaining levers are the scalar-compute hot paths
+themselves (SIMD/ggml-ify scunet/mixtex WMSA, layout_detect deformable attn) and
+Metal per-op dispatch (ggml-metal ICB replay) — not the mechanical gaps around
+them. Verify which case you're in first.
+
+## Two more measured instances + a byte-identical SIMD trick (2026-07-11)
+
+More applications of the rule above, plus a technique for verified perf wins:
+
+- **gliner DeBERTa encoder is GPU-execute-bound, not dispatch-bound.** The
+  shared ggml `CRISPASR_METAL_PROFILE` probe split the 942-node encoder graph
+  into host-encode ~3.3 ms vs GPU-execute ~70–90 ms → **~96% GPU / ~4% host**.
+  So the "cut ggml_cont/permute, fuse ops" lever (which only touches host-encode)
+  was the WRONG one. The real cost: the disentangled c2p/p2c position matmuls
+  projected the full `[H, T*T]` pair-grid through `k_w`/`q_w`, but only `≤2T-1`
+  DISTINCT relative-position buckets exist. Fix: project the unique buckets once
+  (`[H, n_used]`), then `ggml_get_rows` to expand — output-identical, **1.28×
+  (T≈40) to 1.71× (T≈90)**, win scales O(T²−T). Same "reuse an invariant instead
+  of recomputing per element" shape as the rel-pos CPU cache, moved into the graph.
+
+- **layout_detect Phase-2 decoder cost is the scalar `cpu_linear` matmul, NOT
+  the deformable-attention sampling loop** (my first guess — corrected by the
+  bench). The deformable sample loop is ~17M MACs; `cpu_linear` (`:1018`) is a
+  scalar stride-N matmul at up to 256×256×8400, ~10×/layer×6 = ~3–5G MACs. Guess
+  cost, then measure; the loud-looking loop wasn't the cost.
+
+- **Byte-identical SIMD via AXPY reordering** (the technique). A `[out,N] = W[out,in]
+  @ X[in,N]` matmul written as `for n,o: sum_i W[o,i]*x[i*N+n]` strides `x` by N
+  (cache-hostile, un-vectorizable) — the layout_detect hot loop. Reordering to
+  `for o: y[o,:] = b[o]; for i: y[o,:] += W[o,i]*x[i,:]` makes `x[i,:]`/`y[o,:]`
+  contiguous over N (vectorizes) while keeping the **per-output accumulation order
+  (i ascending) identical → byte-identical**, verified by an empty `diff` of the
+  region output. This is strictly better than routing through `core_cpu::dot_product`
+  / `linear_batch_cpu` when you want byte-identity: those do a SIMD horizontal/
+  pairwise reduction that changes summation order (cos≈1, not exact). Measured
+  **~1.26× on Phase-2** (best-of A/B of two back-to-back binaries — the only valid
+  timing method on a box that was at loadavg 20–137 with competing crispasr/
+  flutter; best-of because noise only inflates times). AXPY was also far more
+  load-STABLE than the strided baseline (better cache behavior under memory
+  contention) — a side signal that the access-pattern change, not just SIMD width,
+  was the win.
+
+- **`ggml_conv_2d_direct` is a SLOW Metal kernel for large-spatial shapes; use
+  `ggml_conv_2d` (im2col+GEMM).** The layout_detect backbone (RT-DETRv2 @ 640²)
+  ran its 505-node graph at ~99.6% GPU-execute, 11.7s gpu_us — pure Metal conv.
+  Swapping the two conv sites from `conv_2d_direct` to `conv_2d` (im2col + `mul_mm`
+  GEMM) cut Phase-1 **11.4s → 1.2s (~9.8×)**. Metal's simdgroup `mul_mm` is highly
+  optimized; the direct-conv kernel is not, for these shapes. Output is cos≈1 (both
+  F32 — the fork's `ggml_conv_2d` picks an F32 im2col when the kernel is F32; only
+  reduction order differs → ≤0.001 score / ≤0.1px bbox jitter, clears the cos≥0.99
+  regression gate). This is the conv-heavy-engine case of the dev-doc's "conv_2d
+  port wins for conv-heavy engines" note — flip the default there, gate the direct
+  path (`LAYOUT_CONV_DIRECT=1`). **Candidate for the CPU-pinned SR family too** if
+  they ever move conv to Metal. `conv_2d_direct`'s only edge is memory (no im2col
+  buffer) — irrelevant at a fixed 640² input.
+
+- **The conv-swap win was engine-specific: whole-network conv (layout) wins, a
+  neck/patch conv in a decode-dominated model does NOT.** Sweeping the other
+  `conv_2d_direct` / `conv2d_cpu` users (got_ocr SAM-neck, glm_ocr patch-embed,
+  ppformulanet/unlimited/bttr necks) — they're all a small neck/patch stage inside
+  a transformer+decoder model. **got_ocr measured**: neck_projector 396 ms of
+  6738 ms (~6%, convs a fraction of that) while **decode = 92%** (499 × ~12 ms).
+  So the conv swap is ~4% at best — the flagged-micro-gap-that-isn't-dominant case;
+  don't churn it. And the got_ocr **decode step is ~89% GPU-execute / ~11% host**
+  (metal-prof: 940 nodes, 2.5 ms encode / ~20 ms gpu synced) → **compute-bound**,
+  so the decode-step graph cache / ggml-metal ICB (which only remove host/dispatch)
+  cap out at ~10–17% there — modest, and a risky project. Lesson: the layout
+  backbone was special because the ENTIRE net is conv (measured 99.6% GPU / 11.7s);
+  measure the fraction before assuming a repeat of a win.
+
+- **The ggml gitlink/symlink dance bit twice this session** — see the `git stash`/
+  `git checkout` reset trap; a fresh-worktree build needs the ggml symlink, git ops
+  need the gitlink, and stash/checkout silently swap it back to the empty gitlink
+  → stale-binary. Re-`ln -s` after any tree-touching git op before rebuilding.
+
+## Decode-step graph cache + CPU-decoder wins (2026-07-11, cont.)
+
+Five decoders got a gated **sched-free `ggml_gallocr` decode-step cache**, plus
+threading/dequant wins on two CPU engines. The durable lessons:
+
+- **Sched-free decode cache: reserve a `ggml_gallocr` once at max KV length, then
+  compute decode steps via `ggml_backend_graph_compute(backend, gf)` — not the
+  sched.** A decode step's graph has constant node count (only tensor shapes grow
+  with `n_past`), so a gallocr reserved for the longest graph takes
+  `ggml_gallocr_needs_realloc`'s no-realloc fast path every step, and the
+  sched-free compute skips `ggml_backend_sched_split_graph` (the per-step host
+  cost). Shipped byte-identical on got_ocr, internvl2, glm, lightonocr, math_ocr
+  (each behind `<ENGINE>_DECODE_CACHE=1`, default OFF). Measured host build+alloc
+  ~0.85→0.28 ms/step (got_ocr, quiet) → ~3% on light decoders, ~0% on heavy ones
+  (compute-dominated). **Its real value is load-insensitivity:** the sched's
+  `alloc` balloons to ~4.3 ms/step under load while the gallocr stays flat ~0.1 ms.
+- **Cache DECODE steps only (`n_past > 0`), never prefill.** got_ocr's prefill is
+  a separate code path, but internvl2/glm/lightonocr route prefill through the same
+  `run_cached_step`. Sending the prefill graph (image splice / full-seq mRoPE — a
+  DIFFERENT node count) through a decode-shaped gallocr reservation + sched-free
+  compute corrupts output: **glm degenerated into repetition** until the `n_past>0`
+  gate was added (internvl2 survived by luck). Always gate on `n_past>0`.
+- **"Single-graph decoder" is necessary but NOT sufficient — the decode graph must
+  also be single-BACKEND.** qwen2vl looked ideal (single graph, already
+  constant-shape) but `GGML_SCHED_DEBUG=2` showed its **attention runs on CPU**
+  (per-layer `SPLIT: CPU`) while the rest is Metal. A sched-free
+  `graph_compute(ctx.backend=Metal)` forces those CPU ops onto Metal → empty
+  output. And with a constant shape there's no realloc to skip, so nothing to gain.
+  Reverted. Check `GGML_SCHED_DEBUG=2` for CPU splits before attempting the cache.
+- **On an autoregressive decoder, check for CONSTANT WORK re-run per step before
+  optimizing any kernel.** mixtex's CPU decoder re-ran ~11 `to_f32()` weight
+  dequantizations per layer on EVERY of 30 steps (converting the same f16 weights
+  ~120×). Hoisting them into a once-built f32 cache: **decoder 2923→1008 ms
+  (~2.9×)**, byte-identical (same-binary A/B via `MIXTEX_DEC_DEQUANT_PER_STEP=1`).
+  My first guess (thread the 25681-wide vocab projection) measured as ~4% of the
+  step — a dud. The redundant dequant was 65%. Same shape as the rel-pos / weight
+  dequant caches: an invariant recomputed in the hot loop. **Audited the other CPU
+  OCR decoders for the same bug — clean:** ppformulanet / ppformulanet_l hoist all
+  `to_f32()` before their decode loops; bttr / posformer / hmer / parseq have none
+  (ggml graphs). mixtex was the lone offender; no need to re-grep.
+- **For an already-SIMD scalar kernel over INDEPENDENT units, the next lever is
+  loop-level threading, not more SIMD.** mixtex's Swin window attention was already
+  dot-product-SIMD; the encoder bottleneck was the **serial per-window loop** (270
+  independent windows). Threading it (each `window_mhsa` self-contained, disjoint
+  output) → **encoder 1420→733 ms (1.94×)**, byte-identical. Same for layout's
+  `cpu_linear` (thread the independent output-row `o`-loop → Phase-2 ~1.24–1.49×,
+  partly memory-bandwidth-bound so sub-2×). Both now **honor `ctx->n_threads`**
+  (default `-t` = 1 → old serial behavior), the mixtex/layout analog of the safmn
+  n_threads fix. Byte-identical by construction (disjoint writes, unchanged
+  per-unit math) — verify with a `-t 1` vs `-t 8` diff.
+- **Prove the parallel path actually engaged.** A best-of-3 briefly showed mixtex
+  threading giving *zero* speedup — a shell-function bug where `-t 8` silently
+  didn't reach the binary. Added a one-line `n_threads=N` / `cache active` stderr
+  marker (bench-gated) to each change so a run *proves* the fast path ran before
+  any timing is trusted (a loaded box already fabricates numbers; a mis-set flag
+  fabricates worse).
+
+## surya-det: the default path was broken since the port; only the A/B reference path was ever verified (2026-07-11)
+
+Found while auditing `core_cpu::conv2d_cpu` consumers: **every default-path
+surya-det detection aborted** with `GGML_ASSERT(a->ne[2] == b->ne[2])` at
+`ggml.c:4472`. Root cause: LiteMLA's `agg_pw` is a *grouped* pointwise conv
+(groups = 3·heads — neither depthwise nor groups=1) and `g_conv` routed it
+through `ggml_conv_2d`, which has no groups support. The depthwise branch
+(`groups == IC` → `ggml_conv_2d_dw`) masked the gap for `agg_dw`, so the
+grouped-but-not-depthwise case only exists on this one conv — and it asserts
+at graph-BUILD time (hard abort, no fallback possible).
+
+Two lessons:
+
+1. **Verify the DEFAULT path, not just the reference path.** A pre-merge
+   build (06c02ee) crashes identically, so this is not a regression — the
+   graph path has been broken since the port. The port's parity was evidently
+   established via `SURYA_DET_SCALAR=1` (the CPU reference), and the
+   regression manifest has no surya entry, so nothing ever exercised the
+   path users actually get. Same genus as verify-handover-claims: the
+   "working engine" claim was true only for the A/B baseline path.
+
+2. **A 1×1 grouped conv is a batched matmul, not N small convs.** The fix
+   expresses `y[g·OCg+oc, hw] = Σ_icg w·x` as ONE `ggml_mul_mat` on
+   `[ICg, OCg, groups] × [ICg, HW, groups]` with two cont+permutes — ~6
+   graph nodes total vs ~5 *per group* for a split-conv-concat loop (48
+   groups at stage3 would have blown the 2048-node gf2 budget and added ~96
+   Metal dispatches). Verified: 39/39 boxes byte-identical to the scalar
+   reference on Metal AND forced-CPU; the restored graph path is ~2× the
+   scalar fallback (18.5 s vs 38 s end-to-end on scan_page_pd).
+
+## The build dir was silently CPU-only for 5 days — check the cache before calling anything "Metal" (2026-07-12)
+
+Found while verifying the `--gpu-backend` sweep: the main working tree's
+`build/` had `GGML_METAL:BOOL=OFF` (`GGML_AVAILABLE_BACKENDS=ggml-cpu`),
+configured 2026-07-07 — almost certainly by the CPU-only sandbox session that
+built the 4D encoder batch (its PLAN note even says "this env is CPU-only,
+GGML_METAL=OFF"). It stuck: every measurement made with the main binary from
+07-07 to 07-12 that was labelled "Metal" actually ran on CPU. `init_best`
+falls back without any error, and on a CPU-only BUILD there is not even the
+"embedded metal library" stderr line to miss — silence is the only symptom.
+
+Casualties corrected:
+- **The 4D-batch "Metal verdict" was wrong twice over**: the "Metal parity
+  failure" (0.99989 < gate) and the mixed-length throughput loss were CPU
+  numbers. On a real Metal build, 4D parity PASSES (0.9999996) and **packed
+  is 5–7× vs sequential everywhere** (uniform and mixed, interleaved bench)
+  — packed is the Metal batching mode; 4D is the CPU tool. PLAN C3 rewritten.
+- **Cross-binary baselines were conflated** (CPU main vs Metal worktree):
+  yesterday's "mixtex 19 s → 5 s", "layout 21 s → 3.4 s", "gliner 6.7 → 3.1 s"
+  wall-clock comparisons overstate the code wins — the branch's own
+  same-binary isolated numbers (1.94×, 9.8×, 1.28–1.71×) are the real ones.
+  The "gliner Metal score wiggle" was actually CPU-vs-Metal backend diff.
+- **ppformulanet-L re-measured** on Metal: encoder 31 s → 8.3 s, so the CPU
+  neck is ~18% of total (not ~10%) and the decoder (~69%) is the dominant
+  cost. conv2d_cpu skip verdict stands; the engine's lever is its decoder.
+
+Rules: (1) before any backend-attributed measurement, verify
+`GGML_METAL:BOOL=ON` in the build cache AND `MTL0` in the run's stderr;
+(2) never compare wall-clock across binaries from differently-configured
+build dirs — same-binary env-toggled A/B or nothing; (3) after any sandbox
+session, assume the build config may have been downgraded.
+
+Bonus bug the same day: `tests/test_encoder_batch.py`'s 4D parity class
+leaked `CRISPEMBED_ENCODER_4D=1` into the throughput test, so its "seq" and
+"packed" legs silently ran the 4D path. Pop the mode envs at bench start.

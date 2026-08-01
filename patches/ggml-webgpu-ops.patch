@@ -1,0 +1,961 @@
+diff --git a/src/ggml-webgpu/ggml-webgpu-shader-lib.hpp b/src/ggml-webgpu/ggml-webgpu-shader-lib.hpp
+index 9d88f98..c38b2e1 100644
+--- a/src/ggml-webgpu/ggml-webgpu-shader-lib.hpp
++++ b/src/ggml-webgpu/ggml-webgpu-shader-lib.hpp
+@@ -750,6 +750,11 @@ class ggml_webgpu_shader_lib {
+         gated_delta_net_pipelines;  // type/S_v/kda
+     std::unordered_map<ggml_webgpu_pad_pipeline_key, webgpu_pipeline, ggml_webgpu_pad_pipeline_key_hash>
+         pad_pipelines;              // circular/non-circular
++    std::unordered_map<int, webgpu_pipeline> im2col_pipelines;            // dst type (0=f32, 1=f16)
++    std::unordered_map<int, webgpu_pipeline> arange_pipelines;             // single variant
++    std::unordered_map<int, webgpu_pipeline> upscale_pipelines;            // 0=nearest, 1=bilinear
++    std::unordered_map<int, webgpu_pipeline> pool2d_pipelines;            // pool op (0=max, 1=avg)
++    std::unordered_map<int, webgpu_pipeline> conv_transpose_2d_pipelines; // single variant
+     std::unordered_map<ggml_webgpu_binary_pipeline_key, webgpu_pipeline, ggml_webgpu_binary_pipeline_key_hash>
+         binary_pipelines;           // type/op/inplace/overlap
+     std::unordered_map<ggml_webgpu_concat_pipeline_key, webgpu_pipeline, ggml_webgpu_concat_pipeline_key_hash>
+@@ -827,6 +832,10 @@ class ggml_webgpu_shader_lib {
+                 defines.push_back("L2_NORM");
+                 variant = "l2_norm";
+                 break;
++            case GGML_OP_NORM:
++                defines.push_back("NORM");
++                variant = "norm";
++                break;
+             default:
+                 GGML_ABORT("Unsupported op for row_norm shader");
+         }
+@@ -1313,6 +1322,112 @@ class ggml_webgpu_shader_lib {
+         return pad_pipelines[key];
+     }
+ 
++
++    webgpu_pipeline get_arange_pipeline(const ggml_webgpu_shader_lib_context & context) {
++        auto it = arange_pipelines.find(0);
++        if (it != arange_pipelines.end()) {
++            return it->second;
++        }
++        std::vector<std::string> defines;
++        defines.push_back(std::string("WG_SIZE=") + std::to_string(context.max_wg_size));
++        auto processed           = preprocessor.preprocess(wgsl_arange, defines);
++        auto decisions           = std::make_shared<ggml_webgpu_generic_shader_decisions>();
++        decisions->wg_size       = context.max_wg_size;
++        webgpu_pipeline pipeline = ggml_webgpu_create_pipeline(device, processed, "arange");
++        pipeline.context         = decisions;
++        arange_pipelines[0]      = pipeline;
++        return arange_pipelines[0];
++    }
++
++    webgpu_pipeline get_upscale_pipeline(const ggml_webgpu_shader_lib_context & context) {
++        const int mode = ggml_get_op_params_i32(context.dst, 0) & 0xFF;  // ggml_scale_mode
++        const int key  = mode == GGML_SCALE_MODE_NEAREST ? 0 : 1;
++        auto      it   = upscale_pipelines.find(key);
++        if (it != upscale_pipelines.end()) {
++            return it->second;
++        }
++        std::vector<std::string> defines;
++        std::string              variant;
++        if (key == 0) {
++            defines.push_back("NEAREST");
++            variant = "upscale_nearest";
++        } else {
++            defines.push_back("BILINEAR");
++            variant = "upscale_bilinear";
++        }
++        defines.push_back(std::string("WG_SIZE=") + std::to_string(context.max_wg_size));
++        auto processed           = preprocessor.preprocess(wgsl_upscale, defines);
++        auto decisions           = std::make_shared<ggml_webgpu_generic_shader_decisions>();
++        decisions->wg_size       = context.max_wg_size;
++        webgpu_pipeline pipeline = ggml_webgpu_create_pipeline(device, processed, variant);
++        pipeline.context         = decisions;
++        upscale_pipelines[key]   = pipeline;
++        return upscale_pipelines[key];
++    }
++
++    webgpu_pipeline get_im2col_pipeline(const ggml_webgpu_shader_lib_context & context) {
++        const int key = context.dst->type == GGML_TYPE_F16 ? 1 : 0;
++        auto      it  = im2col_pipelines.find(key);
++        if (it != im2col_pipelines.end()) {
++            return it->second;
++        }
++        std::vector<std::string> defines;
++        std::string              variant = "im2col_f32";
++        if (key == 1) {
++            defines.push_back("DST_F16");
++            variant = "im2col_f16";
++        }
++        defines.push_back(std::string("WG_SIZE=") + std::to_string(context.max_wg_size));
++        auto processed           = preprocessor.preprocess(wgsl_im2col, defines);
++        auto decisions           = std::make_shared<ggml_webgpu_generic_shader_decisions>();
++        decisions->wg_size       = context.max_wg_size;
++        webgpu_pipeline pipeline = ggml_webgpu_create_pipeline(device, processed, variant);
++        pipeline.context         = decisions;
++        im2col_pipelines[key]    = pipeline;
++        return im2col_pipelines[key];
++    }
++
++    webgpu_pipeline get_pool2d_pipeline(const ggml_webgpu_shader_lib_context & context) {
++        const int key = ggml_get_op_params_i32(context.dst, 0);  // GGML_OP_POOL_MAX=0 / AVG=1
++        auto      it  = pool2d_pipelines.find(key);
++        if (it != pool2d_pipelines.end()) {
++            return it->second;
++        }
++        std::vector<std::string> defines;
++        std::string              variant;
++        if (key == GGML_OP_POOL_MAX) {
++            defines.push_back("POOL_MAX");
++            variant = "pool2d_max";
++        } else {
++            defines.push_back("POOL_AVG");
++            variant = "pool2d_avg";
++        }
++        defines.push_back(std::string("WG_SIZE=") + std::to_string(context.max_wg_size));
++        auto processed           = preprocessor.preprocess(wgsl_pool2d, defines);
++        auto decisions           = std::make_shared<ggml_webgpu_generic_shader_decisions>();
++        decisions->wg_size       = context.max_wg_size;
++        webgpu_pipeline pipeline = ggml_webgpu_create_pipeline(device, processed, variant);
++        pipeline.context         = decisions;
++        pool2d_pipelines[key]    = pipeline;
++        return pool2d_pipelines[key];
++    }
++
++    webgpu_pipeline get_conv_transpose_2d_pipeline(const ggml_webgpu_shader_lib_context & context) {
++        auto it = conv_transpose_2d_pipelines.find(0);
++        if (it != conv_transpose_2d_pipelines.end()) {
++            return it->second;
++        }
++        std::vector<std::string> defines;
++        defines.push_back(std::string("WG_SIZE=") + std::to_string(context.max_wg_size));
++        auto processed                 = preprocessor.preprocess(wgsl_conv_transpose_2d, defines);
++        auto decisions                 = std::make_shared<ggml_webgpu_generic_shader_decisions>();
++        decisions->wg_size             = context.max_wg_size;
++        webgpu_pipeline pipeline       = ggml_webgpu_create_pipeline(device, processed, "conv_transpose_2d");
++        pipeline.context               = decisions;
++        conv_transpose_2d_pipelines[0] = pipeline;
++        return conv_transpose_2d_pipelines[0];
++    }
++
+     webgpu_pipeline get_mul_mat_vec_pipeline(const ggml_webgpu_shader_lib_context & context) {
+         ggml_webgpu_mul_mat_vec_pipeline_key key = {};
+         key.src0_type                            = context.src0->type;
+diff --git a/src/ggml-webgpu/ggml-webgpu.cpp b/src/ggml-webgpu/ggml-webgpu.cpp
+index aa20a74..876d746 100644
+--- a/src/ggml-webgpu/ggml-webgpu.cpp
++++ b/src/ggml-webgpu/ggml-webgpu.cpp
+@@ -822,6 +822,224 @@ static webgpu_encoded_op ggml_webgpu_set(webgpu_context & ctx,
+     return ggml_backend_webgpu_build(ctx, pipeline, params, entries, wg_x);
+ }
+ 
++static void ggml_webgpu_wg2d(webgpu_context & ctx, uint32_t total_wg, uint32_t & wg_x, uint32_t & wg_y) {
++    // Split a 1D dispatch across two dimensions to respect the per-dimension
++    // workgroup limit (large convolution lowering easily exceeds it).
++    const uint32_t max_dim = (uint32_t) ctx->global_ctx->capabilities.limits.maxComputeWorkgroupsPerDimension;
++    wg_x                   = std::min(total_wg, max_dim);
++    wg_y                   = (total_wg + wg_x - 1) / wg_x;
++}
++
++static webgpu_encoded_op ggml_webgpu_arange(webgpu_context & ctx, ggml_tensor * dst) {
++    ggml_webgpu_shader_lib_context shader_lib_ctx = {};
++    shader_lib_ctx.dst                            = dst;
++    shader_lib_ctx.max_wg_size = ctx->global_ctx->capabilities.limits.maxComputeInvocationsPerWorkgroup;
++
++    webgpu_pipeline pipeline  = ctx->shader_lib->get_arange_pipeline(shader_lib_ctx);
++    auto *          decisions = static_cast<ggml_webgpu_generic_shader_decisions *>(pipeline.context.get());
++
++    const uint32_t ne = (uint32_t) ggml_nelements(dst);
++
++    std::vector<uint32_t> params = {
++        ne,
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, dst) / ggml_type_size(dst->type)),
++        ggml_webgpu_u32_from_f32(ggml_get_op_params_f32(dst, 0)),  // start
++        ggml_webgpu_u32_from_f32(ggml_get_op_params_f32(dst, 2)),  // step
++    };
++
++    std::vector<wgpu::BindGroupEntry> entries = {
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 0, dst),
++    };
++    return ggml_backend_webgpu_build(ctx, pipeline, params, entries, CEIL_DIV(ne, decisions->wg_size));
++}
++
++static webgpu_encoded_op ggml_webgpu_upscale(webgpu_context & ctx, ggml_tensor * src, ggml_tensor * dst) {
++    ggml_webgpu_shader_lib_context shader_lib_ctx = {};
++    shader_lib_ctx.src0                           = src;
++    shader_lib_ctx.dst                            = dst;
++    shader_lib_ctx.max_wg_size = ctx->global_ctx->capabilities.limits.maxComputeInvocationsPerWorkgroup;
++
++    webgpu_pipeline pipeline  = ctx->shader_lib->get_upscale_pipeline(shader_lib_ctx);
++    auto *          decisions = static_cast<ggml_webgpu_generic_shader_decisions *>(pipeline.context.get());
++
++    const uint32_t ne = (uint32_t) ggml_nelements(dst);
++    uint32_t       wg_x, wg_y;
++    ggml_webgpu_wg2d(ctx, CEIL_DIV(ne, decisions->wg_size), wg_x, wg_y);
++
++    // Scale factors + pixel offset mirror the CPU reference, incl. the
++    // align-corners adjustment.
++    const int32_t mode_flags   = ggml_get_op_params_i32(dst, 0);
++    float         sf0          = (float) dst->ne[0] / src->ne[0];
++    float         sf1          = (float) dst->ne[1] / src->ne[1];
++    const float   sf2          = (float) dst->ne[2] / src->ne[2];
++    const float   sf3          = (float) dst->ne[3] / src->ne[3];
++    float         pixel_offset = 0.5f;
++    if (mode_flags & GGML_SCALE_FLAG_ALIGN_CORNERS) {
++        pixel_offset = 0.0f;
++        sf0          = dst->ne[0] > 1 && src->ne[0] > 1 ? (float) (dst->ne[0] - 1) / (src->ne[0] - 1) : sf0;
++        sf1          = dst->ne[1] > 1 && src->ne[1] > 1 ? (float) (dst->ne[1] - 1) / (src->ne[1] - 1) : sf1;
++    }
++
++    std::vector<uint32_t> params = {
++        ne,
++        wg_x,
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, src) / ggml_type_size(src->type)),
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, dst) / ggml_type_size(dst->type)),
++        (uint32_t) (src->nb[0] / ggml_type_size(src->type)),
++        (uint32_t) (src->nb[1] / ggml_type_size(src->type)),
++        (uint32_t) (src->nb[2] / ggml_type_size(src->type)),
++        (uint32_t) (src->nb[3] / ggml_type_size(src->type)),
++        (uint32_t) src->ne[0],
++        (uint32_t) src->ne[1],
++        (uint32_t) dst->ne[0],
++        (uint32_t) dst->ne[1],
++        (uint32_t) dst->ne[2],
++        ggml_webgpu_u32_from_f32(sf0),
++        ggml_webgpu_u32_from_f32(sf1),
++        ggml_webgpu_u32_from_f32(sf2),
++        ggml_webgpu_u32_from_f32(sf3),
++        ggml_webgpu_u32_from_f32(pixel_offset),
++    };
++
++    std::vector<wgpu::BindGroupEntry> entries = {
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 0, src),
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 1, dst),
++    };
++    return ggml_backend_webgpu_build(ctx, pipeline, params, entries, wg_x, wg_y);
++}
++
++static webgpu_encoded_op ggml_webgpu_im2col(webgpu_context & ctx, ggml_tensor * src1, ggml_tensor * dst) {
++    ggml_webgpu_shader_lib_context shader_lib_ctx = {};
++    shader_lib_ctx.src0                           = src1;
++    shader_lib_ctx.dst                            = dst;
++    shader_lib_ctx.max_wg_size = ctx->global_ctx->capabilities.limits.maxComputeInvocationsPerWorkgroup;
++
++    webgpu_pipeline pipeline  = ctx->shader_lib->get_im2col_pipeline(shader_lib_ctx);
++    auto *          decisions = static_cast<ggml_webgpu_generic_shader_decisions *>(pipeline.context.get());
++
++    const uint32_t ne = (uint32_t) ggml_nelements(dst);
++    uint32_t       wg_x, wg_y;
++    ggml_webgpu_wg2d(ctx, CEIL_DIV(ne, decisions->wg_size), wg_x, wg_y);
++
++    std::vector<uint32_t> params = {
++        ne,
++        wg_x,
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, src1) / ggml_type_size(src1->type)),
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, dst) / ggml_type_size(dst->type)),
++        (uint32_t) (src1->nb[1] / ggml_type_size(src1->type)),
++        (uint32_t) (src1->nb[2] / ggml_type_size(src1->type)),
++        (uint32_t) (src1->nb[3] / ggml_type_size(src1->type)),
++        (uint32_t) src1->ne[0],  // IW
++        (uint32_t) src1->ne[1],  // IH
++        (uint32_t) dst->ne[1],   // OW
++        (uint32_t) dst->ne[2],   // OH
++        (uint32_t) dst->src[0]->ne[0],  // KW
++        (uint32_t) dst->src[0]->ne[1],  // KH
++        (uint32_t) dst->ne[0],   // CHW = IC*KH*KW
++        (uint32_t) ggml_get_op_params_i32(dst, 0),  // s0
++        (uint32_t) ggml_get_op_params_i32(dst, 1),  // s1
++        (uint32_t) ggml_get_op_params_i32(dst, 2),  // p0
++        (uint32_t) ggml_get_op_params_i32(dst, 3),  // p1
++        (uint32_t) ggml_get_op_params_i32(dst, 4),  // d0
++        (uint32_t) ggml_get_op_params_i32(dst, 5),  // d1
++    };
++
++    std::vector<wgpu::BindGroupEntry> entries = {
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 0, src1),
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 1, dst),
++    };
++    return ggml_backend_webgpu_build(ctx, pipeline, params, entries, wg_x, wg_y);
++}
++
++static webgpu_encoded_op ggml_webgpu_pool2d(webgpu_context & ctx, ggml_tensor * src, ggml_tensor * dst) {
++    ggml_webgpu_shader_lib_context shader_lib_ctx = {};
++    shader_lib_ctx.src0                           = src;
++    shader_lib_ctx.dst                            = dst;
++    shader_lib_ctx.max_wg_size = ctx->global_ctx->capabilities.limits.maxComputeInvocationsPerWorkgroup;
++
++    webgpu_pipeline pipeline  = ctx->shader_lib->get_pool2d_pipeline(shader_lib_ctx);
++    auto *          decisions = static_cast<ggml_webgpu_generic_shader_decisions *>(pipeline.context.get());
++
++    const uint32_t ne = (uint32_t) ggml_nelements(dst);
++    uint32_t       wg_x, wg_y;
++    ggml_webgpu_wg2d(ctx, CEIL_DIV(ne, decisions->wg_size), wg_x, wg_y);
++
++    std::vector<uint32_t> params = {
++        ne,
++        wg_x,
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, src) / ggml_type_size(src->type)),
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, dst) / ggml_type_size(dst->type)),
++        (uint32_t) (src->nb[1] / ggml_type_size(src->type)),
++        (uint32_t) (src->nb[2] / ggml_type_size(src->type)),
++        (uint32_t) (src->nb[3] / ggml_type_size(src->type)),
++        (uint32_t) src->ne[0],  // IW
++        (uint32_t) src->ne[1],  // IH
++        (uint32_t) dst->ne[0],  // OW
++        (uint32_t) dst->ne[1],  // OH
++        (uint32_t) src->ne[2],  // C
++        (uint32_t) ggml_get_op_params_i32(dst, 1),  // k0
++        (uint32_t) ggml_get_op_params_i32(dst, 2),  // k1
++        (uint32_t) ggml_get_op_params_i32(dst, 3),  // s0
++        (uint32_t) ggml_get_op_params_i32(dst, 4),  // s1
++        (uint32_t) ggml_get_op_params_i32(dst, 5),  // p0
++        (uint32_t) ggml_get_op_params_i32(dst, 6),  // p1
++    };
++
++    std::vector<wgpu::BindGroupEntry> entries = {
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 0, src),
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 1, dst),
++    };
++    return ggml_backend_webgpu_build(ctx, pipeline, params, entries, wg_x, wg_y);
++}
++
++static webgpu_encoded_op ggml_webgpu_conv_transpose_2d(webgpu_context & ctx,
++                                                       ggml_tensor *    src0,
++                                                       ggml_tensor *    src1,
++                                                       ggml_tensor *    dst) {
++    ggml_webgpu_shader_lib_context shader_lib_ctx = {};
++    shader_lib_ctx.src0                           = src0;
++    shader_lib_ctx.src1                           = src1;
++    shader_lib_ctx.dst                            = dst;
++    shader_lib_ctx.max_wg_size = ctx->global_ctx->capabilities.limits.maxComputeInvocationsPerWorkgroup;
++
++    webgpu_pipeline pipeline  = ctx->shader_lib->get_conv_transpose_2d_pipeline(shader_lib_ctx);
++    auto *          decisions = static_cast<ggml_webgpu_generic_shader_decisions *>(pipeline.context.get());
++
++    const uint32_t ne = (uint32_t) ggml_nelements(dst);
++    uint32_t       wg_x, wg_y;
++    ggml_webgpu_wg2d(ctx, CEIL_DIV(ne, decisions->wg_size), wg_x, wg_y);
++
++    std::vector<uint32_t> params = {
++        ne,
++        wg_x,
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, src0) / ggml_type_size(src0->type)),
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, src1) / ggml_type_size(src1->type)),
++        (uint32_t) (ggml_webgpu_tensor_misalignment(ctx, dst) / ggml_type_size(dst->type)),
++        (uint32_t) (src0->nb[1] / ggml_type_size(src0->type)),
++        (uint32_t) (src0->nb[2] / ggml_type_size(src0->type)),
++        (uint32_t) (src0->nb[3] / ggml_type_size(src0->type)),
++        (uint32_t) (src1->nb[1] / ggml_type_size(src1->type)),
++        (uint32_t) (src1->nb[2] / ggml_type_size(src1->type)),
++        (uint32_t) (src1->nb[3] / ggml_type_size(src1->type)),
++        (uint32_t) src1->ne[0],  // IW
++        (uint32_t) src1->ne[1],  // IH
++        (uint32_t) src1->ne[2],  // IC
++        (uint32_t) dst->ne[0],   // OW
++        (uint32_t) dst->ne[1],   // OH
++        (uint32_t) dst->ne[2],   // OC
++        (uint32_t) src0->ne[0],  // KW
++        (uint32_t) src0->ne[1],  // KH
++        (uint32_t) ggml_get_op_params_i32(dst, 0),  // stride
++    };
++
++    std::vector<wgpu::BindGroupEntry> entries = {
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 0, src0),
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 1, src1),
++        ggml_webgpu_make_tensor_bind_group_entry(ctx, 2, dst),
++    };
++    return ggml_backend_webgpu_build(ctx, pipeline, params, entries, wg_x, wg_y);
++}
++
+ static webgpu_encoded_op ggml_webgpu_pad(webgpu_context & ctx, ggml_tensor * src, ggml_tensor * dst) {
+     ggml_webgpu_shader_lib_context shader_lib_ctx = {};
+     shader_lib_ctx.src0                           = src;
+@@ -2427,6 +2645,10 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
+ #ifndef __EMSCRIPTEN__
+             return ggml_webgpu_flash_attn(ctx, src0, src1, src2, node->src[3], node->src[4], node);
+ #else
++            // Same silent-skip hazard as the default case: warn, because on a
++            // sched-less compute path a dropped attention = garbage output.
++            fprintf(stderr, "ggml_webgpu: SKIPPING unsupported op FLASH_ATTN_EXT (%s) — no Emscripten kernels\n",
++                    node->name);
+             return std::nullopt;
+ #endif
+         case GGML_OP_ADD:
+@@ -2440,7 +2662,18 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
+             return ggml_webgpu_repeat(ctx, src0, node);
+         case GGML_OP_RMS_NORM:
+         case GGML_OP_L2_NORM:
++        case GGML_OP_NORM:
+             return ggml_webgpu_row_norm(ctx, src0, node);
++        case GGML_OP_ARANGE:
++            return ggml_webgpu_arange(ctx, node);
++        case GGML_OP_UPSCALE:
++            return ggml_webgpu_upscale(ctx, src0, node);
++        case GGML_OP_IM2COL:
++            return ggml_webgpu_im2col(ctx, src1, node);
++        case GGML_OP_POOL_2D:
++            return ggml_webgpu_pool2d(ctx, src0, node);
++        case GGML_OP_CONV_TRANSPOSE_2D:
++            return ggml_webgpu_conv_transpose_2d(ctx, src0, src1, node);
+         case GGML_OP_ROPE:
+             return ggml_webgpu_rope(ctx, src0, src1, src2, node);
+         case GGML_OP_GLU:
+@@ -2480,6 +2713,10 @@ static std::optional<webgpu_encoded_op> ggml_webgpu_encode_node(webgpu_context c
+         case GGML_OP_SUM_ROWS:
+             return ggml_webgpu_sum_rows(ctx, src0, node);
+         default:
++            // Unhandled ops are silently treated as no-ops upstream — that
++            // produces garbage on the raw (sched-less) compute path. Warn.
++            fprintf(stderr, "ggml_webgpu: SKIPPING unsupported op %s (%s)\n", ggml_op_name(node->op),
++                    node->name);
+             return std::nullopt;
+     }
+ }
+@@ -3426,8 +3663,35 @@ static bool ggml_backend_webgpu_device_supports_op(ggml_backend_dev_t dev, const
+             }
+         case GGML_OP_RMS_NORM:
+         case GGML_OP_L2_NORM:
++        case GGML_OP_NORM:
+             supports_op = op->type == GGML_TYPE_F32 && src0->type == GGML_TYPE_F32;
+             break;
++        case GGML_OP_ARANGE:
++            supports_op = op->type == GGML_TYPE_F32;
++            break;
++        case GGML_OP_UPSCALE:
++            {
++                const int32_t mode = ggml_get_op_params_i32(op, 0) & 0xFF;
++                supports_op        = src0->type == GGML_TYPE_F32 && op->type == GGML_TYPE_F32 &&
++                              (mode == GGML_SCALE_MODE_NEAREST || mode == GGML_SCALE_MODE_BILINEAR) &&
++                              (ggml_get_op_params_i32(op, 0) & GGML_SCALE_FLAG_ANTIALIAS) == 0;
++            }
++            break;
++        case GGML_OP_IM2COL:
++            // 2D only; input F32, columns F16 or F32 (contiguous dst by construction).
++            supports_op = src1->type == GGML_TYPE_F32 &&
++                          (op->type == GGML_TYPE_F16 || op->type == GGML_TYPE_F32) &&
++                          ggml_get_op_params_i32(op, 6) == 1;
++            break;
++        case GGML_OP_POOL_2D:
++            supports_op = src0->type == GGML_TYPE_F32 && op->type == GGML_TYPE_F32 &&
++                          (ggml_get_op_params_i32(op, 0) == GGML_OP_POOL_MAX ||
++                           ggml_get_op_params_i32(op, 0) == GGML_OP_POOL_AVG);
++            break;
++        case GGML_OP_CONV_TRANSPOSE_2D:
++            supports_op = src0->type == GGML_TYPE_F16 && src1->type == GGML_TYPE_F32 &&
++                          op->type == GGML_TYPE_F32;
++            break;
+         case GGML_OP_ROPE:
+             supports_op = op->type == GGML_TYPE_F32 || op->type == GGML_TYPE_F16;
+             break;
+diff --git a/src/ggml-webgpu/wgsl-shaders/arange.wgsl b/src/ggml-webgpu/wgsl-shaders/arange.wgsl
+new file mode 100644
+index 0000000..5b3a430
+--- /dev/null
++++ b/src/ggml-webgpu/wgsl-shaders/arange.wgsl
+@@ -0,0 +1,22 @@
++// arange: dst[i] = start + i*step (f32, contiguous)
++
++@group(0) @binding(0)
++var<storage, read_write> dst: array<f32>;
++
++struct Params {
++    ne: u32,
++    offset_dst: u32,   // in elements
++    start: f32,
++    step: f32,
++};
++
++@group(0) @binding(1)
++var<uniform> params: Params;
++
++@compute @workgroup_size(WG_SIZE)
++fn main(@builtin(global_invocation_id) gid: vec3<u32>) {
++    if (gid.x >= params.ne) {
++        return;
++    }
++    dst[params.offset_dst + gid.x] = params.start + f32(gid.x) * params.step;
++}
+diff --git a/src/ggml-webgpu/wgsl-shaders/conv_transpose_2d.wgsl b/src/ggml-webgpu/wgsl-shaders/conv_transpose_2d.wgsl
+new file mode 100644
+index 0000000..be19508
+--- /dev/null
++++ b/src/ggml-webgpu/wgsl-shaders/conv_transpose_2d.wgsl
+@@ -0,0 +1,102 @@
++enable f16;
++
++// conv_transpose_2d (p0): kernel src0 [KW, KH, OC, IC] (f16), input src1
++// [IW, IH, IC, N] (f32) -> dst [OW, OH, OC, N] (f32, contiguous), where
++// OW = (IW-1)*stride + KW, OH = (IH-1)*stride + KH. Gather formulation:
++// one thread per dst element, accumulating the taps (ix, iy) with
++// ox = ix*stride + kx, oy = iy*stride + ky. 2D dispatch.
++
++@group(0) @binding(0)
++var<storage, read_write> kern: array<f16>;
++
++@group(0) @binding(1)
++var<storage, read_write> src: array<f32>;
++
++@group(0) @binding(2)
++var<storage, read_write> dst: array<f32>;
++
++struct Params {
++    ne: u32,
++    nwg_x: u32,
++    offset_kern: u32,  // in elements
++    offset_src: u32,   // in elements
++    offset_dst: u32,   // in elements
++
++    // kernel strides (in elements): [KW, KH, OC, IC]
++    stride_k1: u32,
++    stride_k2: u32,
++    stride_k3: u32,
++
++    // input strides (in elements): [IW, IH, IC, N]
++    stride_src1: u32,
++    stride_src2: u32,
++    stride_src3: u32,
++
++    IW: u32,
++    IH: u32,
++    IC: u32,
++    OW: u32,
++    OH: u32,
++    OC: u32,
++    KW: u32,
++    KH: u32,
++    stride: u32,
++};
++
++@group(0) @binding(3)
++var<uniform> params: Params;
++
++@compute @workgroup_size(WG_SIZE)
++fn main(@builtin(workgroup_id) wid: vec3<u32>,
++        @builtin(local_invocation_id) lid: vec3<u32>) {
++    let idx = (wid.y * params.nwg_x + wid.x) * WG_SIZE + lid.x;
++    if (idx >= params.ne) {
++        return;
++    }
++
++    var i = idx;
++    let plane = params.OH * params.OW;
++    let i23 = i / plane;
++    i = i % plane;
++    let oy = i / params.OW;
++    let ox = i % params.OW;
++    let oc = i23 % params.OC;
++    let n = i23 / params.OC;
++
++    var acc: f32 = 0.0;
++    for (var ky: u32 = 0; ky < params.KH; ky++) {
++        if (oy + 1 < ky + 1) {  // oy < ky, unsigned-safe
++            continue;
++        }
++        let dy = oy - ky;
++        if (dy % params.stride != 0) {
++            continue;
++        }
++        let iy = dy / params.stride;
++        if (iy >= params.IH) {
++            continue;
++        }
++        for (var kx: u32 = 0; kx < params.KW; kx++) {
++            if (ox + 1 < kx + 1) {
++                continue;
++            }
++            let dx = ox - kx;
++            if (dx % params.stride != 0) {
++                continue;
++            }
++            let ix = dx / params.stride;
++            if (ix >= params.IW) {
++                continue;
++            }
++            let src_row = params.offset_src + n * params.stride_src3 + iy * params.stride_src1 + ix;
++            let k_row = params.offset_kern + oc * params.stride_k2 + ky * params.stride_k1 + kx;
++            for (var ic: u32 = 0; ic < params.IC; ic++) {
++                let v = src[src_row + ic * params.stride_src2];
++                let w = f32(kern[k_row + ic * params.stride_k3]);
++                acc += v * w;
++            }
++        }
++    }
++
++    dst[params.offset_dst + idx] = acc;
++}
+diff --git a/src/ggml-webgpu/wgsl-shaders/im2col.wgsl b/src/ggml-webgpu/wgsl-shaders/im2col.wgsl
+new file mode 100644
+index 0000000..5212c9e
+--- /dev/null
++++ b/src/ggml-webgpu/wgsl-shaders/im2col.wgsl
+@@ -0,0 +1,84 @@
++enable f16;
++
++// im2col (2D): src = input image [IW, IH, IC, N] (f32), dst = columns
++// [IC*KH*KW, OW, OH, N] (f16 or f32, contiguous). One thread per dst
++// element; 2D dispatch to stay under the per-dimension workgroup limit.
++
++@group(0) @binding(0)
++var<storage, read_write> src: array<f32>;
++
++#ifdef DST_F16
++@group(0) @binding(1)
++var<storage, read_write> dst: array<f16>;
++#else
++@group(0) @binding(1)
++var<storage, read_write> dst: array<f32>;
++#endif
++
++struct Params {
++    ne: u32,           // total dst elements
++    nwg_x: u32,        // workgroups dispatched along x (for linearization)
++    offset_src: u32,   // in elements
++    offset_dst: u32,   // in elements
++
++    // src strides (in elements)
++    stride_src1: u32,
++    stride_src2: u32,
++    stride_src3: u32,
++
++    IW: u32,
++    IH: u32,
++    OW: u32,
++    OH: u32,
++    KW: u32,
++    KH: u32,
++    CHW: u32,          // IC*KH*KW == dst ne0
++
++    s0: u32,
++    s1: u32,
++    p0: u32,
++    p1: u32,
++    d0: u32,
++    d1: u32,
++};
++
++@group(0) @binding(2)
++var<uniform> params: Params;
++
++@compute @workgroup_size(WG_SIZE)
++fn main(@builtin(workgroup_id) wid: vec3<u32>,
++        @builtin(local_invocation_id) lid: vec3<u32>) {
++    let idx = (wid.y * params.nwg_x + wid.x) * WG_SIZE + lid.x;
++    if (idx >= params.ne) {
++        return;
++    }
++
++    var i = idx;
++    let i3 = i / (params.OH * params.OW * params.CHW);
++    i = i % (params.OH * params.OW * params.CHW);
++    let oh = i / (params.OW * params.CHW);
++    i = i % (params.OW * params.CHW);
++    let ow = i / params.CHW;
++    let i0 = i % params.CHW;
++
++    let khkw = params.KH * params.KW;
++    let ic = i0 / khkw;
++    let rem = i0 % khkw;
++    let ky = rem / params.KW;
++    let kx = rem % params.KW;
++
++    let iw = i32(ow * params.s0 + kx * params.d0) - i32(params.p0);
++    let ih = i32(oh * params.s1 + ky * params.d1) - i32(params.p1);
++
++    var v: f32 = 0.0;
++    if (iw >= 0 && ih >= 0 && u32(iw) < params.IW && u32(ih) < params.IH) {
++        v = src[params.offset_src + i3 * params.stride_src3 + ic * params.stride_src2 +
++                u32(ih) * params.stride_src1 + u32(iw)];
++    }
++
++#ifdef DST_F16
++    dst[params.offset_dst + idx] = f16(v);
++#else
++    dst[params.offset_dst + idx] = v;
++#endif
++}
+diff --git a/src/ggml-webgpu/wgsl-shaders/pool2d.wgsl b/src/ggml-webgpu/wgsl-shaders/pool2d.wgsl
+new file mode 100644
+index 0000000..f93aef2
+--- /dev/null
++++ b/src/ggml-webgpu/wgsl-shaders/pool2d.wgsl
+@@ -0,0 +1,93 @@
++// pool_2d: src [IW, IH, C, N] f32 -> dst [OW, OH, C, N] f32 (contiguous).
++// Variants: POOL_MAX / POOL_AVG (matches the CPU reference: out-of-bounds
++// taps are skipped for max and contribute zero for avg, which divides by
++// the full kernel area). One thread per dst element; 2D dispatch.
++
++@group(0) @binding(0)
++var<storage, read_write> src: array<f32>;
++
++@group(0) @binding(1)
++var<storage, read_write> dst: array<f32>;
++
++struct Params {
++    ne: u32,
++    nwg_x: u32,
++    offset_src: u32,
++    offset_dst: u32,
++
++    // src strides (in elements)
++    stride_src1: u32,
++    stride_src2: u32,
++    stride_src3: u32,
++
++    IW: u32,
++    IH: u32,
++    OW: u32,
++    OH: u32,
++
++    C: u32,            // src ne2 (channels)
++    k0: u32,
++    k1: u32,
++    s0: u32,
++    s1: u32,
++    p0: u32,
++    p1: u32,
++};
++
++@group(0) @binding(2)
++var<uniform> params: Params;
++
++@compute @workgroup_size(WG_SIZE)
++fn main(@builtin(workgroup_id) wid: vec3<u32>,
++        @builtin(local_invocation_id) lid: vec3<u32>) {
++    let idx = (wid.y * params.nwg_x + wid.x) * WG_SIZE + lid.x;
++    if (idx >= params.ne) {
++        return;
++    }
++
++    var i = idx;
++    let plane = params.OH * params.OW;
++    let i23 = i / plane;      // fused channel/batch index (contiguous dst)
++    i = i % plane;
++    let oy = i / params.OW;
++    let ox = i % params.OW;
++
++    // src channel/batch offset: dst is contiguous, so i23 splits into
++    // (i2, i3) against the src strides.
++    let i3 = i23 / params.C;
++    let i2 = i23 % params.C;
++    let src_base = params.offset_src + i3 * params.stride_src3 + i2 * params.stride_src2;
++
++#ifdef POOL_MAX
++    // -FLT_MAX (the decimal literal rounds outside f32 range and WGSL
++    // rejects it, so bitcast the exact pattern; matches the CPU init).
++    var acc: f32 = bitcast<f32>(0xff7fffffu);
++#else
++    var acc: f32 = 0.0;
++#endif
++
++    for (var ky: u32 = 0; ky < params.k1; ky++) {
++        let iy = i32(oy * params.s1 + ky) - i32(params.p1);
++        if (iy < 0 || u32(iy) >= params.IH) {
++            continue;
++        }
++        for (var kx: u32 = 0; kx < params.k0; kx++) {
++            let ix = i32(ox * params.s0 + kx) - i32(params.p0);
++            if (ix < 0 || u32(ix) >= params.IW) {
++                continue;
++            }
++            let v = src[src_base + u32(iy) * params.stride_src1 + u32(ix)];
++#ifdef POOL_MAX
++            acc = max(acc, v);
++#else
++            acc += v;
++#endif
++        }
++    }
++
++#ifdef POOL_MAX
++    dst[params.offset_dst + idx] = acc;
++#else
++    dst[params.offset_dst + idx] = acc / f32(params.k0 * params.k1);
++#endif
++}
+diff --git a/src/ggml-webgpu/wgsl-shaders/row_norm.wgsl b/src/ggml-webgpu/wgsl-shaders/row_norm.wgsl
+index bd8d32b..9bf687a 100644
+--- a/src/ggml-webgpu/wgsl-shaders/row_norm.wgsl
++++ b/src/ggml-webgpu/wgsl-shaders/row_norm.wgsl
+@@ -1,13 +1,13 @@
+ #ifdef INPLACE
+-fn update(src_offset: u32, dst_offset: u32, scale: f32) {
+-    src[dst_offset] = scale * src[src_offset];
++fn update(src_offset: u32, dst_offset: u32, scale: f32, shift: f32) {
++    src[dst_offset] = scale * (src[src_offset] + shift);
+ }
+ 
+ @group(0) @binding(1)
+ var<uniform> params: Params;
+ #else
+-fn update(src_offset: u32, dst_offset: u32, scale: f32) {
+-    dst[dst_offset] = scale * src[src_offset];
++fn update(src_offset: u32, dst_offset: u32, scale: f32, shift: f32) {
++    dst[dst_offset] = scale * (src[src_offset] + shift);
+ }
+ 
+ @group(0) @binding(1)
+@@ -43,6 +43,10 @@ struct Params {
+ var<storage, read_write> src: array<f32>;
+ 
+ var<workgroup> scratch: array<f32, WG_SIZE>;
++#ifdef NORM
++// LayerNorm needs the mean as well — second accumulator for plain sums.
++var<workgroup> scratch2: array<f32, WG_SIZE>;
++#endif
+ 
+ @compute @workgroup_size(WG_SIZE)
+ fn main(@builtin(workgroup_id) wid: vec3<u32>,
+@@ -60,21 +64,34 @@ fn main(@builtin(workgroup_id) wid: vec3<u32>,
+     let elems = (params.ne0 + WG_SIZE - 1) / WG_SIZE;
+ 
+     var sum = 0.0f;
++#ifdef NORM
++    var sum_lin = 0.0f;
++#endif
+     var col = lid.x;
+     for (var j: u32 = 0; j < elems; j++) {
+         if (col >= params.ne0) {
+             break;
+         }
+-        sum += pow(src[i_src_row + col], 2.0);
++        let v = src[i_src_row + col];
++        sum += v * v;
++#ifdef NORM
++        sum_lin += v;
++#endif
+         col += WG_SIZE;
+     }
+ 
+     scratch[lid.x] = sum;
++#ifdef NORM
++    scratch2[lid.x] = sum_lin;
++#endif
+     workgroupBarrier();
+     var offset: u32 = WG_SIZE / 2;
+     while (offset > 0) {
+         if (lid.x < offset) {
+             scratch[lid.x] += scratch[lid.x + offset];
++#ifdef NORM
++            scratch2[lid.x] += scratch2[lid.x + offset];
++#endif
+         }
+         offset = offset / 2;
+         workgroupBarrier();
+@@ -83,8 +100,16 @@ fn main(@builtin(workgroup_id) wid: vec3<u32>,
+ 
+ #ifdef RMS_NORM
+     let scale = 1.0/sqrt(sum/f32(params.ne0) + params.eps);
++    let shift = 0.0f;
+ #elif defined(L2_NORM)
+     let scale = 1.0/max(sqrt(sum), params.eps);
++    let shift = 0.0f;
++#elif defined(NORM)
++    // LayerNorm: (x - mean) / sqrt(var + eps); var = E[x^2] - mean^2
++    let mean = scratch2[0] / f32(params.ne0);
++    let variance = sum / f32(params.ne0) - mean * mean;
++    let scale = 1.0/sqrt(variance + params.eps);
++    let shift = -mean;
+ #endif
+ 
+     col = lid.x;
+@@ -92,7 +117,7 @@ fn main(@builtin(workgroup_id) wid: vec3<u32>,
+         if (col >= params.ne0) {
+             break;
+         }
+-        update(i_src_row + col, i_dst_row + col, scale);
++        update(i_src_row + col, i_dst_row + col, scale, shift);
+         col += WG_SIZE;
+     }
+ }
+diff --git a/src/ggml-webgpu/wgsl-shaders/upscale.wgsl b/src/ggml-webgpu/wgsl-shaders/upscale.wgsl
+new file mode 100644
+index 0000000..765df22
+--- /dev/null
++++ b/src/ggml-webgpu/wgsl-shaders/upscale.wgsl
+@@ -0,0 +1,89 @@
++// upscale / interpolate: src [IW, IH, C, N] f32 -> dst [OW, OH, C, N] f32
++// (contiguous dst). Variants: NEAREST / BILINEAR — element-exact ports of
++// the CPU reference (pixel_offset convention, edge clamping). Scale factors
++// and pixel_offset are computed host-side (incl. align-corners). 2D dispatch.
++
++@group(0) @binding(0)
++var<storage, read_write> src: array<f32>;
++
++@group(0) @binding(1)
++var<storage, read_write> dst: array<f32>;
++
++struct Params {
++    ne: u32,
++    nwg_x: u32,
++    offset_src: u32,
++    offset_dst: u32,
++
++    // src strides (in elements)
++    stride_src0: u32,
++    stride_src1: u32,
++    stride_src2: u32,
++    stride_src3: u32,
++
++    IW: u32,
++    IH: u32,
++    OW: u32,
++    OH: u32,
++    C: u32,            // dst ne2
++
++    sf0: f32,
++    sf1: f32,
++    sf2: f32,
++    sf3: f32,
++    pixel_offset: f32,
++};
++
++@group(0) @binding(2)
++var<uniform> params: Params;
++
++@compute @workgroup_size(WG_SIZE)
++fn main(@builtin(workgroup_id) wid: vec3<u32>,
++        @builtin(local_invocation_id) lid: vec3<u32>) {
++    let idx = (wid.y * params.nwg_x + wid.x) * WG_SIZE + lid.x;
++    if (idx >= params.ne) {
++        return;
++    }
++
++    var i = idx;
++    let plane = params.OH * params.OW;
++    let i23 = i / plane;
++    i = i % plane;
++    let oy = i / params.OW;
++    let ox = i % params.OW;
++    let i3 = i23 / params.C;
++    let i2 = i23 % params.C;
++
++    let i02 = u32(f32(i2) / params.sf2);
++    let i03 = u32(f32(i3) / params.sf3);
++    let base = params.offset_src + i03 * params.stride_src3 + i02 * params.stride_src2;
++
++#ifdef NEAREST
++    let i01 = u32(f32(oy) / params.sf1);
++    let i00 = u32(f32(ox) / params.sf0);
++    dst[params.offset_dst + idx] = src[base + i01 * params.stride_src1 + i00 * params.stride_src0];
++#else
++    // BILINEAR
++    let y = (f32(oy) + params.pixel_offset) / params.sf1 - params.pixel_offset;
++    var y0 = i32(floor(y));
++    var y1 = y0 + 1;
++    y0 = clamp(y0, 0, i32(params.IH) - 1);
++    y1 = clamp(y1, 0, i32(params.IH) - 1);
++    let dy = clamp(y - f32(y0), 0.0, 1.0);
++
++    let x = (f32(ox) + params.pixel_offset) / params.sf0 - params.pixel_offset;
++    var x0 = i32(floor(x));
++    var x1 = x0 + 1;
++    x0 = clamp(x0, 0, i32(params.IW) - 1);
++    x1 = clamp(x1, 0, i32(params.IW) - 1);
++    let dx = clamp(x - f32(x0), 0.0, 1.0);
++
++    let a = src[base + u32(y0) * params.stride_src1 + u32(x0) * params.stride_src0];
++    let b = src[base + u32(y0) * params.stride_src1 + u32(x1) * params.stride_src0];
++    let c = src[base + u32(y1) * params.stride_src1 + u32(x0) * params.stride_src0];
++    let d = src[base + u32(y1) * params.stride_src1 + u32(x1) * params.stride_src0];
++
++    dst[params.offset_dst + idx] = a * (1.0 - dx) * (1.0 - dy) + b * dx * (1.0 - dy) +
++                                   c * (1.0 - dx) * dy + d * dx * dy;
++#endif
++}

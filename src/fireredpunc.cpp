@@ -10,10 +10,12 @@
 #include "fireredpunc.h"
 
 #include "core/gguf_loader.h"
+#include "imatrix.h"
 
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -379,7 +381,7 @@ static bool fireredpunc_load(fireredpunc_context & ctx, const char * path) {
     const char * punc_backend = getenv("FIREREDPUNC_BACKEND");
     const bool force_cpu = punc_backend && strcmp(punc_backend, "cpu") == 0;
     const bool force_gpu = punc_backend && strcmp(punc_backend, "gpu") == 0;
-    ctx.backend = (force_cpu && !force_gpu) ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx.backend = (force_cpu && !force_gpu) ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     // Always have a separate CPU backend on hand for ggml_backend_sched
     // to fall back to (issue #68). Even though the primary backend is
@@ -434,6 +436,10 @@ static bool fireredpunc_load(fireredpunc_context & ctx, const char * path) {
         backends[n_backends++] = ctx.backend_cpu;
     }
     ctx.sched = ggml_backend_sched_new(backends, nullptr, n_backends, 8192, false, false);
+
+    // Wire the imatrix collector (no-op unless CRISPEMBED_IMATRIX_OUT is set) so
+    // fireredpunc / fullstop-punc XLM-R can produce imatrix-calibrated quants.
+    crispembed_imatrix_install(ctx.sched);
 
     return true;
 }
@@ -597,6 +603,22 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
     // Read logits: [n_classes, N]
     std::vector<float> logits_buf(ctx.n_classes * N);
     ggml_backend_tensor_get(logits, logits_buf.data(), 0, logits_buf.size() * sizeof(float));
+
+    // Diff harness: append per-token raw class logits to $FIREREDPUNC_DUMP_LOGITS
+    // (one line per token, n_classes space-separated floats). Lets an A/B measure
+    // the pre-argmax distribution — where quantization/imatrix effects actually
+    // live — instead of the thresholded restored-string exact-match.
+    if (const char * dump_path = getenv("FIREREDPUNC_DUMP_LOGITS")) {
+        if (FILE * fp = fopen(dump_path, "a")) {
+            for (int t = 0; t < N; t++) {
+                for (int c = 0; c < ctx.n_classes; c++) {
+                    fprintf(fp, "%s%.7g", c ? " " : "", logits_buf[t * ctx.n_classes + c]);
+                }
+                fputc('\n', fp);
+            }
+            fclose(fp);
+        }
+    }
 
     // Argmax per token
     std::vector<int> preds(N);
@@ -849,6 +871,9 @@ char * fireredpunc_process(fireredpunc_context * ctx, const char * text) {
 
 void fireredpunc_free(fireredpunc_context * ctx) {
     if (!ctx) return;
+    // Flush imatrix before teardown — this context is freed directly (not via
+    // crispembed_free), and one-shot binaries exit past atexit handlers.
+    crispembed_imatrix_flush();
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     if (ctx->buf) ggml_backend_buffer_free(ctx->buf);
     if (ctx->w_ctx) ggml_free(ctx->w_ctx);

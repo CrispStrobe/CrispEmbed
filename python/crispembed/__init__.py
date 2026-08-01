@@ -1,6 +1,7 @@
 """CrispEmbed — lightweight text embedding via ggml."""
 
 from ._binding import (
+    set_gpu_backend,
     CrispEmbed, CrispVit, CrispFace, CrispFacePipeline, CrispClipText,
     CrispOcrModel, CrispMathOcr, CrispOcrPipeline, CrispOcrOrchestrator, CrispPreprocess,
     CrispLayout, CrispTextDetect, CrispNER, CrispKIE, CrispLiLT,
@@ -12,6 +13,7 @@ from ._binding import (
 )
 
 __all__ = [
+    "set_gpu_backend",
     "CrispEmbed", "CrispVit", "CrispFace", "CrispFacePipeline", "CrispClipText",
     "CrispOcrModel", "CrispMathOcr", "CrispOcrPipeline", "CrispOcrOrchestrator", "CrispPreprocess",
     "CrispLayout", "CrispTextDetect", "CrispNER", "CrispKIE", "CrispLiLT",

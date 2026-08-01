@@ -675,6 +675,18 @@ MODELS = {
         "langs": ["en"],
         "desc": "SPLADE++ EN v1. Sparse term-weight retrieval over the BERT vocabulary. Use with crispembed_encode_sparse() for SPLADE-style lexical retrieval.",
     },
+    "splade-v3": {
+        "base_model": "naver/splade-v3",
+        "arch": "BERT",
+        "dim": 30522,  # vocab-sized sparse output
+        "layers": 12,
+        "params": "110M",
+        "pooling": "sparse (SPLADE max-log)",
+        "tokenizer": "WordPiece",
+        "license": "cc-by-nc-sa-4.0",
+        "langs": ["en"],
+        "desc": "SPLADE v3 (Naver). Sparse term-weight retrieval over the BERT vocabulary; stronger than SPLADE++ v1. Use with crispembed_encode_sparse(). NON-COMMERCIAL (CC-BY-NC-SA-4.0).",
+    },
     "embeddinggemma-300m": {
         "base_model": "google/embeddinggemma-300m",
         "arch": "Gemma3",

@@ -1,0 +1,9 @@
+.dart_tool/
+build/
+coverage/
+pubspec.lock
+android/src/main/jniLibs/
+ios/Libs/*.a
+linux/lib/*.so*
+macos/Libs/*.dylib*
+windows/lib/*.dll

@@ -48,6 +48,9 @@ struct Report {
     float rms = 0.0f;
     float cos_min = 1.0f;
     float cos_mean = 1.0f;
+    float cos_global = 1.0f;
+    float mine_norm = 0.0f;
+    float ref_norm = 0.0f;
     std::vector<int64_t> shape;
 
     bool is_pass(float cos_threshold = 0.999f) const { return found && cos_min >= cos_threshold; }
@@ -351,6 +354,14 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
 
     if (cmp_n == 0) return r;
 
+    double mine_sq = 0.0, ref_sq = 0.0;
+    for (size_t i = 0; i < cmp_n; ++i) {
+        mine_sq += (double)data[i] * data[i];
+        ref_sq += (double)ref[i] * ref[i];
+    }
+    r.mine_norm = (float)std::sqrt(mine_sq);
+    r.ref_norm = (float)std::sqrt(ref_sq);
+
     // Element-wise metrics
     double sum_abs = 0, sum_sq = 0;
     float max_a = 0;
@@ -363,6 +374,8 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
     r.max_abs = max_a;
     r.mean_abs = (float)(sum_abs / cmp_n);
     r.rms = (float)std::sqrt(sum_sq / cmp_n);
+    r.mine_norm = (float)std::sqrt(mine_sq);
+    r.ref_norm = (float)std::sqrt(ref_sq);
 
     // Per-row cosine similarity
     // Determine row size from shape or row_dim
@@ -380,7 +393,7 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
         D = cmp_n;
     }
 
-    double cos_sum = 0;
+    double cos_sum = 0, global_dot = 0, global_na = 0, global_nb = 0;
     float cos_worst = 2.0f;
     for (size_t row = 0; row < n_rows; row++) {
         const float * a = data + row * D;
@@ -390,13 +403,20 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
             dot += (double)a[j] * b[j];
             na += (double)a[j] * a[j];
             nb += (double)b[j] * b[j];
+            global_dot += (double)a[j] * b[j];
+            global_na += (double)a[j] * a[j];
+            global_nb += (double)b[j] * b[j];
         }
-        float cos = (na > 1e-18 && nb > 1e-18) ? (float)(dot / (std::sqrt(na) * std::sqrt(nb))) : 0.0f;
+        float cos = na > 1e-18 && nb > 1e-18 ? (float)(dot / (std::sqrt(na) * std::sqrt(nb)))
+                                             : (na <= 1e-18 && nb <= 1e-18 ? 1.0f : 0.0f);
         cos_sum += cos;
         if (cos < cos_worst) cos_worst = cos;
     }
     r.cos_min = cos_worst;
     r.cos_mean = (float)(cos_sum / n_rows);
+    r.cos_global = global_na > 1e-18 && global_nb > 1e-18
+                       ? (float)(global_dot / (std::sqrt(global_na) * std::sqrt(global_nb)))
+                       : (global_na <= 1e-18 && global_nb <= 1e-18 ? 1.0f : 0.0f);
 
     return r;
 }

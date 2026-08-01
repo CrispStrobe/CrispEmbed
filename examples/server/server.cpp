@@ -31,6 +31,7 @@
 //   GET  /health          — server status + loaded capabilities
 
 #include "crispembed.h"
+#include "core/json.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "model_mgr.h"
@@ -51,38 +52,61 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cmath>
 #include <iomanip>
 #include <mutex>
 #include <sstream>
 #include <string>
 #include <vector>
 
-static std::string json_escape(const std::string & s) {
-    std::string out;
-    for (char c : s) {
-        if (c == '"')
-            out += "\\\"";
-        else if (c == '\\')
-            out += "\\\\";
-        else if (c == '\n')
-            out += "\\n";
-        else
-            out += c;
+using core_json::json_escape;
+using core_json::json_extract_number;
+using core_json::json_extract_strings;
+
+static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {
+    if (!path || !rgb || w <= 0 || h <= 0) return false;
+    const int out_w = (angle == 90 || angle == 270) ? h : w;
+    const int out_h = (angle == 90 || angle == 270) ? w : h;
+    std::vector<uint8_t> rotated((size_t)out_w * out_h * 3);
+    for (int y = 0; y < h; y++) {
+        for (int x = 0; x < w; x++) {
+            int ox = x, oy = y;
+            if (angle == 90) {
+                ox = h - 1 - y;
+                oy = x;
+            } else if (angle == 180) {
+                ox = w - 1 - x;
+                oy = h - 1 - y;
+            } else if (angle == 270) {
+                ox = y;
+                oy = w - 1 - x;
+            }
+            memcpy(rotated.data() + ((size_t)oy * out_w + ox) * 3, rgb + ((size_t)y * w + x) * 3, 3);
+        }
     }
-    return out;
+    FILE * f = fopen(path, "wb");
+    if (!f) return false;
+    fprintf(f, "P6\n%d %d\n255\n", out_w, out_h);
+    const size_t written = fwrite(rotated.data(), 1, rotated.size(), f);
+    fclose(f);
+    return written == rotated.size();
 }
 
 int main(int argc, char ** argv) {
     std::string model_path;
     std::string host = "127.0.0.1";
-    std::string det_model_path;        // face detection model
-    std::string rec_model_path;        // face recognition model
-    std::string vit_model_path;        // standalone ViT model (SigLIP/CLIP)
-    std::string clip_text_model_path;  // CLIP text encoder
-    std::string ocr_model_path;        // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
-    std::string ocr_det_model_path;    // general OCR: text detection model (DBNet)
-    std::string ocr_rec_model_path;    // general OCR: text recognition model (TrOCR)
-    std::string layout_model_path;     // layout detection model (RT-DETRv2)
+    std::string det_model_path;       // face detection model
+    std::string rec_model_path;       // face recognition model
+    std::string vit_model_path;       // standalone ViT model (SigLIP/CLIP)
+    std::string clip_text_model_path; // CLIP text encoder
+    std::string ocr_model_path;       // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
+    std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
+    std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
+    std::string layout_model_path;    // layout detection model (RT-DETRv2)
+    std::string table_model_path;     // table cell OCR model (Tesseract-LSTM GGUF)
+    std::string formula_model_path;   // formula OCR model (PP-FormulaNet GGUF)
+    bool route_tables = false;
+    bool route_formulas = false;
     std::string text_det_model_path;   // surya text detection model
     std::string ner_model_path;        // NER model (GLiNER)
     std::string lid_model_path;        // text LID model
@@ -115,6 +139,8 @@ int main(int argc, char ** argv) {
             port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc)
             n_threads = atoi(argv[++i]);
+        else if (strcmp(argv[i], "--gpu-backend") == 0 && i + 1 < argc)
+            crispembed_set_gpu_backend(argv[++i]);
         else if (strcmp(argv[i], "--det") == 0 && i + 1 < argc)
             det_model_path = argv[++i];
         else if (strcmp(argv[i], "--rec") == 0 && i + 1 < argc)
@@ -133,6 +159,14 @@ int main(int argc, char ** argv) {
             ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc)
             layout_model_path = argv[++i];
+        else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc)
+            table_model_path = argv[++i];
+        else if (strcmp(argv[i], "--formula") == 0 && i + 1 < argc)
+            formula_model_path = argv[++i];
+        else if (strcmp(argv[i], "--tables") == 0)
+            route_tables = true;
+        else if (strcmp(argv[i], "--formulas") == 0)
+            route_formulas = true;
         else if (strcmp(argv[i], "--text-det") == 0 && i + 1 < argc)
             text_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ner") == 0 && i + 1 < argc)
@@ -201,6 +235,10 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline)\n");
+        fprintf(stderr, "  --table MODEL     Tesseract-LSTM table-cell model (optional)\n");
+        fprintf(stderr, "  --formula MODEL   PP-FormulaNet model (optional)\n");
+        fprintf(stderr, "  --tables          route layout tables to --table\n");
+        fprintf(stderr, "  --formulas        route layout formulas to --formula\n");
         fprintf(stderr, "  --vlm-model MODEL VLM escalation fallback GGUF (optional)\n");
         fprintf(stderr, "  --vlm-engine N    VLM backend: 0=GOT 1=GLM 2=Qwen2-VL 3=InternVL2\n");
         fprintf(stderr, "  --punct-model M   post-OCR punctuation/spacing GGUF (optional)\n");
@@ -283,32 +321,9 @@ int main(int argc, char ** argv) {
         std::vector<std::string> texts;
         auto body = req.body;
 
-        // Quick parse: find "texts" array or "text" string
-        auto pos = body.find("\"texts\"");
-        if (pos != std::string::npos) {
-            auto arr_start = body.find('[', pos);
-            auto arr_end = body.find(']', arr_start);
-            if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                size_t i = 0;
-                while (i < arr.size()) {
-                    auto q1 = arr.find('"', i);
-                    if (q1 == std::string::npos) break;
-                    auto q2 = arr.find('"', q1 + 1);
-                    if (q2 == std::string::npos) break;
-                    texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                    i = q2 + 1;
-                }
-            }
-        } else {
-            pos = body.find("\"text\"");
-            if (pos != std::string::npos) {
-                auto q1 = body.find('"', pos + 6);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos) {
-                    texts.push_back(body.substr(q1 + 1, q2 - q1 - 1));
-                }
-            }
+        // "texts" array, else "text" string (JSON-escaping aware)
+        if (json_extract_strings(body, "texts", texts) == 0) {
+            json_extract_strings(body, "text", texts);
         }
 
         if (texts.empty()) {
@@ -378,28 +393,7 @@ int main(int argc, char ** argv) {
         }
         std::vector<std::string> texts;
         auto body = req.body;
-        auto pos = body.find("\"input\"");
-        if (pos != std::string::npos) {
-            auto arr_start = body.find('[', pos);
-            if (arr_start != std::string::npos) {
-                auto arr_end = body.find(']', arr_start);
-                std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                size_t i = 0;
-                while (i < arr.size()) {
-                    auto q1 = arr.find('"', i);
-                    if (q1 == std::string::npos) break;
-                    auto q2 = arr.find('"', q1 + 1);
-                    if (q2 == std::string::npos) break;
-                    texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                    i = q2 + 1;
-                }
-            } else {
-                auto q1 = body.find('"', pos + 7);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos)
-                    texts.push_back(body.substr(q1 + 1, q2 - q1 - 1));
-            }
-        }
+        json_extract_strings(body, "input", texts);
 
         if (texts.empty()) {
             res.status = 400;
@@ -448,32 +442,8 @@ int main(int argc, char ** argv) {
         std::vector<std::string> texts;
         auto body = req.body;
 
-        // Parse "input" — can be array or string
-        auto pos = body.find("\"input\"");
-        if (pos != std::string::npos) {
-            auto arr_start = body.find('[', pos);
-            auto str_start = body.find('"', pos + 7);
-            if (arr_start != std::string::npos && (str_start == std::string::npos || arr_start < str_start)) {
-                // Array of strings
-                auto arr_end = body.find(']', arr_start);
-                if (arr_end != std::string::npos) {
-                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            } else if (str_start != std::string::npos) {
-                // Single string
-                auto q2 = body.find('"', str_start + 1);
-                if (q2 != std::string::npos) texts.push_back(body.substr(str_start + 1, q2 - str_start - 1));
-            }
-        }
+        // Parse "input" — can be array or string (JSON-escaping aware)
+        json_extract_strings(body, "input", texts);
 
         if (texts.empty()) {
             res.status = 400;
@@ -527,12 +497,9 @@ int main(int argc, char ** argv) {
         std::string text;
         auto body = req.body;
 
-        auto pos = body.find("\"prompt\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 8);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) text = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        std::vector<std::string> prompt;
+        json_extract_strings(body, "prompt", prompt);
+        if (!prompt.empty()) text = prompt.front();
 
         if (text.empty()) {
             res.status = 400;
@@ -596,16 +563,8 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto cpos = body.find("\"conf\"");
-        if (cpos != std::string::npos) {
-            auto start = body.find_first_of("0123456789.", cpos + 6);
-            if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
-        }
-        auto dspos = body.find("\"det_size\"");
-        if (dspos != std::string::npos) {
-            auto start = body.find_first_of("0123456789", dspos + 10);
-            if (start != std::string::npos) det_size = atoi(body.c_str() + start);
-        }
+        conf = (float)json_extract_number(body, "conf", conf);
+        det_size = (int)json_extract_number(body, "det_size", det_size);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -654,16 +613,8 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto cpos = body.find("\"conf\"");
-        if (cpos != std::string::npos) {
-            auto start = body.find_first_of("0123456789.", cpos + 6);
-            if (start != std::string::npos) conf = (float)atof(body.c_str() + start);
-        }
-        auto dspos = body.find("\"det_size\"");
-        if (dspos != std::string::npos) {
-            auto start = body.find_first_of("0123456789", dspos + 10);
-            if (start != std::string::npos) det_size = atoi(body.c_str() + start);
-        }
+        conf = (float)json_extract_number(body, "conf", conf);
+        det_size = (int)json_extract_number(body, "det_size", det_size);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -792,11 +743,7 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto mpos = body.find("\"max_tokens\"");
-        if (mpos != std::string::npos) {
-            auto colon = body.find(':', mpos + 12);
-            if (colon != std::string::npos) max_tokens = atoi(body.c_str() + colon + 1);
-        }
+        max_tokens = (int)json_extract_number(body, "max_tokens", max_tokens);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -886,6 +833,23 @@ int main(int argc, char ** argv) {
         if (!sr_model_path.empty()) {
             pp.sr_model = sr_model_path.c_str();
         }
+        if (!layout_model_path.empty()) {
+            std::string layout_r = crispembed_mgr::resolve_model(layout_model_path, true);
+            if (!layout_r.empty()) layout_model_path = layout_r;
+            pp.layout_model = layout_model_path.c_str();
+        }
+        if (!table_model_path.empty()) {
+            std::string table_r = crispembed_mgr::resolve_model(table_model_path, true);
+            if (!table_r.empty()) table_model_path = table_r;
+            pp.table_model = table_model_path.c_str();
+        }
+        if (!formula_model_path.empty()) {
+            std::string formula_r = crispembed_mgr::resolve_model(formula_model_path, true);
+            if (!formula_r.empty()) formula_model_path = formula_r;
+            pp.formula_model = formula_model_path.c_str();
+        }
+        pp.route_tables = route_tables ? 1 : 0;
+        pp.route_formulas = route_formulas ? 1 : 0;
         ocr_orch_ctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         if (!ocr_orch_ctx) fprintf(stderr, "Warning: failed to init OCR orchestrator\n");
     }
@@ -1133,16 +1097,11 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        // Parse query text
+        // Parse query text (JSON-escaping aware)
         std::string query_text;
         {
-            auto qp = req.body.find("\"query\"");
-            if (qp != std::string::npos) {
-                auto q1 = req.body.find('"', qp + 7);
-                auto q2 = req.body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos)
-                    query_text = req.body.substr(q1 + 1, q2 - q1 - 1);
-            }
+            std::vector<std::string> q;
+            if (json_extract_strings(req.body, "query", q) > 0) query_text = q.front();
         }
         if (query_text.empty()) {
             res.status = 400;
@@ -1150,27 +1109,9 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        // Parse documents array
+        // Parse documents array (JSON-escaping aware)
         std::vector<std::string> doc_texts;
-        {
-            auto dp = req.body.find("\"documents\"");
-            if (dp != std::string::npos) {
-                auto arr_start = req.body.find('[', dp);
-                if (arr_start != std::string::npos) {
-                    auto arr_end = req.body.find(']', arr_start);
-                    std::string arr = req.body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        doc_texts.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            }
-        }
+        json_extract_strings(req.body, "documents", doc_texts);
         if (doc_texts.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"no documents provided\"}", "application/json");
@@ -1298,6 +1239,131 @@ int main(int argc, char ** argv) {
         }
     });
 
+    // POST /rerank — cross-encoder rerank (issue #37). Mirrors the CLI `--rerank
+    // --json` shape so sidecar users get cross-encoder precision without FFI or a
+    // per-call CLI spawn. The loaded model must be a reranker (is_reranker == 1).
+    // Request:  {"query": "...", "documents": ["...", "..."], "top_n": 10}
+    // Response: {"query": "...", "results": [{"index": 0, "score": 0.103284, "document": "..."}]}
+    svr.Post("/rerank", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
+            return;
+        }
+        if (!crispembed_is_reranker(ctx)) {
+            res.status = 400;
+            res.set_content("{\"error\": \"loaded model is not a cross-encoder reranker\"}", "application/json");
+            return;
+        }
+
+        std::string query_text;
+        {
+            std::vector<std::string> q;
+            if (json_extract_strings(req.body, "query", q) > 0) query_text = q.front();
+        }
+        if (query_text.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing query field\"}", "application/json");
+            return;
+        }
+
+        std::vector<std::string> doc_texts;
+        json_extract_strings(req.body, "documents", doc_texts);
+        if (doc_texts.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no documents provided\"}", "application/json");
+            return;
+        }
+        const int top_n = (int)json_extract_number(req.body, "top_n", 0);
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        // Batch rerank (caches the classifier weights → avoids a per-document
+        // GPU→CPU transfer; see crispembed_rerank_batch).
+        std::vector<const char *> doc_ptrs;
+        doc_ptrs.reserve(doc_texts.size());
+        for (const auto & d : doc_texts) doc_ptrs.push_back(d.c_str());
+        std::vector<float> scores(doc_texts.size(), 0.0f);
+        const int n_scored =
+            crispembed_rerank_batch(ctx, query_text.c_str(), doc_ptrs.data(), (int)doc_ptrs.size(), scores.data());
+        if (n_scored != (int)doc_texts.size()) {
+            res.status = 500;
+            res.set_content("{\"error\": \"rerank failed\"}", "application/json");
+            return;
+        }
+
+        std::vector<std::pair<size_t, float>> ranked;
+        ranked.reserve(doc_texts.size());
+        for (size_t i = 0; i < doc_texts.size(); ++i) {
+            if (std::isfinite(scores[i])) ranked.emplace_back(i, scores[i]);
+        }
+        std::sort(ranked.begin(), ranked.end(), [](const auto & a, const auto & b) { return a.second > b.second; });
+        if (top_n > 0 && (int)ranked.size() > top_n) ranked.resize(top_n);
+
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        std::ostringstream js;
+        js << "{\"query\": \"" << json_escape(query_text) << "\", \"results\": [";
+        for (size_t i = 0; i < ranked.size(); ++i) {
+            if (i > 0) js << ", ";
+            js << "{\"index\": " << ranked[i].first << ", \"score\": " << std::fixed << std::setprecision(6)
+               << ranked[i].second << ", \"document\": \"" << json_escape(doc_texts[ranked[i].first]) << "\"}";
+        }
+        js << "]}";
+        fprintf(stderr, "crispembed-server: /rerank %zu docs in %.1f ms\n", doc_texts.size(), ms);
+        res.set_content(js.str(), "application/json");
+    });
+
+    // POST /sparse — SPLADE / BGE-M3 sparse term-weight retrieval. The loaded model
+    // must expose a sparse head (has_sparse == 1). Returns the non-zero vocabulary
+    // term weights per input text (SPLADE-style bag of weighted expansion terms).
+    // Request:  {"texts": ["your query text"]}   (or {"text": "..."})
+    // Response: {"results": [{"weights": {"1996": 0.9532, "2938": 1.5153}}]}
+    svr.Post("/sparse", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no embedding model loaded\"}", "application/json");
+            return;
+        }
+        if (!crispembed_has_sparse(ctx)) {
+            res.status = 400;
+            res.set_content("{\"error\": \"loaded model does not support sparse retrieval\"}", "application/json");
+            return;
+        }
+
+        std::vector<std::string> texts;
+        if (json_extract_strings(req.body, "texts", texts) == 0) {
+            json_extract_strings(req.body, "text", texts);
+        }
+        if (texts.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"no texts provided\"}", "application/json");
+            return;
+        }
+
+        std::lock_guard<std::mutex> lock(model_mutex);
+        auto t0 = std::chrono::steady_clock::now();
+
+        std::ostringstream js;
+        js << "{\"results\": [";
+        for (size_t t = 0; t < texts.size(); ++t) {
+            const int32_t * indices = nullptr;
+            const float * values = nullptr;
+            const int n = crispembed_encode_sparse(ctx, texts[t].c_str(), &indices, &values);
+            if (t > 0) js << ", ";
+            js << "{\"weights\": {";
+            for (int i = 0; i < n; ++i) {
+                if (i > 0) js << ", ";
+                js << "\"" << indices[i] << "\": " << std::fixed << std::setprecision(6) << values[i];
+            }
+            js << "}}";
+        }
+        js << "]}";
+        double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        fprintf(stderr, "crispembed-server: /sparse %zu texts in %.1f ms\n", texts.size(), ms);
+        res.set_content(js.str(), "application/json");
+    });
+
     // POST /ocr/model — single-model OCR recognition (math or text, auto-dispatched).
     // /math/ocr is kept as a deprecated alias for the same handler.
     // Request:  {"image": "/path/to/formula.png"}
@@ -1324,11 +1390,7 @@ int main(int argc, char ** argv) {
         }
 
         int req_max_tokens = 0;
-        auto mt_pos = body.find("\"max_tokens\"");
-        if (mt_pos != std::string::npos) {
-            auto colon = body.find(':', mt_pos + 12);
-            if (colon != std::string::npos) req_max_tokens = std::atoi(body.c_str() + colon + 1);
-        }
+        req_max_tokens = (int)json_extract_number(body, "max_tokens", req_max_tokens);
 
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
         if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
@@ -1470,7 +1532,17 @@ int main(int argc, char ** argv) {
                << ",\"confidence\":" << results[i].confidence << ",\"rec_confidence\":" << std::fixed
                << std::setprecision(4) << rec_conf << "}";
         }
-        js << "],\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
+        int n_order = 0;
+        const int * order = crispembed_ocr_pipeline_reading_order(ocr_orch_ctx, &n_order);
+        int markdown_len = 0;
+        const char * markdown = crispembed_ocr_pipeline_markdown(ocr_orch_ctx, &markdown_len);
+        js << "],\"reading_order\":[";
+        for (int i = 0; i < n_order; ++i) {
+            if (i) js << ",";
+            js << order[i];
+        }
+        js << "],\"markdown\":\"" << json_escape(markdown ? markdown : "") << "\""
+           << ",\"ms\":" << std::fixed << std::setprecision(1) << ms << "}";
 
         fprintf(stderr, "crispembed-server: /ocr/pipeline in %.1f ms (%d regions, conf=%.2f)\n", ms, n_results,
                 mean_conf);
@@ -1497,11 +1569,7 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto tpos = body.find("\"threshold\"");
-        if (tpos != std::string::npos) {
-            auto colon = body.find(':', tpos);
-            if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-        }
+        threshold = (float)json_extract_number(body, "threshold", threshold);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -1603,11 +1671,7 @@ int main(int argc, char ** argv) {
             auto q2 = body.find('"', q1 + 1);
             if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
         }
-        auto tpos = body.find("\"threshold\"");
-        if (tpos != std::string::npos) {
-            auto colon = body.find(':', tpos);
-            if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-        }
+        threshold = (float)json_extract_number(body, "threshold", threshold);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -1674,35 +1738,11 @@ int main(int argc, char ** argv) {
 
         // Parse "labels" array
         std::vector<std::string> labels;
-        {
-            auto pos = body.find("\"labels\"");
-            if (pos != std::string::npos) {
-                auto arr_start = body.find('[', pos);
-                auto arr_end = body.find(']', arr_start);
-                if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            }
-        }
+        json_extract_strings(body, "labels", labels);
 
         // Parse "threshold"
         float threshold = 0.5f;
-        {
-            auto pos = body.find("\"threshold\"");
-            if (pos != std::string::npos) {
-                auto colon = body.find(':', pos);
-                if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-            }
-        }
+        { threshold = (float)json_extract_number(body, "threshold", threshold); }
 
         if (text.empty() || labels.empty()) {
             res.status = 400;
@@ -1809,35 +1849,11 @@ int main(int argc, char ** argv) {
 
         // Parse "labels" array
         std::vector<std::string> labels;
-        {
-            auto pos = body.find("\"labels\"");
-            if (pos != std::string::npos) {
-                auto arr_start = body.find('[', pos);
-                auto arr_end = body.find(']', arr_start);
-                if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                    std::string arr = body.substr(arr_start + 1, arr_end - arr_start - 1);
-                    size_t i = 0;
-                    while (i < arr.size()) {
-                        auto q1 = arr.find('"', i);
-                        if (q1 == std::string::npos) break;
-                        auto q2 = arr.find('"', q1 + 1);
-                        if (q2 == std::string::npos) break;
-                        labels.push_back(arr.substr(q1 + 1, q2 - q1 - 1));
-                        i = q2 + 1;
-                    }
-                }
-            }
-        }
+        json_extract_strings(body, "labels", labels);
 
         // Parse "threshold"
         float threshold = 0.5f;
-        {
-            auto pos = body.find("\"threshold\"");
-            if (pos != std::string::npos) {
-                auto colon = body.find(':', pos);
-                if (colon != std::string::npos) threshold = (float)atof(body.c_str() + colon + 1);
-            }
-        }
+        { threshold = (float)json_extract_number(body, "threshold", threshold); }
 
         if (image_path.empty() || labels.empty()) {
             res.status = 400;
@@ -1947,14 +1963,12 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
-    // Shared helper: extract the "image" path from a JSON body.
+    // Shared helper: extract the "image" path from a JSON body (decoy-safe,
+    // escaping-aware — same depth-1 finder as every other field read).
     auto extract_image_path = [](const std::string & body) -> std::string {
-        auto pos = body.find("\"image\"");
-        if (pos == std::string::npos) return "";
-        auto q1 = body.find('"', pos + 7);
-        auto q2 = (q1 == std::string::npos) ? std::string::npos : body.find('"', q1 + 1);
-        if (q1 == std::string::npos || q2 == std::string::npos) return "";
-        return body.substr(q1 + 1, q2 - q1 - 1);
+        std::vector<std::string> v;
+        json_extract_strings(body, "image", v);
+        return v.empty() ? std::string() : v.front();
     };
 
     // POST /scan/split — detect a two-up book spread (no model needed)
@@ -2076,6 +2090,37 @@ int main(int argc, char ** argv) {
         stbi_image_free(data);
         char buf[128];
         snprintf(buf, sizeof(buf), "{\"angle\":%.3f,\"confidence\":%.3f}", angle, conf);
+        res.set_content(buf, "application/json");
+    });
+
+    // POST /preprocess/orientation — model-free four-way page orientation.
+    // Detection is advisory: callers decide whether and how to rotate pages.
+    svr.Post("/preprocess/orientation", [&](const httplib::Request & req, httplib::Response & res) {
+        auto body = req.body;
+        std::string image_path;
+        auto pos = body.find("\"image\"");
+        if (pos != std::string::npos) {
+            auto q1 = body.find('"', pos + 7);
+            auto q2 = body.find('"', q1 + 1);
+            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
+        }
+        if (image_path.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
+            return;
+        }
+        int w = 0, h = 0, ch = 0;
+        unsigned char * data = stbi_load(image_path.c_str(), &w, &h, &ch, 1);
+        if (!data) {
+            res.status = 400;
+            res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+            return;
+        }
+        float confidence = 0.0f;
+        const int angle = crispembed_detect_page_orientation(data, w, h, &confidence);
+        stbi_image_free(data);
+        char buf[160];
+        snprintf(buf, sizeof(buf), "{\"angle\":%d,\"confidence\":%.3f,\"rotated\":false}", angle, confidence);
         res.set_content(buf, "application/json");
     });
 
@@ -2246,16 +2291,8 @@ int main(int argc, char ** argv) {
 
         // Parse page dimensions
         int page_w = 800, page_h = 600;
-        auto pw_pos = body.find("\"page_width\"");
-        if (pw_pos != std::string::npos) {
-            auto colon = body.find(':', pw_pos);
-            if (colon != std::string::npos) page_w = atoi(body.c_str() + colon + 1);
-        }
-        auto ph_pos = body.find("\"page_height\"");
-        if (ph_pos != std::string::npos) {
-            auto colon = body.find(':', ph_pos);
-            if (colon != std::string::npos) page_h = atoi(body.c_str() + colon + 1);
-        }
+        page_w = (int)json_extract_number(body, "page_width", page_w);
+        page_h = (int)json_extract_number(body, "page_height", page_h);
 
         // Parse results array (minimal JSON — extract text + bbox per entry)
         // Each result: {"text":"...","x":N,"y":N,"w":N,"h":N,"confidence":F}
@@ -2289,18 +2326,15 @@ int main(int argc, char ** argv) {
                         texts.push_back("");
                     r.text = texts.back().c_str();
                     r.text_len = (int)texts.back().size();
-                    // Extract numbers
+                    // Extract numbers (per-object; decoy-safe depth-1 finder)
                     auto parse_num = [&](const char * key) -> float {
-                        auto kp = obj.find(key);
-                        if (kp == std::string::npos) return 0;
-                        auto cp = obj.find(':', kp);
-                        return cp != std::string::npos ? (float)atof(obj.c_str() + cp + 1) : 0;
+                        return (float)json_extract_number(obj, key, 0.0);
                     };
-                    r.x = parse_num("\"x\"");
-                    r.y = parse_num("\"y\"");
-                    r.w = parse_num("\"w\"");
-                    r.h = parse_num("\"h\"");
-                    r.confidence = parse_num("\"confidence\"");
+                    r.x = parse_num("x");
+                    r.y = parse_num("y");
+                    r.w = parse_num("w");
+                    r.h = parse_num("h");
+                    r.confidence = parse_num("confidence");
                     if (r.confidence == 0) r.confidence = 1.0f;
                     results.push_back(r);
                 }
@@ -3101,11 +3135,7 @@ int main(int argc, char ** argv) {
 
         // Parse task (default 0 = denoise)
         int task = 0;
-        auto tpos = body.find("\"task\"");
-        if (tpos != std::string::npos) {
-            auto colon = body.find(':', tpos + 5);
-            if (colon != std::string::npos) task = atoi(body.c_str() + colon + 1);
-        }
+        task = (int)json_extract_number(body, "task", task);
         if (task < 0 || task > 6) {
             res.status = 400;
             res.set_content("{\"error\": \"task must be 0-6\"}", "application/json");
@@ -3237,12 +3267,13 @@ int main(int argc, char ** argv) {
     //   multipart/form-data: files named "page" (or "page0","page1",...) → image bytes
     //   OR application/json: {"images": ["/path/page1.png", "/path/page2.png"],
     //                         "format": "text|hocr|alto|pdf",
-    //                         "cleanup": true, "dewarp": false}
+    //                         "cleanup": true, "dewarp": false, "autorotate": false}
     // Returns: rendered document in the requested format
     svr.Post("/ocr/document", [&](const httplib::Request & req, httplib::Response & res) {
         std::string format = "text";
         bool do_cleanup = true;
         bool do_dewarp = false;
+        bool do_autorotate = false;
         std::vector<std::string> temp_files; // track files to clean up
 
         // Collect page images (either from multipart or JSON paths)
@@ -3265,6 +3296,10 @@ int main(int argc, char ** argv) {
                     do_dewarp = file.content == "true" || file.content == "1";
                     continue;
                 }
+                if (name == "autorotate") {
+                    do_autorotate = file.content == "true" || file.content == "1";
+                    continue;
+                }
                 // Must be a page image
                 char tmp_path[256];
                 snprintf(tmp_path, sizeof(tmp_path), "/tmp/crispembed_doc_%d_%d.img", (int)getpid(), page_idx++);
@@ -3284,6 +3319,11 @@ int main(int argc, char ** argv) {
                 auto q1 = body.find('"', fpos + 8);
                 auto q2 = body.find('"', q1 + 1);
                 if (q1 != std::string::npos && q2 != std::string::npos) format = body.substr(q1 + 1, q2 - q1 - 1);
+            }
+            auto rpos = body.find("\"autorotate\"");
+            if (rpos != std::string::npos) {
+                auto value = body.find_first_not_of(" \t\r\n:", rpos + 12);
+                do_autorotate = value != std::string::npos && body.compare(value, 4, "true") == 0;
             }
             // Parse "images" array
             auto apos = body.find("\"images\"");
@@ -3332,8 +3372,28 @@ int main(int argc, char ** argv) {
 
         int total_regions = 0;
         for (size_t pi = 0; pi < page_paths.size(); pi++) {
+            std::string page_source = page_paths[pi];
+            if (do_autorotate) {
+                int ow = 0, oh = 0, och = 0;
+                unsigned char * gray = stbi_load(page_source.c_str(), &ow, &oh, &och, 1);
+                float orientation_confidence = 0.0f;
+                const int angle = gray ? crispembed_detect_page_orientation(gray, ow, oh, &orientation_confidence) : 0;
+                if (gray) stbi_image_free(gray);
+                if (angle != 0 && orientation_confidence >= 0.55f) {
+                    int rw = 0, rh = 0, rc = 0;
+                    unsigned char * rgb = stbi_load(page_source.c_str(), &rw, &rh, &rc, 3);
+                    char rotated_path[256];
+                    snprintf(rotated_path, sizeof(rotated_path), "/tmp/crispembed_doc_rot_%d_%zu.ppm", (int)getpid(),
+                             pi);
+                    if (rgb && write_rotated_ppm(rotated_path, rgb, rw, rh, angle)) {
+                        page_source = rotated_path;
+                        temp_files.push_back(page_source);
+                    }
+                    if (rgb) stbi_image_free(rgb);
+                }
+            }
             int w = 0, h = 0, ch = 0;
-            unsigned char * img = stbi_load(page_paths[pi].c_str(), &w, &h, &ch, 0);
+            unsigned char * img = stbi_load(page_source.c_str(), &w, &h, &ch, 0);
             if (!img) continue;
 
             // Optional dewarp (grayscale)
@@ -3363,8 +3423,8 @@ int main(int argc, char ** argv) {
 
             if (ocr_orch_ctx) {
                 std::lock_guard<std::mutex> lock(ocr_orch_mutex);
-                results = crispembed_ocr_pipeline_run(ocr_orch_ctx, page_paths[pi].c_str(), &n_results, &full_text,
-                                                      &mean_conf);
+                results =
+                    crispembed_ocr_pipeline_run(ocr_orch_ctx, page_source.c_str(), &n_results, &full_text, &mean_conf);
             } else if (ocr_model_ctx) {
                 std::lock_guard<std::mutex> lock(ocr_model_mutex);
                 int out_len = 0;
@@ -3392,11 +3452,11 @@ int main(int argc, char ** argv) {
                     lines[i] = { &words[i],        1, (int)results[i].x, (int)results[i].y, (int)results[i].w,
                                  (int)results[i].h };
                 }
-                ocr_render_page page = { lines.data(), n_results, w, h, page_paths[pi].c_str() };
+                ocr_render_page page = { lines.data(), n_results, w, h, page_source.c_str() };
                 ocr_render_add_page(renderer, &page);
             } else {
                 // Empty page
-                ocr_render_page page = { nullptr, 0, w, h, page_paths[pi].c_str() };
+                ocr_render_page page = { nullptr, 0, w, h, page_source.c_str() };
                 ocr_render_add_page(renderer, &page);
             }
         }
@@ -3434,6 +3494,10 @@ int main(int argc, char ** argv) {
         js << "{\"status\": \"ok\"";
         if (ctx) {
             js << ", \"dim\": " << dim << ", \"layers\": " << hp->n_layer << ", \"vocab\": " << hp->n_vocab;
+            // Retrieval capabilities of the loaded model → the matching POST routes.
+            if (crispembed_is_reranker(ctx)) js << ", \"reranker\": true"; // POST /rerank
+            if (crispembed_has_sparse(ctx)) js << ", \"sparse\": true";    // POST /sparse
+            if (crispembed_has_colbert(ctx)) js << ", \"colbert\": true";  // POST /colbert/score
         }
         if (face_det) js << ", \"face_detection\": true";
         if (face_rec) js << ", \"face_recognition\": true, \"face_dim\": " << crispembed_face_dim(face_rec);
@@ -3466,6 +3530,46 @@ int main(int argc, char ** argv) {
         js << ", \"scan_cleanup\": true"; // always available (no model needed)
         js << "}";
         res.set_content(js.str(), "application/json");
+    });
+
+    // Runtime discovery. Every capability is reported from loaded contexts, so
+    // clients can select modular routes without guessing which optional GGUF
+    // backends are present.
+    svr.Get("/capabilities", [&](const httplib::Request &, httplib::Response & res) {
+        crispembed_ocr_capabilities oc{};
+        const bool have_orch_caps = ocr_orch_ctx && crispembed_ocr_pipeline_capabilities(ocr_orch_ctx, &oc);
+        std::ostringstream js;
+        js << "{\"status\":\"ok\",\"routes\":{";
+        js << "\"ocr\":" << (ocr_pipeline_ctx ? "true" : "false");
+        js << ",\"ocr_pipeline\":" << (ocr_orch_ctx ? "true" : "false");
+        js << ",\"layout\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
+        js << ",\"tables\":" << (have_orch_caps && oc.tables ? "true" : "false");
+        js << ",\"formulas\":" << (have_orch_caps && oc.formulas ? "true" : "false");
+        js << ",\"batch\":true,\"markdown\":" << (ocr_orch_ctx ? "true" : "false") << "}";
+        js << ",\"modules\":{";
+        js << "\"generic_ocr\":" << (ocr_model_ctx ? "true" : "false");
+        js << ",\"dbnet_trocr\":" << (ocr_pipeline_ctx || ocr_orch_ctx ? "true" : "false");
+        js << ",\"tesseract_lstm\":" << ((ocr_model_ctx || (have_orch_caps && oc.tables)) ? "true" : "false");
+        js << ",\"layout_detector\":" << (layout_ctx || (have_orch_caps && oc.layout) ? "true" : "false");
+        js << ",\"vlm_escalation\":" << (!vlm_model_path.empty() ? "true" : "false");
+        js << "},\"config\":{";
+        js << "\"route_tables\":" << (route_tables ? "true" : "false");
+        js << ",\"route_formulas\":" << (route_formulas ? "true" : "false");
+        js << ",\"pooling\":false";
+        js << "}}";
+        res.set_content(js.str(), "application/json");
+    });
+
+    svr.Get("/health/live", [&](const httplib::Request &, httplib::Response & res) {
+        res.status = 200;
+        res.set_content("{\"status\":\"live\"}", "application/json");
+    });
+
+    svr.Get("/health/ready", [&](const httplib::Request &, httplib::Response & res) {
+        const bool ready = ctx || face_det || vit_ctx || ocr_model_ctx || ocr_pipeline_ctx || ocr_orch_ctx ||
+                           layout_ctx || text_det_ctx || ner_ctx || pix2struct_ctx;
+        res.status = ready ? 200 : 503;
+        res.set_content(ready ? "{\"status\":\"ready\"}" : "{\"status\":\"not_ready\"}", "application/json");
     });
 
     fprintf(stderr, "\ncrispembed-server: listening on %s:%d\n", host.c_str(), port);
@@ -3525,6 +3629,7 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /scan/cleanup    — {\"image\": \"scan.png\"} (deskew, crop, whiten)\n");
     fprintf(stderr, "  POST /pdf/dpi              — {\"file\": \"...\"} (PDF DPI profiling)\n");
     fprintf(stderr, "  POST /preprocess/skew      — {\"image\": \"...\"} (find skew angle)\n");
+    fprintf(stderr, "  POST /preprocess/orientation — {\"image\": \"...\"} (four-way orientation advisory)\n");
     fprintf(stderr, "  POST /preprocess/dewarp    — {\"image\": \"...\"} (straighten curved text)\n");
     fprintf(stderr, "  POST /preprocess/tps-dewarp — {\"image\": \"...\", \"model\": \"tps-loc.gguf\"}\n");
     fprintf(stderr, "  POST /preprocess/cc-detect — {\"image\": \"...\"} (model-free line detection)\n");
@@ -3532,6 +3637,10 @@ int main(int argc, char ** argv) {
     fprintf(stderr, "  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)\n");
     if (ctx && crispembed_has_colbert(ctx))
         fprintf(stderr, "  POST /colbert/score   — {\"query\": \"...\", \"documents\": [...]}\n");
+    if (ctx && crispembed_is_reranker(ctx))
+        fprintf(stderr, "  POST /rerank          — {\"query\": \"...\", \"documents\": [...], \"top_n\": 10}\n");
+    if (ctx && crispembed_has_sparse(ctx))
+        fprintf(stderr, "  POST /sparse          — {\"texts\": [\"...\"]}  (SPLADE/BGE-M3 term weights)\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);

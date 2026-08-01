@@ -1,0 +1,61 @@
+#include "ocr_pipeline_pool.h"
+
+#include <cstdio>
+#include <cstdlib>
+#include "core/clean_exit.h"
+
+#ifdef _WIN32
+static void set_test_env(const char * name, const char * value) {
+    _putenv_s(name, value);
+}
+
+static void unset_test_env(const char * name) {
+    _putenv_s(name, "");
+}
+#else
+static void set_test_env(const char * name, const char * value) {
+    setenv(name, value, 1);
+}
+
+static void unset_test_env(const char * name) {
+    unsetenv(name);
+}
+#endif
+
+static bool expect(bool value, const char * label) {
+    if (!value) std::fprintf(stderr, "FAIL: %s\n", label);
+    return value;
+}
+
+static int crispembed_test_main() {
+    unset_test_env("CRISPEMBED_DEBUG_ALLOW_OCR_Q4");
+    if (!expect(ocr_pipeline::is_dangerous_q4_recognizer_path("trocr-small-printed-q4_k.gguf"),
+                "detect dangerous TrOCR Q4 path"))
+        return 1;
+    if (!expect(!ocr_pipeline::dangerous_q4_override_enabled(), "Q4 override disabled by default")) return 1;
+    ocr_pipeline::context * rejected = nullptr;
+    if (!expect(!ocr_pipeline::load(&rejected, "/no/such/det.gguf", "trocr-small-printed-q4_k.gguf", 2),
+                "reject dangerous Q4 before loading"))
+        return 1;
+    if (!expect(rejected == nullptr, "rejected Q4 leaves null context")) return 1;
+
+    set_test_env("CRISPEMBED_DEBUG_ALLOW_OCR_Q4", "1");
+    if (!expect(ocr_pipeline::dangerous_q4_override_enabled(), "Q4 override enabled explicitly")) return 1;
+
+    ocr_pipeline_pool::context * ctx = nullptr;
+    if (ocr_pipeline_pool::load(&ctx, "/no/such/det.gguf", "/no/such/rec.gguf", 2, 1)) {
+        std::fprintf(stderr, "pool unexpectedly loaded missing models\n");
+        ocr_pipeline_pool::free(ctx);
+        return 1;
+    }
+    if (ctx != nullptr) {
+        std::fprintf(stderr, "failed pool load left a context\n");
+        ocr_pipeline_pool::free(ctx);
+        return 1;
+    }
+    return 0;
+}
+
+int main() {
+    core_util::clean_exit(crispembed_test_main());
+}

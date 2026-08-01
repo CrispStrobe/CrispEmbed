@@ -189,7 +189,12 @@ print("\n" + "=" * 60, "\nStep 2: portfolio regression\n", "=" * 60, flush=True)
 env = dict(os.environ)
 env["BUILD_DIR"] = str(BUILD_DIR)
 env["LD_LIBRARY_PATH"] = f"{BUILD_DIR}:{env.get('LD_LIBRARY_PATH','')}"
-env["REGRESSION_WORK"] = str(WORK / "models")
+# Stage model + ref GGUFs under /tmp (~70 GB on Kaggle), NOT /kaggle/working
+# (~20 GB) — a multi-GB multi-model pull ENOSPCs the small partition and the
+# run ERRORs with "No space left on device" (kaggle_usage.md disk gotcha).
+_dl = Path("/tmp/crispembed-regression")
+_dl.mkdir(parents=True, exist_ok=True)
+env["REGRESSION_WORK"] = str(_dl)
 driver = str(EMBED_DIR / "tests/regression/run_one.py")
 
 results = {}

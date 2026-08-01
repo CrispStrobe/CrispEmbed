@@ -247,6 +247,89 @@ void BPETokenizer::clip_bpe_word(const std::string & pretoken, std::vector<int32
     }
 }
 
+// GPT-2 ByteLevel regex pre-tokenizer (HF ByteLevel, use_regex=true), as used
+// by ModernBERT. Reproduces the reference alternation, tried in order at each
+// position:
+//   's|'t|'re|'ve|'m|'ll|'d | ?\p{L}+ | ?\p{N}+ | ?[^\s\p{L}\p{N}]+ | \s+(?!\S) | \s+
+// where the leading ` ?` is a literal 0x20 space (consumed into the following
+// run). \p{L} is approximated as ASCII letters + any non-ASCII byte (same as
+// the CLIP pre-tokenizer); NFC normalization is not applied (inputs are assumed
+// already-normalized — matches the pragmatic level of clip_pretokenize).
+std::vector<std::string> BPETokenizer::gpt2_pretokenize(const std::string & text) const {
+    std::vector<std::string> out;
+    const std::string & s = text;
+    const size_t n = s.size();
+    size_t i = 0;
+    while (i < n) {
+        const unsigned char c = (unsigned char)s[i];
+
+        // 1. Contractions (case-sensitive lowercase, no leading space).
+        if (c == '\'' && i + 1 < n) {
+            if (i + 2 < n) {
+                const std::string two = s.substr(i + 1, 2);
+                if (two == "re" || two == "ve" || two == "ll") {
+                    out.push_back(s.substr(i, 3));
+                    i += 3;
+                    continue;
+                }
+            }
+            const unsigned char d = (unsigned char)s[i + 1];
+            if (d == 's' || d == 't' || d == 'm' || d == 'd') {
+                out.push_back(s.substr(i, 2));
+                i += 2;
+                continue;
+            }
+        }
+
+        // 2-4: optional single leading 0x20 space, then a run of one class.
+        size_t k = i;
+        if (c == ' ') k++; // ` ?` consumes at most one literal space
+        if (k < n) {
+            const unsigned char cc = (unsigned char)s[k];
+            if (clip_is_letter(cc)) { // ` ?\p{L}+`
+                size_t j = k;
+                while (j < n && clip_is_letter((unsigned char)s[j])) j += clip_utf8_len((unsigned char)s[j]);
+                out.push_back(s.substr(i, j - i));
+                i = j;
+                continue;
+            }
+            if (clip_is_digit(cc)) { // ` ?\p{N}+`
+                size_t j = k;
+                while (j < n && clip_is_digit((unsigned char)s[j])) j++;
+                out.push_back(s.substr(i, j - i));
+                i = j;
+                continue;
+            }
+            if (!clip_is_space(cc)) { // ` ?[^\s\p{L}\p{N}]+`
+                size_t j = k;
+                while (j < n) {
+                    const unsigned char e = (unsigned char)s[j];
+                    if (clip_is_space(e) || clip_is_letter(e) || clip_is_digit(e)) break;
+                    j += clip_utf8_len(e);
+                }
+                out.push_back(s.substr(i, j - i));
+                i = j;
+                continue;
+            }
+        }
+
+        // 5-6: a whitespace run [i, j). `\s+(?!\S)` matches all-but-the-last
+        // whitespace char when the run is followed by a non-space (the last is
+        // left for the next word's ` ?`); the whole run at end-of-string or when
+        // it is a single char (then plain `\s+`, alternative 6).
+        size_t j = i;
+        while (j < n && clip_is_space((unsigned char)s[j])) j++;
+        if (j == n || (j - 1) == i) {
+            out.push_back(s.substr(i, j - i));
+            i = j;
+        } else {
+            out.push_back(s.substr(i, (j - 1) - i));
+            i = j - 1;
+        }
+    }
+    return out;
+}
+
 embed_tokens BPETokenizer::encode(const std::string & text) const {
     std::vector<int32_t> ids;
 
@@ -280,6 +363,22 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
         if (suffix_id_ >= 0) {
             ids.push_back(suffix_id_);
         }
+    } else if (gpt2_regex_pretok_) {
+        // GPT-2 ByteLevel with the regex pre-tokenizer (ModernBERT). Split the
+        // text with the GPT-2 regex, byte-encode each pre-token, then BPE-merge.
+        // No `<|...|>` special handling — ModernBERT's specials ([CLS]/[SEP]/…)
+        // are added via the bos/eos id wrap below, not embedded in text.
+        for (const auto & pt : gpt2_pretokenize(text)) {
+            std::string enc = core_bpe::bytes_to_unicode(pt.data(), pt.size());
+            core_bpe::bpe_one(token_to_id_, merge_rank_, enc, ids);
+        }
+
+        // For encoder models: wrap with BOS (CLS) and EOS (SEP)
+        if (bos_id_ >= 0) ids.insert(ids.begin(), bos_id_);
+        if (suffix_id_ >= 0)
+            ids.push_back(suffix_id_);
+        else if (eos_id_ >= 0 && bos_id_ >= 0)
+            ids.push_back(eos_id_);
     } else {
         // GPT-2 byte-level BPE (Qwen3, ModernBERT). Pre-split on `<|...|>`
         // special tokens — Qwen-style vocabs have these as added tokens
