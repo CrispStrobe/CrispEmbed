@@ -2664,6 +2664,15 @@ the pattern first.
   `+80`, row 10 vertical offset `+14`, and row 5 height `+12`. This identifies
   local row construction/splitting errors, not a global crop-padding issue.
 
+- **Tesseract row-blob-bounds A/B (2026-08-01).** Direct debug showed row 5
+  assigned blobs at `x=29..343` but the vertical ink scan widened its crop to
+  `x=27..428` using neighboring-row pixels. The gated
+  `CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS` mode prevents that expansion.
+  On scan-strip it improved CER/WER from `0.03922/0.13274` to
+  `0.03209/0.11504`; geometry mean `dw` improved from `+4.33` to `+2.42`,
+  worst width delta from `+80` to `+13`, while counts stayed 12/12. Keep it
+  gated pending additional page fixtures; exact text parity is still open.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
