@@ -210,9 +210,11 @@ recognizer and LayoutLM consumer.
       caused by CLI crop/spacing/case behavior.
 - [x] Harden `test-tesseract-lstm-diff` so decoded metadata mismatches fail the
       test. The official 601x36 PSM7 crop remains 9/9 plus decoded-pass; the
-      direct six-line sweep correctly exposes line 4 as an input/preprocessing
-      mismatch (`cos=0.999946`, `max_abs=1.57e-2`) rather than accepting its
-      differing punctuation.
+      direct six-line sweep initially exposed line 4 as an input mismatch.
+- [x] Match the reference dumper's RGB-to-gray conversion to native
+      `stb_image` (`(77R+150G+29B)>>8`), eliminating the line-4 input error.
+      All six direct line fixtures now pass decoded parity; input tensors are
+      exact and stage cosines remain at or above `0.998821`.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
