@@ -22,6 +22,9 @@ def main() -> int:
     assert int(match.group("chars")) == 33
     assert float(match.group("confidence")) == 0.91
     assert float(match.group("time_ms")) == 123.4
+    rows = MODULE.parse_rows(match.string, "medium")
+    assert rows[0]["variant"] == "medium"
+    assert rows[0]["time_ms"] == 123.4
     print("PP-OCRv6 benchmark parser OK")
     return 0
 
