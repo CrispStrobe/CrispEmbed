@@ -15,6 +15,7 @@ Usage:
 """
 
 import os
+import struct
 import sys
 import tempfile
 import unittest
@@ -31,6 +32,16 @@ TEST_IMAGE = os.environ.get("CRISPEMBED_TEST_IMAGE")
 
 HAVE_MODELS = DET_MODEL and REC_MODEL and TEST_IMAGE
 skip_reason = "Set CRISPEMBED_DET_MODEL, CRISPEMBED_REC_MODEL, CRISPEMBED_TEST_IMAGE"
+
+if HAVE_MODELS:
+    # Loading a recognition model is gated on an explicit acknowledgement that
+    # this process may produce biometric templates (see POLICY.md §4). These
+    # tests do exactly that, deliberately and on operator-supplied fixtures, so
+    # they acknowledge here rather than making the suite unrunnable. Detection
+    # is never gated. The gate itself is covered by test_biometric_gate.py.
+    import crispembed
+
+    crispembed.accept_biometric_use(lib_path=LIB)
 
 
 def _need_models(fn):
@@ -189,8 +200,10 @@ def _make_blank_bmp(w: int, h: int) -> bytes:
     row_size = (w * 3 + 3) & ~3
     img_size = row_size * h
     file_size = 54 + img_size
+    # 14-byte BITMAPFILEHEADER + 40-byte BITMAPINFOHEADER. Width/height are
+    # signed in the DIB header.
     header = struct.pack(
-        "<2sIHHI IHHI HH IIIIII",
+        "<2sIHHI IiiHH IIiiII",
         b"BM", file_size, 0, 0, 54,
         40, w, h, 1, 24,
         0, img_size, 2835, 2835, 0, 0,
