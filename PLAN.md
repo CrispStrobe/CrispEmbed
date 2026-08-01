@@ -56,17 +56,18 @@ probability-map boundary (`max_abs=0.00154233`, RMS `0.00008044`, cosine
 96 regions but fails tensor parity (`cosine=0.9311001`, global `0.9986384`),
 so its prior README parity claim is stale for this reference. The DBNet diff
 harness now retains every backbone, lateral, smooth, fused, head, and final
-probability-map tap; F16 passes all of them. Inference-only native/Python
-timing remains a TODO. Q4_K's earliest divergence is already at
+probability-map tap; F16 passes all of them. Q4_K's earliest divergence is
+already at
 `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), and it worsens
 through the neck to final-map cosine `0.9311001`; this is a quantization
 quality TODO, not a postprocessing issue. The fresh native CPU-forced page
 benchmark reports detector graph `4178.6 ms`, postprocess `8.3 ms`, total
-`4186.9 ms`, and 12 line units. Miniconda PyTorch CPU inference-only timing is
-`1213.450 ms` on the same 736x1472 input, versus native F16 `4178.6 ms` CPU
-and `4732.1 ms` Metal graph time (`3.45x` and `3.90x` slower). Both native
-backends pass all taps and decode 96 regions, so output quality is on par while
-graph/kernel speed is a mandatory TODO.
+`4186.9 ms`, and 12 line units; eight native CPU threads improve this to
+`2727.3 ms` graph, `9.3 ms` postprocess, `2736.7 ms` total, still `2.25x`
+slower than the `1213.450 ms` Miniconda PyTorch CPU reference. Native F16
+Metal is `4732.1 ms` graph (`3.90x` slower). Both native backends pass all
+taps and decode 96 regions, so output quality is on par while graph/kernel
+speed is a mandatory TODO.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU

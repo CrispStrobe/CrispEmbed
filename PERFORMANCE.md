@@ -1,5 +1,54 @@
 # CrispEmbed Performance
 
+## EasyOCR GGML parity benchmarks — Apple M1, 2026-08-01
+
+All measurements below use the same `scan_strip.png` input and Miniconda
+PyTorch reference where stated. Native timings are warm graph timings unless
+noted; they are acceptance evidence, not claims that the current implementation
+meets the speed target.
+
+### Recognizers
+
+| Path | Native Metal | Python CPU reference | Ratio | Output/parity |
+|---|---:|---:|---:|---|
+| Latin Gen2 formula, width 200 | 16.523 ms | 12.460 ms | 1.33x | `x=0442` both; all stages pass |
+| Latin Gen2 scan, width 128 | 10.885 ms | 7.137 ms | 1.53x | `82` both; all stages pass |
+| Latin Gen1 ResNet, width 128 | 154.082 ms | 78.648 ms | 1.96x | `==#` both; all stages pass |
+| English Gen2 scan, width 200 | 16.536 ms | 10.035 ms | 1.65x | `032` both; all stages pass |
+| English Gen2 scan, width 128 | 10.697 ms | 7.287 ms | 1.47x | `@32` both; strict timestep-11 row cosine remains open |
+
+Native is slower in every recognizer measurement. These are cross-device
+directional comparisons; graph/kernel and dynamic-width optimization remain
+open. Repeated native outputs are stable after fixing persistent LSTM state
+storage aliasing.
+
+### CRAFT detector
+
+| Backend/model | Native graph | Python CPU reference | Ratio | Output/parity |
+|---|---:|---:|---:|---|
+| Metal, runtime-BN F16 | 850.018 ms | 396.027 ms | 2.15x | 106 boxes both; taps pass |
+
+The runtime-BN F32 graph matches captured Python tensors to floating-point
+noise. Runtime-BN F16 also decodes 106 boxes. The older folded-F16 artifact
+decoded 107 because accumulated CNN/BN error crossed a threshold; it is stale.
+CPU-forced and Metal CRAFT outputs are byte-identical on this fixture.
+
+### DBNet detector
+
+| Backend/model | Graph | Postprocess | Total | Python CPU reference | Ratio | Output/parity |
+|---|---:|---:|---:|---:|---:|---|
+| CPU, F16, 1 thread | 4178.6 ms | 8.3 ms | 4186.9 ms | 1213.450 ms | 3.45x | all taps pass; 96 regions |
+| CPU, F16, 8 threads | 2727.3 ms | 9.3 ms | 2736.7 ms | 1213.450 ms | 2.25x | 12 line units; `Brighton` present |
+| Metal, F16 | 4732.1 ms | 9.8 ms | 4742.0 ms | 1213.450 ms | 3.90x | all taps pass; 96 regions |
+
+F16 matches the fresh official MMOCR reference at backbone, neck, head, and
+probability-map boundaries. Native quality is on par on this fixture, but all
+native backend timings miss the reference speed target. Increasing CPU threads
+helps but does not close the gap. Q4_K decodes the same 96 regions but diverges
+at `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`) and ends at
+final-map cosine `0.9311001`; Q4_K is a quantization-quality TODO, not an
+accepted parity variant.
+
 Benchmark results on Intel Xeon Skylake (4 threads), CPU-only, no GPU.
 
 ## Server Mode Latency (model loaded once)
