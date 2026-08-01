@@ -30,7 +30,7 @@ int main(int argc, char ** argv) {
         const auto boxes = ppocrv6_det::detect_file(det, argv[3], 0.2f);
         size_t region_limit = boxes.size();
         if (const char * env = std::getenv("PPOCRV6_DIRECT_MAX_REGIONS"))
-            region_limit = std::min(region_limit, std::strtoul(env, nullptr, 10));
+            region_limit = std::min(region_limit, static_cast<size_t>(std::strtoul(env, nullptr, 10)));
         size_t rotated = 0;
         const char * crop_prefix = std::getenv("PPOCRV6_DIRECT_SAVE_CROPS");
         std::printf("ppocrv6-direct detector_regions=%zu image=%dx%d orientation=%s\n", boxes.size(), w, h,

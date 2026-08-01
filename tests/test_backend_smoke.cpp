@@ -85,13 +85,16 @@ int main(int argc, char ** argv) {
     for (float v : ov) correct = correct && v > 3.99f && v < 4.01f;
     const char * request_name = requested ? requested : "auto";
     if (json_output) {
-        std::printf("{\"requested\":\"%s\",\"name\":\"%s\",\"type\":%d,\"nodes\":%d,\"computed\":%s,\"compute_ms\":%.3f,\"device_available\":%s,\"correct\":%s}\n",
-                    request_name, name ? name : "unknown", (int)type, ggml_graph_n_nodes(graph), computed ? "true" : "false",
-                    compute_ms, requested_device_available ? "true" : "false", correct ? "true" : "false");
+        std::printf("{\"requested\":\"%s\",\"name\":\"%s\",\"type\":%d,\"nodes\":%d,\"computed\":%s,\"compute_ms\":%."
+                    "3f,\"device_available\":%s,\"correct\":%s}\n",
+                    request_name, name ? name : "unknown", (int)type, ggml_graph_n_nodes(graph),
+                    computed ? "true" : "false", compute_ms, requested_device_available ? "true" : "false",
+                    correct ? "true" : "false");
     } else {
-        std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d compute_ms=%.3f device_available=%d correct=%d\n",
-                    request_name, name ? name : "unknown", (int)type, ggml_graph_n_nodes(graph), computed ? 1 : 0, compute_ms,
-                    requested_device_available ? 1 : 0, correct ? 1 : 0);
+        std::printf("backend-smoke requested=%s name=%s type=%d nodes=%d computed=%d compute_ms=%.3f "
+                    "device_available=%d correct=%d\n",
+                    request_name, name ? name : "unknown", (int)type, ggml_graph_n_nodes(graph), computed ? 1 : 0,
+                    compute_ms, requested_device_available ? 1 : 0, correct ? 1 : 0);
     }
     if (alloc) ggml_gallocr_free(alloc);
     ggml_free(ctx);

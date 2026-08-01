@@ -174,9 +174,23 @@ def _run(argv):
     return r.returncode, r.stdout + r.stderr
 
 
+def _field_contents(field):
+    if hasattr(field, "contents"):
+        return field.contents()
+    type_names = [getattr(t, "name", str(t)) for t in field.types]
+    if type_names and type_names[0] == "STRING":
+        return bytes(field.parts[field.data[0]]).decode("utf-8")
+    if type_names and type_names[0] == "ARRAY":
+        if len(type_names) > 1 and type_names[1] == "STRING":
+            return [bytes(field.parts[i]).decode("utf-8") for i in field.data]
+        return [field.parts[i][0].item() for i in field.data]
+    value = field.parts[field.data[0]][0]
+    return value.item() if hasattr(value, "item") else value
+
+
 def _read(path):
     r = GGUFReader(path)
-    md = {f.name: f.contents() for f in r.fields.values()}
+    md = {f.name: _field_contents(f) for f in r.fields.values()}
     tensors = {t.name: t for t in r.tensors}
     return md, tensors
 
@@ -202,7 +216,7 @@ def main():
 
 
 def _scenario(patch_qt, check):
-    with tempfile.TemporaryDirectory() as d:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
         llm = os.path.join(d, "llm.gguf")
         mmproj = os.path.join(d, "mmproj.gguf")
         merged = os.path.join(d, "crisp.gguf")
