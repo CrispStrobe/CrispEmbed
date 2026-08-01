@@ -1422,6 +1422,13 @@ matched 23 rows monotonically and exposed five unmatched official rows
 matched deltas remain diagnostic until one-to-many merged-row matching is
 implemented.
 
+Source inspection indicates several official rows are nested decorative marks
+inside larger text boxes, so the merge report now labels a primary official
+box and nested rows. This prevents a speculative production split based only
+on TSV row count. On German, native row 0 has primary official index 1 and
+nested indices 2 and 4; native row 9 has primary index 13 and nested index 12;
+native row 22 has primary index 26 with no fully-contained nested row.
+
 The geometry report now exposes `merged_official_groups` when one native row
 covers at least half the vertical extent of multiple official rows. This
 separates merge candidates from genuinely missing rows without changing the

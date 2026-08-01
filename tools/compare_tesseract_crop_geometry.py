@@ -128,7 +128,24 @@ def compare_geometry(native: list[dict[str, float]], official: list[dict[str, in
             if overlap >= float(o["height"]) * 0.5:
                 covered.append(official_index)
         if len(covered) > 1:
-            merged_official_groups.append({"native_index": native_index, "official_indices": covered})
+            primary = max(covered, key=lambda index: official[index]["width"] * official[index]["height"])
+            primary_box = official[primary]
+            primary_top = primary_box["top"]
+            primary_bottom = primary_top + primary_box["height"]
+            primary_left = primary_box["left"]
+            primary_right = primary_left + primary_box["width"]
+            nested = []
+            for index in covered:
+                if index == primary:
+                    continue
+                box = official[index]
+                if (primary_left <= box["left"] and box["left"] + box["width"] <= primary_right
+                        and primary_top <= box["top"] and box["top"] + box["height"] <= primary_bottom):
+                    nested.append(index)
+            merged_official_groups.append({"native_index": native_index,
+                                           "official_indices": covered,
+                                           "primary_official_index": primary,
+                                           "nested_official_indices": nested})
     summary = {}
     for key in ("dx", "dy", "dw", "dh"):
         values = [row[key] for row in deltas]
