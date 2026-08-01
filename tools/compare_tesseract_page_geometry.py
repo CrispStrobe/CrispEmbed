@@ -109,11 +109,28 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
                     "delta": [round(mine_box[i] - ref_box[i], 3) for i in range(4)],
                 }
             )
+    component_deltas = [
+        abs(pair["delta"][component])
+        for pair in pairs
+        for component in range(4)
+    ]
+    reference_gaps = [
+        reference[index + 1][1] - (reference[index][1] + reference[index][3])
+        for index in range(max(0, len(reference) - 1))
+    ]
+    native_gaps = [
+        mine[index + 1][1] - (mine[index][1] + mine[index][3])
+        for index in range(max(0, len(mine) - 1))
+    ]
+    gap_deltas = [abs(native_gaps[index] - reference_gaps[index]) for index in range(min(len(reference_gaps), len(native_gaps)))]
     return {
         "reference_lines": len(reference),
         "native_lines": len(mine),
         "count_delta": len(mine) - len(reference),
         "mean_indexed_iou": round(sum(pair["iou"] for pair in pairs) / len(pairs), 6) if pairs else 0.0,
+        "mean_abs_crop_delta": round(sum(component_deltas) / len(component_deltas), 3) if component_deltas else 0.0,
+        "max_abs_crop_delta": round(max(component_deltas), 3) if component_deltas else 0.0,
+        "mean_abs_interline_gap_delta": round(sum(gap_deltas) / len(gap_deltas), 3) if gap_deltas else 0.0,
         "pairs": pairs,
     }
 
@@ -130,6 +147,8 @@ def main() -> int:
     parser.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
     parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
     parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
+    parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
+    parser.add_argument("--max-mean-gap-delta", type=float, help="fail if mean absolute inter-line gap delta exceeds this value")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     comparison = compare(
@@ -141,6 +160,10 @@ def main() -> int:
         checks["min_native_lines"] = comparison["native_lines"] >= args.min_native_lines
     if args.min_iou is not None:
         checks["min_iou"] = comparison["mean_indexed_iou"] >= args.min_iou
+    if args.max_mean_crop_delta is not None:
+        checks["max_mean_crop_delta"] = comparison["mean_abs_crop_delta"] <= args.max_mean_crop_delta
+    if args.max_mean_gap_delta is not None:
+        checks["max_mean_gap_delta"] = comparison["mean_abs_interline_gap_delta"] <= args.max_mean_gap_delta
     result = {
         "image": str(args.image),
         "provenance": {
