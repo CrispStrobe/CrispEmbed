@@ -193,9 +193,10 @@ recognizer and LayoutLM consumer.
       `tools/compare_tesseract_page_geometry.py` now measures the independent
       geometry boundary from official TSV level-4 rows. On `scan_strip.png`
       the default baseline-clustered component adapter has 12/12 indexed rows
-      with mean IoU `0.750833`; the projection fallback has 12/12 with mean IoU
-      `0.865993`. These measurements confirm count/order parity only; crop
-      geometry and decoded-text parity remain open.
+      with mean IoU `0.787761` after short-row noise tightening; the projection
+      fallback has 12/12 with mean IoU `0.865993`. The short final-row crop now
+      decodes `Meryton` correctly. These measurements confirm count/order parity
+      only; quote/spacing, first-line, and full decoded-text parity remain open.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.
