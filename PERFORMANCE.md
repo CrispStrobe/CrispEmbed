@@ -1312,3 +1312,12 @@ quality gap is punctuation, spacing, and glyph output from line
 recognition/decoding, not detector box count or a precision-only failure. The
 stale 2-box result is rejected and should not be used as a performance or
 compatibility baseline.
+
+The native crop diagnostic now dumps the exact recognizer inputs on demand via
+`CRISPEMBED_TESSERACT_CROP_DUMP_DIR`. The rebuilt Q8 scan-strip run produced
+12 grayscale crops, with heights 22–32 px and the final crop 76×25 px. This
+confirms valid line geometry, but does not yet establish equivalence with
+Tesseract CLI's internal line normalization. A direct single-crop CLI A/B was
+not accepted because the installed Homebrew Tesseract/Leptonica could not
+reopen a valid dumped PNG; repeat after fixing that environment before drawing
+quality conclusions.
