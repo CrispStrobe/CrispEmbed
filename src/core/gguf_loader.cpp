@@ -184,6 +184,17 @@ std::vector<int> kv_i32_array(gguf_context * gctx, const char * key) {
     return out;
 }
 
+std::vector<uint8_t> kv_u8_array(gguf_context * gctx, const char * key) {
+    std::vector<uint8_t> out;
+    const int k = gguf_find_key(gctx, key);
+    if (k < 0 || gguf_get_kv_type(gctx, k) != GGUF_TYPE_ARRAY || gguf_get_arr_type(gctx, k) != GGUF_TYPE_UINT8)
+        return out;
+    const size_t n = gguf_get_arr_n(gctx, k);
+    const auto * data = (const uint8_t *)gguf_get_arr_data(gctx, k);
+    out.assign(data, data + n);
+    return out;
+}
+
 // ---------------------------------------------------------------------------
 // Pass 2: tensor allocation + weight data copy.
 // ---------------------------------------------------------------------------

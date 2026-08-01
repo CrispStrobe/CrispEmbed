@@ -2615,6 +2615,7 @@ the pattern first.
   The converter now has an opt-in `--embed-dawgs` data-preservation mode that
   stores the three LSTM DAWG components as uint8 metadata arrays; runtime
   scoring remains disabled until a binary parser and parity fixture exist. A
-  bounded read-only parser and synthetic prefix matcher are now in-tree; the
-  remaining TODO is wiring it to embedded GGUF metadata and validating word
-  choices against official Tesseract on transcribed fixtures.
+  bounded read-only parser and synthetic prefix matcher are now in-tree, and
+  `CRISPEMBED_TESSERACT_DAWG_LOAD` now validates/loads embedded graphs without
+  changing recognition. The remaining TODO is actual scoring and validating
+  word choices against official Tesseract on transcribed fixtures.

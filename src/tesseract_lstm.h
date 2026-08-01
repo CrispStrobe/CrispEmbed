@@ -59,6 +59,9 @@ float tesseract_lstm_word_confidence(const tesseract_lstm_context * ctx);
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx);
 int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx);
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx);
+/// Number of optional DAWG graphs loaded from GGUF metadata. Loading is
+/// enabled only with CRISPEMBED_TESSERACT_DAWG_LOAD.
+int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx);
 
 /// Enable/disable capture of per-stage intermediates for parity testing.
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);
