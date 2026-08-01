@@ -2640,6 +2640,13 @@ the pattern first.
   Reject this preprocessing for production; the remaining mismatch is not
   explained by excess vertical paper alone.
 
+- **Tesseract page box-pad A/B (2026-08-01).** Setting the legacy component
+  `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD=0` retained 12/12 regions and produced
+  byte-identical native text and unchanged CER/WER `0.03922/0.13274` versus
+  the default pad. Reject box expansion as the explanation for the token
+  mismatch; the next target is row-boundary construction and baseline
+  assignment, not another crop-padding variant.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
