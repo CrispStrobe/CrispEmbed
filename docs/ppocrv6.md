@@ -74,6 +74,14 @@ cosine/logit parity and live CER gates on the CC0/German corpus.
 Until those gates pass, PP-OCRv6 remains explicitly CPU-first; enabling the
 experimental graph does not silently change the default execution path.
 
+The detector has a separate staged graph switch,
+`CRISPEMBED_PPOCRV6_DET_GRAPH=1`. For tiny/small models it currently graphs
+the detector stem and first backbone stage, then returns the feature map to
+the established CPU neck/head. This is intentionally not enabled by default:
+the CPU smoke is slightly slower because graph setup/copy overhead dominates,
+while the persistent backend-resident boundary is intended for Metal/CUDA
+validation and subsequent full-neck work.
+
 Dump the current torch reference fixture and enable native comparisons with:
 
 ```bash
