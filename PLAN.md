@@ -2524,3 +2524,10 @@ the pattern first.
   566 chars, CER `0.03375`, and WER `0.15044`; cached stage time was `22.11 s`
   versus `157.59 s` uncached (`7.1x` faster). Detection and crop together
   remained below `50 ms`, so recurrent recognition is the active bottleneck.
+
+  The page comparator now preserves normalized official and native decoded text
+  in its JSON output. On `scan_strip.png`, the remaining errors are concrete
+  crop/decode differences (`50`→`80`, `ay`→`8ay`, `Such`/`such`, `Scheme`/
+  `scheme`, and punctuation/hyphen spacing), not a region-count mismatch.
+  Use these actual strings to guide crop and decoder fixes rather than treating
+  CER/WER alone as a sufficient quality signal.
