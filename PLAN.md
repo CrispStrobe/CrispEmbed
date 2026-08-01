@@ -2704,4 +2704,7 @@ the pattern first.
   environment (PNG, PGM, and TIFF all fail in Leptonica), but its page TSV
   line differs. This proves the line-0 quality discrepancy is in official
   page segmentation/line normalization, not the native GGUF recognizer.
-  The page comparator now has `--crop-dump-dir` for fresh reproducible dumps.
+  The page comparator now has `--crop-dump-dir` for fresh reproducible dumps,
+  and `tools/compare_tesseract_crop_diff.py` automates regeneration of a
+  per-crop Python reference plus the native tensor diff without invoking the
+  broken local-image CLI path.
