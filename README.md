@@ -300,6 +300,17 @@ AuraFace recognition.
 ./build/crispembed -m yunet --detect photo.jpg --json
 ```
 
+> **Face recognition is biometric processing.** A face template is
+> special-category personal data (GDPR Art. 9), and searching a gallery of them
+> (1:N identification) is a high-risk AI system under the EU AI Act. Running a
+> recognition model therefore requires a one-time acknowledgement
+> (`--accept-biometric` or `CRISPEMBED_ACCEPT_BIOMETRIC=1`); detection alone is
+> not gated. CrispEmbed provides **no gallery, enrolment, index or 1:N search**
+> primitive, and prints cosine similarity without a match/no-match verdict —
+> thresholds must be calibrated and documented per deployment. Read
+> **[POLICY.md](POLICY.md)** before building on this. `examples/face_verify.py`
+> shows 1:1 verification.
+
 **BidirLM-Omni** unifies text, audio, and image into one shared 2048-d space
 (bidirectional Qwen3 body + Whisper-shape audio encoder + Qwen2VL vision tower
 with DeepStack). Q4_K verified locally across all three modalities.
@@ -478,6 +489,25 @@ consent to auto-download (interactive prompt, `--accept-license <spdx>`, or
 `CRISPEMBED_ACCEPT_LICENSE`). `--accept-license` acknowledges the caller accepts
 upstream terms — it does not grant rights you don't otherwise have. Audit the
 whole registry with `python tests/check_registry_licenses.py`.
+
+---
+
+## Intended purpose & acceptable use
+
+CrispEmbed is a **component**, not a finished AI system: it returns vectors and
+text, and every decision made from them happens in your code. Its intended
+purpose is retrieval, document understanding, and document preprocessing.
+
+**[POLICY.md](POLICY.md)** states the intended purpose, the prohibited uses
+(no scraping facial-image databases, no emotion inference, no biometric
+categorisation, no social scoring), and which obligations transfer to you when
+you deploy — biometric processing under GDPR Art. 9, EU AI Act Annex III for 1:N
+face identification, Art. 50 transparency for generated or manipulated imagery,
+and the limits of OCR accuracy. Read it before building on the face pipeline or
+the super-resolution engines.
+
+CrispEmbed ships no emotion-recognition, biometric-categorisation, age, gender,
+or ethnicity model, and no scraping tooling — absent by design.
 
 ---
 
