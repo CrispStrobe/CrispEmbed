@@ -2619,6 +2619,14 @@ the pattern first.
   geometry or a precision-only failure. The rejected stale-binary result must
   not be used to diagnose detector compatibility.
 
+- **Tesseract line-input diagnostic (2026-08-01).** Added the opt-in
+  `CRISPEMBED_TESSERACT_CROP_DUMP_DIR` hook to dump the exact grayscale crops
+  passed to the native LSTM recognizer. On `scan_strip.png`, the rebuilt Q8
+  run produced 12 crops (heights 22–32 px; final crop 76×25 px), matching the
+  valid 12-line geometry. This rules out the stale 2-box observation and makes
+  Tesseract's internal page-segmentation/line normalization the next parity
+  comparison target; do not attribute the text gap to GGUF precision yet.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
