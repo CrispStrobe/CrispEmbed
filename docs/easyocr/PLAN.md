@@ -14,12 +14,13 @@
 
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
-- Selected next item: close the remaining seeded Tesseract numerical/recode
-  gates before canonical promotion. The upstream LUT table-generation
-  contract is now mirrored in the Python reference (double-precision
-  `math.tanh/exp` literals cast to `TFloat`); fresh German references now pass
-  all 9 stages exactly and decoded output matches native (` s.`). Korean still
-  has 6/200 argmax differences and remains the active numerical investigation.
+- Selected next item: validate Tesseract confidence/beam semantics against an
+  explicit official tessdata directory, then continue recoder/DAWG parity.
+  The seeded LUT correction is complete: all 12 languages pass 9/9 stages and
+  decoded output on the controlled line. The confidence comparator now accepts
+  `--tessdata-dir`, eliminating silent zero-word official results caused by a
+  stale `TESSDATA_PREFIX`; the German tiny-line diagnostic still shows native
+  text/calibration is not yet on par and beam remains diagnostic.
   The detector geometry/ordering handoff remains tracked below.
 - CRAFT cause/fix: the older folded-weight F16 artifact accumulated enough
   convolution/BN error to produce 107 boxes. Re-converting with raw
