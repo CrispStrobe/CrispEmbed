@@ -50,15 +50,14 @@ int main() {
         return 1;
     }
 
-    // A hostile unicharset size must be rejected before any 64-bit mask
-    // shift; this also keeps the parser's bounds contract explicit.
+    // A malformed unicharset header must be rejected before any edge parsing.
     bytes.clear();
     append_u16(bytes, 42);
-    append_u32(bytes, 0xffffffffu);
+    append_u32(bytes, 0);
     append_u32(bytes, 1);
     append_u64(bytes, 0);
-    if (tesseract_dawg::parse(bytes, dawg, &error) || error != "unsupported dawg unicharset size") {
-        std::fprintf(stderr, "oversized dawg unicharset rejection failed: %s\n", error.c_str());
+    if (tesseract_dawg::parse(bytes, dawg, &error) || error != "invalid dawg unicharset size") {
+        std::fprintf(stderr, "malformed dawg unicharset rejection failed: %s\n", error.c_str());
         return 1;
     }
     std::puts("tesseract dawg: PASS");

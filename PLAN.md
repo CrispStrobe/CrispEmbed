@@ -2646,7 +2646,7 @@ the pattern first.
   test covers both safeguards.
 
 - **DAWG parser hardening (2026-08-01).** The bounded SquishedDawg parser now
-  rejects unicharset sizes whose packed-field shifts cannot fit in its 64-bit
-  edge representation before constructing masks or reading edges. The parser
-  regression suite covers the malformed oversized header and the valid
+  validates the packed-field shift range before constructing 64-bit masks or
+  reading edges, with a defensive guard for future wider headers. The parser
+  regression suite covers a malformed unicharset header and the valid
   membership path; no recognition behavior or default gate changed.
