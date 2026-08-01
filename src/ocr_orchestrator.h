@@ -39,23 +39,23 @@ namespace ocr_orchestrator {
 // Which ggml-native engine runs a stage. Each maps to an existing context type
 // in this repo; `dbnet_trocr` is the general `ocr_pipeline` (detect+recognize).
 enum class engine {
-    dbnet_trocr,    // ocr_pipeline.cpp  (DBNet detection + TrOCR recognition)
-    ppocrv6,        // PP-OCRv6 detector + recognizer
-    surya,          // surya_det.cpp + recognizer
-    qwen2vl,        // qwen2vl_ocr.cpp   (VLM)
-    got,            // got_ocr.cpp
-    parseq,         // parseq_ocr.cpp
-    glm,            // glm_ocr.cpp
-    internvl2,      // internvl2_ocr.cpp
-    tesseract,      // DBNet detection + Tesseract-LSTM line recognition
+    dbnet_trocr,       // ocr_pipeline.cpp  (DBNet detection + TrOCR recognition)
+    ppocrv6,           // PP-OCRv6 detector + recognizer
+    surya,             // surya_det.cpp + recognizer
+    qwen2vl,           // qwen2vl_ocr.cpp   (VLM)
+    got,               // got_ocr.cpp
+    parseq,            // parseq_ocr.cpp
+    glm,               // glm_ocr.cpp
+    internvl2,         // internvl2_ocr.cpp
+    tesseract,         // DBNet detection + Tesseract-LSTM line recognition
     tesseract_fraktur, // DBNet detection + grayscale crops + German Fraktur LSTM
-    deepseek_ocr2,  // deepseek_ocr2.cpp (MoE VLM)
-    pix2struct,     // pix2struct.cpp (document/chart understanding)
-    granite_vision, // granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
-    lightonocr,     // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
-    qwen3vl,        // qwen2vl_ocr.cpp (Qwen3-VL, DeepStack + IMROPE)
-    unlimited_ocr,  // unlimited_ocr.cpp (SAM + CLIP + MoE VLM)
-    unified,        // metadata-dispatched crispembed_ocr_model_* GGUF
+    deepseek_ocr2,     // deepseek_ocr2.cpp (MoE VLM)
+    pix2struct,        // pix2struct.cpp (document/chart understanding)
+    granite_vision,    // granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
+    lightonocr,        // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
+    qwen3vl,           // qwen2vl_ocr.cpp (Qwen3-VL, DeepStack + IMROPE)
+    unlimited_ocr,     // unlimited_ocr.cpp (SAM + CLIP + MoE VLM)
+    unified,           // metadata-dispatched crispembed_ocr_model_* GGUF
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.

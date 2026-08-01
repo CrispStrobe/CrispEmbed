@@ -82,6 +82,11 @@ diagnostic-only until tensor/box parity is complete; setting
 detections. Without that second switch, the pipeline uses the CPU reference
 path, preventing graph geometry or score drift from changing OCR results.
 
+The current CPU parity probe reports detector probability-map cosine 0.99113
+and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
+produces one extra box (31 vs 30), so the explicit accept switch remains a
+debug gate rather than a production setting.
+
 Dump the current torch reference fixture and enable native comparisons with:
 
 ```bash
