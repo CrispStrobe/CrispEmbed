@@ -2657,3 +2657,9 @@ the pattern first.
   and rejection of an incomplete dictionary prefix. This validates the
   composition/membership seam without a model load; runtime scoring remains
   opt-in and still requires real official word-choice fixtures.
+
+- **DAWG number-word fallback (2026-08-01).** The gated scorer now checks the
+  system graph first and the preserved number graph second, so numeric words
+  can receive a bonus when they are absent from the ordinary dictionary. A
+  standalone regression covers the fallback; punctuation-graph semantics and
+  official candidate reranking remain intentionally unimplemented.
