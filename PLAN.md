@@ -539,6 +539,12 @@ downstream handoff parity, not detector-box similarity alone.
       direct recognizer contract for greedy/beam comparisons without page
       segmentation overhead; it is diagnostic until a non-empty, transcribed
       line fixture is wired into the acceptance gate.
+      On the available German Fraktur line fixture, official Tesseract
+      produces `1` with mean word confidence `0.5886`; native greedy produces
+      `GI` with sequence confidence `0.5985` and two timestep confidences;
+      native beam-8 produces `GIIEE` with sequence confidence `0.5808` and no
+      per-character confidences. The confidence scale is close, but decoded
+      text is not yet parity, so beam remains diagnostic and opt-in.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.

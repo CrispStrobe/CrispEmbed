@@ -237,6 +237,11 @@ static void test_tesseract_image(const char * model_path, const char * image_pat
     const float sequence = tesseract_lstm_mean_confidence(ctx);
     printf("  text: '%s' (%d chars) char_conf=%d sequence_conf=%.6f\n", text ? text : "", len, n_conf, sequence);
     CHECK(sequence >= 0.0f && sequence <= 1.0f, "tesseract sequence confidence bounded");
+    const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
+    const char * recode_beam_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
+    const bool beam_enabled =
+        (beam_env && std::atoi(beam_env) > 1) || (recode_beam_env && std::atoi(recode_beam_env) > 1);
+    if (beam_enabled) CHECK(conf == nullptr && n_conf == 0, "tesseract beam has no fabricated char confidences");
     if (conf && n_conf > 0) {
         for (int i = 0; i < n_conf; ++i)
             CHECK(conf[i] >= 0.0f && conf[i] <= 1.0f, "tesseract image char confidence bounded");
