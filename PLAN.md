@@ -467,6 +467,12 @@ downstream handoff parity, not detector-box similarity alone.
       The comparator also accepts optional `--min-native-lines` and `--min-iou`
       gates; the component fixture passes at 12 lines and IoU `0.82`, while
       diagnostic runs without thresholds remain non-gating.
+      The aggregate page-metrics harness now selects `legacy-fallback`,
+      `component`, `baseline`, or `projection` explicitly and clears stale
+      policy environment variables between runs. On `scan_strip.png`, the
+      measured CER/WER are `0.0179/0.0841`, `0.0322/0.1121`,
+      `0.0179/0.0841`, and `0.0250/0.1121` respectively; legacy-fallback
+      remains the best default.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
