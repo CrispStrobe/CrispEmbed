@@ -1114,6 +1114,15 @@ int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx) {
     return ctx ? (int)ctx->dawgs.size() : 0;
 }
 
+int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char * name, const int * unichars,
+                                int n_unichars, int complete) {
+    if (!ctx || !name || n_unichars < 0 || (n_unichars > 0 && !unichars)) return -1;
+    const auto it = ctx->dawgs.find(name);
+    if (it == ctx->dawgs.end()) return -1;
+    const std::vector<int> ids(unichars, unichars + n_unichars);
+    return tesseract_dawg::prefix_matches(it->second, ids, complete != 0) ? 1 : 0;
+}
+
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled) {
     if (ctx) ctx->dump_mode = (enabled != 0);
 }

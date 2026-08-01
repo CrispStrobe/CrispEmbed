@@ -63,6 +63,12 @@ const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx);
 /// enabled only with CRISPEMBED_TESSERACT_DAWG_LOAD.
 int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx);
 
+/// Query a loaded DAWG by name using unicharset IDs. Returns 1 for a match,
+/// 0 for a non-match, and -1 when the graph is not loaded or arguments are
+/// invalid. `complete=0` accepts a valid prefix; `complete=1` requires a word.
+int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char * name, const int * unichars,
+                                int n_unichars, int complete);
+
 /// Enable/disable capture of per-stage intermediates for parity testing.
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);
 
