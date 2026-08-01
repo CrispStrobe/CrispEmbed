@@ -1658,3 +1658,9 @@ the pattern first.
   lfm2 + the closed engines are auto-guarded in `tests/regression/manifest.json`.
 - **`core/vlm_decoder.h` — deferred.** A unified scalar decode loop; only 2 scalar
   engines remain, so abstracting is premature. Revisit if a 3rd appears.
+
+- **Tesseract int-mode kernel optimization — IN PROGRESS.** Cache each LSTM
+  gate's int8 weights, bias quantization, and scale at model load, then
+  quantize each input/hidden vector once per timestep. The prior implementation
+  recomputed scales and rounded every weight inside every gate dot product.
+  Benchmark and decoded-output parity must pass before promotion.
