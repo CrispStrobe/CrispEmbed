@@ -28,12 +28,6 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `main` | O11.7 persistent graph and weight-cache optimization: reuse static shapes, scheduler buffers, dequantized critical weights, and batched line crops | **PENDING** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
 | 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
-| 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** explicit Tesseract Fraktur profile: DBNet page detection, grayscale line crops, and `tesseract-frk` GGUF recognition; preserve the existing generic Tesseract path | **COMPLETED — grouped full-page smoke: 21 regions, 1,017 chars, mean confidence 0.872; 74/74 tests** |
-| 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** reproducible native-vs-system Fraktur CER/WER harness for exact line and full-page fixtures, preserving long-s and Unicode NFC | **COMPLETED — page and direct-line modes** |
-| 2026-07-31 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** regenerate Fraktur F32/Q8 artifacts with exact source `training_flags=65` / `int_mode=true`; retain F32 output head | **IN PROGRESS — metadata fixed; CLI-equivalent int8 arithmetic pending** |
-| 2026-08-01 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | **Picked:** port a Tesseract-native classical page-segmentation path for Fraktur, retaining DBNet behind an explicit fallback gate; compare region geometry, text quality, and end-to-end latency | **IN PROGRESS — gated prototype exists; DBNet remains default while quality parity is fixed** |
-| 2026-08-01 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | Classical page-segmentation prototype (`CRISPEMBED_TESSERACT_PAGESEG=1`) | **EXPERIMENTAL — 21 lines and ~230 ms proposal time, but 983 chars / confidence 0.631 versus DBNet 1,017 chars / 0.872; not quality-equivalent** |
-| 2026-08-01 | `feat/tesseract-fraktur` / `/Volumes/backups/code/CrispEmbed-tesseract-fraktur` | Surface page-segmentation selection through supported interfaces | **COMPLETED — CLI `--tesseract-pageseg`, explicit C API stage field `page_segmentation`, and env override; DBNet remains default** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **COMPLETED** |
@@ -172,35 +166,15 @@ Required Fraktur implementation sequence:
    output projection was previously quantized.
 2. Add an explicit `tesseract-fraktur` stage/profile using DBNet line crops →
    grayscale crop → `tesseract_lstm` `frk` model, with the normal Tesseract
-   path remaining available for modern German. **Completed:** native/C API
-   engine value 15, `tesseract_fraktur_stage()`, and a backup-volume smoke test
-   on `german_official_print.jpg` using `dbnet-ic15-f16.gguf` plus
-   `tesseract-frk-q8_0.gguf` (21 line regions, 1,017 characters, mean
-   confidence 0.872, native stage 11.07 s; original Tesseract is 145 words,
-   1,021 characters, 1.84 s on the same page).
+   path remaining available for modern German.
 3. Add a Fraktur regression fixture containing the German title crop and
    full-page `german_official_print.jpg`; compare native GGUF, Python/
    Tesseract, and system Tesseract `-l frk` outputs with CER/WER where an
    oracle exists. Preserve `ſ`, `ß`, ligatures, and Unicode normalization in
-   the comparison. **In progress:** the full-page harness now groups DBNet
-   fragments into 21 line regions (down from 111 word-like regions); native
-   versus system-`frk` baseline is CER `0.2380`, WER `0.4113` on the current
-   fixture; `tools/compare_tesseract_fraktur.py` emits this NFC-preserving
-   comparison as JSON. System OCR remains a baseline, not a gold transcription.
-   The exact 200×80 title crop is also covered through the direct diff mode:
-   native Q8 decodes `GT`, while system `frk` decodes `1` (CER `2.0`, WER
-   `1.0`), confirming that this tiny fixture cannot use system OCR as its gold
-   transcription.
+   the comparison.
 4. Run crispasr-diff-style intermediate parity for the converted `frk` model,
-  then test F32, head-only Q8, and debug Q4. Do not publish a quant until
+   then test F32, head-only Q8, and debug Q4. Do not publish a quant until
    the Fraktur crop remains readable and the output-layer parity gate passes.
-   **Completed for refreshed exact-image references:** F32 passes all 9 stages
-   at cosine 1.000000; mixed Q8 passes all 9 with worst cosine 0.999873 and
-   keeps the output head F32; debug Q4 is intentionally not publishable (worst
-   recurrent-stage cosine 0.846360, logits 0.928677). Both deployed Fraktur
-   artifacts now also carry the exact source metadata `training_flags=65` and
-   `int_mode=true`; this records the source mode but does not yet reproduce
-   Tesseract CLI's int8 arithmetic.
 5. Keep `deu_frak` and the Calamari/OCRopus models as separately licensed
    external benchmarks; do not silently convert or redistribute them as
    Apache artifacts.
@@ -284,6 +258,21 @@ Python detector/recognizer page manifest is still required before parity is
 claimed. The current local Python environment lacks torch, numpy, and cv2, so
 that reference run remains an explicit external/dependency gate.
 
+The detector-independent production handoff is now explicit: `run_regions`
+accepts caller-supplied detector boxes and applies the configured lines/words
+ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
+pipeline test replays the DBNet boxes through this API and matches the normal
+98-record run; this validates the boundary, not external Tesseract TSV parity.
+
+The first real page comparison confirms why TSV parity cannot be asserted by
+zipping records: native DBNet/CRNN `words` mode emits 98 records, while
+Tesseract 5.5.2 `--psm 6` emits 106 TSV words. The first geometry already
+differs before recognition (`[46.97,0,62.56,20.88]` native versus
+`[50,0,58,19]` TSV), and later indices shift with segmentation. Full-page
+Tesseract TSV also reads `Drighton;` on this fixture, whereas the instrumented
+internal PSM7 crop reads `Brighton`; page segmentation and crop selection remain
+the active parity gate.
+
 The harness-blind CTC/vocabulary/confidence gate is now covered by the native
 `easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
 with repeated-token collapse, vocabulary entries are 1-based and validated,
@@ -308,32 +297,21 @@ continues to use left-to-right y-band ordering. The adapter is covered by the
 layout regression and the model-backed page smoke; horizontal-gap splitting is
 still a later detector-specific refinement.
 
-### Tesseract parity status — NOT PROVEN
+### Tesseract parity status — controlled line proven; page/CLI parity pending
 
 The repository contains a `.traineddata` → GGUF converter, a pure-Python
 Tesseract LSTM reference dumper, and `test-tesseract-lstm-diff`. That is an
 available validation path, not evidence that the shipped models match the
-original Tesseract engine. No completed `-ref.gguf` run is recorded for the
-exact installed `eng.traineddata`, and the backup GGUF metadata only identifies
-the `tessdata_best` source; it does not record a verified source-file hash.
+original Tesseract engine. The controlled exact `eng.traineddata` line run is
+now complete; backup artifacts must still be regenerated consistently when
+model metadata changes, and page/CLI parity remains separate.
 
 The native implementation is also a line recognizer. Tesseract's page
 segmentation, word boundaries, spacing, and reading order are separate
 postprocessing behavior. A Python forward pass can prove GGUF/runtime math
 against parsed weights, but does not by itself prove full Tesseract CLI parity.
-Do not mark this lane green until the exact source model is hashed, the
-reference dump and native diff pass every captured stage with magnitudes
-inspected, and the decoded line output is compared with the original engine.
-
-The explicit Fraktur lane is now exposed as `ocr_orchestrator::tesseract_fraktur`
-(C API engine value `15`) and `tesseract_fraktur_stage()`. It keeps DBNet page
-detection and line grouping, disables binarization, lowers the detector's
-minimum line height for historical scans, and recognizes grayscale crops with
-the caller-provided `tesseract-frk-{f32|q8_0}.gguf`. The existing generic
-`tesseract` engine/value `6` is unchanged. The model-gated regression accepts
-`CRISPEMBED_FRAKTUR_DET_MODEL`, `CRISPEMBED_FRAKTUR_MODEL`, and
-`CRISPEMBED_FRAKTUR_IMAGE`; it must be run from a complete configured build
-before this row is marked complete.
+Do not mark the full lane green until page segmentation, spacing, reading order,
+and decoded page output are compared with the original engine.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -390,8 +368,10 @@ downstream handoff parity, not detector-box similarity alone.
 
 #### Interoperability gates
 
-- [ ] Make detector output and ordering policy first-class production adapters;
-      no test-only DBNet→EasyOCR orchestration.
+- [x] Make detector output and ordering policy first-class production adapters;
+      `easyocr_pipeline::run_regions` now accepts detector-independent boxes and
+      applies the selected `lines`/`words` policy through the production crop /
+      recognizer path; the pipeline test exercises the injected-geometry handoff.
 - [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
       page fixture with a Python reference manifest.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
@@ -408,12 +388,17 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
       it with EasyOCR CRNN on identical crops rather than treating either
       recognizer as the detector.
-- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
-      its `-ref.gguf`, pass all captured stages and decoded line output, then
-      compare page segmentation/spacing independently.
+- [x] Prove the controlled line-recognizer boundary separately: the exact
+      Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
+      decoded text, and official instrumented PSM7 internal crop all match;
+      logits differ by at most `6.6e-7` with cosine `1.000000`.
+- [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
+      this remains open because direct line fixtures are not the same internal
+      crops selected by official PSM7.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
-      run and stage/output parity remain open.
+      run and controlled-line stage/output parity are complete; page parity
+      remains open.
 - [x] Align the diagnostic Tesseract reference dumper and native recognizer
       with the actual Leptonica `pixScaleGrayLI` fixed-16 bilinear contract
       (top-left sampling, integer weights, replicated edges). The previous
@@ -431,37 +416,52 @@ downstream handoff parity, not detector-box similarity alone.
       its recode beam. GGUF/reference metadata now records `training_flags`
       and `int_mode`; the current F32 graph remains measurable against the
       F32 Python reference but is not yet CLI-logit parity.
-- [ ] Add an int8-equivalent Tesseract inference path and diff its logits
-      against a reference produced with the same quantized arithmetic before
-      adding a recode/dictionary beam. A plain CTC prefix beam over current
-      F32 logits still returns `Drighton`, so beam search alone cannot explain
-      the CLI result. An initial implementation is opt-in via
-      `CRISPEMBED_TESSERACT_INT8=1`; it uses row-wise symmetric int8 weights
-      and per-vector activation scales. On the official full-page fixture it
-      produced 1,016 characters in 9.8 s versus the current F32-math path's
-      1,017 characters in 11.1 s, but its direct logits are not parity-safe.
-      It must not become the default; exact Tesseract int-mode scales/kernels
-      are still required.
-      The converter now preserves source int8 matrices and row scales as
-      auxiliary `.int8`/`.int8_scale` tensors while retaining F32 tensors.
-      Candidate artifact: `/Volumes/backups/ai/crispembed-gguf/
-      tesseract-frk-int8-source-candidate.gguf`; it is not published or
-      substituted for the validated F32/Q8 artifacts yet.
-      The quantizer policy now keeps every Tesseract `.weight` tensor lossless
-      in a deployment container; the source int8 matrices remain separate
-      host-side tensors, avoiding a second ggml quantization pass.
-- [x] Add independent line-recognition workers for the Fraktur page path.
-      `CRISPEMBED_TESSERACT_WORKERS=4` preserves detector order and output
-      text while reducing the official fixture's recognizer stage from 11.66 s
-      to 10.00 s; the 1,017-character result and 74-test regression remain
-      unchanged. It remains opt-in until worker-count policy is exposed in
-      the public configuration.
-- [x] Split Fraktur end-to-end timing into detector, grouping, crop, and
-      recognition stages. On the official fixture with four workers: DBNet
-      detection `4411 ms`, grouping `0 ms`, crop preparation `126 ms`, line
-      recognition `554 ms`, stage total `6830 ms`; system Tesseract `--psm 3`
-      completes in `1.83 s` and emits 145 non-empty TSV word records. The
-      detector is now the dominant optimization target.
+- [x] Add the first int8-equivalent Tesseract activation path and an int-mode
+      Python `-ref.gguf`; input/intermediate/output boundaries pass the 0.99
+      diff gate (int-mode logits cosine `0.997227`). This shifts native output
+      to `Lhey ... Drighton`, but does not yet reproduce the CLI's
+      `ihey ... Brighton`.
+- [x] Add an opt-in CTC prefix beam (`CRISPEMBED_TESSERACT_BEAM_WIDTH`) and
+      test widths 2, 3, 5, 10, 16, 25, and 50. It leaves the int-mode result
+      unchanged, proving generic CTC beam search alone is not the CLI choice
+      mechanism.
+- [x] Close the int-mode network logit gap with Tesseract's lookup-table
+      nonlinearities and exact quantized matrix arithmetic. Recode/dictionary
+      scoring remains a separate pending gate below.
+- [x] Added Tesseract's 1/256 LUT nonlinearities and reconstructed per-row
+      int8 matrix accumulation. Native/Python int-mode parity improved to
+      logits cosine `0.998405` with identical decoded output; CTC and
+      Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
+      the CLI's `Brighton`.
+- [x] Compare native against an instrumented official Tesseract PSM7 run at
+      the internal activation boundary. The earliest divergence was the
+      `Convolve` layer's out-of-image cells: Tesseract fills them with its
+      seeded `TRand`, not zeros. GGUF now preserves `sample_iteration`, and
+      both converter/reference/native paths reproduce the exact seeded padding.
+      On the 601x36 official PSM7 crop, every captured stage passes at cosine
+      1.000000 (logits max error 6.6e-7, cosine 1.000000), and native decodes
+      the same `Brighton` path as official Tesseract. This closes arithmetic
+      and preprocessing parity for this controlled line; recode/dictionary
+      scoring and full-page segmentation remain separate gates.
+- [x] Preserve the serialized Tesseract recoder map/offsets in the runtime and
+      add an opt-in recoder-prefix legality layer to the diagnostic beam.
+      Width-25 constrained decoding reproduces `Brighton` on the official
+      crop with all 9 network diff stages still passing. Full RecodeBeamSearch
+      certainty aggregation and DAWG dictionary scoring remain pending and
+      are not enabled in production.
+- [x] Harden `test-tesseract-lstm-diff` so decoded metadata mismatches fail the
+      test. The Python reference now matches native `stb_image` RGB-to-gray
+      conversion (`(77R+150G+29B)>>8`); all six direct line fixtures pass
+      decoded parity with exact input tensors and stage cosines at or above
+      `0.998821`.
+- [x] Sweep six existing CC0/public-domain English line fixtures through the
+      exact int-mode native/Python harness: all 6 references pass the
+      captured-stage 0.99 parity gate, and the constrained width-25 beam remains
+      stable on the official `Brighton` crop. Official CLI PSM7 output was
+      separately measured with `language_model_ngram_on=0` and `=1`; both
+      settings produced identical text on all six lines. The remaining
+      differences (crop width, spacing, and case) are page-segmentation/CLI
+      geometry, not DAWG scoring evidence.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
