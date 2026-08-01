@@ -9,6 +9,7 @@ decoded output even when the line ordering is correct.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -24,6 +25,14 @@ BOX_RE = re.compile(
 
 def run(command: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(command, text=True, capture_output=True, env=env, timeout=900, check=False)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float, float, float]]:
@@ -134,6 +143,11 @@ def main() -> int:
         checks["min_iou"] = comparison["mean_indexed_iou"] >= args.min_iou
     result = {
         "image": str(args.image),
+        "provenance": {
+            "detector_model_sha256": sha256_file(args.det_model),
+            "recognizer_model_sha256": sha256_file(args.rec_model),
+            "ordering": "official-tsv-level4-vs-native-debug-candidate-index",
+        },
         "psm": args.psm,
         "component": args.component,
         "baseline": args.baseline,
