@@ -1158,6 +1158,18 @@ made yet for quantized companions; per-language `crispembed-diff` and decoded
 output checks remain TODO. One old Fraktur mixed candidate is truncated and
 was excluded.
 
+Chinese seeded F32 is the first decoded-output exception: all 9 stages pass
+with aligned magnitudes, but the old native decoder returned an empty string
+while the Python reference returned `<141>`. This is a harness-blind recoder
+mapping defect, not a graph discrepancy. The native fallback now exposes the
+unmapped class; no Chinese OCR-quality or quantized-speed claim is accepted
+until recode-beam composition is implemented and tested.
+
+The corrected F32/Q8_0/Q4_K canonical files are now uploaded to the intended
+`cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories. Existing
+F16 files have not yet been replaced; they remain a release TODO until fresh
+seeded F16 conversions are generated and checked.
+
 ### Tesseract cached-int8 recurrent kernel gate
 
 On the same scan-strip input and `tesseract-frk-q8_0.gguf`, cached and
@@ -1166,3 +1178,17 @@ uncached int-mode decoding both returned `SEEEES`. The cached path measured
 `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1`, a `29.3x` speedup with identical
 decoded output. Cached mode is therefore the default; the environment gate is
 retained for parity diagnostics and alternate architectures.
+
+Full-page validation on `scan_strip.png` confirmed the same result: cached and
+uncached paths both produced 12 regions/566 chars with CER `0.03375` and WER
+`0.15044`. Cached native stage time was `22.11 s` versus `157.59 s` uncached,
+for a `7.1x` speedup; detect plus crop was only `46.1 ms` cached. The remaining
+Fraktur page-quality gap is therefore in recognition/output parity, not DBNet
+or crop throughput.
+
+The comparator now stores both normalized decoded strings. The scan-strip
+official/native pair is 451/566 chars with CER `0.03375`; representative
+differences are `50`→`80`, `ay`→`8ay`, capitalization (`Such`/`such`,
+`Scheme`/`scheme`), and punctuation/hyphen spacing. This confirms the next
+quality work should inspect crop geometry and decode semantics, not detector
+throughput.
