@@ -106,6 +106,16 @@ Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
 seed-preserving mixed Q8/F32 candidate reaches 9/9 and `0.994876`. Both decoded
 outputs still differ from Python, so mixed precision is not promoted. The
 blueprint now explicitly models native row-wise int8 FC arithmetic.
+
+Backup audit found 46 Tesseract model GGUFs, but 45 lack
+`tesseract_lstm.sample_iteration`; only the explicitly named Homebrew English
+artifact has the seed. Missing-seed language and quantized variants require
+regeneration or verified metadata reconstruction before parity acceptance.
+Fresh F32 Fraktur conversion now passes all 9 stages exactly (logits max error
+`2.09e-7`) and decoded text matches Python after the blueprint adopted int8
+LSTM row arithmetic. The seed-preserving mixed Q8/F32 candidate still fails at
+logits cosine `0.989655` and decoded output, so quantization—not preprocessing
+or graph topology—is the remaining quality blocker.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
@@ -2477,3 +2487,9 @@ the pattern first.
   lfm2 + the closed engines are auto-guarded in `tests/regression/manifest.json`.
 - **`core/vlm_decoder.h` — deferred.** A unified scalar decode loop; only 2 scalar
   engines remain, so abstracting is premature. Revisit if a 3rd appears.
+
+- **Tesseract int-mode kernel optimization — IN PROGRESS.** Cache each LSTM
+  gate's int8 weights, bias quantization, and scale at model load, then
+  quantize each input/hidden vector once per timestep. The prior implementation
+  recomputed scales and rounded every weight inside every gate dot product.
+  Benchmark and decoded-output parity must pass before promotion.

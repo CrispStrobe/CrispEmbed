@@ -265,13 +265,35 @@ def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False, int_mode=False):
     h = np.zeros(ns, dtype=np.float32)
     c = np.zeros(ns, dtype=np.float32)
     output = np.zeros((T, ns), dtype=np.float32)
+    if int_mode:
+        row_max = np.maximum(np.max(np.abs(W_ih), axis=1), np.max(np.abs(W_hh), axis=1))
+        row_max = np.maximum(row_max, np.abs(bias))
+        row_scale = (row_max / np.float32(127.0)).astype(np.float32)
+        safe_scale = np.where(row_scale == 0, np.float32(1.0), row_scale)
+        def q_weights(weights):
+            scaled = weights / safe_scale[:, None]
+            rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+            return np.clip(rounded, -127, 127).astype(np.int32)
+        q_w_ih = q_weights(W_ih)
+        q_w_hh = q_weights(W_hh)
+        scaled_bias = bias / safe_scale
+        q_bias = np.where(scaled_bias >= 0, np.floor(scaled_bias + 0.5),
+                          -np.floor(-scaled_bias + 0.5)).astype(np.int32)
 
     for step in range(T):
         t = (T - 1 - step) if reverse else step
         xt = x[t]
 
-        # gates = W_ih @ x + W_hh @ h + bias
-        gates = W_ih @ xt + W_hh @ h + bias
+        # Match native TF_INT_MODE row-wise arithmetic when enabled.
+        if int_mode:
+            qx = np.clip(np.where(xt * 127.0 >= 0, np.floor(xt * 127.0 + 0.5),
+                                  -np.floor(-xt * 127.0 + 0.5)), -127, 127).astype(np.int32)
+            qh = np.clip(np.where(h * 127.0 >= 0, np.floor(h * 127.0 + 0.5),
+                                  -np.floor(-h * 127.0 + 0.5)), -127, 127).astype(np.int32)
+            acc = q_w_ih @ qx + q_w_hh @ qh + q_bias * 127
+            gates = acc.astype(np.float32) * row_scale / np.float32(127.0)
+        else:
+            gates = W_ih @ xt + W_hh @ h + bias
 
         logistic = tesseract_logistic if int_mode else sigmoid
         nonlinear_tanh = tesseract_tanh if int_mode else np.tanh
@@ -403,6 +425,35 @@ def int8_fc_forward(x, weight, bias):
         acc = xi @ wi + bi * 127
         out[:, row] = acc.astype(np.float32) * scale / np.float32(127.0)
     return out
+
+
+def int8_lstm_gates(x, h, W_ih, W_hh, bias):
+    """Compute one Tesseract int-mode LSTM gate vector by serialized rows."""
+    gates = np.empty(W_ih.shape[0], dtype=np.float32)
+    def q127(values):
+        scaled = values * np.float32(127.0)
+        rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+        return np.clip(rounded, -127, 127).astype(np.int32)
+    xi = q127(np.asarray(x, dtype=np.float32))
+    hi = q127(np.asarray(h, dtype=np.float32))
+    for row in range(W_ih.shape[0]):
+        max_abs = max(float(np.max(np.abs(W_ih[row]))),
+                      float(np.max(np.abs(W_hh[row]))), abs(float(bias[row])))
+        if max_abs == 0.0:
+            gates[row] = 0.0
+            continue
+        scale = np.float32(max_abs / 127.0)
+        wi_scaled = W_ih[row] / scale
+        wh_scaled = W_hh[row] / scale
+        wi = np.where(wi_scaled >= 0, np.floor(wi_scaled + 0.5), -np.floor(-wi_scaled + 0.5))
+        wh = np.where(wh_scaled >= 0, np.floor(wh_scaled + 0.5), -np.floor(-wh_scaled + 0.5))
+        wi = np.clip(wi, -127, 127).astype(np.int32)
+        wh = np.clip(wh, -127, 127).astype(np.int32)
+        b_scaled = float(bias[row] / scale)
+        bq = int(np.floor(b_scaled + 0.5) if b_scaled >= 0 else -np.floor(-b_scaled + 0.5))
+        acc = int(wi @ xi) + int(wh @ hi) + bq * 127
+        gates[row] = np.float32(acc) * scale / np.float32(127.0)
+    return gates
 
 
 def run_forward(root, image_gray, captures, int_mode=False):
