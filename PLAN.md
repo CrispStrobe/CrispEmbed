@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: Latin Gen1/Gen2 F16/F32 family checks run with fresh Miniconda references; Latin Gen1 passes, while English dynamic-width row-11 logits remains explicitly open | **IN PROGRESS** |
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: English row-11 dynamic-width drift is backend-independent and blank-class dominated; decoded parity holds, strict tensor gate remains open | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |

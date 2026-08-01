@@ -35,6 +35,16 @@
   `0.975300` F16) despite global cosine around `0.9998`. This is not an F16
   artifact regression, but that dynamic-width logits gate remains open and is
   not claimed green.
+- [x] Localize the English width-128 exception with CPU/Metal A-B and
+      class-level logits diagnostics. `EASYOCR_FORCE_CPU=1` and the default
+      Metal backend produce identical reports; the first row-specific drift is
+      BiLSTM-1 timestep 11 (`cos 0.998517`, norms `27.04/27.76`) and the final
+      projection amplifies it at logits timestep 11 (`cos 0.973824`, norms
+      `28.81/30.84`). The largest single difference is blank class 0
+      (`15.94` native vs `17.69` Python); all 31 timestep argmaxes still match.
+      This is a backend-independent numerical-sensitivity case, not an F16
+      layout or tokenizer error. The strict per-row tensor gate remains open;
+      decoded parity is recorded separately.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
