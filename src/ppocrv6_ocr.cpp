@@ -1,17 +1,22 @@
 #include "ppocrv6_ocr.h"
 
+#include "ggml.h"
+#include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h"
 #include "crispembed_diff.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <numeric>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 using core_cpu::conv2d_cpu;
@@ -49,6 +54,22 @@ struct pp_svtr {
     std::vector<float> ln2_wf, ln2_bf, fc1_wf, fc1_bf, fc2_wf, fc2_bf;
 };
 
+struct pp_graph_state {
+    ggml_backend_t backend = nullptr;
+    ggml_backend_t cpu_backend = nullptr;
+    ggml_backend_sched_t sched = nullptr;
+    ggml_context * graph_ctx = nullptr;
+    ggml_cgraph * graph = nullptr;
+    ggml_tensor * input = nullptr;
+    ggml_tensor * output = nullptr;
+    std::vector<uint8_t> graph_meta;
+    std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
+    std::vector<ggml_context *> resident_ctxs;
+    std::vector<ggml_backend_buffer_t> resident_bufs;
+    bool attempted = false;
+    bool ready = false;
+};
+
 struct ppocrv6_ocr_context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
@@ -75,6 +96,7 @@ struct ppocrv6_ocr_context {
     std::vector<pp_svtr> svtr;
     std::vector<float> svtr_norm_wf, svtr_norm_bf, svtr_head_wf, svtr_head_bf;
     std::unique_ptr<crispembed_diff::Ref> diff;
+    pp_graph_state graph;
 };
 
 static ggml_tensor * get(const core_gguf::tensor_map & m, const std::string & n) {
@@ -438,6 +460,142 @@ static bool map_model(ppocrv6_ocr_context * c) {
     return !c->stem.empty() && (tiny ? c->fc2_w != nullptr : c->svtr_head_w != nullptr && c->svtr.size() == 2);
 }
 
+// The GGUF loader owns the original leaves.  A graph backend must not consume
+// those leaves directly when they live on another backend, and convolution
+// kernels need an explicit [KW, KH, IC/group, OC] view.  Materialize each leaf
+// once on the graph backend, preserving the contiguous GGUF order.
+static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tensor * src, ggml_type type,
+                                       int64_t ne0, int64_t ne1, int64_t ne2, int64_t ne3) {
+    if (!src || !c->graph.backend) return nullptr;
+    auto it = c->graph.resident.find(src);
+    if (it != c->graph.resident.end()) return it->second;
+    std::vector<float> data = to_f32(src);
+    ggml_init_params ip = { ggml_tensor_overhead() + 64, nullptr, true };
+    ggml_context * wc = ggml_init(ip);
+    if (!wc) return nullptr;
+    ggml_tensor * dst = ggml_new_tensor_4d(wc, type, ne0, ne1, ne2, ne3);
+    ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors(wc, c->graph.backend);
+    if (!dst || !buf) {
+        if (buf) ggml_backend_buffer_free(buf);
+        ggml_free(wc);
+        return nullptr;
+    }
+    if (type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> half(data.size());
+        ggml_fp32_to_fp16_row(data.data(), half.data(), (int64_t)half.size());
+        ggml_backend_tensor_set(dst, half.data(), 0, ggml_nbytes(dst));
+    } else {
+        ggml_backend_tensor_set(dst, data.data(), 0, ggml_nbytes(dst));
+    }
+    c->graph.resident[src] = dst;
+    c->graph.resident_ctxs.push_back(wc);
+    c->graph.resident_bufs.push_back(buf);
+    return dst;
+}
+
+static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, const pp_conv & p) {
+    if (!p.w || p.stride_h != p.stride_w || p.pad_h != p.pad_w) return nullptr;
+    const bool dw = p.groups == p.in_ch;
+    const int icg = dw ? 1 : p.in_ch / p.groups;
+    // Depthwise im2col requires F16; regular convolutions stay F32 to preserve
+    // the scalar reference's accumulation precision.
+    ggml_tensor * w = pp_graph_resident(c, p.w, dw ? GGML_TYPE_F16 : GGML_TYPE_F32, p.kw, p.kh, icg, p.out_ch);
+    if (!w) return nullptr;
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
+                         : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
+    if (p.b) {
+        ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
+        if (!b) return nullptr;
+        y = ggml_add(g, y, ggml_reshape_3d(g, b, 1, 1, p.out_ch));
+    }
+    return y;
+}
+
+static ggml_tensor * pp_graph_block(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, const pp_block & b) {
+    ggml_tensor * y = pp_graph_conv(c, g, x, b.dw);
+    if (!y) return nullptr;
+    if (b.se) {
+        ggml_tensor * pooled = ggml_pool_2d(g, y, GGML_OP_POOL_AVG, y->ne[0], y->ne[1], y->ne[0], y->ne[1], 0, 0);
+        ggml_tensor * gate = pp_graph_conv(c, g, pooled, b.se1);
+        if (!gate) return nullptr;
+        gate = ggml_relu(g, gate);
+        gate = pp_graph_conv(c, g, gate, b.se2);
+        if (!gate) return nullptr;
+        gate = ggml_hardsigmoid(g, gate);
+        y = ggml_mul(g, y, gate);
+    }
+    ggml_tensor * z = pp_graph_conv(c, g, y, b.cm1);
+    if (!z) return nullptr;
+    z = b.silu_act ? ggml_silu(g, z) : ggml_gelu(g, z);
+    ggml_tensor * out = pp_graph_conv(c, g, z, b.cm2);
+    if (!out) return nullptr;
+    if (b.residual) out = ggml_add(g, out, y);
+    return out;
+}
+
+static bool pp_graph_build(ppocrv6_ocr_context * c) {
+    if (c->graph.attempted) return c->graph.ready;
+    c->graph.attempted = true;
+    // Large/SVTR has asymmetric stem padding and a separate token decoder;
+    // keep it on the proven CPU path until that graph has its own parity taps.
+    if (c->large_stem || !std::getenv("CRISPEMBED_PPOCRV6_GRAPH")) return false;
+    c->graph.backend = c->backend;
+    if (!c->graph.backend) return false;
+    if (ggml_backend_is_cpu(c->graph.backend)) {
+        ggml_backend_t backends[] = { c->graph.backend };
+        c->graph.sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    } else {
+        c->graph.cpu_backend = ggml_backend_cpu_init();
+        ggml_backend_t backends[] = { c->graph.backend, c->graph.cpu_backend };
+        c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+    }
+    if (!c->graph.sched) return false;
+    constexpr int H = 48, W = 320;
+    const size_t meta_size = ggml_tensor_overhead() * 4096 + ggml_graph_overhead_custom(4096, false);
+    c->graph.graph_meta.resize(meta_size);
+    ggml_init_params ip = { meta_size, c->graph.graph_meta.data(), true };
+    c->graph.graph_ctx = ggml_init(ip);
+    if (!c->graph.graph_ctx) return false;
+    c->graph.graph = ggml_new_graph_custom(c->graph.graph_ctx, 4096, false);
+    c->graph.input = ggml_new_tensor_4d(c->graph.graph_ctx, GGML_TYPE_F32, W, H, 3, 1);
+    ggml_set_name(c->graph.input, "ppocrv6_graph_input");
+    ggml_set_input(c->graph.input);
+    ggml_tensor * x = c->graph.input;
+    for (const pp_conv & p : c->stem) {
+        x = pp_graph_conv(c, c->graph.graph_ctx, x, p);
+        if (!x) return false;
+        x = ggml_gelu(c->graph.graph_ctx, x);
+    }
+    for (const auto & stage : c->stages) {
+        for (const pp_block & b : stage) {
+            x = pp_graph_block(c, c->graph.graph_ctx, x, b);
+            if (!x) return false;
+        }
+    }
+    c->graph.output = x;
+    ggml_set_name(x, "ppocrv6_graph_output");
+    ggml_set_output(x);
+    ggml_build_forward_expand(c->graph.graph, x);
+    ggml_backend_sched_reset(c->graph.sched);
+    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+    c->graph.ready = true;
+    fprintf(stderr, "ppocrv6: persistent GGML backbone graph ready (%s, %lldx%lldx%lld)\n",
+            ggml_backend_name(c->graph.backend), (long long)x->ne[0], (long long)x->ne[1], (long long)x->ne[2]);
+    return true;
+}
+
+static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & input, std::vector<float> & output,
+                         int & h, int & w) {
+    if (!pp_graph_build(c)) return false;
+    ggml_backend_tensor_set(c->graph.input, input.data(), 0, input.size() * sizeof(float));
+    if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
+    output.resize(ggml_nelements(c->graph.output));
+    ggml_backend_tensor_get(c->graph.output, output.data(), 0, output.size() * sizeof(float));
+    w = (int)c->graph.output->ne[0];
+    h = (int)c->graph.output->ne[1];
+    return true;
+}
+
 static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vector<float> & out) {
     constexpr int H = 48, W = 320;
     out.assign(3 * H * W, 0.0f);
@@ -572,7 +730,16 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
 static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<float> & input, int * out_len) {
     std::vector<float> x = input, y;
     int h = 48, w = 320;
-    if (c->large_stem) {
+    std::vector<float> graph_out;
+    const bool graph_done = pp_graph_run(c, input, graph_out, h, w);
+    if (graph_done) {
+        x.swap(graph_out);
+        if (c->diff) {
+            auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
+            fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min,
+                    r.is_pass() ? "PASS" : "FAIL");
+        }
+    } else if (c->large_stem) {
         int oh, ow;
         auto diff_stem = [&](const char * name, const std::vector<float> & v) {
             if (!c->diff) return;
@@ -622,7 +789,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             fprintf(stderr, "[ppocrv6-diff] ppocrv6.large_stem cos=%.6f |mine|=%.6g %s\n", r.cos_min,
                     std::sqrt(std::inner_product(x.begin(), x.end(), x.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
         }
-    } else
+    } else {
         for (const auto & s : c->stem) {
             int oh, ow;
             if (!apply_conv(s, x, h, w, y, oh, ow)) return nullptr;
@@ -645,7 +812,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
                         r.is_pass() ? "PASS" : "FAIL");
             }
         }
-    for (size_t si = 0; si < c->stages.size(); ++si) {
+    }
+    if (!graph_done) for (size_t si = 0; si < c->stages.size(); ++si) {
         for (size_t bi = 0; bi < c->stages[si].size(); ++bi) {
             std::vector<float> tap_dw, tap_cm1;
             if (!run_block(c->stages[si][bi], x, h, w, si == 0 && bi == 0 ? &tap_dw : nullptr,
@@ -756,7 +924,9 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
 
 extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
     auto * c = new ppocrv6_ocr_context();
-    c->backend = ggml_backend_cpu_init();
+    const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    if (!c->backend) c->backend = ggml_backend_cpu_init();
     gguf_context * meta = core_gguf::open_metadata(path);
     if (!meta) {
         delete c;
@@ -779,6 +949,14 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
 
 extern "C" void ppocrv6_ocr_free(ppocrv6_ocr_context * c) {
     if (!c) return;
+    for (auto * buf : c->graph.resident_bufs)
+        if (buf) ggml_backend_buffer_free(buf);
+    for (auto * ctx : c->graph.resident_ctxs)
+        if (ctx) ggml_free(ctx);
+    if (c->graph.sched) ggml_backend_sched_free(c->graph.sched);
+    // graph.backend is normally c->backend; it is freed below.
+    if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
+    if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
     core_gguf::free_weights(c->wl);
     if (c->backend) ggml_backend_free(c->backend);
     delete c;

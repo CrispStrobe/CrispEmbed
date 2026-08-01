@@ -57,12 +57,13 @@ normalization. These values must remain part of the parity fixtures.
 
 ## Backend status and GPU roadmap
 
-The current PP-OCRv6 detector, recognizer, and PP-LCNet orientation runtime
-are correctness-first CPU implementations. They load GGUF weights through the
-CPU backend and execute custom `conv2d_cpu`/`linear_cpu` kernels; they do not
-yet construct persistent ggml graphs and therefore do not use Metal or CUDA.
-The surrounding orchestrator can still run other graph-backed OCR stages on a
-GPU, but that does not accelerate these PP-OCRv6 stages.
+The default PP-OCRv6 detector, recognizer, and PP-LCNet orientation runtime
+remain correctness-first CPU implementations. An experimental persistent GGML
+backbone graph is available for tiny/small recognizers with
+`CRISPEMBED_PPOCRV6_GRAPH=1`; it covers the stem, depthwise/pointwise blocks,
+SE gates, activations, residuals, and all four backbone stages. The recognizer
+head and the detector/orientation paths remain on the CPU reference path until
+their parity gates are complete.
 
 The graph port is staged: first reproduce detector, SVTR recognizer, and
 PP-LCNet logits with persistent ggml graphs and CPU parity taps; then enable
@@ -70,8 +71,8 @@ Metal/CUDA scheduling with residency checks; finally batch line crops and cache
 static-shape graphs and dequantized critical tensors. Every stage must pass
 cosine/logit parity and live CER gates on the CC0/German corpus.
 
-Until those gates pass, PP-OCRv6 remains explicitly CPU-only; enabling a GPU
-build does not silently imply GPU execution for this family.
+Until those gates pass, PP-OCRv6 remains explicitly CPU-first; enabling the
+experimental graph does not silently change the default execution path.
 
 Dump the current torch reference fixture and enable native comparisons with:
 
