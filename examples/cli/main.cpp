@@ -136,6 +136,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
     fprintf(stderr, "       --tess-model-dir D  directory of tesseract-{lang}-q8_0.gguf for auto-select\n");
+    fprintf(stderr, "       --tesseract-pageseg  use classical Tesseract-style page segmentation (experimental)\n");
     fprintf(stderr, "       --sr-model PATH text super-resolution GGUF for low-DPI upscaling (NAFNet+PixelShuffle)\n");
     fprintf(stderr, "  --pan-sr FILE    standalone PAN super-resolution: upscale image, write PGM to stdout\n");
     fprintf(stderr, "                   (needs --pan-model PATH: PAN GGUF, Pixel Attention Network, 2x or 4x)\n");
@@ -276,6 +277,7 @@ static int cli_main(int argc, char ** argv) {
     std::string punct_model;         // --punct-model: post-process OCR with punctuation
     std::string output_format;       // --output-format: text/hocr/alto
     std::string pipeline_engine;     // --ocr-engine NAME
+    bool tesseract_pageseg = false;  // --tesseract-pageseg
     std::string pdf_dpi_path;        // --pdf-dpi FILE
     std::string find_skew_path;      // --find-skew FILE
     std::string dewarp_path;         // --dewarp FILE
@@ -410,6 +412,8 @@ static int cli_main(int argc, char ** argv) {
             truecase_model = argv[++i];
         } else if (strcmp(argv[i], "--tess-model-dir") == 0 && i + 1 < argc) {
             tess_model_dir = argv[++i];
+        } else if (strcmp(argv[i], "--tesseract-pageseg") == 0) {
+            tesseract_pageseg = true;
         } else if (strcmp(argv[i], "--denoise") == 0) {
             pipeline_denoise = true;
         } else if (strcmp(argv[i], "--sr-model") == 0 && i + 1 < argc) {
@@ -1137,6 +1141,7 @@ static int cli_main(int argc, char ** argv) {
             st.det_target_short = 736;
             st.vlm_max_tokens = 0;
             st.vlm_prompt = nullptr;
+            st.page_segmentation = tesseract_pageseg ? 1 : 0;
             st.min_chars = min_chars;
             st.min_confidence = min_conf;
             pctx = crispembed_ocr_pipeline_init_stages(

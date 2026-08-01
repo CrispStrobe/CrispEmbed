@@ -5071,6 +5071,7 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
         st.params.det_dilation = s.det_dilation == 0 ? 1 : s.det_dilation;
         st.params.det_scoring = s.det_score_mode == 1 ? ocr_detect::score_mode::accurate : ocr_detect::score_mode::fast;
         st.params.vlm_max_tokens = s.vlm_max_tokens;
+        st.params.page_segmentation = s.page_segmentation;
         if (s.vlm_prompt && *s.vlm_prompt) st.params.vlm_prompt = s.vlm_prompt;
         st.accept.min_chars = s.min_chars;
         st.accept.min_confidence = s.min_confidence;

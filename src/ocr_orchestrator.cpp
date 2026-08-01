@@ -677,7 +677,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         const auto tess_bench_start = std::chrono::steady_clock::now();
         std::vector<ocr_detect::text_box> boxes;
-        if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG")) {
+        const bool classical_pageseg = st.params.page_segmentation != 0 ||
+                                       std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+        if (classical_pageseg) {
             int sw = 0, sh = 0, sc = 0;
             unsigned char * seg_gray = stbi_load(path, &sw, &sh, &sc, 1);
             if (seg_gray) {
@@ -697,7 +699,6 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         detected_regions.reserve(boxes.size());
         for (const auto & box : boxes)
             detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-        const bool classical_pageseg = std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
         const auto line_regions = classical_pageseg ? detected_regions
                                                     : easyocr_layout::group_dbnet_lines(detected_regions);
         const auto tess_group_done = std::chrono::steady_clock::now();
