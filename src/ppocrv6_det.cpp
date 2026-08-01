@@ -1,16 +1,22 @@
 #include "ppocrv6_det.h"
 #include "ocr_detect.h"
 
+#include "ggml.h"
+#include "ggml-alloc.h"
+#include "ggml-backend.h"
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h"
 #include "ggml-cpu.h"
 
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <queue>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 extern "C" {
 unsigned char * stbi_load(const char *, int *, int *, int *, int);
@@ -62,6 +68,22 @@ struct context {
     std::vector<float> last_prob;
     int last_h = 0, last_w = 0;
     std::unordered_map<std::string, std::vector<float>> last_stages;
+    struct graph_state {
+        ggml_backend_t backend = nullptr;
+        ggml_backend_t cpu_backend = nullptr;
+        ggml_backend_sched_t sched = nullptr;
+        ggml_context * graph_ctx = nullptr;
+        ggml_cgraph * graph = nullptr;
+        ggml_tensor * input = nullptr;
+        ggml_tensor * output = nullptr;
+        std::vector<uint8_t> meta;
+        std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
+        std::vector<ggml_context *> resident_ctxs;
+        std::vector<ggml_backend_buffer_t> resident_bufs;
+        int h = 0, w = 0;
+        bool attempted = false;
+        bool ready = false;
+    } graph;
 };
 
 static ggml_tensor * get(const core_gguf::tensor_map & m, const std::string & n) {
@@ -264,6 +286,145 @@ static bool run_block(const block & b, std::vector<float> & x, int & h, int & w,
     return true;
 }
 
+static ggml_tensor * graph_resident(context * c, const ggml_tensor * src, ggml_type type, int64_t ne0, int64_t ne1,
+                                    int64_t ne2, int64_t ne3) {
+    if (!src || !c->graph.backend) return nullptr;
+    auto it = c->graph.resident.find(src);
+    if (it != c->graph.resident.end()) return it->second;
+    std::vector<float> data = to_f32(src);
+    ggml_init_params ip = { ggml_tensor_overhead() + 64, nullptr, true };
+    ggml_context * wc = ggml_init(ip);
+    if (!wc) return nullptr;
+    ggml_tensor * dst = ggml_new_tensor_4d(wc, type, ne0, ne1, ne2, ne3);
+    ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors(wc, c->graph.backend);
+    if (!dst || !buf) {
+        if (buf) ggml_backend_buffer_free(buf);
+        ggml_free(wc);
+        return nullptr;
+    }
+    if (type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> half(data.size());
+        ggml_fp32_to_fp16_row(data.data(), half.data(), (int64_t)half.size());
+        ggml_backend_tensor_set(dst, half.data(), 0, ggml_nbytes(dst));
+    } else {
+        ggml_backend_tensor_set(dst, data.data(), 0, ggml_nbytes(dst));
+    }
+    c->graph.resident[src] = dst;
+    c->graph.resident_ctxs.push_back(wc);
+    c->graph.resident_bufs.push_back(buf);
+    return dst;
+}
+
+static ggml_tensor * graph_conv(context * c, ggml_context * g, ggml_tensor * x, const conv & p) {
+    if (!p.w) return nullptr;
+    const bool dw = p.groups == p.ic;
+    const int icg = dw ? 1 : p.ic / p.groups;
+    ggml_tensor * w = graph_resident(c, p.w, GGML_TYPE_F16, p.kw, p.kh, icg, p.oc);
+    if (!w) return nullptr;
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1)
+                         : ggml_conv_2d(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1);
+    if (p.b) {
+        ggml_tensor * b = graph_resident(c, p.b, GGML_TYPE_F32, p.oc, 1, 1, 1);
+        if (!b) return nullptr;
+        y = ggml_add(g, y, ggml_reshape_3d(g, b, 1, 1, p.oc));
+    }
+    return y;
+}
+
+static ggml_tensor * graph_block(context * c, ggml_context * g, ggml_tensor * x, const block & b) {
+    ggml_tensor * y = graph_conv(c, g, x, b.dw);
+    if (!y) return nullptr;
+    if (b.gate.valid) {
+        ggml_tensor * pooled = ggml_pool_2d(g, y, GGML_OP_POOL_AVG, y->ne[0], y->ne[1], y->ne[0], y->ne[1], 0, 0);
+        ggml_tensor * gate = graph_conv(c, g, pooled, b.gate.c1);
+        if (!gate) return nullptr;
+        gate = ggml_relu(g, gate);
+        gate = graph_conv(c, g, gate, b.gate.c2);
+        if (!gate) return nullptr;
+        y = ggml_mul(g, y, ggml_hardsigmoid(g, gate));
+    }
+    ggml_tensor * z = graph_conv(c, g, y, b.cm1);
+    if (!z) return nullptr;
+    z = ggml_gelu_erf(g, z);
+    ggml_tensor * out = graph_conv(c, g, z, b.cm2);
+    if (!out) return nullptr;
+    if (b.residual) out = ggml_add(g, out, y);
+    return out;
+}
+
+static bool graph_build(context * c, int h, int w) {
+    if (c->graph.attempted) return c->graph.ready && c->graph.h == h && c->graph.w == w;
+    c->graph.attempted = true;
+    if (c->variant == "medium" || !std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH")) return false;
+    c->graph.backend = c->backend;
+    if (!c->graph.backend) return false;
+    if (ggml_backend_is_cpu(c->graph.backend)) {
+        ggml_backend_t backends[] = { c->graph.backend };
+        c->graph.sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+    } else {
+        c->graph.cpu_backend = ggml_backend_cpu_init();
+        ggml_backend_t backends[] = { c->graph.backend, c->graph.cpu_backend };
+        c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+    }
+    if (!c->graph.sched) return false;
+    const size_t meta_size = ggml_tensor_overhead() * 4096 + ggml_graph_overhead_custom(4096, false);
+    c->graph.meta.resize(meta_size);
+    ggml_init_params ip = { meta_size, c->graph.meta.data(), true };
+    c->graph.graph_ctx = ggml_init(ip);
+    if (!c->graph.graph_ctx) return false;
+    c->graph.graph = ggml_new_graph_custom(c->graph.graph_ctx, 4096, false);
+    c->graph.input = ggml_new_tensor_3d(c->graph.graph_ctx, GGML_TYPE_F32, w, h, 3);
+    ggml_set_name(c->graph.input, "ppocrv6_det_graph_input");
+    ggml_set_input(c->graph.input);
+    ggml_tensor * x = graph_conv(c, c->graph.graph_ctx, c->graph.input, c->stem[0]);
+    if (!x) return false;
+    x = ggml_relu(c->graph.graph_ctx, x);
+    ggml_tensor * padded = ggml_pad_ext(c->graph.graph_ctx, x, 0, 1, 0, 1, 0, 0, 0, 0);
+    ggml_tensor * branch = graph_conv(c, c->graph.graph_ctx, padded, c->stem[1]);
+    if (!branch) return false;
+    branch = ggml_relu(c->graph.graph_ctx, branch);
+    ggml_tensor * branch_padded = ggml_pad_ext(c->graph.graph_ctx, branch, 0, 1, 0, 1, 0, 0, 0, 0);
+    branch = graph_conv(c, c->graph.graph_ctx, branch_padded, c->stem[2]);
+    if (!branch) return false;
+    branch = ggml_relu(c->graph.graph_ctx, branch);
+    ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, padded, GGML_OP_POOL_MAX, 2, 2, 1, 1, 0, 0);
+    x = ggml_concat(c->graph.graph_ctx, pooled, branch, 2);
+    x = graph_conv(c, c->graph.graph_ctx, x, c->stem[3]);
+    if (!x) return false;
+    x = ggml_relu(c->graph.graph_ctx, x);
+    x = graph_conv(c, c->graph.graph_ctx, x, c->stem[4]);
+    if (!x) return false;
+    x = ggml_relu(c->graph.graph_ctx, x);
+    for (const block & b : c->stages[0]) {
+        x = graph_block(c, c->graph.graph_ctx, x, b);
+        if (!x) return false;
+    }
+    c->graph.output = x;
+    ggml_set_name(x, "ppocrv6_det_graph_stage0");
+    ggml_set_output(x);
+    ggml_build_forward_expand(c->graph.graph, x);
+    ggml_backend_sched_reset(c->graph.sched);
+    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+    c->graph.h = h;
+    c->graph.w = w;
+    c->graph.ready = true;
+    fprintf(stderr, "ppocrv6-det: persistent GGML stem/stage0 graph ready (%s, %dx%d)\n",
+            ggml_backend_name(c->graph.backend), w, h);
+    return true;
+}
+
+static bool graph_run(context * c, const std::vector<float> & input, int h, int w, std::vector<float> & out, int & oh,
+                      int & ow) {
+    if (!graph_build(c, h, w)) return false;
+    ggml_backend_tensor_set(c->graph.input, input.data(), 0, input.size() * sizeof(float));
+    if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
+    out.resize(ggml_nelements(c->graph.output));
+    ggml_backend_tensor_get(c->graph.output, out.data(), 0, out.size() * sizeof(float));
+    ow = (int)c->graph.output->ne[0];
+    oh = (int)c->graph.output->ne[1];
+    return true;
+}
+
 static bool run_stem(context * c, const std::vector<float> & input, int h, int w, std::vector<float> & out, int & oh,
                      int & ow) {
     std::vector<float> x = input, y, branch;
@@ -415,7 +576,9 @@ static void append_component(const std::vector<float> & prob, int h, int w, floa
 
 context * init(const char * path, int) {
     auto * c = new context();
-    c->backend = ggml_backend_cpu_init();
+    const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    if (!c->backend) c->backend = ggml_backend_cpu_init();
     auto * meta = core_gguf::open_metadata(path);
     if (!meta) {
         delete c;
@@ -532,6 +695,13 @@ context * init(const char * path, int) {
 
 void free(context * c) {
     if (!c) return;
+    for (auto * buf : c->graph.resident_bufs)
+        if (buf) ggml_backend_buffer_free(buf);
+    for (auto * wc : c->graph.resident_ctxs)
+        if (wc) ggml_free(wc);
+    if (c->graph.sched) ggml_backend_sched_free(c->graph.sched);
+    if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
+    if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
     core_gguf::free_weights(c->wl);
     if (c->backend) ggml_backend_free(c->backend);
     delete c;
@@ -552,10 +722,17 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             }
     std::vector<float> x;
     int H, W;
-    if (!run_stem(c, input, h, w, x, H, W)) return {};
+    const bool graph_done = graph_run(c, input, h, w, x, H, W);
+    if (!graph_done && !run_stem(c, input, h, w, x, H, W)) return {};
     std::vector<std::vector<float>> stages;
     std::vector<int> hs, ws;
-    for (size_t si = 0; si < c->stages.size(); ++si) {
+    if (graph_done) {
+        stages.push_back(x);
+        hs.push_back(H);
+        ws.push_back(W);
+    }
+    const size_t first_stage = graph_done ? 1 : 0;
+    for (size_t si = first_stage; si < c->stages.size(); ++si) {
         auto & ss = c->stages[si];
         for (size_t bi = 0; bi < ss.size(); ++bi)
             if (!run_block(ss[bi], x, H, W, c, si == 0 && bi == 0 ? "block0" : "")) return {};
