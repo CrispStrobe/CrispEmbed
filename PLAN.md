@@ -826,6 +826,13 @@ batching/graph and immutable-weight reuse; detector and crop are only a few
 milliseconds in the instrumented path. Do not trade away the recorded output
 quality gates while optimizing this hotspot.
 
+An activation-scratch reuse prototype was measured against the existing path:
+it preserves CER/WER exactly. A paired run measured `279.1 ms` scratch versus
+`282.3 ms` default, but earlier repeated runs were roughly `329–338 ms` versus
+the prior `~300 ms` four-worker measurement; this is not a reliable gain. It
+is retained behind `CRISPEMBED_TESSERACT_REUSE_SCRATCH` and is disabled by
+default until a repeated controlled benchmark demonstrates improvement.
+
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
 normal greedy recognizer's sub-second-to-low-single-digit-second line timings.
