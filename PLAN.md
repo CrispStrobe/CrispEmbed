@@ -27,6 +27,13 @@ performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
 timing/output manifests; their existing parity checks are not performance
 acceptance evidence.
 
+CRAFT's fresh diff now prints error statistics: the earliest divergent stage is
+`basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine `0.995623`),
+which propagates to score-map `max_abs=0.06910`, RMS `0.008026`, global cosine
+`0.999716` and changes the threshold-sensitive decoded box count from Python's
+106 to native's 107. This is a CNN/layout or numerical parity TODO; threshold
+tuning is explicitly not an acceptance fix.
+
 Detector benchmark audit: the fresh CRAFT reference for `scan_strip.png` uses a
 288x544 canvas and decodes 106 boxes; native F32 passes tensor global gates but
 decodes 107, so CRAFT box parity is open again. Native diff runtime was ~2.34 s;
