@@ -414,6 +414,10 @@ downstream handoff parity, not detector-box similarity alone.
       on `scan_strip.png`; crop widths are tightened per split band. Text still
       differs on `Meryton` and punctuation/quotes, so decoded page parity and
       official crop equivalence remain open.
+      Review of Tesseract `textord/makerow.cpp` confirms its authoritative
+      boundary is connected blobs assigned by vertical overlap, line size,
+      spacing, and fitted baselines; our projection splitter is only an
+      interim adapter and the component-row port remains pending.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
