@@ -323,7 +323,12 @@ static ggml_tensor * graph_conv(context * c, ggml_context * g, ggml_tensor * x, 
     if (!p.w) return nullptr;
     const bool dw = p.groups == p.ic;
     const int icg = dw ? 1 : p.ic / p.groups;
-    ggml_tensor * w = graph_resident(c, p.w, dw ? GGML_TYPE_F16 : GGML_TYPE_F32, p.kw, p.kh, icg, p.oc);
+    // Metal/CUDA convolution kernels are substantially more efficient with
+    // resident half weights. Keep CPU graph parity in F32 and provide an
+    // explicit F32 override for backend-diff debugging.
+    const bool force_f32 = std::getenv("CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS") != nullptr;
+    const ggml_type weight_type = force_f32 || ggml_backend_is_cpu(c->graph.backend) ? GGML_TYPE_F32 : GGML_TYPE_F16;
+    ggml_tensor * w = graph_resident(c, p.w, weight_type, p.kw, p.kh, icg, p.oc);
     if (!w) return nullptr;
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1)
                          : ggml_conv_2d(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1);
