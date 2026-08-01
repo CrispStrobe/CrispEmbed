@@ -796,6 +796,16 @@ Q8 (`0.5279`) and is much faster than full F32, but remains worse than the
 reference in regions, text, confidence, WER, and speed. Keep it gated and
 test additional small recurrent critical sets before promotion.
 
+During the next sync, remote `main` had accidentally replaced the 1,025-line
+int-mode/scratch implementation with an older 659-line F32-only runtime. The
+regression was caught by the scan benchmark: recognition rose to `50.15 s`
+for 12 Fraktur lines. The known-good runtime was restored and protected by
+`tests/test_tesseract_runtime_contract.py`; the current LUT-enabled int-mode
+run is `34.32 s` recognition with unchanged output (12 regions, CER `0.03375`,
+WER `0.15044`). This remains slower than official Tesseract and is an active
+optimization TODO, but the critical fast path is now guarded against silent
+branch overwrites.
+
 The generic quantizer now accepts repeatable `--keep-pattern` fnmatch rules.
 This makes critical-weight retention reproducible for every model family while
 leaving the default policy unchanged; the Tesseract mixed-precision packer

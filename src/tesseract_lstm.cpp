@@ -18,6 +18,7 @@
 #include "core/gpu_backend_pref.h"
 
 #include <algorithm>
+#include <array>
 #include <cassert>
 #include <chrono>
 #include <cmath>
@@ -326,14 +327,34 @@ static float quantize_int_input(float value) {
 // Tesseract uses generated 4096-entry LUTs with 1/256 input spacing for its
 // LSTM tanh/logistic functions. Reproduce the interpolation contract here;
 // direct tanhf/expf changes quantization boundaries in int mode.
+static const std::array<float, 4096> & tesseract_tanh_lut() {
+    static const std::array<float, 4096> lut = [] {
+        std::array<float, 4096> values{};
+        for (size_t i = 0; i < values.size(); i++) values[i] = tanhf((float)i / 256.0f);
+        return values;
+    }();
+    return lut;
+}
+
+static const std::array<float, 4096> & tesseract_logistic_lut() {
+    static const std::array<float, 4096> lut = [] {
+        std::array<float, 4096> values{};
+        for (size_t i = 0; i < values.size(); i++)
+            values[i] = 1.0f / (1.0f + expf(-(float)i / 256.0f));
+        return values;
+    }();
+    return lut;
+}
+
 static float tesseract_tanh(float value) {
     const bool negative = value < 0.0f;
     const float x = fabsf(value) * 256.0f;
     const unsigned index = (unsigned)x;
     if (index >= 4095) return negative ? -1.0f : 1.0f;
     const float frac = x - (float)index;
-    const float y0 = tanhf((float)index / 256.0f);
-    const float y1 = tanhf((float)(index + 1) / 256.0f);
+    const auto & lut = tesseract_tanh_lut();
+    const float y0 = lut[index];
+    const float y1 = lut[index + 1];
     const float result = y0 + (y1 - y0) * frac;
     return negative ? -result : result;
 }
@@ -344,8 +365,9 @@ static float tesseract_logistic(float value) {
     const unsigned index = (unsigned)x;
     if (index >= 4095) return negative ? 0.0f : 1.0f;
     const float frac = x - (float)index;
-    const float y0 = 1.0f / (1.0f + expf(-(float)index / 256.0f));
-    const float y1 = 1.0f / (1.0f + expf(-(float)(index + 1) / 256.0f));
+    const auto & lut = tesseract_logistic_lut();
+    const float y0 = lut[index];
+    const float y1 = lut[index + 1];
     const float result = y0 + (y1 - y0) * frac;
     return negative ? 1.0f - result : result;
 }
