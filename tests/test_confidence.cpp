@@ -9,6 +9,8 @@
 // Usage:
 //   test-confidence                             (unit tests only)
 //   test-confidence --parseq <model.gguf>       (live test PARSeq)
+//   test-confidence --tesseract-image <model.gguf> <line.png>
+//                                             (direct greedy/beam line test)
 //   test-confidence --all <models_dir>          (live test all engines)
 
 #include "parseq_ocr.h"
@@ -30,8 +32,14 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include <vector>
 #include <string>
+
+extern "C" {
+unsigned char * stbi_load(const char *, int *, int *, int *, int);
+void stbi_image_free(void *);
+}
 
 static int n_pass = 0, n_fail = 0;
 
@@ -137,6 +145,8 @@ static void test_null_safety() {
 
     // Tesseract LSTM
     CHECK(tesseract_lstm_confidences(nullptr, &n) == nullptr, "tess null ctx");
+    CHECK(tesseract_lstm_mean_confidence(nullptr) == 0.0f, "tess null mean");
+    CHECK(tesseract_lstm_word_confidence(nullptr) == 0.0f, "tess null word confidence");
 
     // GOT-OCR
     CHECK(got_ocr_confidences(nullptr, &n) == nullptr, "got null ctx");
@@ -207,6 +217,51 @@ static void test_tesseract_live(const char * model_path) {
         printf("  tesseract: no confidences (empty output)\n");
     }
 
+    tesseract_lstm_free(ctx);
+}
+
+static void test_tesseract_image(const char * model_path, const char * image_path) {
+    printf("=== Tesseract image confidence test ===\n");
+    auto * ctx = tesseract_lstm_init(model_path, 2);
+    CHECK(ctx != nullptr, "tesseract image init");
+    if (!ctx) return;
+    int width = 0, height = 0, channels = 0;
+    unsigned char * pixels = stbi_load(image_path, &width, &height, &channels, 1);
+    CHECK(pixels != nullptr, "tesseract image load");
+    if (!pixels) {
+        tesseract_lstm_free(ctx);
+        return;
+    }
+    int len = 0;
+    const char * text = tesseract_lstm_recognize(ctx, pixels, width, height, &len);
+    int n_conf = 0;
+    const float * conf = tesseract_lstm_confidences(ctx, &n_conf);
+    const float sequence = tesseract_lstm_mean_confidence(ctx);
+    const float word = tesseract_lstm_word_confidence(ctx);
+    float char_min = 0.0f, char_mean = 0.0f;
+    if (conf && n_conf > 0) {
+        char_min = conf[0];
+        double sum = 0.0;
+        for (int i = 0; i < n_conf; ++i) {
+            char_min = std::min(char_min, conf[i]);
+            sum += conf[i];
+        }
+        char_mean = (float)(sum / n_conf);
+    }
+    printf("  text: '%s' (%d chars) char_conf=%d char_min=%.6f char_mean=%.6f sequence_conf=%.6f word_conf=%.6f\n",
+           text ? text : "", len, n_conf, char_min, char_mean, sequence, word);
+    CHECK(sequence >= 0.0f && sequence <= 1.0f, "tesseract sequence confidence bounded");
+    CHECK(word >= 0.0f && word <= 1.0f, "tesseract word confidence bounded");
+    const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
+    const char * recode_beam_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
+    const bool beam_enabled =
+        (beam_env && std::atoi(beam_env) > 1) || (recode_beam_env && std::atoi(recode_beam_env) > 1);
+    if (beam_enabled) CHECK(conf == nullptr && n_conf == 0, "tesseract beam has no fabricated char confidences");
+    if (conf && n_conf > 0) {
+        for (int i = 0; i < n_conf; ++i)
+            CHECK(conf[i] >= 0.0f && conf[i] <= 1.0f, "tesseract image char confidence bounded");
+    }
+    stbi_image_free(pixels);
     tesseract_lstm_free(ctx);
 }
 
@@ -303,6 +358,10 @@ static int crispembed_test_main(int argc, char ** argv) {
             test_parseq_live(argv[++i]);
         } else if (strcmp(argv[i], "--tesseract") == 0 && i + 1 < argc) {
             test_tesseract_live(argv[++i]);
+        } else if (strcmp(argv[i], "--tesseract-image") == 0 && i + 2 < argc) {
+            const char * model = argv[++i];
+            const char * image = argv[++i];
+            test_tesseract_image(model, image);
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
             test_hmer_live(argv[++i]);
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {

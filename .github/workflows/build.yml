@@ -15,7 +15,7 @@ jobs:
     name: Static guards
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
       - name: Test mains route through clean_exit
         run: bash tools/check_test_clean_exit.sh
       - name: Workflow toolchains are version-pinned
@@ -44,7 +44,7 @@ jobs:
             lib_name: crispembed.dll
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -60,12 +60,30 @@ jobs:
 
       - name: Smoke test (Unix)
         if: runner.os != 'Windows'
-        run: ./build/crispembed --help 2>&1 || true
+        run: |
+          ./build/crispembed --help 2>&1 || true
+          ./build/test-backend-smoke
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
-        run: .\build\Release\crispembed.exe --help 2>&1 || true
+        run: |
+          $runtimeDirs = @(
+            "$PWD\build\Release",
+            "$PWD\build\bin\Release",
+            "$PWD\build\bin"
+          )
+          $env:PATH = ($runtimeDirs -join ';') + ';' + $env:PATH
+          & .\build\Release\crispembed.exe --help
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "crispembed --help exited with $LASTEXITCODE (ignored)"
+          }
+          & .\build\Release\test-backend-smoke.exe cpu --json
+          exit $LASTEXITCODE
         shell: pwsh
+
+      - name: Smoke test (explicit Metal)
+        if: runner.os == 'macOS'
+        run: ./build/test-backend-smoke metal
 
       # Install into a staging prefix so the shared library is bundled with its
       # ggml runtime dylibs/sos and rewritten to a relocatable @loader_path /
@@ -76,7 +94,7 @@ jobs:
         run: cmake --install build --config Release --prefix dist
 
       - name: Upload shared library bundle
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
           path: |
@@ -92,7 +110,7 @@ jobs:
       matrix:
         abi: [arm64-v8a, armeabi-v7a, x86_64]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -108,7 +126,7 @@ jobs:
           cmake --build build -j4
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: android-${{ matrix.abi }}
           path: build/libcrispembed.so
@@ -118,7 +136,7 @@ jobs:
     name: ios-arm64
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -139,7 +157,7 @@ jobs:
           cmake --build build -j4
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ios-arm64
           path: build/libcrispembed-static.a
@@ -154,10 +172,10 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build, build-android, build-ios]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v4
         with:
           path: artifacts
 
@@ -196,7 +214,7 @@ jobs:
           find $PLUGIN -name '*.so' -o -name '*.dylib' -o -name '*.dll' -o -name '*.a' | sort
 
       - name: Upload bundled plugin
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: flutter-plugin-bundled
           path: flutter/crispembed/

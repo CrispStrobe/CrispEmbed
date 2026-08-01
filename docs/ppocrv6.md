@@ -14,15 +14,15 @@ The source repositories are the official
 F16 GGUFs, quantized GGUFs, and parity fixtures on the external model volume:
 
 ```text
-/Volumes/backups/ai/crispembed-gguf/
+$CRISPEMBED_GGUF_DIR/
 ```
 
 Convert one model with:
 
 ```bash
 python models/convert-ppocrv6-to-gguf.py \
-  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_small_rec_safetensors \
-  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_small_rec-f16.gguf
+  --model-dir "$CRISPEMBED_GGUF_DIR/source/PP-OCRv6_small_rec_safetensors" \
+  --output "$CRISPEMBED_GGUF_DIR/PP-OCRv6_small_rec-f16.gguf"
 ```
 
 The converter folds inference BatchNorm into convolution weights. PP-OCRv6's
@@ -55,23 +55,122 @@ conversion, rescaling by `1/255`, and the model's declared normalization. Text
 detection uses the v6 736-pixel minimum-side policy and ImageNet channel
 normalization. These values must remain part of the parity fixtures.
 
+## Backend status and GPU roadmap
+
+The default PP-OCRv6 detector, recognizer, and PP-LCNet orientation runtime
+remain correctness-first CPU implementations. An experimental persistent GGML
+full recognizer graph is available for tiny/small recognizers with
+`CRISPEMBED_PPOCRV6_GRAPH=1`; it covers the stem, depthwise/pointwise blocks,
+SE gates, activations, residuals, all four backbone stages, pooled head,
+folded batch norms, and projection logits. The detector/orientation paths
+remain on the CPU reference path until their graph parity gates are complete.
+
+The graph port is staged: first reproduce detector, SVTR recognizer, and
+PP-LCNet logits with persistent ggml graphs and CPU parity taps; then enable
+Metal/CUDA scheduling with residency checks; finally batch line crops and cache
+static-shape graphs and dequantized critical tensors. Every stage must pass
+cosine/logit parity and live CER gates on the CC0/German corpus.
+
+Until those gates pass, PP-OCRv6 remains explicitly CPU-first; enabling the
+experimental graph does not silently change the default execution path.
+
+The detector has a separate staged graph switch,
+`CRISPEMBED_PPOCRV6_DET_GRAPH=1`. For tiny/small models it constructs the
+detector stem, backbone, neck, and head graph. Its probability map remains
+diagnostic-only until tensor/box parity is complete; setting
+`CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT=1` explicitly accepts non-empty graph
+detections. Without that second switch, the pipeline uses the CPU reference
+path, preventing graph geometry or score drift from changing OCR results.
+
+The current CPU parity probe reports detector probability-map cosine 0.99113
+and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
+produces one extra box (31 vs 30), so the explicit accept switch remains a
+debug gate rather than a production setting.
+
+Use `CRISPEMBED_PPOCRV6_DET_BENCH=1` to print the detector timing split. On
+the German CC0 page, CPU normalization is about 2.5 ms while the scalar
+detector work is about 626 ms; the graph diagnostic reports about 590 ms on
+this CPU build before its CPU fallback. This keeps preprocessing on CPU unless
+a backend-specific measurement proves the transfer worthwhile.
+
+Use `CRISPEMBED_PPOCRV6_BENCH=1` for the routed end-to-end split, including
+quad crop geometry, orientation, and recognition. On the German CC0 page the
+Metal build measured detector 6.9 s, crop 3.4 ms, orientation 358.6 ms, and
+recognition 455.2 ms; geometry is therefore not a useful GPU-offload target
+yet, while orientation is a separate graph optimization target.
+
+Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` to print per-line recognizer graph
+latency and the selected backend. On the Metal build this is a graph execution
+measurement, not a production quality claim. The tiny recognizer graph now
+executes at roughly 19--24 ms/crop on MTL0, but its decoded output is not yet
+CPU-parity; it is diagnostic-only unless `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT=1`
+is set, and the CPU recognizer remains the fallback result. The current small
+and medium recognizers use the asymmetric SVTR stem and remain on the CPU path
+until their separate graph is implemented.
+
+The tiny/small static-shape graph allocation is retained across line crops.
+Only the input staging tensor is refreshed per crop; backend buffer planning is
+not repeated for every line. This optimization does not alter the accept gate
+or the CPU reference fallback. A future dynamic-shape recognizer must clear
+the allocation before rebuilding its scheduler graph.
+
+The graph-output gate is stricter than activation-reference parity: on the
+`HI` line fixture, the accepted tiny graph currently emits blank tokens while
+the CPU path emits `HI` (graph-vs-CPU logit cosine `0.2629`, maximum absolute
+error `23.77`). The graph therefore remains diagnostic-only; the decode probe
+is enabled with `CRISPEMBED_PPOCRV6_GRAPH_DEBUG=1` and does not affect the
+production result. The graph now uses the correct `[W,H]` argument order for
+the head's `3x2` pooling, but the depthwise head convolution still collapses
+to a repeated bias-like activation; its dedicated weight/layout path remains
+the next parity target.
+
+Non-CPU detector graphs use F16 resident convolution weights by default for
+backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a
+high-precision backend comparison. On the Apple M1 probe this reduced the
+diagnostic detector graph from roughly 3.6 s to 3.3 s without changing the
+reported parity cosines.
+
+The PP-LCNet orientation graph is also opt-in with
+`PPLCNET_ORIENTATION_GRAPH=1` and `PPLCNET_ORIENTATION_GRAPH_PIPELINE=1`. It uses a backend scheduler with CPU fallback
+for ggml operations not implemented by the selected GPU backend. Its output is
+diagnostic-only unless `PPLCNET_ORIENTATION_GRAPH_ACCEPT=1` is set; the current
+Metal probe executes safely and matches the CPU reference within 0.026 logit
+absolute error on the German line fixture. Run
+`PPLCNET_ORIENTATION_GRAPH_PARITY=1` with the orientation test to enforce that
+gate. The current expanded probe passes 9/10 German/Arabic/derived fixtures;
+the uneven-illumination Arabic fixture has a Metal delta of 1.07/3.22 while
+the CPU graph passes with 0.0046/0.0139. Tap diagnostics show the Metal drift
+starts around SE block 4 and accumulates through the later depthwise/SE blocks;
+it is therefore a backend numerical issue rather than preprocessing or graph
+topology. Production still requires the explicit accept switch until that
+backend case is resolved. The explicit pipeline graph now
+passes the full orchestrator smoke safely; on the German CC0 page it takes
+about 1.15 s for 30 crops versus 0.36 s for the CPU path because each crop
+currently reallocates the mixed scheduler. Without the pipeline switch, the
+orchestrator keeps the faster CPU orientation path.
+
+The current CPU parity probe reports detector probability-map cosine 0.99113
+and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
+produces one extra box (31 vs 30), so the explicit accept switch remains a
+debug gate rather than a production setting.
+
 Dump the current torch reference fixture and enable native comparisons with:
 
 ```bash
 python tools/dump_ppocrv6_reference.py \
-  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_tiny_rec_safetensors \
+  --model-dir "$CRISPEMBED_GGUF_DIR/source/PP-OCRv6_tiny_rec_safetensors" \
   --image /path/to/line.png \
-  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf
-PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
-  ./build/crispembed -m /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  --output "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf"
+PPOCRV6_REF="$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf" \
+  ./build/crispembed -m "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-f16.gguf" \
   --ocr /path/to/line.png
 ```
 
 The same comparison is available as a standalone regression binary:
 
 ```bash
-PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
+PPOCRV6_REF="$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf" \
   ./build/test-ppocrv6-rec \
-  /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-f16.gguf" \
   /path/to/line.png
 ```

@@ -1,5 +1,75 @@
 # CrispEmbed Performance
 
+## EasyOCR GGML parity benchmarks — Apple M1, 2026-08-01
+
+All measurements below use the same `scan_strip.png` input and Miniconda
+PyTorch reference where stated. Native timings are warm graph timings unless
+noted; they are acceptance evidence, not claims that the current implementation
+meets the speed target.
+
+### Recognizers
+
+| Path | Native Metal | Python CPU reference | Ratio | Output/parity |
+|---|---:|---:|---:|---|
+| Latin Gen2 formula, width 200 | 16.523 ms | 12.460 ms | 1.33x | `x=0442` both; all stages pass |
+| Latin Gen2 scan, width 128 | 10.885 ms | 7.137 ms | 1.53x | `82` both; all stages pass |
+| Latin Gen1 ResNet, width 128 | 154.082 ms | 78.648 ms | 1.96x | `==#` both; all stages pass |
+| English Gen2 scan, width 200 | 16.536 ms | 10.035 ms | 1.65x | `032` both; all stages pass |
+| English Gen2 scan, width 128 | 10.697 ms | 7.287 ms | 1.47x | `@32` both; strict timestep-11 row cosine remains open |
+
+Native is slower in every recognizer measurement. These are cross-device
+directional comparisons; graph/kernel and dynamic-width optimization remain
+open. Repeated native outputs are stable after fixing persistent LSTM state
+storage aliasing.
+
+### CRAFT detector
+
+| Backend/model | Native graph | Python CPU reference | Ratio | Output/parity |
+|---|---:|---:|---:|---|
+| Metal, runtime-BN F16 | 850.018 ms | 396.027 ms | 2.15x | 106 boxes both; taps pass |
+
+The runtime-BN F32 graph matches captured Python tensors to floating-point
+noise. Runtime-BN F16 also decodes 106 boxes. The older folded-F16 artifact
+decoded 107 because accumulated CNN/BN error crossed a threshold; it is stale.
+CPU-forced and Metal CRAFT outputs are byte-identical on this fixture.
+
+### DBNet detector
+
+| Backend/model | Graph | Postprocess | Total | Python CPU reference | Ratio | Output/parity |
+|---|---:|---:|---:|---:|---:|---|
+| CPU, F16, 1 thread | 4178.6 ms | 8.3 ms | 4186.9 ms | 1213.450 ms | 3.45x | all taps pass; 96 regions |
+| CPU, F16, 4 threads, persistent graph | 5661.1 ms warm | ~10 ms | ~5661 ms | 1213.450 ms | 4.67x | 98 rapid regions; `Brighton` present |
+| CPU, F16, 8 threads, persistent graph | 2907.2 ms warm | ~10 ms | ~2907 ms | 1213.450 ms | 2.40x | 98 rapid regions; `Brighton` present |
+| Metal, F16, persistent graph | 3499.4 ms warm | ~10 ms | ~3499 ms | 577.342 ms MPS | 6.06x | 98 rapid regions; `Brighton` present |
+
+The Python reference reports `torch.get_num_threads()=4` and
+`torch.get_num_interop_threads()=8`. Thus the 8-thread native result is the
+best available throughput measurement but is not a same-thread comparison;
+native remains slower even with twice the reference compute threads. On the
+same M1 Metal device, the Python MPS blueprint averages `577.342 ms`, making
+native Metal `6.06x` slower; this isolates the remaining gap to CrispEmbed's
+Metal convolution/deconvolution kernels. F16
+matches the fresh official MMOCR reference at backbone, neck, head, and
+probability-map boundaries. The detector now uses a shape-keyed persistent
+GGML graph; diagnostic tap retention is opt-in via
+`OCR_DETECT_CAPTURE_TAPS=1`. Native quality is on par on this fixture, but all
+native backend timings miss the reference speed target. Increasing CPU threads
+and graph persistence help operationally but do not close the compute gap. Q4_K decodes the same 96 regions but diverges
+at `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`) and ends at
+final-map cosine `0.9311001`; Q4_K is a quantization-quality TODO, not an
+accepted parity variant.
+
+An opt-in `OCR_DETECT_DIRECT_CONV=1` experiment was not promoted. GGML's CPU
+direct-convolution kernel requires F32 weights, and the F32 direct graph did
+not complete a diff run within roughly two minutes on the shared M1; it is not
+parity or performance evidence. The default persistent im2col path is
+unchanged. A later optimized/vectorized direct kernel remains a performance
+TODO. One subsequent baseline run was resource-contended (44.1 s cold /
+66.7 s warm with 8 threads), so it is excluded from the stable ratios above.
+An attempted cumulative per-tap profiler was also rejected: prefix graphs
+shared the persistent tensor arena and changed the restored run to zero boxes.
+It produced no valid stage timings; isolated-allocator profiling remains open.
+
 Benchmark results on Intel Xeon Skylake (4 threads), CPU-only, no GPU.
 
 ## Server Mode Latency (model loaded once)
@@ -98,7 +168,7 @@ M1 Metal path (detection ~3.0 s, batched crop encoding ~1.8 s, decoding ~0.2 s).
 ### External document-parser comparison (2026-07-31)
 
 The local CrispEmbed live check used the repeatable `fox.png` fixture and
-GGUF models from `/Volumes/backups/ai/crispembed-gguf/`:
+GGUF models from `$CRISPEMBED_GGUF_DIR`:
 
 | Engine / environment | Detection | Recognition | Timing | Quality check |
 |---|---:|---:|---:|---|
@@ -926,12 +996,124 @@ skips because a sample or local model was unavailable.  This is a coverage
 report, not a claim that the skipped engines are unsupported.  The reusable
 driver stores all output and stderr tails in JSON for follow-up runs.
 
+### Tesseract reference parity and gated page-segmentation cost (2026-08-01)
+
+This is a same-fixture quality/cost cross-check on `scan_strip.png`, not a
+claim that all full-page Tesseract behavior is matched. Official timings are
+stock Tesseract CLI TSV wall time; native timings are the instrumented
+detector→group→crop→recognizer stage total. The native subprocess elapsed time
+also includes test-binary/model setup and is therefore not used as the pure
+pipeline comparison.
+
+| Path | Output quality vs official | Official wall ms | Native stage ms | Native result |
+|---|---|---:|---:|---|
+| Legacy/fallback | Best current native path, but CER/WER `0.0179/0.0841`; confidence `0.895` vs `0.9108` | 315.9–349.9 | 310.7 | 12 regions, 567 chars |
+| Component | Worse: CER/WER `0.0322/0.1121` | 315.9–349.9 | 266.8 | 12 regions, 569 chars |
+| Baseline | Same CER/WER as legacy, no quality gain; IoU lower | 315.9–349.9 | 282.2 | 12 regions |
+| Projection | Worse: CER/WER `0.0250/0.1121`; IoU best but text worse | 315.9–349.9 | 360.1 | 12 regions |
+
+Native recognition dominates the stage (`260.3–353.8 ms`); detector and crop
+were approximately `3–4 ms` each. A worker sweep retained identical CER/WER
+and measured native stage totals of `690.3 ms` at one worker, `300.7 ms` at four,
+and `292.1 ms` at eight. The immediate performance TODO is recognizer batching,
+graph/weight reuse, and fair warm-run measurement; the detector is not the
+current bottleneck. The immediate quality TODO is full-page crop/spacing/text
+parity: native is not yet output-equivalent even where region count matches.
+
+An activation-scratch reuse prototype is gated by
+`CRISPEMBED_TESSERACT_REUSE_SCRATCH`; it preserves CER/WER but measured about
+`279.1 ms` versus `282.3 ms` in one paired run, while earlier repeated runs
+were `329–338 ms` versus the prior `~300 ms` result. The variance is too large
+to claim an improvement, so it is disabled by default and remains an
+optimization TODO.
+
+Use `tools/benchmark_tesseract_page.py` for repeated, policy-specific runs;
+its summary separates official CLI, native subprocess, native stage, and
+recognizer timings and retains every per-run quality record.
+
+The German official-print page remains materially worse: native default is 21
+regions vs official 25, CER `0.307`, WER `0.404`, and confidence `0.836` vs
+`0.866`. Paired warm/cold timing and per-stage reference timing for this page
+remain TODOs. The Fraktur line diagnostic is also not a speed claim because its
+available input is a full page under PSM7 rather than an identical transcribed
+line crop.
+
+Latest normalized-artifact rerun (current Fraktur Q8 artifact) is worse still:
+official Tesseract took `9.34 s` for 25 lines/881 chars at confidence `0.8658`,
+while native took `38.69 s` of stage time for 23 regions/1,235 chars at
+confidence `0.768`, CER `0.5279`, and WER `0.5390`. Native recognition consumed
+`38.34 s`; detection was `102 ms` and crop `250 ms`. The earlier Q8/F16
+measurement is retained as historical until artifact and control conditions
+are pinned identically. This is an explicit speed and quality blocker.
+
+### Fraktur recognizer precision matrix (same German page/control)
+
+| Recognizer artifact | Native stage | Regions/chars | Confidence | CER/WER | Assessment |
+|---|---:|---:|---:|---:|---|
+| `frk-q8_0` | 38.69 s | 23 / 1,235 | 0.768 | 0.5279 / 0.5390 | Faster, but worse text |
+| `frk-f32` | 102.41 s | 23 / 1,164 | 0.767 | 0.4672 / 0.5461 | Better CER, far too slow |
+| `frk-int8-source-q8-candidate` | 64.44 s | 23 / 1,164 | 0.767 | 0.4672 / 0.5461 | F32-like output, still too slow |
+| `frk-mixed-lstm0hh-f32` | 23.42 s | 23 / 1,146 | 0.765 | 0.4603 / 0.5390 | Best measured CER/speed frontier, still worse than official |
+
+Official Tesseract remained 25 lines/881 chars. Precision therefore changes
+output quality as well as speed; optimizing standard Q8 alone cannot achieve
+reference quality. Same-artifact warm/cold benchmarks and recognizer
+optimization remain required before selecting the production Fraktur tier.
+
+The mixed-precision candidate is generated with
+`models/mix-tesseract-gguf.py`: Q8 remains the default base, while explicitly
+selected critical tensors are copied from F32. The selected
+`lstm.0.weight_hh` profile is not a production default; it remains gated
+until repeat benchmarks, page-region parity, and decoded-text quality gates
+improve.
+
+Fresh Miniconda regeneration from `/opt/homebrew/share/tessdata/frk.traineddata`
+now gives exact input parity (`cosine=1.0`, both norms `122.453`). Against
+now gives exact input parity (`cosine=1.0`, both norms `122.453`). The old Q8
+artifact lacked `sample_iteration`, causing the earlier `0.983119` logits
+result and seeded-padding mismatch. A freshly converted F32 model reaches
+9/9 stages with logits cosine `0.993819`; a mixed Q8/F32 candidate carrying
+the recovered seed reaches 9/9 and `0.994876`. Both still decode differently
+from Python, so the mixed candidate is not production-accepted. References are
+stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`
+and `tesseract-frk-ref-int8fc.gguf`.
+
+GGUF metadata audit of `/Volumes/backups/ai/crispembed-gguf/` found 46
+Tesseract model artifacts: 45 lack `tesseract_lstm.sample_iteration`; only
+`tesseract-eng-homebrew-intmeta-f32-sample6352704.gguf` carries it. The missing
+seed can change every out-of-bounds Convolve padding value, so those artifacts
+require regeneration or metadata-preserving reconstruction before parity
+acceptance.
+
+After regenerating the Python reference with exact int8 LSTM arithmetic, the
+fresh F32 Fraktur GGUF passes all 9 captured stages exactly (final logits max
+error `2.09e-7`) and decoded text matches Python. The seed-preserving mixed
+Q8/F32 candidate remains below parity (`logits cosine 0.989655`) and decodes
+differently; quantization quality is the remaining blocker.
+
+Quantization policy improvement: `models/quantize.py` now supports repeatable
+`--keep-pattern` rules, allowing callers to retain critical recurrent or
+output tensors at source precision without changing the established default
+quantization behavior. The policy is unit-tested and remains opt-in.
+
 The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
 seven CC0/public-domain images through Tesseract plus skew/content detection:
 all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
 format gap (`cannot load`); a PNG derivative is now included for the OCR
 pipeline while the source TIFF remains available for a future native TIFF
 decoder test.
+
+### Tesseract runtime regression and recovery
+
+A remote-main merge temporarily replaced the int-mode/scratch Tesseract
+runtime with an older F32-only implementation. On
+`tests/regression/images/scan_strip.png` with the same Fraktur Q8 artifact,
+recognition measured `50.15 s` in that regression. Restoring the known-good
+runtime and adding LUTs for the existing Tesseract nonlinear interpolation
+contract measured `34.32 s`, with unchanged output: 12 regions, 566 chars,
+CER `0.03375`, and WER `0.15044`. The required int-mode, LUT, and gated
+scratch symbols are now protected by a runtime-contract test. The remaining
+speed gap to official Tesseract is still an active TODO.
 
 ### Full local matrix comparison (M1 Metal, 2026-07-31)
 

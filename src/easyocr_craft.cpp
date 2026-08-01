@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -26,9 +27,11 @@ struct easyocr_craft_context {
     ggml_tensor * feature = nullptr;
     ggml_tensor * scores = nullptr;
     ggml_tensor * basenet[5] = {};
+    ggml_tensor * slice1_taps[4] = {};
     int width = 0;
     int height = 0;
     std::vector<float> input_host;
+    easyocr_craft_timing last_timing = {};
 };
 
 static ggml_tensor * req(easyocr_craft_context * c, const std::string & name) {
@@ -71,9 +74,21 @@ static bool build_graph(easyocr_craft_context * c) {
 
     // VGG-16 BN feature taps used by EasyOCR's CRAFT implementation.
     x = conv(g, c, x, "basenet.slice1.0", 3, 3, 1, 1);
+    c->slice1_taps[0] = x;
+    ggml_set_name(x, "slice1_tap_0");
+    ggml_set_output(x);
     x = conv(g, c, x, "basenet.slice1.3", 3, 3, 1, 1);
+    c->slice1_taps[1] = x;
+    ggml_set_name(x, "slice1_tap_1");
+    ggml_set_output(x);
     pool(2, 2, 0);
+    c->slice1_taps[2] = x;
+    ggml_set_name(x, "slice1_tap_2");
+    ggml_set_output(x);
     x = conv(g, c, x, "basenet.slice1.7", 3, 3, 1, 1);
+    c->slice1_taps[3] = x;
+    ggml_set_name(x, "slice1_tap_3");
+    ggml_set_output(x);
     x = conv(g, c, x, "basenet.slice1.10", 3, 3, 1, 1, 1, 1, false);
     x = ggml_relu(g, x);
     ggml_tensor * source4 = x;
@@ -171,18 +186,35 @@ bool easyocr_craft_forward(easyocr_craft_context * c, const float * input, size_
     if (!c || n_elem != (size_t)c->width * c->height * 3) return false;
     c->input_host.assign(input, input + n_elem);
     ggml_backend_tensor_set(c->input, input, 0, n_elem * sizeof(float));
-    return ggml_backend_graph_compute(c->backend, c->graph) == GGML_STATUS_SUCCESS;
+    const auto start = std::chrono::steady_clock::now();
+    const bool ok = ggml_backend_graph_compute(c->backend, c->graph) == GGML_STATUS_SUCCESS;
+    const auto end = std::chrono::steady_clock::now();
+    c->last_timing.graph_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    return ok;
+}
+
+bool easyocr_craft_last_timing(const easyocr_craft_context * c, easyocr_craft_timing * timing) {
+    if (!c || !timing) return false;
+    *timing = c->last_timing;
+    return true;
 }
 
 int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
     crispembed_diff::Ref ref;
     if (!c || !ref.load(path)) return 1;
     int failures = 0;
-    for (const char * name :
-         { "input_image", "basenet_0", "basenet_1", "basenet_2", "basenet_3", "basenet_4", "feature", "scores" }) {
+    for (const char * name : { "input_image", "leaf_basenet_slice1_2", "leaf_basenet_slice1_5", "leaf_basenet_slice1_6",
+                               "leaf_basenet_slice1_9", "leaf_basenet_slice1_11", "leaf_basenet_slice2_12", "basenet_0",
+                               "basenet_1", "basenet_2", "basenet_3", "basenet_4", "feature", "scores" }) {
         auto rr = ref.get_f32(name);
         if (!rr.first) continue;
         ggml_tensor * t = !strcmp(name, "feature") ? c->feature : !strcmp(name, "scores") ? c->scores : c->input;
+        if (!strcmp(name, "leaf_basenet_slice1_2")) t = c->slice1_taps[0];
+        if (!strcmp(name, "leaf_basenet_slice1_5")) t = c->slice1_taps[1];
+        if (!strcmp(name, "leaf_basenet_slice1_6")) t = c->slice1_taps[2];
+        if (!strcmp(name, "leaf_basenet_slice1_9")) t = c->slice1_taps[3];
+        if (!strcmp(name, "leaf_basenet_slice1_11")) t = c->basenet[4];
+        if (!strcmp(name, "leaf_basenet_slice2_12")) t = c->basenet[4];
         if (!strncmp(name, "basenet_", 8)) t = c->basenet[name[8] - '0'];
         std::vector<float> data((size_t)ggml_nelements(t));
         if (!strcmp(name, "input_image")) {
@@ -203,9 +235,10 @@ int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
             data.swap(nhwc);
         }
         auto report = ref.compare(name, data.data(), data.size(), 0);
-        printf("easyocr-craft-diff %-12s n=%zu cos=%.7f global=%.7f mine=%.6g ref=%.6g %s\n", name, report.n_elem,
-               report.cos_min, report.cos_global, report.mine_norm, report.ref_norm,
-               report.cos_global >= 0.99f ? "PASS" : "FAIL");
+        printf(
+            "easyocr-craft-diff %-12s n=%zu max=%.6g mean=%.6g rms=%.6g cos=%.7f global=%.7f mine=%.6g ref=%.6g %s\n",
+            name, report.n_elem, report.max_abs, report.mean_abs, report.rms, report.cos_min, report.cos_global,
+            report.mine_norm, report.ref_norm, report.cos_global >= 0.99f ? "PASS" : "FAIL");
         if (report.cos_global < 0.99f) failures++;
     }
     return failures;

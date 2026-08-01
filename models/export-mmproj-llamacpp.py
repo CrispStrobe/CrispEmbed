@@ -41,6 +41,20 @@ PATCH_NAME = "v.patch_embd.weight"
 PATCH_NAME_1 = "v.patch_embd.weight.1"
 
 
+def field_contents(field):
+    if hasattr(field, "contents"):
+        return field.contents()
+    type_names = [getattr(t, "name", str(t)) for t in field.types]
+    if type_names and type_names[0] == "STRING":
+        return bytes(field.parts[field.data[0]]).decode("utf-8")
+    if type_names and type_names[0] == "ARRAY":
+        if len(type_names) > 1 and type_names[1] == "STRING":
+            return [bytes(field.parts[i]).decode("utf-8") for i in field.data]
+        return [field.parts[i][0].item() for i in field.data]
+    value = field.parts[field.data[0]][0]
+    return value.item() if hasattr(value, "item") else value
+
+
 def is_vision_tensor(name):
     """A tensor belongs to the vision tower / projector (not the LLM)."""
     return name.startswith("v.") or name.startswith("mm.")
@@ -99,7 +113,7 @@ def read_crisp_vision(reader):
 
     Vision tensor names are kept identity (they already are llama.cpp-native);
     the concatenated temporal patch is split back into two slices."""
-    md = {f.name: f.contents() for f in reader.fields.values()}
+    md = {f.name: field_contents(f) for f in reader.fields.values()}
     patch = int(_mv(md, "qwen2vl.vision.patch_size",
                     "qwen2vl.vision.spatial_patch_size", default=14))
     in_ch = int(_mv(md, "qwen2vl.vision.in_channels", default=3))
@@ -183,7 +197,7 @@ def do_self_test(ref_path):
     back with export's logic; assert the recovered slices are byte-identical to
     the originals and that every vision tensor name is recognized."""
     ref = GGUFReader(ref_path)
-    rmd = {f.name: f.contents() for f in ref.fields.values()}
+    rmd = {f.name: field_contents(f) for f in ref.fields.values()}
     patch = int(rmd.get("clip.vision.patch_size", 14))
     in_ch = 3
     temporal = 2

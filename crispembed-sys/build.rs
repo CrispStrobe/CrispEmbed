@@ -122,6 +122,13 @@ fn configure_and_build(src_root: &Path) -> PathBuf {
     build
         .arg("--build")
         .arg(&build_dir)
+        // Only the shared library this crate links. The top-level CMakeLists
+        // also declares the CLI, server, quantizer and ~40 test executables;
+        // building all of them would cost consumers minutes for artifacts they
+        // never use, and the published crate ships the test SOURCES (cmake
+        // needs them to configure) without the fixtures that would let them run.
+        .arg("--target")
+        .arg("crispembed-shared")
         .arg("--config")
         .arg("Release");
     run(&mut build, "cmake build");
@@ -129,11 +136,40 @@ fn configure_and_build(src_root: &Path) -> PathBuf {
     build_dir
 }
 
+/// Locate the C/C++ sources cmake is pointed at.
+///
+/// In-tree they are the repository root (this crate's parent); in the crate
+/// published to crates.io they are `vendor/`, because cargo only packages files
+/// under the crate root. The repository copy wins when present, so a
+/// development build never compiles a stale vendored snapshot.
+fn resolve_src_root(manifest_dir: &Path) -> PathBuf {
+    // Probe for CMakeLists.txt AND ggml, not just the directory: in a published
+    // crate the parent is the cargo registry's `src/` directory, which exists
+    // but holds no sources.
+    let is_source_root =
+        |p: &Path| p.join("CMakeLists.txt").is_file() && p.join("ggml/CMakeLists.txt").is_file();
+
+    if let Some(repo) = manifest_dir.parent() {
+        if is_source_root(repo) {
+            return repo.to_path_buf();
+        }
+    }
+    let vendored = manifest_dir.join("vendor");
+    if is_source_root(&vendored) {
+        return vendored;
+    }
+    panic!(
+        "crispembed sources not found. Expected either the repository root \
+         (in-tree build — did you run `git submodule update --init ggml`?) or \
+         {}. For a checkout, run scripts/vendor_rust_sources.sh before \
+         `cargo package`/`cargo publish`.",
+        vendored.display()
+    );
+}
+
 fn main() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let src_root = manifest_dir
-        .parent()
-        .expect("crispembed-sys must be inside the repo root");
+    let src_root = &resolve_src_root(&manifest_dir);
 
     println!("cargo:rerun-if-env-changed=CRISPEMBED_SYS_LIB_DIR");
 

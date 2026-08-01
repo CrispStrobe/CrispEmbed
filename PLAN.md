@@ -13,15 +13,133 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs | **IN PROGRESS** |
+| 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
+| 2026-08-01 | `chore/crates-publish` / `../CrispEmbed-crates` | **Picked:** publish `crispembed` + `crispembed-sys` to crates.io. Touches ONLY `crispembed-sys/`, `.gitignore`, `scripts/vendor_rust_sources.sh` and two new workflow files — **no changes to `CMakeLists.txt`, `src/`, `ggml/` or any OCR/model code**. Checkpoint: root cause was that `cargo package` archives only files under the crate root, so build.rs's `manifest_dir.parent()` (the repo root it runs cmake on) does not exist in a published tarball — the crate would have uploaded fine and built for nobody. Fixed by vendoring tracked sources into `crispembed-sys/vendor/` (gitignored, 4.0 MiB compressed) with build.rs preferring the repo copy. Verify build of the unpacked tarball running. | **IN PROGRESS** |
+
+EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
+width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
+200 `16.523/12.460 ms`, scan 128 `10.885/7.137 ms`, Latin Gen1 scan 128
+`154.082/78.648 ms`, English Gen2 scan 200 `16.536/10.035 ms`, and scan 128
+`10.697/7.287 ms` (native/reference totals). Outputs match in every case:
+`x=0442`, `82`, `==#`, `032`, and `@32`; the English width-128 strict
+row-wise logits gate is still open despite decoded parity. Native is slower in
+all measured graph/total paths, so graph/kernel and width optimization are
+performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
+timing/output manifests; their existing parity checks are not performance
+acceptance evidence.
+
+CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
+stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
+`0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,
+global cosine `0.999716` and changed the threshold-sensitive decoded box count
+from Python's 106 to native's 107. Re-converting with runtime BN (raw
+convolution weights plus explicit BN scale/shift) makes F32 match to
+floating-point noise; runtime-BN F16 reaches score-map global cosine
+`0.9999999` and 106 boxes. The CPU-forced and Metal outputs are byte-identical.
+The folded artifact is stale; threshold tuning is not the fix.
+
+Detector benchmark audit: the fresh CRAFT reference for `scan_strip.png` uses a
+288x544 canvas and decodes 106 boxes; runtime-BN F32/F16 native runs decode 106,
+so CRAFT box parity passes. Native diff runtime was ~2.34 s;
+the Python dump was ~9.13 s including model load and serializing 84 tensors, not
+an inference-only comparison. DBNet native page smoke measured 6.63 s in line
+mode (12 units, 1.34 s summed recognizer work) and 6.67 s in word mode (98
+units, 2.50 s summed recognizer work). The restored official DBNet checkpoint
+now has tensor parity evidence below; native's 98-word segmentation remains
+not comparable to Tesseract's 106-word segmentation. These are explicit
+quality/performance TODOs.
+
+Fresh DBNet reference checkpoint parity is now available: the official MMOCR
+IC15 ResNet-18 checkpoint was restored and dumped with Miniconda Python on the
+same 736x1472 preprocessed `scan_strip.png`. Native F16 passes the final
+probability-map boundary (`max_abs=0.00154233`, RMS `0.00008044`, cosine
+`0.9999974`, global `1.0000000`) and decodes 96 regions. Q4_K decodes the same
+96 regions but fails tensor parity (`cosine=0.9311001`, global `0.9986384`),
+so its prior README parity claim is stale for this reference. The DBNet diff
+harness now retains every backbone, lateral, smooth, fused, head, and final
+probability-map tap; F16 passes all of them. Q4_K's earliest divergence is
+already at
+`backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), and it worsens
+through the neck to final-map cosine `0.9311001`; this is a quantization
+quality TODO, not a postprocessing issue. The detector now uses a shape-keyed
+persistent GGML graph, with diagnostic tap retention enabled only by
+`OCR_DETECT_CAPTURE_TAPS=1`. The fresh native CPU-forced page benchmark reports
+detector graph `4178.6 ms`, postprocess `8.3 ms`, total `4186.9 ms`, and 12 line
+units. The Miniconda reference uses 4 compute threads and 8 interop threads.
+Corrected rapid-mode repeated benchmarking gives native CPU `5661.1 ms` warm
+with 4 threads (`4.67x` slower), `2907.2 ms` warm with 8 threads (`2.40x`),
+versus `1213.450 ms` reference. The same Python blueprint on MPS averages
+`577.342 ms`; native Metal `3499.4 ms` is therefore `6.06x` slower on the
+same device. Both native backends pass all taps in diff mode and retain
+readable output; native CPU/Metal convolution and deconvolution kernels remain
+mandatory optimization TODOs.
+
+An opt-in `OCR_DETECT_DIRECT_CONV=1` experiment was investigated against the
+GGML direct-convolution op. CPU requires F32 kernels, and the resulting direct
+graph did not finish a diff run within roughly two minutes; it remains
+disabled and is not parity/performance evidence. The default persistent
+im2col path is unchanged. A vectorized direct kernel is a future performance
+item. A later 8-thread baseline run was resource-contended (44.1 s cold,
+66.7 s warm) and is excluded from the stable benchmark ratios.
+An initial per-tap prefix-graph profiler was discarded because shared arena
+allocation changed the restored output to zero boxes. No stage timing from that
+experiment is evidence; profiling needs an isolated allocator before use.
+
+CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
+288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
+and `850.018 ms` for native runtime-BN F16 Metal graph compute, with 106 boxes
+from both (`2.15x` native/reference directional slowdown). CRAFT quality is
+on par on this fixture; its graph/kernel path remains a performance TODO.
+
+The old folded-F16 CRAFT taps showed error accumulation through the VGG. The
+runtime-BN conversion removes that divergence: F32 captured taps match to
+floating-point noise, and F16 remains within the accepted global gate. The
+CPU-forced and Metal runtime-BN runs are byte-identical, including taps, score
+map, and 106-box decoded result. Remaining CRAFT work is repeated inference
+benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **IN PROGRESS** |
-| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **IN PROGRESS** |
-| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **IN PROGRESS** |
+| 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
+
+Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
+Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
+seed-preserving mixed Q8/F32 candidate reaches 9/9 and `0.994876`. Both decoded
+outputs still differ from Python, so mixed precision is not promoted. The
+blueprint now explicitly models native row-wise int8 FC arithmetic.
+
+Backup audit found 46 Tesseract model GGUFs, but 45 lack
+`tesseract_lstm.sample_iteration`; only the explicitly named Homebrew English
+artifact has the seed. Missing-seed language and quantized variants require
+regeneration or verified metadata reconstruction before parity acceptance.
+Fresh F32 Fraktur conversion now passes all 9 stages exactly (logits max error
+`2.09e-7`) and decoded text matches Python after the blueprint adopted int8
+LSTM row arithmetic. The seed-preserving mixed Q8/F32 candidate still fails at
+logits cosine `0.989655` and decoded output, so quantization—not preprocessing
+or graph topology—is the remaining quality blocker.
+| 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
+| 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny/small recognizer runs one persistent graph through logits and the detector constructs an opt-in full stem/backbone/neck/head graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; corrected detector neck channel order brings graph-vs-CPU probability cosine to 0.99113 and head pre-sigmoid to 0.99898, but graph box count is still 31 vs CPU 30, so CPU accept-gate fallback remains | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation gates; graph uses the canonical weight layout and correct `[1280,2]` linear view. Expanded Metal parity passes 9/10 German/Arabic/derived fixtures; tap diagnostics localize the remaining uneven-illumination Arabic drift to Metal accumulation beginning around SE block 4 (`1.0679/3.2166` final logit deltas), while the CPU graph passes (`0.0046/0.0139`), identifying a backend numerical issue rather than preprocessing/topology. Repeated standalone Metal execution passes 31/31 after per-crop scheduler reallocation; source audit confirms this remains required for reliable mixed CPU/Metal depthwise execution on pre-tensor Apple GPUs. Explicit pipeline graph execution now passes `141/141` with 30/30 text regions; graph remains opt-in pending the numerical outlier and reuse/performance work | **IN PROGRESS** |
+| 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **PENDING** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.3 preprocessing/geometry cost split: `CRISPEMBED_PPOCRV6_DET_BENCH=1` reports detector normalize/graph/total timings and `CRISPEMBED_PPOCRV6_BENCH=1` reports routed detector, quad crop, orientation, and recognizer timings. German CC0 Metal measured detector 6.9 s, crop 3.4 ms, CPU orientation 358.6 ms, recognition 455.2 ms; explicit Metal orientation graph is safe but 1.15 s for 30 crops, so geometry is not the bottleneck and CPU remains the default | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.4 OCR portfolio graph audit: capability matrix schema now classifies PP-OCRv6 and PP-LCNet as partial rather than overstating GPU support; tiny/small/medium tier details and acceptance gates are recorded. Source audit confirms FormulaNet, MixTeX, SmolDocling, HMER/BTTR/PosFormer are CPU-scheduled today; VLM audit now records the concrete CPU seams (window partition, spatial merge, host-side unshuffle/merge, scalar merger, and opt-in neck/MoE fallbacks) while preserving GPU graph claims only as partial | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.5 backend build/device matrix: Metal macOS, CUDA Linux, CPU reference; graph smoke accepts an explicit backend, reports requested/selected device, and passes on Apple M1 with `GGML_METAL=ON`; CUDA remains pending. Metal PP-OCRv6 orchestrator smoke now passes 141/141; recognizer graph and detector diagnostic graph execute on MTL0 | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.6 graph performance/parity gates: backend smoke now records warm compute latency after a successful graph run; engine-level parity/quality gates remain pending. Added opt-in per-line recognizer graph timing and non-CPU F16 resident detector weights; Metal detector diagnostic improved from ~3.6 s to ~3.3 s on German CC0 with unchanged parity (0.99114 probability cosine), and remains CPU-accepted | **IN PROGRESS** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.7 PP-OCRv6 recognizer weight-cache optimization: cache immutable convolution dequantization across line crops; retain the static-shape GGML scheduler allocation across crops; standalone artifacts now report incompatible tensor maps instead of failing silently. Corrected asymmetric graph convolution argument order (`x/y` versus reference `height/width`) and fixed the head shape from the accidental `6x5` map to the expected `10x1`/10-token map. The graph input contract is now verified: reference `[C,H,W]` is already byte-compatible with contiguous ggml `[W,H,C,N]` channel-plane storage; the former pixel-interleaving transpose was removed. Debug taps now show exact staged input and stem1 pre/post-convolution parity (`cosine 1.0`); the next divergence is stem2 (`cosine 0.623837`), so detector/recognizer graph acceptance remains disabled. Added a stem2 pre-activation tap for the next convolution audit. Live German tiny pipeline remains `30` regions/`139` chars at confidence `0.93`; graph diagnostic computes logits then intentionally falls back. Tier audit: tiny graph builds through logits but decoded parity is not met; small/medium remain `large_stem=1` CPU paths. Graph is diagnostic-only and CPU fallback preserves `141/141` pipeline quality | **IN PROGRESS** |
+| 2026-07-31 | `main` | O11.7 persistent graph and weight-cache optimization: reuse static shapes, scheduler buffers, dequantized critical weights, and batched line crops | **PENDING** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 live PP-OCRv6 detector → quad crop → PP-LCNet line orientation → recognizer regression across 10 CC0/derived fixtures using cached Q8/F16 artifacts | **COMPLETED** |
+| 2026-07-31 | `diagnose/pp-ocrv6-quality` / `.codex/worktrees/diagnose-pp-ocrv6-quality` | **Picked:** PP-OCRv6 Python/C++ detector geometry and crop parity on 10 CC0 fixtures; DBNet→PP-OCRv6 line/word path comparison added; quad handoff and PP-LCNet PIR→GGUF decoder landed; native classifier wired as optional `model_c` stage with NumPy/native cosine parity and CC0 sweep harness | **IN PROGRESS** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.2 deterministic problematic-input corpus: skew, border, illumination, haze, speckle, low-DPI, JPEG, rotation, perspective, and mixed-orientation variants with parent hashes/recipes | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.6 shared crop preparation contract: aspect/stretch geometry, fixed height/width, max width, padding, and RGB/grayscale output | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.4 structured line-orientation telemetry: detected angle/confidence and applied-rotation metadata through native/C APIs | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 benchmark accept-gate classification and preprocessor output provenance | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 model-free four-way page-orientation fallback and explicit C API; learned classifier remains separate | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 VLM cleanup safeguard: explicit opt-in barrier for destructive classical/learned cleanup on full-page VLM stages | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 structured stage metrics through the native/C pipeline API | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **COMPLETED** |
+| 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.7 explicit multi-page autorotate option for `/ocr/document`, with confidence gate and temporary rotated page handoff | **COMPLETED** |
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
@@ -37,7 +155,7 @@ Requirements:
 1. Keep the detector's four-point polygon through postprocessing, including
    Paddle's contour score, `thresh=0.2`, `box_thresh=0.45`, `unclip_ratio=1.4`,
    candidate cap, clipping, and reading-order sort. The external
-   `/Volumes/backups/ai/crispembed-gguf/dbnet-ic15-f16.gguf` remains a fallback
+   `$CRISPEMBED_GGUF_DIR/dbnet-ic15-f16.gguf` remains a fallback
    detector, not a replacement for the PP-OCRv6 detector.
 2. Add a shared quadrilateral crop helper equivalent to RapidOCR's
    `get_rotate_crop_image`: canonical TL/TR/BR/BL ordering, perspective
@@ -63,11 +181,157 @@ Requirements:
    the complete pipeline no longer emits full-page recognizer garbage on the
    German fixtures.
 
+Parity note (2026-07-31): `inference.yml` declares `DecodeImage(img_mode=BGR)`;
+the public crop handoff remains RGB, with the recognizer swapping to BGR at
+its model boundary. Exact native detector crops now reproduce the visible
+German title geometry. On the Fraktur crop, Python and native logits agree at
+cosine 0.99998--0.99999, but both decode `Rieilhs–刊臂懒s²ł1&tt.`; this is a
+source-model recognition-quality limitation, not a native crop/inference
+parity failure. Do not publish a quality claim for this fixture until a
+Paddle/Python official run confirms whether the model itself has the same
+limitation.
+
 Implementation order: shared quad warp and telemetry; PP-LCNet classifier;
 PP-det→PP-rec integration; DBNet fallback adapter; per-stage diff fixtures;
 benchmark and regression manifest; then publish only to `cstr/` from the
 external model volume. This work must be merged from remote `main` before
 each landing checkpoint and pushed back to remote `main` after the checkpoint.
+
+### Historical German Fraktur OCR inventory and port plan (2026-07-31)
+
+The directly portable German-Fraktur model is the official Tesseract `frk`
+traineddata shipped by `tesseract-lang`. Local inspection with
+`combine_tessdata -u` confirms an LSTM network, `lstm-unicharset`, and
+`lstm-recoder`; the existing converter successfully produced
+`$CRISPEMBED_GGUF_DIR/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
+parameters). This is the first Fraktur model to use in the native
+`tesseract_lstm` GGUF path. Preserve the output alphabet, including long-s
+and historical characters, and keep the sensitive output layer at F32 for
+the first quantization gate. The upstream Tesseract language data and
+runtime are Apache-2.0; retain the exact source checksum and attribution in
+the eventual model README.
+
+| Source | What it contains | License/provenance | GGML/GGUF decision |
+|---|---|---|---|
+| [Tesseract `frk`](https://github.com/tesseract-ocr/tessdata) | Current LSTM Fraktur recognizer; local `frk.traineddata` is the 4.00-alpha synthetic-trained network with 100 output codes | Apache-2.0 Tesseract language data; verify exact tessdata revision/checksum per artifact | **Port now:** existing `convert-tesseract-to-gguf.py` and `tesseract_lstm.cpp`; test on German Fraktur crops and full pages |
+| [`paalberti/tesseract-dan-fraktur`](https://github.com/paalberti/tesseract-dan-fraktur) `deu_frak` | German Fraktur Tesseract 3.02 package containing the compiled `deu_frak.traineddata`, `deu_frak.config`, `unicharambigs`, dictionaries/lists, build script, and many paired `.tif`/`.box` training samples (including font and scanned-page examples) | Repository `COPYING` says Apache-2.0; retain attribution and separately verify provenance of the historical source scans and annotations before redistributing or using them as a new corpus | **Compatibility and training-data candidate:** the legacy package is not an LSTM GGUF input and must not be passed to the current converter as if it were; use it with a legacy Tesseract 3.02 path, or use the paired image/box material for clean-room retraining into a supported LSTM format after provenance review |
+| [`jze/ocropus-model_fraktur`](https://github.com/jze/ocropus-model_fraktur) | OCRopus `pyrnn.gz` and CLSTM Fraktur character models; reports 1.089% held-out error on its own test set | No explicit license found in repository; source books/datasets also need provenance review | **Do not redistribute/port yet:** license clarification required; format is not Tesseract LSTM |
+| [`chreul/19th-century-fraktur-OCR`](https://github.com/chreul/19th-century-fraktur-OCR) | MIT Calamari five-model voting ensemble, single Calamari model, and OCRopus model for 19th-century German Fraktur; models expect binarized line images; repository includes at most 50 lines per book so users can adapt transcription guidelines, while the complete corpus is obtained from the linked GT publication | Repository MIT; the supplied model/adaptation files are distinct from the complete training corpus, whose source and ground-truth licensing must be checked independently | **Benchmark/retraining candidate:** no current GGUF importer; use the supplied samples for reproducible adaptation tests, then retrain into a supported LSTM graph if the full corpus permissions and target transcription policy are clear |
+| [`yingyangle/fraktur`](https://github.com/yingyangle/fraktur) | Research project using GT4HistOCR line data, character segmentation, zoning/black-pixel features, and a k-NN classifier; reports about 92% character accuracy | **No repository license or explicit reuse grant found.** GT4HistOCR itself is CC-BY-4.0, but that does not license this repository's code, pickles, feature data, or derived artifacts | **Reference only:** do not copy, train from its artifacts, or redistribute until the authors clarify licensing; independently reproduce the simple feature baseline from the separately licensed GT4HistOCR data if useful |
+| [`UB-Mannheim/AustrianNewspapers`](https://github.com/UB-Mannheim/AustrianNewspapers) | NewsEye/READ Austrian newspaper ground truth, 1864–1911; revised PAGE-XML with Fraktur/Antiqua, baselines, regions, and long-s transcription | Original dataset explicitly CC BY 4.0; preserve attribution to Mühlberger/Hackl, Austrian National Library, and the repository revision | **Eligible training source:** strong Fraktur/Antiqua classifier and Tesseract fine-tuning corpus after source/page split and attribution manifest |
+| [`UB-Mannheim/reichsanzeiger-gt`](https://github.com/UB-Mannheim/reichsanzeiger-gt) | 119,429 lines from 197 German newspaper pages, 1820–1939; Fraktur and Latin, with long-s and historical characters | Current GitHub repository advertises CC0-1.0; verify the exact revision and downloaded scan URLs before redistribution | **Highest-priority training/evaluation source:** large, directly relevant Fraktur corpus; use for classifier and Tesseract fine-tuning, preserving its transcription conventions |
+| [`ulb-sachsen-anhalt/ulb-groundtruth-eval-odem-ger`](https://github.com/ulb-sachsen-anhalt/ulb-groundtruth-eval-odem-ger) | OCR-D Phase III ULB VD18 German-Fraktur Page-XML ground truth: 39,823 text lines across 1,026 pages and 6,298 text regions, dated 1700–1799, with non-text region annotations | Repository metadata says CC-BY-4.0, while the GitHub license badge says CC-BY-SA-4.0; treat it conservatively as CC-BY-SA-4.0 until ULB resolves the discrepancy, and preserve the repository citation | **Highest-priority training/evaluation source:** convert Page-XML lines/regions into explicit line crops and manifests; useful for 18th-century Fraktur, layout/region evaluation, and clean-room LSTM fine-tuning once the license is settled |
+| [`UB-Mannheim/dach-gt`](https://github.com/UB-Mannheim/dach-gt) | Ground truth and full text for selected prints from German libraries; repository ships data plus image-download tooling and supports PAGE/ALTO/escriptorium workflows | CC0-1.0 repository license; retain institution/source URLs and verify any remote scan terms | **Eligible broad training source:** mine Fraktur lines and full-text alignment for detector/recognizer evaluation and clean-room training; keep each institution as a separate provenance split |
+| [`jbaiter/archiscribe-corpus`](https://github.com/jbaiter/archiscribe-corpus) | 4,255 German-Fraktur lines from 112 works across 73 years (1800s–1890s), with transcription directories and Archive.org/IIIF source links | CC-BY-4.0; attribution and source-work provenance are required | **Eligible evaluation/adaptation source:** strong chronological/style diversity; import the line images and transcriptions only with an attribution manifest and use work-level splits to avoid leakage |
+| [`UB-Mannheim/charlottenburger-amtsschrifttum`](https://github.com/UB-Mannheim/charlottenburger-amtsschrifttum) | 26 pages of German Fraktur ground truth from 1879–1919, including long-s (ſ), German Mark (ℳ), double oblique hyphen (⸗), fractions, and downloadable image URLs | CC0-1.0 | **Small but valuable regression/adaptation fixture:** use for historical-character coverage, line-recognition tests, and domain adaptation; do not treat its 26 pages as a standalone general corpus |
+| [`UB-Mannheim/Reichsanzeiger`](https://github.com/UB-Mannheim/Reichsanzeiger) | Apache-licensed software/data support for the digital edition of *Deutscher Reichsanzeiger und Preußischer Staatsanzeiger*, including the SQL image/issue mapping and project metadata | Apache-2.0 repository; the underlying scans, full text, and linked digital-edition assets must retain their own terms | **Pipeline/provenance reference, not a recognizer:** use the issue/image mapping to locate and reproduce evaluation pages; keep this Apache repository separate from the `reichsanzeiger-gt` CC0 ground-truth corpus |
+| [`SimoneRebora/OCRFraktur`](https://github.com/SimoneRebora/OCRFraktur) | OCRopus Fraktur training project: 4,287 real lines from *Tiroler Soldaten-Zeitung*, 3,000 synthetically generated lines from three Fraktur fonts, a 410-line test set, and a `TSZ_Fraktur_model.pyrnn.gz` model reporting 0.479% CER on its own test set | **No repository license found.** The README cites the Musil edition and source texts/fonts; those inputs have independent provenance and must not be assumed redistributable | **Reference only until licensing is clarified:** valuable for synthetic-data design and an OCRopus baseline, but no redistribution, training, or GGUF conversion from its artifacts; independently recreate the experiment from cleared sources if needed |
+| [`phildiderichsen/MeMo-Fraktur-OCR-code`](https://github.com/phildiderichsen/MeMo-Fraktur-OCR-code) | Rule-based correction/evaluation workflow: Tesseract re-OCR with `frk`, `fraktur`, and `dan`, alternative OCR comparison, regex/context rules, SymSpell, VRT alignment, and staged intermediate outputs | **No repository license found.** Its PDFs, OCR outputs, dictionaries, and external corpora require separate permission review | **Concepts only:** reproduce the error-analysis, multi-model voting, historical spelling, hyphenation, and correction stages in our own code; do not copy source or derived artifacts into a distributable model/data package |
+| [`muratyanasoglu/AI-Powered-OCR-Project-for-Ancient-Languages-Ancient-Greek-Fraktur-Old-German-Classical-Latin`](https://github.com/muratyanasoglu/AI-Powered-OCR-Project-for-Ancient-Languages-Ancient-Greek-Fraktur-Old-German-Classical-Latin) | Django/PyTesseract application using Tesseract 5, OpenCV/Pillow preprocessing, configurable PSM/OEM, `deu_latf`/`frk`/other language packs, and optional Gemini translation/analysis; no custom OCR weights | No explicit repository license found in the inspected tree; Tesseract language data and Gemini service have separate terms | **Workflow reference only:** useful ideas for script-specific preprocessing and output export, but it contributes no native recognizer, detector, or GGUF-compatible weights; do not bundle its external language packs or API integration without review |
+| [`Nargizi/oppy`](https://github.com/Nargizi/oppy) | Small German-Fraktur PDF OCR wrapper; dependencies show PyMuPDF, OpenCV, `pytesseract`, and `fsspec`, with package modules for PDF/image/text handling | MIT repository license; Tesseract and any downloaded language data remain separately licensed | **Reference only:** it uses the system Tesseract executable through PyTesseract rather than a custom model; compare its PDF rasterization/preprocessing ideas with our native pipeline, but there is nothing to convert to GGUF |
+| [`UB-Mannheim/digitue-gt`](https://github.com/UB-Mannheim/digitue-gt) | CC0 transcriptions for digitized Tübingen books/journals, including Fraktur-tagged material; images fetched from UB Tübingen URLs | Repository advertises CC0-1.0; confirm that downloaded image endpoints carry compatible reuse terms and keep source URLs | **Eligible source:** mine Fraktur/Antiqua line crops for clean-room classifier training and evaluation; retain provenance even under CC0 |
+| [`samprietoserrano/archival-ocr-transcription`](https://github.com/samprietoserrano/archival-ocr-transcription) | MIT-licensed Python workflow and outputs for a 1719 German Fraktur book by Peter Kolb; extraction used Google Document AI and Transkribus, followed by local cleanup, historical spell-checking, and reading-order assembly | Repository MIT; Internet Archive scans, DTA corpora, CLARIN GeMiCorpus, and Transkribus/Google outputs retain their own terms | **Reference/evaluation source, not a model port:** useful for a historical Fraktur page fixture, reading-order and post-correction tests, but it supplies no portable LSTM/CNN weights. Audit source-image and corpus permissions before using its text/images for training |
+| SchriftLotse `party-v4` | Swin-base vision encoder plus 40M-parameter Llama decoder; page-wise recognition with line prompts | Apache-2.0 model release | **Not a near-term port:** custom Kraken multimodal architecture; potentially reusable after a dedicated Swin/Llama graph and tokenizer audit |
+| SchriftLotse Kraken BLLA | Trainable neural baseline/line segmenter | Apache-2.0 via Kraken/model release | **Not a near-term port:** PyTorch Kraken BLLA format and baseline geometry are separate from DBNet; evaluate as an external segmentation oracle first |
+| SchriftLotse `orli` | ConvNeXtV2-tiny encoder, multi-scale adapter, autoregressive transformer decoder for baselines and reading order | Apache-2.0 model release | **Not a near-term port:** new autoregressive layout graph; consider only after native line/ordering gates |
+| SchriftLotse `trocr-kurrent-19`, `trocr-kurrent-early`, `trocr-medieval` | Historical handwriting TrOCR checkpoints | MIT according to the inventory | **Potential later port:** assess against existing TrOCR encoder/decoder implementation; verify exact HF architecture and tokenizer before conversion |
+| SchriftLotse `trocr-modern` | German handwritten TrOCR checkpoint | AFL-3.0 according to the inventory | **Potential later port with license review:** same TrOCR compatibility check, but AFL-3.0 obligations must be documented |
+| SchriftLotse Microsoft TrOCR processor | Processor/tokenizer only, not a recognizer model | MIT according to the inventory | **Reuse only as preprocessing/tokenizer reference;** no standalone GGUF model |
+| SchriftLotse `qwen-embed` | Qwen3 Embedding 0.6B semantic search model | Apache-2.0 | **Already covered by decoder embedding infrastructure;** not an OCR recognizer |
+| [Xilinx `LSTM-PYNQ`](https://github.com/Xilinx/LSTM-PYNQ) `Fraktur_OCR.ipynb` | Quantized BiLSTM Fraktur OCR overlay for PYNQ; notebook constructs `PynqFrakturOCR`, downloads FPGA bitstream and Fraktur weights, and recognizes lines from *Wanderungen durch die Mark Brandenburg* | Repository BSD-3-Clause; the notebook cites the FINN-L paper and an Insiders Technologies text dataset, whose data/model provenance must be audited separately | **Reference only for now:** the model is coupled to FINN/PYNQ fixed-point hardware and does not expose a standard Tesseract/PyTorch checkpoint. Porting would require recovering the quantized layer weights, codec, preprocessing, and CTC decode from `lstm/src/network/fraktur`; do not assume it is interchangeable with `tesseract_lstm` GGUF |
+
+OCR-D’s historical-print catalogue narrows the practical Tesseract targets:
+
+| OCR-D/Tesseract resource | Meaning | Port status |
+|---|---|---|
+| `deu_latf` (formerly `frk`) | Current German Fraktur language model with some Antiqua coverage | **Directly portable:** use the local `frk.traineddata` LSTM conversion already validated; preserve the upstream name/revision mapping in metadata |
+| `Fraktur` | Broader Fraktur script model, including non-German characters and some Antiqua | **Candidate:** obtain the exact `.traineddata`, verify its `lstm` component, then run the same converter/parity/Fraktur regression gates |
+| GT4HistOCR-derived models (`GT4HistOCR_*`, `frak2021`, UB Mannheim models) | Historical-print models trained from GT4HistOCR and related German/Fraktur corpora; OCR-D recommends these for broad historical coverage | **Highest next priority:** locate the exact `.traineddata` artifact and license/attribution terms, convert if it contains an LSTM component, and compare against `deu_latf` on our corpus |
+| `deu_frak` | Older Tesseract 3 German Fraktur model | **Legacy benchmark only:** OCR-D explicitly says it is no longer recommended; it is not a current LSTM conversion input |
+
+OCR-D documents that Tesseract 4.1+ `.traineddata` files contain an
+`unicharset` and neural `lstm` weights, and that models can be combined (for
+example `deu+deu_latf` or `Fraktur+Latin`) at an accuracy/runtime cost. The
+official Tesseract language data is Apache-2.0, but GT4HistOCR training data is
+CC-BY-4.0 and individual UB Mannheim derivatives may have additional
+attribution or release conditions. Record the exact model URL, checksum,
+training corpus, and license before placing any derivative in the shared
+model volume or publishing a GGUF.
+
+Required Fraktur implementation sequence:
+
+1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
+   `$CRISPEMBED_GGUF_DIR`; never commit large weights.
+   Apply the same policy to every `tesseract_lstm` language variant: all
+   quantized Q8/Q4 artifacts must retain `output.weight` and `output.bias` at
+   the source precision (F16 or F32), while only recurrent matrices may be
+   quantized. Existing multilingual artifacts must be regenerated if their
+   output projection was previously quantized.
+2. Add an explicit `tesseract-fraktur` stage/profile using DBNet line crops →
+   grayscale crop → `tesseract_lstm` `frk` model, with the normal Tesseract
+   path remaining available for modern German.
+3. Add a Fraktur regression fixture containing the German title crop and
+   full-page `german_official_print.jpg`; compare native GGUF, Python/
+   Tesseract, and system Tesseract `-l frk` outputs with CER/WER where an
+   oracle exists. Preserve `ſ`, `ß`, ligatures, and Unicode normalization in
+   the comparison.
+4. Run crispasr-diff-style intermediate parity for the converted `frk` model,
+   then test F32, head-only Q8, and debug Q4. Do not publish a quant until
+   the Fraktur crop remains readable and the output-layer parity gate passes.
+5. Keep `deu_frak` and the Calamari/OCRopus models as separately licensed
+   external benchmarks; do not silently convert or redistribute them as
+   Apache artifacts.
+6. Add OCR-D/GT4HistOCR model comparisons (`deu_latf`, `Fraktur`, and the
+   best available `frak2021`/GT4HistOCR derivative) before deciding whether
+   `tesseract-frk-f32.gguf` is the production default. Include the Xilinx
+   LSTM-PYNQ result only as a hardware-reference baseline unless its weights
+   and codec can be legally and technically recovered.
+
+### Fraktur line-classifier retraining (clean-room alternative to AGPL model)
+
+`impresso-project/frakturline-classification-cnn` is useful as a routing
+component, not as a recognizer: it classifies a grayscale line crop as
+`fraktur` or `other`. Its published architecture is small and reproducible:
+approximately 2.1M parameters, input `1x60x800`, three convolutional stages
+with ReLU/max-pooling and LayerNorm, adaptive max-pooling to `1x8`, then
+`1024 -> 128 -> 1` fully connected layers. The model card reports a 99.75%
+accuracy result on its held-out test set, but the model and the linked
+Impresso datasets are AGPL-3.0. Do not copy its weights, code, or dataset
+into a permissively licensed CrispEmbed artifact.
+
+We can train an independent equivalent classifier from the published
+architecture and independently licensed data:
+
+1. Use CC-BY-4.0 GT4HistOCR Fraktur lines and the MIT-licensed
+   [`chreul/19th-century-fraktur-OCR`](https://github.com/chreul/19th-century-fraktur-OCR)
+   repository's included sample/model-training material for the positive
+   class, with attribution and source revision/checksum. The chreul
+   repository is MIT-licensed and explicitly supplies small training samples,
+   Calamari/OCRopus models, and source-book provenance; that MIT grant does
+   not automatically relicense the original historical scans or every
+   upstream source corpus, so audit each selected file before redistribution.
+   Build the `other` class from separately licensed Antiqua/Latin line corpora,
+   or annotate our own public-domain CC0 fixtures. Do not derive a replacement
+   dataset by relabeling or mirroring the AGPL Impresso dataset.
+2. Split by source publication/page, never by individual crop, to prevent
+   font/page leakage. Add hard negatives: ornate Antiqua, mixed lines,
+   ornaments, headers, low-DPI scans, skew, bleed-through, and short lines.
+3. Reimplement the architecture independently in the existing Python
+   training/reference tooling, export an ONNX/PyTorch state dict, and write a
+   small GGUF converter with F32 classifier head and F16 convolution weights.
+   The native runtime should use the existing crop helper and expose
+   `fraktur_probability`, `script_class`, and an abstain/uncertain state.
+4. Use the classifier only to route line crops: `fraktur` → `frk`/`deu_latf`
+   or a GT4HistOCR-derived Tesseract model; `other` → modern German/Latin
+   recognizer. It must not replace recognition or silently alter text.
+5. Validate on an independently held-out Fraktur/Antiqua corpus and our
+   German page fixtures. Report balanced accuracy, precision/recall/F1,
+   calibration, abstention rate, and downstream OCR CER/WER against always
+   `frk`, always `deu`, and the classifier route. A 99% classifier score is
+   not sufficient if routing worsens recognition.
+6. Publish only the independently trained weights and a complete data/
+   attribution manifest. Keep the AGPL Impresso model as an external
+   benchmark/reference, not as a CrispEmbed dependency.
 
 EasyOCR checkpoint: the CRAFT detector graph now passes Python input, VGG taps,
 U-Net feature map, NHWC score-map, and decoded box-count parity on CPU and
@@ -76,6 +340,85 @@ artifact. The next slice explicitly separates detector geometry from ordering:
 EasyOCR line grouping, Tesseract/LayoutLM word ordering, and one structured
 handoff contract. DBNet Python box/text parity and production orchestration
 remain pending.
+
+The reusable `easyocr_pipeline` now exposes the selected `lines` and `words`
+policies, runs native DBNet detection plus GPU-resident EasyOCR recognition,
+and returns text, detector/recognizer confidence, pixel boxes, reading-order
+metadata, and normalized LayoutLM boxes. The model-backed regression produces
+12 line records and 98 word records on `scan_strip.png`; Python box/text
+reference parity remains a separate pending gate.
+
+The harness-blind postprocessing reference is now explicit: Python EasyOCR
+`readtext(detail=1)` JSON is converted by
+`tools/easyocr_postprocess_reference.py` into a versioned manifest covering
+ordering, crop geometry, text, confidence, and LayoutLM normalization. Its
+model-free test passes both line and word policies.
+
+The native `test-easyocr-pipeline` can emit the same manifest schema, and
+`tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
+The serializer self-check passes on the 98-word DBNet page run; an independent
+Python detector/recognizer page manifest is still required before parity is
+claimed. The current local Python environment lacks torch, numpy, and cv2, so
+that reference run remains an explicit external/dependency gate.
+
+The detector-independent production handoff is now explicit: `run_regions`
+accepts caller-supplied detector boxes and applies the configured lines/words
+ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
+pipeline test replays the DBNet boxes through this API and matches the normal
+98-record run; this validates the boundary, not external Tesseract TSV parity.
+The public signature now accepts only `easyocr_layout::region`, keeping
+DBNet-specific types inside the implementation. The compile/link proof passes;
+the post-merge model replay is currently blocked by the unrelated shared
+`ggml` submodule checkout difference and is not claimed green.
+
+The first real page comparison confirms why TSV parity cannot be asserted by
+zipping records: native DBNet/CRNN `words` mode emits 98 records, while
+Tesseract 5.5.2 `--psm 6` emits 106 TSV words. The first geometry already
+differs before recognition (`[46.97,0,62.56,20.88]` native versus
+`[50,0,58,19]` TSV), and later indices shift with segmentation. Full-page
+Tesseract TSV also reads `Drighton;` on this fixture, whereas the instrumented
+internal PSM7 crop reads `Brighton`; page segmentation and crop selection remain
+the active parity gate.
+
+The harness-blind CTC/vocabulary/confidence gate is now covered by the native
+`easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
+with repeated-token collapse, vocabulary entries are 1-based and validated,
+and confidence follows EasyOCR's nonblank `custom_mean` formula.
+
+The page-pipeline audit found that EasyOCR's `get_image_list` uses OpenCV
+`resize(..., interpolation=1)` (bilinear), whereas the standalone recognizer
+fixture was generated with PIL bicubic. An experimental native bilinear
+substitution failed the existing diff at `sequence_input`, `bilstm_0`, and
+`logits` (`Ea` versus `5a`), so it is not retained in production until a
+matching bilinear `-ref.gguf` is regenerated.
+
+An experimental strict port of EasyOCR's horizontal gap thresholds was also
+rejected: applied directly to the DBNet artifact it split the 98 fragmented
+regions into 26 recognition units instead of the existing 12 line units.
+DBNet therefore needs a detector-specific line adapter before those thresholds
+can replace the current y-band grouping.
+
+The first DBNet adapter is now explicit in `easyocr_layout`: it preserves the
+fragment-tolerant y-band aggregation for DBNet line crops, while word mode
+continues to use left-to-right y-band ordering. The adapter is covered by the
+layout regression and the model-backed page smoke; horizontal-gap splitting is
+still a later detector-specific refinement.
+
+### Tesseract parity status — controlled line proven; page/CLI parity pending
+
+The repository contains a `.traineddata` → GGUF converter, a pure-Python
+Tesseract LSTM reference dumper, and `test-tesseract-lstm-diff`. That is an
+available validation path, not evidence that the shipped models match the
+original Tesseract engine. The controlled exact `eng.traineddata` line run is
+now complete; backup artifacts must still be regenerated consistently when
+model metadata changes, and page/CLI parity remains separate.
+
+The native implementation is also a line recognizer. Tesseract's page
+segmentation, word boundaries, spacing, and reading order are separate
+postprocessing behavior. A Python forward pass can prove GGUF/runtime math
+against parsed weights, but does not by itself prove full Tesseract CLI parity.
+Do not mark the full lane green until page segmentation, spacing, reading order,
+and decoded page output are compared with the original engine.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -95,9 +438,11 @@ remain pending.
   `crispembed-diff` → decoded-output protocol.
 - Preserve per-artifact source/license metadata; do not infer a fine-tuned
   checkpoint's license solely from its backbone.
-- Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
-  words and normalized boxes. Transformers' `apply_ocr=True` path uses
-  PyTesseract; LayoutLM is not itself an OCR checkpoint.
+- [x] Add a weight-free LayoutLMv2/v3 handoff contract for externally produced
+  words and normalized boxes. `tools/validate_layoutlm_handoff.py` emits the
+  exact `apply_ocr=False` processor payload and retains confidence/pixel boxes
+  as sidecar metadata; Transformers' `apply_ocr=True` path uses PyTesseract.
+  A live model invocation remains unnecessary for this contract gate.
 - Acceptance requires reference parity, decoded text, and real pipeline output
   checks before quantization or registry integration.
 
@@ -132,20 +477,448 @@ downstream handoff parity, not detector-box similarity alone.
 
 #### Interoperability gates
 
-- [ ] Make detector output and ordering policy first-class production adapters;
-      no test-only DBNet→EasyOCR orchestration.
+- [x] Make detector output and ordering policy first-class production adapters;
+      `easyocr_pipeline::run_regions` now accepts detector-independent boxes and
+      applies the selected `lines`/`words` policy through the production crop /
+      recognizer path; the pipeline test exercises the injected-geometry handoff.
 - [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
       page fixture with a Python reference manifest.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
       confidence, pixel boxes, and normalized LayoutLM boxes.
+- [x] Add native handoff invariants for word-mode line/x ordering and
+      normalized-box bounds; external Tesseract TSV geometry/text parity is
+      still pending.
+- [x] Add a standard-library Tesseract TSV geometry/order comparator and
+      self-test; a real page comparison remains an evidence gate, not a claim
+      of Tesseract text parity.
 - [ ] Run the same structured words through LayoutLMv2/v3 with
       `apply_ocr=False`; verify serialization and ordering independently of
       logits.
-- [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
-      it with EasyOCR CRNN on identical crops rather than treating either
-      recognizer as the detector.
+- [x] Keep Tesseract LSTM as a separately measured recognizer lane; the
+      `test-ocr-identical-crops` harness feeds the exact same RGB crop to the
+      dynamic-width EasyOCR CRNN and grayscale Tesseract LSTM, then reports both
+      confidence conventions. On three official TSV boxes, both lanes preserve
+      the text structure but differ in ambiguous characters/punctuation (for
+      example `I`/`[` and the final quote), confirming these are recognizer
+      outputs rather than detector/order differences.
+- [x] Prove the controlled line-recognizer boundary separately: the exact
+      Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
+      decoded text, and official instrumented PSM7 internal crop all match;
+      logits differ by at most `6.6e-7` with cosine `1.000000`.
+      New reference dumps record the source image dimensions, and the native
+      diff harness rejects a mismatched fixture before reporting stage cosine
+      scores; this prevents stale `-ref.gguf` archives from masquerading as
+      model or runtime parity failures.
+- [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
+      this remains open because direct line fixtures are not the same internal
+      crops selected by official PSM7.
+      The native classical page-segmentation adapter is now wired behind the
+      explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
+      geometry regression. It now also bypasses generic scan cleanup so page
+      segmentation sees original-image coordinates, and its row threshold
+      rejects sparse antialiasing bridges on gray paper; this does not close
+      real CLI parity.
+      On `scan_strip.png`, the tuned native CLI path improved from 3 to 7
+      decoded regions, while official Tesseract `--psm 3/6` emits 12 lines;
+      exact RGB-to-gray conversion is now shared with the proven reference.
+      Height-based splitting now recovers 12 candidates and 12 decoded regions
+      on `scan_strip.png`; crop widths are tightened per split band. Text still
+      differs on `Meryton` and punctuation/quotes, so decoded page parity and
+      official crop equivalence remain open.
+      The env-gated page-segmentation path now also bypasses cleanup (the
+      structured `page_segmentation` parameter already did), so it preserves
+      original-page coordinates. On `scan_strip.png` the component fallback
+      recovers 12 regions, 567 native characters, and CER/WER `0.0179/0.0841`
+      against official 12-line output; native mean confidence is `0.895` versus
+      official mean word confidence `0.9108`. This improves geometry and text
+      parity but does not make the experimental path production-default.
+      The `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` control now reaches the
+      documented component prototype through the orchestrator; its current
+      `scan_strip.png` result is 12 regions, 569 chars, and confidence `0.878`,
+      so the legacy/fallback adapter remains the default classical choice.
+      Review of Tesseract `textord/makerow.cpp` confirms its authoritative
+      boundary is connected blobs assigned by vertical overlap, line size,
+      spacing, and fitted baselines; our projection splitter is only an
+      interim adapter. An opt-in component prototype is available behind
+      `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG`. After a Tesseract-style
+      reassociation pass for short/detached blobs it produces the expected 12
+      rows on `scan_strip.png`, but its enlarged first-line crop currently
+      worsens recognizer output, so it remains experimental and is not enabled
+      in production.
+      `tools/compare_tesseract_page_geometry.py` now measures the independent
+      geometry boundary from official TSV level-4 rows. On `scan_strip.png`
+      The legacy component path remains the default because the German
+      official-print gate regressed under the newer baseline matcher. With
+      `CRISPEMBED_TESSERACT_COMPONENT_BASELINE=1`, the baseline experiment now
+      has 12/12 indexed rows with mean IoU `0.813562` after vertical crop
+      tightening; the projection fallback has 12/12 with mean IoU `0.865993`.
+      Its first-line crop is `[48,0,434,20]` and short final-row crop
+      `[27,237,72,22]`; both page ends decode coherently, although the
+      baseline variant drops the final exclamation mark. Character choices and
+      quote/spacing differences remain a
+      decoded-text parity gate. A page-level beam A/B at widths 1, 5, 10, and
+      25 keeps the same first-line choices; generic CTC beam search remains
+      opt-in and is not the cause of the remaining CLI discrepancy.
+      The geometry comparator now passes detector and recognizer models
+      separately through the CLI (`--ocr-det`/`--ocr-rec`); its component
+      prototype measurement is 12/12 lines with indexed mean IoU `0.826222` on
+      `scan_strip.png`, rather than the previous false zero-row result.
+      The comparator also accepts optional `--min-native-lines` and `--min-iou`
+      gates; the component fixture passes at 12 lines and IoU `0.82`, while
+      diagnostic runs without thresholds remain non-gating.
+      Geometry reports now include detector/recognizer SHA-256 hashes and the
+      indexed reading-order policy, matching the aggregate page-metrics
+      provenance record without serializing local model paths.
+      The geometry comparator now also reports mean/max absolute crop deltas
+      and mean absolute inter-line gap deltas, with optional max-delta gates;
+      this keeps spacing/crop drift visible even when row count and IoU pass.
+      Its projection/component/baseline policy flags are now mutually
+      exclusive and clear inherited policy variables before each run, so an
+      A/B result cannot silently use a stale segmentation mode.
+      It now reports monotonic reading-order checks for both TSV and native
+      boxes and can gate them with `--require-reading-order`; indexed IoU is
+      therefore no longer the only signal for an ordering regression.
+      `tests/test_tesseract_page_geometry.py` covers the ordering, crop-delta,
+      spacing-delta, and equal-count ordering-regression cases without model
+      files.
+      The regression workflow now runs this test in the Tier 0 smoke job and
+      triggers on changes to the comparator test, keeping these gates active
+      in PR and `main` CI.
+      The aggregate page-metrics harness now selects `legacy-fallback`,
+      `component`, `baseline`, or `projection` explicitly and clears stale
+      policy environment variables between runs. On `scan_strip.png`, the
+      measured CER/WER are `0.0179/0.0841`, `0.0322/0.1121`,
+      `0.0179/0.0841`, and `0.0250/0.1121` respectively; legacy-fallback
+      remains the best default.
+      Each aggregate JSON record now includes detector and recognizer
+      SHA-256 hashes plus the ordering-comparison policy, without writing
+      local model paths into reports.
+      The aggregate harness now supports opt-in minimum-region and maximum
+      CER/WER acceptance gates and reports their individual results, allowing
+      page-quality regressions to fail explicitly instead of being hidden in
+      diagnostic JSON.
+      The model-free geometry regression also covers aggregate gate pass/fail
+      semantics and verifies that all quality gates remain opt-in.
+      It also exercises all four page-segmentation policy labels, keeping the
+      legacy default and each experimental mode explicit in reports.
+- [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
+      GGUF metadata and dumped reference GGUF metadata; the actual reference
+      run and controlled-line stage/output parity are complete; page parity
+      remains open.
+- [x] Align the diagnostic Tesseract reference dumper and native recognizer
+      with the actual Leptonica `pixScaleGrayLI` fixed-16 bilinear contract
+      (top-left sampling, integer weights, replicated edges). The previous
+      half-pixel resize was wrong and caused the first real divergence on a
+      thin receipt crop.
+- [x] Trace the receipt discrepancy against upstream Tesseract/Leptonica:
+      `commons-receipt-line-3` moved from input cosine `0.990245` and
+      `after_conv_fc` `0.983611` to all 9 diff stages at cosine `1.000000`,
+      with matching mine/ref norms. Two additional CC0 Commons fixtures are
+      vendored with URLs, licenses, and SHA-256 metadata; full CLI page and
+      decoder-choice parity remain open.
+- [x] Trace the remaining `Brighton`/`Drighton` discrepancy to the exact
+      installed model's `training_flags=65`: Tesseract's `TF_INT_MODE` is set,
+      so the CLI quantizes inputs and per-output weight rows to int8 before
+      its recode beam. GGUF/reference metadata now records `training_flags`
+      and `int_mode`; the current F32 graph remains measurable against the
+      F32 Python reference but is not yet CLI-logit parity.
+- [x] Add the first int8-equivalent Tesseract activation path and an int-mode
+      Python `-ref.gguf`; input/intermediate/output boundaries pass the 0.99
+      diff gate (int-mode logits cosine `0.997227`). This shifts native output
+      to `Lhey ... Drighton`, but does not yet reproduce the CLI's
+      `ihey ... Brighton`.
+- [x] Add an opt-in CTC prefix beam (`CRISPEMBED_TESSERACT_BEAM_WIDTH`) and
+      test widths 2, 3, 5, 10, 16, 25, and 50. It leaves the int-mode result
+      unchanged, proving generic CTC beam search alone is not the CLI choice
+      mechanism.
+- [x] Close the int-mode network logit gap with Tesseract's lookup-table
+      nonlinearities and exact quantized matrix arithmetic. Recode/dictionary
+      scoring remains a separate pending gate below.
+- [x] Added Tesseract's 1/256 LUT nonlinearities and reconstructed per-row
+      int8 matrix accumulation. Native/Python int-mode parity improved to
+      logits cosine `0.998405` with identical decoded output; CTC and
+      Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
+      the CLI's `Brighton`.
+- [x] Compare native against an instrumented official Tesseract PSM7 run at
+      the internal activation boundary. The earliest divergence was the
+      `Convolve` layer's out-of-image cells: Tesseract fills them with its
+      seeded `TRand`, not zeros. GGUF now preserves `sample_iteration`, and
+      both converter/reference/native paths reproduce the exact seeded padding.
+      On the 601x36 official PSM7 crop, every captured stage passes at cosine
+      1.000000 (logits max error 6.6e-7, cosine 1.000000), and native decodes
+      the same `Brighton` path as official Tesseract. This closes arithmetic
+      and preprocessing parity for this controlled line; recode/dictionary
+      scoring and full-page segmentation remain separate gates.
+- [x] Preserve the serialized Tesseract recoder map/offsets in the runtime and
+      add an opt-in recoder-prefix legality layer to the diagnostic beam.
+      Width-25 constrained decoding reproduces `Brighton` on the official
+      crop with all 9 network diff stages still passing. Full RecodeBeamSearch
+      certainty aggregation and DAWG dictionary scoring remain pending and
+      are not enabled in production.
+- [x] Harden `test-tesseract-lstm-diff` so decoded metadata mismatches fail the
+      test. The Python reference now matches native `stb_image` RGB-to-gray
+      conversion (`(77R+150G+29B)>>8`); all six direct line fixtures pass
+      decoded parity with exact input tensors and stage cosines at or above
+      `0.998821`.
+- [x] Sweep six existing CC0/public-domain English line fixtures through the
+      exact int-mode native/Python harness: all 6 references pass the
+      captured-stage 0.99 parity gate, and the constrained width-25 beam remains
+      stable on the official `Brighton` crop. Official CLI PSM7 output was
+      separately measured with `language_model_ngram_on=0` and `=1`; both
+      settings produced identical text on all six lines. The remaining
+      differences (crop width, spacing, and case) are page-segmentation/CLI
+      geometry, not DAWG scoring evidence.
+- [x] Run exact hashed Homebrew English references after the Leptonica fix:
+      the controlled line fixture decodes identically in native/Python as
+      `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
+      passing the 0.99 gate and logits cosine `0.999863`. The full-page image
+      is not a valid single-line recognizer fixture; page segmentation remains
+      a separate acceptance gate.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
+
+- [x] Fix native Tesseract confidence propagation. The converter/reference
+      already expose CTC softmax probabilities, but `src/tesseract_lstm.cpp`
+      discarded them and appended `0.0` for every decoded character. Greedy
+      decoding now returns the selected timestep probability, so page-level
+      confidence is no longer spuriously zero. This was a runtime bug, not a
+      GGUF conversion bug.
+- [x] Define the native beam confidence contract. A prefix/recode beam output
+      is a sequence-level hypothesis assembled across timesteps, so a
+      per-character confidence cannot be copied from one timestep. Native now
+      exposes a length-normalized CTC sequence probability separately and
+      leaves beam `char_conf` empty. Greedy decoding continues to expose
+      selected timestep probabilities. This follows Tesseract's distinction
+      between character certainty and word-level aggregation; it is not a
+      claim of exact `WERD_RES::certainty` parity.
+- [ ] Validate beam confidence against the official engine's certainty
+      aggregation and implement per-character posterior/marginal scores only
+      if that comparison establishes a stable mapping. Keep beam decoding
+      opt-in until recoder and DAWG scoring are also matched.
+      `test-confidence --tesseract-image MODEL LINE.png` now exercises the
+      direct recognizer contract for greedy/beam comparisons without page
+      segmentation overhead; it is diagnostic until a non-empty, transcribed
+      line fixture is wired into the acceptance gate.
+      `tools/compare_tesseract_line_confidence.py` now measures the same
+      contract against official TSV on three English line fixtures: greedy text
+      matches on two of three, while the first line remains `Lhey`/`Drighton`;
+      greedy sequence-vs-official-mean-word confidence deltas were `+0.0053`,
+      `-0.0847`, and `-0.0643`. Beam confidence is intentionally reported as a
+      separate sequence probability (not a fabricated per-word certainty), so
+      this does not close the official certainty gate. Tesseract source review
+      now confirms the native greedy `word_confidence` mapping: minimum
+      selected-path `log(probability)`, followed by `clamp(100 + 5*certainty,
+      0, 100)`. On the direct second-line fixture this is `0.965889` versus
+      official `0.959698`; page-level aggregation and beam certainty remain
+      open.
+      On the available German Fraktur line fixture, official Tesseract
+      produces `1` with mean word confidence `0.5886`; native greedy produces
+      `GI` with sequence confidence `0.5985` and two timestep confidences;
+      native beam-8 produces `GIIEE` with sequence confidence `0.5808` and no
+      per-character confidences. The confidence scale is close, but decoded
+      text is not yet parity, so beam remains diagnostic and opt-in.
+      The diagnostic now also reports native character min/mean probabilities;
+      on the F32 artifact these are `0.0902`/`0.1978` for greedy, while beam
+      correctly reports zero per-character values and sequence confidence
+      `0.5592`. These are diagnostics only, not a production calibration.
+      After correcting the aggregation to exclude blank/repeated CTC
+      timesteps, native Fraktur greedy `word_confidence` is `0.8797` versus
+      official TSV `0.5886`; beam remains `0`. Semantics now match the
+      min-emitted-character rule, but calibration and decoded-text parity are
+      still open.
+      The line-confidence comparator now provides opt-in gates for greedy
+      word-confidence calibration and the beam sequence-only contract; its
+      model-free tests cover pass, calibration failure, fabricated beam
+      character confidence, and missing-beam cases.
+      It now records recognizer SHA-256 provenance and official word-confidence
+      min/median/max alongside the mean, making calibration spread visible
+      without treating those distributions as beam-character parity.
+      Both page-metrics and line-confidence comparators now emit elapsed
+      milliseconds for each official subprocess and native subprocess/line
+      run, so quality claims can be paired with measured cost.
+      Page metrics can additionally request native detect/group/crop/recognize
+      timings with `--benchmark`; official Tesseract remains an external CLI
+      timing baseline unless built with matching internal instrumentation.
+      The comparator uses the orchestrator-level benchmark switch, keeping
+      recognizer-only timing separate from the full detector-to-recognizer
+      pipeline timing.
+
+The gated page-segmentation experiment currently gives 21 regions, 1,128
+characters, and 0.836 mean confidence on the German official-print fixture.
+The projection fallback gives 24 regions, 1,606 characters, and 0.702 mean
+confidence. The reproducible TSV comparison reports 25 official lines, 141
+words, 881 non-whitespace word characters, and 0.866 mean word confidence;
+the native default blob path reports 21 regions, 1,128 characters, 0.836
+confidence, CER 0.307, and WER 0.404 against the official text. Neither
+experimental path is yet a quality match, so DBNet remains the production
+default. The comparison is reproducible with
+`tools/compare_tesseract_page_metrics.py`.
+
+The component row-gap sweep (0, 2, 4, 6, and 8 pixels) did not improve the
+quality gate: the best alternate produced 23 regions but lower confidence
+(0.805). The default row fitter remains unchanged and the tuning variable is
+not enabled in production.
+
+The subsequent baseline-row matcher regression produced 49 regions and failed
+the native gate. It is now preserved behind
+`CRISPEMBED_TESSERACT_COMPONENT_BASELINE`; the legacy component grouping is
+the default experimental component path again and restores 21 regions, 1,128
+characters, 0.836 confidence, and 78/78 model-gated orchestrator checks.
+The model-free orchestrator suite now also guards the two-row component
+geometry and reading order, preventing this default/gated-path regression from
+returning silently.
+The component adapter now falls through to the baseline matcher only when
+legacy grouping returns no boxes; this preserves the measured legacy
+German-page behavior while avoiding an empty classical result on harder
+layouts. The fallback remains behind the classical page-segmentation gate and
+DBNet is unchanged.
+
+Latest reproducible German-page rerun (2026-08-02, current `frk` Q8 artifact)
+measured official Tesseract at 25 lines/881 chars, confidence `0.8658`, and
+`9.34 s`; native measured 23 regions/1,235 chars, confidence `0.768`, CER
+`0.5279`, WER `0.5390`, and `38.69 s` native stage. Native per-stage timing was
+detect `102.0 ms`, crop `249.7 ms`, and recognize `38,338.3 ms`. This is worse
+in both output quality and speed. The older 21-region/`0.307` CER result is
+retained as a historical measurement because artifact/control conditions must
+be normalized before calling it a regression. TODO: pin the exact recognizer
+artifact and benchmark controls in the matrix, then fix the Fraktur page path.
+
+The same fixture/control was then run against the available recognizer
+variants. Standard `frk-q8_0` produced 23 regions/1,235 chars, confidence
+`0.768`, CER `0.5279`, WER `0.5390`, and native stage `38.69 s`; `frk-f32`
+produced 23/1,164, confidence `0.767`, CER `0.4672`, WER `0.5461`, and
+`102.41 s`; `frk-int8-source-q8-candidate` matched the F32 output metrics and
+produced `64.44 s`. Official output remained 25 lines/881 chars in all runs.
+This isolates a precision/artifact quality tradeoff: standard Q8 is faster but
+not output-equivalent, while F32/source-Q8 is more accurate on CER but much
+slower and still not page-parity. TODO: choose and optimize a high-precision
+Fraktur artifact only after same-artifact warm/cold benchmarks and decoded
+output gates are stable.
+
+The first reproducible mixed-precision experiment keeps Q8 as the base and
+restores only `lstm.0.weight_hh` from F32 with
+`models/mix-tesseract-gguf.py`. On the same page it produced 23 regions/1,146
+chars, confidence `0.765`, CER `0.4603`, WER `0.5390`, and native recognition
+`23.42 s` (detect `58.2 ms`, crop `55.4 ms`); official Tesseract produced
+25/881, confidence `0.8658`, and `5.55 s` in that run. This improves CER over
+Q8 (`0.5279`) and is much faster than full F32, but remains worse than the
+reference in regions, text, confidence, WER, and speed. Keep it gated and
+test additional small recurrent critical sets before promotion.
+
+During the next sync, remote `main` had accidentally replaced the 1,025-line
+int-mode/scratch implementation with an older 659-line F32-only runtime. The
+regression was caught by the scan benchmark: recognition rose to `50.15 s`
+for 12 Fraktur lines. The known-good runtime was restored and protected by
+`tests/test_tesseract_runtime_contract.py`; the current LUT-enabled int-mode
+run is `34.32 s` recognition with unchanged output (12 regions, CER `0.03375`,
+WER `0.15044`). This remains slower than official Tesseract and is an active
+optimization TODO, but the critical fast path is now guarded against silent
+branch overwrites.
+
+The generic quantizer now accepts repeatable `--keep-pattern` fnmatch rules.
+This makes critical-weight retention reproducible for every model family while
+leaving the default policy unchanged; the Tesseract mixed-precision packer
+remains the safer byte-preserving path for existing artifacts.
+
+#### Cross-check survey — quality and cost status
+
+Every checked path must be classified by both decoded output quality and
+measured cost; a cosine or successful exit code alone is not an OCR-quality
+claim.
+
+- **Controlled Tesseract line / Python reference / native GGUF:** on par for
+  the validated exact line contract. The captured stage tensors and logits
+  pass the existing `crispembed-diff` gates (cosines at or above `0.99`, with
+  the proven controlled run at `1.000000`), and decoded output matches. The
+  remaining gap is per-step timing: the diff harness records parity but does
+  not yet emit reference and native elapsed time for every graph stage. TODO:
+  add stage timing without weakening the cosine gate.
+- **English Tesseract line-confidence path:** mixed, not full parity. Greedy
+  decoded text matches two of three checked line fixtures; the remaining
+  outputs contain `Lhey`/`Drighton` substitutions. Previously measured greedy
+  sequence-confidence deltas versus official TSV word confidence were
+  `+0.0053`, `-0.0847`, and `-0.0643`. This is worse on the affected lines,
+  and the confidence calibration TODO remains open. The comparator now emits
+  official/native elapsed milliseconds, but a controlled same-crop timing
+  table for all three fixtures is still TODO.
+- **German Fraktur line-confidence path:** worse, not on par. Official output
+  is `1`; native greedy is `GI`, and native beam-8 is `GIIEE`. Native greedy
+  word confidence is `0.8797` versus official TSV `0.5886`; beam correctly
+  exposes sequence confidence only and zero character confidences, but that
+  semantic contract is not certainty parity. TODO: obtain a transcribed,
+  same-crop Fraktur line fixture and validate beam/greedy output and timing
+  against the official engine.
+- **`scan_strip.png` full-page legacy/fallback path:** close but worse. Both
+  paths produce 12 regions; native produces 567 characters versus official
+  453, CER is `0.0179`, WER is `0.0841`, and confidence is `0.895` versus
+  `0.9108`. The new timed run measured official TSV at `342.6 ms` and native
+  DBNet→Tesseract at `1105.2 ms` (`3.2x` slower). TODO: profile detector,
+  crop/warp, and recognizer separately; the native path must close this cost
+  gap before any default-path promotion.
+- **`scan_strip.png` gated alternatives:** projection and baseline preserve
+  12/12 rows but remain worse or non-superior in decoded output; measured
+  geometry means are projection IoU `0.865993`, baseline IoU `0.813562`, and
+  component IoU `0.826222`. Aggregate CER/WER are respectively
+  `0.0250/0.1121`, `0.0179/0.0841`, and `0.0322/0.1121` for projection,
+  baseline, and component. Per-policy native stage timings are now recorded
+  below; retain all modes gated because no alternate is a quality and speed
+  improvement.
+- **German official-print page:** worse, not on par. The native default
+  classical path reports 21 regions, 1,128 characters, confidence `0.836`,
+  CER `0.307`, and WER `0.404`; official Tesseract reports 25 lines, 881
+  non-whitespace word characters, and confidence `0.866`. Projection reports
+  24 regions, 1,606 characters, and confidence `0.702`. TODO: add paired
+  reference/native cold-load and warm per-stage timings for this fixture and
+  improve segmentation/text before considering promotion.
+- **Portfolio engine sweep:** this is a separate cross-engine benchmark, not
+  Tesseract parity. The local M1 Metal sweep completed 11 engines, with 2
+  timeout/error entries and explicit missing-model/sample statuses. TODO:
+  attach the same quality/cost classification to every available engine and
+  keep specialist/VLM outputs separate from plain-text OCR.
+
+The first per-stage `scan_strip.png` benchmark now exists for all four native
+policies. Official Tesseract TSV elapsed times were approximately
+`315.9–349.9 ms`; native pipeline stage totals were legacy `310.7 ms`,
+component `266.8 ms`, baseline `282.2 ms`, and projection `360.1 ms`.
+Recognizer time dominated each native stage (`260.3–353.8 ms`), while native
+detect and crop were each about `3–4 ms`. The comparator subprocess elapsed
+times are higher than those stage totals because the model-gated test binary
+also performs setup/fixture work; they must not be presented as pure OCR
+latency. Official internal detect/recognize split timings are still unavailable
+from the stock CLI, so a per-step apples-to-apples speed claim remains TODO.
+The quality/cost table is currently: legacy best quality and close stage cost;
+baseline same measured CER/WER but not a geometry/decoded-output improvement;
+component worse CER/WER; projection slower and worse CER/WER. None is ready for
+default promotion.
+
+The current line diagnostic on the available Fraktur full-page/PSM7 input
+measured official `278.6 ms`, native greedy `244.3 ms`, and native beam `110.3
+ms`; these are not a same-crop benchmark and must not be used as a speed claim.
+TODO: repeat timing on the cleared transcribed line fixtures and report cold
+load, warm greedy, warm beam, and per-stage reference/native costs together.
+
+The worker sweep on `scan_strip.png` preserves CER/WER while reducing native
+stage total from `690.3 ms` at one worker to `300.7 ms` at four and `292.1 ms`
+at eight. The next performance implementation task is therefore recognizer
+batching/graph and immutable-weight reuse; detector and crop are only a few
+milliseconds in the instrumented path. Do not trade away the recorded output
+quality gates while optimizing this hotspot.
+
+An activation-scratch reuse prototype was measured against the existing path:
+it preserves CER/WER exactly. A paired run measured `279.1 ms` scratch versus
+`282.3 ms` default, but earlier repeated runs were roughly `329–338 ms` versus
+the prior `~300 ms` four-worker measurement; this is not a reliable gain. It
+is retained behind `CRISPEMBED_TESSERACT_REUSE_SCRATCH` and is disabled by
+default until a repeated controlled benchmark demonstrates improvement.
+`tools/benchmark_tesseract_page.py` now automates repeated policy/worker runs
+and summarizes median/p90 official CLI, native subprocess, native stage, and
+recognizer timings alongside CER/WER/confidence deltas.
+
+Beam width 8 is not a performance candidate on this workload: the live
+full-page run reached several seconds to tens of seconds per line, versus the
+normal greedy recognizer's sub-second-to-low-single-digit-second line timings.
+The beam remains an opt-in diagnostic path until recoder/DAWG parity and a
+usable latency budget are both demonstrated.
 
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
@@ -314,6 +1087,43 @@ The checked-in matrix now has a model-free CI coverage guard at
 `tests/regression/test_engine_matrix.py`: all 23 portfolio engines must remain
 present with a lane, runtime, fixture, and explicit availability status.
 
+#### O9 measured survey — native vs reference status (2026-08-01)
+
+This is the current evidence boundary. Timings below are cold end-to-end M1
+Metal process times unless marked otherwise; they include model load and are
+not directly comparable to warm service throughput. “Exact” means exact output
+against the pinned reference/fixture, not a claim of SOTA quality. Missing
+reference gold or a missing model is recorded as unmeasured, not as a pass.
+
+| Path | Native timing / reference comparison | Output quality | Explicit follow-up |
+|---|---|---|---|
+| DBNet + TrOCR | 8.05 s cold; ~5.0 s warm on fox; DBNet postprocess optimization reduced 43.3 s → 1.54 s | 10/10 regions and 10/10 recognized; ordinary document baseline | Add shared German CC0 CER/WER and warm p50/p95 against Python/RapidOCR |
+| Tesseract-LSTM via DBNet line crops | 7.55 s cold / 8.09 s warm in the first sweep; expanded run 32.0 s cold due process/model conditions | Line crop CER 0.040; controlled line arithmetic/reference parity is exact, but page path is worse: 21 native regions vs 25 official lines, CER 0.307/WER 0.404 | Normalize benchmark conditions; match page segmentation, crop geometry, spacing, and CLI decode |
+| PARSeq | 0.921 s first sweep / 6.25 s expanded cold | Recognizer-only smoke (`Gooducalicanos.com`), no gold quality score | Add line-crop harness and CER/exact-match against scene-text gold |
+| GOT-OCR2 | 15.662 s / 22.073 s cold | Exact fox transcript | Warm/p95 benchmark and full German CC0 quality lane |
+| GLM-OCR | 32.884 s / 38.086 s cold | Exact fox transcript | Warm/p95 benchmark and German CC0 quality lane |
+| InternVL2-1B | 24.908 s / 28.523 s cold | Worse than reference presentation: CER 0.540 and prompt text included | Strip prompt wrapper, compare normalized text, then optimize tile/vision residency |
+| Qwen2-VL-3B | 70.757 s / 90.113 s before timeout | No transcript within the 45 s budget; quality unscored | Model-size/quantization tier benchmark and timeout budget decision |
+| LightOnOCR | 31.561 s / 69.289 s cold | Plausible but unscored | Add gold transcription and separate prompt-wrapper normalization |
+| SmolDocling | 16.334 s expanded | Worse: duplicated DocTags regions, payload CER 0.86 | Deduplicate/parse DocTags before any speed work |
+| Unlimited-OCR | 45.967 s system-volume run; 40.391 s `UOCR_MMAP=1` backup-volume run | Correct two-region output; CER 0.010, one harmless title-box coordinate drift | Keep mmap path; split SAM/CLIP/projection/decoder timings and compare warm runs |
+| MixTeX | 7.523 s / 13.286 s cold | Exact specialist LaTeX | Add warm/p95 and German/CN math fixtures; window attention remains CPU-scheduled |
+| Flova | 16.153 s / 36.293 s cold | Exact specialist LilyPond | Add warm/p95 and handwritten German/music fixture coverage |
+| Pix2TeX / Texteller | Pix2TeX 5.520 s / 8.980 s; Texteller 11.403 s / 18.491 s | Pix2TeX exact; Texteller worse/unusable (CER 7.293) | Keep Texteller out of quality tier; add formula-domain error analysis |
+| SMT | 0.37 s incremental vs 1.98 s full recompute for ~100 tokens (5.4× faster) | 96.3% GrandStaff; native/HF token agreement 100% on validated samples; q8_0 exact, q4_k ~32% and rejected | Keep F32/Q8; do not expose Q4_K as quality tier |
+| Polyphonic-TrOMR / Flova OMR / Transcoda | No common live timing in the O9 sweep | Per-stage/decoded parity documented; TrOMR and Flova byte-exact on validated references; Transcoda model lane still missing in the matrix run | Add common real-photo/historical-score warm/cold benchmark |
+| PP-FormulaNet, HMER, BTTR, PosFormer, Texo | No common live timing in the O9 sweep | Stage parity exists for selected fixtures; no shared gold quality/throughput claim | Run model-backed math benchmark with exact LaTeX and CER/exact-match |
+| PP-OCRv6 pipeline | German CC0 Metal: detector 6.9 s, quad crop 3.4 ms, CPU orientation 358.6 ms, recognition 455.2 ms; tiny graph diagnostic adds cost (3.46 s vs 2.44 s CPU on `HI` crop) | CPU accept-gate pipeline: 30 regions/139 chars, confidence 0.93, 141/141 smoke; detector graph is worse (cos 0.99113, 31 vs 30 boxes); recognizer graph still blank on `HI` (cos 0.2629 vs CPU) | Fix detector box parity and depthwise recognizer head; benchmark CPU/Metal only after accepted-output parity |
+| PP-LCNet orientation | CPU 0.36 s vs explicit Metal graph 1.15 s for 30 crops | 9/10 Metal parity fixtures; one uneven-illumination Arabic outlier (1.0679/3.2166 logits); CPU graph passes | Resolve Metal SE/depthwise numerical drift or keep CPU default; measure warm reuse only after reliability |
+| EasyOCR/DBNet/LayoutLM handoff | No external Python page timing yet | Native model-backed run: 12 lines/98 words; geometry IoU 0.916 against TSV baseline, but native emits 98 vs Tesseract 106 words; external EasyOCR text parity pending | Install/reference Python environment and compare full manifests, CER, geometry, and warm timings |
+
+Portfolio-wide TODOs created by this survey: (1) normalize cold-load versus
+warm-inference measurement and report p50/p95; (2) attach a gold transcription
+or exact structured reference to every runnable lane; (3) run the explicit
+`model-needed` lanes with `--download-missing`; (4) do not optimize a lane
+whose output is currently worse until its structural postprocessing/parity
+failure is fixed; and (5) keep specialist metrics separate from plain-text OCR.
+
 ### O10 — Preprocessing inventory, parity, and live outcome gates [IN PROGRESS]
 
 The OCR front-end needs its own measured regression track. Our restoration
@@ -358,10 +1168,12 @@ more than another restoration model.
 #### Implementation slices
 
 1. **O10.1 — Live preprocessor benchmark harness.** **Implemented in
-   `feat/ppocr-next-20260731`; pending merge.** Add
+   `feat/ppocr-next-20260731`; merged to `main`.** Add
    `tests/ocr_preprocessor_benchmark.py`. For every real CC0/German fixture,
    run raw input, classical cleanup variants, deskew, binarization, dewarp,
-   denoise, and every locally available SR/restoration model. Record stage
+   denoise, and every locally available SR/restoration model. The harness
+   accepts `--include-derived` to sweep every traced O10.2 robustness variant.
+   Record stage
    latency, output dimensions, pixel statistics, detector regions, OCR text,
    confidence, and CER/exact match when gold text exists. Also report text
    delta versus the raw-image baseline when no verified gold transcription is
@@ -396,10 +1208,14 @@ more than another restoration model.
    Tesseract-LSTM, and PARSeq line crops, and structured angle/confidence
    metadata is exposed per region. The learned classifier remains outstanding.
 
-5. **O10.5 — Learned page orientation.** Port a small four-way page-orientation
+5. **O10.5 — Learned page orientation.** **Model-free fallback implemented in
+   `feat/ppocr-next-20260731`;** port a small four-way page-orientation
    model. Apply it before PDF/image routing only when confidence clears a
    configurable threshold. Never rotate VLM inputs implicitly unless the
-   caller enables the option, because VLM letterboxing is model-specific.
+   caller enables the option, because VLM letterboxing is model-specific. The
+   fallback exposes `crispembed_detect_page_orientation` and
+   `/preprocess/orientation`, and never rotates
+   input implicitly; a learned PP-LCNet classifier remains outstanding.
 
 6. **O10.6 — Shared crop preprocessing.** **Implemented in
    `feat/ppocr-next-20260731`;** consolidate classifier and
@@ -408,12 +1224,21 @@ more than another restoration model.
    grayscale/RGB contracts. Add parity fixtures for short, tall, wide,
    upside-down, and tightly clipped lines.
 
-7. **O10.7 — PDF render/autorotate path.** Add native page rendering and
+7. **O10.7 — PDF render/autorotate path.** **Image-page autorotation and
+   multi-page DPI API slices
+   implemented in `feat/ppocr-next-20260731`;** add native page rendering and
    page-level accumulation where the platform supports it. Reuse PDF DPI
    profiling to select render DPI, then apply page orientation and the normal
-   document pipeline. Keep the existing parser-only path for minimal builds.
+   document pipeline. `/ocr/document` now accepts explicit
+   `"autorotate": true`, applies the confidence-gated fallback, and hands
+   rotated temporary pages through the normal renderer. Keep the existing
+   parser-only path for minimal builds. Bindings can now request all-page DPI
+   metadata with ownership-safe `crispembed_pdf_all_pages_dpi` APIs.
 
-8. **O10.8 — Stage routing and safeguards.** **Benchmark accept-gate slice
+8. **O10.8 — Stage routing, safeguards, and metrics.** **Benchmark accept-gate,
+   VLM cleanup safeguard, and structured stage-metrics slices implemented in
+   `feat/ppocr-next-20260731`;**
+   **benchmark accept-gate slice
    implemented in `feat/ppocr-next-20260731`;** make preprocessing selection
    evidence-based: classical cleanup for scans, no destructive cleanup for
    VLMs/photos, denoise for noisy captures, SR only for low-DPI inputs, and
@@ -422,7 +1247,11 @@ more than another restoration model.
    beyond the configured tolerance. The benchmark now records input/output
    checksums and dimensions plus conservative helped/neutral/harmed/
    unavailable/error outcome labels; changed text without verified gold is
-   reported as unavailable rather than claimed as an improvement.
+   reported as unavailable rather than claimed as an improvement. Full-page
+   VLM stages now skip destructive cleanup unless a future explicit VLM
+   preprocessing override is added. The native/C pipeline API now exposes
+   per-stage elapsed time, cleanup-applied flag, gate result, text yield, and
+   confidence.
 
 #### Required benchmark output
 

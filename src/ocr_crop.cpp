@@ -2,6 +2,7 @@
 #include "classical_preproc.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstring>
 
@@ -59,6 +60,17 @@ bool orient_180_gray(std::vector<uint8_t> & pixels, int width, int height) {
     return orient_180_gray_info(pixels, width, height).corrected;
 }
 
+void rotate_180_rgb(std::vector<uint8_t> & pixels, int width, int height) {
+    if (width <= 0 || height <= 0 || pixels.size() != (size_t)width * height * 3) return;
+    for (int y = 0; y < (height + 1) / 2; ++y)
+        for (int x = 0; x < width; ++x) {
+            const size_t a = ((size_t)y * width + x) * 3;
+            const size_t b = ((size_t)(height - 1 - y) * width + (width - 1 - x)) * 3;
+            if (a >= b) continue;
+            for (int c = 0; c < 3; ++c) std::swap(pixels[a + c], pixels[b + c]);
+        }
+}
+
 std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int channels, int x, int y, int crop_w,
                              int crop_h, int padding, int * out_width, int * out_height) {
     if (out_width) *out_width = 0;
@@ -80,6 +92,62 @@ std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int 
     }
     if (out_width) *out_width = w;
     if (out_height) *out_height = h;
+    return result;
+}
+
+std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
+                                  const float qy[4], int padding, int * out_width, int * out_height) {
+    if (out_width) *out_width = 0;
+    if (out_height) *out_height = 0;
+    if (!pixels || !qx || !qy || width <= 0 || height <= 0 || channels <= 0) return {};
+
+    // DBPostProcess already emits clockwise points, but canonicalizing here
+    // makes this helper safe for adapters receiving arbitrary point order.
+    std::array<int, 4> order{};
+    float min_sum = INFINITY, max_sum = -INFINITY, min_diff = INFINITY, max_diff = -INFINITY;
+    for (int i = 0; i < 4; ++i) {
+        const float sum = qx[i] + qy[i], diff = qx[i] - qy[i];
+        if (sum < min_sum) {
+            min_sum = sum;
+            order[0] = i;
+        }
+        if (diff > max_diff) {
+            max_diff = diff;
+            order[1] = i;
+        }
+        if (sum > max_sum) {
+            max_sum = sum;
+            order[2] = i;
+        }
+        if (diff < min_diff) {
+            min_diff = diff;
+            order[3] = i;
+        }
+    }
+    std::array<float, 4> x{}, y{};
+    for (int i = 0; i < 4; ++i) {
+        x[i] = qx[order[i]];
+        y[i] = qy[order[i]];
+    }
+    auto dist = [&](int a, int b) { return std::hypot(x[a] - x[b], y[a] - y[b]); };
+    const int pad = std::max(0, padding);
+    const int ow = std::max(1, (int)std::lround(std::max(dist(0, 1), dist(3, 2))) + 2 * pad);
+    const int oh = std::max(1, (int)std::lround(std::max(dist(0, 3), dist(1, 2))) + 2 * pad);
+    std::vector<uint8_t> result((size_t)ow * oh * channels);
+    for (int oy = 0; oy < oh; ++oy) {
+        const float v = std::clamp((oy - pad) / float(std::max(1, oh - 1 - 2 * pad)), 0.0f, 1.0f);
+        for (int ox = 0; ox < ow; ++ox) {
+            const float u = std::clamp((ox - pad) / float(std::max(1, ow - 1 - 2 * pad)), 0.0f, 1.0f);
+            const float top_x = x[0] + u * (x[1] - x[0]), top_y = y[0] + u * (y[1] - y[0]);
+            const float bot_x = x[3] + u * (x[2] - x[3]), bot_y = y[3] + u * (y[2] - y[3]);
+            const int sx = std::clamp((int)std::lround(top_x + v * (bot_x - top_x)), 0, width - 1);
+            const int sy = std::clamp((int)std::lround(top_y + v * (bot_y - top_y)), 0, height - 1);
+            const uint8_t * src = pixels + ((size_t)sy * width + sx) * channels;
+            std::memcpy(result.data() + ((size_t)oy * ow + ox) * channels, src, (size_t)channels);
+        }
+    }
+    if (out_width) *out_width = ow;
+    if (out_height) *out_height = oh;
     return result;
 }
 

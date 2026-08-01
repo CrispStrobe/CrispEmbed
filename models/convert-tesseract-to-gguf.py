@@ -22,6 +22,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import struct
 import sys
 from pathlib import Path
@@ -189,12 +190,14 @@ NF_LAYER_SPECIFIC_LR = 64
 # ---------------------------------------------------------------------------
 
 def read_weight_matrix(r: TessReader):
-    """Read a WeightMatrix → dict with 'weight' (np array) and 'bias' (np array)."""
+    """Read a WeightMatrix, retaining the source int8 rows when present."""
     mode = r.read_u8()
     int_mode = (mode & 1) != 0       # kInt8Flag
     use_adam = (mode & 4) != 0       # kAdamFlag
     double_flag = (mode & 128) != 0  # kDoubleFlag
 
+    raw = None
+    scales = None
     if not double_flag:
         # Old format (pre-double)
         if int_mode:
@@ -217,6 +220,7 @@ def read_weight_matrix(r: TessReader):
             raw = np.frombuffer(r.read_bytes(dim1 * dim2), dtype=np.int8).reshape(dim1, dim2)
             n_scales = r.read_u32()
             scales_raw = np.array([r.read_f64() for _ in range(n_scales)])
+            scales = scales_raw.astype(np.float32)
             # Dequant: float_w = int8_w * stored_scale (raw value before /127)
             # because runtime does: dot(int8_w, int8_input) * loaded_scale
             # = dot(int8_w, float_x * 127) * (stored / 127) = dot(int8_w, float_x) * stored
@@ -233,7 +237,11 @@ def read_weight_matrix(r: TessReader):
     bias = weights_f32[:, -1]     # (no,)
 
     return {"weight": weight, "bias": bias, "shape": (dim1, dim2),
-            "int_mode": int_mode if int_mode else False}
+            "int_mode": int_mode if int_mode else False,
+            # The final serialized column is the bias; keep the source rows
+            # so native int-mode can use the same quantized network.
+            "raw": raw[:, :-1].copy() if raw is not None else None,
+            "scales": scales.copy() if scales is not None else None}
 
 
 # ---------------------------------------------------------------------------
@@ -411,6 +419,8 @@ def main():
     # Parse traineddata archive
     # -----------------------------------------------------------------------
     components = parse_traineddata(data)
+    source_sha256 = hashlib.sha256(data).hexdigest()
+    print(f"Source SHA-256: {source_sha256}")
     print(f"\nComponents: {', '.join(components.keys())}")
 
     if "lstm" not in components:
@@ -516,6 +526,10 @@ def main():
     writer.add_string("general.license", "Apache-2.0")
     writer.add_string("general.source",
                       "https://github.com/tesseract-ocr/tessdata_best")
+    writer.add_string("tesseract_lstm.source_sha256", source_sha256)
+    writer.add_uint32("tesseract_lstm.training_flags", training_flags)
+    writer.add_int32("tesseract_lstm.sample_iteration", sample_iteration)
+    writer.add_bool("tesseract_lstm.int_mode", bool(training_flags & 1))
 
     # Network hyperparameters
     writer.add_string("tesseract_lstm.vgsl_spec", vgsl_spec)
@@ -586,6 +600,16 @@ def main():
         writer.add_tensor(name, d, raw_dtype=dtype_gguf)
         tensor_count += 1
 
+    def add_int8_tensor(name, data_arr):
+        """Store source Tesseract int8 rows without passing through ggml quantization."""
+        if data_arr is not None:
+            writer.add_tensor(name, data_arr.astype(np.int8), raw_dtype=gguf.GGMLQuantizationType.I8)
+
+    def add_int8_rows(prefix, wm):
+        if wm.get("raw") is not None:
+            add_int8_tensor(prefix + ".int8", wm["raw"])
+            add_tensor(prefix + ".int8_scale", wm["scales"].astype(np.float32))
+
     # -----------------------------------------------------------------------
     # Write tensors
     # -----------------------------------------------------------------------
@@ -609,6 +633,7 @@ def main():
             # No reordering needed for FC layers.
             add_tensor(f"{prefix}.weight", wm["weight"])
             add_tensor(f"{prefix}.bias", wm["bias"])
+            add_int8_rows(prefix, wm)
             print(f"  {prefix}.weight: {wm['weight'].shape}")
 
         elif t in ("LSTM", "SummLSTM"):
@@ -655,6 +680,14 @@ def main():
             add_tensor(f"{prefix}.weight_ih", weight_ih)
             add_tensor(f"{prefix}.weight_hh", weight_hh)
             add_tensor(f"{prefix}.bias", stacked_b)
+
+            if all(layer["weights"][name].get("raw") is not None for name, _ in gate_reorder):
+                raw_stacked = np.concatenate([layer["weights"][name]["raw"] for name, _ in gate_reorder], axis=0)
+                scale_stacked = np.concatenate([layer["weights"][name]["scales"] for name, _ in gate_reorder], axis=0)
+                add_int8_tensor(f"{prefix}.weight_ih.int8", raw_stacked[:, :ni_in])
+                add_int8_tensor(f"{prefix}.weight_hh.int8", raw_stacked[:, ni_in:])
+                add_tensor(f"{prefix}.weight_ih.int8_scale", scale_stacked.astype(np.float32))
+                add_tensor(f"{prefix}.weight_hh.int8_scale", scale_stacked.astype(np.float32))
 
             ltype = lstm_types[idx]
             print(f"  {prefix}: {ltype}, ns={ns}, ni={ni_in}, "

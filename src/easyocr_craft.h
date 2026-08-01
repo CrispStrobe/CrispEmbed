@@ -2,6 +2,10 @@
 
 #include <cstddef>
 
+typedef struct easyocr_craft_timing {
+    double graph_ms;
+} easyocr_craft_timing;
+
 struct easyocr_craft_context;
 
 easyocr_craft_context * easyocr_craft_init(const char * model_path, int width, int height);
@@ -9,3 +13,4 @@ void easyocr_craft_free(easyocr_craft_context * ctx);
 bool easyocr_craft_forward(easyocr_craft_context * ctx, const float * chw_input, size_t n_elem);
 int easyocr_craft_diff(easyocr_craft_context * ctx, const char * ref_path);
 int easyocr_craft_box_count(easyocr_craft_context * ctx, float text_threshold, float link_threshold, float low_text);
+bool easyocr_craft_last_timing(const easyocr_craft_context * ctx, easyocr_craft_timing * timing);

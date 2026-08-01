@@ -18,6 +18,7 @@
 #include "crispembed_diff.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -72,14 +73,96 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     printf("\nImage: %dx%d\n", w, h);
 
+    // A reference archive is tied to the exact source image. Older archives
+    // may not carry these fields, but new dumps must fail early when paired
+    // with a different fixture instead of producing misleading cosine data.
+    const std::string ref_w = ref.meta("tesseract_lstm_ref.image_width");
+    const std::string ref_h = ref.meta("tesseract_lstm_ref.image_height");
+    if (!ref_w.empty() && !ref_h.empty() && (atoi(ref_w.c_str()) != w || atoi(ref_h.c_str()) != h)) {
+        fprintf(stderr, "reference image dimensions %sx%s do not match input %dx%d\n", ref_w.c_str(), ref_h.c_str(), w,
+                h);
+        stbi_image_free(img);
+        tesseract_lstm_free(ctx);
+        return 2;
+    }
+
     // Run C++ forward pass
     int out_len = 0;
     const char * text = tesseract_lstm_recognize(ctx, img, w, h, &out_len);
     printf("C++ result: '%s'\n", text);
+    if (std::getenv("TESSERACT_DIFF_DEBUG")) {
+        int n = 0;
+        const float * data = tesseract_lstm_get_capture(ctx, "input_image", &n);
+        if (data && n > 0) {
+            float lo = data[0], hi = data[0];
+            for (int i = 1; i < n; ++i) {
+                lo = std::min(lo, data[i]);
+                hi = std::max(hi, data[i]);
+            }
+            printf("C++ input debug: n=%d min=%.6g max=%.6g first=", n, lo, hi);
+            for (int i = 0; i < std::min(n, 8); ++i) printf(" %.6g", data[i]);
+            printf("\n");
+        }
+
+        if (ref.has("input_image")) {
+            auto [ref_data, ref_n] = ref.get_f32("input_image");
+            if (ref_data && ref_n > 0) {
+                float lo = ref_data[0], hi = ref_data[0];
+                for (size_t i = 1; i < ref_n; ++i) {
+                    lo = std::min(lo, ref_data[i]);
+                    hi = std::max(hi, ref_data[i]);
+                }
+                printf("Ref input debug: n=%zu min=%.6g max=%.6g first=", ref_n, lo, hi);
+                for (size_t i = 0; i < std::min<size_t>(ref_n, 8); ++i) printf(" %.6g", ref_data[i]);
+                printf("\n");
+            }
+        }
+        int conv_n = 0;
+        const float * conv = tesseract_lstm_get_capture(ctx, "after_convolve", &conv_n);
+        if (conv && ref.has("after_convolve")) {
+            auto [ref_conv, ref_conv_n] = ref.get_f32("after_convolve");
+            printf("C++/ref convolve n=%d/%zu first=", conv_n, ref_conv_n);
+            for (int i = 0; i < std::min(conv_n, 32); ++i) printf(" %.6g/%.6g", conv[i], ref_conv[i]);
+            printf("\n");
+            int shown = 0;
+            for (int i = 0; i < std::min<size_t>(conv_n, ref_conv_n) && shown < 8; ++i) {
+                if (std::fabs(conv[i] - ref_conv[i]) > 1.0e-6f) {
+                    printf("convolve mismatch[%d]=%.9g ref=%.9g\n", i, conv[i], ref_conv[i]);
+                    shown++;
+                }
+            }
+        }
+        int logits_n = 0;
+        const float * logits = tesseract_lstm_get_capture(ctx, "logits", &logits_n);
+        if (logits && ref.has("logits")) {
+            auto [ref_logits, ref_logits_n] = ref.get_f32("logits");
+            const auto logits_shape = ref.shape("logits");
+            const int classes = logits_shape.empty() ? 99 : (int)logits_shape[0];
+            const int timesteps = std::min(logits_n, (int)ref_logits_n) / classes;
+            int mismatches = 0;
+            for (int t = 0; t < timesteps; ++t) {
+                int mine = 0, theirs = 0;
+                for (int c = 1; c < classes; ++c) {
+                    if (logits[t * classes + c] > logits[t * classes + mine]) mine = c;
+                    if (ref_logits[t * classes + c] > ref_logits[t * classes + theirs]) theirs = c;
+                }
+                if (mine != theirs && mismatches < 12) {
+                    printf("logit argmax mismatch[t=%d] native=%d ref=%d native=%.6g ref=%.6g\n", t, mine, theirs,
+                           logits[t * classes + mine], ref_logits[t * classes + theirs]);
+                    mismatches++;
+                }
+            }
+            printf("logit argmax mismatches=%d/%d\n", mismatches, timesteps);
+        }
+    }
 
     // Check Python result from reference metadata
     std::string py_text = ref.meta("tesseract_lstm_ref.decoded_text");
     if (!py_text.empty()) printf("Py  result: '%s'\n", py_text.c_str());
+    const bool decoded_mismatch = !py_text.empty() && py_text != text;
+    if (decoded_mismatch) {
+        fprintf(stderr, "decoded output mismatch: native='%s' python='%s'\n", text, py_text.c_str());
+    }
 
     // Compare each stage
     printf("\n=== Per-stage parity ===\n");
@@ -90,6 +173,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     };
 
     int n_pass = 0, n_fail = 0, n_skip = 0;
+    constexpr float kStageCosineGate = 0.99f;
 
     for (const char * stage : stages) {
         // Get C++ capture
@@ -118,20 +202,20 @@ static int crispembed_test_main(int argc, char ** argv) {
             verdict = "PASS";
         else if (r.cos_min >= 0.999f)
             verdict = "PASS (ok)";
-        else if (r.cos_min >= 0.99f)
-            verdict = "WARN";
+        else if (r.cos_min >= kStageCosineGate)
+            verdict = "PASS (0.99 gate)";
         else {
             verdict = "FAIL";
         }
 
-        bool pass = r.cos_min >= 0.999f;
+        bool pass = r.cos_min >= kStageCosineGate;
         if (pass)
             n_pass++;
         else
             n_fail++;
 
-        printf("  %-20s  cos_min=%.6f  max_abs=%.2e  mean_abs=%.2e  %s\n", stage, r.cos_min, r.max_abs, r.mean_abs,
-               verdict);
+        printf("  %-20s  cos_min=%.6f  global=%.6f  max_abs=%.2e  mean_abs=%.2e  mine_norm=%.6g  ref_norm=%.6g  %s\n",
+               stage, r.cos_min, r.cos_global, r.max_abs, r.mean_abs, r.mine_norm, r.ref_norm, verdict);
     }
 
     printf("\n=== Summary: %d PASS, %d FAIL, %d SKIP ===\n", n_pass, n_fail, n_skip);
@@ -139,7 +223,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     stbi_image_free(img);
     tesseract_lstm_free(ctx);
 
-    return n_fail > 0 ? 1 : 0;
+    return n_fail > 0 || decoded_mismatch ? 1 : 0;
 }
 
 int main(int argc, char ** argv) {

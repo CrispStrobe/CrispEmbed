@@ -705,6 +705,20 @@ CRISPEMBED_API const int * crispembed_ocr_pipeline_reading_order(void * ctx, int
 /// Lightweight Markdown export from the most recent pipeline run.
 CRISPEMBED_API const char * crispembed_ocr_pipeline_markdown(void * ctx, int * out_len);
 
+typedef struct crispembed_ocr_stage_metric {
+    int index;
+    const char * engine;
+    float elapsed_ms;
+    int cleanup_applied;
+    int accepted;
+    int text_chars;
+    float mean_confidence;
+} crispembed_ocr_stage_metric;
+
+/// Per-stage metrics from the most recent pipeline run. The array is owned by
+/// the pipeline context and is valid until its next run/free call.
+CRISPEMBED_API const crispembed_ocr_stage_metric * crispembed_ocr_pipeline_stage_metrics(void * ctx, int * out_n);
+
 /// Get the detected language from the last pipeline run (via LID).
 /// Returns ISO 639-1 code (e.g. "en", "de") or "" if LID not configured.
 /// confidence is written to *out_confidence if non-NULL.
@@ -1154,10 +1168,11 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
-    int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int engine;           // 0..13 existing engines, 14=unified metadata-dispatched GGUF (matches map_engine)
+    int source_type; // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    int engine; // 0..14 existing engines, 15=tesseract_fraktur, 14=unified metadata-dispatched GGUF (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
+    const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)
     int cleanup_enabled;
     int denoise;                            // NAFNet tier-2 for this stage
     crispembed_scan_cleanup_params cleanup; // the 10 classical knobs
@@ -1176,6 +1191,8 @@ typedef struct crispembed_ocr_stage {
     // Accept-gate:
     int min_chars;
     float min_confidence;
+    // Tesseract engines: 0 = DBNet, 1 = classical page segmentation.
+    int page_segmentation;
 } crispembed_ocr_stage;
 
 /// Build a pipeline from an explicit ordered stage array (full tweakability).
@@ -1230,6 +1247,22 @@ CRISPEMBED_API char * crispembed_ocr_render(const crispembed_ocr_result * result
 /// across all raster images on the page, and *out_n_images to the count.
 CRISPEMBED_API int crispembed_pdf_page_dpi(const char * pdf_path, int page, float * out_dpi, int * out_n_images);
 
+/// Per-page PDF DPI result returned by crispembed_pdf_all_pages_dpi().
+typedef struct crispembed_pdf_page_dpi_result {
+    float dpi;
+    float dpi_min;
+    float dpi_max;
+    int n_images;
+    float page_width_pt;
+    float page_height_pt;
+} crispembed_pdf_page_dpi_result;
+
+/// Profile every page in a PDF. The returned array is owned by the caller and
+/// must be released with crispembed_pdf_all_pages_dpi_free().
+CRISPEMBED_API const crispembed_pdf_page_dpi_result * crispembed_pdf_all_pages_dpi(const char * pdf_path,
+                                                                                   int * out_n_pages);
+CRISPEMBED_API void crispembed_pdf_all_pages_dpi_free(const crispembed_pdf_page_dpi_result * results);
+
 /// Dewarp a grayscale page (straighten curved text lines).
 /// [out] must be pre-allocated (w*h bytes). Returns 0 on success.
 CRISPEMBED_API int crispembed_dewarp(const uint8_t * gray, int w, int h, uint8_t * out, int * out_w, int * out_h);
@@ -1251,6 +1284,10 @@ CRISPEMBED_API crispembed_ocr_result * crispembed_cc_detect(const uint8_t * gray
 /// Find skew angle (degrees) of a document image.
 /// Returns 0 on success; *angle is the rotation needed to deskew.
 CRISPEMBED_API int crispembed_find_skew(const uint8_t * gray, int w, int h, float * angle, float * confidence);
+
+/// Model-free page orientation fallback. Returns 0/90/180/270 degrees
+/// clockwise and never rotates the input buffer.
+CRISPEMBED_API int crispembed_detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence);
 
 /// Adaptive Otsu binarization (handles uneven lighting).
 /// [out] must be pre-allocated (w*h bytes), receives 0/255 values.
