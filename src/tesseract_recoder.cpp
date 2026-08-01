@@ -6,6 +6,10 @@ namespace tesseract_recoder {
 
 bool compose_classes(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
                      std::vector<int> & unichars, std::vector<int> & starts) {
+    // These are result vectors, not accumulators. Clear them so a failed
+    // composition cannot leave stale tokens from a previous recognition.
+    unichars.clear();
+    starts.clear();
     const int n = (int)labels.size();
     if (codes.empty()) return false;
     std::vector<int> previous(n + 1, -1), previous_uid(n + 1, -1);

@@ -13,15 +13,19 @@ int main() {
         std::fprintf(stderr, "exact recoder composition failed\n");
         return 1;
     }
-    unichars.clear();
-    starts.clear();
+    unichars = { 99 };
+    starts = { 77 };
     if (tesseract_recoder::compose_classes({ 0, 2 }, codes, unichars, starts)) {
         std::fprintf(stderr, "invalid recoder composition unexpectedly succeeded\n");
         return 1;
     }
+    if (!unichars.empty() || !starts.empty()) {
+        std::fprintf(stderr, "failed composition retained stale output\n");
+        return 1;
+    }
     const std::vector<std::vector<int>> ambiguous = { { 4 }, { 4, 5 }, { 5 } };
-    unichars.clear();
-    starts.clear();
+    unichars = { 99 };
+    starts = { 77 };
     if (!tesseract_recoder::compose_classes({ 4, 5 }, ambiguous, unichars, starts) ||
         !equal(unichars, { 1 }) || !equal(starts, { 0 })) {
         std::fprintf(stderr, "ambiguous recoder composition failed\n");
