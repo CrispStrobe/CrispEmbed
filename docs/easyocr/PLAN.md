@@ -170,7 +170,15 @@ recognizer and LayoutLM consumer.
       direct line fixtures are not the same internal crops selected by PSM7.
       The native classical page-segmentation adapter is now wired behind the
       explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
-      geometry regression; this does not close real CLI parity.
+      geometry regression. It now also bypasses generic scan cleanup so page
+      segmentation sees original-image coordinates, and its row threshold
+      rejects sparse antialiasing bridges on gray paper; this does not close
+      real CLI parity.
+      On `scan_strip.png`, the tuned native CLI path improved from 3 to 7
+      decoded regions, while official Tesseract `--psm 3/6` emits 12 lines;
+      exact RGB-to-gray conversion is now shared with the proven reference,
+      and diagnostics show the remaining defect is merged 40--62 px row bands
+      before recognition; candidate-band splitting and crop acceptance remain.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.
