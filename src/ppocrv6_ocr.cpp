@@ -566,6 +566,9 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
     }
     ggml_tensor * w = pp_graph_resident(c, wt, GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
     if (!w) return nullptr;
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "ppocrv6 graph linear wt=%lldx%lld x=%lldx%lld\n", (long long)wt->ne[0],
+                (long long)wt->ne[1], (long long)x->ne[0], (long long)x->ne[1]);
     ggml_tensor * y = ggml_mul_mat(g, w, x);
     if (bias) {
         ggml_tensor * b = pp_graph_resident(c, bias, GGML_TYPE_F32, bias->ne[0], 1, 1, 1);
