@@ -310,31 +310,44 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
     for (int i = 0; i < width * height; ++i) sum += gray[i];
     const int threshold = std::clamp((int)(sum / (uint64_t)(width * height)) - 130, 60, 120);
     std::vector<uint8_t> seen((size_t)width * height, 0);
-    struct blob { int x0, y0, x1, y1, area; };
+    struct blob {
+        int x0, y0, x1, y1, area;
+    };
     std::vector<blob> blobs;
     std::vector<int> stack;
     stack.reserve(256);
-    for (int y = 0; y < height; ++y) for (int x = 0; x < width; ++x) {
-        const size_t seed = (size_t)y * width + x;
-        if (seen[seed] || gray[seed] >= threshold) continue;
-        seen[seed] = 1; stack.clear(); stack.push_back((int)seed);
-        blob b{x, y, x, y, 0};
-        while (!stack.empty()) {
-            const int p = stack.back(); stack.pop_back();
-            const int py = p / width, px = p - py * width;
-            b.x0 = std::min(b.x0, px); b.x1 = std::max(b.x1, px);
-            b.y0 = std::min(b.y0, py); b.y1 = std::max(b.y1, py); ++b.area;
-            for (int dy = -1; dy <= 1; ++dy) for (int dx = -1; dx <= 1; ++dx) {
-                if (!dx && !dy) continue;
-                const int nx = px + dx, ny = py + dy;
-                if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-                const size_t q = (size_t)ny * width + nx;
-                if (!seen[q] && gray[q] < threshold) { seen[q] = 1; stack.push_back((int)q); }
+    for (int y = 0; y < height; ++y)
+        for (int x = 0; x < width; ++x) {
+            const size_t seed = (size_t)y * width + x;
+            if (seen[seed] || gray[seed] >= threshold) continue;
+            seen[seed] = 1;
+            stack.clear();
+            stack.push_back((int)seed);
+            blob b{ x, y, x, y, 0 };
+            while (!stack.empty()) {
+                const int p = stack.back();
+                stack.pop_back();
+                const int py = p / width, px = p - py * width;
+                b.x0 = std::min(b.x0, px);
+                b.x1 = std::max(b.x1, px);
+                b.y0 = std::min(b.y0, py);
+                b.y1 = std::max(b.y1, py);
+                ++b.area;
+                for (int dy = -1; dy <= 1; ++dy)
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        if (!dx && !dy) continue;
+                        const int nx = px + dx, ny = py + dy;
+                        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                        const size_t q = (size_t)ny * width + nx;
+                        if (!seen[q] && gray[q] < threshold) {
+                            seen[q] = 1;
+                            stack.push_back((int)q);
+                        }
+                    }
             }
+            const int bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
+            if (b.area >= 5 && bh >= 3 && bh <= height / 3 && bw <= width / 2) blobs.push_back(b);
         }
-        const int bw = b.x1 - b.x0 + 1, bh = b.y1 - b.y0 + 1;
-        if (b.area >= 5 && bh >= 3 && bh <= height / 3 && bw <= width / 2) blobs.push_back(b);
-    }
     if (blobs.empty()) return out;
 
     // Tesseract's old textord path first makes blobs and then assigns them to
@@ -354,35 +367,57 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
         max_row_gap = std::clamp(std::atoi(gap_env), 0, std::max(3, height / 20));
     }
     if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
-        std::fprintf(stderr, "tesseract_pageseg: components=%zu median_h=%d row_gap=%d\n",
-                     blobs.size(), median_h, max_row_gap);
-    std::sort(blobs.begin(), blobs.end(), [](const blob & a, const blob & b) {
-        return a.y0 == b.y0 ? a.x0 < b.x0 : a.y0 < b.y0;
-    });
-    struct row { std::vector<blob> blobs; int y0 = 0, y1 = 0; };
+        std::fprintf(stderr, "tesseract_pageseg: components=%zu median_h=%d row_gap=%d\n", blobs.size(), median_h,
+                     max_row_gap);
+    // Assign by fitted baseline, not by transitive y-range overlap. A tall
+    // ascender can overlap the next line; Tesseract's makerow path keeps it
+    // with the row whose baseline/vertical overlap is the best match.
+    struct row {
+        int x0, y0, x1, y1, count, area;
+        float baseline;
+    };
     std::vector<row> rows;
+    std::sort(blobs.begin(), blobs.end(),
+              [](const blob & a, const blob & b) { return a.y1 == b.y1 ? a.x0 < b.x0 : a.y1 < b.y1; });
+    const float baseline_tolerance = std::max((float)max_row_gap, median_h * 0.8f);
     for (const auto & b : blobs) {
-        if (!rows.empty() && b.y0 <= rows.back().y1 + max_row_gap) {
-            rows.back().blobs.push_back(b);
-            rows.back().y1 = std::max(rows.back().y1, b.y1);
+        int best = -1;
+        float best_distance = baseline_tolerance;
+        for (int i = 0; i < (int)rows.size(); ++i) {
+            const float distance = std::fabs(rows[i].baseline - (float)b.y1);
+            if (distance <= best_distance) {
+                best_distance = distance;
+                best = i;
+            }
+        }
+        if (best < 0) {
+            rows.push_back({ b.x0, b.y0, b.x1, b.y1, 1, b.area, (float)b.y1 });
         } else {
-            rows.push_back({{b}, b.y0, b.y1});
+            row & r = rows[best];
+            r.x0 = std::min(r.x0, b.x0);
+            r.y0 = std::min(r.y0, b.y0);
+            r.x1 = std::max(r.x1, b.x1);
+            r.y1 = std::max(r.y1, b.y1);
+            r.area += b.area;
+            r.baseline = (r.baseline * r.count + b.y1) / (r.count + 1.0f);
+            ++r.count;
         }
     }
-    for (auto & r : rows) {
-        if (r.blobs.size() < 2) continue;
-        int x0 = width, x1 = -1;
-        for (const auto & b : r.blobs) { x0 = std::min(x0, b.x0); x1 = std::max(x1, b.x1); }
-        if (x1 < x0) continue;
+    std::sort(rows.begin(), rows.end(), [](const row & a, const row & b) { return a.y0 < b.y0; });
+    for (const auto & r : rows) {
+        if (r.count < 2 || r.x1 - r.x0 < std::max(8, width / 50) ||
+            r.y1 - r.y0 + 1 < std::max(6, (int)std::lround(median_h * 0.75f)))
+            continue;
         ocr_detect::text_box box{};
-        box.x = (float)std::max(0, x0 - 3);
+        box.x = (float)std::max(0, r.x0 - 3);
         box.y = (float)std::max(0, r.y0 - 3);
-        box.w = (float)std::min(width - (int)box.x, x1 - x0 + 7);
+        box.w = (float)std::min(width - (int)box.x, r.x1 - r.x0 + 7);
         box.h = (float)std::min(height - (int)box.y, r.y1 - r.y0 + 7);
         box.score = 1.0f;
         out.push_back(box);
     }
-    std::sort(out.begin(), out.end(), [](const auto & a, const auto & b) { return a.y == b.y ? a.x < b.x : a.y < b.y; });
+    std::sort(out.begin(), out.end(),
+              [](const auto & a, const auto & b) { return a.y == b.y ? a.x < b.x : a.y < b.y; });
     return out;
 }
 
