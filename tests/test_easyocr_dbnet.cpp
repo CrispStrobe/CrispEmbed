@@ -24,7 +24,9 @@ int main(int argc, char ** argv) {
     ocr_detect::context * det = nullptr;
     easyocr_ocr_context * rec = nullptr;
     int rc = 0;
-    if (!ocr_detect::load(&det, argv[1], 1) || !(rec = easyocr_ocr_init(argv[2], 1))) {
+    const int detector_threads =
+        std::max(1, std::getenv("OCR_DETECT_THREADS") ? std::atoi(std::getenv("OCR_DETECT_THREADS")) : 1);
+    if (!ocr_detect::load(&det, argv[1], detector_threads) || !(rec = easyocr_ocr_init(argv[2], 1))) {
         rc = 4;
     } else {
         auto boxes = ocr_detect::detect_rgb_ex(det, pixels, w, h, 3, ocr_detect::rapid_defaults());

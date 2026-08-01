@@ -116,6 +116,9 @@
       slower and Metal is `3.90x` slower (`4732.1 ms` graph). Both native
       backends retain the F16 reference taps and 96 decoded regions. Graph and
       kernel optimization is a mandatory performance TODO for both backends.
+      With `OCR_DETECT_THREADS=8`, native CPU improves to `2727.3 ms` graph,
+      `9.3 ms` postprocess, `2736.7 ms` total, still `2.25x` slower than the
+      reference; output remains 12 readable line units with `Brighton`.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
