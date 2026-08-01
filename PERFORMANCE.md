@@ -1319,6 +1319,11 @@ base64 payload and SHA-256 metadata. This verifies preservation only; the
 artifact is not a promoted backup model and native dictionary scoring is still
 unimplemented.
 
+The regenerated DAWG-bearing smoke GGUF loads successfully in the native
+runtime and reports `dawg=3`; the live confidence target passed `35/35` checks
+on `scan_strip.png`. The decoded smoke text was `Se`; this validates metadata
+acceptance only and is not a page-quality or DAWG-parity result.
+
 A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
 report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
 following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus

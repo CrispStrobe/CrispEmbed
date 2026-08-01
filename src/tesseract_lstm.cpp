@@ -148,6 +148,11 @@ struct tesseract_lstm_context {
     // Unicharset tokens
     std::vector<std::string> tokens;
 
+    // Losslessly preserved DAWG payloads for future decoder work. The native
+    // production decoder deliberately does not score these yet.
+    std::vector<std::string> dawg_components;
+    std::map<std::string, std::string> dawg_payloads;
+
     // Inference results
     std::string result_buf;
     std::vector<float> char_confs;
@@ -239,6 +244,22 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->sample_iteration = core_gguf::kv_i32(meta, "tesseract_lstm.sample_iteration", 0);
     ctx->int_mode = core_gguf::kv_bool(meta, "tesseract_lstm.int_mode", (ctx->training_flags & 1) != 0);
     ctx->vgsl_spec = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
+
+    // New converters preserve DAWG payloads as base64 metadata. Older GGUFs
+    // have no manifest and remain valid with zero components. Reject a
+    // malformed new manifest rather than silently claiming dictionary data is
+    // available for a future scoring implementation.
+    ctx->dawg_components = core_gguf::kv_str_array(meta, "tesseract_lstm.dawg_components");
+    for (const std::string & name : ctx->dawg_components) {
+        const std::string key = "tesseract_lstm.dawg." + name + ".base64";
+        const std::string payload = core_gguf::kv_str(meta, key.c_str(), "");
+        if (payload.empty()) {
+            fprintf(stderr, "tesseract_lstm: DAWG manifest entry '%s' has no payload\n", name.c_str());
+            core_gguf::free_metadata(meta);
+            return false;
+        }
+        ctx->dawg_payloads.emplace(name, payload);
+    }
 
     // Tokens
     ctx->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");
@@ -333,9 +354,9 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
 
-    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d, int_mode=%s)\n",
+    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d, int_mode=%s, dawg=%zu)\n",
             ctx->vgsl_spec.c_str(), ctx->num_lstm_layers, ctx->num_classes, ctx->input_height,
-            ctx->int_mode ? "true" : "false");
+            ctx->int_mode ? "true" : "false", ctx->dawg_components.size());
 
     return true;
 }
@@ -1138,6 +1159,10 @@ int tesseract_lstm_input_height(const tesseract_lstm_context * ctx) {
 
 int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->num_classes : 0;
+}
+
+int tesseract_lstm_dawg_component_count(const tesseract_lstm_context * ctx) {
+    return ctx ? (int)ctx->dawg_components.size() : 0;
 }
 
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {
