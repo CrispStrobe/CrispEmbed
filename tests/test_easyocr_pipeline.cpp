@@ -1,5 +1,7 @@
 #include "easyocr_pipeline.h"
+#include "ocr_detect.h"
 #include "core/clean_exit.h"
+#include "../ggml/examples/stb_image.h"
 
 #include <cstdio>
 #include <cstring>
@@ -89,6 +91,27 @@ static int crispembed_test_main(int argc, char ** argv) {
                     i, item.word.line, item.word.x, item.word.y, item.word.w, item.word.h, item.detector_confidence,
                     item.word.confidence, item.normalized.x0, item.normalized.y0, item.normalized.x1,
                     item.normalized.y1, item.word.text.c_str());
+    }
+    // Exercise the public detector-independent adapter with the same image.
+    // This is the production handoff used by external geometry providers.
+    int rw = 0, rh = 0, rc = 0;
+    unsigned char * rp = stbi_load(argv[3], &rw, &rh, &rc, 3);
+    ocr_detect::context * external_detector = nullptr;
+    if (!rp || !ocr_detect::load(&external_detector, argv[1], 1)) {
+        if (rp) stbi_image_free(rp);
+        easyocr_pipeline::free(ctx);
+        return 9;
+    }
+    const auto external_boxes =
+        ocr_detect::detect_rgb_ex(external_detector, rp, rw, rh, 3, ocr_detect::rapid_defaults());
+    const auto external_results = easyocr_pipeline::run_regions(ctx, external_boxes, rp, rw, rh, 3);
+    ocr_detect::free(external_detector);
+    stbi_image_free(rp);
+    if (external_results.size() != results.size()) {
+        std::fprintf(stderr, "detector-independent handoff count mismatch: %zu != %zu\n", external_results.size(),
+                     results.size());
+        easyocr_pipeline::free(ctx);
+        return 10;
     }
     if (argc == 6 && !write_manifest(argv[5], argv[3], mode, results)) {
         easyocr_pipeline::free(ctx);

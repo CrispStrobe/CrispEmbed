@@ -202,7 +202,53 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -50, 50)))
 
 
-def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False):
+def tesseract_tanh(x):
+    """Tesseract's 1/256-spaced tanh lookup-table interpolation."""
+    x = np.asarray(x, dtype=np.float32)
+    negative = x < 0
+    ax = np.abs(x) * np.float32(256.0)
+    index = np.floor(ax).astype(np.int64)
+    frac = ax - index.astype(np.float32)
+    i0 = np.minimum(index, 4094).astype(np.float32)
+    y0 = np.tanh(i0 / np.float32(256.0))
+    y1 = np.tanh((i0 + 1.0) / np.float32(256.0))
+    result = y0 + (y1 - y0) * frac
+    result = np.where(index >= 4095, 1.0, result)
+    return np.where(negative, -result, result).astype(np.float32)
+
+
+def tesseract_logistic(x):
+    """Tesseract's 1/256-spaced logistic lookup-table interpolation."""
+    x = np.asarray(x, dtype=np.float32)
+    negative = x < 0
+    ax = np.abs(x) * np.float32(256.0)
+    index = np.floor(ax).astype(np.int64)
+    frac = ax - index.astype(np.float32)
+    i0 = np.minimum(index, 4094).astype(np.float32)
+    y0 = 1.0 / (1.0 + np.exp(-i0 / np.float32(256.0)))
+    y1 = 1.0 / (1.0 + np.exp(-(i0 + 1.0) / np.float32(256.0)))
+    result = y0 + (y1 - y0) * frac
+    result = np.where(index >= 4095, 1.0, result)
+    return np.where(negative, 1.0 - result, result).astype(np.float32)
+
+
+def _quantize_int_activation(x):
+    """Match NetworkIO::WriteTimeStepPart (signed int8 / 127)."""
+    x = np.asarray(x, dtype=np.float32)
+    scaled = x * np.float32(127.0)
+    rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+    return np.clip(rounded, -127, 127).astype(np.float32) / np.float32(127.0)
+
+
+def _quantize_int_input(x):
+    """Match NetworkIO::SetPixel (128 scale, clipped to signed int8)."""
+    x = np.asarray(x, dtype=np.float32)
+    scaled = x * np.float32(128.0)
+    rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+    return np.clip(rounded, -127, 127).astype(np.float32) / np.float32(127.0)
+
+
+def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False, int_mode=False):
     """LSTM forward pass over time axis.
 
     x:    (T, ni) input
@@ -227,17 +273,42 @@ def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False):
         # gates = W_ih @ x + W_hh @ h + bias
         gates = W_ih @ xt + W_hh @ h + bias
 
-        i_gate = sigmoid(gates[0*ns:1*ns])
-        f_gate = sigmoid(gates[1*ns:2*ns])
-        g_gate = np.tanh(gates[2*ns:3*ns])
-        o_gate = sigmoid(gates[3*ns:4*ns])
+        logistic = tesseract_logistic if int_mode else sigmoid
+        nonlinear_tanh = tesseract_tanh if int_mode else np.tanh
+        i_gate = logistic(gates[0*ns:1*ns])
+        f_gate = logistic(gates[1*ns:2*ns])
+        g_gate = nonlinear_tanh(gates[2*ns:3*ns])
+        o_gate = logistic(gates[3*ns:4*ns])
 
         c = f_gate * c + i_gate * g_gate
-        h = o_gate * np.tanh(c)
+        h = o_gate * nonlinear_tanh(c)
+        if int_mode:
+            h = _quantize_int_activation(h)
 
         output[t] = h
 
     return output
+
+
+class _TRand:
+    def __init__(self, seed):
+        self.seed = seed & ((1 << 64) - 1)
+
+    def next_int(self):
+        self.seed = (self.seed * 6364136223846793005 + 1442695040888963407) & ((1 << 64) - 1)
+        return self.seed >> 33
+
+    def signed_rand(self, scale):
+        return scale * (2.0 * self.next_int() / 2147483647.0 - 1.0)
+
+
+def _round_away(value):
+    return np.floor(value + 0.5) if value >= 0 else -np.floor(-value + 0.5)
+
+
+_CONVOLVE_RNG = None
+_CONVOLVE_INT_MODE = False
+_SAMPLE_ITERATION = 0
 
 
 def convolve_stack(x, half_x, half_y):
@@ -251,18 +322,22 @@ def convolve_stack(x, half_x, half_y):
     kh = 2 * half_y + 1
     out = np.zeros((H, W, C * kw * kh), dtype=np.float32)
 
-    for dx in range(-half_x, half_x + 1):
-        for dy in range(-half_y, half_y + 1):
-            out_offset = ((dx + half_x) * kh + (dy + half_y)) * C
-            for y in range(H):
-                for xi in range(W):
+    for y in range(H):
+        for xi in range(W):
+            for dx in range(-half_x, half_x + 1):
+                for dy in range(-half_y, half_y + 1):
+                    out_offset = ((dx + half_x) * kh + (dy + half_y)) * C
                     sy = y + dy
                     sx = xi + dx
                     if 0 <= sy < H and 0 <= sx < W:
                         out[y, xi, out_offset:out_offset+C] = x[sy, sx, :]
                     else:
-                        # Random fill in Tesseract — use zeros for determinism
-                        pass
+                        for c in range(C):
+                            if _CONVOLVE_INT_MODE:
+                                value = _round_away(_CONVOLVE_RNG.signed_rand(127.0)) / 127.0
+                            else:
+                                value = _CONVOLVE_RNG.signed_rand(1.0)
+                            out[y, xi, out_offset + c] = value
     return out
 
 
@@ -296,7 +371,7 @@ def fc_forward(x, weight, bias, activation="tanh"):
     return y
 
 
-def run_forward(root, image_gray, captures):
+def run_forward(root, image_gray, captures, int_mode=False):
     """Run the full Tesseract LSTM forward pass, capturing intermediates.
 
     image_gray: (H, W) float32 grayscale [0, 1]
@@ -330,10 +405,16 @@ def run_forward(root, image_gray, captures):
         return layers
 
     layers = find_layers(root)
+    global _CONVOLVE_RNG, _CONVOLVE_INT_MODE
+    _CONVOLVE_RNG = _TRand(_SAMPLE_ITERATION * 0x10000001)
+    _CONVOLVE_RNG.next_int()  # LSTMRecognizer::SetRandomSeed discards one value.
+    _CONVOLVE_INT_MODE = int_mode
 
     # Input: (H, W) → (H, W, 1)
     H, W = image_gray.shape
     x = image_gray[:, :, np.newaxis].astype(np.float32)
+    if int_mode:
+        x = _quantize_int_input(x)
     captures["input_image"] = x.flatten().copy()
 
     for layer in layers:
@@ -349,7 +430,13 @@ def run_forward(root, image_gray, captures):
             x_flat = x.reshape(H * W, C)
             wm = layer["weights"]["fc"]
             act = "tanh" if layer["type"] == "Tanh" else "linear"
-            x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
+            if int_mode and act == "tanh":
+                x_flat = x_flat @ wm["weight"].T + wm["bias"]
+                x_flat = tesseract_tanh(x_flat)
+            else:
+                x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
+            if int_mode:
+                x_flat = _quantize_int_activation(x_flat)
             x = x_flat.reshape(H, W, -1)
             captures["after_conv_fc"] = x.flatten().copy()
 
@@ -370,7 +457,8 @@ def run_forward(root, image_gray, captures):
             out_cols = np.zeros((W, ns), dtype=np.float32)
             for col in range(W):
                 col_input = x[:, col, :]  # (H, C) — run LSTM over H steps
-                h_seq = lstm_forward(col_input, W_ih, W_hh, bias, ns, reverse=False)
+                h_seq = lstm_forward(col_input, W_ih, W_hh, bias, ns, reverse=False,
+                                     int_mode=int_mode)
                 out_cols[col] = h_seq[-1]  # keep only last hidden state
 
             # Output: (1, W, ns) → squeeze height
@@ -389,7 +477,8 @@ def run_forward(root, image_gray, captures):
             wm = layer["weights"]
             W_ih, W_hh, bias = _pack_lstm_weights(wm, ns)
             rev = layer.get("_reversed", False)
-            x = lstm_forward(x, W_ih, W_hh, bias, ns, reverse=rev)
+            x = lstm_forward(x, W_ih, W_hh, bias, ns, reverse=rev,
+                             int_mode=int_mode)
             captures[f"after_lstm_{layer['_idx']}"] = x.flatten().copy()
 
         elif t in FC_TYPES and layer.get("_role") == "output":
@@ -476,9 +565,23 @@ def _tesseract_normalize(img_u8):
     if not maxes:
         maxes = [255.0]
 
-    # 25th percentile of mins, 75th percentile of maxes
-    black = float(np.percentile(mins, 25))
-    white = float(np.percentile(maxes, 75))
+    # Match Tesseract's STATS::ile: histogram buckets 0..255, then linear
+    # interpolation within the bucket containing frac * total_count. A
+    # sorted-sample percentile crosses int8 input rounding boundaries.
+    def percentile_histogram(values, q):
+        buckets = np.bincount(np.asarray(values, dtype=np.uint8), minlength=256)
+        total = int(len(values))
+        target = max(1.0, min(float(total), float(q) * total))
+        cumulative = 0
+        for index, count in enumerate(buckets):
+            cumulative += int(count)
+            if cumulative >= target and count > 0:
+                # Tesseract's loop increments index before STATS::ile returns.
+                return float(index + 1 - (cumulative - target) / count)
+        return 0.0
+
+    black = percentile_histogram(mins, 0.25)
+    white = percentile_histogram(maxes, 0.75)
     contrast = (white - black) / 2.0
     if contrast <= 0:
         contrast = 1.0
@@ -525,8 +628,13 @@ def main():
     # ── Load image ────────────────────────────────────────────────────
     try:
         from PIL import Image
-        img = Image.open(args.image).convert("L")  # grayscale
-        img_u8 = np.array(img, dtype=np.uint8)     # [0, 255]
+        img = Image.open(args.image)
+        # Match stb_image's stbi_load(..., req_comp=1) conversion used by the
+        # native harness: integer RGB coefficients and truncation, rather than
+        # Pillow's rounded ITU-R 601 conversion. This matters at int8 input
+        # boundaries for RGB fixtures.
+        rgb = np.asarray(img.convert("RGB"), dtype=np.uint16)
+        img_u8 = ((77 * rgb[..., 0] + 150 * rgb[..., 1] + 29 * rgb[..., 2]) >> 8).astype(np.uint8)
     except ImportError:
         print("ERROR: Pillow required (pip install Pillow)")
         sys.exit(1)
@@ -553,7 +661,9 @@ def main():
     vgsl = r.read_string()
     training_flags = r.read_i32()
     _ = r.read_i32()  # training_iteration
-    _ = r.read_i32()  # sample_iteration
+    sample_iteration = r.read_i32()
+    global _SAMPLE_ITERATION
+    _SAMPLE_ITERATION = sample_iteration
     null_char = r.read_i32()
 
     # Find input height
@@ -587,7 +697,7 @@ def main():
 
     # ── Run forward pass ──────────────────────────────────────────────
     captures = {}
-    logits = run_forward(root, img_input, captures)
+    logits = run_forward(root, img_input, captures, int_mode=bool(training_flags & 1))
 
     # ── CTC decode ────────────────────────────────────────────────────
     decoded = ctc_greedy_decode(logits, null_char)
