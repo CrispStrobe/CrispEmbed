@@ -27,16 +27,19 @@ performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
 timing/output manifests; their existing parity checks are not performance
 acceptance evidence.
 
-CRAFT's fresh diff now prints error statistics: the earliest divergent stage is
-`basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine `0.995623`),
-which propagates to score-map `max_abs=0.06910`, RMS `0.008026`, global cosine
-`0.999716` and changes the threshold-sensitive decoded box count from Python's
-106 to native's 107. This is a CNN/layout or numerical parity TODO; threshold
-tuning is explicitly not an acceptance fix.
+CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
+stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
+`0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,
+global cosine `0.999716` and changed the threshold-sensitive decoded box count
+from Python's 106 to native's 107. Re-converting with runtime BN (raw
+convolution weights plus explicit BN scale/shift) makes F32 match to
+floating-point noise; runtime-BN F16 reaches score-map global cosine
+`0.9999999` and 106 boxes. The CPU-forced and Metal outputs are byte-identical.
+The folded artifact is stale; threshold tuning is not the fix.
 
 Detector benchmark audit: the fresh CRAFT reference for `scan_strip.png` uses a
-288x544 canvas and decodes 106 boxes; native F32 passes tensor global gates but
-decodes 107, so CRAFT box parity is open again. Native diff runtime was ~2.34 s;
+288x544 canvas and decodes 106 boxes; runtime-BN F32/F16 native runs decode 106,
+so CRAFT box parity passes. Native diff runtime was ~2.34 s;
 the Python dump was ~9.13 s including model load and serializing 84 tensors, not
 an inference-only comparison. DBNet native page smoke measured 6.63 s in line
 mode (12 units, 1.34 s summed recognizer work) and 6.67 s in word mode (98
@@ -45,11 +48,12 @@ locally, so DBNet reference timing/quality parity remains blocked; the 98-word
 output is readable and contains Brighton but is not on par with Tesseract's
 106-word segmentation. These are explicit quality/performance TODOs.
 
-CRAFT taps now show error accumulation through the VGG: early `slice1` global
-cosines range from `0.9999831` down to `0.9992513`, while later source taps
-decline to `0.9986382`, `0.9978006`, `0.9975555`, and `0.9956226` at `basenet_0`.
-The next CRAFT task is convolution/BatchNorm or layout numerical parity, not
-postprocessing threshold tuning.
+The old folded-F16 CRAFT taps showed error accumulation through the VGG. The
+runtime-BN conversion removes that divergence: F32 captured taps match to
+floating-point noise, and F16 remains within the accepted global gate. The
+CPU-forced and Metal runtime-BN runs are byte-identical, including taps, score
+map, and 106-box decoded result. Remaining CRAFT work is repeated inference
+benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |

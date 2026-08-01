@@ -6,13 +6,14 @@
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
 - Selected next item: unify detector geometry with explicit EasyOCR line mode
   and Tesseract/LayoutLM word mode, then promote the DBNet smoke path into a
-  production handoff. CRAFT now passes decoded box parity: 106 native boxes
-  versus 106 Python boxes on CPU and Metal.
-- CRAFT cause/fix: BN folding changed Conv→BatchNorm evaluation order enough
-  to attenuate low-confidence score regions. The GGUF now retains raw
-  convolution weights plus BN scale/shift tensors, and the persistent graph
-  executes BN explicitly. F32 reaches exact parity; F16 reaches global cosine
-  >= 0.999999 and the same decoded box count.
+  production handoff. CRAFT decoded parity now passes with the runtime-BN
+  GGUF: 106 native boxes versus 106 Python boxes.
+- CRAFT cause/fix: the older folded-weight F16 artifact accumulated enough
+  convolution/BN error to produce 107 boxes. Re-converting with raw
+  convolution weights plus explicit BN scale/shift tensors makes F32 match to
+  floating-point noise; runtime-BN F16 reaches score-map global cosine
+  `0.9999999` and the same 106 decoded boxes. CPU-forced and Metal outputs are
+  byte-identical.
 - Status: English Gen-2 and Latin Gen-1 ResNet graphs pass the agreed 0.99
   cosine gate with mine/ref magnitude reports; decoded outputs are `5a` and
   `=#4#4#` respectively
@@ -64,15 +65,16 @@
       but do not yet provide native/reference timing ratios. Any slower native
       stage and any worse text/box/ordering output must be recorded as a
       separate optimization or quality TODO before those lanes are accepted.
-- [ ] Recheck CRAFT against fresh references after the benchmark audit. The
-      fresh official Python dump for `scan_strip.png` uses a 288x544 canvas and
-      decodes 106 boxes; native F32 passes the captured tensor global gates but
-      decodes 107 boxes. The older local reference produced 104 versus 106,
-      confirming it was not a stable parity fixture. A timed native diff run
-      took about 2.34 s; Python reference generation took 9.13 s including
-      checkpoint load and writing 84 tensors, so those timings are not an
-      inference-only comparison. Exact CRAFT box parity and an isolated
-      repeated inference benchmark remain open quality/performance TODOs.
+- [x] Recheck CRAFT against a fresh official reference after the benchmark
+      audit. The reference for `scan_strip.png` uses a 288x544 canvas and
+      decodes 106 boxes. The old folded F16 GGUF decoded 107, while a freshly
+      converted runtime-BN F32 GGUF matches every captured tensor to floating-
+      point noise and runtime-BN F16 decodes 106 with score-map global cosine
+      `0.9999999`. CPU and Metal runs are byte-identical. The older local
+      reference produced 104 versus 106 and remains stale. Inference-only
+      repeated CRAFT timing and output manifests remain performance TODOs;
+      the prior 2.34 s native diff versus 9.13 s Python dump included unequal
+      model-load/serialization work and is not a benchmark ratio.
 - [x] Extend the CRAFT diff report with max/mean/RMS error and magnitudes. The
       fresh mismatch's earliest divergent captured stage is `basenet_0`
       (`max_abs=1.52823`, `rms=0.195515`, global cosine `0.995623`); the score
