@@ -98,7 +98,7 @@ M1 Metal path (detection ~3.0 s, batched crop encoding ~1.8 s, decoding ~0.2 s).
 ### External document-parser comparison (2026-07-31)
 
 The local CrispEmbed live check used the repeatable `fox.png` fixture and
-GGUF models from `/Volumes/backups/ai/crispembed-gguf/`:
+GGUF models from `$CRISPEMBED_GGUF_DIR`:
 
 | Engine / environment | Detection | Recognition | Timing | Quality check |
 |---|---:|---:|---:|---|

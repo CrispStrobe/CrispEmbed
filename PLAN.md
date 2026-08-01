@@ -16,11 +16,12 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
+| 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
-| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny/small recognizer backbone graph slice now exists behind `CRISPEMBED_PPOCRV6_GRAPH=1`, with production routing still gated on parity | **IN PROGRESS** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny/small recognizer runs one persistent graph through logits and the detector now has an opt-in stem+stage-0 graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; production routing remains gated on tensor parity and Metal validation | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation parity gates; graph prototype is preserved locally, but first-convolution kernel-layout parity is still failing and the shipped path remains CPU reference | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **PENDING** |
 | 2026-07-31 | `main` | O11.4 OCR portfolio graph audit: port or explicitly classify CPU-bound FormulaNet, MixTeX, SmolDocling, HMER/BTTR/PosFormer, and VLM vision necks | **PENDING** |
@@ -54,7 +55,7 @@ Requirements:
 1. Keep the detector's four-point polygon through postprocessing, including
    Paddle's contour score, `thresh=0.2`, `box_thresh=0.45`, `unclip_ratio=1.4`,
    candidate cap, clipping, and reading-order sort. The external
-   `/Volumes/backups/ai/crispembed-gguf/dbnet-ic15-f16.gguf` remains a fallback
+   `$CRISPEMBED_GGUF_DIR/dbnet-ic15-f16.gguf` remains a fallback
    detector, not a replacement for the PP-OCRv6 detector.
 2. Add a shared quadrilateral crop helper equivalent to RapidOCR's
    `get_rotate_crop_image`: canonical TL/TR/BR/BL ordering, perspective
@@ -102,7 +103,7 @@ The directly portable German-Fraktur model is the official Tesseract `frk`
 traineddata shipped by `tesseract-lang`. Local inspection with
 `combine_tessdata -u` confirms an LSTM network, `lstm-unicharset`, and
 `lstm-recoder`; the existing converter successfully produced
-`/Volumes/backups/ai/crispembed-gguf/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
+`$CRISPEMBED_GGUF_DIR/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
 parameters). This is the first Fraktur model to use in the native
 `tesseract_lstm` GGUF path. Preserve the output alphabet, including long-s
 and historical characters, and keep the sensitive output layer at F32 for
@@ -160,7 +161,7 @@ model volume or publishing a GGUF.
 Required Fraktur implementation sequence:
 
 1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
-   `/Volumes/backups/ai/crispembed-gguf/`; never commit large weights.
+   `$CRISPEMBED_GGUF_DIR`; never commit large weights.
    Apply the same policy to every `tesseract_lstm` language variant: all
    quantized Q8/Q4 artifacts must retain `output.weight` and `output.bias` at
    the source precision (F16 or F32), while only recurrent matrices may be
@@ -498,6 +499,39 @@ downstream handoff parity, not detector-box similarity alone.
       a separate acceptance gate.
 - [ ] Record detector/ordering/recognizer provenance and checkpoint licenses;
       never relabel the cstr DBNet artifact or publish it under another account.
+
+- [x] Fix native Tesseract confidence propagation. The converter/reference
+      already expose CTC softmax probabilities, but `src/tesseract_lstm.cpp`
+      discarded them and appended `0.0` for every decoded character. Greedy
+      decoding now returns the selected timestep probability, so page-level
+      confidence is no longer spuriously zero. This was a runtime bug, not a
+      GGUF conversion bug.
+- [x] Define the native beam confidence contract. A prefix/recode beam output
+      is a sequence-level hypothesis assembled across timesteps, so a
+      per-character confidence cannot be copied from one timestep. Native now
+      exposes a length-normalized CTC sequence probability separately and
+      leaves beam `char_conf` empty. Greedy decoding continues to expose
+      selected timestep probabilities. This follows Tesseract's distinction
+      between character certainty and word-level aggregation; it is not a
+      claim of exact `WERD_RES::certainty` parity.
+- [ ] Validate beam confidence against the official engine's certainty
+      aggregation and implement per-character posterior/marginal scores only
+      if that comparison establishes a stable mapping. Keep beam decoding
+      opt-in until recoder and DAWG scoring are also matched.
+
+The gated page-segmentation experiment currently gives 21 regions, 1,128
+characters, and 0.836 mean confidence on the German official-print fixture.
+The projection fallback gives 24 regions, 1,606 characters, and 0.702 mean
+confidence. The reproducible TSV comparison reports 25 official lines, 141
+words, 881 non-whitespace word characters, and 0.866 mean word confidence;
+neither experimental path is yet a quality match, so DBNet remains the
+production default.
+
+Beam width 8 is not a performance candidate on this workload: the live
+full-page run reached several seconds to tens of seconds per line, versus the
+normal greedy recognizer's sub-second-to-low-single-digit-second line timings.
+The beam remains an opt-in diagnostic path until recoder/DAWG parity and a
+usable latency budget are both demonstrated.
 
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.

@@ -116,6 +116,7 @@ struct tesseract_lstm_context {
     // Inference results
     std::string result_buf;
     std::vector<float> char_confs;
+    float sequence_confidence = 0.0f;
 
     // Diff mode: capture per-stage intermediates
     bool dump_mode = false;
@@ -540,7 +541,8 @@ static bool recode_prefix_legal(const std::vector<int> & prefix, const std::vect
 
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
                                                int beam_width, bool viterbi,
-                                               const std::vector<std::vector<int>> * recoder = nullptr) {
+                                               const std::vector<std::vector<int>> * recoder = nullptr,
+                                               float * score_out = nullptr) {
     std::vector<ctc_beam_state> beam(1);
     beam[0].p_blank = 0.0f;
     for (int t = 0; t < timesteps; ++t) {
@@ -591,10 +593,14 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     if (beam.empty()) return {};
     if (recoder != nullptr) {
         for (const auto & state : beam) {
-            if (recode_prefix_legal(state.prefix, *recoder, false)) return state.prefix;
+            if (recode_prefix_legal(state.prefix, *recoder, false)) {
+                if (score_out) *score_out = beam_add(state.p_blank, state.p_nonblank, viterbi);
+                return state.prefix;
+            }
         }
         return {};
     }
+    if (score_out) *score_out = beam_add(beam.front().p_blank, beam.front().p_nonblank, viterbi);
     return beam.front().prefix;
 }
 
@@ -759,17 +765,22 @@ static void forward(tesseract_lstm_context * ctx,
     // recode beam and dictionary behavior.
     ctx->result_buf.clear();
     ctx->char_confs.clear();
+    ctx->sequence_confidence = 0.0f;
     std::vector<int> labels;
     const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
     const char * recode_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
     bool beam_decoded = false;
+    float beam_log_score = -INFINITY;
+    std::vector<float> greedy_label_confs;
     if (recode_width > 1) {
-        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false, &ctx->recoder_codes);
+        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false,
+                                        &ctx->recoder_codes, &beam_log_score);
         beam_decoded = true;
     } else if (beam_width > 1) {
-        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false);
+        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false,
+                                        nullptr, &beam_log_score);
         beam_decoded = true;
     } else {
         int prev = -1;
@@ -784,9 +795,11 @@ static void forward(tesseract_lstm_context * ctx,
                 }
             }
             labels.push_back(best);
+            greedy_label_confs.push_back(best_p);
         }
     }
     int prev = -1;
+    size_t label_index = 0;
     for (int best : labels) {
         if (best != ctx->null_char && (beam_decoded || best != prev)) {
             // Map output class → unichar via reverse recoder
@@ -794,10 +807,26 @@ static void forward(tesseract_lstm_context * ctx,
             if (best < (int)ctx->output_to_unichar.size()) uid = ctx->output_to_unichar[best];
             if (uid >= 0 && uid < (int)ctx->tokens.size()) {
                 ctx->result_buf += ctx->tokens[uid];
-                ctx->char_confs.push_back(0.0f);
+                // Greedy labels retain their actual softmax probability. A
+                // prefix beam label has no one-to-one timestep confidence;
+                // leave that path empty until beam posterior aggregation is
+                // implemented instead of fabricating a probability.
+                ctx->char_confs.push_back(beam_decoded || label_index >= greedy_label_confs.size()
+                                              ? 0.0f : greedy_label_confs[label_index]);
             }
         }
         prev = best;
+        ++label_index;
+    }
+    if (beam_decoded && std::isfinite(beam_log_score)) {
+        // A CTC beam score is a sequence probability, not a character
+        // probability. Normalize by timesteps to avoid length-dependent
+        // underflow and expose it separately from char_confs.
+        ctx->sequence_confidence = std::clamp(expf(beam_log_score / std::max(1, T)), 0.0f, 1.0f);
+    } else if (!greedy_label_confs.empty()) {
+        double sum = 0.0;
+        for (float p : greedy_label_confs) sum += p;
+        ctx->sequence_confidence = (float)(sum / greedy_label_confs.size());
     }
 }
 
@@ -916,6 +945,10 @@ const float * tesseract_lstm_confidences(const tesseract_lstm_context * ctx, int
     }
     if (n_chars) *n_chars = (int)ctx->char_confs.size();
     return ctx->char_confs.data();
+}
+
+float tesseract_lstm_mean_confidence(const tesseract_lstm_context * ctx) {
+    return ctx ? ctx->sequence_confidence : 0.0f;
 }
 
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx) {

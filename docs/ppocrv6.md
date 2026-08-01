@@ -14,15 +14,15 @@ The source repositories are the official
 F16 GGUFs, quantized GGUFs, and parity fixtures on the external model volume:
 
 ```text
-/Volumes/backups/ai/crispembed-gguf/
+$CRISPEMBED_GGUF_DIR/
 ```
 
 Convert one model with:
 
 ```bash
 python models/convert-ppocrv6-to-gguf.py \
-  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_small_rec_safetensors \
-  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_small_rec-f16.gguf
+  --model-dir "$CRISPEMBED_GGUF_DIR/source/PP-OCRv6_small_rec_safetensors" \
+  --output "$CRISPEMBED_GGUF_DIR/PP-OCRv6_small_rec-f16.gguf"
 ```
 
 The converter folds inference BatchNorm into convolution weights. PP-OCRv6's
@@ -59,11 +59,11 @@ normalization. These values must remain part of the parity fixtures.
 
 The default PP-OCRv6 detector, recognizer, and PP-LCNet orientation runtime
 remain correctness-first CPU implementations. An experimental persistent GGML
-backbone graph is available for tiny/small recognizers with
+full recognizer graph is available for tiny/small recognizers with
 `CRISPEMBED_PPOCRV6_GRAPH=1`; it covers the stem, depthwise/pointwise blocks,
-SE gates, activations, residuals, and all four backbone stages. The recognizer
-head and the detector/orientation paths remain on the CPU reference path until
-their parity gates are complete.
+SE gates, activations, residuals, all four backbone stages, pooled head,
+folded batch norms, and projection logits. The detector/orientation paths
+remain on the CPU reference path until their graph parity gates are complete.
 
 The graph port is staged: first reproduce detector, SVTR recognizer, and
 PP-LCNet logits with persistent ggml graphs and CPU parity taps; then enable
@@ -74,23 +74,31 @@ cosine/logit parity and live CER gates on the CC0/German corpus.
 Until those gates pass, PP-OCRv6 remains explicitly CPU-first; enabling the
 experimental graph does not silently change the default execution path.
 
+The detector has a separate staged graph switch,
+`CRISPEMBED_PPOCRV6_DET_GRAPH=1`. For tiny/small models it currently graphs
+the detector stem and first backbone stage, then returns the feature map to
+the established CPU neck/head. This is intentionally not enabled by default:
+the CPU smoke is slightly slower because graph setup/copy overhead dominates,
+while the persistent backend-resident boundary is intended for Metal/CUDA
+validation and subsequent full-neck work.
+
 Dump the current torch reference fixture and enable native comparisons with:
 
 ```bash
 python tools/dump_ppocrv6_reference.py \
-  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_tiny_rec_safetensors \
+  --model-dir "$CRISPEMBED_GGUF_DIR/source/PP-OCRv6_tiny_rec_safetensors" \
   --image /path/to/line.png \
-  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf
-PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
-  ./build/crispembed -m /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  --output "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf"
+PPOCRV6_REF="$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf" \
+  ./build/crispembed -m "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-f16.gguf" \
   --ocr /path/to/line.png
 ```
 
 The same comparison is available as a standalone regression binary:
 
 ```bash
-PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
+PPOCRV6_REF="$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf" \
   ./build/test-ppocrv6-rec \
-  /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-f16.gguf" \
   /path/to/line.png
 ```

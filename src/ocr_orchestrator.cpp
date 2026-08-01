@@ -705,8 +705,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (classical_pageseg) {
             std::vector<uint8_t> seg_gray;
             int sw = 0, sh = 0;
-            if (load_gray_exact(path, seg_gray, &sw, &sh))
-                boxes = tesseract_pageseg::segment_gray(seg_gray.data(), sw, sh);
+            if (load_gray_exact(path, seg_gray, &sw, &sh)) {
+                boxes = std::getenv("CRISPEMBED_TESSERACT_PAGESEG_PROJECTION")
+                            ? tesseract_pageseg::segment_gray(seg_gray.data(), sw, sh)
+                            : tesseract_pageseg::segment_gray_components(seg_gray.data(), sw, sh);
+            }
         } else {
             boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
         }
@@ -815,6 +818,15 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     for (int k = 0; k < n_conf; k++) s += conf[k];
                     mean = (float)(s / n_conf);
                     r.char_conf.assign(conf, conf + n_conf);
+                }
+                // Some converted Tesseract models expose a confidence buffer
+                // whose values are all zero even though recognition succeeded.
+                // Preserve the detector/segmentation score in that case rather
+                // than reporting a misleading page confidence of exactly zero.
+                if (mean <= 0.0f) mean = item.box.score;
+                if (conf == nullptr || n_conf == 0) {
+                    const float sequence_mean = tesseract_lstm_mean_confidence(tess);
+                    if (sequence_mean > 0.0f) mean = sequence_mean;
                 }
                 r.confidence = mean;
                 r.rec_confidence = mean;
