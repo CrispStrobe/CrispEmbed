@@ -755,6 +755,18 @@ retained as a historical measurement because artifact/control conditions must
 be normalized before calling it a regression. TODO: pin the exact recognizer
 artifact and benchmark controls in the matrix, then fix the Fraktur page path.
 
+The same fixture/control was then run against the available recognizer
+variants. Standard `frk-q8_0` produced 23 regions/1,235 chars, confidence
+`0.768`, CER `0.5279`, WER `0.5390`, and native stage `38.69 s`; `frk-f32`
+produced 23/1,164, confidence `0.767`, CER `0.4672`, WER `0.5461`, and
+`102.41 s`; `frk-int8-source-q8-candidate` matched the F32 output metrics and
+produced `64.44 s`. Official output remained 25 lines/881 chars in all runs.
+This isolates a precision/artifact quality tradeoff: standard Q8 is faster but
+not output-equivalent, while F32/source-Q8 is more accurate on CER but much
+slower and still not page-parity. TODO: choose and optimize a high-precision
+Fraktur artifact only after same-artifact warm/cold benchmarks and decoded
+output gates are stable.
+
 #### Cross-check survey — quality and cost status
 
 Every checked path must be classified by both decoded output quality and
