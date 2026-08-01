@@ -823,10 +823,29 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
         for (const auto & tap : c->graph.debug_taps) {
             std::vector<float> values(ggml_nelements(tap.second));
             ggml_backend_tensor_get(tap.second, values.data(), 0, values.size() * sizeof(float));
-            fprintf(stderr, "[ppocrv6-graph-tap] %s shape=%lldx%lld first=%.7g %.7g %.7g %.7g\n", tap.first,
-                    (long long)tap.second->ne[0], (long long)tap.second->ne[1], values.size() > 0 ? values[0] : 0.0f,
+            fprintf(stderr, "[ppocrv6-graph-tap] %s shape=%lldx%lldx%lldx%lld first=%.7g %.7g %.7g %.7g\n", tap.first,
+                    (long long)tap.second->ne[0], (long long)tap.second->ne[1], (long long)tap.second->ne[2],
+                    (long long)tap.second->ne[3], values.size() > 0 ? values[0] : 0.0f,
                     values.size() > 1 ? values[1] : 0.0f, values.size() > 2 ? values[2] : 0.0f,
                     values.size() > 3 ? values[3] : 0.0f);
+            if (c->diff && tap.second->ne[2] > 1) {
+                const int64_t tw = tap.second->ne[0], th = tap.second->ne[1], tc = tap.second->ne[2];
+                std::vector<float> channel_plane(values.size());
+                for (int64_t ch = 0; ch < tc; ++ch)
+                    for (int64_t yy = 0; yy < th; ++yy)
+                        for (int64_t xx = 0; xx < tw; ++xx)
+                            channel_plane[(size_t)ch * th * tw + (size_t)yy * tw + xx] =
+                                values[((size_t)yy * tw + xx) * tc + ch];
+                const char * ref_name = nullptr;
+                if (std::strcmp(tap.first, "backbone") == 0) ref_name = "ppocrv6.stage4";
+                if (std::strcmp(tap.first, "head_act1") == 0) ref_name = "ppocrv6.head_conv1";
+                if (std::strcmp(tap.first, "head_act2") == 0) ref_name = "ppocrv6.head_input";
+                if (ref_name) {
+                    const auto report = c->diff->compare(ref_name, channel_plane.data(), channel_plane.size(), -1);
+                    fprintf(stderr, "[ppocrv6-graph-diff] %s as %s cos=%.6f global=%.6f %s\n", tap.first, ref_name,
+                            report.cos_min, report.cos_global, report.is_pass() ? "PASS" : "FAIL");
+                }
+            }
         }
     }
     w = (int)c->graph.output->ne[0];
