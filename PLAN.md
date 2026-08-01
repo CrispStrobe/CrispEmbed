@@ -16,6 +16,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs | **IN PROGRESS** |
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
+| 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
@@ -506,6 +507,19 @@ downstream handoff parity, not detector-box similarity alone.
       aggregation and implement per-character posterior/marginal scores only
       if that comparison establishes a stable mapping. Keep beam decoding
       opt-in until recoder and DAWG scoring are also matched.
+
+The gated page-segmentation experiment currently gives 21 regions, 1,128
+characters, and 0.836 mean confidence on the German official-print fixture.
+The projection fallback gives 24 regions, 1,606 characters, and 0.702 mean
+confidence. The official Tesseract page run gives 21 line-level regions and
+about 1,021 normalized output characters; neither experimental path is yet a
+quality match, so DBNet remains the production default.
+
+Beam width 8 is not a performance candidate on this workload: the live
+full-page run reached several seconds to tens of seconds per line, versus the
+normal greedy recognizer's sub-second-to-low-single-digit-second line timings.
+The beam remains an opt-in diagnostic path until recoder/DAWG parity and a
+usable latency budget are both demonstrated.
 
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
