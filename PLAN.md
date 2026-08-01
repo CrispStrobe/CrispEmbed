@@ -395,9 +395,13 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Run the same structured words through LayoutLMv2/v3 with
       `apply_ocr=False`; verify serialization and ordering independently of
       logits.
-- [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
-      it with EasyOCR CRNN on identical crops rather than treating either
-      recognizer as the detector.
+- [x] Keep Tesseract LSTM as a separately measured recognizer lane; the
+      `test-ocr-identical-crops` harness feeds the exact same RGB crop to the
+      dynamic-width EasyOCR CRNN and grayscale Tesseract LSTM, then reports both
+      confidence conventions. On three official TSV boxes, both lanes preserve
+      the text structure but differ in ambiguous characters/punctuation (for
+      example `I`/`[` and the final quote), confirming these are recognizer
+      outputs rather than detector/order differences.
 - [x] Prove the controlled line-recognizer boundary separately: the exact
       Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
       decoded text, and official instrumented PSM7 internal crop all match;
