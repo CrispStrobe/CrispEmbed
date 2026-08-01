@@ -467,6 +467,9 @@ downstream handoff parity, not detector-box similarity alone.
       The comparator also accepts optional `--min-native-lines` and `--min-iou`
       gates; the component fixture passes at 12 lines and IoU `0.82`, while
       diagnostic runs without thresholds remain non-gating.
+      Geometry reports now include detector/recognizer SHA-256 hashes and the
+      indexed reading-order policy, matching the aggregate page-metrics
+      provenance record without serializing local model paths.
       The aggregate page-metrics harness now selects `legacy-fallback`,
       `component`, `baseline`, or `projection` explicitly and clears stale
       policy environment variables between runs. On `scan_strip.png`, the
