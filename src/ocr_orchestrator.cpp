@@ -1540,7 +1540,8 @@ result run_file(context * ctx, const char * image_path) {
         auto t_stage = std::chrono::steady_clock::now();
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
         cleanup_profile stage_cleanup = s.cleanup;
-        if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) && s.params.page_segmentation != 0) {
+        if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) &&
+            (s.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr)) {
             // Tesseract's page-segmentation path measures row ink on the
             // original page. Generic deskew/crop/whiten cleanup changes those
             // coordinates and can merge unrelated rows before segmentation.
