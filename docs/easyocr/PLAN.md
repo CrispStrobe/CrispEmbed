@@ -109,7 +109,9 @@
       `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), worsening
       through the neck and ending at final-map cosine `0.9311001`; this is a
       quantization-quality TODO, not postprocessing. Inference-only timing
-      remains open.
+      remains open. A fresh native CPU-forced page run reports detector graph
+      `4178.6 ms`, postprocess `8.3 ms`, total `4186.9 ms`, and 12 line units;
+      no Python speed ratio is claimed until its inference-only path is timed.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
