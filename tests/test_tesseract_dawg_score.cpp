@@ -50,6 +50,12 @@ int main() {
         std::fprintf(stderr, "multi-code DAWG score mismatch\n");
         return 1;
     }
+    dawgs.erase("lstm-system-dawg");
+    dawgs.emplace("lstm-number-dawg", dawg);
+    if (tesseract_dawg_score::word_bonus(two_words, codes, tokens, dawgs, false) != 0.25f) {
+        std::fprintf(stderr, "number DAWG fallback mismatch\n");
+        return 1;
+    }
     std::puts("tesseract dawg score: PASS");
     return 0;
 }
