@@ -1,6 +1,8 @@
 #include "tesseract_pageseg.h"
 
 #include <algorithm>
+#include <cstdio>
+#include <cstdlib>
 
 namespace tesseract_pageseg {
 
@@ -20,6 +22,10 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
     // bridging adjacent printed lines.
     const int threshold = std::clamp(mean - 90, 30, 120);
     const int min_row_ink = std::max(4, width / 130);
+    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
+        std::fprintf(stderr, "tesseract_pageseg: size=%dx%d mean=%d threshold=%d min_row_ink=%d\n", width, height, mean,
+                     threshold, min_row_ink);
+    }
     std::vector<int> rows(height, 0);
     for (int y = 0; y < height; ++y) {
         int count = 0;

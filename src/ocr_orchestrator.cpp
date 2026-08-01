@@ -82,6 +82,29 @@ unsigned char * stbi_load(const char * filename, int * x, int * y, int * channel
 void stbi_image_free(void * retval_from_stbi_load);
 }
 
+static bool load_gray_exact(const char * path, std::vector<uint8_t> & gray, int * out_w, int * out_h) {
+    if (out_w) *out_w = 0;
+    if (out_h) *out_h = 0;
+    gray.clear();
+    int w = 0, h = 0, c = 0;
+    unsigned char * rgb = stbi_load(path, &w, &h, &c, 3);
+    if (!rgb || w <= 0 || h <= 0) {
+        if (rgb) stbi_image_free(rgb);
+        return false;
+    }
+    gray.resize((size_t)w * h);
+    for (size_t i = 0; i < gray.size(); ++i) {
+        const unsigned char r = rgb[3 * i + 0];
+        const unsigned char g = rgb[3 * i + 1];
+        const unsigned char b = rgb[3 * i + 2];
+        gray[i] = (uint8_t)((77u * r + 150u * g + 29u * b) >> 8);
+    }
+    stbi_image_free(rgb);
+    if (out_w) *out_w = w;
+    if (out_h) *out_h = h;
+    return true;
+}
+
 namespace ocr_orchestrator {
 
 struct context {
@@ -680,12 +703,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         const bool classical_pageseg =
             st.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
         if (classical_pageseg) {
-            int sw = 0, sh = 0, sc = 0;
-            unsigned char * seg_gray = stbi_load(path, &sw, &sh, &sc, 1);
-            if (seg_gray) {
-                boxes = tesseract_pageseg::segment_gray(seg_gray, sw, sh);
-                stbi_image_free(seg_gray);
-            }
+            std::vector<uint8_t> seg_gray;
+            int sw = 0, sh = 0;
+            if (load_gray_exact(path, seg_gray, &sw, &sh))
+                boxes = tesseract_pageseg::segment_gray(seg_gray.data(), sw, sh);
         } else {
             boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
         }
@@ -700,10 +721,18 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         for (const auto & box : boxes) detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
         const auto line_regions =
             classical_pageseg ? detected_regions : easyocr_layout::group_dbnet_lines(detected_regions);
+        const bool pageseg_debug = classical_pageseg && std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG");
+        if (pageseg_debug) {
+            fprintf(stderr, "ocr_orchestrator: pageseg candidates=%zu\n", line_regions.size());
+            for (size_t i = 0; i < line_regions.size(); ++i) {
+                const auto & line = line_regions[i];
+                fprintf(stderr, "  candidate=%zu box=%.1f,%.1f %.1fx%.1f\n", i, line.x, line.y, line.w, line.h);
+            }
+        }
         const auto tess_group_done = std::chrono::steady_clock::now();
-        int w = 0, h = 0, c = 0;
-        unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
-        if (!gray) return {};
+        int w = 0, h = 0;
+        std::vector<uint8_t> gray;
+        if (!load_gray_exact(path, gray, &w, &h)) return {};
         struct line_crop {
             ocr_detect::text_box box;
             std::vector<uint8_t> pixels;
@@ -722,12 +751,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             b.h = line.h;
             b.score = line.score;
             int cw = 0, chh = 0;
-            auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
+            auto crop = ocr_crop::extract(gray.data(), w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
             crops.push_back({ b, std::move(crop), cw, chh, orientation });
         }
-        stbi_image_free(gray);
         if (crops.empty()) return {};
         const auto tess_crop_done = std::chrono::steady_clock::now();
 
@@ -769,6 +797,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 const auto orientation = item.orientation;
                 int len = 0;
                 const char * t = tesseract_lstm_recognize(tess, item.pixels.data(), item.width, item.height, &len);
+                if (pageseg_debug) {
+                    fprintf(stderr, "  candidate=%zu crop=%dx%d decoded_len=%d text=%.*s\n", i, item.width, item.height,
+                            len, len > 0 ? len : 0, t ? t : "");
+                }
                 if (!t || len <= 0) continue;
                 auto & r = slots[i];
                 r.box = item.box;
