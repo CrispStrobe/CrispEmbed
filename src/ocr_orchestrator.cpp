@@ -798,6 +798,23 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 std::snprintf(crop_path, sizeof(crop_path), "%s/crop-%02zu.png", dump_dir, crops.size());
                 if (stbi_write_png(crop_path, cw, chh, 1, crop.data(), cw) == 0)
                     std::fprintf(stderr, "ocr_orchestrator: failed to dump crop %s\n", crop_path);
+                char manifest_path[1024];
+                std::snprintf(manifest_path, sizeof(manifest_path), "%s/crops.tsv", dump_dir);
+                FILE * manifest = std::fopen(manifest_path, crops.empty() ? "w" : "a");
+                if (manifest) {
+                    if (crops.empty())
+                        std::fprintf(manifest, "index\tbox_x\tbox_y\tbox_w\tbox_h\tcrop_w\tcrop_h\tmin\tmax\n");
+                    uint8_t min_value = 255, max_value = 0;
+                    for (const uint8_t value : crop) {
+                        min_value = std::min(min_value, value);
+                        max_value = std::max(max_value, value);
+                    }
+                    std::fprintf(manifest, "%zu\t%.3f\t%.3f\t%.3f\t%.3f\t%d\t%d\t%u\t%u\n", crops.size(), b.x, b.y, b.w,
+                                 b.h, cw, chh, (unsigned)min_value, (unsigned)max_value);
+                    std::fclose(manifest);
+                } else {
+                    std::fprintf(stderr, "ocr_orchestrator: failed to open crop manifest %s\n", manifest_path);
+                }
             }
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
             crops.push_back({ b, std::move(crop), cw, chh, orientation });

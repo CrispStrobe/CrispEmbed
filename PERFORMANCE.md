@@ -1321,3 +1321,8 @@ Tesseract CLI's internal line normalization. A direct single-crop CLI A/B was
 not accepted because the installed Homebrew Tesseract/Leptonica could not
 reopen a valid dumped PNG; repeat after fixing that environment before drawing
 quality conclusions.
+
+The diagnostic also emits `crops.tsv`. A verified Q8 run produced 12 records
+plus the header; source boxes map to crop sizes 438×22 through 462×32, with a
+final 76×25 crop. The first line begins at page `y=0`, so edge clipping is now
+an explicit geometry item for the official-Tesseract comparison.

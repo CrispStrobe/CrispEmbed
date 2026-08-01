@@ -2626,6 +2626,10 @@ the pattern first.
   valid 12-line geometry. This rules out the stale 2-box observation and makes
   Tesseract's internal page-segmentation/line normalization the next parity
   comparison target; do not attribute the text gap to GGUF precision yet.
+  The hook now also writes `crops.tsv` with source boxes and pixel ranges;
+  the verified Q8 run wrote 12 crop records plus a header and exposed the
+  first line as an edge-clipped box at `y=0`. Compare this manifest against
+  official TSV line geometry before changing recognizer preprocessing.
 
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
