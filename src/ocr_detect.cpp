@@ -78,6 +78,10 @@ struct context {
     float img_std[3] = { 58.395f, 57.12f, 57.375f };
     int pad_divisor = 32;
 
+    // Experimental direct convolution path.  The default im2col path remains
+    // the compatibility baseline until tensor and box parity are confirmed.
+    bool direct_conv = false;
+
     // Post-processing defaults
     float prob_thresh = 0.3f;
     float box_thresh = 0.5f;
@@ -105,6 +109,12 @@ struct context {
 
     bool bench = false;
 };
+
+static ggml_tensor * detector_conv2d(ggml_context * g, ggml_tensor * w, ggml_tensor * x, int stride, int pad,
+                                     bool direct) {
+    return direct ? ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1)
+                  : ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+}
 
 // ---------------------------------------------------------------------------
 // Loading
@@ -233,6 +243,7 @@ bool load(context ** out, const char * path, int n_threads) {
     if (ocr_det_debug) fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
     ctx->bench = (std::getenv("CRISPEMBED_OCR_DETECT_BENCH") != nullptr);
     ctx->capture_intermediates = (std::getenv("OCR_DETECT_CAPTURE_TAPS") != nullptr);
+    ctx->direct_conv = (std::getenv("OCR_DETECT_DIRECT_CONV") != nullptr);
     return true;
 }
 
@@ -258,7 +269,7 @@ static ggml_tensor * dequant_rows_f32(ggml_context * g, ggml_tensor * w) {
 
 // Prepare a conv weight for ggml_conv_2d: handle 2D-flattened quantized
 // weights and cast to F16 (required by ggml_conv_2d).
-static ggml_tensor * prep_conv_weight(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
+static ggml_tensor * prep_conv_weight(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW, bool direct = false) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
         // Flattened: [IC*KH*KW, OC] — dequant + reshape
@@ -268,7 +279,9 @@ static ggml_tensor * prep_conv_weight(ggml_context * g, ggml_tensor * w, int IC,
         int64_t OC = w->ne[1];
         w = ggml_reshape_4d(g, w, KW, KH, IC, OC);
     }
-    if (w->type != GGML_TYPE_F16) {
+    if (direct) {
+        if (w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
+    } else if (w->type != GGML_TYPE_F16) {
         w = ggml_cast(g, w, GGML_TYPE_F16);
     }
     return w;
@@ -276,9 +289,9 @@ static ggml_tensor * prep_conv_weight(ggml_context * g, ggml_tensor * w, int IC,
 
 // Conv2D + optional bias + ReLU
 static ggml_tensor * conv_bias_relu(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int IC, int KH, int KW,
-                                    int stride, int pad, bool relu = true) {
-    ggml_tensor * w = prep_conv_weight(g, cl.w, IC, KH, KW);
-    x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+                                    int stride, int pad, bool relu, bool direct) {
+    ggml_tensor * w = prep_conv_weight(g, cl.w, IC, KH, KW, direct);
+    x = detector_conv2d(g, w, x, stride, pad, direct);
 
     if (cl.b) {
         int OC = (int)cl.b->ne[0];
@@ -295,18 +308,18 @@ static ggml_tensor * conv_bias_relu(ggml_context * g, ggml_tensor * x, const con
 
 // ResNet BasicBlock: conv1(3×3) + relu + conv2(3×3) + shortcut + relu
 static ggml_tensor * basic_block_fwd(ggml_context * g, ggml_tensor * x, const basic_block & blk, int in_ch, int out_ch,
-                                     int stride) {
+                                     int stride, bool direct) {
     ggml_tensor * identity = x;
 
     // conv1: 3×3, stride, pad=1
-    ggml_tensor * out = conv_bias_relu(g, x, blk.conv1, in_ch, 3, 3, stride, 1, /*relu=*/true);
+    ggml_tensor * out = conv_bias_relu(g, x, blk.conv1, in_ch, 3, 3, stride, 1, /*relu=*/true, direct);
 
     // conv2: 3×3, stride=1, pad=1, NO relu (applied after residual)
-    out = conv_bias_relu(g, out, blk.conv2, out_ch, 3, 3, 1, 1, /*relu=*/false);
+    out = conv_bias_relu(g, out, blk.conv2, out_ch, 3, 3, 1, 1, /*relu=*/false, direct);
 
     // Downsample shortcut if present
     if (blk.downsample.w) {
-        identity = conv_bias_relu(g, x, blk.downsample, in_ch, 1, 1, stride, 0, /*relu=*/false);
+        identity = conv_bias_relu(g, x, blk.downsample, in_ch, 1, 1, stride, 0, /*relu=*/false, direct);
     }
 
     // Residual + ReLU
@@ -409,7 +422,7 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         // --- Backbone: ResNet-18 ---
 
         // Stem: conv1(7×7, s2, p3) + relu + maxpool(3, s2, p1)
-        x = conv_bias_relu(g, x, ctx->stem, 3, 7, 7, 2, 3, true);
+        x = conv_bias_relu(g, x, ctx->stem, 3, 7, 7, 2, 3, true, ctx->direct_conv);
         x = ggml_pool_2d(g, x, GGML_OP_POOL_MAX, 3, 3, 2, 2, 1, 1);
 
         // Stage outputs for FPN
@@ -418,26 +431,26 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         int stage_ch[4] = { 64, 128, 256, 512 };
 
         // Stage 0: 2 blocks, 64ch, no stride change
-        x = basic_block_fwd(g, x, ctx->stages[0][0], 64, 64, 1);
-        x = basic_block_fwd(g, x, ctx->stages[0][1], 64, 64, 1);
+        x = basic_block_fwd(g, x, ctx->stages[0][0], 64, 64, 1, ctx->direct_conv);
+        x = basic_block_fwd(g, x, ctx->stages[0][1], 64, 64, 1, ctx->direct_conv);
         stage_out[0] = x;
         taps.push_back({ "backbone_stage_0", x });
 
         // Stage 1: 2 blocks, 128ch, first block stride 2
-        x = basic_block_fwd(g, x, ctx->stages[1][0], 64, 128, 2);
-        x = basic_block_fwd(g, x, ctx->stages[1][1], 128, 128, 1);
+        x = basic_block_fwd(g, x, ctx->stages[1][0], 64, 128, 2, ctx->direct_conv);
+        x = basic_block_fwd(g, x, ctx->stages[1][1], 128, 128, 1, ctx->direct_conv);
         stage_out[1] = x;
         taps.push_back({ "backbone_stage_1", x });
 
         // Stage 2: 2 blocks, 256ch, first block stride 2
-        x = basic_block_fwd(g, x, ctx->stages[2][0], 128, 256, 2);
-        x = basic_block_fwd(g, x, ctx->stages[2][1], 256, 256, 1);
+        x = basic_block_fwd(g, x, ctx->stages[2][0], 128, 256, 2, ctx->direct_conv);
+        x = basic_block_fwd(g, x, ctx->stages[2][1], 256, 256, 1, ctx->direct_conv);
         stage_out[2] = x;
         taps.push_back({ "backbone_stage_2", x });
 
         // Stage 3: 2 blocks, 512ch, first block stride 2
-        x = basic_block_fwd(g, x, ctx->stages[3][0], 256, 512, 2);
-        x = basic_block_fwd(g, x, ctx->stages[3][1], 512, 512, 1);
+        x = basic_block_fwd(g, x, ctx->stages[3][0], 256, 512, 2, ctx->direct_conv);
+        x = basic_block_fwd(g, x, ctx->stages[3][1], 512, 512, 1, ctx->direct_conv);
         stage_out[3] = x;
         taps.push_back({ "backbone_stage_3", x });
 
@@ -446,8 +459,8 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         // Lateral 1×1 convs (no bias, no relu in FPNC default)
         ggml_tensor * lat[4];
         for (int i = 0; i < 4; i++) {
-            ggml_tensor * w = prep_conv_weight(g, ctx->lateral[i].w, stage_ch[i], 1, 1);
-            lat[i] = ggml_conv_2d(g, w, stage_out[i], 1, 1, 0, 0, 1, 1);
+            ggml_tensor * w = prep_conv_weight(g, ctx->lateral[i].w, stage_ch[i], 1, 1, ctx->direct_conv);
+            lat[i] = detector_conv2d(g, w, stage_out[i], 1, 0, ctx->direct_conv);
             // Add bias if present
             if (ctx->lateral[i].b) {
                 int OC = (int)ctx->lateral[i].b->ne[0];
@@ -468,8 +481,8 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         // Smooth 3×3 convs (256→64, no relu in FPNC default)
         ggml_tensor * smoothed[4];
         for (int i = 0; i < 4; i++) {
-            ggml_tensor * w = prep_conv_weight(g, ctx->smooth[i].w, 256, 3, 3);
-            smoothed[i] = ggml_conv_2d(g, w, lat[i], 1, 1, 1, 1, 1, 1);
+            ggml_tensor * w = prep_conv_weight(g, ctx->smooth[i].w, 256, 3, 3, ctx->direct_conv);
+            smoothed[i] = detector_conv2d(g, w, lat[i], 1, 1, ctx->direct_conv);
             if (ctx->smooth[i].b) {
                 int OC = (int)ctx->smooth[i].b->ne[0];
                 ggml_tensor * bias = ggml_reshape_3d(g, ctx->smooth[i].b, 1, 1, OC);
@@ -493,14 +506,14 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         // Optional output conv (if present in model)
         if (ctx->neck_output.w) {
             int fused_ch = (int)fused->ne[2];
-            fused = conv_bias_relu(g, fused, ctx->neck_output, fused_ch, 3, 3, 1, 1, true);
+            fused = conv_bias_relu(g, fused, ctx->neck_output, fused_ch, 3, 3, 1, 1, true, ctx->direct_conv);
         }
 
         // --- Head: probability branch ---
 
         // conv1: 3×3 (256→64) + relu (BN folded)
         int fused_ch = (int)fused->ne[2];
-        x = conv_bias_relu(g, fused, ctx->head_conv1, fused_ch, 3, 3, 1, 1, true);
+        x = conv_bias_relu(g, fused, ctx->head_conv1, fused_ch, 3, 3, 1, 1, true, ctx->direct_conv);
         taps.push_back({ "head_conv1", x });
 
         // deconv1: ConvTranspose2d (64→64, k=2, s=2) + relu (BN folded)
