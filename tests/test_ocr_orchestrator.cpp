@@ -9,6 +9,7 @@
 // Usage: test-ocr-orchestrator   (exits non-zero on failure)
 
 #include "ocr_orchestrator.h"
+#include "tesseract_pageseg.h"
 #include "core/clean_exit.h"
 #include "crispembed.h"
 
@@ -178,6 +179,25 @@ static void test_classifier() {
 
     // NULL path → no crash
     CHECK(classify_file(nullptr) == source_type::scanned_doc, "null path → scanned_doc fallback");
+}
+
+static void test_tesseract_pageseg_geometry() {
+    printf("── Tesseract classical page segmentation geometry ──\n");
+    constexpr int w = 120, h = 48;
+    std::vector<uint8_t> gray((size_t)w * h, 245);
+    for (int y = 8; y <= 12; ++y)
+        for (int x = 12; x < 106; ++x) gray[(size_t)y * w + x] = 20;
+    for (int y = 30; y <= 34; ++y)
+        for (int x = 20; x < 96; ++x) gray[(size_t)y * w + x] = 20;
+
+    const auto boxes = tesseract_pageseg::segment_gray(gray.data(), w, h);
+    CHECK(boxes.size() == 2, "classical page segmentation finds two text bands");
+    if (boxes.size() == 2) {
+        CHECK(boxes[0].y < boxes[1].y, "classical page segmentation preserves top-to-bottom order");
+        CHECK(boxes[0].x <= 12.0f && boxes[0].y <= 8.0f, "first band includes deterministic padding");
+        CHECK(boxes[0].x + boxes[0].w >= 106.0f && boxes[1].x + boxes[1].w >= 96.0f,
+              "band geometry covers the detected ink");
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -856,6 +876,7 @@ static int crispembed_test_main() {
     test_fraktur_stage_profile();
     test_structured_capability_validation();
     test_classifier();
+    test_tesseract_pageseg_geometry();
     test_accept_gate();
     test_multi_stage();
     test_per_stage_config();

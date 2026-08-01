@@ -265,6 +265,10 @@ accepts caller-supplied detector boxes and applies the configured lines/words
 ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
 pipeline test replays the DBNet boxes through this API and matches the normal
 98-record run; this validates the boundary, not external Tesseract TSV parity.
+The public signature now accepts only `easyocr_layout::region`, keeping
+DBNet-specific types inside the implementation. The compile/link proof passes;
+the post-merge model replay is currently blocked by the unrelated shared
+`ggml` submodule checkout difference and is not claimed green.
 
 The first real page comparison confirms why TSV parity cannot be asserted by
 zipping records: native DBNet/CRNN `words` mode emits 98 records, while
@@ -397,6 +401,17 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
       this remains open because direct line fixtures are not the same internal
       crops selected by official PSM7.
+      The native classical page-segmentation adapter is now wired behind the
+      explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
+      geometry regression. It now also bypasses generic scan cleanup so page
+      segmentation sees original-image coordinates, and its row threshold
+      rejects sparse antialiasing bridges on gray paper; this does not close
+      real CLI parity.
+      On `scan_strip.png`, the tuned native CLI path improved from 3 to 7
+      decoded regions, while official Tesseract `--psm 3/6` emits 12 lines;
+      exact RGB-to-gray conversion is now shared with the proven reference,
+      and diagnostics show the remaining defect is merged 40--62 px row bands
+      before recognition; candidate-band splitting and crop acceptance remain.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
