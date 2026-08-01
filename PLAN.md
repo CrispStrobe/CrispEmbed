@@ -179,21 +179,73 @@ now wired: `--ocr-engine ppocrv6` (C-ABI id 16) and `--ocr-engine easyocr`
 (id 17), plus `--ocr-cls` for the optional PP-LCNet 0/180 classifier and
 registry entries naming the locally-converted artifacts.
 
-**First measured gap (PP-OCRv6 small, Metal, `synth_00_clean.png`, 3 lines).**
+**Baseline table (20 synthetic fixtures, 3 repeats, uncontended M1 Metal).**
+`crispembed-ppocrv6` is excluded because it does not produce text at all (see
+below); every other arm ran clean with 0 failures.
+
+| engine | kind | CER | WER | CER vs tesseract-cli | proc ms | engine ms |
+|---|---|--:|--:|--:|--:|--:|
+| `tesseract-cli:eng` | external | **0.0256** | **0.0890** | — | **373** | — |
+| `paddleocr-py` | external | **0.0185** | 0.1153 | 0.0368 | 1074 | 1074 |
+| `easyocr-py` | external | 0.0769 | 0.2363 | 0.0928 | 746 | 746 |
+| `crispembed-tesseract` | native | 0.0814 | 0.2548 | 0.1005 | 6462 | — |
+| `crispembed-easyocr` | native | 0.1412 | 0.3802 | 0.1561 | 6640 | 6295 |
+
+Reading the columns correctly: `crispembed-tesseract` vs `tesseract-cli` is a
+fair wall-clock comparison (both are one subprocess per image, both pay model
+load), so **17x slower at 3.2x the character error** is the real gap. For
+`crispembed-easyocr` vs `easyocr-py` the fair column is `engine_ms`, which
+excludes load on both sides: **8.4x slower at 1.8x the character error**. The
+EasyOCR CER gap mixes detector and recognizer — our lane pairs the EasyOCR CRNN
+with DBNet while `easyocr-py` uses CRAFT — so it is not yet attributable.
+
+Three gaps follow, in priority order: (1) PP-OCRv6 produces no usable text at
+all; (2) both working native lanes are ~10x slower than the engines they port;
+(3) both carry roughly 2-3x the character error of their upstream.
+
+**PP-OCRv6 is not validated — its reference cannot read text either.**
+
+The accepted PP-OCRv6 parity evidence is per-stage cosine against
+`tools/dump_ppocrv6_reference.py`, a hand-written torch mirror of the Paddle
+blueprint. On `synth_00_clean.png` the native lane decodes `iiiiii` /
+`laúieyotiieieioieioni.` / `íotuinióniiaieiasaieró` at `mean_conf=0.94` — and
+running the *reference* on the very same crop yields the same class of garbage
+(`neiioiieioe…`). Detector geometry is not at fault: the dumped crops are
+pixel-perfect line images of the ground-truth text. So the native runtime is
+faithfully reproducing a wrong blueprint, which is exactly the failure mode
+HARD RULE #3 exists to catch — cosine 0.9999 against a reference that cannot
+read means nothing, and the earlier `涨RiI` decode recorded above for the fox
+crop was the same signal, read as acceptable.
+
+The divergence is structural, not a tunable. `config.json` pins
+hidden_size/depth/mlp_ratio/conv_kernel_size but **not** the attention head
+count, the activation placement, or the pre-head pooling, and the dumper guesses
+`heads=8` with SiLU/GELU. Sweeping those guesses by decoded output —
+16 head counts x 2 head activations x 3 poolings, then 4 stem x 5 depthwise x 4
+channel activations — never produces readable text; the best combination
+(`stem=relu, dw=none, cm1=gelu`) reaches CER 0.667 on a rendered `The quick`
+crop with fragments like `hea`/`ui` visible, and the current default is worse
+still. Output is largely insensitive to head count, which places the error in
+the PP-LCNetV4 backbone/stem topology rather than the SVTR head.
+
+Next step for this lane is therefore blueprint recovery, not tuning: obtain the
+real PP-OCRv6 modeling code (PaddleX, or a `transformers` release that
+recognises `model_type: pp_ocrv6_small_rec` — 4.57.6 does not) and rebuild
+`dump_ppocrv6_reference.py` against it. Until then no PP-OCRv6 parity or
+performance number in this file should be treated as evidence, and the lane
+must not be promoted to a default.
+
+**Original stage-bench observation (PP-OCRv6 small, Metal, `synth_00_clean.png`, 3 lines).**
 Decoded output is not text: `iiiiii` / `laúieyotiieieioieioni.` /
 `íotuinióniiaieiasaieró` against a ground truth of "The quick brown fox jumps
 over the lazy dog." — with `mean_conf=0.94`, so the confidence signal does not
 detect it. Detector geometry is plausible (3 boxes for 3 lines); the recognizer
 output is wrong. Stage bench on the same run: `detect=62177.3 ms
 recognize=35630.8 ms total=97844.2 ms`, i.e. ~98 s for a 600x200 image that
-PaddleOCR reads in a fraction of a second. This run was CPU-contended and its
-absolute timings are therefore not a benchmark, but neither the two-orders-of-
-magnitude latency nor the garbage transcription is explainable by contention.
-This is consistent with the existing note that PP-OCRv6 CPU/graph parity was
-only ever accepted at the *tensor* boundary on crops, never on a rendered page
-end-to-end. Next: re-run uncontended for real numbers, then bisect the
-recognizer with `crispembed-diff` starting at the crop that feeds it, since the
-detector hands it geometry that looks right.
+PaddleOCR reads in a fraction of a second. That run was CPU-contended; uncontended,
+`test-ppocrv6-direct` reports 1774 ms total for the same three lines, so the
+98 s figure is contention and the standing latency question for this lane is
+moot until it produces text at all.
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 

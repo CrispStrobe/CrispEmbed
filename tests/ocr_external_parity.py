@@ -47,6 +47,7 @@ TESSDATA = "/opt/homebrew/share/tessdata"
 # Native stage-bench lines (stderr, opt-in via env) carry the load-excluded cost.
 STAGE_BENCH = {
     "ppocrv6": re.compile(r"\[ppocrv6-stage-bench\].*?total=([0-9.]+) ms"),
+    "easyocr": re.compile(r"\[easyocr-stage-bench\].*?total=([0-9.]+) ms"),
     "tesseract": re.compile(r"\[tesseract-stage-bench\].*?total=([0-9.]+) ms"),
 }
 REGIONS_RE = re.compile(r"^regions=(\d+)\s+mean_conf=([0-9.]+)", re.M)
@@ -312,6 +313,9 @@ def build_engines(args) -> list[Engine]:
             CrispEmbedCLI("crispembed-tesseract", "tesseract", binary,
                           model(args.dbnet), model(args.tess_rec),
                           {"CRISPEMBED_TESSERACT_BENCH": "1"}, "tesseract"),
+            CrispEmbedCLI("crispembed-easyocr", "easyocr", binary,
+                          model(args.dbnet), model(args.easyocr_rec),
+                          {"CRISPEMBED_EASYOCR_BENCH": "1"}, "easyocr"),
             CrispEmbedCLI("crispembed-ppocrv6", "ppocrv6", binary,
                           model(args.ppocr_det), model(args.ppocr_rec),
                           {"CRISPEMBED_PPOCRV6_BENCH": "1"}, "ppocrv6"),
@@ -331,6 +335,7 @@ def main() -> int:
     ap.add_argument("--psm", type=int, default=6)
     ap.add_argument("--dbnet", default="dbnet-ic15-q8_0.gguf")
     ap.add_argument("--tess-rec", default="tesseract-eng-q8_0-seeded.gguf")
+    ap.add_argument("--easyocr-rec", default="easyocr-english-g2-f16.gguf")
     ap.add_argument("--ppocr-det", default="PP-OCRv6_small_det-f16.gguf")
     ap.add_argument("--ppocr-rec", default="PP-OCRv6_small_rec-f16.gguf")
     ap.add_argument("--reference", default="tesseract-cli:eng",
