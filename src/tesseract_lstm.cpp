@@ -159,6 +159,7 @@ struct tesseract_lstm_context {
     std::map<std::string, std::vector<float>> captures;
 
     bool bench = false;
+    bool cache_int = true;
     bool reuse_scratch = false;
 
     // GGUF loader state
@@ -778,7 +779,7 @@ static void forward(tesseract_lstm_context * ctx,
     auto & seq_b = ctx->reuse_scratch ? ctx->scratch_seq_b : local_seq_b;
     seq_a.resize((size_t)W2 * ns0);
     summ_lstm_forward(transposed.data(), seq_a.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
-                      lw0.bias.data(), int_mode, &lw0);
+                      lw0.bias.data(), int_mode, ctx->cache_int ? &lw0 : nullptr);
     lstm_idx++;
     capture(ctx, "after_lstm_0", seq_a.data(), seq_a.size());
 
@@ -794,7 +795,7 @@ static void forward(tesseract_lstm_context * ctx,
 
         next_seq->resize((size_t)T * lw.ns);
         lstm_forward(cur_seq->data(), next_seq->data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(),
-                     lw.bias.data(), rev, int_mode, &lw);
+                     lw.bias.data(), rev, int_mode, ctx->cache_int ? &lw : nullptr);
 
         std::swap(cur_seq, next_seq);
         cur_dim = lw.ns;
@@ -930,6 +931,7 @@ tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_thre
         return nullptr;
     }
     ctx->bench = (std::getenv("CRISPEMBED_TESSERACT_BENCH") != nullptr);
+    ctx->cache_int = (std::getenv("CRISPEMBED_TESSERACT_DISABLE_INT_CACHE") == nullptr);
     ctx->reuse_scratch = (std::getenv("CRISPEMBED_TESSERACT_REUSE_SCRATCH") != nullptr);
     return ctx;
 }
