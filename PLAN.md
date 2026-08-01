@@ -2628,3 +2628,12 @@ the pattern first.
   English scan-strip smoke fixture, recode beam width 4 produced identical
   `Se` output with and without the bonus; this is a smoke result, not a quality
   promotion.
+
+- **Tesseract parity harness controls (2026-08-01).** The paired page
+  comparator and benchmark now expose `--compose`, `--recode-beam`, and
+  `--dawg-score`, forwarding them to the corresponding opt-in runtime gates.
+  Benchmark JSON also records the exact official/native text pair and their
+  official-line/native-region counts, alongside CER/WER and stage timings.
+  This closes the instrumentation gap for the DAWG word-choice experiment;
+  it does not promote the scorer. A clean, resource-isolated Fraktur run with
+  a real embedded-DAWG model remains required before judging quality or speed.

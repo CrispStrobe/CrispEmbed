@@ -153,6 +153,13 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         env["CRISPEMBED_TESSERACT_WORKERS"] = str(args.workers)
     if args.beam:
         env["CRISPEMBED_TESSERACT_BEAM_WIDTH"] = str(args.beam)
+    if args.recode_beam:
+        env["CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH"] = str(args.recode_beam)
+    if args.compose:
+        env["CRISPEMBED_TESSERACT_RECODE_COMPOSE"] = "1"
+    if args.dawg_score:
+        env["CRISPEMBED_TESSERACT_DAWG_LOAD"] = "1"
+        env["CRISPEMBED_TESSERACT_DAWG_SCORE"] = "1"
     if args.benchmark:
         env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
     if args.projection:
@@ -217,6 +224,12 @@ def main() -> int:
                         help="explicit Tesseract tessdata directory for the official subprocess")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--beam", type=int, default=0)
+    parser.add_argument("--recode-beam", type=int, default=0,
+                        help="opt-in composed-recoder beam width")
+    parser.add_argument("--dawg-score", action="store_true",
+                        help="enable opt-in embedded DAWG beam scoring")
+    parser.add_argument("--compose", action="store_true",
+                        help="enable opt-in composed-recoder decoding")
     parser.add_argument("--benchmark", action="store_true", help="include native detect/group/crop/recognize timings")
     policy = parser.add_mutually_exclusive_group()
     policy.add_argument("--projection", action="store_true")
