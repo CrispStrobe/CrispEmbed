@@ -441,8 +441,17 @@ recognizer and LayoutLM consumer.
       precision is not promoted.
 - [x] Align the Python ConvNL blueprint with native row-wise int8 FC
       arithmetic and rerun the fresh reference. Results are unchanged; the
-      the old seeded-padding mismatch is eliminated; decoded-output parity is
+      old seeded-padding mismatch is eliminated; decoded-output parity is
       still open despite the improved `0.994876` mixed logits cosine.
+- [x] Audit all backup Tesseract GGUF metadata. Of 46 model artifacts, 45 lack
+      `tesseract_lstm.sample_iteration`; only the named Homebrew English model
+      is seed-complete. Missing-seed language and quantized artifacts remain
+      gated until regenerated or reconstructed with verified metadata.
+- [x] Align the Python int-mode LSTM with native row-wise int8 arithmetic using
+      pre-quantized matrices. Fresh F32 Fraktur now passes all 9 stages exactly
+      and decoded text matches Python; the seed-preserving mixed Q8/F32
+      candidate remains below parity at logits cosine `0.989655`, so
+      quantization quality is the remaining blocker.
 - [x] Obtain an official Tesseract internal activation/raw-row comparison;
       the remaining discrepancy was traced to seeded Convolve padding and is
       now resolved below.

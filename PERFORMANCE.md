@@ -1078,6 +1078,19 @@ from Python, so the mixed candidate is not production-accepted. References are
 stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`
 and `tesseract-frk-ref-int8fc.gguf`.
 
+GGUF metadata audit of `/Volumes/backups/ai/crispembed-gguf/` found 46
+Tesseract model artifacts: 45 lack `tesseract_lstm.sample_iteration`; only
+`tesseract-eng-homebrew-intmeta-f32-sample6352704.gguf` carries it. The missing
+seed can change every out-of-bounds Convolve padding value, so those artifacts
+require regeneration or metadata-preserving reconstruction before parity
+acceptance.
+
+After regenerating the Python reference with exact int8 LSTM arithmetic, the
+fresh F32 Fraktur GGUF passes all 9 captured stages exactly (final logits max
+error `2.09e-7`) and decoded text matches Python. The seed-preserving mixed
+Q8/F32 candidate remains below parity (`logits cosine 0.989655`) and decodes
+differently; quantization quality is the remaining blocker.
+
 Quantization policy improvement: `models/quantize.py` now supports repeatable
 `--keep-pattern` rules, allowing callers to retain critical recurrent or
 output tensors at source precision without changing the established default
