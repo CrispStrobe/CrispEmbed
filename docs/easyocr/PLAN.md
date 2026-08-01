@@ -29,7 +29,12 @@
   `Brighton` region. The harness now has explicit `lines` mode (EasyOCR
   grouping plus dynamic-width CRNN graphs) and `words` mode (LayoutLM/Tesseract
   handoff style). This is a pipeline smoke gate only; Python box/text parity
-  and production orchestration remain open.
+  and production orchestration remain open. The detector-independent
+  production handoff is now explicit: `easyocr_pipeline::run_regions` accepts
+  caller-supplied detector boxes and applies the configured lines/words
+  ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
+  pipeline test replays the DBNet boxes through this API and matches the normal
+  98-record run; external Tesseract TSV parity remains open.
 - Tesseract parity is explicitly **not proven**. The converter, Python
   reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
   recorded completed reference run for the exact installed `eng.traineddata`,
