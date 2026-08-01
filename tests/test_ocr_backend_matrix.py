@@ -11,6 +11,18 @@ PPOCR = ROOT / "docs/ppocrv6.md"
 
 def main() -> int:
     text = MATRIX.read_text()
+    rows = []
+    for line in text.splitlines():
+        if not line.startswith("|") or line.startswith("|---"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells and cells[0] != "Engine family":
+            rows.append(cells)
+    assert rows, "backend matrix has no data rows"
+    for row in rows:
+        assert len(row) == 4, f"malformed backend matrix row: {row!r}"
+        assert all(row), f"blank backend matrix field: {row!r}"
+        assert row[2] in {"No", "Partial", "Yes, when backend enabled"}, f"unsupported capability value: {row[2]}"
     required = (
         "PP-OCRv6 detector/recognizer", "PP-LCNet orientation", "DBNet + TrOCR",
         "Tesseract-LSTM", "PARSeq", "Surya", "GOT/GLM/Qwen/InternVL/DeepSeek VLMs",
@@ -21,7 +33,7 @@ def main() -> int:
         assert name in text, f"missing backend matrix row: {name}"
     assert "PP-OCRv6 remains explicitly CPU-only" in PPOCR.read_text()
     assert "GGML_METAL=OFF" in text and "GGML_CUDA=OFF" in text
-    print(f"OCR backend matrix OK: {len(required)} required families")
+    print(f"OCR backend matrix OK: {len(required)} required families, {len(rows)} schema-valid rows")
     return 0
 
 
