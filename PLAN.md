@@ -2663,3 +2663,12 @@ the pattern first.
   can receive a bonus when they are absent from the ordinary dictionary. A
   standalone regression covers the fallback; punctuation-graph semantics and
   official candidate reranking remain intentionally unimplemented.
+
+- **DAWG prefix-score experiment (2026-08-01).** Added the separately gated
+  `CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE` path. It gives a small `0.02`
+  diagnostic bonus only to an incomplete final word that is a valid system or
+  number-DAWG prefix; complete words retain the `0.25` bonus. The default
+  scorer behavior is unchanged, and the standalone test covers both modes.
+  This is an experiment, not evidence of official word-choice parity.
+  The page comparator/benchmark expose it as `--dawg-prefix-score` and clear
+  the corresponding inherited environment gate before each run.

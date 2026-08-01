@@ -41,6 +41,7 @@ def main() -> int:
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument("--recode-beam", type=int, default=0)
     parser.add_argument("--dawg-score", action="store_true")
+    parser.add_argument("--dawg-prefix-score", action="store_true")
     parser.add_argument("--compose", action="store_true")
     parser.add_argument("--projection", action="store_true")
     parser.add_argument("--component", action="store_true")
@@ -50,8 +51,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats < 1:
         parser.error("--repeats must be positive")
-    if args.dawg_score and args.recode_beam <= 1:
-        parser.error("--dawg-score requires --recode-beam > 1")
+    if (args.dawg_score or args.dawg_prefix_score) and args.recode_beam <= 1:
+        parser.error("DAWG scoring requires --recode-beam > 1")
     if sum((args.projection, args.component, args.baseline)) > 1:
         parser.error("segmentation policies are mutually exclusive")
 
@@ -82,6 +83,8 @@ def main() -> int:
             command.extend(["--recode-beam", str(args.recode_beam)])
         if args.dawg_score:
             command.append("--dawg-score")
+        if args.dawg_prefix_score:
+            command.append("--dawg-prefix-score")
         if args.compose:
             command.append("--compose")
         if args.projection:
@@ -110,6 +113,7 @@ def main() -> int:
         "scratch": args.scratch,
         "recode_beam": args.recode_beam,
         "dawg_score": args.dawg_score,
+        "dawg_prefix_score": args.dawg_prefix_score,
         "compose": args.compose,
         "repeats": len(records),
         "provenance": records[-1]["provenance"],

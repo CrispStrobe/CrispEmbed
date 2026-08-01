@@ -151,6 +151,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "CRISPEMBED_TESSERACT_RECODE_COMPOSE",
         "CRISPEMBED_TESSERACT_DAWG_LOAD",
         "CRISPEMBED_TESSERACT_DAWG_SCORE",
+        "CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE",
     ):
         env.pop(key, None)
     if args.workers:
@@ -161,9 +162,11 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         env["CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH"] = str(args.recode_beam)
     if args.compose:
         env["CRISPEMBED_TESSERACT_RECODE_COMPOSE"] = "1"
-    if args.dawg_score:
+    if args.dawg_score or args.dawg_prefix_score:
         env["CRISPEMBED_TESSERACT_DAWG_LOAD"] = "1"
         env["CRISPEMBED_TESSERACT_DAWG_SCORE"] = "1"
+    if args.dawg_prefix_score:
+        env["CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE"] = "1"
     if args.benchmark:
         env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
     if args.projection:
@@ -232,6 +235,8 @@ def main() -> int:
                         help="opt-in composed-recoder beam width")
     parser.add_argument("--dawg-score", action="store_true",
                         help="enable opt-in embedded DAWG beam scoring")
+    parser.add_argument("--dawg-prefix-score", action="store_true",
+                        help="enable the opt-in DAWG prefix bonus experiment")
     parser.add_argument("--compose", action="store_true",
                         help="enable opt-in composed-recoder decoding")
     parser.add_argument("--benchmark", action="store_true", help="include native detect/group/crop/recognize timings")
@@ -244,8 +249,8 @@ def main() -> int:
     parser.add_argument("--max-wer", type=float, help="fail if word error rate exceeds this value")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    if args.dawg_score and args.recode_beam <= 1:
-        parser.error("--dawg-score requires --recode-beam > 1")
+    if (args.dawg_score or args.dawg_prefix_score) and args.recode_beam <= 1:
+        parser.error("DAWG scoring requires --recode-beam > 1")
 
     official = official_metrics(args.image, args.lang, args.psm, args.tessdata_dir)
     reference_text = official_text(args.image, args.lang, args.psm, args.tessdata_dir)
