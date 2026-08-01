@@ -22,6 +22,30 @@ ROW = re.compile(r"^  INFO: (?P<fixture>.+): (?P<regions>\d+) regions, "
                  r"time_ms=(?P<time_ms>[0-9.]+)\)$")
 
 
+def parse_rows(text: str, variant: str) -> list[dict]:
+    rows = []
+    for line in text.splitlines():
+        match = ROW.match(line)
+        if match:
+            row = match.groupdict()
+            row["variant"] = variant
+            row["regions"] = int(row["regions"])
+            row["chars"] = int(row["chars"])
+            row["confidence"] = float(row["confidence"])
+            row["time_ms"] = float(row["time_ms"])
+            rows.append(row)
+    return rows
+
+
+def write_json(path: Path | None, result: dict) -> None:
+    payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
+    if path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(payload)
+    else:
+        print(payload, end="")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--test-binary", default="build/test-ocr-orchestrator", type=Path)
@@ -55,32 +79,32 @@ def main() -> int:
                                   timeout=args.timeout)
         except subprocess.TimeoutExpired as exc:
             elapsed = round(time.monotonic() - started, 2)
+            partial = exc.stdout or ""
+            if isinstance(partial, bytes):
+                partial = partial.decode(errors="replace")
+            timeout_result = {
+                "version": 1,
+                "status": "timeout",
+                "engine": "ppocrv6",
+                "orientation": "pplcnet-0-180",
+                "variant": variant,
+                "timeout_seconds": args.timeout,
+                "elapsed_seconds": elapsed,
+                "rows": parse_rows(partial, variant),
+            }
+            if args.json_out:
+                write_json(args.json_out, timeout_result)
             raise SystemExit(f"native PP-OCRv6 {variant} regression timed out after {elapsed}s; "
                              "use --timeout to override") from exc
-        rows = []
-        for line in proc.stdout.splitlines():
-            match = ROW.match(line)
-            if match:
-                row = match.groupdict()
-                row["variant"] = variant
-                row["regions"] = int(row["regions"])
-                row["chars"] = int(row["chars"])
-                row["confidence"] = float(row["confidence"])
-                row["time_ms"] = float(row["time_ms"])
-                rows.append(row)
+        rows = parse_rows(proc.stdout, variant)
         if proc.returncode != 0:
             raise SystemExit(f"native PP-OCRv6 {variant} regression failed (exit {proc.returncode})\n"
                              f"{proc.stderr[-2000:]}")
         if len(rows) != args.fixture_limit:
             raise SystemExit(f"expected {args.fixture_limit} PP-OCRv6 {variant} benchmark rows, got {len(rows)}")
         all_rows.extend(rows)
-    result = {"version": 1, "engine": "ppocrv6", "orientation": "pplcnet-0-180", "rows": all_rows}
-    payload = json.dumps(result, ensure_ascii=False, indent=2) + "\n"
-    if args.json_out:
-        args.json_out.parent.mkdir(parents=True, exist_ok=True)
-        args.json_out.write_text(payload)
-    else:
-        print(payload, end="")
+    write_json(args.json_out, {"version": 1, "status": "ok", "engine": "ppocrv6",
+                               "orientation": "pplcnet-0-180", "rows": all_rows})
     return 0
 
 
