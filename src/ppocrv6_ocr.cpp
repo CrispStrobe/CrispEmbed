@@ -25,6 +25,10 @@ struct pp_conv {
     ggml_tensor * w = nullptr;
     ggml_tensor * b = nullptr;
     int in_ch = 0, out_ch = 0, kh = 1, kw = 1, stride = 1, stride_h = 1, stride_w = 1, pad_h = 0, pad_w = 0, groups = 1;
+    // Recognizer crops reuse the same convolution weights. Cache the CPU
+    // representation once, matching the detector's weight policy; otherwise
+    // every detected line repeats a full GGUF→F32 dequantization.
+    mutable std::vector<float> wf, bf;
 };
 
 struct pp_block {
@@ -101,8 +105,10 @@ static bool apply_conv(const pp_conv & c, const std::vector<float> & in, int h, 
     oh = (h + 2 * c.pad_h - c.kh) / c.stride_h + 1;
     ow = (w + 2 * c.pad_w - c.kw) / c.stride_w + 1;
     out.assign((size_t)c.out_ch * oh * ow, 0.0f);
-    auto ww = to_f32(c.w);
-    auto bb = to_f32(c.b);
+    if (c.wf.empty()) c.wf = to_f32(c.w);
+    if (c.b && c.bf.empty()) c.bf = to_f32(c.b);
+    const auto & ww = c.wf;
+    const auto & bb = c.bf;
     // Even 2x2 kernels in the large recognizer stem use asymmetric effective
     // borders (one branch is valid, the other restores the spatial size).
     // Keep this small path explicit; it also avoids backend-specific
