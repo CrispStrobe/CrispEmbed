@@ -259,6 +259,21 @@ Python detector/recognizer page manifest is still required before parity is
 claimed. The current local Python environment lacks torch, numpy, and cv2, so
 that reference run remains an explicit external/dependency gate.
 
+The detector-independent production handoff is now explicit: `run_regions`
+accepts caller-supplied detector boxes and applies the configured lines/words
+ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
+pipeline test replays the DBNet boxes through this API and matches the normal
+98-record run; this validates the boundary, not external Tesseract TSV parity.
+
+The first real page comparison confirms why TSV parity cannot be asserted by
+zipping records: native DBNet/CRNN `words` mode emits 98 records, while
+Tesseract 5.5.2 `--psm 6` emits 106 TSV words. The first geometry already
+differs before recognition (`[46.97,0,62.56,20.88]` native versus
+`[50,0,58,19]` TSV), and later indices shift with segmentation. Full-page
+Tesseract TSV also reads `Drighton;` on this fixture, whereas the instrumented
+internal PSM7 crop reads `Brighton`; page segmentation and crop selection remain
+the active parity gate.
+
 The harness-blind CTC/vocabulary/confidence gate is now covered by the native
 `easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
 with repeated-token collapse, vocabulary entries are 1-based and validated,
@@ -283,22 +298,21 @@ continues to use left-to-right y-band ordering. The adapter is covered by the
 layout regression and the model-backed page smoke; horizontal-gap splitting is
 still a later detector-specific refinement.
 
-### Tesseract parity status — NOT PROVEN
+### Tesseract parity status — controlled line proven; page/CLI parity pending
 
 The repository contains a `.traineddata` → GGUF converter, a pure-Python
 Tesseract LSTM reference dumper, and `test-tesseract-lstm-diff`. That is an
 available validation path, not evidence that the shipped models match the
-original Tesseract engine. No completed `-ref.gguf` run is recorded for the
-exact installed `eng.traineddata`, and the backup GGUF metadata only identifies
-the `tessdata_best` source; it does not record a verified source-file hash.
+original Tesseract engine. The controlled exact `eng.traineddata` line run is
+now complete; backup artifacts must still be regenerated consistently when
+model metadata changes, and page/CLI parity remains separate.
 
 The native implementation is also a line recognizer. Tesseract's page
 segmentation, word boundaries, spacing, and reading order are separate
 postprocessing behavior. A Python forward pass can prove GGUF/runtime math
 against parsed weights, but does not by itself prove full Tesseract CLI parity.
-Do not mark this lane green until the exact source model is hashed, the
-reference dump and native diff pass every captured stage with magnitudes
-inspected, and the decoded line output is compared with the original engine.
+Do not mark the full lane green until page segmentation, spacing, reading order,
+and decoded page output are compared with the original engine.
 
 > **Board cleared 2026-07-20** — all 18 previously-listed in-flight items had
 > landed; the index + preserved specifics are in `HISTORY.md` "July 20, 2026 —
@@ -355,8 +369,10 @@ downstream handoff parity, not detector-box similarity alone.
 
 #### Interoperability gates
 
-- [ ] Make detector output and ordering policy first-class production adapters;
-      no test-only DBNet→EasyOCR orchestration.
+- [x] Make detector output and ordering policy first-class production adapters;
+      `easyocr_pipeline::run_regions` now accepts detector-independent boxes and
+      applies the selected `lines`/`words` policy through the production crop /
+      recognizer path; the pipeline test exercises the injected-geometry handoff.
 - [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
       page fixture with a Python reference manifest.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
@@ -373,12 +389,17 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane; compare
       it with EasyOCR CRNN on identical crops rather than treating either
       recognizer as the detector.
-- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
-      its `-ref.gguf`, pass all captured stages and decoded line output, then
-      compare page segmentation/spacing independently.
+- [x] Prove the controlled line-recognizer boundary separately: the exact
+      Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
+      decoded text, and official instrumented PSM7 internal crop all match;
+      logits differ by at most `6.6e-7` with cosine `1.000000`.
+- [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
+      this remains open because direct line fixtures are not the same internal
+      crops selected by official PSM7.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
-      run and stage/output parity remain open.
+      run and controlled-line stage/output parity are complete; page parity
+      remains open.
 - [x] Align the diagnostic Tesseract reference dumper and native recognizer
       with the actual Leptonica `pixScaleGrayLI` fixed-16 bilinear contract
       (top-left sampling, integer weights, replicated edges). The previous
@@ -396,11 +417,52 @@ downstream handoff parity, not detector-box similarity alone.
       its recode beam. GGUF/reference metadata now records `training_flags`
       and `int_mode`; the current F32 graph remains measurable against the
       F32 Python reference but is not yet CLI-logit parity.
-- [ ] Add an int8-equivalent Tesseract inference path and diff its logits
-      against a reference produced with the same quantized arithmetic before
-      adding a recode/dictionary beam. A plain CTC prefix beam over current
-      F32 logits still returns `Drighton`, so beam search alone cannot explain
-      the CLI result.
+- [x] Add the first int8-equivalent Tesseract activation path and an int-mode
+      Python `-ref.gguf`; input/intermediate/output boundaries pass the 0.99
+      diff gate (int-mode logits cosine `0.997227`). This shifts native output
+      to `Lhey ... Drighton`, but does not yet reproduce the CLI's
+      `ihey ... Brighton`.
+- [x] Add an opt-in CTC prefix beam (`CRISPEMBED_TESSERACT_BEAM_WIDTH`) and
+      test widths 2, 3, 5, 10, 16, 25, and 50. It leaves the int-mode result
+      unchanged, proving generic CTC beam search alone is not the CLI choice
+      mechanism.
+- [x] Close the int-mode network logit gap with Tesseract's lookup-table
+      nonlinearities and exact quantized matrix arithmetic. Recode/dictionary
+      scoring remains a separate pending gate below.
+- [x] Added Tesseract's 1/256 LUT nonlinearities and reconstructed per-row
+      int8 matrix accumulation. Native/Python int-mode parity improved to
+      logits cosine `0.998405` with identical decoded output; CTC and
+      Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
+      the CLI's `Brighton`.
+- [x] Compare native against an instrumented official Tesseract PSM7 run at
+      the internal activation boundary. The earliest divergence was the
+      `Convolve` layer's out-of-image cells: Tesseract fills them with its
+      seeded `TRand`, not zeros. GGUF now preserves `sample_iteration`, and
+      both converter/reference/native paths reproduce the exact seeded padding.
+      On the 601x36 official PSM7 crop, every captured stage passes at cosine
+      1.000000 (logits max error 6.6e-7, cosine 1.000000), and native decodes
+      the same `Brighton` path as official Tesseract. This closes arithmetic
+      and preprocessing parity for this controlled line; recode/dictionary
+      scoring and full-page segmentation remain separate gates.
+- [x] Preserve the serialized Tesseract recoder map/offsets in the runtime and
+      add an opt-in recoder-prefix legality layer to the diagnostic beam.
+      Width-25 constrained decoding reproduces `Brighton` on the official
+      crop with all 9 network diff stages still passing. Full RecodeBeamSearch
+      certainty aggregation and DAWG dictionary scoring remain pending and
+      are not enabled in production.
+- [x] Harden `test-tesseract-lstm-diff` so decoded metadata mismatches fail the
+      test. The Python reference now matches native `stb_image` RGB-to-gray
+      conversion (`(77R+150G+29B)>>8`); all six direct line fixtures pass
+      decoded parity with exact input tensors and stage cosines at or above
+      `0.998821`.
+- [x] Sweep six existing CC0/public-domain English line fixtures through the
+      exact int-mode native/Python harness: all 6 references pass the
+      captured-stage 0.99 parity gate, and the constrained width-25 beam remains
+      stable on the official `Brighton` crop. Official CLI PSM7 output was
+      separately measured with `language_model_ngram_on=0` and `=1`; both
+      settings produced identical text on all six lines. The remaining
+      differences (crop width, spacing, and case) are page-segmentation/CLI
+      geometry, not DAWG scoring evidence.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages

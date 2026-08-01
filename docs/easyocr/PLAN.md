@@ -29,7 +29,19 @@
   `Brighton` region. The harness now has explicit `lines` mode (EasyOCR
   grouping plus dynamic-width CRNN graphs) and `words` mode (LayoutLM/Tesseract
   handoff style). This is a pipeline smoke gate only; Python box/text parity
-  and production orchestration remain open.
+  and production orchestration remain open. The detector-independent
+  production handoff is now explicit: `easyocr_pipeline::run_regions` accepts
+  caller-supplied detector boxes and applies the configured lines/words
+  ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
+  pipeline test replays the DBNet boxes through this API and matches the normal
+  98-record run; external Tesseract TSV parity remains open.
+  A real page comparison confirms why TSV parity cannot be asserted by zipping
+  records: native DBNet/CRNN `words` mode emits 98 records, while Tesseract
+  5.5.2 `--psm 6` emits 106 TSV words. The first geometry already differs
+  before recognition (`[46.97,0,62.56,20.88]` native versus `[50,0,58,19]`
+  TSV), and full-page Tesseract reads `Drighton;` while the instrumented
+  internal PSM7 crop reads `Brighton`; page segmentation/crop selection remains
+  the active parity gate.
 - Tesseract parity is explicitly **not proven**. The converter, Python
   reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
   recorded completed reference run for the exact installed `eng.traineddata`,
@@ -147,11 +159,14 @@ recognizer and LayoutLM consumer.
       `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
       it with EasyOCR CRNN on identical detector crops.
-- [ ] Prove Tesseract parity separately: hash the exact `.traineddata`, create
-      its `-ref.gguf`, pass all captured stages and decoded line output, then
-      compare page segmentation/spacing independently.
+- [x] Prove the controlled line-recognizer boundary separately: exact hashed
+      Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
+      text, and the official instrumented PSM7 internal crop all match.
+- [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
+      direct line fixtures are not the same internal crops selected by PSM7.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
-      metadata; the actual reference run and stage/output parity remain open.
+      metadata; the controlled-line reference and stage/output parity are
+      complete, while page parity remains open.
 - [x] Align the diagnostic reference dumper and native recognizer with
       Tesseract's actual Leptonica `pixScaleGrayLI` fixed-16 bilinear
       contract (top-left sampling and edge replication); the earlier
@@ -167,9 +182,51 @@ recognizer and LayoutLM consumer.
       quantizes activations and per-output weight rows to int8 before its
       recode beam; our current F32 graph is not expected to reproduce those
       logits. Metadata now preserves the flag in both GGUF and references.
-- [ ] Implement and diff int8-equivalent inference first; only then add an
-      optional Tesseract-style recode/dictionary beam. A generic CTC prefix
-      beam over current F32 logits still selects `Drighton`.
+- [x] Implement the first int8-equivalent activation path and a matching
+      quantized Python reference; all 9 captured stages pass the 0.99 gate
+      (int-mode logits cosine `0.997227`), but native still decodes
+      `Lhey ... Drighton` versus the CLI's `ihey ... Brighton`.
+- [x] Add and test an opt-in generic CTC prefix beam through
+      `CRISPEMBED_TESSERACT_BEAM_WIDTH` at widths 2, 3, 5, 10, 16, 25, and 50;
+      it does not change the native result, so it is not the CLI explanation.
+- [ ] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
+      quantized matrix arithmetic), then port its recode beam/dictionary
+      scoring and validate decoded output.
+- [x] Added the 1/256 Tesseract nonlinear LUT contract and reconstructed
+      per-row int8 dot products. Native/Python int-mode logits now reach
+      cosine `0.998405` with identical decoded output; generic CTC and
+      Viterbi/recode-style diagnostic beams at widths 2-50 still do not select
+      CLI `Brighton`.
+- [x] Obtain an official Tesseract internal activation/raw-row comparison;
+      the remaining discrepancy was traced to seeded Convolve padding and is
+      now resolved below.
+- [x] Resolve the official Tesseract discrepancy: PSM7 creates a 601x36
+      internal crop, and its first divergent tensor was `Convolve` boundary
+      padding. Tesseract uses a seeded `TRand` based on serialized
+      `sample_iteration` rather than zero padding. GGUF metadata, the Python
+      reference, and native path now preserve/replay that state. Fresh
+      official-vs-native comparison passes all 9 captured tensors at cosine
+      1.000000 (logits max error 6.6e-7) and decodes `Brighton` identically.
+- [ ] Port and validate Tesseract recode/dictionary scoring separately from
+      the now-proven network arithmetic; do not enable a production beam from
+      the diagnostic implementation.
+- [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
+      prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
+      remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
+      top-N transition rules, and DAWG dictionary scoring are still not ported
+      or production-enabled.
+- [x] Run the six available English line fixtures with official CLI PSM7 and
+      compare `language_model_ngram_on=0` versus `=1`: outputs were identical
+      for every line. This keeps DAWG scoring as an unproven pending feature,
+      while documenting that the observed line differences are currently
+      caused by CLI crop/spacing/case behavior.
+- [x] Harden `test-tesseract-lstm-diff` so decoded metadata mismatches fail the
+      test. The official 601x36 PSM7 crop remains 9/9 plus decoded-pass; the
+      direct six-line sweep initially exposed line 4 as an input mismatch.
+- [x] Match the reference dumper's RGB-to-gray conversion to native
+      `stb_image` (`(77R+150G+29B)>>8`), eliminating the line-4 input error.
+      All six direct line fixtures now pass decoded parity; input tensors are
+      exact and stage cosines remain at or above `0.998821`.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
