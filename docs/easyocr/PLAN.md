@@ -200,6 +200,11 @@ recognizer and LayoutLM consumer.
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
       top-N transition rules, and DAWG dictionary scoring are still not ported
       or production-enabled.
+- [x] Run the six available English line fixtures with official CLI PSM7 and
+      compare `language_model_ngram_on=0` versus `=1`: outputs were identical
+      for every line. This keeps DAWG scoring as an unproven pending feature,
+      while documenting that the observed line differences are currently
+      caused by CLI crop/spacing/case behavior.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
