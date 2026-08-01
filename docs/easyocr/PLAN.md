@@ -24,6 +24,17 @@
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
+- The local F16 family check found and repaired a stale English Gen2 artifact:
+  the old file had flattened convolution weights and unfused BatchNorm tensors
+  and aborted graph construction. Re-conversion from the official checkpoint
+  produces the current 36-tensor GGUF and runs normally. Latin Gen1 ResNet F16
+  passes all six stages at dynamic width 128 (minimum cosine `0.999860`,
+  logits `0.999993`) and decodes `==#`. English Gen2 F32 and regenerated F16
+  both decode `@32` with `0/31` argmax mismatches; both retain the same
+  shape-specific row-11 logits minimum cosine (`0.973824` F32,
+  `0.975300` F16) despite global cosine around `0.9998`. This is not an F16
+  artifact regression, but that dynamic-width logits gate remains open and is
+  not claimed green.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
