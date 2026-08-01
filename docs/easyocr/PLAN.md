@@ -2,6 +2,13 @@
 
 ## NOW — active work
 
+- [x] Audit an opt-in GGML direct-convolution optimization for DBNet. The CPU
+      direct kernel requires F32 weights and did not complete a diff run within
+      roughly two minutes on the shared M1, so it remains disabled; the
+      persistent im2col path is unchanged. A vectorized direct kernel remains
+      a performance TODO, and a resource-contended baseline is excluded from
+      stable ratios.
+
 - Branch: `feat/easyocr-ggml`
 - Worktree: `.codex/worktrees/feat-easyocr-ggml`
 - Selected next item: unify detector geometry with explicit EasyOCR line mode

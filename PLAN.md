@@ -73,6 +73,14 @@ same device. Both native backends pass all taps in diff mode and retain
 readable output; native CPU/Metal convolution and deconvolution kernels remain
 mandatory optimization TODOs.
 
+An opt-in `OCR_DETECT_DIRECT_CONV=1` experiment was investigated against the
+GGML direct-convolution op. CPU requires F32 kernels, and the resulting direct
+graph did not finish a diff run within roughly two minutes; it remains
+disabled and is not parity/performance evidence. The default persistent
+im2col path is unchanged. A vectorized direct kernel is a future performance
+item. A later 8-thread baseline run was resource-contended (44.1 s cold,
+66.7 s warm) and is excluded from the stable benchmark ratios.
+
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
 and `850.018 ms` for native runtime-BN F16 Metal graph compute, with 106 boxes

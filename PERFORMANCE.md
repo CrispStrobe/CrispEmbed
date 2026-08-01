@@ -59,6 +59,14 @@ at `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`) and ends at
 final-map cosine `0.9311001`; Q4_K is a quantization-quality TODO, not an
 accepted parity variant.
 
+An opt-in `OCR_DETECT_DIRECT_CONV=1` experiment was not promoted. GGML's CPU
+direct-convolution kernel requires F32 weights, and the F32 direct graph did
+not complete a diff run within roughly two minutes on the shared M1; it is not
+parity or performance evidence. The default persistent im2col path is
+unchanged. A later optimized/vectorized direct kernel remains a performance
+TODO. One subsequent baseline run was resource-contended (44.1 s cold /
+66.7 s warm with 8 threads), so it is excluded from the stable ratios above.
+
 Benchmark results on Intel Xeon Skylake (4 threads), CPU-only, no GPU.
 
 ## Server Mode Latency (model loaded once)
