@@ -2621,5 +2621,10 @@ the pattern first.
   backend-isolated parser/runtime diagnostics. The remaining TODO is actual
   scoring and validating word choices against official Tesseract on transcribed
   fixtures; the C ABI now exposes non-mutating complete/prefix membership for
-  the future scorer, including a UTF-8 tokenizer wrapper. Candidate reranking
-  and official word-choice parity remain TODO.
+  the future scorer, including a UTF-8 tokenizer wrapper. An opt-in
+  `CRISPEMBED_TESSERACT_DAWG_SCORE` bonus now ranks completed system-dictionary
+  words inside recode beam search; it is diagnostic-only until candidate
+  outputs and official word-choice parity are benchmarked. On the embedded
+  English scan-strip smoke fixture, recode beam width 4 produced identical
+  `Se` output with and without the bonus; this is a smoke result, not a quality
+  promotion.
