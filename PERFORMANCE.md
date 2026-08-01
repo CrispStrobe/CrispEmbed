@@ -1365,3 +1365,15 @@ not a segmentation-count or ordering failure. Native benchmark was
 `detect=89.5 ms`, `crop=258.5 ms`, `recognize=17216.3 ms`, `total=17564.4 ms`;
 official Tesseract CLI elapsed `47761.8 ms` in this run, but these timings are
 not yet a controlled backend-speed comparison.
+
+The first divergent line was checked at the tensor boundary. Native crop 0
+was dumped and a Python reference was regenerated from the installed Fraktur
+traineddata. `test-tesseract-lstm-diff` passed every captured stage (input,
+convolution, conv-FC, maxpool, four LSTM stages, and logits); the lowest
+cosine was `0.997755`, with recurrent mine/ref norms `35.8611/35.8704`, and
+the native/Python decoded strings were identical. The official Homebrew CLI
+cannot reopen local PNG/PGM/TIFF files in this environment, so direct CLI
+single-crop confirmation is blocked; the page-level mismatch is nevertheless
+localized to official page segmentation/line normalization rather than GGUF
+recognition math. Use the comparator's new `--crop-dump-dir` option for fresh
+crop manifests.
