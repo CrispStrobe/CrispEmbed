@@ -2520,3 +2520,7 @@ the pattern first.
   were both `SEEEES`; LSTM time was `35.4 ms` cached versus `1,035.6 ms`
   uncached (`29.3x` faster). Promote the cache as the default and retain the
   disable gate for future architecture-specific diagnostics.
+  Full-page scan-strip validation also passed: both modes produced 12 regions,
+  566 chars, CER `0.03375`, and WER `0.15044`; cached stage time was `22.11 s`
+  versus `157.59 s` uncached (`7.1x` faster). Detection and crop together
+  remained below `50 ms`, so recurrent recognition is the active bottleneck.
