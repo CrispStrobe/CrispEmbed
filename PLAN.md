@@ -2605,6 +2605,16 @@ the pattern first.
   resolutions, but the current fixture points away from box expansion and
   toward line-image preprocessing/decoder semantics.
 
+- **Seeded page-gate rerun (2026-08-01).** The exact-text page comparator was
+  rerun on `scan_strip.png` with the published DBNet IC15 F16 detector and
+  both corrected Fraktur F32 and Q8_0 recognizers. Both recognizer choices
+  produced only 2 detector boxes/lines instead of the established 12-region
+  baseline (`ZEDEREE GIE2IE` / `ZEEDEREE SIE2EG`), so this result is rejected
+  before recognition-quality comparison. The shared 2-box result localizes
+  the immediate regression to detector/page-pipeline compatibility, not F32
+  versus Q8 recognizer math; reproduce detector taps and input geometry before
+  changing decoder defaults.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
