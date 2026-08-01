@@ -102,12 +102,22 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
             "CRISPEMBED_FRAKTUR_DUMP": "1",
         }
     )
+    for key in (
+        "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
+        "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
+        "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
+    ):
+        env.pop(key, None)
     if args.workers:
         env["CRISPEMBED_TESSERACT_WORKERS"] = str(args.workers)
     if args.beam:
         env["CRISPEMBED_TESSERACT_BEAM_WIDTH"] = str(args.beam)
     if args.projection:
         env["CRISPEMBED_TESSERACT_PAGESEG_PROJECTION"] = "1"
+    elif args.component:
+        env["CRISPEMBED_TESSERACT_COMPONENT_PAGESEG"] = "1"
+    elif args.baseline:
+        env["CRISPEMBED_TESSERACT_COMPONENT_BASELINE"] = "1"
     proc = run([str(args.native_test)], env)
     matches = INFO_RE.findall(proc.stdout + proc.stderr)
     if not matches:
@@ -120,6 +130,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "chars": int(chars),
         "mean_confidence": float(confidence),
         "stage_ms": float(stage_ms),
+        "pageseg_policy": "projection" if args.projection else "component" if args.component else "baseline" if args.baseline else "legacy-fallback",
         "text": " ".join(text_match.group("text").split()) if text_match else "",
         "stderr": proc.stderr[-500:],
     }
@@ -135,7 +146,10 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--beam", type=int, default=0)
-    parser.add_argument("--projection", action="store_true")
+    policy = parser.add_mutually_exclusive_group()
+    policy.add_argument("--projection", action="store_true")
+    policy.add_argument("--component", action="store_true", help="use the opt-in component prototype")
+    policy.add_argument("--baseline", action="store_true", help="use the opt-in baseline-row matcher")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
