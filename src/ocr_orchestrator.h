@@ -83,6 +83,8 @@ struct accept_gate {
 // Tunable engine parameters (per stage). Only the fields relevant to the
 // stage's engine are used; the rest keep their defaults.
 struct engine_params {
+    // Tesseract engines: 0 = DBNet, 1 = classical page segmentation.
+    int page_segmentation = 0;
     // Detection (DBNet / Surya), used by ocr_pipeline::run_file.
     float det_prob_threshold = 0.3f;
     float det_box_threshold = 0.5f;

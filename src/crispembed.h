@@ -1191,6 +1191,8 @@ typedef struct crispembed_ocr_stage {
     // Accept-gate:
     int min_chars;
     float min_confidence;
+    // Tesseract engines: 0 = DBNet, 1 = classical page segmentation.
+    int page_segmentation;
 } crispembed_ocr_stage;
 
 /// Build a pipeline from an explicit ordered stage array (full tweakability).
