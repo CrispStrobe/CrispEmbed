@@ -893,6 +893,14 @@ static void forward(tesseract_lstm_context * ctx,
                 if (!beam_decoded)
                     ctx->char_confs.push_back(
                         label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
+            } else {
+                // Keep the diagnostic greedy decoder aligned with the Python
+                // reference for recoder classes that are only one component
+                // of a multi-code unichar. Full Tesseract recode-beam
+                // composition remains a separate production-quality task;
+                // silently dropping the class makes tensor parity look like
+                // an empty OCR result.
+                ctx->result_buf += "<" + std::to_string(best) + ">";
             }
         }
         prev = best;

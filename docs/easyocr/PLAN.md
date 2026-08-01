@@ -574,3 +574,10 @@ metadata, not learned parameters.
       `tesseract_lstm.sample_iteration`; the old truncated Fraktur mixed-lstm0ih
       candidate was excluded. Per-language stage/output parity remains the next
       acceptance gate before canonical promotion.
+
+- [ ] Complete recoder-aware decoded-output parity for composed scripts. The
+      Chinese seeded F32 pilot passes all 9 tensor stages, but the Python
+      diagnostic emits `<141>` for a multi-code recoder class while native
+      greedy decoding silently dropped it. Native now preserves an explicit
+      `<class>` diagnostic fallback; true Tesseract recode-beam composition and
+      dictionary scoring remain required before production quality acceptance.
