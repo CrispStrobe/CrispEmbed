@@ -100,12 +100,11 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
 
-Mixed-precision checkpoint: the Miniconda mixer and unit tests pass, but the
-archived Fraktur reference is stale at the input boundary (native norm
-`122.453`, reference norm `488.914`, reference minimum `-28.6364` versus the
-current `[-1,1]` preprocessing). Q8 and the mixed candidate both fail there;
-no mixed-precision quality conclusion is accepted until a fresh reference is
-generated.
+Mixed-precision checkpoint: a fresh Miniconda reference was regenerated from
+the installed `frk.traineddata` and stored in the external GGUF backup. Input
+parity is exact; Q8 reaches 6/9 stage passes with logits cosine `0.983119`,
+while mixed `lstm.0.weight_hh` F32 reaches 6/9 with `0.982110`. Both decoded
+outputs differ from Python, so mixed precision is not promoted.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
