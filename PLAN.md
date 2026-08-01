@@ -263,6 +263,10 @@ accepts caller-supplied detector boxes and applies the configured lines/words
 ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
 pipeline test replays the DBNet boxes through this API and matches the normal
 98-record run; this validates the boundary, not external Tesseract TSV parity.
+The public signature now accepts only `easyocr_layout::region`, keeping
+DBNet-specific types inside the implementation. The compile/link proof passes;
+the post-merge model replay is currently blocked by the unrelated shared
+`ggml` submodule checkout difference and is not claimed green.
 
 The first real page comparison confirms why TSV parity cannot be asserted by
 zipping records: native DBNet/CRNN `words` mode emits 98 records, while

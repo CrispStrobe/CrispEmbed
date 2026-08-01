@@ -3,6 +3,7 @@
 #include "easyocr_ocr.h"
 #include "easyocr_postprocess.h"
 #include "ocr_crop.h"
+#include "ocr_detect.h"
 
 #include <algorithm>
 #include <cmath>
@@ -59,11 +60,8 @@ easyocr_layout::ordering_mode ordering_mode(const context * ctx) {
     return ctx ? ctx->mode : easyocr_layout::ordering_mode::lines;
 }
 
-static std::vector<result> recognize_regions_locked(context * ctx, const std::vector<ocr_detect::text_box> & detected,
+static std::vector<result> recognize_regions_locked(context * ctx, const std::vector<easyocr_layout::region> & regions,
                                                     const uint8_t * pixels, int width, int height, int channels) {
-    std::vector<easyocr_layout::region> regions;
-    regions.reserve(detected.size());
-    for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
     const auto ordered = ctx->mode == easyocr_layout::ordering_mode::lines ? easyocr_layout::group_dbnet_lines(regions)
                                                                            : easyocr_layout::order_words(regions);
 
@@ -115,11 +113,11 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
     return results;
 }
 
-std::vector<result> run_regions(context * ctx, const std::vector<ocr_detect::text_box> & boxes, const uint8_t * pixels,
-                                int width, int height, int channels) {
+std::vector<result> run_regions(context * ctx, const std::vector<easyocr_layout::region> & regions,
+                                const uint8_t * pixels, int width, int height, int channels) {
     if (!ctx || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
     std::lock_guard<std::mutex> lock(ctx->mutex);
-    return recognize_regions_locked(ctx, boxes, pixels, width, height, channels);
+    return recognize_regions_locked(ctx, regions, pixels, width, height, channels);
 }
 
 std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
@@ -127,7 +125,10 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
     std::lock_guard<std::mutex> lock(ctx->mutex);
     const auto detected =
         ocr_detect::detect_rgb_ex(ctx->detector, pixels, width, height, channels, ocr_detect::rapid_defaults());
-    return recognize_regions_locked(ctx, detected, pixels, width, height, channels);
+    std::vector<easyocr_layout::region> regions;
+    regions.reserve(detected.size());
+    for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+    return recognize_regions_locked(ctx, regions, pixels, width, height, channels);
 }
 
 std::vector<result> run_file(context * ctx, const char * image_path) {
