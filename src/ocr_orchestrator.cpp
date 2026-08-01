@@ -793,6 +793,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 // Preserve the detector/segmentation score in that case rather
                 // than reporting a misleading page confidence of exactly zero.
                 if (mean <= 0.0f) mean = item.box.score;
+                if (conf == nullptr || n_conf == 0) {
+                    const float sequence_mean = tesseract_lstm_mean_confidence(tess);
+                    if (sequence_mean > 0.0f) mean = sequence_mean;
+                }
                 r.confidence = mean;
                 r.rec_confidence = mean;
                 r.text = std::string(t, len);

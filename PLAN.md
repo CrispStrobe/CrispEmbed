@@ -486,14 +486,18 @@ downstream handoff parity, not detector-box similarity alone.
       decoding now returns the selected timestep probability, so page-level
       confidence is no longer spuriously zero. This was a runtime bug, not a
       GGUF conversion bug.
-- [ ] Define and validate beam confidence semantics. A prefix/recode beam
-      output is a sequence-level hypothesis assembled across timesteps, so a
-      per-character confidence cannot be copied from one timestep. Implement
-      posterior/marginal aggregation (or explicitly expose sequence score and
-      mark per-character confidence unavailable), then compare it with
-      Tesseract's certainty aggregation before enabling beam confidence in
-      production. Until then, the page path uses the segmentation score only
-      when an experimental beam returns no character posterior.
+- [x] Define the native beam confidence contract. A prefix/recode beam output
+      is a sequence-level hypothesis assembled across timesteps, so a
+      per-character confidence cannot be copied from one timestep. Native now
+      exposes a length-normalized CTC sequence probability separately and
+      leaves beam `char_conf` empty. Greedy decoding continues to expose
+      selected timestep probabilities. This follows Tesseract's distinction
+      between character certainty and word-level aggregation; it is not a
+      claim of exact `WERD_RES::certainty` parity.
+- [ ] Validate beam confidence against the official engine's certainty
+      aggregation and implement per-character posterior/marginal scores only
+      if that comparison establishes a stable mapping. Keep beam decoding
+      opt-in until recoder and DAWG scoring are also matched.
 
 English Gen-2 now has a committed `test-easyocr-diff` harness, passes the agreed
 0.99 per-stage cosine gate in F32 and folded-F16 forms, and decodes `5a`.
