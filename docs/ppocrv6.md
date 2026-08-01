@@ -75,12 +75,12 @@ Until those gates pass, PP-OCRv6 remains explicitly CPU-first; enabling the
 experimental graph does not silently change the default execution path.
 
 The detector has a separate staged graph switch,
-`CRISPEMBED_PPOCRV6_DET_GRAPH=1`. For tiny/small models it currently graphs
-the detector stem and first backbone stage, then returns the feature map to
-the established CPU neck/head. This is intentionally not enabled by default:
-the CPU smoke is slightly slower because graph setup/copy overhead dominates,
-while the persistent backend-resident boundary is intended for Metal/CUDA
-validation and subsequent full-neck work.
+`CRISPEMBED_PPOCRV6_DET_GRAPH=1`. For tiny/small models it constructs the
+detector stem, backbone, neck, and head graph. Its probability map remains
+diagnostic-only until tensor/box parity is complete; setting
+`CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT=1` explicitly accepts non-empty graph
+detections. Without that second switch, the pipeline uses the CPU reference
+path, preventing graph geometry or score drift from changing OCR results.
 
 Dump the current torch reference fixture and enable native comparisons with:
 

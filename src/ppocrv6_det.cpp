@@ -83,6 +83,7 @@ struct context {
         int h = 0, w = 0;
         bool attempted = false;
         bool ready = false;
+        bool probability_output = false;
     } graph;
 };
 
@@ -331,6 +332,21 @@ static ggml_tensor * graph_conv(context * c, ggml_context * g, ggml_tensor * x, 
     return y;
 }
 
+static ggml_tensor * graph_deconv(context * c, ggml_context * g, ggml_tensor * x, const conv & p) {
+    if (!p.w || p.kh != 2 || p.kw != 2 || p.sh != 2 || p.sw != 2) return nullptr;
+    // Paddle stores transpose kernels as [IC, OC, KH, KW]; GGML expects
+    // [KW, KH, OC, IC] with the same contiguous bytes.
+    ggml_tensor * w = graph_resident(c, p.w, GGML_TYPE_F16, p.kw, p.kh, p.oc, p.ic);
+    if (!w) return nullptr;
+    ggml_tensor * y = ggml_conv_transpose_2d_p0(g, w, x, 2);
+    if (p.b) {
+        ggml_tensor * b = graph_resident(c, p.b, GGML_TYPE_F32, p.oc, 1, 1, 1);
+        if (!b) return nullptr;
+        y = ggml_add(g, y, ggml_reshape_3d(g, b, 1, 1, p.oc));
+    }
+    return y;
+}
+
 static ggml_tensor * graph_block(context * c, ggml_context * g, ggml_tensor * x, const block & b) {
     ggml_tensor * y = graph_conv(c, g, x, b.dw);
     if (!y) return nullptr;
@@ -395,10 +411,67 @@ static bool graph_build(context * c, int h, int w) {
     x = graph_conv(c, c->graph.graph_ctx, x, c->stem[4]);
     if (!x) return false;
     x = ggml_relu(c->graph.graph_ctx, x);
-    for (const block & b : c->stages[0]) {
-        x = graph_block(c, c->graph.graph_ctx, x, b);
-        if (!x) return false;
+    std::vector<ggml_tensor *> stage_out(4);
+    stage_out[0] = x;
+    for (int si = 0; si < 4; ++si) {
+        if (si > 0) {
+            // The first block of each later stage carries the downsample.
+            // The graph is built from the same mapped block list as CPU.
+            x = stage_out[si - 1];
+        }
+        for (const block & b : c->stages[si]) {
+            x = graph_block(c, c->graph.graph_ctx, x, b);
+            if (!x) return false;
+        }
+        stage_out[si] = x;
     }
+    std::vector<ggml_tensor *> fused(4);
+    for (int i = 0; i < 4; ++i) {
+        fused[i] = graph_conv(c, c->graph.graph_ctx, stage_out[i], c->features[i].insert);
+        if (!fused[i]) return false;
+        ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, fused[i], GGML_OP_POOL_AVG, fused[i]->ne[0],
+                                           fused[i]->ne[1], fused[i]->ne[0], fused[i]->ne[1], 0, 0);
+        ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].insert_se1);
+        if (!gate) return false;
+        gate = ggml_relu(c->graph.graph_ctx, gate);
+        gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].insert_se2);
+        if (!gate) return false;
+        gate = ggml_scale(c->graph.graph_ctx, gate, 0.2f);
+        gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
+        fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_mul(c->graph.graph_ctx, fused[i], gate));
+    }
+    for (int i = 2; i >= 0; --i)
+        fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_upscale(c->graph.graph_ctx, fused[i + 1], 2, GGML_SCALE_MODE_NEAREST));
+    std::vector<ggml_tensor *> proc(4);
+    for (int i = 0; i < 4; ++i) {
+        ggml_tensor * z = graph_conv(c, c->graph.graph_ctx, fused[i], c->features[i].dw);
+        if (!z) return false;
+        z = graph_conv(c, c->graph.graph_ctx, z, c->features[i].pw);
+        if (!z) return false;
+        ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, z, GGML_OP_POOL_AVG, z->ne[0], z->ne[1], z->ne[0],
+                                           z->ne[1], 0, 0);
+        ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].se1);
+        if (!gate) return false;
+        gate = ggml_relu(c->graph.graph_ctx, gate);
+        gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].se2);
+        if (!gate) return false;
+        gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
+        proc[i] = ggml_add(c->graph.graph_ctx, z, ggml_mul(c->graph.graph_ctx, z, gate));
+    }
+    ggml_tensor * neck = proc[0];
+    for (int i = 1; i < 4; ++i)
+        neck = ggml_concat(c->graph.graph_ctx, neck,
+                           ggml_upscale(c->graph.graph_ctx, proc[i], 1 << i, GGML_SCALE_MODE_NEAREST), 2);
+    x = graph_conv(c, c->graph.graph_ctx, neck, c->head_down);
+    if (!x) return false;
+    x = ggml_relu(c->graph.graph_ctx, x);
+    x = graph_deconv(c, c->graph.graph_ctx, x, c->head_up);
+    if (!x) return false;
+    x = ggml_relu(c->graph.graph_ctx, x);
+    x = graph_deconv(c, c->graph.graph_ctx, x, c->head_final);
+    if (!x) return false;
+    x = ggml_sigmoid(c->graph.graph_ctx, x);
+    c->graph.probability_output = true;
     c->graph.output = x;
     ggml_set_name(x, "ppocrv6_det_graph_stage0");
     ggml_set_output(x);
@@ -722,7 +795,36 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             }
     std::vector<float> x;
     int H, W;
-    const bool graph_done = graph_run(c, input, h, w, x, H, W);
+    bool graph_done = graph_run(c, input, h, w, x, H, W);
+    if (graph_done && c->graph.probability_output) {
+        c->last_prob = x;
+        c->last_h = H;
+        c->last_w = W;
+        auto native_boxes = ocr_detect::postprocess_probability_map(x.data(), H, W, threshold, 0.60f, 1.4f, 1, 1.0f,
+                                                                    1.0f, 0, 3000, ocr_detect::score_mode::fast);
+        std::vector<box> out;
+        out.reserve(native_boxes.size());
+        for (const auto & b : native_boxes) {
+            box p{ b.x, b.y, b.w, b.h, b.score };
+            std::copy(std::begin(b.qx), std::end(b.qx), std::begin(p.qx));
+            std::copy(std::begin(b.qy), std::end(b.qy), std::begin(p.qy));
+            out.push_back(p);
+        }
+        const float sx = float(w) / W, sy = float(h) / H;
+        for (auto & b : out) {
+            b.x *= sx;
+            b.w *= sx;
+            b.y *= sy;
+            b.h *= sy;
+            for (int i = 0; i < 4; ++i) {
+                b.qx[i] *= sx;
+                b.qy[i] *= sy;
+            }
+        }
+        if (!out.empty() && std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT")) return out;
+        fprintf(stderr, "ppocrv6-det: graph probability map is diagnostic-only; using CPU reference\n");
+        graph_done = false;
+    }
     if (!graph_done && !run_stem(c, input, h, w, x, H, W)) return {};
     std::vector<std::vector<float>> stages;
     std::vector<int> hs, ws;
