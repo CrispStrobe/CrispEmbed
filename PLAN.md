@@ -2725,3 +2725,8 @@ the pattern first.
   error. This prevents a resource-contended native page run from hanging
   indefinitely while preserving the 900-second default for normal fixtures.
   Fifteen model-free geometry tests pass.
+
+- **Page text comparator timeout (2026-08-01).** The official/native text
+  comparator and repeated benchmark now accept `--timeout` and report explicit
+  timeout diagnostics instead of hanging on a contended full-page process.
+  The default remains 900 seconds; the source contract passes.

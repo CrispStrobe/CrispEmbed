@@ -39,6 +39,7 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--timeout", type=float, default=900)
     parser.add_argument("--recode-beam", type=int, default=0)
     parser.add_argument("--dawg-score", action="store_true")
     parser.add_argument("--dawg-prefix-score", action="store_true")
@@ -78,6 +79,8 @@ def main() -> int:
             "--workers",
             str(args.workers),
             "--benchmark",
+            "--timeout",
+            str(args.timeout),
         ]
         if args.recode_beam:
             command.extend(["--recode-beam", str(args.recode_beam)])

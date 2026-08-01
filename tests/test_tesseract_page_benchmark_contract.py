@@ -36,3 +36,8 @@ def test_page_benchmark_preserves_exact_output_pair():
     assert '"identical"' in BENCHMARK
     assert '"DAWG scoring requires --recode-beam > 1"' in COMPARE
     assert '"DAWG scoring requires --recode-beam > 1"' in BENCHMARK
+
+
+def test_page_comparator_has_bounded_subprocess_timeout():
+    assert '"--timeout"' in COMPARE
+    assert "subprocess.TimeoutExpired" in COMPARE
