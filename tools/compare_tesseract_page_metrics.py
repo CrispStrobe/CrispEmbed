@@ -20,6 +20,7 @@ INFO_RE = re.compile(
     r"INFO: regions=(?P<regions>\d+) chars=(?P<chars>\d+) "
     r"confidence=(?P<confidence>[0-9.]+) stage_ms=(?P<stage_ms>[0-9.]+)"
 )
+NATIVE_TEXT_RE = re.compile(r"BEGIN native Fraktur full_text\n(?P<text>.*?)\n  END native Fraktur full_text", re.S)
 
 
 def run(cmd: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
@@ -57,6 +58,39 @@ def official_metrics(image: Path, lang: str, psm: int) -> dict:
     }
 
 
+def official_text(image: Path, lang: str, psm: int) -> str:
+    proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang])
+    return " ".join(proc.stdout.split())
+
+
+def edit_distance(left: str, right: str) -> int:
+    previous = list(range(len(right) + 1))
+    for i, left_char in enumerate(left, 1):
+        current = [i]
+        for j, right_char in enumerate(right, 1):
+            current.append(min(
+                current[-1] + 1,
+                previous[j] + 1,
+                previous[j - 1] + (left_char != right_char),
+            ))
+        previous = current
+    return previous[-1]
+
+
+def token_distance(left: list[str], right: list[str]) -> int:
+    previous = list(range(len(right) + 1))
+    for i, left_token in enumerate(left, 1):
+        current = [i]
+        for j, right_token in enumerate(right, 1):
+            current.append(min(
+                current[-1] + 1,
+                previous[j] + 1,
+                previous[j - 1] + (left_token != right_token),
+            ))
+        previous = current
+    return previous[-1]
+
+
 def native_metrics(args: argparse.Namespace, image: Path) -> dict:
     env = os.environ.copy()
     env.update(
@@ -65,7 +99,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
             "CRISPEMBED_FRAKTUR_MODEL": str(args.rec_model),
             "CRISPEMBED_FRAKTUR_IMAGE": str(image),
             "CRISPEMBED_TESSERACT_PAGESEG": "1",
-            "CRISPEMBED_FRAKTUR_DUMP": "0",
+            "CRISPEMBED_FRAKTUR_DUMP": "1",
         }
     )
     if args.workers:
@@ -79,12 +113,14 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
     if not matches:
         raise RuntimeError("native regression emitted no Fraktur INFO metrics")
     regions, chars, confidence, stage_ms = matches[-1]
+    text_match = NATIVE_TEXT_RE.search(proc.stdout + proc.stderr)
     return {
         "returncode": proc.returncode,
         "regions": int(regions),
         "chars": int(chars),
         "mean_confidence": float(confidence),
         "stage_ms": float(stage_ms),
+        "text": " ".join(text_match.group("text").split()) if text_match else "",
         "stderr": proc.stderr[-500:],
     }
 
@@ -104,7 +140,12 @@ def main() -> int:
     args = parser.parse_args()
 
     official = official_metrics(args.image, args.lang, args.psm)
+    reference_text = official_text(args.image, args.lang, args.psm)
     native = native_metrics(args, args.image)
+    native_text = native.pop("text")
+    char_denominator = max(1, len(reference_text))
+    word_reference = reference_text.split()
+    word_native = native_text.split()
     result = {
         "fixture": str(args.image),
         "official_tesseract": official,
@@ -113,6 +154,8 @@ def main() -> int:
             "region_delta_vs_official_lines": native["regions"] - official["lines"],
             "char_delta": native["chars"] - official["chars"],
             "confidence_delta": native["mean_confidence"] - official["mean_word_confidence"],
+            "cer": edit_distance(reference_text, native_text) / char_denominator,
+            "wer": token_distance(word_reference, word_native) / max(1, len(word_reference)),
         },
     }
     serialized = json.dumps(result, indent=2, ensure_ascii=False) + "\n"

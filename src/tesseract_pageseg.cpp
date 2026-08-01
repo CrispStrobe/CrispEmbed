@@ -7,6 +7,149 @@
 
 namespace tesseract_pageseg {
 
+struct blob_box {
+    int x0 = 0, y0 = 0, x1 = 0, y1 = 0, area = 0;
+};
+
+static std::vector<ocr_detect::text_box> segment_components(const uint8_t * gray, int width, int height,
+                                                            int threshold) {
+    std::vector<uint8_t> seen((size_t)width * height, 0);
+    std::vector<blob_box> blobs;
+    std::vector<int> stack;
+    for (int y = 0; y < height; ++y) {
+        for (int x = 0; x < width; ++x) {
+            const size_t seed = (size_t)y * width + x;
+            if (seen[seed] || gray[seed] >= threshold) continue;
+            seen[seed] = 1;
+            stack.clear();
+            stack.push_back((int)seed);
+            blob_box box{ x, y, x, y, 0 };
+            while (!stack.empty()) {
+                const int p = stack.back();
+                stack.pop_back();
+                const int py = p / width, px = p - py * width;
+                ++box.area;
+                box.x0 = std::min(box.x0, px);
+                box.x1 = std::max(box.x1, px);
+                box.y0 = std::min(box.y0, py);
+                box.y1 = std::max(box.y1, py);
+                for (int dy = -1; dy <= 1; ++dy) {
+                    for (int dx = -1; dx <= 1; ++dx) {
+                        if (dx == 0 && dy == 0) continue;
+                        const int nx = px + dx, ny = py + dy;
+                        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+                        const size_t np = (size_t)ny * width + nx;
+                        if (!seen[np] && gray[np] < threshold) {
+                            seen[np] = 1;
+                            stack.push_back((int)np);
+                        }
+                    }
+                }
+            }
+            if (box.area >= 2 && box.y1 - box.y0 + 1 >= 3) blobs.push_back(box);
+        }
+    }
+    if (blobs.empty()) return {};
+    std::vector<float> heights;
+    for (const auto & b : blobs) heights.push_back((float)(b.y1 - b.y0 + 1));
+    std::sort(heights.begin(), heights.end());
+    const float tolerance = std::max(3.0f, heights[heights.size() / 2] * 0.8f);
+    struct row {
+        int x0, y0, x1, y1, count, area;
+        float baseline;
+    };
+    std::vector<row> rows;
+    std::sort(blobs.begin(), blobs.end(),
+              [](const blob_box & a, const blob_box & b) { return a.y1 != b.y1 ? a.y1 < b.y1 : a.x0 < b.x0; });
+    for (const auto & b : blobs) {
+        int best = -1;
+        float distance = tolerance;
+        for (int i = 0; i < (int)rows.size(); ++i) {
+            const float d = std::fabs(rows[i].baseline - (float)b.y1);
+            if (d <= distance) {
+                distance = d;
+                best = i;
+            }
+        }
+        if (best < 0)
+            rows.push_back({ b.x0, b.y0, b.x1, b.y1, 1, b.area, (float)b.y1 });
+        else {
+            row & r = rows[best];
+            r.x0 = std::min(r.x0, b.x0);
+            r.y0 = std::min(r.y0, b.y0);
+            r.x1 = std::max(r.x1, b.x1);
+            r.y1 = std::max(r.y1, b.y1);
+            r.area += b.area;
+            r.baseline = (r.baseline * r.count + b.y1) / (r.count + 1.0f);
+            ++r.count;
+        }
+    }
+    std::sort(rows.begin(), rows.end(), [](const row & a, const row & b) { return a.y0 < b.y0; });
+    // Tesseract's make_initial_textrows() reassociates detached small blobs
+    // with an established row using line-size spacing. Do the same here so
+    // quotes and punctuation cannot become standalone text lines.
+    const float reassociate_distance = std::max(tolerance, 10.0f);
+    std::vector<row> reassociated;
+    for (const auto & candidate : rows) {
+        if (candidate.count >= 20) {
+            reassociated.push_back(candidate);
+            continue;
+        }
+        int best = -1;
+        float best_distance = reassociate_distance;
+        for (int i = 0; i < (int)reassociated.size(); ++i) {
+            if (reassociated[i].count < 20) continue;
+            const float distance = std::fabs(reassociated[i].baseline - candidate.baseline);
+            if (distance <= best_distance) {
+                best_distance = distance;
+                best = i;
+            }
+        }
+        if (best < 0) {
+            reassociated.push_back(candidate);
+        } else {
+            row & target = reassociated[best];
+            target.x0 = std::min(target.x0, candidate.x0);
+            target.y0 = std::min(target.y0, candidate.y0);
+            target.x1 = std::max(target.x1, candidate.x1);
+            target.y1 = std::max(target.y1, candidate.y1);
+            target.area += candidate.area;
+            target.baseline = (target.baseline * target.count + candidate.baseline * candidate.count) /
+                              (target.count + candidate.count);
+            target.count += candidate.count;
+        }
+    }
+    rows.swap(reassociated);
+    std::sort(rows.begin(), rows.end(), [](const row & a, const row & b) { return a.y0 < b.y0; });
+    if (std::getenv("CRISPEMBED_TESSERACT_COMPONENT_DEBUG")) {
+        for (const auto & r : rows) {
+            std::fprintf(stderr, "component row x=%d..%d y=%d..%d count=%d base=%.1f\n", r.x0, r.x1, r.y0, r.y1,
+                         r.count, r.baseline);
+        }
+    }
+    std::vector<ocr_detect::text_box> out;
+    // Tesseract's filter_blobs moves very small connected components to its
+    // noise/small lists before row assignment.  Apply the equivalent row-level
+    // guard here: a genuine text row has at least an x-height-sized vertical
+    // span and substantially more ink than isolated scan noise.  Keep this
+    // conservative because punctuation and detached dots are valid members of
+    // an otherwise well-supported row.
+    const int min_row_height = std::max(6, (int)std::lround(heights[heights.size() / 2] * 0.75f));
+    for (const auto & r : rows) {
+        if (r.count < 2 || r.x1 - r.x0 < std::max(8, width / 50) || r.y1 - r.y0 + 1 < min_row_height ||
+            r.area < min_row_height * 2)
+            continue;
+        ocr_detect::text_box b{};
+        b.x = (float)std::max(0, r.x0 - 2);
+        b.y = (float)std::max(0, r.y0 - 2);
+        b.w = (float)std::min(width - (int)b.x, r.x1 - r.x0 + 5);
+        b.h = (float)std::min(height - (int)b.y, r.y1 - r.y0 + 5);
+        b.score = 1.0f;
+        out.push_back(b);
+    }
+    return out;
+}
+
 std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, int height) {
     std::vector<ocr_detect::text_box> out;
     if (!gray || width <= 0 || height <= 0) return out;
@@ -26,6 +169,10 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
     if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
         std::fprintf(stderr, "tesseract_pageseg: size=%dx%d mean=%d threshold=%d min_row_ink=%d\n", width, height, mean,
                      threshold, min_row_ink);
+    }
+    if (std::getenv("CRISPEMBED_TESSERACT_COMPONENT_PAGESEG")) {
+        const auto component_rows = segment_components(gray, width, height, threshold);
+        if (component_rows.size() >= 2) return component_rows;
     }
     std::vector<int> rows(height, 0);
     for (int y = 0; y < height; ++y) {
@@ -199,7 +346,16 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
     for (const auto & b : blobs) heights.push_back(b.y1 - b.y0 + 1);
     std::nth_element(heights.begin(), heights.begin() + heights.size() / 2, heights.end());
     const int median_h = std::max(3, heights[heights.size() / 2]);
-    const int max_row_gap = std::max(3, (int)std::lround(median_h * 0.65f));
+    const int default_row_gap = std::max(3, (int)std::lround(median_h * 0.65f));
+    int max_row_gap = default_row_gap;
+    if (const char * gap_env = std::getenv("CRISPEMBED_TESSERACT_PAGESEG_ROW_GAP")) {
+        // Experimental tuning knob: Tesseract's row fitter is baseline-driven;
+        // this pixel gap is the portable approximation for scanned pages.
+        max_row_gap = std::clamp(std::atoi(gap_env), 0, std::max(3, height / 20));
+    }
+    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
+        std::fprintf(stderr, "tesseract_pageseg: components=%zu median_h=%d row_gap=%d\n",
+                     blobs.size(), median_h, max_row_gap);
     std::sort(blobs.begin(), blobs.end(), [](const blob & a, const blob & b) {
         return a.y0 == b.y0 ? a.x0 < b.x0 : a.y0 < b.y0;
     });
