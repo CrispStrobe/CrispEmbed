@@ -43,7 +43,8 @@ def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float,
     return lines
 
 
-def native_lines(cli: Path, model: Path, image: Path, component: bool, baseline: bool) -> list[tuple[float, float, float, float]]:
+def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, component: bool,
+                 baseline: bool) -> list[tuple[float, float, float, float]]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
     if component:
@@ -54,11 +55,15 @@ def native_lines(cli: Path, model: Path, image: Path, component: bool, baseline:
         [
             str(cli),
             "-m",
-            str(model),
+            str(rec_model),
             "--ocr-pipeline",
             str(image),
             "--ocr-engine",
             "tesseract",
+            "--ocr-det",
+            str(det_model),
+            "--ocr-rec",
+            str(rec_model),
             "--tesseract-pageseg",
         ],
         env,
@@ -107,7 +112,8 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", type=Path, required=True)
-    parser.add_argument("--model", type=Path, required=True)
+    parser.add_argument("--det-model", type=Path, required=True)
+    parser.add_argument("--rec-model", type=Path, required=True)
     parser.add_argument("--cli", type=Path, default=Path("build/crispembed"))
     parser.add_argument("--lang", default="eng")
     parser.add_argument("--psm", type=int, default=3)
@@ -122,7 +128,7 @@ def main() -> int:
         "baseline": args.baseline,
         "comparison": compare(
             official_lines(args.image, args.lang, args.psm),
-            native_lines(args.cli, args.model, args.image, args.component, args.baseline),
+            native_lines(args.cli, args.det_model, args.rec_model, args.image, args.component, args.baseline),
         ),
     }
     serialized = json.dumps(result, indent=2) + "\n"
