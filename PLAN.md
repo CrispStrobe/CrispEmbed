@@ -499,6 +499,9 @@ downstream handoff parity, not detector-box similarity alone.
       Its projection/component/baseline policy flags are now mutually
       exclusive and clear inherited policy variables before each run, so an
       A/B result cannot silently use a stale segmentation mode.
+      It now reports monotonic reading-order checks for both TSV and native
+      boxes and can gate them with `--require-reading-order`; indexed IoU is
+      therefore no longer the only signal for an ordering regression.
       The aggregate page-metrics harness now selects `legacy-fallback`,
       `component`, `baseline`, or `projection` explicitly and clears stale
       policy environment variables between runs. On `scan_strip.png`, the
