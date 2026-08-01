@@ -1311,6 +1311,14 @@ decoded text and greedy calibration did not. This is evidence for a remaining
 Tesseract decoder/recoder and confidence-aggregation quality TODO, not a
 performance acceptance result; the beam path remains diagnostic.
 
+Converter smoke (2026-08-01): Miniconda converted the installed Homebrew
+`eng.traineddata` to `/tmp/crispembed-eng-dawg-smoke.gguf` successfully. The
+6.6 MiB GGUF contains the three available LSTM DAWG payloads
+(`lstm-punc-dawg`, `lstm-system-dawg`, and `lstm-number-dawg`), each with a
+base64 payload and SHA-256 metadata. This verifies preservation only; the
+artifact is not a promoted backup model and native dictionary scoring is still
+unimplemented.
+
 A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
 report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
 following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus

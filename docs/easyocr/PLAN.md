@@ -480,6 +480,12 @@ recognizer and LayoutLM consumer.
 - [ ] Port and validate Tesseract recode/dictionary scoring separately from
       the now-proven network arithmetic; do not enable a production beam from
       the diagnostic implementation.
+- [x] Preserve Tesseract DAWG components losslessly in newly converted GGUFs.
+      `convert-tesseract-to-gguf.py` now records the present DAWG component
+      names, base64 payloads, and SHA-256 digests under
+      `tesseract_lstm.dawg.*`. Existing GGUFs are unchanged and do not gain
+      dictionary scoring retroactively; native DAWG traversal/scoring remains
+      the next implementation and parity task.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
