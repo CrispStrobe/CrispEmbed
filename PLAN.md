@@ -682,6 +682,10 @@ downstream handoff parity, not detector-box similarity alone.
       official TSV `0.5886`; beam remains `0`. Semantics now match the
       min-emitted-character rule, but calibration and decoded-text parity are
       still open.
+      The line-confidence comparator now provides opt-in gates for greedy
+      word-confidence calibration and the beam sequence-only contract; its
+      model-free tests cover pass, calibration failure, fabricated beam
+      character confidence, and missing-beam cases.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
