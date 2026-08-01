@@ -14,10 +14,12 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
     for (int i = 0; i < width * height; ++i) sum += gray[i];
     const int mean = (int)(sum / (uint64_t)(width * height));
     // A dark threshold is intentional: historical paper has broad gray
-    // background variation, so mean-minus-24 would classify the paper itself
-    // as ink and collapse all rows into one band.
-    const int threshold = std::clamp(mean - 130, 60, 120);
-    const int min_row_ink = std::max(2, width / 500);
+    // background variation, so a near-background threshold would classify the
+    // paper itself as ink and collapse all rows into one band. Keep enough
+    // dark pixels per row to prevent isolated antialiasing specks from
+    // bridging adjacent printed lines.
+    const int threshold = std::clamp(mean - 90, 30, 120);
+    const int min_row_ink = std::max(4, width / 130);
     std::vector<int> rows(height, 0);
     for (int y = 0; y < height; ++y) {
         int count = 0;
@@ -36,7 +38,9 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
         for (int y = y0; y <= y1; ++y) {
             for (int x = 0; x < width; ++x) {
                 if (gray[y * width + x] < threshold) {
-                    x0 = std::min(x0, x); x1 = std::max(x1, x); ++ink;
+                    x0 = std::min(x0, x);
+                    x1 = std::max(x1, x);
+                    ++ink;
                 }
             }
         }
@@ -64,4 +68,4 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
     return out;
 }
 
-}
+} // namespace tesseract_pageseg

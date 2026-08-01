@@ -403,7 +403,13 @@ downstream handoff parity, not detector-box similarity alone.
       crops selected by official PSM7.
       The native classical page-segmentation adapter is now wired behind the
       explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
-      geometry regression; this does not close real CLI parity.
+      geometry regression. It now also bypasses generic scan cleanup so page
+      segmentation sees original-image coordinates, and its row threshold
+      rejects sparse antialiasing bridges on gray paper; this does not close
+      real CLI parity.
+      On `scan_strip.png`, the tuned native CLI path improved from 3 to 7
+      decoded regions, while official Tesseract `--psm 3/6` emits 12 lines;
+      candidate-band detection and crop/recognition acceptance still diverge.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
