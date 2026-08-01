@@ -20,7 +20,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
-| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, one-time gallocr reserve, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 detector graph is next | **IN PROGRESS** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny/small recognizer backbone graph slice now exists behind `CRISPEMBED_PPOCRV6_GRAPH=1`, with production routing still gated on parity | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation parity gates; graph prototype is preserved locally, but first-convolution kernel-layout parity is still failing and the shipped path remains CPU reference | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **PENDING** |
 | 2026-07-31 | `main` | O11.4 OCR portfolio graph audit: port or explicitly classify CPU-bound FormulaNet, MixTeX, SmolDocling, HMER/BTTR/PosFormer, and VLM vision necks | **PENDING** |
@@ -403,7 +403,15 @@ downstream handoff parity, not detector-box similarity alone.
       crops selected by official PSM7.
       The native classical page-segmentation adapter is now wired behind the
       explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
-      geometry regression; this does not close real CLI parity.
+      geometry regression. It now also bypasses generic scan cleanup so page
+      segmentation sees original-image coordinates, and its row threshold
+      rejects sparse antialiasing bridges on gray paper; this does not close
+      real CLI parity.
+      On `scan_strip.png`, the tuned native CLI path improved from 3 to 7
+      decoded regions, while official Tesseract `--psm 3/6` emits 12 lines;
+      exact RGB-to-gray conversion is now shared with the proven reference,
+      and diagnostics show the remaining defect is merged 40--62 px row bands
+      before recognition; candidate-band splitting and crop acceptance remain.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
