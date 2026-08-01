@@ -1165,10 +1165,21 @@ mapping defect, not a graph discrepancy. The native fallback now exposes the
 unmapped class; no Chinese OCR-quality or quantized-speed claim is accepted
 until recode-beam composition is implemented and tested.
 
-The corrected F32/Q8_0/Q4_K canonical files are now uploaded to the intended
-`cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories. Existing
-F16 files have not yet been replaced; they remain a release TODO until fresh
-seeded F16 conversions are generated and checked.
+German exposes a separate quality gap: the first LSTM stage differs by one
+int8 activation step, and the final logits have 3/150 argmax mismatches. Native
+decodes ` s.` while Python decodes `e  .`; this is not accepted despite all
+stage cosine gates passing.
+
+The completed seeded F32 sweep has exact native/Python decoded parity for 10 of
+12 languages on the controlled line. Korean is the second exception: 6/200
+logit argmax positions differ and native/Python diagnostic strings diverge,
+despite all nine tensor stages clearing the cosine gate. German and Korean are
+therefore quality TODOs, not green model validations.
+
+All 51 corrected canonical F32/F16/Q8_0/Q4_K files are now uploaded to the
+intended `cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories.
+Remote metadata spot-checks confirm nonzero `sample_iteration`; no
+`mlx-community` upload was made.
 
 ### Tesseract cached-int8 recurrent kernel gate
 
