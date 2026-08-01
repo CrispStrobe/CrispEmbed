@@ -426,6 +426,17 @@ downstream handoff parity, not detector-box similarity alone.
       on `scan_strip.png`; crop widths are tightened per split band. Text still
       differs on `Meryton` and punctuation/quotes, so decoded page parity and
       official crop equivalence remain open.
+      The env-gated page-segmentation path now also bypasses cleanup (the
+      structured `page_segmentation` parameter already did), so it preserves
+      original-page coordinates. On `scan_strip.png` the component fallback
+      recovers 12 regions, 567 native characters, and CER/WER `0.0179/0.0841`
+      against official 12-line output; native mean confidence is `0.895` versus
+      official mean word confidence `0.9108`. This improves geometry and text
+      parity but does not make the experimental path production-default.
+      The `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` control now reaches the
+      documented component prototype through the orchestrator; its current
+      `scan_strip.png` result is 12 regions, 569 chars, and confidence `0.878`,
+      so the legacy/fallback adapter remains the default classical choice.
       Review of Tesseract `textord/makerow.cpp` confirms its authoritative
       boundary is connected blobs assigned by vertical overlap, line size,
       spacing, and fitted baselines; our projection splitter is only an

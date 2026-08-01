@@ -392,14 +392,16 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
 }
 
 std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, int width, int height) {
-    if (!std::getenv("CRISPEMBED_TESSERACT_COMPONENT_BASELINE")) {
+    const bool baseline_override = std::getenv("CRISPEMBED_TESSERACT_COMPONENT_BASELINE") != nullptr;
+    const bool use_fallback = !baseline_override;
+    if (use_fallback) {
         const auto legacy = segment_gray_components_legacy(gray, width, height);
-        if (!legacy.empty()) return legacy;
+        if (legacy.size() >= 2) return legacy;
         // Keep the measured legacy grouping as the default, but do not turn a
-        // difficult page into an empty classical result. The baseline matcher
-        // below is still experimental; use it only when the legacy path found
-        // no rows at all, and leave an explicit baseline override available for
-        // A/B comparisons.
+        // difficult page into an empty or single-row classical result. The
+        // baseline matcher below is still experimental; use it only when the
+        // legacy path is under-segmented, and leave an explicit baseline
+        // override available for A/B comparisons.
     }
     std::vector<ocr_detect::text_box> out;
     if (!gray || width <= 0 || height <= 0) return out;
@@ -584,6 +586,12 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
     }
     std::sort(out.begin(), out.end(),
               [](const auto & a, const auto & b) { return a.y == b.y ? a.x < b.x : a.y < b.y; });
+    if (use_fallback && out.size() < 2) {
+        // A single baseline row is not a useful page segmentation result. The
+        // projection splitter is the safer fallback for this case and keeps
+        // the baseline implementation explicitly opt-in for A/B diagnostics.
+        return segment_gray(gray, width, height);
+    }
     return out;
 }
 
