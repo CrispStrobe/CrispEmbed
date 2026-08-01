@@ -2617,5 +2617,7 @@ the pattern first.
   scoring remains disabled until a binary parser and parity fixture exist. A
   bounded read-only parser and synthetic prefix matcher are now in-tree, and
   `CRISPEMBED_TESSERACT_DAWG_LOAD` now validates/loads embedded graphs without
-  changing recognition. The remaining TODO is actual scoring and validating
-  word choices against official Tesseract on transcribed fixtures.
+  changing recognition. `CRISPEMBED_TESSERACT_FORCE_CPU` is also available for
+  backend-isolated parser/runtime diagnostics. The remaining TODO is actual
+  scoring and validating word choices against official Tesseract on transcribed
+  fixtures.

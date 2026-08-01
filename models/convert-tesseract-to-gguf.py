@@ -583,7 +583,10 @@ def main():
             payload = components.get(name)
             if payload is None:
                 continue
-            writer.add_array(f"tesseract_lstm.dawg.{name}", list(payload))
+            # Keep the element type explicit: a Python list of ints may be
+            # inferred as int32/int64 by different gguf Python versions.
+            writer.add_key_value(f"tesseract_lstm.dawg.{name}", list(payload), gguf.GGUFValueType.ARRAY,
+                                 gguf.GGUFValueType.UINT8)
             embedded_dawgs.append(name)
         writer.add_array("tesseract_lstm.dawg_names", embedded_dawgs)
         writer.add_bool("tesseract_lstm.dawg_embedded", bool(embedded_dawgs))
