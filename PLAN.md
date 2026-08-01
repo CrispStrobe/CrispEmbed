@@ -553,6 +553,9 @@ the native gate. It is now preserved behind
 `CRISPEMBED_TESSERACT_COMPONENT_BASELINE`; the legacy component grouping is
 the default experimental component path again and restores 21 regions, 1,128
 characters, 0.836 confidence, and 78/78 model-gated orchestrator checks.
+The model-free orchestrator suite now also guards the two-row component
+geometry and reading order, preventing this default/gated-path regression from
+returning silently.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
