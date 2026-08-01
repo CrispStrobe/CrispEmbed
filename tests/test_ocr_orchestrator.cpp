@@ -198,6 +198,22 @@ static void test_tesseract_pageseg_geometry() {
         CHECK(boxes[0].x + boxes[0].w >= 106.0f && boxes[1].x + boxes[1].w >= 96.0f,
               "band geometry covers the detected ink");
     }
+
+    // The component path is experimental, but its default legacy grouping is
+    // a supported gated fallback. Use separated glyph-like blobs so the
+    // connected-component filters are exercised rather than a single bar.
+    std::fill(gray.begin(), gray.end(), 245);
+    for (int row_y : { 8, 30 }) {
+        for (int glyph = 0; glyph < 5; ++glyph) {
+            const int x0 = 12 + glyph * 18;
+            for (int y = row_y; y < row_y + 7; ++y)
+                for (int x = x0; x < x0 + 8; ++x) gray[(size_t)y * w + x] = 20;
+        }
+    }
+    const auto component_boxes = tesseract_pageseg::segment_gray_components(gray.data(), w, h);
+    CHECK(component_boxes.size() == 2, "component page segmentation groups two blob rows");
+    if (component_boxes.size() == 2)
+        CHECK(component_boxes[0].y < component_boxes[1].y, "component rows preserve top-to-bottom order");
 }
 
 // ═══════════════════════════════════════════════════════════════════════

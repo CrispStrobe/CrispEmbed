@@ -10,6 +10,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -815,6 +816,8 @@ void free(context * c) {
 
 std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int channels, float threshold) {
     if (!c || !px) return {};
+    const bool bench = std::getenv("CRISPEMBED_PPOCRV6_DET_BENCH") != nullptr;
+    const auto started = std::chrono::steady_clock::now();
     static constexpr float mean[3] = { 0.485f, 0.456f, 0.406f };
     static constexpr float stdev[3] = { 0.229f, 0.224f, 0.225f };
     std::vector<float> input((size_t)3 * h * w);
@@ -829,7 +832,9 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     std::vector<float> x;
     std::vector<float> graph_probability;
     int H, W;
+    const auto preprocessed = std::chrono::steady_clock::now();
     bool graph_done = graph_run(c, input, h, w, x, H, W);
+    const auto graph_finished = std::chrono::steady_clock::now();
     const bool compare_graph = std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE") != nullptr;
     if (graph_done && c->graph.probability_output && compare_graph) {
         graph_probability = x;
@@ -860,7 +865,17 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                 b.qy[i] *= sy;
             }
         }
-        if (!out.empty() && std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT")) return out;
+        if (!out.empty() && std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT")) {
+            if (bench) {
+                const auto ms = [](auto a, auto b) {
+                    return std::chrono::duration<double, std::milli>(b - a).count();
+                };
+                fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=1\n",
+                        ms(started, preprocessed), ms(preprocessed, graph_finished), ms(started, std::chrono::steady_clock::now()),
+                        out.size());
+            }
+            return out;
+        }
         fprintf(stderr, "ppocrv6-det: graph probability map is diagnostic-only; using CPU reference\n");
         graph_done = false;
     }
@@ -927,6 +942,14 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                 b.qx[i] *= sx;
                 b.qy[i] *= sy;
             }
+        }
+        if (bench) {
+            const auto ms = [](auto a, auto b) {
+                return std::chrono::duration<double, std::milli>(b - a).count();
+            };
+            fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
+                    ms(started, preprocessed), ms(preprocessed, graph_finished), ms(started, std::chrono::steady_clock::now()),
+                    out.size());
         }
         return out;
     }
@@ -1065,6 +1088,13 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             fprintf(stderr, "ppocrv6-det: graph-vs-CPU %s cosine=%.9f\n", name,
                     sd / (std::sqrt(sg) * std::sqrt(sc) + 1e-30));
         }
+    }
+    if (bench) {
+        const auto ms = [](auto a, auto b) {
+            return std::chrono::duration<double, std::milli>(b - a).count();
+        };
+        fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
+                ms(started, preprocessed), ms(preprocessed, graph_finished), ms(started, std::chrono::steady_clock::now()), out.size());
     }
     return out;
 }
