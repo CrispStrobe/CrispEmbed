@@ -499,6 +499,9 @@ recognizer and LayoutLM consumer.
       edge-array bounds, next-node bounds, and forward-edge run markers. The
       `test-tesseract-dawg` target passes; this remains structural validation,
       not dictionary traversal or scoring.
+- [x] Add a read-only exact-word lookup primitive over validated DAWG payloads,
+      keyed by Tesseract unichar IDs. It is covered by the minimal DAWG fixture
+      and is not wired into OCR hypothesis scoring or production beam decode.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,

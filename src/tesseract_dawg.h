@@ -11,6 +11,10 @@ extern "C" {
 // not apply dictionary scores to OCR hypotheses.
 int tesseract_dawg_validate_base64(const char * payload, char * error, size_t error_size);
 
+// Diagnostic exact-word lookup over unichar IDs. Returns 1 only when the
+// serialized DAWG contains the complete sequence; no score is produced.
+int tesseract_dawg_contains_base64(const char * payload, const int * unichar_ids, size_t count);
+
 #ifdef __cplusplus
 }
 #endif
