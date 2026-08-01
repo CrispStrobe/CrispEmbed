@@ -793,6 +793,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray.data(), w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
+            if (const char * dump_dir = std::getenv("CRISPEMBED_TESSERACT_CROP_DUMP_DIR")) {
+                char crop_path[1024];
+                std::snprintf(crop_path, sizeof(crop_path), "%s/crop-%02zu.png", dump_dir, crops.size());
+                if (stbi_write_png(crop_path, cw, chh, 1, crop.data(), cw) == 0)
+                    std::fprintf(stderr, "ocr_orchestrator: failed to dump crop %s\n", crop_path);
+            }
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
             crops.push_back({ b, std::move(crop), cw, chh, orientation });
         }
