@@ -52,10 +52,18 @@ def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float,
     return lines
 
 
-def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, component: bool,
-                 baseline: bool) -> list[tuple[float, float, float, float]]:
+def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, projection: bool,
+                 component: bool, baseline: bool) -> list[tuple[float, float, float, float]]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
+    for key in (
+        "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
+        "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
+        "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
+    ):
+        env.pop(key, None)
+    if projection:
+        env["CRISPEMBED_TESSERACT_PAGESEG_PROJECTION"] = "1"
     if component:
         env["CRISPEMBED_TESSERACT_COMPONENT_PAGESEG"] = "1"
     if baseline:
@@ -143,8 +151,10 @@ def main() -> int:
     parser.add_argument("--cli", type=Path, default=Path("build/crispembed"))
     parser.add_argument("--lang", default="eng")
     parser.add_argument("--psm", type=int, default=3)
-    parser.add_argument("--component", action="store_true")
-    parser.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
+    policy = parser.add_mutually_exclusive_group()
+    policy.add_argument("--projection", action="store_true", help="use the experimental projection splitter")
+    policy.add_argument("--component", action="store_true", help="use the experimental component prototype")
+    policy.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
     parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
     parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
     parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
@@ -153,7 +163,7 @@ def main() -> int:
     args = parser.parse_args()
     comparison = compare(
         official_lines(args.image, args.lang, args.psm),
-        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.component, args.baseline),
+        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline),
     )
     checks = {}
     if args.min_native_lines is not None:
@@ -172,6 +182,7 @@ def main() -> int:
             "ordering": "official-tsv-level4-vs-native-debug-candidate-index",
         },
         "psm": args.psm,
+        "projection": args.projection,
         "component": args.component,
         "baseline": args.baseline,
         "comparison": comparison,

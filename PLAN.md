@@ -473,6 +473,9 @@ downstream handoff parity, not detector-box similarity alone.
       The geometry comparator now also reports mean/max absolute crop deltas
       and mean absolute inter-line gap deltas, with optional max-delta gates;
       this keeps spacing/crop drift visible even when row count and IoU pass.
+      Its projection/component/baseline policy flags are now mutually
+      exclusive and clear inherited policy variables before each run, so an
+      A/B result cannot silently use a stale segmentation mode.
       The aggregate page-metrics harness now selects `legacy-fallback`,
       `component`, `baseline`, or `projection` explicitly and clears stale
       policy environment variables between runs. On `scan_strip.png`, the
