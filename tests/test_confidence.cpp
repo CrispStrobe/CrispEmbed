@@ -32,6 +32,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cmath>
+#include <algorithm>
 #include <vector>
 #include <string>
 
@@ -235,7 +236,18 @@ static void test_tesseract_image(const char * model_path, const char * image_pat
     int n_conf = 0;
     const float * conf = tesseract_lstm_confidences(ctx, &n_conf);
     const float sequence = tesseract_lstm_mean_confidence(ctx);
-    printf("  text: '%s' (%d chars) char_conf=%d sequence_conf=%.6f\n", text ? text : "", len, n_conf, sequence);
+    float char_min = 0.0f, char_mean = 0.0f;
+    if (conf && n_conf > 0) {
+        char_min = conf[0];
+        double sum = 0.0;
+        for (int i = 0; i < n_conf; ++i) {
+            char_min = std::min(char_min, conf[i]);
+            sum += conf[i];
+        }
+        char_mean = (float)(sum / n_conf);
+    }
+    printf("  text: '%s' (%d chars) char_conf=%d char_min=%.6f char_mean=%.6f sequence_conf=%.6f\n", text ? text : "",
+           len, n_conf, char_min, char_mean, sequence);
     CHECK(sequence >= 0.0f && sequence <= 1.0f, "tesseract sequence confidence bounded");
     const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
     const char * recode_beam_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
