@@ -683,20 +683,34 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     ggml_set_name(c->graph.input, "ppocrv6_graph_input");
     ggml_set_input(c->graph.input);
     ggml_tensor * x = c->graph.input;
-    for (const pp_conv & p : c->stem) {
+    for (size_t stem_idx = 0; stem_idx < c->stem.size(); ++stem_idx) {
+        const pp_conv & p = c->stem[stem_idx];
         x = pp_graph_conv(c, c->graph.graph_ctx, x, p);
         if (!x) {
             if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
             return false;
         }
         x = ggml_gelu(c->graph.graph_ctx, x);
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            const char * name = stem_idx == 0 ? "stem1" : "stem2";
+            c->graph.debug_taps.push_back({ name, x });
+            ggml_set_output(x);
+        }
     }
-    for (const auto & stage : c->stages) {
+    for (size_t stage_idx = 0; stage_idx < c->stages.size(); ++stage_idx) {
+        const auto & stage = c->stages[stage_idx];
         for (const pp_block & b : stage) {
             x = pp_graph_block(c, c->graph.graph_ctx, x, b);
             if (!x) {
                 if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph block failed\n");
                 return false;
+            }
+        }
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            static const char * names[] = { "stage1", "stage2", "stage3", "stage4" };
+            if (stage_idx < sizeof(names) / sizeof(names[0])) {
+                c->graph.debug_taps.push_back({ names[stage_idx], x });
+                ggml_set_output(x);
             }
         }
     }
@@ -803,6 +817,18 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
         graph_input = input;
     }
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
+    if (c->diff && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        std::vector<float> staged(graph_input.size());
+        ggml_backend_tensor_get(c->graph.input, staged.data(), 0, staged.size() * sizeof(float));
+        std::vector<float> staged_chw(input.size());
+        for (int cidx = 0; cidx < C; ++cidx)
+            for (int y = 0; y < H; ++y)
+                for (int x = 0; x < W; ++x)
+                    staged_chw[(size_t(cidx) * H + y) * W + x] = staged[(size_t(y) * W + x) * C + cidx];
+        const auto report = c->diff->compare("ppocrv6.input", staged_chw.data(), staged_chw.size(), -1);
+        fprintf(stderr, "[ppocrv6-graph-diff] staged-input cos=%.6f global=%.6f %s\n", report.cos_min,
+                report.cos_global, report.is_pass() ? "PASS" : "FAIL");
+    }
     // Reuse of mixed Metal/CPU scheduler allocations is unstable on the
     // current pre-tensor Apple backend across repeated line crops. Rebuild
     // the static allocation per crop until backend reuse is validated.
@@ -837,10 +863,22 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                             channel_plane[(size_t)ch * th * tw + (size_t)yy * tw + xx] =
                                 values[((size_t)yy * tw + xx) * tc + ch];
                 const char * ref_name = nullptr;
+                if (std::strcmp(tap.first, "stem1") == 0) ref_name = "ppocrv6.stem1";
+                if (std::strcmp(tap.first, "stem2") == 0) ref_name = "ppocrv6.stem2";
+                if (std::strcmp(tap.first, "stage1") == 0) ref_name = "ppocrv6.stage1";
+                if (std::strcmp(tap.first, "stage2") == 0) ref_name = "ppocrv6.stage2";
+                if (std::strcmp(tap.first, "stage3") == 0) ref_name = "ppocrv6.stage3";
+                if (std::strcmp(tap.first, "stage4") == 0) ref_name = "ppocrv6.stage4";
                 if (std::strcmp(tap.first, "backbone") == 0) ref_name = "ppocrv6.stage4";
                 if (std::strcmp(tap.first, "head_act1") == 0) ref_name = "ppocrv6.head_conv1";
                 if (std::strcmp(tap.first, "head_act2") == 0) ref_name = "ppocrv6.head_input";
                 if (ref_name) {
+                    if (std::strcmp(tap.first, "backbone") == 0) {
+                        const auto raw_report = c->diff->compare(ref_name, values.data(), values.size(), -1);
+                        fprintf(stderr, "[ppocrv6-graph-diff] %s raw-as-%s cos=%.6f global=%.6f %s\n", tap.first,
+                                ref_name, raw_report.cos_min, raw_report.cos_global,
+                                raw_report.is_pass() ? "PASS" : "FAIL");
+                    }
                     const auto report = c->diff->compare(ref_name, channel_plane.data(), channel_plane.size(), -1);
                     fprintf(stderr, "[ppocrv6-graph-diff] %s as %s cos=%.6f global=%.6f %s\n", tap.first, ref_name,
                             report.cos_min, report.cos_global, report.is_pass() ? "PASS" : "FAIL");
