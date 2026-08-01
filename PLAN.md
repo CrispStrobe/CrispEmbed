@@ -43,10 +43,10 @@ so CRAFT box parity passes. Native diff runtime was ~2.34 s;
 the Python dump was ~9.13 s including model load and serializing 84 tensors, not
 an inference-only comparison. DBNet native page smoke measured 6.63 s in line
 mode (12 units, 1.34 s summed recognizer work) and 6.67 s in word mode (98
-units, 2.50 s summed recognizer work). No PyTorch DBNet checkpoint is present
-locally, so DBNet reference timing/quality parity remains blocked; the 98-word
-output is readable and contains Brighton but is not on par with Tesseract's
-106-word segmentation. These are explicit quality/performance TODOs.
+units, 2.50 s summed recognizer work). The restored official DBNet checkpoint
+now has tensor parity evidence below; native's 98-word segmentation remains
+not comparable to Tesseract's 106-word segmentation. These are explicit
+quality/performance TODOs.
 
 Fresh DBNet reference checkpoint parity is now available: the official MMOCR
 IC15 ResNet-18 checkpoint was restored and dumped with Miniconda Python on the
@@ -57,7 +57,10 @@ probability-map boundary (`max_abs=0.00154233`, RMS `0.00008044`, cosine
 so its prior README parity claim is stale for this reference. The DBNet diff
 harness now retains every backbone, lateral, smooth, fused, head, and final
 probability-map tap; F16 passes all of them. Inference-only native/Python
-timing remains a TODO.
+timing remains a TODO. Q4_K's earliest divergence is already at
+`backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), and it worsens
+through the neck to final-map cosine `0.9311001`; this is a quantization
+quality TODO, not a postprocessing issue.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU

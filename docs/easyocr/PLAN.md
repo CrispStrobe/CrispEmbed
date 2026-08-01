@@ -105,7 +105,11 @@
       parity at cosine `0.9311001` / global `0.9986384`; do not repeat the
       README's old blanket Q4 parity claim. The diff now retains and compares
       all backbone, neck, head, and final-map taps; F16 passes them all under
-      the global/magnitude gate. Inference-only timing remains open.
+      the global/magnitude gate. Q4_K's earliest real divergence is already
+      `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`), worsening
+      through the neck and ending at final-map cosine `0.9311001`; this is a
+      quantization-quality TODO, not postprocessing. Inference-only timing
+      remains open.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
