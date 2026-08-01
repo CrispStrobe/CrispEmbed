@@ -1053,11 +1053,19 @@ are pinned identically. This is an explicit speed and quality blocker.
 | `frk-q8_0` | 38.69 s | 23 / 1,235 | 0.768 | 0.5279 / 0.5390 | Faster, but worse text |
 | `frk-f32` | 102.41 s | 23 / 1,164 | 0.767 | 0.4672 / 0.5461 | Better CER, far too slow |
 | `frk-int8-source-q8-candidate` | 64.44 s | 23 / 1,164 | 0.767 | 0.4672 / 0.5461 | F32-like output, still too slow |
+| `frk-mixed-lstm0hh-f32` | 23.42 s | 23 / 1,146 | 0.765 | 0.4603 / 0.5390 | Best measured CER/speed frontier, still worse than official |
 
 Official Tesseract remained 25 lines/881 chars. Precision therefore changes
 output quality as well as speed; optimizing standard Q8 alone cannot achieve
 reference quality. Same-artifact warm/cold benchmarks and recognizer
 optimization remain required before selecting the production Fraktur tier.
+
+The mixed-precision candidate is generated with
+`models/mix-tesseract-gguf.py`: Q8 remains the default base, while explicitly
+selected critical tensors are copied from F32. The selected
+`lstm.0.weight_hh` profile is not a production default; it remains gated
+until repeat benchmarks, page-region parity, and decoded-text quality gates
+improve.
 
 The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
 seven CC0/public-domain images through Tesseract plus skew/content detection:
