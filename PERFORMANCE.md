@@ -1271,6 +1271,16 @@ The box geometry is therefore not the dominant error on this fixture. Keep
 the gate for other scan resolutions, but do not change the default or use
 tighter boxes as a quality claim.
 
+### Tesseract composed-recorder gate (2026-08-01)
+
+`CRISPEMBED_TESSERACT_RECODE_COMPOSE` now enables exact segmentation of
+collapsed CTC classes into serialized multi-code unichar entries. It is
+opt-in: the existing single-code fallback remains the production default.
+Fraktur default versus opt-in output/confidence is byte-identical on the
+controlled line, and a Chinese smoke input passes both modes without a crash;
+that smoke did not exercise a multi-code emission, so no quality promotion is
+claimed yet.
+
 ### Tesseract confidence harness and line calibration (2026-08-01)
 
 The confidence comparator was hardened against non-UTF-8 Tesseract stderr and
