@@ -135,3 +135,39 @@ extern "C" int tesseract_dawg_validate_base64(const char * payload, char * error
     }
     return 1;
 }
+
+extern "C" int tesseract_dawg_contains_base64(const char * payload, const int * unichar_ids, size_t count) {
+    if (!payload || !unichar_ids || count == 0 || !tesseract_dawg_validate_base64(payload, nullptr, 0)) return 0;
+
+    std::vector<uint8_t> data;
+    if (!decode_base64(payload, data)) return 0;
+    const uint32_t unicharset_size = read_u32(data, 2);
+    const uint32_t num_edges = read_u32(data, 6);
+    const int flag_start = ceil_log2(unicharset_size);
+    const int next_start = flag_start + 3;
+    const uint64_t next_mask = ~0ull << next_start;
+    const uint64_t marker = 1ull << flag_start;
+    const uint64_t direction = 2ull << flag_start;
+    const uint64_t word_end = 4ull << flag_start;
+    const uint64_t letter_mask = ~(~0ull << flag_start);
+
+    uint32_t node = 0;
+    for (size_t pos = 0; pos < count; ++pos) {
+        bool found = false;
+        uint64_t selected = 0;
+        for (uint32_t edge_index = node; edge_index < num_edges; ++edge_index) {
+            const uint64_t edge = read_u64(data, 10 + (size_t)edge_index * 8);
+            if ((edge & next_mask) == next_mask || (edge & direction) != 0) break;
+            if ((int)(edge & letter_mask) == unichar_ids[pos]) {
+                selected = edge;
+                found = true;
+                break;
+            }
+            if (edge & marker) break;
+        }
+        if (!found) return 0;
+        node = (uint32_t)((selected & next_mask) >> next_start);
+        if (pos + 1 == count) return (selected & word_end) != 0;
+    }
+    return 0;
+}
