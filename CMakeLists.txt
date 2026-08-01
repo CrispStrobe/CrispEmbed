@@ -406,6 +406,9 @@ add_executable(test-easyocr-dbnet tests/test_easyocr_dbnet.cpp)
 target_include_directories(test-easyocr-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
 
+add_executable(test-dbnet-diff tests/test_dbnet_diff.cpp)
+target_link_libraries(test-dbnet-diff PRIVATE crispembed)
+
 add_executable(test-easyocr-layout tests/test_easyocr_layout.cpp)
 target_link_libraries(test-easyocr-layout PRIVATE crispembed)
 

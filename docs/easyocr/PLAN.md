@@ -97,14 +97,15 @@
       The mismatch accumulates through the CNN rather than appearing solely in
       CRAFT connected components. The next quality task is convolution/BN or
       layout numerical parity, with the captured taps retained for debugging.
-- [ ] Add a DBNet Python reference checkpoint/timing fixture. The local backup
-      has only the converted `cstr/dbnet-ic15-GGUF` GGUF, not the source PyTorch
-      checkpoint; the native scan page currently emits 12 line units / 98 word
-      units in 6.63/6.67 s end-to-end, with summed recognizer work of
-      1.34/2.50 s. Native text is readable and includes `Brighton`, but its
-      98-word segmentation is not comparable to Tesseract's 106-word page
-      output. No DBNet quality or speed parity claim is allowed until the
-      source checkpoint/reference is restored.
+- [x] Restore the official MMOCR DBNet ResNet-18 IC15 checkpoint and add a
+      fresh `scan_strip.png` reference plus `test-dbnet-diff`. The native F16
+      backup passes the probability-map boundary with max error `0.00154233`,
+      RMS `0.00008044`, cosine `0.9999974`, global cosine `1.0000000`, and
+      96 decoded regions. Q4_K produces the same 96 regions but fails tensor
+      parity at cosine `0.9311001` / global `0.9986384`; do not repeat the
+      README's old blanket Q4 parity claim. The current diff covers the final
+      probability map; per-backbone/neck/head taps and inference-only timing
+      remain open.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
