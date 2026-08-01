@@ -746,6 +746,10 @@ downstream handoff parity, not detector-box similarity alone.
       allowing a misconfigured data path to appear to pass.
       It also provides `--require-greedy-text-match`; confidence/beam checks
       must not be reported as OCR-quality acceptance when native text differs.
+      On the explicit German tiny-line fixture, enabling both
+      `--require-official-words` and `--require-greedy-text-match` correctly
+      exits 1 (`official_words_present=true`, `greedy_text_matches=false`),
+      preserving the known native `G` versus official `1` quality gap.
       Both page-metrics and line-confidence comparators now emit elapsed
       milliseconds for each official subprocess and native subprocess/line
       run, so quality claims can be paired with measured cost.
