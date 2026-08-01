@@ -999,6 +999,13 @@ graph/weight reuse, and fair warm-run measurement; the detector is not the
 current bottleneck. The immediate quality TODO is full-page crop/spacing/text
 parity: native is not yet output-equivalent even where region count matches.
 
+An activation-scratch reuse prototype is gated by
+`CRISPEMBED_TESSERACT_REUSE_SCRATCH`; it preserves CER/WER but measured about
+`279.1 ms` versus `282.3 ms` in one paired run, while earlier repeated runs
+were `329–338 ms` versus the prior `~300 ms` result. The variance is too large
+to claim an improvement, so it is disabled by default and remains an
+optimization TODO.
+
 The German official-print page remains materially worse: native default is 21
 regions vs official 25, CER `0.307`, WER `0.404`, and confidence `0.836` vs
 `0.866`. Paired warm/cold timing and per-stage reference timing for this page
