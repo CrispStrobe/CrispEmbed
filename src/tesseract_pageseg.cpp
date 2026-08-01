@@ -404,15 +404,77 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
         }
     }
     std::sort(rows.begin(), rows.end(), [](const row & a, const row & b) { return a.y0 < b.y0; });
+    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
+        for (const auto & r : rows) {
+            std::fprintf(stderr, "component-row x=%d..%d y=%d..%d count=%d base=%.1f\n", r.x0, r.x1, r.y0, r.y1,
+                         r.count, r.baseline);
+        }
+    }
     for (const auto & r : rows) {
         if (r.count < 2 || r.x1 - r.x0 < std::max(8, width / 50) ||
             r.y1 - r.y0 + 1 < std::max(6, (int)std::lround(median_h * 0.75f)))
             continue;
+        const int crop_y0 = std::max(r.y0, (int)std::floor(r.baseline - median_h * 1.6f));
+        const int crop_y1 = std::min(r.y1, (int)std::ceil(r.baseline + median_h * 1.2f));
+        int tight_x0 = width, tight_x1 = -1;
+        int loose_x0 = width, loose_x1 = -1;
+        for (int x = 0; x < width; ++x) {
+            int ink = 0;
+            for (int y = crop_y0; y <= crop_y1; ++y) ink += gray[y * width + x] < threshold;
+            if (ink >= 2) {
+                loose_x0 = std::min(loose_x0, x);
+                loose_x1 = std::max(loose_x1, x);
+            }
+            if (ink >= 4) {
+                tight_x0 = std::min(tight_x0, x);
+                tight_x1 = std::max(tight_x1, x);
+            }
+        }
+        if (r.count < 20) {
+            // Tesseract's noise list prevents a detached speck from extending
+            // a short row. Keep the widest nearby active cluster for such rows;
+            // long rows intentionally retain separated word clusters.
+            int best_run_x0 = width, best_run_x1 = -1;
+            int run_x0 = width, last_active = -1;
+            for (int x = 0; x < width; ++x) {
+                int ink = 0;
+                for (int y = crop_y0; y <= crop_y1; ++y) ink += gray[y * width + x] < threshold;
+                if (ink >= 2) {
+                    if (run_x0 == width || x - last_active > 8) {
+                        if (last_active >= run_x0 && last_active - run_x0 > best_run_x1 - best_run_x0) {
+                            best_run_x0 = run_x0;
+                            best_run_x1 = last_active;
+                        }
+                        run_x0 = x;
+                    }
+                    last_active = x;
+                }
+            }
+            if (last_active >= run_x0 && last_active - run_x0 > best_run_x1 - best_run_x0) {
+                best_run_x0 = run_x0;
+                best_run_x1 = last_active;
+            }
+            if (best_run_x1 >= best_run_x0) {
+                tight_x0 = loose_x0 = best_run_x0;
+                tight_x1 = loose_x1 = best_run_x1;
+            }
+        }
+        if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG") && r.count < 20) {
+            std::fprintf(stderr, "component-row-tight x=%d..%d loose=%d..%d y=%d..%d\n", tight_x0, tight_x1, loose_x0,
+                         loose_x1, crop_y0, crop_y1);
+        }
+        if (tight_x1 >= tight_x0 && loose_x1 >= loose_x0 && tight_x0 > r.x0 + 5 &&
+            tight_x1 - tight_x0 > (r.y1 - r.y0 + 1) * 10) {
+            tight_x0 = loose_x0;
+            tight_x1 = loose_x1;
+        }
+        const int box_x0 = tight_x1 >= tight_x0 ? tight_x0 : r.x0;
+        const int box_x1 = tight_x1 >= tight_x0 ? tight_x1 : r.x1;
         ocr_detect::text_box box{};
-        box.x = (float)std::max(0, r.x0 - 3);
-        box.y = (float)std::max(0, r.y0 - 3);
-        box.w = (float)std::min(width - (int)box.x, r.x1 - r.x0 + 7);
-        box.h = (float)std::min(height - (int)box.y, r.y1 - r.y0 + 7);
+        box.x = (float)std::max(0, box_x0 - 3);
+        box.y = (float)std::max(0, crop_y0 - 3);
+        box.w = (float)std::min(width - (int)box.x, box_x1 - box_x0 + 7);
+        box.h = (float)std::min(height - (int)box.y, crop_y1 - crop_y0 + 7);
         box.score = 1.0f;
         out.push_back(box);
     }
