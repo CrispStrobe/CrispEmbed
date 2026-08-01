@@ -32,6 +32,11 @@ def artifact_filename(spec: str | dict | None) -> str | None:
     return spec
 
 
+def pipeline_engine(entry: dict) -> str:
+    """Use the routed engine family, not a tiered manifest display name."""
+    return entry.get("pipeline_engine") or entry.get("engine") or entry.get("name", "")
+
+
 def normalize(s: str) -> str:
     s = s.replace("\r", "").strip()
     s = re.sub(r"(?m)^regions=\d+\s+mean_conf=[0-9.]+\s*$", "", s)
@@ -172,7 +177,7 @@ def main() -> int:
                 rows.append(row)
                 continue
             command = [args.binary, "--ocr-pipeline", str(image),
-                       "--ocr-engine", entry.get("pipeline_engine", name),
+                       "--ocr-engine", pipeline_engine(entry),
                        "--ocr-det", str(detector_path), "--ocr-rec", str(model)]
         else:
             command = [args.binary, "-m", str(model), "--ocr", str(image)]

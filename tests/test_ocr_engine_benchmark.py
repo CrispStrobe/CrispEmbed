@@ -16,6 +16,8 @@ def main() -> int:
     assert MODULE.artifact_filename("legacy.gguf") == "legacy.gguf"
     assert MODULE.artifact_filename({"file": "detector.gguf", "repo": "cstr/example"}) == "detector.gguf"
     assert MODULE.artifact_filename(None) is None
+    assert MODULE.pipeline_engine({"name": "ppocrv6-small", "engine": "ppocrv6"}) == "ppocrv6"
+    assert MODULE.pipeline_engine({"name": "custom", "engine": "dbnet", "pipeline_engine": "tesseract"}) == "tesseract"
     assert not MODULE.runtime_failed({"timed_out": False, "returncode": 0}, "normal completion")
     assert MODULE.runtime_failed({"timed_out": False, "returncode": 0}, "ocr_pipeline: failed to load detection model")
     assert MODULE.runtime_failed({"timed_out": False, "returncode": 1}, "")
