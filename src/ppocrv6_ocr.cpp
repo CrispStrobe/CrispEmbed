@@ -67,6 +67,7 @@ struct ppocrv6_ocr_context {
     ggml_tensor * fc1_b = nullptr;
     ggml_tensor * fc2_w = nullptr;
     ggml_tensor * fc2_b = nullptr;
+    std::vector<float> fc1_wf, fc1_bf, fc2_wf, fc2_bf;
     ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr, *norm1_mean = nullptr, *norm1_var = nullptr;
     ggml_tensor *norm2_w = nullptr, *norm2_b = nullptr, *norm2_mean = nullptr, *norm2_var = nullptr;
     ggml_tensor *svtr_norm_w = nullptr, *svtr_norm_b = nullptr;
@@ -380,6 +381,10 @@ static bool map_model(ppocrv6_ocr_context * c) {
     c->fc1_b = get(m, "rec.head.fc1.bias");
     c->fc2_w = get(m, "rec.head.fc2.weight");
     c->fc2_b = get(m, "rec.head.fc2.bias");
+    c->fc1_wf = to_f32(c->fc1_w);
+    c->fc1_bf = to_f32(c->fc1_b);
+    c->fc2_wf = to_f32(c->fc2_w);
+    c->fc2_bf = to_f32(c->fc2_b);
     c->norm1_w = get(m, "rec.head.norm1.weight");
     c->norm1_b = get(m, "rec.head.norm1.bias");
     c->norm1_mean = get(m, "rec.head.norm1.running_mean");
@@ -721,15 +726,15 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
                 std::sqrt(std::inner_product(seq.begin(), seq.end(), seq.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
     }
-    auto f1 = to_f32(c->fc1_w), b1 = to_f32(c->fc1_b), f2 = to_f32(c->fc2_w), b2 = to_f32(c->fc2_b);
     c->result.clear();
     std::vector<float> all_logits;
     all_logits.reserve((size_t)pw * c->vocab_size);
     int last = -1;
     for (int t = 0; t < pw; ++t) {
         std::vector<float> hidden(c->hidden), logits(c->vocab_size);
-        linear_cpu(seq.data() + t * c->head_dw.in_ch, hidden.data(), c->head_dw.in_ch, c->hidden, f1.data(), b1.data());
-        linear_cpu(hidden.data(), logits.data(), c->hidden, c->vocab_size, f2.data(), b2.data());
+        linear_cpu(seq.data() + t * c->head_dw.in_ch, hidden.data(), c->head_dw.in_ch, c->hidden, c->fc1_wf.data(),
+                   c->fc1_bf.data());
+        linear_cpu(hidden.data(), logits.data(), c->hidden, c->vocab_size, c->fc2_wf.data(), c->fc2_bf.data());
         all_logits.insert(all_logits.end(), logits.begin(), logits.end());
         int best = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
         if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];
