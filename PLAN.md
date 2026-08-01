@@ -2487,3 +2487,12 @@ the pattern first.
   lfm2 + the closed engines are auto-guarded in `tests/regression/manifest.json`.
 - **`core/vlm_decoder.h` — deferred.** A unified scalar decode loop; only 2 scalar
   engines remain, so abstracting is premature. Revisit if a 3rd appears.
+
+- **Tesseract seeded-artifact regeneration (2026-08-01).** The 12 installed
+  canonical `.traineddata` sources were SHA-256 matched to the existing GGUFs.
+  Fresh Miniconda F32/F16 conversions and metadata-repaired Q8_0/Q4_K
+  companions are now in `/Volumes/backups/ai/crispembed-gguf/` as `*-seeded.gguf`.
+  Forty-two companions are readable and carry nonzero `sample_iteration`; old
+  files remain available for rollback. The old Fraktur `mixed-lstm0ih` candidate
+  is truncated and was excluded. Per-language diff and decoded-output gates are
+  still required before promotion to canonical names.
