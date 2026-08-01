@@ -132,6 +132,28 @@ static int crispembed_test_main(int argc, char ** argv) {
                 }
             }
         }
+        int logits_n = 0;
+        const float * logits = tesseract_lstm_get_capture(ctx, "logits", &logits_n);
+        if (logits && ref.has("logits")) {
+            auto [ref_logits, ref_logits_n] = ref.get_f32("logits");
+            const auto logits_shape = ref.shape("logits");
+            const int classes = logits_shape.empty() ? 99 : (int)logits_shape[0];
+            const int timesteps = std::min(logits_n, (int)ref_logits_n) / classes;
+            int mismatches = 0;
+            for (int t = 0; t < timesteps; ++t) {
+                int mine = 0, theirs = 0;
+                for (int c = 1; c < classes; ++c) {
+                    if (logits[t * classes + c] > logits[t * classes + mine]) mine = c;
+                    if (ref_logits[t * classes + c] > ref_logits[t * classes + theirs]) theirs = c;
+                }
+                if (mine != theirs && mismatches < 12) {
+                    printf("logit argmax mismatch[t=%d] native=%d ref=%d native=%.6g ref=%.6g\n", t, mine, theirs,
+                           logits[t * classes + mine], ref_logits[t * classes + theirs]);
+                    mismatches++;
+                }
+            }
+            printf("logit argmax mismatches=%d/%d\n", mismatches, timesteps);
+        }
     }
 
     // Check Python result from reference metadata
