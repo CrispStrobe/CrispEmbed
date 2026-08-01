@@ -67,9 +67,11 @@ detector graph `4178.6 ms`, postprocess `8.3 ms`, total `4186.9 ms`, and 12 line
 units. The Miniconda reference uses 4 compute threads and 8 interop threads.
 Corrected rapid-mode repeated benchmarking gives native CPU `5661.1 ms` warm
 with 4 threads (`4.67x` slower), `2907.2 ms` warm with 8 threads (`2.40x`),
-and Metal `3499.4 ms` warm (`2.89x`), versus `1213.450 ms` reference. Both
-native backends pass all taps in diff mode and retain readable output;
-graph/kernel speed remains a mandatory TODO.
+versus `1213.450 ms` reference. The same Python blueprint on MPS averages
+`577.342 ms`; native Metal `3499.4 ms` is therefore `6.06x` slower on the
+same device. Both native backends pass all taps in diff mode and retain
+readable output; native CPU/Metal convolution and deconvolution kernels remain
+mandatory optimization TODOs.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU

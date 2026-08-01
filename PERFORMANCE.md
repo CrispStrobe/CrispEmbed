@@ -40,12 +40,15 @@ CPU-forced and Metal CRAFT outputs are byte-identical on this fixture.
 | CPU, F16, 1 thread | 4178.6 ms | 8.3 ms | 4186.9 ms | 1213.450 ms | 3.45x | all taps pass; 96 regions |
 | CPU, F16, 4 threads, persistent graph | 5661.1 ms warm | ~10 ms | ~5661 ms | 1213.450 ms | 4.67x | 98 rapid regions; `Brighton` present |
 | CPU, F16, 8 threads, persistent graph | 2907.2 ms warm | ~10 ms | ~2907 ms | 1213.450 ms | 2.40x | 98 rapid regions; `Brighton` present |
-| Metal, F16, persistent graph | 3499.4 ms warm | ~10 ms | ~3499 ms | 1213.450 ms | 2.89x | 98 rapid regions; `Brighton` present |
+| Metal, F16, persistent graph | 3499.4 ms warm | ~10 ms | ~3499 ms | 577.342 ms MPS | 6.06x | 98 rapid regions; `Brighton` present |
 
 The Python reference reports `torch.get_num_threads()=4` and
 `torch.get_num_interop_threads()=8`. Thus the 8-thread native result is the
 best available throughput measurement but is not a same-thread comparison;
-native remains slower even with twice the reference compute threads. F16
+native remains slower even with twice the reference compute threads. On the
+same M1 Metal device, the Python MPS blueprint averages `577.342 ms`, making
+native Metal `6.06x` slower; this isolates the remaining gap to CrispEmbed's
+Metal convolution/deconvolution kernels. F16
 matches the fresh official MMOCR reference at backbone, neck, head, and
 probability-map boundaries. The detector now uses a shape-keyed persistent
 GGML graph; diagnostic tap retention is opt-in via

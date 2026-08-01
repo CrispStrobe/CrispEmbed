@@ -121,7 +121,10 @@
       benchmarking gives `5661.1 ms` warm CPU with 4 threads and `2907.2 ms`
       with 8 threads, versus `1213.450 ms` Python CPU; Metal is `3499.4 ms`.
       Python uses 4 compute threads, so the native 8-thread result is still
-      `2.40x` slower despite twice the compute threads.
+      `2.40x` slower despite twice the compute threads. The same Python
+      blueprint on MPS averages `577.342 ms`, making native Metal `6.06x`
+      slower on the same device; native convolution/deconvolution kernel
+      optimization remains mandatory.
       With `OCR_DETECT_THREADS=8`, native CPU improves to `2727.3 ms` graph,
       `9.3 ms` postprocess, `2736.7 ms` total, still `2.25x` slower than the
       reference; output remains 12 readable line units with `Brighton`.
