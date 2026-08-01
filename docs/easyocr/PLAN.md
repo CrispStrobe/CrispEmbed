@@ -168,6 +168,9 @@ recognizer and LayoutLM consumer.
       text, and the official instrumented PSM7 internal crop all match.
 - [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
       direct line fixtures are not the same internal crops selected by PSM7.
+      The native classical page-segmentation adapter is now wired behind the
+      explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
+      geometry regression; this does not close real CLI parity.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.

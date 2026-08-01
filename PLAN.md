@@ -401,6 +401,9 @@ downstream handoff parity, not detector-box similarity alone.
 - [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
       this remains open because direct line fixtures are not the same internal
       crops selected by official PSM7.
+      The native classical page-segmentation adapter is now wired behind the
+      explicit `--tesseract-pageseg`/stage option and has a model-free synthetic
+      geometry regression; this does not close real CLI parity.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
