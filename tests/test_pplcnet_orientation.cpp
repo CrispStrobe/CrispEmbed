@@ -6,6 +6,14 @@
 #include <cstdlib>
 #include <vector>
 
+static void set_env(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
 int main(int argc, char ** argv) {
     if (argc != 2 && argc != 3) {
         std::fprintf(stderr, "usage: %s <pplcnet-orientation.gguf> [image]\n", argv[0]);
@@ -37,9 +45,9 @@ int main(int argc, char ** argv) {
         auto * cpu = pplcnet_orientation::init(argv[1], 1);
         const auto cpu_result = pplcnet_orientation::classify_file(cpu, argv[2]);
         pplcnet_orientation::free(cpu);
-        setenv("PPLCNET_ORIENTATION_GRAPH", "1", 1);
-        setenv("PPLCNET_ORIENTATION_GRAPH_PIPELINE", "1", 1);
-        setenv("PPLCNET_ORIENTATION_GRAPH_ACCEPT", "1", 1);
+        set_env("PPLCNET_ORIENTATION_GRAPH", "1");
+        set_env("PPLCNET_ORIENTATION_GRAPH_PIPELINE", "1");
+        set_env("PPLCNET_ORIENTATION_GRAPH_ACCEPT", "1");
         auto * graph = pplcnet_orientation::init(argv[1], 1);
         const auto graph_result = pplcnet_orientation::classify_file(graph, argv[2]);
         pplcnet_orientation::free(graph);
