@@ -453,6 +453,12 @@ downstream handoff parity, not detector-box similarity alone.
       to 10.00 s; the 1,017-character result and 74-test regression remain
       unchanged. It remains opt-in until worker-count policy is exposed in
       the public configuration.
+- [x] Split Fraktur end-to-end timing into detector, grouping, crop, and
+      recognition stages. On the official fixture with four workers: DBNet
+      detection `4411 ms`, grouping `0 ms`, crop preparation `126 ms`, line
+      recognition `554 ms`, stage total `6830 ms`; system Tesseract `--psm 3`
+      completes in `1.83 s` and emits 145 non-empty TSV word records. The
+      detector is now the dominant optimization target.
 - [x] Run exact hashed Homebrew English references after the Leptonica fix:
       the controlled line fixture decodes identically in native/Python as
       `_ “ ihey are going to be encamped near Drighton ;`, with all 9 stages
