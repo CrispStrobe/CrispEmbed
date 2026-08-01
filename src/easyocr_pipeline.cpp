@@ -59,12 +59,8 @@ easyocr_layout::ordering_mode ordering_mode(const context * ctx) {
     return ctx ? ctx->mode : easyocr_layout::ordering_mode::lines;
 }
 
-std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
-    if (!ctx || !ctx->detector || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
-    std::lock_guard<std::mutex> lock(ctx->mutex);
-
-    const auto detected =
-        ocr_detect::detect_rgb_ex(ctx->detector, pixels, width, height, channels, ocr_detect::rapid_defaults());
+static std::vector<result> recognize_regions_locked(context * ctx, const std::vector<ocr_detect::text_box> & detected,
+                                                    const uint8_t * pixels, int width, int height, int channels) {
     std::vector<easyocr_layout::region> regions;
     regions.reserve(detected.size());
     for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
@@ -117,6 +113,21 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
         width, height);
     for (size_t i = 0; i < results.size() && i < normalized.size(); ++i) results[i].normalized = normalized[i];
     return results;
+}
+
+std::vector<result> run_regions(context * ctx, const std::vector<ocr_detect::text_box> & boxes, const uint8_t * pixels,
+                                int width, int height, int channels) {
+    if (!ctx || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
+    std::lock_guard<std::mutex> lock(ctx->mutex);
+    return recognize_regions_locked(ctx, boxes, pixels, width, height, channels);
+}
+
+std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
+    if (!ctx || !ctx->detector || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
+    std::lock_guard<std::mutex> lock(ctx->mutex);
+    const auto detected =
+        ocr_detect::detect_rgb_ex(ctx->detector, pixels, width, height, channels, ocr_detect::rapid_defaults());
+    return recognize_regions_locked(ctx, detected, pixels, width, height, channels);
 }
 
 std::vector<result> run_file(context * ctx, const char * image_path) {

@@ -258,6 +258,12 @@ Python detector/recognizer page manifest is still required before parity is
 claimed. The current local Python environment lacks torch, numpy, and cv2, so
 that reference run remains an explicit external/dependency gate.
 
+The detector-independent production handoff is now explicit: `run_regions`
+accepts caller-supplied detector boxes and applies the configured lines/words
+ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
+pipeline test replays the DBNet boxes through this API and matches the normal
+98-record run; this validates the boundary, not external Tesseract TSV parity.
+
 The harness-blind CTC/vocabulary/confidence gate is now covered by the native
 `easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
 with repeated-token collapse, vocabulary entries are 1-based and validated,
@@ -353,8 +359,10 @@ downstream handoff parity, not detector-box similarity alone.
 
 #### Interoperability gates
 
-- [ ] Make detector output and ordering policy first-class production adapters;
-      no test-only DBNet→EasyOCR orchestration.
+- [x] Make detector output and ordering policy first-class production adapters;
+      `easyocr_pipeline::run_regions` now accepts detector-independent boxes and
+      applies the selected `lines`/`words` policy through the production crop /
+      recognizer path; the pipeline test exercises the injected-geometry handoff.
 - [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
       page fixture with a Python reference manifest.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
