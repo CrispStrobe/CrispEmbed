@@ -70,6 +70,14 @@ class TesseractPageGeometryTest(unittest.TestCase):
         result = compare(reference, native)
         self.assertEqual(result["matched_mean_abs_interline_gap_delta"], 0.0)
 
+    def test_zero_iou_matches_are_reported(self) -> None:
+        reference = [(0.0, 0.0, 10.0, 5.0)]
+        native = [(100.0, 100.0, 10.0, 5.0)]
+        result = compare(reference, native)
+        self.assertEqual(result["matched_count"], 1)
+        self.assertEqual(result["matched_positive_iou_count"], 0)
+        self.assertEqual(result["matched_zero_iou_count"], 1)
+
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
         passing = acceptance_checks(args, {"regions": 12}, {"cer": 0.019, "wer": 0.089})
