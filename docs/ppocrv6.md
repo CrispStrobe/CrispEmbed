@@ -97,6 +97,12 @@ Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` to print per-line recognizer graph
 latency and the selected backend. On the Metal build this is a graph execution
 measurement, not a claim that the detector graph is production-accepted.
 
+Non-CPU detector graphs use F16 resident convolution weights by default for
+backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a
+high-precision backend comparison. On the Apple M1 probe this reduced the
+diagnostic detector graph from roughly 3.6 s to 3.3 s without changing the
+reported parity cosines.
+
 The current CPU parity probe reports detector probability-map cosine 0.99113
 and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
 produces one extra box (31 vs 30), so the explicit accept switch remains a
