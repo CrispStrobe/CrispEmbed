@@ -809,10 +809,11 @@ static void forward(tesseract_lstm_context * ctx,
                 ctx->result_buf += ctx->tokens[uid];
                 // Greedy labels retain their actual softmax probability. A
                 // prefix beam label has no one-to-one timestep confidence;
-                // leave that path empty until beam posterior aggregation is
-                // implemented instead of fabricating a probability.
-                ctx->char_confs.push_back(
-                    beam_decoded || label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
+                // leave that path empty instead of returning fabricated zero
+                // entries that look like valid per-character scores.
+                if (!beam_decoded)
+                    ctx->char_confs.push_back(
+                        label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
             }
         }
         prev = best;
