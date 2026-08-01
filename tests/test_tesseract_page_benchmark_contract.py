@@ -41,3 +41,5 @@ def test_page_benchmark_preserves_exact_output_pair():
 def test_page_comparator_has_bounded_subprocess_timeout():
     assert '"--timeout"' in COMPARE
     assert "subprocess.TimeoutExpired" in COMPARE
+    assert '"--timeout must be positive"' in COMPARE
+    assert '"--timeout must be positive"' in BENCHMARK
