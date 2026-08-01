@@ -690,6 +690,11 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
             if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
             return false;
         }
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            const char * pre_name = stem_idx == 0 ? "stem1_pre" : "stem2_pre";
+            c->graph.debug_taps.push_back({ pre_name, x });
+            ggml_set_output(x);
+        }
         x = ggml_gelu(c->graph.graph_ctx, x);
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             const char * name = stem_idx == 0 ? "stem1" : "stem2";
@@ -802,30 +807,16 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
         return false;
     }
     // resize_normalize and the scalar reference use channel-plane storage
-    // [C,H,W], while a contiguous ggml image tensor is [W,H,C,N].  Keep the
-    // public/reference representation unchanged and transpose only at this
-    // backend boundary; otherwise every graph convolution receives channels
-    // interleaved across its spatial rows.
+    // [C,H,W].  A contiguous ggml tensor shaped [W,H,C,N] has the same byte
+    // order: dimension 0 (x), then dimension 1 (y), then channels.  No
+    // pixel-interleaving transpose is needed at this backend boundary.
     constexpr int H = 48, W = 320, C = 3;
-    std::vector<float> graph_input(input.size());
-    if (input.size() == size_t(C * H * W)) {
-        for (int cidx = 0; cidx < C; ++cidx)
-            for (int y = 0; y < H; ++y)
-                for (int x = 0; x < W; ++x)
-                    graph_input[(size_t(y) * W + x) * C + cidx] = input[(size_t(cidx) * H + y) * W + x];
-    } else {
-        graph_input = input;
-    }
+    std::vector<float> graph_input = input;
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
     if (c->diff && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         std::vector<float> staged(graph_input.size());
         ggml_backend_tensor_get(c->graph.input, staged.data(), 0, staged.size() * sizeof(float));
-        std::vector<float> staged_chw(input.size());
-        for (int cidx = 0; cidx < C; ++cidx)
-            for (int y = 0; y < H; ++y)
-                for (int x = 0; x < W; ++x)
-                    staged_chw[(size_t(cidx) * H + y) * W + x] = staged[(size_t(y) * W + x) * C + cidx];
-        const auto report = c->diff->compare("ppocrv6.input", staged_chw.data(), staged_chw.size(), -1);
+        const auto report = c->diff->compare("ppocrv6.input", staged.data(), staged.size(), -1);
         fprintf(stderr, "[ppocrv6-graph-diff] staged-input cos=%.6f global=%.6f %s\n", report.cos_min,
                 report.cos_global, report.is_pass() ? "PASS" : "FAIL");
     }
@@ -856,14 +847,9 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                     values.size() > 3 ? values[3] : 0.0f);
             if (c->diff && tap.second->ne[2] > 1) {
                 const int64_t tw = tap.second->ne[0], th = tap.second->ne[1], tc = tap.second->ne[2];
-                std::vector<float> channel_plane(values.size());
-                for (int64_t ch = 0; ch < tc; ++ch)
-                    for (int64_t yy = 0; yy < th; ++yy)
-                        for (int64_t xx = 0; xx < tw; ++xx)
-                            channel_plane[(size_t)ch * th * tw + (size_t)yy * tw + xx] =
-                                values[((size_t)yy * tw + xx) * tc + ch];
                 const char * ref_name = nullptr;
                 if (std::strcmp(tap.first, "stem1") == 0) ref_name = "ppocrv6.stem1";
+                if (std::strcmp(tap.first, "stem1_pre") == 0) ref_name = "ppocrv6.stem1_pre";
                 if (std::strcmp(tap.first, "stem2") == 0) ref_name = "ppocrv6.stem2";
                 if (std::strcmp(tap.first, "stage1") == 0) ref_name = "ppocrv6.stage1";
                 if (std::strcmp(tap.first, "stage2") == 0) ref_name = "ppocrv6.stage2";
@@ -879,9 +865,18 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                                 ref_name, raw_report.cos_min, raw_report.cos_global,
                                 raw_report.is_pass() ? "PASS" : "FAIL");
                     }
-                    const auto report = c->diff->compare(ref_name, channel_plane.data(), channel_plane.size(), -1);
+                    const auto report = c->diff->compare(ref_name, values.data(), values.size(), -1);
                     fprintf(stderr, "[ppocrv6-graph-diff] %s as %s cos=%.6f global=%.6f %s\n", tap.first, ref_name,
                             report.cos_min, report.cos_global, report.is_pass() ? "PASS" : "FAIL");
+                    if (std::strcmp(tap.first, "stem1_pre") == 0 || std::strcmp(tap.first, "stem1") == 0 ||
+                        std::strcmp(tap.first, "stem2") == 0) {
+                        const auto ref = c->diff->get_f32(ref_name);
+                        fprintf(stderr, "[ppocrv6-graph-debug] %s graph=%.7g %.7g %.7g %.7g ref=%.7g %.7g %.7g %.7g\n",
+                                tap.first, values.size() > 0 ? values[0] : 0.0f, values.size() > 1 ? values[1] : 0.0f,
+                                values.size() > 2 ? values[2] : 0.0f, values.size() > 3 ? values[3] : 0.0f,
+                                ref.second > 0 ? ref.first[0] : 0.0f, ref.second > 1 ? ref.first[1] : 0.0f,
+                                ref.second > 2 ? ref.first[2] : 0.0f, ref.second > 3 ? ref.first[3] : 0.0f);
+                    }
                 }
             }
         }
