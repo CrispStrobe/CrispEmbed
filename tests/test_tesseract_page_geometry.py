@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from compare_tesseract_page_geometry import compare, reading_order_is_monotonic  # noqa: E402
 from compare_tesseract_crop_geometry import compare as compare_crop_geometry  # noqa: E402
+from compare_tesseract_crop_geometry import compare_geometry  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
 from compare_tesseract_page_metrics import selected_detector_route  # noqa: E402
 from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
@@ -101,6 +102,16 @@ class TesseractPageGeometryTest(unittest.TestCase):
         )
         self.assertFalse(result["alignment_valid"])
         self.assertEqual(result["paired_rows"], 1)
+
+    def test_crop_geometry_can_report_unmatched_rows(self) -> None:
+        native = [{"box_x": 0.0, "box_y": 0.0, "box_w": 10.0, "box_h": 20.0,
+                   "crop_w": 10.0, "crop_h": 20.0}]
+        official = [{"left": 0, "top": 0, "width": 10, "height": 5},
+                    {"left": 0, "top": 10, "width": 10, "height": 5}]
+        result = compare_geometry(native, official)
+        self.assertEqual(result["alignment"], "monotonic-geometry")
+        self.assertEqual(result["matched_rows"], 1)
+        self.assertEqual(result["unmatched_official"], [0])
 
     def test_repeated_benchmark_summary_is_deterministic(self) -> None:
         self.assertEqual(summarize([1.0, 2.0, 3.0]), {"min": 1.0, "median": 2.0, "p90": 3.0, "max": 3.0})

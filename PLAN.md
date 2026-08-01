@@ -2754,3 +2754,11 @@ the pattern first.
   `alignment_valid=false` and `paired_rows`, so those deltas cannot be treated
   as geometry measurements until a line-matching strategy handles merges and
   missing rows.
+
+- **Merge-aware German geometry diagnostic (2026-08-01).** Added
+  `--match-by-geometry` to the crop comparator. On the native German manifest
+  it matched 23 native rows monotonically and identified five unmatched
+  official rows (`0,2,3,4,26`) instead of treating merged/missing lines as
+  same-index pairs. The tool remains strict (exit 1 while counts differ), and
+  its matched deltas are diagnostic only until the row matcher accounts for
+  true one-to-many merges.
