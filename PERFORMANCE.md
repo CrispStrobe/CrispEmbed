@@ -1379,3 +1379,13 @@ recognition math. Use the comparator's new `--crop-dump-dir` option for fresh
 crop manifests. `tools/compare_tesseract_crop_diff.py` now automates the
 per-crop Python-reference regeneration and native `test-tesseract-lstm-diff`
 run while refusing to overwrite an existing reference.
+
+On the CC0 German printed-document fixture, official Tesseract emitted 28
+lines/153 words/897 characters while native DBNet emitted 23 lines/862
+characters. CER/WER was `0.32984/0.67974`; native stages measured
+`detect=982.4 ms`, `crop=670.0 ms`, `recognize=19594.7 ms`, and
+`total=21247.2 ms`. Since five lines are missing or merged before recognition,
+index-paired per-line errors are not a valid recognizer benchmark. The page
+comparator now reports `alignment_valid=false` when line counts differ. This
+fixture is a detector/line-geometry TODO, separate from the crop-level tensor
+parity proven on scan-strip.

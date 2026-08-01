@@ -2708,3 +2708,15 @@ the pattern first.
   and `tools/compare_tesseract_crop_diff.py` automates regeneration of a
   per-crop Python reference plus the native tensor diff without invoking the
   broken local-image CLI path.
+
+- **CC0 German page cross-check (2026-08-01).** The same canonical Q8 DBNet
+  plus seeded German recognizer was run on
+  `tests/regression/images/cc0/german_official_print.jpg`. Official Tesseract
+  produced 28 lines/153 words/897 characters; native produced 23 lines/862
+  characters, with CER/WER `0.32984/0.67974`. The native benchmark was
+  `detect=982.4 ms`, `crop=670.0 ms`, `recognize=19594.7 ms`,
+  `total=21247.2 ms`. Because the line counts differ, index-paired line CER
+  is not a recognizer-quality measure here: this fixture opens a separate
+  detector/line-geometry coverage gate. The comparator now marks such
+  per-line alignment as invalid instead of implying a valid line-by-line
+  pairing.

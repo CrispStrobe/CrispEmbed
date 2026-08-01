@@ -291,6 +291,9 @@ def main() -> int:
         comparison["line_comparison"] = {
             "official_lines": len(official_lines),
             "native_lines": len(native_lines),
+            "count_delta": len(native_lines) - len(official_lines),
+            "alignment": "reading-order-index",
+            "alignment_valid": len(official_lines) == len(native_lines),
             "exact_lines": sum(row["exact"] for row in line_records),
             "rows": line_records,
         }
