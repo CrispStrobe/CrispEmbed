@@ -744,6 +744,8 @@ downstream handoff parity, not detector-box similarity alone.
       The comparator also provides `--require-official-words`, and its model-
       free contract test rejects empty official TSV references instead of
       allowing a misconfigured data path to appear to pass.
+      It also provides `--require-greedy-text-match`; confidence/beam checks
+      must not be reported as OCR-quality acceptance when native text differs.
       Both page-metrics and line-confidence comparators now emit elapsed
       milliseconds for each official subprocess and native subprocess/line
       run, so quality claims can be paired with measured cost.
