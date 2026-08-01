@@ -1,8 +1,31 @@
 #include "tesseract_recoder.h"
 
 #include <algorithm>
+#include <cstdint>
 
 namespace tesseract_recoder {
+
+bool prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
+                  bool allow_partial) {
+    if (codes.empty()) return true;
+    const int n = (int)prefix.size();
+    std::vector<uint8_t> reachable(n + 1, 0);
+    reachable[0] = 1;
+    for (int pos = 0; pos <= n; ++pos) {
+        if (!reachable[pos]) continue;
+        for (const auto & code : codes) {
+            if (code.empty() || pos + (int)code.size() > n) {
+                if (allow_partial && pos < n && !code.empty() && pos + (int)code.size() > n &&
+                    std::equal(prefix.begin() + pos, prefix.end(), code.begin())) {
+                    return true;
+                }
+                continue;
+            }
+            if (std::equal(code.begin(), code.end(), prefix.begin() + pos)) reachable[pos + code.size()] = 1;
+        }
+    }
+    return reachable[n] != 0;
+}
 
 bool compose_classes(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
                      std::vector<int> & unichars, std::vector<int> & starts) {

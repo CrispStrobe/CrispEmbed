@@ -2609,4 +2609,6 @@ the pattern first.
   default. Fraktur default and opt-in outputs are byte-identical on the
   controlled line; a Chinese smoke run passes both modes without crashes, but
   did not emit a multi-code class, so full composed-recoded quality parity and
-  dictionary/DAWG scoring remain open.
+  dictionary/DAWG scoring remain open. The recoder’s exact segmentation and
+  beam-prefix legality are now standalone-tested; dictionary/DAWG integration
+  and a fixture that exercises a real multi-code decoded class remain TODO.
