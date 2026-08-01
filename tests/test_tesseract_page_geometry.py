@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from compare_tesseract_page_geometry import compare, reading_order_is_monotonic  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
+from compare_tesseract_page_metrics import selected_detector_route  # noqa: E402
 from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
 from benchmark_tesseract_page import summarize  # noqa: E402
 
@@ -77,6 +78,12 @@ class TesseractPageGeometryTest(unittest.TestCase):
             self.assertEqual(selected_pageseg_policy(args), name)
         args = type("Args", (), {"projection": False, "component": False, "baseline": False})()
         self.assertEqual(selected_pageseg_policy(args), "legacy-fallback")
+
+    def test_native_pageseg_is_a_distinct_route(self) -> None:
+        args = type("Args", (), {"native_pageseg": True})()
+        self.assertEqual(selected_detector_route(args), "native-tesseract-pageseg")
+        args.native_pageseg = False
+        self.assertEqual(selected_detector_route(args), "dbnet")
 
     def test_repeated_benchmark_summary_is_deterministic(self) -> None:
         self.assertEqual(summarize([1.0, 2.0, 3.0]), {"min": 1.0, "median": 2.0, "p90": 3.0, "max": 3.0})
