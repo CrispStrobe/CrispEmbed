@@ -13,6 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-01 | `chore/crates-publish` / `../CrispEmbed-crates` | **Picked:** publish `crispembed` + `crispembed-sys` to crates.io. Touches ONLY `crispembed-sys/`, `.gitignore`, `scripts/vendor_rust_sources.sh` and two new workflow files — **no changes to `CMakeLists.txt`, `src/`, `ggml/` or any OCR/model code**. Checkpoint: root cause was that `cargo package` archives only files under the crate root, so build.rs's `manifest_dir.parent()` (the repo root it runs cmake on) does not exist in a published tarball — the crate would have uploaded fine and built for nobody. Fixed by vendoring tracked sources into `crispembed-sys/vendor/` (gitignored, 4.0 MiB compressed) with build.rs preferring the repo copy. Verify build of the unpacked tarball running. | **IN PROGRESS** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add a dependency-free EasyOCR interoperability contract test covering Python `lines`/`words` ordering, crop/normalized geometry, and LayoutLM `apply_ocr=False` serialization; keep real-page reference parity as the separate live gate. `tests/test_easyocr_interop_contract.py` passes with 3 words, 2 grouped lines, and ordered LayoutLM sidecar metadata | **COMPLETED** |
@@ -141,6 +142,53 @@ or graph topology—is the remaining quality blocker.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.8 structured stage metrics through the native/C pipeline API | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.5 orientation API surface: explicit `/preprocess/orientation` advisory endpoint with angle/confidence | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O10.7 explicit multi-page autorotate option for `/ocr/document`, with confidence gate and temporary rotated page handoff | **COMPLETED** |
+
+### OCR external head-to-head — CrispEmbed vs Tesseract / EasyOCR / PaddleOCR
+
+Every OCR parity artifact in this repo so far compares CrispEmbed against a
+*per-stage tensor reference*. That proves a graph is faithful to its blueprint;
+it does not answer whether the shipped pipeline reads a page as well or as fast
+as the engine it ports. Two new dependency-light scripts close that gap:
+
+- `tests/ocr_synth_corpus.py` — deterministic rendered corpus (20 fixtures: 4
+  paragraphs x clean/blur/noise/lowdpi/skew) carrying its own exact ground
+  truth, so CER/WER becomes an absolute number. On clean rendered text every
+  mature engine scores near zero, which makes a port bug separable from a hard
+  input.
+- `tests/ocr_external_parity.py` — runs system Tesseract, Python EasyOCR, Python
+  PaddleOCR and the native lanes over the same images. Reports absolute CER/WER
+  vs ground truth, *port-fidelity* CER vs the upstream engine's own reading of
+  the same image, and latency in two deliberately separate columns: `proc_ms`
+  (whole invocation, includes model load) and `engine_ms` (load-excluded, from
+  the native stage-bench stderr or from the in-process Python engines). The
+  columns are not comparable to each other; a non-zero exit is never timed as a
+  win.
+
+**Reachability fixes (the lanes were not runnable at all).** `engine::ppocrv6`
+is fully implemented in `ocr_orchestrator.cpp` — detector, quad crop, PP-LCNet
+orientation, recognizer, stage bench — but had **no `map_engine` C-ABI id and no
+`--ocr-engine` name**, so the PaddleOCR-parity lane could not be invoked from
+the CLI, the C ABI, or any binding. EasyOCR had a validated
+`easyocr_pipeline::{load,run_file}` but no orchestrator engine at all. Both are
+now wired: `--ocr-engine ppocrv6` (C-ABI id 16) and `--ocr-engine easyocr`
+(id 17), plus `--ocr-cls` for the optional PP-LCNet 0/180 classifier and
+registry entries naming the locally-converted artifacts.
+
+**First measured gap (PP-OCRv6 small, Metal, `synth_00_clean.png`, 3 lines).**
+Decoded output is not text: `iiiiii` / `laúieyotiieieioieioni.` /
+`íotuinióniiaieiasaieró` against a ground truth of "The quick brown fox jumps
+over the lazy dog." — with `mean_conf=0.94`, so the confidence signal does not
+detect it. Detector geometry is plausible (3 boxes for 3 lines); the recognizer
+output is wrong. Stage bench on the same run: `detect=62177.3 ms
+recognize=35630.8 ms total=97844.2 ms`, i.e. ~98 s for a 600x200 image that
+PaddleOCR reads in a fraction of a second. This run was CPU-contended and its
+absolute timings are therefore not a benchmark, but neither the two-orders-of-
+magnitude latency nor the garbage transcription is explainable by contention.
+This is consistent with the existing note that PP-OCRv6 CPU/graph parity was
+only ever accepted at the *tensor* boundary on crops, never on a rendered page
+end-to-end. Next: re-run uncontended for real numbers, then bisect the
+recognizer with `crispembed-diff` starting at the crop that feeds it, since the
+detector hands it geometry that looks right.
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 

@@ -13,6 +13,7 @@
 #include "ocr_pipeline.h"
 #include "ocr_crop.h"
 #include "easyocr_layout.h"
+#include "easyocr_pipeline.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -115,6 +116,7 @@ struct context {
     ppocrv6_det::context * ppdet = nullptr;         // PP-OCRv6 detector
     ppocrv6_ocr_context * pprec = nullptr;          // PP-OCRv6 recognizer
     pplcnet_orientation::context * ppori = nullptr; // optional PP-LCNet line orientation
+    easyocr_pipeline::context * easy = nullptr;     // DBNet detection + EasyOCR CRNN recognition
     layout_detect::context * layout = nullptr;      // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
@@ -406,6 +408,44 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                                          st.params.det_box_threshold, st.params.det_target_short, &geometry);
         return ocr_pipeline::run_file(ctx->dbnet, path, st.params.det_prob_threshold, st.params.det_box_threshold,
                                       st.params.det_target_short, &geometry);
+    }
+    case engine::easyocr: {
+        // EasyOCR's own detector is CRAFT; this stage pairs its CRNN
+        // recognizer with the repo's DBNet detector, which is what
+        // easyocr_pipeline already validates against the Python reference.
+        // `model_a` is therefore the DBNet GGUF, not a CRAFT one.
+        const bool easy_bench = std::getenv("CRISPEMBED_EASYOCR_BENCH") != nullptr;
+        const auto easy_started = std::chrono::steady_clock::now();
+        if (st.model_a.empty() || st.model_b.empty()) {
+            fprintf(stderr, "ocr_orchestrator: easyocr stage missing models (model_a=det, model_b=rec)\n");
+            return {};
+        }
+        if (!ctx->easy && !easyocr_pipeline::load(&ctx->easy, st.model_a.c_str(), st.model_b.c_str(), ctx->n_threads))
+            return {};
+        if (!ctx->easy) return {};
+        // Line mode matches EasyOCR's own `paragraph=False` line output; word
+        // mode exists for the LayoutLM/Tesseract-style word handoff and would
+        // fragment the text a CER comparison sees.
+        easyocr_pipeline::set_ordering_mode(ctx->easy, easyocr_layout::ordering_mode::lines);
+        const auto items =
+            px ? easyocr_pipeline::run_raw(ctx->easy, px, pw, ph, 3) : easyocr_pipeline::run_file(ctx->easy, path);
+        std::vector<ocr_pipeline::ocr_result> results;
+        results.reserve(items.size());
+        for (const auto & it : items) {
+            if (it.word.text.empty()) continue;
+            ocr_pipeline::ocr_result r;
+            r.box = { it.word.x, it.word.y, it.word.w, it.word.h, it.detector_confidence };
+            r.text = it.word.text;
+            r.confidence = it.word.confidence;
+            r.rec_confidence = it.word.confidence;
+            results.push_back(std::move(r));
+        }
+        if (easy_bench) {
+            fprintf(stderr, "[easyocr-stage-bench] total=%.1f ms units=%zu results=%zu\n",
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - easy_started).count(),
+                    items.size(), results.size());
+        }
+        return results;
     }
     case engine::ppocrv6: {
         const bool ppocr_bench = std::getenv("CRISPEMBED_PPOCRV6_BENCH") != nullptr;
@@ -1523,6 +1563,8 @@ static const char * engine_name(engine e) {
         return "unlimited_ocr";
     case engine::unified:
         return "unified";
+    case engine::easyocr:
+        return "easyocr";
     default:
         return "unknown";
     }
@@ -1779,6 +1821,7 @@ void free(context * ctx) {
     if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
     if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
     if (ctx->ppori) pplcnet_orientation::free(ctx->ppori);
+    if (ctx->easy) easyocr_pipeline::free(ctx->easy);
     if (ctx->layout) layout_detect::free(ctx->layout);
     if (ctx->table) table_parse_free(ctx->table);
     if (ctx->formula) ppformulanet_ocr_free(ctx->formula);
