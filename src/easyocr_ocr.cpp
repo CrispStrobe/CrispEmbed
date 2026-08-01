@@ -7,6 +7,7 @@
 #include "image_preprocess.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include "ggml.h"
 
 #include <algorithm>
@@ -248,7 +249,8 @@ static bool build_graph(easyocr_ocr_context * c) {
 easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
     (void)n_threads;
     auto * c = new easyocr_ocr_context();
-    c->backend = crispasr_init_gpu_backend();
+    const bool force_cpu = std::getenv("EASYOCR_FORCE_CPU") != nullptr;
+    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!c->backend || !core_gguf::load_weights(model_path, c->backend, "easyocr", c->wl)) {
         easyocr_ocr_free(c);
         return nullptr;
@@ -435,7 +437,8 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         const bool sparse_feature_pass = !strcmp(name, "features") && report.cos_global >= 0.99f;
         const bool pass = report.is_pass(0.99f) || sparse_feature_pass;
         print_diff_report(name, report, pass);
-        if (!pass && std::getenv("EASYOCR_DIFF_DEBUG") && row_dim >= 0) {
+        if (std::getenv("EASYOCR_DIFF_DEBUG") && row_dim >= 0 &&
+            (!pass || !strcmp(name, "sequence_input") || !strcmp(name, "bilstm_1") || !strcmp(name, "logits"))) {
             auto ref_values = ref.get_f32(name);
             const size_t row_size = row_dim < (int)ref.shape(name).size() ? (size_t)ref.shape(name)[row_dim] : 0;
             if (row_size > 0) {
@@ -465,6 +468,23 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
                 }
                 printf("easyocr-diff-debug %-16s worst_row=%zu cos=%.7f mine=%.6g ref=%.6g\n", name, worst_row, worst,
                        mine_row_norm, ref_row_norm);
+                if (!strcmp(name, "logits")) {
+                    std::vector<size_t> order(row_size);
+                    for (size_t j = 0; j < row_size; ++j) order[j] = j;
+                    const size_t top = std::min<size_t>(5, row_size);
+                    std::partial_sort(order.begin(), order.begin() + top, order.end(), [&](size_t a, size_t b) {
+                        return std::fabs(ordered[worst_row * row_size + a] -
+                                         ref_values.first[worst_row * row_size + a]) >
+                               std::fabs(ordered[worst_row * row_size + b] -
+                                         ref_values.first[worst_row * row_size + b]);
+                    });
+                    for (size_t k = 0; k < top; ++k) {
+                        const size_t cls = order[k];
+                        printf("easyocr-diff-debug logits-row=%zu class=%zu mine=%.7g ref=%.7g diff=%.7g\n", worst_row,
+                               cls, ordered[worst_row * row_size + cls], ref_values.first[worst_row * row_size + cls],
+                               ordered[worst_row * row_size + cls] - ref_values.first[worst_row * row_size + cls]);
+                    }
+                }
             }
         }
         if (!strcmp(name, "logits") && std::getenv("EASYOCR_DIFF_DEBUG")) {
