@@ -1354,3 +1354,14 @@ improved to `0.03209/0.11504`, mean width delta fell to `+2.42`, and worst
 width delta fell from `+80` to `+13`, with 12 regions preserved. This is a
 quality improvement on scan-strip, but remains diagnostic-only until validated
 on more page fixtures; exact output parity still fails.
+
+The per-line page comparator was corrected to group official TSV words by
+page/block/paragraph/line rather than by `word_num`. On the corrected
+row-blob-bounds run, both paths emit 12 lines and only 3/12 lines match
+exactly. The first differing line is line 0 (`<< 4 ...` official versus
+`“< A ...` native); lines 4, 7, and 9 match exactly. Overall CER/WER remains
+`0.03209/0.11504`, so this is a recognition/crop or decoder-quality TODO,
+not a segmentation-count or ordering failure. Native benchmark was
+`detect=89.5 ms`, `crop=258.5 ms`, `recognize=17216.3 ms`, `total=17564.4 ms`;
+official Tesseract CLI elapsed `47761.8 ms` in this run, but these timings are
+not yet a controlled backend-speed comparison.
