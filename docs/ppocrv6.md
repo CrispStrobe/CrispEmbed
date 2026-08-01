@@ -119,7 +119,10 @@ The graph-output gate is stricter than activation-reference parity: on the
 the CPU path emits `HI` (graph-vs-CPU logit cosine `0.2629`, maximum absolute
 error `23.77`). The graph therefore remains diagnostic-only; the decode probe
 is enabled with `CRISPEMBED_PPOCRV6_GRAPH_DEBUG=1` and does not affect the
-production result.
+production result. The graph now uses the correct `[W,H]` argument order for
+the head's `3x2` pooling, but the depthwise head convolution still collapses
+to a repeated bias-like activation; its dedicated weight/layout path remains
+the next parity target.
 
 Non-CPU detector graphs use F16 resident convolution weights by default for
 backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a

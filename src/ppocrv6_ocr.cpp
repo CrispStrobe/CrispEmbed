@@ -68,6 +68,7 @@ struct pp_graph_state {
     std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
     std::vector<ggml_context *> resident_ctxs;
     std::vector<ggml_backend_buffer_t> resident_bufs;
+    std::vector<std::pair<const char *, ggml_tensor *>> debug_taps;
     bool attempted = false;
     bool ready = false;
     // The recognizer graph has fixed crop dimensions. Keep its scheduler
@@ -500,6 +501,60 @@ static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tenso
     return dst;
 }
 
+// GGUF preserves the converter's contiguous Paddle [OC, IC/G, KH, KW]
+// convolution bytes, while ggml_conv_2d consumes [KW, KH, IC/G, OC]. The
+// dimensions alone cannot express this layout change; materialize the
+// reordered tensor once on the selected graph backend.
+static ggml_tensor * pp_graph_resident_conv(ppocrv6_ocr_context * c, const pp_conv & p, ggml_type type) {
+    if (!p.w || !c->graph.backend) return nullptr;
+    auto it = c->graph.resident.find(p.w);
+    if (it != c->graph.resident.end()) return it->second;
+    const int icg = p.in_ch / std::max(1, p.groups);
+    const size_t n = (size_t)p.kw * p.kh * icg * p.out_ch;
+    const std::vector<float> src = to_f32(p.w);
+    if (src.size() < n) return nullptr;
+    std::vector<float> data(n);
+    if (p.groups == p.in_ch) {
+        // The converter's depthwise tensors are already channel-major
+        // [OC, KH, KW], which is the layout consumed by ggml's depthwise
+        // im2col path after its [KW, KH, 1, OC] view.
+        data = src;
+    } else {
+        for (int oc = 0; oc < p.out_ch; ++oc)
+            for (int ic = 0; ic < icg; ++ic)
+                for (int ky = 0; ky < p.kh; ++ky)
+                    for (int kx = 0; kx < p.kw; ++kx) {
+                        const size_t paddle = ((size_t)oc * icg + ic) * p.kh * p.kw + (size_t)ky * p.kw + kx;
+                        const size_t ggml = (size_t)kx + (size_t)p.kw * (ky + (size_t)p.kh * (ic + (size_t)icg * oc));
+                        data[ggml] = src[paddle];
+                    }
+    }
+    ggml_init_params ip = { ggml_tensor_overhead() + 64, nullptr, true };
+    ggml_context * wc = ggml_init(ip);
+    if (!wc) return nullptr;
+    ggml_tensor * dst = ggml_new_tensor_4d(wc, type, p.kw, p.kh, icg, p.out_ch);
+    ggml_backend_buffer_t buf = ggml_backend_alloc_ctx_tensors(wc, c->graph.backend);
+    if (!dst || !buf) {
+        if (buf) ggml_backend_buffer_free(buf);
+        ggml_free(wc);
+        return nullptr;
+    }
+    if (type == GGML_TYPE_F16) {
+        std::vector<ggml_fp16_t> half(data.size());
+        ggml_fp32_to_fp16_row(data.data(), half.data(), (int64_t)half.size());
+        ggml_backend_tensor_set(dst, half.data(), 0, ggml_nbytes(dst));
+    } else {
+        ggml_backend_tensor_set(dst, data.data(), 0, ggml_nbytes(dst));
+    }
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "[ppocrv6-graph-weight] conv=%dx%dx%dx%d src0=%.7g dst0=%.7g\n", p.kw, p.kh, icg, p.out_ch,
+                src[0], data[0]);
+    c->graph.resident[p.w] = dst;
+    c->graph.resident_ctxs.push_back(wc);
+    c->graph.resident_bufs.push_back(buf);
+    return dst;
+}
+
 static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, const pp_conv & p) {
     if (!p.w || p.stride_h != p.stride_w) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
@@ -511,7 +566,11 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     const int icg = dw ? 1 : p.in_ch / p.groups;
     // Depthwise im2col requires F16; regular convolutions stay F32 to preserve
     // the scalar reference's accumulation precision.
-    ggml_tensor * w = pp_graph_resident(c, p.w, dw ? GGML_TYPE_F16 : GGML_TYPE_F32, p.kw, p.kh, icg, p.out_ch);
+    // Keep the CPU diagnostic graph in F32 so it can be compared against the
+    // scalar reference without introducing an avoidable half-precision seam;
+    // Metal depthwise im2col still uses F16 for its supported fast path.
+    const ggml_type graph_type = dw && !ggml_backend_is_cpu(c->graph.backend) ? GGML_TYPE_F16 : GGML_TYPE_F32;
+    ggml_tensor * w = pp_graph_resident_conv(c, p, graph_type);
     if (!w) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
@@ -639,7 +698,18 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     // logits as the graph output also avoids copying the backbone feature map
     // back to CPU merely to run two small projection layers.
     if (!c->large_stem) {
-        x = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 3, 2, 3, 2, 0, 0);
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            c->graph.debug_taps.push_back({ "backbone", x });
+            ggml_set_output(x);
+        }
+        // ggml addresses image dimensions as [W,H], while the reference
+        // recognizer pools [H,W] with a 3x2 kernel and 3x2 stride. Swap the
+        // arguments here so graph pooling matches the CPU sequence contract.
+        x = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 2, 3, 2, 3, 0, 0);
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            c->graph.debug_taps.push_back({ "pool", x });
+            ggml_set_output(x);
+        }
         pp_conv graph_head_dw = c->head_dw;
         // The CPU reference materializes two zero columns on both sides and
         // then performs a valid 1x5 convolution; express that equivalently as
@@ -650,14 +720,30 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
             if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph head failed\n");
             return false;
         }
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            c->graph.debug_taps.push_back({ "head_conv1", x });
+            ggml_set_output(x);
+        }
         x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm1_w, c->norm1_b, c->norm1_mean, c->norm1_var,
                         c->head_dw.out_ch);
         x = ggml_hardswish(c->graph.graph_ctx, x);
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            c->graph.debug_taps.push_back({ "head_act1", x });
+            ggml_set_output(x);
+        }
         x = pp_graph_conv(c, c->graph.graph_ctx, x, c->head_pw);
         if (!x) return false;
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            c->graph.debug_taps.push_back({ "head_conv2", x });
+            ggml_set_output(x);
+        }
         x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm2_w, c->norm2_b, c->norm2_mean, c->norm2_var,
                         c->head_pw.out_ch);
         x = ggml_hardswish(c->graph.graph_ctx, x);
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            c->graph.debug_taps.push_back({ "head_act2", x });
+            ggml_set_output(x);
+        }
         x = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, x, 2, 0, 1, 3));
         // The asymmetric 1x5 head changes the spatial width; derive the token
         // count from the actual element count instead of the pre-padding view.
@@ -711,6 +797,16 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     const auto finished = std::chrono::steady_clock::now();
     output.resize(ggml_nelements(c->graph.output));
     ggml_backend_tensor_get(c->graph.output, output.data(), 0, output.size() * sizeof(float));
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        for (const auto & tap : c->graph.debug_taps) {
+            std::vector<float> values(ggml_nelements(tap.second));
+            ggml_backend_tensor_get(tap.second, values.data(), 0, values.size() * sizeof(float));
+            fprintf(stderr, "[ppocrv6-graph-tap] %s shape=%lldx%lld first=%.7g %.7g %.7g %.7g\n", tap.first,
+                    (long long)tap.second->ne[0], (long long)tap.second->ne[1], values.size() > 0 ? values[0] : 0.0f,
+                    values.size() > 1 ? values[1] : 0.0f, values.size() > 2 ? values[2] : 0.0f,
+                    values.size() > 3 ? values[3] : 0.0f);
+        }
+    }
     w = (int)c->graph.output->ne[0];
     h = (int)c->graph.output->ne[1];
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH")) {
@@ -999,6 +1095,10 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             }
         }
     if (c->large_stem) return recognize_svtr(c, x, h, w, out_len);
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "[ppocrv6-cpu-tap] backbone shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
+                x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
+                x.size() > 3 ? x[3] : 0.0f);
     const int pooled_h = std::max(1, h / 3), pooled_w = std::max(1, w / 2);
     std::vector<float> pooled((size_t)c->head_dw.in_ch * pooled_h * pooled_w, 0.0f);
     for (int cc = 0; cc < c->head_dw.in_ch; ++cc)
@@ -1012,6 +1112,9 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     x.swap(pooled);
     h = pooled_h;
     w = pooled_w;
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "[ppocrv6-cpu-tap] pool shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w, x.size() > 0 ? x[0] : 0.0f,
+                x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f, x.size() > 3 ? x[3] : 0.0f);
     std::vector<float> padded((size_t)c->head_dw.in_ch * h * (w + 4), 0.0f);
     for (int cc = 0; cc < c->head_dw.in_ch; ++cc)
         for (int yy = 0; yy < h; ++yy)
@@ -1024,6 +1127,10 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     x.swap(y);
     h = oh;
     w = ow;
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "[ppocrv6-cpu-tap] head_act1 shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
+                x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
+                x.size() > 3 ? x[3] : 0.0f);
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.head_conv1", x.data(), x.size(), -1);
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_conv1 cos=%.6f |mine|=%.6g %s\n", r.cos_min,
@@ -1045,6 +1152,10 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     x.swap(y);
     h = oh;
     w = ow;
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "[ppocrv6-cpu-tap] head_act2 shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
+                x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
+                x.size() > 3 ? x[3] : 0.0f);
     const int pw = w;
     std::vector<float> seq((size_t)pw * c->head_dw.in_ch);
     for (int t = 0; t < pw; ++t)
