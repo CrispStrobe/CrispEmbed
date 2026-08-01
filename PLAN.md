@@ -418,7 +418,12 @@ downstream handoff parity, not detector-box similarity alone.
       Review of Tesseract `textord/makerow.cpp` confirms its authoritative
       boundary is connected blobs assigned by vertical overlap, line size,
       spacing, and fitted baselines; our projection splitter is only an
-      interim adapter and the component-row port remains pending.
+      interim adapter. An opt-in component prototype is available behind
+      `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG`. After a Tesseract-style
+      reassociation pass for short/detached blobs it produces the expected 12
+      rows on `scan_strip.png`, but its enlarged first-line crop currently
+      worsens recognizer output, so it remains experimental and is not enabled
+      in production.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
@@ -519,8 +524,16 @@ characters, and 0.836 mean confidence on the German official-print fixture.
 The projection fallback gives 24 regions, 1,606 characters, and 0.702 mean
 confidence. The reproducible TSV comparison reports 25 official lines, 141
 words, 881 non-whitespace word characters, and 0.866 mean word confidence;
-neither experimental path is yet a quality match, so DBNet remains the
-production default.
+the native default blob path reports 21 regions, 1,128 characters, 0.836
+confidence, CER 0.307, and WER 0.404 against the official text. Neither
+experimental path is yet a quality match, so DBNet remains the production
+default. The comparison is reproducible with
+`tools/compare_tesseract_page_metrics.py`.
+
+The component row-gap sweep (0, 2, 4, 6, and 8 pixels) did not improve the
+quality gate: the best alternate produced 23 regions but lower confidence
+(0.805). The default row fitter remains unchanged and the tuning variable is
+not enabled in production.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
