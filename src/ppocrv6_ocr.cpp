@@ -64,6 +64,7 @@ struct pp_graph_state {
     ggml_tensor * input = nullptr;
     ggml_tensor * output = nullptr;
     bool logits_output = false;
+    bool svtr_prefix_output = false;
     std::vector<uint8_t> graph_meta;
     std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
     std::vector<ggml_context *> resident_ctxs;
@@ -755,6 +756,35 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
             }
         }
     }
+    if (c->large_stem && std::getenv("CRISPEMBED_PPOCRV6_SVTR_GRAPH")) {
+        // Keep the SVTR attention/MLP decoder on the scalar reference path,
+        // but move its convolutional tokenization onto the persistent graph.
+        // The output is [hidden,tokens] with token-major contiguous storage.
+        const std::string p = "rec.head.encoder.conv_block.";
+        pp_conv c0 = conv(c->wl.tensors, p + "0.conv", c->stages.back().back().cm2.out_ch, c->hidden, 1, 1);
+        pp_conv c1 = conv(c->wl.tensors, p + "1.conv", c->stages.back().back().cm2.out_ch, c->hidden, 1, 1);
+        pp_conv c2 = conv(c->wl.tensors, p + "2.conv", c->hidden, c->hidden, 1, 1, c->hidden);
+        c2.kh = 1;
+        c2.kw = 7;
+        c2.pad_w = 3;
+        ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 2, 3, 2, 3, 0, 0);
+        ggml_tensor * residual = pp_graph_conv(c, c->graph.graph_ctx, pooled, c0);
+        ggml_tensor * branch = pp_graph_conv(c, c->graph.graph_ctx, pooled, c1);
+        if (!residual || !branch) return false;
+        residual = ggml_silu(c->graph.graph_ctx, residual);
+        branch = ggml_silu(c->graph.graph_ctx, branch);
+        branch = pp_graph_conv(c, c->graph.graph_ctx, branch, c2);
+        if (!branch) return false;
+        branch = ggml_silu(c->graph.graph_ctx, branch);
+        x = ggml_add(c->graph.graph_ctx, residual, branch);
+        x = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, x, 2, 0, 1, 3));
+        // On ggml's convolution layout the singleton spatial dimension can
+        // remain as the fastest axis after the permute. The bytes are already
+        // token-major; expose them as the decoder's [hidden,tokens] matrix.
+        const int64_t tokens = x->ne[2];
+        x = ggml_reshape_2d(c->graph.graph_ctx, x, c->hidden, tokens);
+        c->graph.svtr_prefix_output = true;
+    }
     // Complete the tiny/small recognizer graph through logits.  The large
     // SVTR decoder remains on its established CPU path for now.  Keeping the
     // logits as the graph output also avoids copying the backbone feature map
@@ -971,40 +1001,53 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
         }
 }
 
-static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> & x, int h, int w, int * out_len) {
+static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> & x, int h, int w, int * out_len,
+                                   bool prefix_encoded = false) {
     const int in_ch = c->stages.back().back().cm2.out_ch;
-    const int ph = std::max(1, h / 3), pw = std::max(1, w / 2);
-    std::vector<float> pooled((size_t)in_ch * ph * pw, 0.0f);
-    for (int cc = 0; cc < in_ch; ++cc)
-        for (int yy = 0; yy < ph; ++yy)
-            for (int xx = 0; xx < pw; ++xx) {
-                float sum = 0.0f;
-                for (int ky = 0; ky < 3; ++ky)
-                    for (int kx = 0; kx < 2; ++kx) sum += x[(size_t)cc * h * w + (yy * 3 + ky) * w + xx * 2 + kx];
-                pooled[(size_t)cc * ph * pw + yy * pw + xx] = sum / 6.0f;
-            }
-    int oh, ow;
-    std::vector<float> y, residual;
-    pp_conv c0, c1, c2;
-    const std::string p = "rec.head.encoder.conv_block.";
-    c0 = conv(c->wl.tensors, p + "0.conv", in_ch, c->hidden, 1, 1);
-    c1 = conv(c->wl.tensors, p + "1.conv", in_ch, c->hidden, 1, 1);
-    c2 = conv(c->wl.tensors, p + "2.conv", c->hidden, c->hidden, 1, 1, c->hidden);
-    c2.kh = 1;
-    c2.kw = 7;
-    c2.pad_h = 0;
-    c2.pad_w = 3;
-    if (!apply_conv(c0, pooled, ph, pw, residual, oh, ow)) return nullptr;
-    silu(residual);
-    if (!apply_conv(c1, pooled, ph, pw, y, oh, ow)) return nullptr;
-    silu(y);
-    std::vector<float> z;
-    if (!apply_conv(c2, y, ph, pw, z, oh, ow)) return nullptr;
-    silu(z);
-    for (size_t i = 0; i < z.size(); ++i) z[i] += residual[i];
-    std::vector<float> tok((size_t)ow * c->hidden);
-    for (int t = 0; t < ow; ++t)
-        for (int cc = 0; cc < c->hidden; ++cc) tok[(size_t)t * c->hidden + cc] = z[(size_t)cc * oh * ow + t];
+    int ow = 0;
+    std::vector<float> tok;
+    if (prefix_encoded) {
+        // pp_graph_run exposes [hidden,tokens] as w=hidden,h=tokens.
+        ow = h;
+        tok = x;
+    } else {
+        const int ph = std::max(1, h / 3), pw = std::max(1, w / 2);
+        std::vector<float> pooled((size_t)in_ch * ph * pw, 0.0f);
+        for (int cc = 0; cc < in_ch; ++cc)
+            for (int yy = 0; yy < ph; ++yy)
+                for (int xx = 0; xx < pw; ++xx) {
+                    float sum = 0.0f;
+                    for (int ky = 0; ky < 3; ++ky)
+                        for (int kx = 0; kx < 2; ++kx) sum += x[(size_t)cc * h * w + (yy * 3 + ky) * w + xx * 2 + kx];
+                    pooled[(size_t)cc * ph * pw + yy * pw + xx] = sum / 6.0f;
+                }
+        int oh, ow_full;
+        std::vector<float> y, residual;
+        const std::string p = "rec.head.encoder.conv_block.";
+        pp_conv c0 = conv(c->wl.tensors, p + "0.conv", in_ch, c->hidden, 1, 1);
+        pp_conv c1 = conv(c->wl.tensors, p + "1.conv", in_ch, c->hidden, 1, 1);
+        pp_conv c2 = conv(c->wl.tensors, p + "2.conv", c->hidden, c->hidden, 1, 1, c->hidden);
+        c2.kh = 1;
+        c2.kw = 7;
+        c2.pad_h = 0;
+        c2.pad_w = 3;
+        if (!apply_conv(c0, pooled, ph, pw, residual, oh, ow_full)) return nullptr;
+        silu(residual);
+        if (!apply_conv(c1, pooled, ph, pw, y, oh, ow_full)) return nullptr;
+        silu(y);
+        std::vector<float> z;
+        if (!apply_conv(c2, y, ph, pw, z, oh, ow_full)) return nullptr;
+        silu(z);
+        for (size_t i = 0; i < z.size(); ++i) z[i] += residual[i];
+        ow = ow_full;
+        tok.resize((size_t)ow * c->hidden);
+        for (int t = 0; t < ow; ++t)
+            for (int cc = 0; cc < c->hidden; ++cc) tok[(size_t)t * c->hidden + cc] = z[(size_t)cc * oh * ow + t];
+    }
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        fprintf(stderr, "[ppocrv6-svtr-prefix] mode=%s tokens=%d hidden=%d first=%.7g %.7g %.7g %.7g\n",
+                prefix_encoded ? "graph" : "cpu", ow, c->hidden, tok.size() > 0 ? tok[0] : 0.0f,
+                tok.size() > 1 ? tok[1] : 0.0f, tok.size() > 2 ? tok[2] : 0.0f, tok.size() > 3 ? tok[3] : 0.0f);
     const int heads = 8, hd = c->hidden / heads;
     for (const auto & b : c->svtr) {
         std::vector<float> a = tok, qkv, attn((size_t)ow * c->hidden, 0.0f), proj, mlp;
@@ -1113,7 +1156,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         }
         if (graph_done) {
             x.swap(graph_out);
-            if (c->diff) {
+            if (c->diff && !c->graph.svtr_prefix_output) {
                 // The compact reference archives predate the explicit
                 // graph_backbone alias; stage4 is the same tensor at this
                 // seam. Prefer the alias when a future archive provides it.
@@ -1225,7 +1268,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
                         r.is_pass() ? "PASS" : "FAIL");
             }
         }
-    if (c->large_stem) return recognize_svtr(c, x, h, w, out_len);
+    if (c->large_stem) return recognize_svtr(c, x, h, w, out_len, c->graph.svtr_prefix_output);
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] backbone shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
