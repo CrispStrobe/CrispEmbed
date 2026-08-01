@@ -1276,3 +1276,8 @@ Official mean word confidence was `0.7060`; native greedy word confidence was
 `0.9726`, while beam reported sequence confidence `0.9924` and no character
 confidences. This is a calibration/aggregation gap, not evidence for changing
 the recognizer weights or beam default.
+
+The page comparator now uses the same explicit tessdata/environment isolation.
+The scan-strip baseline is unchanged with that correction: official 12 lines,
+113 words, 451 chars versus native 12 regions and 566 chars, CER `0.03375`,
+WER `0.15044`.
