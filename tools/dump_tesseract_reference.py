@@ -371,6 +371,40 @@ def fc_forward(x, weight, bias, activation="tanh"):
     return y
 
 
+def int8_fc_forward(x, weight, bias):
+    """Match Tesseract's TF_INT_MODE row-wise FC arithmetic.
+
+    Each serialized row has one scale reconstructed from the largest absolute
+    row value (including its bias). Inputs and weights are rounded away from
+    zero into signed int8, accumulated in int32, and restored with the row
+    scale before the nonlinear LUT is applied.
+    """
+    x = np.asarray(x, dtype=np.float32)
+    weight = np.asarray(weight, dtype=np.float32)
+    bias = np.asarray(bias, dtype=np.float32)
+    out = np.empty((x.shape[0], weight.shape[0]), dtype=np.float32)
+    xi = np.where(x * np.float32(127.0) >= 0,
+                  np.floor(x * np.float32(127.0) + 0.5),
+                  -np.floor(-x * np.float32(127.0) + 0.5))
+    xi = np.clip(xi, -127, 127).astype(np.int32)
+    for row in range(weight.shape[0]):
+        max_abs = max(float(np.max(np.abs(weight[row]))), abs(float(bias[row])))
+        if max_abs == 0.0:
+            out[:, row] = 0.0
+            continue
+        scale = np.float32(max_abs / 127.0)
+        wi_scaled = weight[row] / scale
+        wi = np.where(wi_scaled >= 0,
+                      np.floor(wi_scaled + 0.5),
+                      -np.floor(-wi_scaled + 0.5))
+        wi = np.clip(wi, -127, 127).astype(np.int32)
+        bi_scaled = float(bias[row] / scale)
+        bi = int(np.floor(bi_scaled + 0.5) if bi_scaled >= 0 else -np.floor(-bi_scaled + 0.5))
+        acc = xi @ wi + bi * 127
+        out[:, row] = acc.astype(np.float32) * scale / np.float32(127.0)
+    return out
+
+
 def run_forward(root, image_gray, captures, int_mode=False):
     """Run the full Tesseract LSTM forward pass, capturing intermediates.
 
@@ -429,9 +463,9 @@ def run_forward(root, image_gray, captures, int_mode=False):
             H, W, C = x.shape
             x_flat = x.reshape(H * W, C)
             wm = layer["weights"]["fc"]
-            act = "tanh" if layer["type"] == "Tanh" else "linear"
+            act = "tanh" if layer["type"] in ("Tanh", "LinTanh") else "linear"
             if int_mode and act == "tanh":
-                x_flat = x_flat @ wm["weight"].T + wm["bias"]
+                x_flat = int8_fc_forward(x_flat, wm["weight"], wm["bias"])
                 x_flat = tesseract_tanh(x_flat)
             else:
                 x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
