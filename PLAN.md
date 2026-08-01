@@ -2702,3 +2702,9 @@ the pattern first.
   making non-overlapping/missing line candidates visible instead of hiding
   them in a mean. Twelve model-free geometry tests pass; no threshold is
   promoted without a real page run.
+
+- **Geometry harness environment isolation (2026-08-01).** Native geometry
+  comparisons now clear crop-padding, page-box, recoder, and DAWG experiment
+  gates before applying the selected segmentation policy. This prevents a
+  prior decoder/crop experiment from contaminating geometry evidence. Thirteen
+  model-free geometry tests pass; the full CLI rebuild remains resource-bound.

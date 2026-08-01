@@ -78,6 +78,16 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertEqual(result["matched_positive_iou_count"], 0)
         self.assertEqual(result["matched_zero_iou_count"], 1)
 
+    def test_geometry_harness_clears_runtime_experiment_gates(self) -> None:
+        source = (ROOT / "tools/compare_tesseract_page_geometry.py").read_text()
+        for key in (
+            "CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD",
+            "CRISPEMBED_TESSERACT_CROP_PAD",
+            "CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH",
+            "CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE",
+        ):
+            self.assertIn(f'"{key}"', source)
+
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
         passing = acceptance_checks(args, {"regions": 12}, {"cer": 0.019, "wer": 0.089})
