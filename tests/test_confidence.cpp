@@ -237,6 +237,7 @@ static void test_tesseract_image(const char * model_path, const char * image_pat
     int n_conf = 0;
     const float * conf = tesseract_lstm_confidences(ctx, &n_conf);
     const float sequence = tesseract_lstm_mean_confidence(ctx);
+    const float word = tesseract_lstm_word_confidence(ctx);
     float char_min = 0.0f, char_mean = 0.0f;
     if (conf && n_conf > 0) {
         char_min = conf[0];
@@ -248,8 +249,9 @@ static void test_tesseract_image(const char * model_path, const char * image_pat
         char_mean = (float)(sum / n_conf);
     }
     printf("  text: '%s' (%d chars) char_conf=%d char_min=%.6f char_mean=%.6f sequence_conf=%.6f word_conf=%.6f\n",
-           text ? text : "", len, n_conf, char_min, char_mean, sequence, tesseract_lstm_word_confidence(ctx));
+           text ? text : "", len, n_conf, char_min, char_mean, sequence, word);
     CHECK(sequence >= 0.0f && sequence <= 1.0f, "tesseract sequence confidence bounded");
+    CHECK(word >= 0.0f && word <= 1.0f, "tesseract word confidence bounded");
     const char * beam_env = std::getenv("CRISPEMBED_TESSERACT_BEAM_WIDTH");
     const char * recode_beam_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const bool beam_enabled =
