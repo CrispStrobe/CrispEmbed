@@ -868,7 +868,8 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                     if (std::strcmp(tap.first, "head_act2") == 0) {
                         token_major.resize(values.size());
                         for (int64_t t = 0; t < tw; ++t)
-                            for (int64_t ch = 0; ch < tc; ++ch) token_major[(size_t)t * tc + ch] = values[(size_t)ch * tw + t];
+                            for (int64_t ch = 0; ch < tc; ++ch)
+                                token_major[(size_t)t * tc + ch] = values[(size_t)ch * tw + t];
                         compare_data = token_major.data();
                     }
                     if (std::strcmp(tap.first, "backbone") == 0) {

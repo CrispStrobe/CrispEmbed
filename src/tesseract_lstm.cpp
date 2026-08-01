@@ -100,8 +100,7 @@ static void prepare_lstm_int_weights(lstm_weights & lw) {
     }
 }
 
-static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * input,
-                                      const int8_t * hidden) {
+static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * input, const int8_t * hidden) {
     const float scale = lw.q_scale[gate];
     if (scale == 0.0f) return 0.0f;
     int32_t acc = lw.bias_q[gate] * 127;
@@ -411,10 +410,11 @@ static void lstm_forward(const float * input, // (T, ni)
 
         // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
         for (int g = 0; g < gs; g++) {
-            gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
-                                          : int8_lstm_row_dot(W_ih + g * ni, W_hh + g * ns, ni, ns, bias[g], xt, h.data()))
-                                : bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
-                                      core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
+            gates[g] = int_mode
+                           ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                                     : int8_lstm_row_dot(W_ih + g * ni, W_hh + g * ns, ni, ns, bias[g], xt, h.data()))
+                           : bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
+                                 core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
         }
 
         for (int j = 0; j < ns; j++) {
@@ -469,8 +469,8 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
             // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
                 gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
-                                              : int8_lstm_row_dot(W_ih + g * channels, W_hh + g * ns, channels, ns, bias[g], xt,
-                                                                  h.data()))
+                                              : int8_lstm_row_dot(W_ih + g * channels, W_hh + g * ns, channels, ns,
+                                                                  bias[g], xt, h.data()))
                                     : bias[g] + core_cpu::dot_product(W_ih + g * channels, xt, channels) +
                                           core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
             }
