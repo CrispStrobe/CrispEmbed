@@ -68,7 +68,7 @@ jobs:
         if: runner.os == 'Windows'
         run: |
           .\build\Release\crispembed.exe --help 2>&1 || true
-          .\build\Release\test-backend-smoke.exe
+          .\build\Release\test-backend-smoke.exe cpu
         shell: pwsh
 
       - name: Smoke test (explicit Metal)
