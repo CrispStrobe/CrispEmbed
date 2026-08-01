@@ -872,11 +872,8 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                         std::strcmp(tap.first, "stem2") == 0) {
                         const auto ref = c->diff->get_f32(ref_name);
                         fprintf(stderr, "[ppocrv6-graph-debug] %s graph=%.7g %.7g %.7g %.7g ref=%.7g %.7g %.7g %.7g\n",
-                                tap.first,
-                                values.size() > 0 ? values[0] : 0.0f,
-                                values.size() > 1 ? values[1] : 0.0f,
-                                values.size() > 2 ? values[2] : 0.0f,
-                                values.size() > 3 ? values[3] : 0.0f,
+                                tap.first, values.size() > 0 ? values[0] : 0.0f, values.size() > 1 ? values[1] : 0.0f,
+                                values.size() > 2 ? values[2] : 0.0f, values.size() > 3 ? values[3] : 0.0f,
                                 ref.second > 0 ? ref.first[0] : 0.0f, ref.second > 1 ? ref.first[1] : 0.0f,
                                 ref.second > 2 ? ref.first[2] : 0.0f, ref.second > 3 ? ref.first[3] : 0.0f);
                     }
