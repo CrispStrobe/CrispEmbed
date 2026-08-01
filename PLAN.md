@@ -2730,3 +2730,9 @@ the pattern first.
   `total=12513.8 ms`. This matches the prior classical result and confirms
   that DBNet is not involved in this route; official-output parity remains
   open at page segmentation/line normalization and decoder semantics.
+
+- **Native-route benchmark propagation (2026-08-01).** Extended
+  `tools/benchmark_tesseract_page.py` with `--native-pageseg` and explicit
+  `detector_route` output, so repeated A/B runs cannot silently fall back to
+  DBNet. The wrapper and route-selection behavior are covered by the focused
+  Miniconda test suite.

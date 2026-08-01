@@ -1397,3 +1397,8 @@ CER/WER `0.03209/0.11504`, and 3/12 exact lines. Its native stage timing was
 `total=12513.8 ms`. The route is not using DBNet for box generation; its
 quality is identical to the established classical row path, so the remaining
 gap is page segmentation/line normalization and decoder semantics.
+
+The repeated benchmark wrapper now accepts `--native-pageseg` and records
+`detector_route`, preserving the DBNet-versus-native distinction across
+multi-repeat timing runs. Its route flag and comparator selection are covered
+by the 10-test focused harness.

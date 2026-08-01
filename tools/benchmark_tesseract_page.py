@@ -42,6 +42,8 @@ def main() -> int:
     parser.add_argument("--projection", action="store_true")
     parser.add_argument("--component", action="store_true")
     parser.add_argument("--baseline", action="store_true")
+    parser.add_argument("--native-pageseg", action="store_true",
+                        help="benchmark the native Tesseract-like row path instead of DBNet")
     parser.add_argument("--scratch", action="store_true", help="enable the gated activation scratch prototype")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
@@ -79,6 +81,8 @@ def main() -> int:
             command.append("--component")
         elif args.baseline:
             command.append("--baseline")
+        if args.native_pageseg:
+            command.append("--native-pageseg")
         env = os.environ.copy()
         env.pop("CRISPEMBED_TESSERACT_REUSE_SCRATCH", None)
         if args.scratch:
@@ -95,6 +99,7 @@ def main() -> int:
     result = {
         "fixture": str(args.image),
         "policy": policy,
+        "detector_route": records[-1]["native_crispembed"].get("detector_route", "dbnet"),
         "workers": args.workers,
         "scratch": args.scratch,
         "repeats": len(records),
