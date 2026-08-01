@@ -1251,6 +1251,10 @@ zero fabricated character confidences. The beam contract passes, but text and
 greedy confidence calibration are worse than the official reference and remain
 TODOs.
 
+With `--require-official-words --require-greedy-text-match`, that same fixture
+exits `1`: the official-word gate passes, while the text gate fails. This keeps
+the confidence contract from being mistaken for OCR-quality parity.
+
 ### Tesseract page-box geometry A/B (2026-08-01)
 
 `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` now controls the symmetric expansion of
