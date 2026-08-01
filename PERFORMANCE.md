@@ -1342,3 +1342,9 @@ The existing component-row segmentation A/B is a quality regression: it kept
 12 regions but produced CER/WER `0.10873/0.20354` versus the legacy baseline
 `0.03922/0.13274`, including a corrupted first line. Keep the component policy
 diagnostic-only and do not use the malformed-path run as benchmark evidence.
+
+`tools/compare_tesseract_crop_geometry.py` now provides a reproducible
+geometry-only benchmark. The current 12-line run reports mean native-minus-
+official deltas `dx=-2.08`, `dy=+1.83`, `dw=+4.33`, `dh=+1.50`; worst rows are
+width `+80`, vertical offset `+14`, and height `+12`. These are row-boundary
+quality findings, not a measured runtime regression.

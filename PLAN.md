@@ -2656,6 +2656,14 @@ the pattern first.
   with a malformed model path emitted no metrics and was discarded as invalid
   evidence.
 
+- **Tesseract crop-geometry comparator (2026-08-01).** Added
+  `tools/compare_tesseract_crop_geometry.py`, which compares `crops.tsv`
+  against official Tesseract TSV level-4 rows. On the current 12-line
+  scan-strip fixture, counts match, but native boxes average `dx=-2.08`,
+  `dy=+1.83`, `dw=+4.33`, `dh=+1.50`; the largest deltas are row 5 width
+  `+80`, row 10 vertical offset `+14`, and row 5 height `+12`. This identifies
+  local row construction/splitting errors, not a global crop-padding issue.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
