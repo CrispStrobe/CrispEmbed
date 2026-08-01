@@ -2595,3 +2595,12 @@ the pattern first.
   the default in the measured runs. Keep the control for alternate scan
   resolutions, but the current fixture points away from box expansion and
   toward line-image preprocessing/decoder semantics.
+
+- **Tesseract composed-recorder (2026-08-01).** Added opt-in
+  `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
+  classes against the serialized multi-code recoder and emits complete
+  unichar tokens. The existing single-code/fallback decoder remains the
+  default. Fraktur default and opt-in outputs are byte-identical on the
+  controlled line; a Chinese smoke run passes both modes without crashes, but
+  did not emit a multi-code class, so full composed-recoded quality parity and
+  dictionary/DAWG scoring remain open.
