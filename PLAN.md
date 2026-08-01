@@ -21,7 +21,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.1 PP-OCRv6 detector/recognizer graph port: replace CPU conv/linear forward with persistent ggml graphs on CPU/Metal/CUDA; preserve Q8 head policy and parity taps | **PENDING** |
-| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny/small recognizer runs one persistent graph through logits and the detector now has an opt-in stem+stage-0 graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; production routing remains gated on tensor parity and Metal validation | **IN PROGRESS** |
+| 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** O11.1 full-graph implementation contract: persistent static-shape graphs, scheduler-selected backend, backend-resident/dequantized weights, reusable input/output staging, batched line crops, and CPU cosine/logit parity fallback; PP-OCRv6 tiny/small recognizer runs one persistent graph through logits and the detector now constructs an opt-in full stem/backbone/neck/head graph via `CRISPEMBED_PPOCRV6_DET_GRAPH=1`; detector probability output is diagnostic-only until box/tensor parity, with CPU accept-gate fallback | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11.2 PP-LCNet line/page orientation graph port: backend-scheduled depthwise/pointwise/SE blocks with CPU fallback and orientation parity gates; graph prototype is preserved locally, but first-convolution kernel-layout parity is still failing and the shipped path remains CPU reference | **IN PROGRESS** |
 | 2026-07-31 | `main` | O11.3 GPU preprocessing handoff: benchmark and, where beneficial, graph-accelerate detector resize/normalize, quad warp, crop batching, and postprocessing without changing geometry | **PENDING** |
 | 2026-07-31 | `main` | O11.4 OCR portfolio graph audit: port or explicitly classify CPU-bound FormulaNet, MixTeX, SmolDocling, HMER/BTTR/PosFormer, and VLM vision necks | **PENDING** |
@@ -530,8 +530,16 @@ characters, and 0.836 mean confidence on the German official-print fixture.
 The projection fallback gives 24 regions, 1,606 characters, and 0.702 mean
 confidence. The reproducible TSV comparison reports 25 official lines, 141
 words, 881 non-whitespace word characters, and 0.866 mean word confidence;
-neither experimental path is yet a quality match, so DBNet remains the
-production default.
+the native default blob path reports 21 regions, 1,128 characters, 0.836
+confidence, CER 0.307, and WER 0.404 against the official text. Neither
+experimental path is yet a quality match, so DBNet remains the production
+default. The comparison is reproducible with
+`tools/compare_tesseract_page_metrics.py`.
+
+The component row-gap sweep (0, 2, 4, 6, and 8 pixels) did not improve the
+quality gate: the best alternate produced 23 regions but lower confidence
+(0.805). The default row fitter remains unchanged and the tuning variable is
+not enabled in production.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the

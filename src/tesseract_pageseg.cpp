@@ -346,7 +346,16 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
     for (const auto & b : blobs) heights.push_back(b.y1 - b.y0 + 1);
     std::nth_element(heights.begin(), heights.begin() + heights.size() / 2, heights.end());
     const int median_h = std::max(3, heights[heights.size() / 2]);
-    const int max_row_gap = std::max(3, (int)std::lround(median_h * 0.65f));
+    const int default_row_gap = std::max(3, (int)std::lround(median_h * 0.65f));
+    int max_row_gap = default_row_gap;
+    if (const char * gap_env = std::getenv("CRISPEMBED_TESSERACT_PAGESEG_ROW_GAP")) {
+        // Experimental tuning knob: Tesseract's row fitter is baseline-driven;
+        // this pixel gap is the portable approximation for scanned pages.
+        max_row_gap = std::clamp(std::atoi(gap_env), 0, std::max(3, height / 20));
+    }
+    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
+        std::fprintf(stderr, "tesseract_pageseg: components=%zu median_h=%d row_gap=%d\n",
+                     blobs.size(), median_h, max_row_gap);
     std::sort(blobs.begin(), blobs.end(), [](const blob & a, const blob & b) {
         return a.y0 == b.y0 ? a.x0 < b.x0 : a.y0 < b.y0;
     });
