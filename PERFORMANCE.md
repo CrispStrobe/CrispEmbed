@@ -1165,16 +1165,19 @@ mapping defect, not a graph discrepancy. The native fallback now exposes the
 unmapped class; no Chinese OCR-quality or quantized-speed claim is accepted
 until recode-beam composition is implemented and tested.
 
-German exposes a separate quality gap: the first LSTM stage differs by one
-int8 activation step, and the final logits have 3/150 argmax mismatches. Native
-decodes ` s.` while Python decodes `e  .`; this is not accepted despite all
-stage cosine gates passing.
+German's apparent quality gap was traced to the Python reference, not the
+native graph. Upstream Tesseract's `generate_lut.py` computes the 4096 tanh and
+logistic table entries with double-precision `math.tanh/exp`, then stores them
+as `TFloat`; the reference had evaluated NumPy float32 nonlinearities directly.
+Regenerated German references now pass all 9 stages exactly through the LSTM
+and finish at max logit error `3.58e-7`; native and Python both decode ` s.`.
 
-The completed seeded F32 sweep has exact native/Python decoded parity for 10 of
-12 languages on the controlled line. Korean is the second exception: 6/200
-logit argmax positions differ and native/Python diagnostic strings diverge,
-despite all nine tensor stages clearing the cosine gate. German and Korean are
-therefore quality TODOs, not green model validations.
+The corrected seeded F32 sweep has exact native/Python decoded parity for all
+12 languages on the controlled line. The stale Spanish reference was also
+regenerated after the LUT correction; its former one-blank decoded mismatch
+was a reference artifact. Korean's prior 6/200 argmax differences disappear
+when the production native LUT uses the same generated-table values as
+upstream Tesseract; the final Korean run has 0/200 mismatches and exits 0.
 
 All 51 corrected canonical F32/F16/Q8_0/Q4_K files are now uploaded to the
 intended `cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories.
