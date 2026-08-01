@@ -43,11 +43,13 @@ def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float,
     return lines
 
 
-def native_lines(cli: Path, model: Path, image: Path, component: bool) -> list[tuple[float, float, float, float]]:
+def native_lines(cli: Path, model: Path, image: Path, component: bool, baseline: bool) -> list[tuple[float, float, float, float]]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
     if component:
         env["CRISPEMBED_TESSERACT_COMPONENT_PAGESEG"] = "1"
+    if baseline:
+        env["CRISPEMBED_TESSERACT_COMPONENT_BASELINE"] = "1"
     proc = run(
         [
             str(cli),
@@ -110,15 +112,17 @@ def main() -> int:
     parser.add_argument("--lang", default="eng")
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--component", action="store_true")
+    parser.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     result = {
         "image": str(args.image),
         "psm": args.psm,
         "component": args.component,
+        "baseline": args.baseline,
         "comparison": compare(
             official_lines(args.image, args.lang, args.psm),
-            native_lines(args.cli, args.model, args.image, args.component),
+            native_lines(args.cli, args.model, args.image, args.component, args.baseline),
         ),
     }
     serialized = json.dumps(result, indent=2) + "\n"
