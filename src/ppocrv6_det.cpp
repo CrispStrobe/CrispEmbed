@@ -490,8 +490,10 @@ static bool graph_build(context * c, int h, int w) {
     c->graph.probability_output = true;
     c->graph.output = x;
     c->graph.taps = stage_out;
-    for (ggml_tensor * tap : c->graph.taps) ggml_set_output(tap);
-    for (const auto & tap : c->graph.named_taps) ggml_set_output(tap.second);
+    if (std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE")) {
+        for (ggml_tensor * tap : c->graph.taps) ggml_set_output(tap);
+        for (const auto & tap : c->graph.named_taps) ggml_set_output(tap.second);
+    }
     ggml_set_name(x, "ppocrv6_det_graph_stage0");
     ggml_set_output(x);
     ggml_build_forward_expand(c->graph.graph, x);
