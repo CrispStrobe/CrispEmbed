@@ -51,6 +51,14 @@
       `EASYOCR_FORCE_CPU=1` diagnostic confirms CPU and Metal are identical,
       and class-level tracing shows the drift is amplified in blank-class
       logits rather than caused by a token-table or backend mismatch.
+- [x] Prove causality with an identical-raster control: feeding both Python
+      and native the exact 128x64 OpenCV-resized grayscale raster makes input,
+      CNN, sequence, both BiLSTM layers, and logits cosine `1.000000` (only
+      ~1e-6 float noise). The graph and recurrent math are therefore correct;
+      the remaining strict-gate failure is solely the native sampler's
+      one-level uint8 difference from OpenCV. Keep this sampler boundary
+      isolated and do not weaken tensor parity or add OpenCV as a production
+      dependency.
 - DBNet→EasyOCR page smoke is now wired in `test-easyocr-dbnet`: the
   existing `cstr/dbnet-ic15-GGUF` F16 detector finds 98 regions on
   `scan_strip.png`, crops them before CRNN inference, and recognizes the
