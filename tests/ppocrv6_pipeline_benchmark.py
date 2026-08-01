@@ -59,9 +59,13 @@ def main() -> int:
                         help="maximum seconds per model variant (default: 900)")
     parser.add_argument("--fixture-limit", type=int, default=10,
                         help="run only the first N live fixtures for profiling (default: 10)")
+    parser.add_argument("--fixture-start", type=int, default=0,
+                        help="zero-based fixture offset for targeted profiling (default: 0)")
     args = parser.parse_args()
     if args.fixture_limit < 1 or args.fixture_limit > 10:
         parser.error("--fixture-limit must be between 1 and 10")
+    if args.fixture_start < 0 or args.fixture_start >= 10 or args.fixture_start + args.fixture_limit > 10:
+        parser.error("--fixture-start plus --fixture-limit must select fixtures within 0..9")
     all_rows = []
     for variant in args.variants:
         required = (f"PP-OCRv6_{variant}_det-f16.gguf", f"PP-OCRv6_{variant}_rec-q8-head.gguf",
@@ -73,6 +77,7 @@ def main() -> int:
         env["CRISPEMBED_MODELS_DIR"] = str(args.models_dir)
         env["CRISPEMBED_PPOCRV6_VARIANT"] = variant
         env["CRISPEMBED_PPOCRV6_FIXTURE_LIMIT"] = str(args.fixture_limit)
+        env["CRISPEMBED_PPOCRV6_FIXTURE_START"] = str(args.fixture_start)
         started = time.monotonic()
         try:
             proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False,
@@ -88,6 +93,8 @@ def main() -> int:
                 "engine": "ppocrv6",
                 "orientation": "pplcnet-0-180",
                 "variant": variant,
+                "fixture_start": args.fixture_start,
+                "fixture_limit": args.fixture_limit,
                 "timeout_seconds": args.timeout,
                 "elapsed_seconds": elapsed,
                 "rows": parse_rows(partial, variant),
@@ -104,7 +111,8 @@ def main() -> int:
             raise SystemExit(f"expected {args.fixture_limit} PP-OCRv6 {variant} benchmark rows, got {len(rows)}")
         all_rows.extend(rows)
     write_json(args.json_out, {"version": 1, "status": "ok", "engine": "ppocrv6",
-                               "orientation": "pplcnet-0-180", "rows": all_rows})
+                               "orientation": "pplcnet-0-180", "fixture_start": args.fixture_start,
+                               "fixture_limit": args.fixture_limit, "rows": all_rows})
     return 0
 
 

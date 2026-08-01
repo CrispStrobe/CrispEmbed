@@ -701,14 +701,19 @@ static void test_ppocrv6_pipeline_regression() {
         "tests/regression/images/cc0/arabic_printed_line.png",
         "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
     };
-    int fixture_limit = 10;
+    int fixture_start = 0;
+    if (const char * start_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_START")) {
+        const int parsed = atoi(start_env);
+        if (parsed >= 0 && parsed < 10) fixture_start = parsed;
+    }
+    int fixture_limit = 10 - fixture_start;
     if (const char * limit_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_LIMIT")) {
         const int parsed = atoi(limit_env);
         if (parsed > 0 && parsed < fixture_limit) fixture_limit = parsed;
     }
     int cases = 0;
     int total_regions = 0;
-    for (int fixture_index = 0; fixture_index < fixture_limit; ++fixture_index) {
+    for (int fixture_index = fixture_start; fixture_index < fixture_start + fixture_limit; ++fixture_index) {
         const char * fixture = fixtures[fixture_index];
         FILE * input = fopen(fixture, "r");
         if (!input) {
