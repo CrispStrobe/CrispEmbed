@@ -502,6 +502,9 @@ downstream handoff parity, not detector-box similarity alone.
       It now reports monotonic reading-order checks for both TSV and native
       boxes and can gate them with `--require-reading-order`; indexed IoU is
       therefore no longer the only signal for an ordering regression.
+      `tests/test_tesseract_page_geometry.py` covers the ordering, crop-delta,
+      spacing-delta, and equal-count ordering-regression cases without model
+      files.
       The aggregate page-metrics harness now selects `legacy-fallback`,
       `component`, `baseline`, or `projection` explicitly and clears stale
       policy environment variables between runs. On `scan_strip.png`, the
