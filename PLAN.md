@@ -594,6 +594,11 @@ characters, 0.836 confidence, and 78/78 model-gated orchestrator checks.
 The model-free orchestrator suite now also guards the two-row component
 geometry and reading order, preventing this default/gated-path regression from
 returning silently.
+The component adapter now falls through to the baseline matcher only when
+legacy grouping returns no boxes; this preserves the measured legacy
+German-page behavior while avoiding an empty classical result on harder
+layouts. The fallback remains behind the classical page-segmentation gate and
+DBNet is unchanged.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
