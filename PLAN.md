@@ -2558,6 +2558,16 @@ the pattern first.
   substitutions and punctuation despite matching region count; decoder,
   recoder, and line-image parity remain the active quality TODOs.
 
+- **Tesseract confidence harness hardening (2026-08-01).** The line-confidence
+  comparator now tolerates non-UTF-8 Tesseract diagnostics and removes stale
+  inherited `TESSDATA_PREFIX` when an explicit tessdata directory is supplied.
+  A valid cropped Fraktur line run produced official/native text differing only
+  by spacing (`1 hey` vs `1hey`), but official mean word confidence was
+  `0.7060` versus native greedy word confidence `0.9726`; beam sequence
+  confidence was `0.9924` with zero fabricated character confidences. Keep the
+  confidence calibration gate open until line-vs-word aggregation is compared
+  against the official certainty contract.
+
 - **Tesseract page-segmentation and beam A/B (2026-08-01).** Projection
   improved the scan-strip comparison to CER/WER `0.03197/0.12389` from the
   legacy `0.03375/0.15044`, with the same 12 regions; baseline matching was

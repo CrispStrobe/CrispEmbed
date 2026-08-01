@@ -1266,3 +1266,13 @@ both tighter candidates preserved 12 regions and the same decoded text:
 The box geometry is therefore not the dominant error on this fixture. Keep
 the gate for other scan resolutions, but do not change the default or use
 tighter boxes as a quality claim.
+
+### Tesseract confidence harness and line calibration (2026-08-01)
+
+The confidence comparator was hardened against non-UTF-8 Tesseract stderr and
+stale inherited `TESSDATA_PREFIX` values. On a cropped Fraktur line, official
+and native F32 text differed only by one missing space (`1 hey` vs `1hey`).
+Official mean word confidence was `0.7060`; native greedy word confidence was
+`0.9726`, while beam reported sequence confidence `0.9924` and no character
+confidences. This is a calibration/aggregation gap, not evidence for changing
+the recognizer weights or beam default.
