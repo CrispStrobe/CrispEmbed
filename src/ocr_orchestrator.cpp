@@ -674,7 +674,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             }
             ctx->tess_resolved_model = tess_model;
         }
+        const auto tess_bench_start = std::chrono::steady_clock::now();
         auto boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+        const auto tess_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
         // The IC15 DBNet artifact returns fragmented word-like regions on
         // historical pages. Tesseract-LSTM is a line recognizer, so preserve
@@ -685,6 +687,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         for (const auto & box : boxes)
             detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
         const auto line_regions = easyocr_layout::group_dbnet_lines(detected_regions);
+        const auto tess_group_done = std::chrono::steady_clock::now();
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
         if (!gray) return {};
@@ -713,6 +716,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         stbi_image_free(gray);
         if (crops.empty()) return {};
+        const auto tess_crop_done = std::chrono::steady_clock::now();
 
         // The recognizer context is stateful (captures and confidences), so
         // use one independent context per worker. Detection and crop order
@@ -764,6 +768,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         std::vector<ocr_pipeline::ocr_result> results;
         results.reserve(crops.size());
         for (size_t i = 0; i < slots.size(); ++i) if (valid[i]) results.push_back(std::move(slots[i]));
+        if (ctx->bench) {
+            const auto ms = [](auto a, auto b) {
+                return std::chrono::duration<double, std::milli>(b - a).count();
+            };
+            fprintf(stderr, "[tesseract-stage-bench] detect=%.1f ms group=%.1f ms crop=%.1f ms recognize=%.1f ms total=%.1f ms boxes=%zu lines=%zu\n",
+                    ms(tess_bench_start, tess_detect_done),
+                    ms(tess_detect_done, tess_group_done),
+                    ms(tess_group_done, tess_crop_done),
+                    ms(tess_crop_done, std::chrono::steady_clock::now()),
+                    ms(tess_bench_start, std::chrono::steady_clock::now()), boxes.size(), line_regions.size());
+        }
         return results;
     }
     case engine::parseq: {
