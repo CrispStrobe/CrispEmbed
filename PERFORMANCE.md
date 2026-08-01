@@ -1415,3 +1415,9 @@ geometry comparator now marks this as `alignment_valid=false` and reports the
 number of index-paired rows; its former mean `dy=257.7` was an alignment
 artifact, not a measured crop offset. A merge-aware line matcher remains a
 detector/geometry TODO before using per-row geometry deltas on this fixture.
+
+The crop comparator now has `--match-by-geometry`: the German native run
+matched 23 rows monotonically and exposed five unmatched official rows
+(`0,2,3,4,26`). It still exits 1 for the count mismatch, and the resulting
+matched deltas remain diagnostic until one-to-many merged-row matching is
+implemented.
