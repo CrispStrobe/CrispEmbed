@@ -33,6 +33,7 @@ def test_page_benchmark_preserves_exact_output_pair():
     assert '"native_text"' in BENCHMARK
     assert '"official_lines"' in BENCHMARK
     assert '"native_regions"' in BENCHMARK
+    assert '"timeout": args.timeout' in BENCHMARK
     assert '"identical"' in BENCHMARK
     assert '"DAWG scoring requires --recode-beam > 1"' in COMPARE
     assert '"DAWG scoring requires --recode-beam > 1"' in BENCHMARK

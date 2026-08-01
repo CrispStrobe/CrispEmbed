@@ -2735,3 +2735,8 @@ the pattern first.
   repeated benchmark wrappers now reject non-positive `--timeout` values at
   argument parsing, avoiding ambiguous subprocess behavior. The page benchmark
   source contract passes.
+
+- **Benchmark timeout provenance (2026-08-01).** Repeated page benchmark JSON
+  now records the effective per-subprocess timeout beside worker count and
+  policy, so slow or aborted runs remain auditable. The page benchmark source
+  contract passes; no quality or default-runtime behavior changed.
