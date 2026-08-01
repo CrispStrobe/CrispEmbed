@@ -775,12 +775,12 @@ static void forward(tesseract_lstm_context * ctx,
     float beam_log_score = -INFINITY;
     std::vector<float> greedy_label_confs;
     if (recode_width > 1) {
-        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false,
-                                        &ctx->recoder_codes, &beam_log_score);
+        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false, &ctx->recoder_codes,
+                                        &beam_log_score);
         beam_decoded = true;
     } else if (beam_width > 1) {
-        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false,
-                                        nullptr, &beam_log_score);
+        labels =
+            ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false, nullptr, &beam_log_score);
         beam_decoded = true;
     } else {
         int prev = -1;
@@ -811,8 +811,8 @@ static void forward(tesseract_lstm_context * ctx,
                 // prefix beam label has no one-to-one timestep confidence;
                 // leave that path empty until beam posterior aggregation is
                 // implemented instead of fabricating a probability.
-                ctx->char_confs.push_back(beam_decoded || label_index >= greedy_label_confs.size()
-                                              ? 0.0f : greedy_label_confs[label_index]);
+                ctx->char_confs.push_back(
+                    beam_decoded || label_index >= greedy_label_confs.size() ? 0.0f : greedy_label_confs[label_index]);
             }
         }
         prev = best;

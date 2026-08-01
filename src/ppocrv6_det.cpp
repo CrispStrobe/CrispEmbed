@@ -430,7 +430,7 @@ static bool graph_build(context * c, int h, int w) {
         fused[i] = graph_conv(c, c->graph.graph_ctx, stage_out[i], c->features[i].insert);
         if (!fused[i]) return false;
         ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, fused[i], GGML_OP_POOL_AVG, fused[i]->ne[0],
-                                           fused[i]->ne[1], fused[i]->ne[0], fused[i]->ne[1], 0, 0);
+                                            fused[i]->ne[1], fused[i]->ne[0], fused[i]->ne[1], 0, 0);
         ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].insert_se1);
         if (!gate) return false;
         gate = ggml_relu(c->graph.graph_ctx, gate);
@@ -441,15 +441,16 @@ static bool graph_build(context * c, int h, int w) {
         fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_mul(c->graph.graph_ctx, fused[i], gate));
     }
     for (int i = 2; i >= 0; --i)
-        fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_upscale(c->graph.graph_ctx, fused[i + 1], 2, GGML_SCALE_MODE_NEAREST));
+        fused[i] = ggml_add(c->graph.graph_ctx, fused[i],
+                            ggml_upscale(c->graph.graph_ctx, fused[i + 1], 2, GGML_SCALE_MODE_NEAREST));
     std::vector<ggml_tensor *> proc(4);
     for (int i = 0; i < 4; ++i) {
         ggml_tensor * z = graph_conv(c, c->graph.graph_ctx, fused[i], c->features[i].dw);
         if (!z) return false;
         z = graph_conv(c, c->graph.graph_ctx, z, c->features[i].pw);
         if (!z) return false;
-        ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, z, GGML_OP_POOL_AVG, z->ne[0], z->ne[1], z->ne[0],
-                                           z->ne[1], 0, 0);
+        ggml_tensor * pooled =
+            ggml_pool_2d(c->graph.graph_ctx, z, GGML_OP_POOL_AVG, z->ne[0], z->ne[1], z->ne[0], z->ne[1], 0, 0);
         ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].se1);
         if (!gate) return false;
         gate = ggml_relu(c->graph.graph_ctx, gate);

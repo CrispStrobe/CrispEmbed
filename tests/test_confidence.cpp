@@ -235,8 +235,7 @@ static void test_tesseract_image(const char * model_path, const char * image_pat
     int n_conf = 0;
     const float * conf = tesseract_lstm_confidences(ctx, &n_conf);
     const float sequence = tesseract_lstm_mean_confidence(ctx);
-    printf("  text: '%s' (%d chars) char_conf=%d sequence_conf=%.6f\n",
-           text ? text : "", len, n_conf, sequence);
+    printf("  text: '%s' (%d chars) char_conf=%d sequence_conf=%.6f\n", text ? text : "", len, n_conf, sequence);
     CHECK(sequence >= 0.0f && sequence <= 1.0f, "tesseract sequence confidence bounded");
     if (conf && n_conf > 0) {
         for (int i = 0; i < n_conf; ++i)
