@@ -105,8 +105,12 @@ measurement, not a production quality claim. The tiny recognizer graph now
 executes at roughly 19--24 ms/crop on MTL0, but its decoded output is not yet
 CPU-parity; it is diagnostic-only unless `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT=1`
 is set, and the CPU recognizer remains the fallback result. The current small
-and medium recognizers use the asymmetric SVTR stem and remain on the CPU path
-until their separate graph is implemented.
+and medium recognizers have an opt-in full SVTR graph. Set
+`CRISPEMBED_PPOCRV6_SVTR_GRAPH=1` and
+`CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH=1` together with
+`CRISPEMBED_PPOCRV6_GRAPH=1` to graph the asymmetric stem, backbone,
+tokenization, attention/MLP blocks, and final norm. CPU CTC decoding remains
+the output boundary until the graph is explicitly accepted.
 
 The tiny/small static-shape graph allocation is retained across line crops.
 Only the input staging tensor is refreshed per crop; backend buffer planning is
@@ -115,14 +119,14 @@ or the CPU reference fallback. A future dynamic-shape recognizer must clear
 the allocation before rebuilding its scheduler graph.
 
 The graph-output gate is stricter than activation-reference parity: on the
-`HI` line fixture, the accepted tiny graph currently emits blank tokens while
-the CPU path emits `HI` (graph-vs-CPU logit cosine `0.2629`, maximum absolute
-error `23.77`). The graph therefore remains diagnostic-only; the decode probe
-is enabled with `CRISPEMBED_PPOCRV6_GRAPH_DEBUG=1` and does not affect the
-production result. The graph now uses the correct `[W,H]` argument order for
-the head's `3x2` pooling, but the depthwise head convolution still collapses
-to a repeated bias-like activation; its dedicated weight/layout path remains
-the next parity target.
+`HI` line fixture, tiny accepted-output parity has been validated on CPU and
+Metal. Small/medium full-graph gold validation passes Arabic, receipt, and
+German fixtures via `tests/test_ppocrv6_graph_gold.py --require`: CPU logits
+cosine is `0.999995–0.999996`, Metal is `0.999956–0.999982`, with unchanged
+decoded text. The graph remains diagnostic-only unless explicitly accepted.
+Regenerated references are backed up under
+`/Volumes/backups/ai/crispembed-gguf/` and belong in the corresponding
+`cstr/PP-OCRv6_*_rec-GGUF` repositories.
 
 Non-CPU detector graphs use F16 resident convolution weights by default for
 backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a
