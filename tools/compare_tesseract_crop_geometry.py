@@ -118,6 +118,17 @@ def compare_geometry(native: list[dict[str, float]], official: list[dict[str, in
         })
     matched_native = {row["native_index"] for row in matches}
     matched_official = {row["official_index"] for row in matches}
+    merged_official_groups = []
+    for native_index, n in enumerate(native):
+        n_top, n_bottom = n["box_y"], n["box_y"] + n["box_h"]
+        covered = []
+        for official_index, o in enumerate(official):
+            o_top, o_bottom = o["top"], o["top"] + o["height"]
+            overlap = _overlap(n_top, n_bottom, o_top, o_bottom)
+            if overlap >= float(o["height"]) * 0.5:
+                covered.append(official_index)
+        if len(covered) > 1:
+            merged_official_groups.append({"native_index": native_index, "official_indices": covered})
     summary = {}
     for key in ("dx", "dy", "dw", "dh"):
         values = [row[key] for row in deltas]
@@ -132,6 +143,7 @@ def compare_geometry(native: list[dict[str, float]], official: list[dict[str, in
         "matched_rows": len(matches),
         "unmatched_native": sorted(set(range(len(native))) - matched_native),
         "unmatched_official": sorted(set(range(len(official))) - matched_official),
+        "merged_official_groups": merged_official_groups,
         "summary": summary,
         "rows": deltas,
     }

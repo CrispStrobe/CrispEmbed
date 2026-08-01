@@ -112,6 +112,8 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertEqual(result["alignment"], "monotonic-geometry")
         self.assertEqual(result["matched_rows"], 1)
         self.assertEqual(result["unmatched_official"], [0])
+        self.assertEqual(result["merged_official_groups"],
+                         [{"native_index": 0, "official_indices": [0, 1]}])
 
     def test_repeated_benchmark_summary_is_deterministic(self) -> None:
         self.assertEqual(summarize([1.0, 2.0, 3.0]), {"min": 1.0, "median": 2.0, "p90": 3.0, "max": 3.0})

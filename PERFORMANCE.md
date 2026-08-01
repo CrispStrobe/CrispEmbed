@@ -1421,3 +1421,13 @@ matched 23 rows monotonically and exposed five unmatched official rows
 (`0,2,3,4,26`). It still exits 1 for the count mismatch, and the resulting
 matched deltas remain diagnostic until one-to-many merged-row matching is
 implemented.
+
+The geometry report now exposes `merged_official_groups` when one native row
+covers at least half the vertical extent of multiple official rows. This
+separates merge candidates from genuinely missing rows without changing the
+production native pageseg policy.
+
+On the German fixture, the report finds merge candidates native `0` →
+official `1..4`, native `9` → official `12..13`, and native `22` → official
+`26..27`; official row `0` remains unmatched. These are concrete geometry
+targets for row-splitting work, not recognizer timing or tensor-parity data.
