@@ -173,6 +173,12 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         env["CRISPEMBED_TESSERACT_COMPONENT_BASELINE"] = "1"
     if args.per_line:
         env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
+    if args.crop_dump_dir is not None:
+        manifest = args.crop_dump_dir / "crops.tsv"
+        if manifest.exists():
+            raise RuntimeError(f"crop dump directory is not fresh: {manifest}")
+        args.crop_dump_dir.mkdir(parents=True, exist_ok=True)
+        env["CRISPEMBED_TESSERACT_CROP_DUMP_DIR"] = str(args.crop_dump_dir)
     proc = run([str(args.native_test)], env)
     matches = INFO_RE.findall(proc.stdout + proc.stderr)
     if not matches:
@@ -246,6 +252,8 @@ def main() -> int:
                         help="fail unless normalized official and native page text match exactly")
     parser.add_argument("--per-line", action="store_true",
                         help="capture and compare decoded native candidate lines")
+    parser.add_argument("--crop-dump-dir", type=Path,
+                        help="dump native line crops and crops.tsv into a fresh directory")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
