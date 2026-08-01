@@ -2650,3 +2650,10 @@ the pattern first.
   reading edges, with a defensive guard for future wider headers. The parser
   regression suite covers a malformed unicharset header and the valid
   membership path; no recognition behavior or default gate changed.
+
+- **DAWG scorer extraction (2026-08-01).** Extracted the diagnostic dictionary
+  bonus into the pure `tesseract_dawg_score` module and added a standalone
+  multi-code test covering a complete word before a space, final-word scoring,
+  and rejection of an incomplete dictionary prefix. This validates the
+  composition/membership seam without a model load; runtime scoring remains
+  opt-in and still requires real official word-choice fixtures.
