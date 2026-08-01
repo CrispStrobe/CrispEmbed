@@ -137,7 +137,9 @@ static int crispembed_test_main(int argc, char ** argv) {
         if (logits && ref.has("logits")) {
             auto [ref_logits, ref_logits_n] = ref.get_f32("logits");
             const auto logits_shape = ref.shape("logits");
-            const int classes = logits_shape.empty() ? 99 : (int)logits_shape[0];
+            const std::string class_meta = ref.meta("tesseract_lstm_ref.num_classes");
+            const int classes =
+                !class_meta.empty() ? atoi(class_meta.c_str()) : (logits_shape.empty() ? 99 : (int)logits_shape[0]);
             const int timesteps = std::min(logits_n, (int)ref_logits_n) / classes;
             int mismatches = 0;
             for (int t = 0; t < timesteps; ++t) {
@@ -196,6 +198,16 @@ static int crispembed_test_main(int argc, char ** argv) {
         }
 
         auto r = ref.compare(stage, cpp_data, cpp_n);
+        if (std::getenv("TESSERACT_DIFF_DEBUG") && strstr(stage, "after_lstm_") == stage) {
+            auto [ref_stage, ref_n] = ref.get_f32(stage);
+            int shown = 0;
+            for (int i = 0; i < std::min<size_t>((size_t)cpp_n, ref_n) && shown < 6; ++i) {
+                if (std::fabs(cpp_data[i] - ref_stage[i]) > 1.0e-6f) {
+                    printf("%s mismatch[%d]=%.9g ref=%.9g\n", stage, i, cpp_data[i], ref_stage[i]);
+                    shown++;
+                }
+            }
+        }
 
         const char * verdict;
         if (r.cos_min >= 0.9999f)
