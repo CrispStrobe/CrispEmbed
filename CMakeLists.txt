@@ -419,6 +419,10 @@ add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-craft-diff PRIVATE crispembed)
 
+add_executable(test-easyocr-craft-benchmark tests/test_easyocr_craft_benchmark.cpp)
+target_include_directories(test-easyocr-craft-benchmark PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-craft-benchmark PRIVATE crispembed)
+
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
     target_link_libraries(test-posformer-batch PRIVATE crispembed)

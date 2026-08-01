@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <string>
@@ -30,6 +31,7 @@ struct easyocr_craft_context {
     int width = 0;
     int height = 0;
     std::vector<float> input_host;
+    easyocr_craft_timing last_timing = {};
 };
 
 static ggml_tensor * req(easyocr_craft_context * c, const std::string & name) {
@@ -184,7 +186,17 @@ bool easyocr_craft_forward(easyocr_craft_context * c, const float * input, size_
     if (!c || n_elem != (size_t)c->width * c->height * 3) return false;
     c->input_host.assign(input, input + n_elem);
     ggml_backend_tensor_set(c->input, input, 0, n_elem * sizeof(float));
-    return ggml_backend_graph_compute(c->backend, c->graph) == GGML_STATUS_SUCCESS;
+    const auto start = std::chrono::steady_clock::now();
+    const bool ok = ggml_backend_graph_compute(c->backend, c->graph) == GGML_STATUS_SUCCESS;
+    const auto end = std::chrono::steady_clock::now();
+    c->last_timing.graph_ms = std::chrono::duration<double, std::milli>(end - start).count();
+    return ok;
+}
+
+bool easyocr_craft_last_timing(const easyocr_craft_context * c, easyocr_craft_timing * timing) {
+    if (!c || !timing) return false;
+    *timing = c->last_timing;
+    return true;
 }
 
 int easyocr_craft_diff(easyocr_craft_context * c, const char * path) {
