@@ -1164,3 +1164,8 @@ while the Python reference returned `<141>`. This is a harness-blind recoder
 mapping defect, not a graph discrepancy. The native fallback now exposes the
 unmapped class; no Chinese OCR-quality or quantized-speed claim is accepted
 until recode-beam composition is implemented and tested.
+
+The corrected F32/Q8_0/Q4_K canonical files are now uploaded to the intended
+`cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories. Existing
+F16 files have not yet been replaced; they remain a release TODO until fresh
+seeded F16 conversions are generated and checked.
