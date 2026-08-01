@@ -1337,3 +1337,8 @@ The component page-box pad A/B is also neutral for quality: with
 to the default and CER/WER stayed `0.03922/0.13274` with 12 regions. Do not
 count this as a speed win; the isolated run's timing was not stable enough for
 an optimization claim.
+
+The existing component-row segmentation A/B is a quality regression: it kept
+12 regions but produced CER/WER `0.10873/0.20354` versus the legacy baseline
+`0.03922/0.13274`, including a corrupted first line. Keep the component policy
+diagnostic-only and do not use the malformed-path run as benchmark evidence.

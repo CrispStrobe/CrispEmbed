@@ -2647,6 +2647,14 @@ the pattern first.
   mismatch; the next target is row-boundary construction and baseline
   assignment, not another crop-padding variant.
 
+- **Tesseract component-row A/B (2026-08-01).** The existing opt-in
+  `--component`/`CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` policy retained 12
+  regions but degraded scan-strip quality to CER/WER `0.10873/0.20354` and
+  corrupted the first line (`40eNArEBOg 10DE EES EEN`). Reject it; the legacy
+  row-clustering path remains the active baseline. A separate alternate run
+  with a malformed model path emitted no metrics and was discarded as invalid
+  evidence.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
