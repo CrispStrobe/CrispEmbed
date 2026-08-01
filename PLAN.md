@@ -2515,11 +2515,13 @@ the pattern first.
   metadata spot-checks confirm nonzero `sample_iteration`; no `mlx-community`
   repository was used.
 
-- **Tesseract seeded F32 sweep (2026-08-01).** Fresh references and native
-  diffs pass decoded parity for 10/12 canonical languages on the controlled
-  line. German has 3/150 and Korean 6/200 logit argmax mismatches despite all
-  tensor cosine gates passing; both remain quality TODOs and are not accepted
-  as fully parity-closed.
+- **Tesseract seeded F32 sweep (2026-08-01).** Corrected references and native
+  diffs now pass decoded parity for all 12 canonical languages on the
+  controlled line. German's former 3/150 mismatch and Spanish's one-blank
+  mismatch were stale-reference effects from NumPy float32 LUT generation;
+  Korean's former 6/200 mismatch was fixed by aligning the production native
+  LUT with upstream generated double-precision entries cast to `TFloat`. All
+  12 runs report 9/9 stages and exit 0.
 
   The cache now has an explicit `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE`
   fallback for controlled parity comparisons; cached mode remains the default.
@@ -2557,3 +2559,11 @@ the pattern first.
   greedy (`0.03197/0.12389`) but increased recognition from `9.66 s` to
   `29.75 s`; keep it diagnostic-only. Next TODO: line-image/crop geometry and
   Tesseract-compatible decoder/recoder semantics.
+
+- **Tesseract page-box geometry A/B (2026-08-01).** Added gated
+  `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` with the existing 3 px expansion as
+  the default. Legacy-page tests at 1/2/3 px all emitted 12 regions, 566 chars,
+  and identical CER/WER `0.03375/0.15044`; 1 px and 2 px were also slower than
+  the default in the measured runs. Keep the control for alternate scan
+  resolutions, but the current fixture points away from box expansion and
+  toward line-image preprocessing/decoder semantics.
