@@ -38,13 +38,15 @@ CPU-forced and Metal CRAFT outputs are byte-identical on this fixture.
 | Backend/model | Graph | Postprocess | Total | Python CPU reference | Ratio | Output/parity |
 |---|---:|---:|---:|---:|---:|---|
 | CPU, F16, 1 thread | 4178.6 ms | 8.3 ms | 4186.9 ms | 1213.450 ms | 3.45x | all taps pass; 96 regions |
-| CPU, F16, 8 threads | 2727.3 ms | 9.3 ms | 2736.7 ms | 1213.450 ms | 2.25x | 12 line units; `Brighton` present |
-| Metal, F16 | 4732.1 ms | 9.8 ms | 4742.0 ms | 1213.450 ms | 3.90x | all taps pass; 96 regions |
+| CPU, F16, 8 threads, persistent graph | 2907.2 ms warm | ~10 ms | ~2907 ms | 1213.450 ms | 2.40x | 98 rapid regions; `Brighton` present |
+| Metal, F16, persistent graph | 3499.4 ms warm | ~10 ms | ~3499 ms | 1213.450 ms | 2.89x | 98 rapid regions; `Brighton` present |
 
 F16 matches the fresh official MMOCR reference at backbone, neck, head, and
-probability-map boundaries. Native quality is on par on this fixture, but all
+probability-map boundaries. The detector now uses a shape-keyed persistent
+GGML graph; diagnostic tap retention is opt-in via
+`OCR_DETECT_CAPTURE_TAPS=1`. Native quality is on par on this fixture, but all
 native backend timings miss the reference speed target. Increasing CPU threads
-helps but does not close the gap. Q4_K decodes the same 96 regions but diverges
+and graph persistence help operationally but do not close the compute gap. Q4_K decodes the same 96 regions but diverges
 at `backbone_stage_0` (global cosine `0.9960006`, RMS `0.07697`) and ends at
 final-map cosine `0.9311001`; Q4_K is a quantization-quality TODO, not an
 accepted parity variant.

@@ -409,6 +409,9 @@ target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
 add_executable(test-dbnet-diff tests/test_dbnet_diff.cpp)
 target_link_libraries(test-dbnet-diff PRIVATE crispembed)
 
+add_executable(test-dbnet-benchmark tests/test_dbnet_benchmark.cpp)
+target_link_libraries(test-dbnet-benchmark PRIVATE crispembed)
+
 add_executable(test-easyocr-layout tests/test_easyocr_layout.cpp)
 target_link_libraries(test-easyocr-layout PRIVATE crispembed)
 
