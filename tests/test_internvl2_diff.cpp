@@ -50,6 +50,23 @@ static int crispembed_test_main(int argc, char ** argv) {
         return 1;
     }
 
+    // ── Guard: this harness feeds a synthetic gradient, so a reference dumped
+    // on a real image (dump_internvl2_reference.py --image ...) makes the
+    // vision-stage cosines meaningless (apples-to-oranges inputs). Refuse it
+    // loudly rather than report a misleading anti-correlation. ──
+    {
+        std::string mode = ref.meta("diff.input_mode");
+        if (!mode.empty() && mode != "gradient") {
+            printf("\n*** ERROR: reference was dumped with input_mode='%s', but this\n"
+                   "    harness compares against a SYNTHETIC GRADIENT. Vision-stage\n"
+                   "    cosines would be meaningless. Re-dump WITHOUT --image:\n"
+                   "      python tools/dump_internvl2_reference.py --model M -o ref.gguf\n",
+                   mode.c_str());
+            internvl2_ocr::free_(ctx);
+            return 1;
+        }
+    }
+
     // ── Prepare synthetic test image ────────────────────────────
     const int img_size = (int)ctx.m.vhp.image_size;
     std::vector<float> pixels(3 * img_size * img_size);

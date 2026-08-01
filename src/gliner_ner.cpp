@@ -15,6 +15,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include "core/gguf_loader.h"
@@ -236,10 +237,18 @@ struct gliner_context {
     bool weights_cached = false;
     bool bench = false;
 
-    // DeBERTa relative position cache (avoids 117 MB alloc + expansion per call)
-    std::vector<float> rel_embd_norm;          // LN-normalized rel embeddings [max_pos, H]
-    int rel_pos_T = -1;                        // T for which rel_pos_expanded_cache is valid
-    std::vector<float> rel_pos_expanded_cache; // [T*T, H] expanded for last T
+    // DeBERTa relative position cache.
+    // Level 1: LN-normalized rel embeddings [max_pos, H], computed once per context.
+    std::vector<float> rel_embd_norm;
+    // Level 2 (T-keyed): instead of expanding rel-pos to [H, T*T] and projecting the
+    // whole grid through k_w/q_w every call, project only the UNIQUE relative-position
+    // buckets used at this T ([H, rel_used_count], count <= 2T-1 << T*T) and gather the
+    // result with get_rows. idx_c2p/idx_p2c map each (i,j) pair-column to its bucket.
+    int rel_pos_T = -1;                 // T for which the caches below are valid
+    int rel_used_count = 0;             // number of distinct buckets used at this T
+    std::vector<float> rel_in_cache;    // [rel_used_count * H] normalized bucket embeddings
+    std::vector<int32_t> idx_c2p_cache; // [T*T]  column i*T+j -> compact bucket idx of (i,j)
+    std::vector<int32_t> idx_p2c_cache; // [T*T]  column x+T*y -> compact bucket idx of (x,y)
 
     // Output storage (valid until next call)
     std::vector<gliner_ner_entity> result_entities;
@@ -665,9 +674,11 @@ static std::vector<float> tensor_to_f32_backend(ggml_tensor * t, ggml_backend_t 
 // ============================================================================
 
 // Build DeBERTa encoder graph. Returns the last hidden state tensor [H, T].
-// Fills rel_pos_expanded_out for CPU-side position expansion after alloc.
+// n_rel_buckets = number of distinct relative-position buckets used at this T
+// (see gliner_context rel-pos cache). The named inputs "rel_in", "idx_c2p" and
+// "idx_p2c" are set after allocation.
 static ggml_tensor * gliner_build_deberta_encoder(ggml_context * g, const gliner_model & model, int T,
-                                                  ggml_tensor ** rel_pos_expanded_out) {
+                                                  int n_rel_buckets) {
     const auto & hp = model.hparams;
     const int H = (int)hp.hidden_size;
     const int n_heads = (int)hp.n_heads;
@@ -685,11 +696,19 @@ static ggml_tensor * gliner_build_deberta_encoder(ggml_context * g, const gliner
     cur = ggml_mul(g, cur, model.embd_ln_w);
     cur = ggml_add(g, cur, model.embd_ln_b);
 
-    // Pre-expanded position embeddings [H, T*T]
-    ggml_tensor * rel_pos_expanded = ggml_new_tensor_2d(g, GGML_TYPE_F32, H, (int64_t)T * T);
-    ggml_set_name(rel_pos_expanded, "rel_pos_expanded");
-    ggml_set_input(rel_pos_expanded);
-    *rel_pos_expanded_out = rel_pos_expanded;
+    // Unique relative-position bucket embeddings [H, n_rel_buckets] (normalized),
+    // plus per-pair bucket indices for the c2p and p2c grids. The heavy position
+    // projections k_w/q_w run over these ~2T-1 columns instead of the full T*T grid;
+    // ggml_get_rows then expands the projected result back to [H, T*T].
+    ggml_tensor * rel_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, H, n_rel_buckets);
+    ggml_set_name(rel_in, "rel_in");
+    ggml_set_input(rel_in);
+    ggml_tensor * idx_c2p = ggml_new_tensor_1d(g, GGML_TYPE_I32, (int64_t)T * T);
+    ggml_set_name(idx_c2p, "idx_c2p");
+    ggml_set_input(idx_c2p);
+    ggml_tensor * idx_p2c = ggml_new_tensor_1d(g, GGML_TYPE_I32, (int64_t)T * T);
+    ggml_set_name(idx_p2c, "idx_p2c");
+    ggml_set_input(idx_p2c);
 
     for (uint32_t il = 0; il < hp.n_layers; il++) {
         const auto & L = model.deb_layers[il];
@@ -717,10 +736,11 @@ static ggml_tensor * gliner_build_deberta_encoder(ggml_context * g, const gliner
         // c2c: Q^T @ K → [T, T, nh]
         ggml_tensor * scores = ggml_mul_mat(g, Ks, Qs);
 
-        ggml_tensor * P = rel_pos_expanded; // [H, T*T]
-
-        // c2p: project pos through K weights (with bias), dot with Q
-        ggml_tensor * Pk = ggml_add(g, ggml_mul_mat(g, L.k_w, P), L.k_b);
+        // c2p: project the UNIQUE bucket embeddings through K weights (with bias) once,
+        // then gather to the [H, T*T] grid; dot with Q. Equivalent to projecting the
+        // full expanded grid but over ~2T-1 columns instead of T*T (the dominant cost).
+        ggml_tensor * Pk_u = ggml_add(g, ggml_mul_mat(g, L.k_w, rel_in), L.k_b); // [H, n_rel_buckets]
+        ggml_tensor * Pk = ggml_get_rows(g, Pk_u, idx_c2p);                      // [H, T*T]
         Pk = ggml_reshape_4d(g, Pk, head_dim, n_heads, T, T);
         ggml_tensor * Pk_b = ggml_cont(g, ggml_permute(g, Pk, 0, 2, 1, 3));
         Pk_b = ggml_reshape_3d(g, Pk_b, head_dim, T, (int64_t)n_heads * T);
@@ -730,10 +750,10 @@ static ggml_tensor * gliner_build_deberta_encoder(ggml_context * g, const gliner
         c2p = ggml_reshape_3d(g, c2p, T, n_heads, T);
         c2p = ggml_cont(g, ggml_permute(g, c2p, 0, 2, 1, 3));
 
-        // p2c: transpose grid, project through Q weights, dot with K
-        ggml_tensor * P_p2c = ggml_reshape_2d(
-            g, ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, P, H, T, T), 0, 2, 1, 3)), H, (int64_t)T * T);
-        ggml_tensor * Pq = ggml_add(g, ggml_mul_mat(g, L.q_w, P_p2c), L.q_b);
+        // p2c: same trick through Q weights; idx_p2c indexes the transposed grid so
+        // no explicit [H, T*T] transpose/cont is materialized.
+        ggml_tensor * Pq_u = ggml_add(g, ggml_mul_mat(g, L.q_w, rel_in), L.q_b); // [H, n_rel_buckets]
+        ggml_tensor * Pq = ggml_get_rows(g, Pq_u, idx_p2c);                      // [H, T*T] (transposed)
         Pq = ggml_reshape_4d(g, Pq, head_dim, n_heads, T, T);
         ggml_tensor * Pq_b = ggml_cont(g, ggml_permute(g, Pq, 0, 2, 1, 3));
         Pq_b = ggml_reshape_3d(g, Pq_b, head_dim, T, (int64_t)n_heads * T);
@@ -785,11 +805,43 @@ static ggml_tensor * gliner_build_deberta_encoder(ggml_context * g, const gliner
     return cur;
 }
 
-// Expand DeBERTa relative position embeddings on CPU, with two-level caching:
+// DeBERTa relative-position bucket for the pair (i, j) (query i, key j). Mirrors
+// HF DebertaV2's build_relative_position + make_log_bucket_position, clamped to
+// the [0, max_pos) embedding table. Extracted so c2p and p2c share it exactly.
+static inline int deberta_rel_bucket(int i, int j, int pos_buckets, int max_pos) {
+    int bucket;
+    if (pos_buckets > 0) {
+        int rel = i - j;
+        int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
+        int abs_rel = std::abs(rel);
+        int mid = pos_buckets / 2;
+        int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
+        int signed_bucket;
+        if (abs_pos <= mid) {
+            signed_bucket = rel;
+        } else {
+            double log_ratio = std::log((double)abs_pos / mid) / std::log((double)(max_pos - 1) / mid);
+            int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
+            signed_bucket = log_pos * sign_val;
+        }
+        bucket = signed_bucket + pos_buckets;
+    } else {
+        bucket = i - j + max_pos / 2;
+    }
+    if (bucket < 0) bucket = 0;
+    if (bucket >= max_pos) bucket = max_pos - 1;
+    return bucket;
+}
+
+// Prepare DeBERTa relative-position inputs, with two-level caching:
 // 1. rel_embd_norm: LN-normalized embeddings, computed once per context lifetime.
-// 2. rel_pos_expanded_cache: expansion to [H, T*T], valid for a fixed T.
+// 2. compact-bucket set + index grids, valid for a fixed T. Instead of expanding
+//    rel-pos to [H, T*T] (projected redundantly through k_w/q_w every layer), we
+//    collect the DISTINCT buckets used at this T (count <= 2T-1 << T*T) into
+//    rel_in_cache and record, per pair-column, which compact bucket it maps to. The
+//    graph projects rel_in_cache once per layer and gathers with idx_c2p/idx_p2c.
 // For typical NER workloads (fixed document window size), both levels hit.
-static void fill_deberta_rel_pos(gliner_context & gctx, ggml_tensor * rpe_t, int T) {
+static void prepare_deberta_rel_pos(gliner_context & gctx, int T) {
     const gliner_model & model = gctx.model;
     const int H = (int)model.hparams.hidden_size;
     const int max_pos = (int)model.rel_embd_w->ne[1];
@@ -817,41 +869,37 @@ static void fill_deberta_rel_pos(gliner_context & gctx, ggml_tensor * rpe_t, int
         }
     }
 
-    // Level 2: expand to [H, T*T] — reuse if T unchanged.
+    // Level 2: compact used-bucket set + index grids — reuse if T unchanged.
     if (gctx.rel_pos_T != T) {
         gctx.rel_pos_T = T;
-        gctx.rel_pos_expanded_cache.resize((size_t)H * T * T);
+        gctx.idx_c2p_cache.resize((size_t)T * T);
+        gctx.idx_p2c_cache.resize((size_t)T * T);
+        std::vector<int> remap(max_pos, -1); // bucket -> compact index
+        std::vector<int> used;               // compact index -> bucket
+        // c2p grid: column i*T+j uses bucket(i, j).
         for (int i = 0; i < T; i++) {
             for (int j = 0; j < T; j++) {
-                int bucket;
-                if (pos_buckets > 0) {
-                    int rel = i - j;
-                    int sign_val = (rel > 0) ? 1 : ((rel < 0) ? -1 : 0);
-                    int abs_rel = std::abs(rel);
-                    int mid = pos_buckets / 2;
-                    int abs_pos = (rel < mid && rel > -mid) ? (mid - 1) : abs_rel;
-                    int signed_bucket;
-                    if (abs_pos <= mid) {
-                        signed_bucket = rel;
-                    } else {
-                        double log_ratio = std::log((double)abs_pos / mid) / std::log((double)(max_pos - 1) / mid);
-                        int log_pos = (int)std::ceil(log_ratio * (mid - 1)) + mid;
-                        signed_bucket = log_pos * sign_val;
-                    }
-                    bucket = signed_bucket + pos_buckets;
-                } else {
-                    bucket = i - j + max_pos / 2;
+                int b = deberta_rel_bucket(i, j, pos_buckets, max_pos);
+                if (remap[b] < 0) {
+                    remap[b] = (int)used.size();
+                    used.push_back(b);
                 }
-                if (bucket < 0) bucket = 0;
-                if (bucket >= max_pos) bucket = max_pos - 1;
-                memcpy(&gctx.rel_pos_expanded_cache[(size_t)(i * T + j) * H], &gctx.rel_embd_norm[(size_t)bucket * H],
-                       H * sizeof(float));
+                gctx.idx_c2p_cache[(size_t)i * T + j] = remap[b];
             }
         }
+        // p2c grid: column x+T*y uses bucket(x, y) — same bucket set (already mapped).
+        for (int y = 0; y < T; y++) {
+            for (int x = 0; x < T; x++) {
+                int b = deberta_rel_bucket(x, y, pos_buckets, max_pos);
+                gctx.idx_p2c_cache[(size_t)y * T + x] = remap[b];
+            }
+        }
+        gctx.rel_used_count = (int)used.size();
+        gctx.rel_in_cache.resize((size_t)gctx.rel_used_count * H);
+        for (int c = 0; c < gctx.rel_used_count; c++) {
+            memcpy(&gctx.rel_in_cache[(size_t)c * H], &gctx.rel_embd_norm[(size_t)used[c] * H], H * sizeof(float));
+        }
     }
-
-    ggml_backend_tensor_set(rpe_t, gctx.rel_pos_expanded_cache.data(), 0,
-                            gctx.rel_pos_expanded_cache.size() * sizeof(float));
 }
 
 // ============================================================================
@@ -977,23 +1025,14 @@ static void mlp_2layer(const float * input, // (N, in_dim)
 {
     std::vector<float> mid(N * mid_dim);
 
-    // Layer 0: Linear + ReLU
-    for (int n = 0; n < N; n++) {
-        for (int j = 0; j < mid_dim; j++) {
-            float val = b0[j];
-            for (int k = 0; k < in_dim; k++) val += w0[j * in_dim + k] * input[n * in_dim + k];
-            mid[n * mid_dim + j] = val > 0.0f ? val : 0.0f; // ReLU
-        }
-    }
+    // Layer 0: Linear + ReLU — batched SIMD GEMM (was a scalar matmul per token).
+    // w0 is [mid_dim, in_dim] = [out_dim, in_dim], matching linear_batch_cpu.
+    core_cpu::linear_batch_cpu(input, mid.data(), N, in_dim, mid_dim, w0, b0);
+    for (size_t i = 0; i < mid.size(); i++)
+        if (mid[i] < 0.0f) mid[i] = 0.0f;
 
-    // Layer 3: Linear (no activation)
-    for (int n = 0; n < N; n++) {
-        for (int j = 0; j < out_dim; j++) {
-            float val = b3[j];
-            for (int k = 0; k < mid_dim; k++) val += w3[j * mid_dim + k] * mid[n * mid_dim + k];
-            output[n * out_dim + j] = val;
-        }
-    }
+    // Layer 3: Linear (no activation) — batched SIMD GEMM.
+    core_cpu::linear_batch_cpu(mid.data(), output, N, mid_dim, out_dim, w3, b3);
 }
 
 // ============================================================================
@@ -1012,7 +1051,7 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
     if (force_cpu && force_cpu[0] && std::strcmp(force_cpu, "0") != 0) {
         ctx->backend = ggml_backend_cpu_init();
     } else {
-        ctx->backend = ggml_backend_init_best();
+        ctx->backend = crispasr_init_gpu_backend();
     }
     if (!ctx->backend) {
         ctx->backend = ggml_backend_cpu_init();
@@ -1264,8 +1303,10 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         ggml_init_params ip = { buf_size, nullptr, true };
         ggml_context * g = ggml_init(ip);
 
-        ggml_tensor * rpe_tensor = nullptr;
-        ggml_tensor * x = gliner_build_deberta_encoder(g, model, T, &rpe_tensor);
+        // Build the compact used-bucket set + index grids for this T before graph
+        // construction (the graph needs rel_used_count to size the rel_in input).
+        prepare_deberta_rel_pos(*ctx, T);
+        ggml_tensor * x = gliner_build_deberta_encoder(g, model, T, ctx->rel_used_count);
 
         // Projection: enc_hidden → gl_hidden
         ggml_tensor * proj = ggml_add(g, ggml_mul_mat(g, model.projection_w, x), model.projection_b);
@@ -1287,9 +1328,18 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
         ggml_tensor * inp_ids = ggml_graph_get_tensor(gf, "input_ids");
         ggml_backend_tensor_set(inp_ids, input_ids.data(), 0, T * sizeof(int32_t));
 
-        // Fill relative position embeddings
-        ggml_tensor * rpe_t = ggml_graph_get_tensor(gf, "rel_pos_expanded");
-        if (rpe_t) fill_deberta_rel_pos(*ctx, rpe_t, T);
+        // Set relative-position inputs: unique bucket embeddings + pair→bucket grids.
+        ggml_tensor * rel_in_t = ggml_graph_get_tensor(gf, "rel_in");
+        ggml_tensor * idx_c2p_t = ggml_graph_get_tensor(gf, "idx_c2p");
+        ggml_tensor * idx_p2c_t = ggml_graph_get_tensor(gf, "idx_p2c");
+        if (rel_in_t)
+            ggml_backend_tensor_set(rel_in_t, ctx->rel_in_cache.data(), 0, ctx->rel_in_cache.size() * sizeof(float));
+        if (idx_c2p_t)
+            ggml_backend_tensor_set(idx_c2p_t, ctx->idx_c2p_cache.data(), 0,
+                                    ctx->idx_c2p_cache.size() * sizeof(int32_t));
+        if (idx_p2c_t)
+            ggml_backend_tensor_set(idx_p2c_t, ctx->idx_p2c_cache.data(), 0,
+                                    ctx->idx_p2c_cache.size() * sizeof(int32_t));
 
         elapsed();
         gliner_cc_compute(ctx, gf, cc);
@@ -1427,16 +1477,11 @@ int gliner_ner_extract(void * ptr, const char * text, const char ** labels, int 
             float w = attn_weights[l];
             for (int i = 0; i < T * enc_hidden; i++) fused[i] += w * all_layer_outs[l][i];
         }
-        // Output projection
+        // Output projection — batched SIMD GEMM (was a scalar [enc_hidden, enc_hidden]
+        // matmul per token; the dominant layer-fusion cost).
         encoder_out.resize(T * enc_hidden);
-        for (int t = 0; t < T; t++) {
-            for (int d = 0; d < enc_hidden; d++) {
-                float val = ctx->fuser_out_proj_b[d];
-                for (int k = 0; k < enc_hidden; k++)
-                    val += ctx->fuser_out_proj_w[d * enc_hidden + k] * fused[t * enc_hidden + k];
-                encoder_out[t * enc_hidden + d] = val;
-            }
-        }
+        core_cpu::linear_batch_cpu(fused.data(), encoder_out.data(), T, enc_hidden, enc_hidden,
+                                   ctx->fuser_out_proj_w.data(), ctx->fuser_out_proj_b.data());
         GDBG("layer fusion: %.1f ms", elapsed());
         if (bench) {
             auto t_fuse1 = std::chrono::steady_clock::now();

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CrispEmbed OCR — WASM Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #f5f5f5; color: #333;
+    max-width: 800px; margin: 0 auto; padding: 24px;
+  }
+  h1 { font-size: 1.4rem; margin-bottom: 4px; }
+  .subtitle { color: #666; font-size: 0.9rem; margin-bottom: 20px; }
+  .card {
+    background: #fff; border-radius: 8px; padding: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.12); margin-bottom: 16px;
+  }
+  label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 0.9rem; }
+  input[type="text"], input[type="number"], select {
+    width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px;
+    font-size: 0.9rem; margin-bottom: 12px;
+  }
+  .tabs { display: flex; gap: 0; margin-bottom: 16px; }
+  .tab {
+    padding: 8px 16px; cursor: pointer; border: 1px solid #ccc;
+    background: #f8fafc; font-size: 0.85rem;
+  }
+  .tab:first-child { border-radius: 6px 0 0 6px; }
+  .tab:last-child { border-radius: 0 6px 6px 0; }
+  .tab.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+  button {
+    background: #2563eb; color: #fff; border: none; border-radius: 6px;
+    padding: 10px 20px; font-size: 0.95rem; cursor: pointer;
+  }
+  button:hover { background: #1d4ed8; }
+  button:disabled { background: #94a3b8; cursor: not-allowed; }
+  .drop-zone {
+    border: 2px dashed #cbd5e1; border-radius: 8px; padding: 40px 20px;
+    text-align: center; color: #64748b; cursor: pointer;
+    transition: border-color .15s, background .15s; position: relative;
+  }
+  .drop-zone.dragover { border-color: #2563eb; background: #eff6ff; }
+  .drop-zone img, .drop-zone canvas {
+    max-width: 100%; max-height: 300px; margin-top: 12px; border-radius: 4px;
+  }
+  .progress-bar {
+    width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px;
+    overflow: hidden; margin: 8px 0;
+  }
+  .progress-bar .fill {
+    height: 100%; background: #2563eb; width: 0%; transition: width .2s;
+  }
+  #status { font-size: 0.85rem; color: #64748b; min-height: 1.2em; }
+  #result-card { display: none; }
+  #result-text {
+    font-family: 'Courier New', monospace; font-size: 1rem;
+    background: #f8fafc; padding: 12px; border-radius: 4px;
+    white-space: pre-wrap; word-break: break-all;
+    border: 1px solid #e2e8f0; min-height: 40px;
+    max-height: 400px; overflow-y: auto;
+  }
+  .meta { font-size: 0.8rem; color: #64748b; margin-top: 6px; }
+  .row { display: flex; gap: 12px; align-items: flex-end; }
+  .row > * { flex: 1; }
+  .hidden { display: none; }
+  .region-box {
+    position: absolute; border: 2px solid #ef4444;
+    background: rgba(239,68,68,0.08); pointer-events: none;
+  }
+  .region-label {
+    position: absolute; top: -18px; left: 0; background: #ef4444;
+    color: #fff; font-size: 0.65rem; padding: 1px 4px; border-radius: 2px;
+    white-space: nowrap;
+  }
+  small { color: #94a3b8; }
+</style>
+</head>
+<body>
+
+<h1>CrispEmbed OCR</h1>
+<p class="subtitle">Client-side OCR powered by WebAssembly — no server needed.</p>
+
+<!-- Mode selector -->
+<div class="card">
+  <label>Mode</label>
+  <div class="tabs">
+    <div class="tab active" onclick="setMode('single')" id="tab-single">Single Model</div>
+    <div class="tab" onclick="setMode('pipeline')" id="tab-pipeline">Pipeline (Det+Rec)</div>
+    <div class="tab" onclick="setMode('cleanup')" id="tab-cleanup">Scan Cleanup</div>
+  </div>
+
+  <!-- Single model config -->
+  <div id="cfg-single">
+    <label for="model-preset">Model</label>
+    <select id="model-preset"></select>
+    <label for="model-url">Model URL (GGUF) — editable for manual override</label>
+    <input type="text" id="model-url"
+      value="https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf"
+      placeholder="https://...model.gguf">
+  </div>
+
+  <!-- Pipeline config -->
+  <div id="cfg-pipeline" class="hidden">
+    <label for="det-url">Detection Model (DBNet GGUF)</label>
+    <input type="text" id="det-url"
+      value="https://huggingface.co/cstr/dbnet-ic15-GGUF/resolve/main/dbnet-ic15-q4_k.gguf"
+      placeholder="https://...det.gguf">
+    <label for="rec-url">Recognition Model (TrOCR GGUF)</label>
+    <input type="text" id="rec-url"
+      value="https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf"
+      placeholder="https://...rec.gguf">
+  </div>
+
+  <!-- Cleanup config -->
+  <div id="cfg-cleanup" class="hidden">
+    <p style="color:#64748b;font-size:0.85rem;margin-bottom:12px;">
+      Classical scan cleanup: deskew, binarize, denoise, crop. No model needed.
+    </p>
+    <div class="row">
+      <div><label><input type="checkbox" id="opt-deskew" checked> Deskew</label></div>
+      <div><label><input type="checkbox" id="opt-crop" checked> Crop borders</label></div>
+      <div><label><input type="checkbox" id="opt-whiten"> Whiten bg</label></div>
+      <div><label><input type="checkbox" id="opt-binarize"> Binarize</label></div>
+    </div>
+  </div>
+
+  <div class="row" style="margin-top:12px;">
+    <div>
+      <label for="n-threads">Threads</label>
+      <input type="number" id="n-threads" value="1" min="1" max="8">
+    </div>
+    <div id="webgpu-opt" style="display:none">
+      <label><input type="checkbox" id="opt-webgpu"> WebGPU (experimental)</label>
+    </div>
+    <div style="flex:0 0 auto">
+      <button id="btn-init" onclick="init()">Load</button>
+    </div>
+  </div>
+  <div class="progress-bar"><div class="fill" id="progress-fill"></div></div>
+  <div id="status">Select a mode and click "Load".</div>
+  <div style="margin-top:8px;">
+    <small>Models are cached locally (OPFS) after the first download.
+    <a href="#" id="clear-cache" style="color:#2563eb;">Clear model cache</a></small>
+  </div>
+</div>
+
+<!-- Image input -->
+<div class="card">
+  <label>Image</label>
+  <div class="drop-zone" id="drop-zone"
+       ondragover="event.preventDefault(); this.classList.add('dragover')"
+       ondragleave="this.classList.remove('dragover')"
+       ondrop="handleDrop(event)"
+       onclick="document.getElementById('file-input').click()">
+    Drop an image here, or click to select
+  </div>
+  <input type="file" id="file-input" accept="image/*" style="display:none"
+         onchange="handleFile(this.files[0])">
+  <div style="margin-top:12px; display:flex; gap:12px; align-items:center;">
+    <button id="btn-process" onclick="processImage()" disabled>Process</button>
+    <span id="process-hint" style="font-size:0.85rem; color:#64748b;"></span>
+  </div>
+</div>
+
+<!-- Result -->
+<div class="card" id="result-card">
+  <label>Result</label>
+  <div id="result-text"></div>
+  <div class="meta" id="result-meta"></div>
+</div>
+
+<script>
+// ---------------------------------------------------------------------------
+// COI service worker: makes the page crossOriginIsolated on hosts that can't
+// set COOP/COEP headers (GitHub Pages), unlocking the multithreaded WASM
+// build (SharedArrayBuffer). One-time reload after first install.
+// ---------------------------------------------------------------------------
+if ('serviceWorker' in navigator && !crossOriginIsolated
+    && (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')) {
+  // The SW calls clients.claim(), so on first install `controllerchange`
+  // fires — the document must then be re-fetched THROUGH the SW to pick up
+  // the COOP/COEP headers. One reload, guarded against loops.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!crossOriginIsolated && !sessionStorage.getItem('coi-reloaded')) {
+      sessionStorage.setItem('coi-reloaded', '1');
+      location.reload();
+    }
+  });
+  navigator.serviceWorker.register('coi-sw.js')
+    .catch(() => {/* no isolation — single-threaded fallback */});
+}
+</script>
+<script>
+
+// All inference runs in a Web Worker (ocr-worker.js) so the page stays
+// responsive during multi-second WASM compute, with live engine progress.
+
+// Verified model presets (each checked CPU + WebGPU against the native
+// engine — tests/wasm-browser/engine-sweep.js). Picking one fills the URL
+// field below, which stays editable for manual override.
+// NOTE: the "Music (OMR)" group is newly added — the engines compile+link into
+// the WASM build and share the generic OCR dispatch, but they still need to be
+// run through engine-sweep.js to join the CPU+WebGPU-verified set.
+const MODEL_PRESETS = [
+  { group: 'Printed text', name: 'TrOCR small printed (45 MB)',
+    url: 'https://huggingface.co/cstr/trocr-small-printed-GGUF/resolve/main/trocr-small-printed-q8_0.gguf' },
+  { group: 'Printed text', name: 'Tesseract LSTM eng (3 MB)',
+    url: 'https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-f16.gguf' },
+  { group: 'Printed text', name: 'Tesseract LSTM deu (2 MB)',
+    url: 'https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-deu-f16.gguf' },
+  { group: 'Scene text', name: 'PARSeq tiny (7 MB)',
+    url: 'https://huggingface.co/cstr/parseq-GGUF/resolve/main/parseq-tiny-q8_0.gguf' },
+  { group: 'Handwritten text', name: 'TrOCR small handwritten (68 MB)',
+    url: 'https://huggingface.co/cstr/trocr-small-handwritten-GGUF/resolve/main/trocr-small-handwritten-q8_0.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'pix2tex (18 MB)', default: true,
+    url: 'https://huggingface.co/cstr/pix2tex-mfr-gguf/resolve/main/pix2tex-mfr-q4_k.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'Texo distill (13 MB)',
+    url: 'https://huggingface.co/cstr/texo-distill-gguf/resolve/main/texo-distill-q4_k.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'PP-FormulaNet-L (127 MB)',
+    url: 'https://huggingface.co/cstr/ppformulanet-l-gguf/resolve/main/ppformulanet-l-q4_k.gguf' },
+  { group: 'Math (printed) → LaTeX', name: 'TexTeller-3 (177 MB)',
+    url: 'https://huggingface.co/cstr/texteller-3-GGUF/resolve/main/texteller-3-q4_k.gguf' },
+  { group: 'Math (handwritten) → LaTeX', name: 'HMER (4 MB)',
+    url: 'https://huggingface.co/cstr/hmer-handwritten-math-gguf/resolve/main/hmer-hw-q4_k.gguf' },
+  { group: 'Math (handwritten) → LaTeX', name: 'BTTR (11 MB)',
+    url: 'https://huggingface.co/cstr/bttr-handwritten-math-gguf/resolve/main/bttr-hw-q4_k.gguf' },
+  { group: 'Math (handwritten) → LaTeX', name: 'PosFormer (10 MB)',
+    url: 'https://huggingface.co/cstr/posformer-hw-GGUF/resolve/main/posformer-hw-q4_k.gguf' },
+  { group: 'Math (mixed zh/en) → LaTeX', name: 'MixTeX (60 MB)',
+    url: 'https://huggingface.co/cstr/mixtex-zhen-gguf/resolve/main/mixtex-zhen-q4_k.gguf' },
+  // Optical Music Recognition (staff image → notation). Same generic OCR dispatch
+  // (crispembed_ocr_model_recognize auto-detects the arch from GGUF metadata).
+  { group: 'Music (OMR)', name: 'SMT — printed → bekern (24 MB)',
+    url: 'https://huggingface.co/cstr/smt-grandstaff-GGUF/resolve/main/smt-grandstaff-q8_0.gguf' },
+  { group: 'Music (OMR)', name: 'Polyphonic-TrOMR — photos → symbolic (31 MB)',
+    url: 'https://huggingface.co/cstr/tromr-GGUF/resolve/main/tromr-q8_0.gguf' },
+  { group: 'Music (OMR)', name: 'Flova — handwritten → LilyPond (88 MB)',
+    url: 'https://huggingface.co/cstr/flova-omr-GGUF/resolve/main/flova-q4_k.gguf' },
+];
+
+function initModelPicker() {
+  const sel = document.getElementById('model-preset');
+  const urlInput = document.getElementById('model-url');
+  const groups = {};
+  for (const p of MODEL_PRESETS) {
+    if (!groups[p.group]) {
+      groups[p.group] = document.createElement('optgroup');
+      groups[p.group].label = p.group;
+      sel.appendChild(groups[p.group]);
+    }
+    const o = document.createElement('option');
+    o.value = p.url;
+    o.textContent = p.name;
+    if (p.default) o.selected = true;
+    groups[p.group].appendChild(o);
+  }
+  const custom = document.createElement('option');
+  custom.value = '';
+  custom.textContent = 'Custom URL…';
+  sel.appendChild(custom);
+  sel.addEventListener('change', () => {
+    if (sel.value) urlInput.value = sel.value;
+    else { urlInput.value = ''; urlInput.focus(); }
+  });
+  // Manual edits flip the picker to Custom so the UI never lies.
+  urlInput.addEventListener('input', () => {
+    if (![...sel.options].some(o => o.value === urlInput.value)) sel.value = '';
+  });
+}
+
+let worker = null;
+let engineReady = false;
+let currentMode = 'single';
+let lastFile = null;
+let processing = false;
+let elapsedTimer = null;
+const loaderCache = {};      // variant dir -> loader path or ''
+
+async function probeLoader(dir) {
+  if (loaderCache[dir] !== undefined) return loaderCache[dir];
+  try {
+    const r = await fetch(dir + 'crispembed_ocr.js', { method: 'HEAD' });
+    loaderCache[dir] = r.ok ? dir + 'crispembed_ocr.js' : '';
+  } catch (_) { loaderCache[dir] = ''; }
+  return loaderCache[dir];
+}
+
+async function pickLoader() {
+  // WebGPU (opt-in checkbox): GPU compute; unsupported ops fall back to CPU
+  // inside the engine's scheduler. The JSPI build needs
+  // WebAssembly.Suspending (Chromium); Safari/Firefox get the Asyncify
+  // compat build. ?gpuCompat=1 forces the compat variant (testing).
+  if (navigator.gpu && document.getElementById('opt-webgpu').checked) {
+    const hasJspi = typeof WebAssembly.Suspending === 'function'
+      && new URLSearchParams(location.search).get('gpuCompat') !== '1';
+    if (hasJspi) {
+      const l = await probeLoader('webgpu/');
+      if (l) return l;
+    }
+    const lc = await probeLoader('webgpu-compat/');
+    if (lc) return lc;
+  }
+  if (crossOriginIsolated) {
+    // Prefer the PROXY_TO_PTHREAD build: multithreaded AND browser-safe. The
+    // plain 'threaded/' build deadlocks on ggml's pthread_join (compute threads
+    // block the servicer worker), so it only works single-threaded — the proxy
+    // build runs the blocking OCR on the runtime pthread instead. Fall back to
+    // threaded/ (kept for parity) then the single-threaded root build.
+    const p = await probeLoader('proxy/');
+    if (p) return p;
+    const l = await probeLoader('threaded/');
+    if (l) return l;
+  }
+  return 'crispembed_ocr.js';
+}
+
+function defaultThreads() {
+  if (!crossOriginIsolated) return 1;
+  return Math.min(4, Math.max(1, (navigator.hardwareConcurrency || 4) - 1));
+}
+
+function setMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + mode).classList.add('active');
+  document.getElementById('cfg-single').classList.toggle('hidden', mode !== 'single');
+  document.getElementById('cfg-pipeline').classList.toggle('hidden', mode !== 'pipeline');
+  document.getElementById('cfg-cleanup').classList.toggle('hidden', mode !== 'cleanup');
+  disposeWorker();
+  document.getElementById('btn-init').textContent = 'Load';
+  document.getElementById('status').textContent = 'Select a mode and click "Load".';
+  updateProcessButton();
+}
+
+function disposeWorker() {
+  if (worker) { worker.postMessage({ cmd: 'dispose' }); worker.terminate(); worker = null; }
+  engineReady = false;
+}
+
+function updateProcessButton() {
+  const btn = document.getElementById('btn-process');
+  const hint = document.getElementById('process-hint');
+  btn.disabled = processing || !(engineReady && lastFile);
+  if (processing)                    hint.textContent = 'Processing\u2026';
+  else if (engineReady && lastFile)  hint.textContent = 'Ready.';
+  else if (!engineReady && lastFile) hint.textContent = 'Image selected — load a model above, then process.';
+  else if (engineReady && !lastFile) hint.textContent = 'Model ready — select an image.';
+  else                               hint.textContent = '';
+}
+
+async function init() {
+  const btn = document.getElementById('btn-init');
+  const status = document.getElementById('status');
+  const fill = document.getElementById('progress-fill');
+  const nThreads = parseInt(document.getElementById('n-threads').value) || 1;
+  btn.disabled = true;
+  fill.style.width = '0%';
+
+  disposeWorker();
+  const loader = await pickLoader();
+
+  const initMsg = { cmd: 'init', mode: currentMode, loader, nThreads };
+  if (currentMode === 'single') {
+    initMsg.modelUrl = document.getElementById('model-url').value.trim();
+    if (!initMsg.modelUrl) { status.textContent = 'Enter a model URL.'; btn.disabled = false; return; }
+  } else if (currentMode === 'pipeline') {
+    initMsg.detUrl = document.getElementById('det-url').value.trim();
+    initMsg.recUrl = document.getElementById('rec-url').value.trim();
+    if (!initMsg.detUrl || !initMsg.recUrl) { status.textContent = 'Enter both model URLs.'; btn.disabled = false; return; }
+  }
+
+  window.__loaderUsed = loader;  // observable by tests
+  worker = new Worker('ocr-worker.js?loader=' + encodeURIComponent(loader));
+  worker.onmessage = (ev) => handleWorkerMessage(ev.data);
+  worker.onerror = (e) => { status.textContent = 'Worker error: ' + e.message; btn.disabled = false; };
+  worker.postMessage(initMsg);
+  status.textContent = 'Initializing WASM module' + (loader.startsWith('threaded') ? ' (multithreaded)' : '') + '\u2026';
+}
+
+let onResult = null;
+let onRunError = null;
+
+function handleWorkerMessage(msg) {
+  const status = document.getElementById('status');
+  const fill = document.getElementById('progress-fill');
+  if (msg.cmd === 'progress') {
+    fill.style.width = (msg.p * 100).toFixed(0) + '%';
+    if (msg.p < 0.80) status.textContent = 'Downloading model(s)\u2026 ' + (msg.p * 100).toFixed(0) + '%';
+    else               status.textContent = 'Loading into WASM memory\u2026';
+  } else if (msg.cmd === 'log') {
+    // Live engine progress (e.g. "ocr_pipeline: recognizing region 3/8")
+    if (processing) setStatusLog(msg.line);
+    else console.debug('[engine]', msg.line);
+  } else if (msg.cmd === 'ready') {
+    engineReady = true;
+    document.getElementById('btn-init').disabled = false;
+    document.getElementById('btn-init').textContent = 'Reload';
+    const th = crossOriginIsolated ? ' Threads available.' : '';
+    status.textContent = (currentMode === 'cleanup' ? 'Scan cleanup ready.'
+      : currentMode === 'pipeline' ? 'Pipeline loaded.' : 'Model loaded.')
+      + ' Drop or select an image.' + th;
+    updateProcessButton();
+  } else if (msg.cmd === 'error') {
+    document.getElementById('btn-init').disabled = false;
+    if (onRunError) { onRunError(new Error(msg.message)); return; }
+    status.textContent = 'Error: ' + msg.message;
+    stopElapsed();
+    processing = false;
+    updateProcessButton();
+  } else if (msg.cmd === 'result') {
+    if (onResult) onResult(msg);
+  }
+}
+
+let processT0 = 0;
+let lastLogLine = '';
+function setStatusLog(line) {
+  lastLogLine = line;
+}
+function startElapsed() {
+  processT0 = performance.now();
+  const status = document.getElementById('status');
+  elapsedTimer = setInterval(() => {
+    const s = ((performance.now() - processT0) / 1000).toFixed(0);
+    status.textContent = 'Processing\u2026 ' + s + 's'
+      + (lastLogLine ? ' — ' + lastLogLine : '');
+  }, 500);
+}
+function stopElapsed() {
+  if (elapsedTimer) { clearInterval(elapsedTimer); elapsedTimer = null; }
+  lastLogLine = '';
+}
+
+function handleDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+}
+
+function handleFile(file) {
+  if (!file || !file.type.startsWith('image/')) return;
+  lastFile = file;
+  const zone = document.getElementById('drop-zone');
+  const reader = new FileReader();
+  reader.onload = () => { zone.innerHTML = `<img src="${reader.result}" alt="preview">`; };
+  reader.readAsDataURL(file);
+  updateProcessButton();
+}
+
+async function fileToImageData(file) {
+  const bmp = await createImageBitmap(file);
+  const canvas = document.createElement('canvas');
+  canvas.width = bmp.width; canvas.height = bmp.height;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bmp, 0, 0);
+  return ctx.getImageData(0, 0, bmp.width, bmp.height);
+}
+
+async function processImage() {
+  if (!engineReady || !lastFile || processing) return;
+  processing = true;
+  updateProcessButton();
+
+  const status = document.getElementById('status');
+  const resultCard = document.getElementById('result-card');
+  const resultText = document.getElementById('result-text');
+  const resultMeta = document.getElementById('result-meta');
+  resultCard.style.display = 'block';
+  resultText.textContent = '\u2026';
+  resultMeta.textContent = '';
+  startElapsed();
+
+  try {
+    const imageData = await fileToImageData(lastFile);
+    const options = currentMode === 'cleanup' ? {
+      deskew: document.getElementById('opt-deskew').checked,
+      cropBorders: document.getElementById('opt-crop').checked,
+      whitenBackground: document.getElementById('opt-whiten').checked,
+      binarize: document.getElementById('opt-binarize').checked,
+    } : {};
+
+    const result = await new Promise((resolve, reject) => {
+      onResult = resolve;
+      onRunError = reject;
+      const buf = imageData.data.buffer;
+      worker.postMessage({ cmd: 'run', width: imageData.width,
+        height: imageData.height, data: buf, options }, [buf]);
+    });
+
+    const ms = (performance.now() - processT0).toFixed(0);
+    if (result.kind === 'single') {
+      resultText.textContent = result.text || '(no text detected)';
+      resultMeta.textContent = `Confidence: ${(result.confidence * 100).toFixed(1)}% | Time: ${ms} ms`;
+    } else if (result.kind === 'pipeline') {
+      const regions = (result.result && result.result.regions) || [];
+      const lines = regions.map((r, i) =>
+        `[${i + 1}] (${r.x.toFixed(0)},${r.y.toFixed(0)} ${r.w.toFixed(0)}x${r.h.toFixed(0)}) ` +
+        `conf=${(r.confidence * 100).toFixed(1)}% "${r.text}"`);
+      resultText.textContent = lines.join('\n') || '(no text detected)';
+      resultMeta.textContent = `${regions.length} region(s) | Time: ${ms} ms`;
+    } else if (result.kind === 'cleanup') {
+      const cleaned = new ImageData(new Uint8ClampedArray(result.data), result.width, result.height);
+      const canvas = document.createElement('canvas');
+      canvas.width = cleaned.width; canvas.height = cleaned.height;
+      canvas.getContext('2d').putImageData(cleaned, 0, 0);
+      const zone = document.getElementById('drop-zone');
+      zone.innerHTML = '';
+      zone.appendChild(canvas);
+      resultText.textContent = `Cleaned: ${cleaned.width}x${cleaned.height}`;
+      resultMeta.textContent = `Time: ${ms} ms`;
+    }
+    status.textContent = 'Done.';
+  } catch (e) {
+    resultText.textContent = 'Error: ' + e.message;
+    status.textContent = 'Processing failed.';
+    console.error(e);
+  } finally {
+    stopElapsed();
+    processing = false;
+    onResult = null;
+    onRunError = null;
+    updateProcessButton();
+  }
+}
+
+initModelPicker();
+
+// Default thread count reflects isolation state (threads need COOP/COEP).
+document.getElementById('n-threads').value = defaultThreads();
+
+document.getElementById('clear-cache').addEventListener('click', async (e) => {
+  e.preventDefault();
+  try {
+    const root = await navigator.storage.getDirectory();
+    await root.removeEntry('crispembed-models', { recursive: true });
+    document.getElementById('status').textContent = 'Model cache cleared.';
+  } catch (_) {
+    document.getElementById('status').textContent = 'Model cache already empty.';
+  }
+});
+
+// Offer the WebGPU toggle only when the browser has WebGPU and the build is
+// deployed alongside the demo.
+if (navigator.gpu) {
+  const dir = typeof WebAssembly.Suspending === 'function' ? 'webgpu/' : 'webgpu-compat/';
+  probeLoader(dir).then((l) => {
+    if (l) document.getElementById('webgpu-opt').style.display = '';
+  });
+}
+
+</script>
+</body>
+</html>

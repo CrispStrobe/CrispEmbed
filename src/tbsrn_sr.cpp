@@ -19,6 +19,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -341,7 +342,7 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
     core_gguf::free_metadata(meta);
 
     bool force_cpu = (getenv("TBSRN_SR_FORCE_CPU") && atoi(getenv("TBSRN_SR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "tbsrn", ctx->wl)) {
         fprintf(stderr, "tbsrn_sr: failed to load weights\n");

@@ -1,6 +1,6 @@
 // test_ocr_detect.cpp — smoke test for DBNet text detection.
 //
-// Usage: test-ocr-detect model.gguf [image.png]
+// Usage: test-ocr-detect model.gguf [image.png] [prob_threshold] [box_threshold]
 
 #include "ocr_detect.h"
 #include "core/clean_exit.h"
@@ -15,6 +15,8 @@ static int crispembed_test_main(int argc, char ** argv) {
 
     const char * model_path = argv[1];
     const char * image_path = argc > 2 ? argv[2] : nullptr;
+    const float prob_threshold = argc > 3 ? std::strtof(argv[3], nullptr) : 0.3f;
+    const float box_threshold = argc > 4 ? std::strtof(argv[4], nullptr) : 0.5f;
 
     // Load model
     ocr_detect::context * ctx = nullptr;
@@ -25,8 +27,8 @@ static int crispembed_test_main(int argc, char ** argv) {
 
     if (image_path) {
         // Detect from file
-        auto boxes = ocr_detect::detect_file(ctx, image_path);
-        printf("Detected %zu text regions:\n", boxes.size());
+        auto boxes = ocr_detect::detect_file(ctx, image_path, prob_threshold, box_threshold);
+        printf("Detected %zu text regions (prob=%.2f box=%.2f):\n", boxes.size(), prob_threshold, box_threshold);
         for (size_t i = 0; i < boxes.size(); i++) {
             auto & b = boxes[i];
             printf("  [%zu] (%.0f, %.0f)-(%.0f, %.0f) score=%.3f\n", i, b.x, b.y, b.x + b.w, b.y + b.h, b.score);

@@ -10,6 +10,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -433,7 +434,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     ctx.n_threads = n_threads;
     ctx.verbosity = verbosity;
 
-    if (verbosity >= 1) printf("glm_ocr: loading %s\n", gguf_path);
+    if (verbosity >= 1) fprintf(stderr, "glm_ocr: loading %s\n", gguf_path);
 
     if (!load_hparams(ctx, gguf_path)) {
         fprintf(stderr, "glm_ocr: failed to load hparams\n");
@@ -441,16 +442,16 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     }
 
     if (verbosity >= 1) {
-        printf("  Vision: %uL, %ud, %uH, patch=%u, image=%u\n", ctx.m.vhp.depth, ctx.m.vhp.hidden_size,
-               ctx.m.vhp.num_heads, ctx.m.vhp.patch_size, ctx.m.vhp.image_size);
-        printf("  LLM: %uL, %ud, %uH/%uKV, hd=%u, inter=%u, vocab=%u\n", ctx.m.lhp.num_hidden_layers,
-               ctx.m.lhp.hidden_size, ctx.m.lhp.num_attention_heads, ctx.m.lhp.num_key_value_heads, ctx.m.lhp.head_dim,
-               ctx.m.lhp.intermediate_size, ctx.m.lhp.vocab_size);
+        fprintf(stderr, "  Vision: %uL, %ud, %uH, patch=%u, image=%u\n", ctx.m.vhp.depth, ctx.m.vhp.hidden_size,
+                ctx.m.vhp.num_heads, ctx.m.vhp.patch_size, ctx.m.vhp.image_size);
+        fprintf(stderr, "  LLM: %uL, %ud, %uH/%uKV, hd=%u, inter=%u, vocab=%u\n", ctx.m.lhp.num_hidden_layers,
+                ctx.m.lhp.hidden_size, ctx.m.lhp.num_attention_heads, ctx.m.lhp.num_key_value_heads, ctx.m.lhp.head_dim,
+                ctx.m.lhp.intermediate_size, ctx.m.lhp.vocab_size);
     }
 
     // Prefer GPU backend when available
     bool force_cpu = (getenv("GLM_OCR_FORCE_CPU") && atoi(getenv("GLM_OCR_FORCE_CPU")));
-    ctx.backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
     ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
@@ -470,7 +471,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
 
     if (verbosity >= 1) {
         const char * bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";
-        printf("  Ready (%s, %d threads)\n", bname, n_threads);
+        fprintf(stderr, "  Ready (%s, %d threads)\n", bname, n_threads);
     }
     return true;
 }
@@ -479,6 +480,10 @@ static void free_kv_cache(context & ctx); // forward decl
 
 void free_(context & ctx) {
     free_kv_cache(ctx);
+    if (ctx.decode_galloc) {
+        ggml_gallocr_free(ctx.decode_galloc);
+        ctx.decode_galloc = nullptr;
+    }
     if (ctx.sched) {
         ggml_backend_sched_free(ctx.sched);
         ctx.sched = nullptr;
@@ -974,8 +979,8 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
     ctx.kvc.n_past = 0;
     ctx.kvc.allocated = true;
     if (ctx.verbosity >= 1) {
-        printf("  KV cache: %d layers, max_seq=%d, %.1f MB\n", n_layers, max_seq,
-               (float)ggml_backend_buffer_get_size(ctx.kvc.buf) / 1024 / 1024);
+        fprintf(stderr, "  KV cache: %d layers, max_seq=%d, %.1f MB\n", n_layers, max_seq,
+                (float)ggml_backend_buffer_get_size(ctx.kvc.buf) / 1024 / 1024);
     }
     return true;
 }
@@ -1173,13 +1178,44 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
     const int T = n_tokens;
     const int Lk = n_past + T;
 
+    // GLM_OCR_DECODE_CACHE=1: reserve a dedicated gallocr once for the max decode
+    // graph and compute sched-free (single-backend, constant node count → every
+    // per-step alloc hits the no-realloc fast path, skipping split_graph).
+    // Output-identical. Same trick as got_ocr.
+    // Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different
+    // graph shape (image splice, full-sequence mRoPE) and stays on the sched.
+    static const bool use_cache = (std::getenv("GLM_OCR_DECODE_CACHE") != nullptr);
+    const bool cache_this = use_cache && n_past > 0;
+    if (cache_this && !ctx.decode_galloc) {
+        ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
+        llm_graph rg = build_llm_graph(ctx, 1, ctx.kvc.max_seq - 1, true);
+        bool reserved = ggml_gallocr_reserve(ctx.decode_galloc, rg.gf);
+        ggml_free(rg.gctx);
+        if (!reserved) {
+            fprintf(stderr, "glm_ocr: decode gallocr reserve failed; using sched\n");
+            ggml_gallocr_free(ctx.decode_galloc);
+            ctx.decode_galloc = nullptr;
+        } else {
+            fprintf(stderr, "glm_ocr: decode-step graph cache active (reserved at max_seq=%d)\n", ctx.kvc.max_seq);
+        }
+    }
+    const bool cache_active = cache_this && ctx.decode_galloc;
+
     llm_graph lg = build_llm_graph(ctx, T, n_past, true);
 
-    ggml_backend_sched_reset(ctx.sched);
-    if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
-        fprintf(stderr, "glm_ocr: cached step alloc failed\n");
-        ggml_free(lg.gctx);
-        return false;
+    if (cache_active) {
+        if (!ggml_gallocr_alloc_graph(ctx.decode_galloc, lg.gf)) {
+            fprintf(stderr, "glm_ocr: cached step gallocr alloc failed\n");
+            ggml_free(lg.gctx);
+            return false;
+        }
+    } else {
+        ggml_backend_sched_reset(ctx.sched);
+        if (!ggml_backend_sched_alloc_graph(ctx.sched, lg.gf)) {
+            fprintf(stderr, "glm_ocr: cached step alloc failed\n");
+            ggml_free(lg.gctx);
+            return false;
+        }
     }
 
     ggml_backend_tensor_set(lg.token_in, token_ids, 0, T * sizeof(int32_t));
@@ -1278,7 +1314,11 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
         }
     }
 
-    ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    if (cache_active) {
+        ggml_backend_graph_compute(ctx.backend, lg.gf);
+    } else {
+        ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
+    }
 
     if (lg.logits_out) {
         last_logits_out.resize(V);

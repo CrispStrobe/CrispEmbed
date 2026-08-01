@@ -65,6 +65,78 @@ mat-vec) kernel issue, not a bandwidth effect; see
 is unaffected (all three quants: cos ≥ 0.99996 vs f32, identical OCR — see
 [`docs/got-ocr2.md`](docs/got-ocr2.md)).
 
+### DBNet text detection — scanline box scoring (2026-07-13, M1 CPU)
+
+`extract_boxes`' polygon scoring was O(bbox_area × contour_len) (ray-cast every
+bbox pixel against the full traced contour) — pathological when a degenerate
+component yields a very long contour. Rewritten as a scanline polygon fill
+(even-odd-identical → **byte-identical boxes**, `OCR_DETECT_SCALAR_SCORE=1` for
+the old path). dbnet-ic15-q4_k, forced CPU, a 10-line page:
+
+| Stage | Before | After |
+|-------|--------|-------|
+| DBNet postprocess | 43 326 ms | **1 540 ms** (~28×) |
+| Detection total (graph 3 s + postproc) | 46.4 s | **4.9 s** |
+| Full DBNet+TrOCR pipeline (14 regions) | ~46 s | **7.2 s** (detect 4.4 · batch-enc 2.5 · decode 0.3) |
+
+Note the decode is not the pipeline bottleneck here — the detection conv graph
+and the ViT crop encoder are (both inherent compute). See LEARNINGS / HISTORY.
+
+### DBNet degenerate-component fallback (2026-07-31, Apple M1 Metal)
+
+The existing scanline scorer exposed a second postprocessing failure: valid
+4-connected DBNet components could produce a one-point contour, making polygon
+score zero and rejecting every box at the default `box_threshold=0.5`. The
+postprocessor now falls back to the component bounding box and mean probability
+for contours with fewer than three points.
+
+On `tests/regression/images/fox.png` with
+`dbnet-ic15-q4_k.gguf`, this changes detection from **0 to 10 boxes**. The
+full DBNet+TrOCR pipeline recognizes 10 regions in about **5.0 s warm** on the
+M1 Metal path (detection ~3.0 s, batched crop encoding ~1.8 s, decoding ~0.2 s).
+
+### External document-parser comparison (2026-07-31)
+
+The local CrispEmbed live check used the repeatable `fox.png` fixture and
+GGUF models from `/Volumes/backups/ai/crispembed-gguf/`:
+
+| Engine / environment | Detection | Recognition | Timing | Quality check |
+|---|---:|---:|---:|---|
+| CrispEmbed DBNet + TrOCR, Apple M1 Metal | 10 regions | 10 regions | ~5.0–5.3 s/image warm | 8/10 words exact, CER 6.1% |
+
+Expected text was `THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG 12345`; the two
+word errors were `TAX` for `FOX` and `IAZY` for `LAZY`.
+
+The comparison implementation could not be executed on this host: its CPU probe requires the
+OpenCV development package, its live production path requires the documented
+CUDA/TensorRT stack, and no usable Docker daemon or NVIDIA device is available.
+Its repository reports **520–559 images/s** for forms/receipts and **200+
+images/s** for dense documents on one RTX 5090, plus **92% FUNSD / 93% CORD
+word-F1** and **0.90 OmniDocBench-125 overall at 20 pages/s**. Those are
+The external NVIDIA benchmark claims are not measurements from this machine, and
+are not directly comparable to the M1 single-image fixture above.
+
+The actionable conclusion is to keep CrispEmbed's portable GGUF/Metal path,
+but prioritize OCR quality and detector/recognizer batching before claiming
+production parity. A fair head-to-head requires the same document corpus,
+warmup policy, output metric, and an NVIDIA CUDA/TensorRT host.
+
+#### TrOCR quantization A/B
+
+This was not a TrOCR-vs-Python failure. The same detector, crops, decoder, and
+ggml runtime were run with the recommended Q8 recognizer versus the locally
+available Q4 model:
+
+| Recognizer | Model size | Output on fox fixture | Warm total |
+|---|---:|---|---:|
+| TrOCR-small-printed Q4_K | 43 MB | `TAX`, `IAZY` errors | 4.75 s |
+| TrOCR-small-printed Q8_0 | 64 MB | exact 10/10 words | 5.13 s |
+
+The model card explicitly warns that Q4_K degrades this narrow 256-dimensional
+decoder and recommends Q8_0. Q8_0 is therefore the immediate quality fix;
+the ~8% end-to-end cost increase is small because detection and the encoder
+dominate this fixture.
+
 ## Ollama Integration (Q8_0, Apple M1)
 
 All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export.
@@ -412,17 +484,23 @@ runtime category. "Existing" means the optimization is already implemented;
 
 #### Optimization maturity ranking
 
-| Rank | Runtime | Vision encoder | LLM attention | KV cache | GPU |
-|------|---------|---------------|---------------|----------|-----|
-| 1 | **internvl2_ocr** | ggml flash_attn | ggml flash_attn | F16 ggml tensor (zero-copy) | Yes |
-| 2 | **glm_ocr** | ggml flash_attn (monolithic graph) | ggml flash_attn | F16 ggml tensor | Yes |
-| 3 | **got_ocr** | ggml per-layer graphs | ggml flash_attn | F16 ggml tensor | Yes |
-| 4 | **qwen2vl_ocr** | ggml graph (mul_mat) | ggml graph (no flash) | F32 CPU vectors, re-uploaded each step | Yes |
-| 5 | **lightonocr** | ggml flash_attn (monolithic) | ggml flash_attn | F16 ggml persistent (ggml_cpy) | No |
-| 6 | **deepseek_ocr2** | ggml per-layer (SAM only) | ggml per-layer graphs | F32 CPU vectors, re-uploaded each step | Yes |
-| 7 | **smoldocling_ocr** | ggml flash_attn | CPU scalar (core_vlm) | F32 CPU flat vector | No |
-| 8 | **granite_vision_ocr** | CPU scalar loops | CPU scalar (core_vlm) | F32 CPU flat vector | No |
-| 9 | **pix2struct** | CPU scalar loops | CPU scalar, no KV cache | None | No |
+> **REFRESH 2026-07-20 (code-verified):** every VLM decoder below now DEFAULTS to a
+> ggml F16-KV GPU decode path; the `core_vlm` CPU-scalar decode survives only as a
+> gated fallback (`CRISPEMBED_*_SCALAR` / `use_ggml` guards). The pre-refresh columns
+> claiming "F32 CPU vectors" / "CPU scalar (core_vlm)" / "no KV cache" for
+> qwen2vl/smoldocling/granite/pix2struct were STALE. Corrected:
+
+| Rank | Runtime | LLM decode (default) | KV cache | GPU |
+|------|---------|----------------------|----------|-----|
+| 1 | **internvl2_ocr** | ggml flash_attn | F16 ggml tensor (zero-copy) | Yes |
+| 2 | **glm_ocr** | ggml flash_attn (monolithic) | F16 ggml tensor | Yes |
+| 3 | **got_ocr** | ggml flash_attn | F16 ggml tensor | Yes |
+| 4 | **qwen2vl_ocr** | ggml + `build_decode_step_graph` | **F16 ggml backend** (`alloc_kv_cache`) | Yes |
+| 5 | **lightonocr** | ggml flash_attn | F16 ggml persistent (`ggml_cpy`) | Yes |
+| 6 | **deepseek_ocr2** | ggml per-layer graphs + flash | **F32** ggml (`alloc_ds_kv_cache`); F16 KV + persistent single-graph both still OPEN here | Yes |
+| 7 | **smoldocling_ocr** | `sd_run_llm_body` ggml (default; `use_ggml`) | **F16 ggml backend**; core_vlm = fallback | Yes |
+| 8 | **granite_vision_ocr** | `gv_run_llm_body` ggml (default; diff cos 0.9999) | **F16 ggml backend**; core_vlm = opt-out | Yes |
+| 9 | **pix2struct** | CPU scalar + DequantCache | KV cache (Phase 2) — CPU, GPU port low-priority | No |
 
 #### Already optimized (best practices found in at least one runtime)
 
@@ -444,7 +522,7 @@ runtime category. "Existing" means the optimization is already implemented;
 
 | Priority | Issue | Affected runtimes | Impact |
 |----------|-------|-------------------|--------|
-| **P0** | Adopt F16 ggml KV cache (internvl2 pattern) | qwen2vl, deepseek, smoldocling, granite | Eliminates O(seq_len) per-step re-upload; halves memory |
+| ~~**P0**~~ DONE | ~~Adopt F16 ggml KV cache (internvl2 pattern)~~ **— landed; all VLM decoders default to ggml F16-KV GPU decode (verified 2026-07-20, see maturity table)** | qwen2vl, deepseek, smoldocling, granite | Eliminates O(seq_len) per-step re-upload; halves memory |
 | **P0** | Use `ggml_flash_attn_ext` for LLM decode | qwen2vl, deepseek | qwen2vl uses manual Q@K+softmax+V; deepseek uses per-layer graphs |
 | **P0** | Move granite to ggml graphs | granite_vision_ocr | Entire engine is CPU-scalar — 10-50x potential speedup |
 | **P0** | Implement batched prefill for smoldocling/granite | smoldocling, granite | Token-at-a-time through 30-40 LLM layers is catastrophic |
@@ -731,6 +809,72 @@ runtime category. "Existing" means the optimization is already implemented;
 
 ---
 
+## Runtime Optimization Audit — Re-verification (2026-07-11)
+
+Full re-sweep of the codebase against the June audit above. **Nearly every P0/P1
+the June audit flagged has since been executed.** The tables above are retained
+for history but are now stale: read this section for the current state. Findings
+here were verified against current code (`git` HEAD), not carried from the doc.
+
+### June-audit claims that are now WRONG (code has moved on)
+
+| June claim | Current reality | Evidence |
+|---|---|---|
+| `conv2d_cpu` "still scalar / needs im2col restructure" (arch-rec #2) | Per-patch gather into a `thread_local` buffer + SIMD `dot_product` per output channel, with a hoisted interior-fast-path boundary check. Effectively single-patch im2col+SIMD. | `core/cpu_ops.h:345-400` |
+| `mel.cpp` projection "naive triple-loop matmul" | `core_cpu::dot_product` fast path for the contiguous layout; scalar retained only for transposed/accumulator cases | `core/mel.cpp:116-117` |
+| VLM decoders "F32 CPU KV re-uploaded each step / CPU-scalar" (qwen2vl, deepseek, smoldocling, granite, pix2struct) | All default to ggml graphs with **F16 device-resident KV** + `ggml_flash_attn_ext`. Scalar is an env-gated fallback. | qwen2vl_ocr.cpp:1091-1092,2412; deepseek_ocr2.cpp:154,1604-1620; granite_vision_ocr.cpp:626-627; smoldocling_ocr.cpp:685-686; pix2struct.cpp:347 |
+| SR "No SIMD anywhere / no dequant caching 12-of-13 / no tiling" | 11/13 SR runtimes on ggml graphs; DequantCache fleet-wide (12 files); Hann-window tiling universal | esrgan_sr.cpp:362; instructir.cpp:164; scunet_denoise.cpp:327 |
+| decoder_embed "no flash in single-text path" | Single-text path (B≤1) now calls `ggml_flash_attn_ext` | decoder_embed.cpp:1196,1421 |
+| gliner "BiLSTM fully scalar" | Gate matmuls use `core_cpu::dot_product` (SIMD); only the per-timestep sequencing is inherent | gliner_ner.cpp:915-916 |
+| tesseract "LSTM gates no SIMD" | SIMD via `core_cpu::dot_product` | tesseract_lstm.cpp:256-257 |
+| Math-OCR scalar encoders (DenseNet bttr/hmer/posformer, HGNetv2 ppformulanet, Swin mixtex) | DenseNet/HGNetv2 → ggml graphs (default); mixtex projections on ggml (window attention still scalar — see gaps) | bttr/posformer/hmer/ppformulanet; mixtex_ocr.cpp:126 |
+
+### Verified DONE since June (net-new work)
+
+- **Device-resident F16 KV cache** across the VLM decoder set; **persistent
+  single decode graph** in deepseek_ocr2 and math_ocr (TrOCR ~4×). Other VLM
+  decoders (qwen2vl/granite/smoldocling) have device-resident KV but still
+  rebuild the decode graph per step.
+- **WebGPU/WASM tier** (OCR build): ~950 lines of authored WGSL kernels
+  (LayerNorm, IM2COL/CONV_2D/POOL_2D/CONV_TRANSPOSE_2D/UPSCALE/ARANGE) landed in
+  the pinned `ggml` submodule. Detection ~60×, det+rec pipeline ~1.8×, ~2.8×
+  total vs SIMD-CPU. Multithreaded via `--proxy-to-pthread`.
+- **Beam search** added to math_ocr, bttr, ppformulanet, ppformulanet_l.
+- **imatrix** quant rollout (20 models); confirmed **zero inference cost** —
+  the eval-callback early-returns unless `CRISPEMBED_IMATRIX_OUT` is set
+  (`imatrix.cpp:131`). It is a calibration/quant-time artifact only.
+
+### True remaining gaps (2026-07-11)
+
+| P | Area | Gap | Impact |
+|---|---|---|---|
+| **P1** | Graph caching (all runtimes) | **0 runtimes reuse the built cgraph.** Decoders rebuild + `sched_reset`+`alloc_graph` per token; device KV landed but the graph around it is rebuilt each step. Blocked on WebGPU (traps `unreachable`) — needs per-backend gating (safe on Metal/CPU). | #1 unrealized lever |
+| **P1** | layout_detect | Deformable cross-attention still CPU-scalar 6-nested bilinear grid-sample | Dominates DETR decoder; the one surviving June P0 |
+| **P1** | text_sr | ~~Only SR engine still fully scalar (`tsr_conv2d`)~~ — conv now delegates to SIMD `core_cpu::conv2d_cpu` (this branch). Remaining: a full ggml graph for GPU offload | Convs SIMD-accelerated; GPU path still open |
+| **P1** | WebGPU embedding tier | `build-embed-wasm.sh` has no `--webgpu` path — text embeddings are CPU-only in browser | Whole embedding browser tier misses the proven GPU path |
+| **P2** | scunet_denoise | Swin blocks still scalar; only SR engine without DequantCache (`scunet_denoise.cpp:32`) | Transformer half unaccelerated + repeated dequant |
+| **P2** | SR-on-GPU (whole family) | **Correction:** the ENTIRE SR family runs conv on a CPU-only `enc_sched` (`swinir_sr.cpp:447` prints `ggml_conv_2d (CPU sched)`); dat/hat/swinir use `init_best` only to LOAD weights, then copy dequantized weights into a CPU-resident context. esrgan/safmn/restormer/instructir just skip that copy. There is no GPU sibling to match — SR-on-GPU is unsolved research (Metal `ggml_conv_2d` + GPU-resident weight/graph path), not a residency toggle | Reprioritized down |
+| DONE | safmn honor `n_threads` | Was hardcoded to a 1-thread conv sched (`safmn_sr.cpp:255`); now honors `-t N` like siblings | **~2.3×** (16.2s→7.1s, 8-core Mac), bit-identical output |
+| **P2** | mixtex_ocr | Swin window attention still scalar (`mixtex_ocr.cpp:126`) | Encoder O(N²·D)-bound |
+| **P2** | qwen2vl/granite/smoldocling | Decode graph rebuilt per step (KV device-resident, but not the persistent-graph pattern deepseek/math use) | Per-step build/launch overhead |
+| **P2** | deepseek_ocr2 | LLM/enc flash are opt-in default-off (measured slower on CPU); re-benchmark on Metal/CUDA | Backend-dependent |
+| **P3** | Build/infra | No LTO/IPO; `GGML_BLAS=OFF` (Accelerate not guaranteed for CPU-fallback matmul); `--gpu-backend` ignored (`crispembed.cpp:81` calls `init_best()` directly); app-level OpenMP possibly unlinked; Metal F16 mul_mm guard in only 5/~40 GPU files | Broad low-effort |
+| **P3** | Misc | ocr_orchestrator PNG round-trip + N reloads; gliner DeBERTa rel-pos [H,T²] ~117MB/call; ppformulanet_l decoder scalar; `conv2d_cpu` not GEMM-batched/multithreaded | Localized |
+
+### Highest-ceiling paths forward
+
+1. **Decode-step graph cache** (per-backend gated) — cache the *decode-step*
+   graph, not the encoder graph (encoder caching is a measured dud + a GPU
+   use-after-free landmine). Templates: the `sched_reserve`+T-bucket pattern in
+   the text encoder and lfm2.
+2. **ggml-metal ICB (indirect command buffer) replay** — Metal decode is
+   per-op-dispatch bound; CUDA-graph capture already solves the CUDA side.
+3. **Finish residual scalar kernels** (layout_detect deformable, text_sr, scunet
+   Swin, mixtex window attn) and upgrade `conv2d_cpu` per-patch → true
+   im2col+GEMM (batch all output channels) + multithread.
+
+---
+
 ## VLM OCR Benchmarks (Intel Xeon Skylake, 4 threads, CPU-only)
 
 ### Qwen3-VL-2B-Instruct (q4_k, 1.5 GB)
@@ -747,3 +891,74 @@ End-to-end OCR on 800×300 invoice image. `QWEN_DBG=1` for per-stage timing.
 `CRISPEMBED_MAX_PIXELS` reduces input resolution before patch extraction.
 Useful for CPU-only deployment where speed matters more than pixel-perfect OCR.
 Applies to all VLM OCR engines that use `image_preprocess.cpp`.
+
+## Local M1 Metal OCR engine sweep (2026-07-31)
+
+Command: `python3 tests/ocr_engine_benchmark.py --repeats 1 --timeout 45
+--output /tmp/crispembed-ocr-benchmark.json`.  These are cold end-to-end
+process times on the local Apple M1; they include model loading and should not
+be read as steady-state service throughput.  Quality is scored only against
+the manifest's known fixture text.
+
+| Engine | Status | Cold ms | Quality |
+|---|---:|---:|---|
+| GOT-OCR2 | ok | 15,662 | exact |
+| GLM-OCR | ok | 32,884 | exact |
+| InternVL2-1B | ok | 24,908 | CER 0.540 (prompt text included) |
+| Qwen2-VL-3B | timeout/error | 70,757 | no transcript before 45 s |
+| LightOnOCR | ok | 31,561 | unscored; plausible transcript |
+| MixTeX | ok | 7,523 | exact specialist formula |
+| Flova | ok | 16,153 | exact specialist LilyPond |
+| Pix2TeX | ok | 5,520 | exact specialist formula |
+| Texteller-3 | ok | 11,403 | CER 7.293; unusable on this fixture |
+| Tesseract-LSTM line-crop pipeline | ok | 7,552 | CER 0.040; 10 DBNet regions, all recognized |
+| PARSeq-tiny | ok | 921 | unscored full-page smoke (`Gooducalicanos.com`); scene-line recognizer |
+
+The proper DBNet+TrOCR Q8 pipeline remains the ordinary document baseline:
+10/10 regions, 10/10 recognized regions, 8.05 s cold on the same M1 run. The
+Tesseract result is now measured through the actual DBNet→line-crop→LSTM
+pipeline: 10 regions, all recognized, 7.55 s cold / 8.09 s warm, CER 0.040
+(punctuation-only drift). PARSeq remains recognizer-only and still needs a
+line-crop orchestrator benchmark.
+
+The manifest contained 51 entries: 8 completed, 1 timed out, and 42 explicit
+skips because a sample or local model was unavailable.  This is a coverage
+report, not a claim that the skipped engines are unsupported.  The reusable
+driver stores all output and stderr tails in JSON for follow-up runs.
+
+The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
+seven CC0/public-domain images through Tesseract plus skew/content detection:
+all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
+format gap (`cannot load`); a PNG derivative is now included for the OCR
+pipeline while the source TIFF remains available for a future native TIFF
+decoder test.
+
+### Full local matrix comparison (M1 Metal, 2026-07-31)
+
+The expanded manifest sweep completed 11 engines, recorded 2 errors, and
+reported 41 explicit non-sample/non-model skips. Representative outputs:
+
+| Engine/lane | Cold ms | Result |
+|---|---:|---|
+| GOT-OCR2 | 22,073 | exact fox transcript |
+| GLM-OCR | 38,086 | exact fox transcript |
+| InternVL2-1B | 28,523 | transcript plus prompt wrapper; CER 0.54 |
+| Qwen2-VL-3B | 90,113 timeout | no output within limit |
+| LightOnOCR | 69,289 | plausible transcript; currently unscored |
+| Tesseract via DBNet line crops | 32,041 | 10 regions; CER 0.040 |
+| PARSeq | 6,252 | `Gooducalicanos.com`; recognizer-only smoke |
+| SmolDocling | 16,334 | text present but duplicated DocTags regions; payload CER 0.86 |
+| MixTeX | 13,286 | exact specialist LaTeX |
+| Flova | 36,293 | exact LilyPond |
+| Pix2TeX | 8,980 | exact LaTeX |
+| TexTeller | 18,491 | CER 7.293; unusable on fixture |
+
+SmolDocling is therefore supported and live-tested; its next fix is structural
+deduplication/DocTags parsing, not model discovery. Unlimited-OCR's Q4_K stacked
+artifact is complete at 2,252,419,328 bytes and now has a successful M1 Metal
+run when loaded from the system volume: 45,967 ms total (SAM 15,663 ms, CLIP
+2,260 ms, projection/assembly 5,835 ms, decoder 22,205 ms), with two correctly
+decoded text regions. The external backup-volume no-copy path (`UOCR_MMAP=1`)
+also completes: 40,391 ms cold benchmark time and CER 0.010, with the one
+character difference being a harmless title-box coordinate drift. Qwen2-VL is
+runnable but did not complete this M1 budget.

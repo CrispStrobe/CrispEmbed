@@ -65,7 +65,7 @@ jobs:
             archive: crispembed-windows-x86_64.zip
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -162,6 +162,27 @@ jobs:
                   done
                   install_name_tool -add_rpath '@loader_path' "$bin" 2>/dev/null || true
               done
+              # Make each dylib's SONAME a REAL file. cmake emits
+              # libX.<M>.<m>.<p>.dylib (real) + libX.<M>.dylib + libX.dylib
+              # (symlinks), but every install-name is @rpath/libX.<M>.dylib.
+              # CocoaPods DEREFERENCES symlinks when it embeds vendored_libraries
+              # (Flutter macOS), so a symlink-only SONAME is dropped and the app
+              # aborts at launch with "Library not loaded: @rpath/libX.<M>.dylib".
+              # Promote the real file to its SONAME so it survives embedding, and
+              # keep libX.dylib as a symlink for build-time `-l` linkers (Rust
+              # crispembed-sys). The fully-versioned filename is retired.
+              for f in pkg/libcrispembed.*.dylib pkg/libggml*.dylib; do
+                  [ -e "$f" ] || continue
+                  [ -L "$f" ] && continue                       # real files only
+                  soname=$(basename "$(otool -D "$f" 2>/dev/null | tail -1)")
+                  case "$soname" in lib*.dylib) ;; *) continue ;; esac
+                  [ "$(basename "$f")" = "$soname" ] && continue  # already SONAME
+                  stem=${soname%.*}; stem=${stem%.*}            # libX
+                  rm -f "pkg/$soname"
+                  mv -f "$f" "pkg/$soname"
+                  ln -sf "$soname" "pkg/$stem.dylib"
+              done
+              echo "macOS tarball dylib layout:"; ls -l pkg/*.dylib || true
           fi
 
           tar -czf ${{ matrix.archive }} -C pkg .
@@ -204,7 +225,7 @@ jobs:
           Compress-Archive -Path pkg/* -DestinationPath ${{ matrix.archive }}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
           path: ${{ matrix.archive }}
@@ -230,7 +251,7 @@ jobs:
     env:
       CUDA_VERSION: "12.8.0"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -295,7 +316,7 @@ jobs:
           tar -czf crispembed-linux-x86_64-cuda.tar.gz -C pkg .
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64-cuda
           path: crispembed-linux-x86_64-cuda.tar.gz
@@ -325,7 +346,7 @@ jobs:
     env:
       CUDA_VERSION: "12.8.0"
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -431,7 +452,7 @@ jobs:
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-cuda.zip
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64-cuda
           path: crispembed-windows-x86_64-cuda.zip
@@ -452,7 +473,7 @@ jobs:
     name: Build windows-x86_64-vulkan
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -503,7 +524,7 @@ jobs:
           Compress-Archive -Path pkg/* -DestinationPath crispembed-windows-x86_64-vulkan.zip
 
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: windows-x86_64-vulkan
           path: crispembed-windows-x86_64-vulkan.zip
@@ -525,7 +546,7 @@ jobs:
       matrix:
         abi: [arm64-v8a, armeabi-v7a]
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build
@@ -534,11 +555,12 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=${{ matrix.abi }} -DANDROID_NATIVE_API_LEVEL=24 \
             -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_LLAMAFILE=OFF
-          cmake --build build -j4
+          # Only the shared lib the plugin needs — not the (host-only) test exes.
+          cmake --build build --target crispembed-shared -j4
       - name: Package
         run: tar -czf crispembed-android-${{ matrix.abi }}.tar.gz -C build libcrispembed.so
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: android-${{ matrix.abi }}
           path: crispembed-android-${{ matrix.abi }}.tar.gz
@@ -556,7 +578,7 @@ jobs:
     name: Build ios-arm64
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
         with:
           submodules: recursive
       - name: Build
@@ -569,11 +591,14 @@ jobs:
             -DCMAKE_CXX_COMPILER=$(xcrun --sdk iphoneos -f clang++) \
             -DCMAKE_BUILD_TYPE=Release \
             -DCRISPEMBED_BUILD_SHARED=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON
-          cmake --build build -j4
+          # Only the static lib the podspec vendors — building the test exes as
+          # iOS targets fails ("Bundle identifier is missing") under -G Xcode and
+          # just wastes time under Make.
+          cmake --build build --target crispembed -j4
       - name: Package
         run: tar -czf crispembed-ios-arm64.tar.gz -C build libcrispembed-static.a
       - name: Upload
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v4
         with:
           name: ios-arm64
           path: crispembed-ios-arm64.tar.gz
@@ -605,10 +630,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v4
         with:
           path: dist/
 

@@ -230,6 +230,13 @@ class RefWriter:
         self.writer = gguf.GGUFWriter(str(path), "internvl2_ref")
         self.count = 0
 
+    def set_input_mode(self, mode):
+        """Stamp how the vision input was produced ('gradient' or 'image:<name>')
+        so the C++ harness can refuse a mismatched comparison — the internvl2
+        harness feeds a synthetic gradient, so an image-based reference makes the
+        vision-stage cosines meaningless."""
+        self.writer.add_string("diff.input_mode", mode)
+
     def add(self, name, data):
         """Add a reference tensor."""
         arr = np.ascontiguousarray(data, dtype=np.float32)
@@ -369,6 +376,7 @@ def main():
 
     # ── Reference writer ─────────────────────────────────────────────
     ref = RefWriter(args.output)
+    ref.set_input_mode(f"image:{args.image.split('/')[-1]}" if args.image else "gradient")
 
     # ── Vision encoder forward pass ──────────────────────────────────
     print("\nVision encoder forward pass...")

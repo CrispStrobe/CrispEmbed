@@ -30,6 +30,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -311,12 +312,19 @@ bool load_tensors(context & ctx, const char * path) {
         blk.ffn_fc1_b = get2(p + "ffn_fc1.bias", p + "ffn.fc1.bias");
         blk.ffn_fc2_w = get2(p + "ffn_fc2.weight", p + "ffn.fc2.weight");
         blk.ffn_fc2_b = get2(p + "ffn_fc2.bias", p + "ffn.fc2.bias");
-        // mmproj or dot-notation ffn_up/ffn_down used for GELU — map to fc1/fc2
+        // mmproj or dot-notation ffn_up/ffn_down used for GELU — map to fc1/fc2.
+        // llama.cpp's qwen2vl mmproj INVERTS the ffn_up/ffn_down naming vs the
+        // fc1/fc2 projection direction (ffn_down.bias=[intermediate]=fc1,
+        // ffn_up.bias=[hidden]=fc2), so map by the actual output dim (bias/weight
+        // size): fc1 = hidden→intermediate (larger output), fc2 the reverse.
         if (!blk.ffn_fc1_w && !blk.ffn_gate_w && blk.ffn_up_w) {
-            blk.ffn_fc1_w = blk.ffn_up_w;
-            blk.ffn_fc1_b = blk.ffn_up_b;
-            blk.ffn_fc2_w = blk.ffn_down_w;
-            blk.ffn_fc2_b = blk.ffn_down_b;
+            int64_t up_out = blk.ffn_up_b ? blk.ffn_up_b->ne[0] : blk.ffn_up_w->ne[1];
+            int64_t dn_out = blk.ffn_down_b ? blk.ffn_down_b->ne[0] : blk.ffn_down_w->ne[1];
+            bool up_is_fc1 = (up_out >= dn_out); // fc1 has the larger (intermediate) output
+            blk.ffn_fc1_w = up_is_fc1 ? blk.ffn_up_w : blk.ffn_down_w;
+            blk.ffn_fc1_b = up_is_fc1 ? blk.ffn_up_b : blk.ffn_down_b;
+            blk.ffn_fc2_w = up_is_fc1 ? blk.ffn_down_w : blk.ffn_up_w;
+            blk.ffn_fc2_b = up_is_fc1 ? blk.ffn_down_b : blk.ffn_up_b;
         }
     }
 
@@ -334,8 +342,9 @@ bool load_tensors(context & ctx, const char * path) {
         }
     }
 
-    m.merger.norm_w = get("v.merger.norm.weight");
-    m.merger.norm_b = get("v.merger.norm.bias");
+    // Merger post-norm: CrispEmbed "v.merger.norm" vs llama.cpp mmproj "v.post_ln".
+    m.merger.norm_w = get2("v.merger.norm.weight", "v.post_ln.weight");
+    m.merger.norm_b = get2("v.merger.norm.bias", "v.post_ln.bias");
     m.merger.fc1_w = get2("v.merger.fc1.weight", "mm.0.weight");
     if (!m.merger.fc1_w) m.merger.fc1_w = get("v.merger.linear_fc1.weight");
     m.merger.fc1_b = get2("v.merger.fc1.bias", "mm.0.bias");
@@ -416,6 +425,9 @@ bool load_tensors(context & ctx, const char * path) {
     m.lm_head_w = get2("l.lm_head.weight", "output.weight");
     if (!m.lm_head_w) m.lm_head_w = get("llm.lm_head.weight");
     if (!m.lm_head_w) m.lm_head_w = get("llm.embed.weight"); // tied
+    // llama.cpp-native tied models (e.g. Qwen2-VL-2B): no output.weight, tie to
+    // the token embedding.
+    if (!m.lm_head_w) m.lm_head_w = m.embed_tokens;
 
     // Some GGUF converters store every 2-D weight in PyTorch (out, in) row-major
     // order instead of ggml's (in, out) convention. ggml_mul_mat(W, x) requires
@@ -903,7 +915,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
 
     // Init backend — prefer GPU when available
     bool force_cpu = (getenv("QWEN2VL_OCR_FORCE_CPU") && atoi(getenv("QWEN2VL_OCR_FORCE_CPU")));
-    ctx.backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
     ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();

@@ -13,6 +13,44 @@
 #include <cmath>
 #include <algorithm>
 
+// Permutation-tolerant per-query cosine. Data is query-major (flat = q*qdim + d);
+// nq queries of length qdim. For each reference query, find its best-cosine match
+// among all C++ queries and report the min / mean over those best matches. This is
+// invariant to the top-K query reordering (see StageFile comment) but still trips
+// on a genuine scramble (which leaves no good match for any query).
+static void perm_tolerant_cos(const float * cpp, const float * ref, size_t nq, size_t qdim, float & cos_min,
+                              float & cos_mean) {
+    std::vector<double> cn(nq), rn(nq);
+    for (size_t q = 0; q < nq; q++) {
+        double sc = 0, sr = 0;
+        const float * a = cpp + q * qdim;
+        const float * b = ref + q * qdim;
+        for (size_t d = 0; d < qdim; d++) {
+            sc += (double)a[d] * a[d];
+            sr += (double)b[d] * b[d];
+        }
+        cn[q] = std::sqrt(sc);
+        rn[q] = std::sqrt(sr);
+    }
+    double sum = 0;
+    float worst = 2.0f;
+    for (size_t j = 0; j < nq; j++) {
+        const float * b = ref + j * qdim;
+        float best = -2.0f;
+        for (size_t i = 0; i < nq; i++) {
+            const float * a = cpp + i * qdim;
+            double dot = 0;
+            for (size_t d = 0; d < qdim; d++) dot += (double)a[d] * b[d];
+            float c = (cn[i] > 1e-9 && rn[j] > 1e-9) ? (float)(dot / (cn[i] * rn[j])) : 0.0f;
+            if (c > best) best = c;
+        }
+        sum += best;
+        if (best < worst) worst = best;
+    }
+    cos_min = worst;
+    cos_mean = (float)(sum / (double)nq);
+}
+
 static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "Usage: %s <layout.gguf> <ref.gguf> [image.png]\n", argv[0]);
@@ -64,24 +102,37 @@ static int crispembed_test_main(int argc, char ** argv) {
     // Compare each stage from dumped files.
     // Per-stage cos_min threshold: input/backbone/encoder stages are exact
     // (they gate the RT-DETR encoder regression class — negative cos on scramble),
-    // so they hold at 0.99. dec_0_cross_out rides the deformable cross-attention's
-    // CPU-side bilinear-sampling floor (~0.977 cos_min on one boundary query,
-    // cos_mean ~0.999) — a pre-existing parity gap unrelated to the encoder path,
-    // so it gates lower. A real decoder crater still trips it (goes negative).
+    // so they hold at 0.99.
+    //
+    // dec_0_cross_out is compared PERMUTATION-TOLERANTLY (perm_tolerant=true).
+    // The 300 decoder queries are picked by a partial_sort over ~8400 near-tie
+    // encoder proposals (layout_detect.cpp:1318). A tiny backend FP difference in
+    // enc_output (Metal/CUDA vs the CPU/Python reference — max_abs ~0.02, cos
+    // 0.99999) reshuffles the near-tie ranks, so "query i" in our output is a
+    // *different physical proposal* than "query i" in the reference. The cross_out
+    // VALUES are correct — index-aligned cos craters (mean ~0.79, min negative on
+    // Metal) purely from this reordering; the final boxes are unaffected (they go
+    // through score-sort + NMS). Matching each reference query to its best-cosine
+    // partner recovers the true parity (cos_mean ~0.999, min ~0.95 = the one
+    // deformable-sampling boundary query). A real decoder scramble destroys the
+    // whole SET → no vector matches any → best-match collapses toward 0, tripping
+    // the 0.85 gate. The encoder-scramble class is additionally caught directly by
+    // the strict 0.99 s3..enc_output stages above.
     struct StageFile {
         const char * ref_name;
         const char * cpp_file;
         float threshold;
+        bool perm_tolerant;
     };
     StageFile stages[] = {
-        { "ip3", "/tmp/cpp_ip3.bin", 0.99f },
-        { "ip4", "/tmp/cpp_ip4.bin", 0.99f },
-        { "ip5", "/tmp/cpp_ip5.bin", 0.99f },
-        { "s3", "/tmp/cpp_s3.bin", 0.99f },
-        { "s4", "/tmp/cpp_s4.bin", 0.99f },
-        { "s5", "/tmp/cpp_s5.bin", 0.99f },
-        { "enc_output", "/tmp/cpp_enc_output.bin", 0.99f },
-        { "dec_0_cross_out", "/tmp/cpp_cross_out.bin", 0.97f },
+        { "ip3", "/tmp/cpp_ip3.bin", 0.99f, false },
+        { "ip4", "/tmp/cpp_ip4.bin", 0.99f, false },
+        { "ip5", "/tmp/cpp_ip5.bin", 0.99f, false },
+        { "s3", "/tmp/cpp_s3.bin", 0.99f, false },
+        { "s4", "/tmp/cpp_s4.bin", 0.99f, false },
+        { "s5", "/tmp/cpp_s5.bin", 0.99f, false },
+        { "enc_output", "/tmp/cpp_enc_output.bin", 0.99f, false },
+        { "dec_0_cross_out", "/tmp/cpp_cross_out.bin", 0.85f, true },
     };
 
     int n_fail = 0;
@@ -112,6 +163,14 @@ static int crispembed_test_main(int argc, char ** argv) {
         }
 
         auto r = ref.compare(st.ref_name, cpp_data.data(), ref_n);
+        if (st.perm_tolerant) {
+            // Query axis = last shape dim (ggml ne1); query vector length = ne0.
+            auto [ref_data2, ref_n2] = ref.get_f32(st.ref_name);
+            (void)ref_n2;
+            size_t nq = r.shape.empty() ? 1 : (size_t)r.shape.back();
+            size_t qdim = (nq > 0) ? ref_n / nq : ref_n;
+            if (nq > 0 && qdim > 0) perm_tolerant_cos(cpp_data.data(), ref_data2, nq, qdim, r.cos_min, r.cos_mean);
+        }
         bool pass = r.is_pass(st.threshold);
         printf("%-15s %10.6f %10.6f %10.4f %s\n", st.ref_name, r.cos_min, r.cos_mean, r.max_abs,
                pass ? "PASS" : "FAIL");

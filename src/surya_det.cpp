@@ -10,6 +10,7 @@
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <chrono>
 #include <cmath>
@@ -205,7 +206,7 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     // GPU; set SURYA_DET_FORCE_CPU=1 to pin to CPU for parity debugging.
     const char * force_cpu = std::getenv("SURYA_DET_FORCE_CPU");
     bool want_cpu = force_cpu && force_cpu[0] && std::strcmp(force_cpu, "0") != 0;
-    ctx->backend = want_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = want_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, ctx->backend, "surya_det", ctx->wl)) {
         ggml_backend_free(ctx->backend);
@@ -302,7 +303,7 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
-    fprintf(stderr, "surya_det: loaded %s (%d threads)\n", model_path, n_threads);
+    if (ctx->dump) fprintf(stderr, "surya_det: loaded %s (%d threads)\n", model_path, n_threads);
     return ctx;
 }
 
@@ -689,6 +690,23 @@ static ggml_tensor * g_conv(ggml_context * g, ggml_tensor * x, const conv_layer 
     if (groups > 1 && groups == IC) {
         // Depthwise conv
         x = ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
+    } else if (groups > 1 && KH == 1 && KW == 1 && stride == 1 && pad == 0) {
+        // Grouped pointwise conv (LiteMLA agg_pw). ggml_conv_2d has no groups
+        // support (asserts on the channel mismatch), but a 1x1 grouped conv is
+        // a batched matmul over the group dim:
+        //   y[gi*OCg+oc, hw] = sum_icg w[gi*OCg+oc, icg] * x[gi*ICg+icg, hw]
+        const int64_t W_ = x->ne[0], H_ = x->ne[1], HW = W_ * H_;
+        const int64_t ICg = IC / groups;
+        const int64_t OC = w->ne[3];
+        const int64_t OCg = OC / groups;
+        ggml_tensor * wg = ggml_reshape_3d(g, w, ICg, OCg, groups); // [1,1,ICg,OC] → [ICg,OCg,groups]
+        if (!ggml_is_contiguous(x)) x = ggml_cont(g, x);
+        ggml_tensor * xt = ggml_cont(g, ggml_transpose(g, ggml_reshape_2d(g, x, HW, IC))); // [IC, HW]
+        xt = ggml_reshape_3d(g, xt, ICg, groups, HW);
+        xt = ggml_cont(g, ggml_permute(g, xt, 0, 2, 1, 3)); // [ICg, HW, groups]
+        ggml_tensor * y = ggml_mul_mat(g, wg, xt);          // [OCg, HW, groups]
+        y = ggml_cont(g, ggml_permute(g, y, 1, 0, 2, 3));   // [HW, OCg, groups]
+        x = ggml_reshape_3d(g, y, W_, H_, OC);              // channel-planar, group-major
     } else {
         x = ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     }

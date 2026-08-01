@@ -19,7 +19,6 @@ import 'package:ffi/ffi.dart';
 // FFI function types
 // ---------------------------------------------------------------------------
 
-typedef _DefaultsC = Void Function(); // returns struct — handled specially
 typedef _InitC = Pointer<Void> Function(Pointer<Utf8>, Int32);
 typedef _InitDart = Pointer<Void> Function(Pointer<Utf8>, int);
 
@@ -28,14 +27,30 @@ typedef _FreeDart = void Function(Pointer<Void>);
 
 typedef _ProcessSimpleC = Int32 Function(
     Pointer<Void>,
-    Pointer<Uint8>, Int32, Int32, Int32,
-    Int32, Int32, Int32, Int32,
-    Pointer<Pointer<Uint8>>, Pointer<Int32>, Pointer<Int32>);
+    Pointer<Uint8>,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Int32,
+    Pointer<Pointer<Uint8>>,
+    Pointer<Int32>,
+    Pointer<Int32>);
 typedef _ProcessSimpleDart = int Function(
     Pointer<Void>,
-    Pointer<Uint8>, int, int, int,
-    int, int, int, int,
-    Pointer<Pointer<Uint8>>, Pointer<Int32>, Pointer<Int32>);
+    Pointer<Uint8>,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    Pointer<Pointer<Uint8>>,
+    Pointer<Int32>,
+    Pointer<Int32>);
 
 typedef _FreeImageC = Void Function(Pointer<Uint8>);
 typedef _FreeImageDart = void Function(Pointer<Uint8>);
@@ -85,10 +100,10 @@ class CrispScanCleanup {
   CrispScanCleanup({String? modelPath, int nThreads = 4, String? libPath}) {
     _lib = DynamicLibrary.open(libPath ?? _defaultLibPath());
 
-    final init = _lib.lookupFunction<_InitC, _InitDart>(
-        'crispembed_scan_cleanup_init');
-    _free = _lib.lookupFunction<_FreeC, _FreeDart>(
-        'crispembed_scan_cleanup_free');
+    final init =
+        _lib.lookupFunction<_InitC, _InitDart>('crispembed_scan_cleanup_init');
+    _free =
+        _lib.lookupFunction<_FreeC, _FreeDart>('crispembed_scan_cleanup_free');
     _freeImage = _lib.lookupFunction<_FreeImageC, _FreeImageDart>(
         'crispembed_scan_cleanup_free_image');
     _processSimple = _lib.lookupFunction<_ProcessSimpleC, _ProcessSimpleDart>(
@@ -129,10 +144,18 @@ class CrispScanCleanup {
     final outH = calloc<Int32>();
 
     final rc = _processSimple(
-      _ctx, pxNative, width, height, channels,
-      deskew ? 1 : 0, cropBorders ? 1 : 0,
-      whitenBackground ? 1 : 0, binarize ? 1 : 0,
-      outPtr, outW, outH,
+      _ctx,
+      pxNative,
+      width,
+      height,
+      channels,
+      deskew ? 1 : 0,
+      cropBorders ? 1 : 0,
+      whitenBackground ? 1 : 0,
+      binarize ? 1 : 0,
+      outPtr,
+      outW,
+      outH,
     );
 
     calloc.free(pxNative);
@@ -146,8 +169,8 @@ class CrispScanCleanup {
 
     final ow = outW.value;
     final oh = outH.value;
-    final resultPixels = Uint8List.fromList(
-        outPtr.value.asTypedList(ow * oh * 3));
+    final resultPixels =
+        Uint8List.fromList(outPtr.value.asTypedList(ow * oh * 3));
     _freeImage(outPtr.value);
 
     calloc.free(outPtr);
@@ -177,9 +200,7 @@ class CrispScanCleanup {
     final x0 = calloc<Int32>(), y0 = calloc<Int32>();
     final x1 = calloc<Int32>(), y1 = calloc<Int32>();
     final rc = _contentBbox(px, width, height, channels, x0, y0, x1, y1);
-    final result = rc != 0
-        ? null
-        : [x0.value, y0.value, x1.value, y1.value];
+    final result = rc != 0 ? null : [x0.value, y0.value, x1.value, y1.value];
     calloc.free(px);
     calloc.free(x0);
     calloc.free(y0);

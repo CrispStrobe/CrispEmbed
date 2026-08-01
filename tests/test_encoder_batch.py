@@ -123,6 +123,11 @@ class TestEncoderBatchThroughput(unittest.TestCase):
     def test_throughput(self):
         import statistics
         m = _load()
+        # The parity classes above set CRISPEMBED_ENCODER_4D / _PACKED and do
+        # not restore them — clear both so "seq" and "packed" below measure
+        # what they claim (a leaked _4D=1 silently rerouted both legs).
+        os.environ.pop("CRISPEMBED_ENCODER_4D", None)
+        os.environ.pop("CRISPEMBED_ENCODER_PACKED", None)
         sent = "Machine learning is a subset of artificial intelligence used today."
 
         def bench(texts, reps=7):

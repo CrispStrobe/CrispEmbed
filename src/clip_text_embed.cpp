@@ -9,6 +9,7 @@
 
 #include "clip_text_embed.h"
 #include "tokenizer.h"
+#include "imatrix.h"
 #include "core/gguf_loader.h"
 #include "core/ggml_metal_guard.h"
 
@@ -16,6 +17,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -75,6 +77,11 @@ struct context {
     bool bench = false;
 
     ggml_gallocr_t galloc = nullptr;
+    // imatrix: gallocr + graph_compute has no eval-callback, so when calibrating
+    // (CRISPEMBED_IMATRIX_OUT set) route compute through a sched the collector hooks.
+    bool imatrix_active = false;
+    ggml_backend_sched_t imatrix_sched = nullptr;
+    ggml_backend_t imatrix_cpu = nullptr; // CPU fallback the sched requires as last backend
 };
 
 bool load(context ** out, const char * path, int n_threads) {
@@ -193,7 +200,7 @@ bool load(context ** out, const char * path, int n_threads) {
 
     // Load weights — prefer GPU backend when available
     bool force_cpu = (getenv("CLIP_TEXT_FORCE_CPU") && atoi(getenv("CLIP_TEXT_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
@@ -249,6 +256,18 @@ bool load(context ** out, const char * path, int n_threads) {
     fprintf(stderr, "clip_text: loaded %d layers\n", ctx->n_layers);
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+    ctx->imatrix_active = (std::getenv("CRISPEMBED_IMATRIX_OUT") != nullptr);
+    if (ctx->imatrix_active) {
+        // ggml_backend_sched_new asserts the LAST backend is CPU.
+        std::vector<ggml_backend_t> bes;
+        bes.push_back(ctx->backend);
+        if (!ggml_backend_is_cpu(ctx->backend)) {
+            ctx->imatrix_cpu = ggml_backend_cpu_init();
+            bes.push_back(ctx->imatrix_cpu);
+        }
+        ctx->imatrix_sched = ggml_backend_sched_new(bes.data(), nullptr, (int)bes.size(), 8192, false, false);
+        crispembed_imatrix_install(ctx->imatrix_sched);
+    }
 
     return true;
 }
@@ -309,8 +328,16 @@ std::vector<float> encode(context * ctx, const char * text) {
     // Token embedding lookup
     ggml_tensor * x = ggml_get_rows(g, ctx->token_embd, ids); // [D, T]
 
-    // Position embedding: pos_embd is [D, max_pos], take first T positions
-    ggml_tensor * pos = ggml_view_2d(g, ctx->pos_embd, D, T, ctx->pos_embd->nb[1], 0);
+    // Position embedding: pos_embd is [D, max_pos], take first T positions.
+    // When quantized (Q8_0 in q4_k/imatrix builds), ggml_add's src1 must be F32
+    // — a raw Q8_0 view aborts in binary-ops. Dequant-cast to F32 first; the
+    // matmul weights (Q4_K) are fine because ggml_mul_mat handles quantized src0,
+    // and token_embd (Q8_0) is fine because ggml_get_rows dequantizes.
+    ggml_tensor * pe = ctx->pos_embd;
+    if (ggml_is_quantized(pe->type)) {
+        pe = ggml_cast(g, pe, GGML_TYPE_F32);
+    }
+    ggml_tensor * pos = ggml_view_2d(g, pe, D, T, pe->nb[1], 0);
     x = ggml_add(g, x, pos);
 
     // Causal mask for CLIP (nullptr for SigLIP bidirectional)
@@ -407,7 +434,12 @@ std::vector<float> encode(context * ctx, const char * text) {
     ggml_cgraph * gf = ggml_new_graph_custom(g, total_nodes, false);
     ggml_build_forward_expand(gf, pooled);
 
-    ggml_gallocr_alloc_graph(ctx->galloc, gf);
+    if (ctx->imatrix_active) {
+        ggml_backend_sched_reset(ctx->imatrix_sched);
+        ggml_backend_sched_alloc_graph(ctx->imatrix_sched, gf);
+    } else {
+        ggml_gallocr_alloc_graph(ctx->galloc, gf);
+    }
 
     if (bench) {
         auto t_pre1 = std::chrono::steady_clock::now();
@@ -431,7 +463,10 @@ std::vector<float> encode(context * ctx, const char * text) {
     // Compute
     {
         auto t_comp0 = std::chrono::steady_clock::now();
-        ggml_backend_graph_compute(ctx->backend, gf);
+        if (ctx->imatrix_active)
+            ggml_backend_sched_graph_compute(ctx->imatrix_sched, gf);
+        else
+            ggml_backend_graph_compute(ctx->backend, gf);
         if (bench) {
             auto t_comp1 = std::chrono::steady_clock::now();
             fprintf(stderr, "[clip_text-bench] graph compute: %.3f ms\n",
@@ -473,6 +508,9 @@ int dim(const context * ctx) {
 
 void free(context * ctx) {
     if (ctx) {
+        crispembed_imatrix_flush(); // this context isn't freed via crispembed_free; clean_exit skips atexit
+        if (ctx->imatrix_sched) ggml_backend_sched_free(ctx->imatrix_sched);
+        if (ctx->imatrix_cpu) ggml_backend_free(ctx->imatrix_cpu);
         if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;

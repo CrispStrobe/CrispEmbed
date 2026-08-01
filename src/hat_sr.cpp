@@ -25,6 +25,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -527,7 +528,7 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
     core_gguf::free_metadata(meta);
 
     bool force_cpu = (getenv("HAT_SR_FORCE_CPU") && atoi(getenv("HAT_SR_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, ctx->backend, "hat", ctx->wl)) {
         fprintf(stderr, "hat_sr: failed to load weights\n");

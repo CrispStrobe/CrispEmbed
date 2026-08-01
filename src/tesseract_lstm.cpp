@@ -15,6 +15,7 @@
 #include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-backend.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -47,6 +48,8 @@ struct tesseract_lstm_context {
     int num_classes;
     int null_char;
     int num_lstm_layers;
+    uint32_t training_flags;
+    bool int_mode;
     std::string vgsl_spec;
 
     // Conv FC weights
@@ -142,6 +145,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->num_classes = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_classes", 111);
     ctx->null_char = (int)core_gguf::kv_u32(meta, "tesseract_lstm.null_char", 110);
     ctx->num_lstm_layers = (int)core_gguf::kv_u32(meta, "tesseract_lstm.num_lstm_layers", 4);
+    ctx->training_flags = core_gguf::kv_u32(meta, "tesseract_lstm.training_flags", 0);
+    ctx->int_mode = core_gguf::kv_bool(meta, "tesseract_lstm.int_mode", (ctx->training_flags & 1) != 0);
     ctx->vgsl_spec = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
 
     // Tokens
@@ -163,7 +168,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: weights
-    ggml_backend_t backend = ggml_backend_init_best();
+    ggml_backend_t backend = crispasr_init_gpu_backend();
     if (!core_gguf::load_weights(path, backend, "tesseract_lstm", ctx->wl)) {
         ggml_backend_free(backend);
         return false;
@@ -224,8 +229,9 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
 
-    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d)\n", ctx->vgsl_spec.c_str(),
-            ctx->num_lstm_layers, ctx->num_classes, ctx->input_height);
+    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d, int_mode=%s)\n",
+            ctx->vgsl_spec.c_str(), ctx->num_lstm_layers, ctx->num_classes, ctx->input_height,
+            ctx->int_mode ? "true" : "false");
 
     return true;
 }
@@ -349,11 +355,20 @@ static void normalize_image(const uint8_t * pixels, int width, int height,
     if (mins.empty()) mins.push_back(0.0f);
     if (maxes.empty()) maxes.push_back(255.0f);
 
-    // 25th percentile of mins, 75th percentile of maxes
+    // NumPy's default percentile method is linear interpolation between the
+    // surrounding sorted samples. Use the same rule as the Python reference;
+    // selecting floor(index) changes the normalization before the first NN op.
     std::sort(mins.begin(), mins.end());
     std::sort(maxes.begin(), maxes.end());
-    float black = mins[(int)(mins.size() * 0.25f)];
-    float white = maxes[(int)(maxes.size() * 0.75f)];
+    auto percentile_linear = [](const std::vector<float> & values, float q) {
+        const float position = q * (float)(values.size() - 1);
+        const size_t lower = (size_t)std::floor(position);
+        const size_t upper = std::min(values.size() - 1, lower + 1);
+        const float fraction = position - (float)lower;
+        return values[lower] + fraction * (values[upper] - values[lower]);
+    };
+    float black = percentile_linear(mins, 0.25f);
+    float white = percentile_linear(maxes, 0.75f);
     float contrast = (white - black) / 2.0f;
     if (contrast <= 0.0f) contrast = 1.0f;
 
@@ -382,12 +397,13 @@ static void forward(tesseract_lstm_context * ctx,
     // 1. Convolve 3×3 stacking (no learned weights) + FC+tanh
     // For each pixel (y,x): stack 3×3 neighborhood → 9 features
     // Then FC: out = tanh(W @ stacked + bias)
+    std::vector<float> convolve_out(H * W * 9);
     std::vector<float> fc_out(H * W * conv_out);
     {
-        std::vector<float> stacked(9);
         for (int y = 0; y < H; y++) {
             for (int x = 0; x < W; x++) {
                 int idx = 0;
+                float * stacked = convolve_out.data() + (y * W + x) * 9;
                 for (int dx = -1; dx <= 1; dx++) {
                     for (int dy = -1; dy <= 1; dy++) {
                         int sx = x + dx, sy = y + dy;
@@ -406,6 +422,7 @@ static void forward(tesseract_lstm_context * ctx,
         }
     }
 
+    capture(ctx, "after_convolve", convolve_out.data(), convolve_out.size());
     capture(ctx, "after_conv_fc", fc_out.data(), fc_out.size());
 
     // 2. MaxPool 3×3
@@ -556,11 +573,9 @@ const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
-    // Tesseract's LSTM is trained on lines normalized to a fixed height
-    // (input_height, typically 36); the conv/maxpool + SummLSTM stack assumes
-    // it (H2 = H/3). Resize the input line to input_height (bilinear,
-    // aspect-preserving) before normalization — otherwise a differently-sized
-    // line produces garbage. (recognize() is documented to do this.)
+    // Tesseract's ImageData::PreScale calls Leptonica pixScale. For the usual
+    // upscaling path this is pixScaleGrayLI: top-left-corner linear
+    // interpolation on a 1/16 fixed-point grid, with edge replication.
     auto t0 = std::chrono::steady_clock::now();
     const uint8_t * src = pixels;
     int W = width, H = height;
@@ -570,30 +585,45 @@ const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_
         int dw = (int)std::lround((double)width * dh / (double)height);
         if (dw < 1) dw = 1;
         resized.resize((size_t)dw * dh);
+        const float scx = 16.0f * (float)width / (float)dw;
+        const float scy = 16.0f * (float)height / (float)dh;
         for (int y = 0; y < dh; y++) {
-            float sy = ((y + 0.5f) * height / dh) - 0.5f;
-            int y0 = (int)std::floor(sy);
-            float fy = sy - y0;
-            int y0c = std::min(std::max(y0, 0), height - 1);
-            int y1c = std::min(std::max(y0 + 1, 0), height - 1);
+            const int ypm = (int)(scy * (float)y);
+            const int yp = ypm >> 4;
+            const int yf = ypm & 0x0f;
+            const int y1 = std::min(yp + 1, height - 1);
             for (int x = 0; x < dw; x++) {
-                float sx = ((x + 0.5f) * width / dw) - 0.5f;
-                int x0 = (int)std::floor(sx);
-                float fx = sx - x0;
-                int x0c = std::min(std::max(x0, 0), width - 1);
-                int x1c = std::min(std::max(x0 + 1, 0), width - 1);
-                float p00 = pixels[y0c * width + x0c];
-                float p01 = pixels[y0c * width + x1c];
-                float p10 = pixels[y1c * width + x0c];
-                float p11 = pixels[y1c * width + x1c];
-                float top = p00 + (p01 - p00) * fx;
-                float bot = p10 + (p11 - p10) * fx;
-                resized[(size_t)y * dw + x] = (uint8_t)std::lround(top + (bot - top) * fy);
+                const int xpm = (int)(scx * (float)x);
+                const int xp = xpm >> 4;
+                const int xf = xpm & 0x0f;
+                const int x1 = std::min(xp + 1, width - 1);
+                const int v00 = pixels[yp * width + xp];
+                const int v10 = pixels[yp * width + x1];
+                const int v01 = pixels[y1 * width + xp];
+                const int v11 = pixels[y1 * width + x1];
+                resized[(size_t)y * dw + x] = (uint8_t)(((16 - xf) * (16 - yf) * v00 + xf * (16 - yf) * v10 +
+                                                         (16 - xf) * yf * v01 + xf * yf * v11 + 128) /
+                                                        256);
             }
         }
         src = resized.data();
         W = dw;
         H = dh;
+    }
+
+    if (std::getenv("TESSERACT_DIFF_DEBUG")) {
+        uint8_t lo = src[0], hi = src[0];
+        int lo_i = 0;
+        for (int i = 1; i < W * H; ++i) {
+            if (src[i] < lo) {
+                lo = src[i];
+                lo_i = i;
+            }
+            hi = std::max(hi, src[i]);
+        }
+        fprintf(stderr, "C++ resized debug: %dx%d min=%u max=%u first=%u %u %u %u\n", W, H, (unsigned)lo, (unsigned)hi,
+                (unsigned)src[0], (unsigned)src[1], (unsigned)src[2], (unsigned)src[3]);
+        fprintf(stderr, "C++ resized min location: x=%d y=%d\n", lo_i % W, lo_i / W);
     }
 
     // Normalize image (Tesseract-style ComputeBlackWhite + SetPixel)

@@ -12,6 +12,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -32,34 +33,12 @@
 
 static void tsr_conv2d(const float * input, int ic, int ih, int iw, const float * weight, const float * bias, int oc,
                        int kh, int kw, int stride, int pad, int groups, float * output) {
-    int oh = (ih + 2 * pad - kh) / stride + 1;
-    int ow = (iw + 2 * pad - kw) / stride + 1;
-    int ic_per_group = ic / groups;
-    int oc_per_group = oc / groups;
-    for (int g = 0; g < groups; g++) {
-        for (int oc_i = 0; oc_i < oc_per_group; oc_i++) {
-            int oc_abs = g * oc_per_group + oc_i;
-            float b = bias ? bias[oc_abs] : 0.0f;
-            for (int oy = 0; oy < oh; oy++) {
-                for (int ox = 0; ox < ow; ox++) {
-                    float sum = b;
-                    for (int ic_i = 0; ic_i < ic_per_group; ic_i++) {
-                        int ic_abs = g * ic_per_group + ic_i;
-                        for (int ky = 0; ky < kh; ky++) {
-                            for (int kx = 0; kx < kw; kx++) {
-                                int iy = oy * stride + ky - pad;
-                                int ix = ox * stride + kx - pad;
-                                if (iy < 0 || iy >= ih || ix < 0 || ix >= iw) continue;
-                                sum += input[ic_abs * ih * iw + iy * iw + ix] *
-                                       weight[oc_abs * ic_per_group * kh * kw + ic_i * kh * kw + ky * kw + kx];
-                            }
-                        }
-                    }
-                    output[oc_abs * oh * ow + oy * ow + ox] = sum;
-                }
-            }
-        }
-    }
+    // Same weight/output/input layout ([oc, ic/groups, kh, kw], CHW, zero-pad) as the
+    // former 7-nested scalar loop — delegate to the shared SIMD (AVX2+FMA / NEON) conv,
+    // which gathers one patch at a time and dot-products it against each filter row.
+    // Numerically equivalent up to FMA accumulation ordering (~1e-6, imperceptible for
+    // an 8-bit image); text_sr was the last SR runtime still doing scalar convolution.
+    core_cpu::conv2d_cpu(input, output, weight, bias, ic, oc, ih, iw, kh, kw, stride, pad, groups);
 }
 
 static void tsr_layernorm2d(const float * input, int c, int h, int w, const float * weight, const float * bias,
@@ -290,7 +269,7 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
     }
 
     bool force_cpu = (getenv("TEXT_SR_FORCE_CPU") && atoi(getenv("TEXT_SR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "text_sr", ctx->wl)) {
         fprintf(stderr, "text_sr: failed to load weights\n");

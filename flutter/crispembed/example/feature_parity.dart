@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
-import '../lib/crispembed.dart';
+import 'package:crispembed/crispembed.dart';
 
 void assertTrue(bool condition, String message) {
   if (!condition) {
@@ -39,14 +39,16 @@ void main(List<String> args) {
   final denseModel = args[0];
   final retrievalModel = args.length > 1 ? args[1] : null;
   final rerankerModel = args.length > 2 ? args[2] : null;
-  final libPath = args.length > 3 ? args[3] : Platform.environment['CRISPEMBED_LIB'];
+  final libPath =
+      args.length > 3 ? args[3] : Platform.environment['CRISPEMBED_LIB'];
 
   stdout.writeln('[dart] dense model: $denseModel');
   final dense = CrispEmbed(denseModel, nThreads: 4, libPath: libPath);
   try {
     final vec = dense.encode('Hello world');
     assertTrue(vec.isNotEmpty, 'single encode returned no values');
-    assertTrue((l2Norm(vec) - 1.0).abs() < 1e-3, 'single encode is not normalized');
+    assertTrue(
+        (l2Norm(vec) - 1.0).abs() < 1e-3, 'single encode is not normalized');
 
     final texts = [
       'query: crisp embeddings are fast',
@@ -67,9 +69,11 @@ void main(List<String> args) {
     dense.setDim(truncDim);
     final vecTrunc = dense.encode('Hello world');
     assertTrue(vecTrunc.length == truncDim, 'setDim did not truncate output');
-    assertTrue((l2Norm(vecTrunc) - 1.0).abs() < 1e-3, 'truncated encode is not normalized');
+    assertTrue((l2Norm(vecTrunc) - 1.0).abs() < 1e-3,
+        'truncated encode is not normalized');
     dense.setDim(0);
-    assertTrue(dense.encode('Hello world').length == vec.length, 'setDim(0) did not restore native dim');
+    assertTrue(dense.encode('Hello world').length == vec.length,
+        'setDim(0) did not restore native dim');
 
     dense.setPrefix('query: ');
     assertTrue(dense.prefix == 'query: ', 'prefix getter mismatch');
@@ -78,7 +82,8 @@ void main(List<String> args) {
     final cleared = dense.encode('hello');
     assertTrue(dense.prefix.isEmpty, 'prefix did not clear');
     assertTrue(prefixed.length == cleared.length, 'prefix changed output dim');
-    assertTrue(vectorsDiffer(prefixed, cleared), 'prefix had no effect on embeddings');
+    assertTrue(
+        vectorsDiffer(prefixed, cleared), 'prefix had no effect on embeddings');
 
     final docs = [
       'Paris France capital city and Eiffel Tower.',
@@ -87,10 +92,13 @@ void main(List<String> args) {
     ];
     final ranked = dense.rerankBiencoder('paris france capital', docs, topN: 2);
     assertTrue(ranked.length == 2, 'rerankBiencoder topN mismatch');
-    assertTrue(ranked.first.index == 0, 'rerankBiencoder did not rank the relevant document first');
-    assertTrue(ranked.first.score >= ranked[1].score, 'rerankBiencoder results are not sorted');
+    assertTrue(ranked.first.index == 0,
+        'rerankBiencoder did not rank the relevant document first');
+    assertTrue(ranked.first.score >= ranked[1].score,
+        'rerankBiencoder results are not sorted');
 
-    stdout.writeln('[dart] dense, batch, matryoshka, prefix, and bi-encoder rerank: PASS');
+    stdout.writeln(
+        '[dart] dense, batch, matryoshka, prefix, and bi-encoder rerank: PASS');
   } finally {
     dense.dispose();
   }
@@ -99,17 +107,22 @@ void main(List<String> args) {
     stdout.writeln('[dart] retrieval model: $retrievalModel');
     final retrieval = CrispEmbed(retrievalModel, nThreads: 4, libPath: libPath);
     try {
-      assertTrue(retrieval.hasSparse, 'retrieval model does not report sparse support');
+      assertTrue(retrieval.hasSparse,
+          'retrieval model does not report sparse support');
       final sparse = retrieval.encodeSparse('Paris is the capital of France.');
       assertTrue(sparse.isNotEmpty, 'encodeSparse returned no entries');
-      assertTrue(sparse.values.every((value) => value > 0.0), 'encodeSparse returned non-positive weights');
+      assertTrue(sparse.values.every((value) => value > 0.0),
+          'encodeSparse returned non-positive weights');
 
-      assertTrue(retrieval.hasColbert, 'retrieval model does not report colbert support');
+      assertTrue(retrieval.hasColbert,
+          'retrieval model does not report colbert support');
       final multi = retrieval.encodeMultivec('Paris is the capital of France.');
       assertTrue(multi.isNotEmpty, 'encodeMultivec returned no token vectors');
-      assertTrue(multi.first.isNotEmpty, 'encodeMultivec returned zero-width token vectors');
+      assertTrue(multi.first.isNotEmpty,
+          'encodeMultivec returned zero-width token vectors');
       for (final token in multi) {
-        assertTrue((l2Norm(token) - 1.0).abs() < 5e-3, 'token vector is not normalized');
+        assertTrue((l2Norm(token) - 1.0).abs() < 5e-3,
+            'token vector is not normalized');
       }
 
       stdout.writeln('[dart] sparse and colbert retrieval: PASS');
@@ -117,18 +130,24 @@ void main(List<String> args) {
       retrieval.dispose();
     }
   } else {
-    stdout.writeln('[dart] sparse and colbert retrieval: SKIP (no retrieval model)');
+    stdout.writeln(
+        '[dart] sparse and colbert retrieval: SKIP (no retrieval model)');
   }
 
   if (rerankerModel != null) {
     stdout.writeln('[dart] reranker model: $rerankerModel');
     final reranker = CrispEmbed(rerankerModel, nThreads: 4, libPath: libPath);
     try {
-      assertTrue(reranker.isReranker, 'reranker model does not report reranker support');
-      final positive = reranker.rerank('capital of france', 'Paris is the capital of France.');
-      final negative = reranker.rerank('capital of france', 'Bicycles have handlebars and pedals.');
-      assertTrue(positive.isFinite && negative.isFinite, 'rerank returned non-finite score');
-      assertTrue(positive > negative, 'reranker failed to score the relevant document higher');
+      assertTrue(reranker.isReranker,
+          'reranker model does not report reranker support');
+      final positive = reranker.rerank(
+          'capital of france', 'Paris is the capital of France.');
+      final negative = reranker.rerank(
+          'capital of france', 'Bicycles have handlebars and pedals.');
+      assertTrue(positive.isFinite && negative.isFinite,
+          'rerank returned non-finite score');
+      assertTrue(positive > negative,
+          'reranker failed to score the relevant document higher');
 
       stdout.writeln('[dart] cross-encoder rerank: PASS');
     } finally {

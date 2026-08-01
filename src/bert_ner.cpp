@@ -4,6 +4,7 @@
 #include "crispembed.h"
 #include "core/gguf_loader.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -82,7 +83,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
 
     // Load classifier weight tensors (need a separate backend for the classifier)
     bool force_cpu = (getenv("BERT_NER_FORCE_CPU") && atoi(getenv("BERT_NER_FORCE_CPU")));
-    ggml_backend_t cls_backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t cls_backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!cls_backend) cls_backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(cls_backend)) ggml_backend_cpu_set_n_threads(cls_backend, n_threads);
     core_gguf::WeightLoad wl;

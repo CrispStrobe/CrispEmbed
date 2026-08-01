@@ -16,8 +16,10 @@
 #include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -25,7 +27,13 @@
 #include <cstring>
 #include <map>
 #include <string>
+#include <thread>
 #include <vector>
+
+// Host-side WMSA thread count, set from scunet_init's n_threads (the window
+// attention runs on the CPU outside ggml, so the backend thread count does
+// not apply to it). Default 1 = the historical serial behavior.
+static int g_wmsa_threads = 1;
 
 // ── Helpers ────────────────────────────────────────────────────────
 
@@ -215,10 +223,14 @@ static void wmsa_forward(const float * x_chw, int C, int H, int W, const float *
     float scale = 1.0f / sqrtf((float)head_dim);
     std::vector<float> attn_out(nW * N * C);
 
-    for (int wi = 0; wi < nW; wi++) {
+    // Each window is independent (reads qkv/rpb/mask, writes only its own
+    // attn_out slice), so the window loop parallelizes byte-identically across
+    // g_wmsa_threads (was single-threaded regardless of -t; default 1 keeps the
+    // old behavior). SCUNET_WMSA_SCALAR=1 forces serial (A/B baseline).
+    auto run_window = [&](int wi, std::vector<float> & scr) {
         for (int hd = 0; hd < n_heads; hd++) {
             // Compute attention scores
-            scratch.resize(N * N);
+            scr.resize(N * N);
             for (int i = 0; i < N; i++) {
                 const float * qi = &qkv[(wi * N + i) * 3 * C + hd * head_dim];
                 for (int j = 0; j < N; j++) {
@@ -226,31 +238,48 @@ static void wmsa_forward(const float * x_chw, int C, int H, int W, const float *
                     float dot = core_cpu::dot_product(qi, kj, head_dim);
                     float bias = rpb[rpb_idx[i * N + j]];
                     float mask_val = shift ? attn_mask[wi * N * N + i * N + j] : 0.0f;
-                    scratch[i * N + j] = dot * scale + bias + mask_val;
+                    scr[i * N + j] = dot * scale + bias + mask_val;
                 }
             }
             // Softmax per row
             for (int i = 0; i < N; i++) {
                 float mx = -1e30f;
-                for (int j = 0; j < N; j++) mx = std::max(mx, scratch[i * N + j]);
+                for (int j = 0; j < N; j++) mx = std::max(mx, scr[i * N + j]);
                 float sum = 0;
                 for (int j = 0; j < N; j++) {
-                    scratch[i * N + j] = expf(scratch[i * N + j] - mx);
-                    sum += scratch[i * N + j];
+                    scr[i * N + j] = expf(scr[i * N + j] - mx);
+                    sum += scr[i * N + j];
                 }
-                for (int j = 0; j < N; j++) scratch[i * N + j] /= sum;
+                for (int j = 0; j < N; j++) scr[i * N + j] /= sum;
             }
             // Attn × V
             for (int i = 0; i < N; i++) {
                 float * dst = &attn_out[(wi * N + i) * C + hd * head_dim];
                 for (int d = 0; d < head_dim; d++) dst[d] = 0;
                 for (int j = 0; j < N; j++) {
-                    float a = scratch[i * N + j];
+                    float a = scr[i * N + j];
                     const float * vj = &qkv[(wi * N + j) * 3 * C + 2 * C + hd * head_dim];
                     for (int d = 0; d < head_dim; d++) dst[d] += a * vj[d];
                 }
             }
         }
+    };
+    static const bool wmsa_scalar = (std::getenv("SCUNET_WMSA_SCALAR") != nullptr);
+    int n_thr = wmsa_scalar ? 1 : std::min(g_wmsa_threads, nW);
+    if (n_thr <= 1) {
+        for (int wi = 0; wi < nW; wi++) run_window(wi, scratch);
+    } else {
+        std::atomic<int> next{ 0 };
+        std::vector<std::thread> pool;
+        pool.reserve(n_thr);
+        for (int t = 0; t < n_thr; t++) {
+            pool.emplace_back([&]() {
+                std::vector<float> scr;
+                int wi;
+                while ((wi = next.fetch_add(1)) < nW) run_window(wi, scr);
+            });
+        }
+        for (auto & th : pool) th.join();
     }
 
     // Output projection: (nW*N, C) → (nW*N, C) — batched SIMD
@@ -363,28 +392,28 @@ static void swin_block_forward(float * x, int C, int H, int W, const swin_block_
     const float * ln2_w_ptr = to_f32(wt.ln2_w, dqC);
     const float * ln2_b_ptr = to_f32(wt.ln2_b, dqD);
 
-    // Pre-allocate buffers outside the pixel loop (was per-pixel before —
-    // 65536+ heap allocs per swin block for a 256x256 image)
+    // Batched MLP: apply LN2 per pixel into a [hw, C] row-major matrix, then run
+    // the two Linear layers as SIMD GEMMs (linear_batch_cpu) instead of a scalar
+    // matmul per pixel. The per-pixel MLP (~2*C*mlp_hidden MACs/pixel over hw
+    // pixels) was the dominant scalar cost of the swin block; this matches the
+    // WMSA path, which already uses linear_batch_cpu/dot_product. Output differs
+    // only by FMA accumulation ordering (~1e-6), like the already-SIMD attention.
     std::vector<float> pix_norm(C);
-    std::vector<float> h(mlp_hidden);
+    std::vector<float> nrm_batch((size_t)hw * C);
     for (int y = 0; y < H; y++)
         for (int xi = 0; xi < W; xi++) {
-            for (int c = 0; c < C; c++) pix[c] = x[c * hw + y * W + xi];
+            int p = y * W + xi;
+            for (int c = 0; c < C; c++) pix[c] = x[c * hw + p];
             layer_norm(pix.data(), C, ln2_w_ptr, ln2_b_ptr, pix_norm.data());
-
-            // MLP: Linear(C→hidden) + GELU + Linear(hidden→C)
-            for (int o = 0; o < mlp_hidden; o++) {
-                float sum = m0b[o];
-                for (int i = 0; i < C; i++) sum += m0w[o * C + i] * pix_norm[i];
-                h[o] = sum;
-            }
-            gelu_inplace(h.data(), mlp_hidden);
-            for (int o = 0; o < C; o++) {
-                float sum = m2b[o];
-                for (int i = 0; i < mlp_hidden; i++) sum += m2w[o * mlp_hidden + i] * h[i];
-                x[o * hw + y * W + xi] += sum;
-            }
+            for (int c = 0; c < C; c++) nrm_batch[(size_t)p * C + c] = pix_norm[c];
         }
+    std::vector<float> h_batch((size_t)hw * mlp_hidden);
+    core_cpu::linear_batch_cpu(nrm_batch.data(), h_batch.data(), hw, C, mlp_hidden, m0w, m0b);
+    gelu_inplace(h_batch.data(), hw * mlp_hidden);
+    std::vector<float> out_batch((size_t)hw * C);
+    core_cpu::linear_batch_cpu(h_batch.data(), out_batch.data(), hw, mlp_hidden, C, m2w, m2b);
+    for (int c = 0; c < C; c++)
+        for (int p = 0; p < hw; p++) x[c * hw + p] += out_batch[(size_t)p * C + c];
 
     if (g_swin_debug_cb && cur_block == g_swin_debug_block_id) g_swin_debug_cb("full_swin", x, C * hw);
 }
@@ -505,7 +534,7 @@ static void load_ctb(core_gguf::WeightLoad & wl, const char * prefix, ctb_weight
 }
 
 scunet_context * scunet_init(const char * model_path, int n_threads) {
-    (void)n_threads;
+    g_wmsa_threads = n_threads > 0 ? n_threads : 1;
     if (!model_path) return nullptr;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
@@ -516,7 +545,7 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
     core_gguf::free_metadata(meta);
 
     bool force_cpu = (getenv("SCUNET_FORCE_CPU") && atoi(getenv("SCUNET_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!backend) backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(backend)) ggml_backend_cpu_set_n_threads(backend, n_threads > 0 ? n_threads : 2);
     core_gguf::WeightLoad wl;

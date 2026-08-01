@@ -13,10 +13,21 @@ import subprocess, sys, time
 import numpy as np
 from pathlib import Path
 
-CLI = str(Path(__file__).parent.parent / "build" / "crispembed")
+import os
+CLI = os.environ.get("CRISPEMBED_CLI") or str(Path(__file__).parent.parent / "build" / "crispembed")
 if not Path(CLI).exists():
     CLI = "/tmp/crispembed-build/crispembed"
-CACHE = "/mnt/storage/crispembed_cache"
+CACHE = os.environ.get("CRISPEMBED_RAG_CACHE", "/mnt/storage/crispembed_cache")
+
+# Quant flavors to compare, in report order: (label, filename-suffix). The imatrix
+# flavors are the shipped defaults — this benchmark checks they preserve actual
+# retrieval RANKING (MRR/Recall), not just cosine agreement with f32.
+FLAVORS = [
+    ("Q8_0",        "-q8_0.gguf"),
+    ("Q4_K",        "-q4_k.gguf"),
+    ("Q4_K+imat",   "-q4_k-imatrix.gguf"),
+    ("IQ4_XS+imat", "-iq4_xs.gguf"),
+]
 
 # ── Built-in IR test dataset ──────────────────────────────────────────
 CORPUS = [
@@ -40,6 +51,23 @@ CORPUS = [
     "Tokenization splits text into subword units for processing by language models.",
     "Attention mechanisms allow models to focus on relevant parts of the input.",
     "Knowledge distillation transfers knowledge from a large model to a smaller one.",
+    # ── Adjacent-topic distractors: semantically close, NOT answers — they make
+    #    top-1 ranking harder so quant flavors can differentiate (indices 20+).
+    "Supervised learning trains models on labelled examples to predict outcomes.",
+    "Unsupervised learning finds structure in data without labelled targets.",
+    "Gradient descent optimizes model parameters by following the loss gradient.",
+    "Overfitting happens when a model memorizes training data and fails to generalize.",
+    "Batch normalization stabilizes training by normalizing layer activations.",
+    "Dropout regularizes neural networks by randomly deactivating units during training.",
+    "A learning rate schedule adjusts the step size as training progresses.",
+    "Cross-entropy loss measures the difference between predicted and true distributions.",
+    "Data augmentation expands a training set by transforming existing examples.",
+    "Hyperparameter tuning searches for the configuration that maximizes validation performance.",
+    "Semantic search retrieves documents by meaning rather than exact keyword overlap.",
+    "Cosine similarity measures the angle between two vectors regardless of magnitude.",
+    "A bi-encoder embeds queries and documents independently for fast retrieval.",
+    "A cross-encoder jointly scores a query-document pair for higher accuracy.",
+    "Approximate nearest neighbour search speeds up similarity lookup in large indexes.",
 ]
 
 QUERIES = [
@@ -53,6 +81,13 @@ QUERIES = [
     ("What is retrieval augmented generation?", [15, 14]),
     ("How is a model fine-tuned?", [16, 6]),
     ("What is the attention mechanism?", [18, 7]),
+    # Harder queries — the answer sits among close distractors (indices 20–34)
+    ("How does semantic search find relevant documents?", [30]),
+    ("What causes a neural network to overfit?", [23]),
+    ("How are embeddings compared for similarity?", [31]),
+    ("What is a bi-encoder used for in retrieval?", [32]),
+    ("How is a query-document pair scored jointly?", [33]),
+    ("What regularizes a network by dropping units?", [25]),
 ]
 
 MODELS = [
@@ -120,26 +155,23 @@ def run(name, gguf, hf_name):
     else:
         print(f"  F32: not found"); f32_c = None
 
-    # Q8_0
-    q8 = gguf.replace('.gguf', '-q8_0.gguf')
-    if Path(q8).exists() and f32_c is not None:
-        c = encode_ce(q8, CORPUS); q = encode_ce(q8, qtexts)
-        if c is not None:
-            m, r = metrics(q, c, QUERIES)
-            cos = np.mean([np.dot(c[i], f32_c[i]) for i in range(len(CORPUS))])
-            print(f"  Q8_0: MRR@10={m:.4f}  Recall@10={r:.4f}  cos_vs_f32={cos:.6f}")
+    # Reference for cos_vs_ref: f32 if available, else the first flavor that loads.
+    ref_c = f32_c
+    for label, suffix in FLAVORS:
+        fp = gguf.replace('.gguf', suffix)
+        if not Path(fp).exists():
+            continue
+        c = encode_ce(fp, CORPUS); q = encode_ce(fp, qtexts)
+        if c is None or q is None:
+            print(f"  {label:11s} FAILED to encode"); continue
+        if ref_c is None:
+            ref_c = c  # anchor on the highest-precision flavor present (Q8_0)
+        m, r = metrics(q, c, QUERIES)
+        cos = np.mean([np.dot(c[i], ref_c[i]) for i in range(len(CORPUS))])
+        print(f"  {label:11s} MRR@10={m:.4f}  Recall@10={r:.4f}  cos_vs_ref={cos:.6f}")
 
-    # Q4_K
-    q4 = gguf.replace('.gguf', '-q4_k.gguf')
-    if Path(q4).exists() and f32_c is not None:
-        c = encode_ce(q4, CORPUS); q = encode_ce(q4, qtexts)
-        if c is not None:
-            m, r = metrics(q, c, QUERIES)
-            cos = np.mean([np.dot(c[i], f32_c[i]) for i in range(len(CORPUS))])
-            print(f"  Q4_K: MRR@10={m:.4f}  Recall@10={r:.4f}  cos_vs_f32={cos:.6f}")
-
-    # HuggingFace
-    if hf_name:
+    # HuggingFace (skip with CRISPEMBED_RAG_NO_HF=1 — avoids loading torch/ST)
+    if hf_name and not os.environ.get("CRISPEMBED_RAG_NO_HF"):
         try:
             t0 = time.time()
             hc = encode_hf(hf_name, CORPUS); hq = encode_hf(hf_name, qtexts)

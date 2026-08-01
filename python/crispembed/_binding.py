@@ -68,6 +68,18 @@ def _load_library(lib_path: Optional[str] = None):
     return ctypes.CDLL(path)
 
 
+def set_gpu_backend(name: Optional[str], lib_path: Optional[str] = None) -> None:
+    """Set the process-global GPU backend preference ("metal", "cuda",
+    "vulkan", ...), matched case-insensitively against the ggml device and
+    registry names. Call BEFORE constructing any model. None or "" = auto.
+    An unavailable preference warns on stderr and falls back to auto; use
+    the per-engine *_FORCE_CPU environment variables to force CPU."""
+    lib = _load_library(lib_path)
+    lib.crispembed_set_gpu_backend.argtypes = [ctypes.c_char_p]
+    lib.crispembed_set_gpu_backend.restype = None
+    lib.crispembed_set_gpu_backend((name or "").encode("utf-8"))
+
+
 class _CrispEmbedHparams(ctypes.Structure):
     _fields_ = [
         ("n_vocab", ctypes.c_int32),
@@ -270,6 +282,11 @@ class CrispEmbed:
                 ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_int),
             ]
             lib.crispembed_encode_image_file.restype = ctypes.POINTER(ctypes.c_float)
+        if hasattr(lib, "crispembed_set_image_deskew"):
+            lib.crispembed_set_image_deskew.argtypes = [
+                ctypes.c_void_p, ctypes.c_int, ctypes.c_float,
+            ]
+            lib.crispembed_set_image_deskew.restype = None
         if hasattr(lib, "crispembed_encode_text_with_image_file"):
             lib.crispembed_encode_text_with_image_file.argtypes = [
                 ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p,
@@ -343,41 +360,54 @@ class CrispEmbed:
         self,
         texts: Union[str, List[str]],
         normalize: bool = True,
+        matryoshka_dim: Optional[int] = None,
     ) -> np.ndarray:
         """Encode text(s) to embedding vectors.
 
         Args:
             texts: Single string or list of strings.
             normalize: L2-normalize (default True, already done in C).
+            matryoshka_dim: Truncate embeddings to this dimension and re-normalize.
+                Useful for Matryoshka models (e.g. EmbeddingGemma) that support
+                variable output dimensions. None = use model's full dimension.
 
         Returns:
             np.ndarray of shape (n_texts, dim) or (dim,) for single text.
         """
+        # Set matryoshka dimension if requested
+        if matryoshka_dim is not None:
+            self._lib.crispembed_set_dim(self._ctx, matryoshka_dim)
+
         single = isinstance(texts, str)
         if single:
             texts = [texts]
 
         n = len(texts)
 
-        if n == 1:
+        try:
+            if n == 1:
+                dim = ctypes.c_int(0)
+                ptr = self._lib.crispembed_encode(
+                    self._ctx, texts[0].encode("utf-8"), ctypes.byref(dim)
+                )
+                if not ptr:
+                    raise RuntimeError(f"Encoding failed for: {texts[0][:50]}")
+                out = np.ctypeslib.as_array(ptr, shape=(dim.value,)).copy()
+                return out if single else out.reshape(1, -1)
+
+            c_texts = (ctypes.c_char_p * n)(*(t.encode("utf-8") for t in texts))
             dim = ctypes.c_int(0)
-            ptr = self._lib.crispembed_encode(
-                self._ctx, texts[0].encode("utf-8"), ctypes.byref(dim)
+            ptr = self._lib.crispembed_encode_batch(
+                self._ctx, c_texts, n, ctypes.byref(dim)
             )
             if not ptr:
-                raise RuntimeError(f"Encoding failed for: {texts[0][:50]}")
-            out = np.ctypeslib.as_array(ptr, shape=(dim.value,)).copy()
-            return out if single else out.reshape(1, -1)
-
-        c_texts = (ctypes.c_char_p * n)(*(t.encode("utf-8") for t in texts))
-        dim = ctypes.c_int(0)
-        ptr = self._lib.crispembed_encode_batch(
-            self._ctx, c_texts, n, ctypes.byref(dim)
-        )
-        if not ptr:
-            raise RuntimeError("Batch encoding failed")
-        out = np.ctypeslib.as_array(ptr, shape=(n * dim.value,)).copy()
-        return out.reshape(n, dim.value)
+                raise RuntimeError("Batch encoding failed")
+            out = np.ctypeslib.as_array(ptr, shape=(n * dim.value,)).copy()
+            return out.reshape(n, dim.value)
+        finally:
+            # Reset to full dimension after matryoshka encode
+            if matryoshka_dim is not None:
+                self._lib.crispembed_set_dim(self._ctx, 0)
 
     # ------------------------------------------------------------------
     # Sparse retrieval (BGE-M3 / SPLADE)
@@ -633,6 +663,18 @@ class CrispEmbed:
         if not ptr or out_dim.value <= 0:
             return np.empty((0,), dtype=np.float32)
         return np.ctypeslib.as_array(ptr, shape=(out_dim.value,)).copy()
+
+    def set_image_deskew(self, enable: bool = True, max_angle: float = 0.0):
+        """Toggle optional document deskew for the file/RGB image paths
+        (``encode_image_file``, ``encode_text_with_image_file`` and the
+        native preprocessor). Off by default — enable for scanned-document
+        embeddings only; photographs should stay un-rotated. ``max_angle``
+        caps the correction in degrees (0 keeps the current value,
+        initially 15°).
+        """
+        if hasattr(self._lib, "crispembed_set_image_deskew"):
+            self._lib.crispembed_set_image_deskew(
+                self._ctx, int(enable), float(max_angle))
 
     def encode_image_file(self, path: str) -> np.ndarray:
         """In-process image embedding (no `transformers` dependency).
@@ -1806,6 +1848,7 @@ class _CrispOcrResult(ctypes.Structure):
         ("confidence", ctypes.c_float),
         ("text", ctypes.c_char_p),
         ("text_len", ctypes.c_int),
+        ("orientation_corrected", ctypes.c_int),
     ]
 
 
@@ -2435,6 +2478,7 @@ class _ScanCleanupParams(ctypes.Structure):
         ("despeckle_thresh", ctypes.c_float),
         ("blackfilter", ctypes.c_int),
         ("blackfilter_thresh", ctypes.c_float),
+        ("deskew_consensus", ctypes.c_int),
     ]
 
 
@@ -2501,7 +2545,8 @@ class CrispScanCleanup:
                 binarize_method=0, sauvola_k=0.2, sauvola_window=25,
                 morph_kernel=51, border_threshold=0.15,
                 deskew_max_angle=15.0, despeckle=True, despeckle_thresh=0.25,
-                blackfilter=True, blackfilter_thresh=0.20):
+                blackfilter=True, blackfilter_thresh=0.20,
+                deskew_consensus=True):
         """Process a scan image.
 
         Args:
@@ -2550,6 +2595,7 @@ class CrispScanCleanup:
         params.despeckle_thresh = despeckle_thresh
         params.blackfilter = int(blackfilter)
         params.blackfilter_thresh = blackfilter_thresh
+        params.deskew_consensus = int(deskew_consensus)
 
         out_ptr = ctypes.POINTER(ctypes.c_uint8)()
         out_w = ctypes.c_int(0)
@@ -4366,6 +4412,7 @@ def ocr_render(results: list, page_w: int, page_h: int, format: str = "text",
         text_bufs.append(ctypes.c_char_p(text_bytes))
         arr[i].text = text_bufs[-1]
         arr[i].text_len = len(text_bytes)
+        arr[i].orientation_corrected = int(r.get("orientation_corrected", 0))
 
     fmt = format.encode("utf-8")
     ptr = lib.crispembed_ocr_render(arr, n, page_w, page_h, fmt)

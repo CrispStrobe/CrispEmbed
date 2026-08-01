@@ -98,13 +98,224 @@ RERANK_CALIB = [
     ("how neural networks learn", ["Networks adjust weights via backpropagation.", "Coffee contains caffeine.", "Gradient descent minimizes the loss.", "The Nile is a long river."]),
     ("effects of sleep deprivation", ["Lack of sleep impairs memory and focus.", "Mount Everest is the tallest mountain.", "Sleep loss weakens the immune system.", "Violins are string instruments."]),
     ("renewable energy sources", ["Solar and wind are clean energy sources.", "The recipe calls for two cups of sugar.", "Hydropower generates electricity from water.", "Penguins live in cold climates."]),
+    # German (DE) calibration pairs
+    ("Wie entsteht Regen", ["Regen entsteht, wenn Wasserdampf zu Tropfen kondensiert.", "Die Börse fiel heute stark.", "Wolken geben Niederschlag ab, wenn sie gesättigt sind.", "Hunde sind beliebte Haustiere."]),
+    ("Wie wirken Impfstoffe", ["Impfstoffe trainieren das Immunsystem mit Antigenen.", "Ein Kuchenrezept braucht Mehl und Eier.", "Eine Impfung regt die Antikörperbildung an.", "Der Bus kommt um zwölf."]),
+    ("Beste Programmiersprache für Datenanalyse", ["Python wird häufig für Datenanalyse und maschinelles Lernen genutzt.", "Fußball wird auf einem Rasenfeld gespielt.", "R eignet sich gut für statistische Berechnungen.", "Im Winter ist es kalt."]),
+    ("Geschichte des Römischen Reiches", ["Rom dehnte sich durch Eroberungen im Mittelmeerraum aus.", "Photosynthese wandelt Sonnenlicht in Energie um.", "Das Reich fiel im fünften Jahrhundert.", "Smartphones nutzen Lithium-Akkus."]),
 ]
 RERANK_EVAL = [
-    ("treatment for headaches", ["Pain relievers like ibuprofen ease headaches.", "The bridge spans two kilometers.", "Rest and hydration reduce headache severity.", "Tomatoes are technically fruits."]),
-    ("how do plants make food", ["Plants use photosynthesis to make glucose.", "The car engine has six cylinders.", "Chlorophyll captures light energy.", "Chess has sixty-four squares."]),
-    ("causes of climate change", ["Greenhouse gas emissions drive warming.", "The museum opens at nine.", "Deforestation raises atmospheric CO2.", "Owls are nocturnal birds."]),
-    ("benefits of regular exercise", ["Exercise strengthens the heart and muscles.", "The library has many books.", "Physical activity improves mood.", "Saturn has prominent rings."]),
-    ("how computers store data", ["Data is stored as bits on drives and memory.", "Roses are often red.", "SSDs use flash memory cells.", "The concert starts at eight."]),
+    ("treatment for migraine headaches", [
+        "Triptans are prescription drugs that abort acute migraine attacks.",
+        "Over-the-counter ibuprofen can relieve mild headache pain.",
+        "Staying hydrated and resting in a dark room eases migraine symptoms.",
+        "Regular sleep schedules reduce the frequency of migraines.",
+        "The suspension bridge spans nearly two kilometers across the bay.",
+        "Ripe tomatoes are botanically classified as fruits."]),
+    ("how do plants convert sunlight into energy", [
+        "Photosynthesis converts sunlight, water and CO2 into glucose.",
+        "Chlorophyll in the chloroplasts absorbs light energy.",
+        "The light-dependent reactions occur in the thylakoid membranes.",
+        "Plants also respire, consuming oxygen at night.",
+        "The six-cylinder engine produces three hundred horsepower.",
+        "A standard chessboard has sixty-four alternating squares."]),
+    ("main causes of global climate change", [
+        "Burning fossil fuels releases carbon dioxide that traps heat.",
+        "Methane from agriculture is a potent greenhouse gas.",
+        "Deforestation reduces the planet's capacity to absorb CO2.",
+        "Industrial emissions have risen sharply since 1950.",
+        "The art museum opens to visitors at nine each morning.",
+        "Owls are nocturnal birds with excellent night vision."]),
+    ("health benefits of regular aerobic exercise", [
+        "Aerobic exercise strengthens the heart and improves circulation.",
+        "Regular activity lowers blood pressure and resting heart rate.",
+        "Exercise releases endorphins that improve mood and reduce stress.",
+        "Walking thirty minutes a day supports long-term health.",
+        "The public library houses over a million printed volumes.",
+        "Saturn is encircled by a bright system of icy rings."]),
+    ("how computers store digital data", [
+        "Data is encoded as binary bits on storage media.",
+        "Solid-state drives store data in flash memory cells.",
+        "Hard disk drives write bits magnetically on spinning platters.",
+        "RAM holds data temporarily while programs run.",
+        "Red roses are a traditional symbol of romance.",
+        "The orchestra concert is scheduled to begin at eight."]),
+    ("what makes a good night of sleep", [
+        "Deep sleep stages restore the body and consolidate memory.",
+        "A cool, dark, quiet room promotes uninterrupted sleep.",
+        "Avoiding caffeine late in the day improves sleep quality.",
+        "Consistent bedtimes help regulate the circadian rhythm.",
+        "The quarterly earnings report exceeded analyst expectations.",
+        "Basalt is a common volcanic rock formed from lava."]),
+    ("how vaccines protect against disease", [
+        "Vaccines train the immune system to recognize a pathogen.",
+        "They introduce a harmless antigen that triggers antibodies.",
+        "Immune memory cells enable a fast response to real infection.",
+        "Booster doses maintain protection as immunity wanes.",
+        "The ferry departs from the northern pier every hour.",
+        "Maple syrup is harvested from the sap of maple trees."]),
+    ("why is the sky blue during the day", [
+        "Sunlight scatters off air molecules, and blue scatters most.",
+        "Rayleigh scattering favors shorter blue wavelengths.",
+        "At sunset the light travels farther, so reds dominate.",
+        "The atmosphere's composition shapes the scattering effect.",
+        "The championship match went into extra time on Sunday.",
+        "Sourdough bread rises through natural wild-yeast fermentation."]),
+    ("Wie funktioniert eine Solarzelle", [
+        "Eine Solarzelle wandelt Sonnenlicht direkt in elektrischen Strom um.",
+        "Der photoelektrische Effekt löst Elektronen im Halbleiter aus.",
+        "Silizium ist das häufigste Material für Photovoltaikzellen.",
+        "Mehrere Zellen werden zu einem Solarmodul zusammengeschaltet.",
+        "Der Zug nach München fährt pünktlich um acht Uhr ab.",
+        "Die Katze schläft den ganzen Nachmittag auf dem Sofa."]),
+    ("Symptome und Verlauf einer Erkältung", [
+        "Eine Erkältung beginnt oft mit Halskratzen und Schnupfen.",
+        "Husten und leichtes Fieber können in den ersten Tagen auftreten.",
+        "Ausreichend Ruhe und Flüssigkeit lindern die Beschwerden.",
+        "Die meisten Erkältungen klingen nach einer Woche ab.",
+        "Der Fluss schlängelt sich zwei Kilometer durch das Tal.",
+        "Tomaten gelten botanisch gesehen als Früchte."]),
+    ("Hauptursachen des globalen Klimawandels", [
+        "Die Verbrennung fossiler Brennstoffe setzt viel CO2 frei.",
+        "Methan aus der Landwirtschaft verstärkt den Treibhauseffekt.",
+        "Abholzung verringert die Aufnahme von Kohlendioxid.",
+        "Industrieabgase sind seit 1950 stark angestiegen.",
+        "Das Museum öffnet werktags erst um neun Uhr.",
+        "Eulen sind nachtaktive Vögel mit sehr gutem Gehör."]),
+    ("Vorteile von regelmäßigem Ausdauersport", [
+        "Ausdauersport stärkt das Herz und die Blutgefäße.",
+        "Regelmäßige Bewegung senkt den Ruhepuls und den Blutdruck.",
+        "Sport schüttet Endorphine aus und hebt die Stimmung.",
+        "Schon dreißig Minuten Gehen pro Tag fördern die Gesundheit.",
+        "Die Stadtbibliothek besitzt über eine Million Bücher.",
+        "Der Saturn ist von einem hellen Ringsystem umgeben."]),
+    ("Wie speichern Computer digitale Daten", [
+        "Daten werden als binäre Bits auf Datenträgern gespeichert.",
+        "SSDs speichern Informationen in Flash-Speicherzellen.",
+        "Festplatten schreiben Bits magnetisch auf rotierende Scheiben.",
+        "Der Arbeitsspeicher hält Daten nur vorübergehend.",
+        "Rote Rosen gelten als Symbol der Romantik.",
+        "Das Konzert des Orchesters beginnt um acht Uhr abends."]),
+    ("Was sorgt für erholsamen Schlaf", [
+        "Tiefschlafphasen erholen den Körper und festigen Erinnerungen.",
+        "Ein kühles, dunkles und ruhiges Zimmer fördert den Schlaf.",
+        "Koffein am Abend zu meiden verbessert die Schlafqualität.",
+        "Feste Schlafenszeiten stabilisieren den Biorhythmus.",
+        "Der Quartalsbericht übertraf die Erwartungen der Analysten.",
+        "Basalt ist ein häufiges vulkanisches Gestein aus Lava."]),
+    ("Wie schützen Impfungen vor Krankheiten", [
+        "Impfungen trainieren das Immunsystem, einen Erreger zu erkennen.",
+        "Ein harmloses Antigen regt die Bildung von Antikörpern an.",
+        "Gedächtniszellen ermöglichen eine schnelle spätere Abwehr.",
+        "Auffrischungsimpfungen erhalten den Schutz über die Zeit.",
+        "Die Fähre legt jede Stunde am Nordpier ab.",
+        "Ahornsirup wird aus dem Saft von Ahornbäumen gewonnen."]),
+    ("Warum ist der Himmel tagsüber blau", [
+        "Sonnenlicht wird an Luftmolekülen gestreut, Blau am stärksten.",
+        "Die Rayleigh-Streuung bevorzugt kurze blaue Wellenlängen.",
+        "Bei Sonnenuntergang dominieren wegen des langen Wegs die Rottöne.",
+        "Die Zusammensetzung der Atmosphäre prägt die Streuung.",
+        "Das Endspiel ging am Sonntag in die Verlängerung.",
+        "Sauerteigbrot geht durch wilde Hefegärung auf."]),
+    # ── expansion 2026-07-12: +7 EN / +7 DE distinct topics (self-authored CC0) ──
+    ("how antibiotics fight bacterial infections", [
+        "Antibiotics kill bacteria or stop them from multiplying.",
+        "Penicillin disrupts the bacterial cell wall until the cell bursts.",
+        "Broad-spectrum antibiotics act against many bacterial species.",
+        "Finishing the full course helps prevent resistant strains.",
+        "The lighthouse beam sweeps the harbor every ten seconds.",
+        "Marble is a metamorphic rock prized by sculptors."]),
+    ("what causes ocean tides", [
+        "The Moon's gravity pulls ocean water into tidal bulges.",
+        "High and low tides alternate roughly every six hours.",
+        "The Sun's gravity adds to spring and neap tide variation.",
+        "Coastlines and sea depth shape local tide heights.",
+        "The violinist tuned her strings before the recital.",
+        "Cacti store water in their thick fleshy stems."]),
+    ("how a four-stroke engine works", [
+        "A four-stroke engine cycles intake, compression, power and exhaust.",
+        "The spark plug ignites the compressed fuel-air mixture.",
+        "The piston's motion turns the crankshaft to drive the wheels.",
+        "Valves open and close to admit air and expel exhaust gases.",
+        "The bakery sells fresh croissants every morning.",
+        "Emperor penguins huddle together to survive the Antarctic cold."]),
+    ("benefits of a balanced diet", [
+        "A balanced diet supplies the nutrients the body needs to function.",
+        "Fruits and vegetables provide vitamins, fiber and antioxidants.",
+        "Adequate protein supports muscle repair and immune function.",
+        "Limiting added sugar lowers the risk of metabolic disease.",
+        "The comet will next be visible from Earth in seventy years.",
+        "Gothic cathedrals feature pointed arches and flying buttresses."]),
+    ("how earthquakes happen", [
+        "Earthquakes occur when tectonic plates slip along a fault.",
+        "Stress builds until the rock suddenly ruptures, releasing energy.",
+        "Seismic waves radiate outward and shake the ground.",
+        "The Richter scale measures an earthquake's released energy.",
+        "The chef garnished the plate with a sprig of basil.",
+        "Honeybees communicate food locations with a waggle dance."]),
+    ("why we dream during sleep", [
+        "The most vivid dreams occur during REM sleep.",
+        "During REM the brain is highly active while the body stays still.",
+        "Dreams may help process emotions and consolidate memory.",
+        "Sleep cycles alternate between REM and non-REM stages.",
+        "The train departs from platform four at noon.",
+        "Quartz is one of the most abundant minerals in the crust."]),
+    ("how a rainbow forms", [
+        "A rainbow forms when sunlight refracts and reflects inside raindrops.",
+        "Each droplet splits white light into its component colors.",
+        "Red appears on the outer arc and violet on the inner arc.",
+        "Rainbows appear opposite the Sun, low after a shower.",
+        "The stock exchange closed higher on Friday afternoon.",
+        "Camels can go many days without drinking water."]),
+    ("Wie wirken Antibiotika gegen Bakterien", [
+        "Antibiotika töten Bakterien ab oder hemmen ihre Vermehrung.",
+        "Penicillin zerstört die Zellwand der Bakterien.",
+        "Breitbandantibiotika wirken gegen viele Bakterienarten.",
+        "Die vollständige Einnahme beugt resistenten Stämmen vor.",
+        "Der Leuchtturm bestreicht den Hafen alle zehn Sekunden.",
+        "Marmor ist ein bei Bildhauern beliebtes Gestein."]),
+    ("Was verursacht Ebbe und Flut", [
+        "Die Anziehungskraft des Mondes formt die Gezeitenberge.",
+        "Flut und Ebbe wechseln etwa alle sechs Stunden.",
+        "Auch die Sonne verstärkt Spring- und Nipptiden.",
+        "Küstenform und Wassertiefe bestimmen die örtliche Tidenhöhe.",
+        "Die Geigerin stimmte vor dem Konzert ihre Saiten.",
+        "Kakteen speichern Wasser in ihren dicken Stämmen."]),
+    ("Wie funktioniert ein Viertaktmotor", [
+        "Ein Viertaktmotor durchläuft Ansaugen, Verdichten, Arbeiten und Ausstoßen.",
+        "Die Zündkerze entzündet das verdichtete Kraftstoffgemisch.",
+        "Die Kolbenbewegung treibt über die Kurbelwelle die Räder an.",
+        "Ventile lassen Luft ein und leiten die Abgase ab.",
+        "Die Bäckerei verkauft jeden Morgen frische Croissants.",
+        "Kaiserpinguine drängen sich gegen die Kälte zusammen."]),
+    ("Vorteile einer ausgewogenen Ernährung", [
+        "Eine ausgewogene Ernährung liefert alle nötigen Nährstoffe.",
+        "Obst und Gemüse liefern Vitamine, Ballaststoffe und Antioxidantien.",
+        "Ausreichend Eiweiß unterstützt Muskeln und Immunsystem.",
+        "Weniger Zucker senkt das Risiko für Stoffwechselerkrankungen.",
+        "Der Komet ist erst in siebzig Jahren wieder sichtbar.",
+        "Gotische Kathedralen haben Spitzbögen und Strebepfeiler."]),
+    ("Wie entstehen Erdbeben", [
+        "Erdbeben entstehen, wenn tektonische Platten an einer Verwerfung abrutschen.",
+        "Spannung baut sich auf, bis das Gestein plötzlich bricht.",
+        "Seismische Wellen breiten sich aus und erschüttern den Boden.",
+        "Die Richterskala misst die freigesetzte Energie eines Bebens.",
+        "Der Koch garnierte den Teller mit einem Basilikumzweig.",
+        "Honigbienen zeigen Futterquellen mit einem Schwänzeltanz."]),
+    ("Warum träumen wir im Schlaf", [
+        "Die lebhaftesten Träume treten im REM-Schlaf auf.",
+        "Im REM-Schlaf ist das Gehirn aktiv, während der Körper ruht.",
+        "Träume helfen, Gefühle zu verarbeiten und Gelerntes zu festigen.",
+        "Schlafzyklen wechseln zwischen REM und Non-REM.",
+        "Der Zug fährt mittags von Gleis vier ab.",
+        "Quarz zählt zu den häufigsten Mineralen der Erdkruste."]),
+    ("Wie entsteht ein Regenbogen", [
+        "Ein Regenbogen entsteht durch Brechung und Reflexion in Regentropfen.",
+        "Jeder Tropfen zerlegt weißes Licht in seine Farben.",
+        "Rot liegt außen, Violett innen am Bogen.",
+        "Regenbögen erscheinen der Sonne gegenüber nach einem Schauer.",
+        "Die Börse schloss am Freitag höher.",
+        "Kamele kommen viele Tage ohne Wasser aus."]),
 ]
 
 # ── NER (token-classification) support ───────────────────────────────────────
@@ -129,6 +340,12 @@ NER_CALIB = [
     "Google DeepMind is headquartered in London, England.",
     "The World Health Organization is based in Geneva, Switzerland.",
     "Nelson Mandela led South Africa after apartheid ended.",
+    # German (DE) calibration — entity-rich
+    "Ursula von der Leyen sprach in Brüssel mit Vertretern der NATO.",
+    "Volkswagen und BMW stellten neue Modelle in Wolfsburg vor.",
+    "Johann Wolfgang von Goethe wurde in Frankfurt geboren und lebte in Weimar.",
+    "Die Vereinten Nationen hielten in Genf einen Gipfel zum Klima ab.",
+    "Bayern München gewann das Spiel gegen Borussia Dortmund in München.",
 ]
 NER_EVAL = [
     "Joe Biden spoke with Emmanuel Macron about NATO in Brussels.",
@@ -137,14 +354,18 @@ NER_EVAL = [
     "Serena Williams won a tennis tournament in Melbourne, Australia.",
     "IBM and Oracle opened data centers in Texas and Virginia.",
     "Albert Einstein studied in Zurich before moving to Princeton.",
+    # German (DE) — entity-rich (PER / ORG / LOC)
+    "Olaf Scholz traf Emmanuel Macron in Berlin zu einem Gespräch.",
+    "Siemens und Bosch eröffneten ein Werk in München.",
+    "Angela Merkel wuchs in Hamburg auf und studierte in Leipzig.",
+    "Die Europäische Union tagte in Straßburg über den Haushalt.",
 ]
 
 # ── ColBERT (multi-vector) support ───────────────────────────────────────────
 # lfm2-colbert emits per-token vectors via --colbert; its LFM2 backbone shares the
 # instrumented lfm2 sched, so the collector fires unchanged. A/B metric = mean
 # per-token cosine (same text -> aligned tokens) vs full-precision gold.
-# (splade-pp sparse is NOT here: its GGUF ships without the MLM head — a converter
-# bug tracked separately — so --sparse can't run.)
+# (splade-pp sparse has its own MODE below, now that the MLM head is restored.)
 MODE.update({m: "colbert" for m in ("lfm2-colbert",)})
 
 COLBERT_CALIB = [
@@ -153,18 +374,21 @@ COLBERT_CALIB = [
     "Quantum computing research advances steadily each year.",
     "Financial markets reacted to the central bank announcement.",
     "Neural networks learn hierarchical features from data.",
-    "Renewable energy adoption is accelerating worldwide.",
-    "The novel explores themes of memory and identity.",
-    "Distributed systems rely on consensus protocols for consistency.",
-    "Photosynthesis converts sunlight into chemical energy.",
-    "Software engineers review code before merging changes.",
+    # German (DE)
+    "Maschinelles Lernen wandelt Text in Vektoren um.",
+    "Die Wettervorhersage sagt für morgen Regen voraus.",
+    "Erneuerbare Energien werden weltweit immer wichtiger.",
+    "Verteilte Systeme nutzen Konsensprotokolle für Konsistenz.",
+    "Photosynthese wandelt Sonnenlicht in chemische Energie um.",
 ]
 COLBERT_EVAL = [
     "Information retrieval systems rank documents by relevance.",
     "Climate change affects ecosystems around the globe.",
     "Deep learning models require large training datasets.",
-    "Effective communication improves team collaboration.",
-    "Databases index records for fast lookup.",
+    # German (DE)
+    "Suchsysteme ordnen Dokumente nach Relevanz.",
+    "Der Klimawandel betrifft Ökosysteme auf der ganzen Welt.",
+    "Datenbanken indexieren Datensätze für schnelle Suche.",
 ]
 
 # ── SPARSE (SPLADE) support ──────────────────────────────────────────────────

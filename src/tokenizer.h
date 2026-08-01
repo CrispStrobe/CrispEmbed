@@ -81,6 +81,27 @@ public:
     // Tokenize a sentence pair: <s> text_a </s> text_b </s>, type_ids all 0.
     embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
 
+    // C2 behavior flags (tokenizer.ggml.add_bos_token / add_eos_token):
+    // gate the <s>/</s> wrap in encode(). encode_pair() keeps the canonical
+    // cross-encoder layout regardless — separators are structural there.
+    void set_add_flags(bool add_bos, bool add_eos) {
+        add_bos_ = add_bos;
+        add_eos_ = add_eos;
+    }
+
+    // Select the segmentation algorithm and space handling.
+    //   bpe_merge=false (default): Unigram / Viterbi max-score path — correct
+    //     for XLM-R and other Unigram SentencePiece models.
+    //   bpe_merge=true: SentencePiece-BPE bigram greedy-merge (llama.cpp SPM) —
+    //     correct for Gemma/Llama, whose `scores` are merge ranks, not unigram
+    //     log-probs (Viterbi over ranks over-segments).
+    //   add_space_prefix: prepend a leading ▁ dummy prefix (XLM-R convention).
+    //     Gemma sets tokenizer.ggml.add_space_prefix=false → no dummy prefix.
+    void set_spm_mode(bool bpe_merge, bool add_space_prefix) {
+        bpe_merge_ = bpe_merge;
+        add_space_prefix_ = add_space_prefix;
+    }
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
     // Look up the surface form of a token by id. Returns an empty string
@@ -102,10 +123,15 @@ private:
     int eos_id_ = 2;
     int unk_id_ = 3;
     int pad_id_ = 1;
+    bool add_bos_ = true; // wrap encode() with <s> (default = historical behavior)
+    bool add_eos_ = true; // wrap encode() with </s>
     int max_length_ = 512;
-    int max_token_len_ = 64; // max byte length of any vocab token
+    int max_token_len_ = 64;       // max byte length of any vocab token
+    bool bpe_merge_ = false;       // SentencePiece-BPE bigram merge (Gemma/Llama)
+    bool add_space_prefix_ = true; // prepend leading ▁ dummy prefix (XLM-R)
 
-    std::vector<int> tokenize_text(const std::string & text) const;
+    std::vector<int> tokenize_text(const std::string & text) const; // Unigram / Viterbi
+    std::vector<int> tokenize_bpe(const std::string & text) const;  // SentencePiece-BPE merge
 };
 
 // BPE tokenizer for decoder embedding models.
@@ -126,6 +152,12 @@ public:
 
     embed_tokens encode(const std::string & text) const;
 
+    // Enable the GPT-2 ByteLevel regex pre-tokenizer for the GPT-2 byte-level
+    // path (ModernBERT, tokenizer.ggml.pre = "modern-bert"). Off by default the
+    // GPT-2 path uses a simpler whitespace-split pre-tokenizer (Qwen3 decoder).
+    // Set separately from load() so a merges reload does not clear it.
+    void set_gpt2_regex_pretok(bool v) { gpt2_regex_pretok_ = v; }
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int bos_id() const { return bos_id_; }
     int eos_id() const { return eos_id_; }
@@ -138,11 +170,12 @@ private:
     std::vector<std::string> id_to_token_;
     int eos_id_ = 151645;
     int pad_id_ = 151643;
-    int suffix_id_ = 151643;        // token appended after text (model-specific)
-    int bos_id_ = -1;               // BOS token (-1 = none)
-    bool spm_style_ = false;        // SentencePiece BPE mode
-    bool spm_dummy_prefix_ = false; // SentencePiece add_dummy_prefix
-    bool clip_style_ = false;       // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    int suffix_id_ = 151643;         // token appended after text (model-specific)
+    int bos_id_ = -1;                // BOS token (-1 = none)
+    bool spm_style_ = false;         // SentencePiece BPE mode
+    bool spm_dummy_prefix_ = false;  // SentencePiece add_dummy_prefix
+    bool clip_style_ = false;        // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    bool gpt2_regex_pretok_ = false; // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
     int max_length_ = 8192;
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text
@@ -160,4 +193,10 @@ private:
     // Byte-encode one CLIP pre-token, append the </w> end-of-word marker to
     // the final symbol, rank-merge, and append the resulting vocab IDs.
     void clip_bpe_word(const std::string & pretoken, std::vector<int32_t> & out) const;
+
+    // GPT-2 ByteLevel regex pre-tokenizer (HF `ByteLevel` with use_regex=true):
+    //   's|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+
+    // Returns raw-byte pre-tokens (before byte-level encoding). Used by the
+    // GPT-2 path when gpt2_regex_pretok_ is set (ModernBERT).
+    std::vector<std::string> gpt2_pretokenize(const std::string & text) const;
 };

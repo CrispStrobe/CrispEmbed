@@ -134,6 +134,26 @@ static void test_find_skew() {
     check("+3° skew: deskew angle within 1.5°", fabsf(angle + skew_deg) < 1.5f);
 }
 
+static void test_page_orientation() {
+    printf("\n=== Four-way page orientation fallback ===\n");
+    const int w = 600, h = 400;
+    auto page = make_white(w, h);
+    for (int line = 0; line < 5; line++) {
+        const int y = 60 + line * 60;
+        for (int dy = 0; dy < 6; dy++) draw_hline(page, w, y + dy, 50, 550, 10);
+    }
+    float confidence = 0.0f;
+    const int upright = detect_page_orientation(page.data(), w, h, &confidence);
+    check("upright page returns 0 degrees", upright == 0 || upright == 180);
+    check("upright page reports confidence", confidence >= 0.0f && confidence <= 1.0f);
+
+    std::vector<uint8_t> rotated((size_t)w * h);
+    for (int y = 0; y < h; y++)
+        for (int x = 0; x < w; x++) rotated[(size_t)x * h + (h - 1 - y)] = page[(size_t)y * w + x];
+    const int sideways = detect_page_orientation(rotated.data(), h, w, &confidence);
+    check("sideways page returns a quarter-turn", sideways == 90 || sideways == 270);
+}
+
 static void test_despeckle() {
     printf("\n=== CC despeckle ===\n");
     int w = 200, h = 200;
@@ -353,6 +373,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     test_morph_fast();
     test_adaptive_otsu();
     test_find_skew();
+    test_page_orientation();
     test_despeckle();
     test_background_norm();
     test_cc_detect();

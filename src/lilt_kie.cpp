@@ -2,9 +2,11 @@
 
 #include "lilt_kie.h"
 #include "core/gguf_loader.h"
+#include "imatrix.h"
 #include "ggml.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <cassert>
@@ -103,7 +105,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
 
     // Init backend — prefer GPU when available
     bool force_cpu = (getenv("LILT_KIE_FORCE_CPU") && atoi(getenv("LILT_KIE_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) {
         delete ctx;
@@ -246,6 +248,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
     backends.push_back(ctx->backend);
     if (ctx->backend_cpu) backends.push_back(ctx->backend_cpu);
     ctx->sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), 8192, false, false);
+    crispembed_imatrix_install(ctx->sched); // no-op unless CRISPEMBED_IMATRIX_OUT is set
 
     *out = ctx;
     return true;
@@ -712,6 +715,9 @@ int num_labels(context * ctx) {
 
 void free(context * ctx) {
     if (!ctx) return;
+    // Flush the imatrix here (this context isn't freed via crispembed_free, and
+    // clean_exit skips atexit); no-op/idempotent unless collection was active.
+    crispembed_imatrix_flush();
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);

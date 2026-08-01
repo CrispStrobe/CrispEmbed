@@ -16,6 +16,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 #include "gguf.h"
 
 // stb_image declarations
@@ -32,6 +33,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <cstdlib>
 #include <cstring>
 #include <string>
+#include <thread>
 #include <vector>
 
 // Debug logging gated on LAYOUT_DEBUG env var
@@ -195,7 +197,7 @@ bool load(context ** out, const char * path, int n_threads) {
 
     // Load weights — prefer GPU backend when available
     bool force_cpu = (getenv("LAYOUT_DETECT_FORCE_CPU") && atoi(getenv("LAYOUT_DETECT_FORCE_CPU")));
-    ctx->backend = force_cpu ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
@@ -407,6 +409,31 @@ static std::vector<float> tensor_to_f32(ggml_tensor * t) {
     return out;
 }
 
+// Full (unmasked) multi-head attention for the layout encoder/decoder.
+// Inputs Q,K,V are [head_dim, N, heads]; returns [head_dim, heads, N] — the SAME
+// layout ggml_flash_attn_ext produces, so callers reshape straight to [D, N].
+//
+// Default is a manual masked-attention path (mul_mat + soft_max_ext + mul_mat),
+// which is correct on EVERY backend/arch. `ggml_flash_attn_ext` is gated behind
+// LAYOUT_DETECT_FLASH=1 because on **CUDA Pascal (sm_60)** there is no flash
+// kernel and `ggml_cuda_flash_attn_ext` calls `GGML_ABORT("fatal error")`
+// (ggml-cuda/fattn.cu:602) — the layout graph runs on a single CUDA backend that
+// bypasses the scheduler's `supports_op` CPU fallback, so it aborts instead of
+// falling back. Manual attention is a negligible cost here (Phase-2 is dominated
+// by the cpu_linear projections, not this attention). Numerically ~identical to
+// flash on backends that support it (verify: LAYOUT_DETECT_FLASH=1 A/B).
+static ggml_tensor * layout_attn(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, float scale) {
+    static const bool use_flash = (std::getenv("LAYOUT_DETECT_FLASH") != nullptr);
+    if (use_flash) {
+        return ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
+    }
+    ggml_tensor * scores = ggml_mul_mat(g, K, Q);                    // [N_k, N_q, heads]
+    scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);     // softmax over keys
+    ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [N, head_dim, heads]
+    ggml_tensor * attn = ggml_mul_mat(g, Vt, scores);                // [head_dim, N_q, heads]
+    return ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));          // [head_dim, heads, N_q]
+}
+
 static ggml_tensor * prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH, int KW) {
     if (!w) return nullptr;
     if (ggml_n_dims(w) == 2) {
@@ -423,11 +450,30 @@ static ggml_tensor * prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH
     return w;
 }
 
+// Backbone conv dispatch. Default: ggml_conv_2d (im2col + F32 GEMM). The
+// metal-prof probe showed the backbone graph is ~99.6% GPU-execute (~11.7s
+// gpu_us / 44ms encode on layout-heron @ 640^2) — conv_2d_direct is a poor Metal
+// kernel for these shapes, while mul_mm (GEMM) is highly optimized; the im2col
+// path is ~9.8x faster (Phase-1 11.4s → 1.2s). prep_conv casts the kernel to F32,
+// so the fork's ggml_conv_2d picks an F32 im2col and the GEMM stays F32 — output
+// is cos≈1 vs direct (same detections; only FP reduction order differs, ≤0.001
+// score / ≤0.1px bbox jitter, well within the test_layout_diff cos≥0.99 gate).
+// LAYOUT_CONV_DIRECT=1 restores the old direct path (regression fallback).
+static bool layout_conv_direct() {
+    static int v = -1;
+    if (v < 0) v = (getenv("LAYOUT_CONV_DIRECT") != nullptr) ? 1 : 0;
+    return v == 1;
+}
+static ggml_tensor * conv2d_dispatch(ggml_context * g, ggml_tensor * w, ggml_tensor * x, int stride, int pad) {
+    if (layout_conv_direct()) return ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    return ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
+}
+
 static ggml_tensor * conv_relu(ggml_context * g, ggml_tensor * x, const conv_w & c, int IC, int KH, int KW, int stride,
                                int pad, bool relu = true) {
     if (!c.w) return x;
     auto * w = prep_conv(g, c.w, IC, KH, KW);
-    x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    x = conv2d_dispatch(g, w, x, stride, pad);
     if (c.b) {
         auto * b = c.b;
         if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
@@ -443,7 +489,7 @@ static ggml_tensor * conv_silu(ggml_context * g, ggml_tensor * x, const conv_w &
                                int pad) {
     if (!c.w) return x;
     auto * w = prep_conv(g, c.w, IC, KH, KW);
-    x = ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    x = conv2d_dispatch(g, w, x, stride, pad);
     if (c.b) {
         auto * b = c.b;
         if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
@@ -577,7 +623,7 @@ static ggml_tensor * aifi_self_attn(ggml_context * g, ggml_tensor * x, const hyb
 
     // Permute to [head_dim, N, N_heads] → compatible with flash_attn
     // ggml flash_attn_ext expects q[D,N,H], k[D,N,H], v[D,N,H]
-    auto * attn = ggml_flash_attn_ext(g, q, k, v, nullptr, 1.0f / sqrtf(head_dim), 0, 0);
+    auto * attn = layout_attn(g, q, k, v, 1.0f / sqrtf(head_dim));
     // flash_attn_ext already applies permute(0,2,1,3): output is [hd, nh, N].
     // Reshape straight to [D, N]; the old manual-path permute scrambled it.
     // (NB: this helper is currently unused — encoder_forward inlines its own AIFI block.)
@@ -667,7 +713,7 @@ static void encoder_forward(ggml_context * g, const hybrid_encoder & enc, ggml_t
         V = ggml_reshape_3d(g, V, hd, heads, N_tok);
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
-        auto * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+        auto * attn = layout_attn(g, Q, K, V, 1.0f / sqrtf((float)hd));
         // flash_attn_ext already applies permute(0,2,1,3): output is [hd, heads, N].
         // Reshape straight to [D, N] — the old manual path's extra permute scrambled it.
         attn = ggml_reshape_2d(g, attn, D_a, N_tok);
@@ -902,8 +948,9 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     auto t_phase1 = std::chrono::steady_clock::now();
     ggml_backend_graph_compute(ctx->backend, gf);
 
-    // Per-block backbone comparison
-    {
+    // Per-block backbone comparison (diagnostic only — the tensor read-backs are
+    // pure debug work, so gate the whole block, not just the range prints).
+    if (layout_debug()) {
         // Read stem
         auto read_range = [&](const char * name) {
             ggml_tensor * t = ggml_graph_get_tensor(gf, name);
@@ -1015,7 +1062,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     // --- Phase 2: Decoder (CPU-side) ---
     auto t_phase2 = std::chrono::steady_clock::now();
 
-    auto cpu_linear = [](const float * x, float * y, int in_d, int out_d, int N, ggml_tensor * w_t, ggml_tensor * b_t) {
+    auto cpu_linear = [nthreads = ctx->n_threads](const float * x, float * y, int in_d, int out_d, int N,
+                                                  ggml_tensor * w_t, ggml_tensor * b_t) {
         auto W = tensor_to_f32(w_t);
         auto b_v = tensor_to_f32(b_t);
         if (W.empty()) W.resize(out_d * in_d, 0.0f);
@@ -1031,15 +1079,41 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             int ne0 = (int)w_t->ne[0];
             transposed = (ne0 != out_d && ne0 == in_d);
         }
-        for (int n = 0; n < N; n++) {
-            for (int o = 0; o < out_d; o++) {
-                float sum = b[o];
+        // y[o,:] = b[o] + sum_i W[o,i] * x[i,:], computed as contiguous AXPYs over the
+        // N axis. x[i,:] and y[o,:] are contiguous (col-major [dim, N]), so the inner
+        // loop vectorizes — unlike the previous (o,n)-first form whose inner reduction
+        // strode x by N. The per-output accumulation order (i ascending) is unchanged,
+        // so the result is byte-identical to the old scalar loop.
+        const size_t Nz = (size_t)N;
+        // Each output row o writes a disjoint yo, so the o-loop parallelizes
+        // byte-identically. This is the dominant Phase-2 cost (the deformable
+        // sample loop is ~1.5%); honors ctx->n_threads (default 1 = old behavior).
+        auto compute_rows = [&](int o0, int o1) {
+            for (int o = o0; o < o1; o++) {
+                float * yo = y + (size_t)o * Nz;
+                const float bo = b[o];
+                for (int n = 0; n < N; n++) yo[n] = bo;
                 for (int i = 0; i < in_d; i++) {
-                    float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
-                    sum += w * x[i * N + n];
+                    const float w = transposed ? W[o * in_d + i] : W[o + i * out_d];
+                    const float * xi = x + (size_t)i * Nz;
+                    for (int n = 0; n < N; n++) yo[n] += w * xi[n];
                 }
-                y[o * N + n] = sum;
             }
+        };
+        int nt = std::min(nthreads, out_d);
+        // Only thread when the matmul is big enough to amortize thread spawn.
+        if (nt <= 1 || (size_t)out_d * in_d * Nz < (size_t)(1u << 20)) {
+            compute_rows(0, out_d);
+        } else {
+            std::vector<std::thread> pool;
+            pool.reserve(nt);
+            int chunk = (out_d + nt - 1) / nt;
+            for (int t = 0; t < nt; t++) {
+                int o0 = t * chunk, o1 = std::min(o0 + chunk, out_d);
+                if (o0 >= o1) break;
+                pool.emplace_back(compute_rows, o0, o1);
+            }
+            for (auto & th : pool) th.join();
         }
     };
 
@@ -1352,6 +1426,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
          token_scores[N_queries - 1].first);
     LDBG("layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
+    double _deform_ms = 0; // profiling accumulator for the deformable-sampling loop
     for (int li = 0; li < 6; li++) {
         // Recompute pos_enc from current reference points each layer (matches HF)
         compute_pos_enc(ref_points.data(), pos_enc.data());
@@ -1415,7 +1490,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             V = ggml_reshape_3d(gc, V, hd, N_heads, N_queries);
             V = ggml_cont(gc, ggml_permute(gc, V, 0, 2, 1, 3));
 
-            auto * attn = ggml_flash_attn_ext(gc, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
+            auto * attn = layout_attn(gc, Q, K, V, 1.0f / sqrtf((float)hd));
             // flash_attn_ext already applies permute(0,2,1,3): output is [hd, heads, N].
             // Reshape straight to [D, N] — the old manual path's extra permute scrambled it.
             attn = ggml_reshape_2d(gc, attn, D, N_queries);
@@ -1474,7 +1549,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
             ggml_free(gc);
         }
-        {
+        if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
                 mn = std::min(mn, v);
@@ -1489,7 +1564,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         // Value projection: [D, N_total] → [D, N_total]
         std::vector<float> values(D * total_tokens);
         cpu_linear(memory.data(), values.data(), D, D, total_tokens, layer.cross_value_w, layer.cross_value_b);
-        if (li == 0) {
+        if (li == 0 && layout_debug()) {
             float vmin = 1e9, vmax = -1e9;
             for (auto v : values) {
                 vmin = std::min(vmin, v);
@@ -1539,6 +1614,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         int value_hd = D / N_heads; // 32
         std::vector<float> cross_out(D * N_queries, 0.0f);
 
+        auto _td0 = std::chrono::steady_clock::now();
         for (int q = 0; q < N_queries; q++) {
             float ref_cx = ref_points[q * 4 + 0]; // cx in [0, 1]
             float ref_cy = ref_points[q * 4 + 1]; // cy in [0, 1]
@@ -1591,8 +1667,9 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
                 }
             }
         }
+        _deform_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _td0).count();
 
-        if (li == 0) {
+        if (li == 0 && layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : cross_out) {
                 mn = std::min(mn, v);
@@ -1680,7 +1757,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         for (int i = 0; i < D * N_queries; i++) queries[i] = residual[i] + ca_out[i];
         cpu_layernorm(queries.data(), D, N_queries, layer.norm2_w, layer.norm2_b);
 
-        {
+        if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
                 mn = std::min(mn, v);
@@ -1737,7 +1814,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             ggml_free(gc);
         }
 
-        {
+        if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
                 mn = std::min(mn, v);
@@ -1818,7 +1895,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase2).count();
-        fprintf(stderr, "[layout_detect-bench] Phase 2 decoder: %.1f ms\n", ms);
+        fprintf(stderr, "[layout_detect-bench] Phase 2 decoder: %.1f ms (deformable-sample loop: %.1f ms)\n", ms,
+                _deform_ms);
     }
 
     // --- Phase 3: Detection heads ---
@@ -1869,7 +1947,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     std::sort(results.begin(), results.end(), [](const region & a, const region & b) { return a.score > b.score; });
 
     // Debug: print top scores
-    if (results.empty()) {
+    if (results.empty() && layout_debug()) {
         float max_score = 0;
         for (auto & v : class_scores) max_score = std::max(max_score, v);
         fprintf(stderr, "layout_detect: max class score after sigmoid: %.6f\n", max_score);
@@ -1880,7 +1958,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         fprintf(stderr, "[layout_detect-bench] Phase 3 heads: %.1f ms\n", ms3);
         fprintf(stderr, "[layout_detect-bench] total: %.1f ms\n", total_ms);
     }
-    fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n", results.size(), score_threshold);
+    if (layout_debug())
+        fprintf(stderr, "layout_detect: %zu detections (score > %.2f)\n", results.size(), score_threshold);
     return results;
 }
 

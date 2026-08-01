@@ -12,6 +12,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <array>
@@ -143,7 +144,9 @@ struct ds_ocr2_ctx {
     // Stacked MoE expert weights ([in,out,n_exp]) for the ggml_mul_mat_id path.
     ggml_context * moe_ctx{};
     ggml_backend_buffer_t moe_buf{};
-    bool moe_metal = false; // true once experts are stacked + the graph path is on
+    bool moe_metal = false;        // true once experts are stacked + the graph path is on
+    bool moe_prestacked = false;   // GGUF already ships ffn_*_exps (converter #4) → skip runtime stacking
+    ggml_context * moe_view_ctx{}; // per-expert views into prestacked tensors (DS_MOE_CPU fallback only)
 
     // Tokenizer
     std::vector<std::string> id_to_piece;
@@ -151,11 +154,16 @@ struct ds_ocr2_ctx {
     std::unordered_map<std::string, int32_t> merge_rank;
     int tok_vocab_size = 0;
 
-    // KV cache for LLM decoder
+    // KV cache for LLM decoder — persistent device-side tensors.
+    // Layout: [kv_dim, max_seq, n_layers] where kv_dim = kv_heads * head_dim.
     struct {
-        std::vector<std::vector<float>> k_cache; // [layer][kv_heads * head_dim * n_past]
-        std::vector<std::vector<float>> v_cache;
+        ggml_context * ctx = nullptr;
+        ggml_backend_buffer_t buf = nullptr;
+        ggml_tensor * k = nullptr; // [kv_dim, max_seq, n_layers]
+        ggml_tensor * v = nullptr;
+        int max_seq = 0;
         int n_past = 0;
+        bool allocated = false;
     } kvc;
 
     // Precomputed RPE tables
@@ -164,6 +172,10 @@ struct ds_ocr2_ctx {
     int n_threads = 4, verbosity = 1;
     std::string diff_ref_path;
 };
+
+// Forward declarations for KV cache management
+static void free_ds_kv_cache(ds_ocr2_ctx & c);
+static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq);
 
 // ---------------------------------------------------------------------------
 // CPU helpers (shared with got_ocr.cpp pattern)
@@ -612,15 +624,54 @@ static bool load_tensors(ds_ocr2_ctx & ctx, const char * path) {
         } else {
             // MoE
             ly.router_w = LF("mlp_gate.weight");
-            ly.experts.resize(lhp.n_experts);
-            for (int j = 0; j < lhp.n_experts; j++) {
-                auto EF = [&](const char * sfx) -> ggml_tensor * {
-                    snprintf(buf, sizeof(buf), "l.blk.%d.exp.%d.%s", i, j, sfx);
-                    return F(buf);
-                };
-                ly.experts[j].gate_w = EF("ffn_gate.weight");
-                ly.experts[j].up_w = EF("ffn_up.weight");
-                ly.experts[j].down_w = EF("ffn_down.weight");
+
+            // Prefer PRESTACKED experts (converter #4): l.blk.{i}.ffn_{gate,up,down}_exps.weight
+            // are [in,out,n_exp] tensors byte-identical to what stack_moe_experts()
+            // builds — load them directly (no per-expert copies, no stacking pass, saves
+            // ~1.3 GB of duplicated resident weights). Fall back to the per-expert layout
+            // for legacy GGUFs.
+            ly.gate_exps = LF("ffn_gate_exps.weight");
+            ly.up_exps = LF("ffn_up_exps.weight");
+            ly.down_exps = LF("ffn_down_exps.weight");
+            if (ly.gate_exps && ly.up_exps && ly.down_exps) {
+                ctx.moe_prestacked = true;
+                // The graph MoE path consumes gate_exps/up_exps/down_exps directly.
+                // Only the DS_MOE_CPU fallback needs per-expert tensors — build them as
+                // views into the stacked buffer (shared storage, no copy). The view's own
+                // ->buffer is null, so set it to the parent's: ggml_backend_tensor_get
+                // (used by to_f32) reads via view_src->buffer, but to_f32's fast path gates
+                // on ->buffer and would otherwise deref a raw device pointer (Metal segfault).
+                if (getenv("DS_MOE_CPU")) {
+                    if (!ctx.moe_view_ctx) {
+                        ggml_init_params vp = {
+                            (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
+                        };
+                        ctx.moe_view_ctx = ggml_init(vp);
+                    }
+                    auto mkview = [&](ggml_tensor * st, int e) -> ggml_tensor * {
+                        ggml_tensor * v =
+                            ggml_view_2d(ctx.moe_view_ctx, st, st->ne[0], st->ne[1], st->nb[1], (size_t)e * st->nb[2]);
+                        v->buffer = st->buffer;
+                        return v;
+                    };
+                    ly.experts.resize(lhp.n_experts);
+                    for (int j = 0; j < lhp.n_experts; j++) {
+                        ly.experts[j].gate_w = mkview(ly.gate_exps, j);
+                        ly.experts[j].up_w = mkview(ly.up_exps, j);
+                        ly.experts[j].down_w = mkview(ly.down_exps, j);
+                    }
+                }
+            } else {
+                ly.experts.resize(lhp.n_experts);
+                for (int j = 0; j < lhp.n_experts; j++) {
+                    auto EF = [&](const char * sfx) -> ggml_tensor * {
+                        snprintf(buf, sizeof(buf), "l.blk.%d.exp.%d.%s", i, j, sfx);
+                        return F(buf);
+                    };
+                    ly.experts[j].gate_w = EF("ffn_gate.weight");
+                    ly.experts[j].up_w = EF("ffn_up.weight");
+                    ly.experts[j].down_w = EF("ffn_down.weight");
+                }
             }
             ly.shared_gate_w = LF("shared_exp.ffn_gate.weight");
             ly.shared_up_w = LF("shared_exp.ffn_up.weight");
@@ -1564,16 +1615,8 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx & ctx, int li, int T, int
     ggml_set_name(pos_ids, "pos_ids");
     ggml_set_input(pos_ids);
 
-    // KV cache input
-    ggml_tensor *k_cache_in = nullptr, *v_cache_in = nullptr;
-    if (n_past > 0) {
-        k_cache_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, nkv * hd, n_past);
-        ggml_set_name(k_cache_in, "k_cache_in");
-        ggml_set_input(k_cache_in);
-        v_cache_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, nkv * hd, n_past);
-        ggml_set_name(v_cache_in, "v_cache_in");
-        ggml_set_input(v_cache_in);
-    }
+    // Persistent KV cache (device-side, no per-step upload)
+    int kv_dim = nkv * hd;
 
     // Pre-norm
     ggml_tensor * h = rmsnorm(x, ly.in_ln_w);
@@ -1600,34 +1643,27 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx & ctx, int li, int T, int
     ggml_tensor * Kc = ggml_cont(g, K); // [hd, nkv, T]
     ggml_tensor * Vc = ggml_cont(g, V);
 
-    // Cache outputs: an INDEPENDENT cont (not aliasing Kc/Vc). The attention
-    // path below consumes Kc/Vc; under the no-alloc scheduler their buffers get
-    // recycled once attention reads them, so a cache view sharing that buffer
-    // would read garbage on the read-back (prefill attention still works, but
-    // the cache is poisoned — exactly the "first token right, rest garbage"
-    // symptom). Giving k_out/v_out their own cont copies the data into a
-    // dedicated buffer that survives. Matches the verified qwen2vl_ocr path
-    // (which conts K separately for cache vs attention).
-    ggml_tensor * K_new = ggml_cont(g, ggml_reshape_2d(g, Kc, nkv * hd, T));
-    ggml_set_name(K_new, "k_out");
-    ggml_set_output(K_new);
+    // Write new K/V into persistent device cache at position n_past.
+    // Kc/Vc are [hd, nkv, T]. Reshape to [kv_dim, T] for the cache write.
+    ggml_tensor * K_flat = ggml_cont(g, ggml_reshape_2d(g, Kc, kv_dim, T));
+    ggml_tensor * V_flat = ggml_cont(g, ggml_reshape_2d(g, Vc, kv_dim, T));
 
-    ggml_tensor * V_new = ggml_cont(g, ggml_reshape_2d(g, Vc, nkv * hd, T));
-    ggml_set_name(V_new, "v_out");
-    ggml_set_output(V_new);
+    size_t layer_off_k = (size_t)li * ctx.kvc.k->nb[2];
+    size_t layer_off_v = (size_t)li * ctx.kvc.v->nb[2];
 
-    // Build full K/V (cache + new) for attention — use Kc/Vc, not the cache outs.
-    ggml_tensor *Kfull, *Vfull;
-    if (n_past > 0) {
-        ggml_tensor * kc3 = ggml_reshape_3d(g, k_cache_in, hd, nkv, n_past);
-        Kfull = ggml_concat(g, kc3, Kc, 2); // [hd, nkv, Lk]
+    ggml_tensor * k_dst =
+        ggml_view_2d(g, ctx.kvc.k, kv_dim, T, ctx.kvc.k->nb[1], layer_off_k + (size_t)n_past * ctx.kvc.k->nb[1]);
+    ggml_tensor * v_dst =
+        ggml_view_2d(g, ctx.kvc.v, kv_dim, T, ctx.kvc.v->nb[1], layer_off_v + (size_t)n_past * ctx.kvc.v->nb[1]);
 
-        ggml_tensor * vc3 = ggml_reshape_3d(g, v_cache_in, hd, nkv, n_past);
-        Vfull = ggml_concat(g, vc3, Vc, 2);
-    } else {
-        Kfull = Kc;
-        Vfull = Vc;
-    }
+    ggml_build_forward_expand(lag.gf, ggml_cpy(g, K_flat, k_dst));
+    ggml_build_forward_expand(lag.gf, ggml_cpy(g, V_flat, v_dst));
+
+    // Read full K/V history [0..n_past+T) from persistent cache.
+    ggml_tensor * Kfull =
+        ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.k, kv_dim, Lk, ctx.kvc.k->nb[1], layer_off_k), hd, nkv, Lk);
+    ggml_tensor * Vfull =
+        ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.v, kv_dim, Lk, ctx.kvc.v->nb[1], layer_off_v), hd, nkv, Lk);
 
     // GQA repeat if needed
     int kv_repeat = nh / nkv;
@@ -1718,11 +1754,7 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx & ctx, int li, int T, int
     ggml_set_name(x, "layer_output");
     ggml_set_output(x);
     ggml_build_forward_expand(lag.gf, x);
-    // k_out/v_out (the cache copies) are NOT ancestors of layer_output (the
-    // attention path consumes Kc/Vc, not these), so expand them explicitly via
-    // their pointers — a graph lookup by name would miss them (not yet added).
-    ggml_build_forward_expand(lag.gf, K_new);
-    ggml_build_forward_expand(lag.gf, V_new);
+    // KV cache writes (ggml_cpy) were already expanded above.
     return lag;
 }
 
@@ -1848,14 +1880,12 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
     int n_layers = lhp.n_layers;
     int kv_dim = nkv * hd;
 
-    // Initialize KV cache
-    ctx.kvc.k_cache.resize(n_layers);
-    ctx.kvc.v_cache.resize(n_layers);
-    for (int i = 0; i < n_layers; i++) {
-        ctx.kvc.k_cache[i].clear();
-        ctx.kvc.v_cache[i].clear();
+    // Allocate persistent device-side KV cache
+    int max_seq = n_prompt + max_new + 64;
+    if (!alloc_ds_kv_cache(ctx, max_seq)) {
+        fprintf(stderr, "deepseek_ocr2: KV cache allocation failed\n");
+        return false;
     }
-    ctx.kvc.n_past = 0;
 
     // Per-row embedding: dequant only the requested row on demand instead of
     // the whole 128k×1280 table (~655 MB held for the entire decode). The decode
@@ -1939,13 +1969,8 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             for (int t = 0; t < T; t++) pos[t] = n_past + t;
             ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "pos_ids"), pos.data(), 0, T * sizeof(int32_t));
 
-            // KV cache
-            if (n_past > 0) {
-                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "k_cache_in"), ctx.kvc.k_cache[li].data(), 0,
-                                        kv_dim * n_past * sizeof(float));
-                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "v_cache_in"), ctx.kvc.v_cache[li].data(), 0,
-                                        kv_dim * n_past * sizeof(float));
-            }
+            // KV cache is now persistent on device — no per-step upload needed.
+            // The graph writes new K/V via ggml_cpy and reads history via ggml_view.
 
             // Causal mask
             int Lk = n_past + T;
@@ -1965,17 +1990,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"), hidden.data(), 0,
                                     T * D * sizeof(float));
 
-            // Update KV cache
-            std::vector<float> k_new(kv_dim * T), v_new(kv_dim * T);
-            ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "k_out"), k_new.data(), 0,
-                                    kv_dim * T * sizeof(float));
-            ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "v_out"), v_new.data(), 0,
-                                    kv_dim * T * sizeof(float));
-
-            if (!no_kv) {
-                ctx.kvc.k_cache[li].insert(ctx.kvc.k_cache[li].end(), k_new.begin(), k_new.end());
-                ctx.kvc.v_cache[li].insert(ctx.kvc.v_cache[li].end(), v_new.begin(), v_new.end());
-            }
+            // KV cache updated in-graph via ggml_cpy (no readback needed).
 
             ggml_free(lag.gctx);
 
@@ -2134,7 +2149,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
         return nullptr;
     }
 
-    ctx.backend = ggml_backend_init_best();
+    ctx.backend = crispasr_init_gpu_backend();
     if (!ctx.backend) {
         ctx.backend = ggml_backend_cpu_init();
         if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
@@ -2173,9 +2188,16 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     // Stack MoE experts for the Metal ggml_mul_mat_id decode path (default).
     // DS_MOE_CPU=1 keeps the per-token CPU-scalar moe_ffn_cpu (slower, but the
     // reference path / fallback for platforms where mul_mat_id misbehaves).
+    // A prestacked GGUF (converter #4) already loaded gate_exps/up_exps/down_exps
+    // directly, so skip the runtime copy — the graph path is ready as-is.
     if (!getenv("DS_MOE_CPU")) {
-        ctx.moe_metal = stack_moe_experts(ctx);
-        if (!ctx.moe_metal) fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
+        if (ctx.moe_prestacked) {
+            ctx.moe_metal = true;
+            fprintf(stderr, "deepseek_ocr2: using prestacked MoE experts (no runtime stacking)\n");
+        } else {
+            ctx.moe_metal = stack_moe_experts(ctx);
+            if (!ctx.moe_metal) fprintf(stderr, "deepseek_ocr2: MoE expert stacking failed — using CPU MoE\n");
+        }
     }
     init_ms("stack_moe_experts");
 
@@ -2196,12 +2218,66 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     return c;
 }
 
+static void free_ds_kv_cache(ds_ocr2_ctx & c) {
+    if (c.kvc.buf) {
+        ggml_backend_buffer_free(c.kvc.buf);
+        c.kvc.buf = nullptr;
+    }
+    if (c.kvc.ctx) {
+        ggml_free(c.kvc.ctx);
+        c.kvc.ctx = nullptr;
+    }
+    c.kvc.allocated = false;
+    c.kvc.n_past = 0;
+}
+
+static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
+    auto & kv = c.kvc;
+    if (kv.allocated && kv.max_seq >= max_seq) {
+        kv.n_past = 0;
+        if (kv.buf) ggml_backend_buffer_clear(kv.buf, 0);
+        return true;
+    }
+    free_ds_kv_cache(c);
+
+    int kv_dim = c.m.lhp.kv_heads * c.m.lhp.head_dim;
+    int nl = c.m.lhp.n_layers;
+
+    size_t mem = 2 * ggml_tensor_overhead() + ggml_graph_overhead();
+    ggml_init_params ip = { mem, nullptr, true };
+    kv.ctx = ggml_init(ip);
+    if (!kv.ctx) return false;
+
+    kv.k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, kv_dim, max_seq, nl);
+    kv.v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, kv_dim, max_seq, nl);
+
+    kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, c.backend);
+    if (!kv.buf) {
+        fprintf(stderr, "deepseek_ocr2: KV cache alloc failed\n");
+        ggml_free(kv.ctx);
+        kv.ctx = nullptr;
+        return false;
+    }
+    ggml_backend_buffer_clear(kv.buf, 0);
+
+    kv.max_seq = max_seq;
+    kv.n_past = 0;
+    kv.allocated = true;
+
+    size_t bytes = ggml_backend_buffer_get_size(kv.buf);
+    fprintf(stderr, "deepseek_ocr2: KV cache: %d layers, max_seq=%d, kv_dim=%d, %.1f MB\n", nl, max_seq, kv_dim,
+            (float)bytes / 1024 / 1024);
+    return true;
+}
+
 void deepseek_ocr2_free(deepseek_ocr2_context * ctx) {
     if (!ctx) return;
     auto & c = ctx->inner;
+    free_ds_kv_cache(c);
     if (c.sched) ggml_backend_sched_free(c.sched);
     if (c.moe_buf) ggml_backend_buffer_free(c.moe_buf);
     if (c.moe_ctx) ggml_free(c.moe_ctx);
+    if (c.moe_view_ctx) ggml_free(c.moe_view_ctx);
     // model_buf/model_ctx alias model_wl — free via free_weights (also unmaps).
     c.model_buf = nullptr;
     c.model_ctx = nullptr;

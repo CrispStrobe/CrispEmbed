@@ -59,7 +59,10 @@ endif()
 # but degrades gracefully (pthread stubs in Emscripten libc).
 # ---------------------------------------------------------------------------
 option(CRISPEMBED_WASM_THREADS "Use real pthreads in WASM (requires COOP/COEP)" OFF)
-if(EMSCRIPTEN AND NOT CRISPEMBED_WASM_THREADS)
+if(EMSCRIPTEN)
+    # Also used for threaded builds: CMake's real FindThreads fails under
+    # Emscripten, and build-wasm.sh --threads already injects -pthread into
+    # CMAKE_{C,CXX,EXE_LINKER}_FLAGS, so a no-op Threads::Threads suffices.
     list(PREPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 endif()
 
@@ -189,13 +192,28 @@ list(APPEND CRISPEMBED_SOURCES src/clip_text_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/cnn_embed.cpp)
 list(APPEND CRISPEMBED_SOURCES src/face_align.cpp)
 list(APPEND CRISPEMBED_SOURCES src/math_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/smt_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/transcoda_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tromr_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/flova_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/hmer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/bttr_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/posformer_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ppformulanet_l_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ppocrv6_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ppocrv6_det.cpp)
+list(APPEND CRISPEMBED_SOURCES src/pplcnet_orientation.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_layout.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_postprocess.cpp)
+list(APPEND CRISPEMBED_SOURCES src/easyocr_craft.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_crop.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_pipeline_pool.cpp)
+list(APPEND CRISPEMBED_SOURCES src/ocr_region_router.cpp)
 list(APPEND CRISPEMBED_SOURCES src/ocr_orchestrator.cpp)
 list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/surya_det.cpp)
@@ -344,6 +362,15 @@ set_target_properties(crispembed-quantize PROPERTIES
 )
 install(TARGETS crispembed-quantize RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
+# Host-only unit test for the server's JSON input parser (issue #34) — no model/lib.
+add_executable(test-server-json-input tests/test_server_json_input.cpp)
+target_include_directories(test-server-json-input PRIVATE ${CMAKE_SOURCE_DIR}/examples/server
+                                                          ${CMAKE_SOURCE_DIR}/src)
+
+# Host-only unit test for arch-driven GGUF hparam key resolution (issue #33 / A2).
+add_executable(test-hparam-keys tests/test_hparam_keys.cpp)
+target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)
+
 add_executable(test-hmer tests/test_hmer.cpp)
 target_link_libraries(test-hmer PRIVATE crispembed)
 
@@ -362,6 +389,31 @@ target_link_libraries(test-posformer PRIVATE crispembed)
 add_executable(test-parseq tests/test_parseq.cpp)
 target_link_libraries(test-parseq PRIVATE crispembed)
 
+add_executable(test-easyocr tests/test_easyocr.cpp)
+target_include_directories(test-easyocr PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr PRIVATE crispembed)
+
+add_executable(test-easyocr-diff tests/test_easyocr_diff.cpp)
+target_include_directories(test-easyocr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-diff PRIVATE crispembed)
+
+add_executable(test-easyocr-dbnet tests/test_easyocr_dbnet.cpp)
+target_include_directories(test-easyocr-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-dbnet PRIVATE crispembed)
+
+add_executable(test-easyocr-layout tests/test_easyocr_layout.cpp)
+target_link_libraries(test-easyocr-layout PRIVATE crispembed)
+
+add_executable(test-easyocr-postprocess tests/test_easyocr_postprocess.cpp)
+target_link_libraries(test-easyocr-postprocess PRIVATE crispembed)
+
+add_executable(test-easyocr-pipeline tests/test_easyocr_pipeline.cpp)
+target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
+
+add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
+target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-craft-diff PRIVATE crispembed)
+
 if(NOT WIN32)
     add_executable(test-posformer-batch tests/test_posformer_batch.cpp)
     target_link_libraries(test-posformer-batch PRIVATE crispembed)
@@ -379,6 +431,24 @@ target_link_libraries(test-mixtex PRIVATE crispembed)
 add_executable(test-mixtex-diff tests/test_mixtex_diff.cpp)
 target_link_libraries(test-mixtex-diff PRIVATE crispembed)
 
+add_executable(test-math-ocr-diff tests/test_math_ocr_diff.cpp)
+target_link_libraries(test-math-ocr-diff PRIVATE crispembed)
+
+add_executable(test-smt-diff tests/test_smt_diff.cpp)
+target_link_libraries(test-smt-diff PRIVATE crispembed)
+
+add_executable(test-transcoda-diff tests/test_transcoda_diff.cpp)
+target_link_libraries(test-transcoda-diff PRIVATE crispembed)
+
+add_executable(test-smt-reco tests/test_smt_reco.cpp)
+target_link_libraries(test-smt-reco PRIVATE crispembed)
+
+add_executable(test-tromr-diff tests/test_tromr_diff.cpp)
+target_link_libraries(test-tromr-diff PRIVATE crispembed)
+
+add_executable(test-flova-diff tests/test_flova_diff.cpp)
+target_link_libraries(test-flova-diff PRIVATE crispembed)
+
 add_executable(test-hat-diff tests/test_hat_diff.cpp)
 target_link_libraries(test-hat-diff PRIVATE crispembed)
 
@@ -391,8 +461,20 @@ target_link_libraries(test-surya-det-diff PRIVATE crispembed)
 add_executable(test-ocr-detect tests/test_ocr_detect.cpp)
 target_link_libraries(test-ocr-detect PRIVATE crispembed)
 
+add_executable(test-ocr-geometry tests/test_ocr_geometry.cpp)
+target_link_libraries(test-ocr-geometry PRIVATE crispembed)
+
+add_executable(test-ocr-crop tests/test_ocr_crop.cpp)
+target_link_libraries(test-ocr-crop PRIVATE crispembed)
+
 add_executable(test-ocr-detect-diff tests/test_ocr_detect_diff.cpp)
 target_link_libraries(test-ocr-detect-diff PRIVATE crispembed)
+
+add_executable(test-ppocrv6-det-diff tests/test_ppocrv6_det_diff.cpp)
+target_link_libraries(test-ppocrv6-det-diff PRIVATE crispembed)
+
+add_executable(test-ocr-region-router tests/test_ocr_region_router.cpp)
+target_link_libraries(test-ocr-region-router PRIVATE crispembed)
 
 add_executable(test-ocr-recognize tests/test_ocr_recognize.cpp)
 target_link_libraries(test-ocr-recognize PRIVATE crispembed)
@@ -451,6 +533,9 @@ target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)
 
 add_executable(test-ocr-pipeline tests/test_ocr_pipeline.cpp)
 target_link_libraries(test-ocr-pipeline PRIVATE crispembed)
+
+add_executable(test-ocr-pipeline-pool tests/test_ocr_pipeline_pool.cpp)
+target_link_libraries(test-ocr-pipeline-pool PRIVATE crispembed)
 
 add_executable(test-qwen2vl tests/test_qwen2vl.cpp)
 target_link_libraries(test-qwen2vl PRIVATE crispembed)
@@ -590,6 +675,24 @@ target_link_libraries(test-smoldocling-diff PRIVATE crispembed)
 
 add_executable(test-confidence tests/test_confidence.cpp)
 target_link_libraries(test-confidence PRIVATE crispembed)
+
+add_executable(test-ppocrv6-rec tests/test_ppocrv6_rec.cpp)
+target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)
+
+add_executable(test-ppocrv6-dbnet tests/test_ppocrv6_dbnet.cpp)
+target_include_directories(test-ppocrv6-dbnet PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ppocrv6-dbnet PRIVATE crispembed)
+
+add_executable(test-ppocrv6-direct tests/test_ppocrv6_direct.cpp)
+target_include_directories(test-ppocrv6-direct PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-ppocrv6-direct PRIVATE crispembed)
+
+add_executable(test-pplcnet-orientation tests/test_pplcnet_orientation.cpp)
+target_include_directories(test-pplcnet-orientation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-pplcnet-orientation PRIVATE crispembed)
+
+add_executable(test-backend-smoke tests/test_backend_smoke.cpp)
+target_link_libraries(test-backend-smoke PRIVATE crispembed)
 
 endif() # NOT iOS
 
