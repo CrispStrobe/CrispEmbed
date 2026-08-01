@@ -417,7 +417,12 @@ downstream handoff parity, not detector-box similarity alone.
       Review of Tesseract `textord/makerow.cpp` confirms its authoritative
       boundary is connected blobs assigned by vertical overlap, line size,
       spacing, and fitted baselines; our projection splitter is only an
-      interim adapter and the component-row port remains pending.
+      interim adapter. An opt-in component prototype is available behind
+      `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG`. After a Tesseract-style
+      reassociation pass for short/detached blobs it produces the expected 12
+      rows on `scan_strip.png`, but its enlarged first-line crop currently
+      worsens recognizer output, so it remains experimental and is not enabled
+      in production.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
