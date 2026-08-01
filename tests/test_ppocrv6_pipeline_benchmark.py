@@ -25,6 +25,19 @@ def main() -> int:
     rows = MODULE.parse_rows(match.string, "medium")
     assert rows[0]["variant"] == "medium"
     assert rows[0]["time_ms"] == 123.4
+    stage = MODULE.parse_stage_rows(
+        "[ppocrv6-stage-bench] detect=10.0 ms crop=2.0 ms orientation=3.0 ms "
+        "recognize=40.0 ms total=55.0 ms boxes=4 results=4"
+    )
+    assert stage == [{
+        "detect_ms": 10.0,
+        "crop_ms": 2.0,
+        "orientation_ms": 3.0,
+        "recognize_ms": 40.0,
+        "total_ms": 55.0,
+        "boxes": 4,
+        "results": 4,
+    }]
     print("PP-OCRv6 benchmark parser OK")
     return 0
 
