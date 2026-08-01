@@ -16,18 +16,28 @@ void set_error(char * error, size_t error_size, const char * message) {
 
 bool decode_base64(const char * input, std::vector<uint8_t> & output) {
     static constexpr char alphabet[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    int value = 0;
-    int bits = -8;
-    for (const unsigned char * p = (const unsigned char *)input; *p; ++p) {
-        if (*p == '=') break;
-        const char * found = std::strchr(alphabet, *p);
-        if (!found) return false;
-        value = (value << 6) | (int)(found - alphabet);
-        bits += 6;
-        if (bits >= 0) {
-            output.push_back((uint8_t)((value >> bits) & 0xff));
-            bits -= 8;
+    const size_t length = std::strlen(input);
+    if (length == 0 || length % 4 != 0) return false;
+    for (size_t offset = 0; offset < length; offset += 4) {
+        int digits[4] = { 0, 0, 0, 0 };
+        int padding = 0;
+        for (int i = 0; i < 4; ++i) {
+            const unsigned char c = (unsigned char)input[offset + i];
+            if (c == '=') {
+                if (i < 2 || offset + 4 != length) return false;
+                ++padding;
+            } else {
+                const char * found = std::strchr(alphabet, c);
+                if (!found || padding != 0) return false;
+                digits[i] = (int)(found - alphabet);
+            }
         }
+        if (padding > 2 || (padding == 1 && input[offset + 2] == '=') || (padding == 2 && input[offset + 2] != '='))
+            return false;
+        if ((padding == 1 && (digits[2] & 3) != 0) || (padding == 2 && (digits[1] & 15) != 0)) return false;
+        output.push_back((uint8_t)((digits[0] << 2) | (digits[1] >> 4)));
+        if (padding < 2) output.push_back((uint8_t)((digits[1] << 4) | (digits[2] >> 2)));
+        if (padding == 0) output.push_back((uint8_t)((digits[2] << 6) | digits[3]));
     }
     return true;
 }

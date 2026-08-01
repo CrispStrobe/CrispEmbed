@@ -29,6 +29,11 @@ int main() {
         std::fprintf(stderr, "invalid DAWG accepted\n");
         return 1;
     }
+    if (tesseract_dawg_validate_base64("K===", error, sizeof(error)) ||
+        tesseract_dawg_validate_base64("KgADAAAAAgAAACUAAAAAAAAAFgAAAAAAAAA=A", error, sizeof(error))) {
+        std::fprintf(stderr, "malformed base64 accepted\n");
+        return 1;
+    }
     std::puts("tesseract DAWG validation: PASS");
     return 0;
 }
