@@ -741,6 +741,9 @@ downstream handoff parity, not detector-box similarity alone.
       `0.883064`, and native beam-8 is `GEIEE` with sequence confidence
       `0.535476` and no character confidences. The beam contract passes, but
       text and greedy confidence calibration remain open quality TODOs.
+      The comparator also provides `--require-official-words`, and its model-
+      free contract test rejects empty official TSV references instead of
+      allowing a misconfigured data path to appear to pass.
       Both page-metrics and line-confidence comparators now emit elapsed
       milliseconds for each official subprocess and native subprocess/line
       run, so quality claims can be paired with measured cost.

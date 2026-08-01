@@ -98,6 +98,8 @@ def native(args: argparse.Namespace, beam: int) -> dict:
 
 def confidence_acceptance_checks(args: argparse.Namespace, reference: dict, greedy: dict, beam: dict | None) -> dict[str, bool]:
     checks: dict[str, bool] = {}
+    if getattr(args, "require_official_words", False):
+        checks["official_words_present"] = reference.get("words", 0) > 0
     if args.max_greedy_word_confidence_delta is not None:
         checks["max_greedy_word_confidence_delta"] = (
             abs(greedy["word_confidence"] - reference["mean_word_confidence"])
@@ -122,6 +124,8 @@ def main() -> int:
                         help="fail if absolute greedy word-confidence delta exceeds this value")
     parser.add_argument("--require-beam-sequence-only", action="store_true",
                         help="fail unless beam output has no fabricated per-character confidences")
+    parser.add_argument("--require-official-words", action="store_true",
+                        help="fail if the official TSV reference contains no recognized words")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
