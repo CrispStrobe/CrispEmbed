@@ -394,6 +394,15 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
         box.score = 1.0f;
         out.push_back(box);
     }
+    if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG")) {
+        std::fprintf(stderr, "legacy pageseg: threshold=%d blobs=%zu median_h=%d max_row_gap=%d rows=%zu\n", threshold,
+                     blobs.size(), median_h, max_row_gap, rows.size());
+        for (size_t i = 0; i < rows.size(); ++i) {
+            const auto & r = rows[i];
+            std::fprintf(stderr, "  row=%zu blobs=%zu y=%d..%d x=%d..%d out=%s\n", i, r.blobs.size(), r.y0, r.y1,
+                         r.blobs.front().x0, r.blobs.back().x1, i < out.size() ? "yes" : "filtered");
+        }
+    }
     std::sort(out.begin(), out.end(),
               [](const auto & a, const auto & b) { return a.y == b.y ? a.x < b.x : a.y < b.y; });
     return out;
@@ -580,6 +589,15 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
             tight_x1 - tight_x0 > (r.y1 - r.y0 + 1) * 10) {
             tight_x0 = loose_x0;
             tight_x1 = loose_x1;
+        }
+        if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS")) {
+            // The vertical scan can see ink from an adjacent overlapping row
+            // and widen the crop beyond the blobs actually assigned here.
+            // Keep this A/B opt-in until it is validated across page fixtures.
+            tight_x0 = r.x0;
+            tight_x1 = r.x1;
+            loose_x0 = r.x0;
+            loose_x1 = r.x1;
         }
         const int box_x0 = tight_x1 >= tight_x0 ? tight_x0 : r.x0;
         const int box_x1 = tight_x1 >= tight_x0 ? tight_x1 : r.x1;

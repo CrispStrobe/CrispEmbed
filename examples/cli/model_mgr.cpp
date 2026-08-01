@@ -2,6 +2,8 @@
 
 #include "model_mgr.h"
 
+#include "crispembed.h" // crispembed_accept_biometric_use
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -1570,9 +1572,18 @@ bool license_requires_acceptance(const char * spdx) {
 }
 
 bool accept_biometric_use(const char * model_label, bool accepted_flag) {
-    if (accepted_flag) return true;
+    // Every success path also arms the library-level gate in
+    // crispembed_face_init(), so the acknowledgement is made once and honoured
+    // by both the CLI's own cnn_embed calls and the public C ABI.
+    if (accepted_flag) {
+        crispembed_accept_biometric_use();
+        return true;
+    }
     const char * env = std::getenv("CRISPEMBED_ACCEPT_BIOMETRIC");
-    if (env && *env && strcmp(env, "0") != 0) return true;
+    if (env && *env && strcmp(env, "0") != 0) {
+        crispembed_accept_biometric_use();
+        return true;
+    }
 
     const char * label = (model_label && *model_label) ? model_label : "this model";
     fprintf(stderr, "\n'%s' is a FACE RECOGNITION model.\n", label);
@@ -1588,6 +1599,7 @@ bool accept_biometric_use(const char * model_label, bool accepted_flag) {
         fprintf(stderr, "Acknowledge and continue? [y/N] ");
         char c = 0;
         if (scanf(" %c", &c) != 1 || (c != 'y' && c != 'Y')) return false;
+        crispembed_accept_biometric_use();
         return true;
     }
 

@@ -12,7 +12,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
 from compare_tesseract_page_geometry import compare, reading_order_is_monotonic  # noqa: E402
+from compare_tesseract_crop_geometry import compare as compare_crop_geometry  # noqa: E402
+from compare_tesseract_crop_geometry import compare_geometry  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
+from compare_tesseract_page_metrics import selected_detector_route  # noqa: E402
 from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
 from benchmark_tesseract_page import summarize  # noqa: E402
 
@@ -77,6 +80,40 @@ class TesseractPageGeometryTest(unittest.TestCase):
             self.assertEqual(selected_pageseg_policy(args), name)
         args = type("Args", (), {"projection": False, "component": False, "baseline": False})()
         self.assertEqual(selected_pageseg_policy(args), "legacy-fallback")
+
+    def test_native_pageseg_is_a_distinct_route(self) -> None:
+        args = type("Args", (), {"native_pageseg": True})()
+        self.assertEqual(selected_detector_route(args), "native-tesseract-pageseg")
+        args.native_pageseg = False
+        self.assertEqual(selected_detector_route(args), "dbnet")
+
+    def test_benchmark_wrapper_exposes_native_route_flag(self) -> None:
+        wrapper = (ROOT / "tools" / "benchmark_tesseract_page.py").read_text()
+        self.assertIn('parser.add_argument("--native-pageseg"', wrapper)
+        self.assertIn('command.append("--native-pageseg")', wrapper)
+
+    def test_crop_geometry_rejects_index_alignment_on_count_mismatch(self) -> None:
+        result = compare_crop_geometry(
+            [{"box_x": 0.0, "box_y": 0.0, "box_w": 10.0, "box_h": 5.0, "crop_w": 10.0, "crop_h": 5.0}],
+            [
+                {"left": 0, "top": 0, "width": 10, "height": 5},
+                {"left": 0, "top": 10, "width": 10, "height": 5},
+            ],
+        )
+        self.assertFalse(result["alignment_valid"])
+        self.assertEqual(result["paired_rows"], 1)
+
+    def test_crop_geometry_can_report_unmatched_rows(self) -> None:
+        native = [{"box_x": 0.0, "box_y": 0.0, "box_w": 10.0, "box_h": 20.0,
+                   "crop_w": 10.0, "crop_h": 20.0}]
+        official = [{"left": 0, "top": 0, "width": 10, "height": 5},
+                    {"left": 0, "top": 10, "width": 10, "height": 5}]
+        result = compare_geometry(native, official)
+        self.assertEqual(result["alignment"], "monotonic-geometry")
+        self.assertEqual(result["matched_rows"], 1)
+        self.assertEqual(result["unmatched_official"], [0])
+        self.assertEqual(result["merged_official_groups"],
+                         [{"native_index": 0, "official_indices": [0, 1]}])
 
     def test_repeated_benchmark_summary_is_deterministic(self) -> None:
         self.assertEqual(summarize([1.0, 2.0, 3.0]), {"min": 1.0, "median": 2.0, "p90": 3.0, "max": 3.0})

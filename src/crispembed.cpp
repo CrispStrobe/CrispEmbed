@@ -16,6 +16,7 @@
 #include "ocr_pipeline.h"
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -3846,6 +3847,21 @@ struct crispembed_face_context {
     std::vector<float> single_emb;
 };
 
+// Biometric acknowledgement, process-wide. The CLI and the server set this
+// after their own (interactive or flag-driven) acknowledgement, so the gate
+// fires exactly once per process however CrispEmbed was entered.
+static std::atomic<bool> g_biometric_accepted{ false };
+
+extern "C" void crispembed_accept_biometric_use(void) {
+    g_biometric_accepted.store(true, std::memory_order_relaxed);
+}
+
+static bool biometric_use_acknowledged() {
+    if (g_biometric_accepted.load(std::memory_order_relaxed)) return true;
+    const char * env = std::getenv("CRISPEMBED_ACCEPT_BIOMETRIC");
+    return env && *env && strcmp(env, "0") != 0;
+}
+
 extern "C" crispembed_face_context * crispembed_face_init(const char * model_path, int n_threads) {
     if (!model_path) return nullptr;
     auto * ctx = new crispembed_face_context();
@@ -3853,6 +3869,31 @@ extern "C" crispembed_face_context * crispembed_face_init(const char * model_pat
         delete ctx;
         return nullptr;
     }
+
+    // Gate on the model's own declared type, so a recognition model is caught
+    // however it was named. This is the single chokepoint every binding funnels
+    // through (Python ctypes, Rust, Dart FFI) — the CLI/server flag alone would
+    // leave all three ungated. No interactive prompt here: a library must
+    // not read stdin. Callers that want to ask a human do it themselves and
+    // then call crispembed_accept_biometric_use().
+    const char * type = cnn_embed::model_type(ctx->cnn);
+    if (type && strcmp(type, "recognition") == 0 && !biometric_use_acknowledged()) {
+        fprintf(stderr,
+                "crispembed: '%s' is a FACE RECOGNITION model. Its output is a biometric\n"
+                "template — special-category personal data under GDPR Art. 9, which generally\n"
+                "needs an Art. 9(2) basis (e.g. explicit consent) before you process it.\n"
+                "Searching a gallery of templates (1:N identification) builds a biometric\n"
+                "identification system: high-risk under EU AI Act Annex III from 2 December\n"
+                "2027, and prohibited outright in some settings (Art. 5). See POLICY.md.\n"
+                "\n"
+                "Refusing to load. Acknowledge with crispembed_accept_biometric_use() or set\n"
+                "CRISPEMBED_ACCEPT_BIOMETRIC=1.\n",
+                model_path);
+        cnn_embed::free(ctx->cnn);
+        delete ctx;
+        return nullptr;
+    }
+
     return ctx;
 }
 

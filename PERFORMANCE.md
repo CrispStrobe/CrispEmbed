@@ -1348,3 +1348,86 @@ geometry-only benchmark. The current 12-line run reports mean native-minus-
 official deltas `dx=-2.08`, `dy=+1.83`, `dw=+4.33`, `dh=+1.50`; worst rows are
 width `+80`, vertical offset `+14`, and height `+12`. These are row-boundary
 quality findings, not a measured runtime regression.
+
+The gated row-blob-bounds A/B fixes the largest local geometry error: CER/WER
+improved to `0.03209/0.11504`, mean width delta fell to `+2.42`, and worst
+width delta fell from `+80` to `+13`, with 12 regions preserved. This is a
+quality improvement on scan-strip, but remains diagnostic-only until validated
+on more page fixtures; exact output parity still fails.
+
+The per-line page comparator was corrected to group official TSV words by
+page/block/paragraph/line rather than by `word_num`. On the corrected
+row-blob-bounds run, both paths emit 12 lines and only 3/12 lines match
+exactly. The first differing line is line 0 (`<< 4 ...` official versus
+`“< A ...` native); lines 4, 7, and 9 match exactly. Overall CER/WER remains
+`0.03209/0.11504`, so this is a recognition/crop or decoder-quality TODO,
+not a segmentation-count or ordering failure. Native benchmark was
+`detect=89.5 ms`, `crop=258.5 ms`, `recognize=17216.3 ms`, `total=17564.4 ms`;
+official Tesseract CLI elapsed `47761.8 ms` in this run, but these timings are
+not yet a controlled backend-speed comparison.
+
+The first divergent line was checked at the tensor boundary. Native crop 0
+was dumped and a Python reference was regenerated from the installed Fraktur
+traineddata. `test-tesseract-lstm-diff` passed every captured stage (input,
+convolution, conv-FC, maxpool, four LSTM stages, and logits); the lowest
+cosine was `0.997755`, with recurrent mine/ref norms `35.8611/35.8704`, and
+the native/Python decoded strings were identical. The official Homebrew CLI
+cannot reopen local PNG/PGM/TIFF files in this environment, so direct CLI
+single-crop confirmation is blocked; the page-level mismatch is nevertheless
+localized to official page segmentation/line normalization rather than GGUF
+recognition math. Use the comparator's new `--crop-dump-dir` option for fresh
+crop manifests. `tools/compare_tesseract_crop_diff.py` now automates the
+per-crop Python-reference regeneration and native `test-tesseract-lstm-diff`
+run while refusing to overwrite an existing reference.
+
+On the CC0 German printed-document fixture, official Tesseract emitted 28
+lines/153 words/897 characters while native DBNet emitted 23 lines/862
+characters. CER/WER was `0.32984/0.67974`; native stages measured
+`detect=982.4 ms`, `crop=670.0 ms`, `recognize=19594.7 ms`, and
+`total=21247.2 ms`. Since five lines are missing or merged before recognition,
+index-paired per-line errors are not a valid recognizer benchmark. The page
+comparator now reports `alignment_valid=false` when line counts differ. This
+fixture is a detector/line-geometry TODO, separate from the crop-level tensor
+parity proven on scan-strip.
+
+The comparator now exposes the native Tesseract-like route explicitly with
+`--native-pageseg`. On `scan_strip.png`, this route produced 12/12 lines,
+CER/WER `0.03209/0.11504`, and 3/12 exact lines. Its native stage timing was
+`detect=12.6 ms`, `crop=644.8 ms`, `recognize=11856.4 ms`,
+`total=12513.8 ms`. The route is not using DBNet for box generation; its
+quality is identical to the established classical row path, so the remaining
+gap is page segmentation/line normalization and decoder semantics.
+
+The repeated benchmark wrapper now accepts `--native-pageseg` and records
+`detector_route`, preserving the DBNet-versus-native distinction across
+multi-repeat timing runs. Its route flag and comparator selection are covered
+by the 10-test focused harness.
+
+On the CC0 German page, the explicit native route emitted the same 23 lines
+and 862 characters as the DBNet route, versus 28 official lines and 897
+characters. CER/WER stayed `0.32984/0.67974`; native timing was
+`detect=1014.9 ms`, `crop=605.7 ms`, `recognize=14263.4 ms`,
+`total=15885.6 ms`. This is a shared five-line geometry/coverage gap, not
+evidence that either recognizer is worse on aligned crops.
+
+The German native crop manifest has 23 rows versus 28 official TSV rows. The
+geometry comparator now marks this as `alignment_valid=false` and reports the
+number of index-paired rows; its former mean `dy=257.7` was an alignment
+artifact, not a measured crop offset. A merge-aware line matcher remains a
+detector/geometry TODO before using per-row geometry deltas on this fixture.
+
+The crop comparator now has `--match-by-geometry`: the German native run
+matched 23 rows monotonically and exposed five unmatched official rows
+(`0,2,3,4,26`). It still exits 1 for the count mismatch, and the resulting
+matched deltas remain diagnostic until one-to-many merged-row matching is
+implemented.
+
+The geometry report now exposes `merged_official_groups` when one native row
+covers at least half the vertical extent of multiple official rows. This
+separates merge candidates from genuinely missing rows without changing the
+production native pageseg policy.
+
+On the German fixture, the report finds merge candidates native `0` →
+official `1..4`, native `9` → official `12..13`, and native `22` → official
+`26..27`; official row `0` remains unmatched. These are concrete geometry
+targets for row-splitting work, not recognizer timing or tensor-parity data.
