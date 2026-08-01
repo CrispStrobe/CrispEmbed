@@ -731,6 +731,43 @@ The checked-in matrix now has a model-free CI coverage guard at
 `tests/regression/test_engine_matrix.py`: all 23 portfolio engines must remain
 present with a lane, runtime, fixture, and explicit availability status.
 
+#### O9 measured survey — native vs reference status (2026-08-01)
+
+This is the current evidence boundary. Timings below are cold end-to-end M1
+Metal process times unless marked otherwise; they include model load and are
+not directly comparable to warm service throughput. “Exact” means exact output
+against the pinned reference/fixture, not a claim of SOTA quality. Missing
+reference gold or a missing model is recorded as unmeasured, not as a pass.
+
+| Path | Native timing / reference comparison | Output quality | Explicit follow-up |
+|---|---|---|---|
+| DBNet + TrOCR | 8.05 s cold; ~5.0 s warm on fox; DBNet postprocess optimization reduced 43.3 s → 1.54 s | 10/10 regions and 10/10 recognized; ordinary document baseline | Add shared German CC0 CER/WER and warm p50/p95 against Python/RapidOCR |
+| Tesseract-LSTM via DBNet line crops | 7.55 s cold / 8.09 s warm in the first sweep; expanded run 32.0 s cold due process/model conditions | Line crop CER 0.040; controlled line arithmetic/reference parity is exact, but page path is worse: 21 native regions vs 25 official lines, CER 0.307/WER 0.404 | Normalize benchmark conditions; match page segmentation, crop geometry, spacing, and CLI decode |
+| PARSeq | 0.921 s first sweep / 6.25 s expanded cold | Recognizer-only smoke (`Gooducalicanos.com`), no gold quality score | Add line-crop harness and CER/exact-match against scene-text gold |
+| GOT-OCR2 | 15.662 s / 22.073 s cold | Exact fox transcript | Warm/p95 benchmark and full German CC0 quality lane |
+| GLM-OCR | 32.884 s / 38.086 s cold | Exact fox transcript | Warm/p95 benchmark and German CC0 quality lane |
+| InternVL2-1B | 24.908 s / 28.523 s cold | Worse than reference presentation: CER 0.540 and prompt text included | Strip prompt wrapper, compare normalized text, then optimize tile/vision residency |
+| Qwen2-VL-3B | 70.757 s / 90.113 s before timeout | No transcript within the 45 s budget; quality unscored | Model-size/quantization tier benchmark and timeout budget decision |
+| LightOnOCR | 31.561 s / 69.289 s cold | Plausible but unscored | Add gold transcription and separate prompt-wrapper normalization |
+| SmolDocling | 16.334 s expanded | Worse: duplicated DocTags regions, payload CER 0.86 | Deduplicate/parse DocTags before any speed work |
+| Unlimited-OCR | 45.967 s system-volume run; 40.391 s `UOCR_MMAP=1` backup-volume run | Correct two-region output; CER 0.010, one harmless title-box coordinate drift | Keep mmap path; split SAM/CLIP/projection/decoder timings and compare warm runs |
+| MixTeX | 7.523 s / 13.286 s cold | Exact specialist LaTeX | Add warm/p95 and German/CN math fixtures; window attention remains CPU-scheduled |
+| Flova | 16.153 s / 36.293 s cold | Exact specialist LilyPond | Add warm/p95 and handwritten German/music fixture coverage |
+| Pix2TeX / Texteller | Pix2TeX 5.520 s / 8.980 s; Texteller 11.403 s / 18.491 s | Pix2TeX exact; Texteller worse/unusable (CER 7.293) | Keep Texteller out of quality tier; add formula-domain error analysis |
+| SMT | 0.37 s incremental vs 1.98 s full recompute for ~100 tokens (5.4× faster) | 96.3% GrandStaff; native/HF token agreement 100% on validated samples; q8_0 exact, q4_k ~32% and rejected | Keep F32/Q8; do not expose Q4_K as quality tier |
+| Polyphonic-TrOMR / Flova OMR / Transcoda | No common live timing in the O9 sweep | Per-stage/decoded parity documented; TrOMR and Flova byte-exact on validated references; Transcoda model lane still missing in the matrix run | Add common real-photo/historical-score warm/cold benchmark |
+| PP-FormulaNet, HMER, BTTR, PosFormer, Texo | No common live timing in the O9 sweep | Stage parity exists for selected fixtures; no shared gold quality/throughput claim | Run model-backed math benchmark with exact LaTeX and CER/exact-match |
+| PP-OCRv6 pipeline | German CC0 Metal: detector 6.9 s, quad crop 3.4 ms, CPU orientation 358.6 ms, recognition 455.2 ms; tiny graph diagnostic adds cost (3.46 s vs 2.44 s CPU on `HI` crop) | CPU accept-gate pipeline: 30 regions/139 chars, confidence 0.93, 141/141 smoke; detector graph is worse (cos 0.99113, 31 vs 30 boxes); recognizer graph still blank on `HI` (cos 0.2629 vs CPU) | Fix detector box parity and depthwise recognizer head; benchmark CPU/Metal only after accepted-output parity |
+| PP-LCNet orientation | CPU 0.36 s vs explicit Metal graph 1.15 s for 30 crops | 9/10 Metal parity fixtures; one uneven-illumination Arabic outlier (1.0679/3.2166 logits); CPU graph passes | Resolve Metal SE/depthwise numerical drift or keep CPU default; measure warm reuse only after reliability |
+| EasyOCR/DBNet/LayoutLM handoff | No external Python page timing yet | Native model-backed run: 12 lines/98 words; geometry IoU 0.916 against TSV baseline, but native emits 98 vs Tesseract 106 words; external EasyOCR text parity pending | Install/reference Python environment and compare full manifests, CER, geometry, and warm timings |
+
+Portfolio-wide TODOs created by this survey: (1) normalize cold-load versus
+warm-inference measurement and report p50/p95; (2) attach a gold transcription
+or exact structured reference to every runnable lane; (3) run the explicit
+`model-needed` lanes with `--download-missing`; (4) do not optimize a lane
+whose output is currently worse until its structural postprocessing/parity
+failure is fixed; and (5) keep specialist metrics separate from plain-text OCR.
+
 ### O10 — Preprocessing inventory, parity, and live outcome gates [IN PROGRESS]
 
 The OCR front-end needs its own measured regression track. Our restoration
