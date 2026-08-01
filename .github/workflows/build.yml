@@ -67,8 +67,18 @@ jobs:
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
         run: |
-          .\build\Release\crispembed.exe --help 2>&1 || true
-          .\build\Release\test-backend-smoke.exe cpu
+          $runtimeDirs = @(
+            "$PWD\build\Release",
+            "$PWD\build\bin\Release",
+            "$PWD\build\bin"
+          )
+          $env:PATH = ($runtimeDirs -join ';') + ';' + $env:PATH
+          & .\build\Release\crispembed.exe --help
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "crispembed --help exited with $LASTEXITCODE (ignored)"
+          }
+          & .\build\Release\test-backend-smoke.exe cpu --json
+          exit $LASTEXITCODE
         shell: pwsh
 
       - name: Smoke test (explicit Metal)
