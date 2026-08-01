@@ -575,8 +575,15 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
     }
-    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
-                         : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
+    // The generic depthwise im2col path returns channel-interleaved output
+    // for contiguous inputs, whereas the following ggml convolution consumes
+    // the canonical channel-plane strides. The direct path preserves those
+    // strides on CPU; retain im2col for GPU backends until direct-kernel
+    // availability is validated there.
+    ggml_tensor * y = dw ? (ggml_backend_is_cpu(c->graph.backend)
+                                ? ggml_conv_2d_dw_direct(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
+                                : ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1))
+                       : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
     if (p.b) {
         ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
         if (!b) return nullptr;
