@@ -25,6 +25,10 @@ struct pp_conv {
     ggml_tensor * w = nullptr;
     ggml_tensor * b = nullptr;
     int in_ch = 0, out_ch = 0, kh = 1, kw = 1, stride = 1, stride_h = 1, stride_w = 1, pad_h = 0, pad_w = 0, groups = 1;
+    // Recognizer crops reuse the same convolution weights. Cache the CPU
+    // representation once, matching the detector's weight policy; otherwise
+    // every detected line repeats a full GGUF→F32 dequantization.
+    mutable std::vector<float> wf, bf;
 };
 
 struct pp_block {
@@ -63,6 +67,7 @@ struct ppocrv6_ocr_context {
     ggml_tensor * fc1_b = nullptr;
     ggml_tensor * fc2_w = nullptr;
     ggml_tensor * fc2_b = nullptr;
+    std::vector<float> fc1_wf, fc1_bf, fc2_wf, fc2_bf;
     ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr, *norm1_mean = nullptr, *norm1_var = nullptr;
     ggml_tensor *norm2_w = nullptr, *norm2_b = nullptr, *norm2_mean = nullptr, *norm2_var = nullptr;
     ggml_tensor *svtr_norm_w = nullptr, *svtr_norm_b = nullptr;
@@ -101,8 +106,10 @@ static bool apply_conv(const pp_conv & c, const std::vector<float> & in, int h, 
     oh = (h + 2 * c.pad_h - c.kh) / c.stride_h + 1;
     ow = (w + 2 * c.pad_w - c.kw) / c.stride_w + 1;
     out.assign((size_t)c.out_ch * oh * ow, 0.0f);
-    auto ww = to_f32(c.w);
-    auto bb = to_f32(c.b);
+    if (c.wf.empty()) c.wf = to_f32(c.w);
+    if (c.b && c.bf.empty()) c.bf = to_f32(c.b);
+    const auto & ww = c.wf;
+    const auto & bb = c.bf;
     // Even 2x2 kernels in the large recognizer stem use asymmetric effective
     // borders (one branch is valid, the other restores the spatial size).
     // Keep this small path explicit; it also avoids backend-specific
@@ -374,6 +381,10 @@ static bool map_model(ppocrv6_ocr_context * c) {
     c->fc1_b = get(m, "rec.head.fc1.bias");
     c->fc2_w = get(m, "rec.head.fc2.weight");
     c->fc2_b = get(m, "rec.head.fc2.bias");
+    c->fc1_wf = to_f32(c->fc1_w);
+    c->fc1_bf = to_f32(c->fc1_b);
+    c->fc2_wf = to_f32(c->fc2_w);
+    c->fc2_bf = to_f32(c->fc2_b);
     c->norm1_w = get(m, "rec.head.norm1.weight");
     c->norm1_b = get(m, "rec.head.norm1.bias");
     c->norm1_mean = get(m, "rec.head.norm1.running_mean");
@@ -715,15 +726,15 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
                 std::sqrt(std::inner_product(seq.begin(), seq.end(), seq.begin(), 0.0)), r.is_pass() ? "PASS" : "FAIL");
     }
-    auto f1 = to_f32(c->fc1_w), b1 = to_f32(c->fc1_b), f2 = to_f32(c->fc2_w), b2 = to_f32(c->fc2_b);
     c->result.clear();
     std::vector<float> all_logits;
     all_logits.reserve((size_t)pw * c->vocab_size);
     int last = -1;
     for (int t = 0; t < pw; ++t) {
         std::vector<float> hidden(c->hidden), logits(c->vocab_size);
-        linear_cpu(seq.data() + t * c->head_dw.in_ch, hidden.data(), c->head_dw.in_ch, c->hidden, f1.data(), b1.data());
-        linear_cpu(hidden.data(), logits.data(), c->hidden, c->vocab_size, f2.data(), b2.data());
+        linear_cpu(seq.data() + t * c->head_dw.in_ch, hidden.data(), c->head_dw.in_ch, c->hidden, c->fc1_wf.data(),
+                   c->fc1_bf.data());
+        linear_cpu(hidden.data(), logits.data(), c->hidden, c->vocab_size, c->fc2_wf.data(), c->fc2_bf.data());
         all_logits.insert(all_logits.end(), logits.begin(), logits.end());
         int best = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
         if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];

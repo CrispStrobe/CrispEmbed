@@ -12,6 +12,7 @@
 #include "scan_cleanup.h"
 #include "ocr_pipeline.h"
 #include "ocr_crop.h"
+#include "easyocr_layout.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -25,6 +26,7 @@
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
 #include "tesseract_lstm.h"
+#include "tesseract_pageseg.h"
 #include "parseq_ocr.h"
 #include "ocr_detect.h"
 #include "ppocrv6_det.h"
@@ -63,6 +65,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <numeric>
+#include <thread>
+#include <future>
 #include <string>
 #include <vector>
 #ifdef _WIN32
@@ -105,6 +109,7 @@ struct context {
     void * unified = nullptr;                   // metadata-dispatched OCR model
     ocr_detect::context * tess_det = nullptr;   // DBNet detection for the tesseract engine
     tesseract_lstm_context * tess = nullptr;    // Tesseract-LSTM line recognizer
+    std::vector<tesseract_lstm_context *> tess_workers;
     ocr_detect::context * parseq_det = nullptr; // DBNet detection for the parseq engine
     parseq_ocr_context * parseq = nullptr;      // PARSeq scene-text recognizer (per-char conf)
     scan_cleanup_ctx * clean1 = nullptr;        // tier-1 classical (model = NULL)
@@ -152,6 +157,19 @@ static stage dbnet_stage(cleanup_profile cp) {
     s.cleanup = cp;
     // model_a/model_b left empty — the caller (CrispSorter / CLI) resolves the
     // DBNet + TrOCR GGUF paths and fills them before load().
+    return s;
+}
+
+stage tesseract_fraktur_stage() {
+    stage s;
+    s.eng = engine::tesseract_fraktur;
+    s.enabled = true;
+    s.cleanup = classical_profile(false);
+    // Historical Fraktur pages contain narrow glyphs and long text lines.
+    s.params.det_min_height = 18;
+    s.params.det_width_height_ratio = 20.0f;
+    s.accept.min_chars = 4;
+    s.accept.min_confidence = 0.25f;
     return s;
 }
 
@@ -608,7 +626,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
-    case engine::tesseract: {
+    case engine::tesseract:
+    case engine::tesseract_fraktur: {
         // DBNet detection (model_a) + per-line Tesseract-LSTM recognition
         // (model_b). Tesseract-LSTM recognizes a single text line, so each
         // detected region is cropped (grayscale) and recognized in turn.
@@ -656,43 +675,141 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             }
             ctx->tess_resolved_model = tess_model;
         }
-        auto boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+        const auto tess_bench_start = std::chrono::steady_clock::now();
+        std::vector<ocr_detect::text_box> boxes;
+        const bool classical_pageseg = st.params.page_segmentation != 0 ||
+                                       std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+        if (classical_pageseg) {
+            int sw = 0, sh = 0, sc = 0;
+            unsigned char * seg_gray = stbi_load(path, &sw, &sh, &sc, 1);
+            if (seg_gray) {
+                boxes = tesseract_pageseg::segment_gray(seg_gray, sw, sh);
+                stbi_image_free(seg_gray);
+            }
+        } else {
+            boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+        }
+        const auto tess_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
+        // The IC15 DBNet artifact returns fragmented word-like regions on
+        // historical pages. Tesseract-LSTM is a line recognizer, so preserve
+        // the detector boxes for geometry but merge same-baseline fragments
+        // into complete line crops before recognition.
+        std::vector<easyocr_layout::region> detected_regions;
+        detected_regions.reserve(boxes.size());
+        for (const auto & box : boxes)
+            detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+        const auto line_regions = classical_pageseg ? detected_regions
+                                                    : easyocr_layout::group_dbnet_lines(detected_regions);
+        const auto tess_group_done = std::chrono::steady_clock::now();
         int w = 0, h = 0, c = 0;
         unsigned char * gray = stbi_load(path, &w, &h, &c, 1); // force 1-channel
         if (!gray) return {};
-        std::vector<ocr_pipeline::ocr_result> results;
-        results.reserve(boxes.size());
+        struct line_crop {
+            ocr_detect::text_box box;
+            std::vector<uint8_t> pixels;
+            int width = 0;
+            int height = 0;
+            ocr_crop::orientation_info orientation{};
+        };
+        std::vector<line_crop> crops;
+        crops.reserve(line_regions.size());
         const int pad = 2;
-        for (auto & b : boxes) {
+        for (const auto & line : line_regions) {
+            ocr_detect::text_box b{};
+            b.x = line.x;
+            b.y = line.y;
+            b.w = line.w;
+            b.h = line.h;
+            b.score = line.score;
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray, w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
-            int len = 0;
-            const char * t = tesseract_lstm_recognize(ctx->tess, crop.data(), cw, chh, &len);
-            if (!t || len <= 0) continue;
-            ocr_pipeline::ocr_result r;
-            r.box = b;
-            r.orientation_corrected = orientation.corrected;
-            r.orientation_angle = orientation.angle;
-            r.orientation_confidence = orientation.confidence;
-            // Mean per-character confidence from the last recognition.
-            int n_conf = 0;
-            const float * conf = tesseract_lstm_confidences(ctx->tess, &n_conf);
-            float mean = b.score;
-            if (conf && n_conf > 0) {
-                double s = 0.0;
-                for (int k = 0; k < n_conf; k++) s += conf[k];
-                mean = (float)(s / n_conf);
-                r.char_conf.assign(conf, conf + n_conf);
-            }
-            r.confidence = mean;
-            r.rec_confidence = mean;
-            r.text = std::string(t, len);
-            if (!r.text.empty()) results.push_back(std::move(r));
+            crops.push_back({b, std::move(crop), cw, chh, orientation});
         }
         stbi_image_free(gray);
+        if (crops.empty()) return {};
+        const auto tess_crop_done = std::chrono::steady_clock::now();
+
+        // The recognizer context is stateful (captures and confidences), so
+        // use one independent context per worker. Detection and crop order
+        // remain deterministic; only independent line inference is parallel.
+        int worker_count = 1;
+        if (const char * env = std::getenv("CRISPEMBED_TESSERACT_WORKERS"))
+            worker_count = std::max(1, std::atoi(env));
+        worker_count = std::min(worker_count, (int)crops.size());
+        const int missing_workers = worker_count - 1 - (int)ctx->tess_workers.size();
+        const bool parallel_load = std::getenv("CRISPEMBED_TESSERACT_PARALLEL_LOAD") != nullptr;
+        if (parallel_load && missing_workers > 0) {
+            std::vector<std::future<tesseract_lstm_context *>> loads;
+            loads.reserve(missing_workers);
+            for (int i = 0; i < missing_workers; ++i) {
+                loads.push_back(std::async(std::launch::async, [model = ctx->tess_resolved_model,
+                                                                  threads = ctx->n_threads]() {
+                    return tesseract_lstm_init(model.c_str(), threads);
+                }));
+            }
+            for (auto & load : loads) {
+                auto * worker = load.get();
+                if (worker) ctx->tess_workers.push_back(worker);
+            }
+        } else {
+            while ((int)ctx->tess_workers.size() < worker_count - 1) {
+                auto * worker = tesseract_lstm_init(ctx->tess_resolved_model.c_str(), ctx->n_threads);
+                if (!worker) break;
+                ctx->tess_workers.push_back(worker);
+            }
+        }
+        worker_count = std::min(worker_count, (int)ctx->tess_workers.size() + 1);
+        std::vector<ocr_pipeline::ocr_result> slots(crops.size());
+        std::vector<char> valid(crops.size(), 0);
+        auto recognize_worker = [&](int worker_index) {
+            tesseract_lstm_context * tess = worker_index == 0 ? ctx->tess : ctx->tess_workers[worker_index - 1];
+            for (size_t i = (size_t)worker_index; i < crops.size(); i += (size_t)worker_count) {
+                auto & item = crops[i];
+                const auto orientation = item.orientation;
+                int len = 0;
+                const char * t = tesseract_lstm_recognize(tess, item.pixels.data(), item.width, item.height, &len);
+                if (!t || len <= 0) continue;
+                auto & r = slots[i];
+                r.box = item.box;
+                r.orientation_corrected = orientation.corrected;
+                r.orientation_angle = orientation.angle;
+                r.orientation_confidence = orientation.confidence;
+                int n_conf = 0;
+                const float * conf = tesseract_lstm_confidences(tess, &n_conf);
+                float mean = item.box.score;
+                if (conf && n_conf > 0) {
+                    double s = 0.0;
+                    for (int k = 0; k < n_conf; k++) s += conf[k];
+                    mean = (float)(s / n_conf);
+                    r.char_conf.assign(conf, conf + n_conf);
+                }
+                r.confidence = mean;
+                r.rec_confidence = mean;
+                r.text = std::string(t, len);
+                valid[i] = !r.text.empty();
+            }
+        };
+        std::vector<std::future<void>> jobs;
+        for (int i = 1; i < worker_count; ++i) jobs.push_back(std::async(std::launch::async, recognize_worker, i));
+        recognize_worker(0);
+        for (auto & job : jobs) job.get();
+        std::vector<ocr_pipeline::ocr_result> results;
+        results.reserve(crops.size());
+        for (size_t i = 0; i < slots.size(); ++i) if (valid[i]) results.push_back(std::move(slots[i]));
+        if (ctx->bench) {
+            const auto ms = [](auto a, auto b) {
+                return std::chrono::duration<double, std::milli>(b - a).count();
+            };
+            fprintf(stderr, "[tesseract-stage-bench] detect=%.1f ms group=%.1f ms crop=%.1f ms recognize=%.1f ms total=%.1f ms boxes=%zu lines=%zu\n",
+                    ms(tess_bench_start, tess_detect_done),
+                    ms(tess_detect_done, tess_group_done),
+                    ms(tess_group_done, tess_crop_done),
+                    ms(tess_crop_done, std::chrono::steady_clock::now()),
+                    ms(tess_bench_start, std::chrono::steady_clock::now()), boxes.size(), line_regions.size());
+        }
         return results;
     }
     case engine::parseq: {
@@ -1261,6 +1378,8 @@ static const char * engine_name(engine e) {
         return "internvl2";
     case engine::tesseract:
         return "tesseract";
+    case engine::tesseract_fraktur:
+        return "tesseract_fraktur";
     case engine::deepseek_ocr2:
         return "deepseek_ocr2";
     case engine::pix2struct:
@@ -1537,6 +1656,7 @@ void free(context * ctx) {
     if (ctx->unified) crispembed_ocr_model_free(ctx->unified);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
     if (ctx->tess) tesseract_lstm_free(ctx->tess);
+    for (auto * worker : ctx->tess_workers) tesseract_lstm_free(worker);
     if (ctx->parseq_det) ocr_detect::free(ctx->parseq_det);
     if (ctx->parseq) parseq_ocr_free(ctx->parseq);
     if (ctx->clean1) scan_cleanup_free(ctx->clean1);

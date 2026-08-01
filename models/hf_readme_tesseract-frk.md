@@ -21,6 +21,7 @@ historical characters in the upstream output alphabet.
 Source: [tesseract-ocr/tessdata `frk.traineddata`](https://github.com/tesseract-ocr/tessdata/blob/main/frk.traineddata)
 
 - Source SHA-256: `7cd1b541e9d3884b9546a7d292c4f349cdb45ff646b4b43166dfc5099a8ad1a1`
+- Source training flags: `65` (`int_mode=true`), preserved in both GGUF files
 - VGSL: `[1,48,0,1Ct3,3,16Mp3,3Lfys64Lfx96Lrx96Lfx384O1c1]`
 - Input height: 48 pixels
 - Output alphabet: 100 Unicode tokens / 99 CTC output codes
@@ -59,7 +60,7 @@ from the same `frk.traineddata` and the same 200×80 grayscale crop:
 | Variant | Worst stage cosine | Logits cosine | Result |
 |---|---:|---:|---|
 | F32 | 1.000000 | 1.000000 | Pass |
-| Q8_0 mixed precision | 0.999860 | 0.999914 | Pass |
+| Q8_0 mixed precision | 0.999873 | 0.999945 | Pass |
 
 The reference activation dump is retained outside Git at
 `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-line.gguf`.

@@ -48,6 +48,7 @@ enum class engine {
     glm,            // glm_ocr.cpp
     internvl2,      // internvl2_ocr.cpp
     tesseract,      // DBNet detection + Tesseract-LSTM line recognition
+    tesseract_fraktur, // DBNet detection + grayscale crops + German Fraktur LSTM
     deepseek_ocr2,  // deepseek_ocr2.cpp (MoE VLM)
     pix2struct,     // pix2struct.cpp (document/chart understanding)
     granite_vision, // granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
@@ -82,6 +83,8 @@ struct accept_gate {
 // Tunable engine parameters (per stage). Only the fields relevant to the
 // stage's engine are used; the rest keep their defaults.
 struct engine_params {
+    // Tesseract engines: 0 = DBNet, 1 = classical page segmentation.
+    int page_segmentation = 0;
     // Detection (DBNet / Surya), used by ocr_pipeline::run_file.
     float det_prob_threshold = 0.3f;
     float det_box_threshold = 0.5f;
@@ -141,6 +144,12 @@ struct config {
 // Sensible defaults: router on; per-source chains with binarize for classical
 // stages, denoise-only for VLM/detector stages; accept-gate {8 chars, 0.5}.
 config default_config();
+
+// Explicit German-Fraktur profile. The caller supplies model_a as the DBNet
+// detector and model_b as tesseract-frk-{precision}.gguf. Unlike the generic
+// scanned-document profile it deliberately preserves grayscale input, since
+// binarization can erase thin Fraktur strokes and long-s forms.
+stage tesseract_fraktur_stage();
 
 struct result {
     int page_width = 0;
