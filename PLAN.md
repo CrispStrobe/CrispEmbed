@@ -424,6 +424,12 @@ downstream handoff parity, not detector-box similarity alone.
       rows on `scan_strip.png`, but its enlarged first-line crop currently
       worsens recognizer output, so it remains experimental and is not enabled
       in production.
+      `tools/compare_tesseract_page_geometry.py` now measures the independent
+      geometry boundary from official TSV level-4 rows. On `scan_strip.png`
+      the default baseline-clustered component adapter has 12/12 indexed rows
+      with mean IoU `0.750833`; the projection fallback has 12/12 with mean IoU
+      `0.865993`. These measurements confirm count/order parity only; crop
+      geometry and decoded-text parity remain open.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
@@ -518,6 +524,10 @@ downstream handoff parity, not detector-box similarity alone.
       aggregation and implement per-character posterior/marginal scores only
       if that comparison establishes a stable mapping. Keep beam decoding
       opt-in until recoder and DAWG scoring are also matched.
+      `test-confidence --tesseract-image MODEL LINE.png` now exercises the
+      direct recognizer contract for greedy/beam comparisons without page
+      segmentation overhead; it is diagnostic until a non-empty, transcribed
+      line fixture is wired into the acceptance gate.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
