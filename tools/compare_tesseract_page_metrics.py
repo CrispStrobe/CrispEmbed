@@ -202,6 +202,8 @@ def acceptance_checks(args: argparse.Namespace, native: dict, comparison: dict) 
         checks["max_cer"] = comparison["cer"] <= args.max_cer
     if args.max_wer is not None:
         checks["max_wer"] = comparison["wer"] <= args.max_wer
+    if getattr(args, "require_text_match", False):
+        checks["text_match"] = comparison.get("official_text", "") == comparison.get("native_text", "")
     return checks
 
 
@@ -225,6 +227,8 @@ def main() -> int:
     parser.add_argument("--min-native-regions", type=int, help="fail if native region count is below this value")
     parser.add_argument("--max-cer", type=float, help="fail if character error rate exceeds this value")
     parser.add_argument("--max-wer", type=float, help="fail if word error rate exceeds this value")
+    parser.add_argument("--require-text-match", action="store_true",
+                        help="fail unless normalized official and native page text match exactly")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -240,6 +244,8 @@ def main() -> int:
         "region_delta_vs_official_lines": native["regions"] - official["lines"],
         "char_delta": native["chars"] - official["chars"],
         "confidence_delta": native["mean_confidence"] - official["mean_word_confidence"],
+        "official_text": reference_text,
+        "native_text": native_text,
         "cer": edit_distance(reference_text, native_text) / char_denominator,
         "wer": token_distance(word_reference, word_native) / max(1, len(word_reference)),
     }

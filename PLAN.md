@@ -2572,7 +2572,10 @@ the pattern first.
   `TESSDATA_PREFIX`, and decodes subprocess diagnostics with replacement for
   invalid bytes. An explicit-tessdata scan-strip rerun remains stable at
   official 12 lines/113 words/451 chars versus native 12 regions/566 chars,
-  CER `0.03375`, WER `0.15044`; no tessdata warning remains.
+  CER `0.03375`, WER `0.15044`; no tessdata warning remains. It now also
+  supports `--require-text-match`, and stores normalized official/native text
+  in the comparison object so approximate CER/WER gates cannot be mistaken
+  for exact page-output parity.
 
 - **Tesseract confidence harness hardening (2026-08-01).** The line-confidence
   comparator now tolerates non-UTF-8 Tesseract diagnostics and removes stale

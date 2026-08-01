@@ -55,6 +55,21 @@ class TesseractPageGeometryTest(unittest.TestCase):
         args = type("Args", (), {"min_native_regions": None, "max_cer": None, "max_wer": None})()
         self.assertEqual(acceptance_checks(args, {"regions": 0}, {"cer": 1.0, "wer": 1.0}), {})
 
+    def test_page_text_gate_rejects_approximate_only_match(self) -> None:
+        args = type("Args", (), {
+            "min_native_regions": None,
+            "max_cer": None,
+            "max_wer": None,
+            "require_text_match": True,
+        })()
+        comparison = {
+            "cer": 0.01,
+            "wer": 0.02,
+            "official_text": "Brighton",
+            "native_text": "Drighton",
+        }
+        self.assertEqual(acceptance_checks(args, {"regions": 1}, comparison), {"text_match": False})
+
     def test_all_pageseg_policies_are_explicit(self) -> None:
         for name in ("projection", "component", "baseline"):
             args = type("Args", (), {"projection": False, "component": False, "baseline": False})()
