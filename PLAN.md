@@ -814,6 +814,13 @@ ms`; these are not a same-crop benchmark and must not be used as a speed claim.
 TODO: repeat timing on the cleared transcribed line fixtures and report cold
 load, warm greedy, warm beam, and per-stage reference/native costs together.
 
+The worker sweep on `scan_strip.png` preserves CER/WER while reducing native
+stage total from `690.3 ms` at one worker to `300.7 ms` at four and `292.1 ms`
+at eight. The next performance implementation task is therefore recognizer
+batching/graph and immutable-weight reuse; detector and crop are only a few
+milliseconds in the instrumented path. Do not trade away the recorded output
+quality gates while optimizing this hotspot.
+
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
 normal greedy recognizer's sub-second-to-low-single-digit-second line timings.

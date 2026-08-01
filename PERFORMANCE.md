@@ -926,6 +926,37 @@ skips because a sample or local model was unavailable.  This is a coverage
 report, not a claim that the skipped engines are unsupported.  The reusable
 driver stores all output and stderr tails in JSON for follow-up runs.
 
+### Tesseract reference parity and gated page-segmentation cost (2026-08-01)
+
+This is a same-fixture quality/cost cross-check on `scan_strip.png`, not a
+claim that all full-page Tesseract behavior is matched. Official timings are
+stock Tesseract CLI TSV wall time; native timings are the instrumented
+detector→group→crop→recognizer stage total. The native subprocess elapsed time
+also includes test-binary/model setup and is therefore not used as the pure
+pipeline comparison.
+
+| Path | Output quality vs official | Official wall ms | Native stage ms | Native result |
+|---|---|---:|---:|---|
+| Legacy/fallback | Best current native path, but CER/WER `0.0179/0.0841`; confidence `0.895` vs `0.9108` | 315.9–349.9 | 310.7 | 12 regions, 567 chars |
+| Component | Worse: CER/WER `0.0322/0.1121` | 315.9–349.9 | 266.8 | 12 regions, 569 chars |
+| Baseline | Same CER/WER as legacy, no quality gain; IoU lower | 315.9–349.9 | 282.2 | 12 regions |
+| Projection | Worse: CER/WER `0.0250/0.1121`; IoU best but text worse | 315.9–349.9 | 360.1 | 12 regions |
+
+Native recognition dominates the stage (`260.3–353.8 ms`); detector and crop
+were approximately `3–4 ms` each. A worker sweep retained identical CER/WER
+and measured native stage totals of `690.3 ms` at one worker, `300.7 ms` at four,
+and `292.1 ms` at eight. The immediate performance TODO is recognizer batching,
+graph/weight reuse, and fair warm-run measurement; the detector is not the
+current bottleneck. The immediate quality TODO is full-page crop/spacing/text
+parity: native is not yet output-equivalent even where region count matches.
+
+The German official-print page remains materially worse: native default is 21
+regions vs official 25, CER `0.307`, WER `0.404`, and confidence `0.836` vs
+`0.866`. Paired warm/cold timing and per-stage reference timing for this page
+remain TODOs. The Fraktur line diagnostic is also not a speed claim because its
+available input is a full page under PSM7 rather than an identical transcribed
+line crop.
+
 The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
 seven CC0/public-domain images through Tesseract plus skew/content detection:
 all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
