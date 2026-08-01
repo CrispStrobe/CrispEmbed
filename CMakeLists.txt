@@ -600,6 +600,10 @@ add_executable(test-tesseract-dawg tests/test_tesseract_dawg.cpp)
 target_include_directories(test-tesseract-dawg PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_link_libraries(test-tesseract-dawg PRIVATE crispembed)
 
+add_executable(test-tesseract-dawg-runtime tests/test_tesseract_dawg_runtime.cpp)
+target_include_directories(test-tesseract-dawg-runtime PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(test-tesseract-dawg-runtime PRIVATE crispembed)
+
 add_executable(test-ocr-identical-crops tests/test_ocr_identical_crops.cpp)
 target_include_directories(test-ocr-identical-crops PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-ocr-identical-crops PRIVATE crispembed)

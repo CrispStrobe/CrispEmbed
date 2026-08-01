@@ -69,6 +69,12 @@ int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx);
 int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char * name, const int * unichars,
                                 int n_unichars, int complete);
 
+/// UTF-8 convenience wrapper around tesseract_lstm_dawg_matches(). It
+/// segments the string against the loaded tokenizer tokens and returns the
+/// same 1/0/-1 status.
+int tesseract_lstm_dawg_matches_utf8(const tesseract_lstm_context * ctx, const char * name, const char * text,
+                                     int complete);
+
 /// Enable/disable capture of per-stage intermediates for parity testing.
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);
 

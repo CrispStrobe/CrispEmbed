@@ -1123,6 +1123,40 @@ int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char *
     return tesseract_dawg::prefix_matches(it->second, ids, complete != 0) ? 1 : 0;
 }
 
+int tesseract_lstm_dawg_matches_utf8(const tesseract_lstm_context * ctx, const char * name, const char * text,
+                                     int complete) {
+    if (!ctx || !name || !text) return -1;
+    if (ctx->dawgs.find(name) == ctx->dawgs.end()) return -1;
+    const std::string input(text);
+    std::vector<int> previous(input.size() + 1, -1);
+    std::vector<int> previous_uid(input.size() + 1, -1);
+    previous[0] = 0;
+    for (size_t pos = 0; pos < input.size(); ++pos) {
+        if (previous[pos] < 0) continue;
+        for (int uid = 0; uid < (int)ctx->tokens.size(); ++uid) {
+            const std::string & token = ctx->tokens[uid];
+            if (token.empty() || pos + token.size() > input.size()) continue;
+            if (!std::equal(token.begin(), token.end(), input.begin() + pos)) continue;
+            const size_t end = pos + token.size();
+            if (previous[end] < 0) {
+                previous[end] = (int)pos;
+                previous_uid[end] = uid;
+            }
+        }
+    }
+    if (previous[input.size()] < 0) return 0;
+    std::vector<int> ids;
+    for (size_t end = input.size(); end > 0;) {
+        const int uid = previous_uid[end];
+        const int begin = previous[end];
+        if (uid < 0 || begin < 0) return 0;
+        ids.push_back(uid);
+        end = (size_t)begin;
+    }
+    std::reverse(ids.begin(), ids.end());
+    return tesseract_lstm_dawg_matches(ctx, name, ids.data(), (int)ids.size(), complete);
+}
+
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled) {
     if (ctx) ctx->dump_mode = (enabled != 0);
 }
