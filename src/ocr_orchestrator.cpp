@@ -408,6 +408,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                                       st.params.det_target_short, &geometry);
     }
     case engine::ppocrv6: {
+        const bool ppocr_bench = std::getenv("CRISPEMBED_PPOCRV6_BENCH") != nullptr;
+        const auto ppocr_started = std::chrono::steady_clock::now();
         if (st.model_a.empty() || st.model_b.empty()) {
             fprintf(stderr, "ocr_orchestrator: ppocrv6 stage missing models (model_a=det, model_b=rec)\n");
             return {};
@@ -423,6 +425,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // bypassing this geometry produces a different probability map and
         // materially different region counts on large fixtures.
         auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
+        const auto ppocr_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
         int w = pw, h = ph;
         std::vector<uint8_t> owned;
@@ -436,12 +439,16 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!rgb || w <= 0 || h <= 0) return {};
         std::vector<ocr_pipeline::ocr_result> results;
+        double crop_ms = 0.0, orientation_ms = 0.0, recognize_ms = 0.0;
         for (const auto & b : boxes) {
+            const auto crop_started = std::chrono::steady_clock::now();
             int cw = 0, ch = 0;
             const bool has_quad = std::hypot(b.qx[1] - b.qx[0], b.qy[1] - b.qy[0]) > 1.0f;
             auto crop = has_quad ? ocr_crop::extract_quad(rgb, w, h, 3, b.qx, b.qy, 2, &cw, &ch)
                                  : ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
+            crop_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - crop_started).count();
             if (crop.empty()) continue;
+            const auto orientation_started = std::chrono::steady_clock::now();
             ocr_crop::orientation_info orientation;
             if (ctx->ppori) {
                 const auto classified = pplcnet_orientation::classify_raw(ctx->ppori, crop.data(), cw, ch, 3);
@@ -454,8 +461,13 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             } else {
                 orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
             }
+            orientation_ms +=
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - orientation_started).count();
+            const auto recognize_started = std::chrono::steady_clock::now();
             int len = 0;
             const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
+            recognize_ms +=
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - recognize_started).count();
             if (!text || len <= 0) continue;
             ocr_pipeline::ocr_result r;
             r.box = { b.x, b.y, b.w, b.h, b.score };
@@ -466,6 +478,14 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             r.orientation_angle = orientation.angle;
             r.orientation_confidence = orientation.confidence;
             results.push_back(std::move(r));
+        }
+        if (ppocr_bench) {
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+            fprintf(stderr,
+                    "[ppocrv6-stage-bench] detect=%.1f ms crop=%.1f ms orientation=%.1f ms recognize=%.1f ms total=%.1f ms "
+                    "boxes=%zu results=%zu\n",
+                    ms(ppocr_started, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
+                    ms(ppocr_started, std::chrono::steady_clock::now()), boxes.size(), results.size());
         }
         return results;
     }

@@ -93,6 +93,12 @@ detector work is about 626 ms; the graph diagnostic reports about 590 ms on
 this CPU build before its CPU fallback. This keeps preprocessing on CPU unless
 a backend-specific measurement proves the transfer worthwhile.
 
+Use `CRISPEMBED_PPOCRV6_BENCH=1` for the routed end-to-end split, including
+quad crop geometry, orientation, and recognition. On the German CC0 page the
+Metal build measured detector 6.9 s, crop 3.4 ms, orientation 358.6 ms, and
+recognition 455.2 ms; geometry is therefore not a useful GPU-offload target
+yet, while orientation is a separate graph optimization target.
+
 Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` to print per-line recognizer graph
 latency and the selected backend. On the Metal build this is a graph execution
 measurement, not a claim that the detector graph is production-accepted.
