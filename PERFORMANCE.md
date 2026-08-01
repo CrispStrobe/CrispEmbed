@@ -1326,3 +1326,8 @@ The diagnostic also emits `crops.tsv`. A verified Q8 run produced 12 records
 plus the header; source boxes map to crop sizes 438×22 through 462×32, with a
 final 76×25 crop. The first line begins at page `y=0`, so edge clipping is now
 an explicit geometry item for the official-Tesseract comparison.
+
+The opt-in vertical ink-trim A/B is a rejected quality optimization: native
+recognition improved from 11,351.6 ms to 10,407.1 ms, but CER/WER degraded
+from `0.03922/0.13274` to `0.04278/0.14159` and the character delta grew from
+116 to 121. Keep `CRISPEMBED_TESSERACT_CROP_TRIM_INK` diagnostic-only.
