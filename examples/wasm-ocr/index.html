@@ -75,6 +75,12 @@
     white-space: nowrap;
   }
   small { color: #94a3b8; }
+  .notice {
+    color: #64748b; font-size: 0.8rem; line-height: 1.5;
+    border-top: 1px solid #e2e8f0; padding-top: 16px; margin-top: 8px;
+  }
+  .notice p { margin-bottom: 8px; }
+  .notice a { color: #2563eb; }
 </style>
 </head>
 <body>
@@ -551,5 +557,27 @@ if (navigator.gpu) {
 }
 
 </script>
+
+<footer class="notice">
+  <p><strong>This is an AI system.</strong> The text it returns is model output,
+  not a faithful copy: OCR is a probabilistic reconstruction, recognisers
+  misread, and VLM-based engines will confabulate plausible text through a
+  smudge rather than leave it blank. Check the result against the source image
+  before relying on it, and do not use it as the sole basis for a decision about
+  a person.</p>
+
+  <p><strong>Your images stay on your device.</strong> Inference runs entirely in
+  this browser tab via WebAssembly; no image is uploaded anywhere. Model weights
+  are fetched from Hugging Face and cached in your browser's origin-private
+  filesystem — use the “Clear model cache” link above to remove them. This demo
+  does no face detection, no face recognition, and no biometric processing of
+  any kind, and its scan cleanup is classical (deskew, binarize, denoise, crop),
+  running no generative model.</p>
+
+  <p>Intended purpose, prohibited uses, and the obligations that transfer to you
+  if you build on the library are in
+  <a href="https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md">POLICY.md</a>.</p>
+</footer>
+
 </body>
 </html>

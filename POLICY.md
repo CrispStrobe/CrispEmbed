@@ -70,6 +70,15 @@ or ethnicity model, no nudification or face-swap model, and no scraping tooling.
 Those capabilities are absent by design, not by oversight, and pull requests
 adding them will be declined.
 
+**That is a statement about the models, not about what the code can be pointed
+at.** CLIP and SigLIP score an image against arbitrary text, so a caller who
+supplies the labels supplies the classifier — the same primitive that finds "an
+invoice" finds a protected attribute, and nothing in the API can tell the two
+apart. That makes the deployment a biometric categorisation system under Art.
+5(1)(g) even though we ship no such model, and the prohibition lands on whoever
+wrote the labels. Zero-shot generality is the feature; this is its cost. Do not
+read the paragraph above as a guarantee that the software cannot be misused.
+
 The Art. 5 prohibitions have applied since **2 February 2025** — the NCII/CSAM
 one from **2 December 2026** — and none of them are waived by the open-source
 exemption. Art. 2(12) puts free-and-open-source AI outside most of the Act;
@@ -203,6 +212,21 @@ Re-hosted GGUFs at `huggingface.co/cstr` are quantized derivatives. Quantization
 is not a substantial modification, so the EU AI Act Art. 53 obligations for
 general-purpose AI models remain with the original model providers; consult the
 upstream model card for training data, capabilities, and limitations.
+
+The prior argument is the fallback. The first one is that Art. 53 does not
+engage at all: almost everything in the registry is a task-specific model — an
+embedder, a detector, a recogniser — and a model that does one task is not a
+general-purpose AI model however it was trained. Where a re-host *is* a
+quantization of a general-purpose model, the compute test settles it, since
+quantization adds no training compute and cannot cross the threshold at which a
+downstream modifier becomes the provider.
+
+Worth knowing if you re-host models yourself: the open-source route out of Art.
+53 is narrower than the one in Art. 2(12). Art. 53(2) relieves a free and
+open-source model provider of the technical-documentation duties, but **not** of
+the copyright policy or the public training-data summary, and none of it applies
+to a model with systemic risk. Publishing weights under a permissive licence is
+therefore not by itself a complete answer.
 
 ## 8. Reporting misuse
 
