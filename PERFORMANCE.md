@@ -1008,6 +1008,10 @@ were `329–338 ms` versus the prior `~300 ms` result. The variance is too large
 to claim an improvement, so it is disabled by default and remains an
 optimization TODO.
 
+Use `tools/benchmark_tesseract_page.py` for repeated, policy-specific runs;
+its summary separates official CLI, native subprocess, native stage, and
+recognizer timings and retains every per-run quality record.
+
 The German official-print page remains materially worse: native default is 21
 regions vs official 25, CER `0.307`, WER `0.404`, and confidence `0.836` vs
 `0.866`. Paired warm/cold timing and per-stage reference timing for this page
