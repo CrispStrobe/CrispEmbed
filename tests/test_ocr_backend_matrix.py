@@ -34,6 +34,17 @@ def main() -> int:
     ppocr_text = PPOCR.read_text()
     assert "CPU fallback" in ppocr_text and "diagnostic-only" in ppocr_text
     assert "GGML_METAL=OFF" in text and "GGML_CUDA=OFF" in text
+    # Keep the partial VLM claims tied to concrete, source-audited CPU seams.
+    # These guards are intentionally textual: changing a seam requires updating
+    # the capability matrix in the same change instead of silently overstating
+    # GPU residency.
+    for marker in (
+        "CPU window partition",
+        "CPU spatial merge",
+        "UOCR_SAM_CONV_CPU",
+        "UOCR_MOE_CPU",
+    ):
+        assert marker in text, f"VLM residency boundary missing from matrix: {marker}"
     print(f"OCR backend matrix OK: {len(required)} required families, {len(rows)} schema-valid rows")
     return 0
 
