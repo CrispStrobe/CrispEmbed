@@ -627,10 +627,37 @@ static float beam_add(float a, float b, bool viterbi) {
     return viterbi ? std::max(a, b) : log_add(a, b);
 }
 
+// Diagnostic-only dictionary bonus. Tesseract's DAWG operates on unicharset
+// IDs, so score only exact composed words and never penalize partial words
+// while a beam is still being expanded. The small fixed bonus is intentionally
+// kept separate from the CTC probability reported as sequence confidence.
+static float dawg_word_bonus(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
+                             const std::vector<std::string> & tokens,
+                             const std::map<std::string, tesseract_dawg::Dawg> & dawgs, bool include_final) {
+    const auto it = dawgs.find("lstm-system-dawg");
+    if (it == dawgs.end()) return 0.0f;
+    std::vector<int> unichars, starts;
+    if (!tesseract_recoder::compose_classes(prefix, codes, unichars, starts)) return 0.0f;
+    float bonus = 0.0f;
+    std::vector<int> word;
+    for (int uid : unichars) {
+        if (uid == 0) {
+            if (!word.empty() && tesseract_dawg::prefix_matches(it->second, word, true)) bonus += 0.25f;
+            word.clear();
+        } else if (uid >= 0 && uid < (int)tokens.size()) {
+            word.push_back(uid);
+        }
+    }
+    if (include_final && !word.empty() && tesseract_dawg::prefix_matches(it->second, word, true)) bonus += 0.25f;
+    return bonus;
+}
+
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
                                                int beam_width, bool viterbi,
                                                const std::vector<std::vector<int>> * recoder = nullptr,
-                                               float * score_out = nullptr) {
+                                               float * score_out = nullptr,
+                                               const std::map<std::string, tesseract_dawg::Dawg> * dawgs = nullptr,
+                                               const std::vector<std::string> * tokens = nullptr) {
     std::vector<ctc_beam_state> beam(1);
     beam[0].p_blank = 0.0f;
     for (int t = 0; t < timesteps; ++t) {
@@ -671,8 +698,14 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
             }
         }
 
-        std::sort(next.begin(), next.end(), [viterbi](const ctc_beam_state & a, const ctc_beam_state & b) {
-            return beam_add(a.p_blank, a.p_nonblank, viterbi) > beam_add(b.p_blank, b.p_nonblank, viterbi);
+        std::sort(next.begin(), next.end(), [viterbi, recoder, dawgs, tokens](const ctc_beam_state & a,
+                                                                               const ctc_beam_state & b) {
+            auto rank = [&](const ctc_beam_state & state) {
+                float score = beam_add(state.p_blank, state.p_nonblank, viterbi);
+                if (recoder && dawgs && tokens) score += dawg_word_bonus(state.prefix, *recoder, *tokens, *dawgs, false);
+                return score;
+            };
+            return rank(a) > rank(b);
         });
         if ((int)next.size() > beam_width) next.resize(beam_width);
         beam.swap(next);
@@ -680,11 +713,21 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
 
     if (beam.empty()) return {};
     if (recoder != nullptr) {
+        const ctc_beam_state * best = nullptr;
+        float best_rank = -INFINITY;
         for (const auto & state : beam) {
             if (tesseract_recoder::prefix_legal(state.prefix, *recoder, false)) {
-                if (score_out) *score_out = beam_add(state.p_blank, state.p_nonblank, viterbi);
-                return state.prefix;
+                float rank = beam_add(state.p_blank, state.p_nonblank, viterbi);
+                if (dawgs && tokens) rank += dawg_word_bonus(state.prefix, *recoder, *tokens, *dawgs, true);
+                if (!best || rank > best_rank) {
+                    best = &state;
+                    best_rank = rank;
+                }
             }
+        }
+        if (best) {
+            if (score_out) *score_out = beam_add(best->p_blank, best->p_nonblank, viterbi);
+            return best->prefix;
         }
         return {};
     }
@@ -875,12 +918,15 @@ static void forward(tesseract_lstm_context * ctx,
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
     const char * recode_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
+    const bool dawg_score = recode_width > 1 && std::getenv("CRISPEMBED_TESSERACT_DAWG_SCORE") != nullptr &&
+                            !ctx->dawgs.empty();
     bool beam_decoded = false;
     float beam_log_score = -INFINITY;
     std::vector<float> greedy_label_confs;
     if (recode_width > 1) {
         labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false, &ctx->recoder_codes,
-                                        &beam_log_score);
+                                        &beam_log_score, dawg_score ? &ctx->dawgs : nullptr,
+                                        dawg_score ? &ctx->tokens : nullptr);
         beam_decoded = true;
     } else if (beam_width > 1) {
         labels =
