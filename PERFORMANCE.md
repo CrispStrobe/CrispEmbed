@@ -1251,6 +1251,10 @@ zero fabricated character confidences. The beam contract passes, but text and
 greedy confidence calibration are worse than the official reference and remain
 TODOs.
 
+With `--require-official-words --require-greedy-text-match`, that same fixture
+exits `1`: the official-word gate passes, while the text gate fails. This keeps
+the confidence contract from being mistaken for OCR-quality parity.
+
 ### Tesseract page-box geometry A/B (2026-08-01)
 
 `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` now controls the symmetric expansion of
@@ -1266,6 +1270,16 @@ both tighter candidates preserved 12 regions and the same decoded text:
 The box geometry is therefore not the dominant error on this fixture. Keep
 the gate for other scan resolutions, but do not change the default or use
 tighter boxes as a quality claim.
+
+### Tesseract composed-recorder gate (2026-08-01)
+
+`CRISPEMBED_TESSERACT_RECODE_COMPOSE` now enables exact segmentation of
+collapsed CTC classes into serialized multi-code unichar entries. It is
+opt-in: the existing single-code fallback remains the production default.
+Fraktur default versus opt-in output/confidence is byte-identical on the
+controlled line, and a Chinese smoke input passes both modes without a crash;
+that smoke did not exercise a multi-code emission, so no quality promotion is
+claimed yet.
 
 ### Tesseract confidence harness and line calibration (2026-08-01)
 
