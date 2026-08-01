@@ -547,6 +547,13 @@ downstream handoff parity, not detector-box similarity alone.
       direct recognizer contract for greedy/beam comparisons without page
       segmentation overhead; it is diagnostic until a non-empty, transcribed
       line fixture is wired into the acceptance gate.
+      `tools/compare_tesseract_line_confidence.py` now measures the same
+      contract against official TSV on three English line fixtures: greedy text
+      matches on two of three, while the first line remains `Lhey`/`Drighton`;
+      greedy sequence-vs-official-mean-word confidence deltas were `+0.0053`,
+      `-0.0847`, and `-0.0643`. Beam confidence is intentionally reported as a
+      separate sequence probability (not a fabricated per-word certainty), so
+      this does not close the official certainty gate.
       On the available German Fraktur line fixture, official Tesseract
       produces `1` with mean word confidence `0.5886`; native greedy produces
       `GI` with sequence confidence `0.5985` and two timestep confidences;
