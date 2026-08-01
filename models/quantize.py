@@ -11,6 +11,7 @@ Usage:
 """
 
 import argparse
+import fnmatch
 import os
 import struct
 import sys
@@ -36,7 +37,16 @@ KEEP_F32_PATTERNS = ["norm", "bias", "embd_ln", "position_embd",
                       "token_type_embd", "pooler", "output_norm"]
 
 
-def should_quantize(name: str, shape: tuple, qtype_name: str) -> bool:
+def should_quantize(name: str, shape: tuple, qtype_name: str,
+                    keep_patterns=()) -> bool:
+    """Return whether a tensor may be quantized.
+
+    ``keep_patterns`` is intentionally opt-in and generic: model-specific
+    callers can retain critical recurrent/output tensors at F32 without
+    changing the established default policy for other GGUF families.
+    """
+    if any(fnmatch.fnmatchcase(name, pattern) for pattern in keep_patterns):
+        return False
     name_lower = name.lower()
     if len(shape) < 2:
         return False
@@ -55,7 +65,8 @@ def should_quantize(name: str, shape: tuple, qtype_name: str) -> bool:
     return True
 
 
-def quantize_gguf(input_path: str, output_path: str, qtype_name: str):
+def quantize_gguf(input_path: str, output_path: str, qtype_name: str,
+                  keep_patterns=()):
     """Quantize by re-reading original GGUF and writing through gguf_init."""
     qtype = QUANT_MAP[qtype_name]
     print(f"Quantizing {os.path.basename(input_path)} -> {os.path.basename(output_path)} ({qtype_name})")
@@ -98,7 +109,7 @@ def quantize_gguf(input_path: str, output_path: str, qtype_name: str):
             n_kept += 1
             continue
 
-        if should_quantize(tname, shape, qtype_name):
+        if should_quantize(tname, shape, qtype_name, keep_patterns):
             try:
                 # gguf.quantize expects [n_rows, row_width] where row_width = ne[0]
                 n_rows = int(np.prod(shape[1:])) if len(shape) > 1 else 1
@@ -260,6 +271,8 @@ def main():
     parser.add_argument("--all", action="store_true")
     parser.add_argument("--dir", default=".")
     parser.add_argument("--output-dir", default=None)
+    parser.add_argument("--keep-pattern", action="append", default=[],
+                        help="fnmatch tensor names to retain at source precision; repeatable")
     args = parser.parse_args()
 
     if args.all:
@@ -284,7 +297,7 @@ def main():
                 print(f"  Skip {os.path.basename(out)} (exists)")
                 continue
             try:
-                quantize_gguf(inp, out, qt)
+                quantize_gguf(inp, out, qt, args.keep_pattern)
             except Exception as e:
                 print(f"  ERROR: {e}")
                 import traceback; traceback.print_exc()
