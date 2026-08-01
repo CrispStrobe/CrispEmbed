@@ -35,8 +35,14 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float, float, float]]:
-    proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang, "tsv"])
+def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None = None) -> list[tuple[float, float, float, float]]:
+    command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
+    if tessdata_dir is not None:
+        command.extend(["--tessdata-dir", str(tessdata_dir)])
+    command.append("tsv")
+    env = os.environ.copy()
+    env.pop("TESSDATA_PREFIX", None)
+    proc = run(command, env=env)
     if proc.returncode != 0:
         raise RuntimeError(f"tesseract failed ({proc.returncode}): {proc.stderr[-500:]}")
     lines = []
@@ -219,6 +225,8 @@ def main() -> int:
     parser.add_argument("--cli", type=Path, default=Path("build/crispembed"))
     parser.add_argument("--lang", default="eng")
     parser.add_argument("--psm", type=int, default=3)
+    parser.add_argument("--tessdata-dir", type=Path,
+                        help="explicit Tesseract tessdata directory for the reference TSV")
     policy = parser.add_mutually_exclusive_group()
     policy.add_argument("--projection", action="store_true", help="use the experimental projection splitter")
     policy.add_argument("--component", action="store_true", help="use the experimental component prototype")
@@ -237,7 +245,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     comparison = compare(
-        official_lines(args.image, args.lang, args.psm),
+        official_lines(args.image, args.lang, args.psm, args.tessdata_dir),
         native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline),
     )
     checks = {}

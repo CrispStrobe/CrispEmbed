@@ -2708,3 +2708,8 @@ the pattern first.
   gates before applying the selected segmentation policy. This prevents a
   prior decoder/crop experiment from contaminating geometry evidence. Thirteen
   model-free geometry tests pass; the full CLI rebuild remains resource-bound.
+
+- **Geometry reference provenance (2026-08-01).** The geometry comparator now
+  accepts `--tessdata-dir` for the official TSV subprocess and clears ambient
+  `TESSDATA_PREFIX` before invoking Tesseract. This aligns geometry provenance
+  with the page/text comparator; fourteen model-free geometry tests pass.
