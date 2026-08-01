@@ -21,6 +21,16 @@
   scan uses EasyOCR's actual width 128 (`ceil(64 * 520 / 260)`), not the fixed
   200-column standalone shape; all six captured stages pass and logits have
   `0/31` argmax mismatches, with decoded output `82` matching Python.
+- [x] Re-generated and reran the Latin family against fresh references from
+      the official checkpoints, current EasyOCR checkout, current dumper, and
+      explicit widths. Latin Gen2 formula (width 200) passes all six stages
+      with minimum cosine `0.9999106` and decodes `x=0442`; Latin Gen2 scan
+      (width 128) passes with minimum cosine `0.9996817`, logits cosine
+      `0.9999978`, and decodes `82`; Latin Gen1 ResNet scan (width 128) passes
+      with minimum cosine `0.9996817`, logits cosine `0.9999934`, and decodes
+      `==#`. The older similarly named local references failed already at
+      `input_image` and had conflicting decoded metadata, so they are stale
+      fixtures and are not parity evidence.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
