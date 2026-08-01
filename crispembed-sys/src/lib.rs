@@ -461,8 +461,16 @@ extern "C" {
     /// The type alias is defined outside the extern block; the raw pointer
     /// is used throughout this API.
 
+    /// Acknowledge that this process may run face *recognition* models, whose
+    /// output is a biometric template (GDPR Art. 9 special-category data).
+    /// Without this — or `CRISPEMBED_ACCEPT_BIOMETRIC=1` —
+    /// `crispembed_face_init` returns NULL for recognition models. Detection
+    /// is never gated. See POLICY.md.
+    pub fn crispembed_accept_biometric_use();
+
     /// Load a face model from `model_path` and return an opaque context.
-    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure, including
+    /// when a recognition model is loaded without a biometric acknowledgement.
     pub fn crispembed_face_init(
         model_path: *const c_char,
         n_threads: c_int,

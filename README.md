@@ -302,10 +302,13 @@ AuraFace recognition.
 
 > **Face recognition is biometric processing.** A face template is
 > special-category personal data (GDPR Art. 9), and searching a gallery of them
-> (1:N identification) is a high-risk AI system under the EU AI Act. Running a
-> recognition model therefore requires a one-time acknowledgement
-> (`--accept-biometric` or `CRISPEMBED_ACCEPT_BIOMETRIC=1`); detection alone is
-> not gated. CrispEmbed provides **no gallery, enrolment, index or 1:N search**
+> (1:N identification) is a high-risk AI system under the EU AI Act. Loading a
+> recognition model therefore requires a one-time acknowledgement —
+> `--accept-biometric` on the CLI and server, `CRISPEMBED_ACCEPT_BIOMETRIC=1` in
+> any process, or `crispembed_accept_biometric_use()` and its Python / Rust /
+> Dart equivalents. The check sits in `crispembed_face_init()`, so it holds for
+> the bindings too, not just the CLI; detection alone is not gated.
+> CrispEmbed provides **no gallery, enrolment, index or 1:N search**
 > primitive, and prints cosine similarity without a match/no-match verdict —
 > thresholds must be calibrated and documented per deployment. Read
 > **[POLICY.md](POLICY.md)** before building on this. `examples/face_verify.py`

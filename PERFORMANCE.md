@@ -1409,3 +1409,25 @@ characters. CER/WER stayed `0.32984/0.67974`; native timing was
 `detect=1014.9 ms`, `crop=605.7 ms`, `recognize=14263.4 ms`,
 `total=15885.6 ms`. This is a shared five-line geometry/coverage gap, not
 evidence that either recognizer is worse on aligned crops.
+
+The German native crop manifest has 23 rows versus 28 official TSV rows. The
+geometry comparator now marks this as `alignment_valid=false` and reports the
+number of index-paired rows; its former mean `dy=257.7` was an alignment
+artifact, not a measured crop offset. A merge-aware line matcher remains a
+detector/geometry TODO before using per-row geometry deltas on this fixture.
+
+The crop comparator now has `--match-by-geometry`: the German native run
+matched 23 rows monotonically and exposed five unmatched official rows
+(`0,2,3,4,26`). It still exits 1 for the count mismatch, and the resulting
+matched deltas remain diagnostic until one-to-many merged-row matching is
+implemented.
+
+The geometry report now exposes `merged_official_groups` when one native row
+covers at least half the vertical extent of multiple official rows. This
+separates merge candidates from genuinely missing rows without changing the
+production native pageseg policy.
+
+On the German fixture, the report finds merge candidates native `0` →
+official `1..4`, native `9` → official `12..13`, and native `22` → official
+`26..27`; official row `0` remains unmatched. These are concrete geometry
+targets for row-splitting work, not recognizer timing or tensor-parity data.

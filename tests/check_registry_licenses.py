@@ -189,7 +189,19 @@ def fetch_hf_license(api, repo_id: str) -> Tuple[str, str]:
     lic = getattr(card, "license", None)
     if isinstance(lic, list):
         lic = ",".join(str(x) for x in lic)
-    return (lic or ""), "OK"
+    lic = (lic or "").strip()
+
+    # `license: other` is HF's escape hatch for anything without an SPDX id;
+    # the actual licence name then lives in `license_name` (e.g. LFM2 tags
+    # `other` + `lfm1.0`). Reading only `license` reports every such model as
+    # OTHER and flags our correct, *more* specific declared tag as a mismatch.
+    # Prefer the specific name — it is the one a redistributor has to honour.
+    if lic.lower() == "other":
+        name = getattr(card, "license_name", None)
+        if isinstance(name, str) and name.strip():
+            return name.strip(), "OK"
+
+    return lic, "OK"
 
 
 # ────────────────────────────────────────────────────────────────────────
