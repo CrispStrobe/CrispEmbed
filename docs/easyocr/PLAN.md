@@ -159,8 +159,10 @@ recognizer and LayoutLM consumer.
       collapse, dictionary/vocabulary validation, EasyOCR custom-mean
       confidence, and box normalization. The production recognizer now uses
       the same nonblank confidence convention.
-- [ ] Exercise the structured handoff with LayoutLMv2/v3 using
-      `apply_ocr=False`; no LayoutLM weights are needed for the contract test.
+- [x] Exercise the structured handoff contract for LayoutLMv2/v3 using
+      `apply_ocr=False`; `tools/validate_layoutlm_handoff.py` emits the
+      processor's `words`/`boxes` payload and preserves confidence/pixel boxes
+      in sidecar metadata. No LayoutLM weights are needed for this gate.
 - [ ] Keep Tesseract LSTM as a separately measured recognizer lane and compare
       it with EasyOCR CRNN on identical detector crops.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
