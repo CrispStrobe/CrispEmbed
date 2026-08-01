@@ -39,6 +39,31 @@
       timestep 11. This reproduces the earlier result with fresh official
       inputs and isolates the remaining exception to dynamic-width numerical
       sensitivity.
+- [x] Add repeated native/reference timing and output checks. On this M1
+      Metal build, 10 repeated recognitions were compared with 10 Miniconda
+      PyTorch CPU recognitions using identical images and widths: Latin Gen2
+      formula 200 native/reference total `16.523/12.460 ms` (`1.33x`),
+      decoded `x=0442`/`x=0442`; Latin Gen2 scan 128 `10.885/7.137 ms`
+      (`1.53x`), decoded `82`/`82`; Latin Gen1 ResNet scan 128
+      `154.082/78.648 ms` (`1.96x`), decoded `==#`/`==#`; English Gen2 scan
+      200 `16.536/10.035 ms` (`1.65x`), decoded `032`/`032`; and English
+      Gen2 scan 128 `10.697/7.287 ms` (`1.47x`), decoded `@32`/`@32`.
+      Native is currently slower in every measured total/graph path despite
+      using Metal; graph/kernel and recognizer-width optimization are explicit
+      performance TODOs. These are cross-runtime numbers (PyTorch CPU versus
+      native Metal), so they are directional rather than final apples-to-
+      apples measurements.
+- [x] Fix the benchmark-only repeated-recognition quality regression: the
+      four host-reset LSTM initial-state tensors could alias intermediate
+      graph storage under the allocator after the first run. Marking them as
+      graph outputs keeps their storage live; repeated Latin Gen2 now remains
+      `82` and Latin Gen1 remains `==#`, matching Python.
+- [ ] Add equivalent repeated per-stage timing and output manifests for CRAFT
+      detector, DBNet detector→EasyOCR page modes, and Tesseract line/page
+      paths. Their current checks establish geometry/text or tensor evidence
+      but do not yet provide native/reference timing ratios. Any slower native
+      stage and any worse text/box/ordering output must be recorded as a
+      separate optimization or quality TODO before those lanes are accepted.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.

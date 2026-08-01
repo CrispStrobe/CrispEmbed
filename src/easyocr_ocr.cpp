@@ -11,6 +11,7 @@
 #include "ggml.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -42,6 +43,7 @@ struct easyocr_ocr_context {
     std::vector<float> input_host;
     std::string result;
     float last_confidence = 0.0f;
+    easyocr_ocr_timing last_timing = {};
 };
 
 static ggml_tensor * req(easyocr_ocr_context * c, const char * name) {
@@ -134,6 +136,11 @@ static ggml_tensor * lstm_direction(ggml_context * g, ggml_tensor * seq, int T, 
     ggml_set_name(c, reverse ? "lstm_rev_c0" : "lstm_fwd_c0");
     ggml_set_input(h);
     ggml_set_input(c);
+    // These are reset from the host before every recognition. Keep their
+    // storage live for the complete graph so the allocator cannot reuse an
+    // initial-state buffer as an intermediate from an earlier timestep.
+    ggml_set_output(h);
+    ggml_set_output(c);
 
     for (int step = 0; step < T; ++step) {
         const int t = reverse ? T - 1 - step : step;
@@ -347,6 +354,7 @@ void easyocr_ocr_free(easyocr_ocr_context * c) {
 
 const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, int w, int h, int ch, int * out_len) {
     if (!c || !px || w <= 0 || h <= 0 || ch <= 0) return nullptr;
+    const auto total_start = std::chrono::steady_clock::now();
     std::vector<uint8_t> gray((size_t)w * h);
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
@@ -365,11 +373,14 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     for (int y = 0; y < c->height; ++y)
         for (int x = rw; x < c->width; ++x)
             c->input_host[(size_t)y * c->width + x] = c->input_host[(size_t)y * c->width + rw - 1];
+    const auto preprocess_end = std::chrono::steady_clock::now();
     ggml_backend_tensor_set(c->input, c->input_host.data(), 0, c->input_host.size() * sizeof(float));
     std::vector<float> zero((size_t)c->hidden, 0.0f);
     for (const char * n : { "lstm_fwd_h0", "lstm_fwd_c0", "lstm_rev_h0", "lstm_rev_c0" })
         ggml_backend_tensor_set(ggml_graph_get_tensor(c->graph, n), zero.data(), 0, zero.size() * sizeof(float));
+    const auto graph_start = std::chrono::steady_clock::now();
     if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return nullptr;
+    const auto graph_end = std::chrono::steady_clock::now();
 
     std::vector<float> logits((size_t)c->classes * c->time_steps);
     ggml_backend_tensor_get(c->logits, logits.data(), 0, logits.size() * sizeof(float));
@@ -403,11 +414,27 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     }
     c->last_confidence = easyocr_postprocess::confidence_custom_mean(nonblank_probabilities);
     if (out_len) *out_len = (int)c->result.size();
+    const auto total_end = std::chrono::steady_clock::now();
+    c->last_timing.preprocess_ms = std::chrono::duration<double, std::milli>(preprocess_end - total_start).count();
+    c->last_timing.graph_ms = std::chrono::duration<double, std::milli>(graph_end - graph_start).count();
+    c->last_timing.decode_ms = std::chrono::duration<double, std::milli>(total_end - graph_end).count();
+    c->last_timing.total_ms = std::chrono::duration<double, std::milli>(total_end - total_start).count();
+    if (std::getenv("EASYOCR_BENCH")) {
+        fprintf(stderr, "[easyocr-bench] preprocess=%.3f graph=%.3f decode=%.3f total=%.3f ms width=%d\n",
+                c->last_timing.preprocess_ms, c->last_timing.graph_ms, c->last_timing.decode_ms,
+                c->last_timing.total_ms, c->width);
+    }
     return c->result.c_str();
 }
 
 float easyocr_ocr_last_confidence(const easyocr_ocr_context * c) {
     return c ? c->last_confidence : 0.0f;
+}
+
+bool easyocr_ocr_last_timing(const easyocr_ocr_context * c, easyocr_ocr_timing * timing) {
+    if (!c || !timing) return false;
+    *timing = c->last_timing;
+    return true;
 }
 
 static bool copy_graph_tensor(ggml_cgraph * graph, const char * name, std::vector<float> & raw,
