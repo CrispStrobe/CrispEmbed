@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 
-from compare_tesseract_page_geometry import compare, greedy_iou_matches, reading_order_is_monotonic  # noqa: E402
+from compare_tesseract_page_geometry import compare, greedy_iou_matches, reading_order_is_monotonic, run  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
 from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
 from benchmark_tesseract_page import summarize  # noqa: E402
@@ -97,6 +97,10 @@ class TesseractPageGeometryTest(unittest.TestCase):
         source = (ROOT / "tools/compare_tesseract_page_geometry.py").read_text()
         self.assertIn('"--timeout"', source)
         self.assertIn("subprocess.TimeoutExpired", source)
+
+    def test_timeout_becomes_explicit_runtime_error(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "command timed out"):
+            run([sys.executable, "-c", "import time; time.sleep(0.2)"], timeout_seconds=0.01)
 
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
