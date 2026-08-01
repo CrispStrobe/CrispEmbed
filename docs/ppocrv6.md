@@ -108,6 +108,12 @@ is set, and the CPU recognizer remains the fallback result. The current small
 and medium recognizers use the asymmetric SVTR stem and remain on the CPU path
 until their separate graph is implemented.
 
+The tiny/small static-shape graph allocation is retained across line crops.
+Only the input staging tensor is refreshed per crop; backend buffer planning is
+not repeated for every line. This optimization does not alter the accept gate
+or the CPU reference fallback. A future dynamic-shape recognizer must clear
+the allocation before rebuilding its scheduler graph.
+
 Non-CPU detector graphs use F16 resident convolution weights by default for
 backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a
 high-precision backend comparison. On the Apple M1 probe this reduced the
