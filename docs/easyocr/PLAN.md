@@ -31,6 +31,14 @@
       `==#`. The older similarly named local references failed already at
       `input_image` and had conflicting decoded metadata, so they are stale
       fixtures and are not parity evidence.
+- [x] Re-generated English Gen2 references after the native sampler update.
+      The fixed 200-column scan passes with exit code 0, decoded `032`, and
+      logits cosine `0.9979853`. The actual EasyOCR width-128 scan decodes
+      `@32` with `0/31` argmax mismatches; all stages pass the global gate, but
+      the strict row-wise logits gate remains open at cosine `0.973824` on
+      timestep 11. This reproduces the earlier result with fresh official
+      inputs and isolates the remaining exception to dynamic-width numerical
+      sensitivity.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
