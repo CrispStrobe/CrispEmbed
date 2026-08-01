@@ -1067,14 +1067,13 @@ selected critical tensors are copied from F32. The selected
 until repeat benchmarks, page-region parity, and decoded-text quality gates
 improve.
 
-The mixer was re-run with Miniconda Python and the exact Fraktur GGUF fixture.
-Both the Q8 base and mixed candidate fail the archived reference at
-`input_image` (cosine `0.528198`, native norm `122.453` versus reference norm
-`488.914`); the archive contains out-of-range input values (minimum
-`-28.6364`) while current native preprocessing is `[-1,1]`. The mixed
-candidate changes later output, but this stale-reference input mismatch is not
-evidence for or against LSTM precision quality. A fresh reference using the
-current preprocessing is required before selecting a mixed artifact.
+Fresh Miniconda regeneration from `/opt/homebrew/share/tessdata/frk.traineddata`
+now gives exact input parity (`cosine=1.0`, both norms `122.453`). Against
+that valid reference, Q8 reaches 6/9 stage passes and logits cosine `0.983119`;
+the mixed `lstm.0.weight_hh` F32 candidate also reaches 6/9 but falls to
+`0.982110`. Both decoded texts differ from the Python reference, so the mixed
+candidate is not an improvement and remains gated. The fresh reference is
+stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`.
 
 Quantization policy improvement: `models/quantize.py` now supports repeatable
 `--keep-pattern` rules, allowing callers to retain critical recurrent or
