@@ -2509,10 +2509,17 @@ the pattern first.
   diagnostic fallback now preserves `<class>`; full recode-beam composition
   and dictionary scoring remain a production-quality TODO.
 
-- **Tesseract HF artifact publication (2026-08-01).** The corrected canonical
-  F32/Q8_0/Q4_K files are uploaded to the intended `cstr/tesseract-lstm-GGUF`
-  and `cstr/tesseract-frk-GGUF` repositories. F16 remains pending fresh seeded
-  conversion and validation; no `mlx-community` repository was used.
+- **Tesseract HF artifact publication (2026-08-01).** All 51 corrected
+  canonical F32/F16/Q8_0/Q4_K files are uploaded to the intended
+  `cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories. Remote
+  metadata spot-checks confirm nonzero `sample_iteration`; no `mlx-community`
+  repository was used.
+
+- **Tesseract seeded F32 sweep (2026-08-01).** Fresh references and native
+  diffs pass decoded parity for 10/12 canonical languages on the controlled
+  line. German has 3/150 and Korean 6/200 logit argmax mismatches despite all
+  tensor cosine gates passing; both remain quality TODOs and are not accepted
+  as fully parity-closed.
 
   The cache now has an explicit `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE`
   fallback for controlled parity comparisons; cached mode remains the default.
@@ -2531,3 +2538,22 @@ the pattern first.
   `scheme`, and punctuation/hyphen spacing), not a region-count mismatch.
   Use these actual strings to guide crop and decoder fixes rather than treating
   CER/WER alone as a sufficient quality signal.
+
+- **Tesseract crop-border A/B (2026-08-01).** `CRISPEMBED_TESSERACT_CROP_PAD`
+  is now an opt-in gate around the Fraktur line-crop border; the production
+  default remains 2 pixels. On `scan_strip.png`, 0/1/2/4 pixels produced
+  12/12/12/12 regions and CER/WER `0.07460/0.30088`, `0.04796/0.20354`,
+  `0.03375/0.15044`, and `0.03552/0.15044`, respectively. Keep 2 pixels as
+  the default. Recognition output remains worse than official Tesseract in
+  substitutions and punctuation despite matching region count; decoder,
+  recoder, and line-image parity remain the active quality TODOs.
+
+- **Tesseract page-segmentation and beam A/B (2026-08-01).** Projection
+  improved the scan-strip comparison to CER/WER `0.03197/0.12389` from the
+  legacy `0.03375/0.15044`, with the same 12 regions; baseline matching was
+  unchanged and slower. Keep projection behind
+  `CRISPEMBED_TESSERACT_PAGESEG_PROJECTION` because the improvement is not yet
+  official-output parity. Beam width 8 on projection was text-identical to
+  greedy (`0.03197/0.12389`) but increased recognition from `9.66 s` to
+  `29.75 s`; keep it diagnostic-only. Next TODO: line-image/crop geometry and
+  Tesseract-compatible decoder/recoder semantics.

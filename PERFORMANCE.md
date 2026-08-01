@@ -1165,10 +1165,21 @@ mapping defect, not a graph discrepancy. The native fallback now exposes the
 unmapped class; no Chinese OCR-quality or quantized-speed claim is accepted
 until recode-beam composition is implemented and tested.
 
-The corrected F32/Q8_0/Q4_K canonical files are now uploaded to the intended
-`cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories. Existing
-F16 files have not yet been replaced; they remain a release TODO until fresh
-seeded F16 conversions are generated and checked.
+German exposes a separate quality gap: the first LSTM stage differs by one
+int8 activation step, and the final logits have 3/150 argmax mismatches. Native
+decodes ` s.` while Python decodes `e  .`; this is not accepted despite all
+stage cosine gates passing.
+
+The completed seeded F32 sweep has exact native/Python decoded parity for 10 of
+12 languages on the controlled line. Korean is the second exception: 6/200
+logit argmax positions differ and native/Python diagnostic strings diverge,
+despite all nine tensor stages clearing the cosine gate. German and Korean are
+therefore quality TODOs, not green model validations.
+
+All 51 corrected canonical F32/F16/Q8_0/Q4_K files are now uploaded to the
+intended `cstr/tesseract-lstm-GGUF` and `cstr/tesseract-frk-GGUF` repositories.
+Remote metadata spot-checks confirm nonzero `sample_iteration`; no
+`mlx-community` upload was made.
 
 ### Tesseract cached-int8 recurrent kernel gate
 
@@ -1192,3 +1203,38 @@ differences are `50`→`80`, `ay`→`8ay`, capitalization (`Such`/`such`,
 `Scheme`/`scheme`), and punctuation/hyphen spacing. This confirms the next
 quality work should inspect crop geometry and decode semantics, not detector
 throughput.
+
+### Tesseract crop-border A/B (2026-08-01)
+
+The Fraktur line crop now has an opt-in `CRISPEMBED_TESSERACT_CROP_PAD` gate;
+the default remains 2 pixels. On `scan_strip.png`, all candidates produced 12
+regions, so this is not a segmentation-count issue:
+
+| Border | Chars | CER | WER | Recognize ms |
+|---:|---:|---:|---:|---:|
+| 0 px | 570 | 0.07460 | 0.30088 | 7,237.5 |
+| 1 px | 567 | 0.04796 | 0.20354 | 6,686.3 |
+| 2 px (default) | 566 | 0.03375 | 0.15044 | 9,217.4 |
+| 4 px | 571 | 0.03552 | 0.15044 | 10,666.3 |
+
+The 2-pixel crop remains the best measured quality point. The gate is retained
+for other scan resolutions and architectures; the next quality TODO is
+Tesseract-compatible decode/recoder semantics for the residual substitutions
+and punctuation differences.
+
+### Tesseract page-segmentation and beam A/B (2026-08-01)
+
+The existing page-segmentation policies were compared on the same fixture and
+official reference. Every policy emitted 12 regions:
+
+| Policy | Chars | CER | WER | Recognize ms | Output result |
+|---|---:|---:|---:|---:|---|
+| Legacy fallback | 566 | 0.03375 | 0.15044 | 9,217 | baseline native text |
+| Projection | 567 | 0.03197 | 0.12389 | 9,661 | best measured WER/CER |
+| Baseline matcher | 566 | 0.03375 | 0.15044 | 14,720 | identical quality, slower |
+| Projection + beam 8 | 567 | 0.03197 | 0.12389 | 29,748 | text-identical to greedy |
+
+Projection remains opt-in because its CER improvement is small and it does not
+reach official output parity; beam width 8 is retained only for diagnostics
+because it adds roughly 3x recognition cost without changing text. The next
+quality work is line-image/crop geometry and Tesseract decoder semantics.
