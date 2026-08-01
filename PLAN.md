@@ -530,6 +530,10 @@ downstream handoff parity, not detector-box similarity alone.
       Each aggregate JSON record now includes detector and recognizer
       SHA-256 hashes plus the ordering-comparison policy, without writing
       local model paths into reports.
+      The aggregate harness now supports opt-in minimum-region and maximum
+      CER/WER acceptance gates and reports their individual results, allowing
+      page-quality regressions to fail explicitly instead of being hidden in
+      diagnostic JSON.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
