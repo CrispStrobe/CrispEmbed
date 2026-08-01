@@ -472,9 +472,10 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
         const int box_x1 = tight_x1 >= tight_x0 ? tight_x1 : r.x1;
         ocr_detect::text_box box{};
         box.x = (float)std::max(0, box_x0 - 3);
-        box.y = (float)std::max(0, crop_y0 - 3);
+        const int vertical_offset = r.count < 20 ? 3 : 0;
+        box.y = (float)std::min(height - 1, std::max(0, crop_y0 + vertical_offset));
         box.w = (float)std::min(width - (int)box.x, box_x1 - box_x0 + 7);
-        box.h = (float)std::min(height - (int)box.y, crop_y1 - crop_y0 + 7);
+        box.h = (float)std::min(height - (int)box.y, crop_y1 - crop_y0 + 2);
         box.score = 1.0f;
         out.push_back(box);
     }
