@@ -402,6 +402,10 @@ downstream handoff parity, not detector-box similarity alone.
       Homebrew `eng.traineddata` hash, Python `-ref.gguf`, native captures,
       decoded text, and official instrumented PSM7 internal crop all match;
       logits differ by at most `6.6e-7` with cosine `1.000000`.
+      New reference dumps record the source image dimensions, and the native
+      diff harness rejects a mismatched fixture before reporting stage cosine
+      scores; this prevents stale `-ref.gguf` archives from masquerading as
+      model or runtime parity failures.
 - [ ] Compare page segmentation, spacing, and CLI crop geometry independently;
       this remains open because direct line fixtures are not the same internal
       crops selected by official PSM7.
