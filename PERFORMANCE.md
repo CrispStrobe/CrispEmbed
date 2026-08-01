@@ -1301,6 +1301,16 @@ the normalized official/native page strings in its comparison output. The
 scan-strip baseline therefore remains explicitly non-green for exact output
 parity even though its CER/WER metrics are measurable.
 
+The confidence harness was rerun after rebuilding `test-confidence`, using the
+explicit Homebrew tessdata directory and the seeded Fraktur Q8 GGUF. Official
+PSM 7 TSV returned `iE` at mean word confidence `0.043433` in `5,881 ms`;
+native greedy returned `BEEES` at word confidence `0.884625` in `305 ms`, and
+beam-8 returned the same `BEEES` with sequence confidence `0.644788` and zero
+per-character confidences in `984 ms`. The official-word check passed, but
+decoded text and greedy calibration did not. This is evidence for a remaining
+Tesseract decoder/recoder and confidence-aggregation quality TODO, not a
+performance acceptance result; the beam path remains diagnostic.
+
 A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
 report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
 following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus
