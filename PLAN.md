@@ -60,6 +60,12 @@ diagnostic. Older GGUFs remain compatible with zero DAWG entries. This closes
 metadata integrity only; DAWG traversal/scoring and decoded-output parity are
 still open.
 
+The loader now also structurally validates each base64 SquishedDawg payload:
+magic/header, dimensions, edge-array bounds, next-node bounds, and forward-edge
+run termination. `test-tesseract-dawg` passes and the regenerated English
+smoke model loads with `dawg=3`; no dictionary score is applied and no
+production beam behavior changed.
+
 CRAFT's old folded-F16 diff printed error statistics: the earliest divergent
 stage was `basenet_0` (`max_abs=1.52823`, RMS `0.195515`, global cosine
 `0.995623`), which propagated to score-map `max_abs=0.06910`, RMS `0.008026`,
