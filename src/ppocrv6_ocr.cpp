@@ -576,15 +576,14 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
             fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
     }
-    // The generic depthwise im2col path returns channel-interleaved output
-    // for contiguous inputs, whereas the following ggml convolution consumes
-    // the canonical channel-plane strides. The direct path preserves those
-    // strides on CPU; retain im2col for GPU backends until direct-kernel
-    // availability is validated there.
-    ggml_tensor * y = dw ? (ggml_backend_is_cpu(c->graph.backend)
-                                ? ggml_conv_2d_dw_direct(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
-                                : ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1))
-                         : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
+    // Keep the generic depthwise im2col path here: it supports the explicit
+    // [W,H,C] graph layout on both CPU and accelerator backends. The direct
+    // depthwise kernel was tested but did not improve parity and remains out
+    // of the accepted path until its layout contract is independently gated.
+    // ggml names the spatial arguments x/y ([W,H]); pp_conv stores them as
+    // height/width to match the scalar reference.
+    ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
+                         : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1);
     if (p.b) {
         ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
         if (!b) return nullptr;
@@ -788,7 +787,22 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                     c->backend ? ggml_backend_name(c->backend) : "none");
         return false;
     }
-    ggml_backend_tensor_set(c->graph.input, input.data(), 0, input.size() * sizeof(float));
+    // resize_normalize and the scalar reference use channel-plane storage
+    // [C,H,W], while a contiguous ggml image tensor is [W,H,C,N].  Keep the
+    // public/reference representation unchanged and transpose only at this
+    // backend boundary; otherwise every graph convolution receives channels
+    // interleaved across its spatial rows.
+    constexpr int H = 48, W = 320, C = 3;
+    std::vector<float> graph_input(input.size());
+    if (input.size() == size_t(C * H * W)) {
+        for (int cidx = 0; cidx < C; ++cidx)
+            for (int y = 0; y < H; ++y)
+                for (int x = 0; x < W; ++x)
+                    graph_input[(size_t(y) * W + x) * C + cidx] = input[(size_t(cidx) * H + y) * W + x];
+    } else {
+        graph_input = input;
+    }
+    ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
     // Reuse of mixed Metal/CPU scheduler allocations is unstable on the
     // current pre-tensor Apple backend across repeated line crops. Rebuild
     // the static allocation per crop until backend reuse is validated.
