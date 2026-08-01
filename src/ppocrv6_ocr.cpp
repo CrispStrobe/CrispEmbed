@@ -215,6 +215,10 @@ static void silu(std::vector<float> & x) {
     for (float & v : x) v = v / (1.0f + std::exp(-v));
 }
 
+static void relu(std::vector<float> & x) {
+    for (float & v : x) v = std::max(0.0f, v);
+}
+
 static void pad_right_bottom(const std::vector<float> & in, int channels, int h, int w, std::vector<float> & out,
                              int & oh, int & ow) {
     oh = h + 1;
@@ -705,28 +709,28 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         };
         x = pp_graph_conv(c, c->graph.graph_ctx, x, c->stem[0]);
         if (!x) return false;
-        x = ggml_silu(c->graph.graph_ctx, x);
+        x = ggml_relu(c->graph.graph_ctx, x);
         large_tap("large_stem1", x);
         ggml_tensor * padded = ggml_pad_ext(c->graph.graph_ctx, x, 0, 1, 0, 1, 0, 0, 0, 0);
         ggml_tensor * branch = pp_graph_conv(c, c->graph.graph_ctx, padded, c->stem[1]);
         if (!branch) return false;
-        branch = ggml_silu(c->graph.graph_ctx, branch);
+        branch = ggml_relu(c->graph.graph_ctx, branch);
         large_tap("large_stem2a", branch);
         branch = ggml_pad_ext(c->graph.graph_ctx, branch, 0, 1, 0, 1, 0, 0, 0, 0);
         branch = pp_graph_conv(c, c->graph.graph_ctx, branch, c->stem[2]);
         if (!branch) return false;
-        branch = ggml_silu(c->graph.graph_ctx, branch);
+        branch = ggml_relu(c->graph.graph_ctx, branch);
         large_tap("large_stem2b", branch);
         ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, padded, GGML_OP_POOL_MAX, 2, 2, 1, 1, 0, 0);
         x = ggml_concat(c->graph.graph_ctx, pooled, branch, 2);
         large_tap("large_cat", x);
         x = pp_graph_conv(c, c->graph.graph_ctx, x, c->stem[3]);
         if (!x) return false;
-        x = ggml_silu(c->graph.graph_ctx, x);
+        x = ggml_relu(c->graph.graph_ctx, x);
         large_tap("large_stem3", x);
         x = pp_graph_conv(c, c->graph.graph_ctx, x, c->stem[4]);
         if (!x) return false;
-        x = ggml_silu(c->graph.graph_ctx, x);
+        x = ggml_relu(c->graph.graph_ctx, x);
         large_tap("large_stem", x);
     } else {
         for (size_t stem_idx = 0; stem_idx < c->stem.size(); ++stem_idx) {
@@ -1239,7 +1243,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             fprintf(stderr, "[ppocrv6-diff] %s cos=%.6f %s\n", name, r.cos_min, r.is_pass() ? "PASS" : "FAIL");
         };
         if (!apply_conv(c->stem[0], x, h, w, y, oh, ow)) return nullptr;
-        silu(y);
+        relu(y);
         x.swap(y);
         h = oh;
         w = ow;
@@ -1249,13 +1253,13 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         pad_right_bottom(x, c->stem[0].out_ch, h, w, padded_stem, ph, pw);
         std::vector<float> branch;
         if (!apply_conv(c->stem[1], padded_stem, ph, pw, branch, oh, ow)) return nullptr;
-        silu(branch);
+        relu(branch);
         diff_stem("ppocrv6.large_stem2a", branch);
         std::vector<float> padded_branch;
         int bph, bpw;
         pad_right_bottom(branch, c->stem[1].out_ch, oh, ow, padded_branch, bph, bpw);
         if (!apply_conv(c->stem[2], padded_branch, bph, bpw, y, oh, ow)) return nullptr;
-        silu(y);
+        relu(y);
         branch.swap(y);
         diff_stem("ppocrv6.large_stem2b", branch);
         std::vector<float> pooled;
@@ -1266,13 +1270,13 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         std::memcpy(cat.data() + pooled.size(), branch.data(), branch.size() * sizeof(float));
         diff_stem("ppocrv6.large_cat", cat);
         if (!apply_conv(c->stem[3], cat, poh, pow, y, oh, ow)) return nullptr;
-        silu(y);
+        relu(y);
         x.swap(y);
         h = oh;
         w = ow;
         diff_stem("ppocrv6.large_stem3", x);
         if (!apply_conv(c->stem[4], x, h, w, y, oh, ow)) return nullptr;
-        silu(y);
+        relu(y);
         x.swap(y);
         h = oh;
         w = ow;
