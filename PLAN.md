@@ -2672,3 +2672,10 @@ the pattern first.
   This is an experiment, not evidence of official word-choice parity.
   The page comparator/benchmark expose it as `--dawg-prefix-score` and clear
   the corresponding inherited environment gate before each run.
+
+- **Tesseract geometry comparator matching (2026-08-01).** The page-geometry
+  harness now reports deterministic one-to-one IoU matches in addition to its
+  legacy indexed deltas. This prevents an inserted/missing line from making
+  all later crop deltas misleading, while preserving the indexed reading-order
+  diagnostics. Eight model-free geometry tests pass; a real CLI crop-equivalence
+  run remains an evidence gate.
