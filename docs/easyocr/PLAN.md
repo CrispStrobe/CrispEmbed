@@ -190,6 +190,12 @@ recognizer and LayoutLM consumer.
       rows on `scan_strip.png`, but its enlarged first-line crop currently
       worsens recognizer output, so it remains experimental and is not enabled
       in production.
+      `tools/compare_tesseract_page_geometry.py` now measures the independent
+      geometry boundary from official TSV level-4 rows. On `scan_strip.png`
+      the production adapter has 12/12 indexed rows with mean IoU `0.865993`;
+      the component prototype also has 12/12 but lower mean IoU `0.826222`.
+      These measurements confirm count/order parity only; crop geometry and
+      decoded-text parity remain open.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.
