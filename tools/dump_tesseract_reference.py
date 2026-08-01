@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 import hashlib
+import math
 import subprocess
 import struct
 import sys
@@ -202,6 +203,19 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -50, 50)))
 
 
+# Match tesseract/src/lstm/generate_lut.py exactly. Upstream generates the
+# table literals with Python's double-precision math module and TFloat stores
+# those literals as float. Calling NumPy's float32 tanh/exp directly creates
+# slightly different entries on some platforms, enough to move an int8
+# activation across an away-from-zero rounding boundary.
+_TESSERACT_TANH_TABLE = np.asarray(
+    [math.tanh(i / 256.0) for i in range(4096)], dtype=np.float32
+)
+_TESSERACT_LOGISTIC_TABLE = np.asarray(
+    [1.0 / (1.0 + math.exp(-i / 256.0)) for i in range(4096)], dtype=np.float32
+)
+
+
 def tesseract_tanh(x):
     """Tesseract's 1/256-spaced tanh lookup-table interpolation."""
     x = np.asarray(x, dtype=np.float32)
@@ -209,9 +223,9 @@ def tesseract_tanh(x):
     ax = np.abs(x) * np.float32(256.0)
     index = np.floor(ax).astype(np.int64)
     frac = ax - index.astype(np.float32)
-    i0 = np.minimum(index, 4094).astype(np.float32)
-    y0 = np.tanh(i0 / np.float32(256.0))
-    y1 = np.tanh((i0 + 1.0) / np.float32(256.0))
+    i0 = np.minimum(index, 4094)
+    y0 = _TESSERACT_TANH_TABLE[i0]
+    y1 = _TESSERACT_TANH_TABLE[i0 + 1]
     result = y0 + (y1 - y0) * frac
     result = np.where(index >= 4095, 1.0, result)
     return np.where(negative, -result, result).astype(np.float32)
@@ -224,9 +238,9 @@ def tesseract_logistic(x):
     ax = np.abs(x) * np.float32(256.0)
     index = np.floor(ax).astype(np.int64)
     frac = ax - index.astype(np.float32)
-    i0 = np.minimum(index, 4094).astype(np.float32)
-    y0 = 1.0 / (1.0 + np.exp(-i0 / np.float32(256.0)))
-    y1 = 1.0 / (1.0 + np.exp(-(i0 + 1.0) / np.float32(256.0)))
+    i0 = np.minimum(index, 4094)
+    y0 = _TESSERACT_LOGISTIC_TABLE[i0]
+    y1 = _TESSERACT_LOGISTIC_TABLE[i0 + 1]
     result = y0 + (y1 - y0) * frac
     result = np.where(index >= 4095, 1.0, result)
     return np.where(negative, 1.0 - result, result).astype(np.float32)
