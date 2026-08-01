@@ -35,6 +35,13 @@
   ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
   pipeline test replays the DBNet boxes through this API and matches the normal
   98-record run; external Tesseract TSV parity remains open.
+  A real page comparison confirms why TSV parity cannot be asserted by zipping
+  records: native DBNet/CRNN `words` mode emits 98 records, while Tesseract
+  5.5.2 `--psm 6` emits 106 TSV words. The first geometry already differs
+  before recognition (`[46.97,0,62.56,20.88]` native versus `[50,0,58,19]`
+  TSV), and full-page Tesseract reads `Drighton;` while the instrumented
+  internal PSM7 crop reads `Brighton`; page segmentation/crop selection remains
+  the active parity gate.
 - Tesseract parity is explicitly **not proven**. The converter, Python
   reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
   recorded completed reference run for the exact installed `eng.traineddata`,

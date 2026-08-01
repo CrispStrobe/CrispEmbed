@@ -264,6 +264,15 @@ ordering, crop, recognizer, and LayoutLM normalization path. The model-backed
 pipeline test replays the DBNet boxes through this API and matches the normal
 98-record run; this validates the boundary, not external Tesseract TSV parity.
 
+The first real page comparison confirms why TSV parity cannot be asserted by
+zipping records: native DBNet/CRNN `words` mode emits 98 records, while
+Tesseract 5.5.2 `--psm 6` emits 106 TSV words. The first geometry already
+differs before recognition (`[46.97,0,62.56,20.88]` native versus
+`[50,0,58,19]` TSV), and later indices shift with segmentation. Full-page
+Tesseract TSV also reads `Drighton;` on this fixture, whereas the instrumented
+internal PSM7 crop reads `Brighton`; page segmentation and crop selection remain
+the active parity gate.
+
 The harness-blind CTC/vocabulary/confidence gate is now covered by the native
 `easyocr_postprocess` module and `test-easyocr-postprocess`. CTC uses blank 0
 with repeated-token collapse, vocabulary entries are 1-based and validated,
