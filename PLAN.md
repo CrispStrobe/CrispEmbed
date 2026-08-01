@@ -203,6 +203,44 @@ Three gaps follow, in priority order: (1) PP-OCRv6 produces no usable text at
 all; (2) both working native lanes are ~10x slower than the engines they port;
 (3) both carry roughly 2-3x the character error of their upstream.
 
+**The detector, not the recognizers, is the whole latency gap — and its resize
+rule is an upstream deviation.** Stage bench on `synth_00_clean.png` via the
+tesseract lane: `detect=4938 ms group=1.8 ms crop=0.8 ms recognize=119 ms`. So
+84% of the time is DBNet, and the recognizers are already cheap. The cause is
+`ocr_detect::detect_rgb_ex`'s `scale = target_short_side / min(w,h)` with no cap
+at 1.0: a 572x188 fixture is enlarged ~3.5x to ~2016x672, i.e. **12.6x the
+source pixels**. Upstream DBNet/PaddleOCR (`limit_type="max"`) only ever
+shrinks.
+
+`detect_options::max_upscale` (env `CRISPEMBED_OCR_DET_MAX_UPSCALE`, 0 = today's
+uncapped behaviour) makes this A/B-able without a rebuild. Same binary,
+back-to-back, 20 synthetic fixtures, `tesseract-cli` held as a load control at
+120–157 ms across all arms:
+
+| lane | uncapped | cap 1.5 | cap 1.0 |
+|---|--:|--:|--:|
+| `crispembed-tesseract` CER | 0.0814 | 0.0309 | **0.0290** |
+| `crispembed-tesseract` proc ms | 6462 | 2145 | **1369** |
+| `crispembed-easyocr` CER | 0.1412 | 0.0955 | **0.0808** |
+| `crispembed-easyocr` engine ms | 6295 | 2396 | **1565** |
+
+That is 2.8x lower character error at 4.7x the speed for the tesseract lane, and
+it lands both lanes at CER parity with their upstreams (`tesseract-cli` 0.0256,
+`easyocr-py` 0.0769). Enlarging a page the scan never resolved was costing both
+time *and* accuracy.
+
+**It is still shipped gated, default off, because one fixture regressed.** On
+`tests/regression/images/cc0/simple_table.jpg` (200x102 — a thumbnail, not a
+page) the uncapped path detects one region while `cap=1.0` detects zero: at that
+size the upscale is doing real work for detection recall. Per the A/B rule a
+one-fixture regression is evidence to gate off, not to erase, so
+`max_upscale` defaults to 0 and the win is opt-in until the rule is
+reformulated to key on estimated text height rather than image size. Note the
+cap provably cannot change behaviour when the short side is already >= 736
+(scale < 1, so the `min` never binds) — the entire risk surface is small images.
+A cap=2.0 arm was also run but is discarded: `tesseract-cli` went 157 -> 1936 ms
+on the same fixture inside it, so that run was contended, not slow.
+
 **PP-OCRv6 is not validated — its reference cannot read text either.**
 
 The accepted PP-OCRv6 parity evidence is per-stage cosine against
