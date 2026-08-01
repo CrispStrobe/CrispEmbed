@@ -14,12 +14,18 @@ import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
 INFO_RE = re.compile(
     r"INFO: regions=(?P<regions>\d+) chars=(?P<chars>\d+) "
     r"confidence=(?P<confidence>[0-9.]+) stage_ms=(?P<stage_ms>[0-9.]+)"
+)
+BENCH_RE = re.compile(
+    r"\[tesseract-stage-bench\] detect=(?P<detect>[0-9.]+) ms group=(?P<group>[0-9.]+) ms "
+    r"crop=(?P<crop>[0-9.]+) ms recognize=(?P<recognize>[0-9.]+) ms total=(?P<total>[0-9.]+) ms "
+    r"boxes=(?P<boxes>\d+) lines=(?P<lines>\d+)"
 )
 NATIVE_TEXT_RE = re.compile(r"BEGIN native Fraktur full_text\n(?P<text>.*?)\n  END native Fraktur full_text", re.S)
 
@@ -37,6 +43,7 @@ def sha256_file(path: Path) -> str:
 
 
 def official_metrics(image: Path, lang: str, psm: int) -> dict:
+    started = time.perf_counter()
     proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang, "tsv"])
     words = []
     lines = set()
@@ -64,6 +71,7 @@ def official_metrics(image: Path, lang: str, psm: int) -> dict:
         "chars": sum(len(text) for text, _ in words),
         "mean_word_confidence": (sum(conf for _, conf in words) / len(words) / 100.0) if words else 0.0,
         "stderr": proc.stderr[-500:],
+        "elapsed_ms": round((time.perf_counter() - started) * 1000.0, 3),
     }
 
 
@@ -111,6 +119,7 @@ def selected_pageseg_policy(args: argparse.Namespace) -> str:
 
 
 def native_metrics(args: argparse.Namespace, image: Path) -> dict:
+    started = time.perf_counter()
     env = os.environ.copy()
     env.update(
         {
@@ -131,6 +140,8 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         env["CRISPEMBED_TESSERACT_WORKERS"] = str(args.workers)
     if args.beam:
         env["CRISPEMBED_TESSERACT_BEAM_WIDTH"] = str(args.beam)
+    if args.benchmark:
+        env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
     if args.projection:
         env["CRISPEMBED_TESSERACT_PAGESEG_PROJECTION"] = "1"
     elif args.component:
@@ -143,6 +154,19 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         raise RuntimeError("native regression emitted no Fraktur INFO metrics")
     regions, chars, confidence, stage_ms = matches[-1]
     text_match = NATIVE_TEXT_RE.search(proc.stdout + proc.stderr)
+    bench_matches = BENCH_RE.findall(proc.stdout + proc.stderr)
+    benchmark = None
+    if bench_matches:
+        detect, group, crop, recognize, total, boxes, lines = bench_matches[-1]
+        benchmark = {
+            "detect_ms": float(detect),
+            "group_ms": float(group),
+            "crop_ms": float(crop),
+            "recognize_ms": float(recognize),
+            "total_ms": float(total),
+            "boxes": int(boxes),
+            "lines": int(lines),
+        }
     return {
         "returncode": proc.returncode,
         "regions": int(regions),
@@ -152,6 +176,8 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "pageseg_policy": selected_pageseg_policy(args),
         "text": " ".join(text_match.group("text").split()) if text_match else "",
         "stderr": proc.stderr[-500:],
+        "elapsed_ms": round((time.perf_counter() - started) * 1000.0, 3),
+        "benchmark": benchmark,
     }
 
 
@@ -176,6 +202,7 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--beam", type=int, default=0)
+    parser.add_argument("--benchmark", action="store_true", help="include native detect/group/crop/recognize timings")
     policy = parser.add_mutually_exclusive_group()
     policy.add_argument("--projection", action="store_true")
     policy.add_argument("--component", action="store_true", help="use the opt-in component prototype")

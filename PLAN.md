@@ -691,6 +691,18 @@ downstream handoff parity, not detector-box similarity alone.
       word-confidence calibration and the beam sequence-only contract; its
       model-free tests cover pass, calibration failure, fabricated beam
       character confidence, and missing-beam cases.
+      It now records recognizer SHA-256 provenance and official word-confidence
+      min/median/max alongside the mean, making calibration spread visible
+      without treating those distributions as beam-character parity.
+      Both page-metrics and line-confidence comparators now emit elapsed
+      milliseconds for each official subprocess and native subprocess/line
+      run, so quality claims can be paired with measured cost.
+      Page metrics can additionally request native detect/group/crop/recognize
+      timings with `--benchmark`; official Tesseract remains an external CLI
+      timing baseline unless built with matching internal instrumentation.
+      The comparator uses the orchestrator-level benchmark switch, keeping
+      recognizer-only timing separate from the full detector-to-recognizer
+      pipeline timing.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
@@ -721,6 +733,83 @@ legacy grouping returns no boxes; this preserves the measured legacy
 German-page behavior while avoiding an empty classical result on harder
 layouts. The fallback remains behind the classical page-segmentation gate and
 DBNet is unchanged.
+
+#### Cross-check survey — quality and cost status
+
+Every checked path must be classified by both decoded output quality and
+measured cost; a cosine or successful exit code alone is not an OCR-quality
+claim.
+
+- **Controlled Tesseract line / Python reference / native GGUF:** on par for
+  the validated exact line contract. The captured stage tensors and logits
+  pass the existing `crispembed-diff` gates (cosines at or above `0.99`, with
+  the proven controlled run at `1.000000`), and decoded output matches. The
+  remaining gap is per-step timing: the diff harness records parity but does
+  not yet emit reference and native elapsed time for every graph stage. TODO:
+  add stage timing without weakening the cosine gate.
+- **English Tesseract line-confidence path:** mixed, not full parity. Greedy
+  decoded text matches two of three checked line fixtures; the remaining
+  outputs contain `Lhey`/`Drighton` substitutions. Previously measured greedy
+  sequence-confidence deltas versus official TSV word confidence were
+  `+0.0053`, `-0.0847`, and `-0.0643`. This is worse on the affected lines,
+  and the confidence calibration TODO remains open. The comparator now emits
+  official/native elapsed milliseconds, but a controlled same-crop timing
+  table for all three fixtures is still TODO.
+- **German Fraktur line-confidence path:** worse, not on par. Official output
+  is `1`; native greedy is `GI`, and native beam-8 is `GIIEE`. Native greedy
+  word confidence is `0.8797` versus official TSV `0.5886`; beam correctly
+  exposes sequence confidence only and zero character confidences, but that
+  semantic contract is not certainty parity. TODO: obtain a transcribed,
+  same-crop Fraktur line fixture and validate beam/greedy output and timing
+  against the official engine.
+- **`scan_strip.png` full-page legacy/fallback path:** close but worse. Both
+  paths produce 12 regions; native produces 567 characters versus official
+  453, CER is `0.0179`, WER is `0.0841`, and confidence is `0.895` versus
+  `0.9108`. The new timed run measured official TSV at `342.6 ms` and native
+  DBNet→Tesseract at `1105.2 ms` (`3.2x` slower). TODO: profile detector,
+  crop/warp, and recognizer separately; the native path must close this cost
+  gap before any default-path promotion.
+- **`scan_strip.png` gated alternatives:** projection and baseline preserve
+  12/12 rows but remain worse or non-superior in decoded output; measured
+  geometry means are projection IoU `0.865993`, baseline IoU `0.813562`, and
+  component IoU `0.826222`. Aggregate CER/WER are respectively
+  `0.0250/0.1121`, `0.0179/0.0841`, and `0.0322/0.1121` for projection,
+  baseline, and component. Per-policy native stage timings are now recorded
+  below; retain all modes gated because no alternate is a quality and speed
+  improvement.
+- **German official-print page:** worse, not on par. The native default
+  classical path reports 21 regions, 1,128 characters, confidence `0.836`,
+  CER `0.307`, and WER `0.404`; official Tesseract reports 25 lines, 881
+  non-whitespace word characters, and confidence `0.866`. Projection reports
+  24 regions, 1,606 characters, and confidence `0.702`. TODO: add paired
+  reference/native cold-load and warm per-stage timings for this fixture and
+  improve segmentation/text before considering promotion.
+- **Portfolio engine sweep:** this is a separate cross-engine benchmark, not
+  Tesseract parity. The local M1 Metal sweep completed 11 engines, with 2
+  timeout/error entries and explicit missing-model/sample statuses. TODO:
+  attach the same quality/cost classification to every available engine and
+  keep specialist/VLM outputs separate from plain-text OCR.
+
+The first per-stage `scan_strip.png` benchmark now exists for all four native
+policies. Official Tesseract TSV elapsed times were approximately
+`315.9–349.9 ms`; native pipeline stage totals were legacy `310.7 ms`,
+component `266.8 ms`, baseline `282.2 ms`, and projection `360.1 ms`.
+Recognizer time dominated each native stage (`260.3–353.8 ms`), while native
+detect and crop were each about `3–4 ms`. The comparator subprocess elapsed
+times are higher than those stage totals because the model-gated test binary
+also performs setup/fixture work; they must not be presented as pure OCR
+latency. Official internal detect/recognize split timings are still unavailable
+from the stock CLI, so a per-step apples-to-apples speed claim remains TODO.
+The quality/cost table is currently: legacy best quality and close stage cost;
+baseline same measured CER/WER but not a geometry/decoded-output improvement;
+component worse CER/WER; projection slower and worse CER/WER. None is ready for
+default promotion.
+
+The current line diagnostic on the available Fraktur full-page/PSM7 input
+measured official `278.6 ms`, native greedy `244.3 ms`, and native beam `110.3
+ms`; these are not a same-crop benchmark and must not be used as a speed claim.
+TODO: repeat timing on the cleared transcribed line fixtures and report cold
+load, warm greedy, warm beam, and per-stage reference/native costs together.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
