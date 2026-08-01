@@ -601,31 +601,6 @@ static float beam_add(float a, float b, bool viterbi) {
     return viterbi ? std::max(a, b) : log_add(a, b);
 }
 
-// Return whether a collapsed code prefix can be segmented into serialized
-// recoder entries, with the final entry optionally incomplete. This is the
-// legality layer of Tesseract's RecodeBeamSearch; dictionary/DAWG scoring is
-// intentionally separate and is not represented by this helper.
-static bool recode_prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
-                                bool allow_partial) {
-    if (codes.empty()) return true;
-    const int n = (int)prefix.size();
-    std::vector<uint8_t> reachable(n + 1, 0);
-    reachable[0] = 1;
-    for (int pos = 0; pos <= n; ++pos) {
-        if (!reachable[pos]) continue;
-        for (const auto & code : codes) {
-            if (code.empty() || pos + (int)code.size() > n) {
-                if (allow_partial && pos < n && !code.empty() && pos + (int)code.size() > n) {
-                    if (std::equal(prefix.begin() + pos, prefix.end(), code.begin())) return true;
-                }
-                continue;
-            }
-            if (std::equal(code.begin(), code.end(), prefix.begin() + pos)) reachable[pos + code.size()] = 1;
-        }
-    }
-    return reachable[n] != 0;
-}
-
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
                                                int beam_width, bool viterbi,
                                                const std::vector<std::vector<int>> * recoder = nullptr,
@@ -655,14 +630,14 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
                     same.p_nonblank = beam_add(same.p_nonblank, state.p_nonblank + lp, viterbi);
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    if (recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) {
+                    if (recoder == nullptr || tesseract_recoder::prefix_legal(extended, *recoder, true)) {
                         auto & dst = find_or_add(extended);
                         dst.p_nonblank = beam_add(dst.p_nonblank, state.p_blank + lp, viterbi);
                     }
                 } else {
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    if (recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) {
+                    if (recoder == nullptr || tesseract_recoder::prefix_legal(extended, *recoder, true)) {
                         auto & dst = find_or_add(extended);
                         dst.p_nonblank = beam_add(dst.p_nonblank, total + lp, viterbi);
                     }
@@ -680,7 +655,7 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     if (beam.empty()) return {};
     if (recoder != nullptr) {
         for (const auto & state : beam) {
-            if (recode_prefix_legal(state.prefix, *recoder, false)) {
+            if (tesseract_recoder::prefix_legal(state.prefix, *recoder, false)) {
                 if (score_out) *score_out = beam_add(state.p_blank, state.p_nonblank, viterbi);
                 return state.prefix;
             }

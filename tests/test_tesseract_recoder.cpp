@@ -31,6 +31,15 @@ int main() {
         std::fprintf(stderr, "ambiguous recoder composition failed\n");
         return 1;
     }
+    const std::vector<std::vector<int>> beam_codes = { { 4, 5 }, { 6 } };
+    if (!tesseract_recoder::prefix_legal({ 4 }, beam_codes, true) ||
+        !tesseract_recoder::prefix_legal({ 4, 5 }, beam_codes, false) ||
+        !tesseract_recoder::prefix_legal({ 6 }, beam_codes, false) ||
+        tesseract_recoder::prefix_legal({ 4 }, beam_codes, false) ||
+        tesseract_recoder::prefix_legal({ 4, 7 }, beam_codes, true)) {
+        std::fprintf(stderr, "recoder beam prefix legality failed\n");
+        return 1;
+    }
     std::puts("tesseract recoder: PASS");
     return 0;
 }
