@@ -1,6 +1,7 @@
 #include "tesseract_pageseg.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 
@@ -71,6 +72,58 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
         }
     }
     if (start >= 0) emit(start, last);
+
+    // Row ink can bridge neighboring lines on degraded paper. Estimate the
+    // normal band height from the lower quartile, then split only clear
+    // multi-line outliers. This keeps isolated tall glyphs intact while
+    // recovering the regular line pitch in merged paragraph bands.
+    if (out.size() >= 3) {
+        std::vector<float> heights;
+        heights.reserve(out.size());
+        for (const auto & b : out) heights.push_back(b.h);
+        std::sort(heights.begin(), heights.end());
+        const float base_height = std::max(8.0f, heights[(heights.size() - 1) / 4]);
+        std::vector<ocr_detect::text_box> split;
+        split.reserve(out.size());
+        for (const auto & b : out) {
+            const int parts = b.h > base_height * 1.5f ? std::max(1, (int)std::lround(b.h / base_height)) : 1;
+            if (parts == 1) {
+                split.push_back(b);
+                continue;
+            }
+            const float y0 = b.y;
+            const float y1 = b.y + b.h;
+            for (int part = 0; part < parts; ++part) {
+                const float py0 = y0 + (y1 - y0) * (float)part / (float)parts;
+                const float py1 = y0 + (y1 - y0) * (float)(part + 1) / (float)parts;
+                const int sy0 = std::max(0, (int)std::lround(py0) + 2);
+                const int sy1 = std::min(height - 1, (int)std::lround(py1) - 3);
+                int sx0 = width, sx1 = -1;
+                if (sy1 >= sy0) {
+                    for (int yy = sy0; yy <= sy1; ++yy) {
+                        for (int xx = 0; xx < width; ++xx) {
+                            if (gray[yy * width + xx] < threshold) {
+                                sx0 = std::min(sx0, xx);
+                                sx1 = std::max(sx1, xx);
+                            }
+                        }
+                    }
+                }
+                ocr_detect::text_box piece = b;
+                if (sx1 >= sx0 && sy1 >= sy0) {
+                    piece.x = (float)std::max(0, sx0 - 2);
+                    piece.y = (float)std::max(0, sy0 - 2);
+                    piece.w = (float)std::min(width - (int)piece.x, sx1 - sx0 + 5);
+                    piece.h = (float)std::min(height - (int)piece.y, sy1 - sy0 + 5);
+                } else {
+                    piece.y = py0;
+                    piece.h = std::max(1.0f, py1 - py0);
+                }
+                split.push_back(piece);
+            }
+        }
+        out = std::move(split);
+    }
     return out;
 }
 
