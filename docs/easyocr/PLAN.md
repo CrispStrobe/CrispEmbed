@@ -111,7 +111,11 @@
       quantization-quality TODO, not postprocessing. Inference-only timing
       remains open. A fresh native CPU-forced page run reports detector graph
       `4178.6 ms`, postprocess `8.3 ms`, total `4186.9 ms`, and 12 line units;
-      no Python speed ratio is claimed until its inference-only path is timed.
+      Miniconda PyTorch CPU inference-only timing is now isolated at
+      `1213.450 ms` for the same 736x1472 input, so native CPU is `3.45x`
+      slower and Metal is `3.90x` slower (`4732.1 ms` graph). Both native
+      backends retain the F16 reference taps and 96 decoded regions. Graph and
+      kernel optimization is a mandatory performance TODO for both backends.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.
