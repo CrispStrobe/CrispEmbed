@@ -26,6 +26,20 @@ sys.path.insert(0, MODELS)
 _spec.loader.exec_module(t_internvl)
 
 
+def _field_contents(field):
+    if hasattr(field, "contents"):
+        return field.contents()
+    type_names = [getattr(t, "name", str(t)) for t in field.types]
+    if type_names and type_names[0] == "STRING":
+        return bytes(field.parts[field.data[0]]).decode("utf-8")
+    if type_names and type_names[0] == "ARRAY":
+        if len(type_names) > 1 and type_names[1] == "STRING":
+            return [bytes(field.parts[i]).decode("utf-8") for i in field.data]
+        return [field.parts[i][0].item() for i in field.data]
+    value = field.parts[field.data[0]][0]
+    return value.item() if hasattr(value, "item") else value
+
+
 def _mmproj(path, proj):
     w = GGUFWriter(path, "clip")
     w.add_string("clip.projector_type", proj)
@@ -41,7 +55,7 @@ def main():
         if not cond:
             fails.append(msg)
 
-    with tempfile.TemporaryDirectory() as d:
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as d:
         # 1. Routing: each projector_type -> the right family label.
         for proj, label in [("qwen2vl_merger", "Qwen2-VL"), ("idefics3", "SmolVLM"),
                             ("internvl", "InternVL")]:
@@ -78,7 +92,7 @@ def main():
                            capture_output=True, text=True)
         check(r.returncode == 0, f"full dispatch exits 0 (rc={r.returncode})")
         if r.returncode == 0:
-            md = {f.name: f.contents() for f in GGUFReader(out).fields.values()}
+            md = {f.name: _field_contents(f) for f in GGUFReader(out).fields.values()}
             check(md.get("general.architecture") == "internvl2",
                   "dispatched merge produced internvl2 GGUF")
         else:
