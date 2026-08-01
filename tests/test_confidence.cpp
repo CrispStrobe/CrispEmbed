@@ -146,6 +146,7 @@ static void test_null_safety() {
     // Tesseract LSTM
     CHECK(tesseract_lstm_confidences(nullptr, &n) == nullptr, "tess null ctx");
     CHECK(tesseract_lstm_mean_confidence(nullptr) == 0.0f, "tess null mean");
+    CHECK(tesseract_lstm_word_confidence(nullptr) == 0.0f, "tess null word confidence");
 
     // GOT-OCR
     CHECK(got_ocr_confidences(nullptr, &n) == nullptr, "got null ctx");
