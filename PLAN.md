@@ -54,8 +54,10 @@ same 736x1472 preprocessed `scan_strip.png`. Native F16 passes the final
 probability-map boundary (`max_abs=0.00154233`, RMS `0.00008044`, cosine
 `0.9999974`, global `1.0000000`) and decodes 96 regions. Q4_K decodes the same
 96 regions but fails tensor parity (`cosine=0.9311001`, global `0.9986384`),
-so its prior README parity claim is stale for this reference. Intermediate
-DBNet taps and inference-only native/Python timing remain TODOs.
+so its prior README parity claim is stale for this reference. The DBNet diff
+harness now retains every backbone, lateral, smooth, fused, head, and final
+probability-map tap; F16 passes all of them. Inference-only native/Python
+timing remains a TODO.
 
 CRAFT repeated inference benchmark: after one warm-up, 10 runs on the captured
 288x544 `scan_strip.png` input averaged `396.027 ms` for Miniconda PyTorch CPU
