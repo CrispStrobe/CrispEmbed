@@ -26,6 +26,7 @@ from pathlib import Path
 try:
     from gguf_merge_core import (
         GGUF_TYPE_ARRAY,
+        GGUF_TYPE_INT32,
         GGUF_TYPE_STRING,
         GGUF_TYPE_UINT32,
         read_gguf,
@@ -35,6 +36,7 @@ except ModuleNotFoundError:  # also support direct import from a test runner
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from gguf_merge_core import (
         GGUF_TYPE_ARRAY,
+        GGUF_TYPE_INT32,
         GGUF_TYPE_STRING,
         GGUF_TYPE_UINT32,
         read_gguf,
@@ -62,11 +64,17 @@ def metadata_value(value_type, value):
         return value
     if not value:
         return (GGUF_TYPE_UINT32, [])
-    element_type = GGUF_TYPE_STRING if isinstance(value[0], str) else GGUF_TYPE_UINT32
+    if isinstance(value[0], str):
+        element_type = GGUF_TYPE_STRING
+    else:
+        # Recoder arrays are signed i32; treating negative entries as u32
+        # corrupts otherwise byte-preserving metadata-only repairs.
+        element_type = GGUF_TYPE_INT32 if any(v < 0 for v in value) else GGUF_TYPE_UINT32
     return (element_type, value)
 
 
-def build_mixed(base_path, precision_path, output_path, patterns):
+def build_mixed(base_path, precision_path, output_path, patterns,
+                metadata_only=False):
     base = read_gguf(base_path)
     precision = read_gguf(precision_path)
     if base.metadata.get("general.architecture") != precision.metadata.get(
@@ -76,7 +84,7 @@ def build_mixed(base_path, precision_path, output_path, patterns):
     base_by_name = {tensor.name: tensor for tensor in base.tensors}
     precision_by_name = {tensor.name: tensor for tensor in precision.tensors}
     selected = selected_names(base_by_name, patterns)
-    if not selected:
+    if not selected and not metadata_only:
         raise ValueError("patterns matched no tensors")
 
     output_tensors = []
@@ -132,11 +140,14 @@ def main():
     parser.add_argument("--base", required=True)
     parser.add_argument("--precision", required=True)
     parser.add_argument("--output", required=True)
-    parser.add_argument("--pattern", action="append", required=True,
+    parser.add_argument("--pattern", action="append", default=[],
                         help="fnmatch tensor pattern; repeat for multiple patterns")
+    parser.add_argument("--metadata-only", action="store_true",
+                        help="copy missing Tesseract contract metadata without replacing tensors")
     args = parser.parse_args()
     try:
-        build_mixed(args.base, args.precision, args.output, args.pattern)
+        build_mixed(args.base, args.precision, args.output, args.pattern,
+                    metadata_only=args.metadata_only)
     except (OSError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
