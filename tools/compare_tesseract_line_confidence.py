@@ -100,6 +100,8 @@ def confidence_acceptance_checks(args: argparse.Namespace, reference: dict, gree
     checks: dict[str, bool] = {}
     if getattr(args, "require_official_words", False):
         checks["official_words_present"] = reference.get("words", 0) > 0
+    if getattr(args, "require_greedy_text_match", False):
+        checks["greedy_text_matches"] = greedy.get("text", "") == reference.get("text", "")
     if args.max_greedy_word_confidence_delta is not None:
         checks["max_greedy_word_confidence_delta"] = (
             abs(greedy["word_confidence"] - reference["mean_word_confidence"])
@@ -126,6 +128,8 @@ def main() -> int:
                         help="fail unless beam output has no fabricated per-character confidences")
     parser.add_argument("--require-official-words", action="store_true",
                         help="fail if the official TSV reference contains no recognized words")
+    parser.add_argument("--require-greedy-text-match", action="store_true",
+                        help="fail unless native greedy text exactly matches official TSV text")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
