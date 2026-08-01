@@ -2719,3 +2719,9 @@ the pattern first.
   saved result self-describing when multiple language-data installations are
   present. The live page run was attempted with the backup CLI but remained
   resource-bound; no result was recorded as parity evidence.
+
+- **Geometry subprocess timeout (2026-08-01).** The comparator now exposes
+  `--timeout` and converts subprocess timeouts into an explicit diagnostic
+  error. This prevents a resource-contended native page run from hanging
+  indefinitely while preserving the 900-second default for normal fixtures.
+  Fifteen model-free geometry tests pass.

@@ -23,8 +23,11 @@ BOX_RE = re.compile(
 )
 
 
-def run(command: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, text=True, capture_output=True, env=env, timeout=900, check=False)
+def run(command: list[str], env: dict[str, str] | None = None, timeout_seconds: float = 900) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(command, text=True, capture_output=True, env=env, timeout=timeout_seconds, check=False)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"command timed out after {timeout_seconds:.1f}s: {' '.join(command)}") from exc
 
 
 def sha256_file(path: Path) -> str:
@@ -35,14 +38,15 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None = None) -> list[tuple[float, float, float, float]]:
+def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None = None,
+                   timeout_seconds: float = 900) -> list[tuple[float, float, float, float]]:
     command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
     if tessdata_dir is not None:
         command.extend(["--tessdata-dir", str(tessdata_dir)])
     command.append("tsv")
     env = os.environ.copy()
     env.pop("TESSDATA_PREFIX", None)
-    proc = run(command, env=env)
+    proc = run(command, env=env, timeout_seconds=timeout_seconds)
     if proc.returncode != 0:
         raise RuntimeError(f"tesseract failed ({proc.returncode}): {proc.stderr[-500:]}")
     lines = []
@@ -59,7 +63,7 @@ def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None =
 
 
 def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, projection: bool,
-                 component: bool, baseline: bool) -> list[tuple[float, float, float, float]]:
+                 component: bool, baseline: bool, timeout_seconds: float = 900) -> list[tuple[float, float, float, float]]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
     for key in (
@@ -97,6 +101,7 @@ def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, proje
             "--tesseract-pageseg",
         ],
         env,
+        timeout_seconds=timeout_seconds,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"CrispEmbed failed ({proc.returncode}): {proc.stderr[-1000:]}")
@@ -227,6 +232,8 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--tessdata-dir", type=Path,
                         help="explicit Tesseract tessdata directory for the reference TSV")
+    parser.add_argument("--timeout", type=float, default=900,
+                        help="per-subprocess timeout in seconds")
     policy = parser.add_mutually_exclusive_group()
     policy.add_argument("--projection", action="store_true", help="use the experimental projection splitter")
     policy.add_argument("--component", action="store_true", help="use the experimental component prototype")
@@ -245,8 +252,9 @@ def main() -> int:
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     comparison = compare(
-        official_lines(args.image, args.lang, args.psm, args.tessdata_dir),
-        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline),
+        official_lines(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout),
+        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline,
+                     args.timeout),
     )
     checks = {}
     if args.min_native_lines is not None:
