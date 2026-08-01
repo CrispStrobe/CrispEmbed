@@ -435,6 +435,38 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         const bool sparse_feature_pass = !strcmp(name, "features") && report.cos_global >= 0.99f;
         const bool pass = report.is_pass(0.99f) || sparse_feature_pass;
         print_diff_report(name, report, pass);
+        if (!pass && std::getenv("EASYOCR_DIFF_DEBUG") && row_dim >= 0) {
+            auto ref_values = ref.get_f32(name);
+            const size_t row_size = row_dim < (int)ref.shape(name).size() ? (size_t)ref.shape(name)[row_dim] : 0;
+            if (row_size > 0) {
+                const size_t rows = std::min(ordered.size(), ref_values.second) / row_size;
+                float worst = 2.0f;
+                size_t worst_row = 0;
+                float mine_row_norm = 0.0f;
+                float ref_row_norm = 0.0f;
+                for (size_t row = 0; row < rows; ++row) {
+                    double dot = 0.0, mine_sq = 0.0, ref_sq = 0.0;
+                    for (size_t j = 0; j < row_size; ++j) {
+                        const float mine = ordered[row * row_size + j];
+                        const float truth = ref_values.first[row * row_size + j];
+                        dot += (double)mine * truth;
+                        mine_sq += (double)mine * mine;
+                        ref_sq += (double)truth * truth;
+                    }
+                    const float cos = mine_sq > 1e-18 && ref_sq > 1e-18
+                                          ? (float)(dot / (std::sqrt(mine_sq) * std::sqrt(ref_sq)))
+                                          : (mine_sq <= 1e-18 && ref_sq <= 1e-18 ? 1.0f : 0.0f);
+                    if (cos < worst) {
+                        worst = cos;
+                        worst_row = row;
+                        mine_row_norm = (float)std::sqrt(mine_sq);
+                        ref_row_norm = (float)std::sqrt(ref_sq);
+                    }
+                }
+                printf("easyocr-diff-debug %-16s worst_row=%zu cos=%.7f mine=%.6g ref=%.6g\n", name, worst_row, worst,
+                       mine_row_norm, ref_row_norm);
+            }
+        }
         if (!strcmp(name, "logits") && std::getenv("EASYOCR_DIFF_DEBUG")) {
             auto ref_logits = ref.get_f32(name);
             const int vocab = (int)t->ne[0];
