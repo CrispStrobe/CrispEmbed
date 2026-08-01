@@ -2605,6 +2605,20 @@ the pattern first.
   resolutions, but the current fixture points away from box expansion and
   toward line-image preprocessing/decoder semantics.
 
+- **Seeded page-gate rerun correction (2026-08-01).** The earlier report of
+  only 2 boxes/lines was invalid evidence: `test-ocr-orchestrator` was stale
+  after the remote pageseg changes. After rebuilding the actual target, with
+  proof `[76/76] Linking CXX executable test-ocr-orchestrator`, the canonical
+  Q8 DBNet IC15 detector plus both corrected Fraktur seeded recognizers emitted
+  the established 12 boxes/lines. The pipeline gate passed in both runs, but
+  the exact-text gate remains non-green. F32 measured CER/WER
+  `0.03922/0.13274`, 12,373 ms total, and confidence delta `0.01647`; Q8
+  measured the same CER/WER, 14,560 ms total, and confidence delta `0.01447`.
+  Native text still differs in punctuation, spacing, and several glyphs, so
+  the remaining TODO is recognizer line-image/decoder parity, not detector
+  geometry or a precision-only failure. The rejected stale-binary result must
+  not be used to diagnose detector compatibility.
+
 - **Tesseract composed-recorder (2026-08-01).** Added opt-in
   `CRISPEMBED_TESSERACT_RECODE_COMPOSE`, which segments collapsed CTC output
   classes against the serialized multi-code recoder and emits complete
