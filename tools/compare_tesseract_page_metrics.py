@@ -141,6 +141,10 @@ def selected_pageseg_policy(args: argparse.Namespace) -> str:
     return "legacy-fallback"
 
 
+def selected_detector_route(args: argparse.Namespace) -> str:
+    return "native-tesseract-pageseg" if args.native_pageseg else "dbnet"
+
+
 def native_metrics(args: argparse.Namespace, image: Path) -> dict:
     started = time.perf_counter()
     env = os.environ.copy()
@@ -153,6 +157,8 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
             "CRISPEMBED_FRAKTUR_DUMP": "1",
         }
     )
+    if not args.native_pageseg:
+        env.pop("CRISPEMBED_TESSERACT_PAGESEG", None)
     for key in (
         "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
         "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
@@ -207,6 +213,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "mean_confidence": float(confidence),
         "stage_ms": float(stage_ms),
         "pageseg_policy": selected_pageseg_policy(args),
+        "detector_route": selected_detector_route(args),
         "text": " ".join(text_match.group("text").split()) if text_match else "",
         "line_texts": native_line_texts,
         "stderr": proc.stderr[-500:],
@@ -252,6 +259,8 @@ def main() -> int:
                         help="fail unless normalized official and native page text match exactly")
     parser.add_argument("--per-line", action="store_true",
                         help="capture and compare decoded native candidate lines")
+    parser.add_argument("--native-pageseg", action="store_true",
+                        help="use native Tesseract-like row segmentation instead of DBNet boxes")
     parser.add_argument("--crop-dump-dir", type=Path,
                         help="dump native line crops and crops.tsv into a fresh directory")
     parser.add_argument("--output", type=Path)
