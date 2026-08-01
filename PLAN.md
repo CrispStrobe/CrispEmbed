@@ -55,7 +55,7 @@ Requirements:
 1. Keep the detector's four-point polygon through postprocessing, including
    Paddle's contour score, `thresh=0.2`, `box_thresh=0.45`, `unclip_ratio=1.4`,
    candidate cap, clipping, and reading-order sort. The external
-   `/Volumes/backups/ai/crispembed-gguf/dbnet-ic15-f16.gguf` remains a fallback
+   `$CRISPEMBED_GGUF_DIR/dbnet-ic15-f16.gguf` remains a fallback
    detector, not a replacement for the PP-OCRv6 detector.
 2. Add a shared quadrilateral crop helper equivalent to RapidOCR's
    `get_rotate_crop_image`: canonical TL/TR/BR/BL ordering, perspective
@@ -103,7 +103,7 @@ The directly portable German-Fraktur model is the official Tesseract `frk`
 traineddata shipped by `tesseract-lang`. Local inspection with
 `combine_tessdata -u` confirms an LSTM network, `lstm-unicharset`, and
 `lstm-recoder`; the existing converter successfully produced
-`/Volumes/backups/ai/crispembed-gguf/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
+`$CRISPEMBED_GGUF_DIR/tesseract-frk-f32.gguf` (3.6 MiB, 933,763
 parameters). This is the first Fraktur model to use in the native
 `tesseract_lstm` GGUF path. Preserve the output alphabet, including long-s
 and historical characters, and keep the sensitive output layer at F32 for
@@ -161,7 +161,7 @@ model volume or publishing a GGUF.
 Required Fraktur implementation sequence:
 
 1. Add `tesseract-frk-f32.gguf` and a sensitive-head `q8_0` derivative only on
-   `/Volumes/backups/ai/crispembed-gguf/`; never commit large weights.
+   `$CRISPEMBED_GGUF_DIR`; never commit large weights.
    Apply the same policy to every `tesseract_lstm` language variant: all
    quantized Q8/Q4 artifacts must retain `output.weight` and `output.bias` at
    the source precision (F16 or F32), while only recurrent matrices may be

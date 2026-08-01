@@ -14,15 +14,15 @@ The source repositories are the official
 F16 GGUFs, quantized GGUFs, and parity fixtures on the external model volume:
 
 ```text
-/Volumes/backups/ai/crispembed-gguf/
+$CRISPEMBED_GGUF_DIR/
 ```
 
 Convert one model with:
 
 ```bash
 python models/convert-ppocrv6-to-gguf.py \
-  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_small_rec_safetensors \
-  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_small_rec-f16.gguf
+  --model-dir "$CRISPEMBED_GGUF_DIR/source/PP-OCRv6_small_rec_safetensors" \
+  --output "$CRISPEMBED_GGUF_DIR/PP-OCRv6_small_rec-f16.gguf"
 ```
 
 The converter folds inference BatchNorm into convolution weights. PP-OCRv6's
@@ -78,19 +78,19 @@ Dump the current torch reference fixture and enable native comparisons with:
 
 ```bash
 python tools/dump_ppocrv6_reference.py \
-  --model-dir /Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_tiny_rec_safetensors \
+  --model-dir "$CRISPEMBED_GGUF_DIR/source/PP-OCRv6_tiny_rec_safetensors" \
   --image /path/to/line.png \
-  --output /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf
-PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
-  ./build/crispembed -m /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  --output "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf"
+PPOCRV6_REF="$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf" \
+  ./build/crispembed -m "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-f16.gguf" \
   --ocr /path/to/line.png
 ```
 
 The same comparison is available as a standalone regression binary:
 
 ```bash
-PPOCRV6_REF=/Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-ref.gguf \
+PPOCRV6_REF="$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-ref.gguf" \
   ./build/test-ppocrv6-rec \
-  /Volumes/backups/ai/crispembed-gguf/PP-OCRv6_tiny_rec-f16.gguf \
+  "$CRISPEMBED_GGUF_DIR/PP-OCRv6_tiny_rec-f16.gguf" \
   /path/to/line.png
 ```
