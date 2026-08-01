@@ -16,6 +16,17 @@ int main(int argc, char ** argv) {
     auto r = argc == 3 ? pplcnet_orientation::classify_file(ctx, argv[2])
                        : pplcnet_orientation::classify_raw(ctx, std::vector<uint8_t>((size_t)160 * 80 * 3, 255).data(),
                                                            160, 80, 3);
+    if (argc == 3 && std::getenv("PPLCNET_ORIENTATION_GRAPH_REPEAT")) {
+        for (int i = 1; i < 32; ++i) {
+            const auto repeated = pplcnet_orientation::classify_file(ctx, argv[2]);
+            if (repeated.angle != r.angle || repeated.confidence < 0.5f) {
+                std::fprintf(stderr, "pplcnet-orientation repeat failed at iteration %d\n", i);
+                pplcnet_orientation::free(ctx);
+                return 5;
+            }
+        }
+        std::printf("pplcnet-orientation repeat=31 PASS\n");
+    }
     std::printf("pplcnet-orientation angle=%d confidence=%.6f p0=%.6f p180=%.6f logit0=%.9g logit180=%.9g\n", r.angle,
                 r.confidence, r.probabilities[0], r.probabilities[1], r.logits[0], r.logits[1]);
     const bool valid = (r.angle == 0 || r.angle == 180) && r.confidence >= 0.5f && r.probabilities[0] >= 0.0f &&
@@ -27,6 +38,7 @@ int main(int argc, char ** argv) {
         const auto cpu_result = pplcnet_orientation::classify_file(cpu, argv[2]);
         pplcnet_orientation::free(cpu);
         setenv("PPLCNET_ORIENTATION_GRAPH", "1", 1);
+        setenv("PPLCNET_ORIENTATION_GRAPH_PIPELINE", "1", 1);
         setenv("PPLCNET_ORIENTATION_GRAPH_ACCEPT", "1", 1);
         auto * graph = pplcnet_orientation::init(argv[1], 1);
         const auto graph_result = pplcnet_orientation::classify_file(graph, argv[2]);
