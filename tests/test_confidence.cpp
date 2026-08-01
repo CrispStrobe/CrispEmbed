@@ -9,6 +9,8 @@
 // Usage:
 //   test-confidence                             (unit tests only)
 //   test-confidence --parseq <model.gguf>       (live test PARSeq)
+//   test-confidence --tesseract-image <model.gguf> <line.png>
+//                                             (direct greedy/beam line test)
 //   test-confidence --all <models_dir>          (live test all engines)
 
 #include "parseq_ocr.h"
@@ -32,6 +34,11 @@
 #include <cmath>
 #include <vector>
 #include <string>
+
+extern "C" {
+unsigned char * stbi_load(const char *, int *, int *, int *, int);
+void stbi_image_free(void *);
+}
 
 static int n_pass = 0, n_fail = 0;
 
@@ -211,6 +218,34 @@ static void test_tesseract_live(const char * model_path) {
     tesseract_lstm_free(ctx);
 }
 
+static void test_tesseract_image(const char * model_path, const char * image_path) {
+    printf("=== Tesseract image confidence test ===\n");
+    auto * ctx = tesseract_lstm_init(model_path, 2);
+    CHECK(ctx != nullptr, "tesseract image init");
+    if (!ctx) return;
+    int width = 0, height = 0, channels = 0;
+    unsigned char * pixels = stbi_load(image_path, &width, &height, &channels, 1);
+    CHECK(pixels != nullptr, "tesseract image load");
+    if (!pixels) {
+        tesseract_lstm_free(ctx);
+        return;
+    }
+    int len = 0;
+    const char * text = tesseract_lstm_recognize(ctx, pixels, width, height, &len);
+    int n_conf = 0;
+    const float * conf = tesseract_lstm_confidences(ctx, &n_conf);
+    const float sequence = tesseract_lstm_mean_confidence(ctx);
+    printf("  text: '%s' (%d chars) char_conf=%d sequence_conf=%.6f\n",
+           text ? text : "", len, n_conf, sequence);
+    CHECK(sequence >= 0.0f && sequence <= 1.0f, "tesseract sequence confidence bounded");
+    if (conf && n_conf > 0) {
+        for (int i = 0; i < n_conf; ++i)
+            CHECK(conf[i] >= 0.0f && conf[i] <= 1.0f, "tesseract image char confidence bounded");
+    }
+    stbi_image_free(pixels);
+    tesseract_lstm_free(ctx);
+}
+
 static void test_hmer_live(const char * model_path) {
     printf("=== HMER live confidence test ===\n");
     auto * ctx = hmer_ocr_init(model_path, 2);
@@ -304,6 +339,10 @@ static int crispembed_test_main(int argc, char ** argv) {
             test_parseq_live(argv[++i]);
         } else if (strcmp(argv[i], "--tesseract") == 0 && i + 1 < argc) {
             test_tesseract_live(argv[++i]);
+        } else if (strcmp(argv[i], "--tesseract-image") == 0 && i + 2 < argc) {
+            const char * model = argv[++i];
+            const char * image = argv[++i];
+            test_tesseract_image(model, image);
         } else if (strcmp(argv[i], "--hmer") == 0 && i + 1 < argc) {
             test_hmer_live(argv[++i]);
         } else if (strcmp(argv[i], "--bttr") == 0 && i + 1 < argc) {

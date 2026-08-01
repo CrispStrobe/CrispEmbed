@@ -524,6 +524,10 @@ downstream handoff parity, not detector-box similarity alone.
       aggregation and implement per-character posterior/marginal scores only
       if that comparison establishes a stable mapping. Keep beam decoding
       opt-in until recoder and DAWG scoring are also matched.
+      `test-confidence --tesseract-image MODEL LINE.png` now exercises the
+      direct recognizer contract for greedy/beam comparisons without page
+      segmentation overhead; it is diagnostic until a non-empty, transcribed
+      line fixture is wired into the acceptance gate.
 
 The gated page-segmentation experiment currently gives 21 regions, 1,128
 characters, and 0.836 mean confidence on the German official-print fixture.
