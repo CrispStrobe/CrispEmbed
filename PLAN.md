@@ -2763,3 +2763,16 @@ the pattern first.
   same-index pairs. The tool remains strict (exit 1 while counts differ), and
   its matched deltas are diagnostic only until the row matcher accounts for
   true one-to-many merges.
+
+- **One-to-many merge reporting (2026-08-01).** The geometry diagnostic now
+  reports native rows whose vertical span covers multiple official rows as
+  `merged_official_groups`, separating true row merges from simply missing
+  official rows. This is diagnostic only; no production row-splitting default
+  is changed until the merged groups are reviewed against the source pixels.
+
+- **German merge candidates (2026-08-01).** On the native CC0 German
+  manifest, the diagnostic identifies native row 0 covering official rows
+  `1..4`, native row 9 covering `12..13`, and native row 22 covering `26..27`.
+  Official row 0 remains unmatched. These are the first concrete source-pixel
+  targets for a future row-splitting adapter; no production default changes
+  are justified from geometry alone.
