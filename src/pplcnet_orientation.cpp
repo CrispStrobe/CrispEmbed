@@ -310,8 +310,8 @@ static bool build_graph(context * c) {
     // [in,out] matmul view; reshape the metadata without transposing values.
     c->graph_logits = ggml_add(g, ggml_mul_mat(g, ggml_reshape_2d(g, c->fc_w, 1280, 2), x), c->fc_b);
     if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
-        fprintf(stderr, "pplcnet graph fc ne=%lld,%lld type=%d\n", (long long)c->fc_w->ne[0],
-                (long long)c->fc_w->ne[1], (int)c->fc_w->type);
+        fprintf(stderr, "pplcnet graph fc ne=%lld,%lld type=%d\n", (long long)c->fc_w->ne[0], (long long)c->fc_w->ne[1],
+                (int)c->fc_w->type);
     ggml_set_name(c->graph_logits, "pplcnet_logits");
     ggml_set_output(c->graph_logits);
     c->graph = ggml_new_graph_custom(g, 4096, false);
@@ -409,7 +409,8 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         // Reallocate the static graph per crop until backend reuse is proven.
         ggml_backend_sched_reset(c->graph_sched);
         if (!ggml_backend_sched_alloc_graph(c->graph_sched, c->graph)) return r;
-        if (!c->graph_sched || ggml_backend_sched_graph_compute(c->graph_sched, c->graph) != GGML_STATUS_SUCCESS) return r;
+        if (!c->graph_sched || ggml_backend_sched_graph_compute(c->graph_sched, c->graph) != GGML_STATUS_SUCCESS)
+            return r;
         if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
             float tap[4] = {};
             float conv_tap[4] = {};

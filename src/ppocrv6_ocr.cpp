@@ -572,7 +572,8 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     const ggml_type graph_type = dw && !ggml_backend_is_cpu(c->graph.backend) ? GGML_TYPE_F16 : GGML_TYPE_F32;
     ggml_tensor * w = pp_graph_resident_conv(c, p, graph_type);
     if (!w) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+            fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
     }
     // The generic depthwise im2col path returns channel-interleaved output
@@ -583,7 +584,7 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     ggml_tensor * y = dw ? (ggml_backend_is_cpu(c->graph.backend)
                                 ? ggml_conv_2d_dw_direct(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
                                 : ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1))
-                       : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
+                         : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
     if (p.b) {
         ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
         if (!b) return nullptr;
@@ -638,8 +639,8 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
     ggml_tensor * w = pp_graph_resident(c, wt, GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
     if (!w) return nullptr;
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
-        fprintf(stderr, "ppocrv6 graph linear wt=%lldx%lld x=%lldx%lld\n", (long long)wt->ne[0],
-                (long long)wt->ne[1], (long long)x->ne[0], (long long)x->ne[1]);
+        fprintf(stderr, "ppocrv6 graph linear wt=%lldx%lld x=%lldx%lld\n", (long long)wt->ne[0], (long long)wt->ne[1],
+                (long long)x->ne[0], (long long)x->ne[1]);
     ggml_tensor * y = ggml_mul_mat(g, w, x);
     if (bias) {
         ggml_tensor * b = pp_graph_resident(c, bias, GGML_TYPE_F32, bias->ne[0], 1, 1, 1);
@@ -963,13 +964,11 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     if (graph_done && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         const int tokens = h;
         const int classes = w;
-        fprintf(stderr, "[ppocrv6-graph-decode] tokens=%d classes=%d vocab=%zu\n", tokens, classes,
-                c->vocab.size());
+        fprintf(stderr, "[ppocrv6-graph-decode] tokens=%d classes=%d vocab=%zu\n", tokens, classes, c->vocab.size());
         for (int t = 0; t < std::min(tokens, 4); ++t) {
             const float * row = graph_out.data() + (size_t)t * classes;
             const int best = int(std::max_element(row, row + classes) - row);
-            fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best],
-                    row[0]);
+            fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best], row[0]);
         }
     }
     if (graph_done && c->graph.logits_output && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
@@ -997,7 +996,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             x.swap(graph_out);
             if (c->diff) {
                 auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
-                fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min, r.is_pass() ? "PASS" : "FAIL");
+                fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min,
+                        r.is_pass() ? "PASS" : "FAIL");
             }
         }
     } else if (c->large_stem) {
@@ -1120,8 +1120,9 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     h = pooled_h;
     w = pooled_w;
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
-        fprintf(stderr, "[ppocrv6-cpu-tap] pool shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w, x.size() > 0 ? x[0] : 0.0f,
-                x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f, x.size() > 3 ? x[3] : 0.0f);
+        fprintf(stderr, "[ppocrv6-cpu-tap] pool shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
+                x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
+                x.size() > 3 ? x[3] : 0.0f);
     std::vector<float> padded((size_t)c->head_dw.in_ch * h * (w + 4), 0.0f);
     for (int cc = 0; cc < c->head_dw.in_ch; ++cc)
         for (int yy = 0; yy < h; ++yy)
@@ -1196,8 +1197,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             cn += double(all_logits[i]) * all_logits[i];
             max_abs = std::max(max_abs, std::fabs(graph_out[i] - all_logits[i]));
         }
-        fprintf(stderr, "[ppocrv6-graph-decode] cpu_cos=%.7f max_abs=%.7g\n",
-                float(dot / (std::sqrt(gn * cn) + 1e-30)), max_abs);
+        fprintf(stderr, "[ppocrv6-graph-decode] cpu_cos=%.7f max_abs=%.7g\n", float(dot / (std::sqrt(gn * cn) + 1e-30)),
+                max_abs);
     }
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.logits", all_logits.data(), all_logits.size(), 1);
@@ -1232,14 +1233,12 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
     }
     core_gguf::free_metadata(meta);
     if (!core_gguf::load_weights(path, c->backend, "ppocrv6", c->wl)) {
-        fprintf(stderr, "ppocrv6: failed to load recognizer weights: %s (variant=%s)\n", path,
-                c->variant.c_str());
+        fprintf(stderr, "ppocrv6: failed to load recognizer weights: %s (variant=%s)\n", path, c->variant.c_str());
         ppocrv6_ocr_free(c);
         return nullptr;
     }
     if (!map_model(c)) {
-        fprintf(stderr, "ppocrv6: recognizer tensor map is incompatible: %s (variant=%s)\n", path,
-                c->variant.c_str());
+        fprintf(stderr, "ppocrv6: recognizer tensor map is incompatible: %s (variant=%s)\n", path, c->variant.c_str());
         ppocrv6_ocr_free(c);
         return nullptr;
     }

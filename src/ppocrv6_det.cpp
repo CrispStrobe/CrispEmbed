@@ -474,10 +474,10 @@ static bool graph_build(context * c, int h, int w) {
     // channels have equal shapes, so a mistaken order can look numerically
     // plausible until the detector head produces unrelated logits.
     ggml_tensor * neck = ggml_upscale(c->graph.graph_ctx, proc[3], 8, GGML_SCALE_MODE_NEAREST);
-    neck = ggml_concat(c->graph.graph_ctx, neck,
-                       ggml_upscale(c->graph.graph_ctx, proc[2], 4, GGML_SCALE_MODE_NEAREST), 2);
-    neck = ggml_concat(c->graph.graph_ctx, neck,
-                       ggml_upscale(c->graph.graph_ctx, proc[1], 2, GGML_SCALE_MODE_NEAREST), 2);
+    neck =
+        ggml_concat(c->graph.graph_ctx, neck, ggml_upscale(c->graph.graph_ctx, proc[2], 4, GGML_SCALE_MODE_NEAREST), 2);
+    neck =
+        ggml_concat(c->graph.graph_ctx, neck, ggml_upscale(c->graph.graph_ctx, proc[1], 2, GGML_SCALE_MODE_NEAREST), 2);
     neck = ggml_concat(c->graph.graph_ctx, neck, proc[0], 2);
     c->graph.named_taps.push_back({ "neck_output", neck });
     x = graph_conv(c, c->graph.graph_ctx, neck, c->head_down);
@@ -872,12 +872,11 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         }
         if (!out.empty() && std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT")) {
             if (bench) {
-                const auto ms = [](auto a, auto b) {
-                    return std::chrono::duration<double, std::milli>(b - a).count();
-                };
-                fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=1\n",
-                        ms(started, preprocessed), ms(preprocessed, graph_finished), ms(started, std::chrono::steady_clock::now()),
-                        out.size());
+                const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+                fprintf(stderr,
+                        "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=1\n",
+                        ms(started, preprocessed), ms(preprocessed, graph_finished),
+                        ms(started, std::chrono::steady_clock::now()), out.size());
             }
             return out;
         }
@@ -949,12 +948,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             }
         }
         if (bench) {
-            const auto ms = [](auto a, auto b) {
-                return std::chrono::duration<double, std::milli>(b - a).count();
-            };
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
             fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
-                    ms(started, preprocessed), ms(preprocessed, graph_finished), ms(started, std::chrono::steady_clock::now()),
-                    out.size());
+                    ms(started, preprocessed), ms(preprocessed, graph_finished),
+                    ms(started, std::chrono::steady_clock::now()), out.size());
         }
         return out;
     }
@@ -972,7 +969,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         if (!apply_conv(c->features[i].insert_se2, g, 1, 1, p, gh, gw)) return {};
         for (int k = 0; k < c->neck; k++)
             for (int j = 0; j < fh[i] * fw[i]; j++)
-        fused[i][(size_t)k * fh[i] * fw[i] + j] +=
+                fused[i][(size_t)k * fh[i] * fw[i] + j] +=
                     fused[i][(size_t)k * fh[i] * fw[i] + j] * std::clamp(0.2f * p[k] + 0.5f, 0.f, 1.f);
         c->last_stages["fused" + std::to_string(i)] = fused[i];
     }
@@ -1069,7 +1066,8 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         for (int si = 0; si < 4; ++si) {
             const auto git = c->last_stages.find("graph_stage" + std::to_string(si));
             const auto cit = c->last_stages.find("backbone_stage" + std::to_string(si));
-            if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size()) continue;
+            if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size())
+                continue;
             double sd = 0.0, sg = 0.0, sc = 0.0;
             for (size_t i = 0; i < git->second.size(); ++i) {
                 sd += double(git->second[i]) * cit->second[i];
@@ -1083,7 +1081,8 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                                    "neck_output", "head_down", "head_up", "head_final_pre" }) {
             const auto git = c->last_stages.find(std::string("graph_") + name);
             const auto cit = c->last_stages.find(name);
-            if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size()) continue;
+            if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size())
+                continue;
             double sd = 0.0, sg = 0.0, sc = 0.0;
             for (size_t i = 0; i < git->second.size(); ++i) {
                 sd += double(git->second[i]) * cit->second[i];
@@ -1095,11 +1094,10 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         }
     }
     if (bench) {
-        const auto ms = [](auto a, auto b) {
-            return std::chrono::duration<double, std::milli>(b - a).count();
-        };
+        const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
         fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
-                ms(started, preprocessed), ms(preprocessed, graph_finished), ms(started, std::chrono::steady_clock::now()), out.size());
+                ms(started, preprocessed), ms(preprocessed, graph_finished),
+                ms(started, std::chrono::steady_clock::now()), out.size());
     }
     return out;
 }
