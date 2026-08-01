@@ -37,7 +37,7 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "python"))
 
-from crispembed import CrispFacePipeline
+from crispembed import CrispFacePipeline, accept_biometric_use
 
 BIOMETRIC_NOTICE = """\
 Face recognition produces a biometric template — special-category personal data
@@ -75,6 +75,10 @@ def main():
     if not (args.accept_biometric or env_ack):
         print(BIOMETRIC_NOTICE, file=sys.stderr)
         return 1
+
+    # Pass the acknowledgement down to the library, which gates recognition
+    # models in crispembed_face_init() regardless of how it was entered.
+    accept_biometric_use(lib_path=args.lib)
 
     # Resolve models — if they look like registry names, auto-download
     det_path = args.det
