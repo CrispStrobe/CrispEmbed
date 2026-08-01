@@ -2503,5 +2503,11 @@ the pattern first.
   recomputed scales and rounded every weight inside every gate dot product.
   Benchmark and decoded-output parity must pass before promotion.
 
+- **Tesseract composed-recoder output — IN PROGRESS.** The Chinese seeded F32
+  reference passes all tensor stages but exposed native dropping of unmapped
+  multi-code recoder classes (`native=''`, Python=`<141>`). The native
+  diagnostic fallback now preserves `<class>`; full recode-beam composition
+  and dictionary scoring remain a production-quality TODO.
+
   The cache now has an explicit `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE`
   fallback for controlled parity comparisons; cached mode remains the default.

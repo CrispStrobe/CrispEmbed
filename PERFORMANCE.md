@@ -1157,3 +1157,10 @@ source metadata. All 42 carry a nonzero seed. No speed or OCR-quality claim is
 made yet for quantized companions; per-language `crispembed-diff` and decoded
 output checks remain TODO. One old Fraktur mixed candidate is truncated and
 was excluded.
+
+Chinese seeded F32 is the first decoded-output exception: all 9 stages pass
+with aligned magnitudes, but the old native decoder returned an empty string
+while the Python reference returned `<141>`. This is a harness-blind recoder
+mapping defect, not a graph discrepancy. The native fallback now exposes the
+unmapped class; no Chinese OCR-quality or quantized-speed claim is accepted
+until recode-beam composition is implemented and tested.
