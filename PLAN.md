@@ -473,6 +473,9 @@ downstream handoff parity, not detector-box similarity alone.
       measured CER/WER are `0.0179/0.0841`, `0.0322/0.1121`,
       `0.0179/0.0841`, and `0.0250/0.1121` respectively; legacy-fallback
       remains the best default.
+      Each aggregate JSON record now includes detector and recognizer
+      SHA-256 hashes plus the ordering-comparison policy, without writing
+      local model paths into reports.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
