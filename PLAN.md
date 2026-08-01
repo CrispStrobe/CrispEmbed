@@ -832,6 +832,9 @@ it preserves CER/WER exactly. A paired run measured `279.1 ms` scratch versus
 the prior `~300 ms` four-worker measurement; this is not a reliable gain. It
 is retained behind `CRISPEMBED_TESSERACT_REUSE_SCRATCH` and is disabled by
 default until a repeated controlled benchmark demonstrates improvement.
+`tools/benchmark_tesseract_page.py` now automates repeated policy/worker runs
+and summarizes median/p90 official CLI, native subprocess, native stage, and
+recognizer timings alongside CER/WER/confidence deltas.
 
 Beam width 8 is not a performance candidate on this workload: the live
 full-page run reached several seconds to tens of seconds per line, versus the
