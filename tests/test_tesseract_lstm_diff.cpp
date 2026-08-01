@@ -72,6 +72,19 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     printf("\nImage: %dx%d\n", w, h);
 
+    // A reference archive is tied to the exact source image. Older archives
+    // may not carry these fields, but new dumps must fail early when paired
+    // with a different fixture instead of producing misleading cosine data.
+    const std::string ref_w = ref.meta("tesseract_lstm_ref.image_width");
+    const std::string ref_h = ref.meta("tesseract_lstm_ref.image_height");
+    if (!ref_w.empty() && !ref_h.empty() && (atoi(ref_w.c_str()) != w || atoi(ref_h.c_str()) != h)) {
+        fprintf(stderr, "reference image dimensions %sx%s do not match input %dx%d\n", ref_w.c_str(), ref_h.c_str(), w,
+                h);
+        stbi_image_free(img);
+        tesseract_lstm_free(ctx);
+        return 2;
+    }
+
     // Run C++ forward pass
     int out_len = 0;
     const char * text = tesseract_lstm_recognize(ctx, img, w, h, &out_len);
