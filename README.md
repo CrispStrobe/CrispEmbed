@@ -510,7 +510,10 @@ and the limits of OCR accuracy. Read it before building on the face pipeline or
 the super-resolution engines.
 
 CrispEmbed ships no emotion-recognition, biometric-categorisation, age, gender,
-or ethnicity model, and no scraping tooling — absent by design.
+or ethnicity model, and no scraping tooling — absent by design. That constrains
+what ships, not what the code can be aimed at: CLIP and SigLIP score an image
+against whatever labels you pass, so the caller supplies the classifier. See
+[POLICY.md §3](POLICY.md).
 
 ---
 
