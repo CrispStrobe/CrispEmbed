@@ -10,6 +10,7 @@
 // Weights are dequantized to F32 on load and cached.
 
 #include "tesseract_lstm.h"
+#include "tesseract_recoder.h"
 
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
@@ -690,45 +691,6 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     return beam.front().prefix;
 }
 
-// Compose a collapsed output-class sequence back into unichar IDs. The
-// recoder stores one or more output classes per unichar; single-class reverse
-// lookup is insufficient for composed characters (notably Chinese). Keep this
-// opt-in until a broad decoded-output fixture set validates the policy.
-static bool recode_classes_to_unichars(const std::vector<int> & labels,
-                                       const std::vector<std::vector<int>> & codes,
-                                       std::vector<int> & unichars,
-                                       std::vector<int> & starts) {
-    const int n = (int)labels.size();
-    if (codes.empty()) return false;
-    std::vector<int> previous(n + 1, -1), previous_uid(n + 1, -1);
-    previous[0] = 0;
-    for (int pos = 0; pos < n; ++pos) {
-        if (previous[pos] < 0) continue;
-        for (int uid = 0; uid < (int)codes.size(); ++uid) {
-            const auto & code = codes[uid];
-            if (code.empty() || pos + (int)code.size() > n) continue;
-            if (!std::equal(code.begin(), code.end(), labels.begin() + pos)) continue;
-            const int end = pos + (int)code.size();
-            if (previous[end] < 0) {
-                previous[end] = pos;
-                previous_uid[end] = uid;
-            }
-        }
-    }
-    if (previous[n] < 0) return false;
-    for (int end = n; end > 0;) {
-        const int uid = previous_uid[end];
-        const int begin = previous[end];
-        if (uid < 0 || begin < 0) return false;
-        unichars.push_back(uid);
-        starts.push_back(begin);
-        end = begin;
-    }
-    std::reverse(unichars.begin(), unichars.end());
-    std::reverse(starts.begin(), starts.end());
-    return true;
-}
-
 static void forward(tesseract_lstm_context * ctx,
                     const float * image, // (H, W) normalized
                     int H, int W) {
@@ -959,8 +921,8 @@ static void forward(tesseract_lstm_context * ctx,
                                  std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
     std::vector<int> composed_uids, composed_starts;
     const bool composed = compose_recoder &&
-                          recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes, composed_uids,
-                                                     composed_starts);
+                          tesseract_recoder::compose_classes(collapsed_labels, ctx->recoder_codes, composed_uids,
+                                                             composed_starts);
     if (composed) {
         for (size_t i = 0; i < composed_uids.size(); ++i) {
             const int uid = composed_uids[i];
