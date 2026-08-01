@@ -1376,4 +1376,6 @@ cannot reopen local PNG/PGM/TIFF files in this environment, so direct CLI
 single-crop confirmation is blocked; the page-level mismatch is nevertheless
 localized to official page segmentation/line normalization rather than GGUF
 recognition math. Use the comparator's new `--crop-dump-dir` option for fresh
-crop manifests.
+crop manifests. `tools/compare_tesseract_crop_diff.py` now automates the
+per-crop Python-reference regeneration and native `test-tesseract-lstm-diff`
+run while refusing to overwrite an existing reference.
