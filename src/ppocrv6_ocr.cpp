@@ -496,13 +496,21 @@ static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tenso
 }
 
 static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, const pp_conv & p) {
-    if (!p.w || p.stride_h != p.stride_w || p.pad_h != p.pad_w) return nullptr;
+    if (!p.w || p.stride_h != p.stride_w) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+            fprintf(stderr, "ppocrv6 graph unsupported conv weights=%d stride=%d/%d\n", p.w ? 1 : 0, p.stride_h,
+                    p.stride_w);
+        return nullptr;
+    }
     const bool dw = p.groups == p.in_ch;
     const int icg = dw ? 1 : p.in_ch / p.groups;
     // Depthwise im2col requires F16; regular convolutions stay F32 to preserve
     // the scalar reference's accumulation precision.
     ggml_tensor * w = pp_graph_resident(c, p.w, dw ? GGML_TYPE_F16 : GGML_TYPE_F32, p.kw, p.kh, icg, p.out_ch);
-    if (!w) return nullptr;
+    if (!w) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
+        return nullptr;
+    }
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1)
                          : ggml_conv_2d(g, w, x, p.stride_h, p.stride_w, p.pad_h, p.pad_w, 1, 1);
     if (p.b) {
@@ -552,7 +560,10 @@ static ggml_tensor * pp_graph_bn(ppocrv6_ocr_context * c, ggml_context * g, ggml
 
 static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, ggml_tensor * wt,
                                      ggml_tensor * bias) {
-    if (!wt || ggml_n_dims(wt) < 2) return nullptr;
+    if (!wt || ggml_n_dims(wt) < 2) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph missing linear weights\n");
+        return nullptr;
+    }
     ggml_tensor * w = pp_graph_resident(c, wt, GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
     if (!w) return nullptr;
     ggml_tensor * y = ggml_mul_mat(g, w, x);
@@ -580,13 +591,19 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         ggml_backend_t backends[] = { c->graph.backend, c->graph.cpu_backend };
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
     }
-    if (!c->graph.sched) return false;
+    if (!c->graph.sched) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph scheduler creation failed\n");
+        return false;
+    }
     constexpr int H = 48, W = 320;
     const size_t meta_size = ggml_tensor_overhead() * 4096 + ggml_graph_overhead_custom(4096, false);
     c->graph.graph_meta.resize(meta_size);
     ggml_init_params ip = { meta_size, c->graph.graph_meta.data(), true };
     c->graph.graph_ctx = ggml_init(ip);
-    if (!c->graph.graph_ctx) return false;
+    if (!c->graph.graph_ctx) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph context creation failed\n");
+        return false;
+    }
     c->graph.graph = ggml_new_graph_custom(c->graph.graph_ctx, 4096, false);
     c->graph.input = ggml_new_tensor_4d(c->graph.graph_ctx, GGML_TYPE_F32, W, H, 3, 1);
     ggml_set_name(c->graph.input, "ppocrv6_graph_input");
@@ -594,13 +611,19 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     ggml_tensor * x = c->graph.input;
     for (const pp_conv & p : c->stem) {
         x = pp_graph_conv(c, c->graph.graph_ctx, x, p);
-        if (!x) return false;
+        if (!x) {
+            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
+            return false;
+        }
         x = ggml_gelu(c->graph.graph_ctx, x);
     }
     for (const auto & stage : c->stages) {
         for (const pp_block & b : stage) {
             x = pp_graph_block(c, c->graph.graph_ctx, x, b);
-            if (!x) return false;
+            if (!x) {
+                if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph block failed\n");
+                return false;
+            }
         }
     }
     // Complete the tiny/small recognizer graph through logits.  The large
@@ -615,7 +638,10 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         // explicit graph padding.
         graph_head_dw.pad_w = 2;
         x = pp_graph_conv(c, c->graph.graph_ctx, x, graph_head_dw);
-        if (!x) return false;
+        if (!x) {
+            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph head failed\n");
+            return false;
+        }
         x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm1_w, c->norm1_b, c->norm1_mean, c->norm1_var,
                         c->head_dw.out_ch);
         x = ggml_hardswish(c->graph.graph_ctx, x);
@@ -625,7 +651,10 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
                         c->head_pw.out_ch);
         x = ggml_hardswish(c->graph.graph_ctx, x);
         x = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, x, 2, 0, 1, 3));
-        x = ggml_reshape_2d(c->graph.graph_ctx, x, c->head_pw.out_ch, x->ne[1]);
+        // The asymmetric 1x5 head changes the spatial width; derive the token
+        // count from the actual element count instead of the pre-padding view.
+        const int64_t tokens = ggml_nelements(x) / c->head_pw.out_ch;
+        x = ggml_reshape_2d(c->graph.graph_ctx, x, c->head_pw.out_ch, tokens);
         x = pp_graph_linear(c, c->graph.graph_ctx, x, c->fc1_w, c->fc1_b);
         if (!x) return false;
         x = pp_graph_linear(c, c->graph.graph_ctx, ggml_gelu(c->graph.graph_ctx, x), c->fc2_w, c->fc2_b);
@@ -637,7 +666,10 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     ggml_set_output(x);
     ggml_build_forward_expand(c->graph.graph, x);
     ggml_backend_sched_reset(c->graph.sched);
-    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph allocation failed\n");
+        return false;
+    }
     c->graph.ready = true;
     fprintf(stderr, "ppocrv6: persistent GGML graph ready (%s, %s, %lldx%lldx%lld)\n",
             ggml_backend_name(c->graph.backend), c->graph.logits_output ? "logits" : "backbone", (long long)x->ne[0],
@@ -647,8 +679,18 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
 
 static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & input, std::vector<float> & output,
                          int & h, int & w) {
-    if (!pp_graph_build(c)) return false;
+    if (!pp_graph_build(c)) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH"))
+            fprintf(stderr, "[ppocrv6-graph-bench] graph unavailable large_stem=%d backend=%s\n", c->large_stem ? 1 : 0,
+                    c->backend ? ggml_backend_name(c->backend) : "none");
+        return false;
+    }
     ggml_backend_tensor_set(c->graph.input, input.data(), 0, input.size() * sizeof(float));
+    // Reuse of mixed Metal/CPU scheduler allocations is unstable on the
+    // current pre-tensor Apple backend across repeated line crops. Rebuild
+    // the static allocation per crop until backend reuse is validated.
+    ggml_backend_sched_reset(c->graph.sched);
+    if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
     const auto started = std::chrono::steady_clock::now();
     if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
     const auto finished = std::chrono::steady_clock::now();
@@ -799,7 +841,13 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     std::vector<float> x = input, y;
     int h = 48, w = 320;
     std::vector<float> graph_out;
-    const bool graph_done = pp_graph_run(c, input, graph_out, h, w);
+    bool graph_done = pp_graph_run(c, input, graph_out, h, w);
+    if (graph_done && c->graph.logits_output && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+        fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
+        graph_done = false;
+        h = 48;
+        w = 320;
+    }
     if (graph_done) {
         if (c->graph.logits_output) {
             const int tokens = h;
@@ -815,10 +863,12 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             if (out_len) *out_len = (int)c->result.size();
             return c->result.c_str();
         }
-        x.swap(graph_out);
-        if (c->diff) {
-            auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
-            fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min, r.is_pass() ? "PASS" : "FAIL");
+        if (graph_done) {
+            x.swap(graph_out);
+            if (c->diff) {
+                auto r = c->diff->compare("ppocrv6.graph_backbone", x.data(), x.size(), -1);
+                fprintf(stderr, "[ppocrv6-diff] graph_backbone cos=%.6f %s\n", r.cos_min, r.is_pass() ? "PASS" : "FAIL");
+            }
         }
     } else if (c->large_stem) {
         int oh, ow;

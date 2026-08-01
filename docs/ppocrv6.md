@@ -101,7 +101,10 @@ yet, while orientation is a separate graph optimization target.
 
 Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` to print per-line recognizer graph
 latency and the selected backend. On the Metal build this is a graph execution
-measurement, not a claim that the detector graph is production-accepted.
+measurement, not a production quality claim. The tiny recognizer graph now
+executes at roughly 19--24 ms/crop on MTL0, but its decoded output is not yet
+CPU-parity; it is diagnostic-only unless `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT=1`
+is set, and the CPU recognizer remains the fallback result.
 
 Non-CPU detector graphs use F16 resident convolution weights by default for
 backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a
