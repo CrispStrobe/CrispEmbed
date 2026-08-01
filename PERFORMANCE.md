@@ -1074,6 +1074,9 @@ the mixed `lstm.0.weight_hh` F32 candidate also reaches 6/9 but falls to
 `0.982110`. Both decoded texts differ from the Python reference, so the mixed
 candidate is not an improvement and remains gated. The fresh reference is
 stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`.
+The Python blueprint now explicitly uses the same row-wise int8 FC contract;
+the rerun is numerically unchanged, leaving randomized `after_convolve`
+(`cosine=0.990050`) as the earliest remaining mismatch on this Fraktur lane.
 
 Quantization policy improvement: `models/quantize.py` now supports repeatable
 `--keep-pattern` rules, allowing callers to retain critical recurrent or

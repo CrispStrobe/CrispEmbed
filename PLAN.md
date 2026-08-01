@@ -106,6 +106,9 @@ the installed `frk.traineddata` and stored in the external GGUF backup. Input
 parity is exact; Q8 reaches 6/9 stage passes with logits cosine `0.983119`,
 while mixed `lstm.0.weight_hh` F32 reaches 6/9 with `0.982110`. Both decoded
 outputs differ from Python, so mixed precision is not promoted.
+The Python blueprint now explicitly models the native row-wise int8 FC
+arithmetic; the rerun is unchanged, leaving randomized `after_convolve`
+(cosine `0.990050`) as the earliest remaining Tesseract parity TODO.
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |

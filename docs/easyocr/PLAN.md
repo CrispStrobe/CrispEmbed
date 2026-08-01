@@ -438,6 +438,10 @@ recognizer and LayoutLM consumer.
       stage passes and logits cosine `0.983119`, while mixed
       `lstm.0.weight_hh` F32 reaches 6/9 and `0.982110`. Both decoded outputs
       differ from Python, so mixed precision is not promoted.
+- [x] Align the Python ConvNL blueprint with native row-wise int8 FC
+      arithmetic and rerun the fresh reference. Results are unchanged; the
+      earliest remaining Fraktur mismatch is randomized `after_convolve` at
+      cosine `0.990050`, so no FC parity fix is claimed.
 - [x] Obtain an official Tesseract internal activation/raw-row comparison;
       the remaining discrepancy was traced to seeded Convolve padding and is
       now resolved below.
