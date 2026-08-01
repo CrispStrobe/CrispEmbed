@@ -159,6 +159,9 @@ def main() -> int:
     policy.add_argument("--projection", action="store_true")
     policy.add_argument("--component", action="store_true", help="use the opt-in component prototype")
     policy.add_argument("--baseline", action="store_true", help="use the opt-in baseline-row matcher")
+    parser.add_argument("--min-native-regions", type=int, help="fail if native region count is below this value")
+    parser.add_argument("--max-cer", type=float, help="fail if character error rate exceeds this value")
+    parser.add_argument("--max-wer", type=float, help="fail if word error rate exceeds this value")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
 
@@ -169,6 +172,20 @@ def main() -> int:
     char_denominator = max(1, len(reference_text))
     word_reference = reference_text.split()
     word_native = native_text.split()
+    comparison = {
+        "region_delta_vs_official_lines": native["regions"] - official["lines"],
+        "char_delta": native["chars"] - official["chars"],
+        "confidence_delta": native["mean_confidence"] - official["mean_word_confidence"],
+        "cer": edit_distance(reference_text, native_text) / char_denominator,
+        "wer": token_distance(word_reference, word_native) / max(1, len(word_reference)),
+    }
+    checks = {}
+    if args.min_native_regions is not None:
+        checks["min_native_regions"] = native["regions"] >= args.min_native_regions
+    if args.max_cer is not None:
+        checks["max_cer"] = comparison["cer"] <= args.max_cer
+    if args.max_wer is not None:
+        checks["max_wer"] = comparison["wer"] <= args.max_wer
     result = {
         "fixture": str(args.image),
         "provenance": {
@@ -178,19 +195,14 @@ def main() -> int:
         },
         "official_tesseract": official,
         "native_crispembed": native,
-        "comparison": {
-            "region_delta_vs_official_lines": native["regions"] - official["lines"],
-            "char_delta": native["chars"] - official["chars"],
-            "confidence_delta": native["mean_confidence"] - official["mean_word_confidence"],
-            "cer": edit_distance(reference_text, native_text) / char_denominator,
-            "wer": token_distance(word_reference, word_native) / max(1, len(word_reference)),
-        },
+        "comparison": comparison,
+        "acceptance": {"passed": all(checks.values()) if checks else None, "checks": checks},
     }
     serialized = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
     if args.output:
         args.output.write_text(serialized)
     print(serialized, end="")
-    return 0 if official["returncode"] == 0 and native["returncode"] == 0 else 1
+    return 0 if official["returncode"] == 0 and native["returncode"] == 0 and all(checks.values()) else 1
 
 
 if __name__ == "__main__":
