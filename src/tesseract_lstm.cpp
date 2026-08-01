@@ -694,10 +694,8 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
 // recoder stores one or more output classes per unichar; single-class reverse
 // lookup is insufficient for composed characters (notably Chinese). Keep this
 // opt-in until a broad decoded-output fixture set validates the policy.
-static bool recode_classes_to_unichars(const std::vector<int> & labels,
-                                       const std::vector<std::vector<int>> & codes,
-                                       std::vector<int> & unichars,
-                                       std::vector<int> & starts) {
+static bool recode_classes_to_unichars(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
+                                       std::vector<int> & unichars, std::vector<int> & starts) {
     const int n = (int)labels.size();
     if (codes.empty()) return false;
     std::vector<int> previous(n + 1, -1), previous_uid(n + 1, -1);
@@ -955,12 +953,11 @@ static void forward(tesseract_lstm_context * ctx,
         }
     }
 
-    const bool compose_recoder = !ctx->recoder_codes.empty() &&
-                                 std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
+    const bool compose_recoder =
+        !ctx->recoder_codes.empty() && std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
     std::vector<int> composed_uids, composed_starts;
-    const bool composed = compose_recoder &&
-                          recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes, composed_uids,
-                                                     composed_starts);
+    const bool composed = compose_recoder && recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes,
+                                                                        composed_uids, composed_starts);
     if (composed) {
         for (size_t i = 0; i < composed_uids.size(); ++i) {
             const int uid = composed_uids[i];
