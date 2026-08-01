@@ -13,6 +13,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from compare_tesseract_page_geometry import compare, reading_order_is_monotonic  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
+from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
 
 
 class TesseractPageGeometryTest(unittest.TestCase):
@@ -52,6 +53,14 @@ class TesseractPageGeometryTest(unittest.TestCase):
     def test_page_quality_gates_are_opt_in(self) -> None:
         args = type("Args", (), {"min_native_regions": None, "max_cer": None, "max_wer": None})()
         self.assertEqual(acceptance_checks(args, {"regions": 0}, {"cer": 1.0, "wer": 1.0}), {})
+
+    def test_all_pageseg_policies_are_explicit(self) -> None:
+        for name in ("projection", "component", "baseline"):
+            args = type("Args", (), {"projection": False, "component": False, "baseline": False})()
+            setattr(args, name, True)
+            self.assertEqual(selected_pageseg_policy(args), name)
+        args = type("Args", (), {"projection": False, "component": False, "baseline": False})()
+        self.assertEqual(selected_pageseg_policy(args), "legacy-fallback")
 
 
 if __name__ == "__main__":
