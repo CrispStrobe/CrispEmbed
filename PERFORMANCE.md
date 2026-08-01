@@ -1076,6 +1076,11 @@ candidate changes later output, but this stale-reference input mismatch is not
 evidence for or against LSTM precision quality. A fresh reference using the
 current preprocessing is required before selecting a mixed artifact.
 
+Quantization policy improvement: `models/quantize.py` now supports repeatable
+`--keep-pattern` rules, allowing callers to retain critical recurrent or
+output tensors at source precision without changing the established default
+quantization behavior. The policy is unit-tested and remains opt-in.
+
 The public-domain fixture smoke path (`tests/ocr_fixture_smoke.py`) exercised
 seven CC0/public-domain images through Tesseract plus skew/content detection:
 all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a

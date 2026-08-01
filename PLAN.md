@@ -795,6 +795,11 @@ Q8 (`0.5279`) and is much faster than full F32, but remains worse than the
 reference in regions, text, confidence, WER, and speed. Keep it gated and
 test additional small recurrent critical sets before promotion.
 
+The generic quantizer now accepts repeatable `--keep-pattern` fnmatch rules.
+This makes critical-weight retention reproducible for every model family while
+leaving the default policy unchanged; the Tesseract mixed-precision packer
+remains the safer byte-preserving path for existing artifacts.
+
 #### Cross-check survey — quality and cost status
 
 Every checked path must be classified by both decoded output quality and
