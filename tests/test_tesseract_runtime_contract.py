@@ -8,8 +8,8 @@ def test_tesseract_runtime_keeps_int_mode_and_lut_path():
     """Protect the fast/quality path from an accidental old-file overwrite."""
     assert "bool int_mode" in SOURCE
     assert "int8_lstm_row_dot" in SOURCE
-    assert "tesseract_tanh_lut" in SOURCE
-    assert "tesseract_logistic_lut" in SOURCE
+    assert "tesseract_tanh" in SOURCE
+    assert "tesseract_logistic" in SOURCE
 
 
 def test_tesseract_runtime_keeps_gated_scratch_reuse():

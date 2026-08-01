@@ -37,6 +37,13 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
+      # Nothing in CI compiled the Rust wrapper before this job, which is how
+      # `main` came to have a crispembed/src/lib.rs that did not build at all
+      # (018b6c77 added OcrResult::orientation_corrected and missed one
+      # initializer). Checked first — it is fast and fails loudly.
+      - name: Build the wrapper and the -sys crate
+        run: cargo build --workspace --release
+
       - name: Vendor the C/C++ sources
         run: scripts/vendor_rust_sources.sh
 

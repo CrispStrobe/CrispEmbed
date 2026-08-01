@@ -320,7 +320,7 @@ model.set_dim(128); model.set_prefix("query: ")
 ```
 
 ```rust
-// Rust  —  crispembed = { git = "https://github.com/CrispStrobe/CrispEmbed" }
+// Rust  —  crispembed = "0.16"          (crates.io; see "Rust crate" below)
 let mut model = crispembed::CrispEmbed::new("model.gguf", 0)?;
 let vec = model.encode("Hello world");
 ```
@@ -340,6 +340,38 @@ const char *latex = crispembed_ocr_model_recognize(ctx, pixels, w, h, ch, &len);
 Per-language parity scripts (`tests/feature_parity.py`, the Rust/Dart
 `feature_parity` examples) verify the wrappers against the CLI. All 45+ registry
 models also export as **Ollama-compatible** GGUFs (`--ollama` converter flag).
+
+### Rust crate
+
+```toml
+[dependencies]
+crispembed = "0.16"          # safe wrapper; crispembed-sys is the raw FFI layer
+```
+
+`crispembed-sys` vendors the C/C++ sources and builds them with cmake, so the
+crate needs **cmake and a C++17 compiler** but nothing preinstalled — and it
+works offline, on docs.rs, and on any target. ggml is linked statically into a
+single `libcrispembed`, so there is one library to ship. A cold build takes a
+few minutes.
+
+To skip that compile, point the crate at a prebuilt library from the
+[releases](https://github.com/CrispStrobe/CrispEmbed/releases) — matching the
+crate version — and build.rs links it instead of invoking cmake:
+
+```bash
+gh release download v0.16.1 -R CrispStrobe/CrispEmbed -p 'crispembed-macos-arm64.tar.gz'
+mkdir -p lib && tar xzf crispembed-macos-arm64.tar.gz -C lib
+export CRISPEMBED_SYS_LIB_DIR=$PWD/lib
+cargo build       # links the prebuilt; no cmake, no source build
+```
+
+The release tarballs ship `libcrispembed` alongside separate `libggml*`
+libraries, so with this path all of them have to travel with your binary — the
+from-source default produces just the one. Release assets exist for linux
+x86_64/arm64, macOS arm64, Windows x86_64 (plus CUDA/Vulkan variants), Android
+and iOS; other targets (including x86_64 macOS) use the source build.
+
+GPU backends are cargo features: `metal`, `cuda`, `vulkan`.
 
 ---
 

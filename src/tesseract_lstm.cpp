@@ -35,6 +35,9 @@ struct lstm_weights {
     std::vector<float> W_ih; // (4*ns, ni)
     std::vector<float> W_hh; // (4*ns, ns)
     std::vector<float> bias; // (4*ns,)
+    std::vector<int8_t> W_ih_q, W_hh_q;
+    std::vector<int32_t> bias_q;
+    std::vector<float> q_scale;
     int ni;
     int ns; // hidden size
 };
@@ -75,6 +78,37 @@ static float int8_lstm_row_dot(const float * w_ih, const float * w_hh, int ni, i
         acc += tesseract_round_int(w_hh[i] / stored_scale) * tesseract_round_int(hidden[i] * 127.0f);
     }
     return (float)acc * stored_scale / 127.0f;
+}
+
+static void prepare_lstm_int_weights(lstm_weights & lw) {
+    const int gates = 4 * lw.ns;
+    lw.W_ih_q.resize((size_t)gates * lw.ni);
+    lw.W_hh_q.resize((size_t)gates * lw.ns);
+    lw.bias_q.resize(gates);
+    lw.q_scale.resize(gates);
+    for (int g = 0; g < gates; ++g) {
+        float max_abs = fabsf(lw.bias[g]);
+        for (int i = 0; i < lw.ni; ++i) max_abs = std::max(max_abs, fabsf(lw.W_ih[g * lw.ni + i]));
+        for (int i = 0; i < lw.ns; ++i) max_abs = std::max(max_abs, fabsf(lw.W_hh[g * lw.ns + i]));
+        lw.q_scale[g] = max_abs / 127.0f;
+        if (lw.q_scale[g] == 0.0f) continue;
+        lw.bias_q[g] = tesseract_round_int(lw.bias[g] / lw.q_scale[g]);
+        for (int i = 0; i < lw.ni; ++i)
+            lw.W_ih_q[g * lw.ni + i] = (int8_t)tesseract_round_int(lw.W_ih[g * lw.ni + i] / lw.q_scale[g]);
+        for (int i = 0; i < lw.ns; ++i)
+            lw.W_hh_q[g * lw.ns + i] = (int8_t)tesseract_round_int(lw.W_hh[g * lw.ns + i] / lw.q_scale[g]);
+    }
+}
+
+static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * input, const int8_t * hidden) {
+    const float scale = lw.q_scale[gate];
+    if (scale == 0.0f) return 0.0f;
+    int32_t acc = lw.bias_q[gate] * 127;
+    const int8_t * wi = lw.W_ih_q.data() + gate * lw.ni;
+    const int8_t * wh = lw.W_hh_q.data() + gate * lw.ns;
+    for (int i = 0; i < lw.ni; ++i) acc += (int32_t)wi[i] * input[i];
+    for (int i = 0; i < lw.ns; ++i) acc += (int32_t)wh[i] * hidden[i];
+    return (float)acc * scale / 127.0f;
 }
 
 // ---------------------------------------------------------------------------
@@ -281,6 +315,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
         lw.W_ih.assign(wih_f, wih_f + gate_size * lw.ni);
         lw.W_hh.assign(whh_f, whh_f + gate_size * lw.ns);
         lw.bias.assign(b_f, b_f + gate_size);
+        prepare_lstm_int_weights(lw);
     }
 
     // Output FC
@@ -327,33 +362,14 @@ static float quantize_int_input(float value) {
 // Tesseract uses generated 4096-entry LUTs with 1/256 input spacing for its
 // LSTM tanh/logistic functions. Reproduce the interpolation contract here;
 // direct tanhf/expf changes quantization boundaries in int mode.
-static const std::array<float, 4096> & tesseract_tanh_lut() {
-    static const std::array<float, 4096> lut = [] {
-        std::array<float, 4096> values{};
-        for (size_t i = 0; i < values.size(); i++) values[i] = tanhf((float)i / 256.0f);
-        return values;
-    }();
-    return lut;
-}
-
-static const std::array<float, 4096> & tesseract_logistic_lut() {
-    static const std::array<float, 4096> lut = [] {
-        std::array<float, 4096> values{};
-        for (size_t i = 0; i < values.size(); i++) values[i] = 1.0f / (1.0f + expf(-(float)i / 256.0f));
-        return values;
-    }();
-    return lut;
-}
-
 static float tesseract_tanh(float value) {
     const bool negative = value < 0.0f;
     const float x = fabsf(value) * 256.0f;
     const unsigned index = (unsigned)x;
     if (index >= 4095) return negative ? -1.0f : 1.0f;
     const float frac = x - (float)index;
-    const auto & lut = tesseract_tanh_lut();
-    const float y0 = lut[index];
-    const float y1 = lut[index + 1];
+    const float y0 = tanhf((float)index / 256.0f);
+    const float y1 = tanhf((float)(index + 1) / 256.0f);
     const float result = y0 + (y1 - y0) * frac;
     return negative ? -result : result;
 }
@@ -364,9 +380,8 @@ static float tesseract_logistic(float value) {
     const unsigned index = (unsigned)x;
     if (index >= 4095) return negative ? 0.0f : 1.0f;
     const float frac = x - (float)index;
-    const auto & lut = tesseract_logistic_lut();
-    const float y0 = lut[index];
-    const float y1 = lut[index + 1];
+    const float y0 = 1.0f / (1.0f + expf(-(float)index / 256.0f));
+    const float y1 = 1.0f / (1.0f + expf(-(float)(index + 1) / 256.0f));
     const float result = y0 + (y1 - y0) * frac;
     return negative ? 1.0f - result : result;
 }
@@ -377,22 +392,29 @@ static void lstm_forward(const float * input, // (T, ni)
                          const float * W_ih, // (4*ns, ni)
                          const float * W_hh, // (4*ns, ns)
                          const float * bias, // (4*ns,)
-                         bool reverse, bool int_mode) {
+                         bool reverse, bool int_mode, const lstm_weights * cached = nullptr) {
     // Gate order (PyTorch): i, f, g, o
     const int gs = 4 * ns;
     std::vector<float> h(ns, 0.0f);
     std::vector<float> c(ns, 0.0f);
     std::vector<float> gates(gs);
+    std::vector<int8_t> input_q(int_mode ? ni : 0), hidden_q(int_mode ? ns : 0);
 
     for (int step = 0; step < T; step++) {
         int t = reverse ? (T - 1 - step) : step;
         const float * xt = input + t * ni;
+        if (int_mode) {
+            for (int i = 0; i < ni; ++i) input_q[i] = (int8_t)tesseract_round_int(xt[i] * 127.0f);
+            for (int i = 0; i < ns; ++i) hidden_q[i] = (int8_t)tesseract_round_int(h[i] * 127.0f);
+        }
 
         // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
         for (int g = 0; g < gs; g++) {
-            gates[g] = int_mode ? int8_lstm_row_dot(W_ih + g * ni, W_hh + g * ns, ni, ns, bias[g], xt, h.data())
-                                : bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
-                                      core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
+            gates[g] = int_mode
+                           ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                                     : int8_lstm_row_dot(W_ih + g * ni, W_hh + g * ns, ni, ns, bias[g], xt, h.data()))
+                           : bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
+                                 core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
         }
 
         for (int j = 0; j < ns; j++) {
@@ -422,7 +444,7 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
                               const float * W_ih, // (4*ns, channels)
                               const float * W_hh, // (4*ns, ns)
                               const float * bias, // (4*ns,)
-                              bool int_mode) {
+                              bool int_mode, const lstm_weights * cached = nullptr) {
     // After XYTranspose: height = original_width, width = original_height
     // For each row (height position), run LSTM across the width (original height).
     // State resets at each row boundary.
@@ -430,6 +452,7 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
     std::vector<float> h(ns);
     std::vector<float> c(ns);
     std::vector<float> gates(gs);
+    std::vector<int8_t> input_q(int_mode ? channels : 0), hidden_q(int_mode ? ns : 0);
 
     for (int row = 0; row < height; row++) {
         // Reset state per row
@@ -438,11 +461,16 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
 
         for (int col = 0; col < width; col++) {
             const float * xt = input + (row * width + col) * channels;
+            if (int_mode) {
+                for (int i = 0; i < channels; ++i) input_q[i] = (int8_t)tesseract_round_int(xt[i] * 127.0f);
+                for (int i = 0; i < ns; ++i) hidden_q[i] = (int8_t)tesseract_round_int(h[i] * 127.0f);
+            }
 
             // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
-                gates[g] = int_mode ? int8_lstm_row_dot(W_ih + g * channels, W_hh + g * ns, channels, ns, bias[g], xt,
-                                                        h.data())
+                gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                                              : int8_lstm_row_dot(W_ih + g * channels, W_hh + g * ns, channels, ns,
+                                                                  bias[g], xt, h.data()))
                                     : bias[g] + core_cpu::dot_product(W_ih + g * channels, xt, channels) +
                                           core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
             }
@@ -750,7 +778,7 @@ static void forward(tesseract_lstm_context * ctx,
     auto & seq_b = ctx->reuse_scratch ? ctx->scratch_seq_b : local_seq_b;
     seq_a.resize((size_t)W2 * ns0);
     summ_lstm_forward(transposed.data(), seq_a.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
-                      lw0.bias.data(), int_mode);
+                      lw0.bias.data(), int_mode, &lw0);
     lstm_idx++;
     capture(ctx, "after_lstm_0", seq_a.data(), seq_a.size());
 
@@ -766,7 +794,7 @@ static void forward(tesseract_lstm_context * ctx,
 
         next_seq->resize((size_t)T * lw.ns);
         lstm_forward(cur_seq->data(), next_seq->data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(),
-                     lw.bias.data(), rev, int_mode);
+                     lw.bias.data(), rev, int_mode, &lw);
 
         std::swap(cur_seq, next_seq);
         cur_dim = lw.ns;
