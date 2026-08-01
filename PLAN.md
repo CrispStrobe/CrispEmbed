@@ -98,7 +98,7 @@ map, and 106-box decoded result. Remaining CRAFT work is repeated inference
 benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
-| 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
+| 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | O10.1 live preprocessor benchmark harness: raw/cleanup/binarize outcome rows on CC0/German fixtures | **COMPLETED** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O9/O10 reproducible PP-OCRv6 tiny/small/medium benchmark JSON wrapper for the 10-fixture detector/orientation/recognizer sweep; tiny/small live sweeps validated, medium first fixture passes in 125.34 s (full sweep still exceeds the 900 s guard and remains pending) | **IN PROGRESS** |
 | 2026-07-31 | `feat/ppocr-next-20260731` | **Picked:** O11 backend/graph capability audit: record CPU-only, partial-graph, and full-GGML-backend paths per OCR engine and prevent unsupported GPU claims; matrix and CPU guard landed | **IN PROGRESS** |
@@ -777,6 +777,16 @@ not output-equivalent, while F32/source-Q8 is more accurate on CER but much
 slower and still not page-parity. TODO: choose and optimize a high-precision
 Fraktur artifact only after same-artifact warm/cold benchmarks and decoded
 output gates are stable.
+
+The first reproducible mixed-precision experiment keeps Q8 as the base and
+restores only `lstm.0.weight_hh` from F32 with
+`models/mix-tesseract-gguf.py`. On the same page it produced 23 regions/1,146
+chars, confidence `0.765`, CER `0.4603`, WER `0.5390`, and native recognition
+`23.42 s` (detect `58.2 ms`, crop `55.4 ms`); official Tesseract produced
+25/881, confidence `0.8658`, and `5.55 s` in that run. This improves CER over
+Q8 (`0.5279`) and is much faster than full F32, but remains worse than the
+reference in regions, text, confidence, WER, and speed. Keep it gated and
+test additional small recurrent critical sets before promotion.
 
 #### Cross-check survey — quality and cost status
 
