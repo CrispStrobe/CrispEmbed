@@ -66,6 +66,9 @@ parity or performance evidence. The default persistent im2col path is
 unchanged. A later optimized/vectorized direct kernel remains a performance
 TODO. One subsequent baseline run was resource-contended (44.1 s cold /
 66.7 s warm with 8 threads), so it is excluded from the stable ratios above.
+An attempted cumulative per-tap profiler was also rejected: prefix graphs
+shared the persistent tensor arena and changed the restored run to zero boxes.
+It produced no valid stage timings; isolated-allocator profiling remains open.
 
 Benchmark results on Intel Xeon Skylake (4 threads), CPU-only, no GPU.
 
