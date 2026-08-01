@@ -35,15 +35,30 @@ if [ ! -f "$repo_root/ggml/CMakeLists.txt" ]; then
     exit 1
 fi
 
+# Serialize concurrent runs. This repo is worked by several sessions/worktrees at
+# once, and two overlapping runs each begin with `rm -rf "$vendor"` — so one
+# deletes files the other has already copied and both "succeed" onto a tree that
+# is missing sources. That happened, and only the completeness check at the end
+# caught it. mkdir is atomic, so it makes a usable lock.
+lock="$vendor.lock"
+if ! mkdir "$lock" 2>/dev/null; then
+    echo "error: another vendor run holds $lock — wait for it, or remove the" >&2
+    echo "       directory if no vendor_rust_sources.sh process is alive." >&2
+    exit 1
+fi
+trap 'rmdir "$lock" 2>/dev/null || true' EXIT
+
 rm -rf "$vendor"
 mkdir -p "$vendor"
 
+# One tar pipeline per source set rather than a cp per file: this copies ~2200
+# files, and forking that many processes took minutes on a loaded machine.
 copy_tracked() {   # $1 = git dir, $2 = destination prefix, rest = pathspecs
     local gitdir="$1" prefix="$2"; shift 2
-    git -C "$gitdir" ls-files -z "$@" | while IFS= read -r -d '' f; do
-        mkdir -p "$vendor/$prefix$(dirname "$f")"
-        cp "$gitdir/$f" "$vendor/$prefix$f"
-    done
+    mkdir -p "$vendor/$prefix"
+    git -C "$gitdir" ls-files -z "$@" \
+        | tar -C "$gitdir" --null -T - -cf - \
+        | tar -C "$vendor/$prefix" -xf -
 }
 
 copy_tracked "$repo_root" ""      CMakeLists.txt VERSION cmake src examples
