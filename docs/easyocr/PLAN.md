@@ -64,6 +64,23 @@
       but do not yet provide native/reference timing ratios. Any slower native
       stage and any worse text/box/ordering output must be recorded as a
       separate optimization or quality TODO before those lanes are accepted.
+- [ ] Recheck CRAFT against fresh references after the benchmark audit. The
+      fresh official Python dump for `scan_strip.png` uses a 288x544 canvas and
+      decodes 106 boxes; native F32 passes the captured tensor global gates but
+      decodes 107 boxes. The older local reference produced 104 versus 106,
+      confirming it was not a stable parity fixture. A timed native diff run
+      took about 2.34 s; Python reference generation took 9.13 s including
+      checkpoint load and writing 84 tensors, so those timings are not an
+      inference-only comparison. Exact CRAFT box parity and an isolated
+      repeated inference benchmark remain open quality/performance TODOs.
+- [ ] Add a DBNet Python reference checkpoint/timing fixture. The local backup
+      has only the converted `cstr/dbnet-ic15-GGUF` GGUF, not the source PyTorch
+      checkpoint; the native scan page currently emits 12 line units / 98 word
+      units in 6.63/6.67 s end-to-end, with summed recognizer work of
+      1.34/2.50 s. Native text is readable and includes `Brighton`, but its
+      98-word segmentation is not comparable to Tesseract's 106-word page
+      output. No DBNet quality or speed parity claim is allowed until the
+      source checkpoint/reference is restored.
 - Next: validate remaining VGG/ResNet
   recognizers, and promote the two OCR ordering policies into production
   adapters before broad detector/model expansion.

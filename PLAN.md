@@ -26,6 +26,17 @@ all measured graph/total paths, so graph/kernel and width optimization are
 performance TODOs. CRAFT, DBNet page modes, and Tesseract still need equivalent
 timing/output manifests; their existing parity checks are not performance
 acceptance evidence.
+
+Detector benchmark audit: the fresh CRAFT reference for `scan_strip.png` uses a
+288x544 canvas and decodes 106 boxes; native F32 passes tensor global gates but
+decodes 107, so CRAFT box parity is open again. Native diff runtime was ~2.34 s;
+the Python dump was ~9.13 s including model load and serializing 84 tensors, not
+an inference-only comparison. DBNet native page smoke measured 6.63 s in line
+mode (12 units, 1.34 s summed recognizer work) and 6.67 s in word mode (98
+units, 2.50 s summed recognizer work). No PyTorch DBNet checkpoint is present
+locally, so DBNet reference timing/quality parity remains blocked; the 98-word
+output is readable and contains Brighton but is not on par with Tesseract's
+106-word segmentation. These are explicit quality/performance TODOs.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
