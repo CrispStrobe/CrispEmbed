@@ -2620,4 +2620,5 @@ the pattern first.
   changing recognition. `CRISPEMBED_TESSERACT_FORCE_CPU` is also available for
   backend-isolated parser/runtime diagnostics. The remaining TODO is actual
   scoring and validating word choices against official Tesseract on transcribed
-  fixtures.
+  fixtures; the C ABI now exposes non-mutating complete/prefix membership for
+  the future scorer.
