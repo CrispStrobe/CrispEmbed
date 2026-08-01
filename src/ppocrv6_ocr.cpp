@@ -10,6 +10,7 @@
 #include "crispembed_diff.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -648,11 +649,18 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
                          int & h, int & w) {
     if (!pp_graph_build(c)) return false;
     ggml_backend_tensor_set(c->graph.input, input.data(), 0, input.size() * sizeof(float));
+    const auto started = std::chrono::steady_clock::now();
     if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
+    const auto finished = std::chrono::steady_clock::now();
     output.resize(ggml_nelements(c->graph.output));
     ggml_backend_tensor_get(c->graph.output, output.data(), 0, output.size() * sizeof(float));
     w = (int)c->graph.output->ne[0];
     h = (int)c->graph.output->ne[1];
+    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH")) {
+        const double ms = std::chrono::duration<double, std::milli>(finished - started).count();
+        fprintf(stderr, "[ppocrv6-graph-bench] backend=%s graph_ms=%.3f output=%dx%d\n",
+                ggml_backend_name(c->graph.backend), ms, w, h);
+    }
     return true;
 }
 

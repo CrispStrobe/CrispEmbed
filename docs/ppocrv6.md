@@ -93,6 +93,10 @@ detector work is about 626 ms; the graph diagnostic reports about 590 ms on
 this CPU build before its CPU fallback. This keeps preprocessing on CPU unless
 a backend-specific measurement proves the transfer worthwhile.
 
+Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` to print per-line recognizer graph
+latency and the selected backend. On the Metal build this is a graph execution
+measurement, not a claim that the detector graph is production-accepted.
+
 The current CPU parity probe reports detector probability-map cosine 0.99113
 and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
 produces one extra box (31 vs 30), so the explicit accept switch remains a
