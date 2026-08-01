@@ -857,6 +857,18 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     int h = 48, w = 320;
     std::vector<float> graph_out;
     bool graph_done = pp_graph_run(c, input, graph_out, h, w);
+    if (graph_done && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        const int tokens = h;
+        const int classes = w;
+        fprintf(stderr, "[ppocrv6-graph-decode] tokens=%d classes=%d vocab=%zu\n", tokens, classes,
+                c->vocab.size());
+        for (int t = 0; t < std::min(tokens, 4); ++t) {
+            const float * row = graph_out.data() + (size_t)t * classes;
+            const int best = int(std::max_element(row, row + classes) - row);
+            fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best],
+                    row[0]);
+        }
+    }
     if (graph_done && c->graph.logits_output && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
@@ -1055,6 +1067,19 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         int best = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
         if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];
         last = best;
+    }
+    if (!graph_out.empty() && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG") &&
+        graph_out.size() == all_logits.size()) {
+        double dot = 0.0, gn = 0.0, cn = 0.0;
+        float max_abs = 0.0f;
+        for (size_t i = 0; i < all_logits.size(); ++i) {
+            dot += double(graph_out[i]) * all_logits[i];
+            gn += double(graph_out[i]) * graph_out[i];
+            cn += double(all_logits[i]) * all_logits[i];
+            max_abs = std::max(max_abs, std::fabs(graph_out[i] - all_logits[i]));
+        }
+        fprintf(stderr, "[ppocrv6-graph-decode] cpu_cos=%.7f max_abs=%.7g\n",
+                float(dot / (std::sqrt(gn * cn) + 1e-30)), max_abs);
     }
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.logits", all_logits.data(), all_logits.size(), 1);
