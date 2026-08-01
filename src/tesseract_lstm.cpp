@@ -828,11 +828,16 @@ static void forward(tesseract_lstm_context * ctx,
         ctx->sequence_confidence = std::clamp(expf(beam_log_score / std::max(1, T)), 0.0f, 1.0f);
     } else if (!greedy_label_confs.empty()) {
         double sum = 0.0;
-        float min_certainty = 0.0f;
         for (float p : greedy_label_confs) sum += p;
-        for (float p : greedy_label_confs) min_certainty = std::min(min_certainty, std::log(std::max(p, 1.0e-20f)));
         ctx->sequence_confidence = (float)(sum / greedy_label_confs.size());
-        ctx->word_confidence = std::clamp(1.0f + 0.05f * min_certainty, 0.0f, 1.0f);
+        // Tesseract word certainty is the minimum over emitted characters,
+        // not over blank/repeated CTC timesteps. char_confs contains exactly
+        // the mapped, collapsed greedy output symbols.
+        if (!ctx->char_confs.empty()) {
+            float min_certainty = 0.0f;
+            for (float p : ctx->char_confs) min_certainty = std::min(min_certainty, std::log(std::max(p, 1.0e-20f)));
+            ctx->word_confidence = std::clamp(1.0f + 0.05f * min_certainty, 0.0f, 1.0f);
+        }
     }
 }
 
