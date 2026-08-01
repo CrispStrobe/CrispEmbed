@@ -46,6 +46,15 @@
   TSV), and full-page Tesseract reads `Drighton;` while the instrumented
   internal PSM7 crop reads `Brighton`; page segmentation/crop selection remains
   the active parity gate.
+- [x] Verify the Miniconda reference environment and restore the exact official
+      `english_g2.pth` checkpoint (MD5 `5864788e1821be9e454ec108d61b887d`).
+      Torch 2.7.1, EasyOCR 1.7.2, OpenCV, and Transformers import cleanly, and
+      EasyOCR's own recognizer initializes on CPU. On the same 12 native DBNet
+      line crops, Python and native recognition match exactly on 8/12 lines;
+      the remaining differences are small CTC character/spacing choices, and
+      both paths read `Brighton`. The previous Python-reference blocker was the
+      missing checkpoint asset, not a Miniconda/Torch problem. Tensor-level
+      `crispembed-diff` remains required before calling recognizer parity.
 - Tesseract parity is explicitly **not proven**. The converter, Python
   reference dumper, and `test-tesseract-lstm-diff` exist, but there is no
   recorded completed reference run for the exact installed `eng.traineddata`,
