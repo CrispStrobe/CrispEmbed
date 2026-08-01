@@ -99,6 +99,12 @@ def build_mixed(base_path, precision_path, output_path, patterns):
     metadata = [(key, value_type, metadata_value(value_type, value))
                 for key, value in base.metadata.items()
                 for value_type in [base.metadata_types[key]]]
+    # Older quantized Tesseract artifacts may predate the serialized seed
+    # metadata. Preserve model-contract KVs from the precision source so
+    # seeded Convolve padding and input geometry remain reproducible.
+    for key, value in precision.metadata.items():
+        if key.startswith("tesseract_lstm.") and key not in base.metadata:
+            metadata.append((key, precision.metadata_types[key], metadata_value(precision.metadata_types[key], value)))
     metadata.extend([
         ("tesseract_lstm.mixed_precision", GGUF_TYPE_STRING,
          "base=Q8_0;selected=F32"),

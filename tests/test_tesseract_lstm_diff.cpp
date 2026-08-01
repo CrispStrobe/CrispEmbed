@@ -18,6 +18,7 @@
 #include "crispembed_diff.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <vector>
@@ -114,6 +115,21 @@ static int crispembed_test_main(int argc, char ** argv) {
                 printf("Ref input debug: n=%zu min=%.6g max=%.6g first=", ref_n, lo, hi);
                 for (size_t i = 0; i < std::min<size_t>(ref_n, 8); ++i) printf(" %.6g", ref_data[i]);
                 printf("\n");
+            }
+        }
+        int conv_n = 0;
+        const float * conv = tesseract_lstm_get_capture(ctx, "after_convolve", &conv_n);
+        if (conv && ref.has("after_convolve")) {
+            auto [ref_conv, ref_conv_n] = ref.get_f32("after_convolve");
+            printf("C++/ref convolve n=%d/%zu first=", conv_n, ref_conv_n);
+            for (int i = 0; i < std::min(conv_n, 32); ++i) printf(" %.6g/%.6g", conv[i], ref_conv[i]);
+            printf("\n");
+            int shown = 0;
+            for (int i = 0; i < std::min<size_t>(conv_n, ref_conv_n) && shown < 8; ++i) {
+                if (std::fabs(conv[i] - ref_conv[i]) > 1.0e-6f) {
+                    printf("convolve mismatch[%d]=%.9g ref=%.9g\n", i, conv[i], ref_conv[i]);
+                    shown++;
+                }
             }
         }
     }
