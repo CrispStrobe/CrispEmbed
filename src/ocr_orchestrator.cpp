@@ -446,7 +446,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             const bool has_quad = std::hypot(b.qx[1] - b.qx[0], b.qy[1] - b.qy[0]) > 1.0f;
             auto crop = has_quad ? ocr_crop::extract_quad(rgb, w, h, 3, b.qx, b.qy, 2, &cw, &ch)
                                  : ocr_crop::extract(rgb, w, h, 3, (int)b.x, (int)b.y, (int)b.w, (int)b.h, 2, &cw, &ch);
-            crop_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - crop_started).count();
+            crop_ms +=
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - crop_started).count();
             if (crop.empty()) continue;
             const auto orientation_started = std::chrono::steady_clock::now();
             ocr_crop::orientation_info orientation;
@@ -462,12 +463,13 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 orientation = ocr_crop::orient_180_rgb_info(crop, cw, ch);
             }
             orientation_ms +=
-                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - orientation_started).count();
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - orientation_started)
+                    .count();
             const auto recognize_started = std::chrono::steady_clock::now();
             int len = 0;
             const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
             recognize_ms +=
-                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - recognize_started).count();
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - recognize_started).count();
             if (!text || len <= 0) continue;
             ocr_pipeline::ocr_result r;
             r.box = { b.x, b.y, b.w, b.h, b.score };
@@ -481,11 +483,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (ppocr_bench) {
             const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
-            fprintf(stderr,
-                    "[ppocrv6-stage-bench] detect=%.1f ms crop=%.1f ms orientation=%.1f ms recognize=%.1f ms total=%.1f ms "
-                    "boxes=%zu results=%zu\n",
-                    ms(ppocr_started, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
-                    ms(ppocr_started, std::chrono::steady_clock::now()), boxes.size(), results.size());
+            fprintf(
+                stderr,
+                "[ppocrv6-stage-bench] detect=%.1f ms crop=%.1f ms orientation=%.1f ms recognize=%.1f ms total=%.1f ms "
+                "boxes=%zu results=%zu\n",
+                ms(ppocr_started, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
+                ms(ppocr_started, std::chrono::steady_clock::now()), boxes.size(), results.size());
         }
         return results;
     }
