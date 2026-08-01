@@ -9,6 +9,7 @@ passed through arguments/environment and are never written into the report.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -25,6 +26,14 @@ NATIVE_TEXT_RE = re.compile(r"BEGIN native Fraktur full_text\n(?P<text>.*?)\n  E
 
 def run(cmd: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
     return subprocess.run(cmd, text=True, capture_output=True, env=env, timeout=900, check=False)
+
+
+def sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def official_metrics(image: Path, lang: str, psm: int) -> dict:
@@ -162,6 +171,11 @@ def main() -> int:
     word_native = native_text.split()
     result = {
         "fixture": str(args.image),
+        "provenance": {
+            "detector_model_sha256": sha256_file(args.det_model),
+            "recognizer_model_sha256": sha256_file(args.rec_model),
+            "ordering": "official-tsv-level4-vs-native-reading-order-index",
+        },
         "official_tesseract": official,
         "native_crispembed": native,
         "comparison": {
