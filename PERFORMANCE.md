@@ -1087,6 +1087,18 @@ format gap (`cannot load`); a PNG derivative is now included for the OCR
 pipeline while the source TIFF remains available for a future native TIFF
 decoder test.
 
+### Tesseract runtime regression and recovery
+
+A remote-main merge temporarily replaced the int-mode/scratch Tesseract
+runtime with an older F32-only implementation. On
+`tests/regression/images/scan_strip.png` with the same Fraktur Q8 artifact,
+recognition measured `50.15 s` in that regression. Restoring the known-good
+runtime and adding LUTs for the existing Tesseract nonlinear interpolation
+contract measured `34.32 s`, with unchanged output: 12 regions, 566 chars,
+CER `0.03375`, and WER `0.15044`. The required int-mode, LUT, and gated
+scratch symbols are now protected by a runtime-contract test. The remaining
+speed gap to official Tesseract is still an active TODO.
+
 ### Full local matrix comparison (M1 Metal, 2026-07-31)
 
 The expanded manifest sweep completed 11 engines, recorded 2 errors, and
