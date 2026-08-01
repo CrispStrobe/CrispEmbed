@@ -582,9 +582,23 @@ metadata, not learned parameters.
       `<class>` diagnostic fallback; true Tesseract recode-beam composition and
       dictionary scoring remain required before production quality acceptance.
 
-- [x] Upload the corrected canonical F32/Q8_0/Q4_K artifacts to the `cstr/`
+- [ ] Close German int-mode decoded parity. On the controlled line, all 9
+      stages pass with aligned magnitudes, but the first LSTM stage differs by
+      one activation quantization step and the final logits have 3/150 argmax
+      mismatches (timesteps 98, 110, 142), yielding native ` s.` versus Python
+      `e  .`. Investigate the exact float32/LUT/quantization ordering before
+      accepting this language or generalizing the result to other variants.
+
+- [x] Run the seeded F32 reference sweep for all 12 canonical languages. Exact
+      decoded parity passed for Arabic, Chinese (after the explicit unmapped
+      class fallback), English, French, Italian, Japanese, Dutch, Portuguese,
+      Russian, and Spanish. German and Korean remain decoded-output failures:
+      both pass all tensor cosine gates but have int-mode argmax differences
+      (German 3/150; Korean 6/200) and require numerical/recode investigation.
+
+- [x] Upload the corrected canonical F32/F16/Q8_0/Q4_K artifacts to the `cstr/`
       Hugging Face repositories: 36 language files to
       `cstr/tesseract-lstm-GGUF` and the two Fraktur files to
-      `cstr/tesseract-frk-GGUF`. No `mlx-community` upload was made. Corrected
-      F16 variants remain in flight and must be regenerated/uploaded before the
-      model-family artifact checklist is complete.
+      `cstr/tesseract-frk-GGUF`. All 51 canonical files are present remotely and
+      remote metadata spot-checks confirm nonzero `sample_iteration`. No
+      `mlx-community` upload was made.
