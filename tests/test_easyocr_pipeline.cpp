@@ -92,6 +92,12 @@ static int crispembed_test_main(int argc, char ** argv) {
                     item.word.confidence, item.normalized.x0, item.normalized.y0, item.normalized.x1,
                     item.normalized.y1, item.word.text.c_str());
     }
+    const size_t normal_count = results.size();
+    // Use a fresh recognizer context for the injected-geometry replay. This
+    // keeps this boundary test independent of dynamic-width graph state from
+    // the preceding detector-backed run.
+    easyocr_pipeline::free(ctx);
+    ctx = nullptr;
     // Exercise the public detector-independent adapter with the same image.
     // This is the production handoff used by external geometry providers.
     int rw = 0, rh = 0, rc = 0;
@@ -104,20 +110,30 @@ static int crispembed_test_main(int argc, char ** argv) {
     }
     const auto external_boxes =
         ocr_detect::detect_rgb_ex(external_detector, rp, rw, rh, 3, ocr_detect::rapid_defaults());
-    const auto external_results = easyocr_pipeline::run_regions(ctx, external_boxes, rp, rw, rh, 3);
+    std::vector<easyocr_layout::region> external_regions;
+    external_regions.reserve(external_boxes.size());
+    for (const auto & box : external_boxes) {
+        external_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
+    }
+    easyocr_pipeline::context * handoff_ctx = nullptr;
+    if (!easyocr_pipeline::load(&handoff_ctx, argv[1], argv[2], 1)) {
+        ocr_detect::free(external_detector);
+        stbi_image_free(rp);
+        return 10;
+    }
+    easyocr_pipeline::set_ordering_mode(handoff_ctx, mode);
+    const auto external_results = easyocr_pipeline::run_regions(handoff_ctx, external_regions, rp, rw, rh, 3);
+    easyocr_pipeline::free(handoff_ctx);
     ocr_detect::free(external_detector);
     stbi_image_free(rp);
-    if (external_results.size() != results.size()) {
+    if (external_results.size() != normal_count) {
         std::fprintf(stderr, "detector-independent handoff count mismatch: %zu != %zu\n", external_results.size(),
-                     results.size());
-        easyocr_pipeline::free(ctx);
+                     normal_count);
         return 10;
     }
     if (argc == 6 && !write_manifest(argv[5], argv[3], mode, results)) {
-        easyocr_pipeline::free(ctx);
         return 8;
     }
-    easyocr_pipeline::free(ctx);
     return 0;
 }
 
