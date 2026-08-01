@@ -50,6 +50,8 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats < 1:
         parser.error("--repeats must be positive")
+    if args.dawg_score and args.recode_beam <= 1:
+        parser.error("--dawg-score requires --recode-beam > 1")
     if sum((args.projection, args.component, args.baseline)) > 1:
         parser.error("segmentation policies are mutually exclusive")
 

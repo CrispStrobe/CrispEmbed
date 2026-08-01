@@ -2637,3 +2637,10 @@ the pattern first.
   This closes the instrumentation gap for the DAWG word-choice experiment;
   it does not promote the scorer. A clean, resource-isolated Fraktur run with
   a real embedded-DAWG model remains required before judging quality or speed.
+
+- **Tesseract parity harness isolation (2026-08-01).** The comparator now
+  clears inherited recode/compose/DAWG environment gates before applying the
+  requested mode, preventing a developer shell from contaminating baseline
+  measurements. It also rejects DAWG scoring without a recode beam wider than
+  one, which would otherwise be a silent no-op. The source-level contract
+  test covers both safeguards.
