@@ -409,7 +409,9 @@ downstream handoff parity, not detector-box similarity alone.
       real CLI parity.
       On `scan_strip.png`, the tuned native CLI path improved from 3 to 7
       decoded regions, while official Tesseract `--psm 3/6` emits 12 lines;
-      candidate-band detection and crop/recognition acceptance still diverge.
+      exact RGB-to-gray conversion is now shared with the proven reference,
+      and diagnostics show the remaining defect is merged 40--62 px row bands
+      before recognition; candidate-band splitting and crop acceptance remain.
 - [x] Record the exact `.traineddata` SHA-256 in both converted Tesseract
       GGUF metadata and dumped reference GGUF metadata; the actual reference
       run and controlled-line stage/output parity are complete; page parity
