@@ -8,7 +8,7 @@ build alone does not promote a CPU implementation.
 | Engine family | Current path | Metal/CUDA today | Next action |
 |---|---|---:|---|
 | PP-OCRv6 detector/recognizer | detector opt-in full graph; tiny recognizer logits graph; small/medium recognizers CPU SVTR path; CPU accept-gate reference | Partial | O11.1/O11.6 parity and tier completion |
-| PP-LCNet orientation | CPU reference plus opt-in backend graph with CPU fallback; Metal graph passes repeated execution and full pipeline smoke, but one numerical outlier remains and graph is slower than CPU | Partial | O11.2 parity and reuse/perf gate |
+| PP-LCNet orientation | CPU reference plus opt-in backend graph with CPU fallback; Metal graph passes repeated execution and full pipeline smoke, but one numerical outlier remains and graph is slower than CPU; per-crop scheduler reallocation is retained because mixed CPU/Metal depthwise reuse is unreliable on pre-tensor Apple GPUs | Partial | O11.2 parity and reuse/perf gate |
 | DBNet + TrOCR | DBNet CPU preprocessing plus graph-backed recognition | Partial | O11.3 detector/warp audit |
 | Tesseract-LSTM | DBNet/crop pipeline plus recognizer path | Partial | measure crop batching |
 | PARSeq | ggml encoder/decoder graph | Yes, when backend enabled | residency/perf gate |
