@@ -1067,6 +1067,14 @@ selected critical tensors are copied from F32. The selected
 until repeat benchmarks, page-region parity, and decoded-text quality gates
 improve.
 
+Fresh Miniconda regeneration from `/opt/homebrew/share/tessdata/frk.traineddata`
+now gives exact input parity (`cosine=1.0`, both norms `122.453`). Against
+that valid reference, Q8 reaches 6/9 stage passes and logits cosine `0.983119`;
+the mixed `lstm.0.weight_hh` F32 candidate also reaches 6/9 but falls to
+`0.982110`. Both decoded texts differ from the Python reference, so the mixed
+candidate is not an improvement and remains gated. The fresh reference is
+stored at `/Volumes/backups/ai/crispembed-gguf/tesseract-frk-ref-fresh.gguf`.
+
 Quantization policy improvement: `models/quantize.py` now supports repeatable
 `--keep-pattern` rules, allowing callers to retain critical recurrent or
 output tensors at source precision without changing the established default
@@ -1078,6 +1086,18 @@ all PNG/JPEG paths passed.  The original TIFF receipt correctly exposed a
 format gap (`cannot load`); a PNG derivative is now included for the OCR
 pipeline while the source TIFF remains available for a future native TIFF
 decoder test.
+
+### Tesseract runtime regression and recovery
+
+A remote-main merge temporarily replaced the int-mode/scratch Tesseract
+runtime with an older F32-only implementation. On
+`tests/regression/images/scan_strip.png` with the same Fraktur Q8 artifact,
+recognition measured `50.15 s` in that regression. Restoring the known-good
+runtime and adding LUTs for the existing Tesseract nonlinear interpolation
+contract measured `34.32 s`, with unchanged output: 12 regions, 566 chars,
+CER `0.03375`, and WER `0.15044`. The required int-mode, LUT, and gated
+scratch symbols are now protected by a runtime-contract test. The remaining
+speed gap to official Tesseract is still an active TODO.
 
 ### Full local matrix comparison (M1 Metal, 2026-07-31)
 
