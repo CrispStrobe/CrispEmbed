@@ -2740,3 +2740,8 @@ the pattern first.
   now records the effective per-subprocess timeout beside worker count and
   policy, so slow or aborted runs remain auditable. The page benchmark source
   contract passes; no quality or default-runtime behavior changed.
+
+- **Geometry timeout executable regression (2026-08-01).** Added a real short
+  subprocess test proving timeout expiry is converted to an explicit runtime
+  error, rather than relying only on source inspection. Sixteen model-free
+  geometry tests pass.
