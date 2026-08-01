@@ -2679,3 +2679,9 @@ the pattern first.
   all later crop deltas misleading, while preserving the indexed reading-order
   diagnostics. Eight model-free geometry tests pass; a real CLI crop-equivalence
   run remains an evidence gate.
+
+- **Matched-IoU acceptance gate (2026-08-01).** Added opt-in
+  `--min-matched-iou` to the geometry comparator. It gates the new one-to-one
+  diagnostic metric independently of legacy indexed IoU, crop deltas, and
+  reading-order checks. Nine model-free geometry tests pass; no default
+  threshold was introduced before a real official/native page run.
