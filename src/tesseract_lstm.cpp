@@ -339,8 +339,7 @@ static const std::array<float, 4096> & tesseract_tanh_lut() {
 static const std::array<float, 4096> & tesseract_logistic_lut() {
     static const std::array<float, 4096> lut = [] {
         std::array<float, 4096> values{};
-        for (size_t i = 0; i < values.size(); i++)
-            values[i] = 1.0f / (1.0f + expf(-(float)i / 256.0f));
+        for (size_t i = 0; i < values.size(); i++) values[i] = 1.0f / (1.0f + expf(-(float)i / 256.0f));
         return values;
     }();
     return lut;
