@@ -81,6 +81,13 @@
       threshold, while the Python component structure yields 106 boxes and
       native yields 107. Do not tune the postprocessing threshold; fix the
       first CNN/layout or numerical divergence before claiming box parity.
+- [x] Add early CRAFT VGG taps to the diff harness. The `slice1` tap global
+      cosines are `0.9999831`, `0.9998919`, `0.9999237`, `0.9997602`, and
+      `0.9992513` across the first block; later source taps decline to
+      `0.9986382`, `0.9978006`, `0.9975555`, and `0.9956226` at `basenet_0`.
+      The mismatch accumulates through the CNN rather than appearing solely in
+      CRAFT connected components. The next quality task is convolution/BN or
+      layout numerical parity, with the captured taps retained for debugging.
 - [ ] Add a DBNet Python reference checkpoint/timing fixture. The local backup
       has only the converted `cstr/dbnet-ic15-GGUF` GGUF, not the source PyTorch
       checkpoint; the native scan page currently emits 12 line units / 98 word

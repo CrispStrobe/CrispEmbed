@@ -44,6 +44,12 @@ units, 2.50 s summed recognizer work). No PyTorch DBNet checkpoint is present
 locally, so DBNet reference timing/quality parity remains blocked; the 98-word
 output is readable and contains Brighton but is not on par with Tesseract's
 106-word segmentation. These are explicit quality/performance TODOs.
+
+CRAFT taps now show error accumulation through the VGG: early `slice1` global
+cosines range from `0.9999831` down to `0.9992513`, while later source taps
+decline to `0.9986382`, `0.9978006`, `0.9975555`, and `0.9956226` at `basenet_0`.
+The next CRAFT task is convolution/BatchNorm or layout numerical parity, not
+postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default | **IN PROGRESS** |
