@@ -2685,3 +2685,8 @@ the pattern first.
   diagnostic metric independently of legacy indexed IoU, crop deltas, and
   reading-order checks. Nine model-free geometry tests pass; no default
   threshold was introduced before a real official/native page run.
+
+- **Matched crop-delta metrics (2026-08-01).** Geometry JSON now reports
+  mean/max crop deltas for the one-to-one IoU matches, and the comparator adds
+  opt-in `--max-matched-mean-crop-delta`. This separates true x/y/width/height
+  error from list-order artifacts; ten model-free geometry tests pass.

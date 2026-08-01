@@ -56,6 +56,13 @@ class TesseractPageGeometryTest(unittest.TestCase):
         native = [reference[1], reference[0]]
         result = compare(reference, native)
         self.assertLess(result["mean_indexed_iou"], result["matched_mean_iou"])
+        self.assertEqual(result["matched_mean_abs_crop_delta"], 0.0)
+
+    def test_matched_crop_delta_tracks_geometry_not_order(self) -> None:
+        reference = [(0.0, 0.0, 10.0, 5.0), (0.0, 10.0, 10.0, 5.0)]
+        native = [(1.0, 10.0, 10.0, 5.0), (1.0, 0.0, 10.0, 5.0)]
+        result = compare(reference, native)
+        self.assertEqual(result["matched_mean_abs_crop_delta"], 0.25)
 
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()

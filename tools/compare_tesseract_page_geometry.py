@@ -160,6 +160,11 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
     ]
     gap_deltas = [abs(native_gaps[index] - reference_gaps[index]) for index in range(min(len(reference_gaps), len(native_gaps)))]
     matched = greedy_iou_matches(reference, mine)
+    matched_component_deltas = [
+        abs(mine[mine_index][component] - reference[ref_index][component])
+        for ref_index, mine_index, _ in matched
+        for component in range(4)
+    ]
     return {
         "reference_lines": len(reference),
         "native_lines": len(mine),
@@ -171,6 +176,9 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         "mean_abs_crop_delta": round(sum(component_deltas) / len(component_deltas), 3) if component_deltas else 0.0,
         "max_abs_crop_delta": round(max(component_deltas), 3) if component_deltas else 0.0,
         "mean_abs_interline_gap_delta": round(sum(gap_deltas) / len(gap_deltas), 3) if gap_deltas else 0.0,
+        "matched_mean_abs_crop_delta": round(sum(matched_component_deltas) / len(matched_component_deltas), 3)
+        if matched_component_deltas else 0.0,
+        "matched_max_abs_crop_delta": round(max(matched_component_deltas), 3) if matched_component_deltas else 0.0,
         "matched_mean_iou": round(sum(item[2] for item in matched) / len(matched), 6) if matched else 0.0,
         "matched_pairs": [
             {"reference_index": ref_index, "native_index": mine_index, "iou": round(overlap, 6)}
@@ -197,6 +205,8 @@ def main() -> int:
     parser.add_argument("--min-matched-iou", type=float,
                         help="fail if one-to-one IoU-matched mean is below this value")
     parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
+    parser.add_argument("--max-matched-mean-crop-delta", type=float,
+                        help="fail if IoU-matched mean crop delta exceeds this value")
     parser.add_argument("--max-mean-gap-delta", type=float, help="fail if mean absolute inter-line gap delta exceeds this value")
     parser.add_argument("--require-reading-order", action="store_true", help="fail unless both box lists are top-to-bottom/left-to-right ordered")
     parser.add_argument("--output", type=Path)
@@ -214,6 +224,8 @@ def main() -> int:
         checks["min_matched_iou"] = comparison["matched_mean_iou"] >= args.min_matched_iou
     if args.max_mean_crop_delta is not None:
         checks["max_mean_crop_delta"] = comparison["mean_abs_crop_delta"] <= args.max_mean_crop_delta
+    if args.max_matched_mean_crop_delta is not None:
+        checks["max_matched_mean_crop_delta"] = comparison["matched_mean_abs_crop_delta"] <= args.max_matched_mean_crop_delta
     if args.max_mean_gap_delta is not None:
         checks["max_mean_gap_delta"] = comparison["mean_abs_interline_gap_delta"] <= args.max_mean_gap_delta
     if args.require_reading_order:
