@@ -26,6 +26,10 @@ python3 tests/regression/generate_derived_fixtures.py
 python3 tests/regression/test_derived_fixtures.py
 ```
 
+Include those variants in the live raw/cleanup/binarization sweep with
+`--include-derived`; the flag is opt-in because the 45-image run is much more
+expensive than the seed-corpus smoke pass.
+
 The complete engine inventory—including engines whose runtime exists but whose
 GGUF still needs downloading or porting—is in `ocr_engine_matrix.json`.
 `ocr_engine_benchmark.py --download-missing` resolves manifest-pinned GGUFs

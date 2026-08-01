@@ -437,7 +437,7 @@ def main():
         )
         out_tensors = [x for x in out_tensors if x[0] != "v.patch_embd.weight"]
         out_tensors.append(("v.patch_embd.weight", comb_info, ("__BYTES__", comb_bytes)))
-        print(f"  patch embed: concatenated 2 temporal slices → {comb_info.shape} ({len(comb_bytes)/1e6:.1f} MB)")
+        print(f"  patch embed: concatenated 2 temporal slices -> {comb_info.shape} ({len(comb_bytes)/1e6:.1f} MB)")
 
     # Handle tied embeddings: if no lm_head, engine uses tie_word_embeddings flag
     has_lm_head = any(name == "llm.lm_head.weight" for name, _, _ in out_tensors)

@@ -17,6 +17,7 @@ from pathlib import Path
 
 import gguf
 import numpy as np
+import cv2
 
 
 def read_charset(path):
@@ -95,11 +96,14 @@ def main():
     net.load_state_dict(state)
     net.eval()
 
-    image = Image.open(args.image).convert("L")
+    image = np.asarray(Image.open(args.image).convert("L"), dtype=np.uint8)
     img_h = 64
-    resized_w = min(args.width, max(1, int(np.ceil(img_h * image.width / image.height))))
-    image = image.resize((resized_w, img_h), Image.Resampling.BICUBIC)
-    arr = np.asarray(image, dtype=np.float32) / 255.0
+    resized_w = min(args.width, max(1, int(np.ceil(img_h * image.shape[1] / image.shape[0]))))
+    # EasyOCR's get_image_list() passes Image.Resampling.LANCZOS (value 1)
+    # to cv2.resize, which means INTER_LINEAR in OpenCV. This is the actual
+    # recognizer pipeline contract; PIL bicubic is not the page path.
+    image = cv2.resize(image, (resized_w, img_h), interpolation=cv2.INTER_LINEAR)
+    arr = image.astype(np.float32) / 255.0
     arr = (arr - 0.5) / 0.5
     padded = np.zeros((1, img_h, args.width), dtype=np.float32)
     padded[:, :, :resized_w] = arr

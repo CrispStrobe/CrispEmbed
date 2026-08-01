@@ -3,12 +3,15 @@
 #include "core/gpu_backend_pref.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
+#include "easyocr_postprocess.h"
 #include "image_preprocess.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include "ggml.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -40,6 +43,7 @@ struct easyocr_ocr_context {
     std::vector<float> input_host;
     std::string result;
     float last_confidence = 0.0f;
+    easyocr_ocr_timing last_timing = {};
 };
 
 static ggml_tensor * req(easyocr_ocr_context * c, const char * name) {
@@ -48,6 +52,78 @@ static ggml_tensor * req(easyocr_ocr_context * c, const char * name) {
 
 static ggml_tensor * linear(ggml_context * g, ggml_tensor * w, ggml_tensor * b, ggml_tensor * x) {
     return ggml_add(g, ggml_mul_mat(g, w, x), b);
+}
+
+// EasyOCR's get_image_list() calls cv2.resize with Image.Resampling.LANCZOS.
+// That PIL enum has value 1, which OpenCV interprets as INTER_LINEAR. Keep the
+// native path byte-compatible with that actual upstream pipeline rather than
+// substituting the standalone reference dumper's bicubic resize. OpenCV's
+// generic CV_8U INTER_LINEAR path uses 11-bit separable coefficients and an
+// integer horizontal buffer; keeping those details here avoids accumulating a
+// float interpolation residual before the recognizer sees the pixels.
+static void resize_easyocr_linear_u8(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w) {
+    constexpr int coef_bits = 11;
+    constexpr int coef_scale = 1 << coef_bits;
+    std::vector<int> xofs((size_t)dst_w), yofs((size_t)dst_h);
+    std::vector<int16_t> xalpha((size_t)dst_w * 2), ybeta((size_t)dst_h * 2);
+    const float scale_x = (float)src_w / (float)dst_w;
+    const float scale_y = (float)src_h / (float)dst_h;
+    for (int x = 0; x < dst_w; ++x) {
+        float f = ((float)x + 0.5f) * scale_x - 0.5f;
+        int sx = (int)std::floor(f);
+        f -= (float)sx;
+        if (sx < 0) {
+            f = 0.0f;
+            sx = 0;
+        }
+        if (sx >= src_w - 1) {
+            f = 0.0f;
+            sx = src_w - 1;
+        }
+        xofs[(size_t)x] = sx;
+        xalpha[(size_t)x * 2 + 0] = (int16_t)std::lround((1.0f - f) * coef_scale);
+        xalpha[(size_t)x * 2 + 1] = (int16_t)std::lround(f * coef_scale);
+    }
+    for (int y = 0; y < dst_h; ++y) {
+        float f = ((float)y + 0.5f) * scale_y - 0.5f;
+        int sy = (int)std::floor(f);
+        f -= (float)sy;
+        if (sy < 0) {
+            f = 0.0f;
+            sy = 0;
+        }
+        if (sy >= src_h - 1) {
+            f = 0.0f;
+            sy = src_h - 1;
+        }
+        yofs[(size_t)y] = sy;
+        ybeta[(size_t)y * 2 + 0] = (int16_t)std::lround((1.0f - f) * coef_scale);
+        ybeta[(size_t)y * 2 + 1] = (int16_t)std::lround(f * coef_scale);
+    }
+
+    std::vector<int32_t> horizontal((size_t)src_h * dst_w);
+    for (int y = 0; y < src_h; ++y) {
+        for (int x = 0; x < dst_w; ++x) {
+            const int sx = xofs[(size_t)x];
+            const int a0 = xalpha[(size_t)x * 2 + 0];
+            const int a1 = xalpha[(size_t)x * 2 + 1];
+            const uint8_t * row = src + (size_t)y * src_w;
+            horizontal[(size_t)y * dst_w + x] = (int32_t)row[sx] * a0 + (int32_t)row[std::min(sx + 1, src_w - 1)] * a1;
+        }
+    }
+    constexpr int final_shift = coef_bits * 2;
+    constexpr int final_round = 1 << (final_shift - 1);
+    for (int y = 0; y < dst_h; ++y) {
+        const int sy = yofs[(size_t)y];
+        const int b0 = ybeta[(size_t)y * 2 + 0];
+        const int b1 = ybeta[(size_t)y * 2 + 1];
+        for (int x = 0; x < dst_w; ++x) {
+            const int64_t value = (int64_t)horizontal[(size_t)sy * dst_w + x] * b0 +
+                                  (int64_t)horizontal[(size_t)std::min(sy + 1, src_h - 1) * dst_w + x] * b1;
+            dst[(size_t)y * dst_w + x] =
+                (float)std::max<int64_t>(0, std::min<int64_t>(255, (value + final_round) >> final_shift));
+        }
+    }
 }
 
 static ggml_tensor * lstm_direction(ggml_context * g, ggml_tensor * seq, int T, int in_dim, int hidden,
@@ -60,6 +136,11 @@ static ggml_tensor * lstm_direction(ggml_context * g, ggml_tensor * seq, int T, 
     ggml_set_name(c, reverse ? "lstm_rev_c0" : "lstm_fwd_c0");
     ggml_set_input(h);
     ggml_set_input(c);
+    // These are reset from the host before every recognition. Keep their
+    // storage live for the complete graph so the allocator cannot reuse an
+    // initial-state buffer as an intermediate from an earlier timestep.
+    ggml_set_output(h);
+    ggml_set_output(c);
 
     for (int step = 0; step < T; ++step) {
         const int t = reverse ? T - 1 - step : step;
@@ -223,7 +304,8 @@ static bool build_graph(easyocr_ocr_context * c) {
 easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
     (void)n_threads;
     auto * c = new easyocr_ocr_context();
-    c->backend = crispasr_init_gpu_backend();
+    const bool force_cpu = std::getenv("EASYOCR_FORCE_CPU") != nullptr;
+    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!c->backend || !core_gguf::load_weights(model_path, c->backend, "easyocr", c->wl)) {
         easyocr_ocr_free(c);
         return nullptr;
@@ -272,15 +354,16 @@ void easyocr_ocr_free(easyocr_ocr_context * c) {
 
 const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, int w, int h, int ch, int * out_len) {
     if (!c || !px || w <= 0 || h <= 0 || ch <= 0) return nullptr;
+    const auto total_start = std::chrono::steady_clock::now();
     std::vector<uint8_t> gray((size_t)w * h);
     for (int y = 0; y < h; ++y)
         for (int x = 0; x < w; ++x) {
             const uint8_t * p = px + ((size_t)y * w + x) * ch;
-            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2]) / 1000);
+            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
         }
     std::vector<float> resized((size_t)c->height * c->width);
     const int rw = std::min(c->width, std::max(1, (int)std::ceil((double)c->height * w / h)));
-    image_preproc::resize_bicubic_u8_hwc(gray.data(), h, w, resized.data(), c->height, rw, 1);
+    resize_easyocr_linear_u8(gray.data(), h, w, resized.data(), c->height, rw);
     c->input_host.assign((size_t)c->height * c->width, 0.0f);
     for (int y = 0; y < c->height; ++y)
         for (int x = 0; x < rw; ++x) {
@@ -290,17 +373,21 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     for (int y = 0; y < c->height; ++y)
         for (int x = rw; x < c->width; ++x)
             c->input_host[(size_t)y * c->width + x] = c->input_host[(size_t)y * c->width + rw - 1];
+    const auto preprocess_end = std::chrono::steady_clock::now();
     ggml_backend_tensor_set(c->input, c->input_host.data(), 0, c->input_host.size() * sizeof(float));
     std::vector<float> zero((size_t)c->hidden, 0.0f);
     for (const char * n : { "lstm_fwd_h0", "lstm_fwd_c0", "lstm_rev_h0", "lstm_rev_c0" })
         ggml_backend_tensor_set(ggml_graph_get_tensor(c->graph, n), zero.data(), 0, zero.size() * sizeof(float));
+    const auto graph_start = std::chrono::steady_clock::now();
     if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return nullptr;
+    const auto graph_end = std::chrono::steady_clock::now();
 
     std::vector<float> logits((size_t)c->classes * c->time_steps);
     ggml_backend_tensor_get(c->logits, logits.data(), 0, logits.size() * sizeof(float));
-    c->result.clear();
-    c->last_confidence = 0.0f;
-    int prev = 0;
+    std::vector<int> best_tokens;
+    std::vector<float> nonblank_probabilities;
+    best_tokens.reserve(c->time_steps);
+    nonblank_probabilities.reserve(c->time_steps);
     for (int t = 0; t < c->time_steps; ++t) {
         float max_logit = logits[(size_t)t * c->classes];
         for (int k = 1; k < c->classes; ++k) max_logit = std::max(max_logit, logits[(size_t)t * c->classes + k]);
@@ -315,17 +402,39 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
                 best = k;
             }
         }
-        c->last_confidence += best_probability;
-        if (best && best != prev && best < (int)c->tokens.size()) c->result += c->tokens[(size_t)best];
-        prev = best;
+        best_tokens.push_back(best);
+        if (best != 0) nonblank_probabilities.push_back(best_probability);
     }
-    c->last_confidence /= std::max(1, c->time_steps);
+    std::vector<std::string> vocabulary;
+    if (c->tokens.size() > 1) vocabulary.assign(c->tokens.begin() + 1, c->tokens.end());
+    int invalid_token = -1;
+    if (!easyocr_postprocess::ctc_greedy_decode(best_tokens, vocabulary, &c->result, &invalid_token)) {
+        fprintf(stderr, "easyocr: invalid CTC token %d (vocabulary size=%zu)\n", invalid_token, vocabulary.size());
+        c->result.clear();
+    }
+    c->last_confidence = easyocr_postprocess::confidence_custom_mean(nonblank_probabilities);
     if (out_len) *out_len = (int)c->result.size();
+    const auto total_end = std::chrono::steady_clock::now();
+    c->last_timing.preprocess_ms = std::chrono::duration<double, std::milli>(preprocess_end - total_start).count();
+    c->last_timing.graph_ms = std::chrono::duration<double, std::milli>(graph_end - graph_start).count();
+    c->last_timing.decode_ms = std::chrono::duration<double, std::milli>(total_end - graph_end).count();
+    c->last_timing.total_ms = std::chrono::duration<double, std::milli>(total_end - total_start).count();
+    if (std::getenv("EASYOCR_BENCH")) {
+        fprintf(stderr, "[easyocr-bench] preprocess=%.3f graph=%.3f decode=%.3f total=%.3f ms width=%d\n",
+                c->last_timing.preprocess_ms, c->last_timing.graph_ms, c->last_timing.decode_ms,
+                c->last_timing.total_ms, c->width);
+    }
     return c->result.c_str();
 }
 
 float easyocr_ocr_last_confidence(const easyocr_ocr_context * c) {
     return c ? c->last_confidence : 0.0f;
+}
+
+bool easyocr_ocr_last_timing(const easyocr_ocr_context * c, easyocr_ocr_timing * timing) {
+    if (!c || !timing) return false;
+    *timing = c->last_timing;
+    return true;
 }
 
 static bool copy_graph_tensor(ggml_cgraph * graph, const char * name, std::vector<float> & raw,
@@ -403,6 +512,56 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         const bool sparse_feature_pass = !strcmp(name, "features") && report.cos_global >= 0.99f;
         const bool pass = report.is_pass(0.99f) || sparse_feature_pass;
         print_diff_report(name, report, pass);
+        if (std::getenv("EASYOCR_DIFF_DEBUG") && row_dim >= 0 &&
+            (!pass || !strcmp(name, "sequence_input") || !strcmp(name, "bilstm_1") || !strcmp(name, "logits"))) {
+            auto ref_values = ref.get_f32(name);
+            const size_t row_size = row_dim < (int)ref.shape(name).size() ? (size_t)ref.shape(name)[row_dim] : 0;
+            if (row_size > 0) {
+                const size_t rows = std::min(ordered.size(), ref_values.second) / row_size;
+                float worst = 2.0f;
+                size_t worst_row = 0;
+                float mine_row_norm = 0.0f;
+                float ref_row_norm = 0.0f;
+                for (size_t row = 0; row < rows; ++row) {
+                    double dot = 0.0, mine_sq = 0.0, ref_sq = 0.0;
+                    for (size_t j = 0; j < row_size; ++j) {
+                        const float mine = ordered[row * row_size + j];
+                        const float truth = ref_values.first[row * row_size + j];
+                        dot += (double)mine * truth;
+                        mine_sq += (double)mine * mine;
+                        ref_sq += (double)truth * truth;
+                    }
+                    const float cos = mine_sq > 1e-18 && ref_sq > 1e-18
+                                          ? (float)(dot / (std::sqrt(mine_sq) * std::sqrt(ref_sq)))
+                                          : (mine_sq <= 1e-18 && ref_sq <= 1e-18 ? 1.0f : 0.0f);
+                    if (cos < worst) {
+                        worst = cos;
+                        worst_row = row;
+                        mine_row_norm = (float)std::sqrt(mine_sq);
+                        ref_row_norm = (float)std::sqrt(ref_sq);
+                    }
+                }
+                printf("easyocr-diff-debug %-16s worst_row=%zu cos=%.7f mine=%.6g ref=%.6g\n", name, worst_row, worst,
+                       mine_row_norm, ref_row_norm);
+                if (!strcmp(name, "logits")) {
+                    std::vector<size_t> order(row_size);
+                    for (size_t j = 0; j < row_size; ++j) order[j] = j;
+                    const size_t top = std::min<size_t>(5, row_size);
+                    std::partial_sort(order.begin(), order.begin() + top, order.end(), [&](size_t a, size_t b) {
+                        return std::fabs(ordered[worst_row * row_size + a] -
+                                         ref_values.first[worst_row * row_size + a]) >
+                               std::fabs(ordered[worst_row * row_size + b] -
+                                         ref_values.first[worst_row * row_size + b]);
+                    });
+                    for (size_t k = 0; k < top; ++k) {
+                        const size_t cls = order[k];
+                        printf("easyocr-diff-debug logits-row=%zu class=%zu mine=%.7g ref=%.7g diff=%.7g\n", worst_row,
+                               cls, ordered[worst_row * row_size + cls], ref_values.first[worst_row * row_size + cls],
+                               ordered[worst_row * row_size + cls] - ref_values.first[worst_row * row_size + cls]);
+                    }
+                }
+            }
+        }
         if (!strcmp(name, "logits") && std::getenv("EASYOCR_DIFF_DEBUG")) {
             auto ref_logits = ref.get_f32(name);
             const int vocab = (int)t->ne[0];

@@ -61,6 +61,9 @@ bool load(context ** ctx, const char * path, int n_threads = 1);
 std::vector<text_box> detect(context * ctx, const float * pixels, int H, int W, float prob_threshold = 0.3f,
                              float box_threshold = 0.5f, float unclip_ratio = 1.5f);
 
+std::vector<text_box> detect_preprocessed_ex(context * ctx, const float * pixels, int H, int W,
+                                             const detect_options & options);
+
 // Detect from image file. Handles resize, normalize, pad, and coordinate
 // rescaling back to original image space.
 std::vector<text_box> detect_file(context * ctx, const char * path, float prob_threshold = 0.3f,
@@ -90,6 +93,8 @@ std::vector<text_box> postprocess_probability_map(const float * prob_map, int ma
 // Returns nullptr if no detection has been run yet.
 // Shape: [H_padded, W_padded], row-major, values in [0, 1].
 const float * get_prob_map(const context * ctx, int * out_h, int * out_w);
+
+bool get_intermediate(const context * ctx, const char * name, const float ** data, size_t * n_elem);
 
 // Free resources.
 void free(context * ctx);

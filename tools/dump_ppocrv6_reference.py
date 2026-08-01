@@ -88,7 +88,9 @@ class Ref:
 
 def preprocess(path: Path):
     im = np.asarray(Image.open(path).convert("RGB"), dtype=np.uint8)
-    if __import__("os").environ.get("PPOCRV6_BGR"):
+    # Official PP-OCRv6 inference.yml declares DecodeImage(img_mode=BGR).
+    # Use BGR by default; PPOCRV6_RGB is an explicit diagnostic override.
+    if not __import__("os").environ.get("PPOCRV6_RGB"):
         im = im[:, :, ::-1]
     h, w = im.shape[:2]
     rw = min(320, max(1, round(w * 48 / h)))

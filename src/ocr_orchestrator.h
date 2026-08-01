@@ -39,22 +39,23 @@ namespace ocr_orchestrator {
 // Which ggml-native engine runs a stage. Each maps to an existing context type
 // in this repo; `dbnet_trocr` is the general `ocr_pipeline` (detect+recognize).
 enum class engine {
-    dbnet_trocr,    // ocr_pipeline.cpp  (DBNet detection + TrOCR recognition)
-    ppocrv6,        // PP-OCRv6 detector + recognizer
-    surya,          // surya_det.cpp + recognizer
-    qwen2vl,        // qwen2vl_ocr.cpp   (VLM)
-    got,            // got_ocr.cpp
-    parseq,         // parseq_ocr.cpp
-    glm,            // glm_ocr.cpp
-    internvl2,      // internvl2_ocr.cpp
-    tesseract,      // DBNet detection + Tesseract-LSTM line recognition
-    deepseek_ocr2,  // deepseek_ocr2.cpp (MoE VLM)
-    pix2struct,     // pix2struct.cpp (document/chart understanding)
-    granite_vision, // granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
-    lightonocr,     // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
-    qwen3vl,        // qwen2vl_ocr.cpp (Qwen3-VL, DeepStack + IMROPE)
-    unlimited_ocr,  // unlimited_ocr.cpp (SAM + CLIP + MoE VLM)
-    unified,        // metadata-dispatched crispembed_ocr_model_* GGUF
+    dbnet_trocr,       // ocr_pipeline.cpp  (DBNet detection + TrOCR recognition)
+    ppocrv6,           // PP-OCRv6 detector + recognizer
+    surya,             // surya_det.cpp + recognizer
+    qwen2vl,           // qwen2vl_ocr.cpp   (VLM)
+    got,               // got_ocr.cpp
+    parseq,            // parseq_ocr.cpp
+    glm,               // glm_ocr.cpp
+    internvl2,         // internvl2_ocr.cpp
+    tesseract,         // DBNet detection + Tesseract-LSTM line recognition
+    tesseract_fraktur, // DBNet detection + grayscale crops + German Fraktur LSTM
+    deepseek_ocr2,     // deepseek_ocr2.cpp (MoE VLM)
+    pix2struct,        // pix2struct.cpp (document/chart understanding)
+    granite_vision,    // granite_vision_ocr.cpp (LLaVA-Next, OCRBench 852)
+    lightonocr,        // lightonocr.cpp (Pixtral ViT + Qwen3 decoder)
+    qwen3vl,           // qwen2vl_ocr.cpp (Qwen3-VL, DeepStack + IMROPE)
+    unlimited_ocr,     // unlimited_ocr.cpp (SAM + CLIP + MoE VLM)
+    unified,           // metadata-dispatched crispembed_ocr_model_* GGUF
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.
@@ -82,6 +83,8 @@ struct accept_gate {
 // Tunable engine parameters (per stage). Only the fields relevant to the
 // stage's engine are used; the rest keep their defaults.
 struct engine_params {
+    // Tesseract engines: 0 = DBNet, 1 = classical page segmentation.
+    int page_segmentation = 0;
     // Detection (DBNet / Surya), used by ocr_pipeline::run_file.
     float det_prob_threshold = 0.3f;
     float det_box_threshold = 0.5f;
@@ -106,6 +109,11 @@ struct stage {
     engine_params params;
     std::string model_a; // det / single model GGUF (resolved by caller)
     std::string model_b; // rec model GGUF (engines that need a pair)
+    // Optional line-orientation model.  PP-OCRv6 uses PP-LCNet here; keeping
+    // it separate from the recognizer lets the stage report an explicit
+    // classifier fallback instead of silently treating orientation as part of
+    // recognition.
+    std::string model_c;
 };
 
 // Ordered stages for one source type. First passing stage wins; otherwise the
@@ -137,6 +145,12 @@ struct config {
 // stages, denoise-only for VLM/detector stages; accept-gate {8 chars, 0.5}.
 config default_config();
 
+// Explicit German-Fraktur profile. The caller supplies model_a as the DBNet
+// detector and model_b as tesseract-frk-{precision}.gguf. Unlike the generic
+// scanned-document profile it deliberately preserves grayscale input, since
+// binarization can erase thin Fraktur strokes and long-s forms.
+stage tesseract_fraktur_stage();
+
 struct result {
     int page_width = 0;
     int page_height = 0;
@@ -166,6 +180,16 @@ struct result {
     int stages_tried = 0;
     std::string detected_lang; // ISO 639-1 code from LID ("" if no LID)
     float lang_confidence = 0.0f;
+    struct stage_metric {
+        int index = 0;
+        std::string engine;
+        float elapsed_ms = 0.0f;
+        bool cleanup_applied = false;
+        bool accepted = false;
+        int text_chars = 0;
+        float mean_confidence = 0.0f;
+    };
+    std::vector<stage_metric> stage_metrics;
 };
 
 struct context;

@@ -140,6 +140,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const int n_tensors = gguf_get_n_tensors(ctx_in);
     const int arch_key = gguf_find_key(ctx_in, "general.architecture");
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
+    const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
     const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
     if (is_ppocrv6) {
         fprintf(stderr, "PP-OCRv6 precision policy: biases/SE/depthwise/early-head tensors stay F16/F32; CTC logits "
@@ -261,7 +262,17 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
              sname.find(".dw.") != std::string::npos || sname.find("det.bb.stem") != std::string::npos ||
              sname.find("det.neck.") != std::string::npos ||
              (sname.find("head.") != std::string::npos && sname.find("head.fc2.weight") == std::string::npos));
-        if (ppocr_keep || sname.find("patch_embed") != std::string::npos ||
+        // Tesseract's output projection is the CTC decision boundary. Keeping
+        // it at F32 avoids changing near-tied character logits even when the
+        // recurrent matrices are quantized. The output bias is already kept
+        // by the generic bias rule below.
+        // Tesseract's native int-mode uses the separately preserved source
+        // int8 matrices. Keep every float matrix lossless in the container so
+        // the F32 path and the bias/activation reference do not acquire a
+        // second, unrelated ggml quantization error.
+        const bool tesseract_keep = is_tesseract_lstm &&
+                                     (sname == "output.weight" || sname.find(".weight") != std::string::npos);
+        if (ppocr_keep || tesseract_keep || sname.find("patch_embed") != std::string::npos ||
             sname.find("downsample") != std::string::npos || sname.find("downsampling") != std::string::npos ||
             sname.find("dwconv") != std::string::npos || sname.find("enc.bb") != std::string::npos ||
             sname.find("enc.proj") != std::string::npos || sname.find("enc.embed.patch") != std::string::npos ||
@@ -700,7 +711,10 @@ int main(int argc, char ** argv) {
             pos.push_back(a);
     }
     if (pos.size() != 3) {
-        fprintf(stderr, "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--ppocrv6-q8-head] [--imatrix <file>]\n\n", argv[0]);
+        fprintf(
+            stderr,
+            "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--ppocrv6-q8-head] [--imatrix <file>]\n\n",
+            argv[0]);
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");

@@ -43,6 +43,18 @@ const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_
 /// winning character class at its CTC timestep.
 const float * tesseract_lstm_confidences(const tesseract_lstm_context * ctx, int * n_chars);
 
+/// Get sequence-level confidence for the last recognition. Greedy decoding
+/// returns the mean selected CTC probability; beam decoding returns a
+/// length-normalized sequence probability. Beam per-character confidence is
+/// intentionally unavailable because its labels have no single timestep.
+float tesseract_lstm_mean_confidence(const tesseract_lstm_context * ctx);
+
+/// Tesseract-style greedy word confidence in [0,1]. This uses the minimum
+/// log-probability over the selected CTC path, matching NetworkIO's certainty
+/// conversion and LTRResultIterator's 100 + 5*certainty rule. Returns 0 for
+/// beam decoding because a beam path has no stable per-symbol certainty.
+float tesseract_lstm_word_confidence(const tesseract_lstm_context * ctx);
+
 /// Get model info.
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx);
 int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx);

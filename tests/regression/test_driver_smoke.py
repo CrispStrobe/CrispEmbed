@@ -40,7 +40,7 @@ CANNED_DIFF = """\
 
 class TestManifest(unittest.TestCase):
     def setUp(self):
-        with open(MANIFEST) as f:
+        with open(MANIFEST, encoding="utf-8") as f:
             self.m = json.load(f)
 
     def test_top_level(self):

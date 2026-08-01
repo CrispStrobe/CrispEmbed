@@ -111,6 +111,12 @@ float ocr_quality_score(const char * text, const char ** dict, int n_dict);
 /// [confidence] receives a score in [0,1] — higher = more certain.
 int detect_text_angle(const uint8_t * gray, int w, int h, float * confidence);
 
+/// Estimate page orientation as one of 0, 90, 180, or 270 degrees clockwise.
+/// This is a model-free fallback based on text-line projection and the
+/// existing 0/180 text-angle heuristic. It never rotates input implicitly.
+/// [confidence] receives the margin between the best and second-best axis.
+int detect_page_orientation(const uint8_t * gray, int w, int h, float * confidence);
+
 // ---------------------------------------------------------------------------
 // 8. TPS spatial transformer (learned dewarping)
 // ---------------------------------------------------------------------------

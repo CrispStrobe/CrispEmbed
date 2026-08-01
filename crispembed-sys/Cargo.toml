@@ -13,6 +13,17 @@ categories = ["external-ffi-bindings", "text-processing"]
 links = "crispembed"
 build = "build.rs"
 
+# The C/C++ sources are vendored into vendor/ by scripts/vendor_rust_sources.sh
+# — cargo only packages files under the crate root, so the in-tree ../src and
+# ../ggml are unreachable from the published tarball. `include` also OVERRIDES
+# .gitignore, which is what lets the generated tree ship without committing a
+# 26 MB duplicate of the repository.
+include = [
+    "src/**/*.rs",
+    "build.rs",
+    "vendor/**",
+]
+
 [features]
 cuda   = []
 metal  = []

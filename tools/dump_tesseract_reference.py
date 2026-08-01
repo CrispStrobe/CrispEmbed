@@ -16,6 +16,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import subprocess
 import struct
 import sys
@@ -201,7 +202,53 @@ def sigmoid(x):
     return 1.0 / (1.0 + np.exp(-np.clip(x, -50, 50)))
 
 
-def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False):
+def tesseract_tanh(x):
+    """Tesseract's 1/256-spaced tanh lookup-table interpolation."""
+    x = np.asarray(x, dtype=np.float32)
+    negative = x < 0
+    ax = np.abs(x) * np.float32(256.0)
+    index = np.floor(ax).astype(np.int64)
+    frac = ax - index.astype(np.float32)
+    i0 = np.minimum(index, 4094).astype(np.float32)
+    y0 = np.tanh(i0 / np.float32(256.0))
+    y1 = np.tanh((i0 + 1.0) / np.float32(256.0))
+    result = y0 + (y1 - y0) * frac
+    result = np.where(index >= 4095, 1.0, result)
+    return np.where(negative, -result, result).astype(np.float32)
+
+
+def tesseract_logistic(x):
+    """Tesseract's 1/256-spaced logistic lookup-table interpolation."""
+    x = np.asarray(x, dtype=np.float32)
+    negative = x < 0
+    ax = np.abs(x) * np.float32(256.0)
+    index = np.floor(ax).astype(np.int64)
+    frac = ax - index.astype(np.float32)
+    i0 = np.minimum(index, 4094).astype(np.float32)
+    y0 = 1.0 / (1.0 + np.exp(-i0 / np.float32(256.0)))
+    y1 = 1.0 / (1.0 + np.exp(-(i0 + 1.0) / np.float32(256.0)))
+    result = y0 + (y1 - y0) * frac
+    result = np.where(index >= 4095, 1.0, result)
+    return np.where(negative, 1.0 - result, result).astype(np.float32)
+
+
+def _quantize_int_activation(x):
+    """Match NetworkIO::WriteTimeStepPart (signed int8 / 127)."""
+    x = np.asarray(x, dtype=np.float32)
+    scaled = x * np.float32(127.0)
+    rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+    return np.clip(rounded, -127, 127).astype(np.float32) / np.float32(127.0)
+
+
+def _quantize_int_input(x):
+    """Match NetworkIO::SetPixel (128 scale, clipped to signed int8)."""
+    x = np.asarray(x, dtype=np.float32)
+    scaled = x * np.float32(128.0)
+    rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+    return np.clip(rounded, -127, 127).astype(np.float32) / np.float32(127.0)
+
+
+def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False, int_mode=False):
     """LSTM forward pass over time axis.
 
     x:    (T, ni) input
@@ -218,25 +265,72 @@ def lstm_forward(x, W_ih, W_hh, bias, ns, reverse=False):
     h = np.zeros(ns, dtype=np.float32)
     c = np.zeros(ns, dtype=np.float32)
     output = np.zeros((T, ns), dtype=np.float32)
+    if int_mode:
+        row_max = np.maximum(np.max(np.abs(W_ih), axis=1), np.max(np.abs(W_hh), axis=1))
+        row_max = np.maximum(row_max, np.abs(bias))
+        row_scale = (row_max / np.float32(127.0)).astype(np.float32)
+        safe_scale = np.where(row_scale == 0, np.float32(1.0), row_scale)
+        def q_weights(weights):
+            scaled = weights / safe_scale[:, None]
+            rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+            return np.clip(rounded, -127, 127).astype(np.int32)
+        q_w_ih = q_weights(W_ih)
+        q_w_hh = q_weights(W_hh)
+        scaled_bias = bias / safe_scale
+        q_bias = np.where(scaled_bias >= 0, np.floor(scaled_bias + 0.5),
+                          -np.floor(-scaled_bias + 0.5)).astype(np.int32)
 
     for step in range(T):
         t = (T - 1 - step) if reverse else step
         xt = x[t]
 
-        # gates = W_ih @ x + W_hh @ h + bias
-        gates = W_ih @ xt + W_hh @ h + bias
+        # Match native TF_INT_MODE row-wise arithmetic when enabled.
+        if int_mode:
+            qx = np.clip(np.where(xt * 127.0 >= 0, np.floor(xt * 127.0 + 0.5),
+                                  -np.floor(-xt * 127.0 + 0.5)), -127, 127).astype(np.int32)
+            qh = np.clip(np.where(h * 127.0 >= 0, np.floor(h * 127.0 + 0.5),
+                                  -np.floor(-h * 127.0 + 0.5)), -127, 127).astype(np.int32)
+            acc = q_w_ih @ qx + q_w_hh @ qh + q_bias * 127
+            gates = acc.astype(np.float32) * row_scale / np.float32(127.0)
+        else:
+            gates = W_ih @ xt + W_hh @ h + bias
 
-        i_gate = sigmoid(gates[0*ns:1*ns])
-        f_gate = sigmoid(gates[1*ns:2*ns])
-        g_gate = np.tanh(gates[2*ns:3*ns])
-        o_gate = sigmoid(gates[3*ns:4*ns])
+        logistic = tesseract_logistic if int_mode else sigmoid
+        nonlinear_tanh = tesseract_tanh if int_mode else np.tanh
+        i_gate = logistic(gates[0*ns:1*ns])
+        f_gate = logistic(gates[1*ns:2*ns])
+        g_gate = nonlinear_tanh(gates[2*ns:3*ns])
+        o_gate = logistic(gates[3*ns:4*ns])
 
         c = f_gate * c + i_gate * g_gate
-        h = o_gate * np.tanh(c)
+        h = o_gate * nonlinear_tanh(c)
+        if int_mode:
+            h = _quantize_int_activation(h)
 
         output[t] = h
 
     return output
+
+
+class _TRand:
+    def __init__(self, seed):
+        self.seed = seed & ((1 << 64) - 1)
+
+    def next_int(self):
+        self.seed = (self.seed * 6364136223846793005 + 1442695040888963407) & ((1 << 64) - 1)
+        return self.seed >> 33
+
+    def signed_rand(self, scale):
+        return scale * (2.0 * self.next_int() / 2147483647.0 - 1.0)
+
+
+def _round_away(value):
+    return np.floor(value + 0.5) if value >= 0 else -np.floor(-value + 0.5)
+
+
+_CONVOLVE_RNG = None
+_CONVOLVE_INT_MODE = False
+_SAMPLE_ITERATION = 0
 
 
 def convolve_stack(x, half_x, half_y):
@@ -250,18 +344,22 @@ def convolve_stack(x, half_x, half_y):
     kh = 2 * half_y + 1
     out = np.zeros((H, W, C * kw * kh), dtype=np.float32)
 
-    for dx in range(-half_x, half_x + 1):
-        for dy in range(-half_y, half_y + 1):
-            out_offset = ((dx + half_x) * kh + (dy + half_y)) * C
-            for y in range(H):
-                for xi in range(W):
+    for y in range(H):
+        for xi in range(W):
+            for dx in range(-half_x, half_x + 1):
+                for dy in range(-half_y, half_y + 1):
+                    out_offset = ((dx + half_x) * kh + (dy + half_y)) * C
                     sy = y + dy
                     sx = xi + dx
                     if 0 <= sy < H and 0 <= sx < W:
                         out[y, xi, out_offset:out_offset+C] = x[sy, sx, :]
                     else:
-                        # Random fill in Tesseract — use zeros for determinism
-                        pass
+                        for c in range(C):
+                            if _CONVOLVE_INT_MODE:
+                                value = _round_away(_CONVOLVE_RNG.signed_rand(127.0)) / 127.0
+                            else:
+                                value = _CONVOLVE_RNG.signed_rand(1.0)
+                            out[y, xi, out_offset + c] = value
     return out
 
 
@@ -295,7 +393,70 @@ def fc_forward(x, weight, bias, activation="tanh"):
     return y
 
 
-def run_forward(root, image_gray, captures):
+def int8_fc_forward(x, weight, bias):
+    """Match Tesseract's TF_INT_MODE row-wise FC arithmetic.
+
+    Each serialized row has one scale reconstructed from the largest absolute
+    row value (including its bias). Inputs and weights are rounded away from
+    zero into signed int8, accumulated in int32, and restored with the row
+    scale before the nonlinear LUT is applied.
+    """
+    x = np.asarray(x, dtype=np.float32)
+    weight = np.asarray(weight, dtype=np.float32)
+    bias = np.asarray(bias, dtype=np.float32)
+    out = np.empty((x.shape[0], weight.shape[0]), dtype=np.float32)
+    xi = np.where(x * np.float32(127.0) >= 0,
+                  np.floor(x * np.float32(127.0) + 0.5),
+                  -np.floor(-x * np.float32(127.0) + 0.5))
+    xi = np.clip(xi, -127, 127).astype(np.int32)
+    for row in range(weight.shape[0]):
+        max_abs = max(float(np.max(np.abs(weight[row]))), abs(float(bias[row])))
+        if max_abs == 0.0:
+            out[:, row] = 0.0
+            continue
+        scale = np.float32(max_abs / 127.0)
+        wi_scaled = weight[row] / scale
+        wi = np.where(wi_scaled >= 0,
+                      np.floor(wi_scaled + 0.5),
+                      -np.floor(-wi_scaled + 0.5))
+        wi = np.clip(wi, -127, 127).astype(np.int32)
+        bi_scaled = float(bias[row] / scale)
+        bi = int(np.floor(bi_scaled + 0.5) if bi_scaled >= 0 else -np.floor(-bi_scaled + 0.5))
+        acc = xi @ wi + bi * 127
+        out[:, row] = acc.astype(np.float32) * scale / np.float32(127.0)
+    return out
+
+
+def int8_lstm_gates(x, h, W_ih, W_hh, bias):
+    """Compute one Tesseract int-mode LSTM gate vector by serialized rows."""
+    gates = np.empty(W_ih.shape[0], dtype=np.float32)
+    def q127(values):
+        scaled = values * np.float32(127.0)
+        rounded = np.where(scaled >= 0, np.floor(scaled + 0.5), -np.floor(-scaled + 0.5))
+        return np.clip(rounded, -127, 127).astype(np.int32)
+    xi = q127(np.asarray(x, dtype=np.float32))
+    hi = q127(np.asarray(h, dtype=np.float32))
+    for row in range(W_ih.shape[0]):
+        max_abs = max(float(np.max(np.abs(W_ih[row]))),
+                      float(np.max(np.abs(W_hh[row]))), abs(float(bias[row])))
+        if max_abs == 0.0:
+            gates[row] = 0.0
+            continue
+        scale = np.float32(max_abs / 127.0)
+        wi_scaled = W_ih[row] / scale
+        wh_scaled = W_hh[row] / scale
+        wi = np.where(wi_scaled >= 0, np.floor(wi_scaled + 0.5), -np.floor(-wi_scaled + 0.5))
+        wh = np.where(wh_scaled >= 0, np.floor(wh_scaled + 0.5), -np.floor(-wh_scaled + 0.5))
+        wi = np.clip(wi, -127, 127).astype(np.int32)
+        wh = np.clip(wh, -127, 127).astype(np.int32)
+        b_scaled = float(bias[row] / scale)
+        bq = int(np.floor(b_scaled + 0.5) if b_scaled >= 0 else -np.floor(-b_scaled + 0.5))
+        acc = int(wi @ xi) + int(wh @ hi) + bq * 127
+        gates[row] = np.float32(acc) * scale / np.float32(127.0)
+    return gates
+
+
+def run_forward(root, image_gray, captures, int_mode=False):
     """Run the full Tesseract LSTM forward pass, capturing intermediates.
 
     image_gray: (H, W) float32 grayscale [0, 1]
@@ -329,10 +490,16 @@ def run_forward(root, image_gray, captures):
         return layers
 
     layers = find_layers(root)
+    global _CONVOLVE_RNG, _CONVOLVE_INT_MODE
+    _CONVOLVE_RNG = _TRand(_SAMPLE_ITERATION * 0x10000001)
+    _CONVOLVE_RNG.next_int()  # LSTMRecognizer::SetRandomSeed discards one value.
+    _CONVOLVE_INT_MODE = int_mode
 
     # Input: (H, W) → (H, W, 1)
     H, W = image_gray.shape
     x = image_gray[:, :, np.newaxis].astype(np.float32)
+    if int_mode:
+        x = _quantize_int_input(x)
     captures["input_image"] = x.flatten().copy()
 
     for layer in layers:
@@ -347,8 +514,14 @@ def run_forward(root, image_gray, captures):
             H, W, C = x.shape
             x_flat = x.reshape(H * W, C)
             wm = layer["weights"]["fc"]
-            act = "tanh" if layer["type"] == "Tanh" else "linear"
-            x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
+            act = "tanh" if layer["type"] in ("Tanh", "LinTanh") else "linear"
+            if int_mode and act == "tanh":
+                x_flat = int8_fc_forward(x_flat, wm["weight"], wm["bias"])
+                x_flat = tesseract_tanh(x_flat)
+            else:
+                x_flat = fc_forward(x_flat, wm["weight"], wm["bias"], act)
+            if int_mode:
+                x_flat = _quantize_int_activation(x_flat)
             x = x_flat.reshape(H, W, -1)
             captures["after_conv_fc"] = x.flatten().copy()
 
@@ -369,7 +542,8 @@ def run_forward(root, image_gray, captures):
             out_cols = np.zeros((W, ns), dtype=np.float32)
             for col in range(W):
                 col_input = x[:, col, :]  # (H, C) — run LSTM over H steps
-                h_seq = lstm_forward(col_input, W_ih, W_hh, bias, ns, reverse=False)
+                h_seq = lstm_forward(col_input, W_ih, W_hh, bias, ns, reverse=False,
+                                     int_mode=int_mode)
                 out_cols[col] = h_seq[-1]  # keep only last hidden state
 
             # Output: (1, W, ns) → squeeze height
@@ -388,7 +562,8 @@ def run_forward(root, image_gray, captures):
             wm = layer["weights"]
             W_ih, W_hh, bias = _pack_lstm_weights(wm, ns)
             rev = layer.get("_reversed", False)
-            x = lstm_forward(x, W_ih, W_hh, bias, ns, reverse=rev)
+            x = lstm_forward(x, W_ih, W_hh, bias, ns, reverse=rev,
+                             int_mode=int_mode)
             captures[f"after_lstm_{layer['_idx']}"] = x.flatten().copy()
 
         elif t in FC_TYPES and layer.get("_role") == "output":
@@ -475,15 +650,51 @@ def _tesseract_normalize(img_u8):
     if not maxes:
         maxes = [255.0]
 
-    # 25th percentile of mins, 75th percentile of maxes
-    black = float(np.percentile(mins, 25))
-    white = float(np.percentile(maxes, 75))
+    # Match Tesseract's STATS::ile: histogram buckets 0..255, then linear
+    # interpolation within the bucket containing frac * total_count. A
+    # sorted-sample percentile crosses int8 input rounding boundaries.
+    def percentile_histogram(values, q):
+        buckets = np.bincount(np.asarray(values, dtype=np.uint8), minlength=256)
+        total = int(len(values))
+        target = max(1.0, min(float(total), float(q) * total))
+        cumulative = 0
+        for index, count in enumerate(buckets):
+            cumulative += int(count)
+            if cumulative >= target and count > 0:
+                # Tesseract's loop increments index before STATS::ile returns.
+                return float(index + 1 - (cumulative - target) / count)
+        return 0.0
+
+    black = percentile_histogram(mins, 0.25)
+    white = percentile_histogram(maxes, 0.75)
     contrast = (white - black) / 2.0
     if contrast <= 0:
         contrast = 1.0
 
     result = (img_u8.astype(np.float32) - black) / contrast - 1.0
     return result
+
+
+def _native_compatible_resize(img_u8, width, height):
+    """Match Tesseract's Leptonica pixScaleGrayLI resize."""
+    src_h, src_w = img_u8.shape
+    scx = 16.0 * src_w / width
+    scy = 16.0 * src_h / height
+    xpm = np.floor(scx * np.arange(width)).astype(np.int64)
+    ypm = np.floor(scy * np.arange(height)).astype(np.int64)
+    xp, xf = xpm >> 4, xpm & 0xF
+    yp, yf = ypm >> 4, ypm & 0xF
+    out = np.empty((height, width), dtype=np.uint8)
+    for y in range(height):
+        sy, sy1, fy = int(yp[y]), min(int(yp[y]) + 1, src_h - 1), int(yf[y])
+        for x in range(width):
+            sx, sx1, fx = int(xp[x]), min(int(xp[x]) + 1, src_w - 1), int(xf[x])
+            value = ((16 - fx) * (16 - fy) * int(img_u8[sy, sx]) +
+                     fx * (16 - fy) * int(img_u8[sy, sx1]) +
+                     (16 - fx) * fy * int(img_u8[sy1, sx]) +
+                     fx * fy * int(img_u8[sy1, sx1]) + 128) // 256
+            out[y, x] = value
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -502,8 +713,13 @@ def main():
     # ── Load image ────────────────────────────────────────────────────
     try:
         from PIL import Image
-        img = Image.open(args.image).convert("L")  # grayscale
-        img_u8 = np.array(img, dtype=np.uint8)     # [0, 255]
+        img = Image.open(args.image)
+        # Match stb_image's stbi_load(..., req_comp=1) conversion used by the
+        # native harness: integer RGB coefficients and truncation, rather than
+        # Pillow's rounded ITU-R 601 conversion. This matters at int8 input
+        # boundaries for RGB fixtures.
+        rgb = np.asarray(img.convert("RGB"), dtype=np.uint16)
+        img_u8 = ((77 * rgb[..., 0] + 150 * rgb[..., 1] + 29 * rgb[..., 2]) >> 8).astype(np.uint8)
     except ImportError:
         print("ERROR: Pillow required (pip install Pillow)")
         sys.exit(1)
@@ -512,8 +728,15 @@ def main():
 
     # ── Parse traineddata ─────────────────────────────────────────────
     data = Path(args.model).read_bytes()
+    source_sha256 = hashlib.sha256(data).hexdigest()
+    print(f"Source SHA-256: {source_sha256}")
     comps = parse_traineddata(data)
     tokens = parse_unicharset(comps["lstm-unicharset"]) if "lstm-unicharset" in comps else []
+    # Tesseract reserves unichar id 0 for space. The serialized unicharset
+    # represents it as an empty string; restore the runtime token so the
+    # Python decoder has the same postprocessing contract as native code.
+    if tokens and tokens[0] == "":
+        tokens[0] = " "
     recoder = parse_recoder(comps["lstm-recoder"]) if "lstm-recoder" in comps else []
 
     r = TessReader(comps["lstm"])
@@ -521,9 +744,11 @@ def main():
 
     # Read LSTMRecognizer metadata
     vgsl = r.read_string()
-    _ = r.read_i32()  # training_flags
+    training_flags = r.read_i32()
     _ = r.read_i32()  # training_iteration
-    _ = r.read_i32()  # sample_iteration
+    sample_iteration = r.read_i32()
+    global _SAMPLE_ITERATION
+    _SAMPLE_ITERATION = sample_iteration
     null_char = r.read_i32()
 
     # Find input height
@@ -544,10 +769,7 @@ def main():
     h_orig, w_orig = img_u8.shape
     scale = input_height / h_orig
     new_w = max(1, int(w_orig * scale + 0.5))
-    from PIL import Image as PILImage
-    img_resized = PILImage.fromarray(img_u8)
-    img_resized = img_resized.resize((new_w, input_height), PILImage.BILINEAR)
-    img_u8_resized = np.array(img_resized, dtype=np.uint8)
+    img_u8_resized = _native_compatible_resize(img_u8, new_w, input_height)
     print(f"Resized: {new_w}x{input_height}")
 
     # ── Tesseract-style pixel normalization ───────────────────────────
@@ -560,7 +782,7 @@ def main():
 
     # ── Run forward pass ──────────────────────────────────────────────
     captures = {}
-    logits = run_forward(root, img_input, captures)
+    logits = run_forward(root, img_input, captures, int_mode=bool(training_flags & 1))
 
     # ── CTC decode ────────────────────────────────────────────────────
     decoded = ctc_greedy_decode(logits, null_char)
@@ -607,7 +829,15 @@ def main():
 
     writer.add_string("general.name", "tesseract-lstm-reference")
     writer.add_string("tesseract_lstm_ref.model_path", str(args.model))
+    writer.add_string("tesseract_lstm_ref.model_sha256", source_sha256)
+    writer.add_uint32("tesseract_lstm_ref.training_flags", training_flags)
+    writer.add_bool("tesseract_lstm_ref.int_mode", bool(training_flags & 1))
+    writer.add_string("tesseract_lstm_ref.resize", "leptonica_pixScaleGrayLI_fixed16_u8_round")
     writer.add_string("tesseract_lstm_ref.image_path", str(args.image))
+    # Keep these as strings: the lightweight C++ diff reader intentionally
+    # retains string metadata while skipping scalar values.
+    writer.add_string("tesseract_lstm_ref.image_width", str(int(img_u8.shape[1])))
+    writer.add_string("tesseract_lstm_ref.image_height", str(int(img_u8.shape[0])))
     writer.add_string("tesseract_lstm_ref.vgsl_spec", vgsl)
     writer.add_uint32("tesseract_lstm_ref.input_height", input_height)
     writer.add_uint32("tesseract_lstm_ref.null_char", null_char)

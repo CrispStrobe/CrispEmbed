@@ -181,5 +181,29 @@
     "local_file": "tests/regression/images/cc0/german_kurrent_handwriting.jpg",
     "sha256": "af3fbf9aae4f0dd0345d5a37fd73490ff2b1b41dee4d6b7ad33bbedd3da49e09",
     "size": 586275
+  },
+  {
+    "name": "commons_test_ocr_document",
+    "file": "commons_test_ocr_document.jpg",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Test_OCR_document.jpg?width=1600",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Test_OCR_document.jpg",
+    "license": "CC0-1.0",
+    "language": "en",
+    "tracks": ["printed", "page", "layout", "tesseract-parity"],
+    "local_file": "tests/regression/images/cc0/commons_test_ocr_document.jpg",
+    "sha256": "92d117d352ed2ebe86efc72e661407761f2747bf44fe7a292facd8d75735e4be",
+    "size": 874463
+  },
+  {
+    "name": "commons_example_receipt",
+    "file": "commons_example_receipt.png",
+    "url": "https://commons.wikimedia.org/wiki/Special:FilePath/Example_Reciept_001.png",
+    "source_page": "https://commons.wikimedia.org/wiki/File:Example_Reciept_001.png",
+    "license": "CC0-1.0",
+    "language": "en",
+    "tracks": ["receipt", "printed", "layout", "tesseract-parity"],
+    "local_file": "tests/regression/images/cc0/commons_example_receipt.png",
+    "sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+    "size": 50346
   }
 ]

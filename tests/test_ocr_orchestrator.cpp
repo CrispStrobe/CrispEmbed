@@ -9,6 +9,7 @@
 // Usage: test-ocr-orchestrator   (exits non-zero on failure)
 
 #include "ocr_orchestrator.h"
+#include "tesseract_pageseg.h"
 #include "core/clean_exit.h"
 #include "crispembed.h"
 
@@ -18,6 +19,7 @@ extern "C" int stbi_write_png(char const * filename, int w, int h, int comp, con
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <chrono>
 #include <string>
 #include <vector>
 
@@ -97,6 +99,18 @@ static void test_structured_capability_validation() {
     CHECK(ctx == nullptr, "formula validation does not allocate context");
 }
 
+static void test_fraktur_stage_profile() {
+    printf("── Fraktur stage profile ──\n");
+    using namespace ocr_orchestrator;
+    const stage s = tesseract_fraktur_stage();
+    CHECK(s.eng == engine::tesseract_fraktur, "explicit tesseract_fraktur engine");
+    CHECK(s.cleanup.enabled, "Fraktur cleanup enabled");
+    CHECK(s.cleanup.params.binarize == 0, "Fraktur profile preserves grayscale page");
+    CHECK(s.params.det_min_height == 18, "Fraktur profile lowers detector line height");
+    CHECK(s.params.det_width_height_ratio == 20.0f, "Fraktur profile accepts long lines");
+    CHECK(s.accept.min_chars == 4 && s.accept.min_confidence == 0.25f, "Fraktur profile gate");
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // 2. Source-type classifier
 // ═══════════════════════════════════════════════════════════════════════
@@ -165,6 +179,41 @@ static void test_classifier() {
 
     // NULL path → no crash
     CHECK(classify_file(nullptr) == source_type::scanned_doc, "null path → scanned_doc fallback");
+}
+
+static void test_tesseract_pageseg_geometry() {
+    printf("── Tesseract classical page segmentation geometry ──\n");
+    constexpr int w = 120, h = 48;
+    std::vector<uint8_t> gray((size_t)w * h, 245);
+    for (int y = 8; y <= 12; ++y)
+        for (int x = 12; x < 106; ++x) gray[(size_t)y * w + x] = 20;
+    for (int y = 30; y <= 34; ++y)
+        for (int x = 20; x < 96; ++x) gray[(size_t)y * w + x] = 20;
+
+    const auto boxes = tesseract_pageseg::segment_gray(gray.data(), w, h);
+    CHECK(boxes.size() == 2, "classical page segmentation finds two text bands");
+    if (boxes.size() == 2) {
+        CHECK(boxes[0].y < boxes[1].y, "classical page segmentation preserves top-to-bottom order");
+        CHECK(boxes[0].x <= 12.0f && boxes[0].y <= 8.0f, "first band includes deterministic padding");
+        CHECK(boxes[0].x + boxes[0].w >= 106.0f && boxes[1].x + boxes[1].w >= 96.0f,
+              "band geometry covers the detected ink");
+    }
+
+    // The component path is experimental, but its default legacy grouping is
+    // a supported gated fallback. Use separated glyph-like blobs so the
+    // connected-component filters are exercised rather than a single bar.
+    std::fill(gray.begin(), gray.end(), 245);
+    for (int row_y : { 8, 30 }) {
+        for (int glyph = 0; glyph < 5; ++glyph) {
+            const int x0 = 12 + glyph * 18;
+            for (int y = row_y; y < row_y + 7; ++y)
+                for (int x = x0; x < x0 + 8; ++x) gray[(size_t)y * w + x] = 20;
+        }
+    }
+    const auto component_boxes = tesseract_pageseg::segment_gray_components(gray.data(), w, h);
+    CHECK(component_boxes.size() == 2, "component page segmentation groups two blob rows");
+    if (component_boxes.size() == 2)
+        CHECK(component_boxes[0].y < component_boxes[1].y, "component rows preserve top-to-bottom order");
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -512,6 +561,13 @@ static void test_c_api() {
         CHECK(n_res == 0, "C API run with no models → 0 regions");
         // full_text may be NULL or empty
         CHECK(!full_text || full_text[0] == '\0' || n_res == 0, "C API run → empty text");
+        int n_metrics = -1;
+        const crispembed_ocr_stage_metric * metrics = crispembed_ocr_pipeline_stage_metrics(ctx, &n_metrics);
+        CHECK(n_metrics >= 0, "C API stage metrics query succeeds");
+        if (n_metrics > 0) {
+            CHECK(metrics != nullptr, "C API stage metrics pointer is present");
+            CHECK(metrics[0].index >= 0 && metrics[0].elapsed_ms >= 0.0, "C API stage metric fields are valid");
+        }
 
         crispembed_ocr_pipeline_free(ctx);
     }
@@ -624,6 +680,170 @@ static void test_tesseract_regression() {
     free(ctx);
 }
 
+// Same path as the production Fraktur profile, but opt-in because the large
+// detector/recognizer artifacts are kept outside the repository.
+static void test_tesseract_fraktur_regression() {
+    printf("── tesseract Fraktur regression (model-gated) ──\n");
+    const char * det_env = getenv("CRISPEMBED_FRAKTUR_DET_MODEL");
+    const char * rec_env = getenv("CRISPEMBED_FRAKTUR_MODEL");
+    const char * image_env = getenv("CRISPEMBED_FRAKTUR_IMAGE");
+    if (!det_env || !rec_env || !image_env || !det_env[0] || !rec_env[0] || !image_env[0]) {
+        printf("  SKIP: CRISPEMBED_FRAKTUR_{DET_MODEL,MODEL,IMAGE} not set\n");
+        return;
+    }
+    FILE * f1 = fopen(det_env, "r");
+    FILE * f2 = fopen(rec_env, "r");
+    FILE * f3 = fopen(image_env, "r");
+    if (!f1 || !f2 || !f3) {
+        if (f1) fclose(f1);
+        if (f2) fclose(f2);
+        if (f3) fclose(f3);
+        printf("  SKIP: Fraktur fixture or model not found\n");
+        return;
+    }
+    fclose(f1);
+    fclose(f2);
+    fclose(f3);
+
+    using namespace ocr_orchestrator;
+    config cfg;
+    cfg.router = false;
+    chain ch;
+    ch.type = source_type::auto_detect;
+    stage s = tesseract_fraktur_stage();
+    s.model_a = det_env;
+    s.model_b = rec_env;
+    ch.stages.push_back(s);
+    cfg.chains.push_back(ch);
+    context * ctx = nullptr;
+    if (!load(&ctx, cfg)) {
+        printf("  SKIP: failed to load Fraktur pipeline\n");
+        return;
+    }
+    result r = run_file(ctx, image_env);
+    CHECK(!r.regions.empty(), "Fraktur pipeline detects at least one line");
+    CHECK(r.regions.size() < 40, "Fraktur DBNet fragments are grouped into line regions");
+    CHECK(!r.full_text.empty(), "Fraktur pipeline returns text");
+    const float elapsed_ms = r.stage_metrics.empty() ? 0.0f : r.stage_metrics.back().elapsed_ms;
+    printf("  INFO: regions=%zu chars=%zu confidence=%.3f stage_ms=%.1f\n", r.regions.size(), r.full_text.size(),
+           r.mean_confidence, elapsed_ms);
+    if (getenv("CRISPEMBED_FRAKTUR_DUMP")) {
+        printf("  BEGIN native Fraktur full_text\n%s\n  END native Fraktur full_text\n", r.full_text.c_str());
+    }
+    ocr_orchestrator::free(ctx);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// 9b. Model-dependent: PP-OCRv6 detector → orientation → recognizer (gated)
+// ═══════════════════════════════════════════════════════════════════════
+static void test_ppocrv6_pipeline_regression() {
+    const char * variant_env = getenv("CRISPEMBED_PPOCRV6_VARIANT");
+    const std::string variant = variant_env && variant_env[0] ? variant_env : "tiny";
+    if (variant != "tiny" && variant != "small" && variant != "medium") {
+        printf("  SKIP: unsupported PP-OCRv6 variant: %s\n", variant.c_str());
+        return;
+    }
+    printf("── PP-OCRv6 %s pipeline regression (model-gated) ──\n", variant.c_str());
+
+    const char * models_dir = getenv("CRISPEMBED_MODELS_DIR");
+    if (!models_dir || !models_dir[0]) {
+        printf("  SKIP: CRISPEMBED_MODELS_DIR not set\n");
+        return;
+    }
+
+    const std::string prefix = std::string(models_dir) + "/PP-OCRv6_" + variant;
+    const std::string det_path = prefix + "_det-f16.gguf";
+    const std::string rec_path = prefix + "_rec-q8-head.gguf";
+    const std::string ori_path = std::string(models_dir) + "/PP-LCNet_x1_0_textline_ori-f16.gguf";
+    const char * image_path = "tests/regression/images/cc0/german_official_document.jpg";
+    FILE * det = fopen(det_path.c_str(), "r");
+    FILE * rec = fopen(rec_path.c_str(), "r");
+    FILE * ori = fopen(ori_path.c_str(), "r");
+    if (!det || !rec || !ori) {
+        if (det) fclose(det);
+        if (rec) fclose(rec);
+        if (ori) fclose(ori);
+        printf("  SKIP: PP-OCRv6 %s/orientation models not found in %s\n", variant.c_str(), models_dir);
+        return;
+    }
+    fclose(det);
+    fclose(rec);
+    fclose(ori);
+
+    using namespace ocr_orchestrator;
+    config cfg;
+    cfg.router = false;
+    chain ch;
+    ch.type = source_type::auto_detect;
+    stage s;
+    s.eng = engine::ppocrv6;
+    s.model_a = det_path;
+    s.model_b = rec_path;
+    s.model_c = ori_path;
+    s.accept.min_chars = 1;
+    s.accept.min_confidence = 0.0f;
+    ch.stages.push_back(s);
+    cfg.chains.push_back(ch);
+
+    context * ctx = nullptr;
+    if (!load(&ctx, cfg)) {
+        printf("  SKIP: failed to load PP-OCRv6 pipeline\n");
+        return;
+    }
+    const char * fixtures[] = {
+        image_path,
+        "tests/regression/images/derived/german_official_document__skew-p04.png",
+        "tests/regression/images/derived/german_official_document__low-dpi.png",
+        "tests/regression/images/derived/german_official_document__rot180.png",
+        "tests/regression/images/derived/german_official_document__perspective.png",
+        "tests/regression/images/derived/german_official_document__mixed-orientation.png",
+        "tests/regression/images/cc0/receipt_example.png",
+        "tests/regression/images/derived/receipt_example__rot90.png",
+        "tests/regression/images/cc0/arabic_printed_line.png",
+        "tests/regression/images/derived/arabic_printed_line__mixed-orientation.png",
+    };
+    int fixture_start = 0;
+    if (const char * start_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_START")) {
+        const int parsed = atoi(start_env);
+        if (parsed >= 0 && parsed < 10) fixture_start = parsed;
+    }
+    int fixture_limit = 10 - fixture_start;
+    if (const char * limit_env = getenv("CRISPEMBED_PPOCRV6_FIXTURE_LIMIT")) {
+        const int parsed = atoi(limit_env);
+        if (parsed > 0 && parsed < fixture_limit) fixture_limit = parsed;
+    }
+    int cases = 0;
+    int total_regions = 0;
+    for (int fixture_index = fixture_start; fixture_index < fixture_start + fixture_limit; ++fixture_index) {
+        const char * fixture = fixtures[fixture_index];
+        FILE * input = fopen(fixture, "r");
+        if (!input) {
+            printf("  SKIP: fixture not found: %s\n", fixture);
+            continue;
+        }
+        fclose(input);
+        const auto started = std::chrono::steady_clock::now();
+        result r = run_file(ctx, fixture);
+        const double elapsed_ms =
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
+        cases++;
+        total_regions += (int)r.regions.size();
+        CHECK(r.stages_tried == 1, "PP-OCRv6 detector/orientation/recognizer stage ran");
+        CHECK(r.mean_confidence >= 0.0f, "PP-OCRv6 pipeline confidence >= 0");
+        for (const auto & region : r.regions) {
+            CHECK(region.orientation_angle == 0 || region.orientation_angle == 180,
+                  "PP-OCRv6 line orientation is 0° or 180°");
+            CHECK(region.orientation_confidence >= 0.0f && region.orientation_confidence <= 1.0f,
+                  "PP-OCRv6 line orientation confidence is bounded");
+        }
+        printf("  INFO: %s: %zu regions, %d chars (conf=%.2f, time_ms=%.1f)\n", fixture, r.regions.size(),
+               (int)r.full_text.size(), r.mean_confidence, elapsed_ms);
+    }
+    CHECK(cases == fixture_limit, "PP-OCRv6 live corpus fixtures ran");
+    CHECK(total_regions > 0, "PP-OCRv6 live corpus produced regions");
+    free(ctx);
+}
+
 // ═══════════════════════════════════════════════════════════════════════
 // 10. Model-dependent: Punctuation post-process (gated)
 // ═══════════════════════════════════════════════════════════════════════
@@ -669,8 +889,10 @@ static void test_punctuation() {
 
 static int crispembed_test_main() {
     test_default_config();
+    test_fraktur_stage_profile();
     test_structured_capability_validation();
     test_classifier();
+    test_tesseract_pageseg_geometry();
     test_accept_gate();
     test_multi_stage();
     test_per_stage_config();
@@ -678,6 +900,8 @@ static int crispembed_test_main() {
     test_c_api();
     test_edge_cases();
     test_tesseract_regression();
+    test_tesseract_fraktur_regression();
+    test_ppocrv6_pipeline_regression();
     test_punctuation();
 
     printf("\n%d passed, %d failed\n", n_pass, n_fail);
