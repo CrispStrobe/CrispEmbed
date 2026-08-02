@@ -24,6 +24,8 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `chore/ai-act-hardening` / `.codex/worktrees/chore-ai-act-hardening` | **Picked:** third AI Act audit, run against `origin/main` after `f7f89032` landed. Re-verified the code-backed claims and found them all true: no 1:N/gallery primitive in the C ABI, no emotion/age/gender/ethnicity code anywhere, no scraping tooling, server gate fails closed before `crispembed_face_init()`, gate keyed on declared model type so a renamed `.gguf` is still caught, `/doc` temp uploads tracked and unlinked. Two gaps remained, both closed here: (1) the deployed GitHub Pages demo (`examples/wasm-ocr/index.html`) carried no notice at all while the HF Space had one — added an AI-output/data-locality/no-biometrics footer linking POLICY.md; (2) POLICY §3 and README asserted the absence of biometric-categorisation *models* in terms a reader could mistake for a guarantee about capability — CLIP/SigLIP zero-shot means the caller supplies the classifier, now stated. Also strengthened §7: Art. 53 does not engage for task-specific models at all (the quantization argument is the fallback), and Art. 53(2) does not waive the copyright policy or training-data summary. Docs/HTML only — no C/C++, no rebuild needed | **COMPLETED** |
 | 2026-08-01 | `chore/ai-act-audit-followups` / `.codex/worktrees/chore-ai-act-audit-followups` | **Picked:** close the five gaps a second AI Act audit found in the `chore/ai-act-policy` work. (1) biometric gate moved into `crispembed_face_init()` so the Python/Rust/Dart bindings are covered, not just CLI+server — new ABI `crispembed_accept_biometric_use()`; (2) `check_registry_licenses.py` read only HF's `license` tag and missed `license_name`, so the 4 correct lfm2 rows failed — fixed, now exit 0, and wired into `main-health.yml`; (3)(4)(5) POLICY.md: Art. 50(2) reframed as reasoned-position-not-settled-exemption, OCR-VLM text addressed, and the regulatory dates corrected — the Omnibus is **Reg (EU) 2026/1744, OJ 24 Jul 2026**, not "adopted June 2026". Touches `src/crispembed.{h,cpp}`, `examples/cli/model_mgr.*`, bindings, POLICY/README/PLAN, `tests/check_registry_licenses.py` — **no OCR/model/graph code**. Verified: CLI + Python both refuse a recognition model without acknowledgement and load it with one, byte-identical embeddings either way; licence check exits 0; `tools/format.sh` clean. | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** fix O9 pipeline benchmark routing to use each manifest entry’s engine family (`ppocrv6`) instead of the tiered display name (`ppocrv6-tiny`), which had sent PP-OCRv6 fixtures through generic DB postprocessing and produced false `missing stem conv` load failures. Rebuilt CLI and verified tiny `4.98 s`/2 regions, small `20.82 s`/2 regions; medium exceeded the `120 s` guard and is recorded as a timeout, not a quality pass | **COMPLETED** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** resolve the remaining official PP-OCRv6 quality discrepancy by testing the HF/PaddleX preprocessing contract (RGB/BGR, resize, normalization) and CTC decode on known-text crops; promote a runtime change only if native output diverges from the official source under the same input. Result: preprocessing is aligned; remaining issue is checkpoint/vocabulary/line-crop quality | **COMPLETED** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** validate PP-OCRv6 checkpoint provenance, CTC vocabulary selection, and line-crop suitability against known-text crops before claiming quality parity; preserve native/reference decoded strings and timing evidence | **IN PROGRESS** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
@@ -46,6 +48,31 @@ confidences). Official-word validity passed, but decoded text and confidence
 calibration failed; recoder/DAWG and page/line confidence aggregation remain
 quality TODOs. Timings were official `5881 ms`, native greedy `305 ms`, and
 beam `984 ms`; these whole-process values are diagnostic only.
+
+**PP-OCRv6 checkpoint/line-crop follow-up (2026-08-02).** The official-source
+reference and native f16 agree on the decoded garbage for the CC0 line/page
+fixtures: Arabic printed line `¿づE₆¿づLyi` and receipt `上批业/|` (the German
+document is likewise not a valid line-crop quality gate). The 18,710-entry CTC
+vocabulary is present and ends with the expected space token, so this is not a
+missing-vocabulary load failure. Keep quality blocked until the exact official
+checkpoint provenance and a known-good PP-OCRv6 line-crop sample are verified;
+do not improve CER by silently switching to a different model family.
+
+**PP-OCRv6 official preprocessing A/B (2026-08-02).** Audited the official
+PaddleX/HF `preprocessor_config.json` and PaddleOCR `inference.yml` against the
+native path. Both use 48-pixel height, pixel-center bilinear resize, right
+padding to width 320, and `(pixel/255 - 0.5) / 0.5`; PaddleOCR's shipped
+inference contract is BGR while the HF processor advertises RGB conversion.
+Fresh official-source runs on `fox.png` decoded `上ai` in both channel modes;
+the native f16 recognizer also decoded `上ai`. On the German uneven-illumination
+fixture, the official source decoded `澳臻肉企NM` (BGR) and `澳臻肉門企NM`
+(RGB), while native BGR decoded `澳臻肉企NM`; this confirms the runtime is
+aligned to the BGR official inference path, not suffering a hidden channel or
+normalization mismatch. Added `CRISPEMBED_PPOCRV6_RGB=1` as a diagnostic-only
+native A/B switch; production remains BGR. The actual text is still nonsense
+in both native and official outputs, so this is a checkpoint/model-quality
+problem, not a runtime-quality fix. **IN PROGRESS:** validate checkpoint
+provenance/vocabulary and line-crop suitability before any model promotion.
 
 Tesseract decoder groundwork (2026-08-01): the converter now preserves every
 present DAWG component from `.traineddata` as base64 GGUF metadata with a
