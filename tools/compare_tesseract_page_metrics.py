@@ -281,6 +281,7 @@ def main() -> int:
         "provenance": {
             "detector_model_sha256": sha256_file(args.det_model),
             "recognizer_model_sha256": sha256_file(args.rec_model),
+            "timeout_seconds": args.timeout,
             "ordering": "official-tsv-level4-vs-native-reading-order-index",
         },
         "official_tesseract": official,

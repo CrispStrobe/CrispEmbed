@@ -2751,3 +2751,8 @@ the pattern first.
   so a mean IoU cannot hide non-overlapping reference lines. Seventeen
   model-free geometry tests pass; no default threshold is promoted before a
   real page run.
+
+- **Comparator timeout provenance (2026-08-02).** Geometry and page-metrics
+  JSON now record `timeout_seconds` alongside model hashes and reference-data
+  provenance, matching the repeated benchmark result. This makes a saved
+  parity artifact auditable without inferring command-line state.

@@ -44,3 +44,4 @@ def test_page_comparator_has_bounded_subprocess_timeout():
     assert "subprocess.TimeoutExpired" in COMPARE
     assert '"--timeout must be positive"' in COMPARE
     assert '"--timeout must be positive"' in BENCHMARK
+    assert '"timeout_seconds": args.timeout' in COMPARE

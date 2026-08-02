@@ -285,6 +285,7 @@ def main() -> int:
             "detector_model_sha256": sha256_file(args.det_model),
             "recognizer_model_sha256": sha256_file(args.rec_model),
             "tessdata_dir": str(args.tessdata_dir) if args.tessdata_dir else None,
+            "timeout_seconds": args.timeout,
             "ordering": "official-tsv-level4-vs-native-debug-candidate-index",
         },
         "psm": args.psm,
