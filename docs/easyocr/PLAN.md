@@ -492,6 +492,9 @@ recognizer and LayoutLM consumer.
       against the regenerated English DAWG GGUF. The runtime now reports the
       loaded component count and exact/prefix query results; this validates
       lookup plumbing only, not production dictionary quality.
+- [x] Harden model-owned DAWG queries for empty sequences and missing component
+      names. The runtime contract now covers an empty legal prefix and the
+      fail-closed `-1` missing-graph result; dictionary scoring remains opt-in.
 - [x] Preserve Tesseract DAWG components losslessly in newly converted GGUFs.
       `convert-tesseract-to-gguf.py` now records the present DAWG component
       names, base64 payloads, and SHA-256 digests under
