@@ -480,6 +480,23 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
         const auto ppocr_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+            int max_graph_regions = 8;
+            if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_GRAPH_MAX_REGIONS")) {
+                const int parsed = std::atoi(limit);
+                if (parsed >= 0) max_graph_regions = parsed;
+            }
+            // The opt-in recognizer graph is numerically sound per crop, but
+            // Metal graph planning per line is currently too expensive for a
+            // full page. Keep direct/small-crop diagnostics available while
+            // falling back to the accepted CPU recognizer for large pages.
+            ppocrv6_ocr_set_graph_accept(ctx->pprec, (int)boxes.size() <= max_graph_regions ? 1 : 0);
+            if ((int)boxes.size() > max_graph_regions && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+                fprintf(stderr, "[ppocrv6-graph-budget] regions=%zu max=%d action=cpu-fallback\n", boxes.size(),
+                        max_graph_regions);
+        } else {
+            ppocrv6_ocr_set_graph_accept(ctx->pprec, -1);
+        }
         int w = pw, h = ph;
         std::vector<uint8_t> owned;
         const unsigned char * rgb = px;
@@ -492,6 +509,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!rgb || w <= 0 || h <= 0) return {};
         std::vector<ocr_pipeline::ocr_result> results;
+        std::vector<int> model_widths;
         double crop_ms = 0.0, orientation_ms = 0.0, recognize_ms = 0.0;
         for (const auto & b : boxes) {
             const auto crop_started = std::chrono::steady_clock::now();
@@ -502,6 +520,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             crop_ms +=
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - crop_started).count();
             if (crop.empty()) continue;
+            const int model_width = std::max(320, int(48.0f * std::max(320.0f / 48.0f, cw / float(std::max(1, ch)))));
+            if (std::find(model_widths.begin(), model_widths.end(), model_width) == model_widths.end())
+                model_widths.push_back(model_width);
             const auto orientation_started = std::chrono::steady_clock::now();
             ocr_crop::orientation_info orientation;
             if (ctx->ppori) {
@@ -542,6 +563,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 "boxes=%zu results=%zu\n",
                 ms(ppocr_started, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
                 ms(ppocr_started, std::chrono::steady_clock::now()), boxes.size(), results.size());
+            fprintf(stderr, "[ppocrv6-width-bench] crops=%zu unique_model_widths=%zu widths=", boxes.size(),
+                    model_widths.size());
+            for (size_t i = 0; i < model_widths.size(); ++i) fprintf(stderr, "%s%d", i ? "," : "", model_widths[i]);
+            fprintf(stderr, "\n");
         }
         return results;
     }

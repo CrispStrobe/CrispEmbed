@@ -5,3 +5,5 @@
 recursive-include crispembed *.so *.so.* *.dylib *.dll *.pyd
 include LICENSE
 include README.md
+# Staged by setup.py from the repo root; see _stage_policy().
+include crispembed/POLICY.md

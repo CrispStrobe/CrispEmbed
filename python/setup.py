@@ -21,10 +21,38 @@ Without ext_modules, setuptools also picks the wrong Python ABI tag
 CPython 3.11 install on PyPy/CPython 3.12/etc. and dlopen a .so that
 the loader can't actually use. Forcing has_ext_modules() = True fixes
 both the platform and the ABI tag in one shot.
+
+It also stages POLICY.md into the package — see _stage_policy() below.
 """
+
+import shutil
+from pathlib import Path
 
 from setuptools import setup
 from setuptools.dist import Distribution
+
+_HERE = Path(__file__).resolve().parent
+
+
+def _stage_policy() -> None:
+    """Copy the repo-root POLICY.md into the package so it ships in the wheel.
+
+    A `pip install crispembed` user gets accept_biometric_use() and the whole
+    face pipeline. Leaving the acceptable-use terms behind in a git repo they
+    may never visit puts the EU AI Act Art. 5 prohibitions out of reach of the
+    people who need them. Copied at build time rather than checked in twice,
+    so the root file stays the single source of truth.
+
+    Best-effort: an sdist unpacked without the parent repo has no ../POLICY.md,
+    and that must not break the build. README.md carries the summary and the
+    canonical URL either way.
+    """
+    src = _HERE.parent / "POLICY.md"
+    if src.is_file():
+        shutil.copyfile(src, _HERE / "crispembed" / "POLICY.md")
+
+
+_stage_policy()
 
 
 class BinaryDistribution(Distribution):
