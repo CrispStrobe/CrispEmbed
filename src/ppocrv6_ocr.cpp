@@ -1302,7 +1302,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         }
     }
     const bool graph_accept = c->graph_accept_override >= 0 ? c->graph_accept_override != 0
-                                                              : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
+                                                            : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
     if (graph_done && c->graph.logits_output && !graph_accept) {
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
