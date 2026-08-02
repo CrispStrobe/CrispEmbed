@@ -230,7 +230,7 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
 | 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** optimize the cached Tesseract int-mode LSTM kernel and immutable-weight reuse; preserve the exact seeded-output contract, benchmark warm recognition against official/native baselines, and keep the precision fallback gated until parity holds | **COMPLETED** |
 | 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reuse per-LSTM temporary vectors across sequential line recognitions; retain isolated per-context ownership, exact cached/uncached output parity, and the existing diagnostic gates | **COMPLETED** |
-| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reproduce the AdaIR F16 ggml buffer assertion from the registry audit, repair only the F16 backend path if the root cause is local, and retain F32/scalar fallback coverage | **IN PROGRESS** |
+| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reproduce the AdaIR F16 ggml buffer assertion from the registry audit, repair only the F16 backend path if the root cause is local, and retain F32/scalar fallback coverage. Added allocation guards (no backend assert) and fixed `DequantCache` identity for backend-resident tensors. F32 remains cos 0.999382 / 2.65 s. F16 now exits cleanly but remains cos 0.729509 / 7.29 s; the F16 artifact's per-kernel CPU buffer allocation still returns null and its quality is not at parity. **TODO:** isolate the CPU scheduler allocation failure and resolve the F16 artifact/runtime shape or precision mismatch before shipping it. | **IN PROGRESS** |
 
 Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
 Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
@@ -396,13 +396,37 @@ So both defaults stay. The same run re-confirms the graph promotion from the
 CPU-scalar reference: PP-OCRv6 **3.25 with the graph versus 5.50 with
 `NO_GRAPH`**, a 1.7x that matches the 1.9x wall-clock figure measured earlier.
 
+**EasyOCR profiled, and an earlier claim in this file corrected.** On a real
+1920x2485 document (`commons_test_ocr_document.jpg`, 31 units) on a quiet box:
+`load=2645 ms detect+recognize=12362 ms`. Compute dominates by 5x. The earlier
+"load is 94% of the stage" reading came from the tiny synthetic page under heavy
+contention, where a single Metal init blocked for tens of seconds — it was a
+contention artifact, not a property of the lane, and should not be planned
+against.
+
+Same page, same DBNet detector, the two lanes differ almost entirely in their
+recognizer: **tesseract lane 8.13 s wall / 7.86 s user, EasyOCR lane 17.98 s /
+9.57 s user**. Per-line Tesseract LSTM runs 46-69 ms.
+
+**Negative result — recognizer graph rebuilds are NOT the cost (do not retry).**
+`easyocr_ocr_set_width()` tears down and rebuilds the graph whenever the canvas
+width changes, and width is per crop (bucketed to a multiple of 64), so reading
+order rebuilds every time consecutive lines land in different buckets. Sorting
+regions by canvas width makes that O(distinct widths) instead of O(regions).
+Implemented and A/B'd: **3.00 vs 3.02 CPU-s on a 47-region receipt and 7.43 vs
+7.68 on the 31-unit document** — 0-3%, at the edge of noise. The rebuild is
+cheap because it is graph construction plus a gallocr pass, with no weight
+reload. Reverted rather than kept gated: ~25 lines of reordering in a
+result-ordering-sensitive path is the wrong trade for 3%.
+
 **What is actually left.** (a) PP-OCRv6's detector is CPU scalar convolution and
-is now that lane's dominant compute; its graph stays diagnostic-only on
-box-geometry parity, so closing that parity is the unlock. (b) DBNet costs
-~400 ms on a capped 572x188 page against `tesseract-cli`'s 0.135 s for the whole
-job — it is CPU-by-choice, so the win there is kernel work, not backend
-selection. (c) EasyOCR's remaining ~3.65 CPU-s is unprofiled below the
-load/compute split.
+is that lane's dominant compute; its graph stays diagnostic-only on box-geometry
+parity, so closing that parity is the unlock and it is real work, not a knob.
+(b) DBNet costs ~400 ms on a capped 572x188 page against `tesseract-cli`'s
+0.135 s for the whole job — CPU by deliberate choice (Metal conv measured
+slower), so the win is kernel work. (c) The EasyOCR CRNN is ~2.2x the Tesseract
+LSTM on the same detections and has no per-stage split below
+`detect+recognize` yet.
 
 **Measure with CPU time on this box.** `user+sys` stayed within 12% across runs
 where wall clock swung 10x, and an early cross-run wall comparison of the
@@ -523,6 +547,95 @@ PaddleOCR reads in a fraction of a second. That run was CPU-contended; uncontend
 `test-ppocrv6-direct` reports 1774 ms total for the same three lines, so the
 98 s figure is contention and the standing latency question for this lane is
 moot until it produces text at all.
+
+### OCR performance backlog — every idea, with status and handover
+
+Status vocabulary: **DONE** shipped on by default; **GATED** implemented, works,
+output-verified, default off with the measurement that kept it off; **OPEN** not
+implemented. Every gated path stays in the tree — a path that does not win today
+can win under a different engine mix, and re-deriving it costs more than the
+gate does.
+
+#### Shipped (default on)
+
+| # | Change | Win | Gate to revert |
+|---|---|--:|---|
+| P1 | Detector stops enlarging pages that already resolve their text (`max_upscale`, `upscale_floor=120`) | 4.7x **and** CER 0.0814→0.0290 | `CRISPEMBED_OCR_DET_MAX_UPSCALE=0` |
+| P2 | Tesseract-LSTM loads via CPU backend instead of spinning up Metal for a host-side engine | lane 5.9 s → 0.47 s (12.5x) | `CRISPEMBED_TESSERACT_GPU_LOAD=1` |
+| P3 | PP-OCRv6 small/medium recognizer graph promoted | 1.9x wall / 1.7x CPU, 26/26 identical text | `CRISPEMBED_PPOCRV6_NO_GRAPH=1` |
+| P4 | PP-OCRv6 detector loads via CPU backend | 7-14% CPU | `CRISPEMBED_PPOCRV6_DET_GPU_LOAD=1` |
+
+#### Implemented, gated off (working — reuse these before rewriting them)
+
+| # | Path | Env | Why it is off | When it becomes worth turning on |
+|---|---|---|---|---|
+| P5 | Process-shared GPU backend (refcount-free singleton + `crispasr_free_gpu_backend`) | `CRISPEMBED_SHARED_GPU_BACKEND=1` | After P2/P4 no lane inits Metal more than once (tesseract 0, EasyOCR 1, PP-OCRv6 1), so it saves nothing today | The moment two GPU-resident engines share a process: a VLM stage beside a recognizer, the detector graph being promoted, or server/batch use. **Hazard:** one `ggml_backend_t` driven from several threads (`CRISPEMBED_TESSERACT_WORKERS`) is not promised safe |
+| P6 | EasyOCR width-sorted recognition (O(distinct widths) graph rebuilds instead of O(regions)) | `EASYOCR_WIDTH_SORT=1` | 0-3%, edge of noise — the rebuild is graph construction + gallocr, no weight reload | If the recognizer graph gains an expensive build step (weight residency, kernel specialisation, a shape-keyed resident cache). Also the natural companion to P9 |
+| P7 | PP-OCRv6 detector full graph | `CRISPEMBED_PPOCRV6_DET_GRAPH=1` | Box geometry not at parity (31 boxes vs CPU 30) | See O1 — this is the single biggest remaining win |
+
+#### Open, in descending measured value
+
+**O1 — PP-OCRv6 detector graph box-geometry parity is NOT a speed item.**
+Corrected 2026-08-02 by measuring it. The premise in earlier notes — that the
+CPU scalar detector is slow and promoting its graph would fix that — is wrong.
+Quiet box (load 4.2), 1920x2518 page, same fixture and binary:
+
+| detector path | total |
+|---|--:|
+| **CPU scalar (shipped default)** | **2350 ms** |
+| graph on the CPU backend | 6132 ms (graph alone 2829 ms) |
+| graph on Metal (`CRISPEMBED_PPOCRV6_DET_GRAPH=1`) | 15933 ms (graph alone 12663 ms) |
+
+The graph is 2.6x slower on CPU and 6.8x slower on Metal than the hand-written
+scalar path it falls back to, which matches the DBNet finding already recorded
+in `ocr_detect.cpp` (Metal conv2d/conv-transpose measured ~139 s GPU vs ~10 s
+CPU on an M1). So closing box-geometry parity is a **correctness and
+portability** goal — it is what a CUDA or Vulkan deployment would need, and it
+removes a diagnostic-only caveat from the matrix — but nobody should expect a
+speedup from it on this hardware, and it should not be prioritised as one.
+Anyone picking it up: the geometry comparator already exists
+(`report_graph_box_geometry`, `CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE=1`), though
+it did not emit on the run above and needs its call site checked first.
+
+**O2 — the detector's CPU scalar path is the real target, at 2350 ms.** It is
+the dominant cost of the PP-OCRv6 lane and DBNet is the shared detector for the
+other two, and ggml graphs are demonstrably the wrong tool for it here (O1). So
+this is kernel work on the scalar code: per-node-trace one detect call, and
+check specifically whether 1x1 convolutions are being routed through an im2col
+path, since a 1x1 conv is a pure channel matmul and its im2col is a copy that
+materialises a large intermediate for nothing. The `QWEN3_TTS_CODEC_FASTCONV`
+precedent in the dev guide is exactly this shape and was worth 3x.
+
+**O3 — EasyOCR CRNN is ~2.2x the Tesseract LSTM on identical detections**
+(17.98 s vs 8.13 s wall on the same 31-unit page, same DBNet boxes). No
+per-stage split exists below `detect+recognize` yet; add one mirroring the
+tesseract/ppocrv6 load-vs-compute benches before targeting anything.
+
+**O4 — Batched crop recognition.** Every lane recognizes line crops one at a
+time. Crops sharing a canvas width could go through one graph dispatch as a
+batch dimension, which is where P6's width grouping stops being cosmetic. Needs
+a batched graph in each recognizer; largest expected win on many-region pages
+(71 regions on one CC0 scan).
+
+**O5 — Model load is still ~0.37 s of the tesseract lane's 0.47 s.** Now that
+compute is small, load dominates a one-shot CLI invocation. Options: mmap the
+GGUF instead of copying weights into host vectors, or keep a warm process /
+server for repeated pages. `tesseract-cli` pays load per invocation too and
+still totals 0.135 s, so there is headroom here.
+
+**O6 — Detector resize rule keyed on estimated text height rather than image
+size.** P1's `upscale_floor=120` is a proxy: what actually matters is whether
+glyphs are tall enough for the detector, not whether the page is. A cheap
+stroke-width or connected-component estimate would let the cap apply to a
+low-DPI thumbnail with big text and stay off for a high-DPI page of tiny text.
+
+**O7 — Per-engine profiling of the remaining VLM/OMR lanes.** This whole round
+covered only the three classical lanes. The load-vs-compute split found a wasted
+Metal init in two of three engines it was applied to; it has not been applied to
+GOT/GLM/Qwen/InternVL/SmolDocling/the OMR engines, and the same class of bug
+(GPU backend created for a host-side path) is plausible in any of them. Cheap to
+check: `grep -n crispasr_init_gpu_backend src/*.cpp` and ask, per engine,
+whether its compute actually runs on that backend.
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 

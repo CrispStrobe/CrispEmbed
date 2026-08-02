@@ -1582,7 +1582,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
 extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
     auto * c = new ppocrv6_ocr_context();
     const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
-    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     gguf_context * meta = core_gguf::open_metadata(path);
     if (!meta) {
@@ -1627,7 +1627,7 @@ extern "C" void ppocrv6_ocr_free(ppocrv6_ocr_context * c) {
     if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
     if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
     core_gguf::free_weights(c->wl);
-    if (c->backend) ggml_backend_free(c->backend);
+    if (c->backend) crispasr_free_gpu_backend(c->backend);
     delete c;
 }
 
