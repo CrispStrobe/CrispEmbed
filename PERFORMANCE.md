@@ -1603,6 +1603,12 @@ Remaining before the f16 can ship: upload it to `cstr/adair-GGUF`, add its
 SHA-256 to `examples/cli/model_hashes.h`, and repoint the `adair-5d` registry
 entry. The runtime no longer blocks it.
 
+End-to-end through the real CLI, not just the diff harness (HARD RULE #3):
+`crispembed --adair-model <f16|f32> --adair <96x96 crop of tests/regression/images/fox.png>`
+returns rc=0 for both at the same 27,661-byte PPM, and the two restored images
+agree at cosine `1.0`, max_abs `1/255`, mean_abs `7e-5`. Output mean/std is
+`242.821 / 35.92` for both — real image content, not a blank or saturated frame.
+
 **Which f16 artifacts are exposed at all.** Only the ones `tools/quantize.cpp`
 produced. A converter-emitted f16 keeps its 4-D shapes: `surya-det-f16.gguf` has
 79 genuinely 4-D F16 tensors (`stem.in_conv.weight` is `[3,3,3,32]`), whereas
