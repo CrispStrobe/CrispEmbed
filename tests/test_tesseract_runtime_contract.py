@@ -15,6 +15,8 @@ def test_tesseract_runtime_keeps_int_mode_and_lut_path():
 def test_tesseract_runtime_keeps_gated_scratch_reuse():
     assert "CRISPEMBED_TESSERACT_REUSE_SCRATCH" in SOURCE
     assert "ctx->reuse_scratch" in SOURCE
+    assert "lstm_scratch" in SOURCE
+    assert "ctx->scratch_lstm" in SOURCE
 
 
 def test_tesseract_runtime_exposes_gated_dawg_queries():
