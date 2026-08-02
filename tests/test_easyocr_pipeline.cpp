@@ -6,7 +6,9 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <regex>
 #include <string>
+#include <vector>
 
 static std::string json_escape(const std::string & text) {
     std::string out;
@@ -54,9 +56,26 @@ static bool write_manifest(const char * path, const char * image, easyocr_layout
     return out.good();
 }
 
+static bool read_region_manifest(const char * path, std::vector<easyocr_layout::region> & regions) {
+    std::ifstream in(path);
+    if (!in) return false;
+    const std::string body((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    // This diagnostic input is the versioned Python/native manifest schema;
+    // match only record-level "box" arrays, never normalized_box arrays.
+    const std::regex box_re(
+        R"("box"\s*:\s*\[\s*([-+0-9.eE]+)\s*,\s*([-+0-9.eE]+)\s*,\s*([-+0-9.eE]+)\s*,\s*([-+0-9.eE]+)\s*\])");
+    for (std::sregex_iterator it(body.begin(), body.end(), box_re), end; it != end; ++it) {
+        regions.push_back({ std::stof((*it)[1].str()), std::stof((*it)[2].str()), std::stof((*it)[3].str()),
+                            std::stof((*it)[4].str()), 0.0f });
+    }
+    return !regions.empty();
+}
+
 static int crispembed_test_main(int argc, char ** argv) {
-    if (argc != 5 && argc != 6) {
-        std::fprintf(stderr, "usage: %s <dbnet.gguf> <easyocr.gguf> <image> <lines|words> [manifest.json]\n", argv[0]);
+    if (argc < 5 || argc > 7) {
+        std::fprintf(stderr,
+                     "usage: %s <dbnet.gguf> <easyocr.gguf> <image> <lines|words> [manifest.json] [regions.json]\n",
+                     argv[0]);
         return 2;
     }
     easyocr_pipeline::context * ctx = nullptr;
@@ -64,6 +83,36 @@ static int crispembed_test_main(int argc, char ** argv) {
     const auto mode = std::strcmp(argv[4], "words") == 0 ? easyocr_layout::ordering_mode::words
                                                          : easyocr_layout::ordering_mode::lines;
     easyocr_pipeline::set_ordering_mode(ctx, mode);
+
+    if (argc == 7) {
+        std::vector<easyocr_layout::region> regions;
+        if (!read_region_manifest(argv[6], regions)) {
+            easyocr_pipeline::free(ctx);
+            return 11;
+        }
+        int rw = 0, rh = 0, rc = 0;
+        unsigned char * pixels = stbi_load(argv[3], &rw, &rh, &rc, 3);
+        if (!pixels) {
+            easyocr_pipeline::free(ctx);
+            return 12;
+        }
+        const auto replay = easyocr_pipeline::run_regions(ctx, regions, pixels, rw, rh, 3);
+        stbi_image_free(pixels);
+        std::printf("easyocr-pipeline external-regions mode=%s regions=%zu results=%zu\n",
+                    mode == easyocr_layout::ordering_mode::words ? "words" : "lines", regions.size(), replay.size());
+        for (size_t i = 0; i < replay.size(); ++i) {
+            const auto & item = replay[i];
+            std::printf("result=%zu line=%d box=%.1f,%.1f %.1fx%.1f rec_conf=%.4f text=%s\n", i, item.word.line,
+                        item.word.x, item.word.y, item.word.w, item.word.h, item.word.confidence,
+                        item.word.text.c_str());
+        }
+        if (!write_manifest(argv[5], argv[3], mode, replay)) {
+            easyocr_pipeline::free(ctx);
+            return 13;
+        }
+        easyocr_pipeline::free(ctx);
+        return !replay.empty() ? 0 : 14;
+    }
     const auto results = easyocr_pipeline::run_file(ctx, argv[3]);
     std::printf("easyocr-pipeline mode=%s results=%zu\n",
                 mode == easyocr_layout::ordering_mode::words ? "words" : "lines", results.size());
