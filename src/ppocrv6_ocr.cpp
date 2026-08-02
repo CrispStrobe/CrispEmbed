@@ -670,6 +670,24 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
     return y;
 }
 
+// The small/medium recognizer graph is on by default as of 2026-08-02. It was
+// promoted on evidence, not preference: decoded text is identical to the CPU
+// reference on all 26 fixtures tried (20 synthetic + 6 CC0 scans, the largest
+// 71 regions), and it is ~1.9x faster end-to-end on a quiet box
+// (synth_00_clean 1230 -> 646 ms; the 1920x2518 german_official_print scan
+// 9369 -> 4964 ms).
+//
+// Scope is deliberate. This covers the recognizer only: the *detector* graph
+// stays diagnostic-only because its box geometry is not yet at parity, and the
+// tiny variant keeps its own CRISPEMBED_PPOCRV6_GRAPH_ACCEPT gate because the
+// evidence above is for small. CRISPEMBED_PPOCRV6_NO_GRAPH restores the CPU
+// reference everywhere, which is the bisection lever if a crop ever disagrees.
+static bool pp_graph_enabled() {
+    static const bool off =
+        std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") != nullptr || std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    return !off;
+}
+
 static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
     if (c->graph.attempted && c->graph.width == width) return c->graph.ready;
     if (c->graph.attempted && c->graph.width != width) {
@@ -701,7 +719,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
         c->graph.svtr_decoder_output = false;
     }
     c->graph.attempted = true;
-    if (!std::getenv("CRISPEMBED_PPOCRV6_GRAPH")) return false;
+    if (!pp_graph_enabled()) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
     if (ggml_backend_is_cpu(c->graph.backend)) {
@@ -805,7 +823,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
             }
         }
     }
-    if (c->large_stem && std::getenv("CRISPEMBED_PPOCRV6_SVTR_GRAPH")) {
+    if (c->large_stem && pp_graph_enabled()) {
         // Keep the SVTR attention/MLP decoder on the scalar reference path,
         // but move its convolutional tokenization onto the persistent graph.
         // The output is [hidden,tokens] with token-major contiguous storage.
@@ -844,7 +862,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
         x = ggml_reshape_2d(c->graph.graph_ctx, x, c->hidden, tokens);
         c->graph.svtr_prefix_output = true;
     }
-    if (c->large_stem && c->graph.svtr_prefix_output && std::getenv("CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH")) {
+    if (c->large_stem && c->graph.svtr_prefix_output && pp_graph_enabled()) {
         const int heads = 8;
         const int head_dim = c->hidden / heads;
         const int tokens = (int)x->ne[1];
