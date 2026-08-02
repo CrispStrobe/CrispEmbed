@@ -45,15 +45,115 @@ time held across the window.
 not arithmetic: the old form streamed the whole output plane once per (oc, ic)
 pair, the current one blocks the pixel axis into 8192-element tiles so a tile's
 input slab stays L2-resident and computes four output channels at a time.
-Decoded-text equivalence over the 26-fixture corpus was still running when this
-was written — treat the number as measured but not yet accepted, and see
-`PLAN.md` H1 for the acceptance gate. The gate stays opt-in regardless:
-`conv2d_cpu` is shared by 15 engines and only the PP-OCRv6 detector has been
-measured.
+Decoded-text equivalence: **34 of 34 fixtures identical, 0 differing** — the 20
+synthetic ground-truth fixtures plus all 14 CC0 scans, gate off vs on, same
+binary. H1's acceptance criteria (CPU-seconds down, decoded output identical,
+control in range) are therefore met **for this engine**.
 
-`conv2d_depthwise_cpu` (`CRISPEMBED_CONVDW_FAST=1`) is implemented and
-equivalence-guarded but **has no speed measurement yet**; given the 20.4% share
-and the 0.02-0.19 GF/s rate it is the next thing to A/B.
+The gate nevertheless stays opt-in, which is the disciplined reading of H1's own
+constraint: `conv2d_cpu` is shared by 15 engines — `ppocrv6_det`, `ppocrv6_ocr`,
+`pplcnet_orientation`, `surya_det`, `nafnet_denoise`, `text_sr`, `got_ocr`,
+`deepseek_ocr2`, `unlimited_ocr`, `ppformulanet_ocr`, `ppformulanet_l_ocr`,
+`bttr_ocr`, `hmer_ocr`, `posformer_ocr` — and exactly one of them has been
+measured. A global flip needs an A/B per engine with a runnable fixture, not an
+extrapolation from the one with the largest 1x1 share.
+
+### Depthwise convolution kernel A/B — a partial win, and why it is only partial
+
+`conv2d_depthwise_cpu` (`CRISPEMBED_CONVDW_FAST=1`) replaces the per-output-pixel
+gather with a loop inversion: per channel and output row, walk the kh*kw taps and
+accumulate a whole output row per tap, so each tap is a contiguous axpy, the
+input row stays in L1 across all taps, and the boundary test becomes a per-tap
+column range in closed form. Same binary, same fixture, CPU-seconds median-of-3,
+box at load 23:
+
+| arm | CPU-s |
+|---|--:|
+| control (`tesseract`, before) | 0.48 |
+| both gates off | 8.69 |
+| `CRISPEMBED_CONVDW_FAST=1` | 8.38 |
+| `CRISPEMBED_CONV1X1_FAST=1` + `CRISPEMBED_CONVDW_FAST=1` | 7.95 |
+| control (`tesseract`, after) | 0.45 |
+
+**3.6% for depthwise alone — well short of what a 20.4% share should give**, so
+the kernel is maybe 25-30% faster rather than the several-fold the 0.02-0.19
+GF/s rate suggested was available. Recorded as a gated partial win, not a
+success.
+
+Two things ruled out for whoever picks this up:
+
+- **It is not a vectorization failure from pointer aliasing.** The obvious
+  suspicion is that `orow[ox] += wv * s[ox - lo]` cannot vectorize because `out`
+  and `in` might alias. Checked with `clang++ -O3 -Rpass=loop-vectorize`: the
+  aliasing and `__restrict` forms *both* vectorize, width 4 interleave 4, via
+  runtime alias checks. Adding `__restrict` is not the fix.
+- **Per-layer profiler numbers cannot settle this at n=1.** A single profiled run
+  per arm reported total convolution time moving 8787 -> 9402 ms *between arms*,
+  which is larger than the effect being measured. Only the median-of-3
+  CPU-seconds A/B above is trustworthy here.
+
+The remaining suspect is loop-invocation overhead rather than the loop body: the
+7x7 layer runs 49 taps x 240 rows x 96 channels = **1.13M invocations** of a
+~184-element inner loop, each paying a runtime alias check, prologue and a
+remainder epilogue. The fix that follows from that is to make each invocation do
+more work — unroll across taps so one pass over the output row accumulates
+several kx taps at once, cutting both the output-row traffic and the invocation
+count by the unroll factor, with the row borders kept on the current general
+path. Not attempted yet.
+
+### EasyOCR lane — where the time actually goes (2026-08-02)
+
+`CRISPEMBED_EASYOCR_STAGE_BENCH=1` on `commons_test_ocr_document.jpg`
+(1920x2518, 289 detector boxes grouped to 27 lines). Absolute figures are
+contended wall clock on a box at load 30+; the shares are the result.
+
+| stage | ms | share |
+|---|--:|--:|
+| detect (DBNet) | 24,778 | ~55% of lane |
+| recognize loop | 20,130 | ~45% of lane |
+| — crop extraction | 41 | 0.2% of loop |
+| — `set_width` graph rebuilds | 4,825 | 24% of loop |
+| — recognize | 15,263 | 76% of loop |
+
+**Detection is the larger half of this lane.** The recognizer is 76% of 45%,
+about a third of the lane, so the "EasyOCR CRNN is 2.2x the Tesseract LSTM"
+comparison is measuring a whole-lane number against a component.
+
+`EASYOCR_WIDTH_SORT=1` cuts graph rebuilds from 25 to 14 (27 regions, 14
+distinct canvas widths) and `set_width` from 4,825 to 2,348 ms — roughly half,
+~12% of the recognition loop but only ~5% of the lane. That reconciles with the
+0-3% previously recorded for P6, which was measured against total lane time
+where detection dominates. The ceiling is the distinct-width count, not the
+region count.
+
+Fixed while measuring this: the width-sort key hardcoded the 2-pixel detector
+crop margin while the recognition loop applies it only when
+`add_detector_crop_margin` is set, so the external-geometry path sorted by
+widths it never requests — 19 rebuilds against 15 distinct widths. Verified
+19 -> 15 after deriving the key from the same `pad`.
+
+### Cost of a GPU backend an engine never computes on
+
+`text_sr`, `tps_locnet` and `bert_ner` each built a GPU backend, used it only to
+pull the GGUF through `core_gguf::load_weights`, copied every weight out to host
+vectors and freed it, without ever running a graph on it — the same bug P2 fixed
+in `tesseract_lstm`. No GGUF for any of the three is cached locally, so rather
+than extrapolate from P2's 12.5x the cost was measured at its source with
+`test-backend-smoke`, which builds a backend and runs one trivial graph on it.
+Median-of-3, box at load 38:
+
+| backend | CPU-s | wall |
+|---|--:|--:|
+| `metal` | 2.62 | 6.71 |
+| `cpu` | 0.03 | 0.03 |
+
+~2.6 CPU-seconds and ~6.7 s wall per invocation, dominated by Metal shader
+library compilation. This is init plus a trivial graph rather than pure init,
+and it is a per-process cost — it dominates a one-shot CLI invocation of a small
+model and vanishes in a warm server. All three now load through
+`ggml_backend_cpu_init()`, with the old path kept behind `TEXT_SR_GPU_LOAD`,
+`TPS_LOCNET_GPU_LOAD` and `BERT_NER_GPU_LOAD`. An end-to-end before/after on a
+real model for each engine is still outstanding.
 
 ## EasyOCR GGML parity benchmarks — Apple M1, 2026-08-01
 

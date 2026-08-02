@@ -403,6 +403,89 @@ static void test_conv2d_1x1_equivalence() {
 }
 
 // ---------------------------------------------------------------------------
+// conv2d_depthwise_cpu — must agree with the generic conv2d_cpu path
+// ---------------------------------------------------------------------------
+// Same rationale and same tolerance argument as the 1x1 guard above.
+//
+// The depthwise kernel replaces the generic path's per-pixel boundary test with
+// a per-tap column range computed in closed form, so the shapes that matter are
+// the ones where that range is not simply [0, out_W): odd padding, stride > 1
+// with padding (where the first valid column is not 0), and a kernel wider than
+// the padded input, which drives the range empty. That last case is why the
+// bounds use explicit floor/ceil -- C division truncates toward zero, so a
+// numerator of -1 over stride 2 would round UP to 0 and admit a column that
+// reads past the end of the input row.
+static void test_conv2d_depthwise_equivalence() {
+    printf("test_conv2d_depthwise_equivalence...\n");
+
+    struct shape {
+        int channels, H, W, kh, kw, stride, pad;
+        bool bias;
+        const char * name;
+    };
+    const shape shapes[] = {
+        { 4, 8, 8, 3, 3, 1, 1, true, "3x3 pad 1" },
+        { 4, 8, 8, 3, 3, 1, 0, true, "3x3 no pad" },
+        { 3, 9, 7, 5, 5, 1, 2, true, "5x5 pad 2" },
+        { 96, 24, 18, 7, 7, 1, 3, true, "7x7 pad 3, detector shape" },
+        { 4, 9, 9, 3, 3, 2, 1, true, "stride 2 with pad" },
+        { 4, 8, 8, 3, 3, 2, 0, true, "stride 2 no pad" },
+        { 2, 4, 4, 5, 5, 2, 2, true, "kernel wider than input, stride 2" },
+        { 2, 3, 3, 5, 5, 1, 0, false, "kernel wider than input, no pad, null bias" },
+        // Drives hi_num negative while the output stays non-empty, which needs
+        // W + pad < kw <= W + 2*pad. With stride 2 this is the exact case where
+        // C's truncating division turns floor(-1/2) = -1 into 0 and admits a
+        // column one past the end of the input row.
+        { 2, 4, 2, 3, 5, 2, 2, true, "tap range empty, stride 2 (floor vs trunc)" },
+        { 5, 6, 6, 1, 3, 1, 0, true, "asymmetric 1x3" },
+        { 5, 6, 6, 3, 1, 1, 1, true, "asymmetric 3x1 with pad" },
+    };
+
+    uint32_t seed = 0xc0ffee11u;
+    auto next = [&seed]() {
+        seed = seed * 1664525u + 1013904223u;
+        return ((float)(seed >> 8) / (float)(1u << 24)) * 2.0f - 1.0f;
+    };
+
+    for (const shape & s : shapes) {
+        const int out_H = (s.H + 2 * s.pad - s.kh) / s.stride + 1;
+        const int out_W = (s.W + 2 * s.pad - s.kw) / s.stride + 1;
+        if (out_H <= 0 || out_W <= 0) continue;
+
+        std::vector<float> in((size_t)s.channels * s.H * s.W);
+        std::vector<float> w((size_t)s.channels * s.kh * s.kw);
+        std::vector<float> b(s.channels);
+        for (float & v : in) v = next();
+        for (float & v : w) v = next();
+        for (float & v : b) v = next();
+
+        std::vector<float> ref((size_t)s.channels * out_H * out_W, 0.0f);
+        std::vector<float> fast((size_t)s.channels * out_H * out_W, 0.0f);
+        const float * bias = s.bias ? b.data() : nullptr;
+
+        conv2d_cpu(in.data(), ref.data(), w.data(), bias, s.channels, s.channels, s.H, s.W, s.kh, s.kw, s.stride, s.pad,
+                   s.channels);
+        conv2d_depthwise_cpu(in.data(), fast.data(), w.data(), bias, s.channels, s.H, s.W, s.kh, s.kw, s.stride, s.pad);
+
+        float scale = 1e-6f;
+        for (float v : ref) scale = fmaxf(scale, fabsf(v));
+        const float tol = 1e-5f * scale;
+
+        size_t mismatches = 0;
+        float worst = 0.0f;
+        for (size_t i = 0; i < ref.size(); ++i) {
+            const float d = fabsf(ref[i] - fast[i]);
+            if (d > worst) worst = d;
+            if (d > tol) mismatches++;
+        }
+        if (mismatches)
+            fprintf(stderr, "  %s: %zu/%zu over tol=%g, max_abs_diff=%g (scale=%g)\n", s.name, mismatches, ref.size(),
+                    tol, worst, scale);
+        CHECK(mismatches == 0, s.name);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Activation functions
 // ---------------------------------------------------------------------------
 static void test_gelu() {
@@ -688,6 +771,7 @@ static int crispembed_test_main() {
     test_linear_cpu();
     test_conv2d_cpu();
     test_conv2d_1x1_equivalence();
+    test_conv2d_depthwise_equivalence();
     test_gelu();
     test_gelu_erf();
     test_silu();
