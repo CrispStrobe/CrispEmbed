@@ -26,6 +26,8 @@ def test_int_mode_cache_is_present():
     assert "tesseract_dawg_init_base64" in DAWG_SOURCE
     assert "context_lookup" in DAWG_SOURCE
     assert "dawg_contexts" in SOURCE
+    assert "tesseract_lstm_dawg_contains" in SOURCE
+    assert "tesseract_lstm_dawg_has_prefix" in SOURCE
 
 
 if __name__ == "__main__":

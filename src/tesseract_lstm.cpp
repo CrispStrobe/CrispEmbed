@@ -1184,6 +1184,20 @@ int tesseract_lstm_dawg_component_count(const tesseract_lstm_context * ctx) {
     return ctx ? (int)ctx->dawg_components.size() : 0;
 }
 
+int tesseract_lstm_dawg_contains(const tesseract_lstm_context * ctx, const char * component, const int * ids,
+                                 size_t count) {
+    if (!ctx || !component) return 0;
+    const auto it = ctx->dawg_contexts.find(component);
+    return it == ctx->dawg_contexts.end() ? 0 : tesseract_dawg_context_contains(it->second, ids, count);
+}
+
+int tesseract_lstm_dawg_has_prefix(const tesseract_lstm_context * ctx, const char * component, const int * ids,
+                                   size_t count) {
+    if (!ctx || !component) return 0;
+    const auto it = ctx->dawg_contexts.find(component);
+    return it == ctx->dawg_contexts.end() ? 0 : tesseract_dawg_context_has_prefix(it->second, ids, count);
+}
+
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->vgsl_spec.c_str() : "";
 }

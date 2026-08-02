@@ -80,6 +80,10 @@ edge array and bit masks for repeated exact/prefix queries. This is preparation
 for beam integration only; production OCR still does not consult dictionary
 state.
 
+The native Tesseract API now exposes exact-word and legal-prefix queries against
+the model-owned cached DAWG contexts by component name. Missing components and
+null contexts fail closed; production decoding still does not invoke them.
+
 Native Tesseract model loading now constructs one cached parsed DAWG context per
 manifest component and frees them with the recognizer. The cached dictionaries
 remain diagnostic-only; production OCR does not apply their state.
