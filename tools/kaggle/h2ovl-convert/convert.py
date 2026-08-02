@@ -158,12 +158,25 @@ if img.exists():
 # line, no registry entry and no SHA pin, so `--list-models` cannot offer a
 # model that does not read a page. This kernel converts, verifies and measures;
 # it uploads only when the artifact has earned it.
+from huggingface_hub import HfApi, create_repo  # noqa: E402
+
+# The reference is the exception, and it goes up either way. It is 100 KB of
+# per-layer activations, not a model — nobody can OCR with it — and it is the
+# one artifact that makes the failure debuggable on a laptop. h2ovl-publish
+# already put the q4_k in this repo (private, carded UNVALIDATED); the ref is
+# the missing half of that pair.
+if ref.exists():
+    _api = HfApi(token=hf_token)
+    create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token, private=True)
+    _api.upload_file(path_or_fileobj=str(ref), path_in_repo=ref.name, repo_id=REPO,
+                     token=hf_token,
+                     commit_message="Per-layer reference activations (diagnostic; single 448x448 tile)")
+    kh.step("uploaded_ref", file=ref.name)
+
 if not ocr_ok:
     kh.step("not_published", reason=ocr_note)
-    print("Artifacts left in /kaggle/working for h2ovl-publish to collect.", flush=True)
+    print("Model NOT published (does not read a page); reference uploaded for debugging.", flush=True)
     sys.exit(f"model does not read a page yet: {ocr_note}")
-
-from huggingface_hub import HfApi, create_repo  # noqa: E402
 
 api = HfApi(token=hf_token)
 create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token, private=True)
