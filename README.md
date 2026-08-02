@@ -599,6 +599,17 @@ Set `--image-root` whenever the port is not loopback-only, and put an
 authenticating proxy in front of it. Starting `--rec` on a non-loopback bind
 warns about exactly this.
 
+### H2OVL and MSAC
+
+`h2ovl-mississippi-2b` sets `use_msac` (Multi-Scale Adaptive Cropping): it was
+trained on a **two-scale** tile stack — a coarse grid plus a finer grid that
+divides neither of its axes, concatenated `fine[:-1] + coarse[:-1] + fine[-1:]`.
+CrispEmbed implements this, so the model reads pages correctly. It matters
+because the failure mode is silent: given ordinary single-scale tiles the model
+loads, prefills, and returns confident nonsense rather than erroring. The 800m
+sibling sets `use_msac: false` and needs none of it. Geometry is pinned by
+`tests/test_msac_tiling.cpp` against the upstream algorithm.
+
 ### Model integrity
 
 Auto-downloaded GGUFs are **SHA-256 pinned** against

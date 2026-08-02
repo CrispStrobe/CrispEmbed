@@ -1758,19 +1758,90 @@ returns rc=0 for both at the same 27,661-byte PPM, and the two restored images
 agree at cosine `1.0`, max_abs `1/255`, mean_abs `7e-5`. Output mean/std is
 `242.821 / 35.92` for both — real image content, not a blank or saturated frame.
 
-**Which f16 artifacts are exposed at all.** Only the ones `tools/quantize.cpp`
-produced. A converter-emitted f16 keeps its 4-D shapes: `surya-det-f16.gguf` has
-79 genuinely 4-D F16 tensors (`stem.in_conv.weight` is `[3,3,3,32]`), whereas
-`adair-5d-f16.gguf` — quantizer output — has none. So "f16" alone does not
-predict the layout; the *producer* does.
+### Exactly which artifacts the flatten touches (measured, 2026-08-02)
 
-**Same bug class, latent, deliberately not fixed here.** `src/surya_det.cpp:700`
-(`const int64_t OC = w->ne[3]`) and `src/tps_locnet.cpp:219`
-(`net->channels[i] = net->conv[i].w->ne[3]`) read a conv output-channel count off
-`ne[3]` the same way. Neither is broken today, because neither ships a
-quantizer-produced artifact — but either would misread one the moment someone
-runs `crispembed-quantize` over it. `src/cnn_embed.cpp:148` already handles both
-layouts (`ggml_n_dims(dw_w) == 2 ? ne[1] : ne[3]`) and is the in-repo precedent.
-Left alone on purpose: there is no artifact on this box that would make a fix
-verifiable, and shipping an unverified edit is precisely the failure mode this
-entry corrects.
+The flatten condition is `ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32` — 4-D
+**F32** only. Verified by running `crispembed-quantize … q8_0` over
+`surya-det-f16.gguf`, whose conv weights are 4-D **F16**: the output still reports
+`stem.in_conv.weight` as `[3,3,3,32]`, all 79 4-D tensors intact. `adair-5d-f16.gguf`,
+quantized from an F32 source, has none left.
+
+So the exposure rule is: **a GGUF is affected iff its conv weights are stored 4-D
+F32 and it is then run through `crispembed-quantize`.** Neither the precision
+label nor the file name tells you — the *source dtype plus the producer* does.
+
+### Follow-up resolved: one of the two suspect sites was a real bug
+
+The first version of this entry listed `src/surya_det.cpp:700` and
+`src/tps_locnet.cpp:219` together as "same bug class, latent". Checking them
+properly split them apart:
+
+- **`src/surya_det.cpp:700` is NOT a bug.** `g_conv` normalises the layout before
+  that read — `if (ggml_n_dims(w) == 2) { OC = w->ne[1]; w = ggml_reshape_4d(...); }`
+  runs first, so `w->ne[3]` is already 4-D by the time the grouped-pointwise
+  branch reads it. No change made.
+- **`src/tps_locnet.cpp:219` WAS a real, reachable bug — now fixed.** It reads
+  `ne[3]` at load time with no such normalisation, and
+  `models/convert-tps-loc-to-gguf.py` **defaults to F32** (`--fp16` is opt-in), so
+  a quantized tps-loc GGUF is precisely the affected shape. Instrumented proof
+  before the fix: all four layers loaded as `ne=[27,16,1,1] … [576,128,1,1]`,
+  `ndims=2`, `channels=1` — against `16/32/64/128` from the 4-D build. `channels`
+  is not cosmetic: it feeds the fc1 input width (line 243) and the per-layer
+  output channels (line 300). Fixed with the `src/cnn_embed.cpp:148` convention,
+  `ggml_n_dims(w) == 2 ? ne[1] : ne[3]`.
+
+Guarded by a new hermetic case in `tests/test_tps_locnet.cpp` (no model file
+needed): it builds the same synthetic network twice, once 4-D and once flattened
+to 2-D from a fixed seed so the bytes are identical, and requires the predicted
+control points to match exactly. Written before the fix and watched fail —
+worst deviation `0.026871 px` before, `0.000000 px` after, suite 14/15 → 15/15.
+
+### Sweeping the SR/denoise engines: two more quantized models were unusable
+
+Having a cheap repro (quantize a local artifact, run the CLI, compare to the
+source) made it worth checking the rest. **Nobody had ever run a quantized
+esrgan or scunet** — both aborted on the first try. Neither is the `ne[3]`
+bug; they are two distinct defects that only a quantized artifact reaches.
+
+| engine | source | quantized | verdict |
+|---|---|---|---|
+| esrgan | `esrgan-x4-f32.gguf` | **aborted** | graph node budget — fixed |
+| scunet | `scunet-color-f32.gguf` | **aborted** | flattened kernel in cache — fixed |
+| pan | `pan-x4-f16.gguf` | ok | clean both ways |
+| swinir | `swinir-light-x4-f16.gguf` | ok | clean both ways |
+| tbsrn | `tbsrn-telescope-f16.gguf` | ok | clean both ways |
+
+**esrgan — `GGML_ASSERT(cgraph->n_nodes < cgraph->size)`.** `esrgan_prep_conv`
+already reshapes a flattened weight correctly, so the layout was never the
+issue; the graph budget was. Measured on the 18-conv x4 model at 64×32: f32
+builds **283** nodes against a `n_convs*12+100 = 316` budget (33 to spare),
+but a quantized GGUF builds **335** — the dequant cast plus `ggml_cont` per conv
+add ~3 nodes each — overflowing by 19. Budget is now `n_convs*16+128`
+(~24 % headroom over the quantized measurement); it is graph metadata only, so
+over-reserving costs nothing. q8_0 now matches f32 at cosine `0.999998`,
+PSNR `51.89 dB`. **q4_k runs but degrades sharply — PSNR `29.55 dB`,
+max_abs `91/255`** on a 2 MB network; treat q8_0 as the usable quant here.
+
+**scunet — `GGML_ASSERT(a->ne[2] == b->ne[2])`.** This one *is* the flatten. The
+persistent kernel cache in `scunet_init` copies the source `ne` verbatim
+(`{t->ne[0], t->ne[1], t->ne[2], t->ne[3]}`, commented "ggml-native, as-is"), so
+a flattened weight is cached as `[K*K*IC, OC, 1, 1]` and `ggml_conv_2d` sees
+`ne[2]==1` instead of IC. The bytes are still in ggml kernel order, so
+`scunet_run_conv` now restores the shape from the call-site dims. Conventions
+were *measured* on the working f32 path rather than assumed — plain conv is
+`[kw,kh,ic,oc]`, `conv_transpose_2d_p0` is `[kw,kh,oc,ic]` (ic=128 oc=64 →
+`[2,2,64,128]`). q8_0 now matches f32 at cosine `0.999999`, PSNR `60.54 dB`,
+max_abs `1/255`.
+
+Regression control for both: the f32 output is **byte-identical** before and
+after each patch, so neither touches the working path.
+
+**The first version of that guard was worthless and it is worth recording why.**
+It passed against the unfixed code. The synthetic model's `loc.fc2.weight` was
+all zeros ("bias will provide the initial grid"), so the predicted points were
+`fc2.bias` alone and did not depend on the conv stack at all — every assertion
+downstream was blind to the channel count. The instrumented `channels=1` print is
+what exposed it, not the green result. `fc2.weight` now carries small non-zero
+random values so the conv stack actually reaches the output. A test that cannot
+see the defect is not a test, and a passing new guard should be distrusted until
+it has been observed failing.
