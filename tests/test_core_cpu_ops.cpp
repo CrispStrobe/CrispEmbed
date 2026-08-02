@@ -486,6 +486,59 @@ static void test_conv2d_depthwise_equivalence() {
 }
 
 // ---------------------------------------------------------------------------
+// dot_product_wide — four accumulators instead of two
+// ---------------------------------------------------------------------------
+// Both forms are equally valid summations of the same products; neither is the
+// exact real sum, so this compares them within a magnitude-scaled tolerance
+// rather than asserting equality. What it is really guarding is the TAIL
+// handling: the wide form steps 32 (AVX2) or 16 (NEON) at a time and then falls
+// through a narrower loop and a scalar remainder, so an off-by-one in any of
+// those drops or double-counts terms. The lengths below straddle every one of
+// those boundaries.
+//
+// A dot product also has an exact reference the SIMD paths cannot fake: with
+// b[] all ones, the result is the sum of a[], and with a[] = 1/n and b[] = 1
+// it is 1. Those catch a dropped tail that a same-shape comparison against an
+// equally-wrong sibling would miss.
+static void test_dot_product_wide() {
+    printf("test_dot_product_wide...\n");
+
+    const int lengths[] = { 0,  1,  2,  3,  4,  5,  7,  8,  9,   15,  16,  17,  23,  24,
+                            31, 32, 33, 47, 48, 63, 64, 65, 100, 127, 128, 129, 1000 };
+
+    uint32_t seed = 0x1234abcdu;
+    auto next = [&seed]() {
+        seed = seed * 1664525u + 1013904223u;
+        return ((float)(seed >> 8) / (float)(1u << 24)) * 2.0f - 1.0f;
+    };
+
+    for (int n : lengths) {
+        std::vector<float> a(n > 0 ? n : 1), b(n > 0 ? n : 1);
+        for (int i = 0; i < n; i++) {
+            a[i] = next();
+            b[i] = next();
+        }
+        const float ref = dot_product(a.data(), b.data(), n);
+        const float wide = dot_product_wide(a.data(), b.data(), n);
+
+        float scale = 1e-6f;
+        for (int i = 0; i < n; i++) scale = fmaxf(scale, fabsf(a[i] * b[i]));
+        scale *= (n > 0 ? n : 1);
+        char msg[64];
+        snprintf(msg, sizeof(msg), "dot_product_wide agrees, n=%d", n);
+        CHECK(fabsf(ref - wide) <= 1e-5f * scale, msg);
+
+        // Exact-invariant check: sum of a[] when b[] is all ones.
+        std::vector<float> ones(n > 0 ? n : 1, 1.0f);
+        double exact = 0.0;
+        for (int i = 0; i < n; i++) exact += a[i];
+        const float got = dot_product_wide(a.data(), ones.data(), n);
+        snprintf(msg, sizeof(msg), "dot_product_wide sums a[] exactly enough, n=%d", n);
+        CHECK(fabsf(got - (float)exact) <= 1e-5f * (fabsf((float)exact) + (float)n * 1e-3f), msg);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Activation functions
 // ---------------------------------------------------------------------------
 static void test_gelu() {
@@ -772,6 +825,7 @@ static int crispembed_test_main() {
     test_conv2d_cpu();
     test_conv2d_1x1_equivalence();
     test_conv2d_depthwise_equivalence();
+    test_dot_product_wide();
     test_gelu();
     test_gelu_erf();
     test_silu();
