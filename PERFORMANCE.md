@@ -1,5 +1,60 @@
 # CrispEmbed Performance
 
+## PP-OCRv6 scalar detector — where the convolution time goes (Apple M1, 2026-08-02)
+
+Per-convolution profile of the CPU scalar detector, the dominant cost of the
+PP-OCRv6 lane and the shared shape family for the other classical lanes.
+Enable with `CRISPEMBED_PPOCRV6_DET_PROFILE=1`; fixture
+`tests/regression/images/cc0/german_official_print.jpg` (1920x2518, detector
+input 960x736).
+
+| convolution class | share of detector conv time | rate |
+|---|--:|--:|
+| 1x1 pointwise | 51.6% | ~1.2 GF/s |
+| depthwise (groups == channels) | 20.4% | 0.02-0.19 GF/s |
+| deconv (2x2 stride 2) | 6.4% | ~0.6 GF/s |
+| all other convolutions | 21.6% | ~1.0 GF/s |
+
+**Read the shares, not the absolute totals.** The same profile measured
+17,506 ms and 12,089 ms of total convolution time on two runs minutes apart,
+because this box routinely sits at load 30-110 with several agent builds
+running; the class proportions moved by under 3 points across the same pair.
+Any absolute figure here is contended wall clock and is not a benchmark.
+
+Heaviest single layer: a 7x7 **depthwise** convolution, 96 channels at 240x184,
+2394 ms and 13.7% of all convolution time at 0.17 GF/s. Depthwise is the
+generic `conv2d_cpu` path's worst case by construction — with one input and one
+output channel per group there is nothing to amortise the patch gather against,
+so it gathers a kh*kw window and consumes it in a single `dot_product`, once per
+output pixel.
+
+### 1x1 convolution kernel A/B
+
+Same binary, gate off vs on, CPU-seconds (`user+sys`) median-of-3, bracketed by
+the external `tesseract` load control. Wall clock is unusable on this box; CPU
+time held across the window.
+
+| arm | CPU-s |
+|---|--:|
+| control (`tesseract`, before) | 0.40 |
+| `CRISPEMBED_CONV1X1_FAST` off (default) | 8.59 |
+| `CRISPEMBED_CONV1X1_FAST=1` | **7.81** |
+| control (`tesseract`, after) | 0.42 |
+
+9.1% CPU, against 6% for the previous axpy form. The difference is traversal,
+not arithmetic: the old form streamed the whole output plane once per (oc, ic)
+pair, the current one blocks the pixel axis into 8192-element tiles so a tile's
+input slab stays L2-resident and computes four output channels at a time.
+Decoded-text equivalence over the 26-fixture corpus was still running when this
+was written — treat the number as measured but not yet accepted, and see
+`PLAN.md` H1 for the acceptance gate. The gate stays opt-in regardless:
+`conv2d_cpu` is shared by 15 engines and only the PP-OCRv6 detector has been
+measured.
+
+`conv2d_depthwise_cpu` (`CRISPEMBED_CONVDW_FAST=1`) is implemented and
+equivalence-guarded but **has no speed measurement yet**; given the 20.4% share
+and the 0.02-0.19 GF/s rate it is the next thing to A/B.
+
 ## EasyOCR GGML parity benchmarks — Apple M1, 2026-08-01
 
 All measurements below use the same `scan_strip.png` input and Miniconda
