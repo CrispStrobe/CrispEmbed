@@ -22,6 +22,13 @@ Usage:
     python tools/fetch_model_hashes.py              # rewrite the header
     python tools/fetch_model_hashes.py --check      # CI: fail if stale
     python tools/fetch_model_hashes.py --json       # dump what was resolved
+    python tools/fetch_model_hashes.py --check-sizes  # CI: declared vs real size
+
+The same tree call also carries each file's size, so the declared `approx_size`
+in the registry can be checked against reality for free. That matters because
+the size is what a user is shown before agreeing to a download, and nothing
+else verifies it: this check found four wrong entries on its first run, on top
+of the four the pinning audit had already found by hand.
 """
 from __future__ import annotations
 
@@ -63,14 +70,46 @@ def registry_urls(cpp_path: Path) -> "OrderedDict[str, dict]":
     return out
 
 
+# Each ModelEntry is { name, filename, url, desc, approx_size, license, card }.
+# The size is the only field shaped like "<number> <unit>", which makes it
+# findable without parsing C++ — and it is the field most likely to be a
+# guess: the audit that added pinning found four entries off by 1.5x to 250x
+# (pix2struct 300->467 MB, german-ocr 1301->1684, h2ovl-800m 398->644, and
+# glotlid claiming 3.3 MB for an 848 MB model).
+ENTRY_RE = re.compile(r"\{\s*\"(?P<name>[^\"]+)\"(?P<body>.*?)\}\s*,", re.S)
+SIZE_RE = re.compile(r"\"(?P<size>[0-9]+(?:\.[0-9]+)?)\s*(?P<unit>[KMG]B)\"")
+
+_UNIT = {"KB": 1e3, "MB": 1e6, "GB": 1e9}
+
+
+def registry_sizes(cpp_path: Path) -> "OrderedDict[str, tuple]":
+    """url -> (model_name, declared_bytes, declared_text) for every entry that
+    declares both a download URL and a size."""
+    text = cpp_path.read_text(encoding="utf-8")
+    start = text.index("static const ModelEntry k_registry[]")
+    end = text.index("\n};", start)
+    body = text[start:end]
+
+    out: "OrderedDict[str, tuple]" = OrderedDict()
+    for m in ENTRY_RE.finditer(body):
+        blob = m.group("body")
+        url_m = URL_RE.search(blob)
+        size_m = SIZE_RE.search(blob)
+        if not url_m or not size_m:
+            continue
+        declared = float(size_m.group("size")) * _UNIT[size_m.group("unit")]
+        out.setdefault(url_m.group(0), (m.group("name"), declared, size_m.group(0).strip('"')))
+    return out
+
+
 def fetch_tree(owner: str, repo: str, rev: str) -> dict:
-    """path -> sha256, for LFS-backed files only."""
+    """path -> (sha256, size_bytes), for LFS-backed files only."""
     url = API.format(owner=owner, repo=repo, rev=rev)
     req = urllib.request.Request(url, headers={"User-Agent": "crispembed-hash-pin"})
     with urllib.request.urlopen(req, timeout=60) as resp:
         entries = json.load(resp)
     return {
-        e["path"]: e["lfs"]["oid"]
+        e["path"]: (e["lfs"]["oid"], int(e["lfs"].get("size") or e.get("size") or 0))
         for e in entries
         if isinstance(e, dict) and e.get("type") == "file" and e.get("lfs")
     }
@@ -95,7 +134,8 @@ def resolve(urls: "OrderedDict[str, dict]", verbose: bool = True):
                 if verbose:
                     print(f"  {key[0]}/{key[1]}@{key[2]}: FAILED ({exc})", file=sys.stderr)
 
-        sha = trees[key].get(parts["path"])
+        entry = trees[key].get(parts["path"])
+        sha = entry[0] if entry else None
         if sha:
             pins[url] = sha
         else:
@@ -160,12 +200,71 @@ def render_header(pins: "OrderedDict[str, str]", unpinned: list) -> str:
     return "\n".join(lines)
 
 
+def check_sizes(tolerance: float = 0.25, floor_bytes: int = 2_000_000,
+                verbose: bool = True) -> int:
+    """Compare each registry entry's declared size against the real file.
+
+    The declared size is what a user sees before agreeing to a download, so a
+    wrong one is a small honesty problem and, at 250x, a real one. Tolerance is
+    generous because these are deliberately round numbers ("19 MB"); it only
+    fires on genuine drift, not rounding.
+    """
+    sizes = registry_sizes(REGISTRY_CPP)
+    urls = registry_urls(REGISTRY_CPP)
+    trees: dict = {}
+    bad, unknown = [], []
+
+    for url, (name, declared, text) in sizes.items():
+        parts = urls.get(url)
+        if not parts:
+            continue
+        key = (parts["owner"], parts["repo"], parts["rev"])
+        if key not in trees:
+            try:
+                trees[key] = fetch_tree(*key)
+            except (urllib.error.URLError, urllib.error.HTTPError, ValueError):
+                trees[key] = {}
+        entry = trees[key].get(parts["path"])
+        if not entry or not entry[1]:
+            unknown.append((name, text))
+            continue
+        actual = entry[1]
+        # Ratio in both directions, so 3.3 MB vs 848 MB is as loud as the reverse.
+        # Both a relative and an absolute gate: "976 KB" vs 1.0 MB is a
+        # rounding artifact, not a wrong number, and failing CI on it would
+        # train people to ignore this check.
+        delta = abs(actual - declared)
+        if delta > floor_bytes and delta / max(actual, 1) > tolerance:
+            bad.append((name, text, actual, declared))
+
+    for name, text, actual, declared in sorted(bad, key=lambda r: -abs(r[2] - r[3])):
+        factor = actual / max(declared, 1)
+        print(f"  SIZE  {name:34s} declared {text:>9s}  actual {actual/1e6:9.1f} MB  ({factor:.2f}x)",
+              file=sys.stderr)
+    if verbose and unknown:
+        print(f"  ({len(unknown)} entries not size-checked: unreachable or not LFS)", file=sys.stderr)
+
+    if bad:
+        print(f"\n{len(bad)} registry size(s) wrong by more than {tolerance:.0%}. "
+              f"These are shown to users before they agree to a download.", file=sys.stderr)
+        return 1
+    print(f"registry sizes: {len(sizes) - len(unknown)} checked, all within "
+          f"{tolerance:.0%} (or under the {floor_bytes/1e6:.0f} MB absolute floor)",
+          file=sys.stderr)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="exit non-zero if the header is stale or coverage regressed")
     ap.add_argument("--json", action="store_true", help="dump resolved pins as JSON")
+    ap.add_argument("--check-sizes", action="store_true",
+                    help="verify each entry's declared size against the real file")
     args = ap.parse_args()
+
+    if args.check_sizes:
+        return check_sizes()
 
     urls = registry_urls(REGISTRY_CPP)
     print(f"registry: {len(urls)} distinct download URLs", file=sys.stderr)

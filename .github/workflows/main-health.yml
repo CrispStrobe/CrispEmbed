@@ -115,3 +115,9 @@ jobs:
       # here, since an unpinned URL now refuses to download at all.
       - name: Verify model SHA-256 pins are current
         run: python tools/fetch_model_hashes.py --check
+
+      # The declared size is what a user sees before agreeing to a download.
+      # Same daily-job rationale (one API call per repo), and it catches the
+      # same class of drift as the pin check: a re-upload at a different quant.
+      - name: Verify registry sizes match the published files
+        run: python tools/fetch_model_hashes.py --check-sizes
