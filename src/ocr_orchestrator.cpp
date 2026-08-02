@@ -717,6 +717,13 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // DBNet detection (model_a) + per-line Tesseract-LSTM recognition
         // (model_b). Tesseract-LSTM recognizes a single text line, so each
         // detected region is cropped (grayscale) and recognized in turn.
+        //
+        // Model load is timed separately from the stage bench below, because
+        // for a one-shot CLI invocation it is not a rounding error: it was
+        // measured at ~4.6 s against 512 ms of actual detect+recognize work,
+        // i.e. 90% of what the user waits for. The stage bench starts after
+        // both loads and therefore cannot see it.
+        const auto tess_load_start = std::chrono::steady_clock::now();
         if (!ctx->tess_det) {
             if (st.model_a.empty() || st.model_b.empty()) {
                 fprintf(stderr, "ocr_orchestrator: tesseract stage missing models "
@@ -729,6 +736,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        const auto tess_det_loaded = std::chrono::steady_clock::now();
         if (!ctx->tess) {
             std::string tess_model = st.model_b;
             // Auto-select: if model_b is "auto" and LID detected a language,
@@ -762,6 +770,12 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             ctx->tess_resolved_model = tess_model;
         }
         const auto tess_bench_start = std::chrono::steady_clock::now();
+        if (std::getenv("CRISPEMBED_TESSERACT_BENCH") || ctx->bench) {
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+            fprintf(stderr, "[tesseract-load-bench] detector=%.1f ms recognizer=%.1f ms total=%.1f ms\n",
+                    ms(tess_load_start, tess_det_loaded), ms(tess_det_loaded, tess_bench_start),
+                    ms(tess_load_start, tess_bench_start));
+        }
         std::vector<ocr_detect::text_box> boxes;
         const bool classical_pageseg =
             st.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
