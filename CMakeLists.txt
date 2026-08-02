@@ -545,6 +545,9 @@ target_link_libraries(test-core-cpu-ops PRIVATE crispembed)
 add_executable(test-core-vlm-attention tests/test_core_vlm_attention.cpp)
 target_link_libraries(test-core-vlm-attention PRIVATE crispembed)
 
+add_executable(test-msac-tiling tests/test_msac_tiling.cpp)
+target_link_libraries(test-msac-tiling PRIVATE crispembed)
+
 add_executable(test-gguf-loader-mmap tests/test_gguf_loader_mmap.cpp)
 target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)
 
