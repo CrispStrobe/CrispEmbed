@@ -63,4 +63,33 @@ bool compose_classes(const std::vector<int> & labels, const std::vector<std::vec
     return true;
 }
 
+bool compose_classes_partial(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
+                             std::vector<int> & unichars, std::vector<int> & starts) {
+    unichars.clear();
+    starts.clear();
+    if (codes.empty()) return false;
+    for (int pos = 0; pos < (int)labels.size();) {
+        int best_uid = -1;
+        int best_len = 0;
+        for (int uid = 0; uid < (int)codes.size(); ++uid) {
+            const auto & code = codes[uid];
+            if (code.empty() || pos + (int)code.size() > (int)labels.size()) continue;
+            if (!std::equal(code.begin(), code.end(), labels.begin() + pos)) continue;
+            if ((int)code.size() > best_len) {
+                best_uid = uid;
+                best_len = (int)code.size();
+            }
+        }
+        starts.push_back(pos);
+        if (best_uid < 0) {
+            unichars.push_back(-1);
+            ++pos;
+        } else {
+            unichars.push_back(best_uid);
+            pos += best_len;
+        }
+    }
+    return !unichars.empty();
+}
+
 } // namespace tesseract_recoder

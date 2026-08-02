@@ -1006,8 +1006,14 @@ static void forward(tesseract_lstm_context * ctx,
     const bool compose_recoder =
         !ctx->recoder_codes.empty() && std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
     std::vector<int> composed_uids, composed_starts;
-    const bool composed = compose_recoder && recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes,
-                                                                        composed_uids, composed_starts);
+    bool composed = compose_recoder &&
+                    recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes, composed_uids, composed_starts);
+    if (compose_recoder && !composed) {
+        // Keep valid multi-class segments visible around an unmapped class in
+        // diagnostic mode. The production/default path remains unchanged.
+        composed = tesseract_recoder::compose_classes_partial(collapsed_labels, ctx->recoder_codes, composed_uids,
+                                                              composed_starts);
+    }
     if (composed) {
         for (size_t i = 0; i < composed_uids.size(); ++i) {
             const int uid = composed_uids[i];
