@@ -467,6 +467,23 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
         const auto ppocr_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+            int max_graph_regions = 8;
+            if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_GRAPH_MAX_REGIONS")) {
+                const int parsed = std::atoi(limit);
+                if (parsed >= 0) max_graph_regions = parsed;
+            }
+            // The opt-in recognizer graph is numerically sound per crop, but
+            // Metal graph planning per line is currently too expensive for a
+            // full page. Keep direct/small-crop diagnostics available while
+            // falling back to the accepted CPU recognizer for large pages.
+            ppocrv6_ocr_set_graph_accept(ctx->pprec, (int)boxes.size() <= max_graph_regions ? 1 : 0);
+            if ((int)boxes.size() > max_graph_regions && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+                fprintf(stderr, "[ppocrv6-graph-budget] regions=%zu max=%d action=cpu-fallback\n", boxes.size(),
+                        max_graph_regions);
+        } else {
+            ppocrv6_ocr_set_graph_accept(ctx->pprec, -1);
+        }
         int w = pw, h = ph;
         std::vector<uint8_t> owned;
         const unsigned char * rgb = px;
