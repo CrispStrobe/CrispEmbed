@@ -1,5 +1,54 @@
 # CrispEmbed Performance
 
+## ⚠ The 1x1 convolution fast path is ARCH-DEPENDENT — do not flip it globally
+
+Measured 2026-08-02 on both machines, same code, same fixture
+(`german_official_print.jpg`), same binary per host, CPU-seconds median-of-3:
+
+| host | arch / SIMD | gate off | `CRISPEMBED_CONV1X1_FAST=1` | verdict |
+|---|---|--:|--:|---|
+| M1 Mac | ARM / NEON | 8.59 | 7.81 | **9.1% faster** |
+| VPS (Xeon Skylake) | x86 / AVX2+FMA | 34.87 | 37.99 | **9.0% SLOWER** |
+
+**The sign of the result flips with the instruction set.** A single-machine
+verdict on this change would have been wrong for half the deployments, in
+whichever direction it had been taken. Both gates therefore stay **default
+off**, and anyone proposing to flip one must show numbers on both
+architectures — or make the dispatch `#ifdef`-conditional and justify each arm
+separately.
+
+The mechanism is visible in the per-layer profile. The same generic
+`conv2d_cpu` reaches wildly different rates on the two machines:
+
+| layer | M1 | Xeon |
+|---|--:|--:|
+| 1x1 pointwise (typical) | ~1.2 GF/s | 5.8-10.8 GF/s |
+| 7x7 depthwise, 96ch @ 240x184 | 0.17 GF/s | 1.46 GF/s |
+
+So the generic gather-then-`dot_product` path is already 5-9x more efficient on
+x86 and is close enough to memory bandwidth that the tiled rewrite only adds
+overhead. On NEON it is weak enough that the rewrite wins. `dot_product` is the
+likely reason: its AVX2 arm consumes 16 floats per iteration across two 256-bit
+accumulators, its NEON arm 8 across two 128-bit ones.
+
+**That reframes the real M1 opportunity.** The Mac is running the same C++ at
+roughly a fifth to an eighth of the throughput x86 gets from it. The productive
+target is the NEON path itself, not the convolution loop structure around it.
+
+The depthwise gate was neutral on x86 (34.73 vs 34.87 off, inside noise) against
+3.6% on the M1 — same direction of story, smaller effect.
+
+Decoded-text equivalence held on both hosts: 34/34 fixtures on the Mac
+(20 synthetic ground-truth + 14 CC0), 14/14 CC0 fixtures on the VPS, both gates
+on. `test-core-cpu-ops` passes 118/118 on **both** NEON and AVX2, so the
+equivalence guards cover both `dot_product` arms.
+
+Measurement note: the VPS ran at load 0.38 against the Mac's 30-110, which is
+why its absolute total convolution time (2,652 ms) is close to the 2,350 ms
+recorded for the Mac detector under quiet conditions while contended Mac runs of
+the same profile read 12,089-17,505 ms. Contended absolute figures from the Mac
+are not comparable to anything.
+
 ## PP-OCRv6 scalar detector — where the convolution time goes (Apple M1, 2026-08-02)
 
 Per-convolution profile of the CPU scalar detector, the dominant cost of the
