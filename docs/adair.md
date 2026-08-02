@@ -33,6 +33,27 @@ Verified against a *genuine* reference — the real PyTorch AdaIR model (upstrea
 image). Reproduce with `tools/dump_adair_reference_from_gguf.py`; ref is on HF at
 `cstr/text-super-resolution-gguf/adair-ref.gguf`.
 
+### F16 (fixed 2026-08-02)
+
+F16 was previously unusable — it aborted in `adair_kernel` with
+`tensor buffer not set`, and once that was guarded it still produced
+cos 0.729509. Neither was a backend or a quantization problem. `tools/quantize.cpp`
+flattens every 4-D conv weight to 2-D `[IC*KH*KW, OC]` in the output header, and
+this engine inferred three hidden widths from `->ne[3]`, which is `1` on a
+flattened tensor: the GDFN hidden width, the FreModule `rate_conv` width and the
+`ChannelGate` MLP width. A GDFN hidden width of 1 makes `half = hidden/2` zero,
+so the following 1×1 conv was built with `ic == 0` — the zero-element kernel
+descriptor the backend could not allocate.
+
+`conv1x1_out_channels()` now derives OC from the element count, which is correct
+under both layouts. F16 measures **cos 0.999383, max_abs 0.027871** on the 64×64
+`adair-ref.gguf` fixture, against **0.999382 / 0.027892** for f32 through the
+same binary — i.e. F16 costs nothing measurable here. Set
+`ADAIR_LEGACY_NE3_DIMS=1` to restore the old `ne[3]` read for bisection.
+
+The registry still ships f32: repointing it needs the f16 uploaded to
+`cstr/adair-GGUF` and a SHA-256 pin in `examples/cli/model_hashes.h`.
+
 ## Performance
 
 All convolution sites — the U-Net down/up/reduce/output convs plus the

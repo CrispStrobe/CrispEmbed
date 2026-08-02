@@ -1179,11 +1179,14 @@ static const ModelEntry k_registry[] = {
       "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
       "https://huggingface.co/cstr/instructir-GGUF" },
 
-    // f32, not f16: the f16 quantizes fine but aborts at run time on the
-    // default ggml_conv_2d path ("tensor buffer not set" in adair_kernel), so
-    // there is no f16 to point at until src/adair.cpp handles F16 weights.
-    // See PLAN.md. Repo id is the canonical lowercase one — cstr/AdaIR-GGUF
-    // only worked via HuggingFace's case redirect.
+    // Still f32, but no longer for a runtime reason: the F16 defect was a shape
+    // bug in this repo, fixed in src/adair.cpp (the quantizer flattens 4-D conv
+    // weights to 2-D, and three hidden widths were read off ne[3]). A local f16
+    // now runs at cos 0.999383 vs the f32 path's 0.999382. Repointing this entry
+    // needs the f16 uploaded to cstr/adair-GGUF and a SHA-256 pin added to
+    // model_hashes.h first. See PLAN.md / PERFORMANCE.md.
+    // Repo id is the canonical lowercase one — cstr/AdaIR-GGUF only worked via
+    // HuggingFace's case redirect.
     { "adair-5d", "adair-5d-f32.gguf", "https://huggingface.co/cstr/adair-GGUF/resolve/main/adair-5d-f32.gguf",
       "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "115 MB", "MIT",
       "https://huggingface.co/cstr/adair-GGUF" },
