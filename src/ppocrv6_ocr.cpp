@@ -1043,6 +1043,12 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
 static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vector<float> & out) {
     constexpr int H = 48, W = 320;
     out.assign(3 * H * W, 0.0f);
+    // The shipped Paddle inference contract is BGR, while the HF processor
+    // advertises RGB conversion. Keep BGR as the production default (it is
+    // the contract used by our official-source gold archives), but expose an
+    // explicit diagnostic switch so the two source formats can be compared
+    // without rebuilding the runtime.
+    const bool rgb = std::getenv("CRISPEMBED_PPOCRV6_RGB") != nullptr;
     const int rw = std::max(1, std::min(W, int(std::round(w * (H / float(std::max(1, h)))))));
     for (int y = 0; y < H; ++y)
         for (int x = 0; x < rw; ++x) {
@@ -1056,10 +1062,10 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
             const float wy = std::clamp(fy - std::floor(fy), 0.0f, 1.0f);
             const float wx = std::clamp(fx - std::floor(fx), 0.0f, 1.0f);
             for (int c = 0; c < 3; ++c) {
-                // Paddle's PP-OCRv6 inference.yml uses DecodeImage(img_mode=BGR).
-                // stbi_load delivers RGB, so keep the public crop API RGB and
-                // swap only at the model input boundary.
-                int sc = ch == 1 ? 0 : (ch >= 3 ? (2 - c) : std::min(c, ch - 1));
+                // stbi_load delivers RGB. The normal path swaps at the model
+                // boundary for Paddle's DecodeImage(img_mode=BGR); the
+                // diagnostic RGB path preserves the public channel order.
+                int sc = ch == 1 ? 0 : (ch >= 3 && !rgb ? (2 - c) : std::min(c, ch - 1));
                 const float a = px[(y0 * w + x0) * ch + sc] * (1 - wx) + px[(y0 * w + x1) * ch + sc] * wx;
                 const float b = px[(y1 * w + x0) * ch + sc] * (1 - wx) + px[(y1 * w + x1) * ch + sc] * wx;
                 out[c * H * W + y * W + x] = ((a * (1 - wy) + b * wy) / 255.0f - 0.5f) / 0.5f;
