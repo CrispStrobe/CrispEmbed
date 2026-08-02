@@ -546,6 +546,48 @@ what ships, not what the code can be aimed at: CLIP and SigLIP score an image
 against whatever labels you pass, so the caller supplies the classifier. See
 [POLICY.md §3](POLICY.md).
 
+**If you operate it, Art. 4 (AI literacy) is yours.** In force since 2 February
+2025, it binds deployers as well as providers, and the open-source exemption
+does not reach it. In practice it means whoever runs the thing understands that
+OCR output is a reconstruction and not a copy, that a cosine similarity is not
+a match decision, that face-recognition error rates vary by demographic group,
+and that a restored image is a plausible completion rather than recovered
+evidence. [POLICY.md §8](POLICY.md).
+
+### Serving it safely
+
+`crispembed-server` has **no authentication**, and its endpoints read images by
+*server-side path* (`{"image": "/path/on/the/server"}`). Bound to loopback
+(the default) that is a local tool; bound to a routable address it lets any
+client read any file the process can — worst on `/face`, which turns one into a
+biometric template.
+
+```bash
+# Confine every {"image": ...} read to one subtree (resolves .. and symlinks).
+crispembed-server --det yunet.gguf --rec arcface.gguf \
+    --image-root /srv/scans --host 0.0.0.0 --accept-biometric
+```
+
+Set `--image-root` whenever the port is not loopback-only, and put an
+authenticating proxy in front of it. Starting `--rec` on a non-loopback bind
+warns about exactly this.
+
+### Model integrity
+
+Auto-downloaded GGUFs are **SHA-256 pinned** against
+[`examples/cli/model_hashes.h`](examples/cli/model_hashes.h), generated from
+HuggingFace's LFS object IDs by `tools/fetch_model_hashes.py`. A payload whose
+digest does not match is deleted rather than installed, non-HTTPS URLs are
+refused, and an unpinned URL is refused unless you set
+`CRISPEMBED_ALLOW_UNPINNED_MODEL=1`. A GGUF is a graph this process executes,
+so "the download succeeded" is not an integrity statement. After adding a model
+to the registry, re-run:
+
+```bash
+python tools/fetch_model_hashes.py          # refresh pins
+python tools/fetch_model_hashes.py --check  # CI: fail if stale
+```
+
 ---
 
 ## License
