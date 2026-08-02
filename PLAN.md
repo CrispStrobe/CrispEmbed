@@ -394,13 +394,37 @@ So both defaults stay. The same run re-confirms the graph promotion from the
 CPU-scalar reference: PP-OCRv6 **3.25 with the graph versus 5.50 with
 `NO_GRAPH`**, a 1.7x that matches the 1.9x wall-clock figure measured earlier.
 
+**EasyOCR profiled, and an earlier claim in this file corrected.** On a real
+1920x2485 document (`commons_test_ocr_document.jpg`, 31 units) on a quiet box:
+`load=2645 ms detect+recognize=12362 ms`. Compute dominates by 5x. The earlier
+"load is 94% of the stage" reading came from the tiny synthetic page under heavy
+contention, where a single Metal init blocked for tens of seconds — it was a
+contention artifact, not a property of the lane, and should not be planned
+against.
+
+Same page, same DBNet detector, the two lanes differ almost entirely in their
+recognizer: **tesseract lane 8.13 s wall / 7.86 s user, EasyOCR lane 17.98 s /
+9.57 s user**. Per-line Tesseract LSTM runs 46-69 ms.
+
+**Negative result — recognizer graph rebuilds are NOT the cost (do not retry).**
+`easyocr_ocr_set_width()` tears down and rebuilds the graph whenever the canvas
+width changes, and width is per crop (bucketed to a multiple of 64), so reading
+order rebuilds every time consecutive lines land in different buckets. Sorting
+regions by canvas width makes that O(distinct widths) instead of O(regions).
+Implemented and A/B'd: **3.00 vs 3.02 CPU-s on a 47-region receipt and 7.43 vs
+7.68 on the 31-unit document** — 0-3%, at the edge of noise. The rebuild is
+cheap because it is graph construction plus a gallocr pass, with no weight
+reload. Reverted rather than kept gated: ~25 lines of reordering in a
+result-ordering-sensitive path is the wrong trade for 3%.
+
 **What is actually left.** (a) PP-OCRv6's detector is CPU scalar convolution and
-is now that lane's dominant compute; its graph stays diagnostic-only on
-box-geometry parity, so closing that parity is the unlock. (b) DBNet costs
-~400 ms on a capped 572x188 page against `tesseract-cli`'s 0.135 s for the whole
-job — it is CPU-by-choice, so the win there is kernel work, not backend
-selection. (c) EasyOCR's remaining ~3.65 CPU-s is unprofiled below the
-load/compute split.
+is that lane's dominant compute; its graph stays diagnostic-only on box-geometry
+parity, so closing that parity is the unlock and it is real work, not a knob.
+(b) DBNet costs ~400 ms on a capped 572x188 page against `tesseract-cli`'s
+0.135 s for the whole job — CPU by deliberate choice (Metal conv measured
+slower), so the win is kernel work. (c) The EasyOCR CRNN is ~2.2x the Tesseract
+LSTM on the same detections and has no per-stage split below
+`detect+recognize` yet.
 
 **Measure with CPU time on this box.** `user+sys` stayed within 12% across runs
 where wall clock swung 10x, and an early cross-run wall comparison of the
