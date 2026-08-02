@@ -455,10 +455,23 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             return {};
         }
         if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
+        const auto ppocr_det_loaded = std::chrono::steady_clock::now();
         if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
         if (!ctx->ppori && !st.model_c.empty())
             ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
+        const auto ppocr_load_done = std::chrono::steady_clock::now();
         if (!ctx->ppdet || !ctx->pprec) return {};
+        // Model load is reported separately: the `detect` figure below spans
+        // from stage entry, so without this split a slow *loader* is
+        // indistinguishable from a slow detector. That distinction was worth
+        // 12.5x in the tesseract lane, where a CPU-only recognizer was
+        // initialising Metal purely to read its own weights.
+        if (ppocr_bench) {
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+            fprintf(stderr, "[ppocrv6-load-bench] detector=%.1f ms recognizer+orientation=%.1f ms total=%.1f ms\n",
+                    ms(ppocr_started, ppocr_det_loaded), ms(ppocr_det_loaded, ppocr_load_done),
+                    ms(ppocr_started, ppocr_load_done));
+        }
         // PP-OCRv6's official predictor applies resize_long=960/max-side and
         // rounds dimensions to a 32-pixel grid before inference.  Do not use
         // detect_raw here: the routed C API has the original page pixels, and
