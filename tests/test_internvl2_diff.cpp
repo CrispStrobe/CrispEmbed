@@ -82,6 +82,11 @@ static int crispembed_test_main(int argc, char ** argv) {
         }
     }
 
+    // Every FAIL below increments this. The harness used to print PASS/FAIL
+    // per stage and then return 0 regardless, so a red stage was advisory and
+    // CI could not see it.
+    int failures = 0;
+
     // ── Run vision encoder ──────────────────────────────────────
     printf("\nRunning vision encoder...\n");
     internvl2_ocr::vision_result vr;
@@ -114,6 +119,7 @@ static int crispembed_test_main(int argc, char ** argv) {
             auto r = ref.compare("vis_proj_output", pr.embeds, pr.n_tokens * pr.embed_dim);
             printf("  vis_proj_output: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
                    r.is_pass() ? "PASS" : "FAIL");
+            if (!r.is_pass()) failures++;
         }
     }
 
@@ -128,10 +134,49 @@ static int crispembed_test_main(int argc, char ** argv) {
             internvl2_ocr::llm_result lr;
             if (internvl2_ocr::run_llm_forward(ctx, test_tokens, n_tokens, lr)) {
                 printf("LLM output: %d tokens, %d dim\n", lr.n_tokens, lr.hidden_dim);
+
+                // Previously this printed the shape and freed the buffers,
+                // comparing nothing — so a reference with 27 vision stages and
+                // a full LLM dump still reported only the vision tower, and
+                // "parity passes" said nothing about the decoder. Compare what
+                // the model actually emits: the post-norm hidden state and the
+                // logits generation reads.
+                if (lr.hidden) {
+                    auto [rn, nn] = ref.get_f32("llm_output_norm");
+                    if (rn && nn > 0) {
+                        auto r = ref.compare("llm_output_norm", lr.hidden, lr.n_tokens * lr.hidden_dim);
+                        printf("  llm_output_norm: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                               r.is_pass() ? "PASS" : "FAIL");
+                        if (!r.is_pass()) failures++;
+                    }
+                }
+                if (lr.logits) {
+                    auto [rl, nl] = ref.get_f32("llm_logits");
+                    if (rl && nl > 0) {
+                        auto r = ref.compare("llm_logits", lr.logits, lr.n_tokens * lr.vocab_size);
+                        printf("  llm_logits:      cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                               r.is_pass() ? "PASS" : "FAIL");
+                        if (!r.is_pass()) failures++;
+
+                        // Cosine can stay high while the argmax moves, and the
+                        // argmax is what generation acts on.
+                        const int V = lr.vocab_size;
+                        const float * mine = lr.logits + (size_t)(lr.n_tokens - 1) * V;
+                        const float * theirs = rl + (size_t)(lr.n_tokens - 1) * V;
+                        int am = 0, at = 0;
+                        for (int v = 1; v < V; v++) {
+                            if (mine[v] > mine[am]) am = v;
+                            if (theirs[v] > theirs[at]) at = v;
+                        }
+                        printf("  argmax(last):    ours=%d ref=%d %s\n", am, at, am == at ? "PASS" : "FAIL");
+                        if (am != at) failures++;
+                    }
+                }
                 free(lr.hidden);
                 if (lr.logits) free(lr.logits);
             } else {
                 printf("LLM forward failed\n");
+                failures++;
             }
         }
     }
@@ -141,7 +186,11 @@ static int crispembed_test_main(int argc, char ** argv) {
     free(pr.embeds);
     internvl2_ocr::free_(ctx);
 
-    printf("\nDone.\n");
+    if (failures) {
+        printf("\nFAIL: %d stage(s) diverged from the reference.\n", failures);
+        return 1;
+    }
+    printf("\nDone — all compared stages match.\n");
     return 0;
 }
 
