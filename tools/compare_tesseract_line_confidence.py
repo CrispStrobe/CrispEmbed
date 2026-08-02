@@ -108,7 +108,11 @@ def confidence_acceptance_checks(args: argparse.Namespace, reference: dict, gree
             <= args.max_greedy_word_confidence_delta
         )
     if args.require_beam_sequence_only:
-        checks["beam_sequence_only"] = beam is not None and beam["char_confidences"] == 0
+        checks["beam_sequence_only"] = (
+            beam is not None
+            and beam["char_confidences"] == 0
+            and beam.get("word_confidence", 0.0) == 0.0
+        )
     return checks
 
 
