@@ -89,6 +89,10 @@ std::vector<std::string> kv_str_array(gguf_context * gctx, const char * key);
 // Read an int32 array. Returns empty vector when missing.
 std::vector<int> kv_i32_array(gguf_context * gctx, const char * key);
 
+// Read a uint8 array (used for opaque-but-portable model metadata such as
+// optional Tesseract DAWG components). Empty when missing or mistyped.
+std::vector<uint8_t> kv_u8_array(gguf_context * gctx, const char * key);
+
 // Read a float32 array (e.g. tokenizer.ggml.scores). Empty when missing/mistyped.
 std::vector<float> kv_f32_array(gguf_context * gctx, const char * key);
 

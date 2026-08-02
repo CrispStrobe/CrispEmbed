@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,4 +37,19 @@ int tesseract_dawg_has_prefix_base64(const char * payload, const int * unichar_i
 
 #ifdef __cplusplus
 }
+
+#include <string>
+#include <vector>
+
+namespace tesseract_dawg {
+
+struct Dawg {
+    uint32_t unicharset_size = 0;
+    std::vector<uint64_t> edges;
+};
+
+bool parse(const std::vector<uint8_t> & bytes, Dawg & out, std::string * error = nullptr);
+bool prefix_matches(const Dawg & dawg, const std::vector<int> & unichars, bool complete);
+
+} // namespace tesseract_dawg
 #endif

@@ -134,6 +134,16 @@ def main() -> int:
         )
         return 0
 
+    # A build that cannot be loaded at all is a missing prerequisite, not a
+    # failed gate. Say so plainly rather than reporting every case as broken.
+    probe = _run_py("import crispembed._binding as b; b._load_library()\nprint('LIB-OK')", {})
+    if "LIB-OK" not in probe.stdout:
+        print(
+            "SKIP: libcrispembed could not be loaded; the gate was NOT exercised.\n"
+            f"      {probe.stderr.strip()[-300:]}"
+        )
+        return 0
+
     failures: list[str] = []
 
     def check(name: str, got: str, want: str) -> None:

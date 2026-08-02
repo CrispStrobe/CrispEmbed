@@ -39,6 +39,11 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--timeout", type=float, default=900)
+    parser.add_argument("--recode-beam", type=int, default=0)
+    parser.add_argument("--dawg-score", action="store_true")
+    parser.add_argument("--dawg-prefix-score", action="store_true")
+    parser.add_argument("--compose", action="store_true")
     parser.add_argument("--projection", action="store_true")
     parser.add_argument("--component", action="store_true")
     parser.add_argument("--baseline", action="store_true")
@@ -49,6 +54,10 @@ def main() -> int:
     args = parser.parse_args()
     if args.repeats < 1:
         parser.error("--repeats must be positive")
+    if args.timeout <= 0:
+        parser.error("--timeout must be positive")
+    if (args.dawg_score or args.dawg_prefix_score) and args.recode_beam <= 1:
+        parser.error("DAWG scoring requires --recode-beam > 1")
     if sum((args.projection, args.component, args.baseline)) > 1:
         parser.error("segmentation policies are mutually exclusive")
 
@@ -74,7 +83,17 @@ def main() -> int:
             "--workers",
             str(args.workers),
             "--benchmark",
+            "--timeout",
+            str(args.timeout),
         ]
+        if args.recode_beam:
+            command.extend(["--recode-beam", str(args.recode_beam)])
+        if args.dawg_score:
+            command.append("--dawg-score")
+        if args.dawg_prefix_score:
+            command.append("--dawg-prefix-score")
+        if args.compose:
+            command.append("--compose")
         if args.projection:
             command.append("--projection")
         elif args.component:
@@ -101,7 +120,12 @@ def main() -> int:
         "policy": policy,
         "detector_route": records[-1]["native_crispembed"].get("detector_route", "dbnet"),
         "workers": args.workers,
+        "timeout": args.timeout,
         "scratch": args.scratch,
+        "recode_beam": args.recode_beam,
+        "dawg_score": args.dawg_score,
+        "dawg_prefix_score": args.dawg_prefix_score,
+        "compose": args.compose,
         "repeats": len(records),
         "provenance": records[-1]["provenance"],
         "quality": {
@@ -109,6 +133,13 @@ def main() -> int:
             "cer": summarize([record["comparison"]["cer"] for record in records]),
             "wer": summarize([record["comparison"]["wer"] for record in records]),
             "confidence_delta": summarize([record["comparison"]["confidence_delta"] for record in records]),
+            "output_comparison": {
+                "identical": records[-1]["official_tesseract"]["text"] == records[-1]["native_crispembed"]["text"],
+                "official_text": records[-1]["official_tesseract"]["text"],
+                "native_text": records[-1]["native_crispembed"]["text"],
+                "official_lines": records[-1]["official_tesseract"]["lines"],
+                "native_regions": records[-1]["native_crispembed"]["regions"],
+            },
         },
         "timing_ms": {
             "official_cli": summarize(official_ms),
