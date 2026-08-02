@@ -183,7 +183,7 @@ bool load(context ** out, const char * path, int n_threads) {
     // conv-transpose kernel. OCR_DETECT_FORCE_CPU=1 forces CPU and overrides it.
     bool force_cpu = (getenv("OCR_DETECT_FORCE_CPU") && atoi(getenv("OCR_DETECT_FORCE_CPU")));
     bool use_gpu = (getenv("OCR_DETECT_USE_GPU") && atoi(getenv("OCR_DETECT_USE_GPU")));
-    ctx->backend = (use_gpu && !force_cpu) ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    ctx->backend = (use_gpu && !force_cpu) ? crispasr_init_gpu_backend_shared() : ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
 
@@ -1248,7 +1248,7 @@ void free(context * ctx) {
     if (!ctx) return;
     if (ctx->graph_ctx) ggml_free(ctx->graph_ctx);
     if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
-    if (ctx->backend) ggml_backend_free(ctx->backend);
+    if (ctx->backend) crispasr_free_gpu_backend(ctx->backend);
     core_gguf::free_weights(ctx->wl);
     delete ctx;
 }

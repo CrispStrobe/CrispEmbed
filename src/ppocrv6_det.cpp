@@ -749,7 +749,7 @@ context * init(const char * path, int) {
     const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
     const bool want_gpu = !force_cpu && (std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr ||
                                          std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH") != nullptr);
-    c->backend = want_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    c->backend = want_gpu ? crispasr_init_gpu_backend_shared() : ggml_backend_cpu_init();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     auto * meta = core_gguf::open_metadata(path);
     if (!meta) {
@@ -875,7 +875,7 @@ void free(context * c) {
     if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
     if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
     core_gguf::free_weights(c->wl);
-    if (c->backend) ggml_backend_free(c->backend);
+    if (c->backend) crispasr_free_gpu_backend(c->backend);
     delete c;
 }
 

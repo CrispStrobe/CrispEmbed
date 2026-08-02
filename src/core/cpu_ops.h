@@ -73,13 +73,16 @@ static inline std::vector<float> to_f32(const ggml_tensor * t) {
 // each inference context should own its own DequantCache instance.
 
 struct DequantCache {
-    std::unordered_map<const void *, std::vector<float>> cache_;
+    // Backend-resident tensors commonly have t->data == nullptr.  Use the
+    // tensor object as the identity so F16/Metal/CPU-buffer weights cannot
+    // alias one another in the cache.
+    std::unordered_map<const ggml_tensor *, std::vector<float>> cache_;
 
     const float * get(const ggml_tensor * t) {
         if (!t) return nullptr;
-        auto it = cache_.find(t->data);
+        auto it = cache_.find(t);
         if (it != cache_.end()) return it->second.data();
-        auto & v = cache_[t->data];
+        auto & v = cache_[t];
         v = to_f32(t);
         return v.data();
     }
