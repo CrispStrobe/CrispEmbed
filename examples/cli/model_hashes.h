@@ -370,8 +370,14 @@ static const ModelHash k_model_hashes[] = {
       "4cc16e226005a2d7ecce7749d5a876704a499ca301428167f5ceb3b75b967312" },
     { "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
       "3651e80aa17d973fe2b12e234eba0f5e3735e2dfc9983448b9a8c4badf3c7de7" },
+    { "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
+      "edf288398dc3bbcb683322fa89be140c6e04c2c14d54ae79d800b842112e1650" },
     { "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",
       "a1da049bcf236cbce52f607de005d6f7d0c4b7f68ab27fecd8f3ba14ec74b51f" },
+    { "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF/resolve/main/nanonets-ocr2-1.5b-q4_k.gguf",
+      "46de5cda9d225d3e963a45b9db2c9adbf03947e396086a404b1c8c9e3175eb56" },
+    { "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf",
+      "8cdd1fe5eeb314f1a34ef537c18800744ba501f67672b4b44fb3d5b23d8c67c7" },
     { "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF/resolve/main/internvl2.5-2b-q4_k.gguf",
       "099323e799cfd9ba0167adc8478622d06c2c89d054268fd934cdd5dd5d68dbd7" },
     { "https://huggingface.co/cstr/internvl2-1b-crispembed-GGUF/resolve/main/internvl2-1b-q4_k.gguf",
@@ -503,10 +509,7 @@ static const ModelHash k_model_hashes[] = {
 // clang-format on
 
 // Unpinned at generation time (integrity NOT enforced for these):
-//   https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf  — not an LFS file, or repo/path unreachable
-//   https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF/resolve/main/nanonets-ocr2-1.5b-q4_k.gguf  — not an LFS file, or repo/path unreachable
 //   https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf  — not an LFS file, or repo/path unreachable
-//   https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf  — not an LFS file, or repo/path unreachable
 
 // Returns the pinned SHA-256 for a download URL, or nullptr when the URL is
 // not pinned. A nullptr is not a pass: the caller decides whether an unpinned
