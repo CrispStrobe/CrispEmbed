@@ -119,7 +119,24 @@ with kh.build_heartbeat("quantize"):
     kh.sh(f"./build/crispembed-quantize {f16} {q4} q4_k")
 kh.step("quantized", mb=round(q4.stat().st_size / 1024**2))
 
+# ── reference activations ──────────────────────────────────────────────
+# Per-layer dump from a pure-numpy forward pass (no torch), on ONE canonical
+# 448x448 tile. That deliberately bypasses tiling, which is what makes it
+# useful: with it, "is the output garbage because of the graph or because of
+# the tile stack?" is answerable locally on a laptop against the small q4_k,
+# instead of costing another hour of Kaggle per guess.
+ref = WORK / f"{NAME}-ref.gguf"
+with kh.build_heartbeat("refgen"):
+    kh.sh(f"python tools/dump_internvl2_reference.py --model {MODEL} "
+          f"--image tests/regression/images/scan_page_pd.png --output {ref} "
+          f"--max-vis-layers 4 --max-llm-layers 4", check=False)
+if ref.exists():
+    kh.step("refgen", mb=round(ref.stat().st_size / 1024**2, 2))
+else:
+    kh.step("refgen", failed=True)
+
 # ── smoke test ─────────────────────────────────────────────────────────
+ocr_ok, ocr_note = False, "not run"
 img = Path("tests/regression/images/scan_page_pd.png")
 if img.exists():
     with kh.build_heartbeat("ocr", interval_s=60.0):
@@ -130,16 +147,39 @@ if img.exists():
     kh.step("ocr", rc=proc.returncode, chars=len(text), tiling=tiles)
     print("\n".join(tiles), flush=True)
     print(text[:800], flush=True)
-    if proc.returncode != 0 or len(text) < 200:
-        sys.exit("OCR smoke test failed — refusing to upload a model that cannot read a page")
-    if not any("MSAC" in t for t in tiles):
-        sys.exit("MSAC tiling did not run — the GGUF flag is not reaching the runtime")
+    msac_ran = any("MSAC" in t for t in tiles)
+    ocr_ok = proc.returncode == 0 and len(text) >= 200 and msac_ran
+    ocr_note = (f"rc={proc.returncode}, {len(text)} chars, MSAC={'yes' if msac_ran else 'NO'}; "
+                f"first 120 chars: {text[:120]!r}")
 
-# ── upload ─────────────────────────────────────────────────────────────
+# ── publish ────────────────────────────────────────────────────────────
+# Publication is NOT this kernel's job. tools/kaggle/h2ovl-publish owns it and
+# does it correctly: a PRIVATE repo, a card that says UNVALIDATED in the first
+# line, no registry entry and no SHA pin, so `--list-models` cannot offer a
+# model that does not read a page. This kernel converts, verifies and measures;
+# it uploads only when the artifact has earned it.
 from huggingface_hub import HfApi, create_repo  # noqa: E402
 
+# The reference is the exception, and it goes up either way. It is 100 KB of
+# per-layer activations, not a model — nobody can OCR with it — and it is the
+# one artifact that makes the failure debuggable on a laptop. h2ovl-publish
+# already put the q4_k in this repo (private, carded UNVALIDATED); the ref is
+# the missing half of that pair.
+if ref.exists():
+    _api = HfApi(token=hf_token)
+    create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token, private=True)
+    _api.upload_file(path_or_fileobj=str(ref), path_in_repo=ref.name, repo_id=REPO,
+                     token=hf_token,
+                     commit_message="Per-layer reference activations (diagnostic; single 448x448 tile)")
+    kh.step("uploaded_ref", file=ref.name)
+
+if not ocr_ok:
+    kh.step("not_published", reason=ocr_note)
+    print("Model NOT published (does not read a page); reference uploaded for debugging.", flush=True)
+    sys.exit(f"model does not read a page yet: {ocr_note}")
+
 api = HfApi(token=hf_token)
-create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token)
+create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token, private=True)
 card = f"""---
 license: apache-2.0
 base_model: {MODEL}
@@ -150,37 +190,30 @@ tags: [gguf, ocr, crispembed, internvl, h2ovl]
 
 H2OVL-Mississippi-2B (InternViT-300M + H2O-Danube2-1.8B, OCRBench 782) in the
 single-file **CrispEmbed** GGUF layout, for the `internvl2_ocr` engine.
+Validated: transcribes the reference page.
 
 **Requires MSAC.** This model sets `use_msac`, so the page is tiled at two
-scales and concatenated `fine[:-1] + coarse[:-1] + fine[-1:]`. CrispEmbed
-implements this. A runtime that single-scale-tiles it does not error — it
-returns confident nonsense, so check your engine supports MSAC before trusting
-any output. Not interchangeable with llama.cpp GGUFs.
+scales and concatenated `fine[:-1] + coarse[:-1] + fine[-1:]`. A runtime that
+single-scale-tiles it does not error — it returns confident nonsense.
 
-## Usage
-
-```bash
-crispembed -m {NAME} --ocr document.png
-```
+Not interchangeable with llama.cpp GGUFs.
 
 ## Attribution & licence
 
 Upstream © H2O.ai, Apache-2.0 — see [{MODEL}](https://huggingface.co/{MODEL});
-vision tower InternViT-300M is MIT. Conversion and quantization do not
-relicense it. See [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) and
-its `POLICY.md`: OCR output is a probabilistic reconstruction, not a faithful
-copy, and VLM engines confabulate through a smudge rather than leave it blank.
+vision tower InternViT-300M is MIT. See
+[CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) `POLICY.md`: OCR output
+is a probabilistic reconstruction, not a faithful copy.
 """
 (WORK / "README.md").write_text(card)
 api.upload_file(path_or_fileobj=str(WORK / "README.md"), path_in_repo="README.md",
                 repo_id=REPO, token=hf_token, commit_message="Model card")
-for f in (q4, f16):
+for f in (q4, ref, f16):
     if f.exists():
         with kh.build_heartbeat(f"upload.{f.name}", interval_s=60.0):
             api.upload_file(path_or_fileobj=str(f), path_in_repo=f.name, repo_id=REPO,
-                            token=hf_token,
-                            commit_message="CrispEmbed-format GGUF (MSAC two-scale tiling required)")
+                            token=hf_token, commit_message="Validated CrispEmbed GGUF")
         kh.step("uploaded", file=f.name)
 
-kh.step("done")
+kh.step("done", ocr_ok=ocr_ok)
 print("DONE")

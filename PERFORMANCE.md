@@ -1905,3 +1905,62 @@ produce) at **`cstr/crispembed-regression-fixtures`**, path
 mirroring CrispASR's convention. Model artifacts stay unpublished: f16 4421 MB,
 q8_0 2186 MB, q4_k 1391 MB all exist in-kernel but none may ship until the
 decoded-output gate passes.
+
+
+## h2ovl-2b — two independent defects, and a corrected metric (2026-08-02, local)
+
+### Correction to the "27 stages" figure
+
+`test-internvl2-diff` printed a row for **every** LLM layer even when the
+reference held fewer. A reference dumped `--max-llm-layers 4` therefore produced
+20 rows of `cos=1.000000 max_abs=0.000000 FAIL` — comparisons against an absent
+tensor. That is why the parity kernel reported "27 stages": 7 real, 20 fabricated.
+Fixed (`ref.has(name)` guard); the same diff now reports 7.
+
+The f16 verdict survives the correction: the fakes report exactly `1.000000`, so
+a `cos_min` of `0.999972` must have come from a real stage, i.e. all 7 real f16
+stages passed. But the count was wrong and any future automated gate reading that
+output would have been diluted by 20 free passes.
+
+### q4_k destroys this LLM; f16 does not
+
+Same reference, same binary, `h2ovl-mississippi-2b`:
+
+| stage | f16 (Kaggle) | q4_k (local) |
+|---|--:|--:|
+| vis_patch_embed | — | `0.999999` PASS |
+| vis_proj_output | — | `0.998630` FAIL |
+| llm_embed | — | `0.999361` PASS |
+| **llm_layer_0** | — | **`0.594995`** FAIL |
+| llm_layer_1 | — | `0.217947` FAIL |
+| llm_layer_2 | — | `-0.268615` FAIL |
+| llm_layer_3 | — | `-0.279113` FAIL |
+| **min over the 7 real stages** | **`0.999972`** | **`-0.279113`** |
+
+Vision survives quantization and the token embedding is fine, then the decoder
+collapses from the very first layer and goes anti-correlated by layer 2. That is
+not quantization drift — f16 is clean at 1e-5 through the same stages — so the
+q4_k recipe is wrong for this architecture (2560d, 32H/8KV ⇒ head_dim 80,
+vocab 32010). The per-backend quant rules in `tools/quantize.cpp` are the place
+to look; **do not ship a q4_k for this model.**
+
+### The template fix is confirmed at the plumbing level, not yet at the output
+
+With `5f617351`, the h2ogpt2 template is selected correctly on the published
+q4_k (`no <|im_start|>/<|im_end|> in vocab but <|end|>=32009 present`) and MSAC
+runs (`19 tiles (3x2 grid, 448px)`). Decoded output changed character: from a
+single repeated token to **"The text is in English."** — a coherent, well-formed
+reply. The model is now answering a prompt instead of emitting noise, which is
+what the fix was supposed to achieve.
+
+It is still not OCR, and there are two live explanations that this run cannot
+separate, because the only artifact small enough to fit locally is the one with
+the broken decoder:
+
+1. the q4_k decoder collapse above, and
+2. the instruction: we send `"OCR this image."`, while the model card drives it
+   as `<image>\n{question}` with prose instructions ("Please describe the image
+   in detail"). The image block placement already matches the card.
+
+Next: run the gates at q8_0/f16, where the decoder is intact. Blocked locally on
+disk (1.5 GB free, q8_0 is 2.3 GB); the parity kernel is computing both.

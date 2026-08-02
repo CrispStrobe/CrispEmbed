@@ -1330,6 +1330,14 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
             for (size_t i = 0; i < lg.layer_outputs.size(); i++) {
                 char name[64];
                 snprintf(name, sizeof(name), "llm_layer_%zu", i);
+                // A reference dumped with --max-llm-layers N holds only N
+                // layers. Comparing the rest against an absent tensor printed
+                // "cos=1.000000 max_abs=0.000000 FAIL" for every remaining
+                // layer — rows that look like 20 hard failures, and which
+                // inflate any automated stage count reading this output (the
+                // h2ovl parity kernel reported "27 stages" when the reference
+                // held 7). Skip what the reference does not contain.
+                if (!ref.has(name)) continue;
                 float * buf = (float *)malloc(T * D * sizeof(float));
                 ggml_backend_tensor_get(lg.layer_outputs[i], buf, 0, T * D * sizeof(float));
                 auto r = ref.compare(name, buf, T * D);
@@ -1708,9 +1716,16 @@ const char * internvl2_ocr_recognize_raw(internvl2_ocr_context * ctx, const uint
     // Use proper dynamic tiling preprocessor from image_preprocess.cpp
     const auto & vhp = ctx->ctx.m.vhp;
     image_preproc::internvl_config cfg;
+    const auto & lhp_cfg = ctx->ctx.m.lhp;
     cfg.image_size = (int)vhp.image_size; // 448
-    cfg.min_dynamic_patch = 1;
-    cfg.max_dynamic_patch = 12;
+    // Honour the model's own declared limits. These were hardcoded to 1/12,
+    // which silently overrode the GGUF: H2OVL declares max_dynamic_patch=6, so
+    // a page was tiled with a grid the model was never trained on. Harmless-
+    // looking for single-scale models whose chosen grid happens to fall below
+    // 12, but MSAC derives its second grid from the first, so the extra
+    // headroom changed the whole stack (19 tiles where the reference gives 13).
+    cfg.min_dynamic_patch = (int)std::max(1u, lhp_cfg.min_dynamic_patch);
+    cfg.max_dynamic_patch = (int)std::max(cfg.min_dynamic_patch, (int)lhp_cfg.max_dynamic_patch);
     // Allow runtime override for CPU-friendly inference (fewer tiles = faster)
     if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) {
         int max_px = atoi(mp);
