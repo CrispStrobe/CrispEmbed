@@ -507,7 +507,7 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
     { "bidirlm-omni-2.5b-textonly", "bidirlm-omni-2.5b-textonly-q8_0.gguf",
       "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/bidirlm-omni-2.5b-textonly-q8_0.gguf",
-      "Qwen3-Bidirectional 2048d text-only (2.5B)", "2.6 GB", "apache-2.0",
+      "Qwen3-Bidirectional 2048d text-only (2.5B)", "1834 MB", "apache-2.0",
       "https://huggingface.co/BidirLM/BidirLM-Omni-2.5B-Embedding" },
     { "bidirlm-omni-2.5b-textonly-q4k", "bidirlm-omni-2.5b-textonly-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/bidirlm-omni-2.5b-textonly-GGUF/resolve/main/"
@@ -997,12 +997,12 @@ static const ModelEntry k_registry[] = {
 
     { "bttr-hw", "bttr-hw-q4_k.gguf",
       "https://huggingface.co/cstr/bttr-handwritten-math-gguf/resolve/main/bttr-hw-q4_k.gguf",
-      "BTTR handwritten math OCR (DenseNet+Transformer, 113 tokens)", "5 MB", "mit",
+      "BTTR handwritten math OCR (DenseNet+Transformer, 113 tokens)", "11 MB", "mit",
       "https://huggingface.co/cstr/bttr-handwritten-math-gguf" },
 
     { "ppformulanet-l", "ppformulanet-l-q8_0.gguf",
       "https://huggingface.co/cstr/ppformulanet-l-gguf/resolve/main/ppformulanet-l-q8_0.gguf",
-      "PP-FormulaNet-L printed math OCR (SAM-ViT+MBart, 181M)", "180 MB", "apache-2.0",
+      "PP-FormulaNet-L printed math OCR (SAM-ViT+MBart, 181M)", "252 MB", "apache-2.0",
       "https://huggingface.co/cstr/ppformulanet-l-gguf" },
 
     { "posformer-crohme", "posformer-crohme-q8_0.gguf",
@@ -1580,7 +1580,7 @@ static const ModelEntry k_registry[] = {
     // scans. Weights cc-by-4.0 (attribution required).
     { "transcoda", "transcoda-q8_0.gguf",
       "https://huggingface.co/cstr/transcoda-omr-GGUF/resolve/main/transcoda-q8_0.gguf",
-      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M)", "120 MB", "cc-by-4.0",
+      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M)", "69 MB", "cc-by-4.0",
       "https://huggingface.co/btrkeks/transcoda-59M-zeroshot-v1" },
 
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
