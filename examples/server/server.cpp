@@ -550,6 +550,26 @@ int main(int argc, char ** argv) {
         }
         face_rec = crispembed_face_init(rec_model_path.c_str(), n_threads);
         if (!face_rec) fprintf(stderr, "Warning: failed to load recognition model '%s'\n", rec_model_path.c_str());
+
+        // The acknowledgement above is made once, by whoever starts the process.
+        // Every HTTP client that can reach the port then inherits it, and there
+        // is no authentication anywhere in this server. Bound to loopback that
+        // is a local tool; bound to a routable address it is an open biometric
+        // endpoint, and one that reads its input by server-side path. Warn
+        // rather than refuse: containers legitimately bind 0.0.0.0 behind a
+        // proxy that does the authenticating.
+        const bool loopback = host == "127.0.0.1" || host == "localhost" || host == "::1";
+        if (face_rec && !loopback) {
+            fprintf(stderr,
+                    "\n"
+                    "WARNING: /face is bound to %s, not loopback, and this server has no\n"
+                    "         authentication. Anyone who can reach %s:%d can extract face\n"
+                    "         templates — GDPR Art. 9 special-category data — from any image\n"
+                    "         file readable by this process, since /face takes a server-side\n"
+                    "         path. Put an authenticating proxy in front of it, or bind\n"
+                    "         127.0.0.1. See POLICY.md §4.\n\n",
+                    host.c_str(), host.c_str(), port);
+        }
     }
 
     // POST /detect — face detection

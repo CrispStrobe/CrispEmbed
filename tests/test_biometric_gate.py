@@ -18,6 +18,8 @@ detail:
   * a *renamed* recognition model is still refused — the gate keys on the
     model's declared type, not on its filename
   * the CLI refuses non-interactively and proceeds with ``--accept-biometric``
+  * ``--dim`` is refused too, on both CLI paths that reach it — reading a
+    property off a recognition model is still loading one
 
 The acknowledgement is a process-wide latch that cannot be cleared, so each
 case runs in its own subprocess.
@@ -195,7 +197,7 @@ def main() -> int:
         env = dict(os.environ)
         env.pop("CRISPEMBED_ACCEPT_BIOMETRIC", None)
 
-        def run_cli(extra: list[str], model: Path) -> str:
+        def run_argv(argv: list[str]) -> str:
             """Return REFUSED/LOADED based on the gate's own message.
 
             Deliberately not keyed on the exit code alone: the CLI can exit
@@ -205,7 +207,7 @@ def main() -> int:
             failures. The refusal text is what the gate itself emits.
             """
             proc = subprocess.run(
-                [str(cli), "-m", str(model), "--detect", str(img), *extra],
+                [str(cli), *argv],
                 check=False,
                 capture_output=True,
                 text=True,
@@ -217,6 +219,9 @@ def main() -> int:
                 return "REFUSED-BUT-EXIT-0"  # fails closed in message only
             return "REFUSED" if refused else "LOADED"
 
+        def run_cli(extra: list[str], model: Path) -> str:
+            return run_argv(["-m", str(model), "--detect", str(img), *extra])
+
         # Non-interactive stdin: the CLI must fail closed rather than hang or
         # silently proceed.
         check("recognition refused non-interactively", run_cli([], rec), "REFUSED")
@@ -226,6 +231,29 @@ def main() -> int:
             "LOADED",
         )
         check("detection ungated", run_cli([], det), "LOADED")
+
+        # --dim reads a property rather than running inference, and returned
+        # before the gate on both of the paths that reach it: the one a face
+        # flag routes to, and the bare fallback with no face flag at all. Both
+        # printed the recognition model's template width (128 for sface) with
+        # no acknowledgement. No template is computed either way, but POLICY.md
+        # §4 promises the acknowledgement on *load*, and crispembed_face_init()
+        # already refuses it over the C ABI — so the CLI was the laxer surface.
+        check(
+            "recognition refused for --dim (face-flag path)",
+            run_argv(["-m", str(rec), "--detect", str(img), "--dim"]),
+            "REFUSED",
+        )
+        check(
+            "recognition refused for --dim (no face flag)",
+            run_argv(["-m", str(rec), "--dim"]),
+            "REFUSED",
+        )
+        check(
+            "detection --dim ungated",
+            run_argv(["-m", str(det), "--detect", str(img), "--dim"]),
+            "LOADED",
+        )
 
     return _report(failures)
 

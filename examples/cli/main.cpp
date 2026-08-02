@@ -47,6 +47,23 @@ static float dot_product(const float * a, const float * b, int n) {
     return sum;
 }
 
+// Biometric acknowledgement for a loaded CNN face model. Returns false when the
+// caller must stop.
+//
+// Keyed on the model's own declared type, so a recognition model is caught
+// however it was named, and `cnn.model_type` defaults to "recognition" when the
+// key is absent (src/cnn_embed.cpp) — an untagged model is gated, not waved
+// through. This mirrors crispembed_face_init(): the CLI reaches cnn_embed
+// directly rather than through the C ABI, so without this it would be the laxer
+// of the two surfaces. Every CLI path that loads a face model goes through here,
+// including --dim, which POLICY.md §4 covers by saying that *loading* a
+// recognition model needs an acknowledgement.
+static bool cnn_biometric_ok(const cnn_embed::context * cctx, const char * model_label, bool accepted_flag) {
+    const char * cnn_type = cnn_embed::model_type(cctx);
+    if (!cnn_type || strcmp(cnn_type, "recognition") != 0) return true;
+    return crispembed_mgr::accept_biometric_use(model_label, accepted_flag);
+}
+
 // Granular overrides for the scan-cleanup recipe (--no-deskew & friends).
 // Templated because the CLI touches both the internal scan_cleanup_params
 // and the C-ABI crispembed_scan_cleanup_params (same field names).
@@ -1343,15 +1360,16 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
 
-        if (!crispembed_mgr::accept_biometric_use(model_arg.c_str(), accept_biometric)) {
-            cnn_embed::free(det_ctx);
-            return 1;
-        }
-
         // Load recognition model (-m)
         cnn_embed::context * rec_ctx = nullptr;
         if (!cnn_embed::load(&rec_ctx, model_path.c_str(), n_threads)) {
             fprintf(stderr, "error: cannot load recognition model '%s'\n", model_path.c_str());
+            cnn_embed::free(det_ctx);
+            return 1;
+        }
+
+        if (!cnn_biometric_ok(rec_ctx, model_arg.c_str(), accept_biometric)) {
+            cnn_embed::free(rec_ctx);
             cnn_embed::free(det_ctx);
             return 1;
         }
@@ -1427,18 +1445,16 @@ static int cli_main(int argc, char ** argv) {
     if (!face_path.empty() || !detect_path.empty()) {
         cnn_embed::context * cctx = nullptr;
         if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
+            // Before --dim, not after: reading a property off a recognition
+            // model is still loading one.
+            if (!cnn_biometric_ok(cctx, model_arg.c_str(), accept_biometric)) {
+                cnn_embed::free(cctx);
+                return 1;
+            }
             if (print_dim) {
                 printf("%d\n", cnn_embed::dim(cctx));
                 cnn_embed::free(cctx);
                 return 0;
-            }
-            // Gate on the model's own declared type, so a recognition model is
-            // caught however it was named (registry alias or bare .gguf path).
-            const char * cnn_type = cnn_embed::model_type(cctx);
-            if (cnn_type && strcmp(cnn_type, "recognition") == 0 &&
-                !crispembed_mgr::accept_biometric_use(model_arg.c_str(), accept_biometric)) {
-                cnn_embed::free(cctx);
-                return 1;
             }
             // Face detection mode
             if (!detect_path.empty()) {
@@ -1997,6 +2013,13 @@ static int cli_main(int argc, char ** argv) {
             }
             cnn_embed::context * cctx = nullptr;
             if (cnn_embed::load(&cctx, model_path.c_str(), n_threads)) {
+                // Same gate as the --face/--detect path above: this fallback is
+                // reached for a bare `-m sface.gguf --dim`, with no face flag
+                // to route it there.
+                if (!cnn_biometric_ok(cctx, model_arg.c_str(), accept_biometric)) {
+                    cnn_embed::free(cctx);
+                    return 1;
+                }
                 printf("%d\n", cnn_embed::dim(cctx));
                 cnn_embed::free(cctx);
                 return 0;
