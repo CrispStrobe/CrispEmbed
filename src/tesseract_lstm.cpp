@@ -665,9 +665,24 @@ static bool recode_prefix_legal(const std::vector<int> & prefix, const std::vect
     return reachable[n] != 0;
 }
 
+// Defined below the decoder, where the full recoder composition helper is
+// kept with output formatting. A complete composition is required before a
+// DAWG can be queried; incomplete recoder codes remain legal beam prefixes.
+static bool recode_classes_to_unichars(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
+                                       std::vector<int> & unichars, std::vector<int> & starts);
+
+static bool dawg_prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
+                              const tesseract_dawg_context * dawg) {
+    if (!dawg || codes.empty()) return true;
+    std::vector<int> unichars, starts;
+    if (!recode_classes_to_unichars(prefix, codes, unichars, starts)) return true;
+    return tesseract_dawg_context_has_prefix(dawg, unichars.data(), unichars.size()) != 0;
+}
+
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
                                                int beam_width, bool viterbi,
                                                const std::vector<std::vector<int>> * recoder = nullptr,
+                                               const tesseract_dawg_context * dawg = nullptr,
                                                float * score_out = nullptr) {
     std::vector<ctc_beam_state> beam(1);
     beam[0].p_blank = 0.0f;
@@ -694,14 +709,16 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
                     same.p_nonblank = beam_add(same.p_nonblank, state.p_nonblank + lp, viterbi);
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    if (recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) {
+                    if ((recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) &&
+                        dawg_prefix_legal(extended, recoder ? *recoder : std::vector<std::vector<int>>(), dawg)) {
                         auto & dst = find_or_add(extended);
                         dst.p_nonblank = beam_add(dst.p_nonblank, state.p_blank + lp, viterbi);
                     }
                 } else {
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    if (recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) {
+                    if ((recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) &&
+                        dawg_prefix_legal(extended, recoder ? *recoder : std::vector<std::vector<int>>(), dawg)) {
                         auto & dst = find_or_add(extended);
                         dst.p_nonblank = beam_add(dst.p_nonblank, total + lp, viterbi);
                     }
@@ -950,16 +967,20 @@ static void forward(tesseract_lstm_context * ctx,
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
     const char * recode_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
+    const bool dawg_filter_enabled = std::getenv("CRISPEMBED_TESSERACT_DAWG_PREFIX") != nullptr;
+    const auto dawg_it = ctx->dawg_contexts.find("lstm-system-dawg");
+    const tesseract_dawg_context * dawg_filter =
+        dawg_filter_enabled && dawg_it != ctx->dawg_contexts.end() ? dawg_it->second : nullptr;
     bool beam_decoded = false;
     float beam_log_score = -INFINITY;
     std::vector<float> greedy_label_confs;
     if (recode_width > 1) {
         labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false, &ctx->recoder_codes,
-                                        &beam_log_score);
+                                        dawg_filter, &beam_log_score);
         beam_decoded = true;
     } else if (beam_width > 1) {
-        labels =
-            ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false, nullptr, &beam_log_score);
+        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false, nullptr, nullptr,
+                                        &beam_log_score);
         beam_decoded = true;
     } else {
         int prev = -1;
