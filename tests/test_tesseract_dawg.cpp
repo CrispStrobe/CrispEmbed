@@ -29,6 +29,14 @@ int main() {
         std::fprintf(stderr, "invalid DAWG accepted\n");
         return 1;
     }
+    tesseract_dawg_context * ctx = tesseract_dawg_init_base64(valid, error, sizeof(error));
+    if (!ctx || !tesseract_dawg_context_has_prefix(ctx, one, 1) || !tesseract_dawg_context_contains(ctx, word, 2) ||
+        tesseract_dawg_context_contains(ctx, one, 1)) {
+        std::fprintf(stderr, "cached DAWG lookup failed: %s\n", error);
+        tesseract_dawg_free(ctx);
+        return 1;
+    }
+    tesseract_dawg_free(ctx);
     if (tesseract_dawg_validate_base64("K===", error, sizeof(error)) ||
         tesseract_dawg_validate_base64("KgADAAAAAgAAACUAAAAAAAAAFgAAAAAAAAA=A", error, sizeof(error))) {
         std::fprintf(stderr, "malformed base64 accepted\n");
