@@ -116,3 +116,55 @@ inline ggml_backend_t crispasr_init_gpu_backend() {
 
     return ggml_backend_init_best();
 }
+
+// ---------------------------------------------------------------------------
+// Optional process-shared GPU backend (opt-in: CRISPEMBED_SHARED_GPU_BACKEND=1)
+//
+// Each engine calling crispasr_init_gpu_backend() gets its own
+// ggml_backend_dev_init, so N GPU engines in one process pay N Metal inits.
+// That init is largely blocking wait rather than compute and degrades badly
+// under contention (an EasyOCR stage measured load=36 s then 87 s on two
+// consecutive runs of the same command while the process used 4 s of CPU).
+//
+// MEASURED STATUS 2026-08-02: this currently buys nothing, because after the
+// detector loaders moved to the CPU backend no OCR lane initialises Metal more
+// than once (tesseract 0, EasyOCR 1, PP-OCRv6 1 -- DBNet is CPU by default
+// since Metal conv is slower for it). It is kept, working and gated off,
+// because the duplication returns the moment two GPU-resident engines run in
+// one process -- a VLM stage beside a recognizer, the detector graph being
+// promoted, or batch/server use where several engines are resident at once.
+//
+// HAZARD if you enable it: a ggml_backend_t is a device+queue handle. Paths
+// that recognize lines in parallel (CRISPEMBED_TESSERACT_WORKERS) would drive
+// one handle from several threads, which ggml does not promise is safe. Only
+// engines whose free path also goes through crispasr_free_gpu_backend() may use
+// this, or the first engine to shut down frees the backend out from under its
+// peers.
+inline bool crispasr_shared_gpu_backend_enabled() {
+    static const bool on = std::getenv("CRISPEMBED_SHARED_GPU_BACKEND") != nullptr;
+    return on;
+}
+
+inline ggml_backend_t & crispasr_shared_gpu_backend_slot() {
+    static ggml_backend_t shared = nullptr;
+    return shared;
+}
+
+// Shared backend when enabled, otherwise a fresh one exactly as
+// crispasr_init_gpu_backend() would return.
+inline ggml_backend_t crispasr_init_gpu_backend_shared() {
+    if (!crispasr_shared_gpu_backend_enabled()) return crispasr_init_gpu_backend();
+    static std::mutex m;
+    std::lock_guard<std::mutex> lock(m);
+    ggml_backend_t & slot = crispasr_shared_gpu_backend_slot();
+    if (!slot) slot = crispasr_init_gpu_backend();
+    return slot;
+}
+
+// Free a backend from either helper. The shared instance is deliberately never
+// freed -- it outlives every engine and process teardown reclaims it.
+inline void crispasr_free_gpu_backend(ggml_backend_t backend) {
+    if (!backend) return;
+    if (backend == crispasr_shared_gpu_backend_slot()) return;
+    ggml_backend_free(backend);
+}

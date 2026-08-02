@@ -61,18 +61,56 @@ easyocr_layout::ordering_mode ordering_mode(const context * ctx) {
 }
 
 static std::vector<result> recognize_regions_locked(context * ctx, const std::vector<easyocr_layout::region> & regions,
-                                                    const uint8_t * pixels, int width, int height, int channels) {
+                                                    const uint8_t * pixels, int width, int height, int channels,
+                                                    bool add_detector_crop_margin) {
     const auto ordered = ctx->mode == easyocr_layout::ordering_mode::lines ? easyocr_layout::group_dbnet_lines(regions)
                                                                            : easyocr_layout::order_words(regions);
 
-    std::vector<result> results;
-    results.reserve(ordered.size());
-    for (size_t i = 0; i < ordered.size(); ++i) {
+    // Opt-in: EASYOCR_WIDTH_SORT=1.
+    //
+    // easyocr_ocr_set_width() tears down and rebuilds the recognizer graph
+    // whenever the canvas width changes, and width is derived per crop
+    // (bucketed to a multiple of 64), so reading order rebuilds every time
+    // consecutive lines land in different buckets -- O(regions) rebuilds on a
+    // page with varied line widths. Visiting in width-sorted order makes that
+    // O(distinct widths): each bucket is built once and every region sharing it
+    // runs back to back. Recognition is independent per crop, so this reorders
+    // work only; results are written back into reading-order slots below.
+    //
+    // MEASURED 2026-08-02: worth 0-3%, at the edge of noise (3.00 vs 3.02 CPU-s
+    // on a 47-region receipt, 7.43 vs 7.68 on a 31-unit document), because the
+    // rebuild is graph construction plus a gallocr pass with no weight reload.
+    // Output is byte-identical. Kept off by default and gated rather than
+    // deleted: it becomes worth more if the recognizer graph ever grows an
+    // expensive build step (weight residency, kernel specialisation, a
+    // shape-keyed resident cache), and it is the natural companion to batching
+    // crops of equal width into one graph dispatch.
+    std::vector<size_t> visit(ordered.size());
+    for (size_t i = 0; i < visit.size(); ++i) visit[i] = i;
+    if (std::getenv("EASYOCR_WIDTH_SORT") != nullptr) {
+        std::vector<int> canvas(ordered.size(), 0);
+        for (size_t i = 0; i < ordered.size(); ++i) {
+            const int cw = std::min(width - std::max(0, (int)ordered[i].x - 2), (int)ordered[i].w + 4);
+            const int ch = std::min(height - std::max(0, (int)ordered[i].y - 2), (int)ordered[i].h + 4);
+            canvas[i] = (cw > 0 && ch > 0) ? easyocr_postprocess::recognizer_canvas_width(cw, ch) : 0;
+        }
+        std::stable_sort(visit.begin(), visit.end(), [&canvas](size_t a, size_t b) { return canvas[a] < canvas[b]; });
+    }
+
+    std::vector<result> slots(ordered.size());
+    std::vector<char> filled(ordered.size(), 0);
+    for (size_t vi = 0; vi < visit.size(); ++vi) {
+        const size_t i = visit[vi];
         const auto & region = ordered[i];
-        const int x = std::max(0, (int)region.x - 2);
-        const int y = std::max(0, (int)region.y - 2);
-        const int crop_w = std::min(width - x, (int)region.w + 4);
-        const int crop_h = std::min(height - y, (int)region.h + 4);
+        // EasyOCR crops caller-supplied horizontal boxes exactly. The native
+        // DBNet route retains its historical two-pixel diagnostic margin, but
+        // external geometry (Python EasyOCR/Tesseract/LayoutLM) must not be
+        // enlarged before recognizer comparison.
+        const int pad = add_detector_crop_margin ? 2 : 0;
+        const int x = std::max(0, (int)region.x - pad);
+        const int y = std::max(0, (int)region.y - pad);
+        const int crop_w = std::min(width - x, (int)region.w + 2 * pad);
+        const int crop_h = std::min(height - y, (int)region.h + 2 * pad);
         int crop_width = 0, crop_height = 0;
         auto crop =
             ocr_crop::extract(pixels, width, height, channels, x, y, crop_w, crop_h, 0, &crop_width, &crop_height);
@@ -99,8 +137,14 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
         item.crop_y = y;
         item.crop_w = crop_width;
         item.crop_h = crop_height;
-        results.push_back(std::move(item));
+        slots[i] = std::move(item);
+        filled[i] = 1;
     }
+    // Back to reading order, dropping regions that produced no crop.
+    std::vector<result> results;
+    results.reserve(ordered.size());
+    for (size_t i = 0; i < slots.size(); ++i)
+        if (filled[i]) results.push_back(std::move(slots[i]));
     const auto normalized = easyocr_layout::normalize_boxes(
         [&results]() {
             std::vector<easyocr_layout::word> words;
@@ -117,7 +161,7 @@ std::vector<result> run_regions(context * ctx, const std::vector<easyocr_layout:
                                 const uint8_t * pixels, int width, int height, int channels) {
     if (!ctx || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
     std::lock_guard<std::mutex> lock(ctx->mutex);
-    return recognize_regions_locked(ctx, regions, pixels, width, height, channels);
+    return recognize_regions_locked(ctx, regions, pixels, width, height, channels, false);
 }
 
 std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
@@ -128,7 +172,7 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
     std::vector<easyocr_layout::region> regions;
     regions.reserve(detected.size());
     for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-    return recognize_regions_locked(ctx, regions, pixels, width, height, channels);
+    return recognize_regions_locked(ctx, regions, pixels, width, height, channels, true);
 }
 
 std::vector<result> run_file(context * ctx, const char * image_path) {

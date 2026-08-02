@@ -16,6 +16,8 @@ def main():
     parser.add_argument("--native", required=True, type=Path)
     parser.add_argument("--box-tolerance", type=float, default=1.0)
     parser.add_argument("--confidence-tolerance", type=float, default=0.02)
+    parser.add_argument("--ignore-detector-confidence", action="store_true",
+                        help="skip detector confidence when the reference source does not expose it")
     args = parser.parse_args()
     reference = json.loads(args.reference.read_text(encoding="utf-8"))
     native = json.loads(args.native.read_text(encoding="utf-8"))
@@ -35,7 +37,8 @@ def main():
             left, right = want.get(field, []), got.get(field, [])
             if len(left) != len(right) or any(not close(a, b, args.box_tolerance) for a, b in zip(left, right)):
                 errors.append(f"record {index} {field}: {left} != {right}")
-        for field in ("confidence", "detector_confidence"):
+        fields = ("confidence",) if args.ignore_detector_confidence else ("confidence", "detector_confidence")
+        for field in fields:
             if not close(want.get(field, 0), got.get(field, 0), args.confidence_tolerance):
                 errors.append(f"record {index} {field}: {want.get(field)} != {got.get(field)}")
     if errors:
