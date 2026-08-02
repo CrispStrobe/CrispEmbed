@@ -226,7 +226,7 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
 | 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** optimize the cached Tesseract int-mode LSTM kernel and immutable-weight reuse; preserve the exact seeded-output contract, benchmark warm recognition against official/native baselines, and keep the precision fallback gated until parity holds | **COMPLETED** |
-| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reuse per-LSTM temporary vectors across sequential line recognitions; retain isolated per-context ownership, exact cached/uncached output parity, and the existing diagnostic gates | **IN PROGRESS** |
+| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reuse per-LSTM temporary vectors across sequential line recognitions; retain isolated per-context ownership, exact cached/uncached output parity, and the existing diagnostic gates | **COMPLETED** |
 
 Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
 Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
@@ -2870,6 +2870,16 @@ the pattern first.
   ms`. The output contract is unchanged; the packed cache remains the default
   and `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1` remains the diagnostic
   fallback.
+
+- **Tesseract LSTM scratch reuse (2026-08-02).** Added a per-context,
+  environment-gated `lstm_scratch` arena for the hidden/cell/gate and int8
+  activation vectors used by SummLSTM and the recurrent layers. The default
+  allocation path is unchanged; `CRISPEMBED_TESSERACT_REUSE_SCRATCH=1` reuses
+  buffers only within one recognizer context. On a dimension-matched seeded
+  English fixture, reuse and fresh allocation both decoded `Etaansen `, so the
+  output contract remains exact. The path is covered by the runtime contract
+  test and remains opt-in until a repeated page benchmark demonstrates a
+  material allocation reduction.
 
 - **Tesseract composed-recoder output — IN PROGRESS.** The Chinese seeded F32
   reference passes all tensor stages but exposed native dropping of unmapped
