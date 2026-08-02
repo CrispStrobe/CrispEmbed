@@ -1,63 +1,59 @@
 # CrispEmbed Performance
 
-## ⚠ The 1x1 convolution fast path wins on one host and loses on the other — do not flip it globally
+## ⚠ The 1x1 and depthwise conv fast paths are NOT wins — measured, both stay off
 
-Measured 2026-08-02 on both machines, same code, same fixture
-(`german_official_print.jpg`), same binary per host, CPU-seconds median-of-3:
+**Retracted: the "9.1% faster on M1" figure this file previously headlined does
+not replicate.** It came from a single median-of-3 A/B. Repeating it as
+interleaved off/on pairs — which cancels drift, unlike two separate medians —
+gives this:
 
-| host | arch / SIMD | gate off | `CRISPEMBED_CONV1X1_FAST=1` | verdict |
+| host | pair deltas (gate off -> on) | mean | sd | 95% CI |
 |---|---|--:|--:|---|
-| M1 Mac | ARM / NEON | 8.59 | 7.81 | **9.1% faster** |
-| VPS (Xeon Skylake) | x86 / AVX2+FMA | 34.87 | 37.99 | **9.0% SLOWER** |
+| M1 Mac (NEON) | +15.7, -1.5, -1.2, +1.9 | +3.7% | 8.1 | [-4.2, +11.7] |
+| VPS Xeon (AVX2) | -7.6, -2.3, -3.3, -13.3, +1.9, -4.2 | -4.8% | 5.2 | [-8.9, -0.7] |
 
-**The sign of the result flips between the two hosts.** A single-machine verdict
-on this change would have been wrong for half the deployments, in whichever
-direction it had been taken. Both gates therefore stay **default off**, and
-anyone proposing to flip one must show numbers on both hosts.
+Read the Mac row carefully: three of the four pairs sit inside ±2%, and the mean
+is carried entirely by pair 1, whose *baseline* was the outlier (10.23 CPU-s
+against ~9.5 for the others) rather than its gated arm being fast. Drop that
+pair and the mean is **-0.3%**. The confidence interval spans zero. The original
+8.59 -> 7.81 reading was the same artifact: an unlucky high baseline, not a fast
+kernel.
 
-Note the two hosts differ in *two* ways, not one: instruction set (NEON vs
-AVX2) **and** load (30-50 vs 0.38). The heading above says "arch-dependent"
-because that was the first reading; see the retraction below, which shows the
-architectural explanation failed its own prediction and leaves contention as
-the untested alternative. Do not quote the arch framing as settled.
+**Conclusions that survive:**
 
-**RETRACTED — the mechanism first published here was wrong.** An earlier version
-of this section reported ~1.2 GF/s on the M1 against 5.8-10.8 GF/s on the Xeon
-for the same `conv2d_cpu`, called it "a 5-8x gap from identical C++", and
-concluded the NEON `dot_product` path was the target. Both halves fail:
+- On x86 the 1x1 tiled kernel is a **regression** — five of six pairs negative,
+  CI excludes zero, roughly -5%.
+- On ARM it is **neutral**, not a 9% win.
+- There is therefore **no architectural flip**. The earlier "sign flips with the
+  instruction set" story was a noisy Mac measurement set against a real x86
+  regression. Both gates stay off, and this time the reason is that neither
+  earns its place, not that the evidence is split.
+- The depthwise gate's single-shot 3.6% on the Mac is unverified against this
+  same noise floor and was neutral on x86. Treat it as unmeasured.
 
-- **The GF/s comparison was contended-Mac against quiet-Xeon** (load 30-110 vs
-  0.38) — the exact quiet-vs-loaded comparison the dev guide says fabricates
-  results. Corrected evidence: the quiet Xeon totals 2,652 ms of convolution,
-  and PLAN records the Mac detector at ~2,350 ms *quiet*. The machines are
-  comparable on this workload. There is no 5-8x architectural gap.
-- **The proposed mechanism made a prediction that failed.** If two accumulator
-  chains were starving the M1's FMA pipes, four chains would help.
-  `dot_product_wide` (`CRISPEMBED_DOT_WIDE=1`, four chains, 16 floats/iteration
-  on NEON) measured **slower** on the M1: 8.52 -> 8.90 CPU-s, decoded text
-  identical. The explanation does not stand.
+### The measurement protocol itself was the bug
 
-What survives is only the same-binary, same-box A/B in the table above, which
-remains valid because each arm was measured against its own control on its own
-machine. **Why** the sign differs is now open. The live hypothesis — untested
-when this was written — is that it is not ISA at all but memory-subsystem
-contention: a cache-blocking change wins precisely when something else is
-evicting your L2, and the two A/Bs differed in load (30-50 vs 0.38) as much as
-in instruction set.
+This is the durable finding. PLAN §1 prescribes median-of-3 CPU-seconds with a
+control before and after, and that protocol **cannot resolve an effect of this
+size on either machine**:
 
-The depthwise gate was neutral on x86 (34.73 vs 34.87 off, inside noise) against
-3.6% on the M1 — same direction of story, smaller effect.
+| host | sd of paired delta | interleaved pairs needed to resolve a 5% effect at 95% |
+|---|--:|--:|
+| M1 Mac | 8.1% | **41** |
+| VPS Xeon | 5.2% | **16** |
 
-Decoded-text equivalence held on both hosts: 34/34 fixtures on the Mac
-(20 synthetic ground-truth + 14 CC0), 14/14 CC0 fixtures on the VPS, both gates
-on. `test-core-cpu-ops` passes 118/118 on **both** NEON and AVX2, so the
-equivalence guards cover both `dot_product` arms.
+A median-of-3 is three samples, and comparing two separately-taken medians is
+strictly worse than pairing because slow drift lands entirely in one arm. Any
+past finding in this file at the 3-10% level that rests on a single median-of-3
+should be treated as unverified until re-run as interleaved pairs with n
+reported. The control-before/control-after bracket does not rescue it: both
+controls can agree within 30% while the measured arms straddle a 15% swing, as
+pair 1 above did.
 
-Measurement note: the VPS ran at load 0.38 against the Mac's 30-110, which is
-why its absolute total convolution time (2,652 ms) is close to the 2,350 ms
-recorded for the Mac detector under quiet conditions while contended Mac runs of
-the same profile read 12,089-17,505 ms. Contended absolute figures from the Mac
-are not comparable to anything.
+**What to do instead:** interleave the arms in one loop, report every pair, and
+publish the spread rather than a single number. If the CI includes zero, the
+honest result is "no measurable effect", which is a perfectly good outcome for a
+gated path.
 
 ## PP-OCRv6 scalar detector — where the convolution time goes (Apple M1, 2026-08-02)
 
@@ -100,8 +96,11 @@ time held across the window.
 | `CRISPEMBED_CONV1X1_FAST=1` | **7.81** |
 | control (`tesseract`, after) | 0.42 |
 
-9.1% CPU, against 6% for the previous axpy form. The difference is traversal,
-not arithmetic: the old form streamed the whole output plane once per (oc, ic)
+**This 9.1% did not replicate — see the retraction at the top of this file.**
+Repeated as interleaved pairs the kernel is neutral on ARM and a ~5% regression
+on x86; the 8.59 baseline here was an unlucky-high sample. The description of
+the traversal change below is still accurate as a description; it is the
+speed claim that failed: the old form streamed the whole output plane once per (oc, ic)
 pair, the current one blocks the pixel axis into 8192-element tiles so a tile's
 input slab stays L2-resident and computes four output channels at a time.
 Decoded-text equivalence: **34 of 34 fixtures identical, 0 differing** — the 20
@@ -1906,3 +1905,62 @@ produce) at **`cstr/crispembed-regression-fixtures`**, path
 mirroring CrispASR's convention. Model artifacts stay unpublished: f16 4421 MB,
 q8_0 2186 MB, q4_k 1391 MB all exist in-kernel but none may ship until the
 decoded-output gate passes.
+
+
+## h2ovl-2b — two independent defects, and a corrected metric (2026-08-02, local)
+
+### Correction to the "27 stages" figure
+
+`test-internvl2-diff` printed a row for **every** LLM layer even when the
+reference held fewer. A reference dumped `--max-llm-layers 4` therefore produced
+20 rows of `cos=1.000000 max_abs=0.000000 FAIL` — comparisons against an absent
+tensor. That is why the parity kernel reported "27 stages": 7 real, 20 fabricated.
+Fixed (`ref.has(name)` guard); the same diff now reports 7.
+
+The f16 verdict survives the correction: the fakes report exactly `1.000000`, so
+a `cos_min` of `0.999972` must have come from a real stage, i.e. all 7 real f16
+stages passed. But the count was wrong and any future automated gate reading that
+output would have been diluted by 20 free passes.
+
+### q4_k destroys this LLM; f16 does not
+
+Same reference, same binary, `h2ovl-mississippi-2b`:
+
+| stage | f16 (Kaggle) | q4_k (local) |
+|---|--:|--:|
+| vis_patch_embed | — | `0.999999` PASS |
+| vis_proj_output | — | `0.998630` FAIL |
+| llm_embed | — | `0.999361` PASS |
+| **llm_layer_0** | — | **`0.594995`** FAIL |
+| llm_layer_1 | — | `0.217947` FAIL |
+| llm_layer_2 | — | `-0.268615` FAIL |
+| llm_layer_3 | — | `-0.279113` FAIL |
+| **min over the 7 real stages** | **`0.999972`** | **`-0.279113`** |
+
+Vision survives quantization and the token embedding is fine, then the decoder
+collapses from the very first layer and goes anti-correlated by layer 2. That is
+not quantization drift — f16 is clean at 1e-5 through the same stages — so the
+q4_k recipe is wrong for this architecture (2560d, 32H/8KV ⇒ head_dim 80,
+vocab 32010). The per-backend quant rules in `tools/quantize.cpp` are the place
+to look; **do not ship a q4_k for this model.**
+
+### The template fix is confirmed at the plumbing level, not yet at the output
+
+With `5f617351`, the h2ogpt2 template is selected correctly on the published
+q4_k (`no <|im_start|>/<|im_end|> in vocab but <|end|>=32009 present`) and MSAC
+runs (`19 tiles (3x2 grid, 448px)`). Decoded output changed character: from a
+single repeated token to **"The text is in English."** — a coherent, well-formed
+reply. The model is now answering a prompt instead of emitting noise, which is
+what the fix was supposed to achieve.
+
+It is still not OCR, and there are two live explanations that this run cannot
+separate, because the only artifact small enough to fit locally is the one with
+the broken decoder:
+
+1. the q4_k decoder collapse above, and
+2. the instruction: we send `"OCR this image."`, while the model card drives it
+   as `<image>\n{question}` with prose instructions ("Please describe the image
+   in detail"). The image block placement already matches the card.
+
+Next: run the gates at q8_0/f16, where the decoder is intact. Blocked locally on
+disk (1.5 GB free, q8_0 is 2.3 GB); the parity kernel is computing both.
