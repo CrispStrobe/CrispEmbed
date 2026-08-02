@@ -1,6 +1,6 @@
 # CrispEmbed Performance
 
-## ⚠ The 1x1 convolution fast path is ARCH-DEPENDENT — do not flip it globally
+## ⚠ The 1x1 convolution fast path wins on one host and loses on the other — do not flip it globally
 
 Measured 2026-08-02 on both machines, same code, same fixture
 (`german_official_print.jpg`), same binary per host, CPU-seconds median-of-3:
@@ -10,30 +10,40 @@ Measured 2026-08-02 on both machines, same code, same fixture
 | M1 Mac | ARM / NEON | 8.59 | 7.81 | **9.1% faster** |
 | VPS (Xeon Skylake) | x86 / AVX2+FMA | 34.87 | 37.99 | **9.0% SLOWER** |
 
-**The sign of the result flips with the instruction set.** A single-machine
-verdict on this change would have been wrong for half the deployments, in
-whichever direction it had been taken. Both gates therefore stay **default
-off**, and anyone proposing to flip one must show numbers on both
-architectures — or make the dispatch `#ifdef`-conditional and justify each arm
-separately.
+**The sign of the result flips between the two hosts.** A single-machine verdict
+on this change would have been wrong for half the deployments, in whichever
+direction it had been taken. Both gates therefore stay **default off**, and
+anyone proposing to flip one must show numbers on both hosts.
 
-The mechanism is visible in the per-layer profile. The same generic
-`conv2d_cpu` reaches wildly different rates on the two machines:
+Note the two hosts differ in *two* ways, not one: instruction set (NEON vs
+AVX2) **and** load (30-50 vs 0.38). The heading above says "arch-dependent"
+because that was the first reading; see the retraction below, which shows the
+architectural explanation failed its own prediction and leaves contention as
+the untested alternative. Do not quote the arch framing as settled.
 
-| layer | M1 | Xeon |
-|---|--:|--:|
-| 1x1 pointwise (typical) | ~1.2 GF/s | 5.8-10.8 GF/s |
-| 7x7 depthwise, 96ch @ 240x184 | 0.17 GF/s | 1.46 GF/s |
+**RETRACTED — the mechanism first published here was wrong.** An earlier version
+of this section reported ~1.2 GF/s on the M1 against 5.8-10.8 GF/s on the Xeon
+for the same `conv2d_cpu`, called it "a 5-8x gap from identical C++", and
+concluded the NEON `dot_product` path was the target. Both halves fail:
 
-So the generic gather-then-`dot_product` path is already 5-9x more efficient on
-x86 and is close enough to memory bandwidth that the tiled rewrite only adds
-overhead. On NEON it is weak enough that the rewrite wins. `dot_product` is the
-likely reason: its AVX2 arm consumes 16 floats per iteration across two 256-bit
-accumulators, its NEON arm 8 across two 128-bit ones.
+- **The GF/s comparison was contended-Mac against quiet-Xeon** (load 30-110 vs
+  0.38) — the exact quiet-vs-loaded comparison the dev guide says fabricates
+  results. Corrected evidence: the quiet Xeon totals 2,652 ms of convolution,
+  and PLAN records the Mac detector at ~2,350 ms *quiet*. The machines are
+  comparable on this workload. There is no 5-8x architectural gap.
+- **The proposed mechanism made a prediction that failed.** If two accumulator
+  chains were starving the M1's FMA pipes, four chains would help.
+  `dot_product_wide` (`CRISPEMBED_DOT_WIDE=1`, four chains, 16 floats/iteration
+  on NEON) measured **slower** on the M1: 8.52 -> 8.90 CPU-s, decoded text
+  identical. The explanation does not stand.
 
-**That reframes the real M1 opportunity.** The Mac is running the same C++ at
-roughly a fifth to an eighth of the throughput x86 gets from it. The productive
-target is the NEON path itself, not the convolution loop structure around it.
+What survives is only the same-binary, same-box A/B in the table above, which
+remains valid because each arm was measured against its own control on its own
+machine. **Why** the sign differs is now open. The live hypothesis — untested
+when this was written — is that it is not ISA at all but memory-subsystem
+contention: a cache-blocking change wins precisely when something else is
+evicting your L2, and the two A/Bs differed in load (30-50 vs 0.38) as much as
+in instruction set.
 
 The depthwise gate was neutral on x86 (34.73 vs 34.87 off, inside noise) against
 3.6% on the M1 — same direction of story, smaller effect.
@@ -1845,3 +1855,54 @@ what exposed it, not the green result. `fc2.weight` now carries small non-zero
 random values so the conv stack actually reaches the output. A test that cannot
 see the defect is not a test, and a passing new guard should be distrusted until
 it has been observed failing.
+
+
+## h2ovl-mississippi-2b — the degenerate output is NOT a graph bug (2026-08-02)
+
+Two Kaggle runs under the full harness regime settled where this model actually
+breaks. Recorded because the three standing suspects in PLAN were all
+graph-level, and the evidence rules the graph out.
+
+**`chr1str/h2ovl-2b-convert` failed on purpose.** Its decoded-output gate fired —
+`rc=0` but **29 characters for a full page** — and it exited rather than publish.
+No repo was created. A conversion that produces a loadable, structurally valid
+GGUF (565 tensors, `use_msac` preserved, no missing LLM matrices) is not a
+cleared model, and this is the gate doing its job.
+
+**MSAC is eliminated as the cause.** The same run logs
+`internvl2_ocr: MSAC two-scale tiling` and `606x1000 → 19 tiles (3x2 grid,
+448px)`, so the two-scale tiling added in `45dfc704` demonstrably runs — and the
+output is still degenerate. That was one of the three recorded suspects.
+
+**`chr1str/h2ovl-2b-parity` then baked the reference and ran the diff:**
+
+| stage set | result |
+|---|--:|
+| f16 vs `-ref.gguf`, **27 stages** | **cos_min `0.999972`** |
+
+So vision encoder, projector, `llm_embed` and the first LLM decoder layers all
+reproduce the Python blueprint to ~1e-5. **Scope, stated precisely so this is not
+over-read:** the harness runs a synthetic gradient image and a 5-token synthetic
+sequence with `--max-llm-layers 4`. It therefore does NOT cover the full 24-layer
+stack, the real prompt tokens, sliding-window attention (never engages at T=5),
+sampling, EOS handling, or detokenisation.
+
+Within that scope the ported compute is correct, which relocates the bug to the
+harness-blind zone (dev guide HARD RULE #3b) and matches the recorded rule
+*"cos=1.0 but greedy diverges ⇒ the bug is the sampling loop, not the graph"*.
+Remaining suspects, reordered by this evidence:
+
+1. the Danube-1.8B chat/prompt template (most likely — it is the one thing the
+   diff harness cannot see and the one thing H2OVL changes vs InternVL2)
+2. EOS / stop-token id
+3. the greedy/sampling loop and detokenisation
+
+Dropped: Mistral sliding-window attention and the 32H/8KV GQA ratio — the
+attention math is inside those 27 passing stages.
+
+Artifacts: the reference is checkpointed unconditionally (it costs a full run to
+produce) at **`cstr/crispembed-regression-fixtures`**, path
+`internvl2/h2ovl-mississippi-2b/ref.gguf` (107 MB) — a new fixtures dataset
+mirroring CrispASR's convention. Model artifacts stay unpublished: f16 4421 MB,
+q8_0 2186 MB, q4_k 1391 MB all exist in-kernel but none may ship until the
+decoded-output gate passes.

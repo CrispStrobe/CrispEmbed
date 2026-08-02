@@ -1,0 +1,17 @@
+{
+  "id": "chr1str/h2ovl-2b-publish",
+  "title": "h2ovl-2b-publish",
+  "code_file": "publish.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "true",
+  "dataset_sources": [
+    "chr1str/crispasr-hf-token",
+    "chr1str/crispasr-ccache"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

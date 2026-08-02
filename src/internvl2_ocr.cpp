@@ -128,6 +128,37 @@ void tokenizer::build_reverse_map() {
     if (im_end_id < 0) im_end_id = find("<|im_end|>");
     newline_id = find("\n");
     if (newline_id < 0) newline_id = find("Ċ"); // GPT-2 BPE '\n'
+
+    img_start_id = find("<img>");
+    img_end_id = find("</img>");
+    end_marker_id = find("<|end|>");
+
+    // Prompt style. The GGUF key is authoritative when the converter emitted it
+    // (internvl2.chat_template), but artifacts built before that key existed
+    // must still work, so infer from the vocab: a checkpoint with no
+    // <|im_start|>/<|im_end|> cannot express ChatML at all — every role marker
+    // would be add_special(-1), i.e. dropped — while <|end|> present is the
+    // h2ogpt2 signature. Inference only fires when the key is absent.
+    if (!h2ogpt2 && im_start_id < 0 && im_end_id < 0 && end_marker_id >= 0) {
+        h2ogpt2 = true;
+        fprintf(stderr,
+                "internvl2_ocr: no <|im_start|>/<|im_end|> in vocab but <|end|>=%d present "
+                "— using the h2ogpt2 prompt template\n",
+                end_marker_id);
+    }
+
+    // Stop set. h2ovl's generation_config lists eos_token_id [2, 32009]; a
+    // single eos_id is not enough, and a missed stop token is indistinguishable
+    // from a runaway decode.
+    auto add_stop = [&](int id) {
+        if (id < 0) return;
+        for (int s : stop_ids)
+            if (s == id) return;
+        stop_ids.push_back(id);
+    };
+    add_stop(eos_id);
+    add_stop(im_end_id);
+    add_stop(end_marker_id);
 }
 
 std::vector<int32_t> tokenizer::encode(const std::string & text) const {
@@ -164,6 +195,34 @@ std::vector<int32_t> tokenizer::encode(const std::string & text) const {
 }
 
 std::vector<int32_t> tokenizer::build_prompt(const std::string & user_text, int n_image_tokens) const {
+    if (h2ogpt2) {
+        // H2OVL "h2ogpt2" template, from the checkpoint's own tokenizer_config
+        // chat_template:
+        //   <|prompt|>{content}<|end|><|answer|>
+        // with the image block wrapped <img><IMG_CONTEXT>*N</img> as InternVL's
+        // own loader does. <|prompt|> and <|answer|> are NOT special tokens in
+        // this vocab (added_tokens.json has only the <img>/<box>/<ref> family
+        // plus <|end|>=32009), so they encode as ordinary text.
+        std::vector<int32_t> ids;
+        auto add_text = [&](const std::string & s) {
+            auto t = encode(s);
+            ids.insert(ids.end(), t.begin(), t.end());
+        };
+        if (bos_id >= 0) ids.push_back(bos_id);
+        add_text("<|prompt|>");
+        if (img_start_id >= 0) ids.push_back(img_start_id);
+        for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_token_id);
+        if (img_end_id >= 0) ids.push_back(img_end_id);
+        add_text("\n" + user_text);
+        if (end_marker_id >= 0) {
+            ids.push_back(end_marker_id);
+        } else {
+            add_text("<|end|>");
+        }
+        add_text("<|answer|>");
+        return ids;
+    }
+
     // InternVL2 chat template:
     // <|im_start|>system\nYou are a helpful assistant.<|im_end|>\n
     // <|im_start|>user\n<IMG_CONTEXT>*N\n{text}<|im_end|>\n
@@ -302,6 +361,16 @@ bool load_hparams(context & ctx, const char * path) {
     int im_end_idx = gguf_find_key(g, "internvl2.tokenizer.im_end_id");
     if (im_end_idx >= 0) {
         tok.im_end_id = (int)gguf_get_val_u32(g, im_end_idx);
+    }
+
+    // Authoritative prompt style, when the converter recorded it. Absent on
+    // artifacts built before that key existed — build_reverse_map() then infers
+    // it from the vocab.
+    int tpl_idx = gguf_find_key(g, "internvl2.chat_template");
+    if (tpl_idx >= 0 && gguf_get_kv_type(g, tpl_idx) == GGUF_TYPE_STRING) {
+        std::string tpl = gguf_get_val_str(g, tpl_idx);
+        tok.h2ogpt2 = (tpl == "h2ogpt2");
+        fprintf(stderr, "internvl2_ocr: chat template '%s'\n", tpl.c_str());
     }
 
     // Load vocab from standard GGUF tokenizer keys
@@ -1538,7 +1607,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     if (ctx.verbosity >= 1) {
         fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill %d tokens)\n", best_id, best_score, n_prompt_tokens);
     }
-    if (best_id == eos_id || best_id == im_end_id) {
+    if (ctx.tok.is_stop(best_id)) {
         out.text = ctx.tok.decode(out.token_ids);
         return true;
     }
@@ -1578,7 +1647,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
         if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f\n", gen, best_id, best_score);
         }
-        if (best_id == eos_id || best_id == im_end_id) break;
+        if (ctx.tok.is_stop(best_id)) break;
     }
 
     // Decode generated tokens to text
