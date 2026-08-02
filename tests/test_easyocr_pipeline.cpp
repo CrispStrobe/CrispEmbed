@@ -50,7 +50,8 @@ static bool write_manifest(const char * path, const char * image, easyocr_layout
             << item.word.y << ", " << item.word.w << ", " << item.word.h << "], \"crop\": [" << item.crop_x << ", "
             << item.crop_y << ", " << item.crop_w << ", " << item.crop_h << "], \"normalized_box\": ["
             << item.normalized.x0 << ", " << item.normalized.y0 << ", " << item.normalized.x1 << ", "
-            << item.normalized.y1 << "]}" << (i + 1 == results.size() ? "\n" : ",\n");
+            << item.normalized.y1 << "], \"recognizer_crop\": [" << item.crop_x << ", " << item.crop_y << ", "
+            << item.crop_w << ", " << item.crop_h << "]}" << (i + 1 == results.size() ? "\n" : ",\n");
     }
     out << "  ]\n}\n";
     return out.good();
