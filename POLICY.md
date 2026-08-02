@@ -29,6 +29,19 @@ practice, or falls under the Art. 50 transparency rules. CrispEmbed is released
 as a general-purpose component and is not placed on the market as a high-risk
 system.
 
+**The project also operates two things that are not components.** The
+[HuggingFace Space](https://huggingface.co/spaces/cstr/CrispEmbed) and the
+[WASM demo](https://crispstrobe.github.io/CrispEmbed/) are running AI systems
+made available to the public, and for those this project is the deployer —
+"we only ship a library" does not describe them. Both are deliberately scoped
+to keep that surface small: neither exposes face detection or recognition, and
+the WASM demo runs entirely client-side, so no uploaded image reaches a server
+we operate. The Space transcribes a math image and deletes the temporary file
+immediately; the Gradio/HuggingFace platform layer may cache uploads
+independently of the application, which is outside our control and stated on
+the Space itself. §8 covers the AI-literacy duty that follows from being a
+deployer at all.
+
 ## 2. What CrispEmbed is not
 
 It is **not** a system that makes decisions about people. It has no notion of
@@ -142,6 +155,25 @@ This is a speed bump and an audit trail, not a security control — the code is
 MIT-licensed and the check is trivially removable. It exists so nobody starts
 processing biometric data without noticing.
 
+**Serving face recognition over HTTP.** `crispembed-server` has no
+authentication of any kind, and its endpoints read images by *server-side
+path* — the client sends `{"image": "/path/on/the/server"}`. On loopback that
+is a local tool. On a routable address it is an unauthenticated biometric
+endpoint that will turn any file the process can read into a template, so:
+
+- The acknowledgement above is made once, by whoever starts the process. Every
+  client that can then reach the port inherits it.
+- Starting `--rec` on a non-loopback bind prints a warning naming the address.
+  It warns rather than refuses, because containers legitimately bind `0.0.0.0`
+  behind a proxy that does the authenticating.
+- **`--image-root DIR` confines every `{"image": ...}` read to one subtree**,
+  resolving `..` and symlinks first so neither escapes it. Set it whenever the
+  port is not loopback-only. Unset, any readable path is accepted — the
+  historical behaviour.
+
+None of this substitutes for an authenticating proxy. If you serve /face to
+anything other than localhost, the access control is yours to build.
+
 **The acknowledgement is per process, not per request, and `crispembed-server`
 has no authentication.** Whoever starts the server acknowledges once; every
 client that can then reach the port inherits it. The image endpoints — `/face`
@@ -189,13 +221,18 @@ it is not a constraint the software imposes on you.
 What *does* matter is the use, and that is a deployer question rather than a
 property of the code. If you publish content depicting real people, places, or
 events, the Art. 50(2) marking duty and the Art. 50(4) deep-fake disclosure duty
-may fall on you regardless of which engine produced it. Art. 50 applies from
-**2 August 2026**; for systems already on the market before that date, the
-Digital Omnibus gives until **2 December 2026** for the Art. 50(2)
-machine-readable marking specifically. CrispEmbed adds **no watermark or C2PA
-provenance marking** to any output, so if you need marking you must add it
-yourself. If your use sits away from the document case, mark it and do not rely
-on the argument above.
+may fall on you regardless of which engine produced it. **Art. 50 is in force —
+it applied from 2 August 2026, which is in the past.** This is no longer a
+deadline to plan for. The only thing still running is the Digital Omnibus grace
+period for the Art. 50(2) *machine-readable marking* on systems already on the
+market before that date, which ends **2 December 2026**.
+
+CrispEmbed adds **no watermark or C2PA provenance marking** to any output, and
+has no plan to before that grace period ends. That is a stated absence, not a
+resolved question: the §5 argument is why we think marking is not required for
+the document case, and it is exactly as untested as this section says. If your
+use sits away from the document case, mark it yourself and do not rely on the
+argument above.
 
 Independently of the AI Act: do not present restored or upscaled imagery as an
 authentic record of the original. Upscaling a licence plate or a face does not
@@ -249,7 +286,44 @@ the copyright policy or the public training-data summary, and none of it applies
 to a model with systemic risk. Publishing weights under a permissive licence is
 therefore not by itself a complete answer.
 
-## 8. Reporting misuse
+**Model payloads are pinned.** A GGUF is a graph plus weights that the process
+then executes, so "the download succeeded" is not an integrity statement. Every
+auto-download URL in the registry carries a SHA-256 pin in
+`examples/cli/model_hashes.h`, generated by `tools/fetch_model_hashes.py` from
+HuggingFace's LFS object IDs. A payload whose digest does not match its pin is
+deleted rather than installed, so a swapped or tampered re-host fails closed
+instead of being loaded. Downloads over plain HTTP are refused outright. A URL
+with no pin is also refused, overridable for a one-off with
+`CRISPEMBED_ALLOW_UNPINNED_MODEL=1`, which prints that the payload is
+unverified. This is a supply-chain control, not an AI Act obligation in itself,
+but it is a precondition for any Art. 15 accuracy/robustness claim a downstream
+integrator wants to make: you cannot attest to the behaviour of weights you did
+not verify you received.
+
+## 8. AI literacy (Art. 4)
+
+Art. 4 has applied since **2 February 2025** and binds providers *and*
+deployers: staff and others operating an AI system on your behalf need a level
+of AI literacy appropriate to the system, the context, and the people affected.
+
+The Art. 2(12) open-source exemption does not reach this for the two systems in
+§1 that this project actually deploys. It also does not reach *you*. If you
+integrate CrispEmbed, the duty attaches to your deployment, not to our library,
+and nothing we ship discharges it.
+
+The unglamorous reading of Art. 4 for a component like this: the people running
+it should understand that OCR output is a reconstruction and not a copy (§6),
+that a cosine similarity is not a match decision (§4), that face-recognition
+error rates vary by demographic group and a threshold calibrated on one
+population does not transfer to another (§4), and that a restored image is a
+plausible completion rather than recovered evidence (§5). Those are the
+misunderstandings that turn this software into a harm. They are stated
+throughout this document for that reason, and repeated in the README, the
+Python and Dart package pages, and the runtime warning printed when a
+recognition model is loaded — so the people operating the thing meet them
+without having to find this file.
+
+## 9. Reporting misuse
 
 If you find CrispEmbed being used for anything in §3, or you believe a shipped
 model or example makes such use easier than it should be, please open an issue
@@ -265,9 +339,9 @@ against the OJ text on 1 August 2026:*
 
 | Date | What applies |
 |---|---|
-| 2 February 2025 | Art. 5 prohibitions (in force) |
+| 2 February 2025 | Art. 5 prohibitions, and Art. 4 AI literacy (both in force) |
 | 2 August 2025 | General-purpose AI model obligations (in force) |
-| 2 August 2026 | Art. 50 transparency obligations |
+| 2 August 2026 | Art. 50 transparency obligations (**in force — this date has passed**) |
 | 2 December 2026 | End of the Art. 50(2) marking grace period for systems already on the market; end of the NCII/CSAM prohibition transitional period |
 | 2 December 2027 | Annex III high-risk obligations (Art. 6(2) systems) |
 | 2 August 2028 | High-risk obligations for Art. 6(1) systems (AI in regulated products) |

@@ -37,6 +37,7 @@ on:
       - 'tests/test_ocr_backend_matrix.py'
       - 'tests/test_easyocr_interop_contract.py'
       - 'tests/test_biometric_gate.py'
+      - 'tests/test_image_root.py'
       - 'src/crispembed.cpp'
       - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
@@ -64,6 +65,7 @@ on:
       - 'tests/test_ocr_backend_matrix.py'
       - 'tests/test_easyocr_interop_contract.py'
       - 'tests/test_biometric_gate.py'
+      - 'tests/test_image_root.py'
       - 'src/crispembed.cpp'
       - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
@@ -157,6 +159,13 @@ jobs:
           CRISPEMBED_GGUF_DIR: ${{ vars.CRISPEMBED_GGUF_DIR }}
         run: python tests/test_biometric_gate.py
 
+      # POLICY.md §4 also tells deployers that --image-root confines request
+      # paths. Same runner constraint, same honest skip when it cannot run.
+      - name: Server --image-root confinement (artifact-equipped runners only)
+        env:
+          CRISPEMBED_GGUF_DIR: ${{ vars.CRISPEMBED_GGUF_DIR }}
+        run: python tests/test_image_root.py
+
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:
     runs-on: ubuntu-latest
@@ -216,6 +225,14 @@ jobs:
           python tests/test_biometric_gate.py \
             --det-model .face-models/yunet.gguf \
             --rec-model .face-models/sface.gguf \
+            --build-dir build
+
+      - name: Server --image-root confinement (real run)
+        env:
+          LD_LIBRARY_PATH: build
+        run: |
+          python tests/test_image_root.py \
+            --det-model .face-models/yunet.gguf \
             --build-dir build
 
   # scan_cleanup do-no-harm guard. Classical (tier-1) preprocessing needs no
