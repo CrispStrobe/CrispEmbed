@@ -24,6 +24,8 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `chore/ai-act-hardening` / `.codex/worktrees/chore-ai-act-hardening` | **Picked:** third AI Act audit, run against `origin/main` after `f7f89032` landed. Re-verified the code-backed claims and found them all true: no 1:N/gallery primitive in the C ABI, no emotion/age/gender/ethnicity code anywhere, no scraping tooling, server gate fails closed before `crispembed_face_init()`, gate keyed on declared model type so a renamed `.gguf` is still caught, `/doc` temp uploads tracked and unlinked. Two gaps remained, both closed here: (1) the deployed GitHub Pages demo (`examples/wasm-ocr/index.html`) carried no notice at all while the HF Space had one — added an AI-output/data-locality/no-biometrics footer linking POLICY.md; (2) POLICY §3 and README asserted the absence of biometric-categorisation *models* in terms a reader could mistake for a guarantee about capability — CLIP/SigLIP zero-shot means the caller supplies the classifier, now stated. Also strengthened §7: Art. 53 does not engage for task-specific models at all (the quantization argument is the fallback), and Art. 53(2) does not waive the copyright policy or training-data summary. Docs/HTML only — no C/C++, no rebuild needed | **COMPLETED** |
 | 2026-08-01 | `chore/ai-act-audit-followups` / `.codex/worktrees/chore-ai-act-audit-followups` | **Picked:** close the five gaps a second AI Act audit found in the `chore/ai-act-policy` work. (1) biometric gate moved into `crispembed_face_init()` so the Python/Rust/Dart bindings are covered, not just CLI+server — new ABI `crispembed_accept_biometric_use()`; (2) `check_registry_licenses.py` read only HF's `license` tag and missed `license_name`, so the 4 correct lfm2 rows failed — fixed, now exit 0, and wired into `main-health.yml`; (3)(4)(5) POLICY.md: Art. 50(2) reframed as reasoned-position-not-settled-exemption, OCR-VLM text addressed, and the regulatory dates corrected — the Omnibus is **Reg (EU) 2026/1744, OJ 24 Jul 2026**, not "adopted June 2026". Touches `src/crispembed.{h,cpp}`, `examples/cli/model_mgr.*`, bindings, POLICY/README/PLAN, `tests/check_registry_licenses.py` — **no OCR/model/graph code**. Verified: CLI + Python both refuse a recognition model without acknowledgement and load it with one, byte-identical embeddings either way; licence check exits 0; `tools/format.sh` clean. | **COMPLETED** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** fix O9 pipeline benchmark routing to use each manifest entry’s engine family (`ppocrv6`) instead of the tiered display name (`ppocrv6-tiny`), which had sent PP-OCRv6 fixtures through generic DB postprocessing and produced false `missing stem conv` load failures. Rebuilt CLI and verified tiny `4.98 s`/2 regions, small `20.82 s`/2 regions; medium exceeded the `120 s` guard and is recorded as a timeout, not a quality pass | **COMPLETED** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** resolve the remaining official PP-OCRv6 quality discrepancy by testing the HF/PaddleX preprocessing contract (RGB/BGR, resize, normalization) and CTC decode on known-text crops; promote a runtime change only if native output diverges from the official source under the same input. Result: preprocessing is aligned; remaining issue is checkpoint/vocabulary/line-crop quality | **COMPLETED** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** validate PP-OCRv6 checkpoint provenance, CTC vocabulary selection, and line-crop suitability against known-text crops before claiming quality parity; preserve native/reference decoded strings and timing evidence | **IN PROGRESS** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
@@ -46,6 +48,31 @@ confidences). Official-word validity passed, but decoded text and confidence
 calibration failed; recoder/DAWG and page/line confidence aggregation remain
 quality TODOs. Timings were official `5881 ms`, native greedy `305 ms`, and
 beam `984 ms`; these whole-process values are diagnostic only.
+
+**PP-OCRv6 checkpoint/line-crop follow-up (2026-08-02).** The official-source
+reference and native f16 agree on the decoded garbage for the CC0 line/page
+fixtures: Arabic printed line `¿づE₆¿づLyi` and receipt `上批业/|` (the German
+document is likewise not a valid line-crop quality gate). The 18,710-entry CTC
+vocabulary is present and ends with the expected space token, so this is not a
+missing-vocabulary load failure. Keep quality blocked until the exact official
+checkpoint provenance and a known-good PP-OCRv6 line-crop sample are verified;
+do not improve CER by silently switching to a different model family.
+
+**PP-OCRv6 official preprocessing A/B (2026-08-02).** Audited the official
+PaddleX/HF `preprocessor_config.json` and PaddleOCR `inference.yml` against the
+native path. Both use 48-pixel height, pixel-center bilinear resize, right
+padding to width 320, and `(pixel/255 - 0.5) / 0.5`; PaddleOCR's shipped
+inference contract is BGR while the HF processor advertises RGB conversion.
+Fresh official-source runs on `fox.png` decoded `上ai` in both channel modes;
+the native f16 recognizer also decoded `上ai`. On the German uneven-illumination
+fixture, the official source decoded `澳臻肉企NM` (BGR) and `澳臻肉門企NM`
+(RGB), while native BGR decoded `澳臻肉企NM`; this confirms the runtime is
+aligned to the BGR official inference path, not suffering a hidden channel or
+normalization mismatch. Added `CRISPEMBED_PPOCRV6_RGB=1` as a diagnostic-only
+native A/B switch; production remains BGR. The actual text is still nonsense
+in both native and official outputs, so this is a checkpoint/model-quality
+problem, not a runtime-quality fix. **IN PROGRESS:** validate checkpoint
+provenance/vocabulary and line-crop suitability before any model promotion.
 
 Tesseract decoder groundwork (2026-08-01): the converter now preserves every
 present DAWG component from `.traineddata` as base64 GGUF metadata with a
@@ -83,6 +110,10 @@ state.
 The native Tesseract API now exposes exact-word and legal-prefix queries against
 the model-owned cached DAWG contexts by component name. Missing components and
 null contexts fail closed; production decoding still does not invoke them.
+
+The API also provides a tri-state result: invalid prefix, legal non-terminal
+prefix, or complete word. This is a scorer-facing contract only; no dictionary
+state changes OCR output yet.
 
 Native Tesseract model loading now constructs one cached parsed DAWG context per
 manifest component and frees them with the recognizer. The cached dictionaries
@@ -301,37 +332,57 @@ cap provably cannot change behaviour when the short side is already >= 736
 A cap=2.0 arm was also run but is discarded: `tesseract-cli` went 157 -> 1936 ms
 on the same fixture inside it, so that run was contended, not slow.
 
-**PP-OCRv6 is not validated — its reference cannot read text either.**
+**PP-OCRv6 — root-caused against the real PaddleOCR source and FIXED.**
 
-The accepted PP-OCRv6 parity evidence is per-stage cosine against
-`tools/dump_ppocrv6_reference.py`, a hand-written torch mirror of the Paddle
-blueprint. On `synth_00_clean.png` the native lane decodes `iiiiii` /
-`laúieyotiieieioieioni.` / `íotuinióniiaieiasaieró` at `mean_conf=0.94` — and
-running the *reference* on the very same crop yields the same class of garbage
-(`neiioiieioe…`). Detector geometry is not at fault: the dumped crops are
-pixel-perfect line images of the ground-truth text. So the native runtime is
-faithfully reproducing a wrong blueprint, which is exactly the failure mode
-HARD RULE #3 exists to catch — cosine 0.9999 against a reference that cannot
-read means nothing, and the earlier `涨RiI` decode recorded above for the fox
-crop was the same signal, read as acceptable.
+The accepted PP-OCRv6 parity evidence was per-stage cosine against
+`tools/dump_ppocrv6_reference.py`, a hand-written torch mirror with guessed
+details — and the mirror could not read text either, so the native port that
+matched it at cosine 0.9999 could not read text either. `git clone`ing
+PaddleOCR and reading `ppocr/modeling/backbones/rec_lcnetv4.py`,
+`ppocr/modeling/necks/rnn.py` and `tools/infer/predict_rec.py` settled every
+guess. Four were wrong:
 
-The divergence is structural, not a tunable. `config.json` pins
-hidden_size/depth/mlp_ratio/conv_kernel_size but **not** the attention head
-count, the activation placement, or the pre-head pooling, and the dumper guesses
-`heads=8` with SiLU/GELU. Sweeping those guesses by decoded output —
-16 head counts x 2 head activations x 3 poolings, then 4 stem x 5 depthwise x 4
-channel activations — never produces readable text; the best combination
-(`stem=relu, dw=none, cm1=gelu`) reaches CER 0.667 on a rendered `The quick`
-crop with fragments like `hea`/`ui` visible, and the current default is worse
-still. Output is largely insensitive to head count, which places the error in
-the PP-LCNetV4 backbone/stem topology rather than the SVTR head.
+1. **Stem activation.** `StemBlock` is built from `ConvBNAct`, whose activation
+   is `ReLU()`; the mirror used SiLU. (Landed on `main` in parallel by the
+   Tesseract session.)
+2. **The neck dropped the local-conv residual.** Upstream is
+   `z = z + local_conv(z)`; the mirror had `z = local_conv(z)`.
+3. **The neck skip landed in the wrong place.** `skip = skip_conv(x)` is
+   computed first but added **after** the SVTR blocks and the final norm; the
+   mirror added it before the blocks and never after.
+4. **Recognizer input width.** `max_wh_ratio` is seeded with `imgW/imgH` and
+   grows to the widest crop, so 320 is a **floor**: a 520x35 line is 713 px.
+   The mirror and the runtime capped width at 320, crushing 44 characters into
+   40 CTC timesteps — undecodable by any model, correct or not.
 
-Next step for this lane is therefore blueprint recovery, not tuning: obtain the
-real PP-OCRv6 modeling code (PaddleX, or a `transformers` release that
-recognises `model_type: pp_ocrv6_small_rec` — 4.57.6 does not) and rebuild
-`dump_ppocrv6_reference.py` against it. Until then no PP-OCRv6 parity or
-performance number in this file should be treated as evidence, and the lane
-must not be promoted to a default.
+A fifth lives in the vocabulary: `use_space_char: true` makes the label list
+`blank + 18708 dict entries + ' '`, which is where the head's 18710 outputs
+come from. The GGUF carries only the 18708, so class 18709 decoded to nothing
+and every space was dropped.
+
+Result on `synth_00_clean.png`, native CPU lane, all three lines exact
+including punctuation:
+
+| before | after |
+|---|---|
+| `iiiiii` | `The quick brown fox jumps over the lazy dog.` |
+| `laúieyotiieieioieioni.` | `Pack my box with five dozen liquor jugs.` |
+| `íotuinióniiaieiasaieró` | `How vexingly quick daft zebras jump!` |
+
+Setting `CRISPEMBED_PPOCRV6_FIXED_WIDTH=1` reproduces the old
+`Te qu c   vr  .` exactly, which is what pins the width cap as the cause rather
+than a correlate.
+
+Open follow-ups for this lane: (a) **latency is unmeasured** — the box sat at
+load average 101 from concurrent sessions during the A/B, and wider input plus
+the O(tokens^2) CPU scalar SVTR attention means a real cost that needs a quiet
+back-to-back run; (b) the opt-in `CRISPEMBED_PPOCRV6_{SVTR_,DET_}GRAPH` paths
+still fold the skip the old way and were not touched; (c) the converter should
+emit the space class itself rather than the runtime appending it; (d) the
+recognizer still confuses `e`/`c` on one Courier fixture, which is an ordinary
+error class, not a structural one. Re-run
+`tests/ocr_external_parity.py` with `crispembed-ppocrv6` enabled once the box is
+quiet to put this lane in the head-to-head table.
 
 **Original stage-bench observation (PP-OCRv6 small, Metal, `synth_00_clean.png`, 3 lines).**
 Decoded output is not text: `iiiiii` / `laúieyotiieieioieioni.` /
