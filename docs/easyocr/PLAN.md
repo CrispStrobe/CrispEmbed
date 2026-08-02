@@ -513,6 +513,12 @@ recognizer and LayoutLM consumer.
 - [x] Cache one parsed DAWG context per model component during native Tesseract
       GGUF load and release them with the recognizer context. This wires the
       reusable infrastructure into the model lifetime without enabling scores.
+- [x] Expose model-context exact/prefix DAWG queries by component name for the
+      future recoder/beam layer. Null and missing-component behavior is guarded;
+      no production OCR path invokes these queries yet.
+- [x] Add a tri-state model-context query distinguishing invalid prefix, legal
+      non-terminal prefix, and complete word. This is the contract the future
+      beam scorer can consume without re-querying exact/prefix separately.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,

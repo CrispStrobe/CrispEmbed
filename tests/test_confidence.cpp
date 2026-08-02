@@ -148,6 +148,9 @@ static void test_null_safety() {
     CHECK(tesseract_lstm_mean_confidence(nullptr) == 0.0f, "tess null mean");
     CHECK(tesseract_lstm_word_confidence(nullptr) == 0.0f, "tess null word confidence");
     CHECK(tesseract_lstm_dawg_component_count(nullptr) == 0, "tess null dawg count");
+    CHECK(tesseract_lstm_dawg_contains(nullptr, "lstm-system-dawg", nullptr, 0) == 0, "tess null dawg lookup");
+    CHECK(tesseract_lstm_dawg_has_prefix(nullptr, "lstm-system-dawg", nullptr, 0) == 0, "tess null dawg prefix");
+    CHECK(tesseract_lstm_dawg_state(nullptr, "lstm-system-dawg", nullptr, 0) == 0, "tess null dawg state");
 
     // GOT-OCR
     CHECK(got_ocr_confidences(nullptr, &n) == nullptr, "got null ctx");
