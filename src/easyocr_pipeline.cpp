@@ -61,7 +61,8 @@ easyocr_layout::ordering_mode ordering_mode(const context * ctx) {
 }
 
 static std::vector<result> recognize_regions_locked(context * ctx, const std::vector<easyocr_layout::region> & regions,
-                                                    const uint8_t * pixels, int width, int height, int channels) {
+                                                    const uint8_t * pixels, int width, int height, int channels,
+                                                    bool add_detector_crop_margin) {
     const auto ordered = ctx->mode == easyocr_layout::ordering_mode::lines ? easyocr_layout::group_dbnet_lines(regions)
                                                                            : easyocr_layout::order_words(regions);
 
@@ -101,10 +102,15 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
     for (size_t vi = 0; vi < visit.size(); ++vi) {
         const size_t i = visit[vi];
         const auto & region = ordered[i];
-        const int x = std::max(0, (int)region.x - 2);
-        const int y = std::max(0, (int)region.y - 2);
-        const int crop_w = std::min(width - x, (int)region.w + 4);
-        const int crop_h = std::min(height - y, (int)region.h + 4);
+        // EasyOCR crops caller-supplied horizontal boxes exactly. The native
+        // DBNet route retains its historical two-pixel diagnostic margin, but
+        // external geometry (Python EasyOCR/Tesseract/LayoutLM) must not be
+        // enlarged before recognizer comparison.
+        const int pad = add_detector_crop_margin ? 2 : 0;
+        const int x = std::max(0, (int)region.x - pad);
+        const int y = std::max(0, (int)region.y - pad);
+        const int crop_w = std::min(width - x, (int)region.w + 2 * pad);
+        const int crop_h = std::min(height - y, (int)region.h + 2 * pad);
         int crop_width = 0, crop_height = 0;
         auto crop =
             ocr_crop::extract(pixels, width, height, channels, x, y, crop_w, crop_h, 0, &crop_width, &crop_height);
@@ -155,7 +161,7 @@ std::vector<result> run_regions(context * ctx, const std::vector<easyocr_layout:
                                 const uint8_t * pixels, int width, int height, int channels) {
     if (!ctx || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
     std::lock_guard<std::mutex> lock(ctx->mutex);
-    return recognize_regions_locked(ctx, regions, pixels, width, height, channels);
+    return recognize_regions_locked(ctx, regions, pixels, width, height, channels, false);
 }
 
 std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
@@ -166,7 +172,7 @@ std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, in
     std::vector<easyocr_layout::region> regions;
     regions.reserve(detected.size());
     for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-    return recognize_regions_locked(ctx, regions, pixels, width, height, channels);
+    return recognize_regions_locked(ctx, regions, pixels, width, height, channels, true);
 }
 
 std::vector<result> run_file(context * ctx, const char * image_path) {
