@@ -1172,14 +1172,21 @@ static const ModelEntry k_registry[] = {
       "SCUNet color denoising (Swin-Conv-UNet, 18M params, SIDD)", "69 MB", "apache-2.0",
       "https://huggingface.co/cstr/scunet-GGUF" },
 
+    // Canonical lowercase repo id; cstr/InstructIR-GGUF only worked via
+    // HuggingFace's case redirect.
     { "instructir", "instructir-f16.gguf",
-      "https://huggingface.co/cstr/InstructIR-GGUF/resolve/main/instructir-f16.gguf",
+      "https://huggingface.co/cstr/instructir-GGUF/resolve/main/instructir-f16.gguf",
       "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
-      "https://huggingface.co/cstr/InstructIR-GGUF" },
+      "https://huggingface.co/cstr/instructir-GGUF" },
 
-    { "adair-5d", "adair-5d-f16.gguf", "https://huggingface.co/cstr/AdaIR-GGUF/resolve/main/adair-5d-f16.gguf",
-      "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "57 MB", "MIT",
-      "https://huggingface.co/cstr/AdaIR-GGUF" },
+    // f32, not f16: the f16 quantizes fine but aborts at run time on the
+    // default ggml_conv_2d path ("tensor buffer not set" in adair_kernel), so
+    // there is no f16 to point at until src/adair.cpp handles F16 weights.
+    // See PLAN.md. Repo id is the canonical lowercase one — cstr/AdaIR-GGUF
+    // only worked via HuggingFace's case redirect.
+    { "adair-5d", "adair-5d-f32.gguf", "https://huggingface.co/cstr/adair-GGUF/resolve/main/adair-5d-f32.gguf",
+      "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "115 MB", "MIT",
+      "https://huggingface.co/cstr/adair-GGUF" },
 
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.
     { "text-sr", "text-sr-nafnet.gguf", "", "NAFNet-SR text super-resolution engine (custom trained model required)",
@@ -1242,7 +1249,7 @@ static const ModelEntry k_registry[] = {
 
     { "pix2struct-base", "pix2struct-base-q8_0.gguf",
       "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
-      "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "300 MB", "apache-2.0",
+      "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "467 MB", "apache-2.0",
       "https://huggingface.co/cstr/pix2struct-GGUF" },
 
     // Stacked MoE experts (converter #4): ~1.3 GB lower resident footprint than the
@@ -1375,8 +1382,23 @@ static const ModelEntry k_registry[] = {
       "Google CLD3 text LID (109 languages, Apache-2.0)", "1.2 MB", "apache-2.0",
       "https://huggingface.co/cstr/cld3-GGUF" },
 
-    { "glotlid", "lid-glotlid-f16.gguf", "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/lid-glotlid-f16.gguf",
-      "GlotLID-V3 text LID (2102 ISO 639-3 languages)", "3.3 MB", "apache-2.0",
+    // Two bugs were fixed here. The `lid-` prefix is CrispASR's naming
+    // convention and never existed in this repo (published files are
+    // glotlid-{f16,q8_0,q5_k,q4_k}.gguf), and the old "3.3 MB" was wrong by
+    // ~250x — GlotLID-V3 is a 2102-language FastText model whose f16 is
+    // 848 MB. The default keeps the f16 the entry always named rather than
+    // silently switching precision; the quants are registered so 848 MB is
+    // not the only option. Quant accuracy for LID is unmeasured here: this
+    // repo has no LID engine (text_lid_dispatch.h is an optional CrispASR
+    // header behind __has_include), so none of these was run.
+    { "glotlid", "glotlid-f16.gguf", "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/glotlid-f16.gguf",
+      "GlotLID-V3 text LID (2102 ISO 639-3 languages, F16)", "848 MB", "apache-2.0",
+      "https://huggingface.co/cstr/glotlid-GGUF" },
+    { "glotlid-q8", "glotlid-q8_0.gguf", "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/glotlid-q8_0.gguf",
+      "GlotLID-V3 text LID (2102 ISO 639-3 languages, Q8_0)", "455 MB", "apache-2.0",
+      "https://huggingface.co/cstr/glotlid-GGUF" },
+    { "glotlid-q4k", "glotlid-q4_k.gguf", "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/glotlid-q4_k.gguf",
+      "GlotLID-V3 text LID (2102 ISO 639-3 languages, Q4_K)", "246 MB", "apache-2.0",
       "https://huggingface.co/cstr/glotlid-GGUF" },
 
     // LightOnOCR-2-1B — Pixtral ViT + Qwen3 decoder (OCR Arena #2)
