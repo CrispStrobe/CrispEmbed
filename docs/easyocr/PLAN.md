@@ -358,6 +358,14 @@ recognizer and LayoutLM consumer.
       and remains a detector/order/crop quality TODO; detector confidence is
       unavailable in EasyOCR's public `readtext(detail=1)` tuple and is not
       synthesized.
+- [x] Replay the Python line boxes through native CRNN recognition with exact
+      caller-supplied crops. The native external-geometry path now avoids the
+      DBNet-only two-pixel margin, but 11/11 same-box recognitions still differ
+      in text/confidence: line 0 Python/native is `"They are going to be ,
+      encamped near   Brighton"` / `They are going to be, encamped near
+      Brighton` at `0.8541` / `0.5483`, and line 4 is a severe native failure.
+      This isolates a remaining recognizer preprocessing/numerical or crop
+      raster parity TODO from the original DBNet box-count mismatch.
 - [x] Add native handoff invariants for word-mode line/x ordering and
       normalized-box bounds; external Tesseract TSV geometry/text parity is
       still pending.
