@@ -305,7 +305,7 @@ easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
     (void)n_threads;
     auto * c = new easyocr_ocr_context();
     const bool force_cpu = std::getenv("EASYOCR_FORCE_CPU") != nullptr;
-    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
     if (!c->backend || !core_gguf::load_weights(model_path, c->backend, "easyocr", c->wl)) {
         easyocr_ocr_free(c);
         return nullptr;
@@ -348,7 +348,7 @@ void easyocr_ocr_free(easyocr_ocr_context * c) {
     if (c->alloc) ggml_gallocr_free(c->alloc);
     if (c->graph_ctx) ggml_free(c->graph_ctx);
     core_gguf::free_weights(c->wl);
-    if (c->backend) ggml_backend_free(c->backend);
+    if (c->backend) crispasr_free_gpu_backend(c->backend);
     delete c;
 }
 

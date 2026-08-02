@@ -547,6 +547,84 @@ PaddleOCR reads in a fraction of a second. That run was CPU-contended; uncontend
 98 s figure is contention and the standing latency question for this lane is
 moot until it produces text at all.
 
+### OCR performance backlog — every idea, with status and handover
+
+Status vocabulary: **DONE** shipped on by default; **GATED** implemented, works,
+output-verified, default off with the measurement that kept it off; **OPEN** not
+implemented. Every gated path stays in the tree — a path that does not win today
+can win under a different engine mix, and re-deriving it costs more than the
+gate does.
+
+#### Shipped (default on)
+
+| # | Change | Win | Gate to revert |
+|---|---|--:|---|
+| P1 | Detector stops enlarging pages that already resolve their text (`max_upscale`, `upscale_floor=120`) | 4.7x **and** CER 0.0814→0.0290 | `CRISPEMBED_OCR_DET_MAX_UPSCALE=0` |
+| P2 | Tesseract-LSTM loads via CPU backend instead of spinning up Metal for a host-side engine | lane 5.9 s → 0.47 s (12.5x) | `CRISPEMBED_TESSERACT_GPU_LOAD=1` |
+| P3 | PP-OCRv6 small/medium recognizer graph promoted | 1.9x wall / 1.7x CPU, 26/26 identical text | `CRISPEMBED_PPOCRV6_NO_GRAPH=1` |
+| P4 | PP-OCRv6 detector loads via CPU backend | 7-14% CPU | `CRISPEMBED_PPOCRV6_DET_GPU_LOAD=1` |
+
+#### Implemented, gated off (working — reuse these before rewriting them)
+
+| # | Path | Env | Why it is off | When it becomes worth turning on |
+|---|---|---|---|---|
+| P5 | Process-shared GPU backend (refcount-free singleton + `crispasr_free_gpu_backend`) | `CRISPEMBED_SHARED_GPU_BACKEND=1` | After P2/P4 no lane inits Metal more than once (tesseract 0, EasyOCR 1, PP-OCRv6 1), so it saves nothing today | The moment two GPU-resident engines share a process: a VLM stage beside a recognizer, the detector graph being promoted, or server/batch use. **Hazard:** one `ggml_backend_t` driven from several threads (`CRISPEMBED_TESSERACT_WORKERS`) is not promised safe |
+| P6 | EasyOCR width-sorted recognition (O(distinct widths) graph rebuilds instead of O(regions)) | `EASYOCR_WIDTH_SORT=1` | 0-3%, edge of noise — the rebuild is graph construction + gallocr, no weight reload | If the recognizer graph gains an expensive build step (weight residency, kernel specialisation, a shape-keyed resident cache). Also the natural companion to P9 |
+| P7 | PP-OCRv6 detector full graph | `CRISPEMBED_PPOCRV6_DET_GRAPH=1` | Box geometry not at parity (31 boxes vs CPU 30) | See O1 — this is the single biggest remaining win |
+
+#### Open, in descending measured value
+
+**O1 — PP-OCRv6 detector graph box-geometry parity.** The detector is CPU scalar
+convolution and is that lane's dominant compute. The graph exists (P7) and
+reaches probability-map cosine 0.99113 / head pre-sigmoid 0.99898, but decodes
+31 boxes against the CPU path's 30, so the accept-gate keeps CPU. Closing that
+is a correctness investigation of the same shape as the recognizer port that
+succeeded this session: dump the probability map from both paths on one fixture,
+find the first contour that differs, and decide whether the divergence is in the
+map (numerics) or the DB postprocessor (threshold/unclip/dilation applied to a
+map with slightly different edges). Expect the answer to be postprocessing on a
+borderline contour, not arithmetic.
+
+**O2 — DBNet conv kernels.** ~400 ms on a capped 572x188 page against
+`tesseract-cli`'s 0.135 s for the entire job, and it is the shared detector for
+two lanes. CPU by deliberate measured choice (Metal conv2d/conv-transpose were
+~139 s GPU vs ~10 s CPU on an M1 for a 1472x736 map), so the win is kernel work,
+not backend selection: `ggml_conv_2d` goes through im2col, and the 1x1 lateral
+convs in the FPNC neck are pure channel matmuls that should never be routed
+through im2col at all (the `QWEN3_TTS_CODEC_FASTCONV` precedent in the dev guide
+is exactly this, worth 3x there). Start by per-node-tracing one detect call.
+
+**O3 — EasyOCR CRNN is ~2.2x the Tesseract LSTM on identical detections**
+(17.98 s vs 8.13 s wall on the same 31-unit page, same DBNet boxes). No
+per-stage split exists below `detect+recognize` yet; add one mirroring the
+tesseract/ppocrv6 load-vs-compute benches before targeting anything.
+
+**O4 — Batched crop recognition.** Every lane recognizes line crops one at a
+time. Crops sharing a canvas width could go through one graph dispatch as a
+batch dimension, which is where P6's width grouping stops being cosmetic. Needs
+a batched graph in each recognizer; largest expected win on many-region pages
+(71 regions on one CC0 scan).
+
+**O5 — Model load is still ~0.37 s of the tesseract lane's 0.47 s.** Now that
+compute is small, load dominates a one-shot CLI invocation. Options: mmap the
+GGUF instead of copying weights into host vectors, or keep a warm process /
+server for repeated pages. `tesseract-cli` pays load per invocation too and
+still totals 0.135 s, so there is headroom here.
+
+**O6 — Detector resize rule keyed on estimated text height rather than image
+size.** P1's `upscale_floor=120` is a proxy: what actually matters is whether
+glyphs are tall enough for the detector, not whether the page is. A cheap
+stroke-width or connected-component estimate would let the cap apply to a
+low-DPI thumbnail with big text and stay off for a high-DPI page of tiny text.
+
+**O7 — Per-engine profiling of the remaining VLM/OMR lanes.** This whole round
+covered only the three classical lanes. The load-vs-compute split found a wasted
+Metal init in two of three engines it was applied to; it has not been applied to
+GOT/GLM/Qwen/InternVL/SmolDocling/the OMR engines, and the same class of bug
+(GPU backend created for a host-side path) is plausible in any of them. Cheap to
+check: `grep -n crispasr_init_gpu_backend src/*.cpp` and ask, per engine,
+whether its compute actually runs on that backend.
+
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
 The PP-OCRv6 port must follow the official PaddleOCR/RapidOCR handoff rather
