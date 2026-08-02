@@ -1,22 +1,31 @@
 """h2ovl-mississippi-2b — the parity half of the port pipeline.
 
-`h2ovl-convert` produced and published f16 + q4_k and proved the GGUF is
-structurally sound (565 tensors, use_msac survived, an OCR smoke ran). That is
-NOT a cleared model. Per crispasr-crispembed-dev.md the acceptance gate is
-per-stage cosine against a `-ref.gguf` baked from the Python blueprint AND the
-decoded output — never a smoke test, never a size.
+`h2ovl-convert` proved the GGUF is structurally sound (565 tensors, use_msac
+survived) and then correctly REFUSED to publish: its OCR smoke returned rc=0 but
+only 29 characters for a full page, so it exited rather than ship a model that
+cannot read. Structural soundness is not clearance. Per crispasr-crispembed-dev.md
+the acceptance gate is per-stage cosine against a `-ref.gguf` baked from the
+Python blueprint AND the decoded output — never a smoke test, never a size.
 
 This kernel closes that gap:
 
-  1. bake `-ref.gguf` from the blueprint (tools/dump_internvl2_reference.py --
+  1. convert f16 in-kernel (~2 min) -- self-contained, because the convert
+     kernel PUBLISHED NOTHING: its OCR gate fired (rc=0 but chars=29 on a full
+     page) and it exited rather than ship a model that cannot read. So there is
+     no repo to pull from, and the model is still broken.
+  2. bake `-ref.gguf` from the blueprint (tools/dump_internvl2_reference.py --
      a pure-numpy forward over the safetensors, so no 8 GB torch load)
-  2. upload the reference to the model repo
-  3. pull the published f16 back down -- validate what users actually get,
-     not a local rebuild
-  4. crispembed-quantize -> q8_0 (the convert kernel only made q4_k)
-  5. test-internvl2-diff EVERY precision against the reference
-  6. decoded-output roundtrip on every precision
-  7. upload q8_0 only if it earns it
+  3. crispembed-quantize -> q8_0
+  4. test-internvl2-diff EVERY precision against the reference -- THE POINT.
+     MSAC two-scale tiling now demonstrably runs (19 tiles, 3x2 grid) and did
+     NOT fix the degenerate output, so that hypothesis is dead and the next
+     move is localising the divergence by stage, not guessing at the next one.
+     The harness reaches vis_proj_output AND llm_embed + run_llm_forward, so it
+     can say whether vision is clean and the LLM is at fault.
+  5. decoded-output roundtrip on every precision
+  6. publish ONLY if both gates pass. A model that emits 29 characters for a
+     page does not get a repo just because the pipeline ran; on failure this
+     writes the diagnostic and uploads nothing.
 
 Regime notes (kaggle_usage.md): harness comes from the CrispASR clone, not the
 bundled copy (#26a); the token is resolved, not merely attached (#26b); every
@@ -33,6 +42,9 @@ from pathlib import Path
 MODEL = "h2oai/h2ovl-mississippi-2b"
 NAME = "h2ovl-mississippi-2b"
 REPO = f"cstr/{NAME}-crispembed-GGUF"
+# Reference intermediates are fixtures, not releases — mirrors CrispASR's
+# cstr/crispasr-regression-fixtures convention (dev guide, crispasr-diff §).
+FIXTURES = "cstr/crispembed-regression-fixtures"
 
 WORK = Path("/kaggle/working")          # artifacts we must retrieve only
 TEMP = Path("/kaggle/temp")             # repo clones (keeps WORK small, #22)
@@ -79,7 +91,14 @@ kh.step("cloned")
 # Not torch (#11) — the dumper is numpy-only by design.
 kh.sh("pip install -q gguf safetensors huggingface_hub pillow", check=False)
 
-# ── 1. bake the reference from the Python blueprint ────────────────────
+# ── 1a. convert f16 in-kernel (the convert kernel published nothing) ───
+f16 = BIG / f"{NAME}-f16.gguf"
+with kh.build_heartbeat("convert"):
+    kh.sh(f"python models/convert-internvl2-to-gguf.py --model {MODEL} "
+          f"--dtype f16 --output {f16}")
+kh.step("converted", mb=round(f16.stat().st_size / 1024**2))
+
+# ── 1b. bake the reference from the Python blueprint ───────────────────
 ref = BIG / f"{NAME}-ref.gguf"
 with kh.build_heartbeat("refdump", interval_s=30.0):
     kh.sh(f"python tools/dump_internvl2_reference.py --model {MODEL} "
@@ -88,32 +107,25 @@ if not ref.exists():
     sys.exit("reference dump produced no file — cannot gate anything without it")
 kh.step("ref_baked", mb=round(ref.stat().st_size / 1024**2))
 
-from huggingface_hub import HfApi, create_repo, hf_hub_download  # noqa: E402
+from huggingface_hub import HfApi, create_repo  # noqa: E402
 
 api = HfApi()
-create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token)
-with kh.build_heartbeat("upload.ref", interval_s=60.0):
-    api.upload_file(path_or_fileobj=str(ref), path_in_repo=ref.name, repo_id=REPO,
-                    token=hf_token,
-                    commit_message="Per-stage reference intermediates (Python blueprint)")
-kh.step("ref_uploaded", file=ref.name)
 
-# ── 2. pull the PUBLISHED f16 (validate what users get, not a rebuild) ──
-with kh.build_heartbeat("fetch.f16", interval_s=60.0):
-    f16 = Path(hf_hub_download(REPO, f"{NAME}-f16.gguf", token=hf_token,
-                               local_dir=str(BIG)))
-kh.step("f16_fetched", mb=round(f16.stat().st_size / 1024**2))
-
-q4 = None
+# Checkpoint the reference the MOMENT it exists (dev guide: never crash before
+# a produced artifact reaches HF). It is a FIXTURE, not a model release, so it
+# goes to the fixtures dataset unconditionally — the model artifacts below stay
+# gated. Losing this to a later failure would mean re-paying the whole dump.
 try:
-    with kh.build_heartbeat("fetch.q4_k", interval_s=60.0):
-        q4 = Path(hf_hub_download(REPO, f"{NAME}-q4_k.gguf", token=hf_token,
-                                  local_dir=str(BIG)))
-    kh.step("q4_fetched", mb=round(q4.stat().st_size / 1024**2))
+    create_repo(FIXTURES, repo_type="dataset", exist_ok=True, token=hf_token, private=False)
+    with kh.build_heartbeat("upload.ref.fixture", interval_s=60.0):
+        api.upload_file(path_or_fileobj=str(ref), path_in_repo=f"internvl2/{NAME}/ref.gguf",
+                        repo_id=FIXTURES, repo_type="dataset", token=hf_token,
+                        commit_message=f"{NAME} per-stage reference (Python blueprint)")
+    kh.step("ref_checkpointed", repo=FIXTURES, path=f"internvl2/{NAME}/ref.gguf")
 except Exception as e:
-    kh.step("q4_fetch_failed", err=str(e)[:200])
+    kh.step("ref_checkpoint_failed", err=str(e)[:300])
 
-# ── 3. build ───────────────────────────────────────────────────────────
+# ── 2. build ───────────────────────────────────────────────────────────
 kh.install_build_toolchain()
 flags = kh.cache_and_link_flags()
 jobs = kh.safe_build_jobs(gpu=False)
@@ -123,11 +135,16 @@ with kh.build_heartbeat("build"):
         f"ninja -C build -j{jobs} crispembed-quantize crispembed-cli test-internvl2-diff")
 kh.step("built")
 
-# ── 4. quantize q8_0 ───────────────────────────────────────────────────
+# ── 3. quantize ────────────────────────────────────────────────────────
 q8 = BIG / f"{NAME}-q8_0.gguf"
 with kh.build_heartbeat("quantize.q8_0"):
     kh.sh(f"./build/crispembed-quantize {f16} {q8} q8_0")
 kh.step("quantized", precision="q8_0", mb=round(q8.stat().st_size / 1024**2))
+
+q4 = BIG / f"{NAME}-q4_k.gguf"
+with kh.build_heartbeat("quantize.q4_k"):
+    kh.sh(f"./build/crispembed-quantize {f16} {q4} q4_k")
+kh.step("quantized", precision="q4_k", mb=round(q4.stat().st_size / 1024**2))
 
 
 # ── 5+6. per-stage diff AND decoded output, for every precision ────────
@@ -189,20 +206,39 @@ for label, path in (("f16", f16), ("q8_0", q8), ("q4_k", q4)):
 (WORK / "parity.json").write_text(json.dumps(results, indent=2))
 kh.step("results_written")
 
-# ── 7. publish q8_0 only if it earned it ───────────────────────────────
-q8r = results.get("q8_0", {})
-q8_ok = (q8r.get("ocr_rc") == 0 and not q8r.get("degenerate", True)
-         and (q8r.get("cos_min") is None or q8r["cos_min"] >= 0.99))
-if q8_ok:
-    with kh.build_heartbeat("upload.q8_0", interval_s=60.0):
-        api.upload_file(path_or_fileobj=str(q8), path_in_repo=q8.name, repo_id=REPO,
+# ── 7. publish ONLY if the model earned it ─────────────────────────────
+# The reference is a fixture and is always worth keeping — it is what any
+# future debugging session needs and it cost a full run to produce. The MODEL
+# artifacts are gated: the convert kernel already refused to ship this
+# checkpoint at 29 chars/page, and a pipeline completing is not a clearance.
+
+
+def cleared(r):
+    return (r.get("ocr_rc") == 0 and not r.get("degenerate", True)
+            and (r.get("cos_min") is None or r["cos_min"] >= 0.99))
+
+
+passing = {k: v for k, v in results.items() if cleared(v)}
+if passing:
+    create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token)
+    with kh.build_heartbeat("upload.ref", interval_s=60.0):
+        api.upload_file(path_or_fileobj=str(ref), path_in_repo=ref.name, repo_id=REPO,
                         token=hf_token,
-                        commit_message="q8_0 (per-stage diff + decoded-output verified)")
-    kh.step("uploaded", file=q8.name)
+                        commit_message="Per-stage reference intermediates (Python blueprint)")
+    kh.step("ref_uploaded", file=ref.name)
+    for label in passing:
+        art = {"f16": f16, "q8_0": q8, "q4_k": q4}[label]
+        with kh.build_heartbeat(f"upload.{label}", interval_s=60.0):
+            api.upload_file(path_or_fileobj=str(art), path_in_repo=art.name, repo_id=REPO,
+                            token=hf_token,
+                            commit_message="per-stage diff + decoded-output verified")
+        kh.step("uploaded", file=art.name)
 else:
-    kh.step("upload_withheld", precision="q8_0", reason="failed diff or decoded-output gate",
-            cos_min=q8r.get("cos_min"), degenerate=q8r.get("degenerate"),
-            ocr_rc=q8r.get("ocr_rc"))
+    kh.step("upload_withheld_all",
+            reason="no precision passed both the per-stage diff and the decoded-output gate",
+            detail={k: {"cos_min": v.get("cos_min"), "chars": v.get("chars"),
+                        "degenerate": v.get("degenerate"), "ocr_rc": v.get("ocr_rc")}
+                    for k, v in results.items()})
 
 kh.step("done", verdict={k: {"cos_min": v.get("cos_min"), "chars": v.get("chars"),
                              "degenerate": v.get("degenerate")}
