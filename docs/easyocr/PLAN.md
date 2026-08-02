@@ -374,6 +374,15 @@ recognizer and LayoutLM consumer.
       for these crops; remaining TODOs are detector geometry/crop selection,
       exact recognizer-asset/preprocessing identity, and page postprocess
       confidence semantics.
+- [x] Separate the padded postprocess `crop` from the actual recognizer input
+      in the manifest contract. Python and native manifests now emit
+      `recognizer_crop`; `tools/compare_easyocr_manifests.py
+      --recognizer-crop-only` compares exact model-input geometry while the
+      default retains legacy padded-crop checks. The comparator and postprocess
+      contract tests pass, and `test-easyocr-pipeline` rebuilt and linked at
+      `[88/88]`. The 11-region external replay confirmed the caller boxes are
+      replayed exactly; text/confidence differences remain a real page-quality
+      TODO, not a crop-field labeling error.
 - [x] Add native handoff invariants for word-mode line/x ordering and
       normalized-box bounds; external Tesseract TSV geometry/text parity is
       still pending.

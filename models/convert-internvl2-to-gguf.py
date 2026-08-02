@@ -474,11 +474,29 @@ def main():
             n_exported += 1
             return True
 
-        # Auto-detect LLM type: InternLM2 (fused wqkv) vs Qwen2 (separate Q/K/V)
+        # Auto-detect LLM attention layout: InternLM2-style fused wqkv vs
+        # HF-standard separate Q/K/V.
+        #
+        # Route on the tensor names actually present, NOT on model_type. H2OVL's
+        # H2O-Danube LLMs report model_type "llama" but use the HF-standard
+        # self_attn.{q,k,v}_proj + mlp.{gate,up,down}_proj layout — the same one
+        # qwen2 uses. Keying off the string sent them down the fused-wqkv branch,
+        # where every lookup missed; lw() returns False silently, so the writer
+        # emitted only the per-layer norms and produced a GGUF whose LLM had no
+        # weight matrices at all. That loads fine and then segfaults in
+        # ggml_mul_mat on a null tensor.
         llm_model_type = lc.get("model_type", "internlm2")
-        is_qwen2 = llm_model_type == "qwen2"
+        probe = "language_model.model.layers.0."
+        has_separate_qkv = (probe + "self_attn.q_proj.weight") in sd
+        has_fused_wqkv = (probe + "attention.wqkv.weight") in sd
+        if not has_separate_qkv and not has_fused_wqkv:
+            sys.exit(f"error: LLM layer 0 has neither {probe}self_attn.q_proj.weight "
+                     f"nor {probe}attention.wqkv.weight — unrecognised attention layout, "
+                     f"refusing to write a GGUF with no LLM weights.")
+        is_qwen2 = has_separate_qkv
         writer.add_string(f"{ARCH}.llm_model_type", llm_model_type)
-        print(f"  LLM type: {llm_model_type} ({'separate Q/K/V + bias' if is_qwen2 else 'fused wqkv'})")
+        print(f"  LLM type: {llm_model_type} "
+              f"({'separate Q/K/V' if is_qwen2 else 'fused wqkv'}, detected from tensor names)")
 
         # Token embeddings — try both naming conventions
         if not lw(LPFX + "embed_tokens.weight",
@@ -545,6 +563,28 @@ def main():
             lw(LPFX + "lm_head.weight",
                "language_model.lm_head.weight", force_f32=True)
 
+        # Every decoder layer must carry its attention and FFN matrices. lw()
+        # reports a miss by returning False and is called for its side effect,
+        # so a wholesale naming mismatch is otherwise invisible until the model
+        # segfaults at inference. Fail here instead, naming what is missing.
+        required = ["attn_q.weight", "attn_k.weight", "attn_v.weight", "attn_o.weight",
+                    "ffn_gate.weight", "ffn_up.weight", "ffn_down.weight"]
+        # GGUFWriter.tensors is list[dict[name -> TensorInfo]] — one dict per
+        # shard — so flatten the keys rather than reading a .name attribute.
+        written = None
+        if hasattr(writer, "tensors"):
+            written = set()
+            for shard in writer.tensors:
+                written.update(shard.keys() if isinstance(shard, dict) else ())
+        if written:
+            missing = [f"{LPFX}blk.{i}.{r}"
+                       for i in range(n_llm_export) for r in required
+                       if f"{LPFX}blk.{i}.{r}" not in written]
+            if missing:
+                sys.exit(f"error: {len(missing)} LLM weight tensor(s) were not exported, "
+                         f"e.g. {missing[:3]}. The checkpoint's naming does not match the "
+                         f"selected attention layout; a GGUF written now would segfault in "
+                         f"ggml_mul_mat on a null tensor.")
         print(f"  LLM: {n_llm_export} layers exported")
 
     # ── Write ────────────────────────────────────────────────────────
