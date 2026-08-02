@@ -426,6 +426,9 @@ recognizer and LayoutLM consumer.
       harness. `--row-blob-bounds` now reaches the page comparator, repeated
       benchmark, native environment, and JSON manifest; the option remains
       diagnostic-only pending multi-fixture quality parity.
+- [x] Expose the same row-blob-bounds switch in the standalone geometry
+      comparator, so direct geometry reports and repeated page reports use the
+      same reproducible policy selection.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.
