@@ -15,6 +15,8 @@
 
 #pragma once
 
+#include <cstdlib>
+
 #include "ggml.h"
 #include "ggml-backend.h"
 
@@ -352,6 +354,48 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
     int ch_per_group_in = in_ch / groups;
     int ch_per_group_out = out_ch / groups;
     int kernel_size = ch_per_group_in * kh * kw;
+
+    // A 1x1 convolution is a channel matmul, not a windowed op: the generic
+    // path below gathers a "patch" per output pixel, which for kh=kw=1 is a
+    // pure copy of ch_per_group_in floats repeated H*W times before the dot.
+    // Take the axpy form instead -- contiguous in the pixel axis, trivially
+    // vectorisable, and it touches each input plane once per output channel.
+    // MEASURED 2026-08-02 on the PP-OCRv6 detector, 1920x2518 page: ~6% CPU
+    // (7.59 vs 8.27/7.93 CPU-seconds median-of-3), output identical on 5
+    // fixtures. Modest because the generic path is better than it looks -- it
+    // reuses one gathered patch across every output channel in the group, so
+    // for a large spatial plane it is cache-friendlier than streaming the
+    // output plane once per (oc, ic) pair as this does. Expect this form to win
+    // more where the plane is small and the channel count is large, and to lose
+    // where the plane is big enough to blow L2. Wall-clock A/B on this box was
+    // useless (contradictory 1.8x-slower / 2x-faster readings at load 40-52);
+    // only CPU time was stable. Opt-in until confirmed on a quiet box and
+    // A/B'd per engine, since this helper is shared by many:
+    // CRISPEMBED_CONV1X1_FAST=1.
+    if (kh == 1 && kw == 1 && stride == 1 && pad == 0) {
+        static const bool fast_1x1 = std::getenv("CRISPEMBED_CONV1X1_FAST") != nullptr;
+        if (fast_1x1) {
+            const size_t plane = (size_t)out_H * out_W;
+            for (int g = 0; g < groups; g++) {
+                const int ic_off = g * ch_per_group_in;
+                const int oc_off = g * ch_per_group_out;
+                const float * w_g = weight + (size_t)oc_off * kernel_size;
+                for (int oc = 0; oc < ch_per_group_out; oc++) {
+                    float * o = out + (size_t)(oc_off + oc) * plane;
+                    const float bv = bias ? bias[oc_off + oc] : 0.0f;
+                    for (size_t q = 0; q < plane; ++q) o[q] = bv;
+                    const float * wrow = w_g + (size_t)oc * kernel_size;
+                    for (int ic = 0; ic < ch_per_group_in; ic++) {
+                        const float wv = wrow[ic];
+                        if (wv == 0.0f) continue;
+                        const float * srow = in + (size_t)(ic_off + ic) * H * W;
+                        for (size_t q = 0; q < plane; ++q) o[q] += wv * srow[q];
+                    }
+                }
+            }
+            return;
+        }
+    }
 
     static thread_local std::vector<float> patch_buf;
     if ((int)patch_buf.size() < kernel_size) patch_buf.resize(kernel_size);
