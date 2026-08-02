@@ -17,6 +17,13 @@ def test_tesseract_runtime_keeps_gated_scratch_reuse():
     assert "ctx->reuse_scratch" in SOURCE
 
 
+def test_tesseract_runtime_exposes_gated_dawg_queries():
+    assert "CRISPEMBED_TESSERACT_DAWG_LOAD" in SOURCE
+    assert "tesseract_lstm_dawg_matches" in SOURCE
+    assert "tesseract_lstm_dawg_matches_utf8" in SOURCE
+    assert "CRISPEMBED_TESSERACT_DAWG_SCORE" in SOURCE
+
+
 if __name__ == "__main__":
     test_tesseract_runtime_keeps_int_mode_and_lut_path()
     test_tesseract_runtime_keeps_gated_scratch_reuse()

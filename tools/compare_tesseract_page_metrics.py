@@ -31,8 +31,13 @@ NATIVE_TEXT_RE = re.compile(r"BEGIN native Fraktur full_text\n(?P<text>.*?)\n  E
 NATIVE_LINE_RE = re.compile(r"candidate=(?P<index>\d+) crop=\d+x\d+ decoded_len=\d+ text=(?P<text>.*)")
 
 
-def run(cmd: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(cmd, text=True, errors="replace", capture_output=True, env=env, timeout=900, check=False)
+def run(cmd: list[str], env: dict[str, str] | None = None,
+        timeout_seconds: float = 900) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(cmd, text=True, errors="replace", capture_output=True, env=env,
+                             timeout=timeout_seconds, check=False)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"command timed out after {timeout_seconds:.1f}s: {' '.join(cmd)}") from exc
 
 
 def sha256_file(path: Path) -> str:
@@ -49,13 +54,14 @@ def official_env() -> dict[str, str]:
     return env
 
 
-def official_metrics(image: Path, lang: str, psm: int, tessdata_dir: Path | None) -> dict:
+def official_metrics(image: Path, lang: str, psm: int, tessdata_dir: Path | None,
+                     timeout_seconds: float) -> dict:
     started = time.perf_counter()
     command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
     if tessdata_dir is not None:
         command.extend(["--tessdata-dir", str(tessdata_dir)])
     command.append("tsv")
-    proc = run(command, env=official_env())
+    proc = run(command, env=official_env(), timeout_seconds=timeout_seconds)
     words = []
     lines = set()
     line_words: dict[tuple[str, str, str, str], list[str]] = {}
@@ -95,11 +101,12 @@ def official_metrics(image: Path, lang: str, psm: int, tessdata_dir: Path | None
     }
 
 
-def official_text(image: Path, lang: str, psm: int, tessdata_dir: Path | None) -> str:
+def official_text(image: Path, lang: str, psm: int, tessdata_dir: Path | None,
+                  timeout_seconds: float) -> str:
     command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
     if tessdata_dir is not None:
         command.extend(["--tessdata-dir", str(tessdata_dir)])
-    proc = run(command, env=official_env())
+    proc = run(command, env=official_env(), timeout_seconds=timeout_seconds)
     return " ".join(proc.stdout.split())
 
 
@@ -160,6 +167,11 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
     if not args.native_pageseg:
         env.pop("CRISPEMBED_TESSERACT_PAGESEG", None)
     for key in (
+        "CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH",
+        "CRISPEMBED_TESSERACT_RECODE_COMPOSE",
+        "CRISPEMBED_TESSERACT_DAWG_LOAD",
+        "CRISPEMBED_TESSERACT_DAWG_SCORE",
+        "CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE",
         "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
         "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
         "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
@@ -169,6 +181,15 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         env["CRISPEMBED_TESSERACT_WORKERS"] = str(args.workers)
     if args.beam:
         env["CRISPEMBED_TESSERACT_BEAM_WIDTH"] = str(args.beam)
+    if args.recode_beam:
+        env["CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH"] = str(args.recode_beam)
+    if args.compose:
+        env["CRISPEMBED_TESSERACT_RECODE_COMPOSE"] = "1"
+    if args.dawg_score or args.dawg_prefix_score:
+        env["CRISPEMBED_TESSERACT_DAWG_LOAD"] = "1"
+        env["CRISPEMBED_TESSERACT_DAWG_SCORE"] = "1"
+    if args.dawg_prefix_score:
+        env["CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE"] = "1"
     if args.benchmark:
         env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
     if args.projection:
@@ -185,7 +206,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
             raise RuntimeError(f"crop dump directory is not fresh: {manifest}")
         args.crop_dump_dir.mkdir(parents=True, exist_ok=True)
         env["CRISPEMBED_TESSERACT_CROP_DUMP_DIR"] = str(args.crop_dump_dir)
-    proc = run([str(args.native_test)], env)
+    proc = run([str(args.native_test)], env, timeout_seconds=args.timeout)
     matches = INFO_RE.findall(proc.stdout + proc.stderr)
     if not matches:
         raise RuntimeError("native regression emitted no Fraktur INFO metrics")
@@ -245,8 +266,18 @@ def main() -> int:
     parser.add_argument("--psm", type=int, default=3)
     parser.add_argument("--tessdata-dir", type=Path,
                         help="explicit Tesseract tessdata directory for the official subprocess")
+    parser.add_argument("--timeout", type=float, default=900,
+                        help="per-subprocess timeout in seconds")
     parser.add_argument("--workers", type=int, default=4)
     parser.add_argument("--beam", type=int, default=0)
+    parser.add_argument("--recode-beam", type=int, default=0,
+                        help="opt-in composed-recoder beam width")
+    parser.add_argument("--dawg-score", action="store_true",
+                        help="enable opt-in embedded DAWG beam scoring")
+    parser.add_argument("--dawg-prefix-score", action="store_true",
+                        help="enable the opt-in DAWG prefix bonus experiment")
+    parser.add_argument("--compose", action="store_true",
+                        help="enable opt-in composed-recoder decoding")
     parser.add_argument("--benchmark", action="store_true", help="include native detect/group/crop/recognize timings")
     policy = parser.add_mutually_exclusive_group()
     policy.add_argument("--projection", action="store_true")
@@ -265,9 +296,13 @@ def main() -> int:
                         help="dump native line crops and crops.tsv into a fresh directory")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
+    if args.timeout <= 0:
+        parser.error("--timeout must be positive")
+    if (args.dawg_score or args.dawg_prefix_score) and args.recode_beam <= 1:
+        parser.error("DAWG scoring requires --recode-beam > 1")
 
-    official = official_metrics(args.image, args.lang, args.psm, args.tessdata_dir)
-    reference_text = official_text(args.image, args.lang, args.psm, args.tessdata_dir)
+    official = official_metrics(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout)
+    reference_text = official_text(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout)
     official["text"] = reference_text
     native = native_metrics(args, args.image)
     native_text = native["text"]
@@ -312,6 +347,7 @@ def main() -> int:
         "provenance": {
             "detector_model_sha256": sha256_file(args.det_model),
             "recognizer_model_sha256": sha256_file(args.rec_model),
+            "timeout_seconds": args.timeout,
             "ordering": "official-tsv-level4-vs-native-reading-order-index",
         },
         "official_tesseract": official,

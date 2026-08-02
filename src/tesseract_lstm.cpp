@@ -11,11 +11,14 @@
 
 #include "tesseract_lstm.h"
 #include "tesseract_dawg.h"
+#include "tesseract_dawg_score.h"
+#include "tesseract_recoder.h"
 
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "ggml.h"
 #include "ggml-backend.h"
+#include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 
 #include <algorithm>
@@ -145,6 +148,10 @@ struct tesseract_lstm_context {
     // Reverse recoder: output_class → unichar_id (-1 if unmapped)
     std::vector<int> output_to_unichar;
     std::vector<std::vector<int>> recoder_codes;
+
+    // Optional parsed language models. Loading is diagnostic-only until
+    // dictionary scoring has passed official-output parity.
+    std::map<std::string, tesseract_dawg::Dawg> dawgs;
 
     // Unicharset tokens
     std::vector<std::string> tokens;
@@ -305,13 +312,33 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
         }
     }
 
+    // DAWG payloads are opt-in. Existing GGUFs do not contain them, and
+    // loading them must not alter the default recognition path.
+    if (std::getenv("CRISPEMBED_TESSERACT_DAWG_LOAD") != nullptr) {
+        const auto dawg_names = core_gguf::kv_str_array(meta, "tesseract_lstm.dawg_names");
+        for (const auto & name : dawg_names) {
+            const std::string key = "tesseract_lstm.dawg." + name;
+            const auto bytes = core_gguf::kv_u8_array(meta, key.c_str());
+            tesseract_dawg::Dawg dawg;
+            std::string error;
+            if (tesseract_dawg::parse(bytes, dawg, &error)) {
+                ctx->dawgs.emplace(name, std::move(dawg));
+            } else {
+                fprintf(stderr, "tesseract_lstm: ignoring invalid DAWG %s: %s\n", name.c_str(), error.c_str());
+            }
+        }
+        fprintf(stderr, "tesseract_lstm: loaded %zu optional DAWG graph(s)\n", ctx->dawgs.size());
+    }
+
     // LSTM types
     ctx->lstm_types = core_gguf::kv_str_array(meta, "tesseract_lstm.lstm_types");
 
     core_gguf::free_metadata(meta);
 
     // Pass 2: weights
-    ggml_backend_t backend = crispasr_init_gpu_backend();
+    const bool force_cpu = std::getenv("CRISPEMBED_TESSERACT_FORCE_CPU") != nullptr;
+    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, backend, "tesseract_lstm", ctx->wl)) {
         ggml_backend_free(backend);
         return false;
@@ -640,50 +667,13 @@ static float beam_add(float a, float b, bool viterbi) {
     return viterbi ? std::max(a, b) : log_add(a, b);
 }
 
-// Return whether a collapsed code prefix can be segmented into serialized
-// recoder entries, with the final entry optionally incomplete. This is the
-// legality layer of Tesseract's RecodeBeamSearch; dictionary/DAWG scoring is
-// intentionally separate and is not represented by this helper.
-static bool recode_prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
-                                bool allow_partial) {
-    if (codes.empty()) return true;
-    const int n = (int)prefix.size();
-    std::vector<uint8_t> reachable(n + 1, 0);
-    reachable[0] = 1;
-    for (int pos = 0; pos <= n; ++pos) {
-        if (!reachable[pos]) continue;
-        for (const auto & code : codes) {
-            if (code.empty() || pos + (int)code.size() > n) {
-                if (allow_partial && pos < n && !code.empty() && pos + (int)code.size() > n) {
-                    if (std::equal(prefix.begin() + pos, prefix.end(), code.begin())) return true;
-                }
-                continue;
-            }
-            if (std::equal(code.begin(), code.end(), prefix.begin() + pos)) reachable[pos + code.size()] = 1;
-        }
-    }
-    return reachable[n] != 0;
-}
-
-// Defined below the decoder, where the full recoder composition helper is
-// kept with output formatting. A complete composition is required before a
-// DAWG can be queried; incomplete recoder codes remain legal beam prefixes.
-static bool recode_classes_to_unichars(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
-                                       std::vector<int> & unichars, std::vector<int> & starts);
-
-static bool dawg_prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
-                              const tesseract_dawg_context * dawg) {
-    if (!dawg || codes.empty()) return true;
-    std::vector<int> unichars, starts;
-    if (!recode_classes_to_unichars(prefix, codes, unichars, starts)) return true;
-    return tesseract_dawg_context_has_prefix(dawg, unichars.data(), unichars.size()) != 0;
-}
-
 static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits, int timesteps, int classes, int blank,
                                                int beam_width, bool viterbi,
                                                const std::vector<std::vector<int>> * recoder = nullptr,
-                                               const tesseract_dawg_context * dawg = nullptr,
-                                               float * score_out = nullptr) {
+                                               float * score_out = nullptr,
+                                               const std::map<std::string, tesseract_dawg::Dawg> * dawgs = nullptr,
+                                               const std::vector<std::string> * tokens = nullptr,
+                                               bool dawg_prefix_score = false) {
     std::vector<ctc_beam_state> beam(1);
     beam[0].p_blank = 0.0f;
     for (int t = 0; t < timesteps; ++t) {
@@ -709,16 +699,14 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
                     same.p_nonblank = beam_add(same.p_nonblank, state.p_nonblank + lp, viterbi);
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    if ((recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) &&
-                        dawg_prefix_legal(extended, recoder ? *recoder : std::vector<std::vector<int>>(), dawg)) {
+                    if (recoder == nullptr || tesseract_recoder::prefix_legal(extended, *recoder, true)) {
                         auto & dst = find_or_add(extended);
                         dst.p_nonblank = beam_add(dst.p_nonblank, state.p_blank + lp, viterbi);
                     }
                 } else {
                     std::vector<int> extended = state.prefix;
                     extended.push_back(c);
-                    if ((recoder == nullptr || recode_prefix_legal(extended, *recoder, true)) &&
-                        dawg_prefix_legal(extended, recoder ? *recoder : std::vector<std::vector<int>>(), dawg)) {
+                    if (recoder == nullptr || tesseract_recoder::prefix_legal(extended, *recoder, true)) {
                         auto & dst = find_or_add(extended);
                         dst.p_nonblank = beam_add(dst.p_nonblank, total + lp, viterbi);
                     }
@@ -726,20 +714,41 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
             }
         }
 
-        std::sort(next.begin(), next.end(), [viterbi](const ctc_beam_state & a, const ctc_beam_state & b) {
-            return beam_add(a.p_blank, a.p_nonblank, viterbi) > beam_add(b.p_blank, b.p_nonblank, viterbi);
-        });
+        std::sort(
+            next.begin(), next.end(),
+            [viterbi, recoder, dawgs, tokens, dawg_prefix_score](const ctc_beam_state & a, const ctc_beam_state & b) {
+                auto rank = [&](const ctc_beam_state & state) {
+                    float score = beam_add(state.p_blank, state.p_nonblank, viterbi);
+                    if (recoder && dawgs && tokens)
+                        score += tesseract_dawg_score::word_bonus(state.prefix, *recoder, *tokens, *dawgs, false,
+                                                                  dawg_prefix_score);
+                    return score;
+                };
+                return rank(a) > rank(b);
+            });
         if ((int)next.size() > beam_width) next.resize(beam_width);
         beam.swap(next);
     }
 
     if (beam.empty()) return {};
     if (recoder != nullptr) {
+        const ctc_beam_state * best = nullptr;
+        float best_rank = -INFINITY;
         for (const auto & state : beam) {
-            if (recode_prefix_legal(state.prefix, *recoder, false)) {
-                if (score_out) *score_out = beam_add(state.p_blank, state.p_nonblank, viterbi);
-                return state.prefix;
+            if (tesseract_recoder::prefix_legal(state.prefix, *recoder, false)) {
+                float rank = beam_add(state.p_blank, state.p_nonblank, viterbi);
+                if (dawgs && tokens)
+                    rank += tesseract_dawg_score::word_bonus(state.prefix, *recoder, *tokens, *dawgs, true,
+                                                             dawg_prefix_score);
+                if (!best || rank > best_rank) {
+                    best = &state;
+                    best_rank = rank;
+                }
             }
+        }
+        if (best) {
+            if (score_out) *score_out = beam_add(best->p_blank, best->p_nonblank, viterbi);
+            return best->prefix;
         }
         return {};
     }
@@ -747,41 +756,11 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     return beam.front().prefix;
 }
 
-// Compose a collapsed output-class sequence back into unichar IDs. The
-// recoder stores one or more output classes per unichar; single-class reverse
-// lookup is insufficient for composed characters (notably Chinese). Keep this
-// opt-in until a broad decoded-output fixture set validates the policy.
+// Keep the LSTM-boundary helper name used by the kernel contract while the
+// reusable implementation remains in the recoder module.
 static bool recode_classes_to_unichars(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
                                        std::vector<int> & unichars, std::vector<int> & starts) {
-    const int n = (int)labels.size();
-    if (codes.empty()) return false;
-    std::vector<int> previous(n + 1, -1), previous_uid(n + 1, -1);
-    previous[0] = 0;
-    for (int pos = 0; pos < n; ++pos) {
-        if (previous[pos] < 0) continue;
-        for (int uid = 0; uid < (int)codes.size(); ++uid) {
-            const auto & code = codes[uid];
-            if (code.empty() || pos + (int)code.size() > n) continue;
-            if (!std::equal(code.begin(), code.end(), labels.begin() + pos)) continue;
-            const int end = pos + (int)code.size();
-            if (previous[end] < 0) {
-                previous[end] = pos;
-                previous_uid[end] = uid;
-            }
-        }
-    }
-    if (previous[n] < 0) return false;
-    for (int end = n; end > 0;) {
-        const int uid = previous_uid[end];
-        const int begin = previous[end];
-        if (uid < 0 || begin < 0) return false;
-        unichars.push_back(uid);
-        starts.push_back(begin);
-        end = begin;
-    }
-    std::reverse(unichars.begin(), unichars.end());
-    std::reverse(starts.begin(), starts.end());
-    return true;
+    return tesseract_recoder::compose_classes(labels, codes, unichars, starts);
 }
 
 static void forward(tesseract_lstm_context * ctx,
@@ -967,20 +946,20 @@ static void forward(tesseract_lstm_context * ctx,
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
     const char * recode_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
-    const bool dawg_filter_enabled = std::getenv("CRISPEMBED_TESSERACT_DAWG_PREFIX") != nullptr;
-    const auto dawg_it = ctx->dawg_contexts.find("lstm-system-dawg");
-    const tesseract_dawg_context * dawg_filter =
-        dawg_filter_enabled && dawg_it != ctx->dawg_contexts.end() ? dawg_it->second : nullptr;
+    const bool dawg_score =
+        recode_width > 1 && std::getenv("CRISPEMBED_TESSERACT_DAWG_SCORE") != nullptr && !ctx->dawgs.empty();
+    const bool dawg_prefix_score = dawg_score && std::getenv("CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE") != nullptr;
     bool beam_decoded = false;
     float beam_log_score = -INFINITY;
     std::vector<float> greedy_label_confs;
     if (recode_width > 1) {
         labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, recode_width, false, &ctx->recoder_codes,
-                                        dawg_filter, &beam_log_score);
+                                        &beam_log_score, dawg_score ? &ctx->dawgs : nullptr,
+                                        dawg_score ? &ctx->tokens : nullptr, dawg_prefix_score);
         beam_decoded = true;
     } else if (beam_width > 1) {
-        labels = ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false, nullptr, nullptr,
-                                        &beam_log_score);
+        labels =
+            ctc_prefix_beam_decode(logits, T, n_classes, ctx->null_char, beam_width, false, nullptr, &beam_log_score);
         beam_decoded = true;
     } else {
         int prev = -1;
@@ -1229,6 +1208,53 @@ int tesseract_lstm_dawg_state(const tesseract_lstm_context * ctx, const char * c
 
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->vgsl_spec.c_str() : "";
+}
+
+int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx) {
+    return ctx ? (int)ctx->dawgs.size() : 0;
+}
+
+int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char * name, const int * unichars,
+                                int n_unichars, int complete) {
+    if (!ctx || !name || n_unichars < 0 || (n_unichars > 0 && !unichars)) return -1;
+    const auto it = ctx->dawgs.find(name);
+    if (it == ctx->dawgs.end()) return -1;
+    const std::vector<int> ids(unichars, unichars + n_unichars);
+    return tesseract_dawg::prefix_matches(it->second, ids, complete != 0) ? 1 : 0;
+}
+
+int tesseract_lstm_dawg_matches_utf8(const tesseract_lstm_context * ctx, const char * name, const char * text,
+                                     int complete) {
+    if (!ctx || !name || !text) return -1;
+    if (ctx->dawgs.find(name) == ctx->dawgs.end()) return -1;
+    const std::string input(text);
+    std::vector<int> previous(input.size() + 1, -1);
+    std::vector<int> previous_uid(input.size() + 1, -1);
+    previous[0] = 0;
+    for (size_t pos = 0; pos < input.size(); ++pos) {
+        if (previous[pos] < 0) continue;
+        for (int uid = 0; uid < (int)ctx->tokens.size(); ++uid) {
+            const std::string & token = ctx->tokens[uid];
+            if (token.empty() || pos + token.size() > input.size()) continue;
+            if (!std::equal(token.begin(), token.end(), input.begin() + pos)) continue;
+            const size_t end = pos + token.size();
+            if (previous[end] < 0) {
+                previous[end] = (int)pos;
+                previous_uid[end] = uid;
+            }
+        }
+    }
+    if (previous[input.size()] < 0) return 0;
+    std::vector<int> ids;
+    for (size_t end = input.size(); end > 0;) {
+        const int uid = previous_uid[end];
+        const int begin = previous[end];
+        if (uid < 0 || begin < 0) return 0;
+        ids.push_back(uid);
+        end = (size_t)begin;
+    }
+    std::reverse(ids.begin(), ids.end());
+    return tesseract_lstm_dawg_matches(ctx, name, ids.data(), (int)ids.size(), complete);
 }
 
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled) {

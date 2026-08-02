@@ -1040,8 +1040,18 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     return true;
 }
 
-static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vector<float> & out) {
-    constexpr int H = 48, W = 320;
+// Returns the padded input width, which is NOT fixed. PaddleOCR
+// tools/infer/predict_rec.py seeds max_wh_ratio with imgW/imgH (320/48) and
+// then grows it to the widest crop in the batch, taking
+// imgW = int(imgH * max_wh_ratio). So 320 is a floor: a 520x35 line becomes
+// 713 px, not a squeeze. Capping at 320 crushed a 44-character line into 40
+// CTC timesteps, which no recognizer can decode. CRISPEMBED_PPOCRV6_FIXED_WIDTH
+// restores the old cap for bisection.
+static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vector<float> & out) {
+    constexpr int H = 48, W_MIN = 320;
+    const bool fixed = std::getenv("CRISPEMBED_PPOCRV6_FIXED_WIDTH") != nullptr;
+    const float ratio = w / float(std::max(1, h));
+    const int W = fixed ? W_MIN : std::max(W_MIN, int(H * std::max(W_MIN / float(H), ratio)));
     out.assign(3 * H * W, 0.0f);
     // The shipped Paddle inference contract is BGR, while the HF processor
     // advertises RGB conversion. Keep BGR as the production default (it is
@@ -1071,6 +1081,7 @@ static void resize_normalize(const uint8_t * px, int w, int h, int ch, std::vect
                 out[c * H * W + y * W + x] = ((a * (1 - wy) + b * wy) / 255.0f - 0.5f) / 0.5f;
             }
         }
+    return W;
 }
 
 static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> & x, int h, int w, int * out_len,
@@ -1078,6 +1089,8 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
     const int in_ch = c->stages.back().back().cm2.out_ch;
     int ow = 0;
     std::vector<float> tok;
+    // skip_conv output, held in token layout until after the SVTR blocks.
+    std::vector<float> skip_tokens;
     if (prefix_encoded || decoder_encoded) {
         // pp_graph_run exposes [hidden,tokens] as w=hidden,h=tokens.
         ow = h;
@@ -1103,6 +1116,11 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         c2.kw = 7;
         c2.pad_h = 0;
         c2.pad_w = 3;
+        // PaddleOCR ppocr/modeling/necks/rnn.py, EncoderWithLightSVTR::forward:
+        //     skip = skip_conv(x); z = conv_reduce(x); z = z + local_conv(z)
+        //     ... svtr blocks ...; z = norm(z); z = z + skip
+        // conv_block.0 is skip_conv and lands AFTER the blocks and the final
+        // norm, not here; the local [1,7] conv is a residual on conv_reduce.
         if (!apply_conv(c0, pooled, ph, pw, residual, oh, ow_full)) return nullptr;
         silu(residual);
         if (!apply_conv(c1, pooled, ph, pw, y, oh, ow_full)) return nullptr;
@@ -1110,11 +1128,15 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         std::vector<float> z;
         if (!apply_conv(c2, y, ph, pw, z, oh, ow_full)) return nullptr;
         silu(z);
-        for (size_t i = 0; i < z.size(); ++i) z[i] += residual[i];
+        for (size_t i = 0; i < z.size() && i < y.size(); ++i) z[i] += y[i];
         ow = ow_full;
         tok.resize((size_t)ow * c->hidden);
+        skip_tokens.resize((size_t)ow * c->hidden);
         for (int t = 0; t < ow; ++t)
-            for (int cc = 0; cc < c->hidden; ++cc) tok[(size_t)t * c->hidden + cc] = z[(size_t)cc * oh * ow + t];
+            for (int cc = 0; cc < c->hidden; ++cc) {
+                tok[(size_t)t * c->hidden + cc] = z[(size_t)cc * oh * ow + t];
+                skip_tokens[(size_t)t * c->hidden + cc] = residual[(size_t)cc * oh * ow + t];
+            }
     }
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-svtr-prefix] mode=%s tokens=%d hidden=%d first=%.7g %.7g %.7g %.7g\n",
@@ -1165,6 +1187,10 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
             }
         }
     if (!decoder_encoded) layernorm_tokens(tok, ow, c->hidden, c->svtr_norm_wf, c->svtr_norm_bf);
+    // z = z + skip, after the blocks and the neck norm (rnn.py). Only the CPU
+    // neck fills skip_tokens; the graph prefix paths still fold it in-graph.
+    if (!skip_tokens.empty() && skip_tokens.size() == tok.size())
+        for (size_t i = 0; i < tok.size(); ++i) tok[i] += skip_tokens[i];
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.head_input", tok.data(), tok.size(), -1);
         fprintf(stderr, "[ppocrv6-diff] ppocrv6.head_input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
@@ -1192,9 +1218,10 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
     return c->result.c_str();
 }
 
-static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<float> & input, int * out_len) {
+static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<float> & input, int * out_len,
+                                   int input_w) {
     std::vector<float> x = input, y;
-    int h = 48, w = 320;
+    int h = 48, w = input_w;
     std::vector<float> graph_out;
     bool graph_done = pp_graph_run(c, input, graph_out, h, w);
     if (graph_done && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
@@ -1211,7 +1238,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
         h = 48;
-        w = 320;
+        w = input_w;
     }
     if (graph_done) {
         if (c->graph.logits_output) {
@@ -1469,6 +1496,12 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
     c->variant = core_gguf::kv_str(meta, "ppocrv6.variant", "tiny");
     c->vocab = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
     c->vocab_size = (int)core_gguf::kv_u32(meta, "ppocrv6.vocab_size", 0);
+    // The PP-OCRv6 configs set use_space_char, so PaddleOCR's label list is
+    // blank + the dict + ' ' -- which is where vocab_size (18710) gets its two
+    // extra classes over the 18708-entry dict the converter emits. Without the
+    // trailing space every inter-word class decodes to nothing and the output
+    // is one run-on token.
+    if (c->vocab_size == (int)c->vocab.size() + 2) c->vocab.push_back(" ");
     if (const char * ref = std::getenv("PPOCRV6_REF")) {
         c->diff = std::make_unique<crispembed_diff::Ref>();
         if (!c->diff->load(ref)) c->diff.reset();
@@ -1506,14 +1539,14 @@ extern "C" const char * ppocrv6_ocr_recognize_raw(ppocrv6_ocr_context * c, const
                                                   int * out_len) {
     if (!c || !px || w <= 0 || h <= 0 || (ch != 1 && ch != 3 && ch != 4)) return nullptr;
     std::vector<float> input;
-    resize_normalize(px, w, h, ch, input);
+    const int input_w = resize_normalize(px, w, h, ch, input);
     if (c->diff) {
         auto r = c->diff->compare("ppocrv6.input", input.data(), input.size(), -1);
         fprintf(stderr, "[ppocrv6-diff] input cos=%.6f |mine|=%.6g %s\n", r.cos_min,
                 std::sqrt(std::inner_product(input.begin(), input.end(), input.begin(), 0.0)),
                 r.is_pass() ? "PASS" : "FAIL");
     }
-    return recognize_nchw(c, input, out_len);
+    return recognize_nchw(c, input, out_len, input_w);
 }
 
 extern "C" const char * ppocrv6_ocr_recognize(ppocrv6_ocr_context * c, const float * px, int w, int h, int * out_len) {
