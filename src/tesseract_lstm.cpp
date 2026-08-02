@@ -336,8 +336,18 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: weights
-    const bool force_cpu = std::getenv("CRISPEMBED_TESSERACT_FORCE_CPU") != nullptr;
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    // This recognizer is entirely CPU-side (see tesseract_lstm_init: n_threads
+    // is unused and every weight below is copied into host vectors, after
+    // which the dequant cache is dropped). The backend exists only to pull the
+    // GGUF through core_gguf::load_weights, so asking for a GPU one spins up
+    // Metal -- shader library and all -- for a sub-2 MB model and then frees
+    // it again. Measured at 1.07 s warm and 4.97 s cold against 4.8 ms for the
+    // CPU backend, i.e. ~85% of a one-shot CLI invocation spent initialising a
+    // device this engine never uses. CRISPEMBED_TESSERACT_GPU_LOAD restores the
+    // old behaviour for bisection.
+    const bool gpu_load = std::getenv("CRISPEMBED_TESSERACT_GPU_LOAD") != nullptr &&
+                          std::getenv("CRISPEMBED_TESSERACT_FORCE_CPU") == nullptr;
+    ggml_backend_t backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, backend, "tesseract_lstm", ctx->wl)) {
         ggml_backend_free(backend);
