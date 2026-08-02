@@ -243,6 +243,14 @@ def main():
     max_dynamic_patch = int(raw_config.get("max_dynamic_patch", 12))
     min_dynamic_patch = int(raw_config.get("min_dynamic_patch", 1))
     use_thumbnail = bool(raw_config.get("use_thumbnail", True))
+    # H2OVL Multi-Scale Adaptive Cropping. When true the model was trained on a
+    # two-scale tile stack (coarse tiles + a finer grid chosen to not divide the
+    # coarse one, concatenated fine[:-1] + coarse[:-1] + fine[-1:]). Feeding it
+    # ordinary single-scale InternVL tiles yields fluent-looking garbage, so the
+    # flag has to survive into the GGUF for the runtime to refuse the model
+    # rather than silently mis-tile it. h2ovl-mississippi-2b sets this; the 800m
+    # does not, which is why only the 800m works today.
+    use_msac = bool(raw_config.get("use_msac", False))
 
     print(f"  Vision: {vis_layers}L, {vis_hidden}d, {vis_heads}H, "
           f"patch={vis_patch}, image={vis_image_size}")
@@ -288,6 +296,7 @@ def main():
     writer.add_uint32(f"{ARCH}.max_dynamic_patch", max_dynamic_patch)
     writer.add_uint32(f"{ARCH}.min_dynamic_patch", min_dynamic_patch)
     writer.add_bool(f"{ARCH}.use_thumbnail", use_thumbnail)
+    writer.add_bool(f"{ARCH}.use_msac", use_msac)
 
     # LLM metadata
     writer.add_uint32(f"{ARCH}.vocab_size", llm_vocab)
