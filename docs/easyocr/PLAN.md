@@ -488,6 +488,10 @@ recognizer and LayoutLM consumer.
 - [x] Make DAWG word-boundary detection follow token text rather than assuming
       unichar ID zero is a space. The scorer test covers a reordered token map;
       production dictionary scoring remains opt-in pending official parity.
+- [x] Wire the model-owned DAWG runtime contract into CMake and exercise it
+      against the regenerated English DAWG GGUF. The runtime now reports the
+      loaded component count and exact/prefix query results; this validates
+      lookup plumbing only, not production dictionary quality.
 - [x] Preserve Tesseract DAWG components losslessly in newly converted GGUFs.
       `convert-tesseract-to-gguf.py` now records the present DAWG component
       names, base64 payloads, and SHA-256 digests under
