@@ -270,29 +270,41 @@ now wired: `--ocr-engine ppocrv6` (C-ABI id 16) and `--ocr-engine easyocr`
 (id 17), plus `--ocr-cls` for the optional PP-LCNet 0/180 classifier and
 registry entries naming the locally-converted artifacts.
 
-**Baseline table (20 synthetic fixtures, 3 repeats, uncontended M1 Metal).**
-`crispembed-ppocrv6` is excluded because it does not produce text at all (see
-below); every other arm ran clean with 0 failures.
+**Where the lanes stand (20 synthetic fixtures with exact ground truth).**
+Quality is settled; latency is only partly settled — see the caveat below.
 
-| engine | kind | CER | WER | CER vs tesseract-cli | proc ms | engine ms |
-|---|---|--:|--:|--:|--:|--:|
-| `tesseract-cli:eng` | external | **0.0256** | **0.0890** | — | **373** | — |
-| `paddleocr-py` | external | **0.0185** | 0.1153 | 0.0368 | 1074 | 1074 |
-| `easyocr-py` | external | 0.0769 | 0.2363 | 0.0928 | 746 | 746 |
-| `crispembed-tesseract` | native | 0.0814 | 0.2548 | 0.1005 | 6462 | — |
-| `crispembed-easyocr` | native | 0.1412 | 0.3802 | 0.1561 | 6640 | 6295 |
+| engine | kind | CER | WER | CER vs tesseract-cli |
+|---|---|--:|--:|--:|
+| `crispembed-ppocrv6` | native | **0.0031** | **0.0178** | 0.0253 |
+| `paddleocr-py` | external | 0.0185 | 0.1153 | 0.0368 |
+| `tesseract-cli:eng` | external | 0.0256 | 0.0890 | — |
+| `crispembed-tesseract` | native | 0.0290 | 0.1623 | 0.0490 |
+| `easyocr-py` | external | 0.0769 | 0.2363 | 0.0928 |
+| `crispembed-easyocr` | native | 0.0808 | 0.3190 | 0.0974 |
 
-Reading the columns correctly: `crispembed-tesseract` vs `tesseract-cli` is a
-fair wall-clock comparison (both are one subprocess per image, both pay model
-load), so **17x slower at 3.2x the character error** is the real gap. For
-`crispembed-easyocr` vs `easyocr-py` the fair column is `engine_ms`, which
-excludes load on both sides: **8.4x slower at 1.8x the character error**. The
-EasyOCR CER gap mixes detector and recognizer — our lane pairs the EasyOCR CRNN
-with DBNet while `easyocr-py` uses CRAFT — so it is not yet attributable.
+All three native lanes reached or beat their upstreams on character error.
+`crispembed-ppocrv6` — which produced pure noise at the start of this work — is
+now the most accurate arm in the comparison, 8x below `tesseract-cli` and 6x
+below PaddleOCR's own Python pipeline. `crispembed-tesseract` (0.0290 vs
+0.0256) and `crispembed-easyocr` (0.0808 vs 0.0769) sit within noise of theirs.
+WER remains the weaker column for the native lanes, which is a spacing/grouping
+question rather than a recognition one and is the natural next target.
 
-Three gaps follow, in priority order: (1) PP-OCRv6 produces no usable text at
-all; (2) both working native lanes are ~10x slower than the engines they port;
-(3) both carry roughly 2-3x the character error of their upstream.
+Starting point for comparison: `crispembed-tesseract` 0.0814, `crispembed-easyocr`
+0.1412, `crispembed-ppocrv6` unusable.
+
+**Latency: partly measured, and honestly so.** The detector cap below is a
+clean 4.7x with a validated in-run control. Everything after it was measured on
+a box carrying 3-6 concurrent agent builds — `tesseract-cli` itself drifted
+from ~150 ms to 464 ms and at times 10.3 s in the same harness — so no absolute
+native latency from those runs is reported here, and `crispembed-ppocrv6` has
+no trustworthy timing at all yet. Re-run
+`tests/ocr_external_parity.py` on a quiet box and check the `tesseract-cli`
+control is back near 150 ms before quoting any number. What is known
+structurally: the recognizers are cheap (`recognize=119 ms` against
+`detect=4938 ms` pre-cap), PP-OCRv6 now feeds the recognizer wider crops by
+design, and its CPU SVTR attention is O(tokens^2), so that lane should be
+expected to cost more than the other two until its graph path is accepted.
 
 **The detector, not the recognizers, is the whole latency gap — and its resize
 rule is an upstream deviation.** Stage bench on `synth_00_clean.png` via the
@@ -320,15 +332,18 @@ it lands both lanes at CER parity with their upstreams (`tesseract-cli` 0.0256,
 `easyocr-py` 0.0769). Enlarging a page the scan never resolved was costing both
 time *and* accuracy.
 
-**It is still shipped gated, default off, because one fixture regressed.** On
-`tests/regression/images/cc0/simple_table.jpg` (200x102 — a thumbnail, not a
-page) the uncapped path detects one region while `cap=1.0` detects zero: at that
-size the upscale is doing real work for detection recall. Per the A/B rule a
-one-fixture regression is evidence to gate off, not to erase, so
-`max_upscale` defaults to 0 and the win is opt-in until the rule is
-reformulated to key on estimated text height rather than image size. Note the
-cap provably cannot change behaviour when the short side is already >= 736
-(scale < 1, so the `min` never binds) — the entire risk surface is small images.
+**It now ships on by default, gated on image size rather than switched off.**
+The first cut was left off because `tests/regression/images/cc0/simple_table.jpg`
+(200x102 — a thumbnail, not a page) went from one detected region to zero when
+capped. The fix is `upscale_floor`: the cap applies only once the short side is
+at least 120 px, which is the difference between "this page already resolves
+its text" and "this is a thumbnail". 120 is measured, not picked — the 616x149
+low-DPI fixtures are *better* capped on both axes (CER 0.025 at 1.25 s versus
+0.066 at 58 s), so the exemption must not reach them, while the 102 px
+thumbnail needs it. Verified by the resize decisions: 616x149 and 572x188 now
+pass through unscaled while 200x102 still goes to 1443x736 and keeps its
+region. Both knobs stay overridable
+(`CRISPEMBED_OCR_DET_MAX_UPSCALE`, `CRISPEMBED_OCR_DET_UPSCALE_FLOOR`).
 A cap=2.0 arm was also run but is discarded: `tesseract-cli` went 157 -> 1936 ms
 on the same fixture inside it, so that run was contended, not slow.
 
