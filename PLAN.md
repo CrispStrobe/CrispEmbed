@@ -578,8 +578,8 @@ gate does.
 | P5 | Process-shared GPU backend (refcount-free singleton + `crispasr_free_gpu_backend`) | `CRISPEMBED_SHARED_GPU_BACKEND=1` | After P2/P4 no lane inits Metal more than once (tesseract 0, EasyOCR 1, PP-OCRv6 1), so it saves nothing today | The moment two GPU-resident engines share a process: a VLM stage beside a recognizer, the detector graph being promoted, or server/batch use. **Hazard:** one `ggml_backend_t` driven from several threads (`CRISPEMBED_TESSERACT_WORKERS`) is not promised safe |
 | P6 | EasyOCR width-sorted recognition (O(distinct widths) graph rebuilds instead of O(regions)) | `EASYOCR_WIDTH_SORT=1` | 0-3%, edge of noise — the rebuild is graph construction + gallocr, no weight reload | If the recognizer graph gains an expensive build step (weight residency, kernel specialisation, a shape-keyed resident cache). Also the natural companion to P9 |
 | P7 | PP-OCRv6 detector full graph | `CRISPEMBED_PPOCRV6_DET_GRAPH=1` | Box geometry not at parity (31 boxes vs CPU 30) | See O1 — this is the single biggest remaining win |
-| P9 | Tiled + 4-wide-unrolled 1x1 convolution (`conv2d_1x1_cpu`) | `CRISPEMBED_CONV1X1_FAST=1` | Wins 9.1% CPU on the PP-OCRv6 detector with identical decoded text, but `conv2d_cpu` is shared by 15 engines and only this one is measured | When each remaining engine with a runnable fixture has been A/B'd. 1x1 convolutions are 51.6% of detector conv time, so the ceiling here is high |
-| P10 | Loop-inverted depthwise convolution (`conv2d_depthwise_cpu`) | `CRISPEMBED_CONVDW_FAST=1` | Implemented and equivalence-guarded; **no speed measurement yet** | Depthwise is 20.4% of detector conv time at 0.02-0.19 GF/s, the worst rate in the network — measure this next |
+| P9 | Tiled + 4-wide-unrolled 1x1 convolution (`conv2d_1x1_cpu`) | `CRISPEMBED_CONV1X1_FAST=1` | **Sign flips with the instruction set**: 9.1% faster on M1/NEON, 9.0% slower on x86/AVX2 (Xeon Skylake, quiet box). Decoded text identical on both | Only as an `#ifdef`-conditional dispatch, or never. There is no size heuristic that fixes an arch split |
+| P10 | Loop-inverted depthwise convolution (`conv2d_depthwise_cpu`) | `CRISPEMBED_CONVDW_FAST=1` | 3.6% on M1/NEON, neutral on x86/AVX2 (34.73 vs 34.87, inside noise). Decoded text identical on both | Same condition as P9, and only after the tap-unrolling rework — 3.6% is well below its 20.4% share |
 
 #### Open, in descending measured value
 
@@ -860,7 +860,39 @@ pair, which is what the fast path does. Expect the fast path to win where the
 plane is small and the channel count large, and to lose where the plane blows
 L2. **A global flip is probably wrong; a size heuristic is probably right.**
 
-**UPDATE 2026-08-02 — the 6% was the implementation, not the idea.** The
+**RESOLVED 2026-08-02 — H1's answer is "keep it off, and here is why": the
+result is ARCH-DEPENDENT and flips sign.** Same code, same fixture, CPU-seconds
+median-of-3, one binary per host:
+
+| host | arch / SIMD | off | `CRISPEMBED_CONV1X1_FAST=1` | |
+|---|---|--:|--:|---|
+| M1 Mac | ARM / NEON | 8.59 | 7.81 | **9.1% faster** |
+| VPS Xeon Skylake | x86 / AVX2+FMA | 34.87 | 37.99 | **9.0% slower** |
+
+H1 offered three outcomes — flip to default, restrict by size heuristic, or
+prove it should stay off. The real answer is a fourth: **it is not a property of
+the size, it is a property of the instruction set.** A size heuristic tuned on
+either machine would have been wrong on the other. Had this been decided on the
+Mac alone, x86 deployments would have taken a 9% regression.
+
+The mechanism is in the per-layer profile: the same generic `conv2d_cpu` runs
+1x1 layers at ~1.2 GF/s on M1 and 5.8-10.8 GF/s on the Xeon, and the 7x7
+depthwise at 0.17 vs 1.46 GF/s. On x86 the gather-then-`dot_product` path is
+already near memory bandwidth and the tiled rewrite is pure added overhead; on
+NEON it is weak enough to beat. The likely cause is `dot_product` itself — 16
+floats per iteration across two 256-bit accumulators on AVX2 against 8 across
+two 128-bit ones on NEON.
+
+**So the productive M1 target is the NEON `dot_product`/gather path, not the
+convolution loop structure.** The Mac is getting a fifth to an eighth of the
+throughput x86 extracts from identical C++. That is the follow-up item, and it
+would lift every one of the 15 engines at once instead of one shape class.
+
+Both gates stay default off. Flipping either now requires numbers from both
+architectures, or an `#ifdef`-conditional dispatch with each arm justified
+separately.
+
+**Earlier detail — the 6% was the implementation, not the idea.** The
 diagnosis above is right about *why* the old form underperformed and wrong about
 the remedy: the fix is not a size heuristic that avoids large planes, it is to
 stop traversing the plane badly. The rewritten `conv2d_1x1_cpu` blocks the pixel
