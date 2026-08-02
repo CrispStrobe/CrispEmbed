@@ -681,15 +681,32 @@ struct adair_context {
 // and OC*KH*KW data; regular uses ne=[KW,KH,IC,OC] with OC*IC*KH*KW. The kernel
 // is F16-cast in-graph. Bias is added on the host afterward.
 static ggml_tensor * adair_kernel(adair_context * ctx, const float * wptr, int ic, int oc, int kh, int kw, bool dw) {
+    if (!ctx || !ctx->enc_backend || !wptr) {
+        fprintf(stderr, "adair: kernel input unavailable (ctx=%p backend=%p weight=%p)\n", (void *)ctx,
+                ctx ? (void *)ctx->enc_backend : nullptr, (const void *)wptr);
+        return nullptr;
+    }
     auto it = ctx->gw.find((const void *)wptr);
     if (it != ctx->gw.end()) return it->second;
     int64_t kic = dw ? 1 : ic;
     int64_t kne[4] = { kw, kh, kic, oc };
     ggml_init_params ip = { ggml_tensor_overhead() + 256, nullptr, true };
     ggml_context * kctx = ggml_init(ip);
+    if (!kctx) return nullptr;
     ggml_tensor * k = ggml_new_tensor(kctx, GGML_TYPE_F32, 4, kne);
+    if (!k) {
+        ggml_free(kctx);
+        return nullptr;
+    }
     ggml_backend_buffer_t kbuf = ggml_backend_alloc_ctx_tensors(kctx, ctx->enc_backend);
-    if (wptr) ggml_backend_tensor_set(k, wptr, 0, ggml_nbytes(k));
+    if (!kbuf || !k->buffer) {
+        fprintf(stderr, "adair: kernel buffer allocation failed (buffer=%p tensor_buffer=%p)\n", (void *)kbuf,
+                (void *)k->buffer);
+        if (kbuf) ggml_backend_buffer_free(kbuf);
+        ggml_free(kctx);
+        return nullptr;
+    }
+    ggml_backend_tensor_set(k, wptr, 0, ggml_nbytes(k));
     ctx->gw_ctxs.push_back(kctx);
     ctx->gw_bufs.push_back(kbuf);
     ctx->gw[(const void *)wptr] = k;
@@ -704,6 +721,12 @@ static void adair_conv(adair_context * ctx, const float * in, int ic, int h, int
     }
     bool dw = (groups == oc && groups == ic);
     ggml_tensor * k = adair_kernel(ctx, wt, ic, oc, kh, kw, dw);
+    if (!k) {
+        fprintf(stderr, "adair: kernel allocation failed; using scalar conv\n");
+        ctx->use_ggml_conv = false;
+        conv2d(in, ic, h, w, wt, bi, oc, kh, kw, pad, stride, groups, out);
+        return;
+    }
 
     const int max_nodes = 16;
     size_t buf_size = ggml_tensor_overhead() * max_nodes + ggml_graph_overhead_custom(max_nodes, false);
@@ -727,6 +750,17 @@ static void adair_conv(adair_context * ctx, const float * in, int ic, int h, int
         fprintf(stderr, "adair: conv alloc failed\n");
         ggml_free(g);
         // Fall back to scalar so we never emit garbage.
+        conv2d(in, ic, h, w, wt, bi, oc, kh, kw, pad, stride, groups, out);
+        return;
+    }
+    // Some ggml CPU scheduler/backend combinations can report graph
+    // allocation success while leaving an input/output tensor unbound.  Do
+    // not call ggml_backend_tensor_set in that state: it asserts internally
+    // and is particularly reproducible with the F16 AdaIR artifact.
+    if (!x->buffer || !y->buffer) {
+        fprintf(stderr, "adair: conv graph has unbound tensors; using scalar conv\n");
+        ggml_free(g);
+        ctx->use_ggml_conv = false;
         conv2d(in, ic, h, w, wt, bi, oc, kh, kw, pad, stride, groups, out);
         return;
     }
