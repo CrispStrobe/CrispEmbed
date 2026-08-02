@@ -10,6 +10,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -74,6 +75,14 @@ int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char *
 /// same 1/0/-1 status.
 int tesseract_lstm_dawg_matches_utf8(const tesseract_lstm_context * ctx, const char * name, const char * text,
                                      int complete);
+
+/// Number of preserved DAWG components in the GGUF metadata. This is
+/// provenance/introspection only; dictionary scoring is not enabled.
+int tesseract_lstm_dawg_component_count(const tesseract_lstm_context * ctx);
+int tesseract_lstm_dawg_contains(const tesseract_lstm_context * ctx, const char * component, const int * unichar_ids,
+                                 size_t count);
+int tesseract_lstm_dawg_has_prefix(const tesseract_lstm_context * ctx, const char * component, const int * unichar_ids,
+                                   size_t count);
 
 /// Enable/disable capture of per-stage intermediates for parity testing.
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);

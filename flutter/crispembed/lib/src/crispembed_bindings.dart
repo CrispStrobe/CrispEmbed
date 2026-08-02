@@ -184,6 +184,9 @@ typedef CrispembedCtxPassagePrefixNative = Pointer<Utf8> Function(
 typedef CrispembedCtxPassagePrefixDart = Pointer<Utf8> Function(Pointer<Void>);
 
 // --- Face detection & recognition ---
+typedef CrispembedAcceptBiometricUseNative = Void Function();
+typedef CrispembedAcceptBiometricUseDart = void Function();
+
 typedef CrispembedFaceInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
 typedef CrispembedFaceInitDart = Pointer<Void> Function(Pointer<Utf8>, int);
 

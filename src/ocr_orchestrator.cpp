@@ -13,6 +13,7 @@
 #include "ocr_pipeline.h"
 #include "ocr_crop.h"
 #include "easyocr_layout.h"
+#include "easyocr_pipeline.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -115,6 +116,7 @@ struct context {
     ppocrv6_det::context * ppdet = nullptr;         // PP-OCRv6 detector
     ppocrv6_ocr_context * pprec = nullptr;          // PP-OCRv6 recognizer
     pplcnet_orientation::context * ppori = nullptr; // optional PP-LCNet line orientation
+    easyocr_pipeline::context * easy = nullptr;     // DBNet detection + EasyOCR CRNN recognition
     layout_detect::context * layout = nullptr;      // optional document layout
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
@@ -406,6 +408,44 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                                          st.params.det_box_threshold, st.params.det_target_short, &geometry);
         return ocr_pipeline::run_file(ctx->dbnet, path, st.params.det_prob_threshold, st.params.det_box_threshold,
                                       st.params.det_target_short, &geometry);
+    }
+    case engine::easyocr: {
+        // EasyOCR's own detector is CRAFT; this stage pairs its CRNN
+        // recognizer with the repo's DBNet detector, which is what
+        // easyocr_pipeline already validates against the Python reference.
+        // `model_a` is therefore the DBNet GGUF, not a CRAFT one.
+        const bool easy_bench = std::getenv("CRISPEMBED_EASYOCR_BENCH") != nullptr;
+        const auto easy_started = std::chrono::steady_clock::now();
+        if (st.model_a.empty() || st.model_b.empty()) {
+            fprintf(stderr, "ocr_orchestrator: easyocr stage missing models (model_a=det, model_b=rec)\n");
+            return {};
+        }
+        if (!ctx->easy && !easyocr_pipeline::load(&ctx->easy, st.model_a.c_str(), st.model_b.c_str(), ctx->n_threads))
+            return {};
+        if (!ctx->easy) return {};
+        // Line mode matches EasyOCR's own `paragraph=False` line output; word
+        // mode exists for the LayoutLM/Tesseract-style word handoff and would
+        // fragment the text a CER comparison sees.
+        easyocr_pipeline::set_ordering_mode(ctx->easy, easyocr_layout::ordering_mode::lines);
+        const auto items =
+            px ? easyocr_pipeline::run_raw(ctx->easy, px, pw, ph, 3) : easyocr_pipeline::run_file(ctx->easy, path);
+        std::vector<ocr_pipeline::ocr_result> results;
+        results.reserve(items.size());
+        for (const auto & it : items) {
+            if (it.word.text.empty()) continue;
+            ocr_pipeline::ocr_result r;
+            r.box = { it.word.x, it.word.y, it.word.w, it.word.h, it.detector_confidence };
+            r.text = it.word.text;
+            r.confidence = it.word.confidence;
+            r.rec_confidence = it.word.confidence;
+            results.push_back(std::move(r));
+        }
+        if (easy_bench) {
+            fprintf(stderr, "[easyocr-stage-bench] total=%.1f ms units=%zu results=%zu\n",
+                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - easy_started).count(),
+                    items.size(), results.size());
+        }
+        return results;
     }
     case engine::ppocrv6: {
         const bool ppocr_bench = std::getenv("CRISPEMBED_PPOCRV6_BENCH") != nullptr;
@@ -793,6 +833,59 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray.data(), w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
+            if (std::getenv("CRISPEMBED_TESSERACT_CROP_TRIM_INK")) {
+                int threshold = 128;
+                if (const char * threshold_env = std::getenv("CRISPEMBED_TESSERACT_CROP_TRIM_THRESHOLD"))
+                    threshold = std::clamp(std::atoi(threshold_env), 1, 254);
+                int first_ink = chh, last_ink = -1;
+                for (int row = 0; row < chh; ++row) {
+                    bool ink = false;
+                    for (int col = 0; col < cw; ++col) {
+                        if (crop[(size_t)row * cw + col] < threshold) {
+                            ink = true;
+                            break;
+                        }
+                    }
+                    if (ink) {
+                        first_ink = std::min(first_ink, row);
+                        last_ink = row;
+                    }
+                }
+                if (last_ink >= first_ink) {
+                    first_ink = std::max(0, first_ink - 1);
+                    last_ink = std::min(chh - 1, last_ink + 1);
+                    const int trimmed_height = last_ink - first_ink + 1;
+                    if (first_ink > 0 || trimmed_height < chh) {
+                        std::vector<uint8_t> trimmed((size_t)cw * trimmed_height);
+                        std::memcpy(trimmed.data(), crop.data() + (size_t)first_ink * cw, (size_t)cw * trimmed_height);
+                        crop.swap(trimmed);
+                        chh = trimmed_height;
+                    }
+                }
+            }
+            if (const char * dump_dir = std::getenv("CRISPEMBED_TESSERACT_CROP_DUMP_DIR")) {
+                char crop_path[1024];
+                std::snprintf(crop_path, sizeof(crop_path), "%s/crop-%02zu.png", dump_dir, crops.size());
+                if (stbi_write_png(crop_path, cw, chh, 1, crop.data(), cw) == 0)
+                    std::fprintf(stderr, "ocr_orchestrator: failed to dump crop %s\n", crop_path);
+                char manifest_path[1024];
+                std::snprintf(manifest_path, sizeof(manifest_path), "%s/crops.tsv", dump_dir);
+                FILE * manifest = std::fopen(manifest_path, crops.empty() ? "w" : "a");
+                if (manifest) {
+                    if (crops.empty())
+                        std::fprintf(manifest, "index\tbox_x\tbox_y\tbox_w\tbox_h\tcrop_w\tcrop_h\tmin\tmax\n");
+                    uint8_t min_value = 255, max_value = 0;
+                    for (const uint8_t value : crop) {
+                        min_value = std::min(min_value, value);
+                        max_value = std::max(max_value, value);
+                    }
+                    std::fprintf(manifest, "%zu\t%.3f\t%.3f\t%.3f\t%.3f\t%d\t%d\t%u\t%u\n", crops.size(), b.x, b.y, b.w,
+                                 b.h, cw, chh, (unsigned)min_value, (unsigned)max_value);
+                    std::fclose(manifest);
+                } else {
+                    std::fprintf(stderr, "ocr_orchestrator: failed to open crop manifest %s\n", manifest_path);
+                }
+            }
             const auto orientation = ocr_crop::orient_180_gray_info(crop, cw, chh);
             crops.push_back({ b, std::move(crop), cw, chh, orientation });
         }
@@ -1470,6 +1563,8 @@ static const char * engine_name(engine e) {
         return "unlimited_ocr";
     case engine::unified:
         return "unified";
+    case engine::easyocr:
+        return "easyocr";
     default:
         return "unknown";
     }
@@ -1726,6 +1821,7 @@ void free(context * ctx) {
     if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
     if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
     if (ctx->ppori) pplcnet_orientation::free(ctx->ppori);
+    if (ctx->easy) easyocr_pipeline::free(ctx->easy);
     if (ctx->layout) layout_detect::free(ctx->layout);
     if (ctx->table) table_parse_free(ctx->table);
     if (ctx->formula) ppformulanet_ocr_free(ctx->formula);

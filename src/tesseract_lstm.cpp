@@ -156,6 +156,16 @@ struct tesseract_lstm_context {
     // Unicharset tokens
     std::vector<std::string> tokens;
 
+    // Losslessly preserved DAWG payloads for future decoder work. The native
+    // production decoder deliberately does not score these yet.
+    std::vector<std::string> dawg_components;
+    std::map<std::string, std::string> dawg_payloads;
+    std::map<std::string, tesseract_dawg_context *> dawg_contexts;
+
+    ~tesseract_lstm_context() {
+        for (auto & entry : dawg_contexts) tesseract_dawg_free(entry.second);
+    }
+
     // Inference results
     std::string result_buf;
     std::vector<float> char_confs;
@@ -247,6 +257,35 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     ctx->sample_iteration = core_gguf::kv_i32(meta, "tesseract_lstm.sample_iteration", 0);
     ctx->int_mode = core_gguf::kv_bool(meta, "tesseract_lstm.int_mode", (ctx->training_flags & 1) != 0);
     ctx->vgsl_spec = core_gguf::kv_str(meta, "tesseract_lstm.vgsl_spec", "");
+
+    // New converters preserve DAWG payloads as base64 metadata. Older GGUFs
+    // have no manifest and remain valid with zero components. Reject a
+    // malformed new manifest rather than silently claiming dictionary data is
+    // available for a future scoring implementation.
+    ctx->dawg_components = core_gguf::kv_str_array(meta, "tesseract_lstm.dawg_components");
+    for (const std::string & name : ctx->dawg_components) {
+        const std::string key = "tesseract_lstm.dawg." + name + ".base64";
+        const std::string payload = core_gguf::kv_str(meta, key.c_str(), "");
+        if (payload.empty()) {
+            fprintf(stderr, "tesseract_lstm: DAWG manifest entry '%s' has no payload\n", name.c_str());
+            core_gguf::free_metadata(meta);
+            return false;
+        }
+        char dawg_error[128];
+        if (!tesseract_dawg_validate_base64(payload.c_str(), dawg_error, sizeof(dawg_error))) {
+            fprintf(stderr, "tesseract_lstm: invalid DAWG '%s': %s\n", name.c_str(), dawg_error);
+            core_gguf::free_metadata(meta);
+            return false;
+        }
+        ctx->dawg_payloads.emplace(name, payload);
+        tesseract_dawg_context * parsed = tesseract_dawg_init_base64(payload.c_str(), dawg_error, sizeof(dawg_error));
+        if (!parsed) {
+            fprintf(stderr, "tesseract_lstm: failed to cache DAWG '%s': %s\n", name.c_str(), dawg_error);
+            core_gguf::free_metadata(meta);
+            return false;
+        }
+        ctx->dawg_contexts.emplace(name, parsed);
+    }
 
     // Tokens
     ctx->tokens = core_gguf::kv_str_array(meta, "tokenizer.tokens");
@@ -361,9 +400,9 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // Clear dequant cache — we've copied everything we need
     ctx->dequant_cache.clear();
 
-    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d, int_mode=%s)\n",
+    fprintf(stderr, "tesseract_lstm: loaded %s (%d LSTM layers, %d classes, height=%d, int_mode=%s, dawg=%zu)\n",
             ctx->vgsl_spec.c_str(), ctx->num_lstm_layers, ctx->num_classes, ctx->input_height,
-            ctx->int_mode ? "true" : "false");
+            ctx->int_mode ? "true" : "false", ctx->dawg_components.size());
 
     return true;
 }
@@ -675,17 +714,18 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
             }
         }
 
-        std::sort(next.begin(), next.end(), [viterbi, recoder, dawgs, tokens](const ctc_beam_state & a,
-                                                                               const ctc_beam_state & b) {
-            auto rank = [&](const ctc_beam_state & state) {
-                float score = beam_add(state.p_blank, state.p_nonblank, viterbi);
-                if (recoder && dawgs && tokens)
-                    score += tesseract_dawg_score::word_bonus(state.prefix, *recoder, *tokens, *dawgs, false,
-                                                              dawg_prefix_score);
-                return score;
-            };
-            return rank(a) > rank(b);
-        });
+        std::sort(
+            next.begin(), next.end(),
+            [viterbi, recoder, dawgs, tokens, dawg_prefix_score](const ctc_beam_state & a, const ctc_beam_state & b) {
+                auto rank = [&](const ctc_beam_state & state) {
+                    float score = beam_add(state.p_blank, state.p_nonblank, viterbi);
+                    if (recoder && dawgs && tokens)
+                        score += tesseract_dawg_score::word_bonus(state.prefix, *recoder, *tokens, *dawgs, false,
+                                                                  dawg_prefix_score);
+                    return score;
+                };
+                return rank(a) > rank(b);
+            });
         if ((int)next.size() > beam_width) next.resize(beam_width);
         beam.swap(next);
     }
@@ -714,6 +754,13 @@ static std::vector<int> ctc_prefix_beam_decode(const std::vector<float> & logits
     }
     if (score_out) *score_out = beam_add(beam.front().p_blank, beam.front().p_nonblank, viterbi);
     return beam.front().prefix;
+}
+
+// Keep the LSTM-boundary helper name used by the kernel contract while the
+// reusable implementation remains in the recoder module.
+static bool recode_classes_to_unichars(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
+                                       std::vector<int> & unichars, std::vector<int> & starts) {
+    return tesseract_recoder::compose_classes(labels, codes, unichars, starts);
 }
 
 static void forward(tesseract_lstm_context * ctx,
@@ -899,8 +946,8 @@ static void forward(tesseract_lstm_context * ctx,
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
     const char * recode_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
-    const bool dawg_score = recode_width > 1 && std::getenv("CRISPEMBED_TESSERACT_DAWG_SCORE") != nullptr &&
-                            !ctx->dawgs.empty();
+    const bool dawg_score =
+        recode_width > 1 && std::getenv("CRISPEMBED_TESSERACT_DAWG_SCORE") != nullptr && !ctx->dawgs.empty();
     const bool dawg_prefix_score = dawg_score && std::getenv("CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE") != nullptr;
     bool beam_decoded = false;
     float beam_log_score = -INFINITY;
@@ -946,12 +993,11 @@ static void forward(tesseract_lstm_context * ctx,
         }
     }
 
-    const bool compose_recoder = !ctx->recoder_codes.empty() &&
-                                 std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
+    const bool compose_recoder =
+        !ctx->recoder_codes.empty() && std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
     std::vector<int> composed_uids, composed_starts;
-    const bool composed = compose_recoder &&
-                          tesseract_recoder::compose_classes(collapsed_labels, ctx->recoder_codes, composed_uids,
-                                                             composed_starts);
+    const bool composed = compose_recoder && recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes,
+                                                                        composed_uids, composed_starts);
     if (composed) {
         for (size_t i = 0; i < composed_uids.size(); ++i) {
             const int uid = composed_uids[i];
@@ -1132,6 +1178,24 @@ int tesseract_lstm_input_height(const tesseract_lstm_context * ctx) {
 
 int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->num_classes : 0;
+}
+
+int tesseract_lstm_dawg_component_count(const tesseract_lstm_context * ctx) {
+    return ctx ? (int)ctx->dawg_components.size() : 0;
+}
+
+int tesseract_lstm_dawg_contains(const tesseract_lstm_context * ctx, const char * component, const int * ids,
+                                 size_t count) {
+    if (!ctx || !component) return 0;
+    const auto it = ctx->dawg_contexts.find(component);
+    return it == ctx->dawg_contexts.end() ? 0 : tesseract_dawg_context_contains(it->second, ids, count);
+}
+
+int tesseract_lstm_dawg_has_prefix(const tesseract_lstm_context * ctx, const char * component, const int * ids,
+                                   size_t count) {
+    if (!ctx || !component) return 0;
+    const auto it = ctx->dawg_contexts.find(component);
+    return it == ctx->dawg_contexts.end() ? 0 : tesseract_dawg_context_has_prefix(it->second, ids, count);
 }
 
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {

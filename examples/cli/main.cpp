@@ -113,6 +113,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "                   JSON: {\"input_ids\": [...], \"bbox\": [[x0,y0,x1,y1], ...]}\n");
     fprintf(stderr, "  --det MODEL      detection model for --face-pipeline\n");
     fprintf(stderr, "  --face-pipeline  detect+align+encode faces (needs -m rec_model --det det_model)\n");
+    fprintf(stderr, "  --accept-biometric  acknowledge face-recognition/biometric use (see POLICY.md)\n");
     fprintf(stderr, "  --punct-model M  post-process OCR text with punctuation model (FireRedPunc/PCS)\n");
     fprintf(stderr, "  --output-format F  OCR output format: text (default), hocr, alto\n");
     fprintf(stderr, "  --pdf-dpi FILE     analyse PDF DPI (per-page image resolution profiling)\n");
@@ -131,7 +132,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
-                    "(dbnet_trocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|unlimited_ocr)\n");
+                    "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|"
+                    "unlimited_ocr)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -165,6 +167,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --nafnet-model PATH NAFNet denoising GGUF (used with --nafnet-denoise)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
+    fprintf(stderr, "  --ocr-cls MODEL  optional line-orientation classifier (PP-LCNet 0/180) for --ocr-engine "
+                    "ppocrv6\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
     fprintf(stderr, "  --conf N         confidence threshold for detection (default: 0.5)\n");
     fprintf(stderr, "  --auto-download  download model automatically if not found\n");
@@ -228,8 +232,10 @@ static int cli_main(int argc, char ** argv) {
     float kie_threshold = 0.5f;
     std::string lilt_path;           // JSON file for LiLT token classification
     std::string det_model;           // detection model for --face-pipeline
+    bool accept_biometric = false;   // --accept-biometric: ack face-recognition use
     std::string ocr_det_path;        // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
+    std::string ocr_cls_path;        // optional line-orientation classifier (PP-LCNet 0/180)
     bool cleanup_mode = false;       // --cleanup: preprocess before OCR
     cleanup_overrides cleanup_ov;    // --no-deskew / --binarize / ... recipe tweaks
     bool image_deskew = false;       // --deskew: deskew before --image embedding
@@ -365,6 +371,8 @@ static int cli_main(int argc, char ** argv) {
             det_model = argv[++i];
         } else if (strcmp(argv[i], "--face-pipeline") == 0) {
             face_pipeline_mode = true;
+        } else if (strcmp(argv[i], "--accept-biometric") == 0) {
+            accept_biometric = true;
         } else if (strcmp(argv[i], "--pdf-dpi") == 0 && i + 1 < argc) {
             pdf_dpi_path = argv[++i];
         } else if (strcmp(argv[i], "--find-skew") == 0 && i + 1 < argc) {
@@ -480,6 +488,8 @@ static int cli_main(int argc, char ** argv) {
             ocr_det_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc) {
             ocr_rec_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-cls") == 0 && i + 1 < argc) {
+            ocr_cls_path = argv[++i];
         } else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) {
             conf_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--lora") == 0 && i + 1 < argc) {
@@ -1091,6 +1101,8 @@ static int cli_main(int argc, char ** argv) {
             if (n == "lightonocr") return 11;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
+            if (n == "ppocrv6") return 16;
+            if (n == "easyocr") return 17;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
@@ -1102,7 +1114,7 @@ static int cli_main(int argc, char ** argv) {
 
         void * pctx = nullptr;
         // Keep model strings alive until the init call returns (it copies them).
-        std::string ma, mb, det, rec;
+        std::string ma, mb, mc, det, rec;
         if (!pipeline_engine.empty()) {
             // Explicit primary engine → single-stage pipeline via the builder.
             const int eid = eng_id(pipeline_engine);
@@ -1117,9 +1129,20 @@ static int cli_main(int argc, char ** argv) {
                                                   : "qwen2vl-ocr";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
-                ma = resolve(ocr_det_path.empty() ? "dbnet-det" : ocr_det_path);
-                const char * rdflt = (eid == 6) ? "tesseract-eng" : "qwen2vl-ocr";
+                // PP-OCRv6 pairs its own detector with its own CTC recognizer;
+                // falling back to the DBNet/TrOCR defaults would silently
+                // benchmark a different pipeline under the ppocrv6 name.
+                const char * ddflt = (eid == 16) ? "ppocrv6-small-det" : "dbnet-det";
+                ma = resolve(ocr_det_path.empty() ? ddflt : ocr_det_path);
+                const char * rdflt = (eid == 6)    ? "tesseract-eng"
+                                     : (eid == 16) ? "ppocrv6-small-rec"
+                                     : (eid == 17) ? "easyocr-english-g2"
+                                                   : "qwen2vl-ocr";
                 mb = resolve(ocr_rec_path.empty() ? rdflt : ocr_rec_path);
+                // Optional PP-LCNet 0/180 line-orientation classifier. Without
+                // it the ppocrv6 stage falls back to its heuristic orientation
+                // check, which is a different (weaker) decision, not a no-op.
+                if (!ocr_cls_path.empty()) mc = resolve(ocr_cls_path);
             }
             crispembed_ocr_stage st;
             std::memset(&st, 0, sizeof(st));
@@ -1127,6 +1150,7 @@ static int cli_main(int argc, char ** argv) {
             st.engine = eid;
             st.model_a = ma.c_str();
             st.model_b = mb.empty() ? nullptr : mb.c_str();
+            st.model_c = mc.empty() ? nullptr : mc.c_str();
             // VLM OCR engines (GOT/GLM/InternVL2/LightOnOCR/Qwen3VL/Unlimited-OCR)
             // ingest the original image and do their own resize/letterbox; the
             // classical scan-cleanup (deskew/crop/binarize) distorts the input and
@@ -1319,6 +1343,11 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
 
+        if (!crispembed_mgr::accept_biometric_use(model_arg.c_str(), accept_biometric)) {
+            cnn_embed::free(det_ctx);
+            return 1;
+        }
+
         // Load recognition model (-m)
         cnn_embed::context * rec_ctx = nullptr;
         if (!cnn_embed::load(&rec_ctx, model_path.c_str(), n_threads)) {
@@ -1366,9 +1395,12 @@ static int cli_main(int argc, char ** argv) {
             all_images.push_back({ name, std::move(results) });
         }
 
-        // Cross-image face matching (if multiple images)
+        // Cross-image cosine similarity (if multiple images).
+        // Deliberately no accept/reject verdict: a usable threshold depends on the
+        // model, the population and the error rate you can tolerate, so it has to be
+        // calibrated and documented per deployment. See POLICY.md.
         if (all_images.size() > 1 && !json_output) {
-            fprintf(stderr, "\n=== Cross-image face matching ===\n");
+            fprintf(stderr, "\n=== Cross-image face similarity (cosine) ===\n");
             for (size_t i = 0; i < all_images.size(); i++) {
                 for (size_t j = i + 1; j < all_images.size(); j++) {
                     fprintf(stderr, "\n%s vs %s:\n", all_images[i].name.c_str(), all_images[j].name.c_str());
@@ -1379,8 +1411,7 @@ static int cli_main(int argc, char ** argv) {
                             if (ea.size() != eb.size() || ea.empty()) continue;
                             float cos = 0;
                             for (size_t k = 0; k < ea.size(); k++) cos += ea[k] * eb[k];
-                            const char * tag = cos > 0.4f ? "MATCH" : "no";
-                            fprintf(stderr, "  [%zu]vs[%zu] cos=%.4f %s\n", a, b, cos, tag);
+                            fprintf(stderr, "  [%zu]vs[%zu] cos=%.4f\n", a, b, cos);
                         }
                     }
                 }
@@ -1400,6 +1431,14 @@ static int cli_main(int argc, char ** argv) {
                 printf("%d\n", cnn_embed::dim(cctx));
                 cnn_embed::free(cctx);
                 return 0;
+            }
+            // Gate on the model's own declared type, so a recognition model is
+            // caught however it was named (registry alias or bare .gguf path).
+            const char * cnn_type = cnn_embed::model_type(cctx);
+            if (cnn_type && strcmp(cnn_type, "recognition") == 0 &&
+                !crispembed_mgr::accept_biometric_use(model_arg.c_str(), accept_biometric)) {
+                cnn_embed::free(cctx);
+                return 1;
             }
             // Face detection mode
             if (!detect_path.empty()) {

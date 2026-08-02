@@ -437,7 +437,25 @@ typedef struct crispembed_face_result {
     int embedding_dim;
 } crispembed_face_result;
 
+// Acknowledge that this process may run face *recognition* models, whose
+// output is a biometric template — special-category personal data under GDPR
+// Art. 9. Call this before crispembed_face_init() on a recognition model.
+//
+// Equivalent to setting CRISPEMBED_ACCEPT_BIOMETRIC=1, and provided for
+// embedders that cannot set an environment variable (Android, iOS, WASM).
+// Detection-only models are never gated: a bounding box is not a template.
+//
+// This is a deliberate speed bump and an audit trail, not a security control —
+// CrispEmbed is MIT-licensed and the check is trivially removable. It exists so
+// that biometric processing is never something a caller starts by accident.
+// See POLICY.md.
+CRISPEMBED_API void crispembed_accept_biometric_use(void);
+
 // Load a CNN face model (detection or recognition). Returns NULL on failure.
+//
+// Recognition models additionally return NULL unless biometric use has been
+// acknowledged via crispembed_accept_biometric_use() or the
+// CRISPEMBED_ACCEPT_BIOMETRIC environment variable.
 CRISPEMBED_API crispembed_face_context * crispembed_face_init(const char * model_path, int n_threads);
 
 // Get embedding dimension (recognition models).
@@ -1168,8 +1186,9 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
-    int source_type; // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    int engine; // 0..14 existing engines, 15=tesseract_fraktur, 14=unified metadata-dispatched GGUF (matches map_engine)
+    int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    int engine;           // 0..14 existing engines, 15=tesseract_fraktur, 16=ppocrv6, 17=easyocr,
+                          // 14=unified metadata-dispatched GGUF (matches map_engine)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)

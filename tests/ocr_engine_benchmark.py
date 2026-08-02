@@ -25,6 +25,18 @@ MANIFEST = ROOT / "tests/regression/manifest.json"
 DEFAULT_MODEL_DIR = Path("/Volumes/backups/ai/crispembed-gguf")
 
 
+def artifact_filename(spec: str | dict | None) -> str | None:
+    """Return the local artifact name for either legacy or structured specs."""
+    if isinstance(spec, dict):
+        return spec.get("file")
+    return spec
+
+
+def pipeline_engine(entry: dict) -> str:
+    """Use the routed engine family, not a tiered manifest display name."""
+    return entry.get("pipeline_engine") or entry.get("engine") or entry.get("name", "")
+
+
 def normalize(s: str) -> str:
     s = s.replace("\r", "").strip()
     s = re.sub(r"(?m)^regions=\d+\s+mean_conf=[0-9.]+\s*$", "", s)
@@ -58,6 +70,14 @@ def quality(output: str, expected: str | None) -> dict:
         "cer": d / max(1, len(want)),
         "edit_distance": d,
     }
+
+
+def runtime_failed(meta: dict, stderr: str) -> bool:
+    """Treat native load/runtime diagnostics as failures even with exit 0."""
+    if meta.get("timed_out") or meta.get("returncode") != 0:
+        return True
+    return any(marker in stderr.lower() for marker in (
+        "failed to load", "load failed", "missing stem", "fatal", "error:"))
 
 
 def run(cmd: list[str], timeout: float) -> tuple[dict, str, str]:
@@ -129,7 +149,7 @@ def main() -> int:
         if args.only and name not in args.only:
             continue
         sample = entry.get("sample")
-        gguf = (entry.get("gguf") or {}).get("file")
+        gguf = artifact_filename(entry.get("gguf"))
         row = {"engine": name, "model": gguf, "sample": sample,
                "expected": entry.get("expected_text")}
         if not sample:
@@ -149,7 +169,7 @@ def main() -> int:
             rows.append(row)
             continue
 
-        detector = entry.get("detector")
+        detector = artifact_filename(entry.get("detector"))
         if detector:
             detector_path = model_dir / detector
             if not detector_path.exists():
@@ -157,7 +177,7 @@ def main() -> int:
                 rows.append(row)
                 continue
             command = [args.binary, "--ocr-pipeline", str(image),
-                       "--ocr-engine", entry.get("pipeline_engine", name),
+                       "--ocr-engine", pipeline_engine(entry),
                        "--ocr-det", str(detector_path), "--ocr-rec", str(model)]
         else:
             command = [args.binary, "-m", str(model), "--ocr", str(image)]
@@ -173,9 +193,14 @@ def main() -> int:
             if meta["timed_out"] or meta["returncode"] != 0:
                 break
         chosen = outputs[-1] if outputs else ""
-        row.update({"status": "ok" if outputs and not meta["timed_out"] and meta["returncode"] == 0 else "error",
+        failed = runtime_failed(meta, errors[-1] if errors else "")
+        warm = timings[1:]
+        warm_p95 = statistics.quantiles(warm, n=20, method="inclusive")[-1] if len(warm) >= 2 else None
+        row.update({"status": "ok" if outputs and not failed else "error",
                     "cold_ms": timings[0] if timings else None,
-                    "warm_median_ms": statistics.median(timings[1:]) if len(timings) > 1 else None,
+                    "warm_median_ms": statistics.median(warm) if warm else None,
+                    "warm_p95_ms": warm_p95,
+                    "timings_ms": timings,
                     "runs": len(timings), "quality": quality(chosen, entry.get("expected_text")),
                     "output": chosen[:4000], "stderr_tail": errors[-1] if errors else ""})
         rows.append(row)
