@@ -42,6 +42,26 @@ const char * model_card_url(int i); // upstream HuggingFace model card
 // Currently: anything matching "cc-by-nc*", "gemma", "llama*", "lfm1.0", "other".
 bool license_requires_acceptance(const char * spdx);
 
+// Acknowledgement gate for face *recognition* models.
+//
+// Face recognition turns an image into a biometric template. Under the GDPR
+// that output is special-category data (Art. 9); building a 1:N identification
+// system on top of it is regulated under the EU AI Act (Annex III §1, from
+// 2 December 2027). Detection alone (bounding boxes) is not gated.
+//
+// Returns true when the caller has acknowledged this. Acceptance comes from
+// `accepted_flag` (`--accept-biometric`), the `CRISPEMBED_ACCEPT_BIOMETRIC`
+// env var, or an interactive [y/N] prompt on a TTY. Off a TTY without
+// acknowledgement the call fails closed and returns false.
+//
+// This is a deliberate speed bump and an audit trail, not a security control:
+// CrispEmbed is MIT-licensed and the check is trivially removable. It exists so
+// that biometric processing is never something a user starts by accident.
+//
+// On every success path this also calls crispembed_accept_biometric_use(), so
+// the library-level gate in crispembed_face_init() does not ask a second time.
+bool accept_biometric_use(const char * model_label, bool accepted_flag);
+
 // Prompt prefixes for optimal retrieval quality.
 // Returns nullptr if the model doesn't use prefixes.
 const char * get_query_prefix(const char * model_name);

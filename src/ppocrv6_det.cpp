@@ -94,6 +94,44 @@ static ggml_tensor * get(const core_gguf::tensor_map & m, const std::string & n)
     return core_gguf::try_get(m, n.c_str());
 }
 
+static float box_iou(const box & a, const box & b) {
+    const float ax2 = a.x + a.w, ay2 = a.y + a.h;
+    const float bx2 = b.x + b.w, by2 = b.y + b.h;
+    const float iw = std::max(0.0f, std::min(ax2, bx2) - std::max(a.x, b.x));
+    const float ih = std::max(0.0f, std::min(ay2, by2) - std::max(a.y, b.y));
+    const float inter = iw * ih;
+    const float area = std::max(0.0f, a.w) * std::max(0.0f, a.h) + std::max(0.0f, b.w) * std::max(0.0f, b.h) - inter;
+    return area > 0.0f ? inter / area : 0.0f;
+}
+
+static void report_graph_box_geometry(const std::vector<box> & graph_boxes, const std::vector<box> & cpu_boxes) {
+    std::vector<bool> used(cpu_boxes.size(), false);
+    double sum_iou = 0.0;
+    float min_iou = 1.0f;
+    size_t matched = 0;
+    for (const box & graph_box : graph_boxes) {
+        size_t best = cpu_boxes.size();
+        float best_iou = 0.0f;
+        for (size_t i = 0; i < cpu_boxes.size(); ++i) {
+            if (!used[i]) {
+                const float iou = box_iou(graph_box, cpu_boxes[i]);
+                if (iou > best_iou) {
+                    best_iou = iou;
+                    best = i;
+                }
+            }
+        }
+        if (best < cpu_boxes.size()) {
+            used[best] = true;
+            ++matched;
+            sum_iou += best_iou;
+            min_iou = std::min(min_iou, best_iou);
+        }
+    }
+    fprintf(stderr, "ppocrv6-det: graph-vs-CPU boxes graph=%zu cpu=%zu matched=%zu mean_iou=%.6f min_iou=%.6f\n",
+            graph_boxes.size(), cpu_boxes.size(), matched, matched ? sum_iou / matched : 0.0, matched ? min_iou : 0.0f);
+}
+
 static conv make_conv(const core_gguf::tensor_map & m, const std::string & n, int ic, int oc, int kh, int kw = 0,
                       int sh = 1, int sw = 0, int groups = 1, int ph = -1, int pw = -1) {
     conv c;
@@ -836,6 +874,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             }
     std::vector<float> x;
     std::vector<float> graph_probability;
+    std::vector<box> graph_boxes;
     int H, W;
     const auto preprocessed = std::chrono::steady_clock::now();
     bool graph_done = graph_run(c, input, h, w, x, H, W);
@@ -870,6 +909,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                 b.qy[i] *= sy;
             }
         }
+        if (compare_graph) graph_boxes = out;
         if (!out.empty() && std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT")) {
             if (bench) {
                 const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
@@ -947,6 +987,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
                 b.qy[i] *= sy;
             }
         }
+        if (compare_graph) report_graph_box_geometry(graph_boxes, out);
         if (bench) {
             const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
             fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
@@ -1054,6 +1095,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             b.qy[i] *= sy;
         }
     }
+    if (compare_graph) report_graph_box_geometry(graph_boxes, out);
     if (!graph_probability.empty() && graph_probability.size() == y.size()) {
         double dot = 0.0, gn = 0.0, cn = 0.0;
         for (size_t i = 0; i < y.size(); ++i) {

@@ -33,6 +33,11 @@ on:
       - 'tests/test_tesseract_line_confidence.py'
       - 'src/tesseract_lstm.cpp'
       - 'tests/test_tesseract_runtime_contract.py'
+      - 'tests/test_ppocrv6_pipeline_benchmark.py'
+      - 'tests/test_ocr_backend_matrix.py'
+      - 'tests/test_easyocr_interop_contract.py'
+      - 'tests/test_biometric_gate.py'
+      - 'src/crispembed.cpp'
       - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
       - 'models/merge-llamacpp-qwen2vl-gguf.py'
@@ -55,6 +60,11 @@ on:
       - 'tests/test_tesseract_line_confidence.py'
       - 'src/tesseract_lstm.cpp'
       - 'tests/test_tesseract_runtime_contract.py'
+      - 'tests/test_ppocrv6_pipeline_benchmark.py'
+      - 'tests/test_ocr_backend_matrix.py'
+      - 'tests/test_easyocr_interop_contract.py'
+      - 'tests/test_biometric_gate.py'
+      - 'src/crispembed.cpp'
       - 'tools/scan_cleanup_bench.py'
       - '.github/workflows/regression.yml'
       - 'models/merge-llamacpp-qwen2vl-gguf.py'
@@ -121,6 +131,31 @@ jobs:
         run: python tests/test_tesseract_line_confidence.py
       - name: Tesseract runtime contract
         run: python tests/test_tesseract_runtime_contract.py
+      - name: PP-OCRv6 benchmark parser contract
+        run: python tests/test_ppocrv6_pipeline_benchmark.py
+      - name: OCR engine benchmark manifest contract
+        run: python tests/test_ocr_engine_benchmark.py
+      - name: OCR backend capability matrix
+        run: python tests/test_ocr_backend_matrix.py
+      - name: EasyOCR/LayoutLM interoperability contract
+        run: python tests/test_easyocr_interop_contract.py
+      - name: PP-OCRv6 graph gold lane (artifact-equipped runners only)
+        env:
+          CRISPEMBED_GGUF_DIR: ${{ vars.CRISPEMBED_GGUF_DIR }}
+        run: |
+          if [ -n "${CRISPEMBED_GGUF_DIR:-}" ] && [ -d "$CRISPEMBED_GGUF_DIR" ]; then
+            python tests/test_ppocrv6_graph_gold.py --require --model-dir "$CRISPEMBED_GGUF_DIR" --ref-dir "$CRISPEMBED_GGUF_DIR"
+          else
+            echo "PP-OCRv6 graph gold: skipped (no artifact-equipped runner configured)"
+          fi
+      # POLICY.md §4 promises that loading a face recognition model requires an
+      # explicit acknowledgement. Needs a built library and two face GGUFs, so
+      # it only really runs on an artifact-equipped runner; elsewhere it says
+      # so rather than reporting a pass it did not earn.
+      - name: Biometric acknowledgement gate (artifact-equipped runners only)
+        env:
+          CRISPEMBED_GGUF_DIR: ${{ vars.CRISPEMBED_GGUF_DIR }}
+        run: python tests/test_biometric_gate.py
 
   # Tier 1: HEAD-check every pinned HF artifact the manifest references.
   preflight:

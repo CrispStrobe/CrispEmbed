@@ -1295,3 +1295,174 @@ The page comparator now uses the same explicit tessdata/environment isolation.
 The scan-strip baseline is unchanged with that correction: official 12 lines,
 113 words, 451 chars versus native 12 regions and 566 chars, CER `0.03375`,
 WER `0.15044`.
+
+The page comparator now has an opt-in `--require-text-match` gate and retains
+the normalized official/native page strings in its comparison output. The
+scan-strip baseline therefore remains explicitly non-green for exact output
+parity even though its CER/WER metrics are measurable.
+
+The confidence harness was rerun after rebuilding `test-confidence`, using the
+explicit Homebrew tessdata directory and the seeded Fraktur Q8 GGUF. Official
+PSM 7 TSV returned `iE` at mean word confidence `0.043433` in `5,881 ms`;
+native greedy returned `BEEES` at word confidence `0.884625` in `305 ms`, and
+beam-8 returned the same `BEEES` with sequence confidence `0.644788` and zero
+per-character confidences in `984 ms`. The official-word check passed, but
+decoded text and greedy calibration did not. This is evidence for a remaining
+Tesseract decoder/recoder and confidence-aggregation quality TODO, not a
+performance acceptance result; the beam path remains diagnostic.
+
+Converter smoke (2026-08-01): Miniconda converted the installed Homebrew
+`eng.traineddata` to `/tmp/crispembed-eng-dawg-smoke.gguf` successfully. The
+6.6 MiB GGUF contains the three available LSTM DAWG payloads
+(`lstm-punc-dawg`, `lstm-system-dawg`, and `lstm-number-dawg`), each with a
+base64 payload and SHA-256 metadata. This verifies preservation only; the
+artifact is not a promoted backup model and native dictionary scoring is still
+unimplemented.
+
+The regenerated DAWG-bearing smoke GGUF loads successfully in the native
+runtime and reports `dawg=3`; the live confidence target passed `35/35` checks
+on `scan_strip.png`. The decoded smoke text was `Se`; this validates metadata
+acceptance only and is not a page-quality or DAWG-parity result.
+
+The native load path now performs the same structural checks in a standalone
+DAWG validator. `test-tesseract-dawg` passes the minimal valid edge fixture and
+rejects malformed input; this adds negligible load-time validation and no
+runtime OCR scoring cost because DAWG traversal remains disabled.
+
+A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
+report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
+following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus
+corrected Fraktur seeded F32 and Q8_0 recognizers both emitted 12 boxes/lines
+and passed the pipeline gate. Exact text still fails: both runs measured
+CER/WER `0.03922/0.13274`; F32 took 12,373 ms total with confidence delta
+`0.01647`, and Q8 took 14,560 ms with confidence delta `0.01447`. The remaining
+quality gap is punctuation, spacing, and glyph output from line
+recognition/decoding, not detector box count or a precision-only failure. The
+stale 2-box result is rejected and should not be used as a performance or
+compatibility baseline.
+
+The native crop diagnostic now dumps the exact recognizer inputs on demand via
+`CRISPEMBED_TESSERACT_CROP_DUMP_DIR`. The rebuilt Q8 scan-strip run produced
+12 grayscale crops, with heights 22–32 px and the final crop 76×25 px. This
+confirms valid line geometry, but does not yet establish equivalence with
+Tesseract CLI's internal line normalization. A direct single-crop CLI A/B was
+not accepted because the installed Homebrew Tesseract/Leptonica could not
+reopen a valid dumped PNG; repeat after fixing that environment before drawing
+quality conclusions.
+
+The diagnostic also emits `crops.tsv`. A verified Q8 run produced 12 records
+plus the header; source boxes map to crop sizes 438×22 through 462×32, with a
+final 76×25 crop. The first line begins at page `y=0`, so edge clipping is now
+an explicit geometry item for the official-Tesseract comparison.
+
+The opt-in vertical ink-trim A/B is a rejected quality optimization: native
+recognition improved from 11,351.6 ms to 10,407.1 ms, but CER/WER degraded
+from `0.03922/0.13274` to `0.04278/0.14159` and the character delta grew from
+116 to 121. Keep `CRISPEMBED_TESSERACT_CROP_TRIM_INK` diagnostic-only.
+
+The component page-box pad A/B is also neutral for quality: with
+`CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD=0`, native output remained byte-identical
+to the default and CER/WER stayed `0.03922/0.13274` with 12 regions. Do not
+count this as a speed win; the isolated run's timing was not stable enough for
+an optimization claim.
+
+The existing component-row segmentation A/B is a quality regression: it kept
+12 regions but produced CER/WER `0.10873/0.20354` versus the legacy baseline
+`0.03922/0.13274`, including a corrupted first line. Keep the component policy
+diagnostic-only and do not use the malformed-path run as benchmark evidence.
+
+`tools/compare_tesseract_crop_geometry.py` now provides a reproducible
+geometry-only benchmark. The current 12-line run reports mean native-minus-
+official deltas `dx=-2.08`, `dy=+1.83`, `dw=+4.33`, `dh=+1.50`; worst rows are
+width `+80`, vertical offset `+14`, and height `+12`. These are row-boundary
+quality findings, not a measured runtime regression.
+
+The gated row-blob-bounds A/B fixes the largest local geometry error: CER/WER
+improved to `0.03209/0.11504`, mean width delta fell to `+2.42`, and worst
+width delta fell from `+80` to `+13`, with 12 regions preserved. This is a
+quality improvement on scan-strip, but remains diagnostic-only until validated
+on more page fixtures; exact output parity still fails.
+
+The per-line page comparator was corrected to group official TSV words by
+page/block/paragraph/line rather than by `word_num`. On the corrected
+row-blob-bounds run, both paths emit 12 lines and only 3/12 lines match
+exactly. The first differing line is line 0 (`<< 4 ...` official versus
+`“< A ...` native); lines 4, 7, and 9 match exactly. Overall CER/WER remains
+`0.03209/0.11504`, so this is a recognition/crop or decoder-quality TODO,
+not a segmentation-count or ordering failure. Native benchmark was
+`detect=89.5 ms`, `crop=258.5 ms`, `recognize=17216.3 ms`, `total=17564.4 ms`;
+official Tesseract CLI elapsed `47761.8 ms` in this run, but these timings are
+not yet a controlled backend-speed comparison.
+
+The first divergent line was checked at the tensor boundary. Native crop 0
+was dumped and a Python reference was regenerated from the installed Fraktur
+traineddata. `test-tesseract-lstm-diff` passed every captured stage (input,
+convolution, conv-FC, maxpool, four LSTM stages, and logits); the lowest
+cosine was `0.997755`, with recurrent mine/ref norms `35.8611/35.8704`, and
+the native/Python decoded strings were identical. The official Homebrew CLI
+cannot reopen local PNG/PGM/TIFF files in this environment, so direct CLI
+single-crop confirmation is blocked; the page-level mismatch is nevertheless
+localized to official page segmentation/line normalization rather than GGUF
+recognition math. Use the comparator's new `--crop-dump-dir` option for fresh
+crop manifests. `tools/compare_tesseract_crop_diff.py` now automates the
+per-crop Python-reference regeneration and native `test-tesseract-lstm-diff`
+run while refusing to overwrite an existing reference.
+
+On the CC0 German printed-document fixture, official Tesseract emitted 28
+lines/153 words/897 characters while native DBNet emitted 23 lines/862
+characters. CER/WER was `0.32984/0.67974`; native stages measured
+`detect=982.4 ms`, `crop=670.0 ms`, `recognize=19594.7 ms`, and
+`total=21247.2 ms`. Since five lines are missing or merged before recognition,
+index-paired per-line errors are not a valid recognizer benchmark. The page
+comparator now reports `alignment_valid=false` when line counts differ. This
+fixture is a detector/line-geometry TODO, separate from the crop-level tensor
+parity proven on scan-strip.
+
+The comparator now exposes the native Tesseract-like route explicitly with
+`--native-pageseg`. On `scan_strip.png`, this route produced 12/12 lines,
+CER/WER `0.03209/0.11504`, and 3/12 exact lines. Its native stage timing was
+`detect=12.6 ms`, `crop=644.8 ms`, `recognize=11856.4 ms`,
+`total=12513.8 ms`. The route is not using DBNet for box generation; its
+quality is identical to the established classical row path, so the remaining
+gap is page segmentation/line normalization and decoder semantics.
+
+The repeated benchmark wrapper now accepts `--native-pageseg` and records
+`detector_route`, preserving the DBNet-versus-native distinction across
+multi-repeat timing runs. Its route flag and comparator selection are covered
+by the 10-test focused harness.
+
+On the CC0 German page, the explicit native route emitted the same 23 lines
+and 862 characters as the DBNet route, versus 28 official lines and 897
+characters. CER/WER stayed `0.32984/0.67974`; native timing was
+`detect=1014.9 ms`, `crop=605.7 ms`, `recognize=14263.4 ms`,
+`total=15885.6 ms`. This is a shared five-line geometry/coverage gap, not
+evidence that either recognizer is worse on aligned crops.
+
+The German native crop manifest has 23 rows versus 28 official TSV rows. The
+geometry comparator now marks this as `alignment_valid=false` and reports the
+number of index-paired rows; its former mean `dy=257.7` was an alignment
+artifact, not a measured crop offset. A merge-aware line matcher remains a
+detector/geometry TODO before using per-row geometry deltas on this fixture.
+
+The crop comparator now has `--match-by-geometry`: the German native run
+matched 23 rows monotonically and exposed five unmatched official rows
+(`0,2,3,4,26`). It still exits 1 for the count mismatch, and the resulting
+matched deltas remain diagnostic until one-to-many merged-row matching is
+implemented.
+
+Source inspection indicates several official rows are nested decorative marks
+inside larger text boxes, so the merge report now labels a primary official
+box and nested rows. This prevents a speculative production split based only
+on TSV row count. On German, native row 0 has primary official index 1 and
+nested indices 2 and 4; native row 9 has primary index 13 and nested index 12;
+native row 22 has primary index 26 with no fully-contained nested row.
+
+The geometry report now exposes `merged_official_groups` when one native row
+covers at least half the vertical extent of multiple official rows. This
+separates merge candidates from genuinely missing rows without changing the
+production native pageseg policy.
+
+On the German fixture, the report finds merge candidates native `0` →
+official `1..4`, native `9` → official `12..13`, and native `22` → official
+`26..27`; official row `0` remains unmatched. These are concrete geometry
+targets for row-splitting work, not recognizer timing or tensor-parity data.

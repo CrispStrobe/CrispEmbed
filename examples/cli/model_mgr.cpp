@@ -2,6 +2,8 @@
 
 #include "model_mgr.h"
 
+#include "crispembed.h" // crispembed_accept_biometric_use
+
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -917,6 +919,20 @@ static const ModelEntry k_registry[] = {
       "PP-OCRv6 medium CTC recognizer (F32 backbone, head-only Q8)", "63 MB", "apache-2.0",
       "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF" },
 
+    // EasyOCR CRNN recognizers and the PP-LCNet line-orientation classifier are
+    // produced locally by models/convert-easyocr-to-gguf.py and
+    // models/convert-pplcnet-orientation-to-gguf.py; no GGUF is published yet,
+    // so these entries name the artifact for --ocr-rec/--ocr-cls resolution
+    // without promising a download (same pattern as mixtex-zhen).
+    { "easyocr-english-g2", "easyocr-english-g2-f16.gguf", "",
+      "EasyOCR English Gen2 CRNN recognizer (local conversion)", "16 MB", "apache-2.0",
+      "https://github.com/JaidedAI/EasyOCR" },
+    { "easyocr-latin-g2", "easyocr-latin-g2-f16.gguf", "", "EasyOCR Latin Gen2 CRNN recognizer (local conversion)",
+      "16 MB", "apache-2.0", "https://github.com/JaidedAI/EasyOCR" },
+    { "pplcnet-textline-ori", "PP-LCNet_x1_0_textline_ori-f16.gguf", "",
+      "PP-LCNet x1.0 text-line 0/180 orientation classifier (local conversion)", "13 MB", "apache-2.0",
+      "https://github.com/PaddlePaddle/PaddleOCR" },
+
     { "surya-det", "surya-det-f16.gguf", "https://huggingface.co/cstr/surya-det-GGUF/resolve/main/surya-det-f16.gguf",
       "surya-ocr-2 text detection (EfficientViT segformer, 38M, 91 langs)", "73 MB", "openrail-m",
       "https://huggingface.co/cstr/surya-det-GGUF" },
@@ -1552,6 +1568,43 @@ bool license_requires_acceptance(const char * spdx) {
     for (const char ** p = restricted; *p; ++p) {
         if (strcmp(spdx, *p) == 0) return true;
     }
+    return false;
+}
+
+bool accept_biometric_use(const char * model_label, bool accepted_flag) {
+    // Every success path also arms the library-level gate in
+    // crispembed_face_init(), so the acknowledgement is made once and honoured
+    // by both the CLI's own cnn_embed calls and the public C ABI.
+    if (accepted_flag) {
+        crispembed_accept_biometric_use();
+        return true;
+    }
+    const char * env = std::getenv("CRISPEMBED_ACCEPT_BIOMETRIC");
+    if (env && *env && strcmp(env, "0") != 0) {
+        crispembed_accept_biometric_use();
+        return true;
+    }
+
+    const char * label = (model_label && *model_label) ? model_label : "this model";
+    fprintf(stderr, "\n'%s' is a FACE RECOGNITION model.\n", label);
+    fprintf(stderr, "Its output is a biometric template — special-category personal data under\n");
+    fprintf(stderr, "GDPR Art. 9, which generally needs an Art. 9(2) basis (e.g. explicit consent)\n");
+    fprintf(stderr, "before you process it.\n");
+    fprintf(stderr, "Using it to search a gallery (1:N identification) builds a biometric\n");
+    fprintf(stderr, "identification system: high-risk under EU AI Act Annex III §1 from\n");
+    fprintf(stderr, "2 December 2027, and prohibited outright in some settings (Art. 5).\n");
+    fprintf(stderr, "See POLICY.md.\n\n");
+
+    if (isatty(fileno(stdin))) {
+        fprintf(stderr, "Acknowledge and continue? [y/N] ");
+        char c = 0;
+        if (scanf(" %c", &c) != 1 || (c != 'y' && c != 'Y')) return false;
+        crispembed_accept_biometric_use();
+        return true;
+    }
+
+    fprintf(stderr, "error: refusing to run a face recognition model without acknowledgement.\n");
+    fprintf(stderr, "       Pass --accept-biometric (or set CRISPEMBED_ACCEPT_BIOMETRIC=1).\n");
     return false;
 }
 

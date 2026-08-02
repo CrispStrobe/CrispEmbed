@@ -22,6 +22,7 @@ Usage:
 """
 
 import argparse
+import base64
 import hashlib
 import struct
 import sys
@@ -92,10 +93,15 @@ COMPONENT_NAMES = [
     "lstm-unicharset", "lstm-recoder", "version",
 ]
 
-# Optional language-model components used by Tesseract's LSTM recognizer.
-# The native line recognizer does not score DAWGs yet, but retaining the exact
-# bytes enables a future runtime implementation without reconverting weights.
-LSTM_DAWG_COMPONENTS = ("lstm-punc-dawg", "lstm-system-dawg", "lstm-number-dawg")
+# These are the language-model components consumed by Tesseract's DAWG and
+# recoder/word-choice paths.  Keep them in GGUF even though the native runtime
+# does not score them yet; dropping them at conversion time would make a later
+# faithful decoder impossible to implement from the GGUF alone.
+DAWG_COMPONENT_NAMES = [
+    "punc-dawg", "system-dawg", "number-dawg", "freq-dawg",
+    "fixed-length-dawg", "cube-word-dawg", "bigram-dawg", "unambig-dawg",
+    "lstm-punc-dawg", "lstm-system-dawg", "lstm-number-dawg",
+]
 
 
 def parse_traineddata(data: bytes) -> dict:
@@ -410,8 +416,6 @@ def main():
     p.add_argument("--output", required=True, help="Output GGUF path")
     p.add_argument("--fp16", action="store_true",
                    help="Store weights in FP16 (halves file size)")
-    p.add_argument("--embed-dawgs", action="store_true",
-                   help="Embed LSTM DAWG components as uint8 GGUF metadata arrays (runtime scoring is not enabled)")
     args = p.parse_args()
 
     model_path = Path(args.model)
@@ -538,6 +542,18 @@ def main():
     writer.add_int32("tesseract_lstm.sample_iteration", sample_iteration)
     writer.add_bool("tesseract_lstm.int_mode", bool(training_flags & 1))
 
+    # Preserve the original DAWG payloads losslessly.  GGUF metadata is
+    # UTF-8, so base64 is used instead of silently discarding binary trie
+    # records.  Runtime DAWG scoring remains opt-in work; these fields are the
+    # portable source material for that implementation.
+    dawg_components = [name for name in DAWG_COMPONENT_NAMES if name in components]
+    writer.add_array("tesseract_lstm.dawg_components", dawg_components)
+    for name in dawg_components:
+        payload = components[name]
+        encoded = base64.b64encode(payload).decode("ascii")
+        writer.add_string(f"tesseract_lstm.dawg.{name}.base64", encoded)
+        writer.add_string(f"tesseract_lstm.dawg.{name}.sha256", hashlib.sha256(payload).hexdigest())
+
     # Network hyperparameters
     writer.add_string("tesseract_lstm.vgsl_spec", vgsl_spec)
     writer.add_uint32("tesseract_lstm.input_height", input_height)
@@ -573,23 +589,6 @@ def main():
                 rev[codes[0]] = uid
         writer.add_array("tesseract_lstm.output_to_unichar",
                          rev.tolist())
-
-    # GGUF metadata has no portable opaque-blob field in all supported Python
-    # writer versions, so preserve exact component bytes as uint8 arrays.
-    # This is opt-in and the runtime intentionally ignores these arrays.
-    if args.embed_dawgs:
-        embedded_dawgs = []
-        for name in LSTM_DAWG_COMPONENTS:
-            payload = components.get(name)
-            if payload is None:
-                continue
-            # Keep the element type explicit: a Python list of ints may be
-            # inferred as int32/int64 by different gguf Python versions.
-            writer.add_key_value(f"tesseract_lstm.dawg.{name}", list(payload), gguf.GGUFValueType.ARRAY,
-                                 gguf.GGUFValueType.UINT8)
-            embedded_dawgs.append(name)
-        writer.add_array("tesseract_lstm.dawg_names", embedded_dawgs)
-        writer.add_bool("tesseract_lstm.dawg_embedded", bool(embedded_dawgs))
 
     # Count LSTM layers for metadata
     lstm_layers = [l for l in layers if l["type"] in ("LSTM", "SummLSTM")]

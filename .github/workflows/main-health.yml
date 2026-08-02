@@ -81,3 +81,27 @@ jobs:
             exit 1
           fi
           echo "OK: all $checked watched workflow(s) are green on main."
+
+  licenses:
+    name: model licences match upstream
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install --disable-pip-version-check huggingface_hub
+
+      # Why this lives in the daily job and not in Lint: it asks huggingface.co
+      # about ~300 repos, so it is slow and network-bound, and what it catches
+      # is UPSTREAM drift — a model card relicensed after we shipped it. That
+      # is the same "breaks with no commit of ours" class main-health exists
+      # for, and it would be pure flake on every push.
+      #
+      # Transient HF failures degrade to "?" rows rather than "✗": a mismatch
+      # needs both sides non-empty, so a 429 or a timeout cannot fail this.
+      - name: Cross-check registry licences against upstream model cards
+        run: python tests/check_registry_licenses.py
