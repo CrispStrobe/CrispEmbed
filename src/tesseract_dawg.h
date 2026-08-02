@@ -9,11 +9,18 @@ extern "C" {
 
 typedef struct tesseract_dawg_context tesseract_dawg_context;
 
+enum {
+    TESSERACT_DAWG_INVALID_PREFIX = 0,
+    TESSERACT_DAWG_LEGAL_PREFIX = 1,
+    TESSERACT_DAWG_COMPLETE_WORD = 2,
+};
+
 // Parse and retain one validated DAWG payload for repeated diagnostic lookups.
 tesseract_dawg_context * tesseract_dawg_init_base64(const char * payload, char * error, size_t error_size);
 void tesseract_dawg_free(tesseract_dawg_context * ctx);
 int tesseract_dawg_context_contains(const tesseract_dawg_context * ctx, const int * unichar_ids, size_t count);
 int tesseract_dawg_context_has_prefix(const tesseract_dawg_context * ctx, const int * unichar_ids, size_t count);
+int tesseract_dawg_context_state(const tesseract_dawg_context * ctx, const int * unichar_ids, size_t count);
 
 // Validate one Tesseract SquishedDawg payload serialized as base64 metadata.
 // This checks the wire header, bounds, and edge-run termination only; it does
