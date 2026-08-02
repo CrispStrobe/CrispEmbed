@@ -423,6 +423,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!ctx->easy && !easyocr_pipeline::load(&ctx->easy, st.model_a.c_str(), st.model_b.c_str(), ctx->n_threads))
             return {};
         if (!ctx->easy) return {};
+        // Split load from compute, the same way the tesseract and ppocrv6
+        // stages do. That split is what exposed a wasted Metal init worth 12.5x
+        // in one lane and 7-14% in another; without it a slow loader and a slow
+        // engine are indistinguishable in the total.
+        const auto easy_loaded = std::chrono::steady_clock::now();
         // Line mode matches EasyOCR's own `paragraph=False` line output; word
         // mode exists for the LayoutLM/Tesseract-style word handoff and would
         // fragment the text a CER comparison sees.
@@ -441,8 +446,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             results.push_back(std::move(r));
         }
         if (easy_bench) {
-            fprintf(stderr, "[easyocr-stage-bench] total=%.1f ms units=%zu results=%zu\n",
-                    std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - easy_started).count(),
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+            const auto easy_done = std::chrono::steady_clock::now();
+            fprintf(stderr,
+                    "[easyocr-stage-bench] load=%.1f ms detect+recognize=%.1f ms total=%.1f ms units=%zu results=%zu\n",
+                    ms(easy_started, easy_loaded), ms(easy_loaded, easy_done), ms(easy_started, easy_done),
                     items.size(), results.size());
         }
         return results;
