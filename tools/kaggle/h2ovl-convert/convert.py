@@ -152,22 +152,21 @@ if img.exists():
     ocr_note = (f"rc={proc.returncode}, {len(text)} chars, MSAC={'yes' if msac_ran else 'NO'}; "
                 f"first 120 chars: {text[:120]!r}")
 
-# ── upload ─────────────────────────────────────────────────────────────
-# The artifacts go up even when the smoke test fails. This model is under
-# active debugging and the q4_k plus the reference are exactly what makes that
-# possible off this box; withholding them only forces another Kaggle round
-# trip per hypothesis. The card says plainly which state it is in, and the
-# run still exits non-zero at the end so the kernel status does not lie.
+# ── publish ────────────────────────────────────────────────────────────
+# Publication is NOT this kernel's job. tools/kaggle/h2ovl-publish owns it and
+# does it correctly: a PRIVATE repo, a card that says UNVALIDATED in the first
+# line, no registry entry and no SHA pin, so `--list-models` cannot offer a
+# model that does not read a page. This kernel converts, verifies and measures;
+# it uploads only when the artifact has earned it.
+if not ocr_ok:
+    kh.step("not_published", reason=ocr_note)
+    print("Artifacts left in /kaggle/working for h2ovl-publish to collect.", flush=True)
+    sys.exit(f"model does not read a page yet: {ocr_note}")
+
 from huggingface_hub import HfApi, create_repo  # noqa: E402
 
-status = ("**Validated**: transcribes the reference page correctly."
-          if ocr_ok else
-          f"**NOT VALIDATED — do not use for real work.** The OCR smoke test on "
-          f"`scan_page_pd.png` failed: {ocr_note}. Published so the failure can be "
-          f"debugged against `{NAME}-ref.gguf` without re-running conversion.")
-
 api = HfApi(token=hf_token)
-create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token)
+create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token, private=True)
 card = f"""---
 license: apache-2.0
 base_model: {MODEL}
@@ -178,31 +177,20 @@ tags: [gguf, ocr, crispembed, internvl, h2ovl]
 
 H2OVL-Mississippi-2B (InternViT-300M + H2O-Danube2-1.8B, OCRBench 782) in the
 single-file **CrispEmbed** GGUF layout, for the `internvl2_ocr` engine.
-
-## Status
-
-{status}
+Validated: transcribes the reference page.
 
 **Requires MSAC.** This model sets `use_msac`, so the page is tiled at two
 scales and concatenated `fine[:-1] + coarse[:-1] + fine[-1:]`. A runtime that
 single-scale-tiles it does not error — it returns confident nonsense.
-
-## Files
-
-| File | What it is |
-|---|---|
-| `{NAME}-q4_k.gguf` | the model |
-| `{NAME}-ref.gguf` | per-layer reference activations (vision 4 layers + LLM 4 layers) from a pure-numpy forward pass on one 448x448 tile, for `tests/test_internvl2_diff.cpp`. Deliberately single-tile, so it isolates graph math from tiling. |
 
 Not interchangeable with llama.cpp GGUFs.
 
 ## Attribution & licence
 
 Upstream © H2O.ai, Apache-2.0 — see [{MODEL}](https://huggingface.co/{MODEL});
-vision tower InternViT-300M is MIT. Conversion and quantization do not
-relicense it. See [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) and
-its `POLICY.md`: OCR output is a probabilistic reconstruction, not a faithful
-copy, and VLM engines confabulate through a smudge rather than leave it blank.
+vision tower InternViT-300M is MIT. See
+[CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) `POLICY.md`: OCR output
+is a probabilistic reconstruction, not a faithful copy.
 """
 (WORK / "README.md").write_text(card)
 api.upload_file(path_or_fileobj=str(WORK / "README.md"), path_in_repo="README.md",
@@ -211,11 +199,8 @@ for f in (q4, ref, f16):
     if f.exists():
         with kh.build_heartbeat(f"upload.{f.name}", interval_s=60.0):
             api.upload_file(path_or_fileobj=str(f), path_in_repo=f.name, repo_id=REPO,
-                            token=hf_token,
-                            commit_message="CrispEmbed-format GGUF (MSAC two-scale tiling required)")
+                            token=hf_token, commit_message="Validated CrispEmbed GGUF")
         kh.step("uploaded", file=f.name)
 
 kh.step("done", ocr_ok=ocr_ok)
 print("DONE")
-if not ocr_ok:
-    sys.exit(f"artifacts uploaded, but the model does not read a page yet: {ocr_note}")
