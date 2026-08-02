@@ -422,6 +422,10 @@ recognizer and LayoutLM consumer.
       decoded-text parity gate. A page-level beam A/B at widths 1, 5, 10, and
       25 keeps the same first-line choices; generic CTC beam search remains
       opt-in and is not the cause of the remaining CLI discrepancy.
+- [x] Make the row-blob-bounds geometry A/B reproducible from the benchmark
+      harness. `--row-blob-bounds` now reaches the page comparator, repeated
+      benchmark, native environment, and JSON manifest; the option remains
+      diagnostic-only pending multi-fixture quality parity.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.

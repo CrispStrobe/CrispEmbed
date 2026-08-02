@@ -175,6 +175,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
         "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
         "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
+        "CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS",
     ):
         env.pop(key, None)
     if args.workers:
@@ -198,6 +199,8 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         env["CRISPEMBED_TESSERACT_COMPONENT_PAGESEG"] = "1"
     elif args.baseline:
         env["CRISPEMBED_TESSERACT_COMPONENT_BASELINE"] = "1"
+    if args.row_blob_bounds:
+        env["CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS"] = "1"
     if args.per_line:
         env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
     if args.crop_dump_dir is not None:
@@ -234,6 +237,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "mean_confidence": float(confidence),
         "stage_ms": float(stage_ms),
         "pageseg_policy": selected_pageseg_policy(args),
+        "row_blob_bounds": args.row_blob_bounds,
         "detector_route": selected_detector_route(args),
         "text": " ".join(text_match.group("text").split()) if text_match else "",
         "line_texts": native_line_texts,
@@ -283,6 +287,8 @@ def main() -> int:
     policy.add_argument("--projection", action="store_true")
     policy.add_argument("--component", action="store_true", help="use the opt-in component prototype")
     policy.add_argument("--baseline", action="store_true", help="use the opt-in baseline-row matcher")
+    parser.add_argument("--row-blob-bounds", action="store_true",
+                        help="keep each component row crop within its assigned blob bounds")
     parser.add_argument("--min-native-regions", type=int, help="fail if native region count is below this value")
     parser.add_argument("--max-cer", type=float, help="fail if character error rate exceeds this value")
     parser.add_argument("--max-wer", type=float, help="fail if word error rate exceeds this value")

@@ -92,6 +92,14 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertIn('parser.add_argument("--native-pageseg"', wrapper)
         self.assertIn('command.append("--native-pageseg")', wrapper)
 
+    def test_benchmark_wrapper_exposes_row_blob_bounds(self) -> None:
+        wrapper = (ROOT / "tools" / "benchmark_tesseract_page.py").read_text()
+        comparator = (ROOT / "tools" / "compare_tesseract_page_metrics.py").read_text()
+        self.assertIn('parser.add_argument("--row-blob-bounds"', wrapper)
+        self.assertIn('command.append("--row-blob-bounds")', wrapper)
+        self.assertIn('parser.add_argument("--row-blob-bounds"', comparator)
+        self.assertIn('CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS', comparator)
+
     def test_crop_geometry_rejects_index_alignment_on_count_mismatch(self) -> None:
         result = compare_crop_geometry(
             [{"box_x": 0.0, "box_y": 0.0, "box_w": 10.0, "box_h": 5.0, "crop_w": 10.0, "crop_h": 5.0}],
