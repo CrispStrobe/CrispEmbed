@@ -685,8 +685,12 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
 // evidence above is for small. CRISPEMBED_PPOCRV6_NO_GRAPH restores the CPU
 // reference everywhere, which is the bisection lever if a crop ever disagrees.
 static bool pp_graph_enabled() {
-    static const bool off =
-        std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") != nullptr || std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    // FORCE_CPU normally means the scalar reference. Permit the explicit
+    // batch-graph probe to select the CPU backend while still exercising the
+    // GGML graph; ordinary FORCE_CPU runs remain graph-free.
+    static const bool off = std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") != nullptr ||
+                            (std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr &&
+                             std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH") == nullptr);
     return !off;
 }
 
@@ -1732,6 +1736,11 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
                 fused = pp_graph_run_batch(c, fused_input, fused_output, tokens, classes, group_count);
                 fused =
                     fused && tokens > 0 && classes > 0 && fused_output.size() >= (size_t)tokens * classes * group_count;
+                if (std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+                    fprintf(stderr,
+                            "[ppocrv6-batch-graph] backend=%s width=%d batch=%d action=%s tokens=%d classes=%d\n",
+                            c->backend ? ggml_backend_name(c->backend) : "none", width, group_count,
+                            fused ? "fused" : "scalar-fallback", tokens, classes);
             }
             for (int member = 0; member < group_count; ++member) {
                 const int i = order[group_start + (size_t)member];

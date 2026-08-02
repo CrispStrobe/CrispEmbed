@@ -18,6 +18,8 @@ def main():
     parser.add_argument("--confidence-tolerance", type=float, default=0.02)
     parser.add_argument("--ignore-detector-confidence", action="store_true",
                         help="skip detector confidence when the reference source does not expose it")
+    parser.add_argument("--recognizer-crop-only", action="store_true",
+                        help="compare recognizer_crop and omit the postprocess crop field")
     args = parser.parse_args()
     reference = json.loads(args.reference.read_text(encoding="utf-8"))
     native = json.loads(args.native.read_text(encoding="utf-8"))
@@ -33,10 +35,17 @@ def main():
             errors.append(f"record {index} text: {want.get('text')!r} != {got.get('text')!r}")
         if want.get("line") != got.get("line"):
             errors.append(f"record {index} line: {want.get('line')} != {got.get('line')}")
-        for field in ("box", "crop", "normalized_box"):
+        geometry_fields = ("box", "normalized_box") if args.recognizer_crop_only else ("box", "crop", "normalized_box")
+        for field in geometry_fields:
             left, right = want.get(field, []), got.get(field, [])
             if len(left) != len(right) or any(not close(a, b, args.box_tolerance) for a, b in zip(left, right)):
                 errors.append(f"record {index} {field}: {left} != {right}")
+        if args.recognizer_crop_only and ("recognizer_crop" not in want or "recognizer_crop" not in got):
+            errors.append(f"record {index} recognizer_crop: missing from reference or native manifest")
+        if "recognizer_crop" in want or "recognizer_crop" in got:
+            left, right = want.get("recognizer_crop", []), got.get("recognizer_crop", [])
+            if len(left) != len(right) or any(not close(a, b, args.box_tolerance) for a, b in zip(left, right)):
+                errors.append(f"record {index} recognizer_crop: {left} != {right}")
         fields = ("confidence",) if args.ignore_detector_confidence else ("confidence", "detector_confidence")
         for field in fields:
             if not close(want.get(field, 0), got.get(field, 0), args.confidence_tolerance):
