@@ -364,16 +364,39 @@ rather than hidden. The tesseract lane went from ~40x system Tesseract to
 **~3x**. The other two are ~3x their Python references (`easyocr-py` 0.75 s,
 `paddleocr-py` 1.07 s) and are not yet at parity.
 
-**Remaining speed work, in order of measured value.** (a) PP-OCRv6's CPU
-detector is scalar convolution and is now the dominant cost of that lane; its
-graph is still diagnostic-only on box-geometry parity, which is the blocker to
-close. (b) Each engine builds its own Metal backend, so a pipeline pays that
-init more than once — sharing one across the orchestrator's engines is untried
-and, given that a single wasted Metal init cost 1–5 s in the tesseract lane, is
-likely worth more than it looks. (c) The DBNet detector still costs ~400 ms on
-a capped 572x188 page against tesseract-cli's 0.15 s for the entire job.
-(d) EasyOCR's lane is the furthest from its reference and has had no profiling
-pass at all yet.
+**Remaining speed work — (a) is now clearly the biggest.**
+
+**(a) One Metal backend per engine, and Metal init blocks.** Every engine calls
+`crispasr_init_gpu_backend()`, which does a fresh `ggml_backend_dev_init`, so a
+pipeline pays the init once per engine — twice in the EasyOCR lane (DBNet
+detector + EasyOCR recognizer). Adding the load/compute split to that stage
+shows how bad it gets: `load=36041 ms` and `load=87090 ms` on two consecutive
+runs of the same command, against `detect+recognize` of ~5 s — while the whole
+process consumed only **2.8 s user + 1.2 s sys**. The load phase is therefore
+almost entirely *blocking wait*, not computation, and it explodes under system
+contention rather than degrading smoothly. On a quiet box the whole lane is
+2.06 s, so this is ~1.5 s quiet and tens of seconds loaded.
+
+That makes a **refcounted shared backend** the top item: hand every engine the
+same `ggml_backend_t` and init Metal once per process. The hazard to design
+around is ownership — each engine currently calls `ggml_backend_free` on its
+own backend, so a naive singleton would be freed out from under its peers, and
+`ggml_backend_sched` also assumes distinct backend instances in places. It
+wants `crispasr_acquire/release_shared_gpu_backend()` with a refcount, then a
+sweep of every engine's free path. Not attempted here because it touches every
+engine and deserves its own change.
+
+**(b)** PP-OCRv6's CPU detector is scalar convolution and is now that lane's
+dominant compute; its graph stays diagnostic-only on box-geometry parity, which
+is the blocker to close. **(c)** The DBNet detector costs ~400 ms on a capped
+572x188 page against `tesseract-cli`'s 0.15 s for the whole job.
+
+**Measure with CPU time on this box.** `user+sys` stayed within 12% across runs
+where wall clock swung 10x, and an early cross-run wall comparison of the
+detector loader reported the *opposite* of what a same-binary A/B later showed.
+Contention-robust ratios at the time of writing (median-of-3 CPU-seconds,
+`tesseract-cli` control 0.46-0.49 s): tesseract lane 3.4x, PP-OCRv6 6.6x,
+EasyOCR 8.9x control.
 
 **Measurement discipline, learned the hard way here.** This box runs 3–6
 concurrent agent builds; load average hit 103 mid-sweep and `tesseract-cli`
