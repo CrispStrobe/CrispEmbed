@@ -65,6 +65,10 @@ crispembed = [
     "*.dylib",
     "*.dll",
     "*.pyd",
+    # Acceptable-use terms, staged from the repo root by setup.py so that a
+    # `pip install` user has the EU AI Act Art. 5 prohibitions and the GDPR
+    # Art. 9 note on hand without visiting the repo.
+    "POLICY.md",
 ]
 
 # cibuildwheel configuration: the actual lib compile happens in
