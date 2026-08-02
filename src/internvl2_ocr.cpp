@@ -1639,9 +1639,16 @@ const char * internvl2_ocr_recognize_raw(internvl2_ocr_context * ctx, const uint
     // Use proper dynamic tiling preprocessor from image_preprocess.cpp
     const auto & vhp = ctx->ctx.m.vhp;
     image_preproc::internvl_config cfg;
+    const auto & lhp_cfg = ctx->ctx.m.lhp;
     cfg.image_size = (int)vhp.image_size; // 448
-    cfg.min_dynamic_patch = 1;
-    cfg.max_dynamic_patch = 12;
+    // Honour the model's own declared limits. These were hardcoded to 1/12,
+    // which silently overrode the GGUF: H2OVL declares max_dynamic_patch=6, so
+    // a page was tiled with a grid the model was never trained on. Harmless-
+    // looking for single-scale models whose chosen grid happens to fall below
+    // 12, but MSAC derives its second grid from the first, so the extra
+    // headroom changed the whole stack (19 tiles where the reference gives 13).
+    cfg.min_dynamic_patch = (int)std::max(1u, lhp_cfg.min_dynamic_patch);
+    cfg.max_dynamic_patch = (int)std::max(cfg.min_dynamic_patch, (int)lhp_cfg.max_dynamic_patch);
     // Allow runtime override for CPU-friendly inference (fewer tiles = faster)
     if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) {
         int max_px = atoi(mp);
