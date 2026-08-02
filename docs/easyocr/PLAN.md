@@ -426,6 +426,9 @@ recognizer and LayoutLM consumer.
       harness. `--row-blob-bounds` now reaches the page comparator, repeated
       benchmark, native environment, and JSON manifest; the option remains
       diagnostic-only pending multi-fixture quality parity.
+- [x] Expose the same row-blob-bounds switch in the standalone geometry
+      comparator, so direct geometry reports and repeated page reports use the
+      same reproducible policy selection.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.
@@ -451,9 +454,10 @@ recognizer and LayoutLM consumer.
 - [x] Add and test an opt-in generic CTC prefix beam through
       `CRISPEMBED_TESSERACT_BEAM_WIDTH` at widths 2, 3, 5, 10, 16, 25, and 50;
       it does not change the native result, so it is not the CLI explanation.
-- [ ] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
-      quantized matrix arithmetic), then port its recode beam/dictionary
-      scoring and validate decoded output.
+- [x] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
+      quantized matrix arithmetic). The controlled PSM7 network boundary now
+      passes; recode-beam/dictionary scoring and full decoded page parity remain
+      separate open gates.
 - [x] Added the 1/256 Tesseract nonlinear LUT contract and reconstructed
       per-row int8 dot products. Native/Python int-mode logits now reach
       cosine `0.998405` with identical decoded output; generic CTC and

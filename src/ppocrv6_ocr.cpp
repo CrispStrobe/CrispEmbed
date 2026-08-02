@@ -989,12 +989,12 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     // [C,H,W].  A contiguous ggml tensor shaped [W,H,C,N] has the same byte
     // order: dimension 0 (x), then dimension 1 (y), then channels.  No
     // pixel-interleaving transpose is needed at this backend boundary.
-    // The persistent graph is built for one fixed crop shape (48x320). Now that
-    // the recognizer honours PaddleOCR's aspect-preserving width, a wider crop
-    // produces more input floats than the graph tensor holds -- writing them
-    // would run off the end of its backend buffer. Refuse the graph for shapes
-    // it was not built for and let the CPU reference take the crop; a
-    // shape-keyed graph is the follow-up.
+    // pp_graph_build is shape-keyed and rebuilds when the width changes, so
+    // this should never fire. It stays as a backstop because the failure it
+    // guards is silent and serious: the recognizer now honours PaddleOCR's
+    // aspect-preserving width, so a mismatch means writing more input floats
+    // than the graph tensor holds, straight off the end of its backend buffer.
+    // Falling back to the CPU reference is always safe.
     if ((size_t)ggml_nelements(c->graph.input) != input.size()) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
             fprintf(stderr, "[ppocrv6-graph] input %zu floats != graph shape %lld; using CPU reference\n", input.size(),

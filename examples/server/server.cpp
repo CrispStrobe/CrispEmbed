@@ -52,8 +52,17 @@
 #include <atomic>
 #include <chrono>
 #include <cstdio>
+#include <cstdlib>
 #include <cmath>
+#include <filesystem>
 #include <iomanip>
+#include <system_error>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <unistd.h>
+#endif
 #include <mutex>
 #include <sstream>
 #include <string>
@@ -62,6 +71,102 @@
 using core_json::json_escape;
 using core_json::json_extract_number;
 using core_json::json_extract_strings;
+
+// --- Request image paths -------------------------------------------------
+//
+// Every image-taking endpoint reads its input by SERVER-SIDE path: the client
+// sends {"image": "/path/on/the/server"}. That is convenient for a local tool
+// and an arbitrary-file-read primitive for a reachable one — worst on /face,
+// which turns any readable image into a biometric template.
+//
+// --image-root confines those reads to one subtree. Unset, behaviour is
+// unchanged (any readable path), which is the historical default and fine on
+// loopback. Set, a path outside the root is rejected before it reaches any
+// model, and the handler sees an empty path — which every endpoint already
+// treats as a 400 — so confinement fails closed without needing 30 handlers
+// to grow a new error branch.
+static std::string g_image_root; // empty = unrestricted
+
+static bool image_path_within_root(const std::string & path) {
+    if (g_image_root.empty()) return true;
+    if (path.empty()) return false;
+
+    std::error_code ec;
+    // weakly_canonical resolves .. and symlinks, so neither a traversal nor a
+    // symlink planted inside the root can escape it.
+    const std::filesystem::path resolved = std::filesystem::weakly_canonical(path, ec);
+    if (ec) return false;
+    const std::filesystem::path root = std::filesystem::weakly_canonical(g_image_root, ec);
+    if (ec) return false;
+
+    auto r = root.begin();
+    auto p = resolved.begin();
+    for (; r != root.end(); ++r, ++p) {
+        if (p == resolved.end() || *p != *r) return false;
+    }
+    return true;
+}
+
+// Parses {"image": "..."} and applies --image-root. Returns "" when absent or
+// out of bounds; the rejection reason goes to stderr, since the shared 400
+// ("no image path") deliberately does not tell an unauthenticated caller
+// whether a path exists.
+static std::string extract_image_path(const std::string & body) {
+    const auto pos = body.find("\"image\"");
+    if (pos == std::string::npos) return "";
+    const auto q1 = body.find('"', pos + 7);
+    if (q1 == std::string::npos) return "";
+    const auto q2 = body.find('"', q1 + 1);
+    if (q2 == std::string::npos) return "";
+
+    std::string path = body.substr(q1 + 1, q2 - q1 - 1);
+    if (!image_path_within_root(path)) {
+        fprintf(stderr, "crispembed-server: rejected image path outside --image-root (%s): %s\n", g_image_root.c_str(),
+                path.c_str());
+        return "";
+    }
+    return path;
+}
+
+// --- Private temp files --------------------------------------------------
+//
+// Uploaded pages were written to a guessable /tmp path (pid + counter) with
+// fopen("wb"), which follows symlinks and leaves the file world-readable
+// under a default umask. On a shared host that is both a disclosure of the
+// document being OCR'd and a symlink-race target. mkstemp gives an
+// unpredictable name, O_EXCL creation, and 0600.
+//
+// Returns "" on failure. The caller still owns cleanup.
+static std::string make_private_temp_file(const char * suffix) {
+#ifdef _WIN32
+    // Windows temp dirs are per-user; GetTempFileName creates the file
+    // exclusively and hands back a unique name.
+    char dir[MAX_PATH];
+    char path[MAX_PATH];
+    if (!GetTempPathA(sizeof(dir), dir)) return "";
+    if (!GetTempFileNameA(dir, "crsp", 0, path)) return "";
+    std::string out(path);
+    if (suffix && *suffix) {
+        const std::string renamed = out + suffix;
+        if (MoveFileA(out.c_str(), renamed.c_str())) out = renamed;
+    }
+    return out;
+#else
+    const char * base = std::getenv("TMPDIR");
+    std::string tmpl = std::string(base && *base ? base : "/tmp");
+    if (!tmpl.empty() && tmpl.back() == '/') tmpl.pop_back();
+    tmpl += "/crispembed_doc_XXXXXX";
+    if (suffix && *suffix) tmpl += suffix;
+
+    std::vector<char> buf(tmpl.begin(), tmpl.end());
+    buf.push_back('\0');
+
+    const int fd = (suffix && *suffix) ? mkstemps(buf.data(), (int)strlen(suffix)) : mkstemp(buf.data());
+    if (fd < 0) return "";
+    close(fd); // created 0600 and owned by us; reopened by name below
+    return std::string(buf.data());
+#endif
+}
 
 static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {
     if (!path || !rgb || w <= 0 || h <= 0) return false;
@@ -136,6 +241,8 @@ int main(int argc, char ** argv) {
             model_path = argv[++i];
         else if (strcmp(argv[i], "--host") == 0 && i + 1 < argc)
             host = argv[++i];
+        else if (strcmp(argv[i], "--image-root") == 0 && i + 1 < argc)
+            g_image_root = argv[++i];
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
             port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc)
@@ -218,6 +325,12 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
+        fprintf(stderr, "\nRequest sandboxing:\n");
+        fprintf(stderr, "  --image-root DIR  confine every {\"image\": PATH} request to DIR.\n");
+        fprintf(stderr, "                    Endpoints read images by server-side path; without\n");
+        fprintf(stderr, "                    this any reachable client can read any file this\n");
+        fprintf(stderr, "                    process can. Set it whenever the port is not\n");
+        fprintf(stderr, "                    loopback-only.\n");
         fprintf(stderr, "\nFace pipeline:\n");
         fprintf(stderr, "  --det MODEL   face detection model (SCRFD GGUF)\n");
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
@@ -567,8 +680,12 @@ int main(int argc, char ** argv) {
                     "         templates — GDPR Art. 9 special-category data — from any image\n"
                     "         file readable by this process, since /face takes a server-side\n"
                     "         path. Put an authenticating proxy in front of it, or bind\n"
-                    "         127.0.0.1. See POLICY.md §4.\n\n",
-                    host.c_str(), host.c_str(), port);
+                    "         127.0.0.1. See POLICY.md §4.\n"
+                    "%s\n",
+                    host.c_str(), host.c_str(), port,
+                    g_image_root.empty() ? "         --image-root is NOT set, so that is every readable file on\n"
+                                           "         this host. Set it to the one directory images may come from.\n"
+                                         : "");
         }
     }
 
@@ -587,12 +704,7 @@ int main(int argc, char ** argv) {
         float conf = 0.5f;
         int det_size = 0;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         conf = (float)json_extract_number(body, "conf", conf);
         det_size = (int)json_extract_number(body, "det_size", det_size);
 
@@ -637,12 +749,7 @@ int main(int argc, char ** argv) {
         float conf = 0.5f;
         int det_size = 0;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         conf = (float)json_extract_number(body, "conf", conf);
         det_size = (int)json_extract_number(body, "det_size", det_size);
 
@@ -704,12 +811,7 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -767,12 +869,7 @@ int main(int argc, char ** argv) {
         std::string image_path;
         int max_tokens = 256;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         max_tokens = (int)json_extract_number(body, "max_tokens", max_tokens);
 
         if (image_path.empty()) {
@@ -1407,12 +1504,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"no image path\"}", "application/json");
@@ -1473,12 +1565,7 @@ int main(int argc, char ** argv) {
         }
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -1525,12 +1612,7 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         // Parse "image" (string)
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -1593,12 +1675,7 @@ int main(int argc, char ** argv) {
         std::string image_path;
         float threshold = 0.3f;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         threshold = (float)json_extract_number(body, "threshold", threshold);
 
         if (image_path.empty()) {
@@ -1637,12 +1714,7 @@ int main(int argc, char ** argv) {
     svr.Post("/table/parse", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"no image path\"}", "application/json");
@@ -1695,12 +1767,7 @@ int main(int argc, char ** argv) {
         std::string image_path;
         float threshold = 0.6f;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         threshold = (float)json_extract_number(body, "threshold", threshold);
 
         if (image_path.empty()) {
@@ -1868,14 +1935,7 @@ int main(int argc, char ** argv) {
 
         // Parse "image"
         std::string image_path;
-        {
-            auto pos = body.find("\"image\"");
-            if (pos != std::string::npos) {
-                auto q1 = body.find('"', pos + 7);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-            }
-        }
+        { image_path = extract_image_path(body); }
 
         // Parse "labels" array
         std::vector<std::string> labels;
@@ -1927,12 +1987,7 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path;
 
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
 
         if (image_path.empty()) {
             res.status = 400;
@@ -2097,12 +2152,7 @@ int main(int argc, char ** argv) {
     svr.Post("/preprocess/skew", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2128,12 +2178,7 @@ int main(int argc, char ** argv) {
     svr.Post("/preprocess/orientation", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2163,12 +2208,7 @@ int main(int argc, char ** argv) {
     svr.Post("/preprocess/dewarp", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string image_path, output_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         auto opos = body.find("\"output\"");
         if (opos != std::string::npos) {
             auto q1 = body.find('"', opos + 8);
@@ -2230,13 +2270,8 @@ int main(int argc, char ** argv) {
     svr.Post("/preprocess/tps-dewarp", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string image_path, model_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
-        pos = body.find("\"model\"");
+        image_path = extract_image_path(body);
+        auto pos = body.find("\"model\"");
         if (pos != std::string::npos) {
             auto q1 = body.find('"', pos + 7);
             auto q2 = body.find('"', q1 + 1);
@@ -2270,12 +2305,7 @@ int main(int argc, char ** argv) {
     svr.Post("/preprocess/cc-detect", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2407,12 +2437,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2483,12 +2508,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2559,12 +2579,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2634,12 +2649,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2709,12 +2719,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2784,12 +2789,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2859,12 +2859,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2935,12 +2930,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -3008,12 +2998,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -3080,12 +3065,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -3151,12 +3131,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -3231,12 +3206,7 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string image_path;
-        auto pos = body.find("\"image\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) image_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        image_path = extract_image_path(body);
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -3312,7 +3282,6 @@ int main(int argc, char ** argv) {
         if (req.is_multipart_form_data()) {
             // Multipart upload: save each file to temp, collect paths
             auto files = req.files;
-            int page_idx = 0;
             for (auto & [name, file] : files) {
                 if (name == "format") {
                     format = file.content;
@@ -3331,14 +3300,16 @@ int main(int argc, char ** argv) {
                     continue;
                 }
                 // Must be a page image
-                char tmp_path[256];
-                snprintf(tmp_path, sizeof(tmp_path), "/tmp/crispembed_doc_%d_%d.img", (int)getpid(), page_idx++);
-                FILE * f = fopen(tmp_path, "wb");
+                const std::string tmp_path = make_private_temp_file(".img");
+                if (tmp_path.empty()) continue;
+                FILE * f = fopen(tmp_path.c_str(), "wb");
                 if (f) {
                     fwrite(file.content.data(), 1, file.content.size(), f);
                     fclose(f);
                     page_paths.push_back(tmp_path);
                     temp_files.push_back(tmp_path);
+                } else {
+                    std::remove(tmp_path.c_str());
                 }
             }
         } else {
@@ -3374,13 +3345,8 @@ int main(int argc, char ** argv) {
             }
             // Single image shortcut
             if (page_paths.empty()) {
-                auto ipos = body.find("\"image\"");
-                if (ipos != std::string::npos) {
-                    auto q1 = body.find('"', ipos + 7);
-                    auto q2 = body.find('"', q1 + 1);
-                    if (q1 != std::string::npos && q2 != std::string::npos)
-                        page_paths.push_back(body.substr(q1 + 1, q2 - q1 - 1));
-                }
+                const std::string single = extract_image_path(body);
+                if (!single.empty()) page_paths.push_back(single);
             }
         }
 
@@ -3412,12 +3378,14 @@ int main(int argc, char ** argv) {
                 if (angle != 0 && orientation_confidence >= 0.55f) {
                     int rw = 0, rh = 0, rc = 0;
                     unsigned char * rgb = stbi_load(page_source.c_str(), &rw, &rh, &rc, 3);
-                    char rotated_path[256];
-                    snprintf(rotated_path, sizeof(rotated_path), "/tmp/crispembed_doc_rot_%d_%zu.ppm", (int)getpid(),
-                             pi);
-                    if (rgb && write_rotated_ppm(rotated_path, rgb, rw, rh, angle)) {
+                    // Pre-created 0600 and owned by us, so the rewrite below
+                    // cannot be redirected through a planted symlink.
+                    const std::string rotated_path = make_private_temp_file(".ppm");
+                    if (rgb && !rotated_path.empty() && write_rotated_ppm(rotated_path.c_str(), rgb, rw, rh, angle)) {
                         page_source = rotated_path;
                         temp_files.push_back(page_source);
+                    } else if (!rotated_path.empty()) {
+                        std::remove(rotated_path.c_str());
                     }
                     if (rgb) stbi_image_free(rgb);
                 }
