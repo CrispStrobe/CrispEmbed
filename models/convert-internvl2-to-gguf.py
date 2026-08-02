@@ -298,6 +298,16 @@ def main():
     writer.add_bool(f"{ARCH}.use_thumbnail", use_thumbnail)
     writer.add_bool(f"{ARCH}.use_msac", use_msac)
 
+    # Prompt style. InternVL2 checkpoints declare this in config.json as
+    # "template" (internlm2-chat, Hermes-2, phi3-chat, ...); H2OVL declares
+    # "h2ogpt2", whose prompt is <|prompt|>...<|end|><|answer|> and which has no
+    # <|im_start|>/<|im_end|> in its vocab at all. Emitting it makes the runtime
+    # choice explicit instead of inferred.
+    chat_template = raw_config.get("template")
+    if chat_template:
+        writer.add_string(f"{ARCH}.chat_template", str(chat_template))
+        print(f"  chat_template: {chat_template}")
+
     # LLM metadata
     writer.add_uint32(f"{ARCH}.vocab_size", llm_vocab)
     writer.add_uint32(f"{ARCH}.hidden_size", llm_hidden)
@@ -376,6 +386,9 @@ def main():
             print(f"  Tokenizer: {n_vocab} tokens (no scores)")
 
         # <|im_end|> is the generation stop token for InternLM2 chat
+        # <|end|> is h2ogpt2's stop token; the runtime adds it to the stop set.
+        # generation_config may list several (h2ovl: eos_token_id [2, 32009]),
+        # and a missed stop token reads as a runaway decode.
         im_end_candidates = ["<|im_end|>", "[UNUSED_TOKEN_145]"]
         for c in im_end_candidates:
             if c in vocab:
