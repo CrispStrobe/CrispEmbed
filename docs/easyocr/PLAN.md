@@ -374,6 +374,10 @@ recognizer and LayoutLM consumer.
       no fabricated character confidences. The official-word validity gate
       passes, but the decoded-text and calibration gates fail; beam remains a
       diagnostic contract, not an accepted parity path.
+- [x] Codify the diagnostic beam-confidence boundary in the live confidence
+      test: beam runs must expose sequence confidence but no fabricated
+      per-character or word certainty. Official calibration and page-level
+      aggregation remain open.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
       Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
       text, and the official instrumented PSM7 internal crop all match.
