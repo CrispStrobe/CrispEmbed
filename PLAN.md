@@ -218,7 +218,7 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
-| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** optimize the cached Tesseract int-mode LSTM kernel and immutable-weight reuse; preserve the exact seeded-output contract, benchmark warm recognition against official/native baselines, and keep the precision fallback gated until parity holds | **IN PROGRESS** |
+| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** optimize the cached Tesseract int-mode LSTM kernel and immutable-weight reuse; preserve the exact seeded-output contract, benchmark warm recognition against official/native baselines, and keep the precision fallback gated until parity holds | **COMPLETED** |
 
 Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
 Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
@@ -2847,11 +2847,21 @@ the pattern first.
   is truncated and was excluded. Per-language diff and decoded-output gates are
   still required before promotion to canonical names.
 
-- **Tesseract int-mode kernel optimization — IN PROGRESS.** Cache each LSTM
+- **Tesseract int-mode kernel optimization — COMPLETED.** Cache each LSTM
   gate's int8 weights, bias quantization, and scale at model load, then
   quantize each input/hidden vector once per timestep. The prior implementation
   recomputed scales and rounded every weight inside every gate dot product.
   Benchmark and decoded-output parity must pass before promotion.
+
+- **Tesseract int-mode kernel optimization (2026-08-02).** Packed each cached
+  gate row as `[W_ih | W_hh]` and each timestep activation as `[input | hidden]`,
+  reducing the hot path to one contiguous int8 accumulation per gate while
+  preserving the existing quantization, LUT, and fallback semantics. On the
+  seeded English Q8 model and `scan_strip.png`, three CLI runs decoded `S` in
+  both modes: cached LSTM `24.2/16.3/18.9 ms`, uncached `896.3/443.5/233.7
+  ms`. The output contract is unchanged; the packed cache remains the default
+  and `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1` remains the diagnostic
+  fallback.
 
 - **Tesseract composed-recoder output — IN PROGRESS.** The Chinese seeded F32
   reference passes all tensor stages but exposed native dropping of unmapped
