@@ -83,11 +83,16 @@
       but do not yet provide native/reference timing ratios. Any slower native
       stage and any worse text/box/ordering output must be recorded as a
       separate optimization or quality TODO before those lanes are accepted.
-- [ ] Consolidate the existing repeated CRAFT/DBNet warm-graph probes into
+- [x] Consolidate the existing repeated CRAFT/DBNet warm-graph probes into
       `crispembed.easyocr.detector-benchmark.v1` JSON with explicit commands,
       device-independent timing ratios, and box-count quality status. The
       manifest must not be interpreted as page-text parity or an apples-to-
-      apples CPU/Metal speed claim.
+      apples CPU/Metal speed claim. The live `scan_strip.png` manifest reports
+      CRAFT native/reference `29,511.835/11,480.765 ms` (`2.57x`) with 106
+      boxes on both sides, and DBNet `44,647.873/16,153.006 ms` (`2.76x`) with
+      98 native boxes; the DBNet timing reference intentionally has no box
+      count, so its quality field is `unknown`. These are resource-sensitive
+      CPU/Metal-versus-CPU directional ratios, not acceptance claims.
 - [x] Add the repeated CRAFT inference benchmark. On the fresh
       `scan_strip.png` reference input, 10 warm runs produced 106 boxes in
       both implementations: Miniconda PyTorch CPU averaged `396.027 ms`,
