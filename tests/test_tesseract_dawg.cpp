@@ -36,6 +36,13 @@ int main() {
         tesseract_dawg_free(ctx);
         return 1;
     }
+    if (tesseract_dawg_context_state(ctx, one, 1) != TESSERACT_DAWG_LEGAL_PREFIX ||
+        tesseract_dawg_context_state(ctx, word, 2) != TESSERACT_DAWG_COMPLETE_WORD ||
+        tesseract_dawg_context_state(ctx, two, 1) != TESSERACT_DAWG_INVALID_PREFIX) {
+        std::fprintf(stderr, "DAWG tri-state lookup failed\n");
+        tesseract_dawg_free(ctx);
+        return 1;
+    }
     tesseract_dawg_free(ctx);
     if (tesseract_dawg_validate_base64("K===", error, sizeof(error)) ||
         tesseract_dawg_validate_base64("KgADAAAAAgAAACUAAAAAAAAAFgAAAAAAAAA=A", error, sizeof(error))) {

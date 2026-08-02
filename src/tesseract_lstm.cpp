@@ -1198,6 +1198,14 @@ int tesseract_lstm_dawg_has_prefix(const tesseract_lstm_context * ctx, const cha
     return it == ctx->dawg_contexts.end() ? 0 : tesseract_dawg_context_has_prefix(it->second, ids, count);
 }
 
+int tesseract_lstm_dawg_state(const tesseract_lstm_context * ctx, const char * component, const int * ids,
+                              size_t count) {
+    if (!ctx || !component) return TESSERACT_DAWG_INVALID_PREFIX;
+    const auto it = ctx->dawg_contexts.find(component);
+    return it == ctx->dawg_contexts.end() ? TESSERACT_DAWG_INVALID_PREFIX
+                                          : tesseract_dawg_context_state(it->second, ids, count);
+}
+
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx) {
     return ctx ? ctx->vgsl_spec.c_str() : "";
 }

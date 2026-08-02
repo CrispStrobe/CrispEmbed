@@ -80,7 +80,7 @@ struct tesseract_dawg_context {
     int next_start = 0;
 };
 
-static int context_lookup(const tesseract_dawg_context * ctx, const int * ids, size_t count, bool require_word_end) {
+static int context_lookup(const tesseract_dawg_context * ctx, const int * ids, size_t count) {
     if (!ctx || !ids || count == 0) return 0;
     uint32_t node = 0;
     for (size_t pos = 0; pos < count; ++pos) {
@@ -98,7 +98,8 @@ static int context_lookup(const tesseract_dawg_context * ctx, const int * ids, s
         }
         if (!found) return 0;
         node = (uint32_t)((selected & ctx->next_mask) >> ctx->next_start);
-        if (pos + 1 == count) return !require_word_end || (selected & ctx->word_end) != 0;
+        if (pos + 1 == count)
+            return (selected & ctx->word_end) != 0 ? TESSERACT_DAWG_COMPLETE_WORD : TESSERACT_DAWG_LEGAL_PREFIX;
     }
     return 0;
 }
@@ -127,11 +128,15 @@ extern "C" void tesseract_dawg_free(tesseract_dawg_context * ctx) {
 }
 
 extern "C" int tesseract_dawg_context_contains(const tesseract_dawg_context * ctx, const int * ids, size_t count) {
-    return context_lookup(ctx, ids, count, true);
+    return context_lookup(ctx, ids, count) == TESSERACT_DAWG_COMPLETE_WORD;
 }
 
 extern "C" int tesseract_dawg_context_has_prefix(const tesseract_dawg_context * ctx, const int * ids, size_t count) {
-    return context_lookup(ctx, ids, count, false);
+    return context_lookup(ctx, ids, count) != TESSERACT_DAWG_INVALID_PREFIX;
+}
+
+extern "C" int tesseract_dawg_context_state(const tesseract_dawg_context * ctx, const int * ids, size_t count) {
+    return context_lookup(ctx, ids, count);
 }
 
 extern "C" int tesseract_dawg_validate_base64(const char * payload, char * error, size_t error_size) {
