@@ -45,11 +45,17 @@ struct detect_options {
     int max_side = 2000;
     // Cap on how far the short-side target may *enlarge* the source. The
     // upstream DBNet/PaddleOCR convention (limit_type="max") only ever shrinks;
-    // resizing a small page up to short-side 736 can cost >10x the pixels for
-    // detail that was never in the scan. 0 keeps the historical uncapped
-    // behaviour; the CRISPEMBED_OCR_DET_MAX_UPSCALE env var overrides it so the
-    // two can be A/B'd without a rebuild.
-    float max_upscale = 0.0f;
+    // resizing a page that already resolves its text up to short-side 736 can
+    // cost >10x the pixels for detail the scan never contained, and measurably
+    // *hurts* accuracy as well as speed. 0 disables the cap;
+    // CRISPEMBED_OCR_DET_MAX_UPSCALE overrides it without a rebuild.
+    float max_upscale = 1.0f;
+    // ...but a genuine thumbnail still needs the enlargement to be detectable
+    // at all: a 200x102 crop drops from one region to zero when capped. So the
+    // cap only applies once the short side is already at least this many
+    // pixels. Below it the old uncapped behaviour is kept.
+    // CRISPEMBED_OCR_DET_UPSCALE_FLOOR overrides it.
+    int upscale_floor = 160;
     int min_height = 30;
     float width_height_ratio = 8.0f;
     int max_candidates = 1000;
