@@ -22,7 +22,7 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** preserve unmapped Tesseract recoder classes as explicit `<class>` diagnostics instead of silently dropping or exposing numeric class labels; keep full composed-script parity open | **COMPLETED** |
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** preserve valid composed recoder segments around unmapped classes with a diagnostic partial composer; leave the default decoder and full composed-script parity gate unchanged | **COMPLETED** |
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** consolidate repeated CRAFT/DBNet warm-graph probes into a versioned JSON manifest with explicit reference/native timing ratios and box-count quality status; keep device mismatch and page-text parity visible. Live scan-strip manifest: CRAFT native/reference `29,511.835/11,480.765 ms` (`2.57x`) with `106=106` boxes; DBNet `44,647.873/16,153.006 ms` (`2.76x`) with native `98` boxes, reference count unavailable in the timing-only probe. | **COMPLETED** |
-| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** produce an independent EasyOCR Python page manifest for `lines` mode and compare ordering, line grouping, crop geometry, decoded text, and confidence against the native DBNet→EasyOCR handoff; keep page parity separate from detector-only timing | **IN PROGRESS** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** produce an independent EasyOCR Python page manifest for `lines` mode and compare ordering, line grouping, crop geometry, decoded text, and confidence against the native DBNet→EasyOCR handoff; keep page parity separate from detector-only timing. Live `scan_strip.png`: Python CRAFT produced 11 lines; native DBNet produced 12. The first mismatch is line 0 (`"They are going to be , encamped near   Brighton"` vs `& They are going to be, encamped near   Brighton`), with geometry `[62,0,412,25]` vs `[46.97,0,423.54,21.76]`; all subsequent records shift, so page quality parity is **not** passed. | **COMPLETED — parity failed; quality TODO** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add a dependency-free EasyOCR interoperability contract test covering Python `lines`/`words` ordering, crop/normalized geometry, and LayoutLM `apply_ocr=False` serialization; keep real-page reference parity as the separate live gate. `tests/test_easyocr_interop_contract.py` passes with 3 words, 2 grouped lines, and ordered LayoutLM sidecar metadata | **COMPLETED** |
@@ -46,7 +46,8 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** reduce full-page Metal graph cost by batching same-width line crops or reusing width-keyed graph residency across the detector→crop→recognizer loop; compare full-route text and stage timings against the CPU-accepted baseline. Before batching, added a safe per-page graph budget: with 33 detected regions the explicit graph request now selects CPU fallback and completes instead of timing out; measured German CC0 route `38.55 s`, 33/33 results, 1,146 chars, with recognize `32.65 s`. | **COMPLETED — safe fallback; batching still required for speed** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** batch same-width PP-OCRv6 line crops in the full route, preserving original order and per-line dynamic widths; compare batched CPU/Metal logits and decoded text against the current scalar fallback. Added native width-distribution telemetry and JSON capture. The current orchestrator still calls the recognizer one crop at a time; a German 33-region live run remained over the 180 s graph-debug guard, so no batching claim is made and graph acceptance stays budgeted/diagnostic-only | **COMPLETED — instrumentation and safety decision; no batch API yet** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** add a real PP-OCRv6 recognizer batch API grouped by identical dynamic model width, retain original result ordering, and require CPU-vs-Metal per-stage logits plus decoded-text parity before enabling it in the full route. Added the C ABI batch contract and wired the detector→crop→orientation→recognizer route through it. Live small-rec two-crop contract (fox + receipt) completed both items with byte-identical scalar/batch text; CPU sample was scalar `9.564 s`, grouped batch `6.070 s` (`1.58x`, warm-cache/small-sample evidence only) | **COMPLETED — safe grouped API; fused graph still required** |
-| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** implement fused GGML batch dimensions for same-width PP-OCRv6 crops, with bounded batch size, per-item error isolation, CPU/Metal logits cosine gates, and full-route German CC0 benchmark comparison. Do not promote Metal until grouped and scalar decoded text are identical and the batch path is measurably faster across repeated runs | **IN PROGRESS** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** implement fused GGML batch dimensions for same-width PP-OCRv6 crops, with bounded batch size, per-item error isolation, CPU/Metal logits cosine gates, and full-route German CC0 benchmark comparison. Added a bounded batch dimension to the tiny logits graph and kept it behind `CRISPEMBED_PPOCRV6_BATCH_GRAPH`; CPU batch smoke completes 2/2 with scalar/batch text parity (`52.5 ms` scalar, `35.1 ms` batch). Metal exposed a GGML pooling shape assertion in the fourth-dimension path, so Metal is explicitly forced back to the grouped scalar path and no GPU promotion is claimed | **COMPLETED — CPU fused proof; Metal blocked safely** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** make fused batching Metal-safe by preserving per-item spatial dimensions through pooling/reshape and adding CPU-vs-Metal logits cosine checks; then extend the fused path to large-stem SVTR only after the tiny lane is stable. Re-run repeated German CC0 route timings and quality comparisons before enabling any production batch-graph flag | **IN PROGRESS** |
 | 2026-08-02 | `chore/ai-act-audit-fixes` / `.codex/worktrees/chore-ai-act-audit-fixes` | **Picked:** fourth AI Act audit, run against `main` at `52172c10`. Re-verified the code-backed claims and this time **executed** the gate against real GGUFs (yunet + sface pulled from `cstr/*`) rather than trusting that the test exists: all 8 prior cases pass, including the renamed-model case. Also verified the registry is clean of emotion/age/gender/ethnicity models (555 entries), that no training code exists (so §7's "quantization only" argument holds), and — since Reg (EU) 2026/1744 postdates the assistant's knowledge cutoff — checked POLICY's whole date table against the EUR-Lex text: **accurate**, including 2 Dec 2026 for the new Art. 5(1)(ba)/(bb) NCII/CSAM prohibitions. Three gaps found and closed here: (1) `--dim` returned *before* the gate on both CLI paths that reach it, making the CLI laxer than `crispembed_face_init()` — all three CLI sites now share one `cnn_biometric_ok()` helper keyed on declared type (which defaults to `recognition`, so it fails closed), and the gate test grew 3 cases; (2) POLICY §4 claimed "both gates key off declared type" while the `--face-pipeline` gate was unconditional-before-load — that path is now type-keyed too, so the sentence is true as written; (3) neither POLICY nor README told deployers that the server acknowledgement is **once per process** with **no authentication** and server-side-path input — documented in both, plus a startup warning when a recognition model is loaded on a non-loopback bind. Touches `examples/cli/main.cpp`, `examples/server/server.cpp`, `tests/test_biometric_gate.py`, POLICY/README/PLAN — **no OCR/model/graph code**. Gap (1) was mis-placed from the start, not a regression: `git log -L` shows the gate was added *below* the pre-existing `--dim` early-return in `6d87d6bd`. Verified before/after with the same toolchain — a CLI built from `HEAD:examples/cli/main.cpp` prints `128` (sface's template width) unacknowledged on **both** paths; the patched CLI refuses both. Gate test now 11/11 with real yunet+sface GGUFs, server warning fires on `--host 0.0.0.0` and stays silent on loopback, `--face-pipeline` still refuses without ack and runs with it, text embed + `--dim` unaffected, `format.sh --check` and `check_registry_licenses.py` clean | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
@@ -370,32 +371,37 @@ so quoting our per-invocation CLI against them would flatter or damn us
 arbitrarily — that is exactly the `proc_ms`/`engine_ms` asymmetry the harness
 refuses to collapse into one column.
 
-**Remaining speed work — (a) is now clearly the biggest.**
+**Remaining speed work.**
 
-**(a) One Metal backend per engine, and Metal init blocks.** Every engine calls
-`crispasr_init_gpu_backend()`, which does a fresh `ggml_backend_dev_init`, so a
-pipeline pays the init once per engine — twice in the EasyOCR lane (DBNet
-detector + EasyOCR recognizer). Adding the load/compute split to that stage
-shows how bad it gets: `load=36041 ms` and `load=87090 ms` on two consecutive
-runs of the same command, against `detect+recognize` of ~5 s — while the whole
-process consumed only **2.8 s user + 1.2 s sys**. The load phase is therefore
-almost entirely *blocking wait*, not computation, and it explodes under system
-contention rather than degrading smoothly. On a quiet box the whole lane is
-2.06 s, so this is ~1.5 s quiet and tens of seconds loaded.
+**The "shared GPU backend" item was wrong and is withdrawn.** It assumed a
+pipeline initialises Metal once per engine. Counting the actual inits after the
+detector fixes: **tesseract lane 0, EasyOCR 1, PP-OCRv6 1**. DBNet already
+defaults to CPU (Metal conv is slower for it — `OCR_DETECT_USE_GPU` is opt-in),
+and the two detector loaders now use the CPU backend, so no lane duplicates the
+init. A refcounted shared backend would be speculative machinery for a problem
+that no longer occurs; the plumbing was written, measured against reality, and
+reverted. The cost is a *single* Metal init, not duplication.
 
-That makes a **refcounted shared backend** the top item: hand every engine the
-same `ggml_backend_t` and init Metal once per process. The hazard to design
-around is ownership — each engine currently calls `ggml_backend_free` on its
-own backend, so a naive singleton would be freed out from under its peers, and
-`ggml_backend_sched` also assumes distinct backend instances in places. It
-wants `crispasr_acquire/release_shared_gpu_backend()` with a refcount, then a
-sweep of every engine's free path. Not attempted here because it touches every
-engine and deserves its own change.
+**And that single init earns its keep** — checked rather than assumed, since the
+tesseract lane's whole 12.5x came from deleting a Metal init. Median-of-3
+CPU-seconds, control 0.35-0.39 s:
 
-**(b)** PP-OCRv6's CPU detector is scalar convolution and is now that lane's
-dominant compute; its graph stays diagnostic-only on box-geometry parity, which
-is the blocker to close. **(c)** The DBNet detector costs ~400 ms on a capped
-572x188 page against `tesseract-cli`'s 0.15 s for the whole job.
+| lane | with Metal | forced CPU |
+|---|--:|--:|
+| EasyOCR recognizer | **3.65** | 6.43 |
+| PP-OCRv6 recognizer | **3.25** | 3.75 |
+
+So both defaults stay. The same run re-confirms the graph promotion from the
+CPU-scalar reference: PP-OCRv6 **3.25 with the graph versus 5.50 with
+`NO_GRAPH`**, a 1.7x that matches the 1.9x wall-clock figure measured earlier.
+
+**What is actually left.** (a) PP-OCRv6's detector is CPU scalar convolution and
+is now that lane's dominant compute; its graph stays diagnostic-only on
+box-geometry parity, so closing that parity is the unlock. (b) DBNet costs
+~400 ms on a capped 572x188 page against `tesseract-cli`'s 0.135 s for the whole
+job — it is CPU-by-choice, so the win there is kernel work, not backend
+selection. (c) EasyOCR's remaining ~3.65 CPU-s is unprofiled below the
+load/compute split.
 
 **Measure with CPU time on this box.** `user+sys` stayed within 12% across runs
 where wall clock swung 10x, and an early cross-run wall comparison of the
@@ -732,10 +738,19 @@ model-free test passes both line and word policies.
 
 The native `test-easyocr-pipeline` can emit the same manifest schema, and
 `tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
-The serializer self-check passes on the 98-word DBNet page run; an independent
-Python detector/recognizer page manifest is still required before parity is
-claimed. The current local Python environment lacks torch, numpy, and cv2, so
-that reference run remains an explicit external/dependency gate.
+The Miniconda runner `tools/run_easyocr_reference_page.py` now produces an
+independent Python CRAFT+English Gen-2 `readtext(detail=1)` manifest. On
+`scan_strip.png`, Python produced 11 lines while native DBNet→CRNN produced
+12. The first mismatch is line 0 (`"They are going to be , encamped near
+Brighton"` versus `& They are going to be, encamped near   Brighton`), with
+geometry `[62,0,412,25]` versus `[46.97,0,423.54,21.76]`; the rest therefore
+cannot be zipped as equivalent lines. Python recognition confidence was
+`0.8541` versus native `0.4472` on that first record. Detector confidence is
+explicitly unavailable from EasyOCR's public tuple and is not fabricated;
+the comparator has `--ignore-detector-confidence` for this case. The manifests
+are backed up under `/Volumes/backups/ai/crispembed-gguf/`. Page text/geometry
+parity is failed and remains a quality TODO; this is evidence, not a claim
+that either detector is universally better.
 
 The detector-independent production handoff is now explicit: `run_regions`
 accepts caller-supplied detector boxes and applies the configured lines/words
@@ -857,8 +872,11 @@ downstream handoff parity, not detector-box similarity alone.
       `easyocr_pipeline::run_regions` now accepts detector-independent boxes and
       applies the selected `lines`/`words` policy through the production crop /
       recognizer path; the pipeline test exercises the injected-geometry handoff.
-- [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
-      page fixture with a Python reference manifest.
+- [x] Validate `lines` against EasyOCR grouping and decoded line text on a
+      page fixture with a Python reference manifest. The live comparison is
+      intentionally failed: Python CRAFT yields 11 lines, native DBNet yields
+      12, and the first text/geometry/confidence mismatch is recorded above;
+      detector/order/crop quality parity remains open.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
       confidence, pixel boxes, and normalized LayoutLM boxes.
 - [x] Add native handoff invariants for word-mode line/x ordering and
