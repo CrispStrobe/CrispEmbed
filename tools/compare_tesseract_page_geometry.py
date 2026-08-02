@@ -69,7 +69,8 @@ def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None =
 
 
 def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, projection: bool,
-                 component: bool, baseline: bool, timeout_seconds: float = 900) -> tuple[list[tuple[float, float, float, float]], dict | None]:
+                 component: bool, baseline: bool, row_blob_bounds: bool,
+                 timeout_seconds: float = 900) -> tuple[list[tuple[float, float, float, float]], dict | None]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
     env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
@@ -84,6 +85,7 @@ def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, proje
         "CRISPEMBED_TESSERACT_DAWG_LOAD",
         "CRISPEMBED_TESSERACT_DAWG_SCORE",
         "CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE",
+        "CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS",
     ):
         env.pop(key, None)
     if projection:
@@ -92,6 +94,8 @@ def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, proje
         env["CRISPEMBED_TESSERACT_COMPONENT_PAGESEG"] = "1"
     if baseline:
         env["CRISPEMBED_TESSERACT_COMPONENT_BASELINE"] = "1"
+    if row_blob_bounds:
+        env["CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS"] = "1"
     proc = run(
         [
             str(cli),
@@ -259,6 +263,8 @@ def main() -> int:
     policy.add_argument("--projection", action="store_true", help="use the experimental projection splitter")
     policy.add_argument("--component", action="store_true", help="use the experimental component prototype")
     policy.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
+    parser.add_argument("--row-blob-bounds", action="store_true",
+                        help="keep each component row crop within its assigned blob bounds")
     parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
     parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
     parser.add_argument("--min-matched-iou", type=float,
@@ -281,7 +287,8 @@ def main() -> int:
     official_elapsed_ms = (time.perf_counter() - official_started) * 1000.0
     native_started = time.perf_counter()
     native, native_stage_benchmark = native_lines(args.cli, args.det_model, args.rec_model, args.image,
-                                                  args.projection, args.component, args.baseline, args.timeout)
+                                                  args.projection, args.component, args.baseline, args.row_blob_bounds,
+                                                  args.timeout)
     native_elapsed_ms = (time.perf_counter() - native_started) * 1000.0
     comparison = compare(reference, native)
     checks = {}
@@ -321,6 +328,7 @@ def main() -> int:
         "projection": args.projection,
         "component": args.component,
         "baseline": args.baseline,
+        "row_blob_bounds": args.row_blob_bounds,
         "comparison": comparison,
         "acceptance": {"passed": all(checks.values()) if checks else None, "checks": checks},
     }
