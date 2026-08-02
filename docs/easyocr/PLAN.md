@@ -510,6 +510,9 @@ recognizer and LayoutLM consumer.
 - [x] Add a reusable parsed-DAWG context for repeated exact/prefix lookups.
       It caches the decoded edge array and masks, avoiding repeated base64
       parsing per future beam hypothesis; it remains diagnostic-only.
+- [x] Cache one parsed DAWG context per model component during native Tesseract
+      GGUF load and release them with the recognizer context. This wires the
+      reusable infrastructure into the model lifetime without enabling scores.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
