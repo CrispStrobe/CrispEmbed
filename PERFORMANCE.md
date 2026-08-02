@@ -1845,3 +1845,54 @@ what exposed it, not the green result. `fc2.weight` now carries small non-zero
 random values so the conv stack actually reaches the output. A test that cannot
 see the defect is not a test, and a passing new guard should be distrusted until
 it has been observed failing.
+
+
+## h2ovl-mississippi-2b — the degenerate output is NOT a graph bug (2026-08-02)
+
+Two Kaggle runs under the full harness regime settled where this model actually
+breaks. Recorded because the three standing suspects in PLAN were all
+graph-level, and the evidence rules the graph out.
+
+**`chr1str/h2ovl-2b-convert` failed on purpose.** Its decoded-output gate fired —
+`rc=0` but **29 characters for a full page** — and it exited rather than publish.
+No repo was created. A conversion that produces a loadable, structurally valid
+GGUF (565 tensors, `use_msac` preserved, no missing LLM matrices) is not a
+cleared model, and this is the gate doing its job.
+
+**MSAC is eliminated as the cause.** The same run logs
+`internvl2_ocr: MSAC two-scale tiling` and `606x1000 → 19 tiles (3x2 grid,
+448px)`, so the two-scale tiling added in `45dfc704` demonstrably runs — and the
+output is still degenerate. That was one of the three recorded suspects.
+
+**`chr1str/h2ovl-2b-parity` then baked the reference and ran the diff:**
+
+| stage set | result |
+|---|--:|
+| f16 vs `-ref.gguf`, **27 stages** | **cos_min `0.999972`** |
+
+So vision encoder, projector, `llm_embed` and the first LLM decoder layers all
+reproduce the Python blueprint to ~1e-5. **Scope, stated precisely so this is not
+over-read:** the harness runs a synthetic gradient image and a 5-token synthetic
+sequence with `--max-llm-layers 4`. It therefore does NOT cover the full 24-layer
+stack, the real prompt tokens, sliding-window attention (never engages at T=5),
+sampling, EOS handling, or detokenisation.
+
+Within that scope the ported compute is correct, which relocates the bug to the
+harness-blind zone (dev guide HARD RULE #3b) and matches the recorded rule
+*"cos=1.0 but greedy diverges ⇒ the bug is the sampling loop, not the graph"*.
+Remaining suspects, reordered by this evidence:
+
+1. the Danube-1.8B chat/prompt template (most likely — it is the one thing the
+   diff harness cannot see and the one thing H2OVL changes vs InternVL2)
+2. EOS / stop-token id
+3. the greedy/sampling loop and detokenisation
+
+Dropped: Mistral sliding-window attention and the 32H/8KV GQA ratio — the
+attention math is inside those 27 passing stages.
+
+Artifacts: the reference is checkpointed unconditionally (it costs a full run to
+produce) at **`cstr/crispembed-regression-fixtures`**, path
+`internvl2/h2ovl-mississippi-2b/ref.gguf` (107 MB) — a new fixtures dataset
+mirroring CrispASR's convention. Model artifacts stay unpublished: f16 4421 MB,
+q8_0 2186 MB, q4_k 1391 MB all exist in-kernel but none may ship until the
+decoded-output gate passes.
