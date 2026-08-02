@@ -97,7 +97,73 @@ struct DequantCache {
 // ---------------------------------------------------------------------------
 // Used by linear_cpu and mha_1q_cpu. AVX2+FMA (x86-64), NEON (ARM), scalar fallback.
 
+// Opt-in wider accumulator count for dot_product: CRISPEMBED_DOT_WIDE=1.
+//
+// Why this exists. Profiling the PP-OCRv6 scalar detector on both machines
+// showed the SAME generic conv2d_cpu running its 1x1 layers at ~1.2 GF/s on an
+// M1 and 5.8-10.8 GF/s on a Xeon Skylake -- a 5-8x gap from identical C++. The
+// arithmetic below explains it. dot_product keeps two accumulators, so it has
+// two loop-carried FMA dependency chains. On the M1 an FP FMA has ~4-cycle
+// latency against 4 NEON pipes, so two chains can retire 2 FMAs per 4 cycles,
+// about 0.5/cycle against a ~4/cycle peak -- an ~8x shortfall that matches the
+// measured gap. The AVX2 arm has the same chain depth but each FMA is twice as
+// wide, so it loses proportionally less.
+//
+// The fix is more INDEPENDENT accumulators, not wider ones: four chains give
+// the scheduler enough to cover the latency. This changes the summation order,
+// so it is numerically different from the two-accumulator form (both are
+// equally "correct" -- neither is the exact real sum) and therefore gated.
+//
+// Declared as a C++17 inline variable rather than a function-local static on
+// purpose: a function-local static with a non-constant initialiser needs a
+// guard-variable check on every call, and this function is called millions of
+// times per page. This is initialised once before main and reads as a plain
+// load, so the branch is perfectly predicted.
+inline const bool g_dot_wide = std::getenv("CRISPEMBED_DOT_WIDE") != nullptr;
+
+static inline float dot_product_wide(const float * a, const float * b, int n) {
+    float s = 0.0f;
+    int i = 0;
+#if defined(__AVX2__) && defined(__FMA__)
+    __m256 a0 = _mm256_setzero_ps(), a1 = _mm256_setzero_ps();
+    __m256 a2 = _mm256_setzero_ps(), a3 = _mm256_setzero_ps();
+    for (; i + 31 < n; i += 32) {
+        a0 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i + 0), _mm256_loadu_ps(b + i + 0), a0);
+        a1 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i + 8), _mm256_loadu_ps(b + i + 8), a1);
+        a2 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i + 16), _mm256_loadu_ps(b + i + 16), a2);
+        a3 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i + 24), _mm256_loadu_ps(b + i + 24), a3);
+    }
+    a0 = _mm256_add_ps(a0, a1);
+    a2 = _mm256_add_ps(a2, a3);
+    a0 = _mm256_add_ps(a0, a2);
+    for (; i + 7 < n; i += 8) a0 = _mm256_fmadd_ps(_mm256_loadu_ps(a + i), _mm256_loadu_ps(b + i), a0);
+    __m128 lo = _mm256_castps256_ps128(a0);
+    __m128 hi = _mm256_extractf128_ps(a0, 1);
+    lo = _mm_add_ps(lo, hi);
+    lo = _mm_add_ps(lo, _mm_movehl_ps(lo, lo));
+    lo = _mm_add_ss(lo, _mm_shuffle_ps(lo, lo, 1));
+    s = _mm_cvtss_f32(lo);
+#elif defined(__aarch64__)
+    float32x4_t a0 = vdupq_n_f32(0.0f), a1 = vdupq_n_f32(0.0f);
+    float32x4_t a2 = vdupq_n_f32(0.0f), a3 = vdupq_n_f32(0.0f);
+    for (; i + 15 < n; i += 16) {
+        a0 = vfmaq_f32(a0, vld1q_f32(a + i + 0), vld1q_f32(b + i + 0));
+        a1 = vfmaq_f32(a1, vld1q_f32(a + i + 4), vld1q_f32(b + i + 4));
+        a2 = vfmaq_f32(a2, vld1q_f32(a + i + 8), vld1q_f32(b + i + 8));
+        a3 = vfmaq_f32(a3, vld1q_f32(a + i + 12), vld1q_f32(b + i + 12));
+    }
+    a0 = vaddq_f32(a0, a1);
+    a2 = vaddq_f32(a2, a3);
+    a0 = vaddq_f32(a0, a2);
+    for (; i + 3 < n; i += 4) a0 = vfmaq_f32(a0, vld1q_f32(a + i), vld1q_f32(b + i));
+    s = vaddvq_f32(a0);
+#endif
+    for (; i < n; i++) s += a[i] * b[i];
+    return s;
+}
+
 static inline float dot_product(const float * a, const float * b, int n) {
+    if (g_dot_wide) return dot_product_wide(a, b, n);
     float s = 0.0f;
 #if defined(__AVX2__) && defined(__FMA__)
     __m256 acc0 = _mm256_setzero_ps();

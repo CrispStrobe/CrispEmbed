@@ -171,6 +171,27 @@ struct tokenizer {
     int image_token_id = 0;
     int newline_id = -1; // '\n' token
 
+    // H2OVL declares template "h2ogpt2", not InternVL2's ChatML: the prompt is
+    // <|prompt|>{text}<|end|><|answer|> and the stop set is {2, 32009}. Its
+    // vocab contains no <|im_start|>/<|im_end|> at all, so the ChatML builder
+    // silently dropped every role marker (add_special(-1) is a no-op) and fed
+    // the model an unmarked prompt it was never trained on — which is what
+    // produced 29 characters for a full page while all 27 diff stages passed
+    // at cos_min 0.999972. See PERFORMANCE.md.
+    bool h2ogpt2 = false;          // prompt style, not a model family
+    int img_start_id = -1;         // <img>
+    int img_end_id = -1;           // </img>
+    int end_marker_id = -1;        // <|end|>
+    std::vector<int32_t> stop_ids; // every id that terminates generation
+
+    // True if `id` terminates generation. Checking a set rather than a single
+    // eos_id matters: h2ovl declares two ([2, 32009]).
+    bool is_stop(int id) const {
+        for (int s : stop_ids)
+            if (s == id) return true;
+        return false;
+    }
+
     // Build reverse map (call after loading vocab)
     void build_reverse_map();
 
