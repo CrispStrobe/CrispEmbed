@@ -90,10 +90,22 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
     std::vector<size_t> visit(ordered.size());
     for (size_t i = 0; i < visit.size(); ++i) visit[i] = i;
     if (std::getenv("EASYOCR_WIDTH_SORT") != nullptr) {
+        // The sort key must use the SAME crop geometry the loop below will use,
+        // or it orders by widths that are never requested and the grouping
+        // under-delivers. This previously hardcoded the 2-pixel detector margin
+        // while the loop applies it only when add_detector_crop_margin is set,
+        // so on the external-geometry path (Python EasyOCR / Tesseract /
+        // LayoutLM boxes, pad 0) the ordering was computed from the wrong
+        // widths. Measured on commons_test_ocr_document.jpg via
+        // CRISPEMBED_EASYOCR_STAGE_BENCH=1: 27 regions over 14 distinct canvas
+        // widths, and the mismatched key left 19 graph rebuilds instead of 14.
+        const int pad = add_detector_crop_margin ? 2 : 0;
         std::vector<int> canvas(ordered.size(), 0);
         for (size_t i = 0; i < ordered.size(); ++i) {
-            const int cw = std::min(width - std::max(0, (int)ordered[i].x - 2), (int)ordered[i].w + 4);
-            const int ch = std::min(height - std::max(0, (int)ordered[i].y - 2), (int)ordered[i].h + 4);
+            const int x = std::max(0, (int)ordered[i].x - pad);
+            const int y = std::max(0, (int)ordered[i].y - pad);
+            const int cw = std::min(width - x, (int)ordered[i].w + 2 * pad);
+            const int ch = std::min(height - y, (int)ordered[i].h + 2 * pad);
             canvas[i] = (cw > 0 && ch > 0) ? easyocr_postprocess::recognizer_canvas_width(cw, ch) : 0;
         }
         std::stable_sort(visit.begin(), visit.end(), [&canvas](size_t a, size_t b) { return canvas[a] < canvas[b]; });

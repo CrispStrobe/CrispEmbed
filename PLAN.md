@@ -54,6 +54,7 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** make fused batching Metal-safe by preserving per-item spatial dimensions through pooling/reshape and adding CPU-vs-Metal logits cosine checks; then extend the fused path to large-stem SVTR only after the tiny lane is stable. Added an explicit Metal capability gate and fallback telemetry. German CC0 full route remains complete and text-bearing (`33/33`, `1,146` chars); current run was `68.75 s` total (`46.45 s` recognition), with `22` unique dynamic widths, so no same-width page batch gain is claimed | **COMPLETED — safe gate and baseline; shape rework remains** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-02 | `feat/ocr-followups` / `.claude/worktrees/feat-ocr-followups` | **Picked:** the orphaned AdaIR F16 TODO from `feat/tesseract-kernel-opt` (that branch merged into `main` at `ee099eb0` and is gone; the item was left `IN PROGRESS`). Root cause identified before any edit: `tools/quantize.cpp` (~line 167) flattens every 4-D F32 conv weight to 2-D `[IC*KH*KW, OC]` in the output header, and `src/adair.cpp` infers three hidden dims from `->ne[3]`, which is `1` on a flattened tensor. Confirmed against the artifacts — `net.decoder_level1.0.ffn.project_in.weight` is `[1,1,96,510]` in `adair-5d-f32.gguf` and `[96,510]` in both `adair-5d-f16.gguf` and the rebuild. `hidden=1` ⇒ `half = hidden/2 = 0` ⇒ a conv with `ic=0` ⇒ the zero-size kernel descriptor the earlier audit saw. **No OCR/perf overlap — does not touch H1–H8 or any paused codex branch.** **Fixed:** `conv1x1_out_channels()` derives OC from `ggml_nelements(t)/ic`, correct under both layouts, with fail-loud guards at all three sites; `ADAIR_LEGACY_NE3_DIMS=1` keeps the old read so both arms are in one binary. Measured on `adair-ref.gguf` (64×64), same binary: f32 `cos 0.999382 / max_abs 0.027892` (reproduces the audit exactly ⇒ regression control), `adair-5d-f16.gguf` **`0.999383 / 0.027871`**, and the `adair-5d-f16-rebuilt.gguf` quantizer rebuild the audit also blamed gives the **identical** `0.999383 / 0.027871` — so neither artifact was ever bad. Independent artifact check: 60 sampled tensors f16-vs-f32 worst cosine `0.999998`, worst max_abs `1.22e-4`, i.e. pure F16 rounding. End-to-end through the real CLI (not just the diff harness): a 96×96 restore returns rc=0 on both models with the outputs agreeing at cosine `1.0`, max_abs `1/255`. **No timings claimed** — load average was 55–127 from parallel agents all session and the 64×64 fixture took `312 s` at f32 against a `2.65 s` quiet-box reference. Registry still ships f32 on purpose: repointing needs the f16 uploaded to `cstr/adair-GGUF` + a SHA-256 pin in `model_hashes.h`, which is an outward-facing step left for the owner. Exposure is narrower than "f16": only `tools/quantize.cpp` output flattens — a converter-emitted f16 keeps 4-D shapes (`surya-det-f16.gguf` has 79 genuinely 4-D F16 tensors), so the *producer* predicts the layout, not the precision. Follow-up recorded, not blind-fixed: `src/surya_det.cpp:700` and `src/tps_locnet.cpp:219` read conv OC off `ne[3]` the same way and would misread a quantizer-produced artifact (`src/cnn_embed.cpp:148` is the both-layouts precedent); neither ships one today and neither is verifiable on this box. | **COMPLETED — runtime fixed; f16 upload/registry pending owner** |
+| 2026-08-02 | `feat/ocr-followups` / `.claude/worktrees/feat-ocr-followups` | **Picked:** settle the `ne[3]` conv-output-channel follow-up left by the AdaIR F16 fix instead of leaving it as speculation. `surya-det-f16.gguf` is only 77 MB, so the claim IS testable here: run it through `crispembed-quantize` to produce the flattened layout and A/B surya detection against the converter-made 4-D artifact. Fix `src/surya_det.cpp:700` only if the test actually breaks. **Not** h2ovl-mississippi-2b — that needs ~9–10 GB for source + conversion and both volumes are full (internal 6.7 GB free, backups 7.8 GB), so it is disk-blocked, not skipped. **Result — the two suspects split apart.** (1) The flatten fires only on 4-D **F32**: quantizing `surya-det-f16.gguf` (4-D F16) to q8_0 leaves all 79 4-D tensors intact, so precision alone does not predict exposure — source dtype + producer does. (2) **`src/surya_det.cpp:700` is NOT a bug** — `g_conv` reshapes a 2-D weight to 4-D *before* that read, so my earlier 'same bug class' note was wrong. No change. (3) **`src/tps_locnet.cpp:219` WAS real and is fixed** — it reads `ne[3]` at load with no normalisation and `convert-tps-loc-to-gguf.py` **defaults to F32**, so a quantized tps-loc GGUF hits it; instrumented pre-fix the four layers loaded `ndims=2, channels=1` instead of `16/32/64/128`, and `channels` feeds the fc1 input width and per-layer output channels. Fixed with the `cnn_embed.cpp:148` convention. New hermetic guard in `tests/test_tps_locnet.cpp` (no model file) compares 4-D vs flattened builds of the same fixed-seed weights: worst control-point deviation `0.026871 px` → `0.000000 px`, suite 14/15 → 15/15. **The guard's first version passed against the broken code** — the synthetic `fc2.weight` was all zeros so the output was `fc2.bias` alone and never touched the conv stack; `fc2.weight` now carries small non-zero values. Recorded because a green new guard means nothing until it has been seen to fail. | **COMPLETED** |
 | 2026-08-02 | `chore/ai-act-audit-fixes` / `.codex/worktrees/chore-ai-act-audit-fixes` | **Picked:** fourth AI Act audit, run against `main` at `52172c10`. Re-verified the code-backed claims and this time **executed** the gate against real GGUFs (yunet + sface pulled from `cstr/*`) rather than trusting that the test exists: all 8 prior cases pass, including the renamed-model case. Also verified the registry is clean of emotion/age/gender/ethnicity models (555 entries), that no training code exists (so §7's "quantization only" argument holds), and — since Reg (EU) 2026/1744 postdates the assistant's knowledge cutoff — checked POLICY's whole date table against the EUR-Lex text: **accurate**, including 2 Dec 2026 for the new Art. 5(1)(ba)/(bb) NCII/CSAM prohibitions. Three gaps found and closed here: (1) `--dim` returned *before* the gate on both CLI paths that reach it, making the CLI laxer than `crispembed_face_init()` — all three CLI sites now share one `cnn_biometric_ok()` helper keyed on declared type (which defaults to `recognition`, so it fails closed), and the gate test grew 3 cases; (2) POLICY §4 claimed "both gates key off declared type" while the `--face-pipeline` gate was unconditional-before-load — that path is now type-keyed too, so the sentence is true as written; (3) neither POLICY nor README told deployers that the server acknowledgement is **once per process** with **no authentication** and server-side-path input — documented in both, plus a startup warning when a recognition model is loaded on a non-loopback bind. Touches `examples/cli/main.cpp`, `examples/server/server.cpp`, `tests/test_biometric_gate.py`, POLICY/README/PLAN — **no OCR/model/graph code**. Gap (1) was mis-placed from the start, not a regression: `git log -L` shows the gate was added *below* the pre-existing `--dim` early-return in `6d87d6bd`. Verified before/after with the same toolchain — a CLI built from `HEAD:examples/cli/main.cpp` prints `128` (sface's template width) unacknowledged on **both** paths; the patched CLI refuses both. Gate test now 11/11 with real yunet+sface GGUFs, server warning fires on `--host 0.0.0.0` and stays silent on loopback, `--face-pipeline` still refuses without ack and runs with it, text embed + `--dim` unaffected, `format.sh --check` and `check_registry_licenses.py` clean | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
@@ -963,9 +964,45 @@ actually spends the time lives in the pipeline) into `detect_ms`, `crop_ms`,
 `set_width_ms` and `recognize_ms`, and reports `width_calls` vs `width_changes`.
 That last pair is the point: `easyocr_ocr_set_width` tears down and rebuilds the
 recognizer graph on every width change, so the ratio says directly how much
-`EASYOCR_WIDTH_SORT` could ever be worth on a given page, which is the number
-missing from the 0-3% result recorded for P6. **Someone needs to run this on the
-31-unit document and the 47-region receipt and put the numbers here.**
+`EASYOCR_WIDTH_SORT` could ever be worth on a given page.
+
+**Run on `commons_test_ocr_document.jpg` (289 detector boxes -> 27 grouped
+lines), 2026-08-02.** Absolute ms are contended wall clock on a load-30-plus
+box; read the ratios.
+
+| stage | ms | share |
+|---|--:|--:|
+| detect | 24,778 | ~55% of the lane |
+| recognize loop total | 20,130 | ~45% of the lane |
+| — crop extraction | 41 | 0.2% of the loop |
+| — `set_width` (graph rebuilds) | 4,825 | **24% of the loop** |
+| — recognize | 15,263 | 76% of the loop |
+
+Three things follow, and the first contradicts how this item was framed.
+
+1. **Detection is the larger half of the EasyOCR lane, not recognition.** H3 was
+   written to find out why the recognizer is 2.2x the Tesseract LSTM, and the
+   answer is that a big part of what was being attributed to "the lane" is
+   DBNet. Whoever picks up H3 should retarget: the recognizer is 76% of 45%, so
+   about a third of the lane.
+2. **Graph rebuilds are 24% of the recognition loop** — 25 rebuilds for 27
+   regions with sorting off. That is the number P6 never had.
+3. **`EASYOCR_WIDTH_SORT` is worth much more than its recorded 0-3%, but only
+   against the right denominator.** It cuts rebuilds 25 -> 14 and `set_width`
+   4,825 -> 2,348 ms, roughly halving it, which is ~12% of the recognition loop
+   — but only ~5% of the lane once detection is counted, and P6's 0-3% was
+   measured against total lane time. Both numbers are right; the old one just
+   hid the mechanism. The ceiling is set by distinct widths, not region count:
+   27 regions over 14 distinct widths means sorting can never remove more than
+   13 of the 25 rebuilds.
+
+**Bug found and fixed by this instrumentation.** The width-sort pre-pass computed
+its sort key with a hardcoded 2-pixel detector margin while the loop applies that
+margin only when `add_detector_crop_margin` is set, so on the external-geometry
+path (Python EasyOCR / Tesseract / LayoutLM boxes, pad 0) it sorted by widths
+that are never requested: 19 rebuilds instead of the 15 distinct widths that path
+actually has. The key now derives from the same `pad` the loop uses; verified
+19 -> 15 on the same page.
 
 **Related** `EASYOCR_WIDTH_SORT=1` already exists (0–3%; it makes graph rebuilds
 O(distinct widths) instead of O(regions)) and becomes worth more if you make the
@@ -1058,11 +1095,28 @@ running in CPU-scalar code (`tsr_nafblock_forward`, `fc_forward`) or, in
 `text_sr`'s case, on a *separate* `ggml_backend_cpu_init()` sched it builds
 right afterwards. All three now load through `ggml_backend_cpu_init()` with the
 old behaviour gated behind `TEXT_SR_GPU_LOAD`, `TPS_LOCNET_GPU_LOAD` and
-`BERT_NER_GPU_LOAD`. **The load-time saving is not yet measured on this
-hardware** — P2's was 12.5x on the tesseract lane and P4's 7-14%, but that is
-the precedent, not a claim about these three. Remaining engines are all genuine
-graph users; the grep-classification table is cheap to re-run if new engines
-land.
+`BERT_NER_GPU_LOAD`. Remaining engines are all genuine graph users; the
+grep-classification table is cheap to re-run if new engines land.
+
+**What the removal is worth, measured 2026-08-02.** No GGUF for any of the three
+is in `~/crispembed-live-cache`, so instead of guessing from P2's 12.5x the cost
+was measured directly at its source — the backend init itself, which is what
+these engines were paying and is engine-independent. `test-backend-smoke` builds
+a backend and runs one trivial graph on it; median-of-3, box at load 38:
+
+| backend | CPU-s | wall |
+|---|--:|--:|
+| `metal` | 2.62 | 6.71 |
+| `cpu` | 0.03 | 0.03 |
+
+So each of the three was spending roughly **2.6 CPU-seconds / 6.7 s wall per
+invocation** standing up Metal — shader library compilation dominates — to pull
+a GGUF it then copies straight out to host vectors. Consistent with the 4971 ms
+P2 measured inside `tesseract_lstm`. Caveat on reading this: the figure is init
+plus a trivial graph, not pure init, and it is a per-process cost, so it matters
+for one-shot CLI use and disappears in a warm server. An end-to-end
+before/after on a real `text_sr` / `tps_locnet` / `bert_ner` model is still the
+thing that would close this properly.
 
 ---
 
