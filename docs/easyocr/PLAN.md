@@ -83,6 +83,16 @@
       but do not yet provide native/reference timing ratios. Any slower native
       stage and any worse text/box/ordering output must be recorded as a
       separate optimization or quality TODO before those lanes are accepted.
+- [x] Consolidate the existing repeated CRAFT/DBNet warm-graph probes into
+      `crispembed.easyocr.detector-benchmark.v1` JSON with explicit commands,
+      device-independent timing ratios, and box-count quality status. The
+      manifest must not be interpreted as page-text parity or an apples-to-
+      apples CPU/Metal speed claim. The live `scan_strip.png` manifest reports
+      CRAFT native/reference `29,511.835/11,480.765 ms` (`2.57x`) with 106
+      boxes on both sides, and DBNet `44,647.873/16,153.006 ms` (`2.76x`) with
+      98 native boxes; the DBNet timing reference intentionally has no box
+      count, so its quality field is `unknown`. These are resource-sensitive
+      CPU/Metal-versus-CPU directional ratios, not acceptance claims.
 - [x] Add the repeated CRAFT inference benchmark. On the fresh
       `scan_strip.png` reference input, 10 warm runs produced 106 boxes in
       both implementations: Miniconda PyTorch CPU averaged `396.027 ms`,
@@ -426,6 +436,9 @@ recognizer and LayoutLM consumer.
       harness. `--row-blob-bounds` now reaches the page comparator, repeated
       benchmark, native environment, and JSON manifest; the option remains
       diagnostic-only pending multi-fixture quality parity.
+- [x] Expose the same row-blob-bounds switch in the standalone geometry
+      comparator, so direct geometry reports and repeated page reports use the
+      same reproducible policy selection.
 - [x] Record the exact `.traineddata` SHA-256 in converted and reference GGUF
       metadata; the controlled-line reference and stage/output parity are
       complete, while page parity remains open.
@@ -451,9 +464,10 @@ recognizer and LayoutLM consumer.
 - [x] Add and test an opt-in generic CTC prefix beam through
       `CRISPEMBED_TESSERACT_BEAM_WIDTH` at widths 2, 3, 5, 10, 16, 25, and 50;
       it does not change the native result, so it is not the CLI explanation.
-- [ ] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
-      quantized matrix arithmetic), then port its recode beam/dictionary
-      scoring and validate decoded output.
+- [x] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
+      quantized matrix arithmetic). The controlled PSM7 network boundary now
+      passes; recode-beam/dictionary scoring and full decoded page parity remain
+      separate open gates.
 - [x] Added the 1/256 Tesseract nonlinear LUT contract and reconstructed
       per-row int8 dot products. Native/Python int-mode logits now reach
       cosine `0.998405` with identical decoded output; generic CTC and
@@ -668,6 +682,13 @@ metadata, not learned parameters.
       greedy decoding silently dropped it. Native now preserves an explicit
       `<class>` diagnostic fallback; true Tesseract recode-beam composition and
       dictionary scoring remain required before production quality acceptance.
+- [x] Ensure every unmapped recoder result remains visible as `<class>` in the
+      native diagnostic output, including the ordinary fallback path. This
+      prevents silent character loss; composed-script quality parity remains
+      open.
+- [x] Add a diagnostic partial recoder composer that preserves valid multi-code
+      segments around unmapped classes and marks the gaps as `<class>`. Exact
+      composition and the default decoder remain unchanged.
 
 - [x] Close German int-mode decoded parity. The discrepancy was in the Python
       reference LUT construction: NumPy float32 nonlinearities did not match
