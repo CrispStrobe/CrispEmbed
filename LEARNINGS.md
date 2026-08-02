@@ -5706,3 +5706,61 @@ session, assume the build config may have been downgraded.
 Bonus bug the same day: `tests/test_encoder_batch.py`'s 4D parity class
 leaked `CRISPEMBED_ENCODER_4D=1` into the throughput test, so its "seq" and
 "packed" legs silently ran the 4D path. Pop the mode envs at bench start.
+
+## A reference you wrote yourself can be wrong, and then per-stage cosine proves nothing (2026-08-02)
+
+PP-OCRv6 had been "validated" the usual way: per-stage cosine against
+`tools/dump_ppocrv6_reference.py` at 0.9999, Metal-vs-CPU agreement, gold
+archives, a passing CI lane. It could not read a page. On a clean rendered
+pangram it emitted `iiiiii` / `laúieyotiieieioieioni.` at `mean_conf=0.94`, and
+an earlier session had recorded the fox-crop decode `涨RiI` in PLAN.md without
+treating it as a failure.
+
+The reason every gate passed is that the reference was a **hand-written torch
+mirror of a Paddle model**, and the runtime had been debugged until it matched
+*the mirror*. Both were wrong in the same places, so every cosine was 1.0 and
+every A/B agreed. This is the failure HARD RULE #3 exists for: the decoded
+output is the only acceptance test, and nobody had read one.
+
+**What actually settles it: `git clone` the upstream repo.** Reading
+`ppocr/modeling/backbones/rec_lcnetv4.py`, `ppocr/modeling/necks/rnn.py` and
+`tools/infer/predict_rec.py` took minutes and produced five facts that no
+amount of tensor diffing could have:
+
+1. `StemBlock` is built from `ConvBNAct`, whose activation is `ReLU()` — the
+   mirror guessed SiLU.
+2. The light-SVTR neck's `[1,7]` local conv is a **residual** (`z = z +
+   local_conv(z)`), not a replacement.
+3. `skip_conv` is computed first but added **after** the SVTR blocks and the
+   neck norm; the mirror added it before the blocks and never after.
+4. `max_wh_ratio` is *seeded* with `imgW/imgH` and then **grows** to the widest
+   crop, so `[3,48,320]` is a **floor**, not a cap — a 520x35 line is 713 px
+   wide. Capping at 320 crushed 44 characters into 40 CTC timesteps, which is
+   undecodable no matter how correct the graph is.
+5. `use_space_char: true` makes the label list `blank + dict + ' '`, which is
+   why the head has 18710 outputs against an 18708-entry dict. The missing
+   class decoded to nothing, so every space was dropped.
+
+Fixing those took the lane from noise to **CER 0.0031 over 20 fixtures — the
+most accurate engine in the comparison**, ahead of system Tesseract (0.0256)
+and PaddleOCR's own Python pipeline (0.0185).
+
+Durable rules:
+
+- **A config that does not pin a hyperparameter is a warning, not a licence to
+  guess.** `config.json` had no `num_attention_heads`, no activation placement,
+  no pooling. Each guess type-checks, runs, and produces plausible activations.
+- **Blind sweeps cannot recover a structural error.** Before reading the source
+  I swept 16 head counts x 2 activations x 3 poolings, then 4 stem x 5
+  depthwise x 4 channel activations — ~200 configurations, judged by decoded
+  text. Best was CER 0.667. The output was nearly *insensitive* to head count,
+  which correctly said "the error is upstream in the backbone", but no
+  combination of tunables could express the missing residual or the misplaced
+  skip. Sweeping is a localiser, never a fix.
+- **Preprocessing is part of the blueprint.** Two of the five bugs (input width,
+  space class) were outside the model graph entirely, in the exact
+  harness-blind zone the diff harness ends before.
+- **When native and reference agree and both look wrong, believe the output.**
+  The converse also held here, usefully: the surviving `e`->`c` confusion on a
+  31 px line reproduced byte-identically in the Python reference, which is how
+  we know *that* one is model capacity and not a port bug.
