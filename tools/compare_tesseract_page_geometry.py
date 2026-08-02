@@ -22,6 +22,11 @@ BOX_RE = re.compile(
     r"candidate=\d+ box=(?P<x>[-0-9.]+),(?P<y>[-0-9.]+) "
     r"(?P<w>[-0-9.]+)x(?P<h>[-0-9.]+)"
 )
+STAGE_BENCH_RE = re.compile(
+    r"\[tesseract-stage-bench\] detect=(?P<detect>[0-9.]+) ms group=(?P<group>[0-9.]+) ms "
+    r"crop=(?P<crop>[0-9.]+) ms recognize=(?P<recognize>[0-9.]+) ms total=(?P<total>[0-9.]+) ms "
+    r"boxes=(?P<boxes>\d+) lines=(?P<lines>\d+)"
+)
 
 
 def run(command: list[str], env: dict[str, str] | None = None, timeout_seconds: float = 900) -> subprocess.CompletedProcess[str]:
@@ -64,9 +69,10 @@ def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None =
 
 
 def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, projection: bool,
-                 component: bool, baseline: bool, timeout_seconds: float = 900) -> list[tuple[float, float, float, float]]:
+                 component: bool, baseline: bool, timeout_seconds: float = 900) -> tuple[list[tuple[float, float, float, float]], dict | None]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
+    env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
     for key in (
         "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
         "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
@@ -106,10 +112,24 @@ def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, proje
     )
     if proc.returncode != 0:
         raise RuntimeError(f"CrispEmbed failed ({proc.returncode}): {proc.stderr[-1000:]}")
-    return [
+    boxes = [
         (float(match.group("x")), float(match.group("y")), float(match.group("w")), float(match.group("h")))
         for match in BOX_RE.finditer(proc.stdout + proc.stderr)
     ]
+    bench_matches = STAGE_BENCH_RE.findall(proc.stdout + proc.stderr)
+    benchmark = None
+    if bench_matches:
+        detect, group, crop, recognize, total, boxes_count, lines = bench_matches[-1]
+        benchmark = {
+            "detect_ms": float(detect),
+            "group_ms": float(group),
+            "crop_ms": float(crop),
+            "recognize_ms": float(recognize),
+            "total_ms": float(total),
+            "boxes": int(boxes_count),
+            "lines": int(lines),
+        }
+    return boxes, benchmark
 
 
 def iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
@@ -260,8 +280,8 @@ def main() -> int:
     reference = official_lines(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout)
     official_elapsed_ms = (time.perf_counter() - official_started) * 1000.0
     native_started = time.perf_counter()
-    native = native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component,
-                          args.baseline, args.timeout)
+    native, native_stage_benchmark = native_lines(args.cli, args.det_model, args.rec_model, args.image,
+                                                  args.projection, args.component, args.baseline, args.timeout)
     native_elapsed_ms = (time.perf_counter() - native_started) * 1000.0
     comparison = compare(reference, native)
     checks = {}
@@ -297,6 +317,7 @@ def main() -> int:
             "official_geometry_subprocess": round(official_elapsed_ms, 3),
             "native_geometry_subprocess": round(native_elapsed_ms, 3),
         },
+        "native_stage_benchmark": native_stage_benchmark,
         "projection": args.projection,
         "component": args.component,
         "baseline": args.baseline,
