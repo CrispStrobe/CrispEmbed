@@ -11,6 +11,7 @@ final CTC string.
 from __future__ import annotations
 
 import argparse
+import math
 from pathlib import Path
 
 import numpy as np
@@ -93,7 +94,15 @@ def preprocess(path: Path):
     if not __import__("os").environ.get("PPOCRV6_RGB"):
         im = im[:, :, ::-1]
     h, w = im.shape[:2]
-    rw = min(320, max(1, round(w * 48 / h)))
+    # PaddleOCR tools/infer/predict_rec.py: max_wh_ratio is SEEDED with
+    # imgW/imgH (320/48) and then grows to the widest crop in the batch, and
+    # the target is imgW = int(imgH * max_wh_ratio). So 320 is a FLOOR, not a
+    # cap: a 520x35 line is 713 px wide, not squeezed into 320. Capping it here
+    # crushed 44 characters into 40 CTC timesteps, which cannot be decoded even
+    # by a correct model.
+    img_h = 48
+    target_w = int(img_h * max(320.0 / img_h, w / float(h)))
+    rw = min(target_w, max(1, int(math.ceil(img_h * w / float(h)))))
     yy = np.maximum(0.0, (np.arange(48, dtype=np.float32) + 0.5) * h / 48.0 - 0.5)
     xx = np.maximum(0.0, (np.arange(rw, dtype=np.float32) + 0.5) * w / rw - 0.5)
     y0 = np.floor(yy).astype(np.int32).clip(0, h - 1); y1 = np.minimum(y0 + 1, h - 1)
@@ -107,7 +116,7 @@ def preprocess(path: Path):
         a = (a - np.asarray([0.485, 0.456, 0.406], dtype=np.float32)) / np.asarray([0.229, 0.224, 0.225], dtype=np.float32)
     else:
         a = (a - 0.5) / 0.5
-    out = np.zeros((48, 320, 3), dtype=np.float32)
+    out = np.zeros((48, target_w, 3), dtype=np.float32)
     out[:, :rw] = a
     return torch.from_numpy(out.transpose(2, 0, 1))[None]
 
@@ -161,10 +170,16 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
         p = f"head.encoder.conv_block.{idx}"
         y = ref.conv(y, p + ".convolution", pad=pad, groups=groups)
         return ref.bn(y, p + ".normalization")
-    residual = F.silu(conv_block(x, 0))
-    y = F.silu(conv_block(x, 1))
-    y = F.silu(conv_block(y, 2, groups=hidden, pad=(0, 3)))
-    x = y + residual
+    # PaddleOCR ppocr/modeling/necks/rnn.py, EncoderWithLightSVTR.forward:
+    #     skip = skip_conv(x); z = conv_reduce(x)
+    #     z = z + local_conv(z)          <- local conv is a RESIDUAL
+    #     ... svtr blocks ...; z = norm(z)
+    #     z = z + skip                   <- skip lands AFTER the blocks + norm
+    # Adding the skip up front instead (and dropping the local residual) is what
+    # turned this reference into a text-shaped noise generator.
+    skip = F.silu(conv_block(x, 0))
+    x = F.silu(conv_block(x, 1))
+    x = x + F.silu(conv_block(x, 2, groups=hidden, pad=(0, 3)))
     x = x.squeeze(2).transpose(1, 2)  # [B,W,hidden]
 
     heads = 8
@@ -184,7 +199,9 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
                          ref.w(p + ".layer_norm2.bias"))
         n = F.silu(F.linear(n, ref.w(p + ".mlp.fc1.weight"), ref.w(p + ".mlp.fc1.bias")))
         x = x + F.linear(n, ref.w(p + ".mlp.fc2.weight"), ref.w(p + ".mlp.fc2.bias"))
-    x = F.layer_norm(x, (hidden,), ref.w("head.encoder.norm.weight"), ref.w("head.encoder.norm.bias"))
+    # nn.LayerNorm(dims, epsilon=1e-6) for the neck norm; the block norms use 1e-5.
+    x = F.layer_norm(x, (hidden,), ref.w("head.encoder.norm.weight"), ref.w("head.encoder.norm.bias"), 1e-6)
+    x = x + skip.squeeze(2).transpose(1, 2)
     stages["head_input"] = x
     logits = F.linear(x, ref.w("head.head.weight"), ref.w("head.head.bias"))
     stages["logits"] = logits
