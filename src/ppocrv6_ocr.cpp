@@ -934,6 +934,18 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
 
 static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & input, std::vector<float> & output,
                          int & h, int & w) {
+    // The accepted graph is deliberately static at the Paddle minimum width.
+    // Line recognition now preserves wider crops so CTC has enough timesteps;
+    // never upload a dynamic-width tensor into this 320-wide graph. The CPU
+    // reference path below handles those crops correctly until a dynamic
+    // graph is implemented.
+    constexpr size_t static_input = 3u * 48u * 320u;
+    if (input.size() != static_input) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+            fprintf(stderr, "ppocrv6: static graph bypassed for input elements=%zu (requires %zu)\n", input.size(),
+                    static_input);
+        return false;
+    }
     if (!pp_graph_build(c)) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH"))
             fprintf(stderr, "[ppocrv6-graph-bench] graph unavailable large_stem=%d backend=%s\n", c->large_stem ? 1 : 0,
