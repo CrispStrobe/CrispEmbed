@@ -552,8 +552,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 ms(ppocr_started, std::chrono::steady_clock::now()), boxes.size(), results.size());
             fprintf(stderr, "[ppocrv6-width-bench] crops=%zu unique_model_widths=%zu widths=", boxes.size(),
                     model_widths.size());
-            for (size_t i = 0; i < model_widths.size(); ++i)
-                fprintf(stderr, "%s%d", i ? "," : "", model_widths[i]);
+            for (size_t i = 0; i < model_widths.size(); ++i) fprintf(stderr, "%s%d", i ? "," : "", model_widths[i]);
             fprintf(stderr, "\n");
         }
         return results;
