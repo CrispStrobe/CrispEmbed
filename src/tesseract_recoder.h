@@ -9,6 +9,12 @@ namespace tesseract_recoder {
 bool compose_classes(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
                      std::vector<int> & unichars, std::vector<int> & starts);
 
+// Best-effort diagnostic composition. Valid serialized codes are emitted as
+// unichar IDs; an unmapped class is emitted as -1 at its source position.
+// This is intentionally not used by the production decoder.
+bool compose_classes_partial(const std::vector<int> & labels, const std::vector<std::vector<int>> & codes,
+                             std::vector<int> & unichars, std::vector<int> & starts);
+
 // Returns whether a collapsed CTC class prefix can be segmented into
 // serialized recoder entries. With allow_partial, the final entry may be a
 // strict prefix of one serialized code during beam expansion.

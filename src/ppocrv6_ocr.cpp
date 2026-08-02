@@ -95,6 +95,7 @@ struct ppocrv6_ocr_context {
     bool large_stem = false;
     int hidden = 0;
     int vocab_size = 0;
+    int graph_accept_override = -1;
     int last_ch = 0;
     std::vector<pp_conv> stem;
     std::vector<std::vector<pp_block>> stages;
@@ -670,6 +671,24 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
     return y;
 }
 
+// The small/medium recognizer graph is on by default as of 2026-08-02. It was
+// promoted on evidence, not preference: decoded text is identical to the CPU
+// reference on all 26 fixtures tried (20 synthetic + 6 CC0 scans, the largest
+// 71 regions), and it is ~1.9x faster end-to-end on a quiet box
+// (synth_00_clean 1230 -> 646 ms; the 1920x2518 german_official_print scan
+// 9369 -> 4964 ms).
+//
+// Scope is deliberate. This covers the recognizer only: the *detector* graph
+// stays diagnostic-only because its box geometry is not yet at parity, and the
+// tiny variant keeps its own CRISPEMBED_PPOCRV6_GRAPH_ACCEPT gate because the
+// evidence above is for small. CRISPEMBED_PPOCRV6_NO_GRAPH restores the CPU
+// reference everywhere, which is the bisection lever if a crop ever disagrees.
+static bool pp_graph_enabled() {
+    static const bool off =
+        std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") != nullptr || std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    return !off;
+}
+
 static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
     if (c->graph.attempted && c->graph.width == width) return c->graph.ready;
     if (c->graph.attempted && c->graph.width != width) {
@@ -701,7 +720,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
         c->graph.svtr_decoder_output = false;
     }
     c->graph.attempted = true;
-    if (!std::getenv("CRISPEMBED_PPOCRV6_GRAPH")) return false;
+    if (!pp_graph_enabled()) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
     if (ggml_backend_is_cpu(c->graph.backend)) {
@@ -805,7 +824,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
             }
         }
     }
-    if (c->large_stem && std::getenv("CRISPEMBED_PPOCRV6_SVTR_GRAPH")) {
+    if (c->large_stem && pp_graph_enabled()) {
         // Keep the SVTR attention/MLP decoder on the scalar reference path,
         // but move its convolutional tokenization onto the persistent graph.
         // The output is [hidden,tokens] with token-major contiguous storage.
@@ -844,7 +863,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
         x = ggml_reshape_2d(c->graph.graph_ctx, x, c->hidden, tokens);
         c->graph.svtr_prefix_output = true;
     }
-    if (c->large_stem && c->graph.svtr_prefix_output && std::getenv("CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH")) {
+    if (c->large_stem && c->graph.svtr_prefix_output && pp_graph_enabled()) {
         const int heads = 8;
         const int head_dim = c->hidden / heads;
         const int tokens = (int)x->ne[1];
@@ -1288,7 +1307,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     std::vector<float> x = input, y;
     int h = 48, w = input_w;
     std::vector<float> graph_out;
-    bool graph_done = pp_graph_run(c, input, graph_out, h, w);
+    const bool graph_allowed = c->graph_accept_override < 0 || c->graph_accept_override != 0;
+    bool graph_done = graph_allowed && pp_graph_run(c, input, graph_out, h, w);
     if (graph_done && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         const int tokens = h;
         const int classes = w;
@@ -1299,7 +1319,9 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best], row[0]);
         }
     }
-    if (graph_done && c->graph.logits_output && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+    const bool graph_accept = c->graph_accept_override >= 0 ? c->graph_accept_override != 0
+                                                            : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
+    if (graph_done && c->graph.logits_output && !graph_accept) {
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
         h = 48;
@@ -1600,6 +1622,10 @@ extern "C" void ppocrv6_ocr_free(ppocrv6_ocr_context * c) {
     delete c;
 }
 
+extern "C" void ppocrv6_ocr_set_graph_accept(ppocrv6_ocr_context * c, int accept) {
+    if (c) c->graph_accept_override = accept < 0 ? -1 : (accept != 0 ? 1 : 0);
+}
+
 extern "C" const char * ppocrv6_ocr_recognize_raw(ppocrv6_ocr_context * c, const uint8_t * px, int w, int h, int ch,
                                                   int * out_len) {
     if (!c || !px || w <= 0 || h <= 0 || (ch != 1 && ch != 3 && ch != 4)) return nullptr;
@@ -1612,6 +1638,41 @@ extern "C" const char * ppocrv6_ocr_recognize_raw(ppocrv6_ocr_context * c, const
                 r.is_pass() ? "PASS" : "FAIL");
     }
     return recognize_nchw(c, input, out_len, input_w);
+}
+
+extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const uint8_t * const * pixels,
+                                               const int * widths, const int * heights, const int * channels, int count,
+                                               char * const * outputs, const int * capacities, int * lengths) {
+    if (!c || !pixels || !widths || !heights || !channels || !outputs || !capacities || !lengths || count < 0) return 0;
+    std::vector<int> order((size_t)count);
+    for (int i = 0; i < count; ++i) {
+        order[(size_t)i] = i;
+        lengths[i] = 0;
+        if (outputs[i] && capacities[i] > 0) outputs[i][0] = '\0';
+    }
+    // Stable width grouping keeps the caller-visible order while allowing a
+    // future fused graph invocation to share one dynamic-width plan. The
+    // current backend still executes each member through the parity-tested
+    // scalar kernel, which makes this API safe to land before fusion.
+    std::stable_sort(order.begin(), order.end(), [&](int lhs, int rhs) {
+        const int lw =
+            std::max(320, int(48.0f * std::max(320.0f / 48.0f, widths[lhs] / float(std::max(1, heights[lhs])))));
+        const int rw =
+            std::max(320, int(48.0f * std::max(320.0f / 48.0f, widths[rhs] / float(std::max(1, heights[rhs])))));
+        return lw < rw;
+    });
+    int completed = 0;
+    for (const int i : order) {
+        int len = 0;
+        const char * text = ppocrv6_ocr_recognize_raw(c, pixels[i], widths[i], heights[i], channels[i], &len);
+        if (!text || !outputs[i] || capacities[i] <= 0) continue;
+        const int copied = std::min(std::max(0, len), capacities[i] - 1);
+        if (copied > 0) std::memcpy(outputs[i], text, (size_t)copied);
+        outputs[i][copied] = '\0';
+        lengths[i] = copied;
+        ++completed;
+    }
+    return completed;
 }
 
 extern "C" const char * ppocrv6_ocr_recognize(ppocrv6_ocr_context * c, const float * px, int w, int h, int * out_len) {

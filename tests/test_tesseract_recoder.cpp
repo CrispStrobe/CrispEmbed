@@ -34,6 +34,11 @@ static int test_main() {
         std::fprintf(stderr, "ambiguous recoder composition failed\n");
         return 1;
     }
+    if (!tesseract_recoder::compose_classes_partial({ 0, 9, 1, 2, 3 }, codes, unichars, starts) ||
+        !equal(unichars, { 0, -1, 1, 2 }) || !equal(starts, { 0, 1, 2, 4 })) {
+        std::fprintf(stderr, "partial recoder composition failed\n");
+        return 1;
+    }
     const std::vector<std::vector<int>> beam_codes = { { 4, 5 }, { 6 } };
     if (!tesseract_recoder::prefix_legal({ 4 }, beam_codes, true) ||
         !tesseract_recoder::prefix_legal({ 4, 5 }, beam_codes, false) ||

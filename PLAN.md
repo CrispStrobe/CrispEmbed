@@ -17,6 +17,12 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** validate the opt-in Tesseract DAWG scorer, model-owned runtime lookup, and diagnostic beam-confidence contract after the remote recoder merge; fix prefix ranking/token boundaries, wire runtime tests, and keep production dictionary scoring/calibration disabled | **COMPLETED** |
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** close the remaining beam-confidence comparator gap so `--require-beam-sequence-only` rejects fabricated word certainty as well as character certainty; add model-free coverage | **COMPLETED** |
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** make the documented Tesseract row-blob-bounds geometry A/B reproducible through the page comparator and repeated benchmark manifests, while keeping it diagnostic-only | **COMPLETED** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** align the standalone Tesseract geometry comparator with the row-blob-bounds benchmark switch and record the policy in its JSON output | **COMPLETED** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** reconcile the stale EasyOCR-plan int-mode status with the detailed parity evidence, keeping recoder/DAWG and full-page decoded parity explicitly open | **COMPLETED** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** preserve unmapped Tesseract recoder classes as explicit `<class>` diagnostics instead of silently dropping or exposing numeric class labels; keep full composed-script parity open | **COMPLETED** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** preserve valid composed recoder segments around unmapped classes with a diagnostic partial composer; leave the default decoder and full composed-script parity gate unchanged | **COMPLETED** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** consolidate repeated CRAFT/DBNet warm-graph probes into a versioned JSON manifest with explicit reference/native timing ratios and box-count quality status; keep device mismatch and page-text parity visible. Live scan-strip manifest: CRAFT native/reference `29,511.835/11,480.765 ms` (`2.57x`) with `106=106` boxes; DBNet `44,647.873/16,153.006 ms` (`2.76x`) with native `98` boxes, reference count unavailable in the timing-only probe. | **COMPLETED** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** produce an independent EasyOCR Python page manifest for `lines` mode and compare ordering, line grouping, crop geometry, decoded text, and confidence against the native DBNet→EasyOCR handoff; keep page parity separate from detector-only timing | **IN PROGRESS** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add a dependency-free EasyOCR interoperability contract test covering Python `lines`/`words` ordering, crop/normalized geometry, and LayoutLM `apply_ocr=False` serialization; keep real-page reference parity as the separate live gate. `tests/test_easyocr_interop_contract.py` passes with 3 words, 2 grouped lines, and ordered LayoutLM sidecar metadata | **COMPLETED** |
@@ -37,7 +43,10 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** reduce Metal dynamic-width overhead by caching compiled graph plans per width or batching same-width crops; add width-specific gold logits before any Metal acceptance promotion. Added `tests/ppocrv6_width_benchmark.py`, which preserves decoded strings and graph shapes for grouped/alternating runs. Current `n=1` Metal timings: short `2582.1 ms`, wide `2250.0 ms`, alternating pair `2780.6 ms`; all return 0 with exact CPU-matching text and MTL0 shapes `80x3x384`/`96x3x384`. CPU controls are `468.3`/`403.8`/`463.8 ms`. | **COMPLETED — benchmark harness; cache/logit TODO** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** generate width-specific official-source activation golds and add CPU/Metal stage-logit comparison to the width benchmark; quantify whether current Metal numerical drift is acceptable before enabling any production graph gate. `tests/ppocrv6_width_benchmark.py` now accepts separate short/wide references and reports per-stage cosines. Fresh golds pass CPU logits cosine `0.999892` at 320 width and `0.999993` at 384; Metal passes `0.999861` and `0.999993`; decoded text is identical in every case. The older 320 archive was stale and was regenerated from the corrected official mirror | **COMPLETED — numerical parity passes; Metal remains opt-in for cost** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** benchmark Metal graph acceptance on the full PP-OCRv6 line/page route with dynamic-width gold coverage, then decide whether the recognizer graph can leave diagnostic-only mode. Added `--recognizer-graph` to `tests/ppocrv6_pipeline_benchmark.py`. The isolated 384-wide gold lane passes (`logits cos=0.999993`), but the German CC0 full route with 33 regions exceeded the 120 s guard under Metal graph acceptance; the prior CPU-accepted route completes in about 20.8 s. Keep recognizer graph acceptance diagnostic-only; full-route batching/residency is required before promotion | **COMPLETED — promotion rejected on measured cost** |
-| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** reduce full-page Metal graph cost by batching same-width line crops or reusing width-keyed graph residency across the detector→crop→recognizer loop; compare full-route text and stage timings against the CPU-accepted baseline | **IN PROGRESS** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** reduce full-page Metal graph cost by batching same-width line crops or reusing width-keyed graph residency across the detector→crop→recognizer loop; compare full-route text and stage timings against the CPU-accepted baseline. Before batching, added a safe per-page graph budget: with 33 detected regions the explicit graph request now selects CPU fallback and completes instead of timing out; measured German CC0 route `38.55 s`, 33/33 results, 1,146 chars, with recognize `32.65 s`. | **COMPLETED — safe fallback; batching still required for speed** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** batch same-width PP-OCRv6 line crops in the full route, preserving original order and per-line dynamic widths; compare batched CPU/Metal logits and decoded text against the current scalar fallback. Added native width-distribution telemetry and JSON capture. The current orchestrator still calls the recognizer one crop at a time; a German 33-region live run remained over the 180 s graph-debug guard, so no batching claim is made and graph acceptance stays budgeted/diagnostic-only | **COMPLETED — instrumentation and safety decision; no batch API yet** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** add a real PP-OCRv6 recognizer batch API grouped by identical dynamic model width, retain original result ordering, and require CPU-vs-Metal per-stage logits plus decoded-text parity before enabling it in the full route. Added the C ABI batch contract and wired the detector→crop→orientation→recognizer route through it. Live small-rec two-crop contract (fox + receipt) completed both items with byte-identical scalar/batch text; CPU sample was scalar `9.564 s`, grouped batch `6.070 s` (`1.58x`, warm-cache/small-sample evidence only) | **COMPLETED — safe grouped API; fused graph still required** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** implement fused GGML batch dimensions for same-width PP-OCRv6 crops, with bounded batch size, per-item error isolation, CPU/Metal logits cosine gates, and full-route German CC0 benchmark comparison. Do not promote Metal until grouped and scalar decoded text are identical and the batch path is measurably faster across repeated runs | **IN PROGRESS** |
 | 2026-08-02 | `chore/ai-act-audit-fixes` / `.codex/worktrees/chore-ai-act-audit-fixes` | **Picked:** fourth AI Act audit, run against `main` at `52172c10`. Re-verified the code-backed claims and this time **executed** the gate against real GGUFs (yunet + sface pulled from `cstr/*`) rather than trusting that the test exists: all 8 prior cases pass, including the renamed-model case. Also verified the registry is clean of emotion/age/gender/ethnicity models (555 entries), that no training code exists (so §7's "quantization only" argument holds), and — since Reg (EU) 2026/1744 postdates the assistant's knowledge cutoff — checked POLICY's whole date table against the EUR-Lex text: **accurate**, including 2 Dec 2026 for the new Art. 5(1)(ba)/(bb) NCII/CSAM prohibitions. Three gaps found and closed here: (1) `--dim` returned *before* the gate on both CLI paths that reach it, making the CLI laxer than `crispembed_face_init()` — all three CLI sites now share one `cnn_biometric_ok()` helper keyed on declared type (which defaults to `recognition`, so it fails closed), and the gate test grew 3 cases; (2) POLICY §4 claimed "both gates key off declared type" while the `--face-pipeline` gate was unconditional-before-load — that path is now type-keyed too, so the sentence is true as written; (3) neither POLICY nor README told deployers that the server acknowledgement is **once per process** with **no authentication** and server-side-path input — documented in both, plus a startup warning when a recognition model is loaded on a non-loopback bind. Touches `examples/cli/main.cpp`, `examples/server/server.cpp`, `tests/test_biometric_gate.py`, POLICY/README/PLAN — **no OCR/model/graph code**. Gap (1) was mis-placed from the start, not a regression: `git log -L` shows the gate was added *below* the pre-existing `--dim` early-return in `6d87d6bd`. Verified before/after with the same toolchain — a CLI built from `HEAD:examples/cli/main.cpp` prints `128` (sface's template width) unacknowledged on **both** paths; the patched CLI refuses both. Gate test now 11/11 with real yunet+sface GGUFs, server warning fires on `--host 0.0.0.0` and stays silent on loopback, `--face-pipeline` still refuses without ack and runs with it, text embed + `--dim` unaffected, `format.sh --check` and `check_registry_licenses.py` clean | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
@@ -217,6 +226,8 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-07-31 | `main` | External document-parser-informed OCR pipeline: structured routing, in-memory handoffs, service contracts, batching, and benchmark gates | **IN PROGRESS** |
 | 2026-07-31 | `main` | Real-world public-domain OCR corpus and manifest-driven multi-engine live benchmarks | **IN PROGRESS** |
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
+| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** optimize the cached Tesseract int-mode LSTM kernel and immutable-weight reuse; preserve the exact seeded-output contract, benchmark warm recognition against official/native baselines, and keep the precision fallback gated until parity holds | **COMPLETED** |
+| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reuse per-LSTM temporary vectors across sequential line recognitions; retain isolated per-context ownership, exact cached/uncached output parity, and the existing diagnostic gates | **COMPLETED** |
 
 Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
 Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
@@ -328,11 +339,15 @@ things were eating the time, none of them the recognizer math:
    Measured 4971 ms cold / 1069 ms warm against **4.8 ms** on the CPU backend.
    The whole invocation went **5.9 s -> 0.47 s (12.5x)**, output byte-identical.
    Fixed; `CRISPEMBED_TESSERACT_GPU_LOAD` restores the old path.
-3. **PP-OCRv6's recognizer runs a CPU scalar SVTR.** Its detector already
+3. **PP-OCRv6's recognizer ran a CPU scalar SVTR.** Its detector already
    follows the correct never-upscale convention (`min(1, 960/max(w,h))`), so the
-   remaining cost is compute. The now-correct graph path is **4.2–7x faster with
-   identical decoded text** (wide 713 px crop 8.28 s -> 1.98 s; 320 px crop
-   6.40 s -> 0.92 s). Not yet promoted — see below.
+   remaining cost was compute. The now-correct graph is **~1.9x faster
+   end-to-end with byte-identical decoded text on 26/26 fixtures** (20 synthetic
+   + 6 CC0 scans, largest 71 regions; `synth_00_clean` 1214 -> 651 ms, the
+   1920x2518 `german_official_print` scan 9369 -> 4964 ms). **Promoted to
+   default**; `CRISPEMBED_PPOCRV6_NO_GRAPH` reverts. Scope is the recognizer
+   only — the detector graph stays diagnostic-only on geometry parity, and the
+   tiny variant keeps its own accept gate since the evidence is for small.
 
 Where that leaves a one-shot CLI invocation on `synth_00_clean.png`, median of
 3, with `tesseract-cli` measured alongside as the load control:
@@ -349,15 +364,39 @@ rather than hidden. The tesseract lane went from ~40x system Tesseract to
 **~3x**. The other two are ~3x their Python references (`easyocr-py` 0.75 s,
 `paddleocr-py` 1.07 s) and are not yet at parity.
 
-**Remaining speed work, in order of measured value.** (a) Promote the PP-OCRv6
-recognizer graph — it is now correct, agrees with CPU on every crop tried, and
-is worth 4.2–7x; it needs a multi-fixture gold pass before the default flips.
-(b) PP-OCRv6's CPU detector (1.9 s) is scalar convolution; its graph is still
-diagnostic-only on geometry parity. (c) Each engine builds its own Metal
-backend, so a pipeline pays that init more than once — sharing one backend
-across the orchestrator's engines is untried. (d) The DBNet detector still
-costs ~400 ms on a capped 572x188 page against tesseract-cli's 0.15 s for the
-entire job.
+**Remaining speed work — (a) is now clearly the biggest.**
+
+**(a) One Metal backend per engine, and Metal init blocks.** Every engine calls
+`crispasr_init_gpu_backend()`, which does a fresh `ggml_backend_dev_init`, so a
+pipeline pays the init once per engine — twice in the EasyOCR lane (DBNet
+detector + EasyOCR recognizer). Adding the load/compute split to that stage
+shows how bad it gets: `load=36041 ms` and `load=87090 ms` on two consecutive
+runs of the same command, against `detect+recognize` of ~5 s — while the whole
+process consumed only **2.8 s user + 1.2 s sys**. The load phase is therefore
+almost entirely *blocking wait*, not computation, and it explodes under system
+contention rather than degrading smoothly. On a quiet box the whole lane is
+2.06 s, so this is ~1.5 s quiet and tens of seconds loaded.
+
+That makes a **refcounted shared backend** the top item: hand every engine the
+same `ggml_backend_t` and init Metal once per process. The hazard to design
+around is ownership — each engine currently calls `ggml_backend_free` on its
+own backend, so a naive singleton would be freed out from under its peers, and
+`ggml_backend_sched` also assumes distinct backend instances in places. It
+wants `crispasr_acquire/release_shared_gpu_backend()` with a refcount, then a
+sweep of every engine's free path. Not attempted here because it touches every
+engine and deserves its own change.
+
+**(b)** PP-OCRv6's CPU detector is scalar convolution and is now that lane's
+dominant compute; its graph stays diagnostic-only on box-geometry parity, which
+is the blocker to close. **(c)** The DBNet detector costs ~400 ms on a capped
+572x188 page against `tesseract-cli`'s 0.15 s for the whole job.
+
+**Measure with CPU time on this box.** `user+sys` stayed within 12% across runs
+where wall clock swung 10x, and an early cross-run wall comparison of the
+detector loader reported the *opposite* of what a same-binary A/B later showed.
+Contention-robust ratios at the time of writing (median-of-3 CPU-seconds,
+`tesseract-cli` control 0.46-0.49 s): tesseract lane 3.4x, PP-OCRv6 6.6x,
+EasyOCR 8.9x control.
 
 **Measurement discipline, learned the hard way here.** This box runs 3–6
 concurrent agent builds; load average hit 103 mid-sweep and `tesseract-cli`
@@ -2845,11 +2884,31 @@ the pattern first.
   is truncated and was excluded. Per-language diff and decoded-output gates are
   still required before promotion to canonical names.
 
-- **Tesseract int-mode kernel optimization — IN PROGRESS.** Cache each LSTM
+- **Tesseract int-mode kernel optimization — COMPLETED.** Cache each LSTM
   gate's int8 weights, bias quantization, and scale at model load, then
   quantize each input/hidden vector once per timestep. The prior implementation
   recomputed scales and rounded every weight inside every gate dot product.
   Benchmark and decoded-output parity must pass before promotion.
+
+- **Tesseract int-mode kernel optimization (2026-08-02).** Packed each cached
+  gate row as `[W_ih | W_hh]` and each timestep activation as `[input | hidden]`,
+  reducing the hot path to one contiguous int8 accumulation per gate while
+  preserving the existing quantization, LUT, and fallback semantics. On the
+  seeded English Q8 model and `scan_strip.png`, three CLI runs decoded `S` in
+  both modes: cached LSTM `24.2/16.3/18.9 ms`, uncached `896.3/443.5/233.7
+  ms`. The output contract is unchanged; the packed cache remains the default
+  and `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1` remains the diagnostic
+  fallback.
+
+- **Tesseract LSTM scratch reuse (2026-08-02).** Added a per-context,
+  environment-gated `lstm_scratch` arena for the hidden/cell/gate and int8
+  activation vectors used by SummLSTM and the recurrent layers. The default
+  allocation path is unchanged; `CRISPEMBED_TESSERACT_REUSE_SCRATCH=1` reuses
+  buffers only within one recognizer context. On a dimension-matched seeded
+  English fixture, reuse and fresh allocation both decoded `Etaansen `, so the
+  output contract remains exact. The path is covered by the runtime contract
+  test and remains opt-in until a repeated page benchmark demonstrates a
+  material allocation reduction.
 
 - **Tesseract composed-recoder output — IN PROGRESS.** The Chinese seeded F32
   reference passes all tensor stages but exposed native dropping of unmapped
