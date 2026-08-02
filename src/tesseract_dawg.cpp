@@ -69,6 +69,71 @@ int ceil_log2(uint32_t value) {
 
 } // namespace
 
+struct tesseract_dawg_context {
+    std::vector<uint8_t> data;
+    uint32_t num_edges = 0;
+    uint64_t next_mask = 0;
+    uint64_t marker = 0;
+    uint64_t direction = 0;
+    uint64_t word_end = 0;
+    uint64_t letter_mask = 0;
+    int next_start = 0;
+};
+
+static int context_lookup(const tesseract_dawg_context * ctx, const int * ids, size_t count, bool require_word_end) {
+    if (!ctx || !ids || count == 0) return 0;
+    uint32_t node = 0;
+    for (size_t pos = 0; pos < count; ++pos) {
+        bool found = false;
+        uint64_t selected = 0;
+        for (uint32_t edge_index = node; edge_index < ctx->num_edges; ++edge_index) {
+            const uint64_t edge = read_u64(ctx->data, 10 + (size_t)edge_index * 8);
+            if ((edge & ctx->next_mask) == ctx->next_mask || (edge & ctx->direction) != 0) break;
+            if ((int)(edge & ctx->letter_mask) == ids[pos]) {
+                selected = edge;
+                found = true;
+                break;
+            }
+            if (edge & ctx->marker) break;
+        }
+        if (!found) return 0;
+        node = (uint32_t)((selected & ctx->next_mask) >> ctx->next_start);
+        if (pos + 1 == count) return !require_word_end || (selected & ctx->word_end) != 0;
+    }
+    return 0;
+}
+
+extern "C" tesseract_dawg_context * tesseract_dawg_init_base64(const char * payload, char * error, size_t error_size) {
+    if (!tesseract_dawg_validate_base64(payload, error, error_size)) return nullptr;
+    auto * ctx = new tesseract_dawg_context();
+    if (!decode_base64(payload, ctx->data)) {
+        delete ctx;
+        return nullptr;
+    }
+    const uint32_t unicharset_size = read_u32(ctx->data, 2);
+    ctx->num_edges = read_u32(ctx->data, 6);
+    const int flag_start = ceil_log2(unicharset_size);
+    ctx->next_start = flag_start + 3;
+    ctx->next_mask = ~0ull << ctx->next_start;
+    ctx->marker = 1ull << flag_start;
+    ctx->direction = 2ull << flag_start;
+    ctx->word_end = 4ull << flag_start;
+    ctx->letter_mask = ~(~0ull << flag_start);
+    return ctx;
+}
+
+extern "C" void tesseract_dawg_free(tesseract_dawg_context * ctx) {
+    delete ctx;
+}
+
+extern "C" int tesseract_dawg_context_contains(const tesseract_dawg_context * ctx, const int * ids, size_t count) {
+    return context_lookup(ctx, ids, count, true);
+}
+
+extern "C" int tesseract_dawg_context_has_prefix(const tesseract_dawg_context * ctx, const int * ids, size_t count) {
+    return context_lookup(ctx, ids, count, false);
+}
+
 extern "C" int tesseract_dawg_validate_base64(const char * payload, char * error, size_t error_size) {
     set_error(error, error_size, "");
     if (!payload || !*payload) {

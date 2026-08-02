@@ -507,6 +507,9 @@ recognizer and LayoutLM consumer.
       next input to recoder/beam scoring, but remains diagnostic-only.
 - [x] Harden DAWG metadata decoding with strict base64 quartet/padding checks
       and malformed-input tests. Corrupt payloads cannot reach traversal.
+- [x] Add a reusable parsed-DAWG context for repeated exact/prefix lookups.
+      It caches the decoded edge array and masks, avoiding repeated base64
+      parsing per future beam hypothesis; it remains diagnostic-only.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
