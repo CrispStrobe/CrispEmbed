@@ -358,6 +358,22 @@ recognizer and LayoutLM consumer.
       and remains a detector/order/crop quality TODO; detector confidence is
       unavailable in EasyOCR's public `readtext(detail=1)` tuple and is not
       synthesized.
+- [x] Replay the Python line boxes through native CRNN recognition with exact
+      caller-supplied crops. The native external-geometry path now avoids the
+      DBNet-only two-pixel margin, returns 11/11 regions, and remains a failed
+      page-quality gate: Python/native line 0 text differs in punctuation and
+      spacing, with confidence `0.8541` / `0.5483`, while line 4 is a severe
+      page-run failure.
+- [x] Run fresh `crispembed-diff` on the exact shared line crops before changing
+      recognizer math. English Gen2 line 0 and the worst line pass input,
+      features, sequence input, both BiLSTM outputs, and logits. Line 0 decodes
+      identically; the worst line reproduces Python's own poor decode. Input
+      cosine is `0.99981`, recurrent/logit cosine is at least `0.99972`, and
+      feature global cosine is `0.99993` (the sparse per-row feature cosine is
+      not a promotion gate). This rules out an unexplained GGML LSTM divergence
+      for these crops; remaining TODOs are detector geometry/crop selection,
+      exact recognizer-asset/preprocessing identity, and page postprocess
+      confidence semantics.
 - [x] Add native handoff invariants for word-mode line/x ordering and
       normalized-box bounds; external Tesseract TSV geometry/text parity is
       still pending.
