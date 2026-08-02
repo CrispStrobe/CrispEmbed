@@ -4,13 +4,21 @@
 #include <cstdio>
 #include <cstdlib>
 
+static void set_env(const char * name, const char * value) {
+#if defined(_WIN32)
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
 static int test_main(int argc, char ** argv) {
     if (argc != 4) {
         std::fprintf(stderr, "usage: %s <model.gguf> <dawg-name> <utf8-text>\n", argv[0]);
         return 2;
     }
-    setenv("CRISPEMBED_TESSERACT_DAWG_LOAD", "1", 1);
-    setenv("CRISPEMBED_TESSERACT_FORCE_CPU", "1", 1);
+    set_env("CRISPEMBED_TESSERACT_DAWG_LOAD", "1");
+    set_env("CRISPEMBED_TESSERACT_FORCE_CPU", "1");
     auto * ctx = tesseract_lstm_init(argv[1], 1);
     if (!ctx) return 1;
     const int count = tesseract_lstm_dawg_count(ctx);
