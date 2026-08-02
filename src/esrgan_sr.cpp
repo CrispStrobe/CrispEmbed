@@ -195,8 +195,16 @@ static ggml_tensor * esrgan_prep_conv(ggml_context * g, ggml_tensor * w, int IC)
 
 static ggml_cgraph * build_esrgan_graph(esrgan_context * ctx, int H, int W) {
     int n_convs = (int)ctx->convs.size();
-    // Each conv: prep(~3 nodes) + conv2d + bias add + prelu(~3 nodes) ≈ 10 nodes
-    int graph_size = n_convs * 12 + 100;
+    // Each conv: prep + conv2d + bias add + prelu. Measured on the 18-conv
+    // Real-ESRGAN x4 at 64x32: f32 weights build 283 nodes (~10.2/conv), but a
+    // QUANTIZED GGUF builds 335 (~13.1/conv) because esrgan_prep_conv adds a
+    // dequant cast + ggml_cont per conv before the reshape. The old 12/conv
+    // estimate covered f32 with 33 nodes to spare and overflowed the quantized
+    // path by 19, aborting in ggml_visit_parents_graph on
+    // GGML_ASSERT(cgraph->n_nodes < cgraph->size) — so any q8_0/q4_k esrgan
+    // artifact was unusable. 16/conv leaves ~24% headroom over the quantized
+    // measurement; this is graph metadata only, so over-reserving is cheap.
+    int graph_size = n_convs * 16 + 128;
     size_t buf_size = ggml_tensor_overhead() * (graph_size + 200) + ggml_graph_overhead_custom(graph_size, false);
     ctx->enc_meta.resize(buf_size);
     ggml_init_params ip = { buf_size, ctx->enc_meta.data(), true };
