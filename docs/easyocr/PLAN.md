@@ -676,6 +676,9 @@ metadata, not learned parameters.
       native diagnostic output, including the ordinary fallback path. This
       prevents silent character loss; composed-script quality parity remains
       open.
+- [x] Add a diagnostic partial recoder composer that preserves valid multi-code
+      segments around unmapped classes and marks the gaps as `<class>`. Exact
+      composition and the default decoder remain unchanged.
 
 - [x] Close German int-mode decoded parity. The discrepancy was in the Python
       reference LUT construction: NumPy float32 nonlinearities did not match
