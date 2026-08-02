@@ -44,6 +44,31 @@ struct adair_context;
 static void adair_conv(adair_context * ctx, const float * in, int ic, int h, int w, const float * wt, const float * bi,
                        int oc, int kh, int kw, int pad, int stride, int groups, float * out);
 
+// Output-channel count of a 1x1 conv weight, derived from the element count so
+// it holds for BOTH GGUF layouts this engine has to read.  An f32 conversion
+// stores the kernel 4-D as [KW,KH,IC,OC] = [1,1,IC,OC], but `tools/quantize.cpp`
+// flattens every 4-D conv weight to 2-D [IC*KH*KW, OC] in the output header, so
+// any f16/quantized artifact reports ne[3]==1.  Reading OC off ne[3] therefore
+// collapsed the GDFN hidden width and both FreModule gate widths to 1 on f16 —
+// which made `half = hidden/2` zero and built the next conv with ic==0, i.e. the
+// zero-size kernel descriptor the F16 audit hit.  The element count survives the
+// flatten (it is a pure reinterpret, no transpose), so deriving OC from it is
+// layout-proof.
+// `ADAIR_LEGACY_NE3_DIMS=1` restores the old read for same-binary bisection.
+static bool adair_legacy_ne3_dims() {
+    static const bool v = getenv("ADAIR_LEGACY_NE3_DIMS") && atoi(getenv("ADAIR_LEGACY_NE3_DIMS"));
+    return v;
+}
+
+static int conv1x1_out_channels(const ggml_tensor * t, int ic) {
+    if (!t) return 0;
+    if (adair_legacy_ne3_dims()) return (int)t->ne[3];
+    if (ic <= 0) return 0;
+    const int64_t n = ggml_nelements(t);
+    if (n % ic != 0) return 0;
+    return (int)(n / ic);
+}
+
 static void conv2d(const float * in, int ic, int h, int w, const float * wt, const float * bi, int oc, int kh, int kw,
                    int pad, int stride, int groups, float * out) {
     int oh = (h + 2 * pad - kh) / stride + 1;
@@ -177,8 +202,12 @@ struct gdfn_wt {
 static void gdfn_forward(adair_context * ctx, const float * x, int C, int H, int W, const gdfn_wt & wt, float * out,
                          core_cpu::DequantCache & dqc) {
     int hw = H * W;
-    // Infer hidden dim from proj1 weight: ne[3] = hidden (output channels)
-    int hidden = (int)wt.proj1_w->ne[3];
+    // Infer hidden dim from the proj1 1x1 kernel (C -> hidden), layout-proof.
+    int hidden = conv1x1_out_channels(wt.proj1_w, C);
+    if (hidden <= 0) {
+        fprintf(stderr, "adair: cannot infer GDFN hidden width from ffn.project_in (C=%d)\n", C);
+        return;
+    }
 
     // Conv1x1 expand (no bias)
     std::vector<float> h1(hidden * hw);
@@ -455,7 +484,11 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
         for (int i = 0; i < hw; i++) pool[c] += projected[c * hw + i];
         pool[c] /= hw;
     }
-    int rc_hidden = (int)wt.rate_w1->ne[3]; // C/8
+    int rc_hidden = conv1x1_out_channels(wt.rate_w1, C); // C/8
+    if (rc_hidden <= 0) {
+        fprintf(stderr, "adair: cannot infer rate_conv hidden width (C=%d)\n", C);
+        return;
+    }
     const float * rw1 = dqc.get(wt.rate_w1);
     std::vector<float> rc_h(rc_hidden);
     for (int o = 0; o < rc_hidden; o++) {
@@ -564,7 +597,11 @@ static void fre_forward(adair_context * ctx, const float * inp_img_3ch, int img_
         for (int i = 0; i < hw; i++) cg_pool[c] += ca_l[c * hw + i];
         cg_pool[c] /= hw;
     }
-    int cg_hidden = (int)wt.cg_w1->ne[3];
+    int cg_hidden = conv1x1_out_channels(wt.cg_w1, C);
+    if (cg_hidden <= 0) {
+        fprintf(stderr, "adair: cannot infer ChannelGate hidden width (C=%d)\n", C);
+        return;
+    }
     const float * cg1 = dqc.get(wt.cg_w1);
     const float * cg2 = dqc.get(wt.cg_w2);
     std::vector<float> cg_h(cg_hidden), cg_out_v(C);
