@@ -30,7 +30,9 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** make the static PP-OCRv6 recognizer graph safe with dynamic-width line crops; bypass the fixed 320-wide graph for wider crops and retain the CPU reference path until a dynamic-shape graph is implemented and benchmarked. Live graph-debug test on an 800×100 fox line reports `input elements=55296` and cleanly bypasses the 320-wide graph; CPU decodes `The quick brown fox jumps` | **COMPLETED** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** implement and benchmark a truly dynamic-width PP-OCRv6 GGML graph, with width-keyed graph/cache ownership and CPU/Metal parity; keep the current explicit CPU fallback as the acceptance baseline. Implemented width-keyed graph rebuilds that retain the loaded GGUF source weights; a single process now runs 320-wide and 384-wide crops with graph outputs `80x3x384` and `96x3x384`, and graph-accepted text matches CPU (`De t 4 dg 14` / `The quick brown fox jumps`) | **COMPLETED — CPU graph validated; Metal parity pending** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** run the width-keyed recognizer graph on Metal for 320/384-wide crops, compare graph-accepted output and stage logits to CPU, and retain CPU fallback for any backend-specific divergence. Metal `MTL0` builds both widths and graph-accepted text matches CPU (`De t 4 dg 14` / `The quick brown fox jumps`); no dynamic gold archive exists yet for stage-logit comparison. Two-crop cold process timing was `28.32 s` Metal versus `2.94 s` CPU, so Metal is currently slower due pipeline compilation and remains diagnostic-only | **COMPLETED — parity passes; performance TODO** |
-| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** add reusable Metal pipeline/cache timing and dynamic-width gold logits, then benchmark warm 320/384-width recognizer graphs; do not promote Metal acceptance until cold/warm cost and numerical parity are recorded | **IN PROGRESS** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** add reusable Metal pipeline/cache timing and dynamic-width gold logits, then benchmark warm 320/384-width recognizer graphs; do not promote Metal acceptance until cold/warm cost and numerical parity are recorded. Fixed repeated Metal scheduler reuse: re-plan Metal buffers per invocation while CPU retains allocation reuse. Same-width repeated Metal now exits 0 with identical text (`19.78 s`/2 crops); alternating 320/384/320/384 also exits 0 with identical text (`21.57 s`/4 crops). Dynamic stage-logit gold remains pending | **COMPLETED — stability fixed; performance/logit TODO** |
+| 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** reduce Metal dynamic-width overhead by caching compiled graph plans per width or batching same-width crops; add width-specific gold logits before any Metal acceptance promotion | **IN PROGRESS** |
+| 2026-08-02 | `chore/ai-act-audit-fixes` / `.codex/worktrees/chore-ai-act-audit-fixes` | **Picked:** fourth AI Act audit, run against `main` at `52172c10`. Re-verified the code-backed claims and this time **executed** the gate against real GGUFs (yunet + sface pulled from `cstr/*`) rather than trusting that the test exists: all 8 prior cases pass, including the renamed-model case. Also verified the registry is clean of emotion/age/gender/ethnicity models (555 entries), that no training code exists (so §7's "quantization only" argument holds), and — since Reg (EU) 2026/1744 postdates the assistant's knowledge cutoff — checked POLICY's whole date table against the EUR-Lex text: **accurate**, including 2 Dec 2026 for the new Art. 5(1)(ba)/(bb) NCII/CSAM prohibitions. Three gaps found and closed here: (1) `--dim` returned *before* the gate on both CLI paths that reach it, making the CLI laxer than `crispembed_face_init()` — all three CLI sites now share one `cnn_biometric_ok()` helper keyed on declared type (which defaults to `recognition`, so it fails closed), and the gate test grew 3 cases; (2) POLICY §4 claimed "both gates key off declared type" while the `--face-pipeline` gate was unconditional-before-load — that path is now type-keyed too, so the sentence is true as written; (3) neither POLICY nor README told deployers that the server acknowledgement is **once per process** with **no authentication** and server-side-path input — documented in both, plus a startup warning when a recognition model is loaded on a non-loopback bind. Touches `examples/cli/main.cpp`, `examples/server/server.cpp`, `tests/test_biometric_gate.py`, POLICY/README/PLAN — **no OCR/model/graph code**. Gap (1) was mis-placed from the start, not a regression: `git log -L` shows the gate was added *below* the pre-existing `--dim` early-return in `6d87d6bd`. Verified before/after with the same toolchain — a CLI built from `HEAD:examples/cli/main.cpp` prints `128` (sface's template width) unacknowledged on **both** paths; the patched CLI refuses both. Gate test now 11/11 with real yunet+sface GGUFs, server warning fires on `--host 0.0.0.0` and stays silent on loopback, `--face-pipeline` still refuses without ack and runs with it, text embed + `--dim` unaffected, `format.sh --check` and `check_registry_licenses.py` clean | **COMPLETED** |
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
@@ -284,29 +286,41 @@ now wired: `--ocr-engine ppocrv6` (C-ABI id 16) and `--ocr-engine easyocr`
 (id 17), plus `--ocr-cls` for the optional PP-LCNet 0/180 classifier and
 registry entries naming the locally-converted artifacts.
 
-**Baseline table (20 synthetic fixtures, 3 repeats, uncontended M1 Metal).**
-`crispembed-ppocrv6` is excluded because it does not produce text at all (see
-below); every other arm ran clean with 0 failures.
+**Where the lanes stand (20 synthetic fixtures with exact ground truth).**
+Quality is settled; latency is only partly settled — see the caveat below.
 
-| engine | kind | CER | WER | CER vs tesseract-cli | proc ms | engine ms |
-|---|---|--:|--:|--:|--:|--:|
-| `tesseract-cli:eng` | external | **0.0256** | **0.0890** | — | **373** | — |
-| `paddleocr-py` | external | **0.0185** | 0.1153 | 0.0368 | 1074 | 1074 |
-| `easyocr-py` | external | 0.0769 | 0.2363 | 0.0928 | 746 | 746 |
-| `crispembed-tesseract` | native | 0.0814 | 0.2548 | 0.1005 | 6462 | — |
-| `crispembed-easyocr` | native | 0.1412 | 0.3802 | 0.1561 | 6640 | 6295 |
+| engine | kind | CER | WER | CER vs tesseract-cli |
+|---|---|--:|--:|--:|
+| `crispembed-ppocrv6` | native | **0.0031** | **0.0178** | 0.0253 |
+| `paddleocr-py` | external | 0.0185 | 0.1153 | 0.0368 |
+| `tesseract-cli:eng` | external | 0.0256 | 0.0890 | — |
+| `crispembed-tesseract` | native | 0.0290 | 0.1623 | 0.0490 |
+| `easyocr-py` | external | 0.0769 | 0.2363 | 0.0928 |
+| `crispembed-easyocr` | native | 0.0808 | 0.3190 | 0.0974 |
 
-Reading the columns correctly: `crispembed-tesseract` vs `tesseract-cli` is a
-fair wall-clock comparison (both are one subprocess per image, both pay model
-load), so **17x slower at 3.2x the character error** is the real gap. For
-`crispembed-easyocr` vs `easyocr-py` the fair column is `engine_ms`, which
-excludes load on both sides: **8.4x slower at 1.8x the character error**. The
-EasyOCR CER gap mixes detector and recognizer — our lane pairs the EasyOCR CRNN
-with DBNet while `easyocr-py` uses CRAFT — so it is not yet attributable.
+All three native lanes reached or beat their upstreams on character error.
+`crispembed-ppocrv6` — which produced pure noise at the start of this work — is
+now the most accurate arm in the comparison, 8x below `tesseract-cli` and 6x
+below PaddleOCR's own Python pipeline. `crispembed-tesseract` (0.0290 vs
+0.0256) and `crispembed-easyocr` (0.0808 vs 0.0769) sit within noise of theirs.
+WER remains the weaker column for the native lanes, which is a spacing/grouping
+question rather than a recognition one and is the natural next target.
 
-Three gaps follow, in priority order: (1) PP-OCRv6 produces no usable text at
-all; (2) both working native lanes are ~10x slower than the engines they port;
-(3) both carry roughly 2-3x the character error of their upstream.
+Starting point for comparison: `crispembed-tesseract` 0.0814, `crispembed-easyocr`
+0.1412, `crispembed-ppocrv6` unusable.
+
+**Latency: partly measured, and honestly so.** The detector cap below is a
+clean 4.7x with a validated in-run control. Everything after it was measured on
+a box carrying 3-6 concurrent agent builds — `tesseract-cli` itself drifted
+from ~150 ms to 464 ms and at times 10.3 s in the same harness — so no absolute
+native latency from those runs is reported here, and `crispembed-ppocrv6` has
+no trustworthy timing at all yet. Re-run
+`tests/ocr_external_parity.py` on a quiet box and check the `tesseract-cli`
+control is back near 150 ms before quoting any number. What is known
+structurally: the recognizers are cheap (`recognize=119 ms` against
+`detect=4938 ms` pre-cap), PP-OCRv6 now feeds the recognizer wider crops by
+design, and its CPU SVTR attention is O(tokens^2), so that lane should be
+expected to cost more than the other two until its graph path is accepted.
 
 **The detector, not the recognizers, is the whole latency gap — and its resize
 rule is an upstream deviation.** Stage bench on `synth_00_clean.png` via the
@@ -334,15 +348,18 @@ it lands both lanes at CER parity with their upstreams (`tesseract-cli` 0.0256,
 `easyocr-py` 0.0769). Enlarging a page the scan never resolved was costing both
 time *and* accuracy.
 
-**It is still shipped gated, default off, because one fixture regressed.** On
-`tests/regression/images/cc0/simple_table.jpg` (200x102 — a thumbnail, not a
-page) the uncapped path detects one region while `cap=1.0` detects zero: at that
-size the upscale is doing real work for detection recall. Per the A/B rule a
-one-fixture regression is evidence to gate off, not to erase, so
-`max_upscale` defaults to 0 and the win is opt-in until the rule is
-reformulated to key on estimated text height rather than image size. Note the
-cap provably cannot change behaviour when the short side is already >= 736
-(scale < 1, so the `min` never binds) — the entire risk surface is small images.
+**It now ships on by default, gated on image size rather than switched off.**
+The first cut was left off because `tests/regression/images/cc0/simple_table.jpg`
+(200x102 — a thumbnail, not a page) went from one detected region to zero when
+capped. The fix is `upscale_floor`: the cap applies only once the short side is
+at least 120 px, which is the difference between "this page already resolves
+its text" and "this is a thumbnail". 120 is measured, not picked — the 616x149
+low-DPI fixtures are *better* capped on both axes (CER 0.025 at 1.25 s versus
+0.066 at 58 s), so the exemption must not reach them, while the 102 px
+thumbnail needs it. Verified by the resize decisions: 616x149 and 572x188 now
+pass through unscaled while 200x102 still goes to 1443x736 and keeps its
+region. Both knobs stay overridable
+(`CRISPEMBED_OCR_DET_MAX_UPSCALE`, `CRISPEMBED_OCR_DET_UPSCALE_FLOOR`).
 A cap=2.0 arm was also run but is discarded: `tesseract-cli` went 157 -> 1936 ms
 on the same fixture inside it, so that run was contended, not slow.
 
