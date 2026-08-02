@@ -1,106 +1,146 @@
 #!/usr/bin/env python3
 """Kaggle kernel: convert H2OVL-Mississippi-2B to CrispEmbed GGUF + upload.
 
-Runs off-box because the local dev machine cannot hold this one: the upstream
-safetensors are 4.3 GB, the f16 GGUF another 4.4 GB, and the q4_k 1.4 GB on top
-— more than the free space there, and the download alone saturates it.
+Runs off-box because the local dev machine cannot hold this one: 4.3 GB of
+upstream safetensors, a 4.4 GB f16 GGUF and a 1.4 GB q4_k on top — more than
+the free space there, and a local attempt ran the disk out mid-write.
 
 What makes this model special is `use_msac` (Multi-Scale Adaptive Cropping).
 The converter records the flag and the runtime honours it by tiling the page
-twice; without that the model loads fine and answers with fluent nonsense. The
-800m sibling has use_msac=false, which is why it worked before MSAC existed.
+at two scales; without that the model loads fine and answers with fluent
+nonsense. Its 800m sibling has use_msac=false, which is why that one worked
+before MSAC existed. Both facts are asserted below rather than assumed —
+every failure mode this model has is silent.
 
-Attach datasets: chr1s4/crispasr-hf-token
+Follows the kaggle_usage.md contract:
+  - kaggle_harness for auth + toolchain, cloned from CrispASR with the
+    bundled copy beside this file as the fallback (a CPU worker may have no
+    internet, and then the clone is what fails first)
+  - init_progress() before anything else: Kaggle buffers parent stdout
+    heavily, so without it a hang is invisible until the kernel is killed
+  - build_heartbeat() around every long silent block, so a stall is
+    distinguishable from slow progress
+  - both datasets attached: crispasr-hf-token (upload auth) and
+    crispasr-ccache (warm build, ~20 min -> ~3 min)
+
+Attach datasets: chr1str/crispasr-hf-token, chr1str/crispasr-ccache
 """
-import gc
 import os
 import subprocess
 import sys
+from pathlib import Path
 
+WORK = Path("/kaggle/working")
 MODEL = "h2oai/h2ovl-mississippi-2b"
 NAME = "h2ovl-mississippi-2b"
 REPO = "cstr/h2ovl-mississippi-2b-crispembed-GGUF"
-WORK = "/kaggle/working"
 
+# ── harness ────────────────────────────────────────────────────────────
+CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
+_CRISPASR_DIR = WORK / "CrispASR"
+if not _CRISPASR_DIR.exists():
+    try:
+        subprocess.check_call(["git", "clone", "--depth", "1", CRISPASR_URL, str(_CRISPASR_DIR)])
+        sys.path.insert(0, str(_CRISPASR_DIR / "tools" / "kaggle"))
+    except Exception as exc:  # noqa: BLE001 — fall through to bundled copy
+        print(f"CrispASR clone failed ({exc}); using bundled harness", flush=True)
+
+if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import kaggle_harness as kh  # noqa: E402
+
+kh.init_progress()
+kh.step("start", model=MODEL, repo=REPO)
+
+hf_token = kh.resolve_hf_token()
+kh.step("auth", have_token=bool(hf_token))
+if not hf_token:
+    sys.exit("no HF token from env/secret/dataset — cannot upload, refusing to "
+             "burn an hour of compute for nothing")
+
+# ── source ─────────────────────────────────────────────────────────────
 os.chdir(WORK)
-subprocess.run("git clone --recursive https://github.com/CrispStrobe/CrispEmbed.git", shell=True, check=True)
-os.chdir("CrispEmbed")
-subprocess.run("git log --oneline -1", shell=True, check=True)
+if not (WORK / "CrispEmbed").exists():
+    with kh.build_heartbeat("clone"):
+        kh.sh("git clone --recursive https://github.com/CrispStrobe/CrispEmbed.git")
+os.chdir(WORK / "CrispEmbed")
+kh.sh("git log --oneline -1", check=False)
+kh.step("cloned")
 
-subprocess.run([sys.executable, "-m", "pip", "install", "gguf", "safetensors", "transformers", "-q"], check=True)
+# Not torch — Kaggle pre-installs it (gotcha #11); only the small deps.
+kh.sh("pip install -q gguf safetensors transformers", check=False)
 
-hf_token = None
-for p in ["/kaggle/input/crispasr-hf-token/hf_token.txt",
-          "/kaggle/input/datasets/chr1s4/crispasr-hf-token/hf_token.txt"]:
-    if os.path.exists(p):
-        hf_token = open(p).read().strip()
-        break
-if hf_token:
-    os.environ["HF_TOKEN"] = hf_token
-    print(f"HF token loaded ({len(hf_token)} chars)", flush=True)
-else:
-    print("WARNING: no HF token — will convert but not upload", flush=True)
+# ── convert ────────────────────────────────────────────────────────────
+f16 = WORK / f"{NAME}-f16.gguf"
+with kh.build_heartbeat("convert"):
+    kh.sh(f"python models/convert-internvl2-to-gguf.py --model {MODEL} "
+          f"--dtype f16 --output {f16}")
+kh.step("converted", mb=round(f16.stat().st_size / 1024**2))
 
-f16 = f"{WORK}/{NAME}-f16.gguf"
-print(f"Converting {MODEL}...", flush=True)
-subprocess.run([sys.executable, "models/convert-internvl2-to-gguf.py",
-                "--model", MODEL, "--dtype", "f16", "--output", f16], check=True)
-print(f"F16: {os.path.getsize(f16) / 1024**2:.0f} MB", flush=True)
-
-# The whole point of this conversion: the flag must have survived into the
-# GGUF, or the runtime will single-scale-tile a model that cannot read that.
+# The flag must have survived into the GGUF, or the runtime single-scale-tiles
+# a model trained on two scales — which does not error, it just lies.
 from gguf import GGUFReader  # noqa: E402
 
-r = GGUFReader(f16)
+reader = GGUFReader(str(f16))
 msac = None
-for k, field in r.fields.items():
-    if k.endswith("use_msac"):
+for key, field in reader.fields.items():
+    if key.endswith("use_msac"):
         msac = bool(field.parts[field.data[0]][0])
-print(f"internvl2.use_msac in GGUF: {msac}", flush=True)
-assert msac is True, "use_msac missing or false — the runtime would mis-tile this model"
 
-# Sanity: the LLM weight matrices must be present. A model_type-based branch
-# used to silently export only the per-layer norms, producing a GGUF that
-# loads and then segfaults in ggml_mul_mat on a null tensor.
-names = {t.name for t in r.tensors}
+# And the LLM matrices must exist: the old model_type-based export branch
+# emitted only per-layer norms for this checkpoint, giving a GGUF that loads
+# and then segfaults in ggml_mul_mat on a null tensor.
+names = {t.name for t in reader.tensors}
 missing = [n for n in ("l.blk.0.attn_q.weight", "l.blk.0.ffn_gate.weight") if n not in names]
-assert not missing, f"LLM weights missing from GGUF: {missing}"
-print(f"tensors: {len(names)} (LLM attention + FFN present)", flush=True)
-del r
-gc.collect()
+kh.step("gguf_checked", use_msac=msac, tensors=len(names), missing=missing)
+del reader
+if msac is not True:
+    sys.exit(f"internvl2.use_msac is {msac!r} — the runtime would mis-tile this model")
+if missing:
+    sys.exit(f"LLM weights missing from GGUF: {missing}")
 
-subprocess.run("cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release", shell=True, check=True)
-subprocess.run("ninja -C build crispembed-quantize", shell=True, check=True)
+# ── build + quantize ───────────────────────────────────────────────────
+kh.install_build_toolchain()  # warms /kaggle/working/.ccache from the dataset
+flags = kh.cache_and_link_flags()
+jobs = kh.safe_build_jobs(gpu=False)
+with kh.build_heartbeat("build"):
+    kh.sh("cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release " + " ".join(flags))
+    kh.sh_with_progress(f"ninja -C build -j{jobs} crispembed-quantize crispembed-cli test-msac-tiling")
+kh.step("built")
 
-q4 = f"{WORK}/{NAME}-q4_k.gguf"
-subprocess.run(["build/crispembed-quantize", f16, q4, "q4_k"], check=True)
-print(f"q4_k: {os.path.getsize(q4) / 1024**2:.0f} MB", flush=True)
+# Geometry check before the model check: if the tiler is wrong, a bad OCR
+# result would be blamed on the weights.
+kh.sh("./build/test-msac-tiling")
+kh.step("msac_geometry_ok")
 
-# Smoke-test the real path on Kaggle, so a broken artifact is never uploaded.
-# The MSAC line in the log is the thing to look for: it proves the two-scale
-# tiler ran rather than the single-scale one.
-subprocess.run("ninja -C build crispembed-cli", shell=True, check=True)
-img = "tests/regression/images/scan_page_pd.png"
-if os.path.exists(img):
-    print("=== OCR smoke test (q4_k) ===", flush=True)
-    p = subprocess.run(["build/crispembed", "-m", q4, "--ocr", img],
-                       capture_output=True, text=True, timeout=3600)
-    tiles = [ln for ln in p.stderr.splitlines() if "MSAC" in ln or "tiles (" in ln]
+q4 = WORK / f"{NAME}-q4_k.gguf"
+with kh.build_heartbeat("quantize"):
+    kh.sh(f"./build/crispembed-quantize {f16} {q4} q4_k")
+kh.step("quantized", mb=round(q4.stat().st_size / 1024**2))
+
+# ── smoke test ─────────────────────────────────────────────────────────
+img = Path("tests/regression/images/scan_page_pd.png")
+if img.exists():
+    with kh.build_heartbeat("ocr", interval_s=60.0):
+        proc = subprocess.run(["./build/crispembed", "-m", str(q4), "--ocr", str(img)],
+                              capture_output=True, text=True, timeout=7200)
+    tiles = [ln for ln in proc.stderr.splitlines() if "MSAC" in ln or "tiles (" in ln]
+    text = proc.stdout.strip()
+    kh.step("ocr", rc=proc.returncode, chars=len(text), tiling=tiles)
     print("\n".join(tiles), flush=True)
-    text = p.stdout.strip()
-    print(f"rc={p.returncode} chars={len(text)}", flush=True)
-    print(text[:600], flush=True)
-    if p.returncode != 0 or len(text) < 200:
+    print(text[:800], flush=True)
+    if proc.returncode != 0 or len(text) < 200:
         sys.exit("OCR smoke test failed — refusing to upload a model that cannot read a page")
     if not any("MSAC" in t for t in tiles):
         sys.exit("MSAC tiling did not run — the GGUF flag is not reaching the runtime")
 
-if hf_token:
-    from huggingface_hub import HfApi, create_repo
+# ── upload ─────────────────────────────────────────────────────────────
+from huggingface_hub import HfApi, create_repo  # noqa: E402
 
-    api = HfApi(token=hf_token)
-    create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token)
-    card = f"""---
+api = HfApi(token=hf_token)
+create_repo(REPO, repo_type="model", exist_ok=True, token=hf_token)
+card = f"""---
 license: apache-2.0
 base_model: {MODEL}
 tags: [gguf, ocr, crispembed, internvl, h2ovl]
@@ -112,12 +152,10 @@ H2OVL-Mississippi-2B (InternViT-300M + H2O-Danube2-1.8B, OCRBench 782) in the
 single-file **CrispEmbed** GGUF layout, for the `internvl2_ocr` engine.
 
 **Requires MSAC.** This model sets `use_msac`, so the page is tiled at two
-scales and the tiles concatenated `fine[:-1] + coarse[:-1] + fine[-1:]`.
-CrispEmbed implements this; a runtime that single-scale-tiles it will get
-fluent nonsense rather than a transcription. Needs CrispEmbed with MSAC
-support (`internvl2.use_msac` honoured in `image_preprocess`).
-
-Not interchangeable with llama.cpp GGUFs — different tensor naming, one file.
+scales and concatenated `fine[:-1] + coarse[:-1] + fine[-1:]`. CrispEmbed
+implements this. A runtime that single-scale-tiles it does not error — it
+returns confident nonsense, so check your engine supports MSAC before trusting
+any output. Not interchangeable with llama.cpp GGUFs.
 
 ## Usage
 
@@ -133,15 +171,16 @@ relicense it. See [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) and
 its `POLICY.md`: OCR output is a probabilistic reconstruction, not a faithful
 copy, and VLM engines confabulate through a smudge rather than leave it blank.
 """
-    open(f"{WORK}/README.md", "w").write(card)
-    api.upload_file(path_or_fileobj=f"{WORK}/README.md", path_in_repo="README.md",
-                    repo_id=REPO, token=hf_token, commit_message="Model card")
-    for f in (f"{NAME}-q4_k.gguf", f"{NAME}-f16.gguf"):
-        path = f"{WORK}/{f}"
-        if os.path.exists(path):
-            print(f"Uploading {f}...", flush=True)
-            api.upload_file(path_or_fileobj=path, path_in_repo=f, repo_id=REPO, token=hf_token,
+(WORK / "README.md").write_text(card)
+api.upload_file(path_or_fileobj=str(WORK / "README.md"), path_in_repo="README.md",
+                repo_id=REPO, token=hf_token, commit_message="Model card")
+for f in (q4, f16):
+    if f.exists():
+        with kh.build_heartbeat(f"upload.{f.name}", interval_s=60.0):
+            api.upload_file(path_or_fileobj=str(f), path_in_repo=f.name, repo_id=REPO,
+                            token=hf_token,
                             commit_message="CrispEmbed-format GGUF (MSAC two-scale tiling required)")
-    print("Upload complete", flush=True)
+        kh.step("uploaded", file=f.name)
 
+kh.step("done")
 print("DONE")
