@@ -26,6 +26,10 @@ STAGE_ROW = re.compile(
     r"recognize=(?P<recognize>[0-9.]+) ms total=(?P<total>[0-9.]+) ms "
     r"boxes=(?P<boxes>\d+) results=(?P<results>\d+)$"
 )
+WIDTH_ROW = re.compile(
+    r"^\[ppocrv6-width-bench\] crops=(?P<crops>\d+) "
+    r"unique_model_widths=(?P<unique>\d+) widths=(?P<widths>.*)$"
+)
 
 
 def parse_rows(text: str, variant: str) -> list[dict]:
@@ -54,6 +58,21 @@ def parse_stage_rows(text: str) -> list[dict]:
                 row[f"{name}_ms"] = float(row.pop(name))
             row["boxes"] = int(row.pop("boxes"))
             row["results"] = int(row.pop("results"))
+            rows.append(row)
+    return rows
+
+
+def parse_width_rows(text: str) -> list[dict]:
+    """Parse per-fixture recognizer crop-width distribution telemetry."""
+    rows = []
+    for line in text.splitlines():
+        match = WIDTH_ROW.match(line)
+        if match:
+            row = match.groupdict()
+            row["crops"] = int(row["crops"])
+            row["unique_model_widths"] = int(row["unique"])
+            del row["unique"]
+            row["widths"] = [int(width) for width in row["widths"].split(",") if width]
             rows.append(row)
     return rows
 
@@ -119,8 +138,10 @@ def main() -> int:
                 partial_err = partial_err.decode(errors="replace")
             timeout_rows = parse_rows(partial, variant)
             stage_rows = parse_stage_rows(partial_err)
-            for row, stages in zip(timeout_rows, stage_rows):
-                row["stages"] = stages
+            width_rows = parse_width_rows(partial_err)
+            for index, row in enumerate(timeout_rows):
+                row["stages"] = stage_rows[index] if index < len(stage_rows) else None
+                row["width_distribution"] = width_rows[index] if index < len(width_rows) else None
             for row in timeout_rows[len(stage_rows):]:
                 row["stages"] = None
             timeout_result = {
@@ -141,15 +162,18 @@ def main() -> int:
                              "use --timeout to override") from exc
         rows = parse_rows(proc.stdout, variant)
         stage_rows = parse_stage_rows(proc.stderr)
+        width_rows = parse_width_rows(proc.stderr)
         if len(stage_rows) == len(rows):
-            for row, stages in zip(rows, stage_rows):
-                row["stages"] = stages
+            for index, row in enumerate(rows):
+                row["stages"] = stage_rows[index]
+                row["width_distribution"] = width_rows[index] if index < len(width_rows) else None
                 row["stage_telemetry_status"] = "complete"
         else:
             # Keep total-output compatibility for older binaries, but make a
             # missing stage telemetry record explicit in the artifact.
             for row in rows:
                 row["stages"] = None
+                row["width_distribution"] = None
                 row["stage_telemetry_status"] = f"unavailable:{len(stage_rows)}/{len(rows)}"
         if proc.returncode != 0:
             raise SystemExit(f"native PP-OCRv6 {variant} regression failed (exit {proc.returncode})\n"
