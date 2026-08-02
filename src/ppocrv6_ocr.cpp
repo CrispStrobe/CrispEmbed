@@ -1700,6 +1700,10 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
                                                             : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
     const char * batch_graph_env = std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH");
     const bool batch_graph_requested = batch_graph_env && std::strcmp(batch_graph_env, "0") != 0;
+    if (batch_graph_requested && (!c->backend || !ggml_backend_is_cpu(c->backend)) &&
+        std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+        fprintf(stderr, "[ppocrv6-batch-graph] backend=%s action=scalar-fallback reason=metal-fourth-dimension-gated\n",
+                c->backend ? ggml_backend_name(c->backend) : "none");
     int max_batch = 4;
     if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_BATCH_MAX")) max_batch = std::max(1, std::atoi(limit));
     int completed = 0;
