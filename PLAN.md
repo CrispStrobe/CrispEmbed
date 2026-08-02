@@ -338,11 +338,15 @@ things were eating the time, none of them the recognizer math:
    Measured 4971 ms cold / 1069 ms warm against **4.8 ms** on the CPU backend.
    The whole invocation went **5.9 s -> 0.47 s (12.5x)**, output byte-identical.
    Fixed; `CRISPEMBED_TESSERACT_GPU_LOAD` restores the old path.
-3. **PP-OCRv6's recognizer runs a CPU scalar SVTR.** Its detector already
+3. **PP-OCRv6's recognizer ran a CPU scalar SVTR.** Its detector already
    follows the correct never-upscale convention (`min(1, 960/max(w,h))`), so the
-   remaining cost is compute. The now-correct graph path is **4.2–7x faster with
-   identical decoded text** (wide 713 px crop 8.28 s -> 1.98 s; 320 px crop
-   6.40 s -> 0.92 s). Not yet promoted — see below.
+   remaining cost was compute. The now-correct graph is **~1.9x faster
+   end-to-end with byte-identical decoded text on 26/26 fixtures** (20 synthetic
+   + 6 CC0 scans, largest 71 regions; `synth_00_clean` 1214 -> 651 ms, the
+   1920x2518 `german_official_print` scan 9369 -> 4964 ms). **Promoted to
+   default**; `CRISPEMBED_PPOCRV6_NO_GRAPH` reverts. Scope is the recognizer
+   only — the detector graph stays diagnostic-only on geometry parity, and the
+   tiny variant keeps its own accept gate since the evidence is for small.
 
 Where that leaves a one-shot CLI invocation on `synth_00_clean.png`, median of
 3, with `tesseract-cli` measured alongside as the load control:
@@ -359,15 +363,16 @@ rather than hidden. The tesseract lane went from ~40x system Tesseract to
 **~3x**. The other two are ~3x their Python references (`easyocr-py` 0.75 s,
 `paddleocr-py` 1.07 s) and are not yet at parity.
 
-**Remaining speed work, in order of measured value.** (a) Promote the PP-OCRv6
-recognizer graph — it is now correct, agrees with CPU on every crop tried, and
-is worth 4.2–7x; it needs a multi-fixture gold pass before the default flips.
-(b) PP-OCRv6's CPU detector (1.9 s) is scalar convolution; its graph is still
-diagnostic-only on geometry parity. (c) Each engine builds its own Metal
-backend, so a pipeline pays that init more than once — sharing one backend
-across the orchestrator's engines is untried. (d) The DBNet detector still
-costs ~400 ms on a capped 572x188 page against tesseract-cli's 0.15 s for the
-entire job.
+**Remaining speed work, in order of measured value.** (a) PP-OCRv6's CPU
+detector is scalar convolution and is now the dominant cost of that lane; its
+graph is still diagnostic-only on box-geometry parity, which is the blocker to
+close. (b) Each engine builds its own Metal backend, so a pipeline pays that
+init more than once — sharing one across the orchestrator's engines is untried
+and, given that a single wasted Metal init cost 1–5 s in the tesseract lane, is
+likely worth more than it looks. (c) The DBNet detector still costs ~400 ms on
+a capped 572x188 page against tesseract-cli's 0.15 s for the entire job.
+(d) EasyOCR's lane is the furthest from its reference and has had no profiling
+pass at all yet.
 
 **Measurement discipline, learned the hard way here.** This box runs 3–6
 concurrent agent builds; load average hit 103 mid-sweep and `tesseract-cli`
