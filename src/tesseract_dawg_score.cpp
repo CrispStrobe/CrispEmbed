@@ -46,6 +46,11 @@ float word_bonus(const std::vector<int> & prefix, const std::vector<std::vector<
             bonus += 0.25f;
         else if (include_prefix && prefix_word_match(dawgs, word))
             bonus += 0.02f;
+    } else if (include_prefix && !word.empty() && prefix_word_match(dawgs, word)) {
+        // Intermediate beam states need a small prefix bonus as well.  Without
+        // this branch the prefix-score switch only affected the final state,
+        // so it could not keep a legal dictionary path alive during pruning.
+        bonus += 0.02f;
     }
     return bonus;
 }

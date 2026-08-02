@@ -480,6 +480,11 @@ recognizer and LayoutLM consumer.
 - [ ] Port and validate Tesseract recode/dictionary scoring separately from
       the now-proven network arithmetic; do not enable a production beam from
       the diagnostic implementation.
+- [x] Correct the opt-in DAWG prefix-score contract: incomplete current words
+      now receive the small dictionary prefix bonus during intermediate beam
+      ranking, not only at final-candidate selection. The focused scorer test
+      covers this path; production/default decoding remains unchanged and full
+      official page-output parity is still open.
 - [x] Preserve Tesseract DAWG components losslessly in newly converted GGUFs.
       `convert-tesseract-to-gguf.py` now records the present DAWG component
       names, base64 payloads, and SHA-256 digests under
