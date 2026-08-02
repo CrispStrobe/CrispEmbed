@@ -51,6 +51,10 @@ under both layouts. F16 measures **cos 0.999383, max_abs 0.027871** on the 64×6
 same binary — i.e. F16 costs nothing measurable here. Set
 `ADAIR_LEGACY_NE3_DIMS=1` to restore the old `ne[3]` read for bisection.
 
+Confirmed through the real CLI as well: restoring a 96×96 crop with the f16 and
+the f32 model returns rc=0 for both and the two output images agree at
+cosine `1.0`, max_abs `1/255`.
+
 The registry still ships f32: repointing it needs the f16 uploaded to
 `cstr/adair-GGUF` and a SHA-256 pin in `examples/cli/model_hashes.h`.
 
