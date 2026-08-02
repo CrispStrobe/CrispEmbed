@@ -959,6 +959,14 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "error: cannot load %s\n", instructir_path.c_str());
             return 1;
         }
+        // Resolve registry names, not just paths: `instructir` is in the
+        // auto-download registry but this flag passed its argument straight to
+        // the loader, so the entry was unreachable from the CLI.
+        instructir_model = crispembed_mgr::resolve_model(instructir_model, auto_download, accepted_license);
+        if (instructir_model.empty()) {
+            stbi_image_free(data);
+            return 1;
+        }
         void * ictx = crispembed_instructir_init(instructir_model.c_str(), n_threads);
         if (!ictx) {
             stbi_image_free(data);
@@ -988,6 +996,13 @@ static int cli_main(int argc, char ** argv) {
         unsigned char * data = stbi_load(adair_path.c_str(), &w, &h, &ch, 3);
         if (!data) {
             fprintf(stderr, "error: cannot load %s\n", adair_path.c_str());
+            return 1;
+        }
+        // Same as InstructIR above: `adair-5d` is a registry entry, so accept a
+        // model name here and not only a filesystem path.
+        adair_model = crispembed_mgr::resolve_model(adair_model, auto_download, accepted_license);
+        if (adair_model.empty()) {
+            stbi_image_free(data);
             return 1;
         }
         void * actx = crispembed_adair_init(adair_model.c_str(), n_threads);
