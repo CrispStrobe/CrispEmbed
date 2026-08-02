@@ -362,23 +362,43 @@ bool preprocess_file(const char * path, const config & cfg, result & out) {
 // Find the closest aspect ratio from a set of possible (rows, cols) grids.
 // Returns (best_rows, best_cols).
 static void find_closest_aspect_ratio(int img_h, int img_w, int min_tiles, int max_tiles, int tile_size, int & out_rows,
-                                      int & out_cols) {
+                                      int & out_cols, int prior_rows = 0, int prior_cols = 0) {
     float target_aspect = (float)img_w / (float)img_h;
     float best_diff = 1e9f;
-    out_rows = 1;
-    out_cols = 1;
+    out_rows = 0;
+    out_cols = 0;
+
+    const bool exclude = (prior_rows > 0 && prior_cols > 0);
 
     for (int n = min_tiles; n <= max_tiles; n++) {
         // Try all factorizations of n
         for (int r = 1; r <= n; r++) {
             if (n % r != 0) continue;
             int c = n / r;
+            // MSAC pass 2: keep only grids that divide neither axis of the
+            // coarse grid, so the second scale is genuinely different rather
+            // than a refinement of the first. Upstream indexes its ratio
+            // tuples (cols, rows), hence the pairing below.
+            if (exclude && !(prior_cols % c != 0 && prior_rows % r != 0)) continue;
             float aspect = (float)c / (float)r;
             float diff = std::abs(aspect - target_aspect);
-            if (diff < best_diff || (diff == best_diff && n < out_rows * out_cols)) {
+            if (diff < best_diff) {
                 best_diff = diff;
                 out_rows = r;
                 out_cols = c;
+            } else if (diff == best_diff) {
+                // Upstream InternVL breaks aspect ties toward MORE tiles when
+                // the source has the pixels to fill them:
+                //   elif ratio_diff == best and area > 0.5*size*size*i[0]*i[1]
+                // We previously preferred fewer tiles, which picks a different
+                // grid for near-square inputs (e.g. 800x800 chose 1x1 where
+                // upstream chooses 2x2). That matters on its own, and MSAC's
+                // second pass is derived from this grid, so it has to match.
+                const double area = (double)img_w * (double)img_h;
+                if (area > 0.5 * (double)tile_size * (double)tile_size * (double)r * (double)c) {
+                    out_rows = r;
+                    out_cols = c;
+                }
             }
         }
     }
@@ -420,7 +440,16 @@ bool preprocess_internvl_rgb(const uint8_t * rgb, int height, int width, int cha
 
     // Find best tiling grid
     int grid_r, grid_c;
-    find_closest_aspect_ratio(height, width, cfg.min_dynamic_patch, cfg.max_dynamic_patch, S, grid_r, grid_c);
+    find_closest_aspect_ratio(height, width, cfg.min_dynamic_patch, cfg.max_dynamic_patch, S, grid_r, grid_c,
+                              cfg.exclude_prior_rows, cfg.exclude_prior_cols);
+    if (grid_r <= 0 || grid_c <= 0) {
+        // Only reachable on an MSAC second pass whose exclusion admitted
+        // nothing. Without exclusion min_dynamic_patch >= 1 always yields 1x1,
+        // so the single-scale path keeps its previous behaviour.
+        if (cfg.exclude_prior_rows > 0 && cfg.exclude_prior_cols > 0) return false;
+        grid_r = 1;
+        grid_c = 1;
+    }
     int n_tiles = grid_r * grid_c;
     if (cfg.use_thumbnail) n_tiles += 1;
 
@@ -488,6 +517,55 @@ bool preprocess_internvl_rgb(const uint8_t * rgb, int height, int width, int cha
         resize_and_normalize_tile(rgb, width, height, width * channels, channels, dst, S, S, cfg.mean, cfg.std);
         tile_idx++;
     }
+
+    return true;
+}
+
+bool preprocess_internvl_msac_rgb(const uint8_t * rgb, int height, int width, int channels, const internvl_config & cfg,
+                                  internvl_result & out) {
+    const int S = cfg.image_size;
+
+    // Pass 1: the ordinary grid.
+    internvl_config c1 = cfg;
+    c1.exclude_prior_rows = 0;
+    c1.exclude_prior_cols = 0;
+    c1.use_thumbnail = true;
+    internvl_result coarse;
+    if (!preprocess_internvl_rgb(rgb, height, width, channels, c1, coarse)) return false;
+
+    // Pass 2: a finer grid (min 3 tiles) that divides neither axis of pass 1.
+    internvl_config c2 = cfg;
+    c2.min_dynamic_patch = 3;
+    c2.exclude_prior_rows = coarse.grid_rows;
+    c2.exclude_prior_cols = coarse.grid_cols;
+    c2.use_thumbnail = true;
+    internvl_result fine;
+    if (!preprocess_internvl_rgb(rgb, height, width, channels, c2, fine)) return false;
+
+    // Upstream appends a thumbnail only when a pass produced more than one
+    // block, so `[:-1]` on a 1x1 pass drops its only tile and contributes
+    // nothing. Reproduce that exactly rather than assuming a thumbnail is
+    // always present.
+    const int coarse_blocks = coarse.grid_rows * coarse.grid_cols;
+    const int fine_blocks = fine.grid_rows * fine.grid_cols;
+    const int coarse_body = (coarse_blocks == 1) ? 0 : coarse_blocks;
+    const int fine_body = (fine_blocks == 1) ? 0 : fine_blocks;
+    if (fine_body < 1) return false; // the fine thumbnail comes from this pass
+
+    // fine[:-1] + coarse[:-1] + fine[-1:]
+    const size_t tile_floats = (size_t)3 * S * S;
+    out.n_tiles = fine_body + coarse_body + 1;
+    out.tile_size = S;
+    out.grid_rows = coarse.grid_rows; // the coarse grid is the page layout
+    out.grid_cols = coarse.grid_cols;
+    out.tiles.resize((size_t)out.n_tiles * tile_floats);
+
+    float * dst = out.tiles.data();
+    std::memcpy(dst, fine.tiles.data(), (size_t)fine_body * tile_floats * sizeof(float));
+    dst += (size_t)fine_body * tile_floats;
+    std::memcpy(dst, coarse.tiles.data(), (size_t)coarse_body * tile_floats * sizeof(float));
+    dst += (size_t)coarse_body * tile_floats;
+    std::memcpy(dst, fine.tiles.data() + (size_t)fine_body * tile_floats, tile_floats * sizeof(float));
 
     return true;
 }
