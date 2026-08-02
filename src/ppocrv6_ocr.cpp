@@ -1622,6 +1622,41 @@ extern "C" const char * ppocrv6_ocr_recognize_raw(ppocrv6_ocr_context * c, const
     return recognize_nchw(c, input, out_len, input_w);
 }
 
+extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const uint8_t * const * pixels,
+                                               const int * widths, const int * heights, const int * channels, int count,
+                                               char * const * outputs, const int * capacities, int * lengths) {
+    if (!c || !pixels || !widths || !heights || !channels || !outputs || !capacities || !lengths || count < 0) return 0;
+    std::vector<int> order((size_t)count);
+    for (int i = 0; i < count; ++i) {
+        order[(size_t)i] = i;
+        lengths[i] = 0;
+        if (outputs[i] && capacities[i] > 0) outputs[i][0] = '\0';
+    }
+    // Stable width grouping keeps the caller-visible order while allowing a
+    // future fused graph invocation to share one dynamic-width plan. The
+    // current backend still executes each member through the parity-tested
+    // scalar kernel, which makes this API safe to land before fusion.
+    std::stable_sort(order.begin(), order.end(), [&](int lhs, int rhs) {
+        const int lw =
+            std::max(320, int(48.0f * std::max(320.0f / 48.0f, widths[lhs] / float(std::max(1, heights[lhs])))));
+        const int rw =
+            std::max(320, int(48.0f * std::max(320.0f / 48.0f, widths[rhs] / float(std::max(1, heights[rhs])))));
+        return lw < rw;
+    });
+    int completed = 0;
+    for (const int i : order) {
+        int len = 0;
+        const char * text = ppocrv6_ocr_recognize_raw(c, pixels[i], widths[i], heights[i], channels[i], &len);
+        if (!text || !outputs[i] || capacities[i] <= 0) continue;
+        const int copied = std::min(std::max(0, len), capacities[i] - 1);
+        if (copied > 0) std::memcpy(outputs[i], text, (size_t)copied);
+        outputs[i][copied] = '\0';
+        lengths[i] = copied;
+        ++completed;
+    }
+    return completed;
+}
+
 extern "C" const char * ppocrv6_ocr_recognize(ppocrv6_ocr_context * c, const float * px, int w, int h, int * out_len) {
     if (!c || !px) return nullptr;
     std::vector<uint8_t> u((size_t)w * h);

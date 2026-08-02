@@ -497,6 +497,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (!rgb || w <= 0 || h <= 0) return {};
         std::vector<ocr_pipeline::ocr_result> results;
         std::vector<int> model_widths;
+        std::vector<std::vector<uint8_t>> crops;
+        std::vector<size_t> crop_box_indices;
+        std::vector<int> crop_widths, crop_heights;
+        std::vector<ocr_crop::orientation_info> crop_orientations;
         double crop_ms = 0.0, orientation_ms = 0.0, recognize_ms = 0.0;
         for (const auto & b : boxes) {
             const auto crop_started = std::chrono::steady_clock::now();
@@ -526,20 +530,39 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             orientation_ms +=
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - orientation_started)
                     .count();
-            const auto recognize_started = std::chrono::steady_clock::now();
-            int len = 0;
-            const char * text = ppocrv6_ocr_recognize_raw(ctx->pprec, crop.data(), cw, ch, 3, &len);
-            recognize_ms +=
-                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - recognize_started).count();
-            if (!text || len <= 0) continue;
+            crop_box_indices.push_back(&b - boxes.data());
+            crop_widths.push_back(cw);
+            crop_heights.push_back(ch);
+            crop_orientations.push_back(orientation);
+            crops.push_back(std::move(crop));
+        }
+        std::vector<const uint8_t *> crop_pixels;
+        std::vector<std::string> batch_text(crops.size(), std::string(4096, '\0'));
+        std::vector<char *> batch_outputs;
+        std::vector<int> batch_capacities(crops.size(), 4096), batch_lengths(crops.size(), 0);
+        crop_pixels.reserve(crops.size());
+        batch_outputs.reserve(crops.size());
+        for (size_t i = 0; i < crops.size(); ++i) {
+            crop_pixels.push_back(crops[i].data());
+            batch_outputs.push_back(batch_text[i].data());
+        }
+        const auto recognize_started = std::chrono::steady_clock::now();
+        ppocrv6_ocr_recognize_raw_batch(ctx->pprec, crop_pixels.data(), crop_widths.data(), crop_heights.data(),
+                                        std::vector<int>(crops.size(), 3).data(), (int)crops.size(),
+                                        batch_outputs.data(), batch_capacities.data(), batch_lengths.data());
+        recognize_ms +=
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - recognize_started).count();
+        for (size_t i = 0; i < crops.size(); ++i) {
+            if (batch_lengths[i] <= 0) continue;
             ocr_pipeline::ocr_result r;
+            const auto & b = boxes[crop_box_indices[i]];
             r.box = { b.x, b.y, b.w, b.h, b.score };
-            r.text.assign(text, (size_t)len);
+            r.text.assign(batch_text[i].data(), (size_t)batch_lengths[i]);
             r.confidence = b.score;
             r.rec_confidence = b.score;
-            r.orientation_corrected = orientation.corrected;
-            r.orientation_angle = orientation.angle;
-            r.orientation_confidence = orientation.confidence;
+            r.orientation_corrected = crop_orientations[i].corrected;
+            r.orientation_angle = crop_orientations[i].angle;
+            r.orientation_confidence = crop_orientations[i].confidence;
             results.push_back(std::move(r));
         }
         if (ppocr_bench) {
