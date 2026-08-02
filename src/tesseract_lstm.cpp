@@ -1021,7 +1021,13 @@ static void forward(tesseract_lstm_context * ctx,
     if (composed) {
         for (size_t i = 0; i < composed_uids.size(); ++i) {
             const int uid = composed_uids[i];
-            if (uid < 0 || uid >= (int)ctx->tokens.size()) continue;
+            if (uid < 0 || uid >= (int)ctx->tokens.size()) {
+                // Preserve an unmapped composed class in diagnostics. Dropping
+                // it silently makes native output look shorter than Python's
+                // reference and hides recoder coverage gaps.
+                ctx->result_buf += "<class>";
+                continue;
+            }
             ctx->result_buf += ctx->tokens[uid];
             if (!beam_decoded) {
                 const int begin = composed_starts[i];
@@ -1041,7 +1047,9 @@ static void forward(tesseract_lstm_context * ctx,
                 ctx->result_buf += ctx->tokens[uid];
                 if (!beam_decoded) ctx->char_confs.push_back(collapsed_confs[i]);
             } else {
-                ctx->result_buf += "<" + std::to_string(best) + ">";
+                // Keep unmapped output classes visible instead of silently
+                // dropping them or exposing implementation-specific IDs.
+                ctx->result_buf += "<class>";
             }
         }
     }

@@ -454,9 +454,10 @@ recognizer and LayoutLM consumer.
 - [x] Add and test an opt-in generic CTC prefix beam through
       `CRISPEMBED_TESSERACT_BEAM_WIDTH` at widths 2, 3, 5, 10, 16, 25, and 50;
       it does not change the native result, so it is not the CLI explanation.
-- [ ] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
-      quantized matrix arithmetic), then port its recode beam/dictionary
-      scoring and validate decoded output.
+- [x] Match Tesseract's exact int-mode logits (lookup-table nonlinearities and
+      quantized matrix arithmetic). The controlled PSM7 network boundary now
+      passes; recode-beam/dictionary scoring and full decoded page parity remain
+      separate open gates.
 - [x] Added the 1/256 Tesseract nonlinear LUT contract and reconstructed
       per-row int8 dot products. Native/Python int-mode logits now reach
       cosine `0.998405` with identical decoded output; generic CTC and
@@ -671,6 +672,10 @@ metadata, not learned parameters.
       greedy decoding silently dropped it. Native now preserves an explicit
       `<class>` diagnostic fallback; true Tesseract recode-beam composition and
       dictionary scoring remain required before production quality acceptance.
+- [x] Ensure every unmapped recoder result remains visible as `<class>` in the
+      native diagnostic output, including the ordinary fallback path. This
+      prevents silent character loss; composed-script quality parity remains
+      open.
 
 - [x] Close German int-mode decoded parity. The discrepancy was in the Python
       reference LUT construction: NumPy float32 nonlinearities did not match
