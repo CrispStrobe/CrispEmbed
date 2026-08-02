@@ -672,6 +672,10 @@ metadata, not learned parameters.
       greedy decoding silently dropped it. Native now preserves an explicit
       `<class>` diagnostic fallback; true Tesseract recode-beam composition and
       dictionary scoring remain required before production quality acceptance.
+- [x] Ensure every unmapped recoder result remains visible as `<class>` in the
+      native diagnostic output, including the ordinary fallback path. This
+      prevents silent character loss; composed-script quality parity remains
+      open.
 
 - [x] Close German int-mode decoded parity. The discrepancy was in the Python
       reference LUT construction: NumPy float32 nonlinearities did not match
