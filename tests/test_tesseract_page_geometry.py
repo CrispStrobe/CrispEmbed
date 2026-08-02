@@ -109,6 +109,11 @@ class TesseractPageGeometryTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "command timed out"):
             run([sys.executable, "-c", "import time; time.sleep(0.2)"], timeout_seconds=0.01)
 
+    def test_geometry_result_defines_timing_fields(self) -> None:
+        source = (ROOT / "tools/compare_tesseract_page_geometry.py").read_text()
+        self.assertIn('"official_geometry_subprocess"', source)
+        self.assertIn('"native_geometry_subprocess"', source)
+
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
         passing = acceptance_checks(args, {"regions": 12}, {"cer": 0.019, "wer": 0.089})

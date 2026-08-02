@@ -14,6 +14,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -255,11 +256,14 @@ def main() -> int:
     args = parser.parse_args()
     if args.timeout <= 0:
         parser.error("--timeout must be positive")
-    comparison = compare(
-        official_lines(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout),
-        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline,
-                     args.timeout),
-    )
+    official_started = time.perf_counter()
+    reference = official_lines(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout)
+    official_elapsed_ms = (time.perf_counter() - official_started) * 1000.0
+    native_started = time.perf_counter()
+    native = native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component,
+                          args.baseline, args.timeout)
+    native_elapsed_ms = (time.perf_counter() - native_started) * 1000.0
+    comparison = compare(reference, native)
     checks = {}
     if args.min_native_lines is not None:
         checks["min_native_lines"] = comparison["native_lines"] >= args.min_native_lines
@@ -289,6 +293,10 @@ def main() -> int:
             "ordering": "official-tsv-level4-vs-native-debug-candidate-index",
         },
         "psm": args.psm,
+        "timing_ms": {
+            "official_geometry_subprocess": round(official_elapsed_ms, 3),
+            "native_geometry_subprocess": round(native_elapsed_ms, 3),
+        },
         "projection": args.projection,
         "component": args.component,
         "baseline": args.baseline,

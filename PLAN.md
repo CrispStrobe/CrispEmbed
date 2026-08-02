@@ -2756,3 +2756,9 @@ the pattern first.
   JSON now record `timeout_seconds` alongside model hashes and reference-data
   provenance, matching the repeated benchmark result. This makes a saved
   parity artifact auditable without inferring command-line state.
+
+- **Geometry timing fields (2026-08-02).** Geometry JSON now reports separate
+  end-to-end official and native geometry-subprocess timings, alongside the
+  existing stage metrics from the native debug stream. This enables speed
+  comparisons once the resource-isolated CLI run is available; eighteen
+  model-free geometry tests pass.
