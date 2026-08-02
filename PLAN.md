@@ -963,9 +963,45 @@ actually spends the time lives in the pipeline) into `detect_ms`, `crop_ms`,
 `set_width_ms` and `recognize_ms`, and reports `width_calls` vs `width_changes`.
 That last pair is the point: `easyocr_ocr_set_width` tears down and rebuilds the
 recognizer graph on every width change, so the ratio says directly how much
-`EASYOCR_WIDTH_SORT` could ever be worth on a given page, which is the number
-missing from the 0-3% result recorded for P6. **Someone needs to run this on the
-31-unit document and the 47-region receipt and put the numbers here.**
+`EASYOCR_WIDTH_SORT` could ever be worth on a given page.
+
+**Run on `commons_test_ocr_document.jpg` (289 detector boxes -> 27 grouped
+lines), 2026-08-02.** Absolute ms are contended wall clock on a load-30-plus
+box; read the ratios.
+
+| stage | ms | share |
+|---|--:|--:|
+| detect | 24,778 | ~55% of the lane |
+| recognize loop total | 20,130 | ~45% of the lane |
+| — crop extraction | 41 | 0.2% of the loop |
+| — `set_width` (graph rebuilds) | 4,825 | **24% of the loop** |
+| — recognize | 15,263 | 76% of the loop |
+
+Three things follow, and the first contradicts how this item was framed.
+
+1. **Detection is the larger half of the EasyOCR lane, not recognition.** H3 was
+   written to find out why the recognizer is 2.2x the Tesseract LSTM, and the
+   answer is that a big part of what was being attributed to "the lane" is
+   DBNet. Whoever picks up H3 should retarget: the recognizer is 76% of 45%, so
+   about a third of the lane.
+2. **Graph rebuilds are 24% of the recognition loop** — 25 rebuilds for 27
+   regions with sorting off. That is the number P6 never had.
+3. **`EASYOCR_WIDTH_SORT` is worth much more than its recorded 0-3%, but only
+   against the right denominator.** It cuts rebuilds 25 -> 14 and `set_width`
+   4,825 -> 2,348 ms, roughly halving it, which is ~12% of the recognition loop
+   — but only ~5% of the lane once detection is counted, and P6's 0-3% was
+   measured against total lane time. Both numbers are right; the old one just
+   hid the mechanism. The ceiling is set by distinct widths, not region count:
+   27 regions over 14 distinct widths means sorting can never remove more than
+   13 of the 25 rebuilds.
+
+**Bug found and fixed by this instrumentation.** The width-sort pre-pass computed
+its sort key with a hardcoded 2-pixel detector margin while the loop applies that
+margin only when `add_detector_crop_margin` is set, so on the external-geometry
+path (Python EasyOCR / Tesseract / LayoutLM boxes, pad 0) it sorted by widths
+that are never requested: 19 rebuilds instead of the 15 distinct widths that path
+actually has. The key now derives from the same `pad` the loop uses; verified
+19 -> 15 on the same page.
 
 **Related** `EASYOCR_WIDTH_SORT=1` already exists (0–3%; it makes graph rebuilds
 O(distinct widths) instead of O(regions)) and becomes worth more if you make the
@@ -1058,11 +1094,28 @@ running in CPU-scalar code (`tsr_nafblock_forward`, `fc_forward`) or, in
 `text_sr`'s case, on a *separate* `ggml_backend_cpu_init()` sched it builds
 right afterwards. All three now load through `ggml_backend_cpu_init()` with the
 old behaviour gated behind `TEXT_SR_GPU_LOAD`, `TPS_LOCNET_GPU_LOAD` and
-`BERT_NER_GPU_LOAD`. **The load-time saving is not yet measured on this
-hardware** — P2's was 12.5x on the tesseract lane and P4's 7-14%, but that is
-the precedent, not a claim about these three. Remaining engines are all genuine
-graph users; the grep-classification table is cheap to re-run if new engines
-land.
+`BERT_NER_GPU_LOAD`. Remaining engines are all genuine graph users; the
+grep-classification table is cheap to re-run if new engines land.
+
+**What the removal is worth, measured 2026-08-02.** No GGUF for any of the three
+is in `~/crispembed-live-cache`, so instead of guessing from P2's 12.5x the cost
+was measured directly at its source — the backend init itself, which is what
+these engines were paying and is engine-independent. `test-backend-smoke` builds
+a backend and runs one trivial graph on it; median-of-3, box at load 38:
+
+| backend | CPU-s | wall |
+|---|--:|--:|
+| `metal` | 2.62 | 6.71 |
+| `cpu` | 0.03 | 0.03 |
+
+So each of the three was spending roughly **2.6 CPU-seconds / 6.7 s wall per
+invocation** standing up Metal — shader library compilation dominates — to pull
+a GGUF it then copies straight out to host vectors. Consistent with the 4971 ms
+P2 measured inside `tesseract_lstm`. Caveat on reading this: the figure is init
+plus a trivial graph, not pure init, and it is a per-process cost, so it matters
+for one-shot CLI use and disappears in a warm server. An end-to-end
+before/after on a real `text_sr` / `tps_locnet` / `bert_ner` model is still the
+thing that would close this properly.
 
 ---
 

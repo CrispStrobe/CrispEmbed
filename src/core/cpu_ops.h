@@ -431,6 +431,83 @@ static inline void conv2d_1x1_cpu(const float * in, float * out, const float * w
     }
 }
 
+// Depthwise convolution (groups == in_ch == out_ch), the k>1 counterpart to
+// conv2d_1x1_cpu.
+//
+// The generic path is at its worst here. With one input and one output channel
+// per group there is nothing to amortise the patch gather against: it gathers a
+// kh*kw window and then consumes it in a single dot_product, per output pixel.
+// Measured on the PP-OCRv6 detector via CRISPEMBED_PPOCRV6_DET_PROFILE=1, the
+// depthwise layers run at 0.02-0.19 GF/s against ~1.2 GF/s for the pointwise
+// ones, and account for 20.4% of all detector convolution time -- the 7x7
+// stage at 240x184 alone is the single most expensive layer in the network
+// (13.7%).
+//
+// This inverts the loop nest instead: for each channel and output row, walk the
+// kh*kw taps and accumulate a whole output row per tap. Each tap is a contiguous
+// axpy over the row, the input row stays in L1 across all taps, the gather
+// disappears entirely, and the boundary test moves out of the pixel loop into a
+// per-tap column range computed in closed form.
+//
+// The interior column range for tap kx is the set of ox where
+// ox*stride - pad + kx lies in [0, W), which is
+// ox in [ceil((pad - kx)/stride), floor((W - 1 - kx + pad)/stride)].
+// Computing it up front means the inner loop has no branches at all, which also
+// lets it vectorise.
+//
+// Preconditions: groups == in_ch == out_ch.
+static inline void conv2d_depthwise_cpu(const float * in, float * out, const float * weight, const float * bias,
+                                        int channels, int H, int W, int kh, int kw, int stride, int pad) {
+    const int out_H = (H + 2 * pad - kh) / stride + 1;
+    const int out_W = (W + 2 * pad - kw) / stride + 1;
+    if (out_H <= 0 || out_W <= 0) return;
+    const int taps = kh * kw;
+
+    for (int c = 0; c < channels; c++) {
+        const float * src = in + (size_t)c * H * W;
+        float * dst = out + (size_t)c * out_H * out_W;
+        const float * wc = weight + (size_t)c * taps;
+        const float bv = bias ? bias[c] : 0.0f;
+
+        for (int oy = 0; oy < out_H; oy++) {
+            float * orow = dst + (size_t)oy * out_W;
+            for (int ox = 0; ox < out_W; ox++) orow[ox] = bv;
+
+            const int iy_base = oy * stride - pad;
+            for (int ky = 0; ky < kh; ky++) {
+                const int iy = iy_base + ky;
+                if (iy < 0 || iy >= H) continue;
+                const float * irow = src + (size_t)iy * W;
+                for (int kx = 0; kx < kw; kx++) {
+                    const float wv = wc[ky * kw + kx];
+                    if (wv == 0.0f) continue;
+                    // Columns where this tap lands inside the input row:
+                    //   0 <= ox*stride - pad + kx < W
+                    // Both bounds are computed with explicit floor/ceil rather
+                    // than C division, which truncates toward zero -- for a
+                    // kernel wider than the padded input the numerator goes
+                    // negative and (-1)/2 would round UP to 0, admitting an
+                    // out-of-range column.
+                    const int lo_num = pad - kx;
+                    int lo = lo_num <= 0 ? 0 : (lo_num + stride - 1) / stride;
+                    const int hi_num = W - 1 - kx + pad;
+                    if (hi_num < 0) continue;
+                    int hi = hi_num / stride;
+                    if (hi > out_W - 1) hi = out_W - 1;
+                    if (hi < lo) continue;
+                    const int ix0 = lo * stride - pad + kx; // >= 0 by construction of lo
+                    const float * s = irow + ix0;
+                    if (stride == 1) {
+                        for (int ox = lo; ox <= hi; ++ox) orow[ox] += wv * s[ox - lo];
+                    } else {
+                        for (int ox = lo; ox <= hi; ++ox) orow[ox] += wv * s[(ox - lo) * stride];
+                    }
+                }
+            }
+        }
+    }
+}
+
 static inline void conv2d_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
                               int out_ch, int H, int W, int kh, int kw, int stride, int pad, int groups = 1) {
     int out_H = (H + 2 * pad - kh) / stride + 1;
@@ -448,6 +525,17 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
         static const bool fast_1x1 = std::getenv("CRISPEMBED_CONV1X1_FAST") != nullptr;
         if (fast_1x1) {
             conv2d_1x1_cpu(in, out, weight, bias, in_ch, out_ch, out_H, out_W, groups);
+            return;
+        }
+    }
+
+    // Same disposition as the 1x1 gate above: opt-in until A/B'd per engine.
+    // See conv2d_depthwise_cpu for why this shape is the generic path's worst
+    // case. CRISPEMBED_CONVDW_FAST=1.
+    if (groups > 1 && groups == in_ch && groups == out_ch) {
+        static const bool fast_dw = std::getenv("CRISPEMBED_CONVDW_FAST") != nullptr;
+        if (fast_dw) {
+            conv2d_depthwise_cpu(in, out, weight, bias, in_ch, H, W, kh, kw, stride, pad);
             return;
         }
     }
