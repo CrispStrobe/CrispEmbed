@@ -860,8 +860,8 @@ pair, which is what the fast path does. Expect the fast path to win where the
 plane is small and the channel count large, and to lose where the plane blows
 L2. **A global flip is probably wrong; a size heuristic is probably right.**
 
-**RESOLVED 2026-08-02 — H1's answer is "keep it off, and here is why": the
-result is ARCH-DEPENDENT and flips sign.** Same code, same fixture, CPU-seconds
+**RESOLVED 2026-08-02 — H1's answer is "keep it off": the result flips sign
+between the two hosts. (The *reason* is still open — see the retraction below.)** Same code, same fixture, CPU-seconds
 median-of-3, one binary per host:
 
 | host | arch / SIMD | off | `CRISPEMBED_CONV1X1_FAST=1` | |
@@ -875,18 +875,22 @@ the size, it is a property of the instruction set.** A size heuristic tuned on
 either machine would have been wrong on the other. Had this been decided on the
 Mac alone, x86 deployments would have taken a 9% regression.
 
-The mechanism is in the per-layer profile: the same generic `conv2d_cpu` runs
-1x1 layers at ~1.2 GF/s on M1 and 5.8-10.8 GF/s on the Xeon, and the 7x7
-depthwise at 0.17 vs 1.46 GF/s. On x86 the gather-then-`dot_product` path is
-already near memory bandwidth and the tiled rewrite is pure added overhead; on
-NEON it is weak enough to beat. The likely cause is `dot_product` itself — 16
-floats per iteration across two 256-bit accumulators on AVX2 against 8 across
-two 128-bit ones on NEON.
+**RETRACTED mechanism.** This entry first explained the flip by per-layer GF/s
+— ~1.2 on M1 against 5.8-10.8 on the Xeon — and concluded the NEON
+`dot_product` path was the target. That comparison put a CONTENDED Mac (load
+30-110) against a QUIET Xeon (0.38), which is the quiet-vs-loaded error the dev
+guide warns about; the quiet Xeon totals 2,652 ms of convolution against the
+~2,350 ms PLAN records for the Mac detector when quiet, so the machines are
+actually comparable. The mechanism also made a falsifiable prediction — that
+more accumulator chains would help NEON — and `CRISPEMBED_DOT_WIDE=1` (four
+chains) measured *slower* on the M1, 8.52 -> 8.90 CPU-s. Prediction failed,
+explanation withdrawn.
 
-**So the productive M1 target is the NEON `dot_product`/gather path, not the
-convolution loop structure.** The Mac is getting a fifth to an eighth of the
-throughput x86 extracts from identical C++. That is the follow-up item, and it
-would lift every one of the 15 engines at once instead of one shape class.
+**The two hosts differ in load as well as ISA**, and a cache-blocking change is
+exactly the kind that wins when something else is evicting L2. Whether the flip
+is architectural or contention-driven is the open question; the A/B results
+themselves stand, since each arm was measured against its own control on its
+own machine.
 
 Both gates stay default off. Flipping either now requires numbers from both
 architectures, or an `#ifdef`-conditional dispatch with each arm justified
