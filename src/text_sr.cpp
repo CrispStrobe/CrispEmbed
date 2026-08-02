@@ -268,8 +268,17 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
 
-    bool force_cpu = (getenv("TEXT_SR_FORCE_CPU") && atoi(getenv("TEXT_SR_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    // This engine never computes on a GPU backend: the NAFNet blocks run
+    // through the CPU-scalar tsr_nafblock_forward/sr_forward_tile path, and the
+    // only sched it builds is over ggml_backend_cpu_init() below. The backend
+    // here exists solely to pull the GGUF through core_gguf::load_weights, so
+    // asking for a GPU one spins up Metal -- shader library and all -- and then
+    // frees it again. Same waste that CRISPEMBED_TESSERACT_GPU_LOAD was added
+    // to remove (measured there at ~85% of a one-shot invocation).
+    // TEXT_SR_GPU_LOAD=1 restores the old behaviour for bisection.
+    const bool force_cpu = (getenv("TEXT_SR_FORCE_CPU") && atoi(getenv("TEXT_SR_FORCE_CPU")));
+    const bool gpu_load = getenv("TEXT_SR_GPU_LOAD") != nullptr && !force_cpu;
+    ggml_backend_t backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "text_sr", ctx->wl)) {
         fprintf(stderr, "text_sr: failed to load weights\n");

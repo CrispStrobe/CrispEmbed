@@ -180,8 +180,15 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
     core_gguf::free_metadata(meta);
 
     // Pass 2: load weights
-    bool force_cpu = (getenv("TPS_LOCNET_FORCE_CPU") && atoi(getenv("TPS_LOCNET_FORCE_CPU")));
-    ggml_backend_t backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    // The localisation net is entirely CPU-side (fc_forward and the scalar
+    // convolutions below; every weight is dequantized into host vectors). This
+    // backend only pulls the GGUF through core_gguf::load_weights and is freed
+    // immediately after, so requesting a GPU one pays a full Metal init for
+    // nothing -- the waste CRISPEMBED_TESSERACT_GPU_LOAD was introduced to
+    // remove. TPS_LOCNET_GPU_LOAD=1 restores the old behaviour for bisection.
+    const bool force_cpu = (getenv("TPS_LOCNET_FORCE_CPU") && atoi(getenv("TPS_LOCNET_FORCE_CPU")));
+    const bool gpu_load = getenv("TPS_LOCNET_GPU_LOAD") != nullptr && !force_cpu;
+    ggml_backend_t backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
 
     core_gguf::WeightLoad wl;

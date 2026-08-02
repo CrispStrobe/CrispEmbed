@@ -6,8 +6,10 @@
 #include "ocr_detect.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <mutex>
 
 extern "C" {
@@ -97,6 +99,21 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
         std::stable_sort(visit.begin(), visit.end(), [&canvas](size_t a, size_t b) { return canvas[a] < canvas[b]; });
     }
 
+    // Per-stage recognition bench (CRISPEMBED_EASYOCR_STAGE_BENCH=1).
+    //
+    // PLAN.md H3: `[easyocr-stage-bench]` only reports load vs
+    // detect+recognize, so nothing below the 12.4 s compute half of a real page
+    // was ever attributed. This splits the per-region loop into crop extraction,
+    // recognizer width changes (which tear down and rebuild the graph) and the
+    // recognize call itself, and counts how many width rebuilds the page
+    // actually triggered -- the number EASYOCR_WIDTH_SORT exists to reduce.
+    const bool stage_bench = std::getenv("CRISPEMBED_EASYOCR_STAGE_BENCH") != nullptr;
+    double crop_ms = 0.0, width_ms = 0.0, recognize_ms = 0.0;
+    long width_calls = 0, width_changes = 0;
+    int last_width = -1;
+    const auto stage_clock = []() { return std::chrono::steady_clock::now(); };
+    const auto stage_started = stage_clock();
+
     std::vector<result> slots(ordered.size());
     std::vector<char> filled(ordered.size(), 0);
     for (size_t vi = 0; vi < visit.size(); ++vi) {
@@ -112,15 +129,27 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
         const int crop_w = std::min(width - x, (int)region.w + 2 * pad);
         const int crop_h = std::min(height - y, (int)region.h + 2 * pad);
         int crop_width = 0, crop_height = 0;
+        const auto crop_t0 = stage_bench ? stage_clock() : std::chrono::steady_clock::time_point{};
         auto crop =
             ocr_crop::extract(pixels, width, height, channels, x, y, crop_w, crop_h, 0, &crop_width, &crop_height);
+        if (stage_bench) crop_ms += std::chrono::duration<double, std::milli>(stage_clock() - crop_t0).count();
         if (crop.empty() || crop_width <= 0 || crop_height <= 0) continue;
 
         const int recognizer_width = easyocr_postprocess::recognizer_canvas_width(crop_width, crop_height);
-        if (!easyocr_ocr_set_width(ctx->recognizer, recognizer_width)) continue;
+        const auto width_t0 = stage_bench ? stage_clock() : std::chrono::steady_clock::time_point{};
+        const bool width_ok = easyocr_ocr_set_width(ctx->recognizer, recognizer_width);
+        if (stage_bench) {
+            width_ms += std::chrono::duration<double, std::milli>(stage_clock() - width_t0).count();
+            ++width_calls;
+            if (recognizer_width != last_width) ++width_changes;
+            last_width = recognizer_width;
+        }
+        if (!width_ok) continue;
         int text_length = 0;
+        const auto rec_t0 = stage_bench ? stage_clock() : std::chrono::steady_clock::time_point{};
         const char * text =
             easyocr_ocr_recognize(ctx->recognizer, crop.data(), crop_width, crop_height, channels, &text_length);
+        if (stage_bench) recognize_ms += std::chrono::duration<double, std::milli>(stage_clock() - rec_t0).count();
         const float rec_confidence = easyocr_ocr_last_confidence(ctx->recognizer);
         result item;
         item.detector_confidence = region.score;
@@ -140,6 +169,15 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
         slots[i] = std::move(item);
         filled[i] = 1;
     }
+    if (stage_bench) {
+        const double loop_ms = std::chrono::duration<double, std::milli>(stage_clock() - stage_started).count();
+        fprintf(stderr,
+                "[easyocr-recognize-bench] regions=%zu crop_ms=%.1f set_width_ms=%.1f recognize_ms=%.1f "
+                "loop_ms=%.1f width_calls=%ld width_changes=%ld width_sort=%d\n",
+                ordered.size(), crop_ms, width_ms, recognize_ms, loop_ms, width_calls, width_changes,
+                std::getenv("EASYOCR_WIDTH_SORT") != nullptr ? 1 : 0);
+    }
+
     // Back to reading order, dropping regions that produced no crop.
     std::vector<result> results;
     results.reserve(ordered.size());
@@ -167,8 +205,14 @@ std::vector<result> run_regions(context * ctx, const std::vector<easyocr_layout:
 std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
     if (!ctx || !ctx->detector || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
     std::lock_guard<std::mutex> lock(ctx->mutex);
+    const bool stage_bench = std::getenv("CRISPEMBED_EASYOCR_STAGE_BENCH") != nullptr;
+    const auto detect_t0 = std::chrono::steady_clock::now();
     const auto detected =
         ocr_detect::detect_rgb_ex(ctx->detector, pixels, width, height, channels, ocr_detect::rapid_defaults());
+    if (stage_bench)
+        fprintf(stderr, "[easyocr-recognize-bench] detect_ms=%.1f boxes=%zu\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - detect_t0).count(),
+                detected.size());
     std::vector<easyocr_layout::region> regions;
     regions.reserve(detected.size());
     for (const auto & box : detected) regions.push_back({ box.x, box.y, box.w, box.h, box.score });
