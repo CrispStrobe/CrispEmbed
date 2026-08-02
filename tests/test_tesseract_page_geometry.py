@@ -78,6 +78,13 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertEqual(result["matched_positive_iou_count"], 0)
         self.assertEqual(result["matched_zero_iou_count"], 1)
 
+    def test_positive_iou_coverage_is_distinguishable(self) -> None:
+        reference = [(0.0, 0.0, 10.0, 5.0), (0.0, 10.0, 10.0, 5.0)]
+        native = [(0.0, 0.0, 10.0, 5.0), (100.0, 100.0, 10.0, 5.0)]
+        result = compare(reference, native)
+        self.assertEqual(result["matched_positive_iou_count"], 1)
+        self.assertEqual(result["matched_zero_iou_count"], 1)
+
     def test_geometry_harness_clears_runtime_experiment_gates(self) -> None:
         source = (ROOT / "tools/compare_tesseract_page_geometry.py").read_text()
         for key in (

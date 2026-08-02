@@ -2745,3 +2745,9 @@ the pattern first.
   subprocess test proving timeout expiry is converted to an explicit runtime
   error, rather than relying only on source inspection. Sixteen model-free
   geometry tests pass.
+
+- **Positive-IoU coverage gate (2026-08-02).** Added opt-in
+  `--min-positive-iou-matches`, backed by explicit positive/zero match counts,
+  so a mean IoU cannot hide non-overlapping reference lines. Seventeen
+  model-free geometry tests pass; no default threshold is promoted before a
+  real page run.
