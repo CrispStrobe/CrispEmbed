@@ -496,6 +496,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (!rgb || w <= 0 || h <= 0) return {};
         std::vector<ocr_pipeline::ocr_result> results;
+        std::vector<int> model_widths;
         double crop_ms = 0.0, orientation_ms = 0.0, recognize_ms = 0.0;
         for (const auto & b : boxes) {
             const auto crop_started = std::chrono::steady_clock::now();
@@ -506,6 +507,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             crop_ms +=
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - crop_started).count();
             if (crop.empty()) continue;
+            const int model_width = std::max(320, int(48.0f * std::max(320.0f / 48.0f, cw / float(std::max(1, ch)))));
+            if (std::find(model_widths.begin(), model_widths.end(), model_width) == model_widths.end())
+                model_widths.push_back(model_width);
             const auto orientation_started = std::chrono::steady_clock::now();
             ocr_crop::orientation_info orientation;
             if (ctx->ppori) {
@@ -546,6 +550,11 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 "boxes=%zu results=%zu\n",
                 ms(ppocr_started, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
                 ms(ppocr_started, std::chrono::steady_clock::now()), boxes.size(), results.size());
+            fprintf(stderr, "[ppocrv6-width-bench] crops=%zu unique_model_widths=%zu widths=", boxes.size(),
+                    model_widths.size());
+            for (size_t i = 0; i < model_widths.size(); ++i)
+                fprintf(stderr, "%s%d", i ? "," : "", model_widths[i]);
+            fprintf(stderr, "\n");
         }
         return results;
     }
