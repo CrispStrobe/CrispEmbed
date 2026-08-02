@@ -378,6 +378,9 @@ recognizer and LayoutLM consumer.
       test: beam runs must expose sequence confidence but no fabricated
       per-character or word certainty. Official calibration and page-level
       aggregation remain open.
+- [x] Apply the same beam-confidence boundary in the Python comparator: its
+      `--require-beam-sequence-only` gate now rejects nonzero word confidence,
+      with a model-free regression test.
 - [x] Prove the controlled line-recognizer boundary separately: exact hashed
       Homebrew `eng.traineddata`, Python `-ref.gguf`, native captures, decoded
       text, and the official instrumented PSM7 internal crop all match.
