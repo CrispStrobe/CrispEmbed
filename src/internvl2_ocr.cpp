@@ -1330,6 +1330,14 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
             for (size_t i = 0; i < lg.layer_outputs.size(); i++) {
                 char name[64];
                 snprintf(name, sizeof(name), "llm_layer_%zu", i);
+                // A reference dumped with --max-llm-layers N holds only N
+                // layers. Comparing the rest against an absent tensor printed
+                // "cos=1.000000 max_abs=0.000000 FAIL" for every remaining
+                // layer — rows that look like 20 hard failures, and which
+                // inflate any automated stage count reading this output (the
+                // h2ovl parity kernel reported "27 stages" when the reference
+                // held 7). Skip what the reference does not contain.
+                if (!ref.has(name)) continue;
                 float * buf = (float *)malloc(T * D * sizeof(float));
                 ggml_backend_tensor_get(lg.layer_outputs[i], buf, 0, T * D * sizeof(float));
                 auto r = ref.compare(name, buf, T * D);
