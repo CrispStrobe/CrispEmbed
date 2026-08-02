@@ -574,25 +574,36 @@ gate does.
 
 #### Open, in descending measured value
 
-**O1 — PP-OCRv6 detector graph box-geometry parity.** The detector is CPU scalar
-convolution and is that lane's dominant compute. The graph exists (P7) and
-reaches probability-map cosine 0.99113 / head pre-sigmoid 0.99898, but decodes
-31 boxes against the CPU path's 30, so the accept-gate keeps CPU. Closing that
-is a correctness investigation of the same shape as the recognizer port that
-succeeded this session: dump the probability map from both paths on one fixture,
-find the first contour that differs, and decide whether the divergence is in the
-map (numerics) or the DB postprocessor (threshold/unclip/dilation applied to a
-map with slightly different edges). Expect the answer to be postprocessing on a
-borderline contour, not arithmetic.
+**O1 — PP-OCRv6 detector graph box-geometry parity is NOT a speed item.**
+Corrected 2026-08-02 by measuring it. The premise in earlier notes — that the
+CPU scalar detector is slow and promoting its graph would fix that — is wrong.
+Quiet box (load 4.2), 1920x2518 page, same fixture and binary:
 
-**O2 — DBNet conv kernels.** ~400 ms on a capped 572x188 page against
-`tesseract-cli`'s 0.135 s for the entire job, and it is the shared detector for
-two lanes. CPU by deliberate measured choice (Metal conv2d/conv-transpose were
-~139 s GPU vs ~10 s CPU on an M1 for a 1472x736 map), so the win is kernel work,
-not backend selection: `ggml_conv_2d` goes through im2col, and the 1x1 lateral
-convs in the FPNC neck are pure channel matmuls that should never be routed
-through im2col at all (the `QWEN3_TTS_CODEC_FASTCONV` precedent in the dev guide
-is exactly this, worth 3x there). Start by per-node-tracing one detect call.
+| detector path | total |
+|---|--:|
+| **CPU scalar (shipped default)** | **2350 ms** |
+| graph on the CPU backend | 6132 ms (graph alone 2829 ms) |
+| graph on Metal (`CRISPEMBED_PPOCRV6_DET_GRAPH=1`) | 15933 ms (graph alone 12663 ms) |
+
+The graph is 2.6x slower on CPU and 6.8x slower on Metal than the hand-written
+scalar path it falls back to, which matches the DBNet finding already recorded
+in `ocr_detect.cpp` (Metal conv2d/conv-transpose measured ~139 s GPU vs ~10 s
+CPU on an M1). So closing box-geometry parity is a **correctness and
+portability** goal — it is what a CUDA or Vulkan deployment would need, and it
+removes a diagnostic-only caveat from the matrix — but nobody should expect a
+speedup from it on this hardware, and it should not be prioritised as one.
+Anyone picking it up: the geometry comparator already exists
+(`report_graph_box_geometry`, `CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE=1`), though
+it did not emit on the run above and needs its call site checked first.
+
+**O2 — the detector's CPU scalar path is the real target, at 2350 ms.** It is
+the dominant cost of the PP-OCRv6 lane and DBNet is the shared detector for the
+other two, and ggml graphs are demonstrably the wrong tool for it here (O1). So
+this is kernel work on the scalar code: per-node-trace one detect call, and
+check specifically whether 1x1 convolutions are being routed through an im2col
+path, since a 1x1 conv is a pure channel matmul and its im2col is a copy that
+materialises a large intermediate for nothing. The `QWEN3_TTS_CODEC_FASTCONV`
+precedent in the dev guide is exactly this shape and was worth 3x.
 
 **O3 — EasyOCR CRNN is ~2.2x the Tesseract LSTM on identical detections**
 (17.98 s vs 8.13 s wall on the same 31-unit page, same DBNet boxes). No
