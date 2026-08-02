@@ -989,7 +989,11 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     // This is a static-shape graph, so retain the scheduler allocation between
     // crops. If a future dynamic-shape path invalidates it, it must clear
     // `allocated` before reaching this function.
-    if (!c->graph.allocated) {
+    // The Apple backend can invalidate mixed graph allocations after a
+    // completed execution (especially when a width-keyed graph is invoked
+    // repeatedly). Re-plan Metal buffers per invocation; CPU safely reuses
+    // its static allocation.
+    if (!c->graph.allocated || !ggml_backend_is_cpu(c->graph.backend)) {
         ggml_backend_sched_reset(c->graph.sched);
         if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
         c->graph.allocated = true;
