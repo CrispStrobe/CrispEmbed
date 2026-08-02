@@ -1657,3 +1657,71 @@ reverted.
 Current status: F32 is the only AdaIR precision cleared for release. F16
 requires a loader/converter descriptor audit, tensor-level dequant parity
 checks, and an end-to-end cosine gate before it can be uploaded or registered.
+
+## AdaIR F16 — root-caused and fixed (2026-08-02, `feat/ocr-followups`)
+
+The audit above closed on the right observation — a zero-size F16 kernel
+descriptor — but attributed it to the buffer allocator. It was neither an
+allocator nor a converter defect. Two facts the audit had already collected
+point at the real cause once they are read together: the header shapes change
+(`[1,1,IC,OC]` → `[IC,OC]`) while the *values* do not.
+
+`tools/quantize.cpp` (~line 167) flattens every 4-D F32 conv weight to 2-D
+`[IC*KH*KW, OC]` so the output header is valid for a quantized tensor. That is
+deliberate and other engines depend on it. But `src/adair.cpp` inferred three
+hidden widths from `->ne[3]`, which is `1` on any flattened tensor:
+`gdfn_forward`'s hidden width, and the FreModule `rate_conv` and `ChannelGate`
+MLP widths. `hidden = 1` makes `half = hidden / 2` zero, so the next 1×1 conv is
+built with `ic == 0` — a kernel with zero elements. That is the descriptor the
+allocator refused, and with the guards in place it degraded to cos `0.729509`
+instead of aborting.
+
+Independent check that the artifacts were never at fault: across 60 randomly
+sampled tensors, `adair-5d-f16.gguf` versus `adair-5d-f32.gguf` gives worst
+cosine `0.999998` and worst max_abs `1.22e-4` — pure F16 rounding.
+
+Fix: `conv1x1_out_channels()` derives OC from `ggml_nelements(t) / ic`, correct
+under both layouts, with fail-loud guards at all three sites.
+`ADAIR_LEGACY_NE3_DIMS=1` restores the old `ne[3]` read so both arms live in one
+binary.
+
+Measured on the 64×64 `adair-ref.gguf` fixture, same binary, ggml conv path:
+
+| artifact | arm | cos | max_abs |
+|---|---|--:|--:|
+| `adair-5d-f32.gguf` | default | `0.999382` | `0.027892` |
+| `adair-5d-f16.gguf` | default (fixed) | **`0.999383`** | `0.027871` |
+| `adair-5d-f16.gguf` | `ADAIR_LEGACY_NE3_DIMS=1` | `0.729509` | `0.707725` |
+
+The f32 number reproduces the audit's `0.999382` exactly, so it is the
+regression control, not a re-measurement. **No timings are quoted here**: the
+box carried load average 55–127 from parallel agent builds throughout, and the
+same 64×64 fixture took `312 s` at f32 against a quiet-box reference of
+`2.65 s`. Re-time on a quiet machine before any performance claim.
+
+Remaining before the f16 can ship: upload it to `cstr/adair-GGUF`, add its
+SHA-256 to `examples/cli/model_hashes.h`, and repoint the `adair-5d` registry
+entry. The runtime no longer blocks it.
+
+End-to-end through the real CLI, not just the diff harness (HARD RULE #3):
+`crispembed --adair-model <f16|f32> --adair <96x96 crop of tests/regression/images/fox.png>`
+returns rc=0 for both at the same 27,661-byte PPM, and the two restored images
+agree at cosine `1.0`, max_abs `1/255`, mean_abs `7e-5`. Output mean/std is
+`242.821 / 35.92` for both — real image content, not a blank or saturated frame.
+
+**Which f16 artifacts are exposed at all.** Only the ones `tools/quantize.cpp`
+produced. A converter-emitted f16 keeps its 4-D shapes: `surya-det-f16.gguf` has
+79 genuinely 4-D F16 tensors (`stem.in_conv.weight` is `[3,3,3,32]`), whereas
+`adair-5d-f16.gguf` — quantizer output — has none. So "f16" alone does not
+predict the layout; the *producer* does.
+
+**Same bug class, latent, deliberately not fixed here.** `src/surya_det.cpp:700`
+(`const int64_t OC = w->ne[3]`) and `src/tps_locnet.cpp:219`
+(`net->channels[i] = net->conv[i].w->ne[3]`) read a conv output-channel count off
+`ne[3]` the same way. Neither is broken today, because neither ships a
+quantizer-produced artifact — but either would misread one the moment someone
+runs `crispembed-quantize` over it. `src/cnn_embed.cpp:148` already handles both
+layouts (`ggml_n_dims(dw_w) == 2 ? ne[1] : ne[3]`) and is the in-repo precedent.
+Left alone on purpose: there is no artifact on this box that would make a fix
+verifiable, and shipping an unverified edit is precisely the failure mode this
+entry corrects.
