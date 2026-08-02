@@ -21,7 +21,7 @@ class TesseractLineConfidenceTest(unittest.TestCase):
             args,
             {"mean_word_confidence": 0.96},
             {"word_confidence": 0.965},
-            {"char_confidences": 0},
+            {"char_confidences": 0, "word_confidence": 0.0},
         )
         self.assertEqual(checks, {"max_greedy_word_confidence_delta": True, "beam_sequence_only": True})
 
@@ -33,6 +33,10 @@ class TesseractLineConfidenceTest(unittest.TestCase):
     def test_beam_contract_rejects_character_confidences_or_missing_beam(self) -> None:
         args = type("Args", (), {"max_greedy_word_confidence_delta": None, "require_beam_sequence_only": True})()
         self.assertEqual(confidence_acceptance_checks(args, {}, {}, {"char_confidences": 2}), {"beam_sequence_only": False})
+        self.assertEqual(
+            confidence_acceptance_checks(args, {}, {}, {"char_confidences": 0, "word_confidence": 0.1}),
+            {"beam_sequence_only": False},
+        )
         self.assertEqual(confidence_acceptance_checks(args, {}, {}, None), {"beam_sequence_only": False})
 
     def test_official_word_gate_rejects_empty_reference(self) -> None:

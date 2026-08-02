@@ -82,6 +82,8 @@ def main() -> int:
                         help="run only the first N live fixtures for profiling (default: 10)")
     parser.add_argument("--fixture-start", type=int, default=0,
                         help="zero-based fixture offset for targeted profiling (default: 0)")
+    parser.add_argument("--recognizer-graph", action="store_true",
+                        help="accept the opt-in PP-OCRv6 recognizer graph for this run")
     args = parser.parse_args()
     if args.fixture_limit < 1 or args.fixture_limit > 10:
         parser.error("--fixture-limit must be between 1 and 10")
@@ -100,6 +102,9 @@ def main() -> int:
         env["CRISPEMBED_PPOCRV6_FIXTURE_LIMIT"] = str(args.fixture_limit)
         env["CRISPEMBED_PPOCRV6_FIXTURE_START"] = str(args.fixture_start)
         env["CRISPEMBED_PPOCRV6_BENCH"] = "1"
+        if args.recognizer_graph:
+            env["CRISPEMBED_PPOCRV6_GRAPH"] = "1"
+            env["CRISPEMBED_PPOCRV6_GRAPH_ACCEPT"] = "1"
         started = time.monotonic()
         try:
             proc = subprocess.run([str(args.test_binary)], capture_output=True, text=True, env=env, check=False,
