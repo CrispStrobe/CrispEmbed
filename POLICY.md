@@ -114,11 +114,13 @@ representative data, measure error rates per subgroup, and document both.
 
 To reduce accidental use, loading a face **recognition** model requires a
 one-time acknowledgement. It sits in `crispembed_face_init()`, which every
-binding funnels through — Python, Rust, Dart FFI — and at the equivalent
-point in the CLI, which calls the internal loader directly. Both gates key off
-the model's own declared type rather than its filename, so a recognition model
-is caught however it was named. The acknowledgement is shared: the CLI's
-interactive prompt also satisfies the library. It is satisfied by any of:
+binding funnels through — Python, Rust, Dart FFI — and at every equivalent
+point in the CLI, which calls the internal loader directly. All of them key off
+the model's own declared `cnn.model_type` rather than its filename, so a
+recognition model is caught however it was named; a model that declares no type
+at all is treated as a recognition model, so the check fails closed. The
+acknowledgement is shared: the CLI's interactive prompt also satisfies the
+library. It is satisfied by any of:
 
 | Surface | How to acknowledge |
 |---|---|
@@ -129,14 +131,33 @@ interactive prompt also satisfies the library. It is satisfied by any of:
 | Rust | `crispembed::accept_biometric_use()` |
 | Dart / Flutter | `acceptBiometricUse()` |
 
-Without one of these, loading a recognition model fails and prints why. The
-library never prompts — a library must not read stdin — so callers that want to
-ask a human do it themselves and then acknowledge. Detection alone (bounding
-boxes, no template) is not gated: a box is not a template.
+Without one of these, loading a recognition model fails and prints why —
+including for a bare `--dim`, because reading a property off a recognition
+model is still loading one. The library never prompts — a library must not read
+stdin — so callers that want to ask a human do it themselves and then
+acknowledge. Detection alone (bounding boxes, no template) is not gated: a box
+is not a template.
 
 This is a speed bump and an audit trail, not a security control — the code is
 MIT-licensed and the check is trivially removable. It exists so nobody starts
 processing biometric data without noticing.
+
+**The acknowledgement is per process, not per request, and `crispembed-server`
+has no authentication.** Whoever starts the server acknowledges once; every
+client that can then reach the port inherits it. The image endpoints — `/face`
+and `/detect` included — take a **server-side file path**, not an upload, so a
+client that can reach the port can have the server read any file the process
+can. Bound to loopback, which is the default, that is a local tool. Bound to a
+routable address with `--host`, it is an open biometric endpoint: put an
+authenticating reverse proxy in front of it, restrict what the process can read,
+and do not expose it directly. The server warns at startup when a recognition
+model is loaded on a non-loopback bind. That warning is a reminder, not a
+control — it does not authenticate anyone.
+
+If you deploy that way you are processing special-category data on behalf of
+whoever's faces reach it, with the GDPR duties in this section attached, and the
+access log of the proxy you put in front is likely the only record that any of
+it happened.
 
 ## 5. Generated and modified content
 

@@ -336,9 +336,14 @@ AuraFace recognition.
 > the bindings too, not just the CLI; detection alone is not gated.
 > CrispEmbed provides **no gallery, enrolment, index or 1:N search**
 > primitive, and prints cosine similarity without a match/no-match verdict —
-> thresholds must be calibrated and documented per deployment. Read
-> **[POLICY.md](POLICY.md)** before building on this. `examples/face_verify.py`
-> shows 1:1 verification.
+> thresholds must be calibrated and documented per deployment.
+>
+> On the server the acknowledgement is made **once per process**, and there is
+> no authentication: every client that can reach the port inherits it, and
+> `/face` reads its input by server-side path. It binds `127.0.0.1` by default —
+> if you move it off loopback with `--host`, put an authenticating proxy in
+> front. Read **[POLICY.md](POLICY.md)** before building on this.
+> `examples/face_verify.py` shows 1:1 verification.
 
 **BidirLM-Omni** unifies text, audio, and image into one shared 2048-d space
 (bidirectional Qwen3 body + Whisper-shape audio encoder + Qwen2VL vision tower
