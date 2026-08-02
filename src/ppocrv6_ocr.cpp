@@ -66,6 +66,10 @@ struct pp_graph_state {
     bool logits_output = false;
     bool svtr_prefix_output = false;
     bool svtr_decoder_output = false;
+    // rnn.py's skip_conv output, produced by the graph neck and applied after
+    // whichever path runs the SVTR blocks + neck norm.
+    ggml_tensor * svtr_skip = nullptr;
+    std::vector<float> svtr_skip_host;
     std::vector<uint8_t> graph_meta;
     std::unordered_map<const ggml_tensor *, ggml_tensor *> resident;
     std::vector<ggml_context *> resident_ctxs;
@@ -813,15 +817,25 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
         c2.kw = 7;
         c2.pad_w = 3;
         ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 2, 3, 2, 3, 0, 0);
-        ggml_tensor * residual = pp_graph_conv(c, c->graph.graph_ctx, pooled, c0);
+        // rnn.py EncoderWithLightSVTR: conv_block.0 is skip_conv and is added
+        // only after the SVTR blocks and the neck norm; the [1,7] conv_block.2
+        // is a residual on conv_reduce. Emit the skip as a separate graph
+        // output so whichever path runs the blocks (CPU here, in-graph below)
+        // can apply it at the right point.
+        ggml_tensor * skip = pp_graph_conv(c, c->graph.graph_ctx, pooled, c0);
         ggml_tensor * branch = pp_graph_conv(c, c->graph.graph_ctx, pooled, c1);
-        if (!residual || !branch) return false;
-        residual = ggml_silu(c->graph.graph_ctx, residual);
+        if (!skip || !branch) return false;
+        skip = ggml_silu(c->graph.graph_ctx, skip);
         branch = ggml_silu(c->graph.graph_ctx, branch);
-        branch = pp_graph_conv(c, c->graph.graph_ctx, branch, c2);
-        if (!branch) return false;
-        branch = ggml_silu(c->graph.graph_ctx, branch);
-        x = ggml_add(c->graph.graph_ctx, residual, branch);
+        ggml_tensor * local = pp_graph_conv(c, c->graph.graph_ctx, branch, c2);
+        if (!local) return false;
+        local = ggml_silu(c->graph.graph_ctx, local);
+        x = ggml_add(c->graph.graph_ctx, branch, local);
+        skip = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, skip, 2, 0, 1, 3));
+        skip = ggml_reshape_2d(c->graph.graph_ctx, skip, c->hidden, skip->ne[2]);
+        ggml_set_output(skip);
+        ggml_build_forward_expand(c->graph.graph, skip);
+        c->graph.svtr_skip = skip;
         x = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, x, 2, 0, 1, 3));
         // On ggml's convolution layout the singleton spatial dimension can
         // remain as the fastest axis after the permute. The bytes are already
@@ -974,6 +988,18 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     // [C,H,W].  A contiguous ggml tensor shaped [W,H,C,N] has the same byte
     // order: dimension 0 (x), then dimension 1 (y), then channels.  No
     // pixel-interleaving transpose is needed at this backend boundary.
+    // The persistent graph is built for one fixed crop shape (48x320). Now that
+    // the recognizer honours PaddleOCR's aspect-preserving width, a wider crop
+    // produces more input floats than the graph tensor holds -- writing them
+    // would run off the end of its backend buffer. Refuse the graph for shapes
+    // it was not built for and let the CPU reference take the crop; a
+    // shape-keyed graph is the follow-up.
+    if ((size_t)ggml_nelements(c->graph.input) != input.size()) {
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+            fprintf(stderr, "[ppocrv6-graph] input %zu floats != graph shape %lld; using CPU reference\n", input.size(),
+                    (long long)ggml_nelements(c->graph.input));
+        return false;
+    }
     std::vector<float> graph_input = input;
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
     if (c->diff && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
@@ -989,7 +1015,11 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     // This is a static-shape graph, so retain the scheduler allocation between
     // crops. If a future dynamic-shape path invalidates it, it must clear
     // `allocated` before reaching this function.
-    if (!c->graph.allocated) {
+    // The Apple backend can invalidate mixed graph allocations after a
+    // completed execution (especially when a width-keyed graph is invoked
+    // repeatedly). Re-plan Metal buffers per invocation; CPU safely reuses
+    // its static allocation.
+    if (!c->graph.allocated || !ggml_backend_is_cpu(c->graph.backend)) {
         ggml_backend_sched_reset(c->graph.sched);
         if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
         c->graph.allocated = true;
@@ -999,6 +1029,11 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     const auto finished = std::chrono::steady_clock::now();
     output.resize(ggml_nelements(c->graph.output));
     ggml_backend_tensor_get(c->graph.output, output.data(), 0, output.size() * sizeof(float));
+    if (c->graph.svtr_skip) {
+        c->graph.svtr_skip_host.resize(ggml_nelements(c->graph.svtr_skip));
+        ggml_backend_tensor_get(c->graph.svtr_skip, c->graph.svtr_skip_host.data(), 0,
+                                c->graph.svtr_skip_host.size() * sizeof(float));
+    }
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         for (const auto & tap : c->graph.debug_taps) {
             std::vector<float> values(ggml_nelements(tap.second));
@@ -1124,6 +1159,7 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
         // pp_graph_run exposes [hidden,tokens] as w=hidden,h=tokens.
         ow = h;
         tok = x;
+        skip_tokens = c->graph.svtr_skip_host;
     } else {
         const int ph = std::max(1, h / 3), pw = std::max(1, w / 2);
         std::vector<float> pooled((size_t)in_ch * ph * pw, 0.0f);
