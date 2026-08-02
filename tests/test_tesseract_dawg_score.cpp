@@ -1,4 +1,5 @@
 #include "tesseract_dawg_score.h"
+#include "core/clean_exit.h"
 
 #include <cstdint>
 #include <cstdio>
@@ -19,7 +20,7 @@ static void u64(std::vector<uint8_t> & bytes, uint64_t value) {
     for (int i = 0; i < 8; ++i) bytes.push_back((uint8_t)(value >> (8 * i)));
 }
 
-int main() {
+static int test_main() {
     // DAWG word [1, 2]: root letter 1 -> node 2, then letter 2 at EOW.
     // Each forward edge run has its marker terminator.
     std::vector<uint8_t> bytes;
@@ -59,4 +60,8 @@ int main() {
     }
     std::puts("tesseract dawg score: PASS");
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(test_main());
 }

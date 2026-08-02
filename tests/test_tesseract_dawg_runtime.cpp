@@ -1,9 +1,10 @@
 #include "tesseract_lstm.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
 
-int main(int argc, char ** argv) {
+static int test_main(int argc, char ** argv) {
     if (argc != 4) {
         std::fprintf(stderr, "usage: %s <model.gguf> <dawg-name> <utf8-text>\n", argv[0]);
         return 2;
@@ -18,4 +19,8 @@ int main(int argc, char ** argv) {
     std::printf("dawgs=%d complete=%d prefix=%d\n", count, complete, prefix);
     tesseract_lstm_free(ctx);
     return count > 0 && complete >= 0 && prefix >= 0 ? 0 : 1;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(test_main(argc, argv));
 }
