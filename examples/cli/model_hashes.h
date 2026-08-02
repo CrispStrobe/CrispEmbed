@@ -362,6 +362,10 @@ static const ModelHash k_model_hashes[] = {
       "459cd6ab70128c1aa9f23dfc2b4af945c212d1e11ac276ecc1faadf8939d3607" },
     { "https://huggingface.co/cstr/scunet-GGUF/resolve/main/scunet-color-f32.gguf",
       "d0a88d05270ae00038e1b491eee2e5a59d45980f3484670e73fa13beca195ac4" },
+    { "https://huggingface.co/cstr/instructir-GGUF/resolve/main/instructir-f16.gguf",
+      "b5affcdb5db8c84d79a256194d1d74e91d0da2da01d8d515f20720fbb2055420" },
+    { "https://huggingface.co/cstr/adair-GGUF/resolve/main/adair-5d-f32.gguf",
+      "56840ae2263759d0c8ae97ce6c1cfd83be1e78f7e4ecf5d4b580e0619cfd9189" },
     { "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
       "4cc16e226005a2d7ecce7749d5a876704a499ca301428167f5ceb3b75b967312" },
     { "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
@@ -376,6 +380,8 @@ static const ModelHash k_model_hashes[] = {
       "26ce9595afa6967a20d0781c2c3e6d01a5eb9a82b7ab25786bbffc6ba9dbeab0" },
     { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
       "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613" },
+    { "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
+      "26e79849b1527426b9e56260c411b3ad39501a0075943e456d9790f1c25f7d2c" },
     { "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-q4_k-stacked.gguf",
       "d1363c88a90d43bc912a041e53534c36e55ebc0591079070e5560534631db911" },
     { "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k-stacked.gguf",
@@ -422,6 +428,12 @@ static const ModelHash k_model_hashes[] = {
       "9d25be201210d8a82eb2f13aaf073d98311e6109e43b9808724b36137c65d571" },
     { "https://huggingface.co/cstr/cld3-GGUF/resolve/main/cld3-f16.gguf",
       "900813b635fa7f472beac213f521d57dd12378099b0623a8a36de0310b6bf892" },
+    { "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/glotlid-f16.gguf",
+      "2514d537b76363d9536138f4c8fa48479d1e431177d1b3faca13b3202748bf15" },
+    { "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/glotlid-q8_0.gguf",
+      "d12b64b310b63f871cf2b79126ee80cc6346ab94d77b8194f2b8ee43fcc86345" },
+    { "https://huggingface.co/cstr/glotlid-GGUF/resolve/main/glotlid-q4_k.gguf",
+      "c766fa61f292f5af5715b0dfdbea1a0a1a1e292bd8680e09f83b4e09d6389cff" },
     { "https://huggingface.co/cstr/lightonocr-GGUF/resolve/main/lightonocr-1b-q4_k.gguf",
       "c162d1af62d24db1228fcbc3344e8aa3b572361240a5be741c738014e994536f" },
     { "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-q8_0.gguf",
@@ -491,14 +503,10 @@ static const ModelHash k_model_hashes[] = {
 // clang-format on
 
 // Unpinned at generation time (integrity NOT enforced for these):
-//   https://huggingface.co/cstr/InstructIR-GGUF/resolve/main/instructir-f16.gguf  — not an LFS file, or repo/path unreachable
-//   https://huggingface.co/cstr/AdaIR-GGUF/resolve/main/adair-5d-f16.gguf  — not an LFS file, or repo/path unreachable
 //   https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf  — not an LFS file, or repo/path unreachable
 //   https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF/resolve/main/nanonets-ocr2-1.5b-q4_k.gguf  — not an LFS file, or repo/path unreachable
 //   https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf  — not an LFS file, or repo/path unreachable
 //   https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf  — not an LFS file, or repo/path unreachable
-//   https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf  — not an LFS file, or repo/path unreachable
-//   https://huggingface.co/cstr/glotlid-GGUF/resolve/main/lid-glotlid-f16.gguf  — not an LFS file, or repo/path unreachable
 
 // Returns the pinned SHA-256 for a download URL, or nullptr when the URL is
 // not pinned. A nullptr is not a pass: the caller decides whether an unpinned
