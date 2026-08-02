@@ -105,3 +105,13 @@ jobs:
       # needs both sides non-empty, so a 429 or a timeout cannot fail this.
       - name: Cross-check registry licences against upstream model cards
         run: python tests/check_registry_licenses.py
+
+      # Same rationale for living here: one API call per re-host repo, so it is
+      # network-bound and would flake on every push. What it catches is a pin
+      # that no longer matches what the re-host serves — either a model was
+      # legitimately re-uploaded and model_hashes.h needs regenerating, or the
+      # content changed underneath us, which is the case worth a red build.
+      # A registry entry added without re-running the generator also lands
+      # here, since an unpinned URL now refuses to download at all.
+      - name: Verify model SHA-256 pins are current
+        run: python tools/fetch_model_hashes.py --check
