@@ -227,7 +227,13 @@ def main():
     writer.add_uint32("qwen2vl.max_position_embeddings", int(tcv("max_position_embeddings", 128000)))
     writer.add_float32("qwen2vl.rms_norm_eps", float(tcv("rms_norm_eps", 1e-6)))
     writer.add_float32("qwen2vl.rope_theta", float(tcv("rope_theta", 1000000.0)))
-    writer.add_bool("qwen2vl.tie_word_embeddings", bool(tcv("tie_word_embeddings", True)))
+    # Ground-truth from the checkpoint, not the config flag: the head is tied
+    # exactly when no separate lm_head weight was shipped. Nanonets-OCR2-1.5B
+    # is a pruned Qwen2-VL whose config omits the flag while shipping no
+    # lm_head, and the LLM-export branch below used to re-add this key in that
+    # case — which gguf rejects as a duplicate, so conversion died after the
+    # vision tower was already written. One write, derived from the weights.
+    writer.add_bool("qwen2vl.tie_word_embeddings", "lm_head.weight" not in all_tensor_names)
 
     # mRoPE sections (transformers >=5.x uses "rope_parameters")
     rope_scaling = tcv("rope_scaling") or tcv("rope_parameters")
@@ -468,8 +474,9 @@ def main():
 
         if "lm_head.weight" in all_tensor_names:
             tensor_specs.append((LPFX + "lm_head.weight", "lm_head.weight", None))
-        elif tcv("tie_word_embeddings", True):
-            writer.add_bool("qwen2vl.tie_word_embeddings", True)
+        else:
+            # qwen2vl.tie_word_embeddings was already written from this same
+            # fact in the metadata section; re-adding it raises in gguf.
             print("  lm_head: tied to embed_tokens")
 
         print(f"  LLM: {n_llm_layers} layers → {len(tensor_specs) - n_vis_tensors} tensors")

@@ -99,6 +99,10 @@ def make_manifest(source):
         y0 = max(0, math.floor(region["y"] - 2))
         x1 = min(width, math.ceil(region["x"] + region["w"] + 2))
         y1 = min(height, math.ceil(region["y"] + region["h"] + 2))
+        rx0 = max(0, math.floor(region["x"]))
+        ry0 = max(0, math.floor(region["y"]))
+        rx1 = min(width, math.ceil(region["x"] + region["w"]))
+        ry1 = min(height, math.ceil(region["y"] + region["h"]))
         records.append({
             "index": index,
             "line": int(region.get("line", next((i for i, g in enumerate(cluster(regions)) if region in g), 0))),
@@ -107,6 +111,7 @@ def make_manifest(source):
             "detector_confidence": region["detector_confidence"],
             "box": [region["x"], region["y"], region["w"], region["h"]],
             "crop": [x0, y0, x1 - x0, y1 - y0],
+            "recognizer_crop": [rx0, ry0, rx1 - rx0, ry1 - ry0],
             "normalized_box": [normalize(region["x"], width), normalize(region["y"], height),
                                 normalize(region["x"] + region["w"], width),
                                 normalize(region["y"] + region["h"], height)],

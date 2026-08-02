@@ -1472,3 +1472,33 @@ On the German fixture, the report finds merge candidates native `0` →
 official `1..4`, native `9` → official `12..13`, and native `22` → official
 `26..27`; official row `0` remains unmatched. These are concrete geometry
 targets for row-splitting work, not recognizer timing or tensor-parity data.
+
+## AdaIR F16 runtime audit (2026-08-02)
+
+The AdaIR F32 reference path remains valid on the 64×64 diff fixture: ggml
+convolution measured cosine `0.999382`, max absolute error `0.027892`, and
+about `2.65 s` inference. The scalar-gated F32 path also passed at cosine
+`0.999379`, but measured about `16.8 s`, so it remains a correctness fallback,
+not a performance path.
+
+The original `adair-5d-f16.gguf` reproduced the backend assertion in the
+per-kernel CPU convolution cache. Allocation guards now prevent the process
+abort and disable the ggml convolution route for that context, preserving the
+existing scalar fallback. The completed F16 fallback runs returned cosine
+`0.729509` and max absolute error `0.707725`; therefore crash-freedom must not
+be confused with output parity. Timings ranged from roughly `7.3 s` to
+`180.5 s` while other large builds were contending for the host, so they are
+not suitable as a stable benchmark.
+
+The F32→F16 rebuild made with the repository quantizer was also tested and
+produced the same F16 cosine failure. Tensor inspection found representative
+metadata changes from `[3,3,3,48]` to `[27,48]` and `[1,1,48,144]` to
+`[48,144]`, with a mixture of F32 and F16 tensor types. Raw values for the
+sampled weights were close to the F32 source, but the runtime still reported
+an allocation size of zero for the F16 kernel descriptor. Explicit CPU buffer
+selection and manual buffer allocation did not change the outcome and were
+reverted.
+
+Current status: F32 is the only AdaIR precision cleared for release. F16
+requires a loader/converter descriptor audit, tensor-level dequant parity
+checks, and an end-to-end cosine gate before it can be uploaded or registered.

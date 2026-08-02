@@ -1204,7 +1204,7 @@ static const ModelEntry k_registry[] = {
 
     { "german-ocr-3.1", "german-ocr-3.1-q4_k.gguf",
       "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
-      "German-OCR-3.1 VLM (Qwen2.5-VL fine-tune, German invoices/forms/receipts)", "1301 MB", "apache-2.0",
+      "German-OCR-3.1 VLM (Qwen2.5-VL fine-tune, German invoices/forms/receipts)", "1684 MB", "apache-2.0",
       "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF" },
 
     { "nanonets-ocr-s", "nanonets-ocr-s-q4_k.gguf",
@@ -1217,6 +1217,10 @@ static const ModelEntry k_registry[] = {
       "Nanonets-OCR2-1.5B VLM OCR (Qwen2-VL pruned 16L, 12+ languages incl. German)", "1346 MB", "apache-2.0",
       "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF" },
 
+    // NOT PUBLISHED YET — this URL still 404s. The model converts (after the
+    // separate-Q/K/V fix in convert-internvl2-to-gguf.py) and loads, but emits
+    // degenerate output at BOTH f16 and q4_k: one repeated token then EOS. So it
+    // is not a quantization artifact. See PLAN.md before re-attempting.
     { "h2ovl-mississippi-2b", "h2ovl-mississippi-2b-q4_k.gguf",
       "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf",
       "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "457 MB", "apache-2.0",
@@ -1224,7 +1228,7 @@ static const ModelEntry k_registry[] = {
 
     { "h2ovl-mississippi-800m", "h2ovl-800m-q4_k.gguf",
       "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf",
-      "H2OVL-Mississippi-0.8B VLM OCR (InternViT-300M + Danube-3-0.5B, OCRBench 751, edge)", "398 MB", "apache-2.0",
+      "H2OVL-Mississippi-0.8B VLM OCR (InternViT-300M + Danube-3-0.5B, OCRBench 751, edge)", "644 MB", "apache-2.0",
       "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF" },
 
     { "internvl2-2b", "internvl2.5-2b-q4_k.gguf",
