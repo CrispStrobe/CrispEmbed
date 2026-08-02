@@ -1104,7 +1104,11 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     }
     float max_upscale = options.max_upscale;
     if (const char * env = std::getenv("CRISPEMBED_OCR_DET_MAX_UPSCALE")) max_upscale = (float)atof(env);
-    if (max_upscale > 0.0f) scale = std::min(scale, max_upscale);
+    int upscale_floor = options.upscale_floor;
+    if (const char * env = std::getenv("CRISPEMBED_OCR_DET_UPSCALE_FLOOR")) upscale_floor = atoi(env);
+    // Only clamp once the source already resolves its text; a true thumbnail
+    // still needs the enlargement to be detectable at all.
+    if (max_upscale > 0.0f && std::min(img_w, img_h) >= upscale_floor) scale = std::min(scale, max_upscale);
     scale = std::max(scale, 1.0f / std::max(img_w, img_h));
     int new_w = (int)(img_w * scale);
     int new_h = (int)(img_h * scale);

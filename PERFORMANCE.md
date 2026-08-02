@@ -1329,6 +1329,12 @@ DAWG validator. `test-tesseract-dawg` passes the minimal valid edge fixture and
 rejects malformed input; this adds negligible load-time validation and no
 runtime OCR scoring cost because DAWG traversal remains disabled.
 
+The opt-in system-DAWG prefix filter was A/B tested on the regenerated English
+smoke GGUF with recoder beam width 8. Both unfiltered and filtered runs passed
+`37/37`, decoded `Se`, and reported sequence confidence `0.562293`; the filter
+did not alter this fixture. This is a safety/observability result, not dictionary
+quality parity, and the default remains unchanged.
+
 A seeded-artifact page-gate rerun correction (2026-08-01): the earlier 2-box
 report was stale binary evidence. After rebuilding `test-ocr-orchestrator`
 following the remote pageseg changes, the canonical Q8 DBNet IC15 detector plus
