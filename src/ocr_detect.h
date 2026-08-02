@@ -54,8 +54,13 @@ struct detect_options {
     // at all: a 200x102 crop drops from one region to zero when capped. So the
     // cap only applies once the short side is already at least this many
     // pixels. Below it the old uncapped behaviour is kept.
+    //
+    // 120 is measured, not picked: the 616x149 low-DPI fixtures are BETTER
+    // capped (CER 0.025 at 1.25 s vs 0.066 at 58 s), so the exemption must not
+    // reach them, while the 200x102 thumbnail loses its only region without it.
+    // The boundary therefore sits between 102 and 149.
     // CRISPEMBED_OCR_DET_UPSCALE_FLOOR overrides it.
-    int upscale_floor = 160;
+    int upscale_floor = 120;
     int min_height = 30;
     float width_height_ratio = 8.0f;
     int max_candidates = 1000;
