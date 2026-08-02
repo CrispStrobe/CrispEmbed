@@ -22,7 +22,7 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** preserve unmapped Tesseract recoder classes as explicit `<class>` diagnostics instead of silently dropping or exposing numeric class labels; keep full composed-script parity open | **COMPLETED** |
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** preserve valid composed recoder segments around unmapped classes with a diagnostic partial composer; leave the default decoder and full composed-script parity gate unchanged | **COMPLETED** |
 | 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** consolidate repeated CRAFT/DBNet warm-graph probes into a versioned JSON manifest with explicit reference/native timing ratios and box-count quality status; keep device mismatch and page-text parity visible. Live scan-strip manifest: CRAFT native/reference `29,511.835/11,480.765 ms` (`2.57x`) with `106=106` boxes; DBNet `44,647.873/16,153.006 ms` (`2.76x`) with native `98` boxes, reference count unavailable in the timing-only probe. | **COMPLETED** |
-| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** produce an independent EasyOCR Python page manifest for `lines` mode and compare ordering, line grouping, crop geometry, decoded text, and confidence against the native DBNet→EasyOCR handoff; keep page parity separate from detector-only timing | **IN PROGRESS** |
+| 2026-08-02 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** produce an independent EasyOCR Python page manifest for `lines` mode and compare ordering, line grouping, crop geometry, decoded text, and confidence against the native DBNet→EasyOCR handoff; keep page parity separate from detector-only timing. Live `scan_strip.png`: Python CRAFT produced 11 lines; native DBNet produced 12. The first mismatch is line 0 (`"They are going to be , encamped near   Brighton"` vs `& They are going to be, encamped near   Brighton`), with geometry `[62,0,412,25]` vs `[46.97,0,423.54,21.76]`; all subsequent records shift, so page quality parity is **not** passed. | **COMPLETED — parity failed; quality TODO** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-01 | `feat/ppocr-next-20260731` | **Picked:** add a dependency-free EasyOCR interoperability contract test covering Python `lines`/`words` ordering, crop/normalized geometry, and LayoutLM `apply_ocr=False` serialization; keep real-page reference parity as the separate live gate. `tests/test_easyocr_interop_contract.py` passes with 3 words, 2 grouped lines, and ordered LayoutLM sidecar metadata | **COMPLETED** |
@@ -228,6 +228,7 @@ benchmarking, not postprocessing threshold tuning.
 | 2026-08-01 | `feat/tesseract-fraktur` / `CrispEmbed-tesseract-fraktur` worktree | **Picked:** validate Tesseract beam/sequence confidence against official line/page outputs; improve gated blob→row segmentation while preserving DBNet as default; optimize the recognizer precision frontier with reproducible mixed-precision GGUF candidates | **IN PROGRESS** |
 | 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** optimize the cached Tesseract int-mode LSTM kernel and immutable-weight reuse; preserve the exact seeded-output contract, benchmark warm recognition against official/native baselines, and keep the precision fallback gated until parity holds | **COMPLETED** |
 | 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reuse per-LSTM temporary vectors across sequential line recognitions; retain isolated per-context ownership, exact cached/uncached output parity, and the existing diagnostic gates | **COMPLETED** |
+| 2026-08-02 | `feat/tesseract-kernel-opt` / `.codex/worktrees/feat-tesseract-kernel-opt` | **Picked:** reproduce the AdaIR F16 ggml buffer assertion from the registry audit, repair only the F16 backend path if the root cause is local, and retain F32/scalar fallback coverage | **IN PROGRESS** |
 
 Mixed-precision checkpoint: the old Q8 artifact lacked `sample_iteration`.
 Fresh F32 conversion reaches 9/9 stages with logits cosine `0.993819`; a
@@ -736,10 +737,19 @@ model-free test passes both line and word policies.
 
 The native `test-easyocr-pipeline` can emit the same manifest schema, and
 `tools/compare_easyocr_manifests.py` reports the first record-level mismatch.
-The serializer self-check passes on the 98-word DBNet page run; an independent
-Python detector/recognizer page manifest is still required before parity is
-claimed. The current local Python environment lacks torch, numpy, and cv2, so
-that reference run remains an explicit external/dependency gate.
+The Miniconda runner `tools/run_easyocr_reference_page.py` now produces an
+independent Python CRAFT+English Gen-2 `readtext(detail=1)` manifest. On
+`scan_strip.png`, Python produced 11 lines while native DBNet→CRNN produced
+12. The first mismatch is line 0 (`"They are going to be , encamped near
+Brighton"` versus `& They are going to be, encamped near   Brighton`), with
+geometry `[62,0,412,25]` versus `[46.97,0,423.54,21.76]`; the rest therefore
+cannot be zipped as equivalent lines. Python recognition confidence was
+`0.8541` versus native `0.4472` on that first record. Detector confidence is
+explicitly unavailable from EasyOCR's public tuple and is not fabricated;
+the comparator has `--ignore-detector-confidence` for this case. The manifests
+are backed up under `/Volumes/backups/ai/crispembed-gguf/`. Page text/geometry
+parity is failed and remains a quality TODO; this is evidence, not a claim
+that either detector is universally better.
 
 The detector-independent production handoff is now explicit: `run_regions`
 accepts caller-supplied detector boxes and applies the configured lines/words
@@ -861,8 +871,11 @@ downstream handoff parity, not detector-box similarity alone.
       `easyocr_pipeline::run_regions` now accepts detector-independent boxes and
       applies the selected `lines`/`words` policy through the production crop /
       recognizer path; the pipeline test exercises the injected-geometry handoff.
-- [ ] Validate `lines` against EasyOCR grouping and decoded line text on a
-      page fixture with a Python reference manifest.
+- [x] Validate `lines` against EasyOCR grouping and decoded line text on a
+      page fixture with a Python reference manifest. The live comparison is
+      intentionally failed: Python CRAFT yields 11 lines, native DBNet yields
+      12, and the first text/geometry/confidence mismatch is recorded above;
+      detector/order/crop quality parity remains open.
 - [ ] Validate `words` against Tesseract TSV-style geometry/order and preserve
       confidence, pixel boxes, and normalized LayoutLM boxes.
 - [x] Add native handoff invariants for word-mode line/x ordering and
