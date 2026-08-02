@@ -17,6 +17,7 @@ def main():
         "records": [{
             "index": 0, "line": 0, "text": "hello", "confidence": 0.9,
             "detector_confidence": 0.8, "box": [10, 20, 40, 12], "crop": [8, 18, 44, 16],
+            "recognizer_crop": [10, 20, 40, 12],
             "normalized_box": [50, 200, 250, 320],
         }],
     }
@@ -29,8 +30,13 @@ def main():
         broken_manifest["records"] = [dict(manifest["records"][0], text="hullo")]
         broken.write_text(json.dumps(broken_manifest), encoding="utf-8")
         passed = subprocess.run([sys.executable, str(COMPARATOR), "--reference", str(reference), "--native", str(native)])
+        recognizer_passed = subprocess.run([
+            sys.executable, str(COMPARATOR), "--reference", str(reference), "--native", str(native),
+            "--recognizer-crop-only",
+        ])
         failed = subprocess.run([sys.executable, str(COMPARATOR), "--reference", str(reference), "--native", str(broken)])
     assert passed.returncode == 0
+    assert recognizer_passed.returncode == 0
     assert failed.returncode == 1
     print("easyocr-manifest-compare PASS and mismatch detection PASS")
 
