@@ -48,6 +48,11 @@ struct lstm_weights {
     int ns; // hidden size
 };
 
+struct lstm_scratch {
+    std::vector<float> h, c, gates;
+    std::vector<int8_t> input_q, hidden_q, activation_q;
+};
+
 static int tesseract_round_int(float value) {
     return value >= 0.0f ? (int)floorf(value + 0.5f) : -(int)floorf(-value + 0.5f);
 }
@@ -195,6 +200,7 @@ struct tesseract_lstm_context {
     std::vector<float> scratch_seq_a;
     std::vector<float> scratch_seq_b;
     std::vector<float> scratch_logits;
+    lstm_scratch scratch_lstm;
 };
 
 // ---------------------------------------------------------------------------
@@ -493,14 +499,24 @@ static void lstm_forward(const float * input, // (T, ni)
                          const float * W_ih, // (4*ns, ni)
                          const float * W_hh, // (4*ns, ns)
                          const float * bias, // (4*ns,)
-                         bool reverse, bool int_mode, const lstm_weights * cached = nullptr) {
+                         bool reverse, bool int_mode, const lstm_weights * cached = nullptr,
+                         lstm_scratch * scratch = nullptr) {
     // Gate order (PyTorch): i, f, g, o
     const int gs = 4 * ns;
-    std::vector<float> h(ns, 0.0f);
-    std::vector<float> c(ns, 0.0f);
-    std::vector<float> gates(gs);
-    std::vector<int8_t> input_q(int_mode ? ni : 0), hidden_q(int_mode ? ns : 0);
-    std::vector<int8_t> activation_q(int_mode && cached ? ni + ns : 0);
+    std::vector<float> local_h, local_c, local_gates;
+    std::vector<int8_t> local_input_q, local_hidden_q, local_activation_q;
+    auto & h = scratch ? scratch->h : local_h;
+    auto & c = scratch ? scratch->c : local_c;
+    auto & gates = scratch ? scratch->gates : local_gates;
+    auto & input_q = scratch ? scratch->input_q : local_input_q;
+    auto & hidden_q = scratch ? scratch->hidden_q : local_hidden_q;
+    auto & activation_q = scratch ? scratch->activation_q : local_activation_q;
+    h.assign(ns, 0.0f);
+    c.assign(ns, 0.0f);
+    gates.resize(gs);
+    input_q.resize(int_mode ? ni : 0);
+    hidden_q.resize(int_mode ? ns : 0);
+    activation_q.resize(int_mode && cached ? ni + ns : 0);
 
     for (int step = 0; step < T; step++) {
         int t = reverse ? (T - 1 - step) : step;
@@ -550,16 +566,25 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
                               const float * W_ih, // (4*ns, channels)
                               const float * W_hh, // (4*ns, ns)
                               const float * bias, // (4*ns,)
-                              bool int_mode, const lstm_weights * cached = nullptr) {
+                              bool int_mode, const lstm_weights * cached = nullptr, lstm_scratch * scratch = nullptr) {
     // After XYTranspose: height = original_width, width = original_height
     // For each row (height position), run LSTM across the width (original height).
     // State resets at each row boundary.
     const int gs = 4 * ns;
-    std::vector<float> h(ns);
-    std::vector<float> c(ns);
-    std::vector<float> gates(gs);
-    std::vector<int8_t> input_q(int_mode ? channels : 0), hidden_q(int_mode ? ns : 0);
-    std::vector<int8_t> activation_q(int_mode && cached ? channels + ns : 0);
+    std::vector<float> local_h, local_c, local_gates;
+    std::vector<int8_t> local_input_q, local_hidden_q, local_activation_q;
+    auto & h = scratch ? scratch->h : local_h;
+    auto & c = scratch ? scratch->c : local_c;
+    auto & gates = scratch ? scratch->gates : local_gates;
+    auto & input_q = scratch ? scratch->input_q : local_input_q;
+    auto & hidden_q = scratch ? scratch->hidden_q : local_hidden_q;
+    auto & activation_q = scratch ? scratch->activation_q : local_activation_q;
+    h.resize(ns);
+    c.resize(ns);
+    gates.resize(gs);
+    input_q.resize(int_mode ? channels : 0);
+    hidden_q.resize(int_mode ? ns : 0);
+    activation_q.resize(int_mode && cached ? channels + ns : 0);
 
     for (int row = 0; row < height; row++) {
         // Reset state per row
@@ -895,7 +920,8 @@ static void forward(tesseract_lstm_context * ctx,
     auto & seq_b = ctx->reuse_scratch ? ctx->scratch_seq_b : local_seq_b;
     seq_a.resize((size_t)W2 * ns0);
     summ_lstm_forward(transposed.data(), seq_a.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
-                      lw0.bias.data(), int_mode, ctx->cache_int ? &lw0 : nullptr);
+                      lw0.bias.data(), int_mode, ctx->cache_int ? &lw0 : nullptr,
+                      ctx->reuse_scratch ? &ctx->scratch_lstm : nullptr);
     lstm_idx++;
     capture(ctx, "after_lstm_0", seq_a.data(), seq_a.size());
 
@@ -911,7 +937,8 @@ static void forward(tesseract_lstm_context * ctx,
 
         next_seq->resize((size_t)T * lw.ns);
         lstm_forward(cur_seq->data(), next_seq->data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(),
-                     lw.bias.data(), rev, int_mode, ctx->cache_int ? &lw : nullptr);
+                     lw.bias.data(), rev, int_mode, ctx->cache_int ? &lw : nullptr,
+                     ctx->reuse_scratch ? &ctx->scratch_lstm : nullptr);
 
         std::swap(cur_seq, next_seq);
         cur_dim = lw.ns;
