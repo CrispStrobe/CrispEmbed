@@ -2,7 +2,17 @@
 
 #include "tesseract_recoder.h"
 
+#include <cctype>
+
 namespace tesseract_dawg_score {
+
+static bool is_word_separator(int uid, const std::vector<std::string> & tokens) {
+    if (uid < 0 || uid >= (int)tokens.size() || tokens[uid].empty()) return false;
+    for (unsigned char ch : tokens[uid]) {
+        if (!std::isspace(ch)) return false;
+    }
+    return true;
+}
 
 static bool complete_word_match(const std::map<std::string, tesseract_dawg::Dawg> & dawgs,
                                 const std::vector<int> & word) {
@@ -34,7 +44,7 @@ float word_bonus(const std::vector<int> & prefix, const std::vector<std::vector<
     float bonus = 0.0f;
     std::vector<int> word;
     for (int uid : unichars) {
-        if (uid == 0) {
+        if (is_word_separator(uid, tokens)) {
             if (!word.empty() && complete_word_match(dawgs, word)) bonus += 0.25f;
             word.clear();
         } else if (uid >= 0 && uid < (int)tokens.size()) {
