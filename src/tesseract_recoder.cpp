@@ -5,8 +5,7 @@
 
 namespace tesseract_recoder {
 
-bool prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
-                  bool allow_partial) {
+bool prefix_legal(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes, bool allow_partial) {
     if (codes.empty()) return true;
     const int n = (int)prefix.size();
     std::vector<uint8_t> reachable(n + 1, 0);
