@@ -348,20 +348,25 @@ things were eating the time, none of them the recognizer math:
    only — the detector graph stays diagnostic-only on geometry parity, and the
    tiny variant keeps its own accept gate since the evidence is for small.
 
-Where that leaves a one-shot CLI invocation on `synth_00_clean.png`, median of
-3, with `tesseract-cli` measured alongside as the load control:
+Where that leaves a one-shot CLI invocation on `synth_00_clean.png`. Measured
+by a self-gating harness that waits for load average < 6, then brackets the run
+with the `tesseract-cli` control before *and* after and discards the window if
+the two readings differ by more than 30%. This window: control 0.12/0.15 s,
+which is the true quiet baseline.
 
-| engine | quiet window (control 0.13–0.17 s) | noisier window (control 0.12→0.23 s) |
-|---|--:|--:|
-| `tesseract-cli:eng` | 0.15 s | 0.12–0.23 s |
-| `crispembed-tesseract` | **0.47 s** | 1.08 s |
-| `crispembed-easyocr` | 2.06 s | 3.64 s |
-| `crispembed-ppocrv6` | 3.70 s | 4.74 s |
+| engine | quiet wall | vs `tesseract-cli` | earlier this round |
+|---|--:|--:|--:|
+| `tesseract-cli:eng` | 0.135 s | — | — |
+| `crispembed-tesseract` | **0.48 s** | 3.6x | 5.9 s at the start |
+| `crispembed-ppocrv6` | **1.39 s** | 10.3x | 3.70 s |
+| `crispembed-easyocr` | **1.47 s** | 10.9x | 2.06 s |
 
-Read the quiet column; the noisier one is shown only so the spread is visible
-rather than hidden. The tesseract lane went from ~40x system Tesseract to
-**~3x**. The other two are ~3x their Python references (`easyocr-py` 0.75 s,
-`paddleocr-py` 1.07 s) and are not yet at parity.
+`tesseract-cli` is the only like-for-like comparison: one subprocess per image,
+model load included on both sides. The Python arms (`easyocr-py` 0.75 s,
+`paddleocr-py` 1.07 s) are measured in-process with the model already resident,
+so quoting our per-invocation CLI against them would flatter or damn us
+arbitrarily — that is exactly the `proc_ms`/`engine_ms` asymmetry the harness
+refuses to collapse into one column.
 
 **Remaining speed work — (a) is now clearly the biggest.**
 
