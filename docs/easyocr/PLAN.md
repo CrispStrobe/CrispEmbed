@@ -480,6 +480,21 @@ recognizer and LayoutLM consumer.
 - [ ] Port and validate Tesseract recode/dictionary scoring separately from
       the now-proven network arithmetic; do not enable a production beam from
       the diagnostic implementation.
+- [x] Correct the opt-in DAWG prefix-score contract: incomplete current words
+      now receive the small dictionary prefix bonus during intermediate beam
+      ranking, not only at final-candidate selection. The focused scorer test
+      covers this path; production/default decoding remains unchanged and full
+      official page-output parity is still open.
+- [x] Make DAWG word-boundary detection follow token text rather than assuming
+      unichar ID zero is a space. The scorer test covers a reordered token map;
+      production dictionary scoring remains opt-in pending official parity.
+- [x] Wire the model-owned DAWG runtime contract into CMake and exercise it
+      against the regenerated English DAWG GGUF. The runtime now reports the
+      loaded component count and exact/prefix query results; this validates
+      lookup plumbing only, not production dictionary quality.
+- [x] Harden model-owned DAWG queries for empty sequences and missing component
+      names. The runtime contract now covers an empty legal prefix and the
+      fail-closed `-1` missing-graph result; dictionary scoring remains opt-in.
 - [x] Preserve Tesseract DAWG components losslessly in newly converted GGUFs.
       `convert-tesseract-to-gguf.py` now records the present DAWG component
       names, base64 payloads, and SHA-256 digests under
@@ -519,6 +534,14 @@ recognizer and LayoutLM consumer.
 - [x] Add a tri-state model-context query distinguishing invalid prefix, legal
       non-terminal prefix, and complete word. This is the contract the future
       beam scorer can consume without re-querying exact/prefix separately.
+- [x] Add an opt-in `CRISPEMBED_TESSERACT_DAWG_PREFIX` recoder-beam filter using
+      the cached system DAWG. Incomplete recoder codes remain candidates; only
+      fully composed prefixes are queried. The default greedy/beam paths are
+      unchanged pending official output parity.
+- [x] Run a controlled A/B of the DAWG prefix filter on the regenerated English
+      smoke GGUF. Recoder beam width 8 passed 37/37 in both modes, decoded `Se`
+      in both modes, and produced sequence confidence `0.562293` in both; no
+      quality promotion is claimed from this single fixture.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,

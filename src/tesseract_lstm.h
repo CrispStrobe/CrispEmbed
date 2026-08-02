@@ -60,6 +60,21 @@ float tesseract_lstm_word_confidence(const tesseract_lstm_context * ctx);
 int tesseract_lstm_input_height(const tesseract_lstm_context * ctx);
 int tesseract_lstm_num_classes(const tesseract_lstm_context * ctx);
 const char * tesseract_lstm_vgsl_spec(const tesseract_lstm_context * ctx);
+/// Number of optional DAWG graphs loaded from GGUF metadata. Loading is
+/// enabled only with CRISPEMBED_TESSERACT_DAWG_LOAD.
+int tesseract_lstm_dawg_count(const tesseract_lstm_context * ctx);
+
+/// Query a loaded DAWG by name using unicharset IDs. Returns 1 for a match,
+/// 0 for a non-match, and -1 when the graph is not loaded or arguments are
+/// invalid. `complete=0` accepts a valid prefix; `complete=1` requires a word.
+int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char * name, const int * unichars,
+                                int n_unichars, int complete);
+
+/// UTF-8 convenience wrapper around tesseract_lstm_dawg_matches(). It
+/// segments the string against the loaded tokenizer tokens and returns the
+/// same 1/0/-1 status.
+int tesseract_lstm_dawg_matches_utf8(const tesseract_lstm_context * ctx, const char * name, const char * text,
+                                     int complete);
 
 /// Number of preserved DAWG components in the GGUF metadata. This is
 /// provenance/introspection only; dictionary scoring is not enabled.

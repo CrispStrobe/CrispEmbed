@@ -199,6 +199,24 @@ jobs:
           GOT_OCR_FORCE_CPU: '1'
           LD_LIBRARY_PATH: build
         run: python tests/regression/run_one.py --name got-ocr2
+      # The smoke-tier copy of this can only skip: it has no build and no
+      # models. Here both exist, and the two face models are small (37 MB +
+      # 0.2 MB), so this is where POLICY.md §4 actually gets enforced.
+      - name: Biometric acknowledgement gate (real run)
+        env:
+          LD_LIBRARY_PATH: build
+        run: |
+          mkdir -p .face-models
+          python - <<'PY'
+          from huggingface_hub import hf_hub_download
+          import shutil
+          for repo, name in (("cstr/yunet-GGUF", "yunet.gguf"), ("cstr/sface-GGUF", "sface.gguf")):
+              shutil.copy(hf_hub_download(repo_id=repo, filename=name), f".face-models/{name}")
+          PY
+          python tests/test_biometric_gate.py \
+            --det-model .face-models/yunet.gguf \
+            --rec-model .face-models/sface.gguf \
+            --build-dir build
 
   # scan_cleanup do-no-harm guard. Classical (tier-1) preprocessing needs no
   # model and no network, so this runs on every PR/push that touches the

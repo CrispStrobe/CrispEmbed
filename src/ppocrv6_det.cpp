@@ -100,8 +100,7 @@ static float box_iou(const box & a, const box & b) {
     const float iw = std::max(0.0f, std::min(ax2, bx2) - std::max(a.x, b.x));
     const float ih = std::max(0.0f, std::min(ay2, by2) - std::max(a.y, b.y));
     const float inter = iw * ih;
-    const float area = std::max(0.0f, a.w) * std::max(0.0f, a.h) +
-                       std::max(0.0f, b.w) * std::max(0.0f, b.h) - inter;
+    const float area = std::max(0.0f, a.w) * std::max(0.0f, a.h) + std::max(0.0f, b.w) * std::max(0.0f, b.h) - inter;
     return area > 0.0f ? inter / area : 0.0f;
 }
 
