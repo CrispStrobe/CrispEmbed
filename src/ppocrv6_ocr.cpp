@@ -672,8 +672,10 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
         // Shape changes invalidate the graph shell and its copied resident
         // tensors. Rebuild only this shape-specific plan; the source GGUF
         // weights remain loaded in c->wl for the next shape.
-        for (auto * buf : c->graph.resident_bufs) if (buf) ggml_backend_buffer_free(buf);
-        for (auto * ctx : c->graph.resident_ctxs) if (ctx) ggml_free(ctx);
+        for (auto * buf : c->graph.resident_bufs)
+            if (buf) ggml_backend_buffer_free(buf);
+        for (auto * ctx : c->graph.resident_ctxs)
+            if (ctx) ggml_free(ctx);
         c->graph.resident_bufs.clear();
         c->graph.resident_ctxs.clear();
         c->graph.resident.clear();
