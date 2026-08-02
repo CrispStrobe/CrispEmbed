@@ -2762,3 +2762,9 @@ the pattern first.
   existing stage metrics from the native debug stream. This enables speed
   comparisons once the resource-isolated CLI run is available; eighteen
   model-free geometry tests pass.
+
+- **Geometry native stage timings (2026-08-02).** The geometry comparator now
+  enables the native orchestration benchmark gate and parses optional
+  detector/group/crop/recognize/total timings into `native_stage_benchmark`.
+  Missing stage diagnostics remain non-fatal; eighteen model-free geometry
+  tests pass.

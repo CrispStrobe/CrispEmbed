@@ -113,6 +113,8 @@ class TesseractPageGeometryTest(unittest.TestCase):
         source = (ROOT / "tools/compare_tesseract_page_geometry.py").read_text()
         self.assertIn('"official_geometry_subprocess"', source)
         self.assertIn('"native_geometry_subprocess"', source)
+        self.assertIn('"native_stage_benchmark"', source)
+        self.assertIn('"CRISPEMBED_OCR_ORCH_BENCH"', source)
 
     def test_page_quality_acceptance_gates(self) -> None:
         args = type("Args", (), {"min_native_regions": 12, "max_cer": 0.02, "max_wer": 0.09})()
