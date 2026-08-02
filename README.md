@@ -239,12 +239,11 @@ Character/word error over that corpus:
 | EasyOCR 1.7.2 (Python) | external | 0.0769 | 0.2363 |
 | `crispembed --ocr-engine easyocr` | native | 0.0808 | 0.3190 |
 
-Latency for one CLI invocation of the same page (median of 3, with
-`tesseract` measured alongside as a load control at 0.13–0.17 s):
-`tesseract-cli` 0.15 s, `--ocr-engine tesseract` 0.47 s, `--ocr-engine easyocr`
-2.06 s, `--ocr-engine ppocrv6` 3.70 s. The tesseract lane was 5.9 s before this
-round — most of it was a CPU-only recognizer initialising Metal purely to load
-its own weights.
+Latency for one CLI invocation of the same page, on an idle machine with
+`tesseract` measured before and after as a control (0.12/0.15 s):
+`tesseract-cli` 0.135 s, `--ocr-engine tesseract` 0.48 s, `--ocr-engine ppocrv6`
+1.39 s, `--ocr-engine easyocr` 1.47 s. `tesseract-cli` is the like-for-like
+comparison — one subprocess per image, model load included on both sides.
 
 Reproduce with `python tests/ocr_synth_corpus.py --output <dir>` then
 `python tests/ocr_external_parity.py --images <dir> --model-dir <gguf dir>`.
