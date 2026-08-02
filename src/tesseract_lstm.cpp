@@ -39,7 +39,9 @@ struct lstm_weights {
     std::vector<float> W_ih; // (4*ns, ni)
     std::vector<float> W_hh; // (4*ns, ns)
     std::vector<float> bias; // (4*ns,)
-    std::vector<int8_t> W_ih_q, W_hh_q;
+    // Packed cached rows: [W_ih | W_hh] for each gate.  The int-mode hot
+    // path can then accumulate one contiguous row against [input | hidden].
+    std::vector<int8_t> W_q;
     std::vector<int32_t> bias_q;
     std::vector<float> q_scale;
     int ni;
@@ -86,10 +88,9 @@ static float int8_lstm_row_dot(const float * w_ih, const float * w_hh, int ni, i
 
 static void prepare_lstm_int_weights(lstm_weights & lw) {
     const int gates = 4 * lw.ns;
-    lw.W_ih_q.resize((size_t)gates * lw.ni);
-    lw.W_hh_q.resize((size_t)gates * lw.ns);
     lw.bias_q.resize(gates);
     lw.q_scale.resize(gates);
+    lw.W_q.resize((size_t)gates * (lw.ni + lw.ns));
     for (int g = 0; g < gates; ++g) {
         float max_abs = fabsf(lw.bias[g]);
         for (int i = 0; i < lw.ni; ++i) max_abs = std::max(max_abs, fabsf(lw.W_ih[g * lw.ni + i]));
@@ -97,21 +98,20 @@ static void prepare_lstm_int_weights(lstm_weights & lw) {
         lw.q_scale[g] = max_abs / 127.0f;
         if (lw.q_scale[g] == 0.0f) continue;
         lw.bias_q[g] = tesseract_round_int(lw.bias[g] / lw.q_scale[g]);
-        for (int i = 0; i < lw.ni; ++i)
-            lw.W_ih_q[g * lw.ni + i] = (int8_t)tesseract_round_int(lw.W_ih[g * lw.ni + i] / lw.q_scale[g]);
+        int8_t * packed = lw.W_q.data() + (size_t)g * (lw.ni + lw.ns);
+        for (int i = 0; i < lw.ni; ++i) packed[i] = (int8_t)tesseract_round_int(lw.W_ih[g * lw.ni + i] / lw.q_scale[g]);
         for (int i = 0; i < lw.ns; ++i)
-            lw.W_hh_q[g * lw.ns + i] = (int8_t)tesseract_round_int(lw.W_hh[g * lw.ns + i] / lw.q_scale[g]);
+            packed[lw.ni + i] = (int8_t)tesseract_round_int(lw.W_hh[g * lw.ns + i] / lw.q_scale[g]);
     }
 }
 
-static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * input, const int8_t * hidden) {
+static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * activation_q) {
     const float scale = lw.q_scale[gate];
     if (scale == 0.0f) return 0.0f;
     int32_t acc = lw.bias_q[gate] * 127;
-    const int8_t * wi = lw.W_ih_q.data() + gate * lw.ni;
-    const int8_t * wh = lw.W_hh_q.data() + gate * lw.ns;
-    for (int i = 0; i < lw.ni; ++i) acc += (int32_t)wi[i] * input[i];
-    for (int i = 0; i < lw.ns; ++i) acc += (int32_t)wh[i] * hidden[i];
+    const int n = lw.ni + lw.ns;
+    const int8_t * w = lw.W_q.data() + (size_t)gate * n;
+    for (int i = 0; i < n; ++i) acc += (int32_t)w[i] * activation_q[i];
     return (float)acc * scale / 127.0f;
 }
 
@@ -500,6 +500,7 @@ static void lstm_forward(const float * input, // (T, ni)
     std::vector<float> c(ns, 0.0f);
     std::vector<float> gates(gs);
     std::vector<int8_t> input_q(int_mode ? ni : 0), hidden_q(int_mode ? ns : 0);
+    std::vector<int8_t> activation_q(int_mode && cached ? ni + ns : 0);
 
     for (int step = 0; step < T; step++) {
         int t = reverse ? (T - 1 - step) : step;
@@ -507,12 +508,16 @@ static void lstm_forward(const float * input, // (T, ni)
         if (int_mode) {
             for (int i = 0; i < ni; ++i) input_q[i] = (int8_t)tesseract_round_int(xt[i] * 127.0f);
             for (int i = 0; i < ns; ++i) hidden_q[i] = (int8_t)tesseract_round_int(h[i] * 127.0f);
+            if (cached) {
+                memcpy(activation_q.data(), input_q.data(), ni);
+                memcpy(activation_q.data() + ni, hidden_q.data(), ns);
+            }
         }
 
         // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
         for (int g = 0; g < gs; g++) {
             gates[g] = int_mode
-                           ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                           ? (cached ? int8_lstm_row_dot_cached(*cached, g, activation_q.data())
                                      : int8_lstm_row_dot(W_ih + g * ni, W_hh + g * ns, ni, ns, bias[g], xt, h.data()))
                            : bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
                                  core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
@@ -554,6 +559,7 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
     std::vector<float> c(ns);
     std::vector<float> gates(gs);
     std::vector<int8_t> input_q(int_mode ? channels : 0), hidden_q(int_mode ? ns : 0);
+    std::vector<int8_t> activation_q(int_mode && cached ? channels + ns : 0);
 
     for (int row = 0; row < height; row++) {
         // Reset state per row
@@ -565,11 +571,15 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
             if (int_mode) {
                 for (int i = 0; i < channels; ++i) input_q[i] = (int8_t)tesseract_round_int(xt[i] * 127.0f);
                 for (int i = 0; i < ns; ++i) hidden_q[i] = (int8_t)tesseract_round_int(h[i] * 127.0f);
+                if (cached) {
+                    memcpy(activation_q.data(), input_q.data(), channels);
+                    memcpy(activation_q.data() + channels, hidden_q.data(), ns);
+                }
             }
 
             // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
-                gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, activation_q.data())
                                               : int8_lstm_row_dot(W_ih + g * channels, W_hh + g * ns, channels, ns,
                                                                   bias[g], xt, h.data()))
                                     : bias[g] + core_cpu::dot_product(W_ih + g * channels, xt, channels) +
