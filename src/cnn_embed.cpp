@@ -101,7 +101,10 @@ bool load(context ** out, const char * path, int n_threads) {
     ctx->type = str_val("cnn.model_type", "recognition");
     ctx->name = str_val("cnn.model_name", "unknown");
     ctx->graph_topology = str_val("cnn.graph_nodes", "");
-    ctx->embed_dim = u32_val("cnn.embedding_dim", 128);
+    // A detector has no embedding head, so it has no embedding width to report.
+    // Defaulting it to the recognition value made crispembed_face_dim() claim a
+    // 128-d template for a model that produces none. An explicit key still wins.
+    ctx->embed_dim = u32_val("cnn.embedding_dim", (ctx->type == "detection") ? 0 : 128);
     // Detection models default to 640x640, recognition to 112x112
     int default_sz = (ctx->type == "detection") ? 640 : 112;
     ctx->input_h = u32_val("cnn.input_height", default_sz);
@@ -212,7 +215,11 @@ bool load(context ** out, const char * path, int n_threads) {
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
-    fprintf(stderr, "cnn_embed: loaded %zu conv blocks + FC(%d)\n", ctx->blocks.size(), ctx->embed_dim);
+    if (ctx->embed_dim > 0) {
+        fprintf(stderr, "cnn_embed: loaded %zu conv blocks + FC(%d)\n", ctx->blocks.size(), ctx->embed_dim);
+    } else {
+        fprintf(stderr, "cnn_embed: loaded %zu conv blocks (no embedding head)\n", ctx->blocks.size());
+    }
     return true;
 }
 
