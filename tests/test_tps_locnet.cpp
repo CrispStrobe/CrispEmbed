@@ -12,6 +12,7 @@
 #include "ggml.h"
 #include "gguf.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -43,8 +44,18 @@ static void check(const char * name, bool cond) {
 // All weights random (model won't produce meaningful dewarping, but
 // exercises the full code path).
 
-static std::string create_test_gguf(int num_fiducial = 10) {
-    std::string path = "/tmp/test_tps_locnet.gguf";
+// `flatten_convs` reproduces what tools/quantize.cpp emits: it collapses every
+// 4-D F32 conv weight to 2-D [IC*KH*KW, OC] in the output header (a pure
+// reinterpret — same bytes, same order, only ne changes). Any engine that reads
+// an output-channel count off ne[3] silently sees 1 on such an artifact. The TPS
+// converter defaults to F32 (--fp16 is opt-in), so a quantized tps-loc GGUF is
+// exactly this shape.
+static std::string create_test_gguf(int num_fiducial = 10, bool flatten_convs = false) {
+    std::string path = flatten_convs ? "/tmp/test_tps_locnet_flat.gguf" : "/tmp/test_tps_locnet.gguf";
+
+    // Fixed seed: the 4-D and flattened builds must contain byte-identical
+    // weights, otherwise the layout comparison below is meaningless.
+    srand(1234);
 
     gguf_context * gctx = gguf_init_empty();
 
@@ -70,7 +81,8 @@ static std::string create_test_gguf(int num_fiducial = 10) {
         int ic = ic_list[i], oc = oc_list[i];
 
         std::string wn = "loc.conv" + std::to_string(i) + ".weight";
-        ggml_tensor * w = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 3, 3, ic, oc);
+        ggml_tensor * w = flatten_convs ? ggml_new_tensor_2d(ctx, GGML_TYPE_F32, (int64_t)ic * 3 * 3, oc)
+                                        : ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 3, 3, ic, oc);
         ggml_set_name(w, wn.c_str());
         // Fill with small random values
         float * wd = (float *)w->data;
@@ -106,8 +118,16 @@ static std::string create_test_gguf(int num_fiducial = 10) {
         int oc = num_fiducial * 2;
         ggml_tensor * w = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 64, oc);
         ggml_set_name(w, "loc.fc2.weight");
-        // Zero weights — bias will provide the initial grid
-        memset(w->data, 0, 64 * oc * sizeof(float));
+        // Small non-zero weights so the predicted points actually depend on the
+        // conv stack. With fc2 zeroed the output is fc2.bias alone, which makes
+        // every downstream assertion blind to anything the convolutions do —
+        // including a wrong channel count. Kept small so the points stay near
+        // the initial grid and the existing finiteness checks still hold.
+        {
+            float * wd = (float *)w->data;
+            float scale = 0.1f / sqrtf(64.0f);
+            for (int j = 0; j < 64 * oc; j++) wd[j] = ((float)(rand() % 1000) / 1000.0f - 0.5f) * 2.0f * scale;
+        }
         gguf_add_tensor(gctx, w);
 
         // Bias = initial fiducial grid (PaddleOCR convention)
@@ -183,6 +203,53 @@ static void test_load_and_predict() {
     remove(path.c_str());
 }
 
+// A quantized tps-loc GGUF carries its conv weights flattened to 2-D (see
+// create_test_gguf). The same bytes in a different ne must load to the same
+// network and predict the same points — the layout is a header detail, not a
+// model change. Comparing against the 4-D build rather than against a golden
+// constant means this stays valid if the synthetic weights ever change.
+static void test_flattened_conv_layout() {
+    printf("\n=== Quantizer-flattened conv layout (2-D [IC*KH*KW, OC]) ===\n");
+
+    std::string p4 = create_test_gguf(10, false);
+    std::string p2 = create_test_gguf(10, true);
+
+    tps_locnet * n4 = tps_locnet_load(p4.c_str());
+    tps_locnet * n2 = tps_locnet_load(p2.c_str());
+    check("4-D model loads", n4 != nullptr);
+    check("flattened model loads", n2 != nullptr);
+
+    if (n4 && n2) {
+        check("flattened model reports the same num_fiducial",
+              tps_locnet_num_fiducial(n2) == tps_locnet_num_fiducial(n4));
+
+        const int W = 64, H = 32;
+        std::vector<uint8_t> gray(W * H, 128);
+        for (int y = 10; y < 22; y++)
+            for (int x = 10; x < 54; x++) gray[y * W + x] = 40;
+
+        std::vector<float> x4(10), y4(10), x2(10), y2(10);
+        int r4 = tps_locnet_predict(n4, gray.data(), W, H, x4.data(), y4.data());
+        int r2 = tps_locnet_predict(n2, gray.data(), W, H, x2.data(), y2.data());
+        check("flattened model predicts the same point count", r2 == r4 && r2 > 0);
+
+        if (r4 > 0 && r2 == r4) {
+            float worst = 0.0f;
+            for (int i = 0; i < r4; i++) {
+                worst = std::max(worst, std::fabs(x2[i] - x4[i]));
+                worst = std::max(worst, std::fabs(y2[i] - y4[i]));
+            }
+            printf("  worst |flattened - 4D| over %d control points: %.6f px\n", r4, worst);
+            check("flattened layout predicts identical control points", worst == 0.0f);
+        }
+    }
+
+    if (n4) tps_locnet_free(n4);
+    if (n2) tps_locnet_free(n2);
+    remove(p4.c_str());
+    remove(p2.c_str());
+}
+
 static void test_auto_dewarp() {
     printf("\n=== Auto dewarp pipeline ===\n");
 
@@ -227,6 +294,7 @@ static int crispembed_test_main() {
     srand(42); // deterministic random weights
 
     test_load_and_predict();
+    test_flattened_conv_layout();
     test_auto_dewarp();
     test_bad_model();
 

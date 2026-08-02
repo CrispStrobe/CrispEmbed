@@ -283,16 +283,9 @@ bool load_hparams(context & ctx, const char * path) {
     // not divide the coarse one, concatenated fine[:-1] + coarse[:-1] +
     // fine[-1:]. We only build single-scale tiles, so an MSAC model receives a
     // visual token layout it never saw and answers with fluent nonsense —
-    // h2ovl-mississippi-2b emits one repeated token then EOS at both f16 and
-    // q4_k. Refuse it rather than return that as if it were a transcription.
-    // Lifting this means implementing the second scale in image_preprocess.
-    if (boolv("internvl2.use_msac", false)) {
-        fprintf(stderr, "internvl2_ocr: this model sets use_msac (Multi-Scale Adaptive Cropping),\n"
-                        "which CrispEmbed does not implement. Running it with single-scale tiles\n"
-                        "produces confident-looking nonsense rather than a transcription, so it is\n"
-                        "refused instead. See PLAN.md (h2ovl-mississippi-2b).\n");
-        return false;
-    }
+    // h2ovl-mississippi-2b emitted one repeated token then EOS at both f16 and
+    // q4_k before the second scale existed. Now honoured in preprocessing.
+    lhp.use_msac = boolv("internvl2.use_msac", lhp.use_msac);
 
     // Tokenizer special tokens
     lhp.bos_token_id = u32("internvl2.tokenizer.bos_id", lhp.bos_token_id);
@@ -1663,12 +1656,17 @@ const char * internvl2_ocr_recognize_raw(internvl2_ocr_context * ctx, const uint
     }
 
     image_preproc::internvl_result pp;
-    if (!image_preproc::preprocess_internvl_rgb(pixel_bytes, height, width, channels, cfg, pp)) {
-        fprintf(stderr, "internvl2_ocr: image preprocessing failed\n");
+    const bool msac = ctx->ctx.m.lhp.use_msac;
+    const bool pp_ok = msac ? image_preproc::preprocess_internvl_msac_rgb(pixel_bytes, height, width, channels, cfg, pp)
+                            : image_preproc::preprocess_internvl_rgb(pixel_bytes, height, width, channels, cfg, pp);
+    if (!pp_ok) {
+        fprintf(stderr, "internvl2_ocr: image preprocessing failed%s\n",
+                msac ? " (MSAC: no admissible second-scale grid for this image)" : "");
         if (out_len) *out_len = 0;
         return "";
     }
 
+    if (msac) fprintf(stderr, "internvl2_ocr: MSAC two-scale tiling\n");
     fprintf(stderr, "internvl2_ocr: %dx%d → %d tiles (%dx%d grid, %dpx)\n", width, height, pp.n_tiles, pp.grid_rows,
             pp.grid_cols, pp.tile_size);
 

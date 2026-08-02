@@ -85,6 +85,9 @@ struct llm_hparams {
     uint32_t max_dynamic_patch = 12;
     uint32_t min_dynamic_patch = 1;
     bool use_thumbnail = true;
+    // H2OVL Multi-Scale Adaptive Cropping: the page is tiled twice and the two
+    // scales concatenated. Required by h2ovl-mississippi-2b.
+    bool use_msac = false;
 
     // Special tokens
     uint32_t bos_token_id = 1;

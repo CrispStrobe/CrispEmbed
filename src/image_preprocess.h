@@ -94,6 +94,14 @@ struct internvl_config {
     bool use_thumbnail = true;
     float mean[3] = { 0.485f, 0.456f, 0.406f };
     float std[3] = { 0.229f, 0.224f, 0.225f };
+
+    // MSAC second pass only (see preprocess_internvl_msac_rgb). When both are
+    // non-zero, candidate grids (r, c) are rejected unless
+    // `prior_cols % c != 0 && prior_rows % r != 0`, which is how H2OVL forces
+    // the fine grid to not be a sub-grid of the coarse one. 0 = no exclusion,
+    // i.e. ordinary single-scale behaviour.
+    int exclude_prior_rows = 0;
+    int exclude_prior_cols = 0;
 };
 
 struct internvl_result {
@@ -113,6 +121,23 @@ bool preprocess_internvl_file(const char * path, const internvl_config & cfg, in
 
 bool preprocess_internvl_rgb(const uint8_t * rgb, int height, int width, int channels, const internvl_config & cfg,
                              internvl_result & out);
+
+// H2OVL Multi-Scale Adaptive Cropping. Tiles the page twice — the ordinary
+// coarse grid, then a finer grid constrained to not divide the coarse one —
+// and returns them in the order the model was trained on:
+//
+//     fine[:-1] + coarse[:-1] + fine[-1:]      (thumbnail last)
+//
+// i.e. both grids' tiles, each without its own thumbnail, followed by the fine
+// thumbnail. Roughly double the tiles of a single-scale pass. Models with
+// `use_msac` in their config (h2ovl-mississippi-2b) require this; feeding them
+// single-scale tiles yields fluent nonsense rather than a transcription.
+//
+// Returns false when the exclusion leaves no admissible fine grid, which the
+// caller should treat as "cannot serve this image", not as a reason to fall
+// back to single-scale.
+bool preprocess_internvl_msac_rgb(const uint8_t * rgb, int height, int width, int channels, const internvl_config & cfg,
+                                  internvl_result & out);
 
 // Standalone separable bicubic resize (a = -0.5 Catmull-Rom) with antialiasing
 // on downscale, matching PIL's uint8 resize (round + clamp) — i.e. the resample

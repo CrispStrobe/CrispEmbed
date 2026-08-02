@@ -1179,16 +1179,15 @@ static const ModelEntry k_registry[] = {
       "InstructIR all-in-one restoration (NAFNet+ICB, 16M params, 7 tasks)", "32 MB", "MIT",
       "https://huggingface.co/cstr/instructir-GGUF" },
 
-    // Still f32, but no longer for a runtime reason: the F16 defect was a shape
-    // bug in this repo, fixed in src/adair.cpp (the quantizer flattens 4-D conv
-    // weights to 2-D, and three hidden widths were read off ne[3]). A local f16
-    // now runs at cos 0.999383 vs the f32 path's 0.999382. Repointing this entry
-    // needs the f16 uploaded to cstr/adair-GGUF and a SHA-256 pin added to
-    // model_hashes.h first. See PLAN.md / PERFORMANCE.md.
+    // Back on f16, halving the download. The F16 defect was a shape bug in this
+    // repo — the quantizer flattens 4-D conv weights to 2-D and three hidden
+    // widths were read off ne[3] — fixed in src/adair.cpp (67ec560c). The f16 is
+    // now uploaded and pinned; against the f32 on the same input it is
+    // cos 0.99999994, max 1 LSB, mean 115.369 vs 115.370.
     // Repo id is the canonical lowercase one — cstr/AdaIR-GGUF only worked via
     // HuggingFace's case redirect.
-    { "adair-5d", "adair-5d-f32.gguf", "https://huggingface.co/cstr/adair-GGUF/resolve/main/adair-5d-f32.gguf",
-      "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "115 MB", "MIT",
+    { "adair-5d", "adair-5d-f16.gguf", "https://huggingface.co/cstr/adair-GGUF/resolve/main/adair-5d-f16.gguf",
+      "AdaIR all-in-one restoration (Restormer+AFLB+FFT, 28.8M params, 5 tasks)", "59 MB", "MIT",
       "https://huggingface.co/cstr/adair-GGUF" },
 
     // text-sr: NAFNet-SR engine — no default model; supply a custom trained GGUF.

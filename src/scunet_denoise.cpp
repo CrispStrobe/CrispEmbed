@@ -707,6 +707,22 @@ static void scunet_run_conv(scunet_context * ctx, bool transpose, const float * 
     ggml_set_name(x, "x");
     ggml_set_input(x);
     ggml_tensor * w = ctx->gw[weight_t];
+    // tools/quantize.cpp flattens 4-D F32 conv weights to 2-D [IC*KH*KW, OC],
+    // and the kernel cache above copies the source ne verbatim ("as-is"), so on
+    // a quantized GGUF the cached kernel arrives [K*K*IC, OC, 1, 1] and
+    // ggml_conv_2d aborts on GGML_ASSERT(a->ne[2] == b->ne[2]). Only ne was
+    // lost — the flatten is a pure reinterpret, so the bytes are still in ggml
+    // kernel order — hence a reshape restores it. Conventions measured on the
+    // working f32 path: plain conv is [kw,kh,ic,oc], conv_transpose_2d_p0 is
+    // [kw,kh,oc,ic] (e.g. ic=128 oc=64 -> [2,2,64,128]).
+    {
+        const int64_t k_c2 = transpose ? oc : ic;
+        const int64_t k_c3 = transpose ? ic : oc;
+        if ((w->ne[0] != kw || w->ne[1] != kh || w->ne[2] != k_c2 || w->ne[3] != k_c3) &&
+            ggml_nelements(w) == (int64_t)kw * kh * k_c2 * k_c3) {
+            w = ggml_reshape_4d(g, w, kw, kh, k_c2, k_c3);
+        }
+    }
     ggml_tensor * y =
         transpose ? ggml_conv_transpose_2d_p0(g, w, x, stride) : ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
     ggml_tensor * bin = nullptr;
