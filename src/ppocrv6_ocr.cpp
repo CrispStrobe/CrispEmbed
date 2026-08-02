@@ -78,6 +78,7 @@ struct pp_graph_state {
     // crop defeats the persistent-graph design and needlessly re-plans backend
     // buffers.
     bool allocated = false;
+    int width = 0;
 };
 
 struct ppocrv6_ocr_context {
@@ -665,8 +666,36 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
     return y;
 }
 
-static bool pp_graph_build(ppocrv6_ocr_context * c) {
-    if (c->graph.attempted) return c->graph.ready;
+static bool pp_graph_build(ppocrv6_ocr_context * c, int width) {
+    if (c->graph.attempted && c->graph.width == width) return c->graph.ready;
+    if (c->graph.attempted && c->graph.width != width) {
+        // Shape changes invalidate the graph shell and its copied resident
+        // tensors. Rebuild only this shape-specific plan; the source GGUF
+        // weights remain loaded in c->wl for the next shape.
+        for (auto * buf : c->graph.resident_bufs)
+            if (buf) ggml_backend_buffer_free(buf);
+        for (auto * ctx : c->graph.resident_ctxs)
+            if (ctx) ggml_free(ctx);
+        c->graph.resident_bufs.clear();
+        c->graph.resident_ctxs.clear();
+        c->graph.resident.clear();
+        c->graph.debug_taps.clear();
+        if (c->graph.sched) ggml_backend_sched_free(c->graph.sched);
+        if (c->graph.cpu_backend) ggml_backend_free(c->graph.cpu_backend);
+        if (c->graph.graph_ctx) ggml_free(c->graph.graph_ctx);
+        c->graph.sched = nullptr;
+        c->graph.cpu_backend = nullptr;
+        c->graph.graph_ctx = nullptr;
+        c->graph.graph = nullptr;
+        c->graph.input = nullptr;
+        c->graph.output = nullptr;
+        c->graph.attempted = false;
+        c->graph.ready = false;
+        c->graph.allocated = false;
+        c->graph.logits_output = false;
+        c->graph.svtr_prefix_output = false;
+        c->graph.svtr_decoder_output = false;
+    }
     c->graph.attempted = true;
     if (!std::getenv("CRISPEMBED_PPOCRV6_GRAPH")) return false;
     c->graph.backend = c->backend;
@@ -683,7 +712,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph scheduler creation failed\n");
         return false;
     }
-    constexpr int H = 48, W = 320;
+    constexpr int H = 48;
     const size_t meta_size = ggml_tensor_overhead() * 4096 + ggml_graph_overhead_custom(4096, false);
     c->graph.graph_meta.resize(meta_size);
     ggml_init_params ip = { meta_size, c->graph.graph_meta.data(), true };
@@ -693,7 +722,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
         return false;
     }
     c->graph.graph = ggml_new_graph_custom(c->graph.graph_ctx, 4096, false);
-    c->graph.input = ggml_new_tensor_4d(c->graph.graph_ctx, GGML_TYPE_F32, W, H, 3, 1);
+    c->graph.input = ggml_new_tensor_4d(c->graph.graph_ctx, GGML_TYPE_F32, width, H, 3, 1);
     ggml_set_name(c->graph.input, "ppocrv6_graph_input");
     ggml_set_input(c->graph.input);
     ggml_tensor * x = c->graph.input;
@@ -924,6 +953,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
     }
     c->graph.allocated = true;
     c->graph.ready = true;
+    c->graph.width = width;
     const char * output_kind =
         c->graph.logits_output ? "logits" : (c->graph.svtr_decoder_output ? "svtr-decoder" : "backbone");
     fprintf(stderr, "ppocrv6: persistent GGML graph ready (%s, %s, %lldx%lldx%lld)\n",
@@ -934,19 +964,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c) {
 
 static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & input, std::vector<float> & output,
                          int & h, int & w) {
-    // The accepted graph is deliberately static at the Paddle minimum width.
-    // Line recognition now preserves wider crops so CTC has enough timesteps;
-    // never upload a dynamic-width tensor into this 320-wide graph. The CPU
-    // reference path below handles those crops correctly until a dynamic
-    // graph is implemented.
-    constexpr size_t static_input = 3u * 48u * 320u;
-    if (input.size() != static_input) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
-            fprintf(stderr, "ppocrv6: static graph bypassed for input elements=%zu (requires %zu)\n", input.size(),
-                    static_input);
-        return false;
-    }
-    if (!pp_graph_build(c)) {
+    if (!pp_graph_build(c, w)) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH"))
             fprintf(stderr, "[ppocrv6-graph-bench] graph unavailable large_stem=%d backend=%s\n", c->large_stem ? 1 : 0,
                     c->backend ? ggml_backend_name(c->backend) : "none");
@@ -956,7 +974,6 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
     // [C,H,W].  A contiguous ggml tensor shaped [W,H,C,N] has the same byte
     // order: dimension 0 (x), then dimension 1 (y), then channels.  No
     // pixel-interleaving transpose is needed at this backend boundary.
-    constexpr int H = 48, W = 320, C = 3;
     std::vector<float> graph_input = input;
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
     if (c->diff && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
