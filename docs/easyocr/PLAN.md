@@ -350,6 +350,14 @@ recognizer and LayoutLM consumer.
       `tools/compare_easyocr_manifests.py`; native serialization and comparator
       self-check pass on the 98-word DBNet page run, with explicit mismatch
       coverage in `tests/test_easyocr_manifest_compare.py`.
+- [x] Run an independent Miniconda EasyOCR CRAFT+English Gen-2 page reference
+      through `tools/run_easyocr_reference_page.py` and compare it with the
+      native DBNet→CRNN `lines` manifest. `scan_strip.png` produces 11 Python
+      lines versus 12 native lines; the first mismatch is recorded in the
+      root plan with text, geometry, and confidence values. Page parity fails
+      and remains a detector/order/crop quality TODO; detector confidence is
+      unavailable in EasyOCR's public `readtext(detail=1)` tuple and is not
+      synthesized.
 - [x] Add native handoff invariants for word-mode line/x ordering and
       normalized-box bounds; external Tesseract TSV geometry/text parity is
       still pending.
