@@ -505,6 +505,14 @@ recognizer and LayoutLM consumer.
 - [x] Add a read-only DAWG prefix-legality lookup, including a fixture where a
       non-terminal prefix is legal but not itself a complete word. This is the
       next input to recoder/beam scoring, but remains diagnostic-only.
+- [x] Harden DAWG metadata decoding with strict base64 quartet/padding checks
+      and malformed-input tests. Corrupt payloads cannot reach traversal.
+- [x] Add a reusable parsed-DAWG context for repeated exact/prefix lookups.
+      It caches the decoded edge array and masks, avoiding repeated base64
+      parsing per future beam hypothesis; it remains diagnostic-only.
+- [x] Cache one parsed DAWG context per model component during native Tesseract
+      GGUF load and release them with the recognizer context. This wires the
+      reusable infrastructure into the model lifetime without enabling scores.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,
