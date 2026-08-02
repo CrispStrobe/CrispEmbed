@@ -216,7 +216,13 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
             core_gguf::free_weights(wl);
             return nullptr;
         }
-        net->channels[i] = (int)net->conv[i].w->ne[3]; // [kw, kh, ic, oc] in ggml
+        // [kw, kh, ic, oc] in ggml — but tools/quantize.cpp flattens 4-D F32
+        // conv weights to 2-D [ic*kh*kw, oc] in the output header, and this
+        // converter defaults to F32 (--fp16 is opt-in), so a quantized tps-loc
+        // GGUF arrives 2-D with ne[3]==1. Reading oc off ne[3] then set every
+        // layer to 1 channel, silently. Same convention as src/cnn_embed.cpp.
+        ggml_tensor * cw = net->conv[i].w;
+        net->channels[i] = (int)(ggml_n_dims(cw) == 2 ? cw->ne[1] : cw->ne[3]);
     }
 
     net->fc1.w = core_gguf::require(wl.tensors, "loc.fc1.weight", "tps_locnet");
