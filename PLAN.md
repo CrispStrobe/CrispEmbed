@@ -310,18 +310,57 @@ question rather than a recognition one and is the natural next target.
 Starting point for comparison: `crispembed-tesseract` 0.0814, `crispembed-easyocr`
 0.1412, `crispembed-ppocrv6` unusable.
 
-**Latency: partly measured, and honestly so.** The detector cap below is a
-clean 4.7x with a validated in-run control. Everything after it was measured on
-a box carrying 3-6 concurrent agent builds — `tesseract-cli` itself drifted
-from ~150 ms to 464 ms and at times 10.3 s in the same harness — so no absolute
-native latency from those runs is reported here, and `crispembed-ppocrv6` has
-no trustworthy timing at all yet. Re-run
-`tests/ocr_external_parity.py` on a quiet box and check the `tesseract-cli`
-control is back near 150 ms before quoting any number. What is known
-structurally: the recognizers are cheap (`recognize=119 ms` against
-`detect=4938 ms` pre-cap), PP-OCRv6 now feeds the recognizer wider crops by
-design, and its CPU SVTR attention is O(tokens^2), so that lane should be
-expected to cost more than the other two until its graph path is accepted.
+**Latency: the dominant costs are found and two are fixed.** Three separate
+things were eating the time, none of them the recognizer math:
+
+1. **The detector enlarged pages that already resolved their text** — 84% of
+   the tesseract lane (`detect=4938 ms` against `recognize=119 ms`). Capping the
+   upscale is 4.7x and *also* cut CER 2.8x. Fixed, on by default (below).
+2. **A CPU-only recognizer was initialising Metal to load itself.**
+   `tesseract_lstm` is entirely host-side, but its loader asked for a GPU
+   backend purely to pull the GGUF through `core_gguf::load_weights` — spinning
+   up Metal, shader library and all, for a sub-2 MB model, then freeing it.
+   Measured 4971 ms cold / 1069 ms warm against **4.8 ms** on the CPU backend.
+   The whole invocation went **5.9 s -> 0.47 s (12.5x)**, output byte-identical.
+   Fixed; `CRISPEMBED_TESSERACT_GPU_LOAD` restores the old path.
+3. **PP-OCRv6's recognizer runs a CPU scalar SVTR.** Its detector already
+   follows the correct never-upscale convention (`min(1, 960/max(w,h))`), so the
+   remaining cost is compute. The now-correct graph path is **4.2–7x faster with
+   identical decoded text** (wide 713 px crop 8.28 s -> 1.98 s; 320 px crop
+   6.40 s -> 0.92 s). Not yet promoted — see below.
+
+Where that leaves a one-shot CLI invocation on `synth_00_clean.png`, median of
+3, with `tesseract-cli` measured alongside as the load control:
+
+| engine | quiet window (control 0.13–0.17 s) | noisier window (control 0.12→0.23 s) |
+|---|--:|--:|
+| `tesseract-cli:eng` | 0.15 s | 0.12–0.23 s |
+| `crispembed-tesseract` | **0.47 s** | 1.08 s |
+| `crispembed-easyocr` | 2.06 s | 3.64 s |
+| `crispembed-ppocrv6` | 3.70 s | 4.74 s |
+
+Read the quiet column; the noisier one is shown only so the spread is visible
+rather than hidden. The tesseract lane went from ~40x system Tesseract to
+**~3x**. The other two are ~3x their Python references (`easyocr-py` 0.75 s,
+`paddleocr-py` 1.07 s) and are not yet at parity.
+
+**Remaining speed work, in order of measured value.** (a) Promote the PP-OCRv6
+recognizer graph — it is now correct, agrees with CPU on every crop tried, and
+is worth 4.2–7x; it needs a multi-fixture gold pass before the default flips.
+(b) PP-OCRv6's CPU detector (1.9 s) is scalar convolution; its graph is still
+diagnostic-only on geometry parity. (c) Each engine builds its own Metal
+backend, so a pipeline pays that init more than once — sharing one backend
+across the orchestrator's engines is untried. (d) The DBNet detector still
+costs ~400 ms on a capped 572x188 page against tesseract-cli's 0.15 s for the
+entire job.
+
+**Measurement discipline, learned the hard way here.** This box runs 3–6
+concurrent agent builds; load average hit 103 mid-sweep and `tesseract-cli`
+itself drifted from 150 ms to 10.3 s inside the same harness. Every number
+above is quoted with the control that bracketed it, and several runs were
+discarded outright. `tests/ocr_external_parity.py` prints the `tesseract-cli`
+arm for exactly this reason — if it is far above ~150 ms the run is measuring
+contention, not engines.
 
 **The detector, not the recognizers, is the whole latency gap — and its resize
 rule is an upstream deviation.** Stage bench on `synth_00_clean.png` via the
