@@ -1219,7 +1219,8 @@ int tesseract_lstm_dawg_matches(const tesseract_lstm_context * ctx, const char *
     if (!ctx || !name || n_unichars < 0 || (n_unichars > 0 && !unichars)) return -1;
     const auto it = ctx->dawgs.find(name);
     if (it == ctx->dawgs.end()) return -1;
-    const std::vector<int> ids(unichars, unichars + n_unichars);
+    const std::vector<int> ids =
+        n_unichars > 0 ? std::vector<int>(unichars, unichars + n_unichars) : std::vector<int>();
     return tesseract_dawg::prefix_matches(it->second, ids, complete != 0) ? 1 : 0;
 }
 

@@ -44,7 +44,17 @@ def _tokens(model_dir: Path, kind: str) -> list[str]:
         doc = yaml.safe_load((model_dir / "inference.yml").read_text())
         chars = doc.get("PostProcess", {}).get("character_dict", [])
         if chars:
-            return [str(x) for x in chars]
+            tokens = [str(x) for x in chars]
+            # The PP-OCRv6 training configs set use_space_char, so PaddleOCR's
+            # BaseRecLabelDecode appends ' ' to the dictionary before
+            # CTCLabelDecode prepends 'blank'.  The label list is therefore
+            # blank + dict + ' ', which is exactly the head_out_channels the
+            # checkpoint carries (18710 against an 18708-entry dict).  Emitting
+            # only the dict leaves the last class decoding to nothing, so every
+            # space is silently dropped and the page comes out run-on.
+            if " " not in tokens:
+                tokens.append(" ")
+            return tokens
     except (ImportError, OSError, ValueError):
         pass
     return []

@@ -1,4 +1,5 @@
 #include "tesseract_recoder.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <vector>
@@ -7,7 +8,7 @@ static bool equal(const std::vector<int> & a, const std::vector<int> & b) {
     return a == b;
 }
 
-int main() {
+static int test_main() {
     const std::vector<std::vector<int>> codes = { { 0 }, { 1, 2 }, { 3 } };
     std::vector<int> unichars, starts;
     if (!tesseract_recoder::compose_classes({ 0, 1, 2, 3 }, codes, unichars, starts) || !equal(unichars, { 0, 1, 2 }) ||
@@ -44,4 +45,8 @@ int main() {
     }
     std::puts("tesseract recoder: PASS");
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(test_main());
 }
