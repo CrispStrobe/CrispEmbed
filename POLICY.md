@@ -266,6 +266,25 @@ its upstream licence, some non-commercial or vendor-restricted. See the
 [Model licences](README.md#model-licenses) table, `crispembed --list-models`,
 and `tests/check_registry_licenses.py`.
 
+**A fine-tune's declared licence is not evidence about its base.** Whoever
+re-hosts is relying on a chain, and the chain is where it breaks. Two failure
+modes we have actually hit in this registry:
+
+- The tag is in the wrong field. HuggingFace records custom licences in
+  `license_name`, not `license`, so a checker that reads only `license` sees
+  nothing and reports a permissive default. `Qwen2.5-VL-3B-Instruct` is
+  `qwen-research` — research-only — while the 7B and Qwen2-VL-2B are
+  Apache-2.0. A "Qwen2.5-VL fine-tune" tagged Apache-2.0 is therefore worth
+  checking rather than believing.
+- The card is simply wrong. `german-ocr-3.1` credits a nonexistent "Qwen3.5",
+  and our own registry described it as a Qwen2.5-VL fine-tune. Neither was
+  reliable. Its GGUF tensor shapes — hidden 1536, 28 layers — identify
+  Qwen2-VL-2B-Instruct (Apache-2.0), so the Apache-2.0 claim does hold; but it
+  held by luck, not because anyone had checked.
+
+Read the weights, not the prose, when the answer decides whether commercial use
+is permitted.
+
 Re-hosted GGUFs at `huggingface.co/cstr` are quantized derivatives. Quantization
 is not a substantial modification, so the EU AI Act Art. 53 obligations for
 general-purpose AI models remain with the original model providers; consult the

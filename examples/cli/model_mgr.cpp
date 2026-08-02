@@ -1204,8 +1204,8 @@ static const ModelEntry k_registry[] = {
 
     { "german-ocr-3.1", "german-ocr-3.1-q4_k.gguf",
       "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
-      "German-OCR-3.1 VLM (Qwen2.5-VL fine-tune, German invoices/forms/receipts)", "1684 MB", "apache-2.0",
-      "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF" },
+      "German-OCR-3.1 VLM (Qwen2-VL-2B fine-tune, German invoices/forms/receipts)", "1684 MB", "apache-2.0",
+      "https://huggingface.co/keyvan-ai/german-ocr-3.1" },
 
     { "nanonets-ocr-s", "nanonets-ocr-s-q4_k.gguf",
       "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",

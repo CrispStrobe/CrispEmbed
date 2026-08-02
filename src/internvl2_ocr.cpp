@@ -278,6 +278,22 @@ bool load_hparams(context & ctx, const char * path) {
     lhp.min_dynamic_patch = u32("internvl2.min_dynamic_patch", lhp.min_dynamic_patch);
     lhp.use_thumbnail = boolv("internvl2.use_thumbnail", lhp.use_thumbnail);
 
+    // H2OVL Multi-Scale Adaptive Cropping. Such a model was trained on a
+    // two-scale tile stack: coarse tiles, plus a finer grid chosen so it does
+    // not divide the coarse one, concatenated fine[:-1] + coarse[:-1] +
+    // fine[-1:]. We only build single-scale tiles, so an MSAC model receives a
+    // visual token layout it never saw and answers with fluent nonsense —
+    // h2ovl-mississippi-2b emits one repeated token then EOS at both f16 and
+    // q4_k. Refuse it rather than return that as if it were a transcription.
+    // Lifting this means implementing the second scale in image_preprocess.
+    if (boolv("internvl2.use_msac", false)) {
+        fprintf(stderr, "internvl2_ocr: this model sets use_msac (Multi-Scale Adaptive Cropping),\n"
+                        "which CrispEmbed does not implement. Running it with single-scale tiles\n"
+                        "produces confident-looking nonsense rather than a transcription, so it is\n"
+                        "refused instead. See PLAN.md (h2ovl-mississippi-2b).\n");
+        return false;
+    }
+
     // Tokenizer special tokens
     lhp.bos_token_id = u32("internvl2.tokenizer.bos_id", lhp.bos_token_id);
     lhp.eos_token_id = u32("internvl2.tokenizer.eos_id", lhp.eos_token_id);

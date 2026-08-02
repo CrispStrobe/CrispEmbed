@@ -530,6 +530,27 @@ consent to auto-download (interactive prompt, `--accept-license <spdx>`, or
 upstream terms — it does not grant rights you don't otherwise have. Audit the
 whole registry with `python tests/check_registry_licenses.py`.
 
+**Check the base model, not just the fine-tune's tag.** A fine-tune cannot
+relicense what it was built on, and the declared tag is sometimes the author's
+optimism. The live trap in this family: **Qwen2.5-VL-3B-Instruct is
+`qwen-research`** (research-only), while Qwen2.5-VL-7B and Qwen2-VL-2B are
+Apache-2.0. So a "Qwen2.5-VL fine-tune" tagged Apache-2.0 is worth checking
+before commercial use — we verified `german-ocr-3.1` from its tensor shapes
+(hidden 1536, 28 layers ⇒ Qwen2-VL-2B, Apache-2.0) rather than trusting its
+card, which credits a nonexistent "Qwen3.5". Note also that HF stores that
+licence in the `license_name` field, not `license`, so a checker that reads only
+`license` sees nothing at all.
+
+The VLM OCR engines' upstream licences, all verified against the base chain:
+
+| Registry model | Upstream | Base | Licence |
+|---|---|---|---|
+| `german-ocr-3.1` | keyvan-ai/german-ocr-3.1 | Qwen2-VL-2B-Instruct | Apache-2.0 |
+| `nanonets-ocr2-1.5b` | nanonets/Nanonets-OCR2-1.5B-exp | Qwen2-VL-2B-Instruct | Apache-2.0 |
+| `nanonets-ocr-s` | nanonets/Nanonets-OCR-s | Qwen2.5-VL-**7B** | Apache-2.0 |
+| `h2ovl-mississippi-800m` | h2oai/h2ovl-mississippi-800m | Danube3-500m + InternViT-300M | Apache-2.0 (+ MIT) |
+| `h2ovl-mississippi-2b` | h2oai/h2ovl-mississippi-2b | Danube2-1.8b + InternViT-300M | Apache-2.0 (+ MIT) |
+
 ---
 
 ## Intended purpose & acceptable use
