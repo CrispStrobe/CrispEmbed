@@ -68,6 +68,8 @@ int tesseract_lstm_dawg_contains(const tesseract_lstm_context * ctx, const char 
                                  size_t count);
 int tesseract_lstm_dawg_has_prefix(const tesseract_lstm_context * ctx, const char * component, const int * unichar_ids,
                                    size_t count);
+int tesseract_lstm_dawg_state(const tesseract_lstm_context * ctx, const char * component, const int * unichar_ids,
+                              size_t count);
 
 /// Enable/disable capture of per-stage intermediates for parity testing.
 void tesseract_lstm_set_dump(tesseract_lstm_context * ctx, int enabled);

@@ -84,6 +84,10 @@ The native Tesseract API now exposes exact-word and legal-prefix queries against
 the model-owned cached DAWG contexts by component name. Missing components and
 null contexts fail closed; production decoding still does not invoke them.
 
+The API also provides a tri-state result: invalid prefix, legal non-terminal
+prefix, or complete word. This is a scorer-facing contract only; no dictionary
+state changes OCR output yet.
+
 Native Tesseract model loading now constructs one cached parsed DAWG context per
 manifest component and frees them with the recognizer. The cached dictionaries
 remain diagnostic-only; production OCR does not apply their state.
