@@ -519,6 +519,14 @@ recognizer and LayoutLM consumer.
 - [x] Add a tri-state model-context query distinguishing invalid prefix, legal
       non-terminal prefix, and complete word. This is the contract the future
       beam scorer can consume without re-querying exact/prefix separately.
+- [x] Add an opt-in `CRISPEMBED_TESSERACT_DAWG_PREFIX` recoder-beam filter using
+      the cached system DAWG. Incomplete recoder codes remain candidates; only
+      fully composed prefixes are queried. The default greedy/beam paths are
+      unchanged pending official output parity.
+- [x] Run a controlled A/B of the DAWG prefix filter on the regenerated English
+      smoke GGUF. Recoder beam width 8 passed 37/37 in both modes, decoded `Se`
+      in both modes, and produced sequence confidence `0.562293` in both; no
+      quality promotion is claimed from this single fixture.
 - [x] Preserve `recoder_map`/`recoder_offsets` and enforce legal recoder-code
       prefixes in the opt-in diagnostic beam. Official PSM7 width-25 testing
       remains `Brighton` with 9/9 tensor stages passing. Certainty aggregation,

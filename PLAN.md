@@ -118,6 +118,15 @@ The API also provides a tri-state result: invalid prefix, legal non-terminal
 prefix, or complete word. This is a scorer-facing contract only; no dictionary
 state changes OCR output yet.
 
+An opt-in `CRISPEMBED_TESSERACT_DAWG_PREFIX` filter now applies cached system
+DAWG prefix legality inside the recoder beam after a prefix fully composes to
+unichar IDs. Incomplete recoder codes remain open; default decoding is
+unchanged and official parity is still pending.
+
+The same filter A/B on the English smoke model passed 37/37 in both modes,
+decoded `Se` in both, and produced sequence confidence `0.562293` in both.
+This confirms safe operation only; dictionary quality parity remains open.
+
 Native Tesseract model loading now constructs one cached parsed DAWG context per
 manifest component and frees them with the recognizer. The cached dictionaries
 remain diagnostic-only; production OCR does not apply their state.
