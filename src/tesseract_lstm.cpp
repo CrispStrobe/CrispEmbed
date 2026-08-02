@@ -153,6 +153,11 @@ struct tesseract_lstm_context {
     // production decoder deliberately does not score these yet.
     std::vector<std::string> dawg_components;
     std::map<std::string, std::string> dawg_payloads;
+    std::map<std::string, tesseract_dawg_context *> dawg_contexts;
+
+    ~tesseract_lstm_context() {
+        for (auto & entry : dawg_contexts) tesseract_dawg_free(entry.second);
+    }
 
     // Inference results
     std::string result_buf;
@@ -266,6 +271,13 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
             return false;
         }
         ctx->dawg_payloads.emplace(name, payload);
+        tesseract_dawg_context * parsed = tesseract_dawg_init_base64(payload.c_str(), dawg_error, sizeof(dawg_error));
+        if (!parsed) {
+            fprintf(stderr, "tesseract_lstm: failed to cache DAWG '%s': %s\n", name.c_str(), dawg_error);
+            core_gguf::free_metadata(meta);
+            return false;
+        }
+        ctx->dawg_contexts.emplace(name, parsed);
     }
 
     // Tokens

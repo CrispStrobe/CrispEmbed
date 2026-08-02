@@ -127,13 +127,12 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
     x = preprocess(image)
     stages["input"] = x
     stem = "model.backbone.encoder.convolution."
-    # PaddleOCR ppocr/modeling/backbones/rec_lcnetv4.py: StemBlock is built from
-    # ConvBNAct, whose activation is ReLU(). It is NOT SiLU/GELU -- an earlier
-    # guess of SiLU here left every stage cosine-matched to a reference that
-    # could not read text.
-    x = F.relu(ref.layer(x, stem + "stem1", stride=2)); stages["large_stem1"] = x
-    # StemBlock pads both even-kernel branches ("SAME") and max-pools the stem1
-    # branch (k=2, s=1, SAME) before concatenating [pool, stem2b].
+    # PaddleOCR's StemBlock uses ConvBNAct(ReLU), not the SiLU used by the
+    # later LCNetV4 channel mixers. Keeping this explicit is important: the
+    # stem is the first quality-sensitive boundary for recognizer parity.
+    x = ref.layer(x, stem + "stem1", stride=2); x = F.relu(x); stages["large_stem1"] = x
+    # PPLCNetV4LargeStem explicitly pads both even-kernel branches and uses a
+    # ceil-mode 2x2 max-pool on the stem1 branch before concatenation.
     padded = F.pad(x, (0, 1, 0, 1))
     branch = ref.conv(padded, stem + "stem2a.convolution", stride=1, pad=0)
     branch = F.relu(ref.bn(branch, stem + "stem2a.normalization"))
@@ -146,9 +145,9 @@ def dump_large(ref: Ref, cfg: dict, image: Path, output: Path):
     stages["large_stem_pooled"] = pooled
     x = torch.cat((pooled, branch), dim=1)
     stages["large_cat"] = x
-    x = F.relu(ref.layer(x, stem + "stem3", stride=2))
+    x = ref.layer(x, stem + "stem3", stride=2); x = F.relu(x)
     stages["large_stem3"] = x
-    x = F.relu(ref.layer(x, stem + "stem4", stride=1))
+    x = ref.layer(x, stem + "stem4", stride=1); x = F.relu(x)
     stages["large_stem"] = x
 
     blocks = cfg["backbone_config"]["block_configs"]
