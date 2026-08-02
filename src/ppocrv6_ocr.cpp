@@ -95,6 +95,7 @@ struct ppocrv6_ocr_context {
     bool large_stem = false;
     int hidden = 0;
     int vocab_size = 0;
+    int graph_accept_override = -1;
     int last_ch = 0;
     std::vector<pp_conv> stem;
     std::vector<std::vector<pp_block>> stages;
@@ -1306,7 +1307,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     std::vector<float> x = input, y;
     int h = 48, w = input_w;
     std::vector<float> graph_out;
-    bool graph_done = pp_graph_run(c, input, graph_out, h, w);
+    const bool graph_allowed = c->graph_accept_override < 0 || c->graph_accept_override != 0;
+    bool graph_done = graph_allowed && pp_graph_run(c, input, graph_out, h, w);
     if (graph_done && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         const int tokens = h;
         const int classes = w;
@@ -1317,7 +1319,9 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best], row[0]);
         }
     }
-    if (graph_done && c->graph.logits_output && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+    const bool graph_accept = c->graph_accept_override >= 0 ? c->graph_accept_override != 0
+                                                            : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
+    if (graph_done && c->graph.logits_output && !graph_accept) {
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
         h = 48;
@@ -1616,6 +1620,10 @@ extern "C" void ppocrv6_ocr_free(ppocrv6_ocr_context * c) {
     core_gguf::free_weights(c->wl);
     if (c->backend) ggml_backend_free(c->backend);
     delete c;
+}
+
+extern "C" void ppocrv6_ocr_set_graph_accept(ppocrv6_ocr_context * c, int accept) {
+    if (c) c->graph_accept_override = accept < 0 ? -1 : (accept != 0 ? 1 : 0);
 }
 
 extern "C" const char * ppocrv6_ocr_recognize_raw(ppocrv6_ocr_context * c, const uint8_t * px, int w, int h, int ch,

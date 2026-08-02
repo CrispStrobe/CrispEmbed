@@ -39,11 +39,18 @@ struct lstm_weights {
     std::vector<float> W_ih; // (4*ns, ni)
     std::vector<float> W_hh; // (4*ns, ns)
     std::vector<float> bias; // (4*ns,)
-    std::vector<int8_t> W_ih_q, W_hh_q;
+    // Packed cached rows: [W_ih | W_hh] for each gate.  The int-mode hot
+    // path can then accumulate one contiguous row against [input | hidden].
+    std::vector<int8_t> W_q;
     std::vector<int32_t> bias_q;
     std::vector<float> q_scale;
     int ni;
     int ns; // hidden size
+};
+
+struct lstm_scratch {
+    std::vector<float> h, c, gates;
+    std::vector<int8_t> input_q, hidden_q, activation_q;
 };
 
 static int tesseract_round_int(float value) {
@@ -86,10 +93,9 @@ static float int8_lstm_row_dot(const float * w_ih, const float * w_hh, int ni, i
 
 static void prepare_lstm_int_weights(lstm_weights & lw) {
     const int gates = 4 * lw.ns;
-    lw.W_ih_q.resize((size_t)gates * lw.ni);
-    lw.W_hh_q.resize((size_t)gates * lw.ns);
     lw.bias_q.resize(gates);
     lw.q_scale.resize(gates);
+    lw.W_q.resize((size_t)gates * (lw.ni + lw.ns));
     for (int g = 0; g < gates; ++g) {
         float max_abs = fabsf(lw.bias[g]);
         for (int i = 0; i < lw.ni; ++i) max_abs = std::max(max_abs, fabsf(lw.W_ih[g * lw.ni + i]));
@@ -97,21 +103,20 @@ static void prepare_lstm_int_weights(lstm_weights & lw) {
         lw.q_scale[g] = max_abs / 127.0f;
         if (lw.q_scale[g] == 0.0f) continue;
         lw.bias_q[g] = tesseract_round_int(lw.bias[g] / lw.q_scale[g]);
-        for (int i = 0; i < lw.ni; ++i)
-            lw.W_ih_q[g * lw.ni + i] = (int8_t)tesseract_round_int(lw.W_ih[g * lw.ni + i] / lw.q_scale[g]);
+        int8_t * packed = lw.W_q.data() + (size_t)g * (lw.ni + lw.ns);
+        for (int i = 0; i < lw.ni; ++i) packed[i] = (int8_t)tesseract_round_int(lw.W_ih[g * lw.ni + i] / lw.q_scale[g]);
         for (int i = 0; i < lw.ns; ++i)
-            lw.W_hh_q[g * lw.ns + i] = (int8_t)tesseract_round_int(lw.W_hh[g * lw.ns + i] / lw.q_scale[g]);
+            packed[lw.ni + i] = (int8_t)tesseract_round_int(lw.W_hh[g * lw.ns + i] / lw.q_scale[g]);
     }
 }
 
-static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * input, const int8_t * hidden) {
+static float int8_lstm_row_dot_cached(const lstm_weights & lw, int gate, const int8_t * activation_q) {
     const float scale = lw.q_scale[gate];
     if (scale == 0.0f) return 0.0f;
     int32_t acc = lw.bias_q[gate] * 127;
-    const int8_t * wi = lw.W_ih_q.data() + gate * lw.ni;
-    const int8_t * wh = lw.W_hh_q.data() + gate * lw.ns;
-    for (int i = 0; i < lw.ni; ++i) acc += (int32_t)wi[i] * input[i];
-    for (int i = 0; i < lw.ns; ++i) acc += (int32_t)wh[i] * hidden[i];
+    const int n = lw.ni + lw.ns;
+    const int8_t * w = lw.W_q.data() + (size_t)gate * n;
+    for (int i = 0; i < n; ++i) acc += (int32_t)w[i] * activation_q[i];
     return (float)acc * scale / 127.0f;
 }
 
@@ -195,6 +200,7 @@ struct tesseract_lstm_context {
     std::vector<float> scratch_seq_a;
     std::vector<float> scratch_seq_b;
     std::vector<float> scratch_logits;
+    lstm_scratch scratch_lstm;
 };
 
 // ---------------------------------------------------------------------------
@@ -493,13 +499,24 @@ static void lstm_forward(const float * input, // (T, ni)
                          const float * W_ih, // (4*ns, ni)
                          const float * W_hh, // (4*ns, ns)
                          const float * bias, // (4*ns,)
-                         bool reverse, bool int_mode, const lstm_weights * cached = nullptr) {
+                         bool reverse, bool int_mode, const lstm_weights * cached = nullptr,
+                         lstm_scratch * scratch = nullptr) {
     // Gate order (PyTorch): i, f, g, o
     const int gs = 4 * ns;
-    std::vector<float> h(ns, 0.0f);
-    std::vector<float> c(ns, 0.0f);
-    std::vector<float> gates(gs);
-    std::vector<int8_t> input_q(int_mode ? ni : 0), hidden_q(int_mode ? ns : 0);
+    std::vector<float> local_h, local_c, local_gates;
+    std::vector<int8_t> local_input_q, local_hidden_q, local_activation_q;
+    auto & h = scratch ? scratch->h : local_h;
+    auto & c = scratch ? scratch->c : local_c;
+    auto & gates = scratch ? scratch->gates : local_gates;
+    auto & input_q = scratch ? scratch->input_q : local_input_q;
+    auto & hidden_q = scratch ? scratch->hidden_q : local_hidden_q;
+    auto & activation_q = scratch ? scratch->activation_q : local_activation_q;
+    h.assign(ns, 0.0f);
+    c.assign(ns, 0.0f);
+    gates.resize(gs);
+    input_q.resize(int_mode ? ni : 0);
+    hidden_q.resize(int_mode ? ns : 0);
+    activation_q.resize(int_mode && cached ? ni + ns : 0);
 
     for (int step = 0; step < T; step++) {
         int t = reverse ? (T - 1 - step) : step;
@@ -507,12 +524,16 @@ static void lstm_forward(const float * input, // (T, ni)
         if (int_mode) {
             for (int i = 0; i < ni; ++i) input_q[i] = (int8_t)tesseract_round_int(xt[i] * 127.0f);
             for (int i = 0; i < ns; ++i) hidden_q[i] = (int8_t)tesseract_round_int(h[i] * 127.0f);
+            if (cached) {
+                memcpy(activation_q.data(), input_q.data(), ni);
+                memcpy(activation_q.data() + ni, hidden_q.data(), ns);
+            }
         }
 
         // gates = W_ih @ x + W_hh @ h + bias (SIMD-accelerated dot products)
         for (int g = 0; g < gs; g++) {
             gates[g] = int_mode
-                           ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                           ? (cached ? int8_lstm_row_dot_cached(*cached, g, activation_q.data())
                                      : int8_lstm_row_dot(W_ih + g * ni, W_hh + g * ns, ni, ns, bias[g], xt, h.data()))
                            : bias[g] + core_cpu::dot_product(W_ih + g * ni, xt, ni) +
                                  core_cpu::dot_product(W_hh + g * ns, h.data(), ns);
@@ -545,15 +566,25 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
                               const float * W_ih, // (4*ns, channels)
                               const float * W_hh, // (4*ns, ns)
                               const float * bias, // (4*ns,)
-                              bool int_mode, const lstm_weights * cached = nullptr) {
+                              bool int_mode, const lstm_weights * cached = nullptr, lstm_scratch * scratch = nullptr) {
     // After XYTranspose: height = original_width, width = original_height
     // For each row (height position), run LSTM across the width (original height).
     // State resets at each row boundary.
     const int gs = 4 * ns;
-    std::vector<float> h(ns);
-    std::vector<float> c(ns);
-    std::vector<float> gates(gs);
-    std::vector<int8_t> input_q(int_mode ? channels : 0), hidden_q(int_mode ? ns : 0);
+    std::vector<float> local_h, local_c, local_gates;
+    std::vector<int8_t> local_input_q, local_hidden_q, local_activation_q;
+    auto & h = scratch ? scratch->h : local_h;
+    auto & c = scratch ? scratch->c : local_c;
+    auto & gates = scratch ? scratch->gates : local_gates;
+    auto & input_q = scratch ? scratch->input_q : local_input_q;
+    auto & hidden_q = scratch ? scratch->hidden_q : local_hidden_q;
+    auto & activation_q = scratch ? scratch->activation_q : local_activation_q;
+    h.resize(ns);
+    c.resize(ns);
+    gates.resize(gs);
+    input_q.resize(int_mode ? channels : 0);
+    hidden_q.resize(int_mode ? ns : 0);
+    activation_q.resize(int_mode && cached ? channels + ns : 0);
 
     for (int row = 0; row < height; row++) {
         // Reset state per row
@@ -565,11 +596,15 @@ static void summ_lstm_forward(const float * input, // (height, width, channels) 
             if (int_mode) {
                 for (int i = 0; i < channels; ++i) input_q[i] = (int8_t)tesseract_round_int(xt[i] * 127.0f);
                 for (int i = 0; i < ns; ++i) hidden_q[i] = (int8_t)tesseract_round_int(h[i] * 127.0f);
+                if (cached) {
+                    memcpy(activation_q.data(), input_q.data(), channels);
+                    memcpy(activation_q.data() + channels, hidden_q.data(), ns);
+                }
             }
 
             // SIMD-accelerated gate computation
             for (int g = 0; g < gs; g++) {
-                gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, input_q.data(), hidden_q.data())
+                gates[g] = int_mode ? (cached ? int8_lstm_row_dot_cached(*cached, g, activation_q.data())
                                               : int8_lstm_row_dot(W_ih + g * channels, W_hh + g * ns, channels, ns,
                                                                   bias[g], xt, h.data()))
                                     : bias[g] + core_cpu::dot_product(W_ih + g * channels, xt, channels) +
@@ -885,7 +920,8 @@ static void forward(tesseract_lstm_context * ctx,
     auto & seq_b = ctx->reuse_scratch ? ctx->scratch_seq_b : local_seq_b;
     seq_a.resize((size_t)W2 * ns0);
     summ_lstm_forward(transposed.data(), seq_a.data(), W2, H2, conv_out, ns0, lw0.W_ih.data(), lw0.W_hh.data(),
-                      lw0.bias.data(), int_mode, ctx->cache_int ? &lw0 : nullptr);
+                      lw0.bias.data(), int_mode, ctx->cache_int ? &lw0 : nullptr,
+                      ctx->reuse_scratch ? &ctx->scratch_lstm : nullptr);
     lstm_idx++;
     capture(ctx, "after_lstm_0", seq_a.data(), seq_a.size());
 
@@ -901,7 +937,8 @@ static void forward(tesseract_lstm_context * ctx,
 
         next_seq->resize((size_t)T * lw.ns);
         lstm_forward(cur_seq->data(), next_seq->data(), T, cur_dim, lw.ns, lw.W_ih.data(), lw.W_hh.data(),
-                     lw.bias.data(), rev, int_mode, ctx->cache_int ? &lw : nullptr);
+                     lw.bias.data(), rev, int_mode, ctx->cache_int ? &lw : nullptr,
+                     ctx->reuse_scratch ? &ctx->scratch_lstm : nullptr);
 
         std::swap(cur_seq, next_seq);
         cur_dim = lw.ns;
@@ -1006,12 +1043,24 @@ static void forward(tesseract_lstm_context * ctx,
     const bool compose_recoder =
         !ctx->recoder_codes.empty() && std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
     std::vector<int> composed_uids, composed_starts;
-    const bool composed = compose_recoder && recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes,
-                                                                        composed_uids, composed_starts);
+    bool composed = compose_recoder &&
+                    recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes, composed_uids, composed_starts);
+    if (compose_recoder && !composed) {
+        // Keep valid multi-class segments visible around an unmapped class in
+        // diagnostic mode. The production/default path remains unchanged.
+        composed = tesseract_recoder::compose_classes_partial(collapsed_labels, ctx->recoder_codes, composed_uids,
+                                                              composed_starts);
+    }
     if (composed) {
         for (size_t i = 0; i < composed_uids.size(); ++i) {
             const int uid = composed_uids[i];
-            if (uid < 0 || uid >= (int)ctx->tokens.size()) continue;
+            if (uid < 0 || uid >= (int)ctx->tokens.size()) {
+                // Preserve an unmapped composed class in diagnostics. Dropping
+                // it silently makes native output look shorter than Python's
+                // reference and hides recoder coverage gaps.
+                ctx->result_buf += "<class>";
+                continue;
+            }
             ctx->result_buf += ctx->tokens[uid];
             if (!beam_decoded) {
                 const int begin = composed_starts[i];
@@ -1031,7 +1080,9 @@ static void forward(tesseract_lstm_context * ctx,
                 ctx->result_buf += ctx->tokens[uid];
                 if (!beam_decoded) ctx->char_confs.push_back(collapsed_confs[i]);
             } else {
-                ctx->result_buf += "<" + std::to_string(best) + ">";
+                // Keep unmapped output classes visible instead of silently
+                // dropping them or exposing implementation-specific IDs.
+                ctx->result_buf += "<class>";
             }
         }
     }
