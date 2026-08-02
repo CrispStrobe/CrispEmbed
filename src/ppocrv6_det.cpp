@@ -726,8 +726,30 @@ static void append_component(const std::vector<float> & prob, int h, int w, floa
 
 context * init(const char * path, int) {
     auto * c = new context();
+    // The production detector path is CPU: its ggml graph is diagnostic-only
+    // until box geometry reaches parity, so outside CRISPEMBED_PPOCRV6_DET_GRAPH
+    // this backend does nothing but pull the GGUF through
+    // core_gguf::load_weights, and asking for a GPU one spins up Metal for a
+    // device the detector never computes on. That drops the detector's own load
+    // from ~7.3 s to 146 ms.
+    //
+    // It is a smaller net win than that sounds, because the recognizer graph
+    // (default since 2026-08-02) needs Metal anyway, so this moves the init
+    // rather than removing it. Same-binary A/B over three rounds, median-of-3
+    // CPU-seconds against a stable 0.47-0.49 s control: 4.43/3.93/3.57 with the
+    // GPU load versus 3.80/3.68/3.04 with the CPU load -- consistently 7-14%
+    // better, so it ships on. CRISPEMBED_PPOCRV6_DET_GPU_LOAD restores the old
+    // path; the detector graph implies it, since that path genuinely computes
+    // on the device.
+    //
+    // (Measured with CPU time, not wall time, on purpose: this box carries
+    // several concurrent agent builds and wall clock swung 10x between runs
+    // while user+sys stayed stable. An earlier cross-run wall comparison
+    // reported the opposite result.)
     const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
-    c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    const bool want_gpu = !force_cpu && (std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr ||
+                                         std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH") != nullptr);
+    c->backend = want_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     auto * meta = core_gguf::open_metadata(path);
     if (!meta) {
