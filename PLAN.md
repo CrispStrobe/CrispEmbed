@@ -75,6 +75,11 @@ DAWG metadata decoding is now strict about quartet length, padding placement,
 and unused padding bits, with malformed-input coverage in
 `test-tesseract-dawg`; corrupt payloads are rejected before traversal.
 
+The DAWG layer now exposes a reusable parsed context that caches the decoded
+edge array and bit masks for repeated exact/prefix queries. This is preparation
+for beam integration only; production OCR still does not consult dictionary
+state.
+
 The diagnostic DAWG layer now distinguishes exact-word membership from legal
 prefix membership. Its fixture covers `1` as a legal non-terminal prefix and
 `1,2` as the complete word; neither path is used by production OCR yet.
