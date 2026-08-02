@@ -53,6 +53,15 @@ static int test_main() {
         std::fprintf(stderr, "multi-code DAWG score mismatch\n");
         return 1;
     }
+
+    // A space is a token/unichar, not necessarily ID zero.  The scorer must
+    // use token text so recoder maps with a different unichar ordering work.
+    const std::vector<std::vector<int>> reordered_codes = { { 0 }, { 4, 5 }, { 6 }, { 7 } };
+    const std::vector<std::string> reordered_tokens = { "x", "a", "b", " " };
+    if (tesseract_dawg_score::word_bonus({ 4, 5, 6, 7 }, reordered_codes, reordered_tokens, dawgs, false) != 0.25f) {
+        std::fprintf(stderr, "nonzero space-token DAWG score mismatch\n");
+        return 1;
+    }
     dawgs.erase("lstm-system-dawg");
     dawgs.emplace("lstm-number-dawg", dawg);
     if (tesseract_dawg_score::word_bonus(two_words, codes, tokens, dawgs, false) != 0.25f) {
