@@ -1219,13 +1219,12 @@ static const ModelEntry k_registry[] = {
       "Nanonets-OCR2-1.5B VLM OCR (Qwen2-VL pruned 16L, 12+ languages incl. German)", "1346 MB", "apache-2.0",
       "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF" },
 
-    // NOT PUBLISHED YET — this URL still 404s. The model converts (after the
-    // separate-Q/K/V fix in convert-internvl2-to-gguf.py) and loads, but emits
-    // degenerate output at BOTH f16 and q4_k: one repeated token then EOS. So it
-    // is not a quantization artifact. See PLAN.md before re-attempting.
+    // Requires MSAC two-scale tiling (use_msac in its config) — single-scale
+    // tiles make it describe the page instead of reading it. Working since the
+    // call site stopped overriding the model's declared max_dynamic_patch.
     { "h2ovl-mississippi-2b", "h2ovl-mississippi-2b-q4_k.gguf",
       "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf",
-      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "457 MB", "apache-2.0",
+      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "1459 MB", "apache-2.0",
       "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF" },
 
     { "h2ovl-mississippi-800m", "h2ovl-800m-q4_k.gguf",
