@@ -12,6 +12,7 @@
 
 #include <cassert>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <vector>
@@ -316,6 +317,92 @@ static void test_conv2d_cpu() {
 }
 
 // ---------------------------------------------------------------------------
+// conv2d_1x1_cpu — must agree with the generic conv2d_cpu path exactly
+// ---------------------------------------------------------------------------
+// The 1x1 fast path is selected inside conv2d_cpu by a read-once static env
+// check (CRISPEMBED_CONV1X1_FAST), so it cannot be A/B'd through that entry
+// point twice in one process. Calling conv2d_1x1_cpu directly compares the two
+// implementations here instead of relying on a whole-engine decoded-output
+// check to notice a shape it happens not to exercise.
+//
+// The shapes below are chosen to hit the parts that a "looks right" reading
+// misses: an output-channel count that is not a multiple of the 4-wide unroll,
+// a plane that straddles the 8192-element tile boundary so a short tail runs,
+// grouped/depthwise layouts where the input and output channel offsets differ,
+// and a null bias.
+//
+// This is a TOLERANCE check, not an equality one, and the reason matters: the
+// generic path sums each output element through dot_product, which on aarch64
+// runs eight FMA lanes and a horizontal add, and on AVX2 sixteen. The axpy form
+// accumulates over input channels in order. Same arithmetic, different
+// association, so the last ulp legitimately differs -- an exact assertion here
+// would be a test that fails for a correct implementation. The tolerance is
+// scaled by the magnitude actually produced, because an absolute epsilon on an
+// output that happens to be large is a tolerance wider than the defect.
+static void test_conv2d_1x1_equivalence() {
+    printf("test_conv2d_1x1_equivalence...\n");
+
+    struct shape {
+        int in_ch, out_ch, H, W, groups;
+        bool bias;
+        const char * name;
+    };
+    const shape shapes[] = {
+        { 8, 8, 4, 4, 1, true, "small square" },
+        { 8, 7, 5, 5, 1, true, "out_ch not multiple of 4" },
+        { 3, 6, 1, 1, 1, true, "single pixel" },
+        { 6, 6, 64, 130, 1, true, "plane 8320 straddles tile boundary" },
+        { 6, 6, 64, 128, 1, true, "plane exactly one tile" },
+        { 12, 6, 9, 9, 3, true, "grouped, 3 groups" },
+        { 5, 5, 7, 7, 5, true, "depthwise" },
+        { 9, 4, 6, 6, 1, false, "null bias" },
+        { 16, 33, 3, 3, 1, true, "out_ch 33, tail of 1" },
+    };
+
+    // Deterministic pseudo-random values; a constant-filled tensor would hide
+    // an index mix-up between the two paths.
+    uint32_t seed = 0x5eed1234u;
+    auto next = [&seed]() {
+        seed = seed * 1664525u + 1013904223u;
+        return ((float)(seed >> 8) / (float)(1u << 24)) * 2.0f - 1.0f;
+    };
+
+    for (const shape & s : shapes) {
+        const size_t plane = (size_t)s.H * s.W;
+        const int cin = s.in_ch / s.groups;
+        std::vector<float> in((size_t)s.in_ch * plane);
+        std::vector<float> w((size_t)s.out_ch * cin);
+        std::vector<float> b(s.out_ch);
+        for (float & v : in) v = next();
+        for (float & v : w) v = next();
+        for (float & v : b) v = next();
+
+        std::vector<float> ref((size_t)s.out_ch * plane, 0.0f);
+        std::vector<float> fast((size_t)s.out_ch * plane, 0.0f);
+        const float * bias = s.bias ? b.data() : nullptr;
+
+        conv2d_cpu(in.data(), ref.data(), w.data(), bias, s.in_ch, s.out_ch, s.H, s.W, 1, 1, 1, 0, s.groups);
+        conv2d_1x1_cpu(in.data(), fast.data(), w.data(), bias, s.in_ch, s.out_ch, s.H, s.W, s.groups);
+
+        float scale = 1e-6f;
+        for (float v : ref) scale = fmaxf(scale, fabsf(v));
+        const float tol = 1e-5f * scale;
+
+        size_t mismatches = 0;
+        float worst = 0.0f;
+        for (size_t i = 0; i < ref.size(); ++i) {
+            const float d = fabsf(ref[i] - fast[i]);
+            if (d > worst) worst = d;
+            if (d > tol) mismatches++;
+        }
+        if (mismatches)
+            fprintf(stderr, "  %s: %zu/%zu over tol=%g, max_abs_diff=%g (scale=%g)\n", s.name, mismatches, ref.size(),
+                    tol, worst, scale);
+        CHECK(mismatches == 0, s.name);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Activation functions
 // ---------------------------------------------------------------------------
 static void test_gelu() {
@@ -600,6 +687,7 @@ static int crispembed_test_main() {
     test_rmsnorm_cpu();
     test_linear_cpu();
     test_conv2d_cpu();
+    test_conv2d_1x1_equivalence();
     test_gelu();
     test_gelu_erf();
     test_silu();

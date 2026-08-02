@@ -347,6 +347,90 @@ static inline void linear_cpu(const float * in, float * out, int in_dim, int out
 // Boundary check is hoisted above the gather: most interior positions take
 // the fast path that avoids per-element range tests.
 
+// A 1x1 convolution is a channel matmul, not a windowed op: the generic
+// conv2d_cpu below gathers a "patch" per output pixel, which for kh=kw=1 is a
+// pure copy of ch_per_group_in floats repeated H*W times before the dot. This
+// takes the axpy form instead -- contiguous in the pixel axis and trivially
+// vectorisable.
+//
+// The pixel axis is blocked into tiles sized so a tile's input slab stays in
+// L2, and four output channels are computed at once so each loaded input
+// element feeds four FMAs from registers rather than one. Both matter: the
+// first version of this path did neither, streaming the WHOLE output plane
+// once per (oc, ic) pair -- for a 480x630 plane that is 1.2 MB
+// read-modify-written ch_per_group_in times per output channel, so nothing but
+// the weights stayed resident, and it was worth only ~6% CPU on the PP-OCRv6
+// detector (7.59 vs 8.27/7.93 CPU-seconds median-of-3, 1920x2518 page).
+//
+// Callers reach this through conv2d_cpu's CRISPEMBED_CONV1X1_FAST gate; it is
+// exposed separately so tests can compare it against the generic path inside a
+// single process (the gate is a read-once static).
+//
+// Preconditions: kh == kw == 1, stride == 1, pad == 0.
+static inline void conv2d_1x1_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
+                                  int out_ch, int H, int W, int groups = 1) {
+    const int ch_per_group_in = in_ch / groups;
+    const int ch_per_group_out = out_ch / groups;
+    const int kernel_size = ch_per_group_in;
+    const size_t plane = (size_t)H * W;
+    // 8192 floats = 32 KB per channel plane slice. With the ~100-256 input
+    // channels these necks use, the resident slab is 3-8 MB, inside the M1's
+    // 12 MB shared L2 and far below the 116 MB a full-plane traversal touches.
+    constexpr size_t tile = 8192;
+
+    for (int g = 0; g < groups; g++) {
+        const int ic_off = g * ch_per_group_in;
+        const int oc_off = g * ch_per_group_out;
+        const float * w_g = weight + (size_t)oc_off * kernel_size;
+        for (size_t p0 = 0; p0 < plane; p0 += tile) {
+            const size_t len = std::min(tile, plane - p0);
+            int oc = 0;
+            for (; oc + 4 <= ch_per_group_out; oc += 4) {
+                float * o0 = out + (size_t)(oc_off + oc + 0) * plane + p0;
+                float * o1 = out + (size_t)(oc_off + oc + 1) * plane + p0;
+                float * o2 = out + (size_t)(oc_off + oc + 2) * plane + p0;
+                float * o3 = out + (size_t)(oc_off + oc + 3) * plane + p0;
+                const float b0 = bias ? bias[oc_off + oc + 0] : 0.0f;
+                const float b1 = bias ? bias[oc_off + oc + 1] : 0.0f;
+                const float b2 = bias ? bias[oc_off + oc + 2] : 0.0f;
+                const float b3 = bias ? bias[oc_off + oc + 3] : 0.0f;
+                for (size_t q = 0; q < len; ++q) {
+                    o0[q] = b0;
+                    o1[q] = b1;
+                    o2[q] = b2;
+                    o3[q] = b3;
+                }
+                const float * w0 = w_g + (size_t)(oc + 0) * kernel_size;
+                const float * w1 = w_g + (size_t)(oc + 1) * kernel_size;
+                const float * w2 = w_g + (size_t)(oc + 2) * kernel_size;
+                const float * w3 = w_g + (size_t)(oc + 3) * kernel_size;
+                for (int ic = 0; ic < ch_per_group_in; ic++) {
+                    const float v0 = w0[ic], v1 = w1[ic], v2 = w2[ic], v3 = w3[ic];
+                    const float * srow = in + (size_t)(ic_off + ic) * plane + p0;
+                    for (size_t q = 0; q < len; ++q) {
+                        const float s = srow[q];
+                        o0[q] += v0 * s;
+                        o1[q] += v1 * s;
+                        o2[q] += v2 * s;
+                        o3[q] += v3 * s;
+                    }
+                }
+            }
+            for (; oc < ch_per_group_out; oc++) {
+                float * o = out + (size_t)(oc_off + oc) * plane + p0;
+                const float bv = bias ? bias[oc_off + oc] : 0.0f;
+                for (size_t q = 0; q < len; ++q) o[q] = bv;
+                const float * wrow = w_g + (size_t)oc * kernel_size;
+                for (int ic = 0; ic < ch_per_group_in; ic++) {
+                    const float wv = wrow[ic];
+                    const float * srow = in + (size_t)(ic_off + ic) * plane + p0;
+                    for (size_t q = 0; q < len; ++q) o[q] += wv * srow[q];
+                }
+            }
+        }
+    }
+}
+
 static inline void conv2d_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
                               int out_ch, int H, int W, int kh, int kw, int stride, int pad, int groups = 1) {
     int out_H = (H + 2 * pad - kh) / stride + 1;
@@ -355,44 +439,15 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
     int ch_per_group_out = out_ch / groups;
     int kernel_size = ch_per_group_in * kh * kw;
 
-    // A 1x1 convolution is a channel matmul, not a windowed op: the generic
-    // path below gathers a "patch" per output pixel, which for kh=kw=1 is a
-    // pure copy of ch_per_group_in floats repeated H*W times before the dot.
-    // Take the axpy form instead -- contiguous in the pixel axis, trivially
-    // vectorisable, and it touches each input plane once per output channel.
-    // MEASURED 2026-08-02 on the PP-OCRv6 detector, 1920x2518 page: ~6% CPU
-    // (7.59 vs 8.27/7.93 CPU-seconds median-of-3), output identical on 5
-    // fixtures. Modest because the generic path is better than it looks -- it
-    // reuses one gathered patch across every output channel in the group, so
-    // for a large spatial plane it is cache-friendlier than streaming the
-    // output plane once per (oc, ic) pair as this does. Expect this form to win
-    // more where the plane is small and the channel count is large, and to lose
-    // where the plane is big enough to blow L2. Wall-clock A/B on this box was
-    // useless (contradictory 1.8x-slower / 2x-faster readings at load 40-52);
-    // only CPU time was stable. Opt-in until confirmed on a quiet box and
-    // A/B'd per engine, since this helper is shared by many:
-    // CRISPEMBED_CONV1X1_FAST=1.
+    // Opt-in until A/B'd per engine, since this helper is shared by 15 files
+    // and the generic path is better than it looks -- it reuses one gathered
+    // patch across every output channel in the group. Wall-clock A/B on this
+    // box was useless (contradictory 1.8x-slower / 2x-faster readings at load
+    // 40-52); only CPU time was stable. See conv2d_1x1_cpu above.
     if (kh == 1 && kw == 1 && stride == 1 && pad == 0) {
         static const bool fast_1x1 = std::getenv("CRISPEMBED_CONV1X1_FAST") != nullptr;
         if (fast_1x1) {
-            const size_t plane = (size_t)out_H * out_W;
-            for (int g = 0; g < groups; g++) {
-                const int ic_off = g * ch_per_group_in;
-                const int oc_off = g * ch_per_group_out;
-                const float * w_g = weight + (size_t)oc_off * kernel_size;
-                for (int oc = 0; oc < ch_per_group_out; oc++) {
-                    float * o = out + (size_t)(oc_off + oc) * plane;
-                    const float bv = bias ? bias[oc_off + oc] : 0.0f;
-                    for (size_t q = 0; q < plane; ++q) o[q] = bv;
-                    const float * wrow = w_g + (size_t)oc * kernel_size;
-                    for (int ic = 0; ic < ch_per_group_in; ic++) {
-                        const float wv = wrow[ic];
-                        if (wv == 0.0f) continue;
-                        const float * srow = in + (size_t)(ic_off + ic) * H * W;
-                        for (size_t q = 0; q < plane; ++q) o[q] += wv * srow[q];
-                    }
-                }
-            }
+            conv2d_1x1_cpu(in, out, weight, bias, in_ch, out_ch, out_H, out_W, groups);
             return;
         }
     }
