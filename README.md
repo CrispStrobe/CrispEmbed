@@ -84,8 +84,8 @@ curl http://localhost:8080/capabilities
 ```
 
 The server also provides `/health/live` and `/health/ready`. Text recognition
-can be swapped independently for TrOCR, Tesseract-LSTM, PARSeq, a VLM, or a
-future PP-OCRv6 GGUF backend.
+can be swapped independently for TrOCR, Tesseract-LSTM, PP-OCRv6, EasyOCR,
+PARSeq, or a VLM.
 
 ---
 
@@ -202,6 +202,8 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 
 | Model | Architecture | Params | Use case | License |
 |-------|-------------|--------|----------|---------|
+| **PP-OCRv6** | PPLCNetV4 + light-SVTR + CTC | 5–63 MB | General doc pipeline, best measured CER (see below) | Apache-2.0 |
+| **EasyOCR** | VGG/ResNet + BiLSTM + CTC | 16 MB | General doc pipeline, EasyOCR-compatible output | Apache-2.0 |
 | **PARSeq** | ViT + Transformer | 24M | Scene text (SOTA, ECCV'22) | Apache-2.0 |
 | **DBNet + TrOCR** | ResNet-18+FPNC → DeiT+Transformer | 7+63M | General doc pipeline (~200ms/region) | MIT / Apache-2.0 |
 | **Tesseract-LSTM** | VGSL Conv+LSTM+CTC | <2 MB | 12 languages, tiny GGUFs | Apache-2.0 |
@@ -220,6 +222,30 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |
+
+#### Measured against the engines we port
+
+`tests/ocr_synth_corpus.py` renders 20 fixtures that carry their own exact
+ground truth, and `tests/ocr_external_parity.py` runs the native lanes beside
+system Tesseract, Python EasyOCR and Python PaddleOCR on the same images.
+Character/word error over that corpus:
+
+| engine | kind | CER | WER |
+|---|---|--:|--:|
+| `crispembed --ocr-engine ppocrv6` | native | **0.0031** | **0.0178** |
+| PaddleOCR 2.10 (Python) | external | 0.0185 | 0.1153 |
+| Tesseract 5.5.2 (`--psm 6`) | external | 0.0256 | 0.0890 |
+| `crispembed --ocr-engine tesseract` | native | 0.0290 | 0.1623 |
+| EasyOCR 1.7.2 (Python) | external | 0.0769 | 0.2363 |
+| `crispembed --ocr-engine easyocr` | native | 0.0808 | 0.3190 |
+
+Reproduce with `python tests/ocr_synth_corpus.py --output <dir>` then
+`python tests/ocr_external_parity.py --images <dir> --model-dir <gguf dir>`.
+The harness also reports latency, in two columns that are deliberately not
+comparable: `proc_ms` covers a whole invocation including model load, while
+`engine_ms` excludes it. Run it on an **idle** machine — it prints the
+`tesseract-cli` arm as a load control, and if that is far above ~150 ms the
+timings are measuring contention rather than the engines.
 
 Formula/music engines validated per-stage against their HF references (typically
 cos ≥ 0.999, byte-exact greedy decode). VLM engines ingest the full page and
