@@ -80,6 +80,10 @@ edge array and bit masks for repeated exact/prefix queries. This is preparation
 for beam integration only; production OCR still does not consult dictionary
 state.
 
+Native Tesseract model loading now constructs one cached parsed DAWG context per
+manifest component and frees them with the recognizer. The cached dictionaries
+remain diagnostic-only; production OCR does not apply their state.
+
 The diagnostic DAWG layer now distinguishes exact-word membership from legal
 prefix membership. Its fixture covers `1` as a legal non-terminal prefix and
 `1,2` as the complete word; neither path is used by production OCR yet.
