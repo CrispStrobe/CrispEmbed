@@ -58,12 +58,20 @@ crispembed -m tesseract-eng-q8_0.gguf --ocr line.png
 The native runtime performs height normalization and CTC greedy decoding. Word
 spacing and page reading order must be supplied by the surrounding OCR
 pipeline; the Tesseract DAWG language models are not part of this GGUF graph.
+The converter also supports an opt-in `--embed-dawgs` mode that preserves the
+three LSTM DAWG components as GGUF metadata for future runtime scoring; the
+current runtime intentionally ignores those arrays.
 
 ## Conversion
 
 ```bash
 python models/convert-tesseract-to-gguf.py \
   --model eng.traineddata --output tesseract-eng-f32.gguf
+
+# Optional: retain the source LSTM DAWG bytes for a future scorer.
+python models/convert-tesseract-to-gguf.py \
+  --model eng.traineddata --output tesseract-eng-dawg-f32.gguf --embed-dawgs
+
 crispembed-quantize tesseract-eng-f32.gguf tesseract-eng-q8_0.gguf q8_0
 crispembed-quantize tesseract-eng-f32.gguf tesseract-eng-q4_k.gguf q4_k
 ```

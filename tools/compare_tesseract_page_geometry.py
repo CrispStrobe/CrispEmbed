@@ -14,6 +14,7 @@ import json
 import os
 import re
 import subprocess
+import time
 from pathlib import Path
 
 
@@ -21,10 +22,18 @@ BOX_RE = re.compile(
     r"candidate=\d+ box=(?P<x>[-0-9.]+),(?P<y>[-0-9.]+) "
     r"(?P<w>[-0-9.]+)x(?P<h>[-0-9.]+)"
 )
+STAGE_BENCH_RE = re.compile(
+    r"\[tesseract-stage-bench\] detect=(?P<detect>[0-9.]+) ms group=(?P<group>[0-9.]+) ms "
+    r"crop=(?P<crop>[0-9.]+) ms recognize=(?P<recognize>[0-9.]+) ms total=(?P<total>[0-9.]+) ms "
+    r"boxes=(?P<boxes>\d+) lines=(?P<lines>\d+)"
+)
 
 
-def run(command: list[str], env: dict[str, str] | None = None) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, text=True, capture_output=True, env=env, timeout=900, check=False)
+def run(command: list[str], env: dict[str, str] | None = None, timeout_seconds: float = 900) -> subprocess.CompletedProcess[str]:
+    try:
+        return subprocess.run(command, text=True, capture_output=True, env=env, timeout=timeout_seconds, check=False)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"command timed out after {timeout_seconds:.1f}s: {' '.join(command)}") from exc
 
 
 def sha256_file(path: Path) -> str:
@@ -35,8 +44,15 @@ def sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
-def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float, float, float]]:
-    proc = run(["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang, "tsv"])
+def official_lines(image: Path, lang: str, psm: int, tessdata_dir: Path | None = None,
+                   timeout_seconds: float = 900) -> list[tuple[float, float, float, float]]:
+    command = ["tesseract", str(image), "stdout", "--psm", str(psm), "-l", lang]
+    if tessdata_dir is not None:
+        command.extend(["--tessdata-dir", str(tessdata_dir)])
+    command.append("tsv")
+    env = os.environ.copy()
+    env.pop("TESSDATA_PREFIX", None)
+    proc = run(command, env=env, timeout_seconds=timeout_seconds)
     if proc.returncode != 0:
         raise RuntimeError(f"tesseract failed ({proc.returncode}): {proc.stderr[-500:]}")
     lines = []
@@ -53,13 +69,21 @@ def official_lines(image: Path, lang: str, psm: int) -> list[tuple[float, float,
 
 
 def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, projection: bool,
-                 component: bool, baseline: bool) -> list[tuple[float, float, float, float]]:
+                 component: bool, baseline: bool, timeout_seconds: float = 900) -> tuple[list[tuple[float, float, float, float]], dict | None]:
     env = os.environ.copy()
     env["CRISPEMBED_TESSERACT_PAGESEG_DEBUG"] = "1"
+    env["CRISPEMBED_OCR_ORCH_BENCH"] = "1"
     for key in (
         "CRISPEMBED_TESSERACT_PAGESEG_PROJECTION",
         "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
         "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
+        "CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD",
+        "CRISPEMBED_TESSERACT_CROP_PAD",
+        "CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH",
+        "CRISPEMBED_TESSERACT_RECODE_COMPOSE",
+        "CRISPEMBED_TESSERACT_DAWG_LOAD",
+        "CRISPEMBED_TESSERACT_DAWG_SCORE",
+        "CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE",
     ):
         env.pop(key, None)
     if projection:
@@ -84,13 +108,28 @@ def native_lines(cli: Path, det_model: Path, rec_model: Path, image: Path, proje
             "--tesseract-pageseg",
         ],
         env,
+        timeout_seconds=timeout_seconds,
     )
     if proc.returncode != 0:
         raise RuntimeError(f"CrispEmbed failed ({proc.returncode}): {proc.stderr[-1000:]}")
-    return [
+    boxes = [
         (float(match.group("x")), float(match.group("y")), float(match.group("w")), float(match.group("h")))
         for match in BOX_RE.finditer(proc.stdout + proc.stderr)
     ]
+    bench_matches = STAGE_BENCH_RE.findall(proc.stdout + proc.stderr)
+    benchmark = None
+    if bench_matches:
+        detect, group, crop, recognize, total, boxes_count, lines = bench_matches[-1]
+        benchmark = {
+            "detect_ms": float(detect),
+            "group_ms": float(group),
+            "crop_ms": float(crop),
+            "recognize_ms": float(recognize),
+            "total_ms": float(total),
+            "boxes": int(boxes_count),
+            "lines": int(lines),
+        }
+    return boxes, benchmark
 
 
 def iou(a: tuple[float, float, float, float], b: tuple[float, float, float, float]) -> float:
@@ -108,6 +147,27 @@ def reading_order_is_monotonic(boxes: list[tuple[float, float, float, float]]) -
         (boxes[index][1], boxes[index][0]) <= (boxes[index + 1][1], boxes[index + 1][0])
         for index in range(max(0, len(boxes) - 1))
     )
+
+
+def greedy_iou_matches(reference: list[tuple[float, float, float, float]],
+                       mine: list[tuple[float, float, float, float]]) -> list[tuple[int, int, float]]:
+    """Return deterministic one-to-one matches, independent of list index."""
+    candidates = sorted(
+        ((iou(ref_box, mine_box), ref_index, mine_index)
+         for ref_index, ref_box in enumerate(reference)
+         for mine_index, mine_box in enumerate(mine)),
+        key=lambda item: (-item[0], item[1], item[2]),
+    )
+    used_reference: set[int] = set()
+    used_native: set[int] = set()
+    matches = []
+    for overlap, ref_index, mine_index in candidates:
+        if ref_index in used_reference or mine_index in used_native:
+            continue
+        used_reference.add(ref_index)
+        used_native.add(mine_index)
+        matches.append((ref_index, mine_index, overlap))
+    return sorted(matches)
 
 
 def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple[float, float, float, float]]) -> dict:
@@ -138,6 +198,23 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         for index in range(max(0, len(mine) - 1))
     ]
     gap_deltas = [abs(native_gaps[index] - reference_gaps[index]) for index in range(min(len(reference_gaps), len(native_gaps)))]
+    matched = greedy_iou_matches(reference, mine)
+    positive_matches = sum(1 for _, _, overlap in matched if overlap > 0.0)
+    matched_component_deltas = [
+        abs(mine[mine_index][component] - reference[ref_index][component])
+        for ref_index, mine_index, _ in matched
+        for component in range(4)
+    ]
+    matched_by_reference = {ref_index: mine_index for ref_index, mine_index, _ in matched}
+    matched_gap_deltas = []
+    for ref_index in range(max(0, len(reference) - 1)):
+        if ref_index not in matched_by_reference or ref_index + 1 not in matched_by_reference:
+            continue
+        ref_gap = reference[ref_index + 1][1] - (reference[ref_index][1] + reference[ref_index][3])
+        first_native = mine[matched_by_reference[ref_index]]
+        second_native = mine[matched_by_reference[ref_index + 1]]
+        native_gap = second_native[1] - (first_native[1] + first_native[3])
+        matched_gap_deltas.append(abs(native_gap - ref_gap))
     return {
         "reference_lines": len(reference),
         "native_lines": len(mine),
@@ -149,6 +226,19 @@ def compare(reference: list[tuple[float, float, float, float]], mine: list[tuple
         "mean_abs_crop_delta": round(sum(component_deltas) / len(component_deltas), 3) if component_deltas else 0.0,
         "max_abs_crop_delta": round(max(component_deltas), 3) if component_deltas else 0.0,
         "mean_abs_interline_gap_delta": round(sum(gap_deltas) / len(gap_deltas), 3) if gap_deltas else 0.0,
+        "matched_mean_abs_crop_delta": round(sum(matched_component_deltas) / len(matched_component_deltas), 3)
+        if matched_component_deltas else 0.0,
+        "matched_max_abs_crop_delta": round(max(matched_component_deltas), 3) if matched_component_deltas else 0.0,
+        "matched_mean_abs_interline_gap_delta": round(sum(matched_gap_deltas) / len(matched_gap_deltas), 3)
+        if matched_gap_deltas else 0.0,
+        "matched_mean_iou": round(sum(item[2] for item in matched) / len(matched), 6) if matched else 0.0,
+        "matched_count": len(matched),
+        "matched_positive_iou_count": positive_matches,
+        "matched_zero_iou_count": len(matched) - positive_matches,
+        "matched_pairs": [
+            {"reference_index": ref_index, "native_index": mine_index, "iou": round(overlap, 6)}
+            for ref_index, mine_index, overlap in matched
+        ],
         "pairs": pairs,
     }
 
@@ -161,30 +251,56 @@ def main() -> int:
     parser.add_argument("--cli", type=Path, default=Path("build/crispembed"))
     parser.add_argument("--lang", default="eng")
     parser.add_argument("--psm", type=int, default=3)
+    parser.add_argument("--tessdata-dir", type=Path,
+                        help="explicit Tesseract tessdata directory for the reference TSV")
+    parser.add_argument("--timeout", type=float, default=900,
+                        help="per-subprocess timeout in seconds")
     policy = parser.add_mutually_exclusive_group()
     policy.add_argument("--projection", action="store_true", help="use the experimental projection splitter")
     policy.add_argument("--component", action="store_true", help="use the experimental component prototype")
     policy.add_argument("--baseline", action="store_true", help="use the experimental baseline-row matcher")
     parser.add_argument("--min-native-lines", type=int, help="fail if native line count is below this value")
     parser.add_argument("--min-iou", type=float, help="fail if indexed mean IoU is below this value")
+    parser.add_argument("--min-matched-iou", type=float,
+                        help="fail if one-to-one IoU-matched mean is below this value")
+    parser.add_argument("--min-positive-iou-matches", type=int,
+                        help="fail if fewer matched candidates have positive IoU")
     parser.add_argument("--max-mean-crop-delta", type=float, help="fail if mean absolute x/y/w/h delta exceeds this value")
+    parser.add_argument("--max-matched-mean-crop-delta", type=float,
+                        help="fail if IoU-matched mean crop delta exceeds this value")
     parser.add_argument("--max-mean-gap-delta", type=float, help="fail if mean absolute inter-line gap delta exceeds this value")
+    parser.add_argument("--max-matched-mean-gap-delta", type=float,
+                        help="fail if IoU-matched mean inter-line gap delta exceeds this value")
     parser.add_argument("--require-reading-order", action="store_true", help="fail unless both box lists are top-to-bottom/left-to-right ordered")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    comparison = compare(
-        official_lines(args.image, args.lang, args.psm),
-        native_lines(args.cli, args.det_model, args.rec_model, args.image, args.projection, args.component, args.baseline),
-    )
+    if args.timeout <= 0:
+        parser.error("--timeout must be positive")
+    official_started = time.perf_counter()
+    reference = official_lines(args.image, args.lang, args.psm, args.tessdata_dir, args.timeout)
+    official_elapsed_ms = (time.perf_counter() - official_started) * 1000.0
+    native_started = time.perf_counter()
+    native, native_stage_benchmark = native_lines(args.cli, args.det_model, args.rec_model, args.image,
+                                                  args.projection, args.component, args.baseline, args.timeout)
+    native_elapsed_ms = (time.perf_counter() - native_started) * 1000.0
+    comparison = compare(reference, native)
     checks = {}
     if args.min_native_lines is not None:
         checks["min_native_lines"] = comparison["native_lines"] >= args.min_native_lines
     if args.min_iou is not None:
         checks["min_iou"] = comparison["mean_indexed_iou"] >= args.min_iou
+    if args.min_matched_iou is not None:
+        checks["min_matched_iou"] = comparison["matched_mean_iou"] >= args.min_matched_iou
+    if args.min_positive_iou_matches is not None:
+        checks["min_positive_iou_matches"] = comparison["matched_positive_iou_count"] >= args.min_positive_iou_matches
     if args.max_mean_crop_delta is not None:
         checks["max_mean_crop_delta"] = comparison["mean_abs_crop_delta"] <= args.max_mean_crop_delta
+    if args.max_matched_mean_crop_delta is not None:
+        checks["max_matched_mean_crop_delta"] = comparison["matched_mean_abs_crop_delta"] <= args.max_matched_mean_crop_delta
     if args.max_mean_gap_delta is not None:
         checks["max_mean_gap_delta"] = comparison["mean_abs_interline_gap_delta"] <= args.max_mean_gap_delta
+    if args.max_matched_mean_gap_delta is not None:
+        checks["max_matched_mean_gap_delta"] = comparison["matched_mean_abs_interline_gap_delta"] <= args.max_matched_mean_gap_delta
     if args.require_reading_order:
         checks["reading_order"] = comparison["paired_reading_order_consistent"]
     result = {
@@ -192,9 +308,16 @@ def main() -> int:
         "provenance": {
             "detector_model_sha256": sha256_file(args.det_model),
             "recognizer_model_sha256": sha256_file(args.rec_model),
+            "tessdata_dir": str(args.tessdata_dir) if args.tessdata_dir else None,
+            "timeout_seconds": args.timeout,
             "ordering": "official-tsv-level4-vs-native-debug-candidate-index",
         },
         "psm": args.psm,
+        "timing_ms": {
+            "official_geometry_subprocess": round(official_elapsed_ms, 3),
+            "native_geometry_subprocess": round(native_elapsed_ms, 3),
+        },
+        "native_stage_benchmark": native_stage_benchmark,
         "projection": args.projection,
         "component": args.component,
         "baseline": args.baseline,

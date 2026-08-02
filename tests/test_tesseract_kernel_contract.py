@@ -30,6 +30,7 @@ def test_int_mode_cache_is_present():
     assert "tesseract_lstm_dawg_has_prefix" in SOURCE
     assert "tesseract_lstm_dawg_state" in SOURCE
     assert "TESSERACT_DAWG_COMPLETE_WORD" in DAWG_SOURCE
+    assert "CRISPEMBED_TESSERACT_DAWG_PREFIX" in SOURCE
 
 
 if __name__ == "__main__":

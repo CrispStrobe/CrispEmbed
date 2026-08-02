@@ -241,7 +241,8 @@ list(APPEND CRISPEMBED_SOURCES src/bert_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/got_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lightonocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_lstm.cpp)
-list(APPEND CRISPEMBED_SOURCES src/tesseract_dawg.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tesseract_recoder.cpp src/tesseract_dawg_score.cpp)
+list(APPEND CRISPEMBED_SOURCES src/tesseract_dawg.cpp src/tesseract_dawg_legacy.cpp)
 list(APPEND CRISPEMBED_SOURCES src/tesseract_pageseg.cpp)
 if(NOT CRISPEMBED_HAS_CRISP_PUNC)
     list(APPEND CRISPEMBED_SOURCES src/fireredpunc.cpp)
@@ -698,6 +699,18 @@ target_link_libraries(test-confidence PRIVATE crispembed)
 
 add_executable(test-tesseract-dawg tests/test_tesseract_dawg.cpp)
 target_link_libraries(test-tesseract-dawg PRIVATE crispembed)
+
+add_executable(test-tesseract-dawg-runtime tests/test_tesseract_dawg_runtime.cpp)
+target_include_directories(test-tesseract-dawg-runtime PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(test-tesseract-dawg-runtime PRIVATE crispembed)
+
+add_executable(test-tesseract-recorder tests/test_tesseract_recoder.cpp)
+target_include_directories(test-tesseract-recorder PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(test-tesseract-recorder PRIVATE crispembed)
+
+add_executable(test-tesseract-dawg-score tests/test_tesseract_dawg_score.cpp)
+target_include_directories(test-tesseract-dawg-score PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(test-tesseract-dawg-score PRIVATE crispembed)
 
 add_executable(test-ppocrv6-rec tests/test_ppocrv6_rec.cpp)
 target_link_libraries(test-ppocrv6-rec PRIVATE crispembed)

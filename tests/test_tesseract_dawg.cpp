@@ -1,9 +1,10 @@
 #include "tesseract_dawg.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstring>
 
-int main() {
+static int test_main() {
     // magic=42, unicharset_size=3, two forward edges: 1 -> 2 (word end).
     const char * valid = "KgADAAAAAgAAACUAAAAAAAAAFgAAAAAAAAA=";
     char compact[64];
@@ -51,4 +52,8 @@ int main() {
     }
     std::puts("tesseract DAWG validation: PASS");
     return 0;
+}
+
+int main() {
+    core_util::clean_exit(test_main());
 }
