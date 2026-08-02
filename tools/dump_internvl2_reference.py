@@ -604,6 +604,36 @@ def main():
 
             del attn_norm_w, ffn_norm_w, q_w, k_w, v_w, wo, w1, w2, w3
 
+        # Final norm + LM head. Without these the reference stops one step
+        # short of anything observable: the decoder can be wrong in a way that
+        # every hidden state hides and only the logits reveal, and generation
+        # reads logits, not hidden states. Only emitted when the full stack was
+        # dumped — a truncated run's last hidden is not the model's output and
+        # comparing it to one would be worse than not comparing at all.
+        if n_llm_dump == llm_layers:
+            out_norm_w = require("language_model.model.norm.weight")
+            x_out = rms_norm(x_llm, out_norm_w, eps=llm_rms_eps)
+            ref.add("llm_output_norm", x_out)
+
+            head_key = ("language_model.lm_head.weight" if "language_model.lm_head.weight" in all_names
+                        else "language_model.output.weight")
+            head_w = get_tensor(head_key)
+            if head_w is None:
+                # Tied head: the checkpoint ships no lm_head and reuses the
+                # embedding matrix. Read that from the weights, not from the
+                # config flag, which some checkpoints simply omit.
+                head_w = embed_w
+            if head_w is not None:
+                logits = linear(x_out, head_w)  # (T, vocab)
+                ref.add("llm_logits", logits)
+                print(f"    logits: range [{logits.min():.4f}, {logits.max():.4f}], "
+                      f"argmax(last)={int(logits[-1].argmax())}")
+            else:
+                print("    lm_head not found — logits stage skipped")
+        else:
+            print(f"    (only {n_llm_dump}/{llm_layers} layers dumped — "
+                  f"output_norm/logits stages skipped)")
+
     # ── Close ────────────────────────────────────────────────────────
     print(f"\nWriting {args.output}...")
     ref.close()
