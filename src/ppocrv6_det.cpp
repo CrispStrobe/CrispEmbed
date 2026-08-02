@@ -12,8 +12,10 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
 #include <queue>
 #include <string>
 #include <unordered_map>
@@ -149,6 +151,87 @@ static conv make_conv(const core_gguf::tensor_map & m, const std::string & n, in
     return c;
 }
 
+// ---------------------------------------------------------------------------
+// Per-convolution CPU profile (CRISPEMBED_PPOCRV6_DET_PROFILE=1)
+// ---------------------------------------------------------------------------
+// PLAN.md H2 asks for a per-layer cost table for the scalar detector before
+// anything is optimised, since the ggml graph route is a measured dead end
+// (2.6-6.8x slower). Rows are keyed on the convolution's shape signature,
+// which is unique enough to name the layer in this architecture. Diagnostic
+// only: when the gate is unset nothing is timed, allocated or printed.
+
+namespace detprof {
+
+static bool enabled() {
+    static const bool on = std::getenv("CRISPEMBED_PPOCRV6_DET_PROFILE") != nullptr;
+    return on;
+}
+
+struct entry {
+    long long calls = 0;
+    double ms = 0.0;
+    double mflop = 0.0;
+};
+
+static std::map<std::string, entry> & table() {
+    static std::map<std::string, entry> t;
+    return t;
+}
+
+static std::string shape_key(const conv & c, int h, int w, int oh, int ow, const char * kind) {
+    char buf[192];
+    snprintf(buf, sizeof(buf), "%-7s ic=%-4d oc=%-4d k=%dx%d s=%dx%d g=%-4d in=%dx%-4d out=%dx%d", kind, c.ic, c.oc,
+             c.kh, c.kw, c.sh, c.sw, c.groups, h, w, oh, ow);
+    return buf;
+}
+
+// One timed convolution. Non-copyable RAII so every early return in the
+// instrumented helpers is accounted for without duplicating the stop call.
+struct scope {
+    bool on;
+    std::string key;
+    double mflop = 0.0;
+    std::chrono::steady_clock::time_point t0;
+
+    scope(const conv & c, int h, int w, int oh, int ow, const char * kind) : on(enabled()) {
+        if (!on) return;
+        key = shape_key(c, h, w, oh, ow, kind);
+        const int cin = c.groups > 0 ? c.ic / c.groups : c.ic;
+        mflop = 2.0 * c.oc * cin * c.kh * c.kw * (double)oh * (double)ow / 1e6;
+        t0 = std::chrono::steady_clock::now();
+    }
+    scope(const scope &) = delete;
+    scope & operator=(const scope &) = delete;
+    ~scope() {
+        if (!on) return;
+        entry & e = table()[key];
+        e.calls++;
+        e.ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+        e.mflop += mflop;
+    }
+};
+
+// Prints the accumulated table, heaviest first, then resets it so a second
+// detect call in the same process reports its own page rather than a running
+// total.
+struct report {
+    ~report() {
+        if (!enabled()) return;
+        std::vector<std::pair<std::string, entry>> rows(table().begin(), table().end());
+        std::sort(rows.begin(), rows.end(), [](const auto & a, const auto & b) { return a.second.ms > b.second.ms; });
+        double total = 0.0;
+        for (const auto & r : rows) total += r.second.ms;
+        fprintf(stderr, "[ppocrv6-det-profile] total_conv_ms=%.3f distinct_layers=%zu\n", total, rows.size());
+        for (const auto & r : rows)
+            fprintf(stderr, "[ppocrv6-det-profile] %9.3f ms %5.1f%% calls=%-3lld %7.2f GF/s  %s\n", r.second.ms,
+                    total > 0.0 ? 100.0 * r.second.ms / total : 0.0, r.second.calls,
+                    r.second.ms > 0.0 ? r.second.mflop / r.second.ms : 0.0, r.first.c_str());
+        table().clear();
+    }
+};
+
+} // namespace detprof
+
 static bool apply_conv(const conv & c, const std::vector<float> & x, int h, int w, std::vector<float> & y, int & oh,
                        int & ow) {
     if (!c.w) return false;
@@ -159,6 +242,7 @@ static bool apply_conv(const conv & c, const std::vector<float> & x, int h, int 
     oh = (h + 2 * c.ph - c.kh) / c.sh + 1;
     ow = (w + 2 * c.pw - c.kw) / c.sw + 1;
     if (oh <= 0 || ow <= 0) return false;
+    const detprof::scope prof(c, h, w, oh, ow, "conv");
     y.assign((size_t)c.oc * oh * ow, 0.0f);
     if (c.wf.empty()) c.wf = to_f32(c.w);
     if (c.b && c.bf.empty()) c.bf = to_f32(c.b);
@@ -199,6 +283,7 @@ static bool apply_deconv2(const conv & c, const std::vector<float> & x, int h, i
     if (!c.w || c.kh != 2 || c.kw != 2) return false;
     oh = h * 2;
     ow = w * 2;
+    const detprof::scope prof(c, h, w, oh, ow, "deconv");
     y.assign((size_t)c.oc * oh * ow, 0.0f);
     if (c.wf.empty()) c.wf = to_f32(c.w);
     if (c.b && c.bf.empty()) c.bf = to_f32(c.b);
@@ -882,6 +967,7 @@ void free(context * c) {
 std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int channels, float threshold) {
     if (!c || !px) return {};
     const bool bench = std::getenv("CRISPEMBED_PPOCRV6_DET_BENCH") != nullptr;
+    const detprof::report prof_report;
     const auto started = std::chrono::steady_clock::now();
     static constexpr float mean[3] = { 0.485f, 0.456f, 0.406f };
     static constexpr float stdev[3] = { 0.229f, 0.224f, 0.225f };
