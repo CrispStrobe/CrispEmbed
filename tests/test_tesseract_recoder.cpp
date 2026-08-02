@@ -3,13 +3,15 @@
 #include <cstdio>
 #include <vector>
 
-static bool equal(const std::vector<int> & a, const std::vector<int> & b) { return a == b; }
+static bool equal(const std::vector<int> & a, const std::vector<int> & b) {
+    return a == b;
+}
 
 int main() {
     const std::vector<std::vector<int>> codes = { { 0 }, { 1, 2 }, { 3 } };
     std::vector<int> unichars, starts;
-    if (!tesseract_recoder::compose_classes({ 0, 1, 2, 3 }, codes, unichars, starts) ||
-        !equal(unichars, { 0, 1, 2 }) || !equal(starts, { 0, 1, 3 })) {
+    if (!tesseract_recoder::compose_classes({ 0, 1, 2, 3 }, codes, unichars, starts) || !equal(unichars, { 0, 1, 2 }) ||
+        !equal(starts, { 0, 1, 3 })) {
         std::fprintf(stderr, "exact recoder composition failed\n");
         return 1;
     }
@@ -26,8 +28,8 @@ int main() {
     const std::vector<std::vector<int>> ambiguous = { { 4 }, { 4, 5 }, { 5 } };
     unichars = { 99 };
     starts = { 77 };
-    if (!tesseract_recoder::compose_classes({ 4, 5 }, ambiguous, unichars, starts) ||
-        !equal(unichars, { 1 }) || !equal(starts, { 0 })) {
+    if (!tesseract_recoder::compose_classes({ 4, 5 }, ambiguous, unichars, starts) || !equal(unichars, { 1 }) ||
+        !equal(starts, { 0 })) {
         std::fprintf(stderr, "ambiguous recoder composition failed\n");
         return 1;
     }

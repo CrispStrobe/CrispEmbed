@@ -26,9 +26,8 @@ static bool prefix_word_match(const std::map<std::string, tesseract_dawg::Dawg> 
 }
 
 float word_bonus(const std::vector<int> & prefix, const std::vector<std::vector<int>> & codes,
-                 const std::vector<std::string> & tokens,
-                 const std::map<std::string, tesseract_dawg::Dawg> & dawgs, bool include_final,
-                 bool include_prefix) {
+                 const std::vector<std::string> & tokens, const std::map<std::string, tesseract_dawg::Dawg> & dawgs,
+                 bool include_final, bool include_prefix) {
     if (dawgs.find("lstm-system-dawg") == dawgs.end() && dawgs.find("lstm-number-dawg") == dawgs.end()) return 0.0f;
     std::vector<int> unichars, starts;
     if (!tesseract_recoder::compose_classes(prefix, codes, unichars, starts)) return 0.0f;
@@ -43,8 +42,10 @@ float word_bonus(const std::vector<int> & prefix, const std::vector<std::vector<
         }
     }
     if (include_final && !word.empty()) {
-        if (complete_word_match(dawgs, word)) bonus += 0.25f;
-        else if (include_prefix && prefix_word_match(dawgs, word)) bonus += 0.02f;
+        if (complete_word_match(dawgs, word))
+            bonus += 0.25f;
+        else if (include_prefix && prefix_word_match(dawgs, word))
+            bonus += 0.02f;
     }
     return bonus;
 }
