@@ -1228,7 +1228,7 @@ static const ModelEntry k_registry[] = {
     // See PERFORMANCE.md "h2ovl-2b — resolved, and the quant ladder".
     { "h2ovl-mississippi-2b", "h2ovl-mississippi-2b-q8_0.gguf",
       "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q8_0.gguf",
-      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "2292 MB", "apache-2.0",
+      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "2592 MB", "apache-2.0",
       "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF" },
 
     { "h2ovl-mississippi-800m", "h2ovl-800m-q4_k.gguf",

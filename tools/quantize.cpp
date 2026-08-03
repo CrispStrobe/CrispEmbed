@@ -511,6 +511,37 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(internvl2-attn→Q8_0) ");
         }
 
+        // InternVL2/H2OVL vision tower: keep F16, do not drop it to Q8_0.
+        // Bisected the whole encoder against the blueprint reference (the
+        // reference carried vis_layer_0..23 and vis_pixel_unshuffle all along;
+        // nothing read them until now). At f16 every stage passes -- vis_layer_*
+        // 1.000000..0.999902, vis_pixel_unshuffle 0.999691, vis_proj_output
+        // 0.999974 -- so the port is exact and there is no code defect. With the
+        // tower at Q8_0 the same stages decay monotonically to 0.90 by layer 11
+        // and 0.64 by layer 12, because 24 residual blocks compound the
+        // per-weight error. The projector then reads 0.998630 on Metal and
+        // 0.912992 on CPU.
+        //
+        // The generic is_vision_weight rule below already refuses to go below
+        // Q8_0; for this arch Q8_0 is itself the ceiling on vision parity, and
+        // the tower is small next to the decoder, so buy the accuracy.
+        // Scoped to the Q8_0 target on purpose. Q8_0 is the quality tier, where
+        // +285 MB on a 2.2 GB file buys full vision parity. Q4_K is the size
+        // tier: applying this there took internvl2-1b -- the edge/WASM model --
+        // from 758 MB to 1135 MB, so the "quantize" step INFLATED it 1.5x,
+        // defeating the only reason that artifact exists. Same shape of mistake
+        // as the sub-Q8 refusal: a rule measured on one model, applied across a
+        // family whose members have different goals.
+        bool is_internvl2_vision = is_internvl2 && ftype == GGML_FTYPE_MOSTLY_Q8_0 &&
+                                   (sname.rfind("v.", 0) == 0 || sname.rfind("proj.", 0) == 0);
+        if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
+            if (atoi(off)) is_internvl2_vision = false;
+        }
+        if (quantize && is_internvl2_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(internvl2-vision→F16) ");
+        }
+
         // MoE router / gating weights (DeepSeek-V2: "*.mlp_gate.weight", also
         // the generic "ffn_gate_inp"): these pick which experts run, so even
         // small quant error flips the top-k selection and corrupts the output.

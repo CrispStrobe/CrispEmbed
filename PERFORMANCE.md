@@ -2101,3 +2101,57 @@ All green, verified rather than assumed:
 | SHA-256 pins | 242 pinned, 0 unpinned, `model_hashes.h` current |
 | URL reachability | 242 distinct download URLs, **0 non-200** |
 | Licence chains | `tests/check_registry_licenses.py` rc=0 |
+
+
+## Vision-stage parity raised to the f16 ceiling (2026-08-03)
+
+### The bisection that settles it: there is no code defect
+
+The reference had carried `vis_layer_0..23` and `vis_pixel_unshuffle` since it
+was baked, and nothing ever compared them — so a divergence between
+`vis_patch_embed` (1.000000) and `vis_proj_output` (0.912992 on CPU) had 24
+unbisected layers to hide in. The graph already names and `set_output`s every
+one; the harness now reads them.
+
+**At f16 every stage passes**: `vis_layer_*` 1.000000 → 0.999902,
+`vis_pixel_unshuffle` 0.999691, `vis_proj_output` 0.999974, `llm_layer_*`
+1.000000. The port is exact. Two things previously read as bugs are not:
+
+- the "discontinuity" at `vis_layer_12` (0.90 → 0.64, max_abs 5.85 → 26.65) is
+  quantization, not a code path — f16 is smooth through it;
+- `vis_pixel_unshuffle` at 0.380 was **not** a layout/reshape mismatch, which
+  was the obvious reading. It is 0.999691 at f16.
+
+Everything measured was Q8_0 error compounding through 24 residual blocks.
+
+### So the lever is vision precision, and it works
+
+| stage | vision Q8_0 | vision F16 |
+|---|--:|--:|
+| vis_layer_11 | 0.900823 | **0.999994** |
+| vis_layer_23 | 0.924021 | **0.999982** |
+| vis_pixel_unshuffle | 0.380373 | **0.999691** |
+| vis_proj_output | 0.912992 | **0.999974** |
+
+Every vision stage now PASSes on CPU, the backend that was worst. 2186 → 2471 MiB
+(+13%), and the page still transcribes. The decoder stays Q8_0: its stages are
+0.98/0.96 and the output is right, while F16 there means the 4.4 GB file.
+
+### Scoped to the Q8_0 target, because the first version was wrong
+
+Applied to the whole arch, this rule took **`internvl2-1b` from 758 MB to
+1135 MB** — the quantize step *inflating* the edge/WASM model 1.5×, defeating
+the only reason that artifact exists. Now gated on `ftype == Q8_0`: the quality
+tier buys parity, Q4_K stays the size tier. Verified both ways — edge q4_k gets
+0 vision→F16 conversions, h2ovl q8_0 gets all 98. `CRISPEMBED_QUANTIZE_NO_VISION_F16=1`
+bisects it without a rebuild.
+
+That is the second rule this session that had to be narrowed after measuring a
+sibling; the pattern to watch is a rule derived from one checkpoint being
+applied to a family whose members have different goals.
+
+### Shipped
+
+`cstr/h2ovl-mississippi-2b-crispembed-GGUF` q8_0 replaced in place
+(2591566112 bytes, sha `497cd047…`, verified byte-identical to the local file),
+pin regenerated, 242 pinned / 0 unpinned.
