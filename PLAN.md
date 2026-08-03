@@ -15,7 +15,6 @@ races). Remove the row when the branch lands.
 |-------|-------------------|------|--------|
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
-| 2026-08-03 | `main` (measurement) + worktree for T1 fixtures | **Picked:** settle the "match PP-OCR original" claim end-to-end: (a) warm load-excluded `engine_ms` A/B of `crispembed-ppocrv6` vs `paddleocr-py` on the 20-fixture synth corpus via `tests/ocr_external_parity.py`; (b) T1 ground-truth transcription for the 6 English-lane CC0 scans; (c) real-scan CER/WER A/B on those labels. No graph/runtime code changes | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -472,6 +471,65 @@ detector loader reported the *opposite* of what a same-binary A/B later showed.
 Contention-robust ratios at the time of writing (median-of-3 CPU-seconds,
 `tesseract-cli` control 0.46-0.49 s): tesseract lane 3.4x, PP-OCRv6 6.6x,
 EasyOCR 8.9x control.
+
+#### 2026-08-03 — "at least match PP-OCR original" verdict: warm A/B settled, first real-scan labels
+
+The two holes named above are now measured (binary rebuilt at `main` HEAD,
+Metal ON, `tests/ocr_external_parity.py`, repeats=3; raw JSON archived as
+`parity-synth.json` / `parity-cc0.json` under `/Volumes/backups/ai/crispembed-gguf/`).
+
+**Warm speed on the 20-fixture synth corpus is NOT matched.** Load-excluded
+`engine_ms`, both arms interleaved in the same window (`tesseract-cli` control
+476 ms vs the 135 ms quiet baseline, so read ratios, not absolutes): native
+median **2085 ms** vs `paddleocr-py` **1484 ms** — per fixture 1.25-1.83x,
+sum-over-corpus **1.48x** slower. Quality re-confirmed unchanged (CER 0.0031
+vs 0.0185; native wins or ties 19/20 fixtures).
+
+**Where the warm gap lives (stage bench, quiet box).** `synth_00_clean`:
+`detect=1415.6 crop=0.3 orientation=0.2 recognize=594.2` — the CPU-scalar
+detector is **70%** of a small page, so T3/T6/T7 are the levers there.
+`commons_example_receipt` (40 crops, 11 distinct widths): `detect=2034.6
+recognize=4238.9` — many-crop pages are recognizer-bound, which is T4's
+batching case. One-shot load adds `recognizer+orientation=1.1 s` (T5).
+
+**Real scans, scored for the first time (T1 labels landed,
+`tests/regression/images/cc0/ground_truth.json`, 5 fixtures transcribed by eye
+with zoom verification; `simple_table.jpg` stays directional-only — its cell
+digits are unrecoverable, and both paddle and native detect 0 regions on it).**
+
+| fixture | paddle CER | native CER | verdict |
+|---|--:|--:|---|
+| `german_official_print.jpg` (Fraktur letterpress) | 0.2250 | **0.0486** | native 4.6x better |
+| `receipt_historical.png` (dot-matrix) | 0.2409 | **0.0260** | native 9x better |
+| `commons_test_ocr_document.jpg` (two-column) | 0.7638 | 0.7612 | tie — CER for *every* arm (tesseract 0.7551 too) is dominated by column reading order vs the column-ordered ground truth, not recognition |
+| `commons_example_receipt.png` (clean monospace) | **0.0074** | 0.0885 | native 12x worse |
+| `simple_form.png` (452x317 UI, ~7 px labels) | **0.6275** | 0.7368 | native worse |
+
+Warm speed on these pages: native median `engine_ms` 9414 vs paddle 7964
+(**1.18x**), and native is *faster* than paddle on 2 of 5 (two-column doc
+15.6 s vs 20.7 s, clean receipt 6.2 s vs 7.9 s).
+
+**The clean-receipt loss is a systematic symbol-class failure, not noise:**
+`$`→`S` throughout, `I`/`f`/`1`→`:`, `H`→`ll` (`Have`→`llave`), while paddle
+reads the same lines correctly with identical region count (40). Probed:
+`CRISPEMBED_PPOCRV6_RGB=1` changes nothing; the medium recognizer fixes word
+shapes (`Qty`, `Price`, `Product`) but keeps the `$`→`S` class. The GGUF
+embeds the full 18,710-class label list, so it is not a truncated charset.
+Two candidate causes, deliberately not guessed at: (a) the known blocked gate
+— official PP-OCRv6 *recognizer* inference is still unrecoverable locally
+(PaddleX exposes only the detector blueprint), so text-gold parity on these
+crops cannot be checked on this box; (b) model asymmetry — `paddleocr-py`'s
+English lane runs a 96-class `en` recognizer while our lane runs the
+18,710-class multilingual PP-OCRv6, and thin-glyph symbol confusion is exactly
+where that asymmetry would bite. See T10.
+
+**Verdict against the "at least match PP-OCR original" requirement.**
+*Quality:* ahead of the original on rendered text (6x) and on hard real scans
+(Fraktur 4.6x, dot-matrix 9x); behind on clean monospace symbols and tiny UI
+text. *Speed (warm, load-excluded):* behind 1.4-1.5x on small pages
+(detector-bound), 1.18x median on real pages, ahead on some large pages. Not
+yet a uniform match; the remaining work is exactly T3/T4/T5/T6 (speed) and T10
+(the symbol-class quality gap).
 
 **Measurement discipline, learned the hard way here.** This box runs 3–6
 concurrent agent builds; load average hit 103 mid-sweep and `tesseract-cli`
@@ -934,7 +992,19 @@ Four facts that should stop you re-deriving them:
 
 ## OPEN TASKS — ordered by expected value
 
-### T1 — Transcribe 5-10 CC0 scans [BLOCKS T2, O8, and the WER column]
+### T1 — Transcribe 5-10 CC0 scans [DONE 2026-08-03 for the 5 scoreable English-lane fixtures]
+
+**Landed:** `tests/regression/images/cc0/ground_truth.json` (branch
+`feat/cc0-ground-truth`, merged) — manual transcription with per-fixture
+confidence and conventions (as-printed hyphenation, column reading order,
+bleed-through excluded). `simple_table.jpg` is excluded as directional-only
+per the trap note below; the out-of-scope fixtures (Fraktur manuscript,
+Arabic, handwriting, sheet music) remain unlabelled. T2 and the real-scan CER
+column are now unblocked; first scored results are in the 2026-08-03
+head-to-head subsection above. Original brief kept below for the remaining
+out-of-scope fixtures.
+
+### T1 (original brief) — Transcribe 5-10 CC0 scans [BLOCKS T2, O8, and the WER column]
 
 **This is the highest-leverage task available and it gates the others.** Every
 remaining routing decision is a proxy for "which output is more correct", and
@@ -1126,6 +1196,32 @@ and should not be written up as a vulnerability.
 **Acceptance** `tests/test_server_json_input.cpp` gains a nested-decoy case per
 converted field, each failing before the change and passing after. No behaviour
 change for well-formed requests.
+
+---
+
+### T10 — PP-OCRv6 clean-monospace symbol-class gap vs official (quality)
+
+On `commons_example_receipt.png` the native lane loses to `paddleocr-py` 12x
+on CER (0.0885 vs 0.0074) through systematic symbol substitutions — `$`→`S`,
+`I`/`f`/`1`→`:`, `H`→`ll` — with identical region count, so the detector is
+not the problem. Already ruled out: `CRISPEMBED_PPOCRV6_RGB=1` (no change),
+truncated charset (full 18,710-class label list is embedded), and the medium
+recognizer (fixes word shapes, keeps the `$`→`S` class).
+
+**Do** Separate the two candidate causes before touching any code. (1) Run
+*official* PP-OCRv6 recognizer inference on the exact line crops — this is the
+already-blocked official-blueprint gate; per the standing offload directive,
+stand it up on Kaggle/VPS from the PaddleX/HF checkpoint rather than this Mac.
+If official v6 makes the same symbol errors, the gap is model asymmetry
+(96-class `en` PP-OCRv4 in paddle's lane vs multilingual v6 in ours) and the
+fix is shipping an `en` recognizer artifact for the English lane, not graph
+work. If official v6 reads `$` correctly, it is a port bug in
+preprocessing/decode and text-gold parity on these crops becomes the
+acceptance test.
+
+**Acceptance** Either an official-v6 crop-level transcript demonstrating
+parity (port exonerated, en-model artifact TODO filed), or a reproduced
+divergence with the first differing stage identified.
 
 ---
 
