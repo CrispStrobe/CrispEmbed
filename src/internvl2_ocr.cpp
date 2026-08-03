@@ -1169,8 +1169,8 @@ bool encode_vision_tile(context & ctx, const float * pixels, vision_result & out
                 float * vis_pe = (float *)malloc(n_pos * D * sizeof(float));
                 ggml_backend_tensor_get(pe_t, vis_pe, 0, n_pos * D * sizeof(float));
                 auto r = ref.compare("vis_patch_embed", vis_pe, n_pos * D);
-                printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
-                       r.is_pass() ? "PASS" : "FAIL");
+                printf("  vis_patch_embed: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                       r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
                 free(vis_pe);
             }
 
@@ -1188,7 +1188,8 @@ bool encode_vision_tile(context & ctx, const float * pixels, vision_result & out
                 float * buf = (float *)malloc(n_pos * D * sizeof(float));
                 ggml_backend_tensor_get(lt, buf, 0, n_pos * D * sizeof(float));
                 auto rl = ref.compare(nm, buf, n_pos * D);
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n", nm, rl.cos_min, rl.max_abs, rl.is_pass() ? "PASS" : "FAIL");
+                printf("  %s: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n", nm, rl.cos_min,
+                       rl.cos_global, rl.max_abs, rl.mine_norm, rl.ref_norm, rl.is_pass() ? "PASS" : "FAIL");
                 free(buf);
             }
         }
@@ -1217,8 +1218,8 @@ bool project_vision(context & ctx, const float * vis_hidden, int n_patches, proj
         crispembed_diff::Ref uref;
         if (uref.load(ctx.diff_ref_path.c_str()) && uref.has("vis_pixel_unshuffle")) {
             auto ru = uref.compare("vis_pixel_unshuffle", unshuffled.data(), n_merged * merge_dim);
-            printf("  vis_pixel_unshuffle: cos=%.6f max_abs=%.6f %s\n", ru.cos_min, ru.max_abs,
-                   ru.is_pass() ? "PASS" : "FAIL");
+            printf("  vis_pixel_unshuffle: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                   ru.cos_min, ru.cos_global, ru.max_abs, ru.mine_norm, ru.ref_norm, ru.is_pass() ? "PASS" : "FAIL");
         }
     }
 
@@ -1375,8 +1376,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                 if (e) {
                     ggml_backend_tensor_get(e, buf, 0, T * D * sizeof(float));
                     auto r = ref.compare("llm_embed", buf, T * D);
-                    printf("  llm_embed: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
-                           r.is_pass() ? "PASS" : "FAIL");
+                    printf("  llm_embed: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                           r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
                 }
                 free(buf);
             }
@@ -1397,7 +1398,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                 float * buf = (float *)malloc(T * D * sizeof(float));
                 ggml_backend_tensor_get(lg.layer_outputs[i], buf, 0, T * D * sizeof(float));
                 auto r = ref.compare(name, buf, T * D);
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n", name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                printf("  %s: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n", name, r.cos_min,
+                       r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
                 free(buf);
             }
         }
