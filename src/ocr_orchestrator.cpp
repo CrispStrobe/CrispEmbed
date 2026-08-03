@@ -55,7 +55,7 @@
 #define CRISPEMBED_HAS_TRUECASE 0
 #endif
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
+// Implementation lives in core/image_out.cpp (single definition project-wide).
 #include "../ggml/examples/stb_image_write.h"
 
 #include <atomic>

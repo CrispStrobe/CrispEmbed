@@ -9,6 +9,7 @@
 #include "crispembed.h"
 #include "core/clean_exit.h"
 #include "core/json.h"
+#include "core/image_out.h"
 #include "core/provenance.h"
 #include "model_mgr.h"
 #include "vit_embed.h"
@@ -587,8 +588,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PGM to stdout
-        printf("P5\n%s%d %d\n255\n", core_prov::netpbm_comment("dewarp").c_str(), ow, oh);
-        fwrite(out.data(), 1, ow * oh, stdout);
+        core_imgout::emit(stdout, out.data(), ow, oh, 1, "dewarp");
         return 0;
     }
     if (!tps_dewarp_path.empty()) {
@@ -605,8 +605,7 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "tps-dewarp failed\n");
             return 1;
         }
-        printf("P5\n%s%d %d\n255\n", core_prov::netpbm_comment("dewarp").c_str(), w, h);
-        fwrite(out.data(), 1, w * h, stdout);
+        core_imgout::emit(stdout, out.data(), w, h, 1, "dewarp");
         return 0;
     }
     if (!cc_detect_path.empty()) {
@@ -662,8 +661,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("pan-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "pan-sr");
         crispembed_pan_sr_free_image(out);
         return 0;
     }
@@ -693,8 +691,7 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "error: DAT SR processing failed\n");
             return 1;
         }
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("dat-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "dat-sr");
         crispembed_dat_sr_free_image(out);
         return 0;
     }
@@ -724,8 +721,7 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "error: HAT SR processing failed\n");
             return 1;
         }
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("hat-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "hat-sr");
         crispembed_hat_sr_free_image(out);
         return 0;
     }
@@ -755,8 +751,7 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "error: SAFMN SR processing failed\n");
             return 1;
         }
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("safmn-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "safmn-sr");
         crispembed_safmn_sr_free_image(out);
         return 0;
     }
@@ -786,8 +781,7 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "error: Real-ESRGAN SR processing failed\n");
             return 1;
         }
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("esrgan-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "esrgan-sr");
         crispembed_esrgan_sr_free_image(out);
         return 0;
     }
@@ -818,8 +812,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("swinir-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "swinir-sr");
         crispembed_swinir_sr_free_image(out);
         return 0;
     }
@@ -850,8 +843,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("tbsrn-sr").c_str(), ow, oh);
-        fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+        core_imgout::emit(stdout, out, ow, oh, 3, "tbsrn-sr");
         crispembed_tbsrn_sr_free_image(out);
         return 0;
     }
@@ -881,8 +873,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("restormer").c_str(), w, h);
-        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        core_imgout::emit(stdout, out, w, h, 3, "restormer");
         crispembed_restormer_free_image(out);
         return 0;
     }
@@ -912,8 +903,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("scunet").c_str(), w, h);
-        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        core_imgout::emit(stdout, out, w, h, 3, "scunet");
         crispembed_scunet_free_image(out);
         return 0;
     }
@@ -945,8 +935,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("nafnet").c_str(), w, h);
-        fwrite(out.data(), 1, out.size(), stdout);
+        core_imgout::emit(stdout, out.data(), w, h, 3, "nafnet");
         return 0;
     }
     if (!instructir_path.empty()) {
@@ -983,8 +972,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("instructir").c_str(), w, h);
-        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        core_imgout::emit(stdout, out, w, h, 3, "instructir");
         crispembed_instructir_free_image(out);
         return 0;
     }
@@ -1021,8 +1009,7 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         // Write result as PPM (RGB) to stdout
-        printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("adair").c_str(), w, h);
-        fwrite(out, 1, (size_t)w * h * 3, stdout);
+        core_imgout::emit(stdout, out, w, h, 3, "adair");
         crispembed_adair_free_image(out);
         return 0;
     }
@@ -1112,8 +1099,7 @@ static int cli_main(int argc, char ** argv) {
             // Emit the cleaned image as PPM (RGB) to stdout, like the other
             // preprocessors; human-readable info goes to stderr.
             fprintf(stderr, "cleaned: %dx%d -> %dx%d\n", w, h, ow, oh);
-            printf("P6\n%s%d %d\n255\n", core_prov::netpbm_comment("scan-cleanup").c_str(), ow, oh);
-            fwrite(out, 1, (size_t)ow * oh * 3, stdout);
+            core_imgout::emit(stdout, out, ow, oh, 3, "scan-cleanup");
         }
         scan_cleanup_free_image(out);
         return 0;

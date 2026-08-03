@@ -232,37 +232,54 @@ the document case we do not think Art. 50(2) engages. That remains a reasoned
 position, not a resolved question, and it is exactly as untested as this
 section says.
 
-What has changed is that you no longer have to build the marking yourself.
-Setting `CRISPEMBED_MARK_GENERATED=1` writes a machine-readable provenance
-comment into every image this library emits, naming the engine that touched the
-pixels:
+What has changed is that images now carry provenance **by default**. Output is
+PNG rather than raw Netpbm — Netpbm has no metadata container and C2PA has no
+PPM binding — and every image gets a PNG `iTXt` chunk naming the engine that
+touched the pixels. `CRISPEMBED_IMAGE_FORMAT=ppm` restores the old raw output
+(with only the header-comment marking of the previous scheme):
 
 ```
-P6
-# CrispEmbed-Generated: true
-# CrispEmbed-Engine: esrgan-sr
-# CrispEmbed-Note: AI-processed image. Not an authentic record of the original;
-#   restored or upscaled detail is a plausible completion, not recovered
-#   information.
-# CrispEmbed-Spec: https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md
-640 480
-255
+generated=true
+software=CrispEmbed
+engine=esrgan-sr
+digitalSourceType=http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced
+note=AI-processed image. Not an authentic record of the original; restored or
+  upscaled detail is a plausible completion, not recovered information.
+policy=https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md
 ```
+
+The IPTC term is **`algorithmicallyEnhanced`**, not `trainedAlgorithmicMedia`.
+The input is a real capture that we enhanced; asserting wholly-synthetic media
+would be false, and a false provenance claim is a worse position than none.
+
+**Content Credentials (C2PA).** When a signing identity is configured —
+`CRISPEMBED_C2PA_CERT` and `CRISPEMBED_C2PA_KEY` — the PNG additionally carries
+a signed C2PA manifest asserting `c2pa.edited` with the same source type. Build
+with `-DCRISPEMBED_C2PA_FETCH=ON` to pull the c2pa-rs native library; without it
+images are still PNG with `iTXt`, just unsigned.
+
+**We ship no signing key, deliberately.** A private key published in an MIT
+repository would let anyone mint a manifest naming CrispEmbed as the software
+agent for an image it never touched, and re-sign after altering the pixels —
+destroying both jobs a C2PA signature exists to do while looking like it does
+them. That is a worse outcome than an unsigned image. `scripts/make-c2pa-cert.sh`
+generates a per-installation chain if you want signing without sourcing a
+certificate; note that a **self-signed certificate is rejected by c2pa-rs**, so
+it builds a leaf + local CA. Verifiers will show *unverified signer* either way:
+such a manifest attests what was done, not who did it. For attributable
+provenance you need a certificate from a CA on the C2PA trust list.
 
 The engine is named rather than a bare "AI-processed", because that flag alone
 does not tell a reader whether detail was **synthesised** (ESRGAN, NAFNet,
 SCUNet) or merely **resampled** (deskew, dewarp) — a distinction this section
 argues matters and that nobody can recover from the pixels afterwards.
 
-**Know what this is not.** It is a header comment, not a signature. Anyone can
-strip it with a text editor, it has no cryptographic binding to the pixels, and
-it does not survive a conversion that drops comments. Art. 50(2) asks for
-solutions effective "as far as is technically feasible", and for raw Netpbm —
-which has no metadata container at all — a header comment is the only in-band
-channel there is. **If you need tamper-evident provenance you need C2PA with a
-real signing identity, and that is still yours to add.** Marking stays off by
-default so the document case is unchanged; turn it on if your use sits away
-from it, and do not rely on the argument above.
+**Know what the unsigned level is not.** An `iTXt` chunk is metadata, not a
+signature: strippable, with no cryptographic binding to the pixels, and lost by
+any conversion that drops ancillary chunks. It satisfies the *marking* Art.
+50(2) asks for; it proves nothing. The signed level adds tamper-evidence over
+the pixels, but only identity you can trace to a trusted CA makes it
+attributable. Do not present either as proof that an image is what it claims.
 
 Independently of the AI Act: do not present restored or upscaled imagery as an
 authentic record of the original. Upscaling a licence plate or a face does not

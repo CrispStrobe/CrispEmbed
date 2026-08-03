@@ -33,6 +33,13 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw
 
+import os as _os
+# CrispEmbed now emits PNG by default (it can carry provenance metadata;
+# raw Netpbm cannot). This harness parses raw pixel bytes, so ask for the
+# historical format rather than teaching it a PNG decoder.
+_os.environ.setdefault("CRISPEMBED_IMAGE_FORMAT", "ppm")
+
+
 try:
     import pytesseract
 except Exception:

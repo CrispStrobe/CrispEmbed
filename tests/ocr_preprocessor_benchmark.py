@@ -26,6 +26,13 @@ import time
 from pathlib import Path
 from difflib import SequenceMatcher
 
+import os as _os
+# CrispEmbed now emits PNG by default (it can carry provenance metadata;
+# raw Netpbm cannot). This harness parses raw pixel bytes, so ask for the
+# historical format rather than teaching it a PNG decoder.
+_os.environ.setdefault("CRISPEMBED_IMAGE_FORMAT", "ppm")
+
+
 
 def run(cmd: list[str], env: dict[str, str], binary: bool = False):
     return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
