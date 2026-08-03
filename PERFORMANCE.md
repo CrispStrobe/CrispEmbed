@@ -2326,3 +2326,42 @@ Complete verdict for h2ovl-mississippi-2b:
 | f16 | 1.000000 | transcribes |
 | q8_0 (shipped, vision F16) | 0.998919 | transcribes |
 | q4_k | — (withdrawn) | fluent but wrong |
+
+
+## Diff-gate regime, and full references for both checkpoints (2026-08-03)
+
+### The gate was right; the regime was unstated
+
+`is_pass()` keys on `cos_min`, and the f16 trace proves that is the **correct**
+gate for port correctness: h2ovl-2b at f16 scores `cos_min` 1.000000 on all 54
+stages including the logits, so a single mishandled token position would still
+fail loudly — which is what this harness is for.
+
+It is the wrong gate for judging a *quantized* artifact, where the question is
+"is the damage acceptable", not "is the port correct". The same model at q8_0
+reads `cos_min` 0.61 on the logits while `cos_global` is 0.998919 and it
+transcribes a page correctly.
+
+So rather than weaken a header shared by every engine on one model's evidence:
+
+- **default unchanged** — 0.999 on `cos_min`; verified f16 still scores 55 PASS
+  / 0 FAIL after the change;
+- `CRISPEMBED_DIFF_COS_THRESHOLD` overrides the threshold per run, for quantized
+  sweeps;
+- `is_pass_global()` added for callers whose question is the aggregate.
+
+Additive: no existing engine's verdict moves.
+
+### Both references now reach the logits
+
+Both had been dumped `--max-llm-layers 4`, which also silently drops
+`llm_output_norm` and `llm_logits`. Re-dumped and republished to
+`cstr/crispembed-regression-fixtures`:
+
+| checkpoint | stages | covers |
+|---|--:|---|
+| h2ovl-mississippi-2b | **54** | 24 vision + 24 LLM + embed + output_norm + logits |
+| h2ovl-mississippi-800m | **46** | 24 vision + 16 LLM + embed + output_norm + logits |
+
+The 2b model repo's copy was replaced too, so neither location hands out a
+reference that stops short of the decision boundary.
