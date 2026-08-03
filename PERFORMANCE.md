@@ -2021,3 +2021,37 @@ vision tower is Q8_0 in all of them, which is why the quants are bit-identical
 there. Left alone deliberately: q8_0 transcribes correctly, and tuning a
 synthetic-gradient cosine when the decoded output already passes is chasing the
 wrong gate.
+
+
+### Corroboration and the sibling regression (2026-08-03)
+
+**Pre-fix baseline, from the parity kernel** (it cloned before the template fix,
+so it captured the old behaviour at all three precisions on the same page):
+
+| precision | pre-fix decoded output |
+|---|---|
+| f16 | `within.` (7 chars) |
+| q8_0 | `withinself.` (11) |
+| q4_k | `.assistant.assist.ass.assass.` (29) |
+
+Two things fall out. f16 was degenerate too, so this was never a precision
+problem. And the q4_k output is leaking the literal token **`assistant`** — the
+ChatML role word being fed to a model that never saw it, which is the root cause
+printing itself.
+
+⚠ One number does not reconcile: that run reports q8_0 `cos_min 0.905481` where
+the same comparison locally gives `0.988750`. Different backend (Kaggle CPU vs
+Metal) and its count still included the 20 fabricated rows. The ladder's shape
+agrees across both; neither figure should be quoted as exact until re-run on one
+backend.
+
+**Sibling regression check.** The BOS-ordering change alters the default for
+every h2ogpt2 checkpoint, so `h2ovl-800m` (q4_k, in the registry) was re-run:
+
+- `fox.png` → `The quick brown fox jumps over the lazy dog. 12345` — exact
+- full page → **1748 chars**, opening `These two girls had been above an hour in
+  the place…`, hyphenation preserved
+
+So the 800m is unaffected and still correct **at q4_k** — which is the concrete
+evidence that refusing sub-Q8 arch-wide would have been wrong, and that the
+2b's collapse is checkpoint-specific rather than a property of the family.
