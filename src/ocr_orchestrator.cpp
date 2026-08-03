@@ -58,6 +58,8 @@
 // Implementation lives in core/image_out.cpp (single definition project-wide).
 #include "../ggml/examples/stb_image_write.h"
 
+#include "core/temp_file.h"
+
 #include <atomic>
 #include <algorithm>
 #include <chrono>
@@ -254,22 +256,15 @@ source_type classify_file(const char * image_path) {
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
+// Create an empty, private temporary PNG and return its path.
+//
+// Delegates to core_tmp::make_private. This used to build a predictable name
+// (/tmp/crispembed_ocr_<pid>_<counter>.png) and leave stbi_write_png to
+// fopen(..., "wb") it — symlink-redirectable, world-readable, holding the
+// user's scanned page. The server had the identical defect in its own copy;
+// there is now one implementation for both.
 static std::string temp_png_path() {
-    static std::atomic<unsigned> counter{ 0 };
-    const char * dir = std::getenv("TMPDIR");
-    if (!dir || !*dir) dir = std::getenv("TEMP");
-    if (!dir || !*dir) dir = "/tmp";
-    char buf[64];
-    std::snprintf(buf, sizeof(buf), "/crispembed_ocr_%u_%u.png",
-                  (unsigned)
-#ifdef _WIN32
-                      _getpid()
-#else
-                      getpid()
-#endif
-                          ,
-                  counter.fetch_add(1));
-    return std::string(dir) + buf;
+    return core_tmp::make_private(".png");
 }
 
 // Run scan cleanup on `src` and return an owned RGB buffer. The caller owns the

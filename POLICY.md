@@ -232,7 +232,9 @@ the document case we do not think Art. 50(2) engages. That remains a reasoned
 position, not a resolved question, and it is exactly as untested as this
 section says.
 
-What has changed is that images now carry provenance **by default**. Output is
+What has changed is that every image CrispEmbed **returns to you** now carries
+provenance by default. (Internal temporaries — a cleaned page handed between
+pipeline stages — are unmarked and deleted; they are not output.) Output is
 PNG rather than raw Netpbm — Netpbm has no metadata container and C2PA has no
 PPM binding — and every image gets a PNG `iTXt` chunk naming the engine that
 touched the pixels. `CRISPEMBED_IMAGE_FORMAT=ppm` restores the old raw output

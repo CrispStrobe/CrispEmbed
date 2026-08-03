@@ -35,6 +35,7 @@
 #include "ocr_render.h"
 #include "scan_cleanup.h"
 #include "core/image_out.h"
+#include "core/temp_file.h"
 #include "model_mgr.h"
 #include "pdf_info.h"
 #if __has_include("text_lid_dispatch.h")
@@ -129,44 +130,11 @@ static std::string extract_image_path(const std::string & body) {
     return path;
 }
 
-// --- Private temp files --------------------------------------------------
-//
-// Uploaded pages were written to a guessable /tmp path (pid + counter) with
-// fopen("wb"), which follows symlinks and leaves the file world-readable
-// under a default umask. On a shared host that is both a disclosure of the
-// document being OCR'd and a symlink-race target. mkstemp gives an
-// unpredictable name, O_EXCL creation, and 0600.
-//
-// Returns "" on failure. The caller still owns cleanup.
+// Private temp files: see core/temp_file.h. Uploaded pages used to go to a
+// guessable /tmp/crispembed_doc_<pid>_<n>.img opened with fopen("wb") —
+// symlink-redirectable and world-readable, holding the document being OCR'd.
 static std::string make_private_temp_file(const char * suffix) {
-#ifdef _WIN32
-    // Windows temp dirs are per-user; GetTempFileName creates the file
-    // exclusively and hands back a unique name.
-    char dir[MAX_PATH];
-    char path[MAX_PATH];
-    if (!GetTempPathA(sizeof(dir), dir)) return "";
-    if (!GetTempFileNameA(dir, "crsp", 0, path)) return "";
-    std::string out(path);
-    if (suffix && *suffix) {
-        const std::string renamed = out + suffix;
-        if (MoveFileA(out.c_str(), renamed.c_str())) out = renamed;
-    }
-    return out;
-#else
-    const char * base = std::getenv("TMPDIR");
-    std::string tmpl = std::string(base && *base ? base : "/tmp");
-    if (!tmpl.empty() && tmpl.back() == '/') tmpl.pop_back();
-    tmpl += "/crispembed_doc_XXXXXX";
-    if (suffix && *suffix) tmpl += suffix;
-
-    std::vector<char> buf(tmpl.begin(), tmpl.end());
-    buf.push_back('\0');
-
-    const int fd = (suffix && *suffix) ? mkstemps(buf.data(), (int)strlen(suffix)) : mkstemp(buf.data());
-    if (fd < 0) return "";
-    close(fd); // created 0600 and owned by us; reopened by name below
-    return std::string(buf.data());
-#endif
+    return core_tmp::make_private(suffix);
 }
 
 static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {

@@ -73,10 +73,11 @@ jobs:
         if: runner.os != 'Windows'
         run: |
           cmake --build build --config Release -j4 \
-            --target test-image-provenance test-provenance-marking test-msac-tiling
+            --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
+          ./build/test-temp-file
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'

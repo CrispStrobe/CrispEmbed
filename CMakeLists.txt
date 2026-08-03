@@ -555,6 +555,9 @@ target_link_libraries(test-msac-tiling PRIVATE crispembed)
 add_executable(test-provenance-marking tests/test_provenance_marking.cpp)
 target_include_directories(test-provenance-marking PRIVATE src)
 
+add_executable(test-temp-file tests/test_temp_file.cpp)
+target_include_directories(test-temp-file PRIVATE src)
+
 add_executable(test-image-provenance tests/test_image_provenance.cpp)
 target_link_libraries(test-image-provenance PRIVATE crispembed-core)
 crispembed_enable_c2pa(test-image-provenance)
