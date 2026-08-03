@@ -271,6 +271,10 @@ list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
+# Version string for output provenance (hOCR ocr-system, ALTO
+# softwareVersion, PDF XMP). An archived document should be traceable to a
+# build, and naming the software without a version is not that.
+target_compile_definitions(crispembed PRIVATE CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_compile_definitions(crispembed PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
 endif()
@@ -557,6 +561,10 @@ target_include_directories(test-provenance-marking PRIVATE src)
 
 add_executable(test-temp-file tests/test_temp_file.cpp)
 target_include_directories(test-temp-file PRIVATE src)
+
+add_executable(test-render-provenance tests/test_render_provenance.cpp)
+target_link_libraries(test-render-provenance PRIVATE crispembed)
+target_compile_definitions(test-render-provenance PRIVATE CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
 
 add_executable(test-image-provenance tests/test_image_provenance.cpp)
 target_link_libraries(test-image-provenance PRIVATE crispembed-core)
