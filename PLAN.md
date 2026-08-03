@@ -675,6 +675,42 @@ GOT/GLM/Qwen/InternVL/SmolDocling/the OMR engines, and the same class of bug
 check: `grep -n crispasr_init_gpu_backend src/*.cpp` and ask, per engine,
 whether its compute actually runs on that backend.
 
+### H9 — Detector router: the concrete path to matching tesseract-cli [NEW 2026-08-03]
+
+**The gap to `tesseract-cli` is the detector, and it is architectural.** Tesseract
+has no neural detector; it segments with classical projection/connected-component
+analysis. Our tesseract lane runs DBNet, a full CNN over the page. On a quiet box
+(load 1.7-3.4) that is 0.70 s against tesseract-cli's 0.17 s, and effective
+parallelism is ~1.0 on both — so we are not losing to threading, we are doing
+roughly 4x more work per page.
+
+`CRISPEMBED_TESSERACT_PAGESEG=1` already implements the classical path, and on the
+20-fixture synthetic corpus it wins on **both** axes: CER 0.02880 -> 0.01460 and
+884 -> 220 ms/page (4.0x), which is level with tesseract-cli on speed and ahead
+of it on quality.
+
+**It is not flippable as-is.** On dense real scans projection segmentation loses
+92-98% of the text (`commons_test_ocr_document.jpg` 1754 -> 149 chars,
+`receipt_historical.png` 494 -> 11, `german_official_document.jpg` 836 -> 19),
+while genuinely beating DBNet on clean print (`german_official_print.jpg`
+848 -> 944, `public_domain_formula_photo.jpg` 0 -> 84, `simple_table.jpg` 5 -> 40).
+The synthetic corpus is single-column rendered text — projection segmentation's
+best case — so a flip justified on it alone would ship a catastrophic scan
+regression.
+
+**Do** Build the router. Run projection segmentation first; accept it when the
+result is plausible, fall back to DBNet when it is not. The probe is cheap — a
+projection pass is ~50 ms against DBNet's ~600 ms — so the fallback costs little
+on the hard pages and saves 4x on the easy majority. The open question is the
+accept test: region count, recovered character count, mean confidence, or
+coverage of the page's ink are all candidates, and the fixtures above already
+give a labelled set to tune against (three clear failures, three clear wins).
+
+**Acceptance** No CER regression on the 20-fixture corpus **and** no character-count
+regression beyond a few percent on any of the 14 CC0 scans, with the per-page
+time down on the pages the router accepts. Report both corpora — this item exists
+precisely because one of them alone gives the wrong answer.
+
 ### OCR performance — self-contained handover prompts
 
 Everything a fresh agent needs is in this section. Read **§0 Setup** and
@@ -1083,6 +1119,35 @@ now).
 `load_model` in `src/tesseract_lstm.cpp` does `.assign(...)` for conv, every
 LSTM layer and the output FC, then drops the dequant cache — or amortise with a
 warm server process.
+
+**CORRECTED 2026-08-02 — the premise is wrong: that load time is COLD PAGE
+CACHE, not copy overhead, and it is not the recognizer.** Measured with
+`CRISPEMBED_TESSERACT_BENCH=1`, three consecutive runs of the same lane:
+
+| run | detector load (dbnet, 12.96 MB) | recognizer load (tesseract, 1.62 MB) |
+|---|--:|--:|
+| 1 (cold) | **1415.3 ms** | 360.3 ms |
+| 2 (warm) | **7.0 ms** | 16.6 ms |
+| 3 (warm) | **7.6 ms** | 15.5 ms |
+
+Two corrections follow. First, H5 attributed the cost to `tesseract_lstm`, but
+the **detector** is the larger share — and both collapse by ~50-200x once the
+file is in the OS page cache, which is the signature of a first-touch disk read,
+not of `.assign()` copies. Rewriting the loader to mmap would not have touched
+the warm number (already 7 ms) and would not have removed the cold read either;
+it would have changed *when* the pages fault in, not that they must.
+
+Second, and more useful: **on any workload that reads more than one page, model
+load is paid once and is ~7 ms.** It is a per-process cost, so it only dominates
+the artificial "one-shot CLI on a single image" benchmark this backlog has been
+optimising against. The realistic comparison is steady-state per-page
+throughput, which is what the 10-page head-to-head now measures.
+
+There is still a real finding underneath: `core_gguf::load_weights` has a
+zero-copy mmap path behind a `try_mmap` parameter that **defaults to false, and
+no caller in `src/` passes true** — so it is dead code today. Worth wiring up
+for the cold-start and large-model cases, but it is not the answer to H5 and
+must not be sold as a per-page win.
 
 **Reference point** `tesseract-cli` also pays model load on every invocation and
 still totals 0.135 s, so the headroom is real.

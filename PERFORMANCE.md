@@ -1,5 +1,54 @@
 # CrispEmbed Performance
 
+## Tesseract lane: classical page segmentation is 4x faster — on the pages it suits
+
+Measured 2026-08-02/03 on a genuinely quiet box (load 1.7-3.4, the first quiet
+window in this whole round). `CRISPEMBED_TESSERACT_PAGESEG=1` replaces the DBNet
+CNN detector with projection-based segmentation, which is what Tesseract itself
+does — it has no neural detector at all, and that is the whole reason
+`tesseract-cli` reads a page in 0.17 s while our lane took 0.70 s.
+
+**On the 20-fixture synthetic corpus (exact ground truth), it wins on both axes:**
+
+| detector path | CER | ms/page |
+|---|--:|--:|
+| DBNet (current default) | 0.02880 | 884 |
+| `CRISPEMBED_TESSERACT_PAGESEG=1` | **0.01460** | **220** |
+
+4.0x faster and CER halved, which also puts the lane ahead of `tesseract-cli`
+(CER 0.026-0.036) on quality and level with it on speed (220 ms vs ~170 ms).
+Single-page wall clock was 0.70 -> 0.18 s against tesseract-cli's 0.17 s,
+reproducible to the centisecond over three rounds.
+
+**On real CC0 scans it fails badly, and that is why it stays opt-in.** Character
+counts, DBNet -> pageseg:
+
+| fixture | regions | chars |
+|---|---|---|
+| `commons_test_ocr_document.jpg` | 31 -> 9 | 1754 -> **149** |
+| `receipt_historical.png` | 40 -> 2 | 494 -> **11** |
+| `german_official_document.jpg` | 25 -> 7 | 836 -> **19** |
+| `arabic_handwriting.jpg` | 23 -> 5 | 283 -> 72 |
+| `german_official_print.jpg` | 21 -> 23 | 848 -> **944** |
+| `public_domain_formula_photo.jpg` | 0 -> 11 | 0 -> **84** |
+| `simple_table.jpg` | 1 -> 2 | 5 -> **40** |
+
+92-98% of the text is lost on the three dense scans. The synthetic corpus is
+single-column rendered text, which is precisely projection segmentation's best
+case — so the 4x/half-CER result above is real but describes one class of page,
+not the general case. Do not flip the default on the synthetic corpus alone;
+that would have shipped a catastrophic regression on document scans.
+
+**The actionable item is a router, not a flip.** The two paths fail in opposite
+directions and the signal separating them is cheap: pageseg wins on clean
+single-column print and loses on dense multi-region layouts. A gate that runs
+projection segmentation first and falls back to DBNet when the recovered
+region/character count is implausibly low would get the 4x on the easy majority
+while keeping DBNet's coverage — and the fallback test costs one projection
+pass, which is 50 ms. That is the concrete path to matching `tesseract-cli`
+on the lane where it currently beats us 4x.
+
+
 ## ⚠ The 1x1 and depthwise conv fast paths are NOT wins — measured, both stay off
 
 **Retracted: the "9.1% faster on M1" figure this file previously headlined does
