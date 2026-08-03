@@ -113,6 +113,51 @@ in this small set. No single default is defensible, which is why all four remain
 reachable and the default is unchanged. It also means a router that only picks
 the segmenter would still leave most of the available quality on the table.
 
+### Looking at the fixtures corrected the labels and found the actual signal
+
+The router probes were being tuned against character counts on scans nobody had
+looked at. Opening them changed two things.
+
+**Half the CC0 set cannot score the English lane at all.** `german_official_document.jpg`
+is an 1848 handwritten Fraktur *Bürger-Brief* — ornate Kurrent script, fold
+creases, photographed at an angle — being read by an **English** Tesseract-LSTM.
+Its "836 characters" against classical's "34" is not a win; it is an English
+model transliterating Fraktur (`Sveer- Dvie]` for *Bürger-Brief*,
+`Dir Sberitggermfier` for *Wir Ober-Bürgermeister*). Both arms are wrong; the
+character count merely rewards the one that hallucinates more fluently. **That
+label is withdrawn**, and the same applies to `arabic_handwriting.jpg`,
+`german_kurrent_handwriting.jpg`, `handwritten_letter.jpg` (handwriting),
+`arabic_printed_line.png` (needs `tesseract-ara`) and
+`public_domain_sheet_music.jpg` (not prose). A Fraktur model is in the cache
+(`tesseract-frk-*`) and is what that fixture actually needs.
+
+`simple_table.jpg` is 200x102: its title and 5x5 grid are legible but the cell
+digits are unrecoverable at that resolution even upscaled 6x, so it can support a
+*directional* judgement (DBNet returning 5 characters for ~35 text cells is a
+clear miss) but never a CER gate.
+
+**The real routing signal is column count.** `commons_test_ocr_document.jpg` —
+the fixture where classical loses hardest, 1754 characters against 677 — is
+clean printed English in **two columns**. A horizontal row-ink projection merges
+the two columns into single rows, which is projection segmentation's textbook
+failure mode. That explains every result in the table above without appeal to
+density or noise: the pages classical wins on (receipts, `german_official_print`,
+the synthetic corpus) are single-column; the one it loses hardest on is
+two-column.
+
+That is also a cheap probe, and a principled one rather than a fitted threshold:
+take the **vertical** ink projection and look for a sustained low-ink valley
+spanning the page height. One column, no valley. It costs the same pass the
+segmenter already makes. Neither ink coverage nor box height could have found
+this, because both are page-level scalars and the property is structural.
+
+**Recommended next step for H9:** implement column detection as the accept test,
+validate on the six fixtures that the English lane can legitimately score
+(`commons_test_ocr_document` two-column, `german_official_print`,
+`receipt_historical`, `commons_example_receipt`, `simple_form`, `simple_table`
+single-column), and keep the Fraktur/Arabic/handwriting fixtures out of the
+English-lane gate entirely.
+
 **This is now blocked on labels, not on ideas.** Choosing among four
 configurations per page needs ground truth on real scans; the CC0 set has none,
 so every "better" above is a character-count proxy. See O8.
