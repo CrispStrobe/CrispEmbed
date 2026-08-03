@@ -113,6 +113,53 @@ in this small set. No single default is defensible, which is why all four remain
 reachable and the default is unchanged. It also means a router that only picks
 the segmenter would still leave most of the available quality on the table.
 
+### H9 router: column detection works, and the segmentation axis is solved
+
+`CRISPEMBED_TESSERACT_SEG_ROUTER=1` routes on detected column count. A candidate
+gutter is a run of near-empty columns in the page interior **that has ink on both
+sides on a majority of text-bearing rows** — the both-sides test is what makes it
+work. Column totals alone called `german_official_print` two-column and
+`receipt_historical` three-column, because a ragged right margin or a short
+receipt line leaves a tall empty band indistinguishable from a gutter.
+
+Detection, 9/9 correct:
+
+| fixture | columns |
+|---|--:|
+| `commons_test_ocr_document.jpg` | **2** |
+| `german_official_print`, `receipt_historical`, `commons_example_receipt`, `simple_form`, `simple_table` | 1 |
+| synthetic clean / noise / skew | 1 |
+
+End-to-end routing, CC0 (characters):
+
+| fixture | routed path | router | DBNet |
+|---|---|--:|--:|
+| `commons_test_ocr_document.jpg` | dbnet (fallback) | 1754 | 1754 |
+| `german_official_print.jpg` | classical | 835 | 848 |
+| `receipt_historical.png` | classical | **600** | 494 |
+| `commons_example_receipt.png` | classical | **280** | 195 |
+
+The multi-column page keeps DBNet's full output; the single-column receipts gain
+20-25% more text. On the synthetic corpus with cleanup left off, the router gives
+**CER 0.01538 at 254 ms/page against DBNet's 0.02880 at 893 ms** — half the error
+at 3.5x the speed.
+
+**The cleanup axis is still unrouted, and it is the reason this is not yet a
+default.** Cleanup wants to be OFF for clean rendered text (synthetic CER 0.0154
+off vs 0.0316 on) and ON for real scans (`receipt_historical` 600 characters vs
+11). The router currently inherits whatever the `PAGESEG` flag implies, so no
+single invocation is best on both corpora:
+
+| setting | synthetic CER | receipts |
+|---|--:|---|
+| router (cleanup on) | 0.03156 | good (600 / 280 chars) |
+| router + `PAGESEG` (cleanup off) | **0.01538** | poor (cleanup disabled globally) |
+
+Both axes need a per-page decision. The segmentation axis now has a validated
+probe; the cleanup axis needs one that distinguishes a clean render from a
+photographed scan — noise or texture energy is the obvious candidate and is
+untested. Until then the router stays opt-in.
+
 ### Looking at the fixtures corrected the labels and found the actual signal
 
 The router probes were being tuned against character counts on scans nobody had
