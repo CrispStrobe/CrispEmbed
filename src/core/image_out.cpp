@@ -169,6 +169,31 @@ bool c2pa_sign_png(std::string & png, const char * engine) {
 #endif
 }
 
+bool emit_to_string(std::string & out, std::string & out_mime, const uint8_t * data, int w, int h, int comp,
+                    const char * engine) {
+    out.clear();
+    if (!data || w <= 0 || h <= 0 || (comp != 1 && comp != 3)) return false;
+
+    if (want_ppm()) {
+        char hdr[512];
+        std::snprintf(hdr, sizeof(hdr), "%s\n%s%d %d\n255\n", comp == 3 ? "P6" : "P5",
+                      core_prov::netpbm_comment(engine).c_str(), w, h);
+        out = hdr;
+        out.append(reinterpret_cast<const char *>(data), (size_t)w * h * comp);
+        out_mime = comp == 3 ? "image/x-portable-pixmap" : "image/x-portable-graymap";
+        return true;
+    }
+
+    if (!stbi_write_png_to_func(collect, &out, w, h, comp, data, w * comp)) return false;
+    const std::string chunk = png_itxt("CrispEmbed", provenance_text(engine));
+    if (!png_insert_itxt(out, chunk)) {
+        std::fprintf(stderr, "crispembed: could not attach provenance metadata (unexpected PNG layout)\n");
+    }
+    c2pa_sign_png(out, engine);
+    out_mime = "image/png";
+    return true;
+}
+
 bool emit(std::FILE * out, const uint8_t * data, int w, int h, int comp, const char * engine) {
     if (!out) out = stdout;
     if (!data || w <= 0 || h <= 0 || (comp != 1 && comp != 3)) return false;

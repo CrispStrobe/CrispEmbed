@@ -57,6 +57,41 @@ std::string emit_to_string(int w, int h, int comp, const char * engine) {
     return out;
 }
 
+// Independent CRC-32 (bit-by-bit, no table) so a bug in the table-driven one
+// in image_out.h cannot validate itself. A wrong chunk CRC is the classic
+// silent failure here: lenient decoders (stb, PIL) ignore it and strict ones
+// reject the whole file.
+uint32_t ref_crc32(const unsigned char * p, size_t n) {
+    uint32_t c = 0xffffffffu;
+    for (size_t i = 0; i < n; i++) {
+        c ^= p[i];
+        for (int k = 0; k < 8; k++) c = (c & 1) ? 0xedb88320u ^ (c >> 1) : c >> 1;
+    }
+    return c ^ 0xffffffffu;
+}
+
+uint32_t be32(const unsigned char * p) {
+    return ((uint32_t)p[0] << 24) | ((uint32_t)p[1] << 16) | ((uint32_t)p[2] << 8) | (uint32_t)p[3];
+}
+
+// Walk every chunk, check every CRC, and report what was seen.
+bool png_chunks_valid(const std::string & s, std::vector<std::string> & types) {
+    if (s.size() < 8) return false;
+    size_t i = 8;
+    while (i + 12 <= s.size()) {
+        const unsigned char * p = (const unsigned char *)s.data() + i;
+        const uint32_t len = be32(p);
+        if (i + 12 + (size_t)len > s.size()) return false;
+        const std::string type((const char *)p + 4, 4);
+        const uint32_t stored = be32(p + 8 + len);
+        if (ref_crc32(p + 4, (size_t)len + 4) != stored) return false;
+        types.push_back(type);
+        i += 12 + (size_t)len;
+        if (type == "IEND") return true;
+    }
+    return false;
+}
+
 bool is_png(const std::string & s) {
     static const unsigned char sig[8] = { 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n' };
     return s.size() > 8 && std::memcmp(s.data(), sig, 8) == 0;
@@ -96,6 +131,73 @@ int main() {
     check(ppm.rfind("P6", 0) == 0, "CRISPEMBED_IMAGE_FORMAT=ppm still yields raw Netpbm");
     check(!is_png(ppm), "and is not a PNG");
     unsetenv("CRISPEMBED_IMAGE_FORMAT");
+
+
+    // ── the PNG must be structurally valid, not merely accepted ──────
+    {
+        std::vector<std::string> types;
+        check(png_chunks_valid(png, types), "every chunk CRC is correct (independent CRC-32)");
+        bool has_ihdr = false, has_itxt = false, has_idat = false, has_iend = false;
+        for (const auto & t : types) {
+            has_ihdr |= t == "IHDR";
+            has_itxt |= t == "iTXt";
+            has_idat |= t == "IDAT";
+            has_iend |= t == "IEND";
+        }
+        check(has_ihdr && has_itxt && has_idat && has_iend, "IHDR + iTXt + IDAT + IEND all present");
+        check(!types.empty() && types.front() == "IHDR", "IHDR is first");
+        check(!types.empty() && types.back() == "IEND", "IEND is last");
+    }
+
+    // ── iTXt payload structure (spec: 5 NUL-separated fields) ────────
+    {
+        const size_t at = png.find("iTXt");
+        const unsigned char * p = (const unsigned char *)png.data() + at - 4;
+        const uint32_t len = be32(p);
+        const std::string data((const char *)p + 8, len);
+        // keyword \0 compflag compmethod lang \0 transkey \0 text
+        const size_t k = data.find('\0');
+        check(k != std::string::npos && data.compare(0, k, "CrispEmbed") == 0, "keyword is CrispEmbed");
+        check(k + 4 < data.size() && data[k + 1] == 0 && data[k + 2] == 0,
+              "compression flag and method are both 0 (uncompressed)");
+        check(data.size() > k + 5, "payload follows the five header fields");
+    }
+
+    // ── the buffer path must agree with the file path ────────────────
+    {
+        std::vector<unsigned char> px(16 * 12 * 3);
+        for (size_t i = 0; i < px.size(); i++) px[i] = (unsigned char)(i * 11 + 3);
+        std::string buf, mime;
+        check(core_imgout::emit_to_string(buf, mime, px.data(), 16, 12, 3, "esrgan-sr"), "emit_to_string succeeds");
+        check(mime == "image/png", "reports image/png so a caller cannot mislabel it");
+        check(buf == png, "buffer path is byte-identical to the file path");
+
+        setenv("CRISPEMBED_IMAGE_FORMAT", "ppm", 1);
+        std::string pbuf, pmime;
+        core_imgout::emit_to_string(pbuf, pmime, px.data(), 16, 12, 3, "esrgan-sr");
+        check(pmime == "image/x-portable-pixmap", "ppm mode reports the Netpbm MIME, not image/png");
+        check(pbuf.rfind("P6", 0) == 0, "ppm mode buffer really is Netpbm");
+        unsetenv("CRISPEMBED_IMAGE_FORMAT");
+    }
+
+    // ── rejects what it cannot honestly emit ─────────────────────────
+    {
+        std::vector<unsigned char> px(4 * 4 * 3, 7);
+        std::string b, m;
+        check(!core_imgout::emit_to_string(b, m, px.data(), 0, 4, 3, "x"), "rejects zero width");
+        check(!core_imgout::emit_to_string(b, m, px.data(), 4, 4, 2, "x"), "rejects unsupported comp=2");
+        check(!core_imgout::emit_to_string(b, m, nullptr, 4, 4, 3, "x"), "rejects null pixels");
+        check(!core_imgout::emit(nullptr, nullptr, 4, 4, 3, "x"), "emit() rejects null pixels");
+    }
+
+    // ── a missing engine name must not produce a malformed chunk ─────
+    {
+        const std::string anon = emit_to_string(8, 8, 3, "");
+        std::vector<std::string> types;
+        check(png_chunks_valid(anon, types), "empty engine name still yields a valid PNG");
+        check(anon.find("generated=true") != std::string::npos, "and is still marked");
+        check(anon.find("engine=") == std::string::npos, "omits the engine field rather than emitting engine=");
+    }
 
     // ── signing ──────────────────────────────────────────────────────
     check(!core_imgout::c2pa_configured(), "reports unconfigured when no cert is set");

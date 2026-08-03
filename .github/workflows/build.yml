@@ -64,6 +64,20 @@ jobs:
           ./build/crispembed --help 2>&1 || true
           ./build/test-backend-smoke
 
+      # Model-free correctness tests. They need no weights and no network, so
+      # they belong on every push rather than in the artifact-gated tiers.
+      # The provenance ones in particular guard claims we make in POLICY.md:
+      # that every emitted image is marked, that the marking is a structurally
+      # valid PNG chunk, and that we never assert wholly-synthetic media.
+      - name: Model-free tests (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          cmake --build build --config Release -j4 \
+            --target test-image-provenance test-provenance-marking test-msac-tiling
+          ./build/test-image-provenance
+          ./build/test-provenance-marking
+          ./build/test-msac-tiling
+
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
         run: |

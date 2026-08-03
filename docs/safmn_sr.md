@@ -26,6 +26,8 @@ Reference vs C++ engine: cosine similarity = 1.000000 (exact float parity on F16
 
 ## C API
 
+> **Output format:** PNG with an `iTXt` provenance chunk by default (`CRISPEMBED_IMAGE_FORMAT=ppm` for raw Netpbm). See [provenance.md](provenance.md).
+
 ```c
 #include "crispembed.h"
 
@@ -43,7 +45,7 @@ crispembed_safmn_sr_free(ctx);
 ## CLI
 
 ```bash
-crispembed --safmn-model safmn-sr-x4.gguf --safmn-sr input.png > upscaled.ppm
+crispembed --safmn-model safmn-sr-x4.gguf --safmn-sr input.png > upscaled.png
 ```
 
 ## Python

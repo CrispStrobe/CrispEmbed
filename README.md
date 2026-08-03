@@ -636,6 +636,8 @@ export CRISPEMBED_C2PA_CERT=~/.config/crispembed/c2pa/cert.pem
 export CRISPEMBED_C2PA_KEY=~/.config/crispembed/c2pa/key.pem
 ```
 
+Full reference: [docs/provenance.md](docs/provenance.md).
+
 **No signing key ships with CrispEmbed, on purpose.** A private key in a public
 repo would let anyone mint manifests naming CrispEmbed for images it never
 touched. A locally generated chain shows as *unverified signer* — it attests
