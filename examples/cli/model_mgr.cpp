@@ -1219,12 +1219,16 @@ static const ModelEntry k_registry[] = {
       "Nanonets-OCR2-1.5B VLM OCR (Qwen2-VL pruned 16L, 12+ languages incl. German)", "1346 MB", "apache-2.0",
       "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF" },
 
-    // Requires MSAC two-scale tiling (use_msac in its config) — single-scale
-    // tiles make it describe the page instead of reading it. Working since the
-    // call site stopped overriding the model's declared max_dynamic_patch.
-    { "h2ovl-mississippi-2b", "h2ovl-mississippi-2b-q4_k.gguf",
-      "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q4_k.gguf",
-      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "1459 MB", "apache-2.0",
+    // q8_0, NOT q4_k: q4_k was measured broken for this checkpoint and withdrawn
+    // from the repo (llm_layer_0 cos 0.594995, anti-correlated by layer 2 — it
+    // loads and emits confident text that is not on the page). q8_0 is
+    // 0.998033/0.995498 against the blueprint reference and transcribes.
+    // Needs MSAC two-scale tiling AND the h2ogpt2 prompt template with no BOS;
+    // all three are runtime-side and were the reason this model looked broken.
+    // See PERFORMANCE.md "h2ovl-2b — resolved, and the quant ladder".
+    { "h2ovl-mississippi-2b", "h2ovl-mississippi-2b-q8_0.gguf",
+      "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q8_0.gguf",
+      "H2OVL-Mississippi-2B VLM OCR (InternViT-300M + Danube-2-1.8B, OCRBench 782)", "2292 MB", "apache-2.0",
       "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF" },
 
     { "h2ovl-mississippi-800m", "h2ovl-800m-q4_k.gguf",
