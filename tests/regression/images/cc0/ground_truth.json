@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "generator": "manual visual transcription (T1)",
+  "provenance": {
+    "transcriber": "Claude (Fable 5), manual reading of each fixture at native resolution plus zoomed crops for small/ambiguous tokens; no OCR engine output was consulted while transcribing",
+    "date": "2026-08-03",
+    "conventions": [
+      "Text is as-printed: line-break hyphenations keep their hyphen (Fraktur '=' transcribed as '-'), letterspaced (gesperrt) words written without intra-word spaces, typographic quotes/apostrophes kept where the source prints them, straight ASCII where the source is dot-matrix/monospace.",
+      "Reading order for multi-column pages is logical: left column top-to-bottom, then right column. Engines that emit raster order will be penalized on ordering; that is a real layout error.",
+      "Back-side bleed-through text (german_official_print.jpg) is NOT ground truth and is excluded."
+    ]
+  },
+  "excluded": [
+    {
+      "file": "simple_table.jpg",
+      "reason": "200x102: title and grid legible but every cell digit is unrecoverable even at 6x upscale (PLAN.md T1 trap). Directional-only fixture; a CER against a guessed table would be fiction."
+    },
+    {
+      "file": "german_official_document.jpg / arabic_* / *handwriting* / handwritten_letter.jpg / public_domain_sheet_music.jpg",
+      "reason": "Out of scope for the English lane per PLAN.md T1 (1848 Fraktur manuscript, Arabic, handwriting, sheet music)."
+    }
+  ],
+  "records": [
+    {
+      "name": "commons_test_ocr_document.jpg",
+      "file": "commons_test_ocr_document.jpg",
+      "confidence": "high",
+      "notes": "Two-column book page. Ground truth order: title, left column, right column. Typographic quotes and apostrophes as printed. Italic phrases transcribed as plain text.",
+      "text": "Lorem Ipsum\nAlice was beginning to get very tired of\nsitting by her sister in the café, and of having\nnothing to do: once or twice she had peeped\ninto the book her sister was reading, but it\nhad no pictures or conversations in it, “and\nwhat is the use of a book,” thought Alice,\n“without pictures or conversations?”\nSo she was considering in her own mind, (as\nwell as she could, for the hot day made her\nfeel very sleepy and stupid,) whether the\npleasure of making a daisy-chain would be\nworth the trouble of getting up and picking\nthe daisies, when suddenly a white rabbit with\npink eyes ran close by her.\nThere was nothing so very remarkable in that;\nnor did Alice think it so very much out of the\nway to hear the Rabbit say to itself, “Oh\ndear! Oh dear! I shall be too late!” (when she\nthought it over afterwards, it occurred to her\nthat she ought to have wondered at this, but\nat the time it all seemed quite natural;) but\nwhen the Rabbit actually took a watch out of its\nwaistcoat-pocket, and looked at it, and then\nhurried on, Alice started to her feet, for it\nflashed across her mind that she had never\nbefore seen a rabbit with either a\nwaistcoat-pocket, or a watch to take out of it,\nand, burning with curiosity, she ran across the\nfield after it, and was just in time to see it pop\ndown a large rabbit-hole under the hedge.\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again.\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped\nsuddenly down, so suddenly that Alice had\nnot a moment to think about stopping herself\nbefore she found herself falling down what\nseemed to be a very deep well.\nEither the well was very deep, or she fell very\nslowly, for she had plenty of time as she went\ndown to look about her, and to wonder what\nwas going to happen next. First, she tried to\nlook down and make out what she was\ncoming to, but it was too dark to see\nanything: then she looked at the sides of the\nwell, and noticed that they were filled with\ncupboards and book-shelves: here and there\nshe saw maps and pictures hung upon pegs.\nShe took down a jar from one of the shelves\nas she passed; it was labelled “ORANGE\nMARMALADE,” but to her great\ndisappointment it was empty: she did not like\nto drop the jar for fear of killing somebody\nunderneath, so managed to put it into one of\nthe cupboards as she fell past it.\nJ’ajoute que le fait d’avoir été, durant plus de\ndeux ans, le directeur de l’hôpital du camp et\nd’avoir, pendant toute la durée de mon\ninternement, donné régulièrement des cours\nde français, d’histoire de la littérature\nfrançaise et d’histoire de la philosophie, m’a\npermis d’avoir des relations suivies et intimes\navec presque tous mes compagnons de\nl’aventure. Ces relations et cette intimité\nm’ont permis de les connaître, un par un, de\nvoir non seulement leur corps nu, lorsqu’ils se\nprésentaient à la visite médicale, mais aussi\nleur âme à nu aux heures de confidences.\nTHE END"
+    },
+    {
+      "name": "german_official_print.jpg",
+      "file": "german_official_print.jpg",
+      "confidence": "high",
+      "notes": "Reichs-Gesetzblatt 1900 Nr. 1, Fraktur letterpress. Fraktur '=' (double hyphen) transcribed as '-'; the abbreviation glyph 'ꝛc.' transcribed as '2c.' per its visual form. Mirrored bleed-through from the verso is excluded. Gesperrt (letterspaced) emphasis written as normal words.",
+      "text": "— 1 —\nReichs-Gesetzblatt.\n№ 1.\nInhalt. Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsordnung vom 1. Dezember 1898.\nS. 1. — Verordnung, betreffend die Uebertragung der Befugnisse des preußischen General-\nAuditoriats auf das Reichsmilitärgericht. S. 2.\n(Nr. 2642.) Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsordnung vom\n1. Dezember 1898. Vom 28. Dezember 1899.\nWir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König\nvon Preußen 2c.\nverordnen unter Zustimmung des Bundesraths auf Grund des §. 1 des Einführungs-\ngesetzes zur Militärstrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Militärstrafgerichtsordnung vom 1. Dezember 1898 (Reichs-Gesetzbl.\nS. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.\nUrkundlich unter Unserer Höchsteigenhändigen Unterschrift und beigedrucktem\nKaiserlichen Insiegel.\nGegeben Neues Palais, den 28. Dezember 1899.\n(L. S.) Wilhelm.\nFürst zu Hohenlohe.\nReichs-Gesetzbl. 1900.\n1\nAusgegeben zu Berlin den 6. Januar 1900."
+    },
+    {
+      "name": "receipt_historical.png",
+      "file": "receipt_historical.png",
+      "confidence": "high",
+      "notes": "Dot-matrix supermarket receipt, straight ASCII. Bottom line 'STEP IN SHOES NOW OPEN!' is clipped by the scan edge but legible. Tokens verified at zoom: PLATES7\"48, CHRY8, T/HOUSE16BN, 96ZPP499.",
+      "text": "ALEXANDER'S HANOVER ST.\nTHE \"SUPER\" MARKET\n11/18 12:21PM STORE 10\nCUST 94 REG 8 OPR 171\nGROCERY .60\nHOOD HOODSIE CUP 1.99\nHOOD HOODSIE CUP 1.99\nHF ORANGE JC 64Z 1.29\nBC WHITE CAKE 18 .73\nBC WHITE CAKE 18 .73\nSLICE D/MAN OR2L .89\nS/K NAPKINS 140 .63\nSLICE CHR COLA2L 1.39\n6 @ 6/.89\nLOOSE BULKY RLS .89\nTUNA SALAD SAND 1.99*TX\nWHITE MT. BREAD .99\nFLEX STRAWS .89*\nSWTHR PLATES7\"48 1.63*\nFRT WRNKLS LEMON 1.79\nBEEF PATTIES 75% 2.21\nSNK FRT/S CHRY8 1.89\n.30 LB @ 1/.59\nCARTWHEELS .18\nBALOONS 14CT 1.25*\nLGE BRWN 8PK .65\nKLEENEX POCKET 1.29*\nM&M 15%FREE 18&4 1.99\n1 @ 2/1.00\nDOMINO CONFECT. .50\n1 @ 2/1.00\nDOMINO CONFECT. .50\nKBLR. T/HOUSE16BN 1.69\nBAKERY 4.99\nCHEER 96ZPP499 4.29\nTOTAL $ 39.99\nCASH TEND 40.00\nSUBTOTAL 39.85\nTAX PAID .14\n.01 CHANGE\nSTEP IN SHOES NOW OPEN!"
+    },
+    {
+      "name": "commons_example_receipt.png",
+      "file": "commons_example_receipt.png",
+      "confidence": "high",
+      "notes": "Clean synthetic monospace receipt; every item row prints a trailing '$' after the price — that trailing '$' is on the page, not a transcription error.",
+      "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a great day!"
+    },
+    {
+      "name": "simple_form.png",
+      "file": "simple_form.png",
+      "confidence": "medium",
+      "notes": "452x317 UI screenshot, ~7 px labels. Order: left panel top-to-bottom, then right panel. 'checkbox1' is partially occluded by the open dropdown but its fragment is consistent with the checkbox2/3 pattern; the checkbox group header is almost fully occluded (only 'cl' visible) and is excluded. 'code/lib' separator and 'Code/labelle' verified at 16x/8x zoom but remain the least certain tokens. Typed combo content is the single letter 'F'.",
+      "text": "Input\nTexte\nNumber\nDate\nPassword\na label\nANOTHER LABEL\nYet another label\ncombo suggest\nF\nFinland\nFrance\ncheckbox1\ncheckbox2\ncheckbox3\nCode/labelle\ncode/lib\ncode\nButton\nRechercher\nDisable button\nTEXTAREA\nTexte\nRadio\nDrag and drop frames\nFixe frames"
+    }
+  ]
+}
