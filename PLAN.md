@@ -15,7 +15,6 @@ races). Remove the row when the branch lands.
 |-------|-------------------|------|--------|
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
-| 2026-08-03 | `fix/ppocrv6-cleanup-default` / `.claude/worktrees/fix-ppocrv6-cleanup` | **Picked:** T10 root cause found — NOT recognizer math: the `--ocr-pipeline` scan-cleanup stage (despeckle/blackfilter run unconditionally, no CLI off-switch) erodes thin strokes on clean rendered type before detection; direct harness on the cleaned image reproduces `$`→`S` byte-for-byte, recognizer scalar==batch correct on raw crops. Fix: ppocrv6 stage skips destructive cleanup by default (mirrors VLM carve-out; `CRISPEMBED_PPOCRV6_CLEANUP=1` restores). Measured cleanup-off: receipt CER 0.0885→0.0025, form 0.737→0.615, scans noise-level. Validating on synth+CC0 before merge | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -574,6 +573,15 @@ than the 1.4x measured against the 2.10/v4 arm); receipt official **5.9 s** vs
 our 6.2 s (near par). RapidOCR/onnxruntime does the receipt in **2.2 s** —
 2.7x faster than both Paddle and us; that is the realistic CPU ceiling to aim
 at, and ORT gets it with width-bucketed batching (see T4 notes).
+
+**2026-08-04 postscript — resolved.** The stage-diff never had to run: the
+bisection (recognizer correct on raw crops, corruption reproduced by running
+the direct harness on the cleanup stage's output image) landed on the
+scan-cleanup preprocessing, not the recognizer. See T10 [RESOLVED] for the
+fix, the post-fix numbers (receipt CER 0.0025, CC0 lane now faster AND more
+accurate than paddleocr-py), and the synth `_noise` trade-off now owned by T2.
+The suspect list below is retained because it documents the official inference
+contract, which remains the reference for any future recognizer work.
 
 **Activation audit came back CLEAN** — our stem ReLU / channel-mixer GELU /
 neck SiLU / tiny-guide Hardswish placement matches the recovered official
@@ -1271,38 +1279,44 @@ change for well-formed requests.
 
 ---
 
-### T10 — PP-OCRv6 recognizer symbol-class PORT BUG (root-cause and fix)
+### T10 — PP-OCRv6 symbol-class gap [RESOLVED 2026-08-04 — it was the cleanup stage, not the recognizer]
 
-**Status 2026-08-03: cause narrowed to the port.** Both official runners
-(paddleocr-3.7 v6_small and RapidOCR's official ONNX export, both local — see
-the 2026-08-03-later head-to-head subsection) read
-`commons_example_receipt.png` correctly where our lane systematically emits
-`$`→`S`, `I`/`f`/`1`→`:`, `H`→`ll`. Model asymmetry is excluded (no `en` v6
-recognizer exists; all languages share the multilingual model). Already ruled
-out: RGB/BGR (no effect, and the page is grayscale anyway), truncated charset
-(18,710 classes embedded), activation placement (our stem ReLU / channel-mixer
-GELU / neck SiLU matches `rec_lcnetv4.py` + the ONNX op histogram).
+**Root cause, proven by bisection; fix merged as `fix/ppocrv6-cleanup-default`.**
+The recognizer port is CORRECT: on the pipeline's own dumped crops it decodes
+the receipt perfectly, scalar and batch identically (`test-ppocrv6-rec`
+parity=PASS 5/5), and the activation audit (stem ReLU / channel-mixer GELU /
+neck SiLU ×5 / tiny-guide Hardswish) matches both `rec_lcnetv4.py` and the
+official ONNX op pattern (13 Erf, 5 `x·σ(x)` SiLU, 10 ReLU, 5 HardSigmoid).
+The corruption came from `--ocr-pipeline`'s scan-cleanup stage:
+`scan_cleanup_process` converts to grayscale and runs **despeckle +
+blackfilter unconditionally** (defaults on, and
+`--no-deskew/--no-crop-borders/--no-whiten` do not touch them — they have no
+CLI switches at all), eroding thin strokes on clean rendered type before the
+detector ever sees the page. `test-ppocrv6-direct` on the cleaned image
+reproduces `$`→`S`, `:tem`, `QLY`, `Frice` byte-for-byte; on the raw image it
+reads everything.
 
-**Do — stage-diff against the official ONNX, first divergence wins.** The
-reference is `~/venvs/rapidocr/.../rapidocr/models/PP-OCRv6_rec_small.onnx`
-(same weights family as our GGUF). Feed BOTH sides the identical preprocessed
-tensor for one failing crop (a receipt `$`-price line), then bisect with
-`onnx.utils.extract_model` / added graph outputs vs our debug taps:
-stem out → stage outs → `avg_pool2d` out → neck (skip/reduce/local/SVTR
-blocks/LayerNorm) → head logits. Prime suspects, in order (details + file:line
-in the head-to-head subsection): inference pooling stride `(3,2)`
-(width-halving), channel-mixer-only residual, `prenorm` flag inversion,
-pad-value/`max_wh_ratio` convention, double-softmax (official graph already
-ends in softmax).
+**Fix (merged):** the ppocrv6 stage skips destructive cleanup by default,
+mirroring the VLM carve-out and the official pipeline (which detects on the
+raw page); `CRISPEMBED_PPOCRV6_CLEANUP=1` restores the old behaviour.
+Same-binary validation: labelled CC0 mean CER 0.332→**0.293** / WER
+0.557→**0.473** (receipt 0.0885→**0.0025**, beating official paddle's 0.0074;
+form 0.737→0.615, also ahead of paddle; Fraktur 0.0486→0.0535 and dot-matrix
+0.0260→0.0273, noise-level), and the lane's median engine_ms fell
+9414→**7682**, now below paddleocr-py's 7933 on these pages. Cost, reported
+rather than hidden: synth mean CER 0.0031→0.0070 (still 2.7x ahead of
+paddle's 0.0185), concentrated in the `_noise` variants where despeckle acted
+as a denoiser (`synth_00/01/02/03_noise` +0.008/+0.008/+0.007/+0.026-ish,
+plus a ±0.02-0.04 wobble on two `clean` fixtures in opposite directions).
 
-**Beware:** our existing gold archives were dumped from our own torch mirror —
-per-stage cosine 0.9999 against them proves self-consistency, not official
-parity. Do not use them as the reference for this bug; use the official ONNX.
-
-**Acceptance** Native decoded text matches the official ONNX transcript on the
-receipt crops (all 12 `$`, `Transaction ID`, quantities) and the 26-fixture
-decoded-text check is unchanged-or-better; the fix lands as default only with
-both.
+**Follow-ups spawned:** (a) the T2 cleanup router now owns the noise-page
+axis, with fresh per-arm ppocrv6 evidence on both corpora; (b) despeckle and
+blackfilter deserve CLI flags — today they are unreachable knobs; (c) the
+official-ONNX `-ref.gguf` stage-diff remains the right tool if a
+recognizer-level anomaly ever resurfaces (reference:
+`~/venvs/rapidocr/.../models/PP-OCRv6_rec_small.onnx`; do NOT use the repo's
+gold archives as the reference — they are dumps of our own torch mirror and
+prove only self-consistency).
 
 ---
 
