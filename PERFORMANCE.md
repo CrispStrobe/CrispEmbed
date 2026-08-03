@@ -168,11 +168,36 @@ The illumination probe looked promising — every synthetic fixture scores exact
 0.00 — until `commons_example_receipt.png` also scored 0.00 while *wanting*
 cleanup (144 characters without it, 280 with). So the axis is not
 render-versus-scan, which was the framing behind both probes. Whatever separates
-"cleanup helps" from "cleanup hurts" is not global image statistics, and the
-next hypothesis should probably come from looking at what cleanup actually does
-to a page it damages, rather than from another page-level scalar — the same
-mistake that cost two rounds on the segmentation axis before opening the images
-found the answer immediately.
+"cleanup helps" from "cleanup hurts" is not global image statistics.
+
+**Root cause, found by looking at the damage instead of computing another
+scalar.** Dumping `--cleanup-only` on `synth_00_clean.png` and comparing shows
+exactly what cleanup does to a page it hurts: background whitening
+(morphological closing) **erodes the antialiased glyph edges** — strokes thin,
+serifs break, sentence-final periods almost vanish. On clean rendered type whose
+shape depends on mid-grey antialiasing that is destructive; on a scan with thick
+saturated ink and background artefacts the same operation removes only the
+artefacts. That explains the CER split (0.0146 without cleanup, 0.0316 with)
+without reference to noise or illumination.
+
+Knowing the mechanism did **not** yield a working probe. Two further candidates
+were measured and rejected:
+
+| probe | result |
+|---|---|
+| ink retained after cleanup | `commons_example_receipt` keeps only **38%** of its ink and reads *better* (280 vs 144 chars) — what was removed there was background, not glyphs |
+| recognizer mean confidence | **2/5 correct**, and biased: picks cleanup-ON even where OFF yields more text (`german_official_print` 944 chars at 0.70 against 835 at 0.76) |
+
+That confidence result matters beyond this item: **cleaned crops read as more
+confident even when the text is worse.** Confidence is not a safe quality gate
+anywhere in this pipeline.
+
+Six approaches are now falsified on this axis (ink coverage, box height, paper
+noise, illumination spread, ink retention, confidence). The obstacle is that no
+page-level statistic separates ink-that-is-glyph from ink-that-is-artefact, which
+is exactly the distinction cleanup acts on. A working selector probably has to be
+local — measuring erosion on the detected text strokes rather than over the whole
+page — or the decision defers to a scoring pass with real ground truth (O8).
 
 Until then the router stays opt-in.
 
