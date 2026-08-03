@@ -22,6 +22,8 @@ Reference vs C++ engine: cosine similarity = 1.000000 (exact float parity on F32
 
 ## C API
 
+> **Output format:** PNG with an `iTXt` provenance chunk by default (`CRISPEMBED_IMAGE_FORMAT=ppm` for raw Netpbm). See [provenance.md](provenance.md).
+
 ```c
 #include "crispembed.h"
 
@@ -39,7 +41,7 @@ crispembed_esrgan_sr_free(ctx);
 ## CLI
 
 ```bash
-crispembed --esrgan-model esrgan-x4.gguf --esrgan-sr input.png > upscaled.ppm
+crispembed --esrgan-model esrgan-x4.gguf --esrgan-sr input.png > upscaled.png
 ```
 
 ## Python

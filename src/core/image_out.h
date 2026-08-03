@@ -119,4 +119,11 @@ inline bool c2pa_configured() {
 // (stdout when null). `engine` names what touched the pixels.
 bool emit(std::FILE * out, const uint8_t * data, int w, int h, int comp, const char * engine);
 
+// Same, into a buffer, for callers that return the image in an HTTP body
+// rather than writing it. `out_mime` receives the matching Content-Type, so a
+// caller cannot label a PNG as image/x-portable-graymap by forgetting to
+// update one of the two.
+bool emit_to_string(std::string & out, std::string & out_mime, const uint8_t * data, int w, int h, int comp,
+                    const char * engine);
+
 } // namespace core_imgout

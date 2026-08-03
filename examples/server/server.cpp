@@ -34,7 +34,7 @@
 #include "core/json.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
-#include "core/provenance.h"
+#include "core/image_out.h"
 #include "model_mgr.h"
 #include "pdf_info.h"
 #if __has_include("text_lid_dispatch.h")
@@ -192,10 +192,9 @@ static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int
     }
     FILE * f = fopen(path, "wb");
     if (!f) return false;
-    fprintf(f, "P6\n%s%d %d\n255\n", core_prov::netpbm_comment("autorotate").c_str(), out_w, out_h);
-    const size_t written = fwrite(rotated.data(), 1, rotated.size(), f);
+    const bool ok = core_imgout::emit(f, rotated.data(), out_w, out_h, 3, "autorotate");
     fclose(f);
-    return written == rotated.size();
+    return ok;
 }
 
 int main(int argc, char ** argv) {
@@ -2240,8 +2239,7 @@ int main(int argc, char ** argv) {
         if (!output_path.empty()) {
             FILE * f = fopen(output_path.c_str(), "wb");
             if (f) {
-                fprintf(f, "P5\n%s%d %d\n255\n", core_prov::netpbm_comment("dewarp").c_str(), ow, oh);
-                fwrite(out.data(), 1, ow * oh, f);
+                core_imgout::emit(f, out.data(), ow, oh, 1, "dewarp");
                 fclose(f);
             }
         }
@@ -2252,13 +2250,12 @@ int main(int argc, char ** argv) {
             want_image = accept.find("image/") != std::string::npos;
         }
         if (want_image) {
-            // PGM format: P5 header + raw bytes
-            std::string pgm;
-            char hdr[512];
-            snprintf(hdr, sizeof(hdr), "P5\n%s%d %d\n255\n", core_prov::netpbm_comment("dewarp").c_str(), ow, oh);
-            pgm = hdr;
-            pgm.append((const char *)out.data(), ow * oh);
-            res.set_content(pgm, "image/x-portable-graymap");
+            // PNG (with provenance) by default; raw PGM under
+            // CRISPEMBED_IMAGE_FORMAT=ppm. The MIME comes back from the same
+            // call that produced the bytes, so the two cannot disagree.
+            std::string body, mime;
+            core_imgout::emit_to_string(body, mime, out.data(), ow, oh, 1, "dewarp");
+            res.set_content(body, mime);
         } else {
             char buf[256];
             snprintf(buf, sizeof(buf), "{\"dewarped\":true,\"width\":%d,\"height\":%d,\"output\":\"%s\"}", ow, oh,
