@@ -54,6 +54,23 @@ harnesses (`tools/eval_restoration_quality.py`, `tools/scan_cleanup_bench.py`,
 `tests/ocr_preprocessor_benchmark.py`) are pinned — they parse pixel bytes
 directly and gain nothing from a PNG decoder.
 
+## HTTP server
+
+The super-resolution and restoration endpoints (`/esrgan/sr`, `/swinir/sr`,
+`/hat/sr`, `/dat/sr`, `/pan/sr`, `/safmn/sr`, `/tbsrn/sr`, `/text/sr`,
+`/restormer`, `/scunet/denoise`, `/instructir/restore`, `/adair/restore`)
+return the image base64-encoded in their JSON response. That payload is a
+**marked PNG**, and the response says so:
+
+```json
+{ "image": "iVBORw0KGgo...", "format": "png", "width": 384, "height": 384, ... }
+```
+
+Until recently these base64'd raw RGB bytes, which carried no provenance at
+all — the engines that synthesise detail were the least marked surface in the
+project. `CRISPEMBED_IMAGE_FORMAT=ppm` restores raw bytes and reports
+`"format": "raw"`, for clients consuming RGB directly.
+
 ## Content Credentials (C2PA)
 
 Off unless you configure a signing identity, because **CrispEmbed ships no
