@@ -227,12 +227,42 @@ deadline to plan for. The only thing still running is the Digital Omnibus grace
 period for the Art. 50(2) *machine-readable marking* on systems already on the
 market before that date, which ends **2 December 2026**.
 
-CrispEmbed adds **no watermark or C2PA provenance marking** to any output, and
-has no plan to before that grace period ends. That is a stated absence, not a
-resolved question: the §5 argument is why we think marking is not required for
-the document case, and it is exactly as untested as this section says. If your
-use sits away from the document case, mark it yourself and do not rely on the
-argument above.
+CrispEmbed adds no marking **by default**, and the argument above is why: for
+the document case we do not think Art. 50(2) engages. That remains a reasoned
+position, not a resolved question, and it is exactly as untested as this
+section says.
+
+What has changed is that you no longer have to build the marking yourself.
+Setting `CRISPEMBED_MARK_GENERATED=1` writes a machine-readable provenance
+comment into every image this library emits, naming the engine that touched the
+pixels:
+
+```
+P6
+# CrispEmbed-Generated: true
+# CrispEmbed-Engine: esrgan-sr
+# CrispEmbed-Note: AI-processed image. Not an authentic record of the original;
+#   restored or upscaled detail is a plausible completion, not recovered
+#   information.
+# CrispEmbed-Spec: https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md
+640 480
+255
+```
+
+The engine is named rather than a bare "AI-processed", because that flag alone
+does not tell a reader whether detail was **synthesised** (ESRGAN, NAFNet,
+SCUNet) or merely **resampled** (deskew, dewarp) — a distinction this section
+argues matters and that nobody can recover from the pixels afterwards.
+
+**Know what this is not.** It is a header comment, not a signature. Anyone can
+strip it with a text editor, it has no cryptographic binding to the pixels, and
+it does not survive a conversion that drops comments. Art. 50(2) asks for
+solutions effective "as far as is technically feasible", and for raw Netpbm —
+which has no metadata container at all — a header comment is the only in-band
+channel there is. **If you need tamper-evident provenance you need C2PA with a
+real signing identity, and that is still yours to add.** Marking stays off by
+default so the document case is unchanged; turn it on if your use sits away
+from it, and do not rely on the argument above.
 
 Independently of the AI Act: do not present restored or upscaled imagery as an
 authentic record of the original. Upscaling a licence plate or a face does not
