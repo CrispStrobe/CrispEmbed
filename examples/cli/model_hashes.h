@@ -377,7 +377,7 @@ static const ModelHash k_model_hashes[] = {
     { "https://huggingface.co/cstr/nanonets-ocr2-1.5b-crispembed-GGUF/resolve/main/nanonets-ocr2-1.5b-q4_k.gguf",
       "46de5cda9d225d3e963a45b9db2c9adbf03947e396086a404b1c8c9e3175eb56" },
     { "https://huggingface.co/cstr/h2ovl-mississippi-2b-crispembed-GGUF/resolve/main/h2ovl-mississippi-2b-q8_0.gguf",
-      "13c5c40a933fd1087e629cdf7c46e2d58018007d8cbf1f7e222762040fb4ff45" },
+      "497cd0471f54e41ff4649d1ebab011202547e10452ae41027948a504c11cec66" },
     { "https://huggingface.co/cstr/h2ovl-800m-crispembed-GGUF/resolve/main/h2ovl-800m-q4_k.gguf",
       "8cdd1fe5eeb314f1a34ef537c18800744ba501f67672b4b44fb3d5b23d8c67c7" },
     { "https://huggingface.co/cstr/internvl2.5-2b-crispembed-GGUF/resolve/main/internvl2.5-2b-q4_k.gguf",

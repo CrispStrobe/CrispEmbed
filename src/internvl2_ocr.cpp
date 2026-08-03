@@ -1173,6 +1173,24 @@ bool encode_vision_tile(context & ctx, const float * pixels, vision_result & out
                        r.is_pass() ? "PASS" : "FAIL");
                 free(vis_pe);
             }
+
+            // Per-layer vision stages. The reference has carried vis_layer_0..23
+            // and vis_pixel_unshuffle all along and nothing ever read them, so a
+            // divergence between vis_patch_embed (1.000000) and vis_proj_output
+            // (0.913 on CPU) had 24 unbisected layers to hide in. The graph
+            // already names and set_output()s each one; this just compares them.
+            for (int i = 0; i < (int)ctx.m.vis_blocks.size(); i++) {
+                char nm[64];
+                snprintf(nm, sizeof(nm), "vis_layer_%d", i);
+                if (!ref.has(nm)) continue;
+                ggml_tensor * lt = ggml_graph_get_tensor(vg.gf, nm);
+                if (!lt) continue;
+                float * buf = (float *)malloc(n_pos * D * sizeof(float));
+                ggml_backend_tensor_get(lt, buf, 0, n_pos * D * sizeof(float));
+                auto rl = ref.compare(nm, buf, n_pos * D);
+                printf("  %s: cos=%.6f max_abs=%.6f %s\n", nm, rl.cos_min, rl.max_abs, rl.is_pass() ? "PASS" : "FAIL");
+                free(buf);
+            }
         }
     }
 
@@ -1191,6 +1209,18 @@ bool project_vision(context & ctx, const float * vis_hidden, int n_patches, proj
     std::vector<float> unshuffled(n_merged * merge_dim);
     pixel_unshuffle_v2(vis_hidden, unshuffled.data(), (int)vhp.n_patches_per_side, (int)vhp.hidden_size,
                        php.downsample_ratio);
+
+    // The last stage before the projector, and the only one computed on the
+    // host — so it separates "the vision encoder drifted" from "the unshuffle
+    // reshaped wrongly", which the projector output alone cannot distinguish.
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref uref;
+        if (uref.load(ctx.diff_ref_path.c_str()) && uref.has("vis_pixel_unshuffle")) {
+            auto ru = uref.compare("vis_pixel_unshuffle", unshuffled.data(), n_merged * merge_dim);
+            printf("  vis_pixel_unshuffle: cos=%.6f max_abs=%.6f %s\n", ru.cos_min, ru.max_abs,
+                   ru.is_pass() ? "PASS" : "FAIL");
+        }
+    }
 
     // Build and compute projector graph
     proj_graph pg = build_proj_graph(ctx, n_merged);
