@@ -1964,3 +1964,140 @@ the broken decoder:
 
 Next: run the gates at q8_0/f16, where the decoder is intact. Blocked locally on
 disk (1.5 GB free, q8_0 is 2.3 GB); the parity kernel is computing both.
+
+
+## h2ovl-2b — resolved, and the quant ladder (2026-08-03)
+
+### Invocation: three defects, all required
+
+Nothing here was a graph bug — `test-internvl2-diff` was clean at f16 the whole
+time. The failures were all in the harness-blind zone:
+
+1. **Wrong chat template** (`5f617351`, mine). The checkpoint declares
+   `template: h2ogpt2` (`<|prompt|>…<|end|><|answer|>`); `build_prompt()` emitted
+   InternVL2 ChatML. This vocab has no `<|im_start|>`/`<|im_end|>`, so
+   `add_special(-1)` dropped every role marker silently.
+2. **Spurious BOS + terse instruction** (`fcebf561`, parallel session).
+   `add_bos_token: false` upstream; and `"OCR this image."` is too weak. Their
+   2×2 A/B showed neither fix works alone.
+3. **BOS default evaluated before vocab inference** (`98c2ae21`, mine). (2) only
+   took effect for GGUFs carrying `internvl2.chat_template`. Without the key,
+   `h2ogpt2` is unknown until `build_reverse_map()` scans the vocab — which runs
+   *after* the default — so BOS stayed on. **Every published artifact is in that
+   state.** Measured on the published q8_0: defaults → EMPTY output;
+   `CRISPEMBED_INTERNVL2_ADD_BOS=0` → full transcription. After reordering,
+   defaults transcribe.
+
+Corroborating evidence that vision was never at fault: with only fix (1), the
+same build reads `fox.png` as `The quick brown fox jumps over the lazy dog. 12345`
+— exactly right. The full-page "serene landscape with a winding river" output was
+confabulation on a hard page with a weak instruction, not a blind model.
+
+### Quant ladder — Q8_0 is the floor for THIS checkpoint
+
+Same reference, same binary, 7 real stages:
+
+| precision | size | llm_layer_0 | llm_layer_2 | verdict |
+|---|--:|--:|--:|---|
+| f16 | 4421 MB | 0.999972 | 0.999972 | transcribes |
+| **q8_0** | **2186 MB** | **0.998033** | **0.995498** | **transcribes** |
+| q4_k + attn held Q8_0 | 1578 MB | 0.922039 | 0.543576 | still wrong |
+| q4_k | 1391 MB | 0.594995 | −0.268615 | anti-correlated |
+| q6_k | 1792 MB | — | — | **fails to load** |
+
+Not a shape problem: every `ne[0]` involved (2560, 6912) is 256-divisible, so
+Q4_K applies cleanly and still wrecks the decoder. Holding attention at Q8_0
+recovers about half — kept, since it is cheap — but is not sufficient.
+
+**It does not generalise.** A first version of this guard refused sub-Q8 for the
+whole `internvl2` arch; that was wrong and would have broken two working models —
+`internvl2-1b` ships q4_k in the registry and OCRs correctly, and `h2ovl-800m` is
+recorded verified at q4_k. One measured checkpoint does not license blocking
+others, so `tools/quantize.cpp` now **warns** and names the decoded-output gate
+instead of refusing.
+
+`vis_proj_output` sits at 0.998630 in every quant and 0.999972 at f16 — the
+vision tower is Q8_0 in all of them, which is why the quants are bit-identical
+there. Left alone deliberately: q8_0 transcribes correctly, and tuning a
+synthetic-gradient cosine when the decoded output already passes is chasing the
+wrong gate.
+
+
+### Corroboration and the sibling regression (2026-08-03)
+
+**Pre-fix baseline, from the parity kernel** (it cloned before the template fix,
+so it captured the old behaviour at all three precisions on the same page):
+
+| precision | pre-fix decoded output |
+|---|---|
+| f16 | `within.` (7 chars) |
+| q8_0 | `withinself.` (11) |
+| q4_k | `.assistant.assist.ass.assass.` (29) |
+
+Two things fall out. f16 was degenerate too, so this was never a precision
+problem. And the q4_k output is leaking the literal token **`assistant`** — the
+ChatML role word being fed to a model that never saw it, which is the root cause
+printing itself.
+
+⚠ One number does not reconcile: that run reports q8_0 `cos_min 0.905481` where
+the same comparison locally gives `0.988750`. Different backend (Kaggle CPU vs
+Metal) and its count still included the 20 fabricated rows. The ladder's shape
+agrees across both; neither figure should be quoted as exact until re-run on one
+backend.
+
+**Sibling regression check.** The BOS-ordering change alters the default for
+every h2ogpt2 checkpoint, so `h2ovl-800m` (q4_k, in the registry) was re-run:
+
+- `fox.png` → `The quick brown fox jumps over the lazy dog. 12345` — exact
+- full page → **1748 chars**, opening `These two girls had been above an hour in
+  the place…`, hyphenation preserved
+
+So the 800m is unaffected and still correct **at q4_k** — which is the concrete
+evidence that refusing sub-Q8 arch-wide would have been wrong, and that the
+2b's collapse is checkpoint-specific rather than a property of the family.
+
+
+### The q8_0 cosine gap: reconciled, and it is the harness input, not a CPU defect (2026-08-03)
+
+The unreconciled figure above is explained. Same binary, same files, only the
+backend varies:
+
+| stage | Metal | CPU (`INTERNVL2_OCR_FORCE_CPU=1`) |
+|---|--:|--:|
+| vis_patch_embed | 0.999999 | 1.000000 |
+| **vis_proj_output** | **0.998630** | **0.912992** |
+| llm_layer_0 | 0.998033 | 0.982747 |
+| llm_layer_3 | 0.988750 | 0.962142 |
+
+CPU min is `0.912992` against the parity kernel's `0.905481` — also CPU, on a
+different box. Hypothesis confirmed: the gap was backend, and the residual is
+CPU-implementation/threading variation between machines. Neither number was
+wrong; they measured different things.
+
+**It does not reach the output, and that is the part that matters.** The same
+CPU path on `h2ovl-800m` transcribes the full page at **1749 chars** against
+Metal's **1748**, same text. So the divergence is confined to the diff harness,
+whose vision input is a *synthetic gradient* — an out-of-distribution image that
+amplifies numerical differences far more than a real page does. That also
+explains why `vis_proj_output` reads FAIL against the 0.999 threshold on every
+quant while every one of them reads real pages correctly.
+
+Two consequences worth carrying forward:
+
+- **Quote a vision-stage cosine with its backend, or not at all.** A single
+  number here is meaningless — the same artifact spans 0.913 to 0.999 depending
+  only on where it ran.
+- **The 0.999 gate on `vis_proj_output` is mis-calibrated for a synthetic
+  gradient.** It fails artifacts that decode correctly, which is a gate that
+  cries wolf. Not changed here (a threshold tuned against one model is how
+  gates rot); recorded so the FAIL is read as expected rather than chased.
+
+### Registry health after the day's churn
+
+All green, verified rather than assumed:
+
+| check | result |
+|---|---|
+| SHA-256 pins | 242 pinned, 0 unpinned, `model_hashes.h` current |
+| URL reachability | 242 distinct download URLs, **0 non-200** |
+| Licence chains | `tests/check_registry_licenses.py` rc=0 |
