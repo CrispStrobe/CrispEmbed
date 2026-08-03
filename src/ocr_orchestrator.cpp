@@ -1857,10 +1857,21 @@ result run_file(context * ctx, const char * image_path) {
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
         cleanup_profile stage_cleanup = s.cleanup;
         if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) &&
-            (s.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr)) {
+            (s.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr) &&
+            std::getenv("CRISPEMBED_TESSERACT_PAGESEG_CLEANUP") == nullptr) {
             // Tesseract's page-segmentation path measures row ink on the
             // original page. Generic deskew/crop/whiten cleanup changes those
             // coordinates and can merge unrelated rows before segmentation.
+            //
+            // That reasoning holds for clean rendered text and is measurably
+            // WRONG for real scans, where cleanup is what makes the row profile
+            // readable at all. Same fixture, same segmenter, cleanup the only
+            // difference: receipt_historical.png gives 2 boxes without it and 38
+            // with; commons_example_receipt 144 characters against 280. The
+            // segmentation choice and the cleanup choice are independent, and
+            // one flag was forcing them to move together.
+            // CRISPEMBED_TESSERACT_PAGESEG_CLEANUP=1 keeps cleanup on while
+            // still using classical segmentation. Default is unchanged.
             if (verbose) fprintf(stderr, "ocr_orchestrator: Tesseract page segmentation skips cleanup\n");
             stage_cleanup.enabled = false;
             stage_cleanup.denoise = false;
