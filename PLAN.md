@@ -1101,6 +1101,76 @@ trusting it.
 
 ---
 
+### T8 — Server: 8 JSON field reads still scan textually (small, self-contained)
+
+**State.** `extract_path_field` was moved onto `core_json`'s depth-1 finder on
+2026-08-03 (commit `54aeaecb`), so every *path* field — `image`, `output`,
+`file`, `model` — is now read the same way the confinement checks it. Eight
+non-path reads were not converted and still do a bare `body.find("\"key\"")`.
+
+**Why it matters.** A textual scan matches the key anywhere, including inside a
+nested object. `{"meta":{"format":"a"},"format":"b"}` makes the server take the
+nested value while a validating proxy in front reads the top-level one, so the
+two disagree about what was requested. That is exactly the disagreement the
+`image` field had. These are non-path fields, so nothing is reachable through
+them the way an arbitrary path was — this is consistency work, not an open hole,
+and should not be written up as a vulnerability.
+
+**Do** Convert `examples/server/server.cpp` lines **1218, 1872, 1935** (`"text"`),
+**2378, 3243** (`"format"`), **2394** (`"results"`), **3249** (`"autorotate"`),
+**3255** (`"images"`) to `core_json::json_extract_strings` /
+`json_extract_number`. Line numbers are as of `b95f4f93`; re-grep
+`body\.find("\\"` before trusting them.
+
+**Acceptance** `tests/test_server_json_input.cpp` gains a nested-decoy case per
+converted field, each failing before the change and passing after. No behaviour
+change for well-formed requests.
+
+---
+
+### T9 — Re-read the control tests for coverage, not correctness (method, ~1h)
+
+**Why this exists.** The `--image-root` shadow survived **three** AI Act audit
+rounds. `tests/test_image_root.py` existed, passed, and was written precisely to
+prove that control — but it probed `/detect`, which sat on the confined side of
+the bug, while POLICY.md claimed the control covered *every* endpoint. A passing
+test about one endpoint was read as evidence for a sentence about thirty-three.
+Greps did not catch it either, because both the correct and the broken call
+sites read `extract_image_path(body)` verbatim.
+
+**Do** For each remaining stated control, ask one question: *does the test cover
+the whole set the prose claims, or one member of it?*
+- **Biometric gate** (`crispembed_face_init`) — POLICY §4 says every binding
+  funnels through it. Does the test exercise Python/Rust/Dart/CLI/server, or one?
+- **SHA-256 model pinning** — POLICY §7 says every auto-download URL is pinned.
+  `fetch_model_hashes.py --check` runs in CI; does it assert *coverage* of the
+  registry, or only that listed pins match?
+- **Provenance marking** — POLICY §5 says every image returned is marked. The 12
+  base64 SR/restore endpoints were missed once already for exactly this reason.
+
+**Acceptance** Either a test extended to the full set, or a written note in
+POLICY.md narrowing the claim to what is actually verified. Narrowing the prose
+is a valid outcome and is often the honest one.
+
+---
+
+### Standing constraint — EU AI Act (not a task; do not "close" it)
+
+The 2026-08-03 audit closed every actionable finding. What remains is **not
+implementable**: POLICY.md §5/§6 argue that document restoration and
+transcription fall outside Art. 50(2) via Recital 134. That is a reasoned
+position, untested by any regulator or court, and it is the ceiling on any
+"CrispEmbed is compliant" claim — do not let a green test suite be read as
+having settled it. Two dates still run: **2 December 2026** ends both the
+Art. 50(2) machine-readable-marking grace period for systems already on the
+market and the NCII/CSAM prohibition transitional period. If the §5 argument is
+ever abandoned, the marking path already exists (PNG `iTXt` by default, signed
+C2PA when `CRISPEMBED_C2PA_CERT`/`_KEY` are set) — that decision is policy, not
+implementation. Regulatory dates were last verified against the OJ text on
+2026-08-03 (Reg. (EU) 2026/1744); re-verify before relying on them.
+
+---
+
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
