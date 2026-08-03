@@ -2293,3 +2293,36 @@ Two things the trace does flag, neither load-bearing today:
 - `|mine|` runs 1.9 % high at `llm_layer_23` (980.20 vs 961.45) — the massive-
   activation dimensions amplifying q8_0 rounding. Bounded and self-correcting
   through the final norm.
+
+
+### f16 ceiling: the port is exact to the logits
+
+Same 54-stage reference, f16, CPU:
+
+| stage | cos_min | cos_glob | max_abs | \|mine\| / \|ref\| |
+|---|--:|--:|--:|---|
+| vis_proj_output | 0.999974 | 1.000000 | 0.003354 | 183.1485 / 183.1475 |
+| llm_layer_0 | 1.000000 | 1.000000 | 0.000004 | 7.7938 / 7.7938 |
+| llm_layer_11 | 1.000000 | 1.000000 | 0.000033 | 86.5238 / 86.5239 |
+| llm_layer_23 | 1.000000 | 1.000000 | 0.001282 | 961.4495 / 961.4499 |
+| llm_output_norm | 1.000000 | 1.000000 | 0.000217 | 331.4937 / 331.4938 |
+| **llm_logits** | **1.000000** | **1.000000** | **0.000069** | **1604.5433 / 1604.5439** |
+
+**Every stage passes, `cos_min` included.** The h2ovl-2b port reproduces the
+Python blueprint exactly, all the way to the tensor token selection reads. There
+is no code defect anywhere in this engine for this model.
+
+That also settles the `cos_min` question directly rather than by argument: at f16
+the per-row minimum is 1.000000, so the low `cos_min` values at q8_0 are
+quantization landing on numerically fragile rows — not a structural mismatch and
+not a harness artifact. And `llm_output_norm`, flagged above as the weakest
+global stage at q8_0 (0.997297, −2.4 % magnitude), is exact at f16
+(331.4937 vs 331.4938), so that too is quantization, not the norm implementation.
+
+Complete verdict for h2ovl-mississippi-2b:
+
+| precision | logits cos_glob | decoded page |
+|---|--:|---|
+| f16 | 1.000000 | transcribes |
+| q8_0 (shipped, vision F16) | 0.998919 | transcribes |
+| q4_k | — (withdrawn) | fluent but wrong |
