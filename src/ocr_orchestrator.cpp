@@ -85,6 +85,31 @@ unsigned char * stbi_load(const char * filename, int * x, int * y, int * channel
 void stbi_image_free(void * retval_from_stbi_load);
 }
 
+// Otsu threshold over an 8-bit grey page. Shared by the coverage and column
+// probes so they cannot disagree about what counts as ink.
+static int pageseg_otsu(const uint8_t * gray, size_t n) {
+    size_t hist[256] = { 0 };
+    for (size_t i = 0; i < n; ++i) hist[gray[i]]++;
+    double sum_all = 0.0;
+    for (int t = 0; t < 256; ++t) sum_all += (double)t * (double)hist[t];
+    double sum_bg = 0.0, w_bg = 0.0, best = -1.0;
+    int thresh = 128;
+    for (int t = 0; t < 256; ++t) {
+        w_bg += (double)hist[t];
+        if (w_bg == 0.0) continue;
+        const double w_fg = (double)n - w_bg;
+        if (w_fg <= 0.0) break;
+        sum_bg += (double)t * (double)hist[t];
+        const double var =
+            w_bg * w_fg * (sum_bg / w_bg - (sum_all - sum_bg) / w_fg) * (sum_bg / w_bg - (sum_all - sum_bg) / w_fg);
+        if (var > best) {
+            best = var;
+            thresh = t;
+        }
+    }
+    return thresh;
+}
+
 // Fraction of the page's foreground ink that falls inside the proposed boxes.
 //
 // The segmentation router (H9) needs to judge a classical segmentation without
@@ -103,28 +128,7 @@ static double pageseg_ink_coverage(const uint8_t * gray, int w, int h,
     if (!gray || w <= 0 || h <= 0) return 0.0;
     const size_t n = (size_t)w * (size_t)h;
 
-    size_t hist[256] = { 0 };
-    for (size_t i = 0; i < n; ++i) hist[gray[i]]++;
-
-    // Otsu: maximise between-class variance over the 256 candidate splits.
-    double sum_all = 0.0;
-    for (int t = 0; t < 256; ++t) sum_all += (double)t * (double)hist[t];
-    double sum_bg = 0.0, w_bg = 0.0, best_var = -1.0;
-    int thresh = 128;
-    for (int t = 0; t < 256; ++t) {
-        w_bg += (double)hist[t];
-        if (w_bg == 0.0) continue;
-        const double w_fg = (double)n - w_bg;
-        if (w_fg <= 0.0) break;
-        sum_bg += (double)t * (double)hist[t];
-        const double m_bg = sum_bg / w_bg;
-        const double m_fg = (sum_all - sum_bg) / w_fg;
-        const double var = w_bg * w_fg * (m_bg - m_fg) * (m_bg - m_fg);
-        if (var > best_var) {
-            best_var = var;
-            thresh = t;
-        }
-    }
+    const int thresh = pageseg_otsu(gray, n);
 
     // Ink is the darker class. A page with no ink at all has nothing to cover;
     // report full coverage so a blank page is not routed to the detector.
@@ -147,6 +151,83 @@ static double pageseg_ink_coverage(const uint8_t * gray, int w, int h,
     for (size_t i = 0; i < n; ++i)
         if (mask[i] && gray[i] <= thresh) covered++;
     return (double)covered / (double)total_ink;
+}
+
+// Number of text columns, detected as a gutter with text on BOTH sides.
+//
+// This is the signal the H9 router needs, and it took looking at the fixtures to
+// find it. Projection segmentation groups rows by horizontal ink profile, so a
+// two-column page merges the columns into single rows and the line crops become
+// unusable -- that, not density or noise, is why commons_test_ocr_document.jpg
+// drops from 1754 characters to 677 while single-column receipts and
+// german_official_print do fine. Ink coverage and median box height both failed
+// to separate these because they are page-level scalars and the property is
+// structural.
+//
+// A plain "run of empty columns" is NOT enough, and measuring it that way was
+// wrong: it called german_official_print 2 columns and receipt_historical 3,
+// because a ragged right margin or a short receipt line leaves a tall empty
+// band that looks identical to a gutter from the column totals alone. A real
+// gutter has text to its LEFT and RIGHT on the same rows. Requiring that on a
+// majority of text-bearing rows is what separates a column break from
+// whitespace.
+static int pageseg_column_count(const uint8_t * gray, int w, int h) {
+    if (!gray || w <= 0 || h <= 0) return 1;
+    const int thresh = pageseg_otsu(gray, (size_t)w * (size_t)h);
+
+    // Rows that carry text at all; blank leading/trailing rows would otherwise
+    // dilute the majority test below.
+    std::vector<int> row_ink(h, 0);
+    std::vector<int> col(w, 0);
+    for (int y = 0; y < h; ++y) {
+        const uint8_t * r = gray + (size_t)y * w;
+        for (int x = 0; x < w; ++x)
+            if (r[x] <= thresh) {
+                row_ink[y]++;
+                col[x]++;
+            }
+    }
+    int row_peak = 0;
+    for (int y = 0; y < h; ++y) row_peak = std::max(row_peak, row_ink[y]);
+    if (row_peak <= 0) return 1;
+    const int row_min = std::max(1, (int)(0.05 * (double)row_peak));
+    std::vector<int> text_rows;
+    for (int y = 0; y < h; ++y)
+        if (row_ink[y] >= row_min) text_rows.push_back(y);
+    if (text_rows.size() < 8) return 1; // too little text to talk about columns
+
+    int col_peak = 0;
+    for (int x = 0; x < w; ++x) col_peak = std::max(col_peak, col[x]);
+    const int empty_max = std::max(1, (int)(0.02 * (double)col_peak));
+    const int min_gutter_w = std::max(3, (int)(0.012 * (double)w));
+    const int lo = (int)(0.15 * (double)w), hi = (int)(0.85 * (double)w);
+
+    int columns = 1, run_start = -1;
+    for (int x = lo; x <= hi; ++x) {
+        const bool empty = (x < hi) && col[x] <= empty_max;
+        if (empty) {
+            if (run_start < 0) run_start = x;
+            continue;
+        }
+        if (run_start >= 0 && x - run_start >= min_gutter_w) {
+            // Candidate gutter [run_start, x). Accept only if most text rows
+            // carry ink on both sides of it.
+            const int gl = run_start, gr = x;
+            size_t both = 0;
+            for (int y : text_rows) {
+                const uint8_t * r = gray + (size_t)y * w;
+                bool left = false, right = false;
+                for (int xx = 0; xx < gl && !left; ++xx)
+                    if (r[xx] <= thresh) left = true;
+                for (int xx = gr; xx < w && !right; ++xx)
+                    if (r[xx] <= thresh) right = true;
+                if (left && right) both++;
+            }
+            if (both * 2 > text_rows.size()) columns++;
+        }
+        run_start = -1;
+    }
+    return columns;
 }
 
 static bool load_gray_exact(const char * path, std::vector<uint8_t> & gray, int * out_w, int * out_h) {
@@ -926,6 +1007,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (seg_router) classical_pageseg = true;
         bool router_fell_back = false;
         double router_coverage = -1.0;
+        int router_columns = -1;
         if (classical_pageseg) {
             std::vector<uint8_t> seg_gray;
             int sw = 0, sh = 0;
@@ -942,14 +1024,18 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 }
                 if (seg_router || std::getenv("CRISPEMBED_TESSERACT_SEG_COVERAGE")) {
                     router_coverage = pageseg_ink_coverage(seg_gray.data(), sw, sh, boxes);
+                    router_columns = pageseg_column_count(seg_gray.data(), sw, sh);
                 }
                 if (seg_router) {
-                    double floor_cov = 0.60;
-                    if (const char * e = std::getenv("CRISPEMBED_TESSERACT_SEG_ROUTER_MIN")) {
-                        const double v = std::atof(e);
-                        if (v > 0.0 && v <= 1.0) floor_cov = v;
-                    }
-                    if (boxes.empty() || router_coverage < floor_cov) {
+                    // Route on COLUMN COUNT, not on ink coverage. Coverage was
+                    // implemented first and measured wrong: commons_test_ocr_document
+                    // scores 1.0000 coverage while losing 91% of its text, because
+                    // the boxes are at paragraph granularity rather than misplaced.
+                    // Median box height overlapped outright. Column count is the
+                    // structural property that actually distinguishes the cases --
+                    // a horizontal row projection cannot separate side-by-side
+                    // columns, so multi-column pages must go to the detector.
+                    if (boxes.empty() || router_columns > 1) {
                         boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
                         classical_pageseg = false; // DBNet boxes need line grouping
                         router_fell_back = true;
@@ -964,8 +1050,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
         }
         if (router_coverage >= 0.0 && (seg_router || std::getenv("CRISPEMBED_TESSERACT_SEG_COVERAGE") || ctx->bench)) {
-            fprintf(stderr, "[tesseract-seg-router] ink_coverage=%.4f boxes=%zu path=%s\n", router_coverage,
-                    boxes.size(), router_fell_back ? "dbnet(fallback)" : "classical");
+            fprintf(stderr, "[tesseract-seg-router] columns=%d ink_coverage=%.4f boxes=%zu path=%s\n", router_columns,
+                    router_coverage, boxes.size(), router_fell_back ? "dbnet(fallback)" : "classical");
         }
         const auto tess_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
