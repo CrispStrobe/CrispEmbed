@@ -156,9 +156,25 @@ single invocation is best on both corpora:
 | router + `PAGESEG` (cleanup off) | **0.01538** | poor (cleanup disabled globally) |
 
 Both axes need a per-page decision. The segmentation axis now has a validated
-probe; the cleanup axis needs one that distinguishes a clean render from a
-photographed scan — noise or texture energy is the obvious candidate and is
-untested. Until then the router stays opt-in.
+probe. The cleanup axis does not, and two candidate signals were measured and
+**rejected** — recorded here so the next attempt does not repeat them:
+
+| probe | synthetic | scans | verdict |
+|---|---|---|---|
+| paper-class noise (sd above Otsu) | 6.9-13.2 | 5.0-14.0 | **overlaps completely** |
+| illumination spread (8x8 tile 90th-pct background) | 0.00 all six | 0.0-45.0 | **counterexample** |
+
+The illumination probe looked promising — every synthetic fixture scores exactly
+0.00 — until `commons_example_receipt.png` also scored 0.00 while *wanting*
+cleanup (144 characters without it, 280 with). So the axis is not
+render-versus-scan, which was the framing behind both probes. Whatever separates
+"cleanup helps" from "cleanup hurts" is not global image statistics, and the
+next hypothesis should probably come from looking at what cleanup actually does
+to a page it damages, rather than from another page-level scalar — the same
+mistake that cost two rounds on the segmentation axis before opening the images
+found the answer immediately.
+
+Until then the router stays opt-in.
 
 ### Looking at the fixtures corrected the labels and found the actual signal
 
