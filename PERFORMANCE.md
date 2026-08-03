@@ -2155,3 +2155,44 @@ applied to a family whose members have different goals.
 `cstr/h2ovl-mississippi-2b-crispembed-GGUF` q8_0 replaced in place
 (2591566112 bytes, sha `497cd047…`, verified byte-identical to the local file),
 pin regenerated, 242 pinned / 0 unpinned.
+
+
+## h2ovl-800m brought up to the same standard (2026-08-03)
+
+The 800m shipped as q4_k only, with **no reference at all** — so its parity had
+never been measured, only its decoded output eyeballed. Ran the full regime
+locally (it is small enough: f16 is 1853 MB): convert → bake reference → quantize
+→ per-stage diff → decoded output.
+
+**f16 — the port is exact here too.** `llm_embed` and `llm_layer_0..3` are all
+1.000000; `vis_proj_output` 0.999701. Two stages sit just under the gate —
+`vis_layer_23` 0.998665 and `vis_pixel_unshuffle` 0.998199 — which is f16-vs-f32
+rounding against a float32 numpy reference, the same class as the 2b, not a
+defect.
+
+**q8_0 with the vision tower at F16** reproduces the f16 vision numbers exactly
+(0.998665 / 0.998199 / 0.999701), confirming the new rule does what it claims on
+a second checkpoint.
+
+### The finding worth carrying: the synthetic probe does not track decoded quality
+
+| model / precision | llm_layer_2 | decoded page |
+|---|--:|---|
+| h2ovl-2b q4_k | **−0.268615** | fluent but wrong |
+| h2ovl-800m q8_0 | **+0.494781** | **transcribes, 1764 chars** |
+
+Two comparable-looking cosines, opposite verdicts. The 800m q8_0 shows
+`llm_layer_1..3` at 0.70 / 0.49 / 0.66 with max_abs ~22 and still transcribes the
+page correctly; the 2b q4_k at a numerically similar magnitude produces
+confident nonsense.
+
+The distinction that survives is **sign**: the 2b q4_k is *anti-correlated*
+(−0.27), meaning the signal inverted, while the 800m is *degraded but aligned*
+(+0.49). A per-stage threshold alone would have rejected a good artifact and,
+at a slightly different cut, accepted a bad one. This is the concrete case for
+why the decoded-output roundtrip is the gate and the cosine is the bisection
+tool — exactly what HARD RULE #3 says, now with a counterexample in-repo.
+
+**Registry unchanged for the 800m: it stays on q4_k.** That artifact transcribes
+(1749 chars, fox exact) at 676 MB against the q8_0's 1175 MB, and this is the
+edge/WASM model. The q8_0 is published as a quality tier, not promoted.
