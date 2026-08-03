@@ -446,6 +446,14 @@ Utility libraries (not model backends) follow a lighter pattern.
 
 - **Always use `git worktree`** for feature branches — never checkout in-place
 - **Keep debug prints** but gate behind `CRISPEMBED_DEBUG` env var
+- **Debug dumps write to fixed `/tmp` paths on purpose.** `LAYOUT_DEBUG` makes
+  `src/layout_detect.cpp` write `/tmp/cpp_*.bin` and read `/tmp/py_*.bin` — the
+  names are a contract with the Python reference dumper, so do not randomise
+  them. Do know what you are enabling: on a shared host those paths are
+  predictable (a planted symlink redirects the write) and the files hold
+  activations. For anything that is not a debug interchange, use
+  `core_tmp::make_private()` (`src/core/temp_file.h`) — never a hand-built
+  `/tmp` name.
 - **Build target:** `crispembed` (static lib) + `crispembed-cli` + `crispembed-shared` + test binaries
 - **Format: run `tools/format.sh --fix` before pushing.** This is enforced —
   `.github/workflows/lint.yml` pins clang-format 18.1.8 and fails the build on
