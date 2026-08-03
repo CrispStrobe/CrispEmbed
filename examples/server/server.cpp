@@ -137,6 +137,52 @@ static std::string make_private_temp_file(const char * suffix) {
     return core_tmp::make_private(suffix);
 }
 
+// Encode a processed image for a JSON response.
+//
+// These endpoints used to base64 RAW RGB bytes straight into the payload, so
+// twelve of them — every super-resolution and restoration engine, i.e. exactly
+// the ones POLICY.md §5 is about because they SYNTHESISE detail — returned
+// completely unmarked AI-processed images. Going through core_imgout means the
+// bytes are a PNG carrying the provenance chunk (and a C2PA manifest when a
+// signing identity is configured), the same as the CLI.
+//
+// `out_format` tells the client what it actually got: "png" normally, "raw"
+// under CRISPEMBED_IMAGE_FORMAT=ppm, which stays available for callers that
+// were consuming raw RGB and are not ready to decode.
+static std::string encode_image_b64(const uint8_t * data, int w, int h, int comp, const char * engine,
+                                    std::string & out_format) {
+    static const char * b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    std::string bytes;
+    if (core_imgout::want_ppm()) {
+        bytes.assign(reinterpret_cast<const char *>(data), (size_t)w * h * comp);
+        out_format = "raw";
+    } else {
+        std::string mime;
+        if (!core_imgout::emit_to_string(bytes, mime, data, w, h, comp, engine)) {
+            bytes.assign(reinterpret_cast<const char *>(data), (size_t)w * h * comp);
+            out_format = "raw";
+        } else {
+            out_format = "png";
+        }
+    }
+
+    const size_t n_bytes = bytes.size();
+    const uint8_t * src = reinterpret_cast<const uint8_t *>(bytes.data());
+    std::string b64;
+    b64.reserve(((n_bytes + 2) / 3) * 4);
+    for (size_t i = 0; i < n_bytes; i += 3) {
+        uint32_t v = (uint32_t)src[i] << 16;
+        if (i + 1 < n_bytes) v |= (uint32_t)src[i + 1] << 8;
+        if (i + 2 < n_bytes) v |= (uint32_t)src[i + 2];
+        b64 += b64chars[(v >> 18) & 0x3f];
+        b64 += b64chars[(v >> 12) & 0x3f];
+        b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+        b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+    }
+    return b64;
+}
+
 static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {
     if (!path || !rgb || w <= 0 || h <= 0) return false;
     const int out_w = (angle == 90 || angle == 270) ? h : w;
@@ -2439,23 +2485,14 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "text-sr", img_format);
         crispembed_text_sr_free_image(out);
 
         const int scale = crispembed_text_sr_upscale_factor(text_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2510,23 +2547,14 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "pan-sr", img_format);
         crispembed_pan_sr_free_image(out);
 
         const int scale = crispembed_pan_sr_scale(pan_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2580,23 +2608,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "hat-sr", img_format);
         crispembed_hat_sr_free_image(out);
 
         const int scale = crispembed_hat_sr_scale(hat_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2650,23 +2669,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "dat-sr", img_format);
         crispembed_dat_sr_free_image(out);
 
         const int scale = (w > 0) ? ow / w : 2;
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2720,23 +2730,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "safmn-sr", img_format);
         crispembed_safmn_sr_free_image(out);
 
         const int scale = crispembed_safmn_sr_scale(safmn_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2790,23 +2791,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "esrgan-sr", img_format);
         crispembed_esrgan_sr_free_image(out);
 
         const int scale = crispembed_esrgan_sr_scale(esrgan_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2861,23 +2853,14 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "swinir-sr", img_format);
         crispembed_swinir_sr_free_image(out);
 
         const int scale = crispembed_swinir_sr_scale(swinir_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2931,21 +2914,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "tbsrn-sr", img_format);
         crispembed_tbsrn_sr_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": 4"
            << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
@@ -2999,21 +2973,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "restormer", img_format);
         crispembed_restormer_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
            << "}";
 
@@ -3065,21 +3030,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "scunet", img_format);
         crispembed_scunet_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
            << "}";
 
@@ -3140,21 +3096,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "instructir", img_format);
         crispembed_instructir_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"task\": " << task << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
 
@@ -3206,21 +3153,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "adair", img_format);
         crispembed_adair_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
            << "}";
 
