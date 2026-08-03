@@ -20,33 +20,66 @@ does — it has no neural detector at all, and that is the whole reason
 Single-page wall clock was 0.70 -> 0.18 s against tesseract-cli's 0.17 s,
 reproducible to the centisecond over three rounds.
 
-**On real CC0 scans it fails badly, and that is why it stays opt-in.** Character
-counts, DBNet -> pageseg:
+**CORRECTED 2026-08-03 — the real-scan failure was a bundled flag, not the
+segmenter.** `CRISPEMBED_TESSERACT_PAGESEG` sets *two* things: use classical
+segmentation, **and skip cleanup** (deskew/binarise/whiten), the latter at a
+second site in `ocr_orchestrator.cpp` on the grounds that "page segmentation
+measures row ink on the original page". On real scans that second half is what
+destroys the result. Same fixture, same segmenter, cleanup the only difference:
+`receipt_historical.png` yields **2 boxes without cleanup and 38 with**.
 
-| fixture | regions | chars |
-|---|---|---|
-| `commons_test_ocr_document.jpg` | 31 -> 9 | 1754 -> **149** |
-| `receipt_historical.png` | 40 -> 2 | 494 -> **11** |
-| `german_official_document.jpg` | 25 -> 7 | 836 -> **19** |
-| `arabic_handwriting.jpg` | 23 -> 5 | 283 -> 72 |
-| `german_official_print.jpg` | 21 -> 23 | 848 -> **944** |
-| `public_domain_formula_photo.jpg` | 0 -> 11 | 0 -> **84** |
-| `simple_table.jpg` | 1 -> 2 | 5 -> **40** |
+Corrected comparison, regions/characters:
 
-92-98% of the text is lost on the three dense scans. The synthetic corpus is
-single-column rendered text, which is precisely projection segmentation's best
-case — so the 4x/half-CER result above is real but describes one class of page,
-not the general case. Do not flip the default on the synthetic corpus alone;
-that would have shipped a catastrophic regression on document scans.
+| fixture | DBNet | classical, no cleanup | classical + cleanup |
+|---|---|---|---|
+| `receipt_historical.png` | 40 / 494 | 2 / 11 | **38 / 616** |
+| `commons_example_receipt.png` | 17 / 195 | 8 / 144 | **18 / 280** |
+| `german_official_print.jpg` | 21 / 848 | 23 / 944 | 21 / 835 |
+| `commons_test_ocr_document.jpg` | **31 / 1754** | 9 / 149 | 18 / 677 |
+| `german_official_document.jpg` | **25 / 836** | 7 / 19 | 8 / 34 |
+| `simple_table.jpg` | 1 / 5 | **2 / 40** | 1 / 5 |
+| `public_domain_formula_photo.jpg` | 0 / 0 | **11 / 84** | 0 / 0 |
 
-**The actionable item is a router, not a flip.** The two paths fail in opposite
-directions and the signal separating them is cheap: pageseg wins on clean
-single-column print and loses on dense multi-region layouts. A gate that runs
-projection segmentation first and falls back to DBNet when the recovered
-region/character count is implausibly low would get the 4x on the easy majority
-while keeping DBNet's coverage — and the fallback test costs one projection
-pass, which is 50 ms. That is the concrete path to matching `tesseract-cli`
-on the lane where it currently beats us 4x.
+With cleanup left on, classical segmentation **beats DBNet on receipts** (616 vs
+494 characters on the historical one). It still loses on dense documents. And the
+no-cleanup variant is the only configuration that finds anything at all on
+`simple_table` and `formula_photo`. Three regimes, no dominant path — so the
+earlier "projection segmentation loses 92-98% of the text" statement was
+measuring the flag bundle, not the segmenter, and is withdrawn.
+
+### The router: implemented, and both accept-tests falsified
+
+`CRISPEMBED_TESSERACT_SEG_ROUTER=1` runs classical segmentation and falls back to
+DBNet when the result looks implausible. The routing *decision* is the unsolved
+part, and two candidate probes were measured and rejected:
+
+**Ink coverage** (Otsu binarise, fraction of foreground inside the boxes;
+`CRISPEMBED_TESSERACT_SEG_COVERAGE=1`). Rejected by a clean counterexample:
+`commons_test_ocr_document.jpg` scores **1.0000 coverage while losing 91% of the
+text**. The failure is not ink landing outside boxes — it is boxes at paragraph
+granularity when the recogniser needs lines. `receipt_historical` 0.0043 and
+`simple_form` 0.0460 are correctly flagged, but `formula_photo` 0.2615 and
+`simple_table` 0.4601 are false alarms on pages where classical is the *only*
+path that works.
+
+**Median box height / page height.** Rejected: the ranges overlap outright.
+Failures 0.037, 0.008, 0.102; successes 0.017, 0.045, 0.083, 0.035, 0.170.
+
+The instrumentation stays because it is cheap and gated, and the negative results
+are recorded so the next attempt starts past them. What the data says a working
+probe must capture is *granularity relative to the page's text*, not placement
+and not absolute size — something like expected line count from the ink row
+profile against actual box count.
+
+**A caveat on the labels themselves:** none of the 14 CC0 scans has ground truth,
+so "better" above is a character-count proxy against DBNet. Tuning a threshold on
+eight proxy-labelled pages would be fitting noise. This is blocked on O8 (corpus
+provenance), and that dependency should be respected rather than worked around.
+
+**Still the actionable item: a router, not a flip** — and separately, the
+cleanup coupling should be unbundled from the segmentation choice, since they
+are independent decisions that the single `PAGESEG` flag currently forces to
+move together.
 
 
 ## ⚠ The 1x1 and depthwise conv fast paths are NOT wins — measured, both stay off
