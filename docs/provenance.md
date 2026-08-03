@@ -49,10 +49,12 @@ as AI-generated. The unit test asserts the wrong term is absent.
 CRISPEMBED_IMAGE_FORMAT=ppm crispembed --adair-model m.gguf --adair in.png > out.ppm
 ```
 
-Raw Netpbm, with only the header-comment marking. This is how the benchmark
-harnesses (`tools/eval_restoration_quality.py`, `tools/scan_cleanup_bench.py`,
-`tests/ocr_preprocessor_benchmark.py`) are pinned — they parse pixel bytes
-directly and gain nothing from a PNG decoder.
+Raw Netpbm, with only the header-comment marking. Kept for callers that parse
+pixel bytes directly. The benchmark harnesses no longer need it: they decode via
+PIL, which reads either format, and they now exercise the default PNG path so a
+defect there cannot pass them. `tests/test_image_provenance.cpp` pins the
+invariant that makes that safe — PNG and Netpbm decode to byte-identical
+pixels, so no metric shifts with the format.
 
 ## HTTP server
 
