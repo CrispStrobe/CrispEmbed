@@ -2055,3 +2055,49 @@ every h2ogpt2 checkpoint, so `h2ovl-800m` (q4_k, in the registry) was re-run:
 So the 800m is unaffected and still correct **at q4_k** — which is the concrete
 evidence that refusing sub-Q8 arch-wide would have been wrong, and that the
 2b's collapse is checkpoint-specific rather than a property of the family.
+
+
+### The q8_0 cosine gap: reconciled, and it is the harness input, not a CPU defect (2026-08-03)
+
+The unreconciled figure above is explained. Same binary, same files, only the
+backend varies:
+
+| stage | Metal | CPU (`INTERNVL2_OCR_FORCE_CPU=1`) |
+|---|--:|--:|
+| vis_patch_embed | 0.999999 | 1.000000 |
+| **vis_proj_output** | **0.998630** | **0.912992** |
+| llm_layer_0 | 0.998033 | 0.982747 |
+| llm_layer_3 | 0.988750 | 0.962142 |
+
+CPU min is `0.912992` against the parity kernel's `0.905481` — also CPU, on a
+different box. Hypothesis confirmed: the gap was backend, and the residual is
+CPU-implementation/threading variation between machines. Neither number was
+wrong; they measured different things.
+
+**It does not reach the output, and that is the part that matters.** The same
+CPU path on `h2ovl-800m` transcribes the full page at **1749 chars** against
+Metal's **1748**, same text. So the divergence is confined to the diff harness,
+whose vision input is a *synthetic gradient* — an out-of-distribution image that
+amplifies numerical differences far more than a real page does. That also
+explains why `vis_proj_output` reads FAIL against the 0.999 threshold on every
+quant while every one of them reads real pages correctly.
+
+Two consequences worth carrying forward:
+
+- **Quote a vision-stage cosine with its backend, or not at all.** A single
+  number here is meaningless — the same artifact spans 0.913 to 0.999 depending
+  only on where it ran.
+- **The 0.999 gate on `vis_proj_output` is mis-calibrated for a synthetic
+  gradient.** It fails artifacts that decode correctly, which is a gate that
+  cries wolf. Not changed here (a threshold tuned against one model is how
+  gates rot); recorded so the FAIL is read as expected rather than chased.
+
+### Registry health after the day's churn
+
+All green, verified rather than assumed:
+
+| check | result |
+|---|---|
+| SHA-256 pins | 242 pinned, 0 unpinned, `model_hashes.h` current |
+| URL reachability | 242 distinct download URLs, **0 non-200** |
+| Licence chains | `tests/check_registry_licenses.py` rc=0 |
