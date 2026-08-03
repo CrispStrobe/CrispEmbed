@@ -386,8 +386,6 @@ bool load_hparams(context & ctx, const char * path) {
     // explicit imperative, it transcribes. Neither change works alone.
     // Must come AFTER tok.h2ogpt2 is known — reading it earlier silently
     // yielded the generic default and made this a no-op.
-    tok.add_bos_token = boolv("internvl2.tokenizer.add_bos_token", !tok.h2ogpt2);
-    if (const char * b = getenv("CRISPEMBED_INTERNVL2_ADD_BOS")) tok.add_bos_token = atoi(b) != 0;
 
     // Load vocab from standard GGUF tokenizer keys
     int vocab_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -400,6 +398,18 @@ bool load_hparams(context & ctx, const char * path) {
         tok.vocab_size = n;
         tok.build_reverse_map();
     }
+
+    // MUST come after build_reverse_map(): when the GGUF carries no
+    // internvl2.chat_template key, h2ogpt2 is only known once the vocab has
+    // been scanned for <|im_start|>/<|end|>. Evaluating the default before that
+    // read h2ogpt2==false and left BOS on — the template was still selected (by
+    // the later inference) but with the spurious <s>, which is the one
+    // combination that fails. Measured on the published q8_0, which carries no
+    // template key: defaults produced EMPTY output, CRISPEMBED_INTERNVL2_ADD_BOS=0
+    // transcribed the page. Every artifact converted before that key existed is
+    // in this state, so ordering here is not a nicety.
+    tok.add_bos_token = boolv("internvl2.tokenizer.add_bos_token", !tok.h2ogpt2);
+    if (const char * b = getenv("CRISPEMBED_INTERNVL2_ADD_BOS")) tok.add_bos_token = atoi(b) != 0;
 
     core_gguf::free_metadata(g);
     return true;
