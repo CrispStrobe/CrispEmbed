@@ -1964,3 +1964,60 @@ the broken decoder:
 
 Next: run the gates at q8_0/f16, where the decoder is intact. Blocked locally on
 disk (1.5 GB free, q8_0 is 2.3 GB); the parity kernel is computing both.
+
+
+## h2ovl-2b — resolved, and the quant ladder (2026-08-03)
+
+### Invocation: three defects, all required
+
+Nothing here was a graph bug — `test-internvl2-diff` was clean at f16 the whole
+time. The failures were all in the harness-blind zone:
+
+1. **Wrong chat template** (`5f617351`, mine). The checkpoint declares
+   `template: h2ogpt2` (`<|prompt|>…<|end|><|answer|>`); `build_prompt()` emitted
+   InternVL2 ChatML. This vocab has no `<|im_start|>`/`<|im_end|>`, so
+   `add_special(-1)` dropped every role marker silently.
+2. **Spurious BOS + terse instruction** (`fcebf561`, parallel session).
+   `add_bos_token: false` upstream; and `"OCR this image."` is too weak. Their
+   2×2 A/B showed neither fix works alone.
+3. **BOS default evaluated before vocab inference** (`98c2ae21`, mine). (2) only
+   took effect for GGUFs carrying `internvl2.chat_template`. Without the key,
+   `h2ogpt2` is unknown until `build_reverse_map()` scans the vocab — which runs
+   *after* the default — so BOS stayed on. **Every published artifact is in that
+   state.** Measured on the published q8_0: defaults → EMPTY output;
+   `CRISPEMBED_INTERNVL2_ADD_BOS=0` → full transcription. After reordering,
+   defaults transcribe.
+
+Corroborating evidence that vision was never at fault: with only fix (1), the
+same build reads `fox.png` as `The quick brown fox jumps over the lazy dog. 12345`
+— exactly right. The full-page "serene landscape with a winding river" output was
+confabulation on a hard page with a weak instruction, not a blind model.
+
+### Quant ladder — Q8_0 is the floor for THIS checkpoint
+
+Same reference, same binary, 7 real stages:
+
+| precision | size | llm_layer_0 | llm_layer_2 | verdict |
+|---|--:|--:|--:|---|
+| f16 | 4421 MB | 0.999972 | 0.999972 | transcribes |
+| **q8_0** | **2186 MB** | **0.998033** | **0.995498** | **transcribes** |
+| q4_k + attn held Q8_0 | 1578 MB | 0.922039 | 0.543576 | still wrong |
+| q4_k | 1391 MB | 0.594995 | −0.268615 | anti-correlated |
+| q6_k | 1792 MB | — | — | **fails to load** |
+
+Not a shape problem: every `ne[0]` involved (2560, 6912) is 256-divisible, so
+Q4_K applies cleanly and still wrecks the decoder. Holding attention at Q8_0
+recovers about half — kept, since it is cheap — but is not sufficient.
+
+**It does not generalise.** A first version of this guard refused sub-Q8 for the
+whole `internvl2` arch; that was wrong and would have broken two working models —
+`internvl2-1b` ships q4_k in the registry and OCRs correctly, and `h2ovl-800m` is
+recorded verified at q4_k. One measured checkpoint does not license blocking
+others, so `tools/quantize.cpp` now **warns** and names the decoded-output gate
+instead of refusing.
+
+`vis_proj_output` sits at 0.998630 in every quant and 0.999972 at f16 — the
+vision tower is Q8_0 in all of them, which is why the quants are bit-identical
+there. Left alone deliberately: q8_0 transcribes correctly, and tuning a
+synthetic-gradient cosine when the decoded output already passes is chasing the
+wrong gate.
