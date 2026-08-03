@@ -208,7 +208,11 @@ std::vector<int32_t> tokenizer::build_prompt(const std::string & user_text, int 
             auto t = encode(s);
             ids.insert(ids.end(), t.begin(), t.end());
         };
-        if (bos_id >= 0) ids.push_back(bos_id);
+        // h2ovl's tokenizer_config declares add_bos_token: false (both the 2b
+        // and the 800m), and upstream chat() just calls tokenizer(query) — so
+        // the blueprint prompt carries NO <s>. We were prepending one
+        // unconditionally.
+        if (add_bos_token && bos_id >= 0) ids.push_back(bos_id);
         add_text("<|prompt|>");
         if (img_start_id >= 0) ids.push_back(img_start_id);
         for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_token_id);
@@ -372,6 +376,18 @@ bool load_hparams(context & ctx, const char * path) {
         tok.h2ogpt2 = (tpl == "h2ogpt2");
         fprintf(stderr, "internvl2_ocr: chat template '%s'\n", tpl.c_str());
     }
+
+    // h2ogpt2 is H2OVL's template, and both H2OVL checkpoints declare
+    // add_bos_token: false — upstream chat() tokenizes the query plainly, so
+    // the blueprint prompt carries no <s>. GGUFs converted before this key
+    // existed carry no value, so default it off for that template rather than
+    // inheriting the generic true. Measured on the 2b: with BOS the model
+    // describes the page whatever the instruction; without it, and with an
+    // explicit imperative, it transcribes. Neither change works alone.
+    // Must come AFTER tok.h2ogpt2 is known — reading it earlier silently
+    // yielded the generic default and made this a no-op.
+    tok.add_bos_token = boolv("internvl2.tokenizer.add_bos_token", !tok.h2ogpt2);
+    if (const char * b = getenv("CRISPEMBED_INTERNVL2_ADD_BOS")) tok.add_bos_token = atoi(b) != 0;
 
     // Load vocab from standard GGUF tokenizer keys
     int vocab_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
@@ -1677,7 +1693,14 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
 struct internvl2_ocr_context {
     internvl2_ocr::context ctx;
     std::string last_text;
-    std::string prompt = "OCR this image.";
+    // "OCR this image." is too terse an instruction for these general-purpose
+    // VLMs: H2OVL answered it with an accurate DESCRIPTION ("The image presents
+    // a page from a book, specifically page 36...") rather than a
+    // transcription. Upstream's own examples are all explicit imperatives
+    // ("Extract the details from the form image and structure them into..."),
+    // and qwen2vl_ocr already had to make exactly this change for the same
+    // reason. Same phrasing here, so the two engines behave alike under --ocr.
+    std::string prompt = "Read all the text in this image. Output the exact text content only.";
     int max_tokens = 512;
     std::vector<float> char_confidences;
 };
@@ -1688,6 +1711,11 @@ internvl2_ocr_context * internvl2_ocr_init(const char * model_path, int n_thread
         delete c;
         return nullptr;
     }
+    // Overridable so prompt behaviour can be bisected without a rebuild. These
+    // models are sharply phrasing-sensitive: the same page yields a 1109-char
+    // description, a verbatim transcription, or an immediate <|end|> depending
+    // only on the instruction, and that is only findable by trying.
+    if (const char * pe = getenv("CRISPEMBED_INTERNVL2_PROMPT")) c->prompt = pe;
     return c;
 }
 
