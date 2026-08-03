@@ -12,6 +12,11 @@
 // vacuously, because "0 failures" from a test that quietly did nothing is how
 // an unsigned release ships believing it signs.
 
+// crispembed-core provides stb_image_write (via core/image_out.cpp) but NOT the
+// decoder, so the round-trip check brings its own. Different symbols, no clash.
+#define STB_IMAGE_IMPLEMENTATION
+#include "../ggml/examples/stb_image.h"
+
 #include "core/image_out.h"
 
 #include <cstdio>
@@ -197,6 +202,45 @@ int main() {
         check(png_chunks_valid(anon, types), "empty engine name still yields a valid PNG");
         check(anon.find("generated=true") != std::string::npos, "and is still marked");
         check(anon.find("engine=") == std::string::npos, "omits the engine field rather than emitting engine=");
+    }
+
+
+    // ── the format change must not touch a single pixel ──────────────
+    // The benchmark harnesses measure PSNR/SSIM/CER on these bytes. If PNG and
+    // PPM disagreed anywhere, every restoration metric would shift when the
+    // default changed, and it would look like a model regression.
+    {
+        const int W = 23, H = 17; // deliberately not multiples of anything
+        for (int comp = 1; comp <= 3; comp += 2) {
+            std::vector<unsigned char> px((size_t)W * H * comp);
+            for (size_t i = 0; i < px.size(); i++) px[i] = (unsigned char)((i * 37 + 11) & 0xff);
+
+            unsetenv("CRISPEMBED_IMAGE_FORMAT");
+            std::string as_png, m1;
+            core_imgout::emit_to_string(as_png, m1, px.data(), W, H, comp, "esrgan-sr");
+
+            setenv("CRISPEMBED_IMAGE_FORMAT", "ppm", 1);
+            std::string as_ppm, m2;
+            core_imgout::emit_to_string(as_ppm, m2, px.data(), W, H, comp, "esrgan-sr");
+            unsetenv("CRISPEMBED_IMAGE_FORMAT");
+
+            int dw = 0, dh = 0, dc = 0;
+            unsigned char * dec =
+                stbi_load_from_memory((const unsigned char *)as_png.data(), (int)as_png.size(), &dw, &dh, &dc, comp);
+            char label[96];
+            std::snprintf(label, sizeof(label), "comp=%d: PNG decodes to the original dimensions", comp);
+            check(dec && dw == W && dh == H, label);
+            if (dec) {
+                std::snprintf(label, sizeof(label), "comp=%d: PNG round-trips the pixels exactly", comp);
+                check(std::memcmp(dec, px.data(), px.size()) == 0, label);
+                stbi_image_free(dec);
+            }
+
+            // And the Netpbm body must be those same bytes, after its header.
+            const size_t body = as_ppm.size() - px.size();
+            std::snprintf(label, sizeof(label), "comp=%d: PPM body is the original pixels", comp);
+            check(as_ppm.size() > px.size() && std::memcmp(as_ppm.data() + body, px.data(), px.size()) == 0, label);
+        }
     }
 
     // ── signing ──────────────────────────────────────────────────────
