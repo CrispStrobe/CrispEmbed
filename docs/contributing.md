@@ -430,8 +430,10 @@ Utility libraries (not model backends) follow a lighter pattern.
 - **Emitting an image? Use `core_imgout::emit()`** (`src/core/image_out.h`), never
   a hand-written `printf("P6\n...")`. It writes PNG with an `iTXt` provenance
   chunk naming your engine, and signs a C2PA manifest when an identity is
-  configured. `POLICY.md` §5 claims *every* image CrispEmbed emits is marked;
-  a new engine that prints its own header silently makes that claim false.
+  configured. `POLICY.md` §5 claims every image CrispEmbed *returns to a caller*
+  is marked; a new engine that prints its own header silently makes that claim
+  false. Internal temporaries are the exception — use `core_tmp::make_private()`
+  (`src/core/temp_file.h`) for those, never a hand-built /tmp name.
   Pass the engine name — it is what tells a reader whether detail was
   synthesised (ESRGAN, NAFNet) or merely resampled (deskew, dewarp). Returning
   the image in an HTTP body instead? `emit_to_string()` hands back the matching
