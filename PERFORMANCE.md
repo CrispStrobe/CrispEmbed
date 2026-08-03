@@ -2196,3 +2196,57 @@ tool — exactly what HARD RULE #3 says, now with a counterexample in-repo.
 **Registry unchanged for the 800m: it stays on q4_k.** That artifact transcribes
 (1749 chars, fox exact) at 676 MB against the q8_0's 1175 MB, and this is the
 edge/WASM model. The q8_0 is published as a quality tier, not promoted.
+
+
+## CORRECTION: I was reading a per-row worst case as tensor parity (2026-08-03)
+
+`Report::cos_min` is the **minimum cosine over rows**. On the diff harness's
+5-token synthetic probe, one fragile token position sinks it while the tensor as
+a whole matches. I quoted it as if it were the stage's parity for most of this
+session, and built a conclusion on it that was wrong.
+
+`Report` has always carried `cos_global`, `mine_norm` and `ref_norm`; **no print
+site ever showed them** — so HARD RULE #2b ("cosine is scale-blind, always read
+`|mine|` vs `|ref|`") was being violated by the tool itself. Every internvl2
+print site now emits `cos_min`, `cos_glob`, `max_abs`, `|mine|`, `|ref|`.
+
+### What the missing columns were hiding
+
+| artifact / stage | cos_min | cos_glob | \|mine\| vs \|ref\| |
+|---|--:|--:|---|
+| 800m q8_0 llm_layer_2 | 0.494781 | **0.999975** | 2762.7 / 2779.2 |
+| 2b q8_0 llm_layer_3 | 0.962142 | **0.999300** | 20.62 / 20.69 |
+| 2b q4_k llm_layer_3 | −0.270306 | **0.968178** | 21.24 / 20.69 |
+
+The magnitudes also explain the "max_abs 22" that looked catastrophic: the
+activation norm legitimately jumps **18.85 → 2510** between LLM layers 0 and 1 —
+**in the reference too**. This model has massive activations; an absolute error
+of 22 on a norm-2510 tensor is 0.9%, entirely proportionate. Without the `|ref|`
+column that was unreadable.
+
+### Two verdicts corrected
+
+**h2ovl-800m q8_0 is NOT degraded.** I recorded its LLM as "cratering" at 0.49.
+Globally it is 0.999975 — as clean as anything here. The artifact was always
+fine; the metric was wrong.
+
+**The "sign is what survives" finding is WITHDRAWN.** I wrote that a positive
+0.49 transcribes while a negative −0.27 fails, and that sign was the durable
+discriminator. That was pattern-matching on two per-row worst cases. The honest
+discriminator is the **global** cosine: 0.999975 (800m q8_0, correct output) vs
+0.968178 (2b q4_k, wrong output). Sign had nothing to do with it.
+
+**The q4_k withdrawal still stands, for a properly stated reason.** Not
+"anti-correlated by layer 2" — that was `cos_min`. It is `cos_glob` decaying
+0.994215 → 0.968178 across just 4 of 24 layers, ~45x the shipped q8_0's error at
+the same depth, compounding over the remaining 20, with a decoded output that
+was wrong. The decision was right; my justification for it was not.
+
+### Gate note
+
+`is_pass()` is keyed on `cos_min` at 0.999, so on this probe nearly every stage
+prints FAIL while being globally excellent — a gate that always cries wolf
+teaches people to ignore it. Not changed here: `crispembed_diff.h` is shared by
+every engine and re-keying it on one model's evidence is the exact mistake this
+session already made twice. Recorded so the FAILs are read correctly, with the
+columns now present to do that.
