@@ -85,6 +85,70 @@ unsigned char * stbi_load(const char * filename, int * x, int * y, int * channel
 void stbi_image_free(void * retval_from_stbi_load);
 }
 
+// Fraction of the page's foreground ink that falls inside the proposed boxes.
+//
+// The segmentation router (H9) needs to judge a classical segmentation without
+// running the detector it is trying to skip, so the test has to come from the
+// page itself. Under-segmentation -- the way projection segmentation fails on
+// dense scans -- leaves most of the text ink outside the returned boxes, which
+// this measures directly. Region count cannot: a dense receipt collapsing to 2
+// boxes and a clean page that genuinely has 2 boxes are identical by count.
+//
+// Otsu picks the ink/paper split rather than a fixed threshold, so the measure
+// survives grey scans and inverted stock. Boxes are rasterised into a page mask
+// first so overlapping proposals cannot count the same pixel twice (which would
+// otherwise let a pile of overlapping boxes fake full coverage).
+static double pageseg_ink_coverage(const uint8_t * gray, int w, int h,
+                                   const std::vector<ocr_detect::text_box> & boxes) {
+    if (!gray || w <= 0 || h <= 0) return 0.0;
+    const size_t n = (size_t)w * (size_t)h;
+
+    size_t hist[256] = { 0 };
+    for (size_t i = 0; i < n; ++i) hist[gray[i]]++;
+
+    // Otsu: maximise between-class variance over the 256 candidate splits.
+    double sum_all = 0.0;
+    for (int t = 0; t < 256; ++t) sum_all += (double)t * (double)hist[t];
+    double sum_bg = 0.0, w_bg = 0.0, best_var = -1.0;
+    int thresh = 128;
+    for (int t = 0; t < 256; ++t) {
+        w_bg += (double)hist[t];
+        if (w_bg == 0.0) continue;
+        const double w_fg = (double)n - w_bg;
+        if (w_fg <= 0.0) break;
+        sum_bg += (double)t * (double)hist[t];
+        const double m_bg = sum_bg / w_bg;
+        const double m_fg = (sum_all - sum_bg) / w_fg;
+        const double var = w_bg * w_fg * (m_bg - m_fg) * (m_bg - m_fg);
+        if (var > best_var) {
+            best_var = var;
+            thresh = t;
+        }
+    }
+
+    // Ink is the darker class. A page with no ink at all has nothing to cover;
+    // report full coverage so a blank page is not routed to the detector.
+    size_t total_ink = 0;
+    for (size_t i = 0; i < n; ++i)
+        if (gray[i] <= thresh) total_ink++;
+    if (total_ink == 0) return 1.0;
+
+    std::vector<uint8_t> mask(n, 0);
+    for (const auto & b : boxes) {
+        int x0 = (int)std::floor(b.x), y0 = (int)std::floor(b.y);
+        int x1 = (int)std::ceil(b.x + b.w), y1 = (int)std::ceil(b.y + b.h);
+        x0 = std::max(0, x0);
+        y0 = std::max(0, y0);
+        x1 = std::min(w, x1);
+        y1 = std::min(h, y1);
+        for (int y = y0; y < y1; ++y) std::memset(mask.data() + (size_t)y * w + x0, 1, (size_t)(x1 - x0));
+    }
+    size_t covered = 0;
+    for (size_t i = 0; i < n; ++i)
+        if (mask[i] && gray[i] <= thresh) covered++;
+    return (double)covered / (double)total_ink;
+}
+
 static bool load_gray_exact(const char * path, std::vector<uint8_t> & gray, int * out_w, int * out_h) {
     if (out_w) *out_w = 0;
     if (out_h) *out_h = 0;
@@ -841,8 +905,27 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     ms(tess_load_start, tess_bench_start));
         }
         std::vector<ocr_detect::text_box> boxes;
-        const bool classical_pageseg =
+        bool classical_pageseg =
             st.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+        // PLAN.md H9 — segmentation router (CRISPEMBED_TESSERACT_SEG_ROUTER=1).
+        //
+        // Classical segmentation is ~4x faster than DBNet on this lane and
+        // halves CER on clean single-column print, but loses 92-98% of the text
+        // on dense scans. The two fail in opposite directions, so the useful
+        // move is to choose per page rather than to pick one globally.
+        //
+        // The accept test cannot compare against DBNet -- running DBNet is
+        // exactly what it is trying to avoid. Ink coverage can be computed from
+        // the page alone: binarise, then ask what fraction of the foreground
+        // falls inside the proposed boxes. Under-segmentation is precisely the
+        // failure that leaves text ink outside them, which is why region count
+        // does not work as a proxy (a dense receipt collapsing to 2 boxes and a
+        // clean page legitimately having 2 boxes look identical by count, and
+        // completely different by coverage).
+        const bool seg_router = std::getenv("CRISPEMBED_TESSERACT_SEG_ROUTER") != nullptr;
+        if (seg_router) classical_pageseg = true;
+        bool router_fell_back = false;
+        double router_coverage = -1.0;
         if (classical_pageseg) {
             std::vector<uint8_t> seg_gray;
             int sw = 0, sh = 0;
@@ -857,9 +940,32 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     // adapter and is separately gated from DBNet.
                     boxes = tesseract_pageseg::segment_gray_components(seg_gray.data(), sw, sh);
                 }
+                if (seg_router || std::getenv("CRISPEMBED_TESSERACT_SEG_COVERAGE")) {
+                    router_coverage = pageseg_ink_coverage(seg_gray.data(), sw, sh, boxes);
+                }
+                if (seg_router) {
+                    double floor_cov = 0.60;
+                    if (const char * e = std::getenv("CRISPEMBED_TESSERACT_SEG_ROUTER_MIN")) {
+                        const double v = std::atof(e);
+                        if (v > 0.0 && v <= 1.0) floor_cov = v;
+                    }
+                    if (boxes.empty() || router_coverage < floor_cov) {
+                        boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+                        classical_pageseg = false; // DBNet boxes need line grouping
+                        router_fell_back = true;
+                    }
+                }
+            } else if (seg_router) {
+                boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+                classical_pageseg = false;
+                router_fell_back = true;
             }
         } else {
             boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
+        }
+        if (router_coverage >= 0.0 && (seg_router || std::getenv("CRISPEMBED_TESSERACT_SEG_COVERAGE") || ctx->bench)) {
+            fprintf(stderr, "[tesseract-seg-router] ink_coverage=%.4f boxes=%zu path=%s\n", router_coverage,
+                    boxes.size(), router_fell_back ? "dbnet(fallback)" : "classical");
         }
         const auto tess_detect_done = std::chrono::steady_clock::now();
         if (boxes.empty()) return {};
