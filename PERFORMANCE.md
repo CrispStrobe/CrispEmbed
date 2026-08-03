@@ -76,6 +76,47 @@ so "better" above is a character-count proxy against DBNet. Tuning a threshold o
 eight proxy-labelled pages would be fitting noise. This is blocked on O8 (corpus
 provenance), and that dependency should be respected rather than worked around.
 
+### Cleanup is a SECOND, independent axis — and the corpora disagree about it
+
+`CRISPEMBED_TESSERACT_PAGESEG_CLEANUP=1` now keeps cleanup on while still using
+classical segmentation, so the two decisions can be measured separately for the
+first time. Default unchanged.
+
+20-fixture synthetic corpus (exact ground truth):
+
+| arm | CER | ms/page |
+|---|--:|--:|
+| DBNet (default) | 0.02880 | 893 |
+| classical, no cleanup | **0.01460** | **224** |
+| classical + cleanup | 0.03590 | 265 |
+
+Real CC0 scans, regions/characters:
+
+| fixture | DBNet | classical | classical + cleanup |
+|---|---|---|---|
+| `receipt_historical.png` | 40 / 494 | 2 / 11 | **38 / 616** |
+| `commons_example_receipt.png` | 17 / 195 | 8 / 144 | **18 / 280** |
+| `commons_test_ocr_document.jpg` | **31 / 1754** | 9 / 149 | 18 / 677 |
+| `german_official_document.jpg` | **25 / 836** | 7 / 19 | 8 / 34 |
+| `german_official_print.jpg` | 21 / 848 | **23 / 944** | 21 / 835 |
+| `simple_table.jpg` | 1 / 5 | **2 / 40** | 2 / 31 |
+
+**The two corpora want opposite settings.** Cleanup roughly *halves* quality on
+clean rendered text (CER 0.0146 -> 0.0359) and is worth 56x the characters on a
+historical receipt (11 -> 616). The original code comment — that cleanup moves
+the coordinates the row-ink profile depends on — is correct for rendered text and
+exactly wrong for scans, where cleanup is what makes the row profile legible.
+
+So the routing problem is **two-dimensional**: {DBNet, classical} x {cleanup,
+no cleanup}, four combinations, and each of them is the best choice on some page
+in this small set. No single default is defensible, which is why all four remain
+reachable and the default is unchanged. It also means a router that only picks
+the segmenter would still leave most of the available quality on the table.
+
+**This is now blocked on labels, not on ideas.** Choosing among four
+configurations per page needs ground truth on real scans; the CC0 set has none,
+so every "better" above is a character-count proxy. See O8.
+
 **Still the actionable item: a router, not a flip** — and separately, the
 cleanup coupling should be unbundled from the segmentation choice, since they
 are independent decisions that the single `PAGESEG` flag currently forces to
