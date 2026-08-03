@@ -17,6 +17,77 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 
+### Next actions — scoped for a fresh session
+
+Read `../crispasr-crispembed-dev.md` first. The three HARD RULES that actually
+bit this codebase most recently: **#2b** (cosine is scale-blind — always read
+`|mine|`/`|ref|`), **#3** (decoded output is the only acceptance test), **#8**
+(never report green off a pipeline's exit code).
+
+**Board discipline.** The table above is for work claimed *right now*. Add a row
+before starting, update it at each checkpoint, move it to `HISTORY.md` when it
+lands. It reached 56 rows — 52 of them finished — before this cleanup, which is
+exactly how a fresh session re-derives something already shipped.
+
+#### Owned and in flight — coordinate before touching
+| # | Item | Owner |
+|---|---|---|
+| N1 | PP-OCRv6 fused batch graph on Metal: per-item branch/sequence dim surviving pooling + CTC flatten, two-crop gold-logit contract before any Metal batch exec; `CRISPEMBED_PPOCRV6_BATCH_GRAPH` stays CPU-only until it passes | `feat/ppocr-next-20260731` |
+| N2 | EasyOCR full-page quality. Per-stage diff on identical crops already **passes** (input 0.99981, recurrent/logits ≥0.99972) ⇒ the gap is detector geometry / crop selection / postprocess confidence. **Do not re-open the LSTM.** | `feat/easyocr-ggml` |
+| N3 | OCR perf H-items — **now UNOWNED**: `perf/ocr-h-items` landed and archived its row while this cleanup was in progress. Remaining: H2 detector scalar path, H4 batched crops, H5 tesseract load, H6 resize-by-text-height. H1/H3/H7 done. Brief + measurement rules in §"OCR performance — self-contained handover prompts" | *(free to pick up)* |
+| — | OCR external head-to-head (CER/WER + latency vs system Tesseract / EasyOCR / PaddleOCR) | `feat/ocr-engine-parity` |
+
+#### Unowned and ready to pick up
+
+**N4 — publish q8_0 for esrgan and scunet.** Both were *unrunnable when
+quantized* until `06bc5d7a` (esrgan graph-node budget; scunet flattened kernel in
+the persistent cache). Fixes verified — esrgan q8_0 cos 0.999998 / 51.9 dB,
+scunet q8_0 0.999999 / 60.5 dB vs f32, and f32 output byte-identical before and
+after — but **no quantized artifact was ever published**, so the registry still
+ships f32 only. Quantize → verify decoded output → upload → pin.
+⚠ Do **not** ship an esrgan q4_k: 29.55 dB / max_abs 91 against q8_0's 51.89 dB.
+
+**N7 — extend the quantize-and-run sweep to the OCR/VL engines.**
+`crispembed-quantize` output is far less exercised than f32/f16 and the failures
+cluster there: of five SR/denoise engines swept, **two had never been run
+quantized at all and both aborted**. Not yet done for OCR/VL. Method: quantize a
+local artifact, run its CLI, diff the decoded output against the f32/f16 run.
+
+#### Deliberately deferred — recorded so they are not re-derived as questions
+
+**N5 — re-convert published h2ovl artifacts to carry `internvl2.chat_template`.**
+The runtime infers the `h2ogpt2` template from the vocab (no `<|im_start|>`,
+`<|end|>` present) because the published f16/q8_0 predate the key. Verified on
+both checkpoints, so this is hygiene, not a defect, against a ~6.7 GB re-upload
+plus re-pin.
+
+**N6 — `llm_output_norm` is h2ovl-2b's weakest q8_0 stage** (`cos_glob` 0.997297,
+the only stage >1 % off in magnitude: 323.44 vs 331.49). **Exact at f16**, so it
+is quantization not the norm implementation, and the logits recover to 0.998919
+right after. First place to look if this model misbehaves again.
+
+#### Standing traps, all re-confirmed this session
+- **`cos_min` is a per-row minimum.** Right gate for port correctness (h2ovl-2b
+  f16 = 1.000000 on all 54 stages incl. logits); wrong gate for a quantized
+  artifact (same model q8_0 = 0.61 on the logits while `cos_glob` is 0.998919 and
+  it transcribes a page). Use `CRISPEMBED_DIFF_COS_THRESHOLD` / `is_pass_global()`
+  for quant sweeps, and always read `|mine|`/`|ref|`.
+- **Dump references WITHOUT `--max-llm-layers`.** The cap also silently drops
+  `llm_output_norm` and `llm_logits`, leaving the harness short of the decision
+  boundary. Both h2ovl references are now full (54 / 46 stages) in
+  `cstr/crispembed-regression-fixtures`.
+- **A rule measured on one checkpoint is not a rule for the family.** Narrowed
+  twice this session: refusing sub-Q8 for all `internvl2` broke `internvl2-1b`
+  and `h2ovl-800m` (both fine at q4_k); vision→F16 for all `internvl2` inflated
+  the edge model 758 → 1135 MB. Re-measure a sibling before generalising.
+- **Timeouts truncate files.** A 10-min tool timeout killed a chained
+  `cp && upload` mid-copy, leaving a truncated GGUF that still looked plausible.
+  Check size *and* digest before trusting a copy; upload straight from the
+  source via `path_in_repo`.
+- **`.env` breaks `git push`.** Sourcing it injects a token that overrides the
+  credential helper — `env -u GH_TOKEN -u GITHUB_TOKEN git push`.
+
+
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
 width; native Metal versus Miniconda PyTorch CPU reference): Latin Gen2 formula
 200 `16.523/12.460 ms`, scan 128 `10.885/7.137 ms`, Latin Gen1 scan 128
