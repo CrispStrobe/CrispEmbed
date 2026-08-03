@@ -531,6 +531,63 @@ text. *Speed (warm, load-excluded):* behind 1.4-1.5x on small pages
 yet a uniform match; the remaining work is exactly T3/T4/T5/T6 (speed) and T10
 (the symbol-class quality gap).
 
+#### 2026-08-03 (later) — the "official v6 is unrecoverable locally" blocker is DEAD; T10 root-caused to a port bug; the true baseline moved
+
+Everything below supersedes the 2026-08-01 "recognizer blueprint unrecoverable /
+quality gate blocked" record and the paddleocr-2.10 arm as the parity target
+(2.10 runs a 96-class `en` PP-OCRv4 recognizer; it remains a valid engine-level
+reference but is NOT the original of what we ported).
+
+**Official PP-OCRv6 now runs on this Mac, three independent ways:**
+1. `~/venvs/paddleocr3` — paddleocr 3.7.0 + paddlepaddle 3.3.1; v6 is the
+   default pipeline; `PaddleOCR(text_detection_model_name="PP-OCRv6_small_det",
+   text_recognition_model_name="PP-OCRv6_small_rec")`; models cached under
+   `~/.paddlex/official_models/`. (HPI/ONNX plugin is Linux-x86-only — plain
+   Paddle backend is the Mac path.)
+2. `~/venvs/rapidocr` — rapidocr 3.9.2 + onnxruntime: RapidAI's ONNX exports
+   of PP-OCRv6 tiny/small/medium det+rec, Paddle-free, models cached in the
+   venv's `rapidocr/models/`. `TextRecognition`-style single-crop runs and
+   full-pipeline both work; also the ONNX graphs double as architecture ground
+   truth (op histogram small rec: 13xErf-GELU, 5xSiLU, 10xReLU, 5xHardSigmoid,
+   softmax in-graph).
+3. Source blueprints, freshly cloned (shallow) under `/Volumes/backups/code/`:
+   `PaddleOCR` (main @2661c7c — full v6 rec modeling source
+   `ppocr/modeling/backbones/rec_lcnetv4.py`, neck `necks/rnn.py:242-345`
+   `EncoderWithLightSVTR`, head `heads/rec_ctc_head.py`, C++ reference
+   `deploy/cpp_infer`, ONNX tar URLs in
+   `paddleocr-js/packages/core/src/resources/model-asset.ts:19-29`),
+   `RapidOCR`, and `TurboOCR` (MIT C++ ORT pipeline of v6 with an exact
+   pre/post contract and CPU perf tricks).
+
+**T10 verdict: PORT BUG, not model asymmetry.** There is no `en`-specific v6
+recognizer (all 50 languages share the multilingual model — RapidOCR
+`model_resolver.py:104-108`), and BOTH official runners read
+`commons_example_receipt.png` essentially perfectly with the same
+tier/generation we run: paddleocr-3.7 v6_small got all 12 `$`, every `1`, and
+`Transaction ID` (47 regions); RapidOCR v6_small ONNX likewise (one `S`, one
+`_Card` artifact). Our lane's `$`->`S`, `I`/`f`/`1`->`:`, `H`->`ll` is ours.
+
+**The true speed baseline (same v6_small models, warm, this M1):** official
+paddle `synth_00_clean` **0.83 s** vs our engine 2.0 s (**2.4x slower** — worse
+than the 1.4x measured against the 2.10/v4 arm); receipt official **5.9 s** vs
+our 6.2 s (near par). RapidOCR/onnxruntime does the receipt in **2.2 s** —
+2.7x faster than both Paddle and us; that is the realistic CPU ceiling to aim
+at, and ORT gets it with width-bucketed batching (see T4 notes).
+
+**Activation audit came back CLEAN** — our stem ReLU / channel-mixer GELU /
+neck SiLU / tiny-guide Hardswish placement matches the recovered official
+source, so the bug is in a subtler contract point. Ranked suspects with the
+official file:line, all now diffable against the local ONNX: (1) backbone exit
+pooling at inference is `avg_pool2d(kernel=(3,2))` with implicit **stride
+(3,2) — width halved**, training uses adaptive `[1,40]`
+(`rec_lcnetv4.py:637-642`); (2) residual wraps the **channel mixer only**, the
+token-mixer skip is folded into the fused RepDWConv (`rec_lcnetv4.py:501-505`
+— the paper formula is misleading); (3) SVTR `Block` `prenorm=False` actually
+means PRE-norm arithmetic (flag name inverted, `rec_svtrnet.py:272-278`); (4)
+preprocessing: BGR, per-image `max_wh_ratio=max(320/48, w/h)`, INTER_LINEAR,
+right-pad with 0.0 **in normalized space** (= gray 127.5), softmax already
+in-graph (`deploy/cpp_infer/.../processors.cc:48-128`, `rec_ctc_head.py:117`).
+
 **Measurement discipline, learned the hard way here.** This box runs 3–6
 concurrent agent builds; load average hit 103 mid-sweep and `tesseract-cli`
 itself drifted from 150 ms to 10.3 s inside the same harness. Every number
@@ -1133,6 +1190,20 @@ Start with PP-OCRv6, whose graph is already default and shape-keyed via
 `pp_graph_build(c, width)`. A bounded fused batch exists behind
 `CRISPEMBED_PPOCRV6_BATCH_GRAPH` (CPU-only; Metal hit a pooling shape assertion).
 
+**Reference design (TurboOCR, MIT, `/Volumes/backups/code/TurboOCR`) — its
+onnxruntime CPU path does the 47-region receipt in 2.2 s where we take 6.2 s,
+and its rec pipeline (`src/recognition/cpu_paddle_rec.cpp`) is the design to
+steal from:** width bucketing with a fine step (`ceil(w/16)*16`, batch only
+within a bucket — a coarse fixed table over-pads, a consecutive-N grouping
+after sorting over-pads at bucket boundaries); natural content width with
+floor 32 instead of pad-to-320 (fewer wasted columns); single
+warpPerspective from the original image straight to `(w,48)` (the
+crop-then-resize path resamples twice and destroys small glyphs); a 2-row
+duplicate-crop batch self-test asserting both rows decode identically
+(catches row-stride bugs); zero-copy decode out of runtime-owned output; and
+a NEON argmax over the 18,710-wide class rows (their SIMD is AVX2-only —
+unclaimed headroom on this M1).
+
 **Acceptance** Decode each row independently and compare against the unbatched
 result for the same crop, plus the 34-fixture text check.
 
@@ -1199,29 +1270,38 @@ change for well-formed requests.
 
 ---
 
-### T10 — PP-OCRv6 clean-monospace symbol-class gap vs official (quality)
+### T10 — PP-OCRv6 recognizer symbol-class PORT BUG (root-cause and fix)
 
-On `commons_example_receipt.png` the native lane loses to `paddleocr-py` 12x
-on CER (0.0885 vs 0.0074) through systematic symbol substitutions — `$`→`S`,
-`I`/`f`/`1`→`:`, `H`→`ll` — with identical region count, so the detector is
-not the problem. Already ruled out: `CRISPEMBED_PPOCRV6_RGB=1` (no change),
-truncated charset (full 18,710-class label list is embedded), and the medium
-recognizer (fixes word shapes, keeps the `$`→`S` class).
+**Status 2026-08-03: cause narrowed to the port.** Both official runners
+(paddleocr-3.7 v6_small and RapidOCR's official ONNX export, both local — see
+the 2026-08-03-later head-to-head subsection) read
+`commons_example_receipt.png` correctly where our lane systematically emits
+`$`→`S`, `I`/`f`/`1`→`:`, `H`→`ll`. Model asymmetry is excluded (no `en` v6
+recognizer exists; all languages share the multilingual model). Already ruled
+out: RGB/BGR (no effect, and the page is grayscale anyway), truncated charset
+(18,710 classes embedded), activation placement (our stem ReLU / channel-mixer
+GELU / neck SiLU matches `rec_lcnetv4.py` + the ONNX op histogram).
 
-**Do** Separate the two candidate causes before touching any code. (1) Run
-*official* PP-OCRv6 recognizer inference on the exact line crops — this is the
-already-blocked official-blueprint gate; per the standing offload directive,
-stand it up on Kaggle/VPS from the PaddleX/HF checkpoint rather than this Mac.
-If official v6 makes the same symbol errors, the gap is model asymmetry
-(96-class `en` PP-OCRv4 in paddle's lane vs multilingual v6 in ours) and the
-fix is shipping an `en` recognizer artifact for the English lane, not graph
-work. If official v6 reads `$` correctly, it is a port bug in
-preprocessing/decode and text-gold parity on these crops becomes the
-acceptance test.
+**Do — stage-diff against the official ONNX, first divergence wins.** The
+reference is `~/venvs/rapidocr/.../rapidocr/models/PP-OCRv6_rec_small.onnx`
+(same weights family as our GGUF). Feed BOTH sides the identical preprocessed
+tensor for one failing crop (a receipt `$`-price line), then bisect with
+`onnx.utils.extract_model` / added graph outputs vs our debug taps:
+stem out → stage outs → `avg_pool2d` out → neck (skip/reduce/local/SVTR
+blocks/LayerNorm) → head logits. Prime suspects, in order (details + file:line
+in the head-to-head subsection): inference pooling stride `(3,2)`
+(width-halving), channel-mixer-only residual, `prenorm` flag inversion,
+pad-value/`max_wh_ratio` convention, double-softmax (official graph already
+ends in softmax).
 
-**Acceptance** Either an official-v6 crop-level transcript demonstrating
-parity (port exonerated, en-model artifact TODO filed), or a reproduced
-divergence with the first differing stage identified.
+**Beware:** our existing gold archives were dumped from our own torch mirror —
+per-stage cosine 0.9999 against them proves self-consistency, not official
+parity. Do not use them as the reference for this bug; use the official ONNX.
+
+**Acceptance** Native decoded text matches the official ONNX transcript on the
+receipt crops (all 12 `$`, `Transaction ID`, quantities) and the 26-fixture
+decoded-text check is unchanged-or-better; the fix lands as default only with
+both.
 
 ---
 
