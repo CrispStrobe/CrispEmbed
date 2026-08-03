@@ -127,17 +127,21 @@ static bool path_within(const std::string & path, const std::string & root) {
 // empty path as a 400, so confinement fails closed without new error branches.
 // The reason goes to stderr, not the response: an unauthenticated caller must
 // not learn whether a path exists.
+//
+// The field is read through core_json's depth-1 finder, not a bare
+// body.find("\"key\""). A nested decoy — {"meta":{"image":"/a"},"image":"/b"} —
+// makes a naive scan take the first textual hit while a validating proxy in
+// front reads the real top-level field, so the two disagree about which path
+// was requested. Matching the same finder every other field read uses keeps
+// confinement and parsing aligned on one notion of "the image field".
 static std::string extract_path_field(const std::string & body, const char * key, const std::string & root,
                                       const char * root_flag) {
-    const std::string needle = std::string("\"") + key + "\"";
-    const auto pos = body.find(needle);
-    if (pos == std::string::npos) return "";
-    const auto q1 = body.find('"', pos + needle.size());
-    if (q1 == std::string::npos) return "";
-    const auto q2 = body.find('"', q1 + 1);
-    if (q2 == std::string::npos) return "";
+    std::vector<std::string> vals;
+    json_extract_strings(body, key, vals);
+    if (vals.empty()) return "";
 
-    std::string path = body.substr(q1 + 1, q2 - q1 - 1);
+    std::string path = vals.front();
+    if (path.empty()) return "";
     if (!path_within(path, root)) {
         fprintf(stderr, "crispembed-server: rejected '%s' path outside %s (%s): %s\n", key, root_flag, root.c_str(),
                 path.c_str());
@@ -2088,18 +2092,19 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
-    // Shared helper: extract the "image" path from a JSON body (decoy-safe,
-    // escaping-aware — same depth-1 finder as every other field read).
-    auto extract_image_path = [](const std::string & body) -> std::string {
-        std::vector<std::string> v;
-        json_extract_strings(body, "image", v);
-        return v.empty() ? std::string() : v.front();
-    };
+    // NOTE: there used to be a local `extract_image_path` lambda here. It read
+    // the field correctly but skipped path_within(), and being declared at
+    // function scope it SHADOWED the file-scope extract_image_path() for every
+    // handler registered below it — so --image-root confined the 13 endpoints
+    // above this point (including /face and /detect) and silently missed the 20
+    // below, among them every super-resolution and restoration engine. Do not
+    // reintroduce a same-named local: the file-scope version is the one that
+    // confines, and shadowing it fails open without a diagnostic.
 
     // POST /scan/split — detect a two-up book spread (no model needed)
     // Request:  {"image": "/path/to/scan.png"}
     // Response: {"pages": 1|2, "split_x": X (if 2), "width": W, "height": H}
-    svr.Post("/scan/split", [&, extract_image_path](const httplib::Request & req, httplib::Response & res) {
+    svr.Post("/scan/split", [&](const httplib::Request & req, httplib::Response & res) {
         std::string image_path = extract_image_path(req.body);
         if (image_path.empty()) {
             res.status = 400;
@@ -2126,7 +2131,7 @@ int main(int argc, char ** argv) {
     // POST /scan/content — detect the printed content bounding box (no model needed)
     // Request:  {"image": "/path/to/scan.png"}
     // Response: {"content": true, "x0":.., "y0":.., "x1":.., "y1":..} | {"content": false}
-    svr.Post("/scan/content", [&, extract_image_path](const httplib::Request & req, httplib::Response & res) {
+    svr.Post("/scan/content", [&](const httplib::Request & req, httplib::Response & res) {
         std::string image_path = extract_image_path(req.body);
         if (image_path.empty()) {
             res.status = 400;
