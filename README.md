@@ -610,21 +610,36 @@ loads, prefills, and returns confident nonsense rather than erroring. The 800m
 sibling sets `use_msac: false` and needs none of it. Geometry is pinned by
 `tests/test_msac_tiling.cpp` against the upstream algorithm.
 
-### Marking generated images (EU AI Act Art. 50(2))
+### Provenance on image outputs (EU AI Act Art. 50(2))
 
-Off by default. `CRISPEMBED_MARK_GENERATED=1` writes a machine-readable
-provenance comment into every image the library emits, naming the engine that
-touched the pixels — so a reader can tell synthesised detail (ESRGAN, NAFNet)
-from resampling (deskew, dewarp), which is not recoverable from the pixels:
+Image outputs are **PNG by default** and always carry a machine-readable `iTXt`
+provenance chunk naming the engine that touched the pixels — Netpbm has no
+metadata container, which is why the format changed:
 
 ```bash
-CRISPEMBED_MARK_GENERATED=1 crispembed --esrgan-model m.gguf --esrgan in.png > out.ppm
-head -5 out.ppm     # P6 / # CrispEmbed-Generated: true / # CrispEmbed-Engine: esrgan-sr
+crispembed --esrgan-model m.gguf --esrgan in.png > out.png
+python -c "from PIL import Image; print(Image.open('out.png').info['CrispEmbed'])"
+# generated=true / software=CrispEmbed / engine=esrgan-sr
+# digitalSourceType=.../algorithmicallyEnhanced
 ```
 
-It is a header comment, not a signature — strippable, with no cryptographic
-binding to the pixels. For tamper-evident provenance you still need C2PA with a
-signing identity. See [POLICY.md §5](POLICY.md).
+The IPTC term is `algorithmicallyEnhanced`, not `trainedAlgorithmicMedia`: the
+input is a real capture we enhanced, and claiming wholly-synthetic media would
+be false. `CRISPEMBED_IMAGE_FORMAT=ppm` restores the old raw Netpbm output.
+
+**Content Credentials (C2PA)** are added when a signing identity is configured:
+
+```bash
+cmake -S . -B build -DCRISPEMBED_C2PA_FETCH=ON     # pull the c2pa-rs native lib
+./scripts/make-c2pa-cert.sh                        # per-installation chain
+export CRISPEMBED_C2PA_CERT=~/.config/crispembed/c2pa/cert.pem
+export CRISPEMBED_C2PA_KEY=~/.config/crispembed/c2pa/key.pem
+```
+
+**No signing key ships with CrispEmbed, on purpose.** A private key in a public
+repo would let anyone mint manifests naming CrispEmbed for images it never
+touched. A locally generated chain shows as *unverified signer* — it attests
+what was done, not who did it. See [POLICY.md §5](POLICY.md).
 
 ### Model integrity
 

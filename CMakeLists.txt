@@ -140,10 +140,14 @@ endif()
 # ---------------------------------------------------------------------------
 # Core GGUF loader library
 # ---------------------------------------------------------------------------
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CrispEmbedC2pa.cmake)
+
 add_library(crispembed-core STATIC
     src/core/gguf_loader.cpp
     src/core/mel.cpp
+    src/core/image_out.cpp
 )
+crispembed_enable_c2pa(crispembed-core)
 target_include_directories(crispembed-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
@@ -550,6 +554,10 @@ target_link_libraries(test-msac-tiling PRIVATE crispembed)
 
 add_executable(test-provenance-marking tests/test_provenance_marking.cpp)
 target_include_directories(test-provenance-marking PRIVATE src)
+
+add_executable(test-image-provenance tests/test_image_provenance.cpp)
+target_link_libraries(test-image-provenance PRIVATE crispembed-core)
+crispembed_enable_c2pa(test-image-provenance)
 
 add_executable(test-gguf-loader-mmap tests/test_gguf_loader_mmap.cpp)
 target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)
