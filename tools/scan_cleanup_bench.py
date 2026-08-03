@@ -33,6 +33,7 @@ import sys
 import numpy as np
 from PIL import Image, ImageDraw
 
+
 try:
     import pytesseract
 except Exception:

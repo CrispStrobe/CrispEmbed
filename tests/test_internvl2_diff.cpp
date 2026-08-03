@@ -117,8 +117,8 @@ static int crispembed_test_main(int argc, char ** argv) {
         auto [ref_data, ref_n] = ref.get_f32("vis_proj_output");
         if (ref_data && ref_n > 0) {
             auto r = ref.compare("vis_proj_output", pr.embeds, pr.n_tokens * pr.embed_dim);
-            printf("  vis_proj_output: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
-                   r.is_pass() ? "PASS" : "FAIL");
+            printf("  vis_proj_output: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n", r.cos_min,
+                   r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
             if (!r.is_pass()) failures++;
         }
     }
@@ -145,7 +145,8 @@ static int crispembed_test_main(int argc, char ** argv) {
                     auto [rn, nn] = ref.get_f32("llm_output_norm");
                     if (rn && nn > 0) {
                         auto r = ref.compare("llm_output_norm", lr.hidden, lr.n_tokens * lr.hidden_dim);
-                        printf("  llm_output_norm: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                        printf("  llm_output_norm: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                               r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm,
                                r.is_pass() ? "PASS" : "FAIL");
                         if (!r.is_pass()) failures++;
                     }
@@ -154,7 +155,8 @@ static int crispembed_test_main(int argc, char ** argv) {
                     auto [rl, nl] = ref.get_f32("llm_logits");
                     if (rl && nl > 0) {
                         auto r = ref.compare("llm_logits", lr.logits, lr.n_tokens * lr.vocab_size);
-                        printf("  llm_logits:      cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                        printf("  llm_logits:      cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                               r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm,
                                r.is_pass() ? "PASS" : "FAIL");
                         if (!r.is_pass()) failures++;
 

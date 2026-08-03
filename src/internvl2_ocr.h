@@ -166,6 +166,11 @@ struct tokenizer {
     int vocab_size = 0;
     int bos_id = 1;
     int eos_id = 2;
+    // From the checkpoint's tokenizer_config, not assumed. h2ovl declares
+    // add_bos_token: false and upstream chat() tokenizes the query plainly, so
+    // prepending <s> there diverges from the blueprint. Defaults true so a GGUF
+    // converted before this key existed keeps its previous behaviour.
+    bool add_bos_token = true;
     int im_start_id = -1; // <|im_start|>
     int im_end_id = -1;   // <|im_end|>
     int image_token_id = 0;

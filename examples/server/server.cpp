@@ -34,6 +34,8 @@
 #include "core/json.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
+#include "core/image_out.h"
+#include "core/temp_file.h"
 #include "model_mgr.h"
 #include "pdf_info.h"
 #if __has_include("text_lid_dispatch.h")
@@ -86,9 +88,10 @@ using core_json::json_extract_strings;
 // treats as a 400 — so confinement fails closed without needing 30 handlers
 // to grow a new error branch.
 static std::string g_image_root; // empty = unrestricted
+static std::string g_model_root; // empty = unrestricted
 
-static bool image_path_within_root(const std::string & path) {
-    if (g_image_root.empty()) return true;
+static bool path_within(const std::string & path, const std::string & root) {
+    if (root.empty()) return true;
     if (path.empty()) return false;
 
     std::error_code ec;
@@ -96,76 +99,108 @@ static bool image_path_within_root(const std::string & path) {
     // symlink planted inside the root can escape it.
     const std::filesystem::path resolved = std::filesystem::weakly_canonical(path, ec);
     if (ec) return false;
-    const std::filesystem::path root = std::filesystem::weakly_canonical(g_image_root, ec);
+    const std::filesystem::path base = std::filesystem::weakly_canonical(root, ec);
     if (ec) return false;
 
-    auto r = root.begin();
+    // Component-wise, not string-prefix: /srv/scansEVIL must not pass for a
+    // root of /srv/scans.
+    auto r = base.begin();
     auto p = resolved.begin();
-    for (; r != root.end(); ++r, ++p) {
+    for (; r != base.end(); ++r, ++p) {
         if (p == resolved.end() || *p != *r) return false;
     }
     return true;
 }
 
-// Parses {"image": "..."} and applies --image-root. Returns "" when absent or
-// out of bounds; the rejection reason goes to stderr, since the shared 400
-// ("no image path") deliberately does not tell an unauthenticated caller
-// whether a path exists.
-static std::string extract_image_path(const std::string & body) {
-    const auto pos = body.find("\"image\"");
+// Parse a path-valued field and confine it.
+//
+// Every endpoint here reads its input by SERVER-SIDE path, which is convenient
+// for a local tool and an arbitrary-filesystem primitive for a reachable one.
+// `--image-root` originally covered only {"image": ...}; three other fields
+// bypassed it, and two were worse than the read it was written for:
+//
+//   "output"  /preprocess/dewarp   — fopen("wb"), i.e. arbitrary file WRITE
+//   "model"   /preprocess/tps-dewarp — loaded as a GGUF and EXECUTED as a graph
+//   "file"    /pdf/dpi             — arbitrary read
+//
+// Returns "" when absent or out of bounds; every endpoint already treats an
+// empty path as a 400, so confinement fails closed without new error branches.
+// The reason goes to stderr, not the response: an unauthenticated caller must
+// not learn whether a path exists.
+static std::string extract_path_field(const std::string & body, const char * key, const std::string & root,
+                                      const char * root_flag) {
+    const std::string needle = std::string("\"") + key + "\"";
+    const auto pos = body.find(needle);
     if (pos == std::string::npos) return "";
-    const auto q1 = body.find('"', pos + 7);
+    const auto q1 = body.find('"', pos + needle.size());
     if (q1 == std::string::npos) return "";
     const auto q2 = body.find('"', q1 + 1);
     if (q2 == std::string::npos) return "";
 
     std::string path = body.substr(q1 + 1, q2 - q1 - 1);
-    if (!image_path_within_root(path)) {
-        fprintf(stderr, "crispembed-server: rejected image path outside --image-root (%s): %s\n", g_image_root.c_str(),
+    if (!path_within(path, root)) {
+        fprintf(stderr, "crispembed-server: rejected '%s' path outside %s (%s): %s\n", key, root_flag, root.c_str(),
                 path.c_str());
         return "";
     }
     return path;
 }
 
-// --- Private temp files --------------------------------------------------
+static std::string extract_image_path(const std::string & body) {
+    return extract_path_field(body, "image", g_image_root, "--image-root");
+}
+
+// Encode a processed image for a JSON response.
 //
-// Uploaded pages were written to a guessable /tmp path (pid + counter) with
-// fopen("wb"), which follows symlinks and leaves the file world-readable
-// under a default umask. On a shared host that is both a disclosure of the
-// document being OCR'd and a symlink-race target. mkstemp gives an
-// unpredictable name, O_EXCL creation, and 0600.
+// These endpoints used to base64 RAW RGB bytes straight into the payload, so
+// twelve of them — every super-resolution and restoration engine, i.e. exactly
+// the ones POLICY.md §5 is about because they SYNTHESISE detail — returned
+// completely unmarked AI-processed images. Going through core_imgout means the
+// bytes are a PNG carrying the provenance chunk (and a C2PA manifest when a
+// signing identity is configured), the same as the CLI.
 //
-// Returns "" on failure. The caller still owns cleanup.
-static std::string make_private_temp_file(const char * suffix) {
-#ifdef _WIN32
-    // Windows temp dirs are per-user; GetTempFileName creates the file
-    // exclusively and hands back a unique name.
-    char dir[MAX_PATH];
-    char path[MAX_PATH];
-    if (!GetTempPathA(sizeof(dir), dir)) return "";
-    if (!GetTempFileNameA(dir, "crsp", 0, path)) return "";
-    std::string out(path);
-    if (suffix && *suffix) {
-        const std::string renamed = out + suffix;
-        if (MoveFileA(out.c_str(), renamed.c_str())) out = renamed;
+// `out_format` tells the client what it actually got: "png" normally, "raw"
+// under CRISPEMBED_IMAGE_FORMAT=ppm, which stays available for callers that
+// were consuming raw RGB and are not ready to decode.
+static std::string encode_image_b64(const uint8_t * data, int w, int h, int comp, const char * engine,
+                                    std::string & out_format) {
+    static const char * b64chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+    std::string bytes;
+    if (core_imgout::want_ppm()) {
+        bytes.assign(reinterpret_cast<const char *>(data), (size_t)w * h * comp);
+        out_format = "raw";
+    } else {
+        std::string mime;
+        if (!core_imgout::emit_to_string(bytes, mime, data, w, h, comp, engine)) {
+            bytes.assign(reinterpret_cast<const char *>(data), (size_t)w * h * comp);
+            out_format = "raw";
+        } else {
+            out_format = "png";
+        }
     }
-    return out;
-#else
-    const char * base = std::getenv("TMPDIR");
-    std::string tmpl = std::string(base && *base ? base : "/tmp");
-    if (!tmpl.empty() && tmpl.back() == '/') tmpl.pop_back();
-    tmpl += "/crispembed_doc_XXXXXX";
-    if (suffix && *suffix) tmpl += suffix;
 
-    std::vector<char> buf(tmpl.begin(), tmpl.end());
-    buf.push_back('\0');
+    const size_t n_bytes = bytes.size();
+    const uint8_t * src = reinterpret_cast<const uint8_t *>(bytes.data());
+    std::string b64;
+    b64.reserve(((n_bytes + 2) / 3) * 4);
+    for (size_t i = 0; i < n_bytes; i += 3) {
+        uint32_t v = (uint32_t)src[i] << 16;
+        if (i + 1 < n_bytes) v |= (uint32_t)src[i + 1] << 8;
+        if (i + 2 < n_bytes) v |= (uint32_t)src[i + 2];
+        b64 += b64chars[(v >> 18) & 0x3f];
+        b64 += b64chars[(v >> 12) & 0x3f];
+        b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
+        b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
+    }
+    return b64;
+}
 
-    const int fd = (suffix && *suffix) ? mkstemps(buf.data(), (int)strlen(suffix)) : mkstemp(buf.data());
-    if (fd < 0) return "";
-    close(fd); // created 0600 and owned by us; reopened by name below
-    return std::string(buf.data());
-#endif
+// Private temp files: see core/temp_file.h. Uploaded pages used to go to a
+// guessable /tmp/crispembed_doc_<pid>_<n>.img opened with fopen("wb") —
+// symlink-redirectable and world-readable, holding the document being OCR'd.
+static std::string make_private_temp_file(const char * suffix) {
+    return core_tmp::make_private(suffix);
 }
 
 static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {
@@ -191,10 +226,9 @@ static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int
     }
     FILE * f = fopen(path, "wb");
     if (!f) return false;
-    fprintf(f, "P6\n%d %d\n255\n", out_w, out_h);
-    const size_t written = fwrite(rotated.data(), 1, rotated.size(), f);
+    const bool ok = core_imgout::emit(f, rotated.data(), out_w, out_h, 3, "autorotate");
     fclose(f);
-    return written == rotated.size();
+    return ok;
 }
 
 int main(int argc, char ** argv) {
@@ -243,6 +277,8 @@ int main(int argc, char ** argv) {
             host = argv[++i];
         else if (strcmp(argv[i], "--image-root") == 0 && i + 1 < argc)
             g_image_root = argv[++i];
+        else if (strcmp(argv[i], "--model-root") == 0 && i + 1 < argc)
+            g_model_root = argv[++i];
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
             port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc)
@@ -331,6 +367,10 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "                    this any reachable client can read any file this\n");
         fprintf(stderr, "                    process can. Set it whenever the port is not\n");
         fprintf(stderr, "                    loopback-only.\n");
+        fprintf(stderr, "  --model-root DIR  confine client-supplied model paths (e.g. the\n");
+        fprintf(stderr, "                    tps-dewarp \"model\" field) to DIR. A GGUF is a graph\n");
+        fprintf(stderr, "                    this process executes, so an unconfined model path\n");
+        fprintf(stderr, "                    is a code-execution surface, not a data one.\n");
         fprintf(stderr, "\nFace pipeline:\n");
         fprintf(stderr, "  --det MODEL   face detection model (SCRFD GGUF)\n");
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
@@ -2116,12 +2156,7 @@ int main(int argc, char ** argv) {
     svr.Post("/pdf/dpi", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string file_path;
-        auto pos = body.find("\"file\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 6);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) file_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        file_path = extract_path_field(body, "file", g_image_root, "--image-root");
         if (file_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'file' field\"}", "application/json");
@@ -2209,12 +2244,9 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path, output_path;
         image_path = extract_image_path(body);
-        auto opos = body.find("\"output\"");
-        if (opos != std::string::npos) {
-            auto q1 = body.find('"', opos + 8);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) output_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        // A client-supplied WRITE target. Confined to --image-root: without it,
+        // any file this process can write is creatable or truncatable.
+        output_path = extract_path_field(body, "output", g_image_root, "--image-root");
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2239,8 +2271,7 @@ int main(int argc, char ** argv) {
         if (!output_path.empty()) {
             FILE * f = fopen(output_path.c_str(), "wb");
             if (f) {
-                fprintf(f, "P5\n%d %d\n255\n", ow, oh);
-                fwrite(out.data(), 1, ow * oh, f);
+                core_imgout::emit(f, out.data(), ow, oh, 1, "dewarp");
                 fclose(f);
             }
         }
@@ -2251,13 +2282,12 @@ int main(int argc, char ** argv) {
             want_image = accept.find("image/") != std::string::npos;
         }
         if (want_image) {
-            // PGM format: P5 header + raw bytes
-            std::string pgm;
-            char hdr[64];
-            snprintf(hdr, sizeof(hdr), "P5\n%d %d\n255\n", ow, oh);
-            pgm = hdr;
-            pgm.append((const char *)out.data(), ow * oh);
-            res.set_content(pgm, "image/x-portable-graymap");
+            // PNG (with provenance) by default; raw PGM under
+            // CRISPEMBED_IMAGE_FORMAT=ppm. The MIME comes back from the same
+            // call that produced the bytes, so the two cannot disagree.
+            std::string body, mime;
+            core_imgout::emit_to_string(body, mime, out.data(), ow, oh, 1, "dewarp");
+            res.set_content(body, mime);
         } else {
             char buf[256];
             snprintf(buf, sizeof(buf), "{\"dewarped\":true,\"width\":%d,\"height\":%d,\"output\":\"%s\"}", ow, oh,
@@ -2271,12 +2301,10 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path, model_path;
         image_path = extract_image_path(body);
-        auto pos = body.find("\"model\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) model_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        // A GGUF is a graph this process then executes, so a client-supplied
+        // model path is a code-execution surface, not a data one. Separate root
+        // from --image-root: a model legitimately lives outside an image dir.
+        model_path = extract_path_field(body, "model", g_model_root, "--model-root");
         if (image_path.empty() || model_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' or 'model' field\"}", "application/json");
@@ -2473,23 +2501,14 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "text-sr", img_format);
         crispembed_text_sr_free_image(out);
 
         const int scale = crispembed_text_sr_upscale_factor(text_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2544,23 +2563,14 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "pan-sr", img_format);
         crispembed_pan_sr_free_image(out);
 
         const int scale = crispembed_pan_sr_scale(pan_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2614,23 +2624,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "hat-sr", img_format);
         crispembed_hat_sr_free_image(out);
 
         const int scale = crispembed_hat_sr_scale(hat_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2684,23 +2685,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "dat-sr", img_format);
         crispembed_dat_sr_free_image(out);
 
         const int scale = (w > 0) ? ow / w : 2;
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2754,23 +2746,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "safmn-sr", img_format);
         crispembed_safmn_sr_free_image(out);
 
         const int scale = crispembed_safmn_sr_scale(safmn_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2824,23 +2807,14 @@ int main(int argc, char ** argv) {
 
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "esrgan-sr", img_format);
         crispembed_esrgan_sr_free_image(out);
 
         const int scale = crispembed_esrgan_sr_scale(esrgan_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2895,23 +2869,14 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "swinir-sr", img_format);
         crispembed_swinir_sr_free_image(out);
 
         const int scale = crispembed_swinir_sr_scale(swinir_sr_ctx);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": " << scale << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
@@ -2965,21 +2930,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)ow * oh * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, ow, oh, 3, "tbsrn-sr", img_format);
         crispembed_tbsrn_sr_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << ow << ", \"height\": " << oh << ", \"original_width\": " << w
            << ", \"original_height\": " << h << ", \"upscale_factor\": 4"
            << ", \"ms\": " << std::fixed << std::setprecision(1) << ms << "}";
@@ -3033,21 +2989,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "restormer", img_format);
         crispembed_restormer_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
            << "}";
 
@@ -3099,21 +3046,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "scunet", img_format);
         crispembed_scunet_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
            << "}";
 
@@ -3174,21 +3112,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "instructir", img_format);
         crispembed_instructir_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"task\": " << task << ", \"ms\": " << std::fixed
            << std::setprecision(1) << ms << "}";
 
@@ -3240,21 +3169,12 @@ int main(int argc, char ** argv) {
         // Base64-encode the raw RGB output
         static const char b64chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         const size_t n_bytes = (size_t)w * h * 3;
-        std::string b64;
-        b64.reserve(((n_bytes + 2) / 3) * 4);
-        for (size_t i = 0; i < n_bytes; i += 3) {
-            uint32_t v = (uint32_t)out[i] << 16;
-            if (i + 1 < n_bytes) v |= (uint32_t)out[i + 1] << 8;
-            if (i + 2 < n_bytes) v |= (uint32_t)out[i + 2];
-            b64 += b64chars[(v >> 18) & 0x3f];
-            b64 += b64chars[(v >> 12) & 0x3f];
-            b64 += (i + 1 < n_bytes) ? b64chars[(v >> 6) & 0x3f] : '=';
-            b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
-        }
+        std::string img_format;
+        const std::string b64 = encode_image_b64(out, w, h, 3, "adair", img_format);
         crispembed_adair_free_image(out);
 
         std::ostringstream js;
-        js << "{\"image\": \"" << b64 << "\""
+        js << "{\"image\": \"" << b64 << "\", \"format\": \"" << img_format << "\""
            << ", \"width\": " << w << ", \"height\": " << h << ", \"ms\": " << std::fixed << std::setprecision(1) << ms
            << "}";
 

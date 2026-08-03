@@ -10,7 +10,10 @@ This guide covers adding a new model backend (OCR, embedding, face, etc.) to Cri
 4. [ ] Wire into the C ABI (`src/crispembed.cpp`)
 5. [ ] **Wire into orchestrator** (OCR only): enum + `map_engine` + header comment + `ocr_orchestrator.cpp` dispatch + CrispSorter
 6. [ ] Wire into CMake + CLI + model registry + all bindings (Python, Rust, Dart)
-7. [ ] Verify parity, quantize, update CrispCalc catalog
+7. [ ] **Regenerate SHA-256 pins** (`python tools/fetch_model_hashes.py`) — an
+       unpinned registry URL refuses to download
+8. [ ] Verify parity, quantize, update CrispCalc catalog
+9. [ ] `tools/format.sh --fix`, and add a row to `PLAN.md`'s active-work table
 
 ---
 
@@ -221,6 +224,31 @@ Add entry to `k_registry[]`:
  "https://huggingface.co/cstr/yourmodel-gguf"},
 ```
 
+**Then regenerate the SHA-256 pins — this is not optional:**
+
+```bash
+python tools/fetch_model_hashes.py        # rewrites examples/cli/model_hashes.h
+```
+
+An unpinned URL **refuses to download**. A GGUF is a graph this process then
+executes, so "the download succeeded" is not an integrity statement; the
+registry fails closed rather than installing an unverified payload. If you skip
+this step your model simply will not fetch, and the error will tell you so.
+`CRISPEMBED_ALLOW_UNPINNED_MODEL=1` overrides it for a one-off.
+
+Three CI checks then hold the entry honest, all in `main-health.yml`:
+
+| Check | Catches |
+|---|---|
+| `fetch_model_hashes.py --check` | pin missing, or the re-host re-uploaded different bytes |
+| `fetch_model_hashes.py --check-sizes` | `"SIZE MB"` not matching the real file (4 entries were wrong when this landed) |
+| `tests/check_registry_licenses.py` | `"license"` not matching the upstream card |
+
+For the licence, check the **base model**, not just the fine-tune's tag — and
+read `license_name` as well as `license`. Qwen2.5-VL-3B is `qwen-research`
+(research-only) while the 7B and Qwen2-VL-2B are Apache-2.0, and HuggingFace
+stores that in `license_name`, so a checker reading only `license` sees nothing.
+
 ### HTTP Server (`examples/server/server.cpp`)
 If adding a new modality (not just a new OCR model variant), wire into the server:
 1. Add `--yourflag MODEL` arg parsing and context init
@@ -293,6 +321,24 @@ Should report:
 - `proj_output: cos >= 0.9999` (encoder parity)
 - Same top token as reference
 - Same decoded text
+
+**Compare every stage, and make the result an exit code.** Two failures worth
+knowing about, both found in shipped harnesses:
+
+- A harness that *ran* the decoder, printed the output shape, freed the buffers
+  and compared **nothing** — so "27 stages passing" was the vision tower alone
+  and the 24-layer LLM had no coverage at all.
+- The same harness returned `0` unconditionally, so every stage was advisory
+  and a red one could not fail CI.
+
+Count failures and `return 1`. Cover the whole stack: capping the dump at a few
+decoder layers leaves the layers where a port actually diverges untested, and
+you must compare the **logits** — a decoder can be wrong in a way every hidden
+state hides, and generation reads logits, not hidden states.
+
+**Check `argmax`, not only cosine.** Cosine stays high while the argmax moves,
+and the argmax is what generation acts on. A model emitting fluent nonsense can
+show cos 0.9999 at every stage.
 
 ### Quantization matrix
 | Format | Size | Parity (cos) | Notes |
@@ -381,6 +427,18 @@ Utility libraries (not model backends) follow a lighter pattern.
 - **Unit tests** with synthetic images (gradients, speckles, curves)
 - **Orchestrator integration** — new detector/cleanup methods surface as
   per-stage options via the `crispembed_ocr_stage` builder
+- **Emitting an image? Use `core_imgout::emit()`** (`src/core/image_out.h`), never
+  a hand-written `printf("P6\n...")`. It writes PNG with an `iTXt` provenance
+  chunk naming your engine, and signs a C2PA manifest when an identity is
+  configured. `POLICY.md` §5 claims every image CrispEmbed *returns to a caller*
+  is marked; a new engine that prints its own header silently makes that claim
+  false. Internal temporaries are the exception — use `core_tmp::make_private()`
+  (`src/core/temp_file.h`) for those, never a hand-built /tmp name.
+  Pass the engine name — it is what tells a reader whether detail was
+  synthesised (ESRGAN, NAFNet) or merely resampled (deskew, dewarp). Returning
+  the image in an HTTP body instead? `emit_to_string()` hands back the matching
+  Content-Type with the bytes, so the two cannot disagree.
+  See [provenance.md](provenance.md).
 
 ---
 
@@ -388,8 +446,31 @@ Utility libraries (not model backends) follow a lighter pattern.
 
 - **Always use `git worktree`** for feature branches — never checkout in-place
 - **Keep debug prints** but gate behind `CRISPEMBED_DEBUG` env var
+- **Debug dumps write to fixed `/tmp` paths on purpose.** `LAYOUT_DEBUG` makes
+  `src/layout_detect.cpp` write `/tmp/cpp_*.bin` and read `/tmp/py_*.bin` — the
+  names are a contract with the Python reference dumper, so do not randomise
+  them. Do know what you are enabling: on a shared host those paths are
+  predictable (a planted symlink redirects the write) and the files hold
+  activations. For anything that is not a debug interchange, use
+  `core_tmp::make_private()` (`src/core/temp_file.h`) — never a hand-built
+  `/tmp` name.
 - **Build target:** `crispembed` (static lib) + `crispembed-cli` + `crispembed-shared` + test binaries
-- **Format:** No mandatory formatter, but keep consistent with surrounding code
+- **Format: run `tools/format.sh --fix` before pushing.** This is enforced —
+  `.github/workflows/lint.yml` pins clang-format 18.1.8 and fails the build on
+  drift. (It runs on macOS because 18.1.8 wraps some files differently there
+  than on Linux, so a Linux-formatted tree can still fail.)
+- **Model-free tests run on every push** and need no weights or network:
+  ```bash
+  cmake --build build --target test-image-provenance test-provenance-marking test-msac-tiling
+  ./build/test-image-provenance && ./build/test-provenance-marking && ./build/test-msac-tiling
+  ```
+  Anything you add that can be checked without a checkpoint belongs here rather
+  than in the artifact-gated tiers — a test that only runs on an equipped runner
+  gates nothing on most pushes.
+- **Coordinate through `PLAN.md`.** Several sessions run in parallel against
+  this repo. Add a row to the "Active work in flight" table before starting,
+  update it at each checkpoint, and push that file to `main` so others can see
+  what is claimed.
 
 ---
 

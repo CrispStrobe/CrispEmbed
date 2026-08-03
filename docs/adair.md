@@ -75,8 +75,10 @@ stay SIMD-scalar. Default ON; set `ADAIR_SCALAR=1` to force the scalar path.
 
 ### CLI
 
+> **Output format:** PNG with an `iTXt` provenance chunk by default (`CRISPEMBED_IMAGE_FORMAT=ppm` for raw Netpbm). See [provenance.md](provenance.md).
+
 ```bash
-crispembed --adair-model adair-5d-f16.gguf --adair noisy.png > restored.ppm
+crispembed --adair-model adair-5d-f16.gguf --adair noisy.png > restored.png
 ```
 
 ### Server

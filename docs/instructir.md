@@ -29,10 +29,12 @@ so no text encoder is needed at runtime.
 
 ### CLI
 
+> **Output format:** PNG with an `iTXt` provenance chunk by default (`CRISPEMBED_IMAGE_FORMAT=ppm` for raw Netpbm). See [provenance.md](provenance.md).
+
 ```bash
 crispembed --instructir-model instructir-f16.gguf \
            --instructir noisy.png \
-           --instructir-task 0 > denoised.ppm
+           --instructir-task 0 > denoised.png
 ```
 
 ### Server

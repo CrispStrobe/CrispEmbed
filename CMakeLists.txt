@@ -140,10 +140,14 @@ endif()
 # ---------------------------------------------------------------------------
 # Core GGUF loader library
 # ---------------------------------------------------------------------------
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CrispEmbedC2pa.cmake)
+
 add_library(crispembed-core STATIC
     src/core/gguf_loader.cpp
     src/core/mel.cpp
+    src/core/image_out.cpp
 )
+crispembed_enable_c2pa(crispembed-core)
 target_include_directories(crispembed-core PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}/src/core
@@ -267,6 +271,10 @@ list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
+# Version string for output provenance (hOCR ocr-system, ALTO
+# softwareVersion, PDF XMP). An archived document should be traceable to a
+# build, and naming the software without a version is not that.
+target_compile_definitions(crispembed PRIVATE CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     target_compile_definitions(crispembed PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
 endif()
@@ -547,6 +555,20 @@ target_link_libraries(test-core-vlm-attention PRIVATE crispembed)
 
 add_executable(test-msac-tiling tests/test_msac_tiling.cpp)
 target_link_libraries(test-msac-tiling PRIVATE crispembed)
+
+add_executable(test-provenance-marking tests/test_provenance_marking.cpp)
+target_include_directories(test-provenance-marking PRIVATE src)
+
+add_executable(test-temp-file tests/test_temp_file.cpp)
+target_include_directories(test-temp-file PRIVATE src)
+
+add_executable(test-render-provenance tests/test_render_provenance.cpp)
+target_link_libraries(test-render-provenance PRIVATE crispembed)
+target_compile_definitions(test-render-provenance PRIVATE CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
+
+add_executable(test-image-provenance tests/test_image_provenance.cpp)
+target_link_libraries(test-image-provenance PRIVATE crispembed-core)
+crispembed_enable_c2pa(test-image-provenance)
 
 add_executable(test-gguf-loader-mmap tests/test_gguf_loader_mmap.cpp)
 target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)

@@ -141,7 +141,37 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const int arch_key = gguf_find_key(ctx_in, "general.architecture");
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
+    const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
+    // Sub-Q8 on an InternVL2-family decoder is checkpoint-dependent: WARN, do
+    // not refuse. Measured on h2ovl-mississippi-2b (2560d, 32H/8KV, head_dim 80)
+    // against a Python-blueprint reference, 7 real stages, same binary:
+    //
+    //   precision              llm_layer_0   llm_layer_2   verdict
+    //   f16                    0.999972      0.999972      transcribes
+    //   q8_0                   0.998033      0.995498      transcribes
+    //   q4_k (attn held Q8_0)  0.922039      0.543576      still wrong
+    //   q4_k                   0.594995     -0.268615      anti-correlated
+    //   q6_k                   -- fails to load at all --
+    //
+    // Not a shape problem: every ne[0] involved (2560, 6912) is 256-divisible,
+    // so Q4_K applies cleanly and still wrecks that decoder.
+    //
+    // But it does NOT generalise, and an earlier version of this guard that
+    // refused for the whole arch was wrong: internvl2-1b ships q4_k in the
+    // registry and OCRs correctly, and h2ovl-800m is recorded verified at q4_k.
+    // One measured checkpoint does not license blocking two working ones, so
+    // this warns and points at the gate that actually decides — the decoded
+    // output. Attention is still held at Q8_0 below, which recovers about half
+    // and costs little.
+    if (is_internvl2 && ftype != GGML_FTYPE_MOSTLY_Q8_0 && ftype != GGML_FTYPE_MOSTLY_F16 &&
+        ftype != GGML_FTYPE_ALL_F32) {
+        fprintf(stderr, "Warning: internvl2 below Q8_0 is checkpoint-dependent. h2ovl-mississippi-2b's\n"
+                        "         decoder diverges badly here (llm_layer_0 cos 0.594995, anti-correlated\n"
+                        "         by layer 2) while internvl2-1b and h2ovl-800m are fine. Verify the\n"
+                        "         DECODED OUTPUT before shipping this file.\n");
+    }
+
     if (is_ppocrv6) {
         fprintf(stderr, "PP-OCRv6 precision policy: biases/SE/depthwise/early-head tensors stay F16/F32; CTC logits "
                         "head is Q8_0 minimum\n");
@@ -270,8 +300,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // int8 matrices. Keep every float matrix lossless in the container so
         // the F32 path and the bias/activation reference do not acquire a
         // second, unrelated ggml quantization error.
-        const bool tesseract_keep = is_tesseract_lstm &&
-                                     (sname == "output.weight" || sname.find(".weight") != std::string::npos);
+        const bool tesseract_keep =
+            is_tesseract_lstm && (sname == "output.weight" || sname.find(".weight") != std::string::npos);
         if (ppocr_keep || tesseract_keep || sname.find("patch_embed") != std::string::npos ||
             sname.find("downsample") != std::string::npos || sname.find("downsampling") != std::string::npos ||
             sname.find("dwconv") != std::string::npos || sname.find("enc.bb") != std::string::npos ||
@@ -454,6 +484,62 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
             printf("(vision→Q8_0) ");
+        }
+
+        // InternVL2/H2OVL decoder attention: Q4_K destroys it. Measured on
+        // h2ovl-mississippi-2b (2560d, 32H/8KV, head_dim 80) against a
+        // Python-blueprint reference, same binary, same 7 real stages:
+        //
+        //   stage         f16        q8_0       q4_k
+        //   llm_layer_0   0.999972   0.998033   0.594995
+        //   llm_layer_2   0.999972   0.995498  -0.268615   <- anti-correlated
+        //
+        // That is not quantization drift, and it is not a shape problem: every
+        // ne[0] here (2560, 6912) is 256-divisible, so Q4_K applies cleanly and
+        // still wrecks the decoder. The error is already 14x larger than Q8_0 at
+        // layer 0 (max_abs 0.0559 vs 0.0041) and compounds to 0.95 by layer 3.
+        // Attention is the sensitive part -- it is what mixes the spliced image
+        // tokens into the text stream -- so hold q/k/v/o at Q8_0 and let the FFN
+        // take the requested type.
+        bool is_internvl2_attn =
+            is_internvl2 && sname.rfind("l.blk.", 0) == 0 &&
+            (sname.find(".attn_q.") != std::string::npos || sname.find(".attn_k.") != std::string::npos ||
+             sname.find(".attn_v.") != std::string::npos || sname.find(".attn_o.") != std::string::npos);
+        if (quantize && is_internvl2_attn && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
+            qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(internvl2-attn→Q8_0) ");
+        }
+
+        // InternVL2/H2OVL vision tower: keep F16, do not drop it to Q8_0.
+        // Bisected the whole encoder against the blueprint reference (the
+        // reference carried vis_layer_0..23 and vis_pixel_unshuffle all along;
+        // nothing read them until now). At f16 every stage passes -- vis_layer_*
+        // 1.000000..0.999902, vis_pixel_unshuffle 0.999691, vis_proj_output
+        // 0.999974 -- so the port is exact and there is no code defect. With the
+        // tower at Q8_0 the same stages decay monotonically to 0.90 by layer 11
+        // and 0.64 by layer 12, because 24 residual blocks compound the
+        // per-weight error. The projector then reads 0.998630 on Metal and
+        // 0.912992 on CPU.
+        //
+        // The generic is_vision_weight rule below already refuses to go below
+        // Q8_0; for this arch Q8_0 is itself the ceiling on vision parity, and
+        // the tower is small next to the decoder, so buy the accuracy.
+        // Scoped to the Q8_0 target on purpose. Q8_0 is the quality tier, where
+        // +285 MB on a 2.2 GB file buys full vision parity. Q4_K is the size
+        // tier: applying this there took internvl2-1b -- the edge/WASM model --
+        // from 758 MB to 1135 MB, so the "quantize" step INFLATED it 1.5x,
+        // defeating the only reason that artifact exists. Same shape of mistake
+        // as the sub-Q8 refusal: a rule measured on one model, applied across a
+        // family whose members have different goals.
+        bool is_internvl2_vision = is_internvl2 && ftype == GGML_FTYPE_MOSTLY_Q8_0 &&
+                                   (sname.rfind("v.", 0) == 0 || sname.rfind("proj.", 0) == 0);
+        if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
+            if (atoi(off)) is_internvl2_vision = false;
+        }
+        if (quantize && is_internvl2_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(internvl2-vision→F16) ");
         }
 
         // MoE router / gating weights (DeepSeek-V2: "*.mlp_gate.weight", also

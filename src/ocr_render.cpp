@@ -97,6 +97,23 @@ static void text_end(ocr_renderer *) {}
 // hOCR renderer
 // ---------------------------------------------------------------------------
 
+// Producer identity for the output formats. An archived hOCR or ALTO should be
+// traceable to a build: naming the software without a version is not that, and
+// Tesseract's own convention is "tesseract 4.1.1". One definition, so the three
+// formats cannot drift apart.
+//
+// NOTE: this identifies the SOFTWARE, not the recognition engine. POLICY.md §6
+// distinguishes CTC/attention recognisers, which transcribe, from VLM engines,
+// which confabulate through a smudge rather than leave a gap — and a reader of
+// the archived file cannot tell them apart from the text. Recording the engine
+// needs it threaded through the orchestrator; see PLAN.md.
+#ifndef CRISPEMBED_VERSION_STR
+#define CRISPEMBED_VERSION_STR "unknown"
+#endif
+static const char * producer_name() {
+    return "CrispEmbed " CRISPEMBED_VERSION_STR;
+}
+
 static void hocr_begin(ocr_renderer * r) {
     r->output += "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
                  "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
@@ -104,9 +121,9 @@ static void hocr_begin(ocr_renderer * r) {
                  "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
                  "<head>\n"
                  "  <meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n"
-                 "  <meta name=\"ocr-system\" content=\"CrispEmbed\" />\n"
-                 "  <meta name=\"ocr-capabilities\" content=\"ocr_page ocr_carea ocr_line ocrx_word\" />\n"
-                 "</head>\n"
+                 "  <meta name=\"ocr-capabilities\" content=\"ocr_page ocr_carea ocr_line ocrx_word\" />\n";
+    r->output += std::string("  <meta name=\"ocr-system\" content=\"") + producer_name() + "\" />\n";
+    r->output += "</head>\n"
                  "<body>\n";
 }
 
@@ -166,6 +183,7 @@ static void alto_begin(ocr_renderer * r) {
                  "      <ocrProcessingStep>\n"
                  "        <processingSoftware>\n"
                  "          <softwareName>CrispEmbed</softwareName>\n"
+                 "          <softwareVersion>" CRISPEMBED_VERSION_STR "</softwareVersion>\n"
                  "        </processingSoftware>\n"
                  "      </ocrProcessingStep>\n"
                  "    </OCRProcessing>\n"
@@ -471,8 +489,8 @@ static void pdf_end(ocr_renderer * r) {
             "    <pdfaid:conformance>B</pdfaid:conformance>\n"
             "    <dc:title><rdf:Alt><rdf:li xml:lang=\"x-default\">OCR Document</rdf:li></rdf:Alt></dc:title>\n"
             "    <dc:creator><rdf:Seq><rdf:li>CrispEmbed</rdf:li></rdf:Seq></dc:creator>\n"
-            "    <xmp:CreatorTool>CrispEmbed OCR</xmp:CreatorTool>\n"
-            "    <xmp:ProducerTool>CrispEmbed</xmp:ProducerTool>\n"
+            "    <xmp:CreatorTool>CrispEmbed OCR " CRISPEMBED_VERSION_STR "</xmp:CreatorTool>\n"
+            "    <xmp:ProducerTool>CrispEmbed " CRISPEMBED_VERSION_STR "</xmp:ProducerTool>\n"
             "  </rdf:Description>\n"
             "</rdf:RDF>\n"
             "</x:xmpmeta>\n"
