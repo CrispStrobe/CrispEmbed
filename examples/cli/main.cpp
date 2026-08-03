@@ -1162,6 +1162,19 @@ static int cli_main(int argc, char ** argv) {
                 // it the ppocrv6 stage falls back to its heuristic orientation
                 // check, which is a different (weaker) decision, not a no-op.
                 if (!ocr_cls_path.empty()) mc = resolve(ocr_cls_path);
+                if (eid == 16 && !std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") &&
+                    !std::getenv("CRISPEMBED_PPOCRV6_ONESHOT_GPU") && !std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") &&
+                    !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH") && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+                    // T5: this CLI processes exactly one page per invocation, and
+                    // on a single page the recognizer's Metal init costs more
+                    // than it saves — interleaved A/B on synth_00_clean: forced
+                    // CPU 1.86 s wall (3/3) vs Metal 2.04-2.17 s, decoded text
+                    // byte-identical. A warm server amortises the init and keeps
+                    // the Metal default; this is invocation-mode wiring, not a
+                    // backend preference. CRISPEMBED_PPOCRV6_ONESHOT_GPU=1
+                    // restores the Metal path for a one-shot run.
+                    setenv("CRISPEMBED_PPOCRV6_FORCE_CPU", "1", 0);
+                }
             }
             crispembed_ocr_stage st;
             std::memset(&st, 0, sizeof(st));
