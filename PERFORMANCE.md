@@ -192,12 +192,35 @@ That confidence result matters beyond this item: **cleaned crops read as more
 confident even when the text is worse.** Confidence is not a safe quality gate
 anywhere in this pipeline.
 
-Six approaches are now falsified on this axis (ink coverage, box height, paper
-noise, illumination spread, ink retention, confidence). The obstacle is that no
-page-level statistic separates ink-that-is-glyph from ink-that-is-artefact, which
-is exactly the distinction cleanup acts on. A working selector probably has to be
-local — measuring erosion on the detected text strokes rather than over the whole
-page — or the decision defers to a scoring pass with real ground truth (O8).
+The local version was then tried too — ink loss **inside** detected text boxes
+against loss **outside** them, which should separate glyph erosion from artefact
+removal. It does not, and it surfaced a structural blocker that rules out the
+whole family:
+
+- In-box loss does not separate: 15.7% on `synth_00_clean` (cleanup unwanted)
+  sits between `receipt_historical` 5.5% and `commons_example_receipt` 65.2%
+  (both wanted).
+- **Cleanup changes the image geometry.** `german_official_print.jpg` comes back
+  2532x1938 from 2518x1920, because deskew rotates and crop trims. Any
+  before/after *pixel-aligned* comparison is therefore undefined on precisely the
+  pages that need deskew — which is most real scans. Seven probes in, this is the
+  finding with the longest reach: it invalidates the entire before/after-diff
+  family, not just this instance.
+
+Seven approaches are now falsified on this axis (ink coverage, box height, paper
+noise, illumination spread, ink retention, confidence, in-box erosion). Two
+independent obstacles are now identified rather than suspected: no page-level
+statistic separates ink-that-is-glyph from ink-that-is-artefact, and no
+pixel-aligned before/after measure survives cleanup's own geometry change.
+
+**Recommendation: stop probing and get labels.** Every remaining idea is a
+proxy for "which output is more correct", and that question is answerable
+directly and cheaply for a handful of pages. Transcribing 5-10 CC0 scans turns
+the cleanup axis into a two-arm scoring run, and simultaneously unblocks O8, the
+WER column, and the H9 acceptance gate. Continuing to invent proxies against
+character-count labels — one of which was already shown to be directionally wrong
+on `german_official_document` — has a worse expected return than an hour of
+transcription.
 
 Until then the router stays opt-in.
 
