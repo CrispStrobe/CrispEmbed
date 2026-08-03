@@ -208,7 +208,11 @@ std::vector<int32_t> tokenizer::build_prompt(const std::string & user_text, int 
             auto t = encode(s);
             ids.insert(ids.end(), t.begin(), t.end());
         };
-        if (bos_id >= 0) ids.push_back(bos_id);
+        // h2ovl's tokenizer_config declares add_bos_token: false (both the 2b
+        // and the 800m), and upstream chat() just calls tokenizer(query) — so
+        // the blueprint prompt carries NO <s>. We were prepending one
+        // unconditionally.
+        if (add_bos_token && bos_id >= 0) ids.push_back(bos_id);
         add_text("<|prompt|>");
         if (img_start_id >= 0) ids.push_back(img_start_id);
         for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_token_id);
@@ -373,6 +377,16 @@ bool load_hparams(context & ctx, const char * path) {
         fprintf(stderr, "internvl2_ocr: chat template '%s'\n", tpl.c_str());
     }
 
+    // h2ogpt2 is H2OVL's template, and both H2OVL checkpoints declare
+    // add_bos_token: false — upstream chat() tokenizes the query plainly, so
+    // the blueprint prompt carries no <s>. GGUFs converted before this key
+    // existed carry no value, so default it off for that template rather than
+    // inheriting the generic true. Measured on the 2b: with BOS the model
+    // describes the page whatever the instruction; without it, and with an
+    // explicit imperative, it transcribes. Neither change works alone.
+    // Must come AFTER tok.h2ogpt2 is known — reading it earlier silently
+    // yielded the generic default and made this a no-op.
+
     // Load vocab from standard GGUF tokenizer keys
     int vocab_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
     if (vocab_idx >= 0) {
@@ -384,6 +398,18 @@ bool load_hparams(context & ctx, const char * path) {
         tok.vocab_size = n;
         tok.build_reverse_map();
     }
+
+    // MUST come after build_reverse_map(): when the GGUF carries no
+    // internvl2.chat_template key, h2ogpt2 is only known once the vocab has
+    // been scanned for <|im_start|>/<|end|>. Evaluating the default before that
+    // read h2ogpt2==false and left BOS on — the template was still selected (by
+    // the later inference) but with the spurious <s>, which is the one
+    // combination that fails. Measured on the published q8_0, which carries no
+    // template key: defaults produced EMPTY output, CRISPEMBED_INTERNVL2_ADD_BOS=0
+    // transcribed the page. Every artifact converted before that key existed is
+    // in this state, so ordering here is not a nicety.
+    tok.add_bos_token = boolv("internvl2.tokenizer.add_bos_token", !tok.h2ogpt2);
+    if (const char * b = getenv("CRISPEMBED_INTERNVL2_ADD_BOS")) tok.add_bos_token = atoi(b) != 0;
 
     core_gguf::free_metadata(g);
     return true;
@@ -1143,9 +1169,28 @@ bool encode_vision_tile(context & ctx, const float * pixels, vision_result & out
                 float * vis_pe = (float *)malloc(n_pos * D * sizeof(float));
                 ggml_backend_tensor_get(pe_t, vis_pe, 0, n_pos * D * sizeof(float));
                 auto r = ref.compare("vis_patch_embed", vis_pe, n_pos * D);
-                printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
-                       r.is_pass() ? "PASS" : "FAIL");
+                printf("  vis_patch_embed: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                       r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
                 free(vis_pe);
+            }
+
+            // Per-layer vision stages. The reference has carried vis_layer_0..23
+            // and vis_pixel_unshuffle all along and nothing ever read them, so a
+            // divergence between vis_patch_embed (1.000000) and vis_proj_output
+            // (0.913 on CPU) had 24 unbisected layers to hide in. The graph
+            // already names and set_output()s each one; this just compares them.
+            for (int i = 0; i < (int)ctx.m.vis_blocks.size(); i++) {
+                char nm[64];
+                snprintf(nm, sizeof(nm), "vis_layer_%d", i);
+                if (!ref.has(nm)) continue;
+                ggml_tensor * lt = ggml_graph_get_tensor(vg.gf, nm);
+                if (!lt) continue;
+                float * buf = (float *)malloc(n_pos * D * sizeof(float));
+                ggml_backend_tensor_get(lt, buf, 0, n_pos * D * sizeof(float));
+                auto rl = ref.compare(nm, buf, n_pos * D);
+                printf("  %s: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n", nm, rl.cos_min,
+                       rl.cos_global, rl.max_abs, rl.mine_norm, rl.ref_norm, rl.is_pass() ? "PASS" : "FAIL");
+                free(buf);
             }
         }
     }
@@ -1165,6 +1210,18 @@ bool project_vision(context & ctx, const float * vis_hidden, int n_patches, proj
     std::vector<float> unshuffled(n_merged * merge_dim);
     pixel_unshuffle_v2(vis_hidden, unshuffled.data(), (int)vhp.n_patches_per_side, (int)vhp.hidden_size,
                        php.downsample_ratio);
+
+    // The last stage before the projector, and the only one computed on the
+    // host — so it separates "the vision encoder drifted" from "the unshuffle
+    // reshaped wrongly", which the projector output alone cannot distinguish.
+    if (!ctx.diff_ref_path.empty()) {
+        crispembed_diff::Ref uref;
+        if (uref.load(ctx.diff_ref_path.c_str()) && uref.has("vis_pixel_unshuffle")) {
+            auto ru = uref.compare("vis_pixel_unshuffle", unshuffled.data(), n_merged * merge_dim);
+            printf("  vis_pixel_unshuffle: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                   ru.cos_min, ru.cos_global, ru.max_abs, ru.mine_norm, ru.ref_norm, ru.is_pass() ? "PASS" : "FAIL");
+        }
+    }
 
     // Build and compute projector graph
     proj_graph pg = build_proj_graph(ctx, n_merged);
@@ -1319,8 +1376,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                 if (e) {
                     ggml_backend_tensor_get(e, buf, 0, T * D * sizeof(float));
                     auto r = ref.compare("llm_embed", buf, T * D);
-                    printf("  llm_embed: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
-                           r.is_pass() ? "PASS" : "FAIL");
+                    printf("  llm_embed: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n",
+                           r.cos_min, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
                 }
                 free(buf);
             }
@@ -1341,7 +1398,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                 float * buf = (float *)malloc(T * D * sizeof(float));
                 ggml_backend_tensor_get(lg.layer_outputs[i], buf, 0, T * D * sizeof(float));
                 auto r = ref.compare(name, buf, T * D);
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n", name, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                printf("  %s: cos_min=%.6f cos_glob=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f %s\n", name, r.cos_min,
+                       r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
                 free(buf);
             }
         }
@@ -1677,7 +1735,14 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
 struct internvl2_ocr_context {
     internvl2_ocr::context ctx;
     std::string last_text;
-    std::string prompt = "OCR this image.";
+    // "OCR this image." is too terse an instruction for these general-purpose
+    // VLMs: H2OVL answered it with an accurate DESCRIPTION ("The image presents
+    // a page from a book, specifically page 36...") rather than a
+    // transcription. Upstream's own examples are all explicit imperatives
+    // ("Extract the details from the form image and structure them into..."),
+    // and qwen2vl_ocr already had to make exactly this change for the same
+    // reason. Same phrasing here, so the two engines behave alike under --ocr.
+    std::string prompt = "Read all the text in this image. Output the exact text content only.";
     int max_tokens = 512;
     std::vector<float> char_confidences;
 };
@@ -1688,6 +1753,11 @@ internvl2_ocr_context * internvl2_ocr_init(const char * model_path, int n_thread
         delete c;
         return nullptr;
     }
+    // Overridable so prompt behaviour can be bisected without a rebuild. These
+    // models are sharply phrasing-sensitive: the same page yields a 1109-char
+    // description, a verbatim transcription, or an immediate <|end|> depending
+    // only on the instruction, and that is only findable by trying.
+    if (const char * pe = getenv("CRISPEMBED_INTERNVL2_PROMPT")) c->prompt = pe;
     return c;
 }
 

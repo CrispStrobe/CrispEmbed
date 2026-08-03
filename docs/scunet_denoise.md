@@ -33,6 +33,8 @@ unchanged (all stages cos = 1.000000).
 
 ### C
 
+> **Output format:** PNG with an `iTXt` provenance chunk by default (`CRISPEMBED_IMAGE_FORMAT=ppm` for raw Netpbm). See [provenance.md](provenance.md).
+
 ```c
 #include "crispembed.h"
 
@@ -49,7 +51,7 @@ crispembed_scunet_free(ctx);
 ### CLI
 
 ```bash
-crispembed --scunet-model scunet-color-f32.gguf --scunet-denoise noisy.png > clean.ppm
+crispembed --scunet-model scunet-color-f32.gguf --scunet-denoise noisy.png > clean.png
 ```
 
 ### Server

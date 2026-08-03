@@ -136,6 +136,27 @@ def main() -> int:
             ]
 
             failures = 0
+
+            # --image-root originally covered only {"image": ...}. Two other
+            # fields were worse than the read it was written for: dewarp's
+            # "output" is an arbitrary file WRITE, and /pdf/dpi's "file" an
+            # unconfined read. A 400 here means the path was rejected before
+            # anything was opened.
+            outside_write = str(outside / "written-by-server.pgm")
+            body = post(port, "/preprocess/dewarp",
+                        {"image": str(root / "ok.png"), "output": outside_write})
+            wrote = os.path.exists(outside_write)
+            print(f"  [{'ok' if not wrote else 'FAIL'}] dewarp 'output' outside root refused "
+                  f"(no file created)")
+            failures += bool(wrote)
+            if isinstance(body, dict) and "error" not in body and wrote:
+                failures += 1
+
+            body = post(port, "/pdf/dpi", {"file": "/etc/hosts"})
+            leaked = isinstance(body, dict) and "error" not in body
+            print(f"  [{'ok' if not leaked else 'FAIL'}] /pdf/dpi 'file' outside root refused")
+            failures += bool(leaked)
+
             for label, image, should_serve in cases:
                 body = post(port, "/detect", {"image": image})
                 served = "faces" in body
@@ -153,7 +174,9 @@ def main() -> int:
 
         # The rejections must be attributable in the server log, or a deployer
         # has no way to tell confinement from a malformed request.
-        logged = (err or "").count("rejected image path outside --image-root")
+        # Message shape changed when confinement generalised beyond "image";
+        # match the field-agnostic form.
+        logged = (err or "").count("rejected 'image' path outside")
         expected_rejections = sum(1 for _, _, serve in cases if not serve)
         if logged != expected_rejections:
             print(f"  [FAIL] server logged {logged} rejections, expected {expected_rejections}")

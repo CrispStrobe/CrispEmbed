@@ -60,6 +60,7 @@ import sys
 import numpy as np
 from PIL import Image
 
+
 try:
     from skimage.metrics import structural_similarity as _ssim
     HAVE_SSIM = True

@@ -2013,3 +2013,404 @@ the broken decoder:
 
 Next: run the gates at q8_0/f16, where the decoder is intact. Blocked locally on
 disk (1.5 GB free, q8_0 is 2.3 GB); the parity kernel is computing both.
+
+
+## h2ovl-2b — resolved, and the quant ladder (2026-08-03)
+
+### Invocation: three defects, all required
+
+Nothing here was a graph bug — `test-internvl2-diff` was clean at f16 the whole
+time. The failures were all in the harness-blind zone:
+
+1. **Wrong chat template** (`5f617351`, mine). The checkpoint declares
+   `template: h2ogpt2` (`<|prompt|>…<|end|><|answer|>`); `build_prompt()` emitted
+   InternVL2 ChatML. This vocab has no `<|im_start|>`/`<|im_end|>`, so
+   `add_special(-1)` dropped every role marker silently.
+2. **Spurious BOS + terse instruction** (`fcebf561`, parallel session).
+   `add_bos_token: false` upstream; and `"OCR this image."` is too weak. Their
+   2×2 A/B showed neither fix works alone.
+3. **BOS default evaluated before vocab inference** (`98c2ae21`, mine). (2) only
+   took effect for GGUFs carrying `internvl2.chat_template`. Without the key,
+   `h2ogpt2` is unknown until `build_reverse_map()` scans the vocab — which runs
+   *after* the default — so BOS stayed on. **Every published artifact is in that
+   state.** Measured on the published q8_0: defaults → EMPTY output;
+   `CRISPEMBED_INTERNVL2_ADD_BOS=0` → full transcription. After reordering,
+   defaults transcribe.
+
+Corroborating evidence that vision was never at fault: with only fix (1), the
+same build reads `fox.png` as `The quick brown fox jumps over the lazy dog. 12345`
+— exactly right. The full-page "serene landscape with a winding river" output was
+confabulation on a hard page with a weak instruction, not a blind model.
+
+### Quant ladder — Q8_0 is the floor for THIS checkpoint
+
+Same reference, same binary, 7 real stages:
+
+| precision | size | llm_layer_0 | llm_layer_2 | verdict |
+|---|--:|--:|--:|---|
+| f16 | 4421 MB | 0.999972 | 0.999972 | transcribes |
+| **q8_0** | **2186 MB** | **0.998033** | **0.995498** | **transcribes** |
+| q4_k + attn held Q8_0 | 1578 MB | 0.922039 | 0.543576 | still wrong |
+| q4_k | 1391 MB | 0.594995 | −0.268615 | anti-correlated |
+| q6_k | 1792 MB | — | — | **fails to load** |
+
+Not a shape problem: every `ne[0]` involved (2560, 6912) is 256-divisible, so
+Q4_K applies cleanly and still wrecks the decoder. Holding attention at Q8_0
+recovers about half — kept, since it is cheap — but is not sufficient.
+
+**It does not generalise.** A first version of this guard refused sub-Q8 for the
+whole `internvl2` arch; that was wrong and would have broken two working models —
+`internvl2-1b` ships q4_k in the registry and OCRs correctly, and `h2ovl-800m` is
+recorded verified at q4_k. One measured checkpoint does not license blocking
+others, so `tools/quantize.cpp` now **warns** and names the decoded-output gate
+instead of refusing.
+
+`vis_proj_output` sits at 0.998630 in every quant and 0.999972 at f16 — the
+vision tower is Q8_0 in all of them, which is why the quants are bit-identical
+there. Left alone deliberately: q8_0 transcribes correctly, and tuning a
+synthetic-gradient cosine when the decoded output already passes is chasing the
+wrong gate.
+
+
+### Corroboration and the sibling regression (2026-08-03)
+
+**Pre-fix baseline, from the parity kernel** (it cloned before the template fix,
+so it captured the old behaviour at all three precisions on the same page):
+
+| precision | pre-fix decoded output |
+|---|---|
+| f16 | `within.` (7 chars) |
+| q8_0 | `withinself.` (11) |
+| q4_k | `.assistant.assist.ass.assass.` (29) |
+
+Two things fall out. f16 was degenerate too, so this was never a precision
+problem. And the q4_k output is leaking the literal token **`assistant`** — the
+ChatML role word being fed to a model that never saw it, which is the root cause
+printing itself.
+
+⚠ One number does not reconcile: that run reports q8_0 `cos_min 0.905481` where
+the same comparison locally gives `0.988750`. Different backend (Kaggle CPU vs
+Metal) and its count still included the 20 fabricated rows. The ladder's shape
+agrees across both; neither figure should be quoted as exact until re-run on one
+backend.
+
+**Sibling regression check.** The BOS-ordering change alters the default for
+every h2ogpt2 checkpoint, so `h2ovl-800m` (q4_k, in the registry) was re-run:
+
+- `fox.png` → `The quick brown fox jumps over the lazy dog. 12345` — exact
+- full page → **1748 chars**, opening `These two girls had been above an hour in
+  the place…`, hyphenation preserved
+
+So the 800m is unaffected and still correct **at q4_k** — which is the concrete
+evidence that refusing sub-Q8 arch-wide would have been wrong, and that the
+2b's collapse is checkpoint-specific rather than a property of the family.
+
+
+### The q8_0 cosine gap: reconciled, and it is the harness input, not a CPU defect (2026-08-03)
+
+The unreconciled figure above is explained. Same binary, same files, only the
+backend varies:
+
+| stage | Metal | CPU (`INTERNVL2_OCR_FORCE_CPU=1`) |
+|---|--:|--:|
+| vis_patch_embed | 0.999999 | 1.000000 |
+| **vis_proj_output** | **0.998630** | **0.912992** |
+| llm_layer_0 | 0.998033 | 0.982747 |
+| llm_layer_3 | 0.988750 | 0.962142 |
+
+CPU min is `0.912992` against the parity kernel's `0.905481` — also CPU, on a
+different box. Hypothesis confirmed: the gap was backend, and the residual is
+CPU-implementation/threading variation between machines. Neither number was
+wrong; they measured different things.
+
+**It does not reach the output, and that is the part that matters.** The same
+CPU path on `h2ovl-800m` transcribes the full page at **1749 chars** against
+Metal's **1748**, same text. So the divergence is confined to the diff harness,
+whose vision input is a *synthetic gradient* — an out-of-distribution image that
+amplifies numerical differences far more than a real page does. That also
+explains why `vis_proj_output` reads FAIL against the 0.999 threshold on every
+quant while every one of them reads real pages correctly.
+
+Two consequences worth carrying forward:
+
+- **Quote a vision-stage cosine with its backend, or not at all.** A single
+  number here is meaningless — the same artifact spans 0.913 to 0.999 depending
+  only on where it ran.
+- **The 0.999 gate on `vis_proj_output` is mis-calibrated for a synthetic
+  gradient.** It fails artifacts that decode correctly, which is a gate that
+  cries wolf. Not changed here (a threshold tuned against one model is how
+  gates rot); recorded so the FAIL is read as expected rather than chased.
+
+### Registry health after the day's churn
+
+All green, verified rather than assumed:
+
+| check | result |
+|---|---|
+| SHA-256 pins | 242 pinned, 0 unpinned, `model_hashes.h` current |
+| URL reachability | 242 distinct download URLs, **0 non-200** |
+| Licence chains | `tests/check_registry_licenses.py` rc=0 |
+
+
+## Vision-stage parity raised to the f16 ceiling (2026-08-03)
+
+### The bisection that settles it: there is no code defect
+
+The reference had carried `vis_layer_0..23` and `vis_pixel_unshuffle` since it
+was baked, and nothing ever compared them — so a divergence between
+`vis_patch_embed` (1.000000) and `vis_proj_output` (0.912992 on CPU) had 24
+unbisected layers to hide in. The graph already names and `set_output`s every
+one; the harness now reads them.
+
+**At f16 every stage passes**: `vis_layer_*` 1.000000 → 0.999902,
+`vis_pixel_unshuffle` 0.999691, `vis_proj_output` 0.999974, `llm_layer_*`
+1.000000. The port is exact. Two things previously read as bugs are not:
+
+- the "discontinuity" at `vis_layer_12` (0.90 → 0.64, max_abs 5.85 → 26.65) is
+  quantization, not a code path — f16 is smooth through it;
+- `vis_pixel_unshuffle` at 0.380 was **not** a layout/reshape mismatch, which
+  was the obvious reading. It is 0.999691 at f16.
+
+Everything measured was Q8_0 error compounding through 24 residual blocks.
+
+### So the lever is vision precision, and it works
+
+| stage | vision Q8_0 | vision F16 |
+|---|--:|--:|
+| vis_layer_11 | 0.900823 | **0.999994** |
+| vis_layer_23 | 0.924021 | **0.999982** |
+| vis_pixel_unshuffle | 0.380373 | **0.999691** |
+| vis_proj_output | 0.912992 | **0.999974** |
+
+Every vision stage now PASSes on CPU, the backend that was worst. 2186 → 2471 MiB
+(+13%), and the page still transcribes. The decoder stays Q8_0: its stages are
+0.98/0.96 and the output is right, while F16 there means the 4.4 GB file.
+
+### Scoped to the Q8_0 target, because the first version was wrong
+
+Applied to the whole arch, this rule took **`internvl2-1b` from 758 MB to
+1135 MB** — the quantize step *inflating* the edge/WASM model 1.5×, defeating
+the only reason that artifact exists. Now gated on `ftype == Q8_0`: the quality
+tier buys parity, Q4_K stays the size tier. Verified both ways — edge q4_k gets
+0 vision→F16 conversions, h2ovl q8_0 gets all 98. `CRISPEMBED_QUANTIZE_NO_VISION_F16=1`
+bisects it without a rebuild.
+
+That is the second rule this session that had to be narrowed after measuring a
+sibling; the pattern to watch is a rule derived from one checkpoint being
+applied to a family whose members have different goals.
+
+### Shipped
+
+`cstr/h2ovl-mississippi-2b-crispembed-GGUF` q8_0 replaced in place
+(2591566112 bytes, sha `497cd047…`, verified byte-identical to the local file),
+pin regenerated, 242 pinned / 0 unpinned.
+
+
+## h2ovl-800m brought up to the same standard (2026-08-03)
+
+The 800m shipped as q4_k only, with **no reference at all** — so its parity had
+never been measured, only its decoded output eyeballed. Ran the full regime
+locally (it is small enough: f16 is 1853 MB): convert → bake reference → quantize
+→ per-stage diff → decoded output.
+
+**f16 — the port is exact here too.** `llm_embed` and `llm_layer_0..3` are all
+1.000000; `vis_proj_output` 0.999701. Two stages sit just under the gate —
+`vis_layer_23` 0.998665 and `vis_pixel_unshuffle` 0.998199 — which is f16-vs-f32
+rounding against a float32 numpy reference, the same class as the 2b, not a
+defect.
+
+**q8_0 with the vision tower at F16** reproduces the f16 vision numbers exactly
+(0.998665 / 0.998199 / 0.999701), confirming the new rule does what it claims on
+a second checkpoint.
+
+### The finding worth carrying: the synthetic probe does not track decoded quality
+
+| model / precision | llm_layer_2 | decoded page |
+|---|--:|---|
+| h2ovl-2b q4_k | **−0.268615** | fluent but wrong |
+| h2ovl-800m q8_0 | **+0.494781** | **transcribes, 1764 chars** |
+
+Two comparable-looking cosines, opposite verdicts. The 800m q8_0 shows
+`llm_layer_1..3` at 0.70 / 0.49 / 0.66 with max_abs ~22 and still transcribes the
+page correctly; the 2b q4_k at a numerically similar magnitude produces
+confident nonsense.
+
+The distinction that survives is **sign**: the 2b q4_k is *anti-correlated*
+(−0.27), meaning the signal inverted, while the 800m is *degraded but aligned*
+(+0.49). A per-stage threshold alone would have rejected a good artifact and,
+at a slightly different cut, accepted a bad one. This is the concrete case for
+why the decoded-output roundtrip is the gate and the cosine is the bisection
+tool — exactly what HARD RULE #3 says, now with a counterexample in-repo.
+
+**Registry unchanged for the 800m: it stays on q4_k.** That artifact transcribes
+(1749 chars, fox exact) at 676 MB against the q8_0's 1175 MB, and this is the
+edge/WASM model. The q8_0 is published as a quality tier, not promoted.
+
+
+## CORRECTION: I was reading a per-row worst case as tensor parity (2026-08-03)
+
+`Report::cos_min` is the **minimum cosine over rows**. On the diff harness's
+5-token synthetic probe, one fragile token position sinks it while the tensor as
+a whole matches. I quoted it as if it were the stage's parity for most of this
+session, and built a conclusion on it that was wrong.
+
+`Report` has always carried `cos_global`, `mine_norm` and `ref_norm`; **no print
+site ever showed them** — so HARD RULE #2b ("cosine is scale-blind, always read
+`|mine|` vs `|ref|`") was being violated by the tool itself. Every internvl2
+print site now emits `cos_min`, `cos_glob`, `max_abs`, `|mine|`, `|ref|`.
+
+### What the missing columns were hiding
+
+| artifact / stage | cos_min | cos_glob | \|mine\| vs \|ref\| |
+|---|--:|--:|---|
+| 800m q8_0 llm_layer_2 | 0.494781 | **0.999975** | 2762.7 / 2779.2 |
+| 2b q8_0 llm_layer_3 | 0.962142 | **0.999300** | 20.62 / 20.69 |
+| 2b q4_k llm_layer_3 | −0.270306 | **0.968178** | 21.24 / 20.69 |
+
+The magnitudes also explain the "max_abs 22" that looked catastrophic: the
+activation norm legitimately jumps **18.85 → 2510** between LLM layers 0 and 1 —
+**in the reference too**. This model has massive activations; an absolute error
+of 22 on a norm-2510 tensor is 0.9%, entirely proportionate. Without the `|ref|`
+column that was unreadable.
+
+### Two verdicts corrected
+
+**h2ovl-800m q8_0 is NOT degraded.** I recorded its LLM as "cratering" at 0.49.
+Globally it is 0.999975 — as clean as anything here. The artifact was always
+fine; the metric was wrong.
+
+**The "sign is what survives" finding is WITHDRAWN.** I wrote that a positive
+0.49 transcribes while a negative −0.27 fails, and that sign was the durable
+discriminator. That was pattern-matching on two per-row worst cases. The honest
+discriminator is the **global** cosine: 0.999975 (800m q8_0, correct output) vs
+0.968178 (2b q4_k, wrong output). Sign had nothing to do with it.
+
+**The q4_k withdrawal still stands, for a properly stated reason.** Not
+"anti-correlated by layer 2" — that was `cos_min`. It is `cos_glob` decaying
+0.994215 → 0.968178 across just 4 of 24 layers, ~45x the shipped q8_0's error at
+the same depth, compounding over the remaining 20, with a decoded output that
+was wrong. The decision was right; my justification for it was not.
+
+### Gate note
+
+`is_pass()` is keyed on `cos_min` at 0.999, so on this probe nearly every stage
+prints FAIL while being globally excellent — a gate that always cries wolf
+teaches people to ignore it. Not changed here: `crispembed_diff.h` is shared by
+every engine and re-keying it on one model's evidence is the exact mistake this
+session already made twice. Recorded so the FAILs are read correctly, with the
+columns now present to do that.
+
+
+## Full 54-stage trace to the logits (2026-08-03)
+
+The reference had only ever been dumped with `--max-llm-layers 4`, which also
+silently skips `llm_output_norm` and `llm_logits` — two stages
+`test_internvl2_diff.cpp` already knew how to compare and had never been given
+data for. So the harness stopped 20 layers short of the decision boundary. Re-dumped
+without the cap: **54 stages** (27 vision + 24 LLM + embed + output_norm + logits),
+108 MB, at `internvl2/h2ovl-mississippi-2b/ref-full.gguf`.
+
+Shipped q8_0 (vision F16), CPU, against all 54:
+
+| stage | cos_min | cos_glob | \|mine\| / \|ref\| |
+|---|--:|--:|---|
+| vis_patch_embed | 1.000000 | 1.000000 | 124.51 / 124.51 |
+| vis_pixel_unshuffle | 0.999695 | 1.000000 | 1739.23 / 1739.25 |
+| vis_proj_output | 0.999974 | 1.000000 | 183.15 / 183.15 |
+| llm_layer_0 | 0.982747 | 0.999863 | 7.77 / 7.79 |
+| llm_layer_11 | 0.967229 | 0.999066 | 86.62 / 86.52 |
+| llm_layer_23 | 0.525327 | 0.998276 | 980.20 / 961.45 |
+| llm_output_norm | 0.629808 | 0.997297 | 323.44 / 331.49 |
+| **llm_logits** | 0.613839 | **0.998919** | **1602.46 / 1604.54** |
+
+**The logits — the actual decision boundary — reproduce the blueprint at
+cos_glob 0.998919 with magnitudes 0.13 % apart.** That is the first time this
+model has been measured there at all, and it is the number that matters: token
+selection happens on this tensor.
+
+The `cos_glob` curve declines smoothly and monotonically from 0.999863 to
+0.998276 across 24 layers with **no discontinuity anywhere** — the signature of
+accumulating quantization error, not a defective op. Every earlier "jump" I
+chased (`vis_layer_12`, `llm_layer_1`) was an artifact of reading `cos_min`.
+
+Two things the trace does flag, neither load-bearing today:
+
+- `llm_output_norm` is the weakest global stage (0.997297) and the only one whose
+  magnitude is off by more than ~1 % (323.44 vs 331.49, −2.4 % low). The logits
+  recover to 0.998919 immediately after, so it is not propagating, but it is the
+  one stage worth a second look if this model ever misbehaves again.
+- `|mine|` runs 1.9 % high at `llm_layer_23` (980.20 vs 961.45) — the massive-
+  activation dimensions amplifying q8_0 rounding. Bounded and self-correcting
+  through the final norm.
+
+
+### f16 ceiling: the port is exact to the logits
+
+Same 54-stage reference, f16, CPU:
+
+| stage | cos_min | cos_glob | max_abs | \|mine\| / \|ref\| |
+|---|--:|--:|--:|---|
+| vis_proj_output | 0.999974 | 1.000000 | 0.003354 | 183.1485 / 183.1475 |
+| llm_layer_0 | 1.000000 | 1.000000 | 0.000004 | 7.7938 / 7.7938 |
+| llm_layer_11 | 1.000000 | 1.000000 | 0.000033 | 86.5238 / 86.5239 |
+| llm_layer_23 | 1.000000 | 1.000000 | 0.001282 | 961.4495 / 961.4499 |
+| llm_output_norm | 1.000000 | 1.000000 | 0.000217 | 331.4937 / 331.4938 |
+| **llm_logits** | **1.000000** | **1.000000** | **0.000069** | **1604.5433 / 1604.5439** |
+
+**Every stage passes, `cos_min` included.** The h2ovl-2b port reproduces the
+Python blueprint exactly, all the way to the tensor token selection reads. There
+is no code defect anywhere in this engine for this model.
+
+That also settles the `cos_min` question directly rather than by argument: at f16
+the per-row minimum is 1.000000, so the low `cos_min` values at q8_0 are
+quantization landing on numerically fragile rows — not a structural mismatch and
+not a harness artifact. And `llm_output_norm`, flagged above as the weakest
+global stage at q8_0 (0.997297, −2.4 % magnitude), is exact at f16
+(331.4937 vs 331.4938), so that too is quantization, not the norm implementation.
+
+Complete verdict for h2ovl-mississippi-2b:
+
+| precision | logits cos_glob | decoded page |
+|---|--:|---|
+| f16 | 1.000000 | transcribes |
+| q8_0 (shipped, vision F16) | 0.998919 | transcribes |
+| q4_k | — (withdrawn) | fluent but wrong |
+
+
+## Diff-gate regime, and full references for both checkpoints (2026-08-03)
+
+### The gate was right; the regime was unstated
+
+`is_pass()` keys on `cos_min`, and the f16 trace proves that is the **correct**
+gate for port correctness: h2ovl-2b at f16 scores `cos_min` 1.000000 on all 54
+stages including the logits, so a single mishandled token position would still
+fail loudly — which is what this harness is for.
+
+It is the wrong gate for judging a *quantized* artifact, where the question is
+"is the damage acceptable", not "is the port correct". The same model at q8_0
+reads `cos_min` 0.61 on the logits while `cos_global` is 0.998919 and it
+transcribes a page correctly.
+
+So rather than weaken a header shared by every engine on one model's evidence:
+
+- **default unchanged** — 0.999 on `cos_min`; verified f16 still scores 55 PASS
+  / 0 FAIL after the change;
+- `CRISPEMBED_DIFF_COS_THRESHOLD` overrides the threshold per run, for quantized
+  sweeps;
+- `is_pass_global()` added for callers whose question is the aggregate.
+
+Additive: no existing engine's verdict moves.
+
+### Both references now reach the logits
+
+Both had been dumped `--max-llm-layers 4`, which also silently drops
+`llm_output_norm` and `llm_logits`. Re-dumped and republished to
+`cstr/crispembed-regression-fixtures`:
+
+| checkpoint | stages | covers |
+|---|--:|---|
+| h2ovl-mississippi-2b | **54** | 24 vision + 24 LLM + embed + output_norm + logits |
+| h2ovl-mississippi-800m | **46** | 24 vision + 16 LLM + embed + output_norm + logits |
+
+The 2b model repo's copy was replaced too, so neither location hands out a
+reference that stops short of the decision boundary.

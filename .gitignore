@@ -60,3 +60,6 @@ crispembed-sys/vendor/
 # Staged into the Python package by python/setup.py at build time.
 python/crispembed/POLICY.md
 python/*.egg-info/
+
+# c2pa prebuilt (fetched at configure time; see cmake/FindC2pa.cmake)
+third_party/c2pa/

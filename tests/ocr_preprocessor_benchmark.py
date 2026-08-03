@@ -27,6 +27,8 @@ from pathlib import Path
 from difflib import SequenceMatcher
 
 
+
+
 def run(cmd: list[str], env: dict[str, str], binary: bool = False):
     return subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                           env=env, check=False, text=not binary)
@@ -89,8 +91,14 @@ def one(cli: Path, det: Path, rec: Path, image: Path, env: dict[str, str], clean
     generated = None
     if cleanup:
         p = run([str(cli), "--cleanup-only", str(image), *cleanup], env, binary=True)
-        if p.returncode == 0 and p.stdout.startswith((b"P5", b"P6")):
-            generated = tmp / (image.stem + "-" + "-".join(cleanup[1:]) + ".pnm")
+        # PNG by default, raw Netpbm under CRISPEMBED_IMAGE_FORMAT=ppm. Accept
+        # both and name the file for what it actually is — PIL reads either, and
+        # a .pnm holding PNG bytes would mislead anyone inspecting the tmp dir.
+        magic = p.stdout[:8]
+        is_png = magic.startswith(b"\x89PNG\r\n\x1a\n")
+        is_pnm = magic.startswith((b"P5", b"P6"))
+        if p.returncode == 0 and (is_png or is_pnm):
+            generated = tmp / (image.stem + "-" + "-".join(cleanup[1:]) + (".png" if is_png else ".pnm"))
             generated.write_bytes(p.stdout)
             source = generated
         else:

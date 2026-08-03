@@ -298,6 +298,17 @@ def main():
     writer.add_bool(f"{ARCH}.use_thumbnail", use_thumbnail)
     writer.add_bool(f"{ARCH}.use_msac", use_msac)
 
+    # Whether the tokenizer itself prepends BOS. h2ovl says false; assuming
+    # true silently added an <s> the upstream prompt never has.
+    _tok_cfg = {}
+    try:
+        with open(resolve_file("tokenizer_config.json")) as _f:
+            _tok_cfg = json.load(_f)
+    except Exception:
+        pass
+    writer.add_bool(f"{ARCH}.tokenizer.add_bos_token",
+                    bool(_tok_cfg.get("add_bos_token", True)))
+
     # Prompt style. InternVL2 checkpoints declare this in config.json as
     # "template" (internlm2-chat, Hermes-2, phi3-chat, ...); H2OVL declares
     # "h2ogpt2", whose prompt is <|prompt|>...<|end|><|answer|> and which has no
