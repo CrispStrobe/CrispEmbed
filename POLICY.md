@@ -29,18 +29,45 @@ practice, or falls under the Art. 50 transparency rules. CrispEmbed is released
 as a general-purpose component and is not placed on the market as a high-risk
 system.
 
+**That covers the code we write, not everything you assemble with it.** The
+MIT licence is ours; the model weights are not. Part of the auto-download
+registry is non-commercial (`cc-by-nc*`) or vendor-restricted (`gemma`,
+`llama*`, `qwen-research`, `mistral-ai-research`, `lfm1.0`), and those are not
+free-and-open-source terms. A system you build from MIT code plus a
+non-commercial checkpoint is therefore not wholly FOSS, and the Art. 2(12)
+reading above does not automatically carry over to it. The CLI makes you accept
+such a licence before the download, which is the point at which that becomes
+your call rather than ours. See §7.
+
 **The project also operates two things that are not components.** The
 [HuggingFace Space](https://huggingface.co/spaces/cstr/CrispEmbed) and the
 [WASM demo](https://crispstrobe.github.io/CrispEmbed/) are running AI systems
-made available to the public, and for those this project is the deployer —
-"we only ship a library" does not describe them. Both are deliberately scoped
-to keep that surface small: neither exposes face detection or recognition, and
-the WASM demo runs entirely client-side, so no uploaded image reaches a server
-we operate. The Space transcribes a math image and deletes the temporary file
-immediately; the Gradio/HuggingFace platform layer may cache uploads
-independently of the application, which is outside our control and stated on
-the Space itself. §8 covers the AI-literacy duty that follows from being a
-deployer at all.
+made available to the public, and "we only ship a library" does not describe
+them. Both are deliberately scoped to keep that surface small: neither exposes
+face detection or recognition, and the WASM demo runs entirely client-side, so
+no uploaded image reaches a server we operate. The Space transcribes a math
+image and deletes the temporary file immediately; the Gradio/HuggingFace
+platform layer may cache uploads independently of the application, which is
+outside our control and stated on the Space itself.
+
+**For those two we are the provider, not merely the deployer.** Art. 3(3)
+attaches provider status to whoever develops an AI system and puts it into
+service under their own name — which is what building and hosting these is.
+The distinction is not cosmetic, because Art. 50 splits along it: paragraphs
+(1) and (2) — telling people they are interacting with an AI system, and
+marking synthetic output in machine-readable form — are *provider* duties,
+while (3) and (4) are *deployer* duties. Art. 2(12) does not help here either:
+the open-source exemption explicitly does not reach Art. 50.
+
+Applied to what these two actually do: the Space states on its own page that it
+is a CrispEmbed demo transcribing math images, which is the Art. 50(1)
+information duty, and the interaction is a form rather than anything that could
+be mistaken for a human. On Art. 50(2), both inherit the position §5 and §6
+argue — transcription reproduces what a document already says, and the image
+work is document preprocessing — and the marking §5 describes applies to images
+either returns. That position is reasoned, not settled; if it is wrong anywhere,
+it is wrong for these two first, because here the duty is ours and not an
+integrator's. §8 covers the AI-literacy duty that follows either way.
 
 ## 2. What CrispEmbed is not
 
@@ -171,7 +198,19 @@ endpoint that will turn any file the process can read into a template, so:
   **write**, so unconfined it makes any file this process can write creatable
   or truncatable — and `/pdf/dpi`'s `file`. Paths resolve through `..` and
   symlinks first and compare component-wise, so `/srv/scansEVIL` does not pass
-  for a root of `/srv/scans`.
+  for a root of `/srv/scans`. Fields are read through the same depth-1 JSON
+  finder used everywhere else, so a nested decoy
+  (`{"meta":{"image":"/a"},"image":"/b"}`) cannot make the server confine one
+  path and open another.
+
+  "Every endpoint" was briefly untrue and is worth saying plainly. A local
+  helper in `server.cpp` shadowed the confining one for every handler declared
+  after it, so `--image-root` covered the first 13 endpoints — `/face` and
+  `/detect` among them — and silently missed the next 20, including every
+  super-resolution and restoration engine. Confinement looked enabled and was
+  not. `tests/test_image_root.py` now probes endpoints on both sides of that
+  boundary, because it previously probed only `/detect` and so could not have
+  caught it.
 - **`--model-root DIR` confines client-supplied *model* paths**, currently
   `/preprocess/tps-dewarp`'s `model`. Separate on purpose: a model legitimately
   lives outside an image directory, and a GGUF is a graph this process then
