@@ -2250,3 +2250,46 @@ teaches people to ignore it. Not changed here: `crispembed_diff.h` is shared by
 every engine and re-keying it on one model's evidence is the exact mistake this
 session already made twice. Recorded so the FAILs are read correctly, with the
 columns now present to do that.
+
+
+## Full 54-stage trace to the logits (2026-08-03)
+
+The reference had only ever been dumped with `--max-llm-layers 4`, which also
+silently skips `llm_output_norm` and `llm_logits` — two stages
+`test_internvl2_diff.cpp` already knew how to compare and had never been given
+data for. So the harness stopped 20 layers short of the decision boundary. Re-dumped
+without the cap: **54 stages** (27 vision + 24 LLM + embed + output_norm + logits),
+108 MB, at `internvl2/h2ovl-mississippi-2b/ref-full.gguf`.
+
+Shipped q8_0 (vision F16), CPU, against all 54:
+
+| stage | cos_min | cos_glob | \|mine\| / \|ref\| |
+|---|--:|--:|---|
+| vis_patch_embed | 1.000000 | 1.000000 | 124.51 / 124.51 |
+| vis_pixel_unshuffle | 0.999695 | 1.000000 | 1739.23 / 1739.25 |
+| vis_proj_output | 0.999974 | 1.000000 | 183.15 / 183.15 |
+| llm_layer_0 | 0.982747 | 0.999863 | 7.77 / 7.79 |
+| llm_layer_11 | 0.967229 | 0.999066 | 86.62 / 86.52 |
+| llm_layer_23 | 0.525327 | 0.998276 | 980.20 / 961.45 |
+| llm_output_norm | 0.629808 | 0.997297 | 323.44 / 331.49 |
+| **llm_logits** | 0.613839 | **0.998919** | **1602.46 / 1604.54** |
+
+**The logits — the actual decision boundary — reproduce the blueprint at
+cos_glob 0.998919 with magnitudes 0.13 % apart.** That is the first time this
+model has been measured there at all, and it is the number that matters: token
+selection happens on this tensor.
+
+The `cos_glob` curve declines smoothly and monotonically from 0.999863 to
+0.998276 across 24 layers with **no discontinuity anywhere** — the signature of
+accumulating quantization error, not a defective op. Every earlier "jump" I
+chased (`vis_layer_12`, `llm_layer_1`) was an artifact of reading `cos_min`.
+
+Two things the trace does flag, neither load-bearing today:
+
+- `llm_output_norm` is the weakest global stage (0.997297) and the only one whose
+  magnitude is off by more than ~1 % (323.44 vs 331.49, −2.4 % low). The logits
+  recover to 0.998919 immediately after, so it is not propagating, but it is the
+  one stage worth a second look if this model ever misbehaves again.
+- `|mine|` runs 1.9 % high at `llm_layer_23` (980.20 vs 961.45) — the massive-
+  activation dimensions amplifying q8_0 rounding. Bounded and self-correcting
+  through the final norm.
