@@ -29,6 +29,8 @@
 
 #pragma once
 
+#include <cstdlib>
+
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
@@ -53,7 +55,42 @@ struct Report {
     float ref_norm = 0.0f;
     std::vector<int64_t> shape;
 
-    bool is_pass(float cos_threshold = 0.999f) const { return found && cos_min >= cos_threshold; }
+    // cos_min is a per-row minimum. That is the RIGHT gate for port
+    // correctness: at reference precision it is exact -- h2ovl-2b f16 scores
+    // cos_min 1.000000 on all 54 stages including the logits -- so a single
+    // mishandled token position still fails loudly, which is what this harness
+    // exists to catch.
+    //
+    // It is the WRONG gate for judging a quantized artifact. There the question
+    // is not "is the port correct" but "is the quantization damage acceptable",
+    // and per-row minima on a short probe are dominated by numerically fragile
+    // rows: the same h2ovl-2b at q8_0 reads cos_min 0.61 on the logits while
+    // cos_global is 0.998919 and the model transcribes a page correctly.
+    // Judging that with the 0.999 port threshold makes almost every stage print
+    // FAIL, and a gate that always cries wolf gets ignored.
+    //
+    // So: the default is unchanged (0.999 on cos_min), and the threshold is
+    // overridable per run via CRISPEMBED_DIFF_COS_THRESHOLD for quantized
+    // sweeps. Use is_pass_global() when the aggregate is the question.
+    bool is_pass(float cos_threshold = 0.999f) const { return found && cos_min >= env_threshold(cos_threshold); }
+
+    // Whole-tensor cosine. Insensitive to one fragile row, still craters on a
+    // layout or scale error, so it is the meaningful figure for a quantized
+    // artifact -- read it together with mine_norm/ref_norm (HARD RULE #2b).
+    bool is_pass_global(float cos_threshold = 0.999f) const {
+        return found && cos_global >= env_threshold(cos_threshold);
+    }
+
+private:
+    static float env_threshold(float fallback) {
+        const char * e = getenv("CRISPEMBED_DIFF_COS_THRESHOLD");
+        if (!e || !*e) return fallback;
+        char * end = nullptr;
+        float v = strtof(e, &end);
+        return (end && end != e && v > 0.0f && v <= 1.0f) ? v : fallback;
+    }
+
+public:
 };
 
 class Ref {
