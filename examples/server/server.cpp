@@ -88,9 +88,10 @@ using core_json::json_extract_strings;
 // treats as a 400 — so confinement fails closed without needing 30 handlers
 // to grow a new error branch.
 static std::string g_image_root; // empty = unrestricted
+static std::string g_model_root; // empty = unrestricted
 
-static bool image_path_within_root(const std::string & path) {
-    if (g_image_root.empty()) return true;
+static bool path_within(const std::string & path, const std::string & root) {
+    if (root.empty()) return true;
     if (path.empty()) return false;
 
     std::error_code ec;
@@ -98,43 +99,55 @@ static bool image_path_within_root(const std::string & path) {
     // symlink planted inside the root can escape it.
     const std::filesystem::path resolved = std::filesystem::weakly_canonical(path, ec);
     if (ec) return false;
-    const std::filesystem::path root = std::filesystem::weakly_canonical(g_image_root, ec);
+    const std::filesystem::path base = std::filesystem::weakly_canonical(root, ec);
     if (ec) return false;
 
-    auto r = root.begin();
+    // Component-wise, not string-prefix: /srv/scansEVIL must not pass for a
+    // root of /srv/scans.
+    auto r = base.begin();
     auto p = resolved.begin();
-    for (; r != root.end(); ++r, ++p) {
+    for (; r != base.end(); ++r, ++p) {
         if (p == resolved.end() || *p != *r) return false;
     }
     return true;
 }
 
-// Parses {"image": "..."} and applies --image-root. Returns "" when absent or
-// out of bounds; the rejection reason goes to stderr, since the shared 400
-// ("no image path") deliberately does not tell an unauthenticated caller
-// whether a path exists.
-static std::string extract_image_path(const std::string & body) {
-    const auto pos = body.find("\"image\"");
+// Parse a path-valued field and confine it.
+//
+// Every endpoint here reads its input by SERVER-SIDE path, which is convenient
+// for a local tool and an arbitrary-filesystem primitive for a reachable one.
+// `--image-root` originally covered only {"image": ...}; three other fields
+// bypassed it, and two were worse than the read it was written for:
+//
+//   "output"  /preprocess/dewarp   — fopen("wb"), i.e. arbitrary file WRITE
+//   "model"   /preprocess/tps-dewarp — loaded as a GGUF and EXECUTED as a graph
+//   "file"    /pdf/dpi             — arbitrary read
+//
+// Returns "" when absent or out of bounds; every endpoint already treats an
+// empty path as a 400, so confinement fails closed without new error branches.
+// The reason goes to stderr, not the response: an unauthenticated caller must
+// not learn whether a path exists.
+static std::string extract_path_field(const std::string & body, const char * key, const std::string & root,
+                                      const char * root_flag) {
+    const std::string needle = std::string("\"") + key + "\"";
+    const auto pos = body.find(needle);
     if (pos == std::string::npos) return "";
-    const auto q1 = body.find('"', pos + 7);
+    const auto q1 = body.find('"', pos + needle.size());
     if (q1 == std::string::npos) return "";
     const auto q2 = body.find('"', q1 + 1);
     if (q2 == std::string::npos) return "";
 
     std::string path = body.substr(q1 + 1, q2 - q1 - 1);
-    if (!image_path_within_root(path)) {
-        fprintf(stderr, "crispembed-server: rejected image path outside --image-root (%s): %s\n", g_image_root.c_str(),
+    if (!path_within(path, root)) {
+        fprintf(stderr, "crispembed-server: rejected '%s' path outside %s (%s): %s\n", key, root_flag, root.c_str(),
                 path.c_str());
         return "";
     }
     return path;
 }
 
-// Private temp files: see core/temp_file.h. Uploaded pages used to go to a
-// guessable /tmp/crispembed_doc_<pid>_<n>.img opened with fopen("wb") —
-// symlink-redirectable and world-readable, holding the document being OCR'd.
-static std::string make_private_temp_file(const char * suffix) {
-    return core_tmp::make_private(suffix);
+static std::string extract_image_path(const std::string & body) {
+    return extract_path_field(body, "image", g_image_root, "--image-root");
 }
 
 // Encode a processed image for a JSON response.
@@ -181,6 +194,13 @@ static std::string encode_image_b64(const uint8_t * data, int w, int h, int comp
         b64 += (i + 2 < n_bytes) ? b64chars[v & 0x3f] : '=';
     }
     return b64;
+}
+
+// Private temp files: see core/temp_file.h. Uploaded pages used to go to a
+// guessable /tmp/crispembed_doc_<pid>_<n>.img opened with fopen("wb") —
+// symlink-redirectable and world-readable, holding the document being OCR'd.
+static std::string make_private_temp_file(const char * suffix) {
+    return core_tmp::make_private(suffix);
 }
 
 static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int h, int angle) {
@@ -257,6 +277,8 @@ int main(int argc, char ** argv) {
             host = argv[++i];
         else if (strcmp(argv[i], "--image-root") == 0 && i + 1 < argc)
             g_image_root = argv[++i];
+        else if (strcmp(argv[i], "--model-root") == 0 && i + 1 < argc)
+            g_model_root = argv[++i];
         else if (strcmp(argv[i], "--port") == 0 && i + 1 < argc)
             port = atoi(argv[++i]);
         else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc)
@@ -345,6 +367,10 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "                    this any reachable client can read any file this\n");
         fprintf(stderr, "                    process can. Set it whenever the port is not\n");
         fprintf(stderr, "                    loopback-only.\n");
+        fprintf(stderr, "  --model-root DIR  confine client-supplied model paths (e.g. the\n");
+        fprintf(stderr, "                    tps-dewarp \"model\" field) to DIR. A GGUF is a graph\n");
+        fprintf(stderr, "                    this process executes, so an unconfined model path\n");
+        fprintf(stderr, "                    is a code-execution surface, not a data one.\n");
         fprintf(stderr, "\nFace pipeline:\n");
         fprintf(stderr, "  --det MODEL   face detection model (SCRFD GGUF)\n");
         fprintf(stderr, "  --rec MODEL   face recognition model (ArcFace/SFace GGUF)\n");
@@ -2130,12 +2156,7 @@ int main(int argc, char ** argv) {
     svr.Post("/pdf/dpi", [&](const httplib::Request & req, httplib::Response & res) {
         auto body = req.body;
         std::string file_path;
-        auto pos = body.find("\"file\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 6);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) file_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        file_path = extract_path_field(body, "file", g_image_root, "--image-root");
         if (file_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'file' field\"}", "application/json");
@@ -2223,12 +2244,9 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path, output_path;
         image_path = extract_image_path(body);
-        auto opos = body.find("\"output\"");
-        if (opos != std::string::npos) {
-            auto q1 = body.find('"', opos + 8);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) output_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        // A client-supplied WRITE target. Confined to --image-root: without it,
+        // any file this process can write is creatable or truncatable.
+        output_path = extract_path_field(body, "output", g_image_root, "--image-root");
         if (image_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' field\"}", "application/json");
@@ -2283,12 +2301,10 @@ int main(int argc, char ** argv) {
         auto body = req.body;
         std::string image_path, model_path;
         image_path = extract_image_path(body);
-        auto pos = body.find("\"model\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 7);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) model_path = body.substr(q1 + 1, q2 - q1 - 1);
-        }
+        // A GGUF is a graph this process then executes, so a client-supplied
+        // model path is a code-execution surface, not a data one. Separate root
+        // from --image-root: a model legitimately lives outside an image dir.
+        model_path = extract_path_field(body, "model", g_model_root, "--model-root");
         if (image_path.empty() || model_path.empty()) {
             res.status = 400;
             res.set_content("{\"error\": \"missing 'image' or 'model' field\"}", "application/json");
