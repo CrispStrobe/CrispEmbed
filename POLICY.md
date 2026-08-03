@@ -166,10 +166,20 @@ endpoint that will turn any file the process can read into a template, so:
 - Starting `--rec` on a non-loopback bind prints a warning naming the address.
   It warns rather than refuses, because containers legitimately bind `0.0.0.0`
   behind a proxy that does the authenticating.
-- **`--image-root DIR` confines every `{"image": ...}` read to one subtree**,
-  resolving `..` and symlinks first so neither escapes it. Set it whenever the
-  port is not loopback-only. Unset, any readable path is accepted — the
-  historical behaviour.
+- **`--image-root DIR` confines client-supplied *data* paths to one subtree**:
+  the `image` field every endpoint reads, `/preprocess/dewarp`'s `output` — a
+  **write**, so unconfined it makes any file this process can write creatable
+  or truncatable — and `/pdf/dpi`'s `file`. Paths resolve through `..` and
+  symlinks first and compare component-wise, so `/srv/scansEVIL` does not pass
+  for a root of `/srv/scans`.
+- **`--model-root DIR` confines client-supplied *model* paths**, currently
+  `/preprocess/tps-dewarp`'s `model`. Separate on purpose: a model legitimately
+  lives outside an image directory, and a GGUF is a graph this process then
+  executes, so an unconfined model path is a code-execution surface rather than
+  a data one.
+
+Set both whenever the port is not loopback-only. Unset, any readable path is
+accepted — the historical behaviour.
 
 None of this substitutes for an authenticating proxy. If you serve /face to
 anything other than localhost, the access control is yours to build.
