@@ -18,6 +18,13 @@ Refusal is deliberately indistinguishable from "no image path" in the HTTP
 response, so an unauthenticated caller cannot probe for file existence; the
 reason goes to the server's stderr instead, and this asserts on both.
 
+It also probes endpoints registered LATE in server.cpp. A local
+`extract_image_path` lambda once shadowed the confining file-scope function for
+every handler below it, so --image-root covered the first 13 endpoints and
+silently missed the next 20 — including every super-resolution and restoration
+engine. This test did not catch that, because /detect sits above the shadow.
+Probing both sides is the regression guard.
+
 Usage:
     python tests/test_image_root.py --det-model yunet.gguf [--build-dir build]
 """
@@ -136,6 +143,7 @@ def main() -> int:
             ]
 
             failures = 0
+            extra_image_rejections = 0
 
             # --image-root originally covered only {"image": ...}. Two other
             # fields were worse than the read it was written for: dewarp's
@@ -157,6 +165,17 @@ def main() -> int:
             print(f"  [{'ok' if not leaked else 'FAIL'}] /pdf/dpi 'file' outside root refused")
             failures += bool(leaked)
 
+            # Endpoints registered below the old shadow point. /scan/split and
+            # /scan/content need no model, so they cover that region without a
+            # second GGUF. While the lambda existed both served this happily.
+            for ep, ok_key in (("/scan/split", "pages"), ("/scan/content", "content")):
+                body = post(port, ep, {"image": str(outside / "secret.png")})
+                served = ok_key in body
+                failures += bool(served)
+                extra_image_rejections += 1
+                print(f"  [{'ok' if not served else 'FAIL'}] {ep} outside root refused "
+                      f"(late-registered endpoint, was unconfined)")
+
             for label, image, should_serve in cases:
                 body = post(port, "/detect", {"image": image})
                 served = "faces" in body
@@ -177,7 +196,7 @@ def main() -> int:
         # Message shape changed when confinement generalised beyond "image";
         # match the field-agnostic form.
         logged = (err or "").count("rejected 'image' path outside")
-        expected_rejections = sum(1 for _, _, serve in cases if not serve)
+        expected_rejections = sum(1 for _, _, serve in cases if not serve) + extra_image_rejections
         if logged != expected_rejections:
             print(f"  [FAIL] server logged {logged} rejections, expected {expected_rejections}")
             failures += 1
