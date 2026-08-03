@@ -1970,6 +1970,22 @@ result run_file(context * ctx, const char * image_path) {
             stage_cleanup.enabled = false;
             stage_cleanup.denoise = false;
         }
+        if (s.eng == engine::ppocrv6 && stage_cleanup.enabled && std::getenv("CRISPEMBED_PPOCRV6_CLEANUP") == nullptr) {
+            // The official PP-OCR pipeline runs its detector on the raw page;
+            // classical cleanup before it is a deviation, and despeckle /
+            // blackfilter run even when deskew/crop/whiten are disabled,
+            // eroding thin strokes on clean rendered type ($ -> S, I -> :,
+            // hyphens vanish). Measured on the labelled CC0 fixtures, CER
+            // cleanup-on -> cleanup-off: commons_example_receipt 0.0885 ->
+            // 0.0025, simple_form 0.7368 -> 0.6154, while the scans cleanup
+            // was meant to help move only at noise level
+            // (german_official_print 0.0486 -> 0.0535, receipt_historical
+            // 0.0260 -> 0.0273). CRISPEMBED_PPOCRV6_CLEANUP=1 restores the
+            // old behaviour.
+            if (verbose) fprintf(stderr, "ocr_orchestrator: ppocrv6 stage skips destructive cleanup\n");
+            stage_cleanup.enabled = false;
+            stage_cleanup.denoise = false;
+        }
         std::vector<uint8_t> cleaned_pixels;
         int cleaned_w = 0, cleaned_h = 0;
         const bool cleaned_in_memory =
