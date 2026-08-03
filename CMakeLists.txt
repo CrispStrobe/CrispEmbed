@@ -548,6 +548,9 @@ target_link_libraries(test-core-vlm-attention PRIVATE crispembed)
 add_executable(test-msac-tiling tests/test_msac_tiling.cpp)
 target_link_libraries(test-msac-tiling PRIVATE crispembed)
 
+add_executable(test-provenance-marking tests/test_provenance_marking.cpp)
+target_include_directories(test-provenance-marking PRIVATE src)
+
 add_executable(test-gguf-loader-mmap tests/test_gguf_loader_mmap.cpp)
 target_link_libraries(test-gguf-loader-mmap PRIVATE crispembed)
 

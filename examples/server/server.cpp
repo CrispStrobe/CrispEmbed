@@ -34,6 +34,7 @@
 #include "core/json.h"
 #include "ocr_render.h"
 #include "scan_cleanup.h"
+#include "core/provenance.h"
 #include "model_mgr.h"
 #include "pdf_info.h"
 #if __has_include("text_lid_dispatch.h")
@@ -191,7 +192,7 @@ static bool write_rotated_ppm(const char * path, const uint8_t * rgb, int w, int
     }
     FILE * f = fopen(path, "wb");
     if (!f) return false;
-    fprintf(f, "P6\n%d %d\n255\n", out_w, out_h);
+    fprintf(f, "P6\n%s%d %d\n255\n", core_prov::netpbm_comment("autorotate").c_str(), out_w, out_h);
     const size_t written = fwrite(rotated.data(), 1, rotated.size(), f);
     fclose(f);
     return written == rotated.size();
@@ -2239,7 +2240,7 @@ int main(int argc, char ** argv) {
         if (!output_path.empty()) {
             FILE * f = fopen(output_path.c_str(), "wb");
             if (f) {
-                fprintf(f, "P5\n%d %d\n255\n", ow, oh);
+                fprintf(f, "P5\n%s%d %d\n255\n", core_prov::netpbm_comment("dewarp").c_str(), ow, oh);
                 fwrite(out.data(), 1, ow * oh, f);
                 fclose(f);
             }
@@ -2253,8 +2254,8 @@ int main(int argc, char ** argv) {
         if (want_image) {
             // PGM format: P5 header + raw bytes
             std::string pgm;
-            char hdr[64];
-            snprintf(hdr, sizeof(hdr), "P5\n%d %d\n255\n", ow, oh);
+            char hdr[512];
+            snprintf(hdr, sizeof(hdr), "P5\n%s%d %d\n255\n", core_prov::netpbm_comment("dewarp").c_str(), ow, oh);
             pgm = hdr;
             pgm.append((const char *)out.data(), ow * oh);
             res.set_content(pgm, "image/x-portable-graymap");

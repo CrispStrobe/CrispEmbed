@@ -610,6 +610,22 @@ loads, prefills, and returns confident nonsense rather than erroring. The 800m
 sibling sets `use_msac: false` and needs none of it. Geometry is pinned by
 `tests/test_msac_tiling.cpp` against the upstream algorithm.
 
+### Marking generated images (EU AI Act Art. 50(2))
+
+Off by default. `CRISPEMBED_MARK_GENERATED=1` writes a machine-readable
+provenance comment into every image the library emits, naming the engine that
+touched the pixels — so a reader can tell synthesised detail (ESRGAN, NAFNet)
+from resampling (deskew, dewarp), which is not recoverable from the pixels:
+
+```bash
+CRISPEMBED_MARK_GENERATED=1 crispembed --esrgan-model m.gguf --esrgan in.png > out.ppm
+head -5 out.ppm     # P6 / # CrispEmbed-Generated: true / # CrispEmbed-Engine: esrgan-sr
+```
+
+It is a header comment, not a signature — strippable, with no cryptographic
+binding to the pixels. For tamper-evident provenance you still need C2PA with a
+signing identity. See [POLICY.md §5](POLICY.md).
+
 ### Model integrity
 
 Auto-downloaded GGUFs are **SHA-256 pinned** against
