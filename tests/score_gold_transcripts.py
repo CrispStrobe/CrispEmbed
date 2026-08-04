@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -29,6 +30,25 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from ocr_external_parity import (  # noqa: E402
     load_fixtures, normalize, render_markdown, score, summarize)
+
+
+def strip_markup(s: str) -> str:
+    """Drop the document structure a markdown arm was *asked* to produce.
+
+    An arm told to "convert tables to HTML" and to label figures with markdown
+    image syntax is not wrong when it does so — but the ground truth is plain
+    text, and character error would charge every `<td>` as a recognition
+    failure.  Scoring this view alongside the real one separates "read the page
+    wrong" from "wrote the page as markup".  It is a diagnostic, never the
+    headline: the arm returns the markup, so the primary CER must keep it.
+    """
+    s = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", s)      # markdown images
+    s = re.sub(r"<[^>]+>", " ", s)                    # html tags
+    s = re.sub(r"^\s*#{1,6}\s*", "", s, flags=re.M)   # headings
+    s = re.sub(r"^\s*\|?[\s:|-]{3,}\|?\s*$", " ", s, flags=re.M)  # table rules
+    s = s.replace("|", " ")
+    s = re.sub(r"\*\*|__|\*|`", "", s)
+    return s
 
 
 def main() -> int:
@@ -40,6 +60,9 @@ def main() -> int:
     ap.add_argument("--kind", default="external")
     ap.add_argument("--suffix", default=".txt")
     ap.add_argument("--require-truth", action="store_true", default=True)
+    ap.add_argument("--strip-markup", action="store_true",
+                    help="also score a markup-stripped view of each transcript; "
+                         "for arms whose prompt asks for markdown/HTML output")
     ap.add_argument("--output", type=Path)
     ap.add_argument("--markdown", type=Path)
     args = ap.parse_args()
@@ -80,8 +103,12 @@ def main() -> int:
             "final_temperature": page.get("final_temperature"),
             "deterministic": page.get("deterministic"),
         }
+        if args.strip_markup:
+            entry["alt_texts"] = {"markup_stripped": strip_markup(text)}
         if fx["truth"]:
             entry.update(score(text, fx["truth"]))
+            entry["alt_scores"] = {k: score(v, fx["truth"])
+                                   for k, v in (entry.get("alt_texts") or {}).items()}
         rows.append({"fixture": fx["name"], "truth_chars": len(normalize(fx["truth"] or "")),
                      "engines": {args.engine: entry}})
 
