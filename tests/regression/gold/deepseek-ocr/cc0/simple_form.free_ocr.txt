@@ -1,0 +1,26 @@
+Input
+
+Texte
+Number
+Date
+Password
+
+a label    ANOTHER LABEL    Yet another label
+
+combosuggest
+
+Finland
+France
+Switzerland
+
+checkbox2
+checkbox3
+
+CodeLabel
+code.lib
+code
+
+Button
+Rechercher
+Recherche
+Reset
