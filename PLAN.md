@@ -16,7 +16,6 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `feat/parity-olmocr` (delegated agent) | **A3 IN PROGRESS** — olmOCR-toolkit reference arm on Kaggle (chr1s4), runtime prompt-contract capture + raw/parsed gold → `tests/regression/gold/olmocr/`; T13 acceptance reference. **A4 QUEUED** | **IN PROGRESS** |
 | 2026-08-04 | `feat/embed-f2llm` (delegated agent) | **T19-E1** — port F2LLM-v2 160M+0.6B (Qwen3Model, Apache) via convert-decoder-embed (docstring claims support — verify); cosine+norm parity vs HF, German retrieval sanity, upload cstr, registry+pins | **IN PROGRESS** |
 | 2026-08-04 | `feat/embed-arctic-granite` (delegated agent) | **T19-E2** — arctic-embed-m-v2.0 + granite-r2 97m/311m: arch check first (granite-r2 may be ModernBERT — report, don't force), then convert/verify/upload/registry | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. Pending: local smoke once the heavy slot frees (A2 running), decoded parity vs A3 gold on ≥5 pages | **IN PROGRESS** |
@@ -1338,6 +1337,28 @@ chars (CER 1.0) as two PICTURE clusters while recognized items score 0.1862;
 (e) 12-24x slower than the load-inclusive tesseract control. (f) Environment:
 `~/.cache/huggingface` symlinks to the backups volume which is 100% FULL —
 every HF download needs `HF_HOME=$HOME/.cache/hf-docling` until cleared.
+
+**A3 status [DONE 2026-08-04, merged]:** 25-page raw+parsed gold in
+`tests/regression/gold/olmocr/` + `contract.json` (captured by IMPORTING the
+toolkit's own `build_page_query`, olmocr 0.4.27). Contract vs our T13 lane:
+prompt **byte-identical** (sha c12f21ac, 557 B — re-verified independently at
+merge), text-before-image CONFIRMED, default system message CONFIRMED, 1288
+render CONFIRMED (small pages UPSCALED; pdftoppm rounds 2 fixtures to 1289;
+grids match native on 24/25 — synth_02_lowdpi lands across a round-to-28
+boundary). **Divergences that shape the T13 gate:** (1) the toolkit's FIRST
+attempt samples at temperature **0.1**, not 0.0 (differs from greedy on 3/5
+cc0 pages, CER 0.001-0.006); (2) the reference disagrees with ITSELF across
+serving stacks (vLLM emitted an early stop on simple_form: CER 0.372 vs
+transformers 0.049 — gold ships from transformers; both kept); (3) reference
+front matter must start at byte 0 and validates strictly (invalid → retry);
+our lane is deliberately more permissive. ⇒ T13 acceptance is a CER
+threshold vs gold, NEVER a byte diff. Harness: synth 20/20 CER 0.0; cc0 mean
+CER 0.17735 raw / **0.04057 markup-stripped** (the 0.70 receipt outlier is
+the prompt returning an HTML table, as instructed; stripping HURTS
+receipt_historical, so both views are quoted). No retries on any of 25
+pages. vLLM-on-T4 works after two fixes (libcuda.so symlink; leave
+VLLM_ATTENTION_BACKEND unset — forcing it breaks the vision tower), ~2x
+faster than transformers serving.
 
 **A2 status [DONE 2026-08-04, merged `add33c26`]:** `Qwen25VLPy` adapter +
 Kaggle kernel (`chr1s4/crispembed-qwen-vl-ocr-parity`, 2x T4); **25/25 gold**
