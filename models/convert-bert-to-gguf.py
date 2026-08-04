@@ -415,8 +415,33 @@ def main():
     id_to_token = {v: k for k, v in vocab.items()}
     tokens = [id_to_token.get(i, f"[UNK_{i}]") for i in range(config.vocab_size)]
 
-    # Detect tokenizer type
-    is_sentencepiece = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
+    # tokenizer.json, read once — it is the only place the tokenizer FAMILY is
+    # declared. Everything below that used to be guessed from the vocab size or
+    # the transformers class is read out of it instead.
+    tok_json = None
+    try:
+        _tjp = _resolve_file(args.model, "tokenizer.json")
+        if _tjp is not None:
+            with open(_tjp, encoding="utf-8") as f:
+                tok_json = json.load(f)
+    except Exception as e:
+        print(f"  tokenizer.json: not available ({e})")
+    tj_model_type = (tok_json or {}).get("model", {}).get("type")
+
+    # Detect tokenizer type.
+    #
+    # The `vocab_size > 100000` heuristic predates any tokenizer.json inspection
+    # and mislabels every LARGE BPE vocab as SentencePiece — which is exactly
+    # what granite-embedding-{97m,311m}-multilingual-r2 are (180k and 262k BPE).
+    # A declared "BPE" is authoritative and overrides it. WordPiece vocabs over
+    # 100k (LaBSE) are deliberately LEFT on the historical path here so this
+    # change cannot alter any other model's conversion; that one is a separate,
+    # still-open question.
+    if tj_model_type == "BPE":
+        is_sentencepiece = False
+        print("  tokenizer.json declares model.type=BPE (overrides the vocab-size heuristic)")
+    else:
+        is_sentencepiece = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
 
     # Ollama's WordPiece tokenizer expects phantom-space tokens:
     # "hello" -> "▁hello", "##ing" -> "ing", "[CLS]" -> "[CLS]"
@@ -516,35 +541,109 @@ def main():
             writer.add_array("tokenizer.ggml.token_type", token_types)
         else:
             # Detect BPE vs WordPiece from tokenizer.json
-            is_bpe_tokenizer = False
+            is_bpe_tokenizer = tj_model_type == "BPE"
             scores = []
-            try:
-                tj_path = _resolve_file(args.model, "tokenizer.json")
-                if tj_path is None:
-                    raise FileNotFoundError("tokenizer.json not found")
-                with open(tj_path, encoding="utf-8") as f:
-                    tj = json.load(f)
-                is_bpe_tokenizer = tj.get("model", {}).get("type") == "BPE"
-                # Store BPE merges for BPE tokenizers
-                if is_bpe_tokenizer:
-                    merges = tj.get("model", {}).get("merges", [])
-                    writer.add_uint32("tokenizer.ggml.merges_count", len(merges))
-                    # Store merges as a tensor (newline-separated blob)
-                    # This avoids GGUF string array metadata issues
-                    merge_strs = []
-                    for m in merges:
-                        merge_strs.append(" ".join(m) if isinstance(m, list) else m)
-                    blob = "\n".join(merge_strs).encode("utf-8")
-                    writer.add_tensor("tokenizer.merges", np.frombuffer(blob, dtype=np.int8))
-                    print(f"  BPE merges: {len(merges)} ({len(blob)} bytes as tensor)")
-            except Exception as e:
-                print(f"  BPE detection: {e}")
+            tj = tok_json or {}
+            if is_bpe_tokenizer:
+                # Store BPE merges as a tensor (newline-separated blob).
+                # This avoids GGUF string array metadata issues.
+                merges = tj.get("model", {}).get("merges", [])
+                writer.add_uint32("tokenizer.ggml.merges_count", len(merges))
+                merge_strs = []
+                for m in merges:
+                    merge_strs.append(" ".join(m) if isinstance(m, list) else m)
+                blob = "\n".join(merge_strs).encode("utf-8")
+                writer.add_tensor("tokenizer.merges", np.frombuffer(blob, dtype=np.int8))
+                print(f"  BPE merges: {len(merges)} ({len(blob)} bytes as tensor)")
+                # A newline-SEPARATED blob cannot represent a merge that
+                # CONTAINS a newline, and SentencePiece-BPE vocabs have plenty
+                # (granite-311m-r2 / Gemma: 465 of them, e.g. "\n\n" -> "\n\n\n").
+                # Those merges were silently dropped, so "a\n\nb" tokenized as
+                # two separate newline tokens instead of the vocab's "\n\n".
+                # Vocabulary pieces are UTF-8 and can never contain NUL, so a
+                # NUL-separated blob is lossless; emit it ALONGSIDE the legacy
+                # tensor (only when actually needed, so no other model's file
+                # changes) and let the runtime prefer it. An older binary keeps
+                # reading the legacy tensor exactly as it does today.
+                if any("\n" in s or "\r" in s for s in merge_strs):
+                    nul_blob = "\0".join(merge_strs).encode("utf-8")
+                    writer.add_tensor("tokenizer.merges_nul", np.frombuffer(nul_blob, dtype=np.int8))
+                    n_nl = sum(1 for s in merge_strs if "\n" in s or "\r" in s)
+                    print(f"  BPE merges: +NUL-separated copy ({n_nl} merges contain CR/LF)")
+            elif tj_model_type is None:
+                print("  BPE detection: no tokenizer.json, assuming WordPiece")
 
             if is_bpe_tokenizer and scores:
                 writer.add_array("tokenizer.ggml.scores", scores)
             writer.add_uint32("tokenizer.ggml.type", 1 if is_bpe_tokenizer else 0)
-            writer.add_uint32("tokenizer.ggml.cls_token_id", tokenizer.cls_token_id if tokenizer.cls_token_id is not None else 101)
-            writer.add_uint32("tokenizer.ggml.sep_token_id", tokenizer.sep_token_id if tokenizer.sep_token_id is not None else 102)
+
+            # --- Self-describing BPE flavour -------------------------------
+            # Which pre-tokenizer and which normalizer a BPE vocab uses is NOT
+            # inferable from the vocab, and guessing it produced silently wrong
+            # ids. Write what tokenizer.json declares; the runtime defaults to
+            # the historical behavior when a key is ABSENT, so every already
+            # published GGUF keeps behaving exactly as before.
+            cls_tok_id = tokenizer.cls_token_id
+            sep_tok_id = tokenizer.sep_token_id
+            if is_bpe_tokenizer:
+                pre = tj.get("pre_tokenizer") or {}
+                pre_list = pre.get("pretokenizers", [pre]) if pre.get("type") == "Sequence" else [pre]
+                split_pat = ""
+                for p in pre_list:
+                    if p.get("type") == "Split" and isinstance(p.get("pattern"), dict):
+                        split_pat = p["pattern"].get("Regex") or ""
+                        if split_pat:
+                            break
+                # o200k_base / cl100k-family splits are the ones with the
+                # case-aware letter alternatives; the `{1,3}` digit group is
+                # their unmistakable marker (GPT-2 has ` ?\p{N}+`, Qwen `\p{N}`).
+                pre_name = ""
+                if "\\p{N}{1,3}" in split_pat and "\\p{Lu}" in split_pat:
+                    pre_name = "o200k"
+                elif any(p.get("type") == "ByteLevel" and p.get("use_regex", True) for p in pre_list):
+                    # HF `ByteLevel(use_regex=true)` IS the GPT-2 split, which
+                    # the runtime has always called "modern-bert".
+                    pre_name = "modern-bert"
+                if pre_name:
+                    writer.add_string("tokenizer.ggml.pre", pre_name)
+                    print(f"  tokenizer.ggml.pre: {pre_name}")
+                if tj.get("model", {}).get("ignore_merges"):
+                    writer.add_bool("tokenizer.ggml.ignore_merges", True)
+                    print("  tokenizer.ggml.ignore_merges: true")
+
+                # A SentencePiece-style BPE declares the space -> U+2581
+                # normalizer (Gemma / granite-311m-r2). Byte-level BPEs do not.
+                norm = json.dumps(tj.get("normalizer") or {})
+                if "\\u2581" in norm or "▁" in norm:
+                    writer.add_uint32("tokenizer.ggml.is_spm_bpe", 1)
+                    print("  tokenizer.ggml.is_spm_bpe: 1 (space -> U+2581 normalizer)")
+
+                # The post-processor template is the ONLY statement of which
+                # special tokens wrap a sequence. granite-311m-r2 prepends <bos>
+                # and appends NOTHING, and its tokenizer exposes no cls/sep at
+                # all — so `tokenizer.cls_token_id` alone would have written the
+                # BERT defaults (101/102) and produced garbage ids.
+                post = tj.get("post_processor") or {}
+                single = post.get("single") if post.get("type") == "TemplateProcessing" else None
+                if single:
+                    def _tpl_special(entry):
+                        st = entry.get("SpecialToken")
+                        if not st:
+                            return None
+                        ids = (post.get("special_tokens", {}).get(st["id"], {})).get("ids", [])
+                        return ids[0] if ids else None
+                    first_id = _tpl_special(single[0])
+                    last_id = _tpl_special(single[-1]) if len(single) > 1 else None
+                    if first_id is not None:
+                        cls_tok_id = first_id
+                    writer.add_bool("tokenizer.ggml.add_bos_token", first_id is not None)
+                    writer.add_bool("tokenizer.ggml.add_eos_token", last_id is not None)
+                    if last_id is not None:
+                        sep_tok_id = last_id
+                    print(f"  post-processor: bos={first_id} eos={last_id}")
+
+            writer.add_uint32("tokenizer.ggml.cls_token_id", cls_tok_id if cls_tok_id is not None else 101)
+            writer.add_uint32("tokenizer.ggml.sep_token_id", sep_tok_id if sep_tok_id is not None else 102)
             writer.add_uint32("tokenizer.ggml.unknown_token_id", tokenizer.unk_token_id if tokenizer.unk_token_id is not None else 100)
             writer.add_uint32("tokenizer.ggml.padding_token_id", tokenizer.pad_token_id if tokenizer.pad_token_id is not None else 0)
         tok_type_str = "BPE" if (not ollama_mode and is_bpe_tokenizer) else "WordPiece"

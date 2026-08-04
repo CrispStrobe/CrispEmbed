@@ -634,6 +634,10 @@ target_link_libraries(test-tokenizer PRIVATE crispembed)
 add_executable(test-qwen-pretokenize tests/test_qwen_pretokenize.cpp)
 target_include_directories(test-qwen-pretokenize PRIVATE src)
 
+# Hermetic: core/bpe.h + core/unicode_categ.h are header-only.
+add_executable(test-o200k-pretokenize tests/test_o200k_pretokenize.cpp)
+target_include_directories(test-o200k-pretokenize PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 

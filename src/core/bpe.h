@@ -21,6 +21,8 @@
 
 #pragma once
 
+#include "unicode_categ.h"
+
 #include <climits>
 #include <cstdint>
 #include <cstring>
@@ -457,6 +459,205 @@ inline std::vector<int32_t> tokenize_qwen(const std::unordered_map<std::string, 
     std::vector<int32_t> result;
     for (const auto & pt : qwen_pretokenize(text)) {
         std::string encoded = bytes_to_unicode(pt.data(), pt.size());
+        bpe_one(token_to_id, merge_rank, encoded, result);
+    }
+    return result;
+}
+
+// --- o200k ByteLevel pre-tokenizer -----------------------------------------
+//
+// The split declared by tokenizer.json of the o200k_base family (GPT-4o,
+// gpt-oss, and — the reason it is here — ibm-granite/granite-embedding-97m-
+// multilingual-r2), verbatim:
+//
+//   1. [^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*
+//                        [\p{Ll}\p{Lm}\p{Lo}\p{M}]+(?i:'s|'t|'re|'ve|'m|'ll|'d)?
+//   2. [^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+
+//                        [\p{Ll}\p{Lm}\p{Lo}\p{M}]*(?i:'s|'t|'re|'ve|'m|'ll|'d)?
+//   3. \p{N}{1,3}
+//   4.  ?[^\s\p{L}\p{N}]+[\r\n/]*
+//   5. \s*[\r\n]+
+//   6. \s+(?!\S)
+//   7. \s+
+//
+// Alternatives are tried in order at each position, exactly as a backtracking
+// regex engine would, and alternatives 1-2 are implemented with the real
+// greedy/backtrack semantics of `U* L+` and `U+ L*`.
+//
+// Unlike the Qwen and GPT-2 pre-tokenizers above, this one BRANCHES ON LETTER
+// CASE, so their shared "any byte >= 0x80 is a letter" shortcut is not usable:
+// with every non-ASCII letter in both the uppercase and the lowercase class,
+// alternative 1 matches a single leading umlaut of an all-caps German word
+// ("ÄRGER" -> "Ä" + "RGER") where the reference takes the whole word via
+// alternative 2. `core_unicode` therefore carries the real general-category
+// table, and this function is the only consumer that needs it.
+namespace o200k_detail {
+
+// Longest `(?i:'s|'t|'re|'ve|'m|'ll|'d)` at codepoint index k, in codepoints
+// (0 = no match). The apostrophe and the letters are ASCII in the reference
+// pattern; a Unicode right-single-quote is NOT a contraction there.
+inline size_t contraction_len(const std::string & s, const std::vector<size_t> & off, size_t k, size_t ncp) {
+    if (k >= ncp || s[off[k]] != '\'') return 0;
+    auto low = [&](size_t idx) -> unsigned char {
+        if (idx >= ncp || off[idx + 1] - off[idx] != 1) return 0;
+        const unsigned char x = (unsigned char)s[off[idx]];
+        return (x >= 'A' && x <= 'Z') ? (unsigned char)(x - 'A' + 'a') : x;
+    };
+    const unsigned char d1 = low(k + 1);
+    if (d1 == 's' || d1 == 't' || d1 == 'm' || d1 == 'd') return 2;
+    const unsigned char d2 = low(k + 2);
+    if ((d1 == 'r' && d2 == 'e') || (d1 == 'v' && d2 == 'e') || (d1 == 'l' && d2 == 'l')) return 3;
+    return 0;
+}
+
+} // namespace o200k_detail
+
+inline std::vector<std::string> o200k_pretokenize(const std::string & s) {
+    std::vector<std::string> out;
+    const size_t n = s.size();
+    if (n == 0) return out;
+
+    // Decode once into codepoint boundaries + categories; the alternation is
+    // then pure index arithmetic.
+    std::vector<size_t> off;
+    std::vector<uint8_t> cat;
+    off.reserve(n + 1);
+    cat.reserve(n);
+    for (size_t i = 0; i < n;) {
+        off.push_back(i);
+        cat.push_back(core_unicode::category(core_unicode::utf8_next(s.data(), n, i)));
+    }
+    off.push_back(n);
+    const size_t ncp = cat.size();
+    const size_t npos = (size_t)-1;
+
+    // [\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}] — the "uppercase side" class.
+    auto in_u = [&](size_t k) {
+        return k < ncp &&
+               (cat[k] == core_unicode::CAT_LU || cat[k] == core_unicode::CAT_LO || cat[k] == core_unicode::CAT_M);
+    };
+    // [\p{Ll}\p{Lm}\p{Lo}\p{M}] — the "lowercase side" class.
+    auto in_l = [&](size_t k) {
+        return k < ncp &&
+               (cat[k] == core_unicode::CAT_LL || cat[k] == core_unicode::CAT_LO || cat[k] == core_unicode::CAT_M);
+    };
+    auto is_letter = [&](size_t k) { return k < ncp && core_unicode::is_letter(cat[k]); };
+    auto is_num = [&](size_t k) { return k < ncp && cat[k] == core_unicode::CAT_N; };
+    auto is_ws = [&](size_t k) { return k < ncp && cat[k] == core_unicode::CAT_WS; };
+    auto byte_at = [&](size_t k) -> char { return k < ncp ? s[off[k]] : '\0'; };
+    auto is_nl = [&](size_t k) { return k < ncp && (byte_at(k) == '\r' || byte_at(k) == '\n'); };
+    // [^\r\n\p{L}\p{N}] — the optional single leading codepoint of alt 1/2.
+    auto is_lead = [&](size_t k) { return k < ncp && !is_nl(k) && !is_letter(k) && !is_num(k); };
+
+    size_t k = 0;
+    while (k < ncp) {
+        size_t end = npos;
+
+        // Alternatives 1 and 2. The leading `[^\r\n\p{L}\p{N}]?` is greedy, so
+        // try it present first and fall back to absent (they can differ only
+        // when s[k] is a combining mark, which is both a valid lead and a
+        // member of both letter-side classes).
+        for (int use_lead = 1; use_lead >= 0 && end == npos; --use_lead) {
+            if (use_lead && !is_lead(k)) continue;
+            const size_t st = k + (use_lead ? 1 : 0);
+
+            size_t u = st;
+            while (in_u(u)) u++; // greedy [Lu Lt Lm Lo M]*
+
+            // Alt 1: `U* L+` — back off the U run to the largest split that
+            // leaves at least one L-class codepoint.
+            size_t m = npos;
+            if (in_l(u)) {
+                m = u; // the codepoint after the U run is an Ll
+            } else {
+                for (size_t t = u; t > st; --t) {
+                    if (in_l(t - 1)) {
+                        m = t - 1;
+                        break;
+                    }
+                }
+            }
+            if (m != npos) {
+                size_t e = m;
+                while (in_l(e)) e++;
+                end = e + o200k_detail::contraction_len(s, off, e, ncp);
+                break;
+            }
+            // Alt 2: `U+ L*`.
+            if (u > st) {
+                size_t e = u;
+                while (in_l(e)) e++;
+                end = e + o200k_detail::contraction_len(s, off, e, ncp);
+                break;
+            }
+        }
+
+        // Alt 3: `\p{N}{1,3}` — digits in groups of at most three.
+        if (end == npos && is_num(k)) {
+            size_t e = k;
+            while (e < ncp && e - k < 3 && is_num(e)) e++;
+            end = e;
+        }
+
+        // Alt 4: ` ?[^\s\p{L}\p{N}]+[\r\n/]*`.
+        if (end == npos) {
+            const size_t st = (byte_at(k) == ' ' && off[k + 1] - off[k] == 1) ? k + 1 : k;
+            if (st < ncp && !is_ws(st) && !is_letter(st) && !is_num(st)) {
+                size_t e = st;
+                while (e < ncp && !is_ws(e) && !is_letter(e) && !is_num(e)) e++;
+                while (e < ncp && (byte_at(e) == '\r' || byte_at(e) == '\n' || byte_at(e) == '/')) e++;
+                end = e;
+            }
+        }
+
+        // Alts 5-7: whitespace. `\s*[\r\n]+` takes the run up to and including
+        // its LAST newline; otherwise `\s+(?!\S)` leaves the final space of a
+        // run for the next token's leading ` ?`, and `\s+` takes the rest.
+        if (end == npos && is_ws(k)) {
+            size_t j = k;
+            while (is_ws(j)) j++;
+            size_t last_nl = npos;
+            for (size_t t = k; t < j; t++)
+                if (is_nl(t)) last_nl = t;
+            if (last_nl != npos)
+                end = last_nl + 1;
+            else if (j == ncp || (j - k) == 1)
+                end = j;
+            else
+                end = j - 1;
+        }
+
+        // No alternative matched (only reachable for exotic input): emit one
+        // codepoint so the partition stays lossless and the loop terminates.
+        if (end == npos || end <= k) end = k + 1;
+
+        out.push_back(s.substr(off[k], off[end] - off[k]));
+        k = end;
+    }
+    return out;
+}
+
+// o200k pre-tokenizer + BPE merge pass.
+//
+// `ignore_merges` mirrors the tokenizer.json flag of the same name (true for
+// o200k / llama-3 style vocabs): a pre-token that is itself a vocabulary entry
+// is emitted directly, WITHOUT running the merge table over it. The flag exists
+// because for a small number of pieces the greedy merge order does not
+// reconstruct the vocabulary token, and the reference implementation short-
+// circuits those.
+inline std::vector<int32_t> tokenize_o200k(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                           const std::unordered_map<std::string, int32_t> & merge_rank,
+                                           const std::string & text, bool ignore_merges = true) {
+    std::vector<int32_t> result;
+    for (const auto & pt : o200k_pretokenize(text)) {
+        std::string encoded = bytes_to_unicode(pt.data(), pt.size());
+        if (ignore_merges) {
+            auto it = token_to_id.find(encoded);
+            if (it != token_to_id.end()) {
+                result.push_back(it->second);
+                continue;
+            }
+        }
         bpe_one(token_to_id, merge_rank, encoded, result);
     }
     return result;

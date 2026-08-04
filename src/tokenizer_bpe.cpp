@@ -363,6 +363,19 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
         if (suffix_id_ >= 0) {
             ids.push_back(suffix_id_);
         }
+    } else if (o200k_regex_pretok_) {
+        // o200k_base ByteLevel (granite-embedding-97m-multilingual-r2). Same
+        // shape as the GPT-2 branch below, but with the o200k split (case-aware
+        // letter runs, 3-digit groups, contraction suffixes) and the vocab's
+        // `ignore_merges` flag.
+        ids = core_bpe::tokenize_o200k(token_to_id_, merge_rank_, text, ignore_merges_);
+
+        // For encoder models: wrap with BOS (CLS) and EOS (SEP)
+        if (bos_id_ >= 0) ids.insert(ids.begin(), bos_id_);
+        if (suffix_id_ >= 0)
+            ids.push_back(suffix_id_);
+        else if (eos_id_ >= 0 && bos_id_ >= 0)
+            ids.push_back(eos_id_);
     } else if (gpt2_regex_pretok_) {
         // GPT-2 ByteLevel with the regex pre-tokenizer (ModernBERT). Split the
         // text with the GPT-2 regex, byte-encode each pre-token, then BPE-merge.

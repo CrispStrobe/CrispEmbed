@@ -113,6 +113,46 @@ MODELS = {
         "langs": ["multilingual"],
         "desc": "IBM Granite Embedding 278M. Multilingual (100+ languages), 768-dimensional CLS-pooled. MTEB-ranked.",
     },
+    "granite-embedding-97m-multilingual-r2": {
+        "base_model": "ibm-granite/granite-embedding-97m-multilingual-r2",
+        "arch": "ModernBERT (RoPE, local/global attention, SwiGLU, pre-LN)",
+        "dim": 384,
+        "layers": 12,
+        "params": "97M",
+        "pooling": "CLS",
+        "tokenizer": "o200k BPE (180k)",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": ("IBM Granite Embedding 97M R2. Multilingual (50+ languages), "
+                 "384-dimensional CLS-pooled, 8192-token context. No query or "
+                 "document prefix."),
+        # min cosine vs the ibm-granite fp32 HF reference over 12 mixed
+        # DE/EN/JA/code texts, measured 2026-08-04.
+        "parity": {
+            "f16": 1.000000,
+            "q8_0": 0.999580,
+        },
+    },
+    "granite-embedding-311m-multilingual-r2": {
+        "base_model": "ibm-granite/granite-embedding-311m-multilingual-r2",
+        "arch": "ModernBERT (RoPE, local/global attention, GeGLU, pre-LN)",
+        "dim": 768,
+        "layers": 22,
+        "params": "311M",
+        "pooling": "CLS",
+        "tokenizer": "SentencePiece BPE (262k)",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": ("IBM Granite Embedding 311M R2. Multilingual (50+ languages), "
+                 "768-dimensional CLS-pooled, 8192-token context. No query or "
+                 "document prefix."),
+        # min cosine vs the ibm-granite fp32 HF reference over 12 mixed
+        # DE/EN/JA/code texts, measured 2026-08-04.
+        "parity": {
+            "f16": 1.000000,
+            "q8_0": 0.999758,
+        },
+    },
     "granite-embedding-107m-multilingual": {
         "base_model": "ibm-granite/granite-embedding-107m-multilingual",
         "arch": "XLM-R",
