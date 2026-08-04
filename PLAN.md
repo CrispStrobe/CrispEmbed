@@ -1203,7 +1203,18 @@ class cannot recur. **Acceptance:** each engine runs by name on a fixture;
 the receipt produces markdown with a table via CLI alone; the matrix smoke
 fails if a future engine ships nameless.
 
+### T11 status [DONE 2026-08-04]: all 18 engines CLI-reachable; document pipeline + markdown via CLI; `tests/test_cli_engine_names.py` guards enum↔name coverage. Found while validating (pre-existing, unowned): feeding a Tesseract GGUF into the FLAT pipeline's rec slot mis-dispatches as `math_ocr` (vocab=1200) and SEGFAULTS on region 1 — the flat rec loader needs an arch check that fails loudly instead.
+
 ### T12 — External-parity arms + bench-span audit for all six families
+
+**Span-audit half DONE 2026-08-04:** all VLM/OCR lanes
+(qwen2vl/got/glm/internvl2/lightonocr/unlimited/granite/smoldocling/parseq/
+pix2struct/layout) time per-stage from their own stage start — net-of-load by
+construction; the two known bug patterns (ppocrv6 stage-entry span, easyocr
+regex on load-inclusive total) do not recur. One real gap:
+**`deepseek_ocr2` emits NO bench line at all** — its recorded timings are
+PLAN prose. T14 must add a `[deepseek-ocr2-stage-bench]` following the
+ppocrv6 net-of-load convention before any perf work.
 
 `tests/ocr_external_parity.py` covers tesseract/easyocr/paddle only. **Do:**
 add reference arms — pip Docling (full document parse), HF-transformers
@@ -1215,6 +1226,71 @@ entry; easyocr harness regex captured load-inclusive total). **Acceptance:**
 one table, per family: native CER/WER + net-of-load engine_ms vs its
 reference on shared fixtures; every stage-bench span documented as
 net-of-load or split like `[easyocr-stage-bench]`.
+
+### Engine-portfolio round — self-contained agent briefs (delegable as written)
+
+Each brief is executable by a fresh agent without this session's context.
+**Shared rules for every brief:** read `../crispasr-crispembed-dev.md` HARD
+RULES first. One heavy process at a time (16 GB shared Mac); new Python envs
+under `~/venvs/<name>` — NEVER touch miniconda's pinned paddleocr 2.10.0 (it
+is a recorded baseline arm). Timing claims need a same-window control
+(`tesseract-cli` on the same fixture) or CPU-seconds; `proc_ms` and
+`engine_ms` are never comparable to each other. Record negative results in
+PLAN with the measured numbers. Claim a row in the active-work table before
+starting; push PLAN to main at checkpoints. Describe third-party pipelines by
+concept, not project name, in code comments. Harness conventions live in
+`tests/ocr_external_parity.py` (adapter = an `Engine` subclass; see
+`PaddleOCRPy` for the in-process pattern) and ground truth in
+`tests/regression/images/cc0/ground_truth.json` (records[]={file,text};
+as-printed hyphenation, column reading order, provenance + per-fixture
+confidence).
+
+**A1 — parity arm: pip document-parser reference (Docling).** `python -m venv
+~/venvs/docling && pip install docling`. Add an `Engine` subclass that runs
+the full document parse in-process (warm ⇒ `proc_ms == engine_ms`), extracts
+plain text for CER and keeps the markdown for later structure gates. Run on
+`~/crispembed-ocr-synth` and the labelled CC0 dir; **acceptance:** a harness
+row (CER/WER/engine_ms) for both corpora in a JSON artifact + PLAN table.
+Trap: its OCR backend choice matters — record which backend it selected.
+
+**A2 — parity arm: transformers Qwen2.5-VL.** venv `~/venvs/qwenvl`
+(torch + transformers, MPS). Reference = **7B** (Apache); the 3B may be used
+for local smoke ONLY (Qwen Research License — never publish 3B numbers as
+the reference). Prompt must match our lane's transcription prompt (see
+`src/qwen2vl_ocr.cpp` prompt constants). Pages may take minutes; if >10
+min/page, run a documented fixture subset. **Acceptance:** harness row +
+saved per-fixture transcripts (they become the gold for our lane's CER gate).
+
+**A3 — parity arm + gold: olmOCR toolkit.** venv `~/venvs/olmocr`
+(`pip install olmocr`). It consumes PDFs: wrap the image fixtures into
+single-page PDFs (img2pdf) and record that recipe. Save (a) its transcripts
+as document-level gold, (b) the exact anchored prompts it builds per page —
+those are the T13 prompt contract. **Acceptance:** harness row + a
+`tests/regression/gold/olmocr/` gold set + the prompt-contract notes in PLAN.
+
+**A4 — parity arm + gold: HF DeepSeek-OCR reference.** venv
+`~/venvs/deepseekocr` (transformers per the model card — read the card's
+exact `infer()` call, do not guess prompts). 16 GB caution: if the reference
+OOMs locally, run it on Kaggle per `../kaggle_usage.md` and bring back
+transcripts only. **Acceptance:** harness row + saved reference transcripts
+for the fixtures — these are the CER gate T14 requires before its perf work.
+
+**A5 — document-level ground truth.** Extend the T1 conventions to document
+STRUCTURE gold (reading order, tables-as-HTML, headers) for 3-5 pages,
+seeded from A1/A3 outputs and human-verified. **Acceptance:** a gold file
+with per-page provenance + a scoring note (order-sensitive CER stays; add a
+structure comparison usable by T16).
+
+**A6 — docs hygiene sweep.** Re-verify every row of
+`docs/ocr_backend_matrix.md` against the code's actual gates (known stale:
+PP-FormulaNet-L is GPU-capable; batch-graph and width-bucketing are now
+defaults; detector graph rows). Re-date or delete impossibility claims per
+the LEARNINGS rule ("re-date your impossibility claims"). **Acceptance:**
+`tests/test_ocr_backend_matrix.py` and `tests/test_cli_engine_names.py` pass
+and every matrix claim cites a gate or a dated measurement.
+
+*(T13-T17 below are NOT agent-delegable as-is: they are port/bisect work —
+run them as dedicated sessions with the full board context.)*
 
 ### T13 — olmOCR lane (the one absent family; cheapest add)
 
