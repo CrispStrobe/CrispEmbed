@@ -1641,6 +1641,55 @@ pages comparable to the reference implementation's own output; then
 backend A/B with text gates. Related Docling-quality debt to carry: layout
 detection score 0.934 vs HF reference 0.955.
 
+### T15 status [DONE 2026-08-04, `feat/t15-smoldocling-doctags`]: contract fixed, native ≥ reference on 4/5 pages; backend port deferred with data
+
+The "duplicated DocTags" was NOT a dedup/parsing problem — it was THREE
+stacked contract defects, all invisible to tensor parity (the recorded 0.9999
+was measured against a dumper that hand-squashed to 512², i.e. a
+matched-WRONG-preprocessing reference):
+
+1. **Converter dropped all 145 added tokens** (`model.vocab` only → vocab
+   49152, not 49280), so detok silently deleted every generated
+   `<loc_N>`/`<doctag>`/`<row_r_col_c>` id (out-of-range → `continue`) —
+   the "mangled markup". Fixed in `convert-smoldocling-to-gguf.py`;
+   **GGUFs converted before 2026-08-04 are defective** — all three quants
+   re-converted and re-uploaded to `cstr/smoldocling-GGUF`, q8_0 SHA
+   re-pinned, fresh-download re-verified.
+2. **Preprocessing fed one squashed nearest-neighbor 512² image**; the
+   reference does Lanczos longest-edge-2048 → round-up-to-512-multiples →
+   512² tiles + squashed global view + `<fake>`/`<row_r_col_c>`/`<global-img>`
+   prompt layout. The squashed input is what made the decoder hallucinate
+   the duplicate regions. Ported exactly (incl. the "\n"+"\n"→single-token
+   1116 BPE subtlety); prompt ids byte-identical to the reference processor
+   on fox.png (347/347, pixel_values [1,5,3,512,512]).
+   `SMOLDOCLING_LEGACY_PREPROC=1` restores the old path.
+3. **max_tokens hardcoded 128** (a parity-era TODO) and
+   `crispembed_ocr_model_set_max_tokens` never dispatched here — every page
+   silently truncated. Default 1024, `--ocr-max-tokens` wired.
+
+Also: registry name `smoldocling` added (engine was `-m <path>`-only — the
+T11 reachability class), DocTags-aware payload scoring in
+`ocr_engine_benchmark.py`.
+
+**Acceptance (artifact `tests/results/ocr_parity_smoldocling_2026-08-04.json`,
+raw paired outputs included):** fox payload CER **0.86 → 0.0000** (exact);
+vs cc0 ground truth, native q8_0 **beats the transformers-f32 reference on
+its own model**: commons 0.0077 vs 0.0956, receipt_historical 0.2344 vs
+0.4935; scan_page_pd native visibly more correct (ref truncated at the
+1024 cap with misreads). simple_form: shared failure — native emits a clean
+`<picture>` classification (CER 1.0), the reference DEGENERATES into a
+"Véhévé…" repetition loop (raw CER 3.23) — same receipt/form-class chaos
+recorded for the A1/A3 references. q4_k and f16 fox-gated too (q4_k locs
+shift more; payload exact).
+
+**Deferred with data (the "then" half):** backend un-hardcode. Stage split
+now: vision+connector 31.7 s of 37.3 s total on fox (5 sub-images, CPU) —
+the port target is the per-tile SigLIP graph (compute-bound, GPU-shaped);
+the 135M per-token decode is the CPU-favored shape per the persistent-decode
+LEARNINGS. Split residency; do NOT move decode blindly. PERFORMANCE.md has
+the table. Full pages are 72–103 s CPU — slower than pre-fix (N+1 vision
+forwards) and worth the backend session.
+
 ### T16 — TableFormer port (MIT) + reading order — the missing Docling half
 
 Tables today are rule-based morphology + Tesseract cells; no learned
