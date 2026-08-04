@@ -478,6 +478,43 @@ Utility libraries (not model backends) follow a lighter pattern.
 
 ---
 
+## Release engineering: never ship a `-march=native` build
+
+Any workflow leg that produces an artifact a *user* downloads (release archive,
+Python wheel, Rust prebuilt) must configure with `-DGGML_NATIVE=OFF` and then
+run the gate:
+
+```bash
+cmake -S . -B build -DGGML_NATIVE=OFF <backend flags>
+python scripts/check-cpu-baseline.py build     # fails the job if not portable
+cmake --build build --config Release -j4
+```
+
+`GGML_NATIVE` defaults to ON and **executes probe programs on the build
+machine** — `check_c_source_runs` with an AVX-512 binary on MSVC, `-march=native`
+on GCC/Clang, `-mcpu=native` plus `dotprod`/`i8mm`/`sve`/`sme` run-probes on ARM.
+The ISA of the artifact therefore depends on which CI runner took the job, and
+GitHub's pools are heterogeneous. That shipped as **#41**: v0.16.1's Windows cpu
+zip was compiled `/arch:AVX512` and died with `Illegal instruction` on any
+consumer Intel CPU.
+
+Two things make it hard to catch by hand, which is why the gate exists:
+
+1. **CI can never reproduce it.** No runner lacks the extension the runner had.
+2. **`CMakeCache.txt` lies when NATIVE is ON** — `FindSIMD.cmake` sets
+   `GGML_AVX512` as a *normal* variable that shadows the cache entry, so the
+   cache can read `OFF` while the compile line says `/arch:AVX512`. The gate
+   also scans `build.ninja` / `*.vcxproj` / `flags.make` for that reason.
+
+`CRISPEMBED_NATIVE` (which drives `-march=native` on CrispEmbed's own targets for
+the `cpu_ops.h` intrinsics) defaults to `GGML_NATIVE`, so the one flag covers the
+whole tree; with it off, those targets mirror ggml's configured baseline rather
+than falling back to scalar. Shipped baselines are listed in the README
+("CPU requirements & redistributable builds"); the full write-up is in
+`LEARNINGS.md` §"GGML_NATIVE probes the BUILD machine".
+
+---
+
 ## WASM Build
 
 CrispEmbed compiles to WebAssembly via Emscripten for client-side browser use.

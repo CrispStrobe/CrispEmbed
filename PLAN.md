@@ -86,6 +86,20 @@ right after. First place to look if this model misbehaves again.
   source via `path_in_repo`.
 - **`.env` breaks `git push`.** Sourcing it injects a token that overrides the
   credential helper — `env -u GH_TOKEN -u GITHUB_TOKEN git push`.
+- **`GGML_NATIVE` probes the BUILD machine — never ship a native build.** It
+  defaults ON and *runs* code on the builder: an AVX-512 `check_c_source_runs`
+  probe on MSVC, `-march=native` on GCC/Clang, `-mcpu=native` plus
+  dotprod/i8mm/sve/sme run-probes on ARM. So the artifact's ISA is a property of
+  whichever runner took the job, and GitHub's pools are heterogeneous. #41:
+  v0.16.1's Windows cpu zip shipped `/arch:AVX512` and died with `Illegal
+  instruction` on a Raptor Lake i9 — CI cannot reproduce it, because no runner
+  lacks the extension the runner had. Every redistributable leg now passes
+  `-DGGML_NATIVE=OFF` and runs `scripts/check-cpu-baseline.py build`.
+  Second trap inside the first: with NATIVE on, `FindSIMD.cmake` sets
+  `GGML_AVX512` as a *normal* variable that shadows the cache entry, so
+  `CMakeCache.txt` can read `OFF` while the compile line says `/arch:AVX512` —
+  check the generated build files, not the cache. `CRISPEMBED_NATIVE` follows
+  `GGML_NATIVE` so one flag covers the tree. Full write-up in `LEARNINGS.md`.
 
 
 EasyOCR cross-check benchmark checkpoint (10 repeated recognitions, identical image/
