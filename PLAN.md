@@ -16,7 +16,6 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `feat/parity-deepseek` (delegated agent) | **A4 IN PROGRESS** — HF DeepSeek-OCR reference arm on Kaggle (chr1s4): card-exact infer() capture, raw+parsed gold → `tests/regression/gold/deepseek-ocr/`; the CER gate T14 requires before its perf work | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. T13 ACCEPTANCE RUN (2026-08-04, q4_k, 5 cc0 pages vs A3 transformers-pass gold, CER-threshold gate per A3's findings): commons_test_ocr_document **0.00637**, simple_form **0.01688**, receipt_historical 0.09287 — 3/5 within the 0.10 near-parity band; german_official_print 0.14909 (abs 0.216 vs gold's 0.083) and commons_example_receipt 0.46387 FAIL — the receipt page emits broken markup fragments where the reference emits a clean HTML table, mean_conf 0.74 (vs 0.98 on synth), similar output length (no truncation). Prime suspect: q4_k formatting instability on table-ish pages — the same instability mode the REFERENCE shows across its own serving stacks (vLLM vs transformers CER 0.372 on simple_form). q8_0 DISCRIMINATION (2026-08-04): q8 does NOT close the receipt gap. Metal cannot hold q8+vision prefill on 16 GB (command-buffer OOM → q8 is CPU-ONLY on this box, ~25 min/page); q8-CPU results: german 0.10543 vs gold (q4-Metal 0.14909 — improved to band edge; abs 0.175 vs reference 0.083) but receipt 0.62283 (WORSE than q4-Metal 0.46387, q8vTruth 1.41 — longer, differently-diverging markup). CAVEAT: two variables changed (quant AND backend); q4-CPU control running on the receipt page to isolate. If q4-CPU ≈ q4-Metal → backend exonerated, table-page format instability is quant/model-level (matches the reference own vLLM-vs-transformers 0.372 self-disagreement) → record as measured limitation + candidate mitigations (front-matter-strict retry like the toolkit; plain-text table prompt variant env-gated). If q4-CPU differs materially → backend-dependent decode bug, bisect per LEARNINGS | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -1336,6 +1335,26 @@ chars (CER 1.0) as two PICTURE clusters while recognized items score 0.1862;
 (e) 12-24x slower than the load-inclusive tesseract control. (f) Environment:
 `~/.cache/huggingface` symlinks to the backups volume which is 100% FULL —
 every HF download needs `HF_HOME=$HOME/.cache/hf-docling` until cleared.
+
+**A4 status [DONE 2026-08-04, merged]:** BOTH checkpoints run (the brief
+named v1 but T14's engine is `deepseek_ocr2` — a v1-only gate would not have
+been a gate): gold for each under `tests/regression/gold/deepseek-ocr{,2}/`
+(free_ocr + grounding raw/.mmd views, contract.json captured off the
+checkpoints' OWN infer()/generate). Determinism verified byte-identical on
+re-run; scoring reproduced from the committed tree at merge. Numbers
+(free_ocr, mean [markup-stripped]): v2 synth **0.00199**, cc0 0.18743
+[**0.11063**]; v1 synth 0.00193, cc0 0.54041 [0.11132] — v1 answers plain-OCR
+with HTML tables on receipts (2.04 raw CER on receipt_historical). Document
+mode after the checkpoint's own post-processing: v2 synth **0.00044** (beats
+plain mode). Contract deltas that matter for T14: crop threshold differs
+v1=640 vs v2=768 (different image-token counts on 13/25 fixtures); eager
+attention is FORCED on sm_75 (checkpoint offers only eager/FA2, no sdpa);
+**bf16 WORKS on T4** (probed: matmul/conv2d/SDPA — corrects the assumption
+A2/A3 ran under); transformers must be ≤4.46.x (remote code loses .generate()
+on 4.50+); the transformers path lacks the vLLM recipe's n-gram
+logits-processor guard → grounding mode can spiral on form pages (v1: 2073
+tokens of repeating box list on simple_form; v2 degrades 4x less). **T14 is
+now UNBLOCKED**: its CER gate is the deepseek-ocr2 gold set.
 
 **A3 status [DONE 2026-08-04, merged]:** 25-page raw+parsed gold in
 `tests/regression/gold/olmocr/` + `contract.json` (captured by IMPORTING the
