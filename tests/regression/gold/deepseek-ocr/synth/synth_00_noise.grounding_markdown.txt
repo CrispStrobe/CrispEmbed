@@ -1,0 +1,8 @@
+<|ref|>text<|/ref|><|det|>[[35, 150, 950, 280]]<|/det|>
+The quick brown fox jumps over the lazy dog. 
+
+<|ref|>text<|/ref|><|det|>[[35, 350, 850, 480]]<|/det|>
+Pack my box with five dozen liquor jugs. 
+
+<|ref|>text<|/ref|><|det|>[[35, 550, 808, 680]]<|/det|>
+How vexingly quick daft zebras jump!

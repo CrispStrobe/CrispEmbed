@@ -1,0 +1,37 @@
+<|ref|>title<|/ref|><|det|>[[125, 90, 724, 175]]<|/det|>
+# Reichs=Begehblatt.
+
+<|ref|>sub_title<|/ref|><|det|>[[380, 202, 480, 234]]<|/det|>
+## N=1.
+
+<|ref|>text<|/ref|><|det|>[[58, 253, 819, 305]]<|/det|>
+Inhalt. Verordnungsbetreffend das Unfrafftretten der Militärfragerichtsvordnungs vom 1. Dezember 1898.
+G. 1. — Verordnungsbetreffend die Uebetragung der Befugnisse des preußischen General-Auditoriat auf das Reichsmilitärgericht. G. 2.
+
+<|ref|>text<|/ref|><|det|>[[33, 340, 818, 383]]<|/det|>
+(Pr. 2642.) Verordnungsbetreffend das Unfrafftretten der Militärfraferichtsvordnungs vom 1. Dezember 1898. Vom 28. Dezember 1899.
+
+<|ref|>text<|/ref|><|det|>[[33, 380, 816, 450]]<|/det|>
+Sir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König von Dreußen 2c.
+
+<|ref|>text<|/ref|><|det|>[[30, 452, 815, 498]]<|/det|>
+verordnen unter Zustimmung des Bundesratss auf Grund des §. 1 des Einführungsgesetzes zur Militärfragerichtsvordnungs vom 1. Dezember 1898, was folgt:
+
+<|ref|>text<|/ref|><|det|>[[30, 509, 812, 575]]<|/det|>
+Einziger Paragrapb.
+Die Militärfragerichtsvordnungs vom 1. Dezember 1898 (Reichs=Geefbl. §. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.
+
+<|ref|>text<|/ref|><|det|>[[28, 577, 813, 621]]<|/det|>
+Urkundlich unter Anferer Höchsteigenhändigen Interdurchrift und beigedrucktem Kaiserlichen Einsteigel.
+
+<|ref|>text<|/ref|><|det|>[[88, 621, 577, 648]]<|/det|>
+Gegeben Neues Palais, den 28. Dezember 1899.
+
+<|ref|>text<|/ref|><|det|>[[366, 670, 475, 702]]<|/det|>
+(L. S.)
+
+<|ref|>text<|/ref|><|det|>[[570, 672, 712, 703]]<|/det|>
+Wilhelm.
+
+<|ref|>text<|/ref|><|det|>[[515, 711, 760, 738]]<|/det|>
+Fürst zu Schonlohe.

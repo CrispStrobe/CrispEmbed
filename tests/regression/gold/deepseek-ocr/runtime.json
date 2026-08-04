@@ -1,0 +1,31 @@
+{
+  "attn_implementation": "eager",
+  "decoder_attention_class": "LlamaAttention",
+  "generation_config": {
+    "_from_model_config": true,
+    "bos_token_id": 0,
+    "eos_token_id": 1,
+    "transformers_version": "4.46.3"
+  },
+  "load_s": 41.8,
+  "tokenizer_eos_token_id": 1,
+  "determinism_rerun": [
+    {
+      "fixture": "synth_00_blur.png",
+      "identical": true,
+      "chars": [
+        126,
+        126
+      ]
+    },
+    {
+      "fixture": "commons_example_receipt.png",
+      "identical": true,
+      "chars": [
+        552,
+        552
+      ]
+    }
+  ],
+  "skipped_over_budget": []
+}

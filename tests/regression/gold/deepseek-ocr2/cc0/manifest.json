@@ -1,0 +1,459 @@
+{
+  "brief": "A4 - parity arm + gold: HF DeepSeek-OCR reference",
+  "model_id": "deepseek-ai/DeepSeek-OCR-2",
+  "revision": "aaa02f3811945a91062062994c5c4a3f4c0af2b0",
+  "card_preset": "dynamic resolution (0-6)x768x768 + 1x1024x1024 (base_size=1024, image_size=768, crop_mode=True)",
+  "infer_kwargs": {
+    "base_size": 1024,
+    "image_size": 768,
+    "crop_mode": true,
+    "save_results": true,
+    "test_compress": false
+  },
+  "prompts": {
+    "free_ocr": "<image>\nFree OCR. ",
+    "grounding_markdown": "<image>\n<|grounding|>Convert the document to markdown. "
+  },
+  "primary_mode": "free_ocr",
+  "entry_point": "modeling_deepseekocr2.py::infer (the checkpoint's own helper, called with the model card's arguments)",
+  "conversation_template": "plain (sft_format='plain', system_prompt=''); SeparatorStyle.PLAIN emits the user content alone, and format_messages .strip()s it, so the applied prompt is the card string minus its trailing space",
+  "dtype": "bfloat16",
+  "dtype_deviation": null,
+  "dtype_patch": null,
+  "bf16_probe": {
+    "matmul": "ok",
+    "conv2d": "ok",
+    "sdpa": "ok"
+  },
+  "attn_implementation": "eager",
+  "decoder_attention_class": "LlamaAttention",
+  "attn_deviation": "card passes _attn_implementation='flash_attention_2'; sm_75 has no FA2 and the checkpoint's ATTENTION_CLASSES has no sdpa entry, so eager is the only remaining key. Vision towers are unaffected (v1 ViT use_flash_attn=False, v2 Qwen2 encoder attn_implementation='sdpa')",
+  "generation_config": {
+    "_from_model_config": true,
+    "bos_token_id": 0,
+    "eos_token_id": 1,
+    "transformers_version": "4.46.3"
+  },
+  "page_time_limit_s": 240.0,
+  "page_time_limit_note": "injected as a StoppingCriteria; max_new_tokens stays at the checkpoint's 8192",
+  "serving_stack": "transformers 4.46.3 (torch 2.10.0+cu128), single CUDA device",
+  "hardware": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
+  "date": "2026-08-04",
+  "images": "/kaggle/temp/CrispEmbed/tests/regression/images/cc0",
+  "repo_commit": "afed60253401e720a7c36ee5e4b247dbcb375f77",
+  "load_s": 7.7,
+  "tokenizer_eos_token_id": 1,
+  "skipped_over_budget": [],
+  "pages": [
+    {
+      "fixture": "commons_example_receipt.png",
+      "stem": "commons_example_receipt",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 10.2,
+          "wall_s": 10.24,
+          "deadline_fired": false,
+          "n_prompt_tokens": 262,
+          "n_image_tokens": 257,
+          "n_output_tokens": 215,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              1
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 559,
+          "post_processed_chars": 559
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 14.07,
+          "wall_s": 14.12,
+          "deadline_fired": false,
+          "n_prompt_tokens": 267,
+          "n_image_tokens": 257,
+          "n_output_tokens": 302,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              1
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 997,
+          "post_processed_chars": 777
+        }
+      }
+    },
+    {
+      "fixture": "commons_test_ocr_document.jpg",
+      "stem": "commons_test_ocr_document",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 35.82,
+          "wall_s": 36.15,
+          "deadline_fired": false,
+          "n_prompt_tokens": 1126,
+          "n_image_tokens": 1121,
+          "n_output_tokens": 684,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            768,
+            768
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 2991,
+          "post_processed_chars": 2991
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 44.27,
+          "wall_s": 44.58,
+          "deadline_fired": false,
+          "n_prompt_tokens": 1131,
+          "n_image_tokens": 1121,
+          "n_output_tokens": 861,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            768,
+            768
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 3539,
+          "post_processed_chars": 3004
+        }
+      }
+    },
+    {
+      "fixture": "german_official_print.jpg",
+      "stem": "german_official_print",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 20.48,
+          "wall_s": 20.77,
+          "deadline_fired": false,
+          "n_prompt_tokens": 1126,
+          "n_image_tokens": 1121,
+          "n_output_tokens": 358,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            768,
+            768
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1078,
+          "post_processed_chars": 1078
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 29.6,
+          "wall_s": 29.9,
+          "deadline_fired": false,
+          "n_prompt_tokens": 1131,
+          "n_image_tokens": 1121,
+          "n_output_tokens": 551,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            768,
+            768
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1630,
+          "post_processed_chars": 960
+        }
+      }
+    },
+    {
+      "fixture": "receipt_historical.png",
+      "stem": "receipt_historical",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 24.28,
+          "wall_s": 24.4,
+          "deadline_fired": false,
+          "n_prompt_tokens": 550,
+          "n_image_tokens": 545,
+          "n_output_tokens": 508,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            2,
+            3,
+            768,
+            768
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              2
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1070,
+          "post_processed_chars": 1070
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 23.64,
+          "wall_s": 23.77,
+          "deadline_fired": false,
+          "n_prompt_tokens": 555,
+          "n_image_tokens": 545,
+          "n_output_tokens": 490,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            2,
+            3,
+            768,
+            768
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              2
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 999,
+          "post_processed_chars": 776
+        }
+      }
+    },
+    {
+      "fixture": "simple_form.png",
+      "stem": "simple_form",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 4.77,
+          "wall_s": 4.8,
+          "deadline_fired": false,
+          "n_prompt_tokens": 262,
+          "n_image_tokens": 257,
+          "n_output_tokens": 84,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              1
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 287,
+          "post_processed_chars": 287
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 23.09,
+          "wall_s": 23.13,
+          "deadline_fired": false,
+          "n_prompt_tokens": 267,
+          "n_image_tokens": 257,
+          "n_output_tokens": 518,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              1
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1587,
+          "post_processed_chars": 287
+        }
+      }
+    }
+  ]
+}

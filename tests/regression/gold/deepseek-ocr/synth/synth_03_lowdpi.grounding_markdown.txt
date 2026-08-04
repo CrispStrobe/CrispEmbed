@@ -1,0 +1,8 @@
+<|ref|>text<|/ref|><|det|>[[48, 150, 925, 300]]<|/det|>
+Sphinx of black quartz, judge my vow. 
+
+<|ref|>text<|/ref|><|det|>[[48, 360, 901, 510]]<|/det|>
+Waltz, bad nymph, for quick jigs vex. 
+
+<|ref|>text<|/ref|><|det|>[[48, 570, 945, 720]]<|/det|>
+Five quacking zephyrs jolt my wax bed.

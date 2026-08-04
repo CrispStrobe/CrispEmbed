@@ -1,0 +1,307 @@
+<|ref|>text<|/ref|><|det|>[[6, 12, 45, 33]]<|/det|>
+Input
+
+<|ref|>text<|/ref|><|det|>[[15, 58, 60, 75]]<|/det|>
+Texte
+
+<|ref|>text<|/ref|><|det|>[[15, 111, 60, 128]]<|/det|>
+Humber
+
+<|ref|>text<|/ref|><|det|>[[15, 174, 60, 191]]<|/det|>
+Date
+
+<|ref|>text<|/ref|><|det|>[[15, 228, 60, 245]]<|/det|>
+Password
+
+<|ref|>text<|/ref|><|det|>[[15, 301, 60, 318]]<|/det|>
+a label
+
+<|ref|>text<|/ref|><|det|>[[110, 301, 195, 318]]<|/det|>
+ANOTHER LABEL
+
+<|ref|>text<|/ref|><|det|>[[15, 365, 120, 384]]<|/det|>
+combo suggest
+
+<|ref|>text<|/ref|><|det|>[[6, 400, 20, 416]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[15, 444, 75, 465]]<|/det|>
+Finland
+
+<|ref|>text<|/ref|><|det|>[[6, 480, 20, 496]]<|/det|>
+C
+
+<|ref|>text<|/ref|><|det|>[[15, 483, 75, 500]]<|/det|>
+France
+
+<|ref|>text<|/ref|><|det|>[[15, 515, 100, 532]]<|/det|>
+cameroun
+
+<|ref|>text<|/ref|><|det|>[[15, 560, 110, 580]]<|/det|>
+☑checkbox2
+
+<|ref|>text<|/ref|><|det|>[[15, 602, 120, 621]]<|/det|>
+☐checkbox3
+
+<|ref|>text<|/ref|><|det|>[[6, 637, 88, 655]]<|/det|>
+CodeLabelle
+
+<|ref|>text<|/ref|><|det|>[[15, 680, 80, 700]]<|/det|>
+code lib
+
+<|ref|>text<|/ref|><|det|>[[15, 737, 48, 754]]<|/det|>
+code
+
+<|ref|>text<|/ref|><|det|>[[6, 800, 55, 817]]<|/det|>
+Button
+
+<|ref|>text<|/ref|><|det|>[[15, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[20, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[20, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[20, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[23, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[23, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[23, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[25, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[25, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[25, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[27, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[27, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[27, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[29, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[29, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[29, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[30, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[30, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[30, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[31, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[31, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[31, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[33, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[33, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[33, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[35, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[35, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[35, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[37, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[37, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[37, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[39, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[39, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[39, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[41, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[41, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[41, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[43, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[43, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[45, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[45, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[45, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[47, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[47, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[47, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[49, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[49, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[49, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[51, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[51, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[51, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[53, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[53, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[53, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[55, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[55, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[55, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[57, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[57, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[57, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[59, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[59, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[59, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[61, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[61, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[61, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[63, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[63, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[63, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[65, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[65, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[65, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[67, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[67, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[67, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[69, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[69, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[69, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[71, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[71, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[71, 844, 20, 860]]<|/det|>
+E
+
+<|ref|>text<|/ref|><|det|>[[73, 844, 20, 860]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[73, 844, 20, 860]]<|/det|>
+R
+
+<|ref|>text<|/ref|><|det|>[[73, 844, 20
