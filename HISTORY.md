@@ -101,9 +101,14 @@ with OpenBLAS installed. That is a second, independent reason a user can see a
 startup failure. Already recorded for the wheels in `python/pyproject.toml`;
 the fix for both is a manylinux-container build.
 
-**Unrelated observation:** v0.17.0 published no
-`crispembed-linux-x86_64-cuda.tar.gz` or `crispembed-windows-x86_64-cuda.zip` —
-both CUDA legs appear to have failed. Worth a look before the next tag.
+**Retracted observation:** an earlier draft of this entry claimed v0.17.0 had
+published no `crispembed-linux-x86_64-cuda.tar.gz` or
+`crispembed-windows-x86_64-cuda.zip`. That was wrong. The asset list was read
+shortly after the release was created, and the CUDA legs take ~1 h, so they
+simply had not attached yet. Both assets are present in v0.17.0, and a
+`workflow_dispatch` dry run of the whole release later came back green on all
+eleven legs including both CUDA ones. Nothing to fix — read a release's assets
+only once every leg has finished.
 
 ---
 
