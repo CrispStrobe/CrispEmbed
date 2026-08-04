@@ -567,7 +567,10 @@ static bool graph_build(context * c, int h, int w) {
         gate = ggml_relu(c->graph.graph_ctx, gate);
         gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].insert_se2);
         if (!gate) return false;
-        gate = ggml_scale(c->graph.graph_ctx, gate, 0.2f);
+        // Hard-sigmoid gate: clamp(0.2*x + 0.5), matching the scalar path and
+        // Paddle's SELayer. A stray extra ggml_scale(gate, 0.2f) here squashed
+        // the gate to 0.04*x + 0.5 — the proc-SE below never had it — and was
+        // the whole fused0-cosine-0.988 / 31-vs-30-box geometry divergence.
         gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
         fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_mul(c->graph.graph_ctx, fused[i], gate));
         c->graph.named_taps.push_back({ "fused" + std::to_string(i), fused[i] });
