@@ -117,17 +117,6 @@ jobs:
 
       - name: Verify portable CPU baseline
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check-cpu-baseline.py build
-
-      # The wheel's whole compatibility claim rests on this: assert the floor
-      # the container was chosen for, rather than trusting that it applied.
-      - name: Verify the manylinux glibc floor (Linux)
-        if: runner.os == 'Linux'
-        run: |
-          mkdir -p _wheelcheck
-          cp -P build/libcrispembed.so* _wheelcheck/ 2>/dev/null || true
-          find build/ggml/src -name 'libggml*' -type f -exec cp {} _wheelcheck/ \; 2>/dev/null || true
-          python3 scripts/check-bundled-deps.py _wheelcheck --max-glibc 2.28
-
       - name: Build
         if: runner.os != 'Linux'
         run: cmake --build build --config Release -j4
@@ -139,6 +128,15 @@ jobs:
           find build/ggml/src -name 'libggml*' \( -type f -o -type l \) \
             -exec cp -P {} python/crispembed/ \; 2>/dev/null || true
           ls -la python/crispembed/
+
+      # The wheel's compatibility claim rests on this, so assert it against the
+      # directory cibuildwheel actually packages rather than a hand-made copy.
+      # (A first attempt staged its own check dir and left out the SONAME
+      # symlinks, so libggml-base.so.0 read as unbundled and the step failed on
+      # its own staging rather than on the artifact.)
+      - name: Verify the manylinux glibc floor (Linux)
+        if: runner.os == 'Linux'
+        run: python3 scripts/check-bundled-deps.py python/crispembed --max-glibc 2.28
 
       - name: Stage native libs into python/crispembed (Windows)
         if: runner.os == 'Windows'
