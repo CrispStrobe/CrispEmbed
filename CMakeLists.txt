@@ -28,6 +28,14 @@ if(MSVC)
     # source files don't each need a `#ifndef M_PI` guard (a recurring Windows
     # build break: text_sr/pan_sr/restormer/swinir_sr all hit it).
     add_definitions(-D_USE_MATH_DEFINES)
+    # <windows.h> defines min/max as macros, which breaks every `std::min(a, b)`
+    # in a translation unit that pulls it in transitively — MSVC reports it as
+    # C2589 "'(': illegal token on right side of '::'" and then cascades into
+    # bogus "function does not take N arguments" / "must have an initializer"
+    # errors many lines later, so the real cause is nowhere near the first
+    # message. Suppress the macros globally rather than per-call-site
+    # `(std::min)(...)` parens, which only survive until the next author.
+    add_definitions(-DNOMINMAX)
 endif()
 
 # ---------------------------------------------------------------------------
