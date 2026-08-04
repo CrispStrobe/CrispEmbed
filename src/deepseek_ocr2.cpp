@@ -1870,10 +1870,20 @@ static void moe_ffn_cpu(ds_ocr2_ctx & ctx, int li, float * hidden, int T) {
 // port is worth it (overhead-bound → yes; compute/MoE-bound → marginal).
 static long long g_ds_build_us = 0, g_ds_compute_us = 0;
 
+// Stage-bench accumulators for the `[deepseek-ocr2-stage-bench]` line. Split so
+// the prefill pass (one graph over the whole prompt) is never folded into the
+// per-token decode figure the T14 A/B moves — mixing them would let a prefill
+// change masquerade as a decode win.
+static long long g_ds_prefill_us = 0, g_ds_decode_us = 0;
+static int g_ds_n_generated = 0;
+
 static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int n_prompt, int max_new,
                             std::vector<int32_t> & out_ids, std::vector<float> & out_confs) {
     g_ds_build_us = 0;
     g_ds_compute_us = 0;
+    g_ds_prefill_us = 0;
+    g_ds_decode_us = 0;
+    g_ds_n_generated = 0;
     auto & lhp = ctx.m.lhp;
     int D = lhp.hidden, V = lhp.vocab_size;
     int nh = lhp.heads, nkv = lhp.kv_heads, hd = lhp.head_dim;
@@ -1929,6 +1939,8 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
         // Prefill (n_past==0) processes the whole assembled prompt; subsequent
         // steps process one freshly-generated token at a time. In no_kv mode the
         // whole sequence is reprocessed every step.
+        const bool is_prefill = (n_past == 0);
+        const auto _step_t0 = std::chrono::steady_clock::now();
         int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
         if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
 
@@ -2073,6 +2085,17 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
 
         out_ids.push_back(next);
         n_generated++;
+
+        {
+            const auto _step_us =
+                std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _step_t0)
+                    .count();
+            // The prefill step also emits the first token, so it is counted as
+            // prefill only; every later step is decode. `break` paths below run
+            // after this, so no step is ever dropped from the totals.
+            (is_prefill ? g_ds_prefill_us : g_ds_decode_us) += _step_us;
+        }
+        g_ds_n_generated = n_generated;
 
         if (getenv("DS_DBG")) {
             const char * pc = (next >= 0 && next < ctx.tok_vocab_size) ? ctx.id_to_piece[next].c_str() : "?";
@@ -2319,6 +2342,15 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         return ctx->result.c_str();
     }
 
+    // `[deepseek-ocr2-stage-bench]` (CRISPEMBED_DEEPSEEK_OCR2_BENCH=1). Every
+    // span below is measured from its OWN stage start and the clock starts here,
+    // inside recognize — model load happened in deepseek_ocr2_init and is not in
+    // any of these figures, so `total` is net-of-load by construction (the
+    // ppocrv6 convention, without ppocrv6's stage-entry correction: no stage
+    // here loads anything).
+    const bool ds_bench = getenv("CRISPEMBED_DEEPSEEK_OCR2_BENCH") != nullptr;
+    const auto _b_start = std::chrono::steady_clock::now();
+
     auto & s = ctx->inner.m.shp;
     int imgS = s.image_size;
 
@@ -2358,6 +2390,8 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         }
     }
 
+    const auto _b_prep = std::chrono::steady_clock::now();
+
     bool dbg_t = getenv("DS_DBG") != nullptr;
     auto _ts = std::chrono::steady_clock::now();
     auto stage_ms = [&](const char * name) {
@@ -2377,6 +2411,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         return "";
     }
     stage_ms("sam");
+    const auto _b_sam = std::chrono::steady_clock::now();
 
     // 2. Qwen2 bidirectional encoder
     std::vector<float> enc_out;
@@ -2387,6 +2422,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         return "";
     }
     stage_ms("qwen2_enc");
+    const auto _b_enc = std::chrono::steady_clock::now();
 
     // 3. Project to LLM dimension
     std::vector<float> proj_out;
@@ -2396,6 +2432,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         return "";
     }
     stage_ms("projector");
+    const auto _b_proj = std::chrono::steady_clock::now();
 
     fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n", n_sam_tokens, sam_dim,
             n_enc_tokens, enc_dim, n_enc_tokens);
@@ -2452,6 +2489,8 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         fprintf(stderr, "\n");
     }
 
+    const auto _b_prompt = std::chrono::steady_clock::now();
+
     // 5. LLM decoder
     std::vector<int32_t> gen_ids;
     std::vector<float> gen_confs;
@@ -2468,6 +2507,22 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
     }
     ctx->result = decode_tokens(ctx->inner, gen_ids.data(), (int)gen_ids.size());
     ctx->char_confidences = std::move(gen_confs);
+
+    if (ds_bench) {
+        const auto _b_end = std::chrono::steady_clock::now();
+        const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+        // `prompt` covers the embed-table dequant + prompt assembly; `prefill`
+        // and `decode` are reported by the decoder itself so the split survives
+        // whichever decode path ran. decode_path names the arm under A/B.
+        fprintf(stderr,
+                "[deepseek-ocr2-stage-bench] preprocess=%.1f ms sam=%.1f ms qwen2_enc=%.1f ms projector=%.1f ms "
+                "prompt=%.1f ms prefill=%.1f ms decode=%.1f ms total=%.1f ms image_tokens=%d prompt_tokens=%d "
+                "gen_tokens=%d decode_path=per-layer\n",
+                ms(_b_start, _b_prep), ms(_b_prep, _b_sam), ms(_b_sam, _b_enc), ms(_b_enc, _b_proj),
+                ms(_b_proj, _b_prompt), g_ds_prefill_us / 1000.0, g_ds_decode_us / 1000.0, ms(_b_start, _b_end),
+                n_img_tokens, n_prompt, g_ds_n_generated);
+    }
+
     if (out_len) *out_len = (int)ctx->result.size();
     return ctx->result.c_str();
 }
