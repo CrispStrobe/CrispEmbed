@@ -341,8 +341,16 @@ static const ModelEntry k_registry[] = {
 
     // Arctic Embed M v2.0 is GTE v1.5 (RoPE + GeGLU + post-LN), NOT the XLM-R
     // backbone its l-v2 sibling uses; only the SentencePiece vocab is shared.
-    // Default is Q8_0: no imatrix has been calibrated for this model yet and
-    // plain Q4_K measures cos 0.954 vs HF (Q8_0 measures 0.9997).
+    // Default stays Q8_0. An imatrix HAS now been calibrated (PLAN.md T19-E3,
+    // 134 German/English/query-prompt/newline texts). Over 65 held-out texts vs
+    // the F32 base: Q8_0 min 0.9994 / mean 0.9996; Q4_K 0.9466/0.9584, and
+    // +imatrix only 0.9480/0.9614. **IQ4_XS+imatrix is the one to reach for
+    // below Q8_0** — 0.9667/0.9757 AND smaller (270 vs 274 MB); -iq4xs serves
+    // it. Q4_K's weak showing has a known cause: the imatrix reaches only 36 of
+    // the 73 quantized tensors here, because the runtime pre-merges q/k/v into
+    // one UNNAMED tensor (crispembed.cpp:799-832), so the collector files its
+    // statistics under ggml's auto name and every attn.{q,k,v}.weight is
+    // quantized without importance. Fixing that naming is the lever.
     { "arctic-embed-m-v2", "arctic-embed-m-v2-q8_0.gguf",
       "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q8_0.gguf",
       "GTE-v1.5 768d CLS multilingual (Q8_0)", "315 MB", "apache-2.0",
@@ -351,9 +359,13 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q8_0.gguf",
       "GTE-v1.5 768d CLS multilingual (Q8_0)", "315 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
-    { "arctic-embed-m-v2-q4k", "arctic-embed-m-v2-q4_k.gguf",
-      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q4_k.gguf",
-      "GTE-v1.5 768d CLS multilingual (Q4_K)", "261 MB", "apache-2.0",
+    { "arctic-embed-m-v2-q4k", "arctic-embed-m-v2-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q4_k-imatrix.gguf",
+      "GTE-v1.5 768d CLS multilingual (Q4_K+imatrix)", "261 MB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
+    { "arctic-embed-m-v2-iq4xs", "arctic-embed-m-v2-iq4_xs.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-iq4_xs.gguf",
+      "GTE-v1.5 768d CLS multilingual (IQ4_XS+imatrix)", "258 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
 
     { "octen-0.6b", "octen-0.6b-q4_k-imatrix.gguf",
@@ -415,6 +427,18 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-80m-f16", "f2llm-v2-80m.gguf",
       "https://huggingface.co/cstr/f2llm-v2-80m-GGUF/resolve/main/f2llm-v2-80m.gguf", "Qwen3 320d multilingual (F16)",
       "250 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-80M" },
+    // Sub-Q8 flavors, imatrix-calibrated (PLAN.md T19-E3). Over 65 held-out
+    // texts vs the F16 base: Q4_K 0.9727 mean / 0.9499 min, +imatrix
+    // 0.9767/0.9455 (mean up, min DOWN), IQ4_XS+imatrix 0.9812/0.9601 — better
+    // on both and marginally smaller, so -iq4xs is the one to prefer here.
+    { "f2llm-v2-80m-q4k", "f2llm-v2-80m-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-80m-GGUF/resolve/main/f2llm-v2-80m-q4_k-imatrix.gguf",
+      "Qwen3 320d multilingual (Q4_K+imatrix)", "71 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-80M" },
+    { "f2llm-v2-80m-iq4xs", "f2llm-v2-80m-iq4_xs.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-80m-GGUF/resolve/main/f2llm-v2-80m-iq4_xs.gguf",
+      "Qwen3 320d multilingual (IQ4_XS+imatrix)", "71 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-80M" },
 
     // Default = Q8_0. The 160M is pruned from the 0.6B base and is the best
     // sub-200M German embedder on MTEB(deu, v1); unlike the 0.6B it survives
@@ -429,6 +453,18 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-160m-f16", "f2llm-v2-160m.gguf",
       "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m.gguf", "Qwen3 640d multilingual (F16)",
       "494 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
+    // imatrix-calibrated sub-Q8 flavors (PLAN.md T19-E3). Over 65 held-out
+    // texts vs the F16 base, imatrix lifts Q4_K on BOTH tails here: mean
+    // 0.9652 -> 0.9719, min 0.9331 -> 0.9495. IQ4_XS+imatrix is better again
+    // (0.9766/0.9645) and slightly smaller. Q8_0's 0.9996 stays the default.
+    { "f2llm-v2-160m-q4k", "f2llm-v2-160m-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m-q4_k-imatrix.gguf",
+      "Qwen3 640d multilingual (Q4_K+imatrix)", "137 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
+    { "f2llm-v2-160m-iq4xs", "f2llm-v2-160m-iq4_xs.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m-iq4_xs.gguf",
+      "Qwen3 640d multilingual (IQ4_XS+imatrix)", "136 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
 
     { "f2llm-v2-330m", "f2llm-v2-330m-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m-q8_0.gguf",
