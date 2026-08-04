@@ -1392,7 +1392,7 @@ embed path; (b) profile the remaining fixed cost (SPM tokenizer build for the
 need; (c) consider a CPU-default for small embedders in one-shot CLI mode
 (T5 precedent: workload-dependent backend). Server mode already amortizes —
 this is a CLI/scripting-latency item. **Acceptance:** one-shot
-`crispembed -m multilingual-e5-small --json "text"` total time down ~oe;3x with
+`crispembed -m multilingual-e5-small --json "text"` total time down ≥3x with
 embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
 in warm batch throughput.
 
