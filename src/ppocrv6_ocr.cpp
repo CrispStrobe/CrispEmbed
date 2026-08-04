@@ -858,22 +858,26 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         local = ggml_silu(c->graph.graph_ctx, local);
         x = ggml_add(c->graph.graph_ctx, branch, local);
         skip = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, skip, 2, 0, 1, 3));
-        skip = ggml_reshape_2d(c->graph.graph_ctx, skip, c->hidden, skip->ne[2]);
+        // Batch-aware: keep the per-item axis explicit as ne[2] instead of
+        // relying on a 2D flatten. For batch==1 this is byte-identical to the
+        // old [hidden,tokens] matrix.
+        skip = ggml_reshape_3d(c->graph.graph_ctx, skip, c->hidden, skip->ne[2], skip->ne[3]);
         ggml_set_output(skip);
         ggml_build_forward_expand(c->graph.graph, skip);
         c->graph.svtr_skip = skip;
         x = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, x, 2, 0, 1, 3));
         // On ggml's convolution layout the singleton spatial dimension can
         // remain as the fastest axis after the permute. The bytes are already
-        // token-major; expose them as the decoder's [hidden,tokens] matrix.
+        // token-major; expose them as the decoder's [hidden,tokens,batch].
         const int64_t tokens = x->ne[2];
-        x = ggml_reshape_2d(c->graph.graph_ctx, x, c->hidden, tokens);
+        x = ggml_reshape_3d(c->graph.graph_ctx, x, c->hidden, tokens, x->ne[3]);
         c->graph.svtr_prefix_output = true;
     }
     if (c->large_stem && c->graph.svtr_prefix_output && pp_graph_enabled()) {
         const int heads = 8;
         const int head_dim = c->hidden / heads;
         const int tokens = (int)x->ne[1];
+        const int64_t items = x->ne[2];
         for (const auto & b : c->svtr) {
             ggml_tensor * residual = x;
             x = pp_graph_layernorm(c, c->graph.graph_ctx, x, b.ln1_w, b.ln1_b, c->hidden);
@@ -881,18 +885,22 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             ggml_tensor * qkv = pp_graph_linear(c, c->graph.graph_ctx, x, b.qkv_w, b.qkv_b);
             if (!qkv) return false;
             const size_t slice = (size_t)c->hidden * ggml_type_size(qkv->type);
-            ggml_tensor * q =
-                ggml_cont(c->graph.graph_ctx, ggml_view_2d(c->graph.graph_ctx, qkv, c->hidden, tokens, qkv->nb[1], 0));
-            ggml_tensor * k = ggml_cont(c->graph.graph_ctx,
-                                        ggml_view_2d(c->graph.graph_ctx, qkv, c->hidden, tokens, qkv->nb[1], slice));
-            ggml_tensor * v = ggml_cont(
-                c->graph.graph_ctx, ggml_view_2d(c->graph.graph_ctx, qkv, c->hidden, tokens, qkv->nb[1], 2 * slice));
-            q = ggml_permute(c->graph.graph_ctx, ggml_reshape_3d(c->graph.graph_ctx, q, head_dim, heads, tokens), 0, 2,
-                             1, 3);
-            k = ggml_permute(c->graph.graph_ctx, ggml_reshape_3d(c->graph.graph_ctx, k, head_dim, heads, tokens), 0, 2,
-                             1, 3);
-            v = ggml_permute(c->graph.graph_ctx, ggml_reshape_3d(c->graph.graph_ctx, v, head_dim, heads, tokens), 0, 2,
-                             1, 3);
+            // Attention must stay per-item: keep the batch axis explicit
+            // through the qkv views and run the head matmuls as 4D
+            // [head_dim, tokens, heads, items] so no token ever attends
+            // across crops.
+            ggml_tensor * q = ggml_cont(c->graph.graph_ctx, ggml_view_3d(c->graph.graph_ctx, qkv, c->hidden, tokens,
+                                                                         items, qkv->nb[1], qkv->nb[2], 0));
+            ggml_tensor * k = ggml_cont(c->graph.graph_ctx, ggml_view_3d(c->graph.graph_ctx, qkv, c->hidden, tokens,
+                                                                         items, qkv->nb[1], qkv->nb[2], slice));
+            ggml_tensor * v = ggml_cont(c->graph.graph_ctx, ggml_view_3d(c->graph.graph_ctx, qkv, c->hidden, tokens,
+                                                                         items, qkv->nb[1], qkv->nb[2], 2 * slice));
+            q = ggml_permute(c->graph.graph_ctx, ggml_reshape_4d(c->graph.graph_ctx, q, head_dim, heads, tokens, items),
+                             0, 2, 1, 3);
+            k = ggml_permute(c->graph.graph_ctx, ggml_reshape_4d(c->graph.graph_ctx, k, head_dim, heads, tokens, items),
+                             0, 2, 1, 3);
+            v = ggml_permute(c->graph.graph_ctx, ggml_reshape_4d(c->graph.graph_ctx, v, head_dim, heads, tokens, items),
+                             0, 2, 1, 3);
             const float scale = 1.0f / std::sqrt((float)head_dim);
             ggml_tensor * scores =
                 ggml_mul_mat(c->graph.graph_ctx, ggml_cont(c->graph.graph_ctx, k), ggml_cont(c->graph.graph_ctx, q));
@@ -900,7 +908,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             ggml_tensor * vt = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, v, 1, 0, 2, 3));
             ggml_tensor * attn = ggml_mul_mat(c->graph.graph_ctx, vt, scores);
             attn = ggml_cont(c->graph.graph_ctx, ggml_permute(c->graph.graph_ctx, attn, 0, 2, 1, 3));
-            attn = ggml_reshape_2d(c->graph.graph_ctx, attn, c->hidden, tokens);
+            attn = ggml_reshape_3d(c->graph.graph_ctx, attn, c->hidden, tokens, items);
             attn = pp_graph_linear(c, c->graph.graph_ctx, attn, b.proj_w, b.proj_b);
             if (!attn) return false;
             x = ggml_add(c->graph.graph_ctx, residual, attn);
@@ -917,6 +925,18 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         x = pp_graph_layernorm(c, c->graph.graph_ctx, x, c->svtr_norm_w, c->svtr_norm_b, c->hidden);
         if (!x) return false;
         c->graph.svtr_decoder_output = true;
+        if (batch > 1) {
+            // Fused batch lane: finish in-graph so the caller receives
+            // per-item logits like the tiny lane. rnn.py adds the skip AFTER
+            // the final norm; the head is one linear to the class table. The
+            // single-crop (batch==1) contract is unchanged — its consumer
+            // still applies skip + head on the scalar side.
+            x = ggml_add(c->graph.graph_ctx, x, c->graph.svtr_skip);
+            x = pp_graph_linear(c, c->graph.graph_ctx, x, c->svtr_head_w, c->svtr_head_b);
+            if (!x) return false;
+            x = ggml_reshape_2d(c->graph.graph_ctx, x, c->vocab_size, (int64_t)tokens * items);
+            c->graph.logits_output = true;
+        }
     }
     // Complete the tiny/small recognizer graph through logits.  The large
     // SVTR decoder remains on its established CPU path for now.  Keeping the
@@ -1749,7 +1769,10 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
             // every backend accepts the fourth dimension through pooling and
             // the flattened CTC head. The grouped scalar path remains the
             // production default and is the fallback for all other cases.
-            bool fused = graph_accept && batch_graph_requested && batch_backend_ok && !c->large_stem && group_count > 1;
+            // large_stem (small/medium) is included since 2026-08-04: the
+            // batch>1 graph finishes in-graph (skip + head) and returns
+            // per-item logits exactly like the tiny lane.
+            bool fused = graph_accept && batch_graph_requested && batch_backend_ok && group_count > 1;
             std::vector<float> fused_input;
             std::vector<float> fused_output;
             // pp_graph_run_batch's third/fourth parameters are IN-OUT: the
