@@ -1443,6 +1443,137 @@ this is a CLI/scripting-latency item. **Acceptance:** one-shot
 embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
 in warm batch throughput.
 
+### T18 status [DONE 2026-08-05, `feat/t18-embed-oneshot-init`, NOT merged]: 4.8x one-shot, byte-identical output, and the cost was NOT what the ticket assumed
+
+**Headline: 895 ms → 186 ms (4.81x) one-shot on multilingual-e5-small q8_0,
+STILL ON METAL, output byte-identical.** The ~1.3 s the ticket recorded
+reproduced as 0.89-0.91 s on a quiet box (same shape, lower absolute — the
+earlier figure was presumably measured under load); the *structure* of the
+claim was right and the *suspect* was wrong.
+
+**Per-component init profile** (`CRISPEMBED_INIT_BENCH=1`, the instrument this
+branch adds — M1 16 GB, multilingual-e5-small q8_0, medians):
+
+| component | before | after | note |
+|---|--:|--:|---|
+| `crispembed_init/arch_detect_gguf_open` | 29.3 ms | 29.3 ms | GGUF metadata parse (250k-token vocab KV) |
+| `load_model/gguf_init_from_file` | 29.7 ms | **0.0 ms** | was a SECOND parse of the same file — now reuses the first |
+| `load_model/vocab_read` | 6.0 ms | 6.0 ms | 250k strings out of the KV array |
+| `load_model/tokenizer_build` | 12.0 ms | 12.0 ms | **the recorded SPM suspect — 12 ms, not the problem** |
+| `load_model/backend_init` | **683.1 ms** | **29.4 ms** | Metal device + pipeline cache |
+| `load_model/sched+meta` | 0.8 ms | 0.5 ms | |
+| `load_model/weights_load` | 46.9 ms | 46.4 ms | |
+| first `crispembed_encode` | 21.0 ms | ~17-20 ms | includes Metal PSO JIT |
+| **process wall** | **895 ms** | **186 ms** | |
+
+**The real cause: ggml-metal's persistent `MTLBinaryArchive` pipeline cache.**
+ggml carries a CrispASR patch (PLAN #88) that opens
+`~/Library/Caches/ggml-metal/<device>.archive` before any PSO is created. That
+archive is append-only across every engine and every Crisp binary that ever ran
+on the box; on this machine it had reached **683 MB**, and opening it costs
+~1 ms/MB — 683 of the 820 ms of internal init. Two things make it strictly a
+loss for a one-shot CLI:
+
+1. **It buys nothing measurable.** First encode was 20.3 ms with the archive
+   open and 17.4 ms with it skipped — marginally *worse* with it. macOS keeps
+   its own system-level shader cache underneath, which is what actually makes
+   the second run fast.
+2. **A one-shot CrispEmbed binary can never repay it.** The archive is
+   serialised back only from `ggml_metal_device_free()`, which runs at
+   static-destructor time — and the one-shot CLIs leave via
+   `core_util::clean_exit` → `_exit()`, which skips it (the known
+   clean_exit-bypasses-atexit hazard, striking somewhere new). Proven directly:
+   pointed at an empty `GGML_METAL_PIPELINE_CACHE` dir the run logs "pipeline
+   cache created" and exits leaving the directory **empty**. So the CLI pays the
+   open and never writes an entry — read-only cost, forever.
+
+**Levers applied, in measured order** (each independently gated; the gates ARE
+the A/B mechanism — one binary, both arms):
+
+| # | Lever | Gate to restore old behaviour | Measured delta (e5-small one-shot) |
+|---|---|---|--:|
+| 1 | Skip a Metal pipeline-cache archive larger than a cap (default 64 MB), decided by `stat` before the device exists (`src/core/metal_pipeline_cache_policy.h`) | `CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB=0` | **−654 ms** |
+| 2 | `--gpu-backend cpu` genuinely returns the CPU backend instead of falling through to `ggml_backend_init_best()` (`src/core/gpu_backend_pref.h`) | `CRISPEMBED_GPU_PREF_CPU_LEGACY=1` | 0.86 s → 0.14 s **on that flag** (6.1x); no effect on the default path |
+| 3 | Reuse `crispembed_init()`'s GGUF parse in `load_model()` / the decoder tokenizer load instead of parsing the file a second time | `CRISPEMBED_GGUF_REPARSE=1` | **−29 ms** |
+| 4 | `CRISPEMBED_ONESHOT_CPU=1` picks CPU when no `--gpu-backend` was given (CLI only) | off by default | −40 ms, opt-in — see recommendation |
+
+Lever 2 has a sharp edge worth remembering: the obvious implementation,
+`ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_CPU)`, **still initialises
+Metal** because enumerating the registry constructs every device. It measured
+29 ms of Metal init on a "cpu" request. `ggml_backend_cpu_init()` touches no
+registry and is the correct call.
+
+**Acceptance** (interleaved same-binary A/B, medians, `sysctl vm.loadavg` first
+value gate >8 — 0 pairs discarded, load stayed 1.8-2.5 throughout):
+
+| case | before | after | speedup | output |
+|---|--:|--:|--:|---|
+| e5-small one-shot `--json "ein test"` (n=7 pairs) | 895 ms (892-901) | **186 ms** (184-187) | **4.81x** | byte-identical |
+| arctic-embed-m-v2 q8_0 one-shot (n=5) | 911 ms (908-916) | **202 ms** (200-264) | **4.51x** | byte-identical |
+| e5-small warm batch-512 (n=5) | 5977 ms | 5451 ms | 1.10x (no regression) | byte-identical, 64/64 |
+| arctic warm batch-64 (n=5) | 1672 ms | 908 ms | 1.84x | byte-identical, 64/64 |
+
+Output identity was checked on the actual vectors, not a summary: 64 texts per
+model, `worst cos = 1.000000000`, `|before| = |after| = 1.000000`, ratio
+1.000000000, and the JSON is byte-for-byte equal. The math path is untouched —
+every change is in init.
+
+**Negative / refuted results, on the record:**
+- **The SPM tokenizer suspect is refuted.** Building the 250k-entry XLM-R
+  SentencePiece tokenizer is 12.0 ms and reading the vocab out of the GGUF is
+  6.0 ms — together 2% of the old fixed cost. No quadratic construction, no
+  disk cache needed. Do not spend time here.
+- **Weight I/O was never the story either**, confirming the ticket: e5-small
+  (132 MB) and arctic (330 MB) both paid the same ~683 ms Metal init.
+- **CPU-default for small embedders is now a much weaker lever than it looked.**
+  Before the fix it would have saved ~700 ms; after it, 40 ms.
+- `ggml_backend_dev_by_type(...CPU)` as a "cheap CPU" path: measured worse than
+  useless (see above), kept out.
+
+**CPU-default recommendation — data for the coordinator, decision NOT taken
+here.** Post-fix sweep, batch-64, times include that arm's own init:
+
+| model | Metal `-t 1` | CPU `-t 1` | CPU `-t 4` |
+|---|--:|--:|--:|
+| multilingual-e5-small q8_0 | 0.77 s | 0.76 s | **0.35 s** |
+| arctic-embed-m-v2 q8_0 | **0.91 s** | 2.77 s | 0.91 s |
+
+One-shot single text post-fix: e5-small 0.18 s Metal vs 0.14 s CPU; arctic
+0.20 s vs 0.17 s. So: **the backend default is no longer the interesting knob —
+the `-t 1` default is.** CPU with 4 threads beats Metal by 2.2x on the small
+embedder and ties on the large one, while CPU at the shipped `-t 1` is 3x
+*worse* than Metal on the large one. A blanket "small embedders default to CPU"
+switch would be defensible on e5-small and wrong on arctic-at-`-t 1`;
+`CRISPEMBED_ONESHOT_CPU=1` ships gated off so the flip can be made with a
+size/thread rule rather than a guess. Suggested follow-up before any flip:
+measure a thread-count default for the embed CLI, which looks like the larger
+untaken win.
+
+**Found, not fixed:**
+1. **Every Metal lane in the repo pays this same archive-open cost**, not just
+   the embedder — the OCR/VLM/SR engines all call `crispasr_init_gpu_backend()`.
+   The policy header is deliberately standalone; adopting it elsewhere is a
+   one-line `core_metal_cache::apply()` before the backend init. Only the embed
+   path is measured and changed on this branch.
+2. **The pipeline cache is arguably broken repo-wide**, not merely oversized: no
+   one-shot Crisp binary that exits via `clean_exit`/`_exit()` can write to it,
+   so it can only be filled by long-running or normally-unwinding processes
+   while every short process pays to read it. Whether the patch should flush at
+   the end of a run, scope the archive per engine, or be retired is CrispASR
+   PLAN #88's call, not this branch's.
+3. The 683 MB archive is still on disk (this branch only stops *reading* it);
+   deleting it is safe and reclaims the space.
+4. `-t` defaults to 1 for the embed CLI (see recommendation above).
+
+**Env gates added:** `CRISPEMBED_INIT_BENCH`,
+`CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB`, `CRISPEMBED_GGUF_REPARSE`,
+`CRISPEMBED_GPU_PREF_CPU_LEGACY`, `CRISPEMBED_ONESHOT_CPU` — all documented in
+README "One-shot CLI startup" and in the headers themselves. Model-free CI
+battery re-run green (backend-smoke auto/metal/cpu, provenance x3, msac,
+temp-file, qwen 39, o200k 85, bpe 246 checks). `test-backend-smoke cpu` now
+reports `name=CPU type=0` where it used to report `MTL0` — the same
+fall-through, visible in a test that had been passing over it.
+
 **T19-E1 status [DONE 2026-08-04, merged]:** F2LLM-v2 **80m/160m/330m
 shipped** (cstr, f16+q8_0, registry+pins; 0.6B was already shipped and needed
 nothing). Converter docstring claim was REAL — worked as-is. Contract: last-token

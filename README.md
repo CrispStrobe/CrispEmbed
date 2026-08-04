@@ -567,6 +567,38 @@ Apple M1, Metal, all-MiniLM-L6-v2:
 Full multi-model and Ollama Q8_0/Q4_K numbers in [PERFORMANCE.md](PERFORMANCE.md).
 Benchmark with `./benchmark.sh [--multi]`.
 
+### One-shot CLI startup
+
+Those are *warm* numbers. A one-shot `crispembed -m model.gguf --json "text"`
+also pays a fixed init, which used to be ~0.9 s on an M1 and dominated
+short-text CLI/scripting use. Measured 2026-08-05, multilingual-e5-small q8_0,
+same binary, output byte-identical:
+
+| | one-shot total | Metal device init |
+|---|--:|--:|
+| before | 895 ms | 683 ms |
+| after | **186 ms** (4.8x) | 29 ms |
+
+Almost all of it was ggml-metal's persistent `MTLBinaryArchive` pipeline cache
+(`~/Library/Caches/ggml-metal/*.archive`): it is append-only across every
+engine and binary on the machine, had grown to 683 MB, and cost ~1 ms/MB to
+open — while a one-shot CLI can never write an entry back to it (the archive is
+serialised from a static destructor, which `_exit()` skips). CrispEmbed now
+skips an archive larger than 64 MB. Env gates:
+
+| Variable | Effect |
+|---|---|
+| `CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB=N` | archive size cap in MB (default 64). `0` = uncapped = pre-2026-08-05 behaviour |
+| `CRISPEMBED_INIT_BENCH=1` | print the per-component init profile (gguf parse / vocab / tokenizer / backend / weights) to stderr |
+| `CRISPEMBED_GGUF_REPARSE=1` | restore the second GGUF metadata parse the loader used to do (~29 ms on a 250k-token vocab) |
+| `CRISPEMBED_GPU_PREF_CPU_LEGACY=1` | restore the old behaviour where `--gpu-backend cpu` fell through to the GPU |
+| `CRISPEMBED_ONESHOT_CPU=1` | opt in to the CPU backend for a CLI run that did not pass `--gpu-backend` |
+| `CRISPEMBED_FORCE_CPU=1` | force the CPU backend for the embedding engine (pre-existing) |
+
+`--gpu-backend cpu` now genuinely skips GPU device init (0.14 s one-shot); it
+previously matched no GPU device, warned, and fell back to Metal anyway.
+Delete the archive to reclaim the disk — nothing depends on it.
+
 ---
 
 ## Where CrispEmbed fits

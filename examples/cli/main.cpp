@@ -321,8 +321,9 @@ static int cli_main(int argc, char ** argv) {
     std::string cc_detect_path; // --cc-detect FILE
     bool face_pipeline_mode = false;
     float conf_threshold = 0.5f;
-    std::string lora_adapter; // LoRA adapter name (--lora)
-    bool list_lora = false;   // --list-lora
+    std::string lora_adapter;     // LoRA adapter name (--lora)
+    bool list_lora = false;       // --list-lora
+    bool gpu_backend_set = false; // --gpu-backend was given explicitly (T18)
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc) {
@@ -333,6 +334,7 @@ static int cli_main(int argc, char ** argv) {
             n_threads = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--gpu-backend") == 0 && i + 1 < argc) {
             crispembed_set_gpu_backend(argv[++i]);
+            gpu_backend_set = true;
         } else if (strcmp(argv[i], "-d") == 0 && i + 1 < argc) {
             output_dim = atoi(argv[++i]);
         } else if (strcmp(argv[i], "--prefix") == 0 && i + 1 < argc) {
@@ -2092,6 +2094,26 @@ static int cli_main(int argc, char ** argv) {
             return 0;
         }
         // Not a ViT model — fall through to text model path
+    }
+
+    // T18, opt-in (CRISPEMBED_ONESHOT_CPU=1): pick the CPU backend for the
+    // text-embed CLI when the caller did not ask for a specific backend.
+    //
+    // MEASURED on M1 16 GB AFTER the T18 pipeline-cache fix (which is what made
+    // this small): one-shot `--json "ein test"` 0.18 s Metal vs 0.14 s CPU on
+    // multilingual-e5-small — a ~40 ms edge, not the ~700 ms it would have been
+    // before. The real remaining CPU win is warm batch on SMALL models with
+    // threads: batch-64 e5-small is 0.77 s Metal vs 0.35 s CPU `-t 4` (2.8x).
+    // It INVERTS on a large embedder single-threaded: arctic-embed-m-v2
+    // batch-64 is 0.91 s Metal vs 2.77 s CPU `-t 1` (3x worse), and only ties
+    // at `-t 4`. So this stays OFF by default and the decision is the
+    // coordinator's — a default flip should come with a size/thread rule, not
+    // a blanket switch.
+    if (const char * oc = std::getenv("CRISPEMBED_ONESHOT_CPU"); oc && oc[0] && strcmp(oc, "0") != 0) {
+        if (!gpu_backend_set) {
+            fprintf(stderr, "crispembed: CRISPEMBED_ONESHOT_CPU=1 — selecting the CPU backend for this one-shot run\n");
+            crispembed_set_gpu_backend("cpu");
+        }
     }
 
     // Init model

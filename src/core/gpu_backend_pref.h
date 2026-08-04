@@ -14,8 +14,11 @@
 // Empty or null = auto (same as ggml_backend_init_best).
 
 #include "ggml-backend.h"
+#include "ggml-cpu.h" // ggml_backend_cpu_init() for the `--gpu-backend cpu` short-circuit
 
+#include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <mutex>
 #include <string>
@@ -65,6 +68,30 @@ inline bool ci_starts_with(const char * haystack, const char * needle) {
 // the preferred backend isn't found.
 inline ggml_backend_t crispasr_init_gpu_backend() {
     std::string pref = crispasr_get_gpu_backend_pref();
+
+    // T18: `--gpu-backend cpu` used to fall THROUGH to the GPU. The loops below
+    // only ever consider GPU/iGPU devices, so "cpu" matched nothing, printed the
+    // "no matching GPU device found" warning and handed back
+    // ggml_backend_init_best() — i.e. Metal. On an M1 that silently cost ~680 ms
+    // of Metal device init on a flag whose whole purpose was to avoid it (found
+    // and reported by T14, which had to add its own engine-local DS2_FORCE_CPU=1
+    // because this flag did not work).
+    // CRISPEMBED_GPU_PREF_CPU_LEGACY=1 restores the old fall-through for A/B.
+    if (!pref.empty() && ci_starts_with("cpu", pref.c_str()) && pref.size() <= 3) {
+        const char * legacy = std::getenv("CRISPEMBED_GPU_PREF_CPU_LEGACY");
+        if (!(legacy && legacy[0] && legacy[0] != '0')) {
+            // ggml_backend_cpu_init(), NOT ggml_backend_dev_by_type(...CPU):
+            // the registry lookup enumerates every registered device, which
+            // constructs the Metal device as a side effect (measured: it still
+            // ran ggml_metal_device_init and cost ~29 ms). The direct
+            // constructor touches no registry, so nothing GPU is created.
+            ggml_backend_t cpu = ggml_backend_cpu_init();
+            if (cpu) {
+                fprintf(stderr, "%s: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n", __func__);
+                return cpu;
+            }
+        }
+    }
 
     // ggml names the Apple backend "MTL" (registry) / "MTL0" (device), so the
     // natural `--gpu-backend metal` would never prefix-match. Alias it.
