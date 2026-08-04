@@ -95,15 +95,24 @@ test-command = 'python -c "from crispembed import CrispEmbed; from crispembed._b
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
 archs = ["x86_64", "aarch64"]
-# We build libcrispembed.so on the HOST runner (Ubuntu 24.04, glibc 2.39),
-# then stage it into python/crispembed/ for cibuildwheel to package. The
-# default repair (`auditwheel repair`) tries to relabel the wheel as
-# manylinux_2_28 (glibc 2.28) and fails because the binary references
-# 2.38+ symbols. Until we move the build INSIDE the manylinux container
-# (which requires reshuffling pyproject.toml to repo root + CMake in
-# CIBW_BEFORE_ALL_LINUX), accept a `linux_x86_64`/`linux_aarch64`-tagged
-# wheel. Narrower compat but works on Ubuntu 24.04+/Debian 13+/EL 9+.
-repair-wheel-command = "cp {wheel} {dest_dir}/"
+# libcrispembed.so is now compiled INSIDE quay.io/pypa/manylinux_2_28_*
+# (see the "Configure + build (Linux, manylinux_2_28 container)" step in
+# .github/workflows/python-wheels.yml), so it carries glibc 2.28 symbols
+# and `auditwheel repair` can tag the wheel manylinux_2_28 for real.
+#
+# It used to be built on the Ubuntu 24.04 runner and only then handed to
+# cibuildwheel, so the binary referenced GLIBC_2.38, auditwheel refused to
+# relabel it, and this line had to be `cp {wheel} {dest_dir}/` — a bare
+# `linux_x86_64` tag that PyPI rejects and that silently required Ubuntu
+# 24.04+/Debian 13+/EL 9+. Doing the build in the container removes the
+# cause instead of the symptom.
+#
+# `--exclude` nothing: libggml*.so are staged into the package directory
+# on purpose and must stay resolvable next to libcrispembed.so. The
+# cibuildwheel test-command imports the package and calls _find_lib(), so
+# a repair that relocated them would fail the build rather than ship a
+# broken wheel.
+repair-wheel-command = "auditwheel repair -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
