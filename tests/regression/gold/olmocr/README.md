@@ -77,11 +77,12 @@ non-reproducible, are in
 
 ## Known deviations from the toolkit
 
-* **Serving layer.** `olmocr[gpu]` pins `vllm==0.11.2`; generation here went
-  through `transformers==4.57.3` (the version that same extra pins). Only the
-  serving layer differs — the request is the toolkit's own. See
-  `tools/kaggle/olmocr-vllm-probe/` for the measured vLLM outcome on this
-  hardware.
+* **Serving layer.** `olmocr[gpu]` pins `vllm==0.11.2`; the gold here was
+  generated through `transformers==4.57.3` (the version that same extra pins).
+  Only the serving layer differs — the request is the toolkit's own. vLLM
+  *does* run on this hardware, and `vllm-serving/` holds its transcripts; see
+  the section below for how far the two stacks agree, which is the single most
+  important number in this directory.
 * **Checkpoint.** The toolkit defaults to `allenai/olmOCR-2-7B-1025-FP8`, whose
   quantised kernels need sm_89+. The unquantised sibling ran instead.
 * **dtype.** fp16, not the checkpoint's bf16: the reference cards are compute
@@ -100,3 +101,55 @@ The same 25 pages at the toolkit's own attempt-0 temperature, kept so the
 determinism claim above is checkable rather than asserted. It is **not** gold:
 it is what the reference produces by default, sampled, and it is the reason a
 gate must be a CER threshold and not a diff.
+
+## `vllm-serving/` — the same request through the toolkit's own server
+
+`vllm==0.11.2` serving `allenai/olmOCR-2-7B-1025` on the same 2x T4 pair, fp16,
+tensor-parallel 2, `temperature=0.0` — greedy, like the gold, and the same
+request object. It is faster (median 3.55 s/page synth against 5.9 s; 20.5 s
+against 40.4 s on `commons_example_receipt.png`).
+
+**Two greedy decodes of the same weights do not agree on document pages.**
+
+| corpus | byte-identical to the gold |
+|---|--:|
+| synth | 20/20 |
+| cc0 | 1/5 |
+
+The three small ones are cosmetic (CER 0.00101–0.02423 against the gold). The
+fourth is not: on `simple_form.png` the vLLM decode emits an early stop token
+and returns about half the page — five of the ten blocks — with
+`finish_reason: stop`, so nothing flags it as truncated. Against ground truth
+that is CER 0.37247 where the transformers decode scores 0.04858. The gold ships
+from the transformers pass for exactly this reason: it is complete on every page
+and reproducible.
+
+The number that matters for the native lane: **the reference does not agree with
+itself across serving stacks at greedy**, so any lane gate must be a CER
+threshold with headroom for this, and a byte diff against either set is
+meaningless.
+
+`probe.json` records how the engine was brought up, including the two
+environment fixes it needs on this hardware — see below.
+
+### Getting vLLM up on Turing (sm_75)
+
+Four measured failures, only one of them about the platform:
+
+1. Probing inside the gold kernel — *"Free memory on device (7.14/14.56 GiB) ...
+   less than desired GPU memory utilization"*. The transformers model was still
+   resident in the same process.
+2. `VLLM_WORKER_MULTIPROC_METHOD=spawn` with `torch.cuda` touched first — the
+   parent's CUDA context forces spawn, and a spawned worker re-imports a Kaggle
+   script kernel top to bottom.
+3. FlashAttention-2 needs compute capability >= 8.0, so vLLM falls back to
+   FlashInfer, which JIT-builds its prefill kernels and links `-lcuda`. Kaggle
+   ships the driver as `libcuda.so.1` with no linker symlink, so ninja dies with
+   `cannot find -lcuda` after ~4 minutes of nvcc. **Fix: symlink it.**
+4. Forcing a backend to dodge the JIT fails on *every* backend sm_75 offers —
+   `Qwen2.5-VL does not support AttentionBackendEnum.{FLASHINFER,TRITON_ATTN,
+   FLEX_ATTENTION} backend now` — because `VLLM_ATTENTION_BACKEND` also forces
+   the vision tower. **Fix: leave it unset** and let the ViT choose.
+
+With the symlink in place and the variable unset, the engine starts in 356 s and
+reads all 25 pages.

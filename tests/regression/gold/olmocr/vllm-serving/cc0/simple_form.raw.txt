@@ -1,0 +1,23 @@
+---
+primary_language: en
+is_rotation_valid: True
+rotation_correction: 0
+is_table: False
+is_diagram: False
+---
+Input
+Texte
+Number
+Date
+Password
+a label   ANOTHER LABEL   Yet another label
+combo suggest
+F
+Finland
+France
+checkbox2
+checkbox3
+Code&labelle
+code&lib
+code
+Button
