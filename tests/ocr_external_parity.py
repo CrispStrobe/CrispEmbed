@@ -65,7 +65,13 @@ STAGE_BENCH = {
     # load-excluded figure this column claims to be.
     "easyocr": re.compile(r"\[easyocr-stage-bench\].*?detect\+recognize=([0-9.]+) ms"),
     "tesseract": re.compile(r"\[tesseract-stage-bench\].*?total=([0-9.]+) ms"),
+    # T14: deepseek-ocr2's total= is net-of-load (the clock starts inside
+    # recognize; the model was loaded by deepseek_ocr2_init before it).
+    "deepseek-ocr2": re.compile(r"\[deepseek-ocr2-stage-bench\].*?total=([0-9.]+) ms"),
 }
+# The decode stage of the same line, for the T14 persistent-graph A/B: `total`
+# also carries the vision tower, which no decode change moves.
+DEEPSEEK_OCR2_DECODE_RE = re.compile(r"\[deepseek-ocr2-stage-bench\].*?decode=([0-9.]+) ms")
 REGIONS_RE = re.compile(r"^regions=(\d+)\s+mean_conf=([0-9.]+)", re.M)
 
 
