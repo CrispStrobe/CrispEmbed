@@ -1,5 +1,58 @@
 # CrispEmbed — Technical Learnings
 
+## A cached CMake `option()` silently disabled Metal — and the binary still reported `GGML_METAL:BOOL=ON` (2026-08-05, T14)
+
+Every measurement in the first half of the T14 round was CPU while being
+labelled Metal. The tell was not in the build system at all: `sam`, a stage
+neither A/B arm touches, varied 17.7 s vs 38.1 s between runs, and PLAN's warm
+profile said the whole page should take ~12 s.
+
+**The mechanism is a stale cache entry, and that is the durable part.** The
+build dir was first configured *without* Metal:
+
+```
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release          # GGML_METAL=OFF
+cmake -G Ninja -B build -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=ON
+```
+
+ggml declares `option(GGML_METAL_EMBED_LIBRARY "..." ${GGML_METAL})`. On the
+FIRST configure `GGML_METAL` was OFF, so `GGML_METAL_EMBED_LIBRARY` was cached
+`OFF`. **`option()` never revisits a value that is already in the cache**, so
+the second configure turned Metal on but left the library un-embedded. The
+cache then reads `GGML_METAL:BOOL=ON` — which is what a reviewer checks — while
+`GGML_METAL_EMBED_LIBRARY:BOOL=OFF` two lines away is what actually decides it.
+
+Un-embedded, ggml writes `default.metallib` into `${CMAKE_RUNTIME_OUTPUT_
+DIRECTORY}` = `build/bin/`, but `ggml_metal_library_init` looks for it beside
+`argv[0]` (`ggml-metal-device.m`: `bin_dir = argv[0] stringByDeletingLast
+PathComponent`), and CrispEmbed links `crispembed` into `build/`. It then falls
+back to compiling `ggml-metal.metal` from source — which ggml's own CMake
+`rm -f`s after building the metallib — so init fails and the engine silently
+runs on CPU:
+
+```
+ggml_metal_library_init: default.metallib not found, loading from source
+ggml_metal_library_init: error: ... "ggml-metal.metal" couldn't be opened ...
+ggml_metal_device_init: error: failed to create library
+```
+
+Fixed for the measurement with `ln -sf bin/default.metallib
+build/default.metallib` (ggml resolves the symlink). The real fixes are
+`-DGGML_METAL_EMBED_LIBRARY=ON`, a clean build dir, or having CrispEmbed copy
+the metallib beside its own executable target.
+
+**Checks that do NOT catch this**, all of which were performed: `GGML_METAL:
+BOOL=ON` in `CMakeCache.txt`; `default.metallib` existing in the build tree;
+the binary linking Metal; a correct decoded transcript. The only reliable
+positives are `ggml_metal_library_init: found '<path>'` +
+`ggml_metal_init: allocating` on stderr, or `GGML_SCHED_DEBUG=2` showing splits
+on a device that is not `CPU`. The recorded rule "check `CMakeCache` + MTL0
+stderr before calling a measurement Metal" needs the second half enforced: the
+cache line alone is not evidence. **A stage that neither arm of an A/B touches
+is the cheapest tripwire for a mislabelled backend — if `sam` moves 2x between
+runs of identical code, stop and find out why before reading any A/B column.**
+
+
 ## A low q4_k cosine is NOT a bug — prove it with a precision control (2026-07-16)
 
 When a shipped q4_k GGUF scores a low cosine vs the HF model (nomic-embed-text-v1.5

@@ -1,0 +1,33 @@
+{
+  "binary": "build/crispembed",
+  "model": "/Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf",
+  "images": "tests/regression/images/cc0",
+  "env": [
+    "DS2_FORCE_CPU=1",
+    "DS2_FAST_DECODE=1"
+  ],
+  "gpu_backend": "default",
+  "rows": [
+    {
+      "fixture": "commons_example_receipt.png",
+      "ok": true,
+      "returncode": 0,
+      "chars": 573,
+      "wall_ms": 42274.6,
+      "preprocess": 10.2,
+      "sam": 16314.5,
+      "qwen2_enc": 4038.2,
+      "projector": 268.7,
+      "prompt": 129.6,
+      "prefill": 3695.1,
+      "decode": 14293.4,
+      "total": 38764.1,
+      "image_tokens": 256.0,
+      "prompt_tokens": 261.0,
+      "gen_tokens": 218.0,
+      "decode_path": "persistent",
+      "kv": "f32"
+    }
+  ],
+  "failures": []
+}

@@ -1,0 +1,285 @@
+{
+  "fixture": "commons_example_receipt.png",
+  "pairs": 5,
+  "gpu_backend": "default",
+  "base_env": [],
+  "samples": {
+    "legacy": [
+      {
+        "pair": 1,
+        "ok": true,
+        "wall_ms": 21232.7,
+        "preprocess": 9.9,
+        "sam": 2720.1,
+        "qwen2_enc": 391.6,
+        "projector": 277.0,
+        "prompt": 163.4,
+        "prefill": 496.1,
+        "decode": 12148.1,
+        "total": 16238.6,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "per-layer",
+        "kv": "f32"
+      },
+      {
+        "pair": 2,
+        "ok": true,
+        "wall_ms": 22843.8,
+        "preprocess": 10.0,
+        "sam": 3258.7,
+        "qwen2_enc": 579.6,
+        "projector": 279.4,
+        "prompt": 179.2,
+        "prefill": 836.7,
+        "decode": 14587.5,
+        "total": 19751.5,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "per-layer",
+        "kv": "f32"
+      },
+      {
+        "pair": 3,
+        "ok": true,
+        "wall_ms": 23196.8,
+        "preprocess": 9.9,
+        "sam": 2719.9,
+        "qwen2_enc": 416.5,
+        "projector": 271.1,
+        "prompt": 219.3,
+        "prefill": 517.5,
+        "decode": 13757.6,
+        "total": 17924.9,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "per-layer",
+        "kv": "f32"
+      },
+      {
+        "pair": 4,
+        "ok": true,
+        "wall_ms": 22646.1,
+        "preprocess": 9.9,
+        "sam": 2699.4,
+        "qwen2_enc": 407.1,
+        "projector": 273.8,
+        "prompt": 337.2,
+        "prefill": 532.5,
+        "decode": 12420.0,
+        "total": 16802.6,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "per-layer",
+        "kv": "f32"
+      },
+      {
+        "pair": 5,
+        "ok": true,
+        "wall_ms": 28867.5,
+        "preprocess": 9.9,
+        "sam": 3426.8,
+        "qwen2_enc": 382.0,
+        "projector": 272.4,
+        "prompt": 193.3,
+        "prefill": 465.0,
+        "decode": 13654.9,
+        "total": 18417.6,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "per-layer",
+        "kv": "f32"
+      }
+    ],
+    "persistent": [
+      {
+        "pair": 1,
+        "ok": true,
+        "wall_ms": 40503.2,
+        "preprocess": 10.0,
+        "sam": 2842.3,
+        "qwen2_enc": 448.4,
+        "projector": 262.3,
+        "prompt": 171.0,
+        "prefill": 583.7,
+        "decode": 32419.5,
+        "total": 36766.5,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "persistent",
+        "kv": "f32"
+      },
+      {
+        "pair": 2,
+        "ok": true,
+        "wall_ms": 39003.2,
+        "preprocess": 9.9,
+        "sam": 2978.0,
+        "qwen2_enc": 502.9,
+        "projector": 276.6,
+        "prompt": 150.9,
+        "prefill": 666.9,
+        "decode": 30609.2,
+        "total": 35208.6,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "persistent",
+        "kv": "f32"
+      },
+      {
+        "pair": 3,
+        "ok": true,
+        "wall_ms": 42115.4,
+        "preprocess": 9.9,
+        "sam": 3238.9,
+        "qwen2_enc": 605.8,
+        "projector": 312.2,
+        "prompt": 167.3,
+        "prefill": 1018.9,
+        "decode": 33353.2,
+        "total": 38726.1,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "persistent",
+        "kv": "f32"
+      },
+      {
+        "pair": 4,
+        "ok": true,
+        "wall_ms": 51452.5,
+        "preprocess": 9.9,
+        "sam": 2794.7,
+        "qwen2_enc": 432.6,
+        "projector": 279.4,
+        "prompt": 202.9,
+        "prefill": 549.8,
+        "decode": 42706.7,
+        "total": 47002.2,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "persistent",
+        "kv": "f32"
+      },
+      {
+        "pair": 5,
+        "ok": true,
+        "wall_ms": 40082.5,
+        "preprocess": 10.0,
+        "sam": 3008.7,
+        "qwen2_enc": 486.9,
+        "projector": 266.0,
+        "prompt": 253.4,
+        "prefill": 651.1,
+        "decode": 32251.8,
+        "total": 36944.2,
+        "image_tokens": 256.0,
+        "prompt_tokens": 261.0,
+        "gen_tokens": 217.0,
+        "decode_path": "persistent",
+        "kv": "f32"
+      }
+    ]
+  },
+  "summary": {
+    "legacy": {
+      "decode_ms": {
+        "n": 5,
+        "median": 13654.9,
+        "min": 12148.1,
+        "max": 14587.5,
+        "spread_frac": 0.179
+      },
+      "total_ms": {
+        "n": 5,
+        "median": 17924.9,
+        "min": 16238.6,
+        "max": 19751.5,
+        "spread_frac": 0.196
+      },
+      "prefill_ms": {
+        "n": 5,
+        "median": 517.5,
+        "min": 465.0,
+        "max": 836.7,
+        "spread_frac": 0.718
+      },
+      "sam_ms": {
+        "n": 5,
+        "median": 2720.1,
+        "min": 2699.4,
+        "max": 3426.8,
+        "spread_frac": 0.267
+      },
+      "qwen2_enc_ms": {
+        "n": 5,
+        "median": 407.1,
+        "min": 382.0,
+        "max": 579.6,
+        "spread_frac": 0.485
+      },
+      "wall_ms": {
+        "n": 5,
+        "median": 22843.8,
+        "min": 21232.7,
+        "max": 28867.5,
+        "spread_frac": 0.334
+      },
+      "distinct_texts": 1
+    },
+    "persistent": {
+      "decode_ms": {
+        "n": 5,
+        "median": 32419.5,
+        "min": 30609.2,
+        "max": 42706.7,
+        "spread_frac": 0.373
+      },
+      "total_ms": {
+        "n": 5,
+        "median": 36944.2,
+        "min": 35208.6,
+        "max": 47002.2,
+        "spread_frac": 0.319
+      },
+      "prefill_ms": {
+        "n": 5,
+        "median": 651.1,
+        "min": 549.8,
+        "max": 1018.9,
+        "spread_frac": 0.72
+      },
+      "sam_ms": {
+        "n": 5,
+        "median": 2978.0,
+        "min": 2794.7,
+        "max": 3238.9,
+        "spread_frac": 0.149
+      },
+      "qwen2_enc_ms": {
+        "n": 5,
+        "median": 486.9,
+        "min": 432.6,
+        "max": 605.8,
+        "spread_frac": 0.356
+      },
+      "wall_ms": {
+        "n": 5,
+        "median": 40503.2,
+        "min": 39003.2,
+        "max": 51452.5,
+        "spread_frac": 0.307
+      },
+      "distinct_texts": 1
+    }
+  },
+  "text_identical_across_arms": true
+}
