@@ -47,7 +47,9 @@ TESSDATA = "/opt/homebrew/share/tessdata"
 # Native stage-bench lines (stderr, opt-in via env) carry the load-excluded cost.
 STAGE_BENCH = {
     "ppocrv6": re.compile(r"\[ppocrv6-stage-bench\].*?total=([0-9.]+) ms"),
-    "easyocr": re.compile(r"\[easyocr-stage-bench\].*?total=([0-9.]+) ms"),
+    # easyocr's total= includes model load; detect+recognize= is the
+    # load-excluded figure this column claims to be.
+    "easyocr": re.compile(r"\[easyocr-stage-bench\].*?detect\+recognize=([0-9.]+) ms"),
     "tesseract": re.compile(r"\[tesseract-stage-bench\].*?total=([0-9.]+) ms"),
 }
 REGIONS_RE = re.compile(r"^regions=(\d+)\s+mean_conf=([0-9.]+)", re.M)

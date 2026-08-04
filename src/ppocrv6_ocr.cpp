@@ -1147,7 +1147,23 @@ static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vecto
     constexpr int H = 48, W_MIN = 320;
     const bool fixed = std::getenv("CRISPEMBED_PPOCRV6_FIXED_WIDTH") != nullptr;
     const float ratio = w / float(std::max(1, h));
-    const int W = fixed ? W_MIN : std::max(W_MIN, int(H * std::max(W_MIN / float(H), ratio)));
+    int W = fixed ? W_MIN : std::max(W_MIN, int(H * std::max(W_MIN / float(H), ratio)));
+    // Opt-in narrow-crop experiment (T4): PaddleOCR pads every crop to >=320
+    // columns, so an 86x28 price cell wastes >2x its width on gray padding.
+    // TurboOCR's CPU pipeline runs natural content width with a floor of 32
+    // and validates parity on FUNSD; CRISPEMBED_PPOCRV6_WIDTH_FLOOR=<n>
+    // (n < 320) tries that here: W = max(n, natural), rounded up to a
+    // multiple of 32 to bound the number of distinct graph widths. Default
+    // behaviour (floor 320) is bit-unchanged while the flag is unset.
+    if (!fixed) {
+        if (const char * floor_env = std::getenv("CRISPEMBED_PPOCRV6_WIDTH_FLOOR")) {
+            const int wf = std::max(32, std::atoi(floor_env));
+            if (wf < W_MIN) {
+                const int natural = std::max(wf, int(std::ceil(H * ratio)));
+                W = std::min(W, (natural + 31) / 32 * 32);
+            }
+        }
+    }
     out.assign(3 * H * W, 0.0f);
     // The shipped Paddle inference contract is BGR, while the HF processor
     // advertises RGB conversion. Keep BGR as the production default (it is
