@@ -190,6 +190,25 @@ MODELS = {
             "q4_k": 0.9654,
         },
     },
+    "f2llm-v2-160m": {
+        "base_model": "codefuse-ai/F2LLM-v2-160M",
+        "arch": "Qwen3",
+        "dim": 640,
+        "layers": 9,
+        "params": "160M",
+        "pooling": "last-token",
+        "tokenizer": "GPT-2 BPE",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": "F2LLM Embedding v2 160M. Qwen3-based, pruned from the 0.6B base; "
+                "the strongest sub-200M German embedder on MTEB(deu, v1).",
+        # min cosine vs codefuse-ai/F2LLM-v2-160M (f32 HF AutoModel reference)
+        # over 14 mixed German/English/code texts, measured 2026-08-04.
+        "parity": {
+            "f16":  1.0000,
+            "q8_0": 0.9994,
+        },
+    },
     "f2llm-v2-0.6b": {
         "base_model": "codefuse-ai/F2LLM-v2-0.6B",
         "arch": "Qwen3",

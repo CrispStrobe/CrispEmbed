@@ -207,6 +207,12 @@ static const char * query_prefix(const char * model) {
     if (strstr(model, "nomic-embed")) return "search_query: ";
     // Jina v5
     if (strstr(model, "jina-v5")) return "Query: ";
+    // F2LLM-v2 — instruction-style prompt, verbatim from the family's
+    // config_sentence_transformers.json "query" prompt (the trailing newline
+    // before "Query: " is load-bearing: it is a distinct token, and dropping
+    // it measurably moves the embedding). Documents get NO prefix.
+    if (strstr(model, "f2llm-v2"))
+        return "Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: ";
     // LFM2.5 Embedding / ColBERT
     if (strstr(model, "lfm2-embed") || strstr(model, "lfm2.5-embed") || strstr(model, "lfm2-colbert") ||
         strstr(model, "lfm2.5-colbert"))
@@ -371,6 +377,20 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/Octen/Octen-Embedding-8B" },
     { "octen-8b-q8", "octen-8b-q8_0.gguf", "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q8_0.gguf",
       "Qwen3 4096d multilingual (Q8_0)", "8.0 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-8B" },
+
+    // Default = Q8_0. The 160M is pruned from the 0.6B base and is the best
+    // sub-200M German embedder on MTEB(deu, v1); unlike the 0.6B it survives
+    // Q8_0 essentially intact (worst cosine 0.9994 vs the f32 HF reference
+    // over 14 mixed German/English/code texts, against 0.9909 for the 0.6B).
+    { "f2llm-v2-160m", "f2llm-v2-160m-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m-q8_0.gguf",
+      "Qwen3 640d multilingual (Q8_0)", "166 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
+    { "f2llm-v2-160m-q8", "f2llm-v2-160m-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m-q8_0.gguf",
+      "Qwen3 640d multilingual (Q8_0)", "166 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
+    { "f2llm-v2-160m-f16", "f2llm-v2-160m.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m.gguf", "Qwen3 640d multilingual (F16)",
+      "494 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
 
     { "f2llm-v2-0.6b", "f2llm-v2-0.6b-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
