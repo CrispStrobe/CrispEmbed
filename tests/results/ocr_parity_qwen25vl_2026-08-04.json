@@ -19,7 +19,8 @@
     "engine_ms is net of model load: the weights are loaded once and warmed with a throwaway generation, so proc_ms == engine_ms for this arm.",
     "tesseract-cli:eng ran in the same window on the same fixtures on both hosts as the timing control; its proc_ms includes per-invocation model load and is not comparable to the in-process engine_ms column.",
     "The 3B sibling was used only to smoke-test the adapter and to verify the eager/sdpa swap was output-identical. It ships under the Qwen Research Licence and none of its numbers appear here or anywhere as a reference.",
-    "HF_HOME is redirected because ~/.cache/huggingface symlinks to an external volume that is 100% full; the default path fails with ENOSPC."
+    "HF_HOME is redirected because ~/.cache/huggingface symlinks to an external volume that is 100% full; the default path fails with ENOSPC.",
+    "THE cc0 TIMING COLUMN IS NOT A LATENCY MEASUREMENT. Fitting 15.45 GiB of weights onto 2x15 GiB while leaving ~9 GiB free for the vision tower's attention forced two degradations that cost time without changing output: the weight split spilled part of the model to disk, and the two largest pages were re-run with ~11.5 GiB of weights in host memory (rows flagged cpu_offloaded + timing_comparable=false, at 2512 s and 1414 s). Quote cc0 for CER/WER only. The synth column is a clean GPU-resident measurement."
   ],
   "contract": {
     "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
@@ -46,6 +47,64 @@
     "control_host": "macOS 26.2 arm64, 16 GiB unified memory",
     "tesseract_cli": "5.5.2 (Mac control)",
     "python": "3.11.8 (~/venvs/qwenvl)"
+  },
+  "vram_investigation": {
+    "symptom": "two ~4.8 Mpix CC0 scans (~6k vision patches) each demand a single 3.98/4.07 GiB allocation",
+    "site": "vision tower attention, via transformers sdpa_attention_forward -> torch scaled_dot_product_attention (named by the captured traceback, not inferred)",
+    "cause": "compute capability 7.5 has no memory-efficient SDPA kernel for this mask, so SDPA silently takes the math path and materialises the score matrix",
+    "attempts": [
+      {
+        "placement": "auto (no cap)",
+        "weights_gib": "~12 on device 0",
+        "outcome": "OOM on device 0, 3.98 GiB requested, 2.26 GiB free"
+      },
+      {
+        "placement": "0=9GiB,1=13GiB",
+        "weights_gib": "n/a",
+        "outcome": "OOM on device 0, got no further"
+      },
+      {
+        "placement": "0=6GiB,1=13GiB",
+        "weights_gib": "n/a",
+        "outcome": "cleared the vision peak, OOM on the 1.02 GiB prefill logits with 0.5 GiB free"
+      },
+      {
+        "placement": "balanced_low_0",
+        "weights_gib": "packed onto device 1",
+        "outcome": "strictly worse - every fixture failed, including ones that had passed"
+      },
+      {
+        "placement": "0=4GiB,1=13GiB",
+        "weights_gib": "0=2.71, 1=12.74",
+        "outcome": "OOM moved to device 1; proved the cap was honoured all along and the failure follows the weights"
+      },
+      {
+        "placement": "0=8GiB,1=8GiB",
+        "weights_gib": "0=6.62, 1=7.81",
+        "outcome": "OOM on device 0: 6.62 weights + 4.77 live + 3.98 requested = 15.37 against 14.56"
+      },
+      {
+        "placement": "0=5GiB,1=11GiB",
+        "weights_gib": "0=3.58, 1=10.85",
+        "outcome": "OOM on device 1; also spilled part of the model to disk"
+      },
+      {
+        "placement": "retry 0=6GiB,1=6GiB,cpu=40GiB",
+        "weights_gib": "0=4.88, 1=5.64",
+        "outcome": "cleared the vision peak, OOM on the prefill logits"
+      },
+      {
+        "placement": "retry 0=2GiB,1=7GiB,cpu=40GiB",
+        "weights_gib": "0=0.96, 1=6.96",
+        "outcome": "OOM on device 1, 2.71 GiB free"
+      },
+      {
+        "placement": "retry 0=1GiB,1=3GiB,cpu=60GiB",
+        "weights_gib": "~11.5 GiB in host memory",
+        "outcome": "PASSED both fixtures, CER 0.00637 and 0.00991, at 2512 s and 1414 s"
+      }
+    ],
+    "todo": "re-run on a single Ampere-or-newer card with >=24 GB, where the vision tower is not split and SDPA can use a memory-efficient kernel; that would also settle the bf16-vs-fp16 question."
   },
   "mac_timing_control": {
     "synth": {
@@ -90,7 +149,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n\f",
-              "proc_ms": 359.6,
+              "proc_ms": 372.8,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -101,8 +160,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
-              "proc_ms": 13767.5,
-              "engine_ms": 13767.5,
+              "proc_ms": 14186.5,
+              "engine_ms": 14186.5,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -149,7 +208,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n\f",
-              "proc_ms": 334.9,
+              "proc_ms": 342.4,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -160,8 +219,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
-              "proc_ms": 13844.2,
-              "engine_ms": 13844.2,
+              "proc_ms": 14295.9,
+              "engine_ms": 14295.9,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -208,7 +267,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n\f",
-              "proc_ms": 217.7,
+              "proc_ms": 237.7,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -219,8 +278,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
-              "proc_ms": 13892.4,
-              "engine_ms": 13892.4,
+              "proc_ms": 14165.7,
+              "engine_ms": 14165.7,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -267,7 +326,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy-dog.\n*\u201cPack my box with five dozen liquor jugs. .-\u00b0\nHow vexingly:quick.daft zebras jump! - >\n\f",
-              "proc_ms": 247.7,
+              "proc_ms": 305.9,
               "engine_ms": null,
               "cer": 0.10656,
               "wer": 0.3913,
@@ -278,8 +337,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
-              "proc_ms": 13817.0,
-              "engine_ms": 13817.0,
+              "proc_ms": 14227.6,
+              "engine_ms": 14227.6,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -326,7 +385,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n\f",
-              "proc_ms": 182.5,
+              "proc_ms": 195.6,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -337,8 +396,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
-              "proc_ms": 13806.3,
-              "engine_ms": 13806.3,
+              "proc_ms": 14215.6,
+              "engine_ms": 14215.6,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -385,7 +444,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n\f",
-              "proc_ms": 261.3,
+              "proc_ms": 259.1,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -396,8 +455,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
-              "proc_ms": 26599.0,
-              "engine_ms": 26599.0,
+              "proc_ms": 27276.8,
+              "engine_ms": 27276.8,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -444,7 +503,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n\f",
-              "proc_ms": 210.9,
+              "proc_ms": 223.0,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -455,8 +514,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
-              "proc_ms": 26648.5,
-              "engine_ms": 26648.5,
+              "proc_ms": 27411.7,
+              "engine_ms": 27411.7,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -503,7 +562,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n\f",
-              "proc_ms": 269.7,
+              "proc_ms": 272.7,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -514,8 +573,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
-              "proc_ms": 26434.9,
-              "engine_ms": 26434.9,
+              "proc_ms": 27234.1,
+              "engine_ms": 27234.1,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -562,7 +621,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Invoice nuiber\u201d 48127 dated \u201c14\u00b0 March..2024. >.\nSubtotal..129.95 EUR, (tax :24..69.-EUR,.-total 154.64 \u00b0RUR:\nPayment\u2019 due within 30 days. of -teceipt. . : : os\n\f",
-              "proc_ms": 316.3,
+              "proc_ms": 342.7,
               "engine_ms": null,
               "cer": 0.25373,
               "wer": 0.78261,
@@ -573,8 +632,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
-              "proc_ms": 26741.6,
-              "engine_ms": 26741.6,
+              "proc_ms": 27266.7,
+              "engine_ms": 27266.7,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -621,7 +680,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n\f",
-              "proc_ms": 201.7,
+              "proc_ms": 218.5,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -632,8 +691,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
-              "proc_ms": 26693.9,
-              "engine_ms": 26693.9,
+              "proc_ms": 27306.5,
+              "engine_ms": 27306.5,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -680,7 +739,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n\f",
-              "proc_ms": 247.3,
+              "proc_ms": 259.6,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -691,8 +750,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
-              "proc_ms": 12592.2,
-              "engine_ms": 12592.2,
+              "proc_ms": 13046.1,
+              "engine_ms": 13046.1,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -739,7 +798,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n\f",
-              "proc_ms": 235.8,
+              "proc_ms": 312.6,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -750,8 +809,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
-              "proc_ms": 12485.5,
-              "engine_ms": 12485.5,
+              "proc_ms": 12772.2,
+              "engine_ms": 12772.2,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -798,7 +857,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n\f",
-              "proc_ms": 263.5,
+              "proc_ms": 206.5,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -809,8 +868,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
-              "proc_ms": 12356.9,
-              "engine_ms": 12356.9,
+              "proc_ms": 12750.1,
+              "engine_ms": 12750.1,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -857,7 +916,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\n-. Every instrument reports a value and-an-uncertainty: . :\nA number without-an interval is not a measurement.\n\f",
-              "proc_ms": 240.3,
+              "proc_ms": 266.9,
               "engine_ms": null,
               "cer": 0.07299,
               "wer": 0.27273,
@@ -868,8 +927,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
-              "proc_ms": 12473.7,
-              "engine_ms": 12473.7,
+              "proc_ms": 12882.1,
+              "engine_ms": 12882.1,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -916,7 +975,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n\f",
-              "proc_ms": 211.8,
+              "proc_ms": 231.5,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -927,8 +986,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
-              "proc_ms": 12714.1,
-              "engine_ms": 12714.1,
+              "proc_ms": 12807.5,
+              "engine_ms": 12807.5,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -975,7 +1034,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n\f",
-              "proc_ms": 204.1,
+              "proc_ms": 214.3,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -986,8 +1045,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
-              "proc_ms": 16169.5,
-              "engine_ms": 16169.5,
+              "proc_ms": 16413.6,
+              "engine_ms": 16413.6,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1034,7 +1093,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n\f",
-              "proc_ms": 226.0,
+              "proc_ms": 240.6,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -1045,8 +1104,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
-              "proc_ms": 16131.4,
-              "engine_ms": 16131.4,
+              "proc_ms": 16470.0,
+              "engine_ms": 16470.0,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1093,7 +1152,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n\f",
-              "proc_ms": 194.5,
+              "proc_ms": 193.9,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -1104,8 +1163,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
-              "proc_ms": 16120.9,
-              "engine_ms": 16120.9,
+              "proc_ms": 16219.0,
+              "engine_ms": 16219.0,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1152,7 +1211,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Sphinx of black quartz; judge my vow:\n~ Waltz, bad nymph, \u2018for quick jigs vex. :\nFive quacking Zephyrs jolt my wax bed:\n\f",
-              "proc_ms": 239.2,
+              "proc_ms": 245.5,
               "engine_ms": null,
               "cer": 0.07895,
               "wer": 0.33333,
@@ -1163,8 +1222,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
-              "proc_ms": 16214.0,
-              "engine_ms": 16214.0,
+              "proc_ms": 16374.9,
+              "engine_ms": 16374.9,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1211,7 +1270,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n\f",
-              "proc_ms": 216.3,
+              "proc_ms": 223.4,
               "engine_ms": null,
               "cer": 0.0,
               "wer": 0.0,
@@ -1222,8 +1281,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
-              "proc_ms": 16236.1,
-              "engine_ms": 16236.1,
+              "proc_ms": 16268.9,
+              "engine_ms": 16268.9,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1273,7 +1332,7 @@
           "mean_wer": 0.089,
           "mean_wer_unordered": 0.10027,
           "mean_cer_vs_reference": null,
-          "median_proc_ms": 237.5,
+          "median_proc_ms": 243.1,
           "median_engine_ms": null
         },
         "qwen-vl-py:qwen2.5-vl-7b": {
@@ -1284,8 +1343,8 @@
           "mean_wer": 0.0,
           "mean_wer_unordered": 0.0,
           "mean_cer_vs_reference": 0.0228,
-          "median_proc_ms": 15006.6,
-          "median_engine_ms": 15006.6
+          "median_proc_ms": 15257.5,
+          "median_engine_ms": 15257.5
         }
       },
       "vl_manifest": {
@@ -1357,7 +1416,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Jackson-Washington\n\n6640 Ortiz Cove, Markmouth, PW\n\n69940\n\nTransaction ID: 8F88C299\n\nDate: 2025-02-16 11:25:12\n\nItem Qty Price\n\nStrategy Accessory 1$ 43.31 $\n\nConference Product 1$ 48.40 $\n\nScientist Item 3 $ 48.07 $\n\nSituation Item 3.$ 23.87 $\n\nLife Accessory 45 48.04 $\n\nMusic Accessory 1$ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\n\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a great day!\n\f",
-              "proc_ms": 501.1,
+              "proc_ms": 551.0,
               "engine_ms": null,
               "cer": 0.01474,
               "wer": 0.14286,
@@ -1368,8 +1427,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\nItem       Qty   Price\nStrategy Accessory    1 $ 43.31 $\nConference Product    1 $ 48.40 $\nScientist Item        3 $ 48.07 $\nSituation Item        3 $ 23.87 $\nLife Accessory        4 $ 48.04 $\nMusic Accessory       1 $ 24.45 $\n\nSubtotal:      $524.14\nGST (5%):      $26.21\nPST (7%):      $36.69\nTotal:         $587.04\n\nPayment: Gift Card (****3486)\nHave a great day!",
-              "proc_ms": 95729.7,
-              "engine_ms": 95729.7,
+              "proc_ms": 97458.1,
+              "engine_ms": 97458.1,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1416,7 +1475,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "suddenly down, so suddenly that Alice had\nLorem Ipsum not a moment to think about stopping herself\nbefore she found herself falling down what\nAitice was beginning to get very tired of seemed to be a very deep well.\nsitting by her sister in the caf\u00e9, and of having Either the well was very deep, or she fell very\nnothing to do: once or twice she had peeped slowly, for she had plenty of time as she went\ninto the book her sister was reading, but it down to look about her, and to wonder what\nhad no pictures or conversations in it, \u201cand was going to happen next. First, she tried to\nwhat is the use of a book,\u201d thought Alice, look down and make out what she was\n\u201cwithout pictures or conversations?\u201d coming to, but it was too dark to see\nSo she was considering in her own mind, (as anything: then she looked at the sides of the\nwell as she could, for the hot day made her well, and noticed that they were filled with\nfeel very sleepy and stupid,) whether the cupboards and book-shelves: here and there\npleasure of making a daisy-chain would be she saw maps and pictures hung upon pegs.\nworth the trouble of getting up and picking She took down a jar from one of the shelves\nthe daisies, when suddenly a white rabbit with as she passed, it was labelled \u201cORANGE\npink eyes ran close by her. MARMALADE,\u201d but to her great\nThere was nothing so very remarkable in that; disap eae -_ emprye she di\nnor did Alice think it so very much out of the toldnapiiieijan fortes ollstins somebody\n. ' underneath, so managed to put it into one of\nway to hear the Rabbit say to itself, \u201cOh cyecutowdsanche cilparee\ndear! Oh dear! I shall be too late!\u201d (when she ,\nthought it over afterwards, it occurred to her Jajoute que le fait Pavoir \u00e9t\u00e9, durant plus de\nthat she ought to have wondered at this, but deux ans, le directeur de ?\u2019hdpital du camp et\nat the time it all seemed quite natural;) but @avoir, pendant toute la dur\u00e9e de mon\nwhen the Rabbit actually took a watch out of its internement, donn\u00e9 r\u00e9gulitrement des cours\nwaistcoat-pocket, and looked at it, and then de frangais, Phistoire de la litt\u00e9rature\nhurried on, Alice started to her feet, for it frangaise et Phistoire de la philosophie, m\u2019a\nflashed across her mind that she had never permis d\u2019avoir des relations suivies et intimes\n: before seen a rabbit with either a avec presque tous mes compagnons de\nwaistcoat-pocket, or a watch to take out of it, Paventure. Ces relations et cette intimit\u00e9\nand, burning with curiosity, she ran across the n\u2019ont permis de les connaitre, un par un, de\nfield after it, and was just in time to see it pop voir non seulement leur corps nu, lorsqwils se\ndown a large rabbit-hole under the hedge. pr\u00e9sentaient a la visite m\u00e9dicale, mais aussi\nd , leur dme 4 nu aux heures de confidences.\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again. THE END\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped :\n\f",
-              "proc_ms": 2978.8,
+              "proc_ms": 3173.6,
               "engine_ms": null,
               "cer": 0.76082,
               "wer": 0.94784,
@@ -1426,44 +1485,46 @@
             },
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
-              "text": "",
-              "proc_ms": null,
-              "engine_ms": null,
-              "error": "OutOfMemoryError: CUDA out of memory. Tried to allocate 3.98 GiB. GPU 1 has a total capacity of 14.56 GiB of which 2.75 GiB is free. Including non-PyTorch memory, this process has 11.81 GiB memory in use. Of the allocated memory 11.58 GiB is allocated by PyTorch, and 100.03 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
-              "traceback": [
-                "  File \"/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py\", line 1787, in _call_impl",
-                "    return forward_call(*args, **kwargs)",
-                "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/accelerate/hooks.py\", line 192, in new_forward",
-                "    output = module._old_forward(*args, **kwargs)",
-                "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2_5_vl/modeling_qwen2_5_vl.py\", line 747, in forward",
-                "    hidden_states, _ = self.self_attn(",
-                "                       ^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py\", line 1776, in _wrapped_call_impl",
-                "    return self._call_impl(*args, **kwargs)",
-                "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py\", line 1787, in _call_impl",
-                "    return forward_call(*args, **kwargs)",
-                "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/accelerate/hooks.py\", line 192, in new_forward",
-                "    output = module._old_forward(*args, **kwargs)",
-                "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2_5_vl/modeling_qwen2_5_vl.py\", line 681, in forward",
-                "    attn_output, attn_weights = attention_interface(",
-                "                                ^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/transformers/integrations/sdpa_attention.py\", line 154, in sdpa_attention_forward",
-                "    attn_output = torch.nn.functional.scaled_dot_product_attention(",
-                "                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 3.98 GiB. GPU 1 has a total capacity of 14.56 GiB of which 2.75 GiB is free. Including non-PyTorch memory, this process has 11.81 GiB memory in use. Of the allocated memory 11.58 GiB is allocated by PyTorch, and 100.03 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)"
+              "text": "Lorem Ipsum\n\nAlice was beginning to get very tired of sitting by her sister in the caf\u00e9, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \"and what is the use of a book,\" thought Alice, \"without pictures or conversations?\"\n\nSo she was considering in her own mind, (as well as she could, for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her.\n\nThere was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, \"Oh dear! Oh dear! I shall be too late!\" (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural;) but when the Rabbit actually took a watch out of its waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out of it, and, burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it, never once considering how in the world she was to get out again.\n\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down what seemed to be a very deep well.\n\nEither the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves: here and there she saw maps and pictures hung upon pegs. She took down a jar from one of the shelves as she passed; it was labelled \"ORANGE MARMALADE,\" but to her great disappointment it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of the cupboards as she fell past it.\n\nJ'ajoute que le fait d'avoir \u00e9t\u00e9, durant plus de deux ans, le directeur de l'h\u00f4pital du camp et d'avoir, pendant toute la dur\u00e9e de mon internement, donn\u00e9 r\u00e9guli\u00e8rement des cours de fran\u00e7ais, d'histoire de la litt\u00e9rature fran\u00e7aise et d'histoire de la philosophie, m'a permis d'avoir des relations suivies et intimes avec presque tous mes compagnons de l'aventure. Ces relations et cette intimit\u00e9 m'ont permis de les conna\u00eetre, un par un, de voir non seulement leur corps nu, lorsqu'ils se pr\u00e9sentaient \u00e0 la visite m\u00e9dicale, mais aussi leur \u00e2me \u00e0 nu aux heures de confidences.\n\nTHE END",
+              "proc_ms": 2511539.2,
+              "engine_ms": 2511539.2,
+              "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
+              "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
+              "dtype": "float16",
+              "device": "cuda:1",
+              "device_map": "auto",
+              "device_map_placements": [
+                "1",
+                "cpu"
               ],
+              "attn_implementation": "sdpa",
+              "prompt": "Read all the text in this image. Output the exact text content only.",
+              "max_new_tokens": 2048,
+              "do_sample": false,
+              "new_tokens": 694,
+              "weights_gib_per_device": {
+                "0": 0.0,
+                "1": 2.71
+              },
+              "peak_gib_per_device": {
+                "0": 0.0,
+                "1": 12.82
+              },
+              "regions": 9,
+              "cer": 0.00637,
+              "wer": 0.03417,
+              "ref_chars": 2981,
+              "wer_unordered": 0.05396,
+              "exact": false,
               "vs_reference": {
-                "cer": 1.0,
-                "wer": 1.0,
+                "cer": 0.76725,
+                "wer": 0.96733,
                 "ref_chars": 2956,
-                "wer_unordered": 1.0,
+                "wer_unordered": 0.13067,
                 "exact": false
-              }
+              },
+              "cpu_offloaded": true,
+              "timing_comparable": false
             }
           }
         },
@@ -1474,7 +1535,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "Sou <r mie SF\n| Nt | |\neidys- Gefegblatt\n-\n+\n/\nAf 1;\nSuihalt, Verordnung, betreffend das Jntrafttreten der Militdrftvafgeridhtsordnung vom 1. Dezember 1898.\nG.1. \u2014 Verordnung, betreffend die Uebertvagung der Befugnijje de3 preugifden General\nAuditoriats auf da3 Neichsmilitirgerit. G. 2.\nem es thi aces |\n(Nr. 2642.) Verovdnung, betreffend bas Gufrafttreten der Militarftvafgeridhtsordniung vom\n1, Dezember 1898. Vom 28. Dezember 1899.\n' yt \u00b0 + SRE ee \u2019\nWir Wilhelin, von Gottes Gnaden Deutfeher Kaijer, Konig\nbon Breufen r.\nverordnen unter Suftimmung de3 Bundesraths auf Grund des \u00a7. 1 de3 Cinfithrungs-\nGelebes sur Militdrftrafgerichtsordnung vom 1. Oezember 1898, was folgt:\nCinziger Paragraph.\nDie MilitarftvafgerichtSordnung vom 1. Dezember 1898 (Meichs-Gefesbl.\n\u00a9. 1189 ff.) tritt am 1. Oftober 1900 in Kraft.\nUrfundlich unter Unjerer Hdchfteigenhindigen Unterfehrift und beigedructtem\nKaiferlichen Gnfiegel.\nGegeben Neues Palais, den 28. Dezember 1899,\n(LL. 8.) Wilhelm.\nHluft gu Hobhenlohe.\nse aaa aie OS\nReid}s- Gefeghl. 1900. 1\nAusgegeben gu Berlin den 6. Januar 1900,\n\f",
-              "proc_ms": 1615.1,
+              "proc_ms": 1749.1,
               "engine_ms": null,
               "cer": 0.18632,
               "wer": 0.64179,
@@ -1484,44 +1545,46 @@
             },
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
-              "text": "",
-              "proc_ms": null,
-              "engine_ms": null,
-              "error": "OutOfMemoryError: CUDA out of memory. Tried to allocate 4.07 GiB. GPU 1 has a total capacity of 14.56 GiB of which 2.77 GiB is free. Including non-PyTorch memory, this process has 11.79 GiB memory in use. Of the allocated memory 11.59 GiB is allocated by PyTorch, and 70.12 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)",
-              "traceback": [
-                "  File \"/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py\", line 1787, in _call_impl",
-                "    return forward_call(*args, **kwargs)",
-                "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/accelerate/hooks.py\", line 192, in new_forward",
-                "    output = module._old_forward(*args, **kwargs)",
-                "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2_5_vl/modeling_qwen2_5_vl.py\", line 747, in forward",
-                "    hidden_states, _ = self.self_attn(",
-                "                       ^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py\", line 1776, in _wrapped_call_impl",
-                "    return self._call_impl(*args, **kwargs)",
-                "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/torch/nn/modules/module.py\", line 1787, in _call_impl",
-                "    return forward_call(*args, **kwargs)",
-                "           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/accelerate/hooks.py\", line 192, in new_forward",
-                "    output = module._old_forward(*args, **kwargs)",
-                "             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/transformers/models/qwen2_5_vl/modeling_qwen2_5_vl.py\", line 681, in forward",
-                "    attn_output, attn_weights = attention_interface(",
-                "                                ^^^^^^^^^^^^^^^^^^^^",
-                "  File \"/usr/local/lib/python3.12/dist-packages/transformers/integrations/sdpa_attention.py\", line 154, in sdpa_attention_forward",
-                "    attn_output = torch.nn.functional.scaled_dot_product_attention(",
-                "                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^",
-                "torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 4.07 GiB. GPU 1 has a total capacity of 14.56 GiB of which 2.77 GiB is free. Including non-PyTorch memory, this process has 11.79 GiB memory in use. Of the allocated memory 11.59 GiB is allocated by PyTorch, and 70.12 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)"
+              "text": "Reichs-Gesetzblatt.\nNr 1.\n\nInhalt. Verordnung, betreffend das Inkrafttreten der Milit\u00e4rstrafgerichtsordnung vom 1. Dezember 1898.\nS. 1. \u2014 Verordnung, betreffend die Uebertragung der Befugnisse des preu\u00dfischen General-\nAuditoriats auf das Reichsmilit\u00e4rgericht. S. 2.\n\n(Nr. 2642.) Verordnung, betreffend das Inkrafttreten der Milit\u00e4rstrafgerichtsordnung vom\n1. Dezember 1898. Vom 28. Dezember 1899.\n\nWir Wilhelm, von Gottes Gnaden Deutscher Kaiser, K\u00f6nig\nvon Preu\u00dfen u.\n\nverordnen unter Zustimmung des Bundesraths auf Grund des \u00a7. 1 des Einf\u00fchrungs-\ngesetzes zur Milit\u00e4rstrafgerichtsordnung vom 1. Dezember 1898, was folgt:\n\nEinziger Paragraph.\nDie Milit\u00e4rstrafgerichtsordnung vom 1. Dezember 1898 (Reichs-Gesetzbl.\nS. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.\n\nUrkundlich unter Unserer H\u00f6chsteigenh\u00e4ndigen Unterschrift und beigedrucktem\nKaiserlichen Insiegel.\n\nGegeben Neues Palais, den 28. Dezember 1899.\n\n(L. S.) Wilhelm.\nF\u00fcrst zu Hohenlohe.\n\nReichs-Gesetzbl. 1900.\n1\n\nAusgegeben zu Berlin den 6. Januar 1900.",
+              "proc_ms": 1413835.8,
+              "engine_ms": 1413835.8,
+              "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
+              "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
+              "dtype": "float16",
+              "device": "cuda:1",
+              "device_map": "auto",
+              "device_map_placements": [
+                "1",
+                "cpu"
               ],
+              "attn_implementation": "sdpa",
+              "prompt": "Read all the text in this image. Output the exact text content only.",
+              "max_new_tokens": 2048,
+              "do_sample": false,
+              "new_tokens": 388,
+              "weights_gib_per_device": {
+                "0": 0.0,
+                "1": 2.71
+              },
+              "peak_gib_per_device": {
+                "0": 0.0,
+                "1": 13.04
+              },
+              "regions": 22,
+              "cer": 0.00991,
+              "wer": 0.03731,
+              "ref_chars": 1009,
+              "wer_unordered": 0.05224,
+              "exact": false,
               "vs_reference": {
-                "cer": 1.0,
-                "wer": 1.0,
+                "cer": 0.17625,
+                "wer": 0.54088,
                 "ref_chars": 1078,
-                "wer_unordered": 1.0,
+                "wer_unordered": 0.58491,
                 "exact": false
-              }
+              },
+              "cpu_offloaded": true,
+              "timing_comparable": false
             }
           }
         },
@@ -1532,7 +1595,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": ": GUST S4 REG 8 GPR dF\nGROCERY 188\nHOUG HOOGSTIE CuP Le\nHOO HOUOSTE CUP 139\nHE ORANGE JC S42 feo\n2 Be WATTS CARE 4s as\nBC WHITE CAKE is 5 eS\nSLICE DB-HAN ORSL oo\neK NAPE INS det aS\nSLICE CHR EuERet eo\nLOOSE BULES RLS pee\nTUNS SALA SAND TOSS eT\nWHITE HT. BREAD 39\nFLEX STRAWS ook\nSHTHE PLATES S \"4a 1. &s*\nFRY WENKLS LEMON eas\nBEER Pa ES par. eet\nSNE FRT\u00abS CHESS dao\n88 18 8 de. 58\nCARTHHEELS Pele\nSALLUINS 24) eat\nLGE BRYN SPE on\nKLEENEX POCKET i eor\nHah A35AFREE is\u00e9\u00a2 1.99\nio8 e141. #8\nGORING CONFECT. _ oe\ntO eee Ba *\nGOMTNG CONFECT. . ae\nEBLE T-HOUSELESN as\nBAKERY 4.58\nCHEER SS2PP499 og 29\nTOTAL ee eo oo\nCASH TEND 48. 8a\nSUBTOTAL S535)\nTHE PAI dd\n81 CHANGE\nStee TA cunts Ahi occ\n\f",
-              "proc_ms": 1451.7,
+              "proc_ms": 1559.5,
               "engine_ms": null,
               "cer": 0.45312,
               "wer": 0.88194,
@@ -1543,8 +1606,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "ALEXANDER'S HANOVER ST.\nTHE \"SUPER\" MARKET\n11/18 12:21PM STORE 10\nCUST 94 REG 8 OPR 171\n\nGROCERY .66\nHOOD HOODSIE CUP 1.99\nHOOD HOODSIE CUP 1.99\nHF ORANGE JC 64Z 1.29\nBC WHITE CAKE 18 .73\nBC WHITE CAKE 18 .73\nSLICE D/MAN OR2L .89\nS/K NAPKINS 140 .63\nSLICE CHR COLA2L 1.39\n6 @ 6/.89\nLOOSE BULKY RLS .89\nTUNA SALAD SAND 1.99*TX\nWHITE MT. BREAD .99\nFLEX STRAWS .89*\nSWTHR PLATES7\"48 1.63*\nFRT WRNKLS LEMON 1.79\nBEEF PATTIES 75% 2.21\nSNK FRT/S CHRY8 1.89\n.30 LB @ 1/.59\nCARTWHEELS .18\nBALOONS 14CT 1.25*\nLGE BRWN SPK .65\nKLEENEX POCKET 1.29*\nM&M 15%FREE 18&4 1.99\n1 @ 2/1.00\nDOMINO CONFECT. .58\nDOMINO CONFECT. .58\nKBLR. T/HOUSE16BN 1.69\nBAKERY 4.99\nCHEER 96ZPP499 4.29\nTOTAL $ 39.99\nCASH TEND 40.00\n\nSUBTOTAL 39.85\nTAX PAID .14\n\n.01 CHANGE\n\nSTEP IN SHOES NOW OPEN!",
-              "proc_ms": 215588.5,
-              "engine_ms": 215588.5,
+              "proc_ms": 219960.6,
+              "engine_ms": 219960.6,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1591,7 +1654,7 @@
             "tesseract-cli:eng": {
               "kind": "external",
               "text": "\u2014_ \u2014 feceeteree ocr\na\nas\n\n8 TT Sone wan\n\f",
-              "proc_ms": 173.6,
+              "proc_ms": 185.5,
               "engine_ms": null,
               "cer": 0.89069,
               "wer": 0.97222,
@@ -1602,8 +1665,8 @@
             "qwen-vl-py:qwen2.5-vl-7b": {
               "kind": "external",
               "text": "Input\nTexte\niNumber\nDate\nPassword\na label\nANOTHER LABEL\nYet another label\ncombo suggest\nF\nFinland\nFrance\ncheckbox1\ncheckbox2\ncode-Niveau\ncode Nb\ncode\nButton\nRechercher\nDisable button\nTEXTAREA\nRadio\nDrag and drop frames\nFixe frames",
-              "proc_ms": 31667.7,
-              "engine_ms": 31667.7,
+              "proc_ms": 32193.0,
+              "engine_ms": 32193.0,
               "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
               "revision": "cc594898137f460bfe9f0759e9844b3ce807cfb5",
               "dtype": "float16",
@@ -1653,19 +1716,19 @@
           "mean_wer": 0.71733,
           "mean_wer_unordered": 0.59218,
           "mean_cer_vs_reference": null,
-          "median_proc_ms": 1451.7,
+          "median_proc_ms": 1559.5,
           "median_engine_ms": null
         },
         "qwen-vl-py:qwen2.5-vl-7b": {
           "kind": "external",
           "n": 5,
-          "failures": 2,
-          "mean_cer": 0.04295,
-          "mean_wer": 0.0625,
-          "mean_wer_unordered": 0.07639,
-          "mean_cer_vs_reference": 1.5736,
-          "median_proc_ms": 95729.7,
-          "median_engine_ms": 95729.7
+          "failures": 0,
+          "mean_cer": 0.02902,
+          "mean_wer": 0.0518,
+          "mean_wer_unordered": 0.06707,
+          "mean_cer_vs_reference": 1.3623,
+          "median_proc_ms": 219960.6,
+          "median_engine_ms": 219960.6
         }
       },
       "vl_manifest": {
@@ -1712,7 +1775,7 @@
           "commons_test_ocr_document.jpg",
           "german_official_print.jpg"
         ],
-        "max_memory": "0=2GiB,1=7GiB,cpu=40GiB",
+        "max_memory": "0=1GiB,1=3GiB,cpu=60GiB",
         "reason": "vision-tower attention exceeded device memory; weights partly in host memory to free it"
       }
     }

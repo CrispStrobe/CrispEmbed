@@ -11,18 +11,17 @@
   },
   "preprocessor": "model defaults (min_pixels/max_pixels not overridden)",
   "dtype": "float16",
-  "device": "cuda:0",
+  "device": "cuda:1",
   "device_map": "auto",
   "device_map_placements": [
-    "0",
     "1",
     "cpu"
   ],
-  "max_memory": "0=2GiB,1=7GiB,cpu=40GiB",
+  "max_memory": "0=1GiB,1=3GiB,cpu=60GiB",
   "attn_implementation": "sdpa",
   "weights_gib_per_device": {
-    "0": 0.96,
-    "1": 6.96
+    "0": 0.0,
+    "1": 2.71
   },
   "hardware": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
   "torch": "2.10.0+cu128",
