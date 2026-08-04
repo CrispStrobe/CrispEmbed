@@ -5806,6 +5806,6 @@ Durable rules from the wreckage:
   assert that pointed at pooling, three abstraction layers from the cause.
 - **Externally-runnable references end "unrecoverable" stalemates.** The
   official-v6-locally-unavailable premise (true in 2026-08-01) silently
-  expired when paddleocr 3.x and RapidOCR's ONNX exports shipped; nobody
+  expired when paddleocr 3.x and community ONNX exports shipped; nobody
   re-checked. Two pip installs turned an "unfalsifiable" quality question into
   a 2-minute experiment. Re-date your impossibility claims.
