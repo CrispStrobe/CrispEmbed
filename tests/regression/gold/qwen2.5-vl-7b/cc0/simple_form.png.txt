@@ -1,0 +1,24 @@
+Input
+Texte
+iNumber
+Date
+Password
+a label
+ANOTHER LABEL
+Yet another label
+combo suggest
+F
+Finland
+France
+checkbox1
+checkbox2
+code-Niveau
+code Nb
+code
+Button
+Rechercher
+Disable button
+TEXTAREA
+Radio
+Drag and drop frames
+Fixe frames
