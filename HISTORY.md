@@ -4,6 +4,58 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — Windows CI unbroken (`build.yml` windows-x86_64)
+
+`build.yml`'s windows leg had been red on every push for the day. Three
+independent Windows-portability breaks, all from work that only ever built on
+Linux/macOS:
+
+- **`<windows.h>`'s `min`/`max` macros.** Any TU that pulls windows.h in
+  transitively turns `std::min(a, b)` into `std::((a) < (b) ? ...)` — MSVC
+  C2589 — and then cascades into unrelated-looking errors many lines away
+  (`'ocr_crop::extract_quad': function does not take 7 arguments`,
+  `'b': references must be initialized` on a range-for, `'hypot': no
+  overloaded function takes 1 arguments`). All of those were one macro in
+  `ocr_orchestrator.cpp`'s crop loop. Fixed globally with `-DNOMINMAX`
+  alongside the existing `_USE_MATH_DEFINES` in the MSVC block; nothing in the
+  tree relies on the macros (checked — every bare `min(`/`max(` is in a
+  comment).
+- **`setenv` in `src/ocr_orchestrator.cpp`.** POSIX-only, added by the
+  PP-OCRv6 one-shot CPU-routing work. Now `set_env_if_unset()`: `_putenv_s`
+  on Windows behind a presence check, which is what `overwrite=0` meant.
+- **`setenv`/`unsetenv`/`mkstemp` in `test_image_provenance` and
+  `test_provenance_marking`** — the two model-free tests `build.yml` runs on
+  every push. Env access now uses the `#ifdef _WIN32 _putenv_s` helper the
+  other tests already carry; the temp file uses `core_tmp::make_private()`,
+  the project's one portable "created by us, unpredictable name" helper.
+  Caveat recorded in the test: Windows cannot hold an empty-valued env var, so
+  the "empty is off" check degenerates to the unset case there.
+
+Fixing those let the build get far enough to expose two more, plus a static
+guard that had been failing alongside it the whole time:
+
+- **`<windows.h>` drags in the legacy `<winsock.h>`**, which then collides with
+  `<winsock2.h>` — 102 `'sockaddr': 'struct' type redefinition` errors inside
+  the Windows SDK, all from `crispembed-server`. It bites on include *order*
+  and so was invisible until someone added a header: `server.cpp` includes
+  `core/temp_file.h` (windows.h) at line 38 and `httplib.h` (winsock2.h) at
+  line 47. Fixed with `-DWIN32_LEAN_AND_MEAN` globally, repeated defensively in
+  `core/temp_file.h` for out-of-tree consumers. Nothing in the tree uses an API
+  that flag excludes (checked).
+- **A second POSIX `setenv`** in `examples/cli/main.cpp`, from the same
+  one-shot routing work. `--cache-dir` two lines away already had the
+  `#ifdef _WIN32 _putenv_s` guard, which is what the new call should have
+  copied.
+- **`tools/check_test_clean_exit.sh`** was red on five tests
+  (`test_image_provenance`, `test_msac_tiling`, `test_provenance_marking`,
+  `test_render_provenance`, `test_temp_file`). Each now follows the documented
+  pattern: body renamed to `crispembed_test_main()`, thin
+  `main() { core_util::clean_exit(crispembed_test_main()); }`. None touches a
+  GPU today, but they link `crispembed-core`, so ggml's static device teardown
+  is one dependency away.
+
+---
+
 ## August 4, 2026 — release artifacts pinned to a fixed CPU baseline (#41)
 
 **Reported:** v0.16.1's `crispembed-windows-x86_64.zip` (cpu) died with

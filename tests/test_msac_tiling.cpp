@@ -24,6 +24,7 @@
 // exact layout it cannot read.
 
 #include "image_preprocess.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <vector>
@@ -81,6 +82,14 @@ int run() {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     return run();
+}
+
+// The guard in tools/check_test_clean_exit.sh: a one-shot binary must not run
+// ggml's static GPU-device destructor at exit (it aborts on Metal / faults on
+// CUDA). These tests touch no GPU today, but they link crispembed-core, so the
+// teardown is one added dependency away from firing.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

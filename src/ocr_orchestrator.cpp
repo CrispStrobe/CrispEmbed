@@ -78,6 +78,19 @@
 #include <unistd.h> // getpid
 #endif
 
+// setenv(name, value, /*overwrite=*/0) is POSIX-only; MSVC has _putenv_s, which
+// always overwrites. Both callers here want "set a default the user can still
+// override from the environment", so the presence check carries the semantics
+// on every platform.
+static void set_env_if_unset(const char * name, const char * value) {
+    if (std::getenv(name)) return;
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    setenv(name, value, /*overwrite=*/0);
+#endif
+}
+
 // stbi_load is exported (non-static) by image_preprocess.cpp's
 // STB_IMAGE_IMPLEMENTATION; forward-declare what we use rather than re-include.
 extern "C" {
@@ -625,7 +638,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 const int parsed = std::atoi(limit);
                 if (parsed >= 0) cpu_max_regions = parsed;
             }
-            if ((int)boxes.size() <= cpu_max_regions) setenv("CRISPEMBED_PPOCRV6_FORCE_CPU", "1", 0);
+            if ((int)boxes.size() <= cpu_max_regions) set_env_if_unset("CRISPEMBED_PPOCRV6_FORCE_CPU", "1");
         }
         if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
         if (!ctx->ppori && !st.model_c.empty())

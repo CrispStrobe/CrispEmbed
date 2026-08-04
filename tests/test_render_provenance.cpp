@@ -16,6 +16,7 @@
 // engine needs it threaded through the orchestrator; see PLAN.md.
 
 #include "ocr_render.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstring>
@@ -55,7 +56,7 @@ std::string render(ocr_render_format fmt) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     std::printf("OCR output provenance\n");
 
     const std::string version = CRISPEMBED_VERSION_STR;
@@ -98,4 +99,12 @@ int main() {
     }
     std::printf("\nPASS: OCR output is traceable to a build.\n");
     return 0;
+}
+
+// The guard in tools/check_test_clean_exit.sh: a one-shot binary must not run
+// ggml's static GPU-device destructor at exit (it aborts on Metal / faults on
+// CUDA). These tests touch no GPU today, but they link crispembed-core, so the
+// teardown is one added dependency away from firing.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
