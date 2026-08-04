@@ -211,17 +211,29 @@ device_map = "auto"
 max_memory = "0=5GiB," + ",".join(f"{i}=11GiB" for i in range(1, n_gpu)) if n_gpu > 1 else ""
 print(f"device_map={device_map} max_memory={max_memory}")
 
-results = {}
-for corpus, images in (("synth", synth_local), ("cc0", cc0)):
-    out_json = WORK / f"parity_{corpus}.json"
-    out_md = WORK / f"parity_{corpus}.md"
-    gold = GOLD / corpus
+ARM = "qwen-vl-py:" + MODEL.split("/")[-1].replace("-Instruct", "").lower()
+
+# Retry budget for pages the GPU-resident configuration cannot hold.  The
+# traceback named the site: the vision tower's attention, through
+# `sdpa_attention_forward`.  These cards are old enough that SDPA has no
+# memory-efficient kernel for this mask and silently uses the math path, which
+# materialises the score matrix — so a ~6k-patch page wants a single ~4 GiB
+# tensor no matter how the weights are placed.  Letting some weights sit in host
+# memory buys that headroom back.  It costs a lot of time per token and is
+# therefore used ONLY for the fixtures that failed, and the rows it produces are
+# flagged so nobody reads their latency as comparable.
+RETRY_MAX_MEMORY = ("0=6GiB," + ",".join(f"{i}=6GiB" for i in range(1, n_gpu))
+                    + ",cpu=40GiB") if n_gpu > 1 else ""
+
+
+def run_parity(images, gold, out_json, out_md, mem, only=""):
     cmd = [
         sys.executable, str(REPO / "tests" / "ocr_external_parity.py"),
         "--images", str(images), "--require-truth", "--repeats", "1",
         "--qwen", "--qwen-model", MODEL,
         "--qwen-dtype", dtype, "--qwen-device-map", device_map,
-        *(["--qwen-max-memory", max_memory] if max_memory else []),
+        *(["--qwen-max-memory", mem] if mem else []),
+        *(["--only", only] if only else []),
         "--qwen-transcripts", str(gold),
         "--hardware", hardware,
         "--skip", "docling-py", "--skip", "easyocr-py", "--skip", "paddleocr-py",
@@ -232,8 +244,61 @@ for corpus, images in (("synth", synth_local), ("cc0", cc0)):
     p = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True)
     print(p.stdout[-20000:], flush=True)
     if p.returncode != 0:
-        print(f"!! {corpus} exit={p.returncode}\n{p.stderr[-8000:]}", flush=True)
-    print(f"[{corpus}] wall={time.time() - t0:.1f}s exit={p.returncode}", flush=True)
+        print(f"!! exit={p.returncode}\n{p.stderr[-8000:]}", flush=True)
+    print(f"[wall={time.time() - t0:.1f}s exit={p.returncode}]", flush=True)
+    return p.returncode
+
+
+def failed_fixtures(path):
+    if not path.exists():
+        return []
+    doc = json.loads(path.read_text())
+    return [fx["fixture"] for fx in doc["fixtures"]
+            if fx["engines"].get(ARM, {}).get("error")]
+
+
+results = {}
+for corpus, images in (("synth", synth_local), ("cc0", cc0)):
+    out_json = WORK / f"parity_{corpus}.json"
+    out_md = WORK / f"parity_{corpus}.md"
+    gold = GOLD / corpus
+    run_parity(images, gold, out_json, out_md, max_memory)
+
+    bad = failed_fixtures(out_json)
+    if bad and RETRY_MAX_MEMORY:
+        print(f"[{corpus}] retrying {len(bad)} fixture(s) with host-memory "
+              f"headroom: {bad}", flush=True)
+        retry_json = WORK / f"parity_{corpus}_retry.json"
+        run_parity(images, gold, retry_json, WORK / f"parity_{corpus}_retry.md",
+                   RETRY_MAX_MEMORY, only=",".join(bad))
+        if retry_json.exists():
+            main_doc = json.loads(out_json.read_text())
+            fixed = {fx["fixture"]: fx for fx in
+                     json.loads(retry_json.read_text())["fixtures"]}
+            for fx in main_doc["fixtures"]:
+                repl = fixed.get(fx["fixture"])
+                if repl and not repl["engines"].get(ARM, {}).get("error"):
+                    entry = repl["engines"][ARM]
+                    # Correct text, but produced with weights in host memory:
+                    # the quality is the model's, the latency is not the
+                    # configuration the other rows were measured in.
+                    entry["cpu_offloaded"] = True
+                    entry["timing_comparable"] = False
+                    fx["engines"][ARM] = entry
+            # The aggregate was computed before the retry, so it still counts
+            # the retried pages as failures.  Recompute it from the merged rows
+            # using the harness's own function rather than hand-patching counts.
+            sys.path.insert(0, str(REPO / "tests"))
+            from ocr_external_parity import summarize as _summarize
+
+            main_doc["summary"] = _summarize(main_doc)
+            main_doc["retry_pass"] = {
+                "fixtures": bad, "max_memory": RETRY_MAX_MEMORY,
+                "reason": "vision-tower attention exceeded device memory; "
+                          "weights partly in host memory to free it",
+            }
+            out_json.write_text(json.dumps(main_doc, indent=2) + "\n")
+
     if out_json.exists():
         results[corpus] = json.loads(out_json.read_text())["summary"]
 
