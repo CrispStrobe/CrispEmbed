@@ -2644,3 +2644,29 @@ Both had been dumped `--max-llm-layers 4`, which also silently drops
 
 The 2b model repo's copy was replaced too, so neither location hands out a
 reference that stops short of the decision boundary.
+
+## CPU baseline of shipped binaries (2026-08-04)
+
+`-DGGML_NATIVE=OFF` is now pinned on every release/wheel leg (#41 — a runner
+with AVX-512 shipped a Windows cpu artifact that took SIGILL on Raptor Lake).
+This is a **portability** change, not a perf change, and the distinction
+matters for every number in this file:
+
+- **ggml-cpu** on x86_64 goes from the runner's `/arch:AVX2` or `/arch:AVX512`
+  lottery to a fixed SSE4.2+AVX+AVX2+FMA+F16C+BMI2. Where the lottery had
+  landed on AVX2 — which is what the AMD runners give, and what all the
+  measurements below were taken on — the emitted code is unchanged.
+- **`core/cpu_ops.h`** keeps its SIMD paths. `CRISPEMBED_NATIVE` now follows
+  `GGML_NATIVE`, and with native off the crispembed targets are compiled
+  `-mavx2 -mfma -mf16c` instead of dropping to scalar, so the `dot_product()` /
+  `linear_cpu` AVX2+FMA work recorded above is still in the shipped binaries.
+- **linux-arm64** pins `armv8.2-a+fp16+dotprod`, which is what `-mcpu=native`
+  was already resolving to on the Neoverse-N1 runners — the dotprod quant
+  kernels are retained.
+
+So release timings remain comparable to the AVX2 numbers in this file. What is
+gone is the possibility of a release built with AVX-512 kernels: nobody should
+benchmark a release artifact and attribute a delta to an ISA the artifact is
+no longer allowed to use. Benchmark *local* builds (`-march=native`, the
+default) when the question is peak CPU throughput, and say which of the two
+you measured.
