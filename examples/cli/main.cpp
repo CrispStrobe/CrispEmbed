@@ -1165,15 +1165,18 @@ static int cli_main(int argc, char ** argv) {
                 if (eid == 16 && !std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") &&
                     !std::getenv("CRISPEMBED_PPOCRV6_ONESHOT_GPU") && !std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") &&
                     !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH") && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
-                    // T5: this CLI processes exactly one page per invocation, and
-                    // on a single page the recognizer's Metal init costs more
-                    // than it saves — interleaved A/B on synth_00_clean: forced
-                    // CPU 1.86 s wall (3/3) vs Metal 2.04-2.17 s, decoded text
-                    // byte-identical. A warm server amortises the init and keeps
-                    // the Metal default; this is invocation-mode wiring, not a
-                    // backend preference. CRISPEMBED_PPOCRV6_ONESHOT_GPU=1
-                    // restores the Metal path for a one-shot run.
-                    setenv("CRISPEMBED_PPOCRV6_FORCE_CPU", "1", 0);
+                    // T5: this CLI processes exactly one page per invocation.
+                    // Whether the recognizer's ~1.1 s Metal init pays for
+                    // itself depends on how many line crops the page yields
+                    // (3 boxes: CPU 1.86 s vs Metal 2.04-2.17 s; 47 boxes:
+                    // Metal 8.1 s vs CPU 14.0 s), so the CLI only declares
+                    // one-shot mode here and the orchestrator picks the
+                    // backend after detection from the box count
+                    // (CRISPEMBED_PPOCRV6_ONESHOT_CPU_MAX_REGIONS, default 8).
+                    // A warm server amortises the init and keeps the Metal
+                    // default. CRISPEMBED_PPOCRV6_ONESHOT_GPU=1 restores the
+                    // unconditional Metal path for a one-shot run.
+                    setenv("CRISPEMBED_PPOCRV6_ONESHOT", "1", 0);
                 }
             }
             crispembed_ocr_stage st;
