@@ -4,6 +4,43 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — crispembed-sys required sources even to link a prebuilt
+
+`build.rs` called `resolve_src_root()` unconditionally as the first statement
+of `main()`, before it looked for a prebuilt library. That function panics when
+the C/C++ sources are absent, so both escape hatches — `CRISPEMBED_SYS_LIB_DIR`
+and the `build/` / `build-cuda/` / `build-vulkan/` probe — were unreachable
+without a full source tree including the ggml submodule. A consumer holding a
+perfectly good `libcrispembed.so` still needed ~1 GB of sources checked out,
+which defeats the point of shipping prebuilt libraries and contradicts the
+README's "no cmake, no source build".
+
+A regression, introduced by `a3156a2a` (crates.io publishability): v0.16.1 used
+`manifest_dir.parent().expect(...)`, which never fires in practice.
+
+- `try_prebuilt` now takes `manifest_dir` instead of a resolved source root and
+  probes `build*/` relative to the crate's parent and `vendor/` directly. No
+  source validation — `build/libcrispembed.so` links the same whether or not
+  ggml was ever initialised.
+- `resolve_src_root()` is called lazily, only on the path that actually runs
+  cmake. Its doc comment now says so.
+- A `CRISPEMBED_SYS_LIB_DIR` that is set but holds no library emits a
+  `cargo:warning` naming what was looked for, instead of silently falling
+  through to a source build the user thought they had opted out of.
+- `rust-crates.yml` gains a regression test: compile `build.rs` standalone with
+  a source-less `CARGO_MANIFEST_DIR` and assert it links the prebuilt. Verified
+  both ways — it passes on the fix and exits 101 on the pre-fix file. Nothing
+  else in CI could have caught this, because every other job runs in-tree where
+  the sources trivially exist.
+
+Behaviour checked across four cases: prebuilt via env var with no sources
+(was: panic, now links it); env var pointing somewhere empty (warns, then falls
+through); sibling `build/` with no sources (was: panic, now links it); and a
+real in-tree checkout with no env var (unchanged — still resolves
+`build-cuda`).
+
+---
+
 ## August 4, 2026 — every Linux tarball was unlaunchable (SubtitleEdit#13205)
 
 **Reported** (via Subtitle Edit, which downloads our prebuilt binaries):
