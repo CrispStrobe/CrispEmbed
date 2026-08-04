@@ -42,9 +42,13 @@ configuration with ~11.5 GiB of weights in host memory read both pages, at
 2512 s and 1414 s, for CER 0.00637 and 0.00991.
 
 Those two rows carry `cpu_offloaded` and `timing_comparable: false` in the
-results JSON. **Read the cc0 timing column for nothing at all** — the same
-constraint also spilled part of the model to disk on the GPU-resident pages.
-`synth` is the clean latency measurement. See
+results JSON. **Read no timing column in this artifact as latency** — not cc0
+and not synth. The weight split needed to free ~9 GiB for the vision tower
+spills part of the model to disk on *both* corpora: the same synth corpus
+measures 2389.7 ms/page fully GPU-resident and 15257.5 ms/page under the shipped
+split, 6.4x slower with byte-identical output. The fully-resident configuration
+is recorded as `latency_reference` in the results JSON — and it is the one that
+cannot read the two largest fixtures at all. See
 `tests/results/ocr_parity_qwen25vl_2026-08-04.json` -> `vram_investigation` for
 the per-attempt residency and outcome table.
 

@@ -20,7 +20,7 @@
     "tesseract-cli:eng ran in the same window on the same fixtures on both hosts as the timing control; its proc_ms includes per-invocation model load and is not comparable to the in-process engine_ms column.",
     "The 3B sibling was used only to smoke-test the adapter and to verify the eager/sdpa swap was output-identical. It ships under the Qwen Research Licence and none of its numbers appear here or anywhere as a reference.",
     "HF_HOME is redirected because ~/.cache/huggingface symlinks to an external volume that is 100% full; the default path fails with ENOSPC.",
-    "THE cc0 TIMING COLUMN IS NOT A LATENCY MEASUREMENT. Fitting 15.45 GiB of weights onto 2x15 GiB while leaving ~9 GiB free for the vision tower's attention forced two degradations that cost time without changing output: the weight split spilled part of the model to disk, and the two largest pages were re-run with ~11.5 GiB of weights in host memory (rows flagged cpu_offloaded + timing_comparable=false, at 2512 s and 1414 s). Quote cc0 for CER/WER only. The synth column is a clean GPU-resident measurement."
+    "NO TIMING COLUMN IN THIS ARTIFACT IS A CLEAN LATENCY MEASUREMENT - not cc0 and not synth. Fitting 15.45 GiB of weights onto 2x15 GiB while leaving ~9 GiB free for the vision tower's attention forced a weight split that spills part of the model to disk, which costs time without changing output, on BOTH corpora; the two largest cc0 pages were additionally re-run with ~11.5 GiB of weights in host memory (flagged cpu_offloaded + timing_comparable=false, 2512 s and 1414 s). Quote this artifact for CER/WER only. See latency_reference for the one fully-GPU-resident measurement taken, and note it comes from a configuration that cannot read the two largest fixtures at all."
   ],
   "contract": {
     "model_id": "Qwen/Qwen2.5-VL-7B-Instruct",
@@ -47,6 +47,13 @@
     "control_host": "macOS 26.2 arm64, 16 GiB unified memory",
     "tesseract_cli": "5.5.2 (Mac control)",
     "python": "3.11.8 (~/venvs/qwenvl)"
+  },
+  "latency_reference": {
+    "note": "The only fully-GPU-resident run: device_map=auto with no cap, placements ['0','1'] with no disk spill. This is the number to quote for VL page latency on this hardware - but the same configuration OOMs on the two largest cc0 fixtures, so it cannot produce the full gold. Recorded so the memory workaround is not mistaken for the model's speed.",
+    "corpus": "synth (20 fixtures)",
+    "median_engine_ms": 2389.7,
+    "vs_final_config": "the shipped 0=5GiB,1=11GiB split measures 15257.5 ms on the same corpus - 6.4x slower, entirely from the disk spill",
+    "hardware": "Kaggle 2x Tesla T4"
   },
   "vram_investigation": {
     "symptom": "two ~4.8 Mpix CC0 scans (~6k vision patches) each demand a single 3.98/4.07 GiB allocation",
