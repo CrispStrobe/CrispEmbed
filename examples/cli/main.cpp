@@ -152,7 +152,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|"
-                    "unlimited_ocr)\n");
+                    "unlimited_ocr|olmocr)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -1150,6 +1150,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
+            if (n == "olmocr") return 18;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
@@ -1168,7 +1169,7 @@ static int cli_main(int argc, char ** argv) {
             // Single-model lanes: VLMs plus the metadata-dispatched engines.
             // deepseek-ocr2 / pix2struct / granite-vision do their own
             // preprocessing like the VLMs (cleanup stays off for them).
-            const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14;
+            const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18;
             if (eid == 14 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: --ocr-engine unified dispatches on GGUF metadata; provide the model "
                                 "via --ocr-rec FILE\n");
@@ -1177,6 +1178,11 @@ static int cli_main(int argc, char ** argv) {
             if (eid == 15 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: --ocr-engine tesseract-fraktur has no registry default; provide a "
                                 "tesseract-frk GGUF via --ocr-rec FILE\n");
+                return 1;
+            }
+            if (eid == 18 && ocr_rec_path.empty()) {
+                fprintf(stderr, "error: --ocr-engine olmocr has no registry default yet; provide an "
+                                "olmOCR GGUF via --ocr-rec FILE\n");
                 return 1;
             }
             if (is_vlm) {

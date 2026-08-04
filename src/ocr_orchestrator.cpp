@@ -831,6 +831,10 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
+    // olmocr is the same runtime as qwen2vl — the fine-tune is auto-detected
+    // inside qwen2vl_ocr_init from the model file, which switches the prompt
+    // contract, token order, and output post-processing.
+    case engine::olmocr:
     case engine::qwen2vl: {
         if (!ctx->qwen) {
             if (st.model_a.empty()) {
@@ -1867,6 +1871,8 @@ static const char * engine_name(engine e) {
         return "unified";
     case engine::easyocr:
         return "easyocr";
+    case engine::olmocr:
+        return "olmocr";
     default:
         return "unknown";
     }
@@ -1889,6 +1895,7 @@ static const char * source_type_name(source_type t) {
 
 static bool is_vlm_engine(engine e) {
     switch (e) {
+    case engine::olmocr:
     case engine::qwen2vl:
     case engine::qwen3vl:
     case engine::got:
