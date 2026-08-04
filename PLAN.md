@@ -610,13 +610,17 @@ at 128; same fixtures still differ at 192), so the official 320 floor stays
 default. All 20 synth fixtures are byte-identical at any floor (their crops
 are wider than 320 natural).
 
-**What still separates us from the ceiling.** (a) detector conv 285 ms
-scalar (pointwise ~10-16 GF/s, 7x7 depthwise ~2 GF/s) — T3/H2 kernel work;
-(b) many-crop pages want the Metal fused batch graph (N1, adopted): scalar
-per-crop dispatch is the remaining 6.5-vs-2.2 s distance to TurboOCR's
-onnxruntime ceiling on the receipt; (c) T7 detector-graph geometry parity is
-the gate for a full-GPU detector (graph currently also SLOWER than scalar —
-2.6-6.8x, undiagnosed; profile before optimizing).
+**What still separates us from the ceiling.** (a) ~~detector~~ **T7 closed
+same day** — the detector graph (CPU backend) is now the default at 1.5-1.7x
+over scalar (see T7 [CLOSED]); with it, synth_00_clean warm compute is
+~**730 ms vs official paddle-3.7's 830 ms — we are AHEAD of the original on
+small pages**; (b) many-crop pages want the Metal fused batch graph (N1,
+adopted): per-crop dispatch is the remaining distance to TurboOCR's
+onnxruntime ceiling on the receipt (2.2 s); (c) T3/H2 scalar-kernel work now
+only matters for the scalar escape path and medium tier; (d) Metal conv perf
+is the blocker for detector-on-GPU (9x slower than CPU graph today) — on
+this M1 the evidence says CPU graph is the right default, GPU via
+CUDA/Vulkan is where the graph's portability pays.
 
 **2026-08-04 postscript — resolved.** The stage-diff never had to run: the
 bisection (recognizer correct on raw crops, corruption reproduced by running
@@ -1283,16 +1287,26 @@ to 0.
 
 ---
 
-### T7 — PP-OCRv6 detector graph geometry parity (correctness, NOT speed) (was H8)
+### T7 — PP-OCRv6 detector graph geometry parity [CLOSED 2026-08-04 — one-line bug; graph promoted to default and it IS a performance item after all]
 
-Unchanged, and **must not be sold as a performance item** — the graph is 2.6-6.8x
-slower than the scalar path. The value is portability (CUDA/Vulkan) and removing
-a diagnostic-only caveat from `docs/ocr_backend_matrix.md`. Box count 31 (graph)
-vs 30 (CPU); probability-map cosine already 0.99113, so expect a DB-postprocessor
-disagreement on one borderline contour rather than an arithmetic bug. The
-comparator is `report_graph_box_geometry`
-(`CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE=1`); check its call site emits before
-trusting it.
+**The divergence was an arithmetic bug, not a postprocessor disagreement:**
+the graph's fused-stage insert-SE applied `ggml_scale(gate, 0.2f)` *and*
+`ggml_scale_bias(gate, 0.2f, 0.5f)` — hard-sigmoid squashed to `0.04x+0.5`
+where the scalar path (and Paddle's SELayer) use `0.2x+0.5`; the proc-stage
+SE never had the extra scale, which is why divergence started exactly at
+`fused0` (cosine 0.988). After the fix: probability cosine ~1e-8 with equal
+norms on synth/german/receipt.
+
+**And the "2.6-6.8x slower" claim was a backend artifact:** `DET_GRAPH`
+*implied* GPU load, so the graph had only ever been timed on Metal (1693 ms)
+— on the CPU backend the same graph runs **175 ms vs 316 ms scalar** on
+synth_00_clean and **1363 ms vs 2056 ms** on the 1920x2518 Fraktur page.
+Promoted to default for tiny/small on CPU (25-fixture labelled CER net-better,
+0.06394 vs 0.06410; receipt hits 0.00000; box-level diffs are threshold
+jitter). `CRISPEMBED_PPOCRV6_DET_SCALAR=1` restores scalar;
+`CRISPEMBED_PPOCRV6_DET_GPU_LOAD` is the explicit GPU opt-in. Remaining:
+medium-tier validation, Metal conv perf, and the comparator's own graph-box
+extraction (emits `graph=0` — the accept path is exercised instead).
 
 ---
 
