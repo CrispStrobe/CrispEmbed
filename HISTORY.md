@@ -4,6 +4,57 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — release artifacts pinned to a fixed CPU baseline (#41)
+
+**Reported:** v0.16.1's `crispembed-windows-x86_64.zip` (cpu) died with
+`Illegal instruction` on an i9-14900KF (Raptor Lake: AVX2, no AVX-512)
+immediately after tokenizer load. The previous release ran the same model on
+the same machine, and the cuda/vulkan zips' CPU fallback worked.
+
+**Cause:** the cpu leg left `GGML_NATIVE` at its default (ON). On MSVC that
+pulls in `ggml-cpu/cmake/FindSIMD.cmake`, which *runs* an AVX-512 probe binary
+on the build machine (`check_c_source_runs`) and compiles the entire CPU
+backend `/arch:AVX512` when it succeeds. GitHub's `windows-latest` pool mixes
+AVX-512-capable Intel hosts with AVX2-only AMD hosts, so the ISA of a release
+was decided by which runner happened to pick up the job. The cuda leg was the
+only one already pinning `-DGGML_NATIVE=OFF` — which is exactly why the
+reporter found its CPU fallback healthy.
+
+The same hazard applied to every other release leg: `-march=native` on
+linux-x86_64, and `-mcpu=native` + `dotprod`/`i8mm`/`sve`/`sme` run-probes on
+both arm64 legs. Python wheels had it on all four platforms.
+
+**Fixed:**
+
+- Every redistributable leg in `release.yml` and `python-wheels.yml` now passes
+  `-DGGML_NATIVE=OFF`. x86_64 lands on SSE4.2+AVX+AVX2+FMA+F16C+BMI2;
+  linux-arm64 pins `-DGGML_CPU_ARM_ARCH=armv8.2-a+fp16+dotprod` (what
+  `-mcpu=native` was already resolving to on the Neoverse-N1 runners, so
+  determinism rather than a floor change); macos-arm64 takes Apple clang's
+  arm64 default.
+- `CRISPEMBED_NATIVE` now defaults to `GGML_NATIVE` (and to OFF when
+  cross-compiling), so one flag makes the whole tree portable. Previously
+  `-DGGML_NATIVE=OFF` alone still left CrispEmbed's own translation units on
+  `-march=native`. With native off, those targets now mirror ggml's configured
+  baseline (`-mavx2 -mfma -mf16c`) instead of dropping to scalar, so
+  `cpu_ops.h`'s intrinsics stay compiled in.
+- New `scripts/check-cpu-baseline.py`, run after configure on every release and
+  wheel leg. It checks the cache options *and* scans the generated compile
+  lines (`build.ninja` / `*.vcxproj` / `flags.make`) for banned tokens —
+  necessary because `FindSIMD.cmake` sets `GGML_AVX512` as a normal variable
+  that shadows the cache entry, so with NATIVE on the cache can read `OFF`
+  while the compile line says `/arch:AVX512`.
+
+Verified locally on MSVC 19.44 and clang: `-DGGML_NATIVE=OFF` yields
+`/arch:AVX2` (MSVC) / `-msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2` (clang) with
+`-mavx2 -mfma -mf16c` on the crispembed targets; the default local build still
+gets `-march=native`; and a deliberate `-DGGML_AVX512=ON` configure —
+reproducing the shipped artifact — is caught by both halves of the checker.
+Shipped baselines are now documented in the README. Details in `LEARNINGS.md`
+§"GGML_NATIVE probes the BUILD machine".
+
+---
+
 ## August 3, 2026 — PLAN.md active-work board cleared; OCR perf round (H1-H9)
 
 52 completed rows archived from the PLAN.md in-flight table, plus the OCR

@@ -16,6 +16,25 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # ── CPU ISA baseline: every leg pins -DGGML_NATIVE=OFF ──────────
+          # ggml's GGML_NATIVE (default ON) probes the BUILD machine: on MSVC
+          # it *runs* FindSIMD.cmake's test programs and turns on /arch:AVX512
+          # if they succeed; on ARM it runs -mcpu=native feature probes for
+          # dotprod/i8mm/sve/sme. GitHub's runner pools are heterogeneous
+          # (windows-latest mixes AVX-512 Intel with AVX2-only AMD), so with
+          # NATIVE on, whether a release runs on consumer hardware is decided
+          # by which runner picked up the job.
+          #
+          # That shipped as #41: the v0.16.1 cpu zip died with "Illegal
+          # instruction" on an i9-14900KF (AVX2, no AVX-512) while the cuda
+          # zip — the one leg that already pinned GGML_NATIVE=OFF — was fine.
+          #
+          # NATIVE=OFF gives ggml a fixed x86 baseline of SSE4.2/AVX/AVX2/
+          # FMA/F16C/BMI2 with AVX-512 and AMX off, and CrispEmbed's own
+          # targets follow it (CRISPEMBED_NATIVE defaults to GGML_NATIVE).
+          # The `Verify portable CPU baseline` step below enforces it so this
+          # cannot silently regress again.
+          #
           # BLAS posture matches CrispASR's: ggml-blas backend (OpenBLAS
           # vendor) for the big matmuls of large encoders (bge-m3,
           # multilingual-e5-large) + LLAMAFILE's tinyBLAS for the small
@@ -24,6 +43,7 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             cmake_args: >-
+              -DGGML_NATIVE=OFF
               -DGGML_BLAS=ON
               -DGGML_BLAS_VENDOR=OpenBLAS
               -DGGML_LLAMAFILE=ON
@@ -37,7 +57,16 @@ jobs:
             # default NEON path for large matmuls. Keep LLAMAFILE off on
             # arm64 — its tinyBLAS x86 SIMD paths don't have NEON parity,
             # and stock ggml-cpu's NEON path is already well-tuned.
+            #
+            # GGML_CPU_ARM_ARCH pins what -mcpu=native was already resolving
+            # to on the Neoverse-N1 runners (armv8.2-a + FP16 + dotprod), so
+            # this is a determinism fix, not a floor change: it keeps the
+            # dotprod quant kernels while making the artifact independent of
+            # which arm host built it (an SVE/SME-capable runner would
+            # otherwise emit instructions Neoverse-N1 and Cortex-A cannot run).
             cmake_args: >-
+              -DGGML_NATIVE=OFF
+              -DGGML_CPU_ARM_ARCH=armv8.2-a+fp16+dotprod
               -DGGML_BLAS=ON
               -DGGML_BLAS_VENDOR=OpenBLAS
               -DGGML_LLAMAFILE=OFF
@@ -47,7 +76,13 @@ jobs:
 
           - name: macos-arm64
             os: macos-latest
+            # No GGML_CPU_ARM_ARCH here: Apple clang targeting arm64-apple
+            # already defaults to an M1-class baseline (FP16 + dotprod), and
+            # -march=armv8… is not the flag spelling clang wants on Darwin.
+            # NATIVE=OFF is still required — a future M4 runner would probe
+            # SME in and break every M1/M2/M3 user.
             cmake_args: >-
+              -DGGML_NATIVE=OFF
               -DGGML_METAL=ON
               -DGGML_METAL_EMBED_LIBRARY=ON
               -DGGML_BLAS=ON
@@ -58,7 +93,12 @@ jobs:
 
           - name: windows-x86_64
             os: windows-latest
+            # The leg #41 was filed against. MSVC + GGML_NATIVE is the worst
+            # case of the lot: FindSIMD.cmake runs an AVX-512 probe binary on
+            # the runner and, when it succeeds, compiles the whole CPU backend
+            # with /arch:AVX512 — which no current Intel consumer CPU can run.
             cmake_args: >-
+              -DGGML_NATIVE=OFF
               -DGGML_BLAS=OFF
             binaries: crispembed.exe crispembed-server.exe crispembed-quantize.exe
             lib: crispembed.dll
@@ -82,6 +122,12 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release
           -DCRISPEMBED_BUILD_SHARED=ON
           ${{ matrix.cmake_args }}
+
+      # Fails the release if the configured tree targets the builder's CPU
+      # instead of a fixed baseline (#41). Cheap, and it catches the case a
+      # test suite cannot: CI has no machine that lacks the extension.
+      - name: Verify portable CPU baseline
+        run: python scripts/check-cpu-baseline.py build
 
       - name: Build
         run: cmake --build build --config Release -j4
@@ -276,16 +322,22 @@ jobs:
           variant: ccache
           max-size: 3G
 
+      # GGML_NATIVE=OFF — the CUDA tarball still contains ggml-cpu, and this
+      # runner is the same heterogeneous ubuntu-latest pool as the cpu leg (#41).
       - name: Configure
         run: >
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=Release
           -DCRISPEMBED_BUILD_SHARED=ON
+          -DGGML_NATIVE=OFF
           -DGGML_CUDA=ON
           -DGGML_BLAS=OFF
           -DCMAKE_C_COMPILER_LAUNCHER=ccache
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
+
+      - name: Verify portable CPU baseline
+        run: python scripts/check-cpu-baseline.py build
 
       - name: Build
         run: cmake --build build --config Release -j4
@@ -418,6 +470,7 @@ jobs:
             -DCMAKE_CUDA_ARCHITECTURES="75-real;86-real;89-real;120-real;120-virtual" `
             -DGGML_NATIVE=OFF `
             -DGGML_AVX2=ON -DGGML_FMA=ON -DGGML_F16C=ON
+          python scripts/check-cpu-baseline.py build
           cmake --build build -j $env:NUMBER_OF_PROCESSORS
 
       - name: Package
@@ -489,14 +542,21 @@ jobs:
           $sdk = Get-ChildItem "C:\VulkanSDK" | Sort-Object Name -Descending | Select-Object -First 1
           echo "VULKAN_SDK=$sdk" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
+      # GGML_NATIVE=OFF for the same reason as the cpu leg (#41): the vulkan
+      # zip still ships a full CPU backend, used both as a fallback and for
+      # ops the Vulkan backend doesn't implement.
       - name: Configure
         run: >
           cmake -S . -B build
           -DCMAKE_BUILD_TYPE=Release
           -DCRISPEMBED_BUILD_SHARED=ON
+          -DGGML_NATIVE=OFF
           -DGGML_VULKAN=ON
           -DGGML_CUDA=OFF
           -DGGML_BLAS=OFF
+
+      - name: Verify portable CPU baseline
+        run: python scripts/check-cpu-baseline.py build
 
       - name: Build
         run: cmake --build build --config Release -j4
@@ -555,6 +615,9 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
             -DANDROID_ABI=${{ matrix.abi }} -DANDROID_NATIVE_API_LEVEL=24 \
             -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DGGML_LLAMAFILE=OFF
+          # Cross-compiling already forces both NATIVE options off, but assert
+          # it rather than assume it (#41).
+          python scripts/check-cpu-baseline.py build
           # Only the shared lib the plugin needs — not the (host-only) test exes.
           cmake --build build --target crispembed-shared -j4
       - name: Package
@@ -591,6 +654,9 @@ jobs:
             -DCMAKE_CXX_COMPILER=$(xcrun --sdk iphoneos -f clang++) \
             -DCMAKE_BUILD_TYPE=Release \
             -DCRISPEMBED_BUILD_SHARED=OFF -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON
+          # Cross-compiling already forces both NATIVE options off, but assert
+          # it rather than assume it (#41).
+          python scripts/check-cpu-baseline.py build
           # Only the static lib the podspec vendors — building the test exes as
           # iOS targets fails ("Bundle identifier is missing") under -G Xcode and
           # just wastes time under Make.
