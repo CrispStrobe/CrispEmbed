@@ -610,6 +610,38 @@ at 128; same fixtures still differ at 192), so the official 320 floor stays
 default. All 20 synth fixtures are byte-identical at any floor (their crops
 are wider than 320 natural).
 
+#### 2026-08-04 (evening) — competitive verdict vs the community onnxruntime pipeline; width bucketing default; two negative results
+
+Same-window interleaved shootout on this M1, warm, same v6_small models:
+
+| page | ours | community ORT pipeline | official paddle-3.7 |
+|---|--:|--:|--:|
+| synth_00_clean (3 crops) | **555 ms** | 710-923 ms | 830 ms |
+| commons_example_receipt (47 crops) | ~2.9-3.3 s | **1.84 s** | 5.9 s |
+
+Quality on the receipt: ours 0 errors, the ORT pipeline 2 (`S`, `_Card`),
+paddle-3.7 0. So: **ahead of everything on small pages, ahead of official
+paddle everywhere, behind the ORT pipeline ~1.5x only on many-crop
+throughput.** The residual is precisely attributed: with fused batching the
+receipt's recognize is ~2.2 s of genuine Metal graph compute (~33 ms/crop in
+batch-8 groups; shape rebuilds only ~200 ms) at ~7 GF/s — ggml's Metal conv
+efficiency at 48-pixel heights, not our graph structure. That is
+kernel-level work (upstream ggml territory), recorded as the open item.
+
+Landed: **width bucketing default (step 64)** — model width rounds UP to a
+multiple of 64 so nearby widths share a graph shape and fuse (receipt: 12
+widths → 5 fused groups, recognize −11%; the synth page's 3 crops now fuse
+into one group, 688→555 ms; 25-fixture CER mean 0.06408 vs 0.06410, jitter
+both ways; `CRISPEMBED_PPOCRV6_WIDTH_BUCKET=0` disables).
+
+Negative results, measured interleaved, kept as env gates: **F16 conv
+residents on Metal are 33% SLOWER** for these shapes (3/3 pairs,
+`CRISPEMBED_PPOCRV6_GRAPH_F16=1` re-enables); **native-q8 linear residents
+are flat** because the q8 policy artifact ships its head high-precision
+(passthrough kept for genuinely-quantized heads). CPU-backend fused batch is
+also slower than Metal fused (4.5 s vs 2.6 s receipt) — the CPU graph is not
+the escape route either.
+
 **What still separates us from the ceiling.** (a) ~~detector~~ **T7 closed
 same day** — the detector graph (CPU backend) is now the default at 1.5-1.7x
 over scalar (see T7 [CLOSED]); with it, synth_00_clean warm compute is
