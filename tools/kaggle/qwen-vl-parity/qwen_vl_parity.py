@@ -189,19 +189,18 @@ if token_dir is not None:
 print("=" * 70)
 print("Step 3: parity runs (sequential — one heavy process at a time)")
 print("=" * 70)
-# Placement, sized from measured failures rather than guessed.  Device 0 holds
-# the inputs, the vision tower's activations and the prefill logits, so it is the
-# device that needs free memory — but accelerate's "auto" fills it with weights
-# first.  Measured on 2x T4 with dense CC0 scans (~4.8 Mpix, ~6k vision patches):
-# "auto" alone died on a 3.98 GiB vision activation with 2.26 GiB free; capping
-# device 0 at 6 GiB of weights got past that and died later on the 1.02 GiB
-# prefill logits with 0.5 GiB free.  The opposite extreme is worse still —
-# "balanced_low_0" packs device 1 so tightly that every fixture OOMs, including
-# ones that previously passed.  So: keep "auto", cap device 0 harder, and have
-# the arm print the resident bytes per device so the next adjustment is made
-# from a measurement instead of a theory.
+# Placement, sized from a measurement.  The arm prints resident bytes per device
+# after load, which settled what three rounds of guessing could not: the knob was
+# always honoured, and the OOM simply followed the weights.  With "auto" alone,
+# device 0 held ~12 GiB and died there; capping device 0 at 4 GiB moved 12.74 GiB
+# onto device 1, and the same allocation died there instead.  "balanced_low_0" is
+# the same mistake at the other extreme and failed every fixture.
+#
+# The numbers: 15.45 GiB of weights, 29 GiB across two cards, and a largest
+# single measured activation of 4.07 GiB (a 4.8 Mpix scan).  An even cap is the
+# only split where *both* devices keep more free memory than that peak needs.
 device_map = "auto"
-max_memory = f"0=4GiB,1={int(vram[1]) - 1}GiB" if n_gpu > 1 else ""
+max_memory = ",".join(f"{i}=8GiB" for i in range(n_gpu)) if n_gpu > 1 else ""
 print(f"device_map={device_map} max_memory={max_memory}")
 
 results = {}
