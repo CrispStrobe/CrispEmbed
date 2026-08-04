@@ -599,8 +599,16 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     // of the accepted path until its layout contract is independently gated.
     // ggml names the spatial arguments x/y ([W,H]); pp_conv stores them as
     // height/width to match the scalar reference.
+    // GGML_OP_CONV_2D (direct convolution, no materialized im2col) has a
+    // native Metal kernel in this ggml revision; the classic path lowers to
+    // im2col + mul_mat, whose intermediate is what small 48-row images are
+    // bandwidth-bound on. Opt-in A/B via CRISPEMBED_PPOCRV6_CONV_DIRECT=1;
+    // requires F32 input and contiguous F16/F32 kernel (both true here).
+    static const bool conv_direct =
+        std::getenv("CRISPEMBED_PPOCRV6_CONV_DIRECT") != nullptr && !ggml_backend_is_cpu(c->graph.backend);
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
-                         : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1);
+                         : (conv_direct ? ggml_conv_2d_direct(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
+                                        : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1));
     if (p.b) {
         ggml_tensor * b = pp_graph_resident(c, p.b, GGML_TYPE_F32, p.out_ch, 1, 1, 1);
         if (!b) return nullptr;
@@ -846,6 +854,23 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             }
         }
     }
+    // Diagnostic stage-stop (profiling only, decode is garbage): truncate the
+    // graph after the backbone so [ppocrv6-graph-bench] attributes compute to
+    // backbone vs neck/decoder/head. CRISPEMBED_PPOCRV6_GRAPH_STOP=backbone.
+    if (const char * stop = std::getenv("CRISPEMBED_PPOCRV6_GRAPH_STOP"); stop && std::strcmp(stop, "backbone") == 0) {
+        c->graph.output = x;
+        ggml_set_name(x, "ppocrv6_graph_output");
+        ggml_set_output(x);
+        ggml_build_forward_expand(c->graph.graph, x);
+        ggml_backend_sched_reset(c->graph.sched);
+        if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+        c->graph.allocated = c->graph.ready = true;
+        c->graph.width = width;
+        c->graph.batch = batch;
+        c->graph.logits_output = true; // lie so the batch caller keeps the lane; output is NOT logits
+        fprintf(stderr, "ppocrv6: STAGE-STOP graph at backbone (%s)\n", ggml_backend_name(c->graph.backend));
+        return true;
+    }
     if (c->large_stem && pp_graph_enabled()) {
         // Keep the SVTR attention/MLP decoder on the scalar reference path,
         // but move its convolutional tokenization onto the persistent graph.
@@ -888,7 +913,19 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         x = ggml_reshape_3d(c->graph.graph_ctx, x, c->hidden, tokens, x->ne[3]);
         c->graph.svtr_prefix_output = true;
     }
-    if (c->large_stem && c->graph.svtr_prefix_output && pp_graph_enabled()) {
+    // Hybrid batch lane (opt-in): stop the graph at the tokenization output
+    // and run the SVTR decoder + head on the CPU per item. Rationale, from
+    // the Metal profiler: the backbone's ~550 conv nodes execute in ~58 ms
+    // per batch-8 group while the neck/decoder's ~130 tiny-tensor nodes
+    // (attention over [120,320]) take ~250 ms of GPU-serial kernel launches —
+    // that arithmetic is microseconds of NEON work per item.
+    const bool batch_cpu_decoder = batch > 1 && std::getenv("CRISPEMBED_PPOCRV6_BATCH_CPU_DECODER") != nullptr;
+    if (c->large_stem && c->graph.svtr_prefix_output && batch_cpu_decoder) {
+        // Flatten [hidden, tokens, items] to [hidden, tokens*items] so the
+        // caller's h = ne[1]/batch contract yields the per-item token count.
+        x = ggml_reshape_2d(c->graph.graph_ctx, x, x->ne[0], x->ne[1] * x->ne[2]);
+    }
+    if (c->large_stem && c->graph.svtr_prefix_output && pp_graph_enabled() && !batch_cpu_decoder) {
         const int heads = 8;
         const int head_dim = c->hidden / heads;
         const int tokens = (int)x->ne[1];
@@ -940,6 +977,22 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         x = pp_graph_layernorm(c, c->graph.graph_ctx, x, c->svtr_norm_w, c->svtr_norm_b, c->hidden);
         if (!x) return false;
         c->graph.svtr_decoder_output = true;
+        // Second stage-stop for profiling: everything except the head linear.
+        if (const char * stop = std::getenv("CRISPEMBED_PPOCRV6_GRAPH_STOP");
+            stop && std::strcmp(stop, "decoder") == 0 && batch > 1) {
+            x = ggml_add(c->graph.graph_ctx, x, c->graph.svtr_skip);
+            c->graph.output = x;
+            ggml_set_name(x, "ppocrv6_graph_output");
+            ggml_set_output(x);
+            ggml_build_forward_expand(c->graph.graph, x);
+            ggml_backend_sched_reset(c->graph.sched);
+            if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+            c->graph.allocated = c->graph.ready = true;
+            c->graph.width = width;
+            c->graph.batch = batch;
+            fprintf(stderr, "ppocrv6: STAGE-STOP graph at decoder (%s)\n", ggml_backend_name(c->graph.backend));
+            return true;
+        }
         if (batch > 1) {
             // Fused batch lane: finish in-graph so the caller receives
             // per-item logits like the tiny lane. rnn.py adds the skip AFTER
@@ -1838,7 +1891,24 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
                 std::string text;
                 int len = 0;
                 bool valid = false;
-                if (fused) {
+                if (fused && c->graph.svtr_prefix_output && !c->graph.logits_output) {
+                    // Hybrid lane: the graph returned the tokenization output
+                    // [hidden, tokens] per item; run the scalar SVTR decoder +
+                    // head on this item's slice. recognize_svtr reads the skip
+                    // from svtr_skip_host, so stage this item's skip slice.
+                    const size_t stride = (size_t)tokens * classes; // classes == hidden here
+                    std::vector<float> item(fused_output.begin() + stride * member,
+                                            fused_output.begin() + stride * (member + 1));
+                    std::vector<float> all_skip = std::move(c->graph.svtr_skip_host);
+                    c->graph.svtr_skip_host.assign(all_skip.begin() + stride * member,
+                                                   all_skip.begin() + stride * (member + 1));
+                    const char * decoded = recognize_svtr(c, item, tokens, classes, &len, true, false);
+                    c->graph.svtr_skip_host = std::move(all_skip);
+                    if (decoded) {
+                        text.assign(decoded, (size_t)std::max(0, len));
+                        valid = true;
+                    }
+                } else if (fused) {
                     const size_t stride = (size_t)tokens * classes;
                     text = graph_text(fused_output.data() + stride * member, tokens, classes);
                     len = (int)text.size();
