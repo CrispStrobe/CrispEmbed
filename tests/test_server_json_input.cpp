@@ -10,6 +10,7 @@
 #include "core/clean_exit.h"
 #include "core/json.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <string>
 #include <vector>
@@ -298,6 +299,54 @@ static int crispembed_test_main() {
         // A/B: agree on a normal payload.
         check("A/B number: agree on well-formed", json_extract_number_legacy(S("{\"conf\":0.75}"), "conf", 0) ==
                                                       json_extract_number_structural(S("{\"conf\":0.75}"), "conf", 0));
+    }
+
+    // T8: the server's remaining non-path fields (text/format/results/
+    // autorotate/images) moved off bare body.find() onto these helpers. One
+    // nested-decoy case per field: the decoy sits inside a nested object
+    // BEFORE the real top-level key, which is exactly where the old textual
+    // scan latched on. Each case also shows the naive scan being fooled.
+    {
+        // "text": decoy inside meta, real value top-level.
+        std::string body = S("{\"meta\":{\"text\":\"DECOY\"},\"text\":\"real input\"}");
+        std::vector<std::string> out;
+        check("T8 text: top-level wins over nested decoy",
+              json_extract_strings(body, "text", out) == 1 && out[0] == "real input");
+        check("T8 text: naive scan would take the decoy first",
+              body.find("\"text\"") < body.find("\"text\"", body.find("\"meta\"") + 20));
+    }
+    {
+        // "format": decoy nested, real top-level.
+        std::string body = S("{\"opts\":{\"format\":\"hocr\"},\"format\":\"pdf\"}");
+        std::vector<std::string> out;
+        check("T8 format: top-level wins over nested decoy",
+              json_extract_strings(body, "format", out) == 1 && out[0] == "pdf");
+        check("T8 format: decoy-only body yields nothing",
+              json_extract_strings(S("{\"opts\":{\"format\":\"hocr\"}}"), "format", out = {}) == 0);
+    }
+    {
+        // "results": value locator must land on the TOP-LEVEL array, not a
+        // nested key of the same name.
+        std::string body = S("{\"meta\":{\"results\":[{\"text\":\"DECOY\"}]},\"results\":[{\"text\":\"ok\"}]}");
+        size_t p = json_find_key_value(body, "results");
+        check("T8 results: finder lands on the top-level array",
+              p != std::string::npos && body[p] == '[' && body.find("\"ok\"") > p && body.find("\"DECOY\"") < p);
+    }
+    {
+        // "autorotate": nested decoy true, top-level false.
+        std::string body = S("{\"opts\":{\"autorotate\":true},\"autorotate\":false}");
+        size_t p = json_find_key_value(body, "autorotate");
+        check("T8 autorotate: finder lands on the top-level literal",
+              p != std::string::npos && body.compare(p, 5, "false") == 0);
+        check("T8 autorotate: naive scan finds the nested decoy first", body.find("\"autorotate\"") < p);
+    }
+    {
+        // "images": nested decoy array must not leak paths into the result.
+        std::string body = S("{\"meta\":{\"images\":[\"/etc/DECOY\"]},\"images\":[\"/srv/a.png\",\"/srv/b.png\"]}");
+        std::vector<std::string> out;
+        size_t n = json_extract_strings(body, "images", out);
+        check("T8 images: exactly the two top-level paths", n == 2 && out[0] == "/srv/a.png" && out[1] == "/srv/b.png");
+        check("T8 images: decoy path did not leak", std::find(out.begin(), out.end(), "/etc/DECOY") == out.end());
     }
 
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");
