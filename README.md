@@ -113,6 +113,32 @@ build-windows.bat           # or build-vulkan.bat / build-cuda.bat
 CUDA Toolkit, or Vulkan SDK. If you see *"ggml does not contain a CMakeLists.txt"*,
 run `git submodule update --init --recursive`.
 
+### CPU requirements & redistributable builds
+
+A source build defaults to `-march=native`: it targets **the machine you build
+on**, which is the fastest option and the right one for local use.
+
+Binaries you intend to copy to another machine must instead be pinned to a
+fixed baseline, or they die with `Illegal instruction` on any CPU that lacks an
+extension the build machine had:
+
+```bash
+cmake -S . -B build -DGGML_NATIVE=OFF     # portable; CRISPEMBED_NATIVE follows it
+python scripts/check-cpu-baseline.py build   # fails the build if it isn't portable
+```
+
+The prebuilt release archives and wheels are all built this way. Their floor is:
+
+| Platform | Baseline | Runs on |
+|----------|----------|---------|
+| x86_64 (Linux / Windows) | SSE4.2 + AVX + AVX2 + FMA + F16C + BMI2 | Intel Haswell (2013) / AMD Excavator (2015) and newer |
+| aarch64 (Linux) | `armv8.2-a+fp16+dotprod` | Neoverse N1/V1, Cortex-A76 and newer |
+| arm64 (macOS) | Apple clang default for arm64 | Apple Silicon (M1 and newer) |
+
+No release artifact uses AVX-512 or AMX: no current Intel consumer CPU has
+them. On a pre-AVX2 CPU, build from source with `-DGGML_NATIVE=OFF
+-DGGML_AVX2=OFF -DGGML_AVX=OFF` (much slower, but it runs).
+
 ### Mobile & browser
 
 ```bash

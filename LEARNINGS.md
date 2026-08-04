@@ -3132,11 +3132,57 @@ raw FLOP throughput.
 | `GGML_AMX_TILE` | OFF | Intel AMX for int8/BF16 (Sapphire Rapids+) | None (needs new CPU) |
 | `GGML_OPENMP` | ON | Thread parallelism | Already enabled |
 
-**Enable for best CPU performance:**
+**Enable for best CPU performance (LOCAL builds only):**
 ```bash
 cmake -S . -B build -DGGML_LLAMAFILE=ON   # custom SGEMM
 cmake -S . -B build -DGGML_AVX512=ON      # if CPU supports (check /proc/cpuinfo)
 ```
+
+> Never do this for a binary you ship — see the next section.
+
+## GGML_NATIVE probes the BUILD machine — never ship a native build
+
+`GGML_NATIVE` defaults to ON and is *not* a compile-time-only heuristic: it
+**executes probe programs on the build machine**.
+
+- MSVC: ggml includes `ggml-cpu/cmake/FindSIMD.cmake`, which uses
+  `check_c_source_runs` to run an AVX-512 test binary. If it exits 0, the whole
+  CPU backend is compiled `/arch:AVX512`.
+- GCC/Clang: `-march=native`.
+- ARM: `-mcpu=native` plus `check_cxx_source_runs` probes for
+  `dotprod` / `i8mm` / `sve` / `sme`.
+
+So the ISA of the artifact is a property of **whichever machine built it**. On a
+heterogeneous CI fleet that is a coin flip. Issue #41: GitHub's `windows-latest`
+pool mixes AVX-512-capable Intel hosts with AVX2-only AMD hosts, so v0.16.1's
+`crispembed-windows-x86_64.zip` (cpu) shipped `/arch:AVX512` and died with
+`Illegal instruction` on an i9-14900KF right after tokenizer load — while the
+previous release, built on an AMD runner, was fine on the same machine, and so
+was the cuda zip, the one leg that already pinned `-DGGML_NATIVE=OFF`.
+
+Two traps that made this hard to see:
+
+1. **The failure never reproduces in CI** — no runner lacks the extension the
+   runner had. Only an end user finds it.
+2. **`CMakeCache.txt` lies when NATIVE is ON.** `FindSIMD.cmake` sets
+   `GGML_AVX512` as a *normal* variable, which shadows the cache entry. The
+   cache can read `GGML_AVX512:BOOL=OFF` while the compile line says
+   `/arch:AVX512`. Verify against the generated build files (`build.ninja`,
+   `*.vcxproj`, `flags.make`), not the cache.
+
+**The rule:** every workflow producing a redistributable artifact passes
+`-DGGML_NATIVE=OFF` and then runs `scripts/check-cpu-baseline.py build`, which
+checks both the cache options and the generated compile lines.
+`CRISPEMBED_NATIVE` (which drives `-march=native` on CrispEmbed's own targets,
+for the `cpu_ops.h` intrinsics) defaults to `GGML_NATIVE`, so one flag makes the
+whole tree portable — setting only one of the two leaves half the binary tuned
+for the builder's CPU, which is precisely how this shipped.
+
+Shipped baselines are documented in the README ("CPU requirements &
+redistributable builds"). Longer term, `GGML_CPU_ALL_VARIANTS` +
+`GGML_BACKEND_DL` would give true runtime dispatch, but it requires the CPU
+backend to be loaded as a DLL, and CrispEmbed calls `ggml_backend_cpu_*`
+directly in ~200 places — a real refactor, not a flag flip.
 
 ### CUDA matmul options
 

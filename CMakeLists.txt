@@ -40,7 +40,31 @@ option(GGML_METAL       "Enable Metal GPU acceleration (macOS)" OFF)
 option(GGML_LLAMAFILE   "Enable llamafile optimized SGEMM" ON)
 option(GGML_OPENMP      "Enable OpenMP threading in ggml (OFF uses lighter pthreads pool)" OFF)
 option(CRISPEMBED_BUILD_SHARED "Build shared library for Python" ON)
-option(CRISPEMBED_NATIVE       "Use -march=native for CPU SIMD (AVX2/NEON)" ON)
+
+# CPU ISA baseline for CrispEmbed's own translation units.
+#
+# `-march=native` bakes in whatever the BUILD machine happens to support. That
+# is right for a local build and wrong for anything shipped: issue #41 — a
+# release runner that happened to have AVX-512 produced a Windows cpu artifact
+# that died with "Illegal instruction" on a Raptor Lake i9 (AVX2, no AVX-512),
+# while the previous release, built on an AVX2-only runner, ran fine. ggml has
+# the same hazard via `GGML_NATIVE` (on MSVC its FindSIMD.cmake *runs* probe
+# programs on the builder and turns on /arch:AVX512 if they succeed).
+#
+# So default CRISPEMBED_NATIVE to GGML_NATIVE: a release build passes
+# `-DGGML_NATIVE=OFF` once and the WHOLE tree — ggml and CrispEmbed alike —
+# compiles to a fixed, portable baseline. Setting only one of the two leaves
+# half the binary tuned for the builder's CPU, which is how this bug ships.
+if(DEFINED GGML_NATIVE)
+    set(CRISPEMBED_NATIVE_DEFAULT ${GGML_NATIVE})
+elseif(CMAKE_CROSSCOMPILING)
+    # Mirrors ggml's own GGML_NATIVE_DEFAULT: you cannot probe the host when
+    # the host is not the target.
+    set(CRISPEMBED_NATIVE_DEFAULT OFF)
+else()
+    set(CRISPEMBED_NATIVE_DEFAULT ON)
+endif()
+option(CRISPEMBED_NATIVE       "Use -march=native for CPU SIMD (AVX2/NEON)" ${CRISPEMBED_NATIVE_DEFAULT})
 
 # BLAS vendor: Generic, OpenBLAS, Intel10_64lp (MKL), Apple, etc.
 if(NOT DEFINED GGML_BLAS_VENDOR)
@@ -77,6 +101,55 @@ if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/ggml/CMakeLists.txt")
 endif()
 
 add_subdirectory(ggml)
+
+# ---------------------------------------------------------------------------
+# CPU ISA flags for CrispEmbed's own targets
+# ---------------------------------------------------------------------------
+# `src/core/cpu_ops.h` guards its intrinsics on __AVX2__ / __FMA__ / __ARM_NEON,
+# so the compiler needs to be told which ISA to target or those paths silently
+# compile out to scalar code.
+#
+#   CRISPEMBED_NATIVE=ON  → -march=native. Fastest locally, NOT redistributable.
+#   CRISPEMBED_NATIVE=OFF → mirror the fixed baseline ggml was configured with
+#                           (GGML_AVX2 / GGML_FMA / GGML_F16C / GGML_AVX512),
+#                           so the SIMD paths stay compiled in without
+#                           over-shooting the ISA the ggml half targets.
+#
+# MSVC is excluded from both arms: it has no `-march`, and the crispembed
+# targets have always been built there at the compiler default (SSE2). Raising
+# that would be a separate, deliberate change — ggml-cpu carries the SIMD that
+# matters on Windows.
+function(crispembed_apply_arch_flags target)
+    if(EMSCRIPTEN OR MSVC OR CMAKE_CROSSCOMPILING)
+        return()
+    endif()
+    if(CRISPEMBED_NATIVE)
+        target_compile_options(${target} PRIVATE -march=native)
+        return()
+    endif()
+    # The GGML_AVX*/FMA/F16C options exist on every host (ggml declares them
+    # unconditionally), so gate on the target architecture before emitting x86
+    # flags — `-mavx2` on aarch64 is a hard compile error.
+    if(NOT CMAKE_SYSTEM_PROCESSOR MATCHES "^([Xx]86_64|[Aa][Mm][Dd]64|i[3-6]86)$")
+        return()
+    endif()
+    set(_arch_flags "")
+    if(GGML_AVX512)
+        list(APPEND _arch_flags -mavx512f -mavx512cd -mavx512vl -mavx512dq -mavx512bw)
+    endif()
+    if(GGML_AVX2)
+        list(APPEND _arch_flags -mavx2)
+    endif()
+    if(GGML_FMA)
+        list(APPEND _arch_flags -mfma)
+    endif()
+    if(GGML_F16C)
+        list(APPEND _arch_flags -mf16c)
+    endif()
+    if(_arch_flags)
+        target_compile_options(${target} PRIVATE ${_arch_flags})
+    endif()
+endfunction()
 
 # ---------------------------------------------------------------------------
 # crisp_audio — shared audio-encoder library, lives in CrispASR. The path is
@@ -284,9 +357,7 @@ target_include_directories(crispembed PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
 )
 # Enable SIMD intrinsics in cpu_ops.h (AVX2/FMA on x86, NEON on ARM)
-if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC AND NOT CMAKE_CROSSCOMPILING)
-    target_compile_options(crispembed PRIVATE -march=native)
-endif()
+crispembed_apply_arch_flags(crispembed)
 # Avoid name clash with the DLL import lib (both would be crispembed.lib on Windows)
 set_target_properties(crispembed PROPERTIES ARCHIVE_OUTPUT_NAME crispembed-static)
 
@@ -806,9 +877,7 @@ if(CRISPEMBED_BUILD_SHARED)
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_compile_definitions(crispembed-shared PRIVATE CRISPEMBED_HAS_CRISP_AUDIO)
     endif()
-    if(CRISPEMBED_NATIVE AND NOT EMSCRIPTEN AND NOT MSVC AND NOT CMAKE_CROSSCOMPILING)
-        target_compile_options(crispembed-shared PRIVATE -march=native)
-    endif()
+    crispembed_apply_arch_flags(crispembed-shared)
     # All ggml + crisp_audio + crispembed-core are STATIC libs baked into the
     # shared .so/.dylib. Mark them PRIVATE so they don't leak into the export
     # set — consumers of crispembed::crispembed (find_package) only see the
