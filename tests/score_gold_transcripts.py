@@ -56,7 +56,12 @@ def main() -> int:
     fixtures = [f for f in load_fixtures(args.images) if f["truth"] or not args.require_truth]
     rows, missing = [], []
     for fx in fixtures:
-        t = args.gold / (Path(fx["name"]).stem + args.suffix)
+        # Arms disagree on whether a transcript is named after the fixture or
+        # after its stem; accept both rather than make the caller care.
+        for cand in (Path(fx["name"]).stem + args.suffix, fx["name"] + args.suffix):
+            t = args.gold / cand
+            if t.exists():
+                break
         if not t.exists():
             missing.append(fx["name"])
             continue
