@@ -1,5 +1,5 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/crispembed-qwen-vl-parity",
+  "id": "${KAGGLE_ACCOUNT}/crispembed-qwen-vl-ocr-parity",
   "title": "CrispEmbed Qwen VL OCR Parity",
   "code_file": "qwen_vl_parity.py",
   "language": "python",
