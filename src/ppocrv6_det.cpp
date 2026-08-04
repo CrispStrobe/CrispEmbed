@@ -453,8 +453,13 @@ static ggml_tensor * graph_conv(context * c, ggml_context * g, ggml_tensor * x, 
     const ggml_type weight_type = force_f32 || ggml_backend_is_cpu(c->graph.backend) ? GGML_TYPE_F32 : GGML_TYPE_F16;
     ggml_tensor * w = graph_resident(c, p.w, weight_type, p.kw, p.kh, icg, p.oc);
     if (!w) return nullptr;
+    // Direct-convolution A/B (no materialized im2col; native Metal kernel in
+    // this ggml revision): CRISPEMBED_PPOCRV6_CONV_DIRECT=1, non-CPU only.
+    static const bool conv_direct =
+        std::getenv("CRISPEMBED_PPOCRV6_CONV_DIRECT") != nullptr && !ggml_backend_is_cpu(c->graph.backend);
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1)
-                         : ggml_conv_2d(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1);
+                         : (conv_direct ? ggml_conv_2d_direct(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1)
+                                        : ggml_conv_2d(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1));
     if (p.b) {
         ggml_tensor * b = graph_resident(c, p.b, GGML_TYPE_F32, p.oc, 1, 1, 1);
         if (!b) return nullptr;
