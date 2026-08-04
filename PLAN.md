@@ -16,7 +16,6 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `chore/ocr-followups-0804` / `.claude/worktrees/chore-ocr-followups-0804` | **Picked:** three light fixes while heavy slot is busy: (1) flat-rec loader arch check for the T11 tesseract-GGUF→math_ocr SEGFAULT (fail loudly), (2) T8 server JSON non-path fields → core_json + nested-decoy tests, (3) stale `ppocrv6_det.cpp:935` DET_GRAPH comment (A6 leftover) | **IN PROGRESS** |
 | 2026-08-04 | `feat/parity-qwenvl` (delegated agent) | **A2 IN PROGRESS** — transformers Qwen2.5-VL-7B reference arm (MPS, Kaggle fallback documented); gold transcripts → `tests/regression/gold/qwen2.5-vl-7b/`. **A3 → A4 still QUEUED** (olmOCR toolkit, HF DeepSeek-OCR), strictly one heavy reference at a time | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. Pending: local smoke once the heavy slot frees (A2 running), decoded parity vs A3 gold on ≥5 pages | **IN PROGRESS** |
 
@@ -1609,7 +1608,23 @@ Remaining: Metal conv perf, and the comparator's own graph-box extraction
 
 ---
 
-### T8 — Server: 8 JSON field reads still scan textually (small, self-contained)
+### T8 — Server: 8 JSON field reads still scan textually [DONE 2026-08-04, merged via `chore/ocr-followups-0804`]
+
+All listed sites (3× `text`, 2× `format`, `results`, `autorotate`, `images`)
+plus the per-result-object `text` moved onto `core_json` depth-1 helpers;
+9 nested-decoy checks added to `tests/test_server_json_input.cpp` (all pass).
+Two extras found while in there: (a) the `images` array was the one
+path-valued input that BYPASSED `--image-root` confinement — each entry now
+goes through `path_within` like the single-image field; (b) the T11
+segfault (Tesseract GGUF in the flat rec slot) is fixed — `math_ocr_init`
+now refuses foreign GGUFs loudly naming their `general.architecture`
+(positive-tested: pix2tex-mfr q4_k still maps 12/12+6/6). Residual, NOT
+fixed: an engine load failure inside the flat pipeline still yields
+`regions=0` with exit code 0 — indistinguishable from a blank page for a
+benchmarking caller (HARD RULE #8 class); needs a status channel through
+the orchestrator before the CLI can exit nonzero. Original brief below.
+
+### T8 (original brief) — small, self-contained
 
 **State.** `extract_path_field` was moved onto `core_json`'s depth-1 finder on
 2026-08-03 (commit `54aeaecb`), so every *path* field — `image`, `output`,
