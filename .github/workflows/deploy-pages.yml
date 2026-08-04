@@ -9,7 +9,16 @@ on:
     branches: [main]
     paths:
       - 'src/**'
+      # Both spellings on purpose: 'ggml/**' covers edits to files inside a
+      # checked-out submodule, but a submodule POINTER bump changes the path
+      # 'ggml' with no trailing slash and matches neither 'ggml/**' nor any
+      # other entry here. Without the bare 'ggml' line this workflow — the
+      # only one that builds the WebGPU tier — skips exactly the change most
+      # likely to break it. That is not hypothetical: the v0.17 pin bump
+      # broke this build, and the follow-up pin fix did not re-run it.
+      - 'ggml'
       - 'ggml/**'
+      - '.gitmodules'
       - 'wasm/**'
       - 'examples/wasm-ocr/**'
       - 'CMakeLists.txt'
