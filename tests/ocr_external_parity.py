@@ -527,6 +527,8 @@ class Qwen25VLPy(Engine):
         self._applied_template: str | None = None
         self._placements: list[str] = []
         self._attn_resolved: str | None = None
+        self._weight_gib: dict = {}
+        self._peak_gib: dict = {}
 
     def available(self) -> str:
         try:
@@ -609,6 +611,16 @@ class Qwen25VLPy(Engine):
                 # record the placements instead of leaving that invisible.
                 self._placements = sorted({
                     str(v) for v in getattr(self._model, "hf_device_map", {}).values()})
+                # Placement knobs are easy to pass and easy to have silently
+                # ignored — a wrong guess looks exactly like a correct one until
+                # a page OOMs.  Read back the resident bytes per device so the
+                # budget is measured, not assumed.
+                if torch.cuda.is_available():
+                    self._weight_gib = {
+                        i: round(torch.cuda.memory_allocated(i) / 2 ** 30, 2)
+                        for i in range(torch.cuda.device_count())}
+                    print(f"    [vl] weights resident per device: {self._weight_gib}",
+                          flush=True)
             else:
                 self._model.to(self._device)
             self._model.eval()
@@ -650,13 +662,21 @@ class Qwen25VLPy(Engine):
         return decoded.strip(), int(new.shape[0])
 
     def run(self, image: Path, repeats: int):
+        import torch
+
         self._ensure(image)
+        if torch.cuda.is_available():
+            for i in range(torch.cuda.device_count()):
+                torch.cuda.reset_peak_memory_stats(i)
         times, text, n_new = [], "", 0
         for _ in range(repeats):
             t = time.perf_counter()
             text, n_new = self._generate(image)
             times.append((time.perf_counter() - t) * 1000)
         med = statistics.median(times)
+        if torch.cuda.is_available():
+            self._peak_gib = {i: round(torch.cuda.max_memory_allocated(i) / 2 ** 30, 2)
+                              for i in range(torch.cuda.device_count())}
         if self.transcripts:
             self.transcripts.mkdir(parents=True, exist_ok=True)
             (self.transcripts / f"{image.name}.txt").write_text(text + "\n")
@@ -672,6 +692,8 @@ class Qwen25VLPy(Engine):
             "max_new_tokens": self.max_new_tokens,
             "do_sample": False,
             "new_tokens": n_new,
+            "weights_gib_per_device": self._weight_gib or None,
+            "peak_gib_per_device": self._peak_gib or None,
             "regions": len([ln for ln in text.splitlines() if ln.strip()]),
         }
         # In-process and pre-warmed: wall time is the engine cost.
@@ -696,6 +718,7 @@ class Qwen25VLPy(Engine):
             "device_map_placements": self._placements or None,
             "max_memory": self.max_memory or None,
             "attn_implementation": self._attn_resolved,
+            "weights_gib_per_device": self._weight_gib or None,
             "hardware": hardware,
             "torch": torch.__version__,
             "transformers": transformers.__version__,
@@ -951,6 +974,7 @@ def main() -> int:
     result["summary"] = summary
     for e in active:
         if isinstance(e, Qwen25VLPy) and e.transcripts:
+            e.transcripts.mkdir(parents=True, exist_ok=True)
             man = e.manifest(args.hardware or platform.platform())
             man["images"] = str(args.images)
             man["fixtures"] = [fx["name"] for fx in fixtures]

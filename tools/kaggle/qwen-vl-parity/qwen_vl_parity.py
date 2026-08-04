@@ -189,19 +189,20 @@ if token_dir is not None:
 print("=" * 70)
 print("Step 3: parity runs (sequential — one heavy process at a time)")
 print("=" * 70)
-# Placement, sized from measured failures rather than guessed.  accelerate's
-# "auto" fills device 0 with weights first — and the inputs, the vision tower's
-# activations and the prefill logits all land on device 0 too, so the busiest
-# device ends up with the least free memory.  Measured on 2x T4, dense CC0 scans
-# (~4.8 Mpix, ~6k vision patches) died there twice: first a 3.98 GiB vision
-# activation against 2.26 GiB free, then a 1.02 GiB prefill allocation against
-# 0.5 GiB free.  Hand-capping the per-device weight budget only moved the
-# failure later.  "balanced_low_0" is the placement mode for this exact shape —
-# it deliberately keeps device 0 as empty of weights as possible because that is
-# where the transient tensors live.
-device_map = "balanced_low_0" if n_gpu > 1 else "auto"
-max_memory = ""
-print(f"device_map={device_map}")
+# Placement, sized from measured failures rather than guessed.  Device 0 holds
+# the inputs, the vision tower's activations and the prefill logits, so it is the
+# device that needs free memory — but accelerate's "auto" fills it with weights
+# first.  Measured on 2x T4 with dense CC0 scans (~4.8 Mpix, ~6k vision patches):
+# "auto" alone died on a 3.98 GiB vision activation with 2.26 GiB free; capping
+# device 0 at 6 GiB of weights got past that and died later on the 1.02 GiB
+# prefill logits with 0.5 GiB free.  The opposite extreme is worse still —
+# "balanced_low_0" packs device 1 so tightly that every fixture OOMs, including
+# ones that previously passed.  So: keep "auto", cap device 0 harder, and have
+# the arm print the resident bytes per device so the next adjustment is made
+# from a measurement instead of a theory.
+device_map = "auto"
+max_memory = f"0=4GiB,1={int(vram[1]) - 1}GiB" if n_gpu > 1 else ""
+print(f"device_map={device_map} max_memory={max_memory}")
 
 results = {}
 for corpus, images in (("synth", synth_local), ("cc0", cc0)):
