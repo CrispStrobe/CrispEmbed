@@ -394,9 +394,9 @@ jobs:
           cp ggml/include/*.h pkg/include/ 2>/dev/null || true
           cp README.md LICENSE pkg/ 2>/dev/null || true
           # Patch RPATH so libggml-cuda.so finds its siblings without
-          # LD_LIBRARY_PATH — CUDA users still rely on the host's
-          # libcudart.so.12 / libcublas.so.12, those resolve via the
-          # standard linker search path.
+          # LD_LIBRARY_PATH — in this (slim) archive the CUDA runtime itself
+          # still comes from the host and resolves via the standard linker
+          # search path.
           for f in pkg/libcrispembed.so* pkg/libggml*.so* \
                    pkg/crispembed pkg/crispembed-server pkg/crispembed-quantize; do
               [ -f "$f" ] || continue
@@ -405,11 +405,98 @@ jobs:
           done
           tar -czf crispembed-linux-x86_64-cuda.tar.gz -C pkg .
 
+      # ── Second archive: the same build, plus the CUDA runtime ──────────
+      # The slim tarball above needs a CUDA *toolkit* on the host, not merely
+      # a driver: libggml-cuda.so hard-needs libcudart/libcublas, and
+      # libggml.so hard-needs libggml-cuda.so, so on a driver-only machine the
+      # loader kills the process at startup — exit 127, no output, and no
+      # degrading to the CPU backend (#42). The Windows CUDA zip has always
+      # bundled cudart/cublas, which is why this only ever bit Linux.
+      #
+      # The slim name is kept as-is for continuity (Subtitle Edit and others
+      # pin these filenames); this adds a self-contained sibling instead of
+      # changing what an existing pin resolves to.
+      - name: Package (CUDA runtime bundled)
+        run: |
+          set -euo pipefail
+          rm -rf pkg-bundled && cp -a pkg pkg-bundled
+
+          # Copy the CUDA runtime closure. `ldd` prints the FULL transitive
+          # set, so libcublasLt (and libnvJitLink, which libcublasLt pulls in
+          # on 12.x) come along without being named here — a hardcoded list
+          # would silently rot on the next CUDA bump.
+          #
+          # libcuda.so.1 is deliberately EXCLUDED: that one is the driver.
+          # Shipping it would pin users to whatever driver this runner had and
+          # break them on every other one.
+          cuda_lib_count=0
+          while read -r lib; do
+              [ -n "$lib" ] || continue
+              base=$(basename "$lib")
+              case "$base" in
+                  libcuda.so*) continue ;;          # driver — never bundle
+                  libcu*|libnv*) ;;                 # CUDA runtime — bundle
+                  *) continue ;;
+              esac
+              # -L dereferences the SONAME symlink so the real file lands under
+              # the name the loader will look for.
+              cp -Lf "$lib" "pkg-bundled/$base"
+              cuda_lib_count=$((cuda_lib_count + 1))
+          done < <(ldd pkg-bundled/libggml-cuda.so* 2>/dev/null | awk '/=>/ {print $3}' | grep '^/' | sort -u)
+          echo "bundled $cuda_lib_count CUDA runtime librar(ies)"
+
+          # DT_RUNPATH is NOT transitive: libcublas.so.12 resolving
+          # libcublasLt.so.12 does not inherit libggml-cuda.so's RUNPATH, so
+          # each bundled CUDA lib needs its own $ORIGIN. (Same thing the
+          # manylinux/PyTorch wheels do to their vendored CUDA libs.)
+          for f in pkg-bundled/libcu*.so* pkg-bundled/libnv*.so*; do
+              [ -f "$f" ] || continue
+              [ -L "$f" ] && continue
+              patchelf --set-rpath '$ORIGIN' "$f" 2>/dev/null || true
+          done
+
+          # NVIDIA's EULA permits redistributing these runtime components with
+          # an application, and requires the terms to travel with them.
+          cp "$CUDA_PATH/EULA.txt" pkg-bundled/NVIDIA-EULA.txt 2>/dev/null || true
+          {
+            echo "This archive bundles NVIDIA CUDA runtime libraries"
+            echo "(libcudart / libcublas / libcublasLt and their dependencies),"
+            echo "redistributed under the NVIDIA CUDA Toolkit End User License"
+            echo "Agreement: https://docs.nvidia.com/cuda/eula/index.html"
+            echo
+            echo "They are NVIDIA's, not CrispEmbed's, and are covered by that"
+            echo "agreement rather than by CrispEmbed's LICENSE."
+            echo
+            echo "The NVIDIA kernel driver library (libcuda.so.1) is NOT included:"
+            echo "it must match the driver installed on the host."
+          } > pkg-bundled/NVIDIA-NOTICE.txt
+
+          tar -czf crispembed-linux-x86_64-cuda-bundled.tar.gz -C pkg-bundled .
+          ls -la crispembed-linux-x86_64-cuda*.tar.gz
+
+      # Both archives, each against its own declared contract. The slim one is
+      # allowed to want the CUDA runtime from the host; the bundled one may
+      # only want the driver. Encoding it here is what turns "CUDA users
+      # normally have CUDA installed" from an assumption into a checked fact.
+      - name: Verify bundled dependencies (both CUDA archives)
+        run: |
+          set -euo pipefail
+          echo "── slim: host must provide the CUDA toolkit runtime ──"
+          python3 scripts/check-bundled-deps.py pkg \
+              --allow 'libcuda.so.*' --allow 'libcudart.so.*' \
+              --allow 'libcublas.so.*' --allow 'libcublasLt.so.*' \
+              --allow 'libnv*.so.*'
+          echo
+          echo "── bundled: host must provide only the driver ──"
+          python3 scripts/check-bundled-deps.py pkg-bundled --allow 'libcuda.so.*'
+
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: linux-x86_64-cuda
-          path: crispembed-linux-x86_64-cuda.tar.gz
+          path: |
+            crispembed-linux-x86_64-cuda.tar.gz
+            crispembed-linux-x86_64-cuda-bundled.tar.gz
 
       - name: Upload to release
         if: startsWith(github.ref, 'refs/tags/')
@@ -419,7 +506,9 @@ jobs:
           name: CrispEmbed ${{ github.ref_name }}
           prerelease: ${{ contains(github.ref_name, '-') }}
           fail_on_unmatched_files: false
-          files: crispembed-linux-x86_64-cuda.tar.gz
+          files: |
+            crispembed-linux-x86_64-cuda.tar.gz
+            crispembed-linux-x86_64-cuda-bundled.tar.gz
 
   # ─── Windows x86_64 + CUDA ────────────────────────────────────────────
   # Bundles cudart64_12.dll + cublas64_12.dll alongside the CrispEmbed
