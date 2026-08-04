@@ -544,7 +544,7 @@ reference but is NOT the original of what we ported).
    text_recognition_model_name="PP-OCRv6_small_rec")`; models cached under
    `~/.paddlex/official_models/`. (HPI/ONNX plugin is Linux-x86-only — plain
    Paddle backend is the Mac path.)
-2. `~/venvs/rapidocr` — rapidocr 3.9.2 + onnxruntime: RapidAI's ONNX exports
+2. `~/venvs/rapidocr` — a community onnxruntime pipeline (3.9.2) with ONNX exports
    of PP-OCRv6 tiny/small/medium det+rec, Paddle-free, models cached in the
    venv's `rapidocr/models/`. `TextRecognition`-style single-crop runs and
    full-pipeline both work; also the ONNX graphs double as architecture ground
@@ -556,21 +556,21 @@ reference but is NOT the original of what we ported).
    `EncoderWithLightSVTR`, head `heads/rec_ctc_head.py`, C++ reference
    `deploy/cpp_infer`, ONNX tar URLs in
    `paddleocr-js/packages/core/src/resources/model-asset.ts:19-29`),
-   `RapidOCR`, and `TurboOCR` (MIT C++ ORT pipeline of v6 with an exact
+   community ONNX-runtime ports of v6 (one MIT C++ pipeline with an exact
    pre/post contract and CPU perf tricks).
 
 **T10 verdict: PORT BUG, not model asymmetry.** There is no `en`-specific v6
-recognizer (all 50 languages share the multilingual model — RapidOCR
+recognizer (all 50 languages share the multilingual model — the community ONNX port confirms:
 `model_resolver.py:104-108`), and BOTH official runners read
 `commons_example_receipt.png` essentially perfectly with the same
 tier/generation we run: paddleocr-3.7 v6_small got all 12 `$`, every `1`, and
-`Transaction ID` (47 regions); RapidOCR v6_small ONNX likewise (one `S`, one
+`Transaction ID` (47 regions); the v6_small ONNX export likewise (one `S`, one
 `_Card` artifact). Our lane's `$`->`S`, `I`/`f`/`1`->`:`, `H`->`ll` is ours.
 
 **The true speed baseline (same v6_small models, warm, this M1):** official
 paddle `synth_00_clean` **0.83 s** vs our engine 2.0 s (**2.4x slower** — worse
 than the 1.4x measured against the 2.10/v4 arm); receipt official **5.9 s** vs
-our 6.2 s (near par). RapidOCR/onnxruntime does the receipt in **2.2 s** —
+our 6.2 s (near par). The community onnxruntime pipeline does the receipt in **2.2 s** —
 2.7x faster than both Paddle and us; that is the realistic CPU ceiling to aim
 at, and ORT gets it with width-bucketed batching (see T4 notes).
 
@@ -615,7 +615,7 @@ same day** — the detector graph (CPU backend) is now the default at 1.5-1.7x
 over scalar (see T7 [CLOSED]); with it, synth_00_clean warm compute is
 ~**730 ms vs official paddle-3.7's 830 ms — we are AHEAD of the original on
 small pages**; (b) many-crop pages want the Metal fused batch graph (N1,
-adopted): per-crop dispatch is the remaining distance to TurboOCR's
+adopted): per-crop dispatch is the remaining distance to the
 onnxruntime ceiling on the receipt (2.2 s); (c) T3/H2 scalar-kernel work now
 only matters for the scalar escape path and medium tier; (d) Metal conv perf
 is the blocker for detector-on-GPU (9x slower than CPU graph today) — on
@@ -1247,7 +1247,7 @@ Start with PP-OCRv6, whose graph is already default and shape-keyed via
 `pp_graph_build(c, width)`. A bounded fused batch exists behind
 `CRISPEMBED_PPOCRV6_BATCH_GRAPH` (CPU-only; Metal hit a pooling shape assertion).
 
-**Reference design (TurboOCR, MIT, `/Volumes/backups/code/TurboOCR`) — its
+**Reference design (an MIT-licensed C++ onnxruntime pipeline of v6, cloned under `/Volumes/backups/code/`) — its
 onnxruntime CPU path does the 47-region receipt in 2.2 s where we take 6.2 s,
 and its rec pipeline (`src/recognition/cpu_paddle_rec.cpp`) is the design to
 steal from:** width bucketing with a fine step (`ceil(w/16)*16`, batch only
@@ -1434,7 +1434,7 @@ implementation. Regulatory dates were last verified against the OJ text on
 
 ### PP-OCRv6 detector-to-recognizer contract (selected follow-up)
 
-The PP-OCRv6 port must follow the official PaddleOCR/RapidOCR handoff rather
+The PP-OCRv6 port must follow the official PaddleOCR handoff rather
 than treating a segmentation result as an axis-aligned crop. The canonical
 path is:
 
@@ -1448,7 +1448,7 @@ Requirements:
    candidate cap, clipping, and reading-order sort. The external
    `$CRISPEMBED_GGUF_DIR/dbnet-ic15-f16.gguf` remains a fallback
    detector, not a replacement for the PP-OCRv6 detector.
-2. Add a shared quadrilateral crop helper equivalent to RapidOCR's
+2. Add a shared quadrilateral crop helper equivalent to the upstream PP-OCR
    `get_rotate_crop_image`: canonical TL/TR/BR/BL ordering, perspective
    transform, width/height derivation, clipping, and deterministic minimum
    height padding. Do not collapse rotated or skewed regions to an
@@ -2417,7 +2417,7 @@ reference gold or a missing model is recorded as unmeasured, not as a pass.
 
 | Path | Native timing / reference comparison | Output quality | Explicit follow-up |
 |---|---|---|---|
-| DBNet + TrOCR | 8.05 s cold; ~5.0 s warm on fox; DBNet postprocess optimization reduced 43.3 s → 1.54 s | 10/10 regions and 10/10 recognized; ordinary document baseline | Add shared German CC0 CER/WER and warm p50/p95 against Python/RapidOCR |
+| DBNet + TrOCR | 8.05 s cold; ~5.0 s warm on fox; DBNet postprocess optimization reduced 43.3 s → 1.54 s | 10/10 regions and 10/10 recognized; ordinary document baseline | Add shared German CC0 CER/WER and warm p50/p95 against the Python/onnxruntime references |
 | Tesseract-LSTM via DBNet line crops | 7.55 s cold / 8.09 s warm in the first sweep; expanded run 32.0 s cold due process/model conditions | Line crop CER 0.040; controlled line arithmetic/reference parity is exact, but page path is worse: 21 native regions vs 25 official lines, CER 0.307/WER 0.404 | Normalize benchmark conditions; match page segmentation, crop geometry, spacing, and CLI decode |
 | PARSeq | 0.921 s first sweep / 6.25 s expanded cold | Recognizer-only smoke (`Gooducalicanos.com`), no gold quality score | Add line-crop harness and CER/exact-match against scene-text gold |
 | GOT-OCR2 | 15.662 s / 22.073 s cold | Exact fox transcript | Warm/p95 benchmark and full German CC0 quality lane |
