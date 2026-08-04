@@ -1,0 +1,472 @@
+[
+  {
+    "fixture": "commons_example_receipt.png",
+    "stem": "commons_example_receipt",
+    "modes": {
+      "free_ocr": {
+        "prompt": "<image>\nFree OCR. ",
+        "error": null,
+        "gen_s": 11.36,
+        "wall_s": 11.47,
+        "deadline_fired": false,
+        "n_prompt_tokens": 908,
+        "n_image_tokens": 903,
+        "n_output_tokens": 200,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          6,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            2,
+            3
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 552,
+        "post_processed_chars": 552,
+        "image_size": "(500, 650)",
+        "valid_img_tokens": "796",
+        "output_text_tokens": "200",
+        "compression_ratio": "0.25"
+      },
+      "grounding_markdown": {
+        "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+        "error": null,
+        "gen_s": 18.07,
+        "wall_s": 18.17,
+        "deadline_fired": false,
+        "n_prompt_tokens": 913,
+        "n_image_tokens": 903,
+        "n_output_tokens": 352,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          6,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            2,
+            3
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 1144,
+        "post_processed_chars": 814,
+        "image_size": "(500, 650)",
+        "valid_img_tokens": "796",
+        "output_text_tokens": "352",
+        "compression_ratio": "0.44"
+      }
+    },
+    "gen_s": 11.36,
+    "n_attempts": 1,
+    "final_temperature": null,
+    "deterministic": true
+  },
+  {
+    "fixture": "commons_test_ocr_document.jpg",
+    "stem": "commons_test_ocr_document",
+    "modes": {
+      "free_ocr": {
+        "prompt": "<image>\nFree OCR. ",
+        "error": null,
+        "gen_s": 32.85,
+        "wall_s": 33.16,
+        "deadline_fired": false,
+        "n_prompt_tokens": 908,
+        "n_image_tokens": 903,
+        "n_output_tokens": 689,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          6,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            2,
+            3
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 2989,
+        "post_processed_chars": 2989,
+        "image_size": "(1920, 2485)",
+        "valid_img_tokens": "797",
+        "output_text_tokens": "689",
+        "compression_ratio": "0.86"
+      },
+      "grounding_markdown": {
+        "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+        "error": null,
+        "gen_s": 41.75,
+        "wall_s": 42.06,
+        "deadline_fired": false,
+        "n_prompt_tokens": 913,
+        "n_image_tokens": 903,
+        "n_output_tokens": 884,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          6,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            2,
+            3
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 3591,
+        "post_processed_chars": 3027,
+        "image_size": "(1920, 2485)",
+        "valid_img_tokens": "797",
+        "output_text_tokens": "884",
+        "compression_ratio": "1.11"
+      }
+    },
+    "gen_s": 32.85,
+    "n_attempts": 1,
+    "final_temperature": null,
+    "deterministic": true
+  },
+  {
+    "fixture": "german_official_print.jpg",
+    "stem": "german_official_print",
+    "modes": {
+      "free_ocr": {
+        "prompt": "<image>\nFree OCR. ",
+        "error": null,
+        "gen_s": 18.61,
+        "wall_s": 18.9,
+        "deadline_fired": false,
+        "n_prompt_tokens": 908,
+        "n_image_tokens": 903,
+        "n_output_tokens": 363,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          6,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            2,
+            3
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 1088,
+        "post_processed_chars": 1088,
+        "image_size": "(1920, 2518)",
+        "valid_img_tokens": "795",
+        "output_text_tokens": "359",
+        "compression_ratio": "0.45"
+      },
+      "grounding_markdown": {
+        "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+        "error": null,
+        "gen_s": 29.37,
+        "wall_s": 29.66,
+        "deadline_fired": false,
+        "n_prompt_tokens": 913,
+        "n_image_tokens": 903,
+        "n_output_tokens": 605,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          6,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            2,
+            3
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 1788,
+        "post_processed_chars": 1054,
+        "image_size": "(1920, 2518)",
+        "valid_img_tokens": "795",
+        "output_text_tokens": "600",
+        "compression_ratio": "0.75"
+      }
+    },
+    "gen_s": 18.61,
+    "n_attempts": 1,
+    "final_temperature": null,
+    "deterministic": true
+  },
+  {
+    "fixture": "receipt_historical.png",
+    "stem": "receipt_historical",
+    "modes": {
+      "free_ocr": {
+        "prompt": "<image>\nFree OCR. ",
+        "error": null,
+        "gen_s": 32.19,
+        "wall_s": 32.32,
+        "deadline_fired": false,
+        "n_prompt_tokens": 498,
+        "n_image_tokens": 493,
+        "n_output_tokens": 693,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          2,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            1,
+            2
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 2202,
+        "post_processed_chars": 2202,
+        "image_size": "(768, 1552)",
+        "valid_img_tokens": "326",
+        "output_text_tokens": "692",
+        "compression_ratio": "2.12"
+      },
+      "grounding_markdown": {
+        "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+        "error": null,
+        "gen_s": 30.65,
+        "wall_s": 30.78,
+        "deadline_fired": false,
+        "n_prompt_tokens": 503,
+        "n_image_tokens": 493,
+        "n_output_tokens": 660,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          2,
+          3,
+          640,
+          640
+        ],
+        "images_spatial_crop": [
+          [
+            1,
+            2
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 1903,
+        "post_processed_chars": 1679,
+        "image_size": "(768, 1552)",
+        "valid_img_tokens": "326",
+        "output_text_tokens": "660",
+        "compression_ratio": "2.02"
+      }
+    },
+    "gen_s": 32.19,
+    "n_attempts": 1,
+    "final_temperature": null,
+    "deterministic": true
+  },
+  {
+    "fixture": "simple_form.png",
+    "stem": "simple_form",
+    "modes": {
+      "free_ocr": {
+        "prompt": "<image>\nFree OCR. ",
+        "error": null,
+        "gen_s": 3.67,
+        "wall_s": 3.7,
+        "deadline_fired": false,
+        "n_prompt_tokens": 278,
+        "n_image_tokens": 273,
+        "n_output_tokens": 61,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_spatial_crop": [
+          [
+            1,
+            1
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 203,
+        "post_processed_chars": 203,
+        "image_size": "(452, 317)",
+        "valid_img_tokens": "179",
+        "output_text_tokens": "61",
+        "compression_ratio": "0.34"
+      },
+      "grounding_markdown": {
+        "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+        "error": null,
+        "gen_s": 89.1,
+        "wall_s": 89.15,
+        "deadline_fired": false,
+        "n_prompt_tokens": 283,
+        "n_image_tokens": 273,
+        "n_output_tokens": 2073,
+        "images_ori_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_crop_shape": [
+          1,
+          3,
+          1024,
+          1024
+        ],
+        "images_spatial_crop": [
+          [
+            1,
+            1
+          ]
+        ],
+        "generate_kwargs": {
+          "temperature": 0.0,
+          "eos_token_id": 1,
+          "streamer": "NoEOSTextStreamer",
+          "max_new_tokens": 8192,
+          "no_repeat_ngram_size": 20,
+          "use_cache": true
+        },
+        "raw_chars": 6066,
+        "post_processed_chars": 561,
+        "image_size": "(452, 317)",
+        "valid_img_tokens": "179",
+        "output_text_tokens": "2073",
+        "compression_ratio": "11.58"
+      }
+    },
+    "gen_s": 3.67,
+    "n_attempts": 1,
+    "final_temperature": null,
+    "deterministic": true
+  }
+]

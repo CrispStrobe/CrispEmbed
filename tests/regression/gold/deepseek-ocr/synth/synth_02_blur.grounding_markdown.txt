@@ -1,0 +1,8 @@
+<|ref|>text<|/ref|><|det|>[[28, 88, 625, 160]]<|/det|>
+Chapter 7. Measurement and error. 
+
+<|ref|>text<|/ref|><|det|>[[28, 199, 970, 280]]<|/det|>
+Every instrument reports a value and an uncertainty. 
+
+<|ref|>text<|/ref|><|det|>[[28, 311, 936, 392]]<|/det|>
+A number without an interval is not a measurement.

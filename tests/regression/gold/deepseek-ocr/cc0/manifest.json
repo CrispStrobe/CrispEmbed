@@ -1,0 +1,499 @@
+{
+  "brief": "A4 - parity arm + gold: HF DeepSeek-OCR reference",
+  "model_id": "deepseek-ai/DeepSeek-OCR",
+  "revision": "9f30c71f441d010e5429c532364a86705536c53a",
+  "card_preset": "Gundam (base_size=1024, image_size=640, crop_mode=True)",
+  "infer_kwargs": {
+    "base_size": 1024,
+    "image_size": 640,
+    "crop_mode": true,
+    "save_results": true,
+    "test_compress": true
+  },
+  "prompts": {
+    "free_ocr": "<image>\nFree OCR. ",
+    "grounding_markdown": "<image>\n<|grounding|>Convert the document to markdown. "
+  },
+  "primary_mode": "free_ocr",
+  "entry_point": "modeling_deepseekocr.py::infer (the checkpoint's own helper, called with the model card's arguments)",
+  "conversation_template": "plain (sft_format='plain', system_prompt=''); SeparatorStyle.PLAIN emits the user content alone, and format_messages .strip()s it, so the applied prompt is the card string minus its trailing space",
+  "dtype": "bfloat16",
+  "dtype_deviation": null,
+  "dtype_patch": null,
+  "bf16_probe": {
+    "matmul": "ok",
+    "conv2d": "ok",
+    "sdpa": "ok"
+  },
+  "attn_implementation": "eager",
+  "decoder_attention_class": "LlamaAttention",
+  "attn_deviation": "card passes _attn_implementation='flash_attention_2'; sm_75 has no FA2 and the checkpoint's ATTENTION_CLASSES has no sdpa entry, so eager is the only remaining key. Vision towers are unaffected (v1 ViT use_flash_attn=False, v2 Qwen2 encoder attn_implementation='sdpa')",
+  "generation_config": {
+    "_from_model_config": true,
+    "bos_token_id": 0,
+    "eos_token_id": 1,
+    "transformers_version": "4.46.3"
+  },
+  "page_time_limit_s": 240.0,
+  "page_time_limit_note": "injected as a StoppingCriteria; max_new_tokens stays at the checkpoint's 8192",
+  "serving_stack": "transformers 4.46.3 (torch 2.10.0+cu128), single CUDA device",
+  "hardware": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
+  "date": "2026-08-04",
+  "images": "/kaggle/temp/CrispEmbed/tests/regression/images/cc0",
+  "repo_commit": "afed60253401e720a7c36ee5e4b247dbcb375f77",
+  "load_s": 41.8,
+  "tokenizer_eos_token_id": 1,
+  "skipped_over_budget": [],
+  "pages": [
+    {
+      "fixture": "commons_example_receipt.png",
+      "stem": "commons_example_receipt",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 11.36,
+          "wall_s": 11.47,
+          "deadline_fired": false,
+          "n_prompt_tokens": 908,
+          "n_image_tokens": 903,
+          "n_output_tokens": 200,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 552,
+          "post_processed_chars": 552,
+          "image_size": "(500, 650)",
+          "valid_img_tokens": "796",
+          "output_text_tokens": "200",
+          "compression_ratio": "0.25"
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 18.07,
+          "wall_s": 18.17,
+          "deadline_fired": false,
+          "n_prompt_tokens": 913,
+          "n_image_tokens": 903,
+          "n_output_tokens": 352,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1144,
+          "post_processed_chars": 814,
+          "image_size": "(500, 650)",
+          "valid_img_tokens": "796",
+          "output_text_tokens": "352",
+          "compression_ratio": "0.44"
+        }
+      }
+    },
+    {
+      "fixture": "commons_test_ocr_document.jpg",
+      "stem": "commons_test_ocr_document",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 32.85,
+          "wall_s": 33.16,
+          "deadline_fired": false,
+          "n_prompt_tokens": 908,
+          "n_image_tokens": 903,
+          "n_output_tokens": 689,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 2989,
+          "post_processed_chars": 2989,
+          "image_size": "(1920, 2485)",
+          "valid_img_tokens": "797",
+          "output_text_tokens": "689",
+          "compression_ratio": "0.86"
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 41.75,
+          "wall_s": 42.06,
+          "deadline_fired": false,
+          "n_prompt_tokens": 913,
+          "n_image_tokens": 903,
+          "n_output_tokens": 884,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 3591,
+          "post_processed_chars": 3027,
+          "image_size": "(1920, 2485)",
+          "valid_img_tokens": "797",
+          "output_text_tokens": "884",
+          "compression_ratio": "1.11"
+        }
+      }
+    },
+    {
+      "fixture": "german_official_print.jpg",
+      "stem": "german_official_print",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 18.61,
+          "wall_s": 18.9,
+          "deadline_fired": false,
+          "n_prompt_tokens": 908,
+          "n_image_tokens": 903,
+          "n_output_tokens": 363,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1088,
+          "post_processed_chars": 1088,
+          "image_size": "(1920, 2518)",
+          "valid_img_tokens": "795",
+          "output_text_tokens": "359",
+          "compression_ratio": "0.45"
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 29.37,
+          "wall_s": 29.66,
+          "deadline_fired": false,
+          "n_prompt_tokens": 913,
+          "n_image_tokens": 903,
+          "n_output_tokens": 605,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            6,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              2,
+              3
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1788,
+          "post_processed_chars": 1054,
+          "image_size": "(1920, 2518)",
+          "valid_img_tokens": "795",
+          "output_text_tokens": "600",
+          "compression_ratio": "0.75"
+        }
+      }
+    },
+    {
+      "fixture": "receipt_historical.png",
+      "stem": "receipt_historical",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 32.19,
+          "wall_s": 32.32,
+          "deadline_fired": false,
+          "n_prompt_tokens": 498,
+          "n_image_tokens": 493,
+          "n_output_tokens": 693,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            2,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              2
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 2202,
+          "post_processed_chars": 2202,
+          "image_size": "(768, 1552)",
+          "valid_img_tokens": "326",
+          "output_text_tokens": "692",
+          "compression_ratio": "2.12"
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 30.65,
+          "wall_s": 30.78,
+          "deadline_fired": false,
+          "n_prompt_tokens": 503,
+          "n_image_tokens": 493,
+          "n_output_tokens": 660,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            2,
+            3,
+            640,
+            640
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              2
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 1903,
+          "post_processed_chars": 1679,
+          "image_size": "(768, 1552)",
+          "valid_img_tokens": "326",
+          "output_text_tokens": "660",
+          "compression_ratio": "2.02"
+        }
+      }
+    },
+    {
+      "fixture": "simple_form.png",
+      "stem": "simple_form",
+      "modes": {
+        "free_ocr": {
+          "prompt": "<image>\nFree OCR. ",
+          "error": null,
+          "gen_s": 3.67,
+          "wall_s": 3.7,
+          "deadline_fired": false,
+          "n_prompt_tokens": 278,
+          "n_image_tokens": 273,
+          "n_output_tokens": 61,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              1
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 203,
+          "post_processed_chars": 203,
+          "image_size": "(452, 317)",
+          "valid_img_tokens": "179",
+          "output_text_tokens": "61",
+          "compression_ratio": "0.34"
+        },
+        "grounding_markdown": {
+          "prompt": "<image>\n<|grounding|>Convert the document to markdown. ",
+          "error": null,
+          "gen_s": 89.1,
+          "wall_s": 89.15,
+          "deadline_fired": false,
+          "n_prompt_tokens": 283,
+          "n_image_tokens": 273,
+          "n_output_tokens": 2073,
+          "images_ori_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_crop_shape": [
+            1,
+            3,
+            1024,
+            1024
+          ],
+          "images_spatial_crop": [
+            [
+              1,
+              1
+            ]
+          ],
+          "generate_kwargs": {
+            "temperature": 0.0,
+            "eos_token_id": 1,
+            "streamer": "NoEOSTextStreamer",
+            "max_new_tokens": 8192,
+            "no_repeat_ngram_size": 20,
+            "use_cache": true
+          },
+          "raw_chars": 6066,
+          "post_processed_chars": 561,
+          "image_size": "(452, 317)",
+          "valid_img_tokens": "179",
+          "output_text_tokens": "2073",
+          "compression_ratio": "11.58"
+        }
+      }
+    }
+  ]
+}

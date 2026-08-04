@@ -1,0 +1,130 @@
+{
+  "captured_at_runtime": true,
+  "brief": "A4 - parity arm + gold: HF DeepSeek-OCR reference",
+  "entry_point": "the checkpoint's own modeling_deepseekocr*.py::infer(); this kernel wraps model.generate to record the request it builds and does not rebuild any part of it",
+  "prompts": {
+    "free_ocr": "<image>\nFree OCR. ",
+    "grounding_markdown": "<image>\n<|grounding|>Convert the document to markdown. "
+  },
+  "primary_mode": "free_ocr",
+  "prompt_note": "verbatim from each model card's Usage block, trailing space included; format_messages() .strip()s the content so the trailing space never reaches the tokenizer",
+  "conversation_template": "plain",
+  "image_token": "<image>",
+  "image_token_id": 128815,
+  "bos_id": 0,
+  "stop_str": "<\uff5cend\u2581of\u2581sentence\uff5c>",
+  "dtype": "bfloat16",
+  "bf16_probe": {
+    "matmul": "ok",
+    "conv2d": "ok",
+    "sdpa": "ok"
+  },
+  "torch": "2.10.0+cu128",
+  "transformers": "4.46.3",
+  "hardware": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
+  "arch_list": [
+    "sm_70",
+    "sm_75",
+    "sm_80",
+    "sm_86",
+    "sm_90",
+    "sm_100",
+    "sm_120"
+  ],
+  "repo_commit": "afed60253401e720a7c36ee5e4b247dbcb375f77",
+  "date": "2026-08-04",
+  "models": [
+    {
+      "key": "deepseek-ocr",
+      "id": "deepseek-ai/DeepSeek-OCR",
+      "modeling_file": "modeling_deepseekocr.py",
+      "infer_kwargs": {
+        "base_size": 1024,
+        "image_size": 640,
+        "crop_mode": true,
+        "save_results": true,
+        "test_compress": true
+      },
+      "card_preset": "Gundam (base_size=1024, image_size=640, crop_mode=True)",
+      "revision": "9f30c71f441d010e5429c532364a86705536c53a",
+      "dtype_patch": null,
+      "runtime": {
+        "attn_implementation": "eager",
+        "decoder_attention_class": "LlamaAttention",
+        "generation_config": {
+          "_from_model_config": true,
+          "bos_token_id": 0,
+          "eos_token_id": 1,
+          "transformers_version": "4.46.3"
+        },
+        "load_s": 41.8,
+        "tokenizer_eos_token_id": 1,
+        "determinism_rerun": [
+          {
+            "fixture": "synth_00_blur.png",
+            "identical": true,
+            "chars": [
+              126,
+              126
+            ]
+          },
+          {
+            "fixture": "commons_example_receipt.png",
+            "identical": true,
+            "chars": [
+              552,
+              552
+            ]
+          }
+        ],
+        "skipped_over_budget": []
+      }
+    },
+    {
+      "key": "deepseek-ocr2",
+      "id": "deepseek-ai/DeepSeek-OCR-2",
+      "modeling_file": "modeling_deepseekocr2.py",
+      "infer_kwargs": {
+        "base_size": 1024,
+        "image_size": 768,
+        "crop_mode": true,
+        "save_results": true,
+        "test_compress": false
+      },
+      "card_preset": "dynamic resolution (0-6)x768x768 + 1x1024x1024 (base_size=1024, image_size=768, crop_mode=True)",
+      "revision": "aaa02f3811945a91062062994c5c4a3f4c0af2b0",
+      "dtype_patch": null,
+      "runtime": {
+        "attn_implementation": "eager",
+        "decoder_attention_class": "LlamaAttention",
+        "generation_config": {
+          "_from_model_config": true,
+          "bos_token_id": 0,
+          "eos_token_id": 1,
+          "transformers_version": "4.46.3"
+        },
+        "load_s": 7.7,
+        "tokenizer_eos_token_id": 1,
+        "determinism_rerun": [
+          {
+            "fixture": "synth_00_blur.png",
+            "identical": true,
+            "chars": [
+              126,
+              126
+            ]
+          },
+          {
+            "fixture": "commons_example_receipt.png",
+            "identical": true,
+            "chars": [
+              559,
+              559
+            ]
+          }
+        ],
+        "skipped_over_budget": []
+      }
+    }
+  ]
+}
