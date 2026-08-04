@@ -12,6 +12,7 @@
 // nothing for a symlink to redirect, and the mode must not be world-readable.
 
 #include "core/temp_file.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -36,7 +37,7 @@ bool exists(const std::string & p) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     std::printf("private temp files\n");
 
     const std::string a = core_tmp::make_private(".png");
@@ -88,4 +89,12 @@ int main() {
     }
     std::printf("\nPASS: temporary files are private and unpredictable.\n");
     return 0;
+}
+
+// The guard in tools/check_test_clean_exit.sh: a one-shot binary must not run
+// ggml's static GPU-device destructor at exit (it aborts on Metal / faults on
+// CUDA). These tests touch no GPU today, but they link crispembed-core, so the
+// teardown is one added dependency away from firing.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
