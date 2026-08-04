@@ -475,6 +475,19 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-330m-f16", "f2llm-v2-330m.gguf",
       "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m.gguf", "Qwen3 896d multilingual (F16)",
       "903 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-330M" },
+    // imatrix-calibrated sub-Q8 flavors (PLAN.md T19-E3). This model degrades
+    // fastest of the three pruned siblings at 4 bits and gains the most from
+    // calibration: over 65 held-out texts vs the F16 base, Q4_K goes mean
+    // 0.9230 -> 0.9501 and min 0.8840 -> 0.9179. IQ4_XS+imatrix is better still
+    // (0.9619/0.9443) and smaller. Both stay well under Q8_0's 0.9992, default.
+    { "f2llm-v2-330m-q4k", "f2llm-v2-330m-q4_k-imatrix.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m-q4_k-imatrix.gguf",
+      "Qwen3 896d multilingual (Q4_K+imatrix)", "250 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-330M" },
+    { "f2llm-v2-330m-iq4xs", "f2llm-v2-330m-iq4_xs.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m-iq4_xs.gguf",
+      "Qwen3 896d multilingual (IQ4_XS+imatrix)", "248 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-330M" },
 
     { "f2llm-v2-0.6b", "f2llm-v2-0.6b-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
