@@ -507,8 +507,13 @@ static bool graph_build(context * c, int h, int w) {
     // vs 315 ms scalar on synth_00_clean (CPU backend), and the 25-fixture CER
     // gate came out net-better (labelled mean 0.06394 vs 0.06410; receipt
     // 0.0000). CRISPEMBED_PPOCRV6_DET_SCALAR=1 restores the scalar reference.
-    // medium stays scalar until its graph gets the same validation.
-    if (c->variant == "medium" || std::getenv("CRISPEMBED_PPOCRV6_DET_SCALAR")) return false;
+    // medium's RepLKFPN neck graph validated 2026-08-04: every med_* tap at
+    // cosine 0.99999998-1.0 vs scalar on synth + receipt, probability
+    // 0.99999999 with equal norms, same box counts, and 6.9 s -> 1.0 s /
+    // 41.4 s -> 8.7 s detector time on synth_00_clean / german_official_print
+    // (the CPU-scalar medium detector was why the medium tier timed out in
+    // every benchmark). German CER graph 0.04856 vs scalar 0.04955.
+    if (std::getenv("CRISPEMBED_PPOCRV6_DET_SCALAR")) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
     if (ggml_backend_is_cpu(c->graph.backend)) {
@@ -562,55 +567,122 @@ static bool graph_build(context * c, int h, int w) {
         }
         stage_out[si] = x;
     }
-    std::vector<ggml_tensor *> fused(4);
-    for (int i = 0; i < 4; ++i) {
-        fused[i] = graph_conv(c, c->graph.graph_ctx, stage_out[i], c->features[i].insert);
-        if (!fused[i]) return false;
-        ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, fused[i], GGML_OP_POOL_AVG, fused[i]->ne[0],
-                                            fused[i]->ne[1], fused[i]->ne[0], fused[i]->ne[1], 0, 0);
-        ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].insert_se1);
-        if (!gate) return false;
-        gate = ggml_relu(c->graph.graph_ctx, gate);
-        gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].insert_se2);
-        if (!gate) return false;
-        // Hard-sigmoid gate: clamp(0.2*x + 0.5), matching the scalar path and
-        // Paddle's SELayer. A stray extra ggml_scale(gate, 0.2f) here squashed
-        // the gate to 0.04*x + 0.5 — the proc-SE below never had it — and was
-        // the whole fused0-cosine-0.988 / 31-vs-30-box geometry divergence.
-        gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
-        fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_mul(c->graph.graph_ctx, fused[i], gate));
-        c->graph.named_taps.push_back({ "fused" + std::to_string(i), fused[i] });
+    ggml_tensor * neck = nullptr;
+    if (c->variant == "medium") {
+        // RepLKFPN-style medium neck, mirroring run_medium_neck: adjust ->
+        // top-down FPN -> project -> bottom-up (stride-2 conv, grid-matched
+        // by nearest interpolation) -> lateral -> med_ic refinement (reduce,
+        // 3x summed vertical/horizontal/symmetric branches, final+ReLU,
+        // residual) -> deepest-first concat on stage-0's grid. Tap names
+        // match the scalar last_stages so DET_GRAPH_COMPARE diffs per stage.
+        ggml_context * g = c->graph.graph_ctx;
+        ggml_tensor *adjusted[4], *top[4], *projected[4], *bottom[4], *refined[4];
+        for (int i = 0; i < 4; ++i) {
+            adjusted[i] = graph_conv(c, g, stage_out[i], c->med_adjust[i]);
+            if (!adjusted[i]) return false;
+            c->graph.named_taps.push_back({ "med_adjust" + std::to_string(i), adjusted[i] });
+        }
+        top[3] = adjusted[3];
+        for (int i = 2; i >= 0; --i) {
+            ggml_tensor * up = ggml_interpolate(g, top[i + 1], adjusted[i]->ne[0], adjusted[i]->ne[1],
+                                                adjusted[i]->ne[2], adjusted[i]->ne[3], GGML_SCALE_MODE_NEAREST);
+            top[i] = ggml_add(g, adjusted[i], up);
+        }
+        for (int i = 0; i < 4; ++i) c->graph.named_taps.push_back({ "med_top" + std::to_string(i), top[i] });
+        for (int i = 0; i < 4; ++i) {
+            projected[i] = graph_conv(c, g, i < 3 ? top[i] : adjusted[3], c->med_project[i]);
+            if (!projected[i]) return false;
+            c->graph.named_taps.push_back({ "med_project" + std::to_string(i), projected[i] });
+        }
+        bottom[0] = projected[0];
+        for (int i = 1; i < 4; ++i) {
+            ggml_tensor * down = graph_conv(c, g, bottom[i - 1], c->med_bottom[i - 1]);
+            if (!down) return false;
+            down = ggml_interpolate(g, down, projected[i]->ne[0], projected[i]->ne[1], down->ne[2], down->ne[3],
+                                    GGML_SCALE_MODE_NEAREST);
+            bottom[i] = ggml_add(g, projected[i], down);
+        }
+        for (int i = 0; i < 4; ++i) c->graph.named_taps.push_back({ "med_bottom" + std::to_string(i), bottom[i] });
+        for (int i = 0; i < 4; ++i) {
+            ggml_tensor * lat = graph_conv(c, g, i == 0 ? projected[0] : bottom[i], c->med_lateral[i]);
+            if (!lat) return false;
+            c->graph.named_taps.push_back({ "med_lateral" + std::to_string(i), lat });
+            const medium_ic & b = c->med_ic[i];
+            ggml_tensor * r = graph_conv(c, g, lat, b.reduce);
+            if (!r) return false;
+            ggml_tensor * a = r;
+            for (int j = 0; j < 3; ++j) {
+                ggml_tensor * v = graph_conv(c, g, a, b.vertical[j]);
+                ggml_tensor * q = graph_conv(c, g, a, b.horizontal[j]);
+                ggml_tensor * s = graph_conv(c, g, a, b.symmetric[j]);
+                if (!v || !q || !s) return false;
+                a = ggml_add(g, ggml_add(g, v, q), s);
+            }
+            ggml_tensor * y = graph_conv(c, g, a, b.final);
+            if (!y) return false;
+            y = ggml_relu(g, y);
+            refined[i] = ggml_add(g, lat, y);
+            c->graph.named_taps.push_back({ "med_refined" + std::to_string(i), refined[i] });
+        }
+        neck = ggml_interpolate(g, refined[3], refined[0]->ne[0], refined[0]->ne[1], refined[3]->ne[2],
+                                refined[3]->ne[3], GGML_SCALE_MODE_NEAREST);
+        for (int i = 2; i >= 1; --i)
+            neck = ggml_concat(g, neck,
+                               ggml_interpolate(g, refined[i], refined[0]->ne[0], refined[0]->ne[1], refined[i]->ne[2],
+                                                refined[i]->ne[3], GGML_SCALE_MODE_NEAREST),
+                               2);
+        neck = ggml_concat(g, neck, refined[0], 2);
+    } else {
+        std::vector<ggml_tensor *> fused(4);
+        for (int i = 0; i < 4; ++i) {
+            fused[i] = graph_conv(c, c->graph.graph_ctx, stage_out[i], c->features[i].insert);
+            if (!fused[i]) return false;
+            ggml_tensor * pooled = ggml_pool_2d(c->graph.graph_ctx, fused[i], GGML_OP_POOL_AVG, fused[i]->ne[0],
+                                                fused[i]->ne[1], fused[i]->ne[0], fused[i]->ne[1], 0, 0);
+            ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].insert_se1);
+            if (!gate) return false;
+            gate = ggml_relu(c->graph.graph_ctx, gate);
+            gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].insert_se2);
+            if (!gate) return false;
+            // Hard-sigmoid gate: clamp(0.2*x + 0.5), matching the scalar path and
+            // Paddle's SELayer. A stray extra ggml_scale(gate, 0.2f) here squashed
+            // the gate to 0.04*x + 0.5 — the proc-SE below never had it — and was
+            // the whole fused0-cosine-0.988 / 31-vs-30-box geometry divergence.
+            gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
+            fused[i] = ggml_add(c->graph.graph_ctx, fused[i], ggml_mul(c->graph.graph_ctx, fused[i], gate));
+            c->graph.named_taps.push_back({ "fused" + std::to_string(i), fused[i] });
+        }
+        for (int i = 2; i >= 0; --i)
+            fused[i] = ggml_add(c->graph.graph_ctx, fused[i],
+                                ggml_upscale(c->graph.graph_ctx, fused[i + 1], 2, GGML_SCALE_MODE_NEAREST));
+        std::vector<ggml_tensor *> proc(4);
+        for (int i = 0; i < 4; ++i) {
+            ggml_tensor * z = graph_conv(c, c->graph.graph_ctx, fused[i], c->features[i].dw);
+            if (!z) return false;
+            z = graph_conv(c, c->graph.graph_ctx, z, c->features[i].pw);
+            if (!z) return false;
+            ggml_tensor * pooled =
+                ggml_pool_2d(c->graph.graph_ctx, z, GGML_OP_POOL_AVG, z->ne[0], z->ne[1], z->ne[0], z->ne[1], 0, 0);
+            ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].se1);
+            if (!gate) return false;
+            gate = ggml_relu(c->graph.graph_ctx, gate);
+            gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].se2);
+            if (!gate) return false;
+            gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
+            proc[i] = ggml_add(c->graph.graph_ctx, z, ggml_mul(c->graph.graph_ctx, z, gate));
+            c->graph.named_taps.push_back({ "proc" + std::to_string(i), proc[i] });
+        }
+        // Match the CPU neck's channel order: deepest feature first, then
+        // progressively finer features.  Reversing this concat is critical—the
+        // channels have equal shapes, so a mistaken order can look numerically
+        // plausible until the detector head produces unrelated logits.
+        neck = ggml_upscale(c->graph.graph_ctx, proc[3], 8, GGML_SCALE_MODE_NEAREST);
+        neck = ggml_concat(c->graph.graph_ctx, neck,
+                           ggml_upscale(c->graph.graph_ctx, proc[2], 4, GGML_SCALE_MODE_NEAREST), 2);
+        neck = ggml_concat(c->graph.graph_ctx, neck,
+                           ggml_upscale(c->graph.graph_ctx, proc[1], 2, GGML_SCALE_MODE_NEAREST), 2);
+        neck = ggml_concat(c->graph.graph_ctx, neck, proc[0], 2);
     }
-    for (int i = 2; i >= 0; --i)
-        fused[i] = ggml_add(c->graph.graph_ctx, fused[i],
-                            ggml_upscale(c->graph.graph_ctx, fused[i + 1], 2, GGML_SCALE_MODE_NEAREST));
-    std::vector<ggml_tensor *> proc(4);
-    for (int i = 0; i < 4; ++i) {
-        ggml_tensor * z = graph_conv(c, c->graph.graph_ctx, fused[i], c->features[i].dw);
-        if (!z) return false;
-        z = graph_conv(c, c->graph.graph_ctx, z, c->features[i].pw);
-        if (!z) return false;
-        ggml_tensor * pooled =
-            ggml_pool_2d(c->graph.graph_ctx, z, GGML_OP_POOL_AVG, z->ne[0], z->ne[1], z->ne[0], z->ne[1], 0, 0);
-        ggml_tensor * gate = graph_conv(c, c->graph.graph_ctx, pooled, c->features[i].se1);
-        if (!gate) return false;
-        gate = ggml_relu(c->graph.graph_ctx, gate);
-        gate = graph_conv(c, c->graph.graph_ctx, gate, c->features[i].se2);
-        if (!gate) return false;
-        gate = ggml_clamp(c->graph.graph_ctx, ggml_scale_bias(c->graph.graph_ctx, gate, 0.2f, 0.5f), 0.0f, 1.0f);
-        proc[i] = ggml_add(c->graph.graph_ctx, z, ggml_mul(c->graph.graph_ctx, z, gate));
-        c->graph.named_taps.push_back({ "proc" + std::to_string(i), proc[i] });
-    }
-    // Match the CPU neck's channel order: deepest feature first, then
-    // progressively finer features.  Reversing this concat is critical—the
-    // channels have equal shapes, so a mistaken order can look numerically
-    // plausible until the detector head produces unrelated logits.
-    ggml_tensor * neck = ggml_upscale(c->graph.graph_ctx, proc[3], 8, GGML_SCALE_MODE_NEAREST);
-    neck =
-        ggml_concat(c->graph.graph_ctx, neck, ggml_upscale(c->graph.graph_ctx, proc[2], 4, GGML_SCALE_MODE_NEAREST), 2);
-    neck =
-        ggml_concat(c->graph.graph_ctx, neck, ggml_upscale(c->graph.graph_ctx, proc[1], 2, GGML_SCALE_MODE_NEAREST), 2);
-    neck = ggml_concat(c->graph.graph_ctx, neck, proc[0], 2);
     c->graph.named_taps.push_back({ "neck_output", neck });
     x = graph_conv(c, c->graph.graph_ctx, neck, c->head_down);
     if (!x) return false;
@@ -706,6 +778,40 @@ static bool run_stem(context * c, const std::vector<float> & input, int h, int w
     relu(out);
     c->last_stages["stem4"] = out;
     return true;
+}
+
+// Print graph-vs-scalar cosines for the probability map, the four backbone
+// stages, and the given named taps. Shared by the small/tiny and medium
+// detect tails (medium returns early and used to skip the compare entirely).
+static void report_graph_compare(context * c, const std::vector<float> & graph_probability,
+                                 const std::vector<float> & y, std::initializer_list<const char *> names) {
+    if (graph_probability.empty() || graph_probability.size() != y.size()) return;
+    double dot = 0.0, gn = 0.0, cn = 0.0;
+    for (size_t i = 0; i < y.size(); ++i) {
+        dot += double(graph_probability[i]) * y[i];
+        gn += double(graph_probability[i]) * graph_probability[i];
+        cn += double(y[i]) * y[i];
+    }
+    fprintf(stderr, "ppocrv6-det: graph-vs-CPU probability cosine=%.9f graph_norm=%.6g cpu_norm=%.6g\n",
+            dot / (std::sqrt(gn) * std::sqrt(cn) + 1e-30), std::sqrt(gn), std::sqrt(cn));
+    auto pair_cosine = [&](const std::string & graph_name, const std::string & cpu_name, const char * label) {
+        const auto git = c->last_stages.find(graph_name);
+        const auto cit = c->last_stages.find(cpu_name);
+        if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size())
+            return;
+        double sd = 0.0, sg = 0.0, sc = 0.0;
+        for (size_t i = 0; i < git->second.size(); ++i) {
+            sd += double(git->second[i]) * cit->second[i];
+            sg += double(git->second[i]) * git->second[i];
+            sc += double(cit->second[i]) * cit->second[i];
+        }
+        fprintf(stderr, "ppocrv6-det: graph-vs-CPU %s cosine=%.9f\n", label,
+                sd / (std::sqrt(sg) * std::sqrt(sc) + 1e-30));
+    };
+    for (int si = 0; si < 4; ++si)
+        pair_cosine("graph_stage" + std::to_string(si), "backbone_stage" + std::to_string(si),
+                    ("stage" + std::to_string(si)).c_str());
+    for (const char * name : names) pair_cosine(std::string("graph_") + name, name, name);
 }
 
 static bool run_medium_ic(const medium_ic & b, std::vector<float> & x, int h, int w) {
@@ -1112,6 +1218,13 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             }
         }
         if (compare_graph) report_graph_box_geometry(graph_boxes, out);
+        report_graph_compare(c, graph_probability, y,
+                             { "med_adjust0",  "med_adjust1",  "med_adjust2",   "med_adjust3",  "med_top0",
+                               "med_top1",     "med_top2",     "med_top3",      "med_project0", "med_project1",
+                               "med_project2", "med_project3", "med_bottom0",   "med_bottom1",  "med_bottom2",
+                               "med_bottom3",  "med_lateral0", "med_lateral1",  "med_lateral2", "med_lateral3",
+                               "med_refined0", "med_refined1", "med_refined2",  "med_refined3", "neck_output",
+                               "head_down",    "head_up",      "head_final_pre" });
         if (bench) {
             const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
             fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
@@ -1220,45 +1333,9 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         }
     }
     if (compare_graph) report_graph_box_geometry(graph_boxes, out);
-    if (!graph_probability.empty() && graph_probability.size() == y.size()) {
-        double dot = 0.0, gn = 0.0, cn = 0.0;
-        for (size_t i = 0; i < y.size(); ++i) {
-            dot += double(graph_probability[i]) * y[i];
-            gn += double(graph_probability[i]) * graph_probability[i];
-            cn += double(y[i]) * y[i];
-        }
-        fprintf(stderr, "ppocrv6-det: graph-vs-CPU probability cosine=%.9f graph_norm=%.6g cpu_norm=%.6g\n",
-                dot / (std::sqrt(gn) * std::sqrt(cn) + 1e-30), std::sqrt(gn), std::sqrt(cn));
-        for (int si = 0; si < 4; ++si) {
-            const auto git = c->last_stages.find("graph_stage" + std::to_string(si));
-            const auto cit = c->last_stages.find("backbone_stage" + std::to_string(si));
-            if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size())
-                continue;
-            double sd = 0.0, sg = 0.0, sc = 0.0;
-            for (size_t i = 0; i < git->second.size(); ++i) {
-                sd += double(git->second[i]) * cit->second[i];
-                sg += double(git->second[i]) * git->second[i];
-                sc += double(cit->second[i]) * cit->second[i];
-            }
-            fprintf(stderr, "ppocrv6-det: graph-vs-CPU stage%d cosine=%.9f\n", si,
-                    sd / (std::sqrt(sg) * std::sqrt(sc) + 1e-30));
-        }
-        for (const char * name : { "fused0", "fused1", "fused2", "fused3", "proc0", "proc1", "proc2", "proc3",
-                                   "neck_output", "head_down", "head_up", "head_final_pre" }) {
-            const auto git = c->last_stages.find(std::string("graph_") + name);
-            const auto cit = c->last_stages.find(name);
-            if (git == c->last_stages.end() || cit == c->last_stages.end() || git->second.size() != cit->second.size())
-                continue;
-            double sd = 0.0, sg = 0.0, sc = 0.0;
-            for (size_t i = 0; i < git->second.size(); ++i) {
-                sd += double(git->second[i]) * cit->second[i];
-                sg += double(git->second[i]) * git->second[i];
-                sc += double(cit->second[i]) * cit->second[i];
-            }
-            fprintf(stderr, "ppocrv6-det: graph-vs-CPU %s cosine=%.9f\n", name,
-                    sd / (std::sqrt(sg) * std::sqrt(sc) + 1e-30));
-        }
-    }
+    report_graph_compare(c, graph_probability, y,
+                         { "fused0", "fused1", "fused2", "fused3", "proc0", "proc1", "proc2", "proc3", "neck_output",
+                           "head_down", "head_up", "head_final_pre" });
     if (bench) {
         const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
         fprintf(stderr, "[ppocrv6-det-bench] preprocess_ms=%.3f graph_ms=%.3f total_ms=%.3f boxes=%zu accepted=0\n",
