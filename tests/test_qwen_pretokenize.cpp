@@ -23,6 +23,7 @@
 // Exit 0 == every split matches HF.
 
 #include "core/bpe.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <string>
@@ -645,7 +646,7 @@ static const std::vector<Case> k_cases = {
         "c" } },
 };
 
-int main() {
+static int crispembed_test_main() {
     int failures = 0;
     int checked = 0;
     for (const auto & c : k_cases) {
@@ -684,4 +685,10 @@ int main() {
 
     printf("test-qwen-pretokenize: %d checks, %d failures\n", checked, failures);
     return failures == 0 ? 0 : 1;
+}
+
+// tools/check_test_clean_exit.sh: a one-shot binary must not run ggml's
+// static GPU-device destructor at exit (it aborts on Metal / faults on CUDA).
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
