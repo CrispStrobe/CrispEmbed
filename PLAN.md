@@ -16,7 +16,6 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `feat/embed-f2llm` (delegated agent) | **T19-E1** — port F2LLM-v2 160M+0.6B (Qwen3Model, Apache) via convert-decoder-embed (docstring claims support — verify); cosine+norm parity vs HF, German retrieval sanity, upload cstr, registry+pins | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. T13 ACCEPTANCE RUN (2026-08-04, q4_k, 5 cc0 pages vs A3 transformers-pass gold, CER-threshold gate per A3's findings): commons_test_ocr_document **0.00637**, simple_form **0.01688**, receipt_historical 0.09287 — 3/5 within the 0.10 near-parity band; german_official_print 0.14909 (abs 0.216 vs gold's 0.083) and commons_example_receipt 0.46387 FAIL — the receipt page emits broken markup fragments where the reference emits a clean HTML table, mean_conf 0.74 (vs 0.98 on synth), similar output length (no truncation). Prime suspect: q4_k formatting instability on table-ish pages — the same instability mode the REFERENCE shows across its own serving stacks (vLLM vs transformers CER 0.372 on simple_form). NEXT: q8_0 discrimination run on the two failing pages (q8 = 8.4 GiB, needs the heavy slot free); if q8 closes the gap → publish q8 as the quality tier and mark q4_k "fast, format-unstable on tables"; if not → bisect the lane (logits vs sampling vs front-matter parse) | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -1417,6 +1416,28 @@ this is a CLI/scripting-latency item. **Acceptance:** one-shot
 `crispembed -m multilingual-e5-small --json "text"` total time down ≥3x with
 embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
 in warm batch throughput.
+
+**T19-E1 status [DONE 2026-08-04, merged]:** F2LLM-v2 **80m/160m/330m
+shipped** (cstr, f16+q8_0, registry+pins; 0.6B was already shipped and needed
+nothing). Converter docstring claim was REAL — worked as-is. Contract: last-token
+pool, L2, query prompt "Instruct: Given a question, retrieve passages that can
+help answer the question.\nQuery: ", no doc prefix, EOS <|im_end|> (NOT
+Qwen3-Embedding's <|endoftext|>). Parity: f16 cos 1.000000 all sizes; q8_0
+≥0.9989 except 0.6B 0.9909 (+3.8% norms — known-soft, consistent with
+LEARNINGS). German retrieval 5/5 everywhere; independently re-verified at
+merge (registry download, 0.611>0.147>-0.030). **The real find — a shipped
+tokenizer bug:** `core_bpe::tokenize_simple` collapsed all whitespace runs to
+single spaces (newlines deleted) — cos 0.9803 on code, 0.9907 on this
+family's OWN query prompt, hidden on newline-free text; proven by reproducing
+our magnitudes in HF with collapsed input. Degraded the already-shipped 0.6B
+and by construction every Qwen-family embedder (qwen3-embed, octen, jina-v5,
+harrier). Fixed via a real declared-regex `qwen_pretokenize`
+(`CRISPEMBED_BPE_LEGACY_WHITESPACE=1` restores), guarded by a hermetic
+39-check test in model-free CI (verified fail-on-broken). **Follow-up filed:**
+other `tokenize_simple` callers (lfm2, OCR engines) likely share the defect —
+audit them. Phantom-bug note preserved in the commit: a 0.845/0.756 "port
+bug" on 330m/80m was the agent's own harness double-applying the new auto
+query prefix — weights were always correct.
 
 **T19-E2 status [DONE 2026-08-04, merged]:** `arctic-embed-m-v2` shipped
 (f32/q8_0/q4_k on cstr, registry+pins, q8_0 default — q4_k without imatrix is
