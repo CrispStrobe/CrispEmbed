@@ -16,11 +16,18 @@ Turing, and both are worth stating because they are the traps:
    runs the whole file again — "An attempt has been made to start a new process
    before the current process has finished its bootstrapping phase". Also not a
    platform limit.
+3. Fixed both, and got the first genuinely platform-shaped failure: Turing has
+   no FlashAttention-2 (`FA2 is only supported on devices with compute
+   capability >= 8`), so vLLM chose FLASHINFER, which JIT-builds its prefill
+   kernels — and the link failed with `cannot find -lcuda`, because Kaggle
+   ships the driver as `libcuda.so.1` with no linker symlink. Environmental,
+   and avoidable twice over: symlink it, and pick a backend that needs no JIT.
 
 So this version: nothing else on the GPU, no `torch.cuda` call before the
-engine starts (the card is identified through `nvidia-smi`), and every
-statement under a `__main__` guard so a spawned worker re-importing this file
-is inert. If the engine starts, it replays the toolkit's own requests so the
+engine starts (the card is identified through `nvidia-smi`), every statement
+under a `__main__` guard so a spawned worker re-importing this file is inert,
+`VLLM_ATTENTION_BACKEND=TRITON_ATTN`, and the `libcuda.so` symlink in place.
+If the engine starts, it replays the toolkit's own requests so the
 serving-layer deviation in the gold can be quantified rather than asserted.
 
 Outputs under /kaggle/working: vllm_probe.json, run.log, and on success
@@ -136,6 +143,25 @@ def main() -> int:
         save()
         return 1
     sh("pip install -q olmocr==0.4.27 img2pdf 2>&1 | tail -3", check=False)
+
+    # Turing has no FlashAttention-2 (needs cc >= 8.0), so vLLM's next choice is
+    # FLASHINFER, which JIT-compiles its prefill kernels with ninja and links
+    # against -lcuda.  Kaggle ships the driver as libcuda.so.1 with no linker
+    # symlink, so that link step dies with "cannot find -lcuda" after ~4 minutes
+    # of compiling.  Two independent fixes, applied together: provide the
+    # symlink, and pick a backend that needs no JIT at all.
+    result["attention_backend_requested"] = os.environ.setdefault(
+        "VLLM_ATTENTION_BACKEND", "TRITON_ATTN")
+    libcuda = subprocess.run("ldconfig -p | grep -m1 'libcuda\\.so\\.1'", shell=True,
+                             capture_output=True, text=True).stdout.strip()
+    result["libcuda_so_1"] = libcuda
+    src = libcuda.split("=>")[-1].strip() if "=>" in libcuda else ""
+    if src and not Path("/usr/lib/x86_64-linux-gnu/libcuda.so").exists():
+        r = subprocess.run(["ln", "-sf", src, "/usr/lib/x86_64-linux-gnu/libcuda.so"],
+                           capture_output=True, text=True)
+        result["libcuda_symlink_rc"] = r.returncode
+    save()
+    print(f"attention backend={result['attention_backend_requested']} libcuda={libcuda}")
 
     if not REPO.exists():
         REPO.parent.mkdir(parents=True, exist_ok=True)
