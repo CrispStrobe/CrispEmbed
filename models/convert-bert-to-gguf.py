@@ -650,6 +650,12 @@ def main():
             rope_theta = rope_theta * factor ** (head_dim / (head_dim - 2))
             print(f"  GTE v1.5: NTK scaling factor={factor}, effective rope_theta={rope_theta:.0f}")
         writer.add_float32("bert.rope_theta", rope_theta)
+        # GteGatedMLP uses ACT2FN[config.hidden_act]; "gelu" is the EXACT erf
+        # GELU, not the tanh approximation. Name it so the runtime does not have
+        # to guess from the architecture.
+        _gte_act = getattr(config, "hidden_act", "gelu")
+        writer.add_string("bert.ffn_act", _gte_act)
+        print(f"  GTE v1.5: gated FFN activation={_gte_act}")
         # GTE v1.5 is POST-LN despite attn_ln/mlp_ln naming: the LN comes
         # AFTER the residual add (attention → add → LN, FFN → add → LN).
         # Do NOT set pre_ln=1.
@@ -699,8 +705,14 @@ def main():
         writer.add_uint32("bert.global_attn_every_n", global_every)
         writer.add_uint32("bert.local_attention", local_attention)
         writer.add_uint32("bert.pre_ln", 1)
+        # ModernBertMLP uses ACT2FN[config.hidden_activation]. gte-modernbert is
+        # "gelu" (exact erf), granite-embedding-97m-multilingual-r2 is "silu"
+        # (SwiGLU) — the weights are shape-identical either way, so the config
+        # is the only thing that can tell them apart.
+        _mb_act = getattr(config, "hidden_activation", "gelu")
+        writer.add_string("bert.ffn_act", _mb_act)
         print(f"  ModernBERT: sliding_theta={sliding_theta}, global_theta={global_theta}, "
-              f"every={global_every}, local_window={local_attention}, pre_ln=1")
+              f"every={global_every}, local_window={local_attention}, pre_ln=1, ffn_act={_mb_act}")
         # Final norm (applied after all layers in pre-LN models)
         if "final_norm.weight" in sd:
             writer.add_tensor("final_norm.weight", f32(sd["final_norm.weight"]))
