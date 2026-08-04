@@ -1876,6 +1876,236 @@ static long long g_ds_build_us = 0, g_ds_compute_us = 0;
 // change masquerade as a decode win.
 static long long g_ds_prefill_us = 0, g_ds_decode_us = 0;
 static int g_ds_n_generated = 0;
+// Which arm actually ran, so a silently-blocked persistent path can never be
+// mistaken for a measured persistent-path number in an A/B table.
+static const char * g_ds_decode_path = "per-layer";
+static const char * g_ds_kv_dtype = "f32";
+
+// ---------------------------------------------------------------------------
+// T14: persistent decode-step graph
+// ---------------------------------------------------------------------------
+//
+// The legacy decode builds, allocates, computes and frees ONE GRAPH PER LAYER
+// PER TOKEN (12 graphs/token), bouncing the hidden state host<->device 24 times
+// per token, then runs the final norm on the host and the LM head as yet
+// another graph. For a 1280-dim/12-layer decoder that is launch- and
+// transfer-bound, which is precisely the case the dev guide says a PERSISTENT
+// graph fixes ("the fix is a PERSISTENT graph, not per-step rebuild").
+//
+// This path mirrors `qwen2vl_ocr.cpp::build_decode_step_graph`: one graph for
+// the whole step (embedding lookup -> 12 layers -> final norm -> logits), with
+// every tensor shape CONSTANT across steps so `ggml_backend_sched_alloc_graph`
+// takes its no-realloc fast path from step 2 on. Constant shapes are why the
+// KV read view spans the full `max_seq` and an F16 `kv_mask` (0 / -INF) hides
+// the not-yet-written slots, rather than a per-step `[.., n_past+1]` view.
+//
+// NOTHING IS DELETED: the legacy per-layer path stays selectable. Commit
+// c75b95d on this very engine replaced the manual masked GQA with
+// flash_attn_ext with NO gate, mishandled the custom bidirectional mask, and
+// shipped garbage OCR unnoticed for weeks precisely because there was nothing
+// left to A/B against.
+//
+// Env gates:
+//   DS2_LEGACY_DECODE=1  force the legacy per-layer/per-token decode
+//   DS2_FAST_DECODE=1    force this path (diagnostic; it is already the
+//                        default wherever it is available)
+//   DS2_KV_F16=1         allocate the KV cache as F16 instead of F32. This is
+//                        a PRECISION change, not a pure perf refactor, so it
+//                        is a SEPARATE opt-in gate: the persistent-graph
+//                        byte-identity gate is run with the cache dtype held
+//                        fixed, otherwise a text diff could not be attributed.
+//   DS_LLM_FLASH=1       (existing) flash_attn_ext. On this path it is only
+//                        honoured together with DS2_KV_F16=1, since
+//                        flash_attn_ext wants an F16 K/V.
+
+// The KV cache dtype is read once per process: prefill and decode share the
+// cache, so they must agree on it.
+static ggml_type ds_kv_type() {
+    return getenv("DS2_KV_F16") ? GGML_TYPE_F16 : GGML_TYPE_F32;
+}
+
+// Why the persistent path is or is not usable. Returns nullptr when usable,
+// else a human-readable reason (reported once, so a silent fallback can never
+// be mistaken for a measured result).
+static const char * ds_persistent_decode_blocker(const ds_ocr2_ctx & ctx) {
+    if (getenv("DS2_LEGACY_DECODE")) return "DS2_LEGACY_DECODE=1";
+    // DS_NO_KV reprocesses the whole growing sequence every step; there is no
+    // single-token step graph to make persistent.
+    if (getenv("DS_NO_KV")) return "DS_NO_KV=1";
+    // The CPU MoE fallback runs host code BETWEEN layers, so the layers cannot
+    // live in one graph.
+    if (!ctx.moe_metal) return "CPU MoE (DS_MOE_CPU=1 or expert stacking failed)";
+    return nullptr;
+}
+
+// Build the single-token decode graph. `n_kv` is the slot this step writes;
+// `max_seq` is the (constant) allocated cache depth.
+static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context * g, int n_kv, int max_seq) {
+    const auto & lhp = ctx.m.lhp;
+    const int D = lhp.hidden, nh = lhp.heads, nkv = lhp.kv_heads, hd = lhp.head_dim;
+    const int n_layers = lhp.n_layers;
+    const int kv_dim = nkv * hd;
+    const float eps = lhp.rms_eps;
+    const float attn_scale = 1.0f / sqrtf((float)hd);
+    const bool kv_f16 = (ctx.kvc.k->type == GGML_TYPE_F16);
+    const bool use_flash = kv_f16 && getenv("DS_LLM_FLASH");
+
+    ggml_cgraph * gf = ggml_new_graph_custom(g, 16384, false);
+
+    // Inputs. ALL of them are re-set on every step by the caller: gallocr hands
+    // an input's buffer to a later intermediate once that input is dead, so even
+    // the "constant" kv_mask is corrupted from step 2 on if it is written once.
+    ggml_tensor * tok_id = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(tok_id, "tok_id");
+    ggml_set_input(tok_id);
+
+    ggml_tensor * pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(pos_ids, "pos_ids");
+    ggml_set_input(pos_ids);
+
+    // 0.0 for populated slots, -INF for the rest. The caller unmasks slot n_kv
+    // before the step so this token attends to its own freshly-written K/V.
+    ggml_tensor * kv_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, max_seq, 1);
+    ggml_set_name(kv_mask, "kv_mask");
+    ggml_set_input(kv_mask);
+
+    auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
+        // ensure_f32: the norm weight is F16 in an all-F16 GGUF and ggml's
+        // elementwise mul rejects an f32xf16 operand pair.
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), ensure_f32(g, w));
+    };
+
+    // Embedding lookup runs in-graph (get_rows works for every quant type and
+    // returns F32), which removes the legacy path's host dequant + upload.
+    ggml_tensor * x = ggml_reshape_2d(g, ggml_get_rows(g, ctx.m.embed_tokens, tok_id), D, 1);
+
+    for (int li = 0; li < n_layers; li++) {
+        const auto & ly = ctx.m.llm_layers[li];
+        ggml_tensor * residual = x;
+        ggml_tensor * h = rmsnorm(x, ly.in_ln_w);
+
+        ggml_tensor * Q = ggml_mul_mat(g, ly.q_w, h);
+        ggml_tensor * K = ggml_mul_mat(g, ly.k_w, h);
+        ggml_tensor * V = ggml_mul_mat(g, ly.v_w, h);
+
+        Q = ggml_reshape_3d(g, Q, hd, nh, 1);
+        K = ggml_reshape_3d(g, K, hd, nkv, 1);
+        V = ggml_reshape_3d(g, V, hd, nkv, 1);
+
+        Q = ggml_rope_ext(g, Q, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f);
+        K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f);
+
+        // ggml_cont before the cache write: a bare rope/reshape VIEW written
+        // into (or read back from) the cache reads stale data.
+        ggml_tensor * K_flat = ggml_reshape_2d(g, ggml_cont(g, K), kv_dim, 1);
+        ggml_tensor * V_flat = ggml_reshape_2d(g, ggml_cont(g, V), kv_dim, 1);
+
+        const size_t off_k = (size_t)li * ctx.kvc.k->nb[2];
+        const size_t off_v = (size_t)li * ctx.kvc.v->nb[2];
+
+        // Write shape is constant (kv_dim,1); only the byte offset moves, which
+        // keeps the sched_alloc compatibility check on its fast path.
+        ggml_tensor * k_write =
+            ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1], off_k + (size_t)n_kv * ctx.kvc.k->nb[1]);
+        ggml_tensor * v_write =
+            ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1], off_v + (size_t)n_kv * ctx.kvc.v->nb[1]);
+        ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
+        ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
+
+        // Fixed-depth read view: constant shape across every step, with kv_mask
+        // hiding the unwritten tail.
+        ggml_tensor * Kfull =
+            ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.k, kv_dim, max_seq, ctx.kvc.k->nb[1], off_k), hd, nkv, max_seq);
+        ggml_tensor * Vfull =
+            ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.v, kv_dim, max_seq, ctx.kvc.v->nb[1], off_v), hd, nkv, max_seq);
+
+        // This decoder is MHA (heads == kv_heads), so there is no GQA repeat.
+        // Guard rather than assume: a future checkpoint with nkv < nh would
+        // otherwise attend to the wrong heads silently.
+        if (nh != nkv) {
+            const int kv_repeat = nh / nkv;
+            Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, max_seq);
+            Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, max_seq));
+            Kfull = ggml_reshape_3d(g, Kfull, hd, nh, max_seq);
+            Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, max_seq);
+            Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, max_seq));
+            Vfull = ggml_reshape_3d(g, Vfull, hd, nh, max_seq);
+        }
+
+        Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // [hd, 1, nh]
+        Kfull = ggml_cont(g, ggml_permute(g, Kfull, 0, 2, 1, 3));
+        Vfull = ggml_cont(g, ggml_permute(g, Vfull, 0, 2, 1, 3));
+
+        ggml_tensor * attn;
+        if (use_flash) {
+            // flash_attn_ext already returns [hd, nh, T] — reshape straight, and
+            // never append a trailing permute(0,2,1,3).
+            attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, kv_mask, attn_scale, 0.0f, 0.0f);
+            ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32);
+            attn = ggml_reshape_2d(g, attn, D, 1);
+        } else {
+            // Same manual masked attention the legacy path uses by default.
+            ggml_tensor * scores = ggml_mul_mat(g, Kfull, Q);
+            scores = ggml_soft_max_ext(g, scores, kv_mask, attn_scale, 0.0f);
+            ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, Vfull, 1, 0, 2, 3));
+            attn = ggml_mul_mat(g, Vt, scores);
+            attn = ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));
+            attn = ggml_reshape_2d(g, attn, D, 1);
+        }
+
+        attn = ggml_mul_mat(g, ly.o_w, attn);
+        x = ggml_add(g, residual, attn);
+
+        // FFN — identical math to build_llm_layer_attn at T == 1.
+        residual = x;
+        ggml_tensor * hn = rmsnorm(x, ly.post_ln_w);
+        if (li == 0) {
+            ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, hn));
+            ggml_tensor * up = ggml_mul_mat(g, ly.ffn_up_w, hn);
+            x = ggml_add(g, residual, ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up)));
+        } else {
+            const int n_exp = lhp.n_experts, K = lhp.n_experts_top;
+            ggml_tensor * logits = ggml_mul_mat(g, ly.router_w, hn);
+            ggml_tensor * probs = ggml_soft_max(g, logits);
+            ggml_tensor * ids = ggml_top_k(g, probs, K);
+            ggml_tensor * p3 = ggml_reshape_3d(g, probs, 1, n_exp, 1);
+            ggml_tensor * top_w = ggml_reshape_2d(g, ggml_get_rows(g, p3, ids), K, 1);
+            top_w = ggml_scale(g, top_w, lhp.routed_scaling_factor);
+
+            ggml_tensor * hn3 = ggml_reshape_3d(g, hn, D, 1, 1);
+            ggml_tensor * hnK = ggml_repeat(g, hn3, ggml_new_tensor_3d(g, hn->type, D, K, 1));
+            ggml_tensor * gate = ggml_silu(g, ggml_mul_mat_id(g, ly.gate_exps, hnK, ids));
+            ggml_tensor * up = ggml_mul_mat_id(g, ly.up_exps, hnK, ids);
+            ggml_tensor * down = ggml_mul_mat_id(g, ly.down_exps, ggml_mul(g, gate, up), ids);
+
+            ggml_tensor * down_p = ggml_cont(g, ggml_permute(g, down, 1, 0, 2, 3));
+            ggml_tensor * w_col = ggml_reshape_3d(g, top_w, K, 1, 1);
+            ggml_tensor * routed = ggml_reshape_2d(g, ggml_mul_mat(g, w_col, down_p), D, 1);
+
+            ggml_tensor * sg = ggml_silu(g, ggml_mul_mat(g, ly.shared_gate_w, hn));
+            ggml_tensor * su = ggml_mul_mat(g, ly.shared_up_w, hn);
+            ggml_tensor * shared = ggml_mul_mat(g, ly.shared_down_w, ggml_mul(g, sg, su));
+
+            x = ggml_add(g, residual, ggml_add(g, routed, shared));
+        }
+    }
+
+    // Final norm + LM head in the SAME graph — the legacy path reads the hidden
+    // state back to the host, norms it there and dispatches the head as another
+    // graph. (The host rmsnorm and the in-graph one reduce in a different order,
+    // so per-token logits differ in the last bits; the acceptance gate is the
+    // decoded text, which is what argmax actually consumes.)
+    x = ggml_mul(g, ggml_rms_norm(g, x, eps), ensure_f32(g, ctx.m.output_norm_w));
+    ggml_tensor * lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
+    x = ggml_mul_mat(g, lm_w, x);
+    ggml_set_name(x, "logits");
+    ggml_set_output(x);
+    ggml_build_forward_expand(gf, x);
+
+    return gf;
+}
 
 static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int n_prompt, int max_new,
                             std::vector<int32_t> & out_ids, std::vector<float> & out_confs) {
@@ -1890,8 +2120,11 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
     int n_layers = lhp.n_layers;
     int kv_dim = nkv * hd;
 
-    // Allocate persistent device-side KV cache
-    int max_seq = n_prompt + max_new + 64;
+    // Allocate persistent device-side KV cache. Rounded up to a multiple of 64
+    // so the fixed-depth kv_mask the persistent decode graph uses satisfies
+    // flash_attn_ext's KQ-mask padding when DS2_KV_F16=1 + DS_LLM_FLASH=1 select
+    // it; harmless for the manual path.
+    int max_seq = ((n_prompt + max_new + 64) + 63) / 64 * 64;
     if (!alloc_ds_kv_cache(ctx, max_seq)) {
         fprintf(stderr, "deepseek_ocr2: KV cache allocation failed\n");
         return false;
@@ -1930,6 +2163,30 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
     bool no_kv = getenv("DS_NO_KV") != nullptr;
     std::vector<float> full_emb(prompt_embeds, prompt_embeds + (size_t)n_prompt * D);
 
+    // T14: persistent single-graph decode for the T==1 steps. Prefill keeps the
+    // per-layer path unconditionally — it runs once, so it is not what the A/B
+    // moves, and leaving it alone keeps the prefill/vision stage times identical
+    // by construction.
+    const char * persist_blocker = ds_persistent_decode_blocker(ctx);
+    const bool use_persistent = (persist_blocker == nullptr);
+    g_ds_decode_path = use_persistent ? "persistent" : "per-layer";
+    g_ds_kv_dtype = (ctx.kvc.k->type == GGML_TYPE_F16) ? "f16" : "f32";
+    if (ctx.verbosity >= 1) {
+        if (use_persistent)
+            fprintf(stderr, "deepseek_ocr2: decode path = persistent step graph (kv=%s%s)\n",
+                    ctx.kvc.k->type == GGML_TYPE_F16 ? "f16" : "f32",
+                    (ctx.kvc.k->type == GGML_TYPE_F16 && getenv("DS_LLM_FLASH")) ? ", flash" : "");
+        else
+            fprintf(stderr, "deepseek_ocr2: decode path = legacy per-layer (%s)\n", persist_blocker);
+    }
+
+    // kv_mask: 0.0 for populated slots, -INF for the rest. Rebuilt/re-uploaded
+    // every step (gallocr aliasing), never written once at build time.
+    std::vector<ggml_fp16_t> kv_mask_data((size_t)max_seq, ggml_fp32_to_fp16(-INFINITY));
+
+    // Logits buffer, reused by both arms.
+    std::vector<float> logits(V);
+
     // Run generation loop
     int n_generated = 0;
     std::vector<int32_t> cur_tokens; // tokens generated so far (single-token steps)
@@ -1941,128 +2198,181 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
         // whole sequence is reprocessed every step.
         const bool is_prefill = (n_past == 0);
         const auto _step_t0 = std::chrono::steady_clock::now();
-        int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
-        if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
 
-        // Build input embeddings
-        std::vector<float> input_emb(T * D);
-        if (no_kv) {
-            memcpy(input_emb.data(), full_emb.data(), (size_t)T * D * sizeof(float));
-        } else if (n_past == 0) {
-            memcpy(input_emb.data(), prompt_embeds, (size_t)T * D * sizeof(float));
-        } else {
-            for (int t = 0; t < T; t++) get_embedding(cur_tokens[t], input_emb.data() + t * D);
-        }
+        if (use_persistent && !is_prefill) {
+            // ── T14 persistent single-graph decode step ──
+            // One graph: embedding lookup -> every layer -> final norm -> logits.
+            const int32_t tok = cur_tokens.empty() ? 0 : cur_tokens.back();
+            const int32_t tok_pos = n_past;
 
-        // Process each layer
-        std::vector<float> hidden(input_emb);
+            // Unmask everything written so far plus this step's own slot, which
+            // the graph writes before it reads the cache back.
+            for (int i = 0; i <= n_past && i < max_seq; i++) kv_mask_data[i] = ggml_fp32_to_fp16(0.0f);
 
-        for (int li = 0; li < n_layers; li++) {
-            bool is_dense = (li == 0);
-            // MoE in-graph (Metal) when experts were stacked; else CPU fallback.
-            bool moe_in_graph = ctx.moe_metal && !is_dense;
-
-            // Build and run attention graph
-            auto _tb0 = std::chrono::steady_clock::now();
-            auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
-            ggml_backend_sched_reset(ctx.sched);
-            if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
-                ggml_free(lag.gctx);
+            const auto _tb0 = std::chrono::steady_clock::now();
+            ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
+            ggml_context * g = ggml_init(ip);
+            if (!g) {
+                fprintf(stderr, "deepseek_ocr2: persistent decode ggml_init failed\n");
                 return false;
             }
-            auto _tb1 = std::chrono::steady_clock::now();
+            ggml_cgraph * gf = build_ds_decode_step_graph(ctx, g, n_past, max_seq);
+            ggml_backend_sched_reset(ctx.sched);
+            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+                fprintf(stderr, "deepseek_ocr2: persistent decode alloc failed\n");
+                ggml_free(g);
+                return false;
+            }
+            const auto _tb1 = std::chrono::steady_clock::now();
             g_ds_build_us += std::chrono::duration_cast<std::chrono::microseconds>(_tb1 - _tb0).count();
 
-            // Set inputs
-            ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "layer_input"), hidden.data(), 0,
-                                    T * D * sizeof(float));
+            // Re-set EVERY input on EVERY step. gallocr may hand an input's
+            // buffer to a later intermediate once that input is dead, so the
+            // "constant" kv_mask is corrupted from step 2 on if it is uploaded
+            // only once — the failure mode is step 0 matching and everything
+            // after diverging.
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_id"), &tok, 0, sizeof(int32_t));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), &tok_pos, 0, sizeof(int32_t));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "kv_mask"), kv_mask_data.data(), 0,
+                                    (size_t)max_seq * sizeof(ggml_fp16_t));
 
-            std::vector<int32_t> pos(T);
-            for (int t = 0; t < T; t++) pos[t] = n_past + t;
-            ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "pos_ids"), pos.data(), 0, T * sizeof(int32_t));
-
-            // KV cache is now persistent on device — no per-step upload needed.
-            // The graph writes new K/V via ggml_cpy and reads history via ggml_view.
-
-            // Causal mask
-            int Lk = n_past + T;
-            std::vector<ggml_fp16_t> mask(Lk * T);
-            for (int qi = 0; qi < T; qi++)
-                for (int ki = 0; ki < Lk; ki++)
-                    mask[qi * Lk + ki] = ggml_fp32_to_fp16(ki > n_past + qi ? -INFINITY : 0.0f);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "mask"), mask.data(), 0,
-                                    Lk * T * sizeof(ggml_fp16_t));
-
-            auto _t0 = std::chrono::steady_clock::now();
-            ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
-            auto _t1 = std::chrono::steady_clock::now();
+            const auto _t0 = std::chrono::steady_clock::now();
+            if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
+                fprintf(stderr, "deepseek_ocr2: persistent decode compute failed\n");
+                ggml_free(g);
+                return false;
+            }
+            const auto _t1 = std::chrono::steady_clock::now();
             g_ds_compute_us += std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
 
-            // Read outputs
-            ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"), hidden.data(), 0,
-                                    T * D * sizeof(float));
-
-            // KV cache updated in-graph via ggml_cpy (no readback needed).
-
-            ggml_free(lag.gctx);
-
-            // MoE FFN (layers 1-11): in-graph on Metal (done above) or CPU here.
-            auto _t2 = std::chrono::steady_clock::now();
-            if (!is_dense && !moe_in_graph) {
-                moe_ffn_cpu(ctx, li, hidden.data(), T);
-            }
-            auto _t3 = std::chrono::steady_clock::now();
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "logits"), logits.data(), 0, (size_t)V * sizeof(float));
+            ggml_free(g);
+            n_past += 1;
+        } else {
+            int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
             if (getenv("DS_DBG"))
-                fprintf(stderr, "  [dbg] llm li=%d attn=%lldms moe=%lldms (n_threads=%d)\n", li,
-                        (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t1 - _t0).count(),
-                        (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t3 - _t2).count(),
-                        ctx.n_threads);
+                fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
 
-            // Diff comparison
-            if (!ctx.diff_ref_path.empty() && n_past == 0) {
-                char name[64];
-                snprintf(name, sizeof(name), "llm_layer_%d", li);
-                crispembed_diff::Ref ref;
-                if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(name)) {
-                    auto r = ref.compare(name, hidden.data(), T * D);
-                    fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n", name, r.cos_min, r.max_abs,
-                            r.is_pass() ? "PASS" : "FAIL");
+            // Build input embeddings
+            std::vector<float> input_emb(T * D);
+            if (no_kv) {
+                memcpy(input_emb.data(), full_emb.data(), (size_t)T * D * sizeof(float));
+            } else if (n_past == 0) {
+                memcpy(input_emb.data(), prompt_embeds, (size_t)T * D * sizeof(float));
+            } else {
+                for (int t = 0; t < T; t++) get_embedding(cur_tokens[t], input_emb.data() + t * D);
+            }
+
+            // Process each layer
+            std::vector<float> hidden(input_emb);
+
+            for (int li = 0; li < n_layers; li++) {
+                bool is_dense = (li == 0);
+                // MoE in-graph (Metal) when experts were stacked; else CPU fallback.
+                bool moe_in_graph = ctx.moe_metal && !is_dense;
+
+                // Build and run attention graph
+                auto _tb0 = std::chrono::steady_clock::now();
+                auto lag = build_llm_layer_attn(ctx, li, T, n_past, is_dense, moe_in_graph);
+                ggml_backend_sched_reset(ctx.sched);
+                if (!ggml_backend_sched_alloc_graph(ctx.sched, lag.gf)) {
+                    ggml_free(lag.gctx);
+                    return false;
+                }
+                auto _tb1 = std::chrono::steady_clock::now();
+                g_ds_build_us += std::chrono::duration_cast<std::chrono::microseconds>(_tb1 - _tb0).count();
+
+                // Set inputs
+                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "layer_input"), hidden.data(), 0,
+                                        T * D * sizeof(float));
+
+                std::vector<int32_t> pos(T);
+                for (int t = 0; t < T; t++) pos[t] = n_past + t;
+                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "pos_ids"), pos.data(), 0, T * sizeof(int32_t));
+
+                // KV cache is now persistent on device — no per-step upload needed.
+                // The graph writes new K/V via ggml_cpy and reads history via ggml_view.
+
+                // Causal mask
+                int Lk = n_past + T;
+                std::vector<ggml_fp16_t> mask(Lk * T);
+                for (int qi = 0; qi < T; qi++)
+                    for (int ki = 0; ki < Lk; ki++)
+                        mask[qi * Lk + ki] = ggml_fp32_to_fp16(ki > n_past + qi ? -INFINITY : 0.0f);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(lag.gf, "mask"), mask.data(), 0,
+                                        Lk * T * sizeof(ggml_fp16_t));
+
+                auto _t0 = std::chrono::steady_clock::now();
+                ggml_backend_sched_graph_compute(ctx.sched, lag.gf);
+                auto _t1 = std::chrono::steady_clock::now();
+                g_ds_compute_us += std::chrono::duration_cast<std::chrono::microseconds>(_t1 - _t0).count();
+
+                // Read outputs
+                ggml_backend_tensor_get(ggml_graph_get_tensor(lag.gf, "layer_output"), hidden.data(), 0,
+                                        T * D * sizeof(float));
+
+                // KV cache updated in-graph via ggml_cpy (no readback needed).
+
+                ggml_free(lag.gctx);
+
+                // MoE FFN (layers 1-11): in-graph on Metal (done above) or CPU here.
+                auto _t2 = std::chrono::steady_clock::now();
+                if (!is_dense && !moe_in_graph) {
+                    moe_ffn_cpu(ctx, li, hidden.data(), T);
+                }
+                auto _t3 = std::chrono::steady_clock::now();
+                if (getenv("DS_DBG"))
+                    fprintf(stderr, "  [dbg] llm li=%d attn=%lldms moe=%lldms (n_threads=%d)\n", li,
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t1 - _t0).count(),
+                            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t3 - _t2).count(),
+                            ctx.n_threads);
+
+                // Diff comparison
+                if (!ctx.diff_ref_path.empty() && n_past == 0) {
+                    char name[64];
+                    snprintf(name, sizeof(name), "llm_layer_%d", li);
+                    crispembed_diff::Ref ref;
+                    if (ref.load(ctx.diff_ref_path.c_str()) && ref.has(name)) {
+                        auto r = ref.compare(name, hidden.data(), T * D);
+                        fprintf(stderr, "  %s: cos_min=%.6f max_abs=%.6f %s\n", name, r.cos_min, r.max_abs,
+                                r.is_pass() ? "PASS" : "FAIL");
+                    }
                 }
             }
-        }
 
-        if (!no_kv) n_past += T;
+            if (!no_kv) n_past += T;
 
-        // Final norm + LM head (CPU)
-        std::vector<float> last_hidden(D);
-        rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
+            // Final norm + LM head (CPU)
+            std::vector<float> last_hidden(D);
+            rmsnorm_cpu(hidden.data() + (T - 1) * D, last_hidden.data(), D, norm_w.data(), lhp.rms_eps);
 
-        std::vector<float> logits(V);
-        if (lmhead_cpu) {
-            linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
-        } else {
-            // logits = lm_w @ last_hidden on Metal (quantized; ~165M mults/token
-            // off the scalar path). Build+run+free in scope (no dangling graph).
-            size_t meta_sz = 1 * 1024 * 1024;
-            std::vector<uint8_t> mb(meta_sz);
-            ggml_init_params ip = { meta_sz, mb.data(), true };
-            ggml_context * gc = ggml_init(ip);
-            ggml_cgraph * gf = ggml_new_graph(gc);
-            ggml_tensor * in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 1);
-            ggml_set_name(in, "lmh_in");
-            ggml_set_input(in);
-            ggml_tensor * out = ggml_mul_mat(gc, lm_w, in); // [V, 1]
-            ggml_set_name(out, "lmh_out");
-            ggml_set_output(out);
-            ggml_build_forward_expand(gf, out);
-            ggml_backend_sched_reset(ctx.sched);
-            ggml_backend_sched_alloc_graph(ctx.sched, gf);
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "lmh_in"), last_hidden.data(), 0,
-                                    (size_t)D * sizeof(float));
-            ggml_backend_sched_graph_compute(ctx.sched, gf);
-            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "lmh_out"), logits.data(), 0, (size_t)V * sizeof(float));
-            ggml_free(gc);
-        }
+            if (lmhead_cpu) {
+                linear_cpu(last_hidden.data(), logits.data(), D, V, head_w.data(), nullptr);
+            } else {
+                // logits = lm_w @ last_hidden on Metal (quantized; ~165M mults/token
+                // off the scalar path). Build+run+free in scope (no dangling graph).
+                size_t meta_sz = 1 * 1024 * 1024;
+                std::vector<uint8_t> mb(meta_sz);
+                ggml_init_params ip = { meta_sz, mb.data(), true };
+                ggml_context * gc = ggml_init(ip);
+                ggml_cgraph * gf = ggml_new_graph(gc);
+                ggml_tensor * in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, D, 1);
+                ggml_set_name(in, "lmh_in");
+                ggml_set_input(in);
+                ggml_tensor * out = ggml_mul_mat(gc, lm_w, in); // [V, 1]
+                ggml_set_name(out, "lmh_out");
+                ggml_set_output(out);
+                ggml_build_forward_expand(gf, out);
+                ggml_backend_sched_reset(ctx.sched);
+                ggml_backend_sched_alloc_graph(ctx.sched, gf);
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "lmh_in"), last_hidden.data(), 0,
+                                        (size_t)D * sizeof(float));
+                ggml_backend_sched_graph_compute(ctx.sched, gf);
+                ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "lmh_out"), logits.data(), 0,
+                                        (size_t)V * sizeof(float));
+                ggml_free(gc);
+            }
+        } // end legacy per-layer step
 
         // Diff: logits
         if (!ctx.diff_ref_path.empty() && n_generated == 0) {
@@ -2172,7 +2482,19 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
         return nullptr;
     }
 
-    ctx.backend = crispasr_init_gpu_backend();
+    // DS2_FORCE_CPU=1 runs the whole engine on the CPU backend. `--gpu-backend
+    // cpu` cannot do this: crispasr_init_gpu_backend() only scans GPU/iGPU
+    // devices, so a "cpu" preference falls through to ggml_backend_init_best()
+    // and silently returns Metal. That gap is T18's to fix globally; this is the
+    // engine-local lever the T14 gate needs to A/B both decode paths on both
+    // backends, and it follows the CRISPEMBED_TESSERACT_FORCE_CPU precedent.
+    if (getenv("DS2_FORCE_CPU")) {
+        ctx.backend = ggml_backend_cpu_init();
+        if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
+        fprintf(stderr, "deepseek_ocr2: DS2_FORCE_CPU=1 — CPU backend\n");
+    } else {
+        ctx.backend = crispasr_init_gpu_backend();
+    }
     if (!ctx.backend) {
         ctx.backend = ggml_backend_cpu_init();
         if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
@@ -2256,7 +2578,8 @@ static void free_ds_kv_cache(ds_ocr2_ctx & c) {
 
 static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
     auto & kv = c.kvc;
-    if (kv.allocated && kv.max_seq >= max_seq) {
+    const ggml_type kt = ds_kv_type();
+    if (kv.allocated && kv.max_seq >= max_seq && kv.k && kv.k->type == kt) {
         kv.n_past = 0;
         if (kv.buf) ggml_backend_buffer_clear(kv.buf, 0);
         return true;
@@ -2271,8 +2594,11 @@ static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
     kv.ctx = ggml_init(ip);
     if (!kv.ctx) return false;
 
-    kv.k = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, kv_dim, max_seq, nl);
-    kv.v = ggml_new_tensor_3d(kv.ctx, GGML_TYPE_F32, kv_dim, max_seq, nl);
+    // DS2_KV_F16=1 halves the cache and its per-token read traffic. It is a
+    // PRECISION change, so it is gated separately from the persistent-graph
+    // refactor: mixing them would make a text diff unattributable.
+    kv.k = ggml_new_tensor_3d(kv.ctx, kt, kv_dim, max_seq, nl);
+    kv.v = ggml_new_tensor_3d(kv.ctx, kt, kv_dim, max_seq, nl);
 
     kv.buf = ggml_backend_alloc_ctx_tensors(kv.ctx, c.backend);
     if (!kv.buf) {
@@ -2288,8 +2614,8 @@ static bool alloc_ds_kv_cache(ds_ocr2_ctx & c, int max_seq) {
     kv.allocated = true;
 
     size_t bytes = ggml_backend_buffer_get_size(kv.buf);
-    fprintf(stderr, "deepseek_ocr2: KV cache: %d layers, max_seq=%d, kv_dim=%d, %.1f MB\n", nl, max_seq, kv_dim,
-            (float)bytes / 1024 / 1024);
+    fprintf(stderr, "deepseek_ocr2: KV cache: %d layers, max_seq=%d, kv_dim=%d, %s, %.1f MB\n", nl, max_seq, kv_dim,
+            kt == GGML_TYPE_F16 ? "f16" : "f32", (float)bytes / 1024 / 1024);
     return true;
 }
 
@@ -2517,10 +2843,10 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         fprintf(stderr,
                 "[deepseek-ocr2-stage-bench] preprocess=%.1f ms sam=%.1f ms qwen2_enc=%.1f ms projector=%.1f ms "
                 "prompt=%.1f ms prefill=%.1f ms decode=%.1f ms total=%.1f ms image_tokens=%d prompt_tokens=%d "
-                "gen_tokens=%d decode_path=per-layer\n",
+                "gen_tokens=%d decode_path=%s kv=%s\n",
                 ms(_b_start, _b_prep), ms(_b_prep, _b_sam), ms(_b_sam, _b_enc), ms(_b_enc, _b_proj),
                 ms(_b_proj, _b_prompt), g_ds_prefill_us / 1000.0, g_ds_decode_us / 1000.0, ms(_b_start, _b_end),
-                n_img_tokens, n_prompt, g_ds_n_generated);
+                n_img_tokens, n_prompt, g_ds_n_generated, g_ds_decode_path, g_ds_kv_dtype);
     }
 
     if (out_len) *out_len = (int)ctx->result.size();
