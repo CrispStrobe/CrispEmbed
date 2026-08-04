@@ -195,7 +195,12 @@ print("=" * 70)
 # corpus never noticed, only the dense CC0 scans did.
 max_memory = ""
 if n_gpu > 1:
-    head = 5.0  # GiB of activation headroom to keep free on the input device
+    # Sized from the measured peak, not guessed.  A 4.8 Mpix scan (1920x2518,
+    # ~6k vision patches before merging) asks for a single 4.07 GiB activation
+    # on top of ~3 GiB already live in the vision tower.  5 GiB of headroom was
+    # not enough — those two pages still OOM'd with 2.4 GiB free — so reserve 8.
+    # Weights need 15.45 GiB total and 6+13 = 19 still holds them.
+    head = 8.0  # GiB of activation headroom to keep free on the input device
     max_memory = ",".join(
         f"{i}={int(max(vram[i] - (head if i == 0 else 1.0), 4.0))}GiB"
         for i in range(n_gpu))
