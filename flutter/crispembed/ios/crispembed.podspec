@@ -1,6 +1,9 @@
+# Derived, not hardcoded — see the note in macos/crispembed.podspec: this
+# version is also the release tag prepare_command fetches the prebuilt libs
+# from, and the literal had drifted three releases behind.
 Pod::Spec.new do |s|
   s.name             = 'crispembed'
-  s.version          = '0.16.0'
+  s.version          = File.read(File.join(__dir__, '..', 'pubspec.yaml'))[/^version:\s*([0-9][^\s+]*)/, 1]
   s.summary          = 'CrispEmbed on-device inference — embeddings + math OCR via ggml.'
   s.homepage         = 'https://github.com/CrispStrobe/CrispEmbed'
   s.license          = { :type => 'MIT' }

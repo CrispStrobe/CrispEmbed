@@ -1,6 +1,13 @@
+# The pod version doubles as the release tag the prebuilt libs are fetched
+# from (see prepare_command below), so a hardcoded literal here silently
+# pins every `pod install` to an old release: it sat at 0.16.0 while the
+# project shipped 0.17.0/0.17.1/0.17.2, and macOS/iOS kept downloading the
+# July libs. Derive it from the plugin's pubspec.yaml — the one file that is
+# always shipped next to this podspec, on pub.dev and in a repo checkout
+# alike — so bumping the release bumps this automatically.
 Pod::Spec.new do |s|
   s.name             = 'crispembed'
-  s.version          = '0.16.0'
+  s.version          = File.read(File.join(__dir__, '..', 'pubspec.yaml'))[/^version:\s*([0-9][^\s+]*)/, 1]
   s.summary          = 'CrispEmbed on-device inference — embeddings + math OCR via ggml.'
   s.homepage         = 'https://github.com/CrispStrobe/CrispEmbed'
   s.license          = { :type => 'MIT' }
