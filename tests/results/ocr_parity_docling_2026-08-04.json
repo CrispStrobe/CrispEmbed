@@ -1,0 +1,1860 @@
+{
+  "version": 1,
+  "date": "2026-08-04",
+  "brief": "A1 - parity arm: pip document-parser reference (Docling)",
+  "harness": "tests/ocr_external_parity.py (DoclingPy adapter)",
+  "repro": [
+    "python -m venv ~/venvs/docling && ~/venvs/docling/bin/pip install docling",
+    "HF_HOME=$HOME/.cache/hf-docling ~/venvs/docling/bin/python tests/ocr_external_parity.py --images ~/crispembed-ocr-synth --require-truth --repeats 3 --output /tmp/synth.json --markdown /tmp/synth.md",
+    "HF_HOME=$HOME/.cache/hf-docling ~/venvs/docling/bin/python tests/ocr_external_parity.py --images tests/regression/images/cc0 --require-truth --repeats 3 --output /tmp/cc0.json --markdown /tmp/cc0.md"
+  ],
+  "notes": [
+    "engine_ms is net of model load: the parser is built once and warmed with a",
+    "throwaway parse before any timing, so proc_ms == engine_ms for this arm.",
+    "tesseract-cli:eng ran in the same window on the same fixtures as the timing",
+    "control; its proc_ms includes per-invocation model load and is NOT comparable",
+    "to the in-process engine_ms column.",
+    "HF_HOME is redirected because ~/.cache/huggingface symlinks to an external",
+    "volume that was 100% full; the default path fails with ENOSPC."
+  ],
+  "environment": {
+    "python": "3.12.10",
+    "platform": "macOS 26.2 arm64",
+    "docling": "2.118.0",
+    "docling_core": "2.90.0",
+    "docling_ibm_models": "3.13.3",
+    "rapidocr": "3.9.2",
+    "torch": "2.13.0",
+    "transformers": "5.8.1",
+    "tesseract_cli": "5.5.2"
+  },
+  "ocr_backend_selected": {
+    "configured": "auto",
+    "selected": "RapidOcrModel",
+    "selected_kind": "rapidocr",
+    "backend": "torch",
+    "lang": [
+      "chinese"
+    ],
+    "reader": "RapidOCR",
+    "log_evidence": [
+      "ocrmac cannot be used because ocrmac is not installed.",
+      "rapidocr cannot be used because onnxruntime is not installed.",
+      "easyocr cannot be used because it is not installed.",
+      "Auto OCR model selected rapidocr with torch."
+    ]
+  },
+  "corpora": {
+    "synth": {
+      "version": 1,
+      "images": "~/crispembed-ocr-synth",
+      "repeats": 3,
+      "reference_engine": "tesseract-cli:eng",
+      "skipped": {
+        "easyocr-py": "import easyocr failed: No module named 'easyocr'",
+        "paddleocr-py": "import paddleocr failed: No module named 'paddleocr'"
+      },
+      "fixtures": [
+        {
+          "fixture": "synth_00_blur.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n",
+              "proc_ms": 114.1,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nHow vexingly quick daft zebras jump!\nPack my box with five dozen liquor jugs.",
+              "proc_ms": 1273.0,
+              "engine_ms": 1273.0,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "The quick brown fox jumps over the lazy dog.\n\nHow vexingly quick daft zebras jump!\n\nPack my box with five dozen liquor jugs.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "The quick brown fox jumps over the lazy dog.\nHow vexingly quick daft zebras jump!\nPack my box with five dozen liquor jugs."
+              },
+              "cer": 0.5082,
+              "wer": 0.52174,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.5082,
+                  "wer": 0.52174,
+                  "ref_chars": 122,
+                  "wer_unordered": 0.0,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.5082,
+                "wer": 0.52174,
+                "ref_chars": 122,
+                "wer_unordered": 0.0,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_00_clean.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n",
+              "proc_ms": 122.5,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
+              "proc_ms": 1232.2,
+              "engine_ms": 1232.2,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "The quick brown fox jumps over the lazy dog.\n\nPack my box with five dozen liquor jugs.\n\nHow vexingly quick daft zebras jump!",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!"
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 122,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 122,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_00_lowdpi.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n",
+              "proc_ms": 139.5,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
+              "proc_ms": 1622.4,
+              "engine_ms": 1622.4,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "The quick brown fox jumps over the lazy dog.\n\nPack my box with five dozen liquor jugs.\n\nHow vexingly quick daft zebras jump!",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!"
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 122,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 122,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_00_noise.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy-dog.\n*\u201cPack my box with five dozen liquor jugs. .-\u00b0\nHow vexingly:quick.daft zebras jump! - >\n",
+              "proc_ms": 127.2,
+              "engine_ms": null,
+              "cer": 0.10656,
+              "wer": 0.3913,
+              "ref_chars": 122,
+              "wer_unordered": 0.43478,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
+              "proc_ms": 1093.2,
+              "engine_ms": 1093.2,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "The quick brown fox jumps over the lazy dog.\n\nPack my box with five dozen liquor jugs.\n\nHow vexingly quick daft zebras jump!",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!"
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 122,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.09848,
+                "wer": 0.3913,
+                "ref_chars": 132,
+                "wer_unordered": 0.43478,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_00_skew.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!\n",
+              "proc_ms": 122.6,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!",
+              "proc_ms": 1181.0,
+              "engine_ms": 1181.0,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "- The quick brown fox jumps over the lazy dog.\n- Pack my box with five dozen liquor jugs.\n- How vexingly quick daft zebras jump!",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "The quick brown fox jumps over the lazy dog.\nPack my box with five dozen liquor jugs.\nHow vexingly quick daft zebras jump!"
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 122,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 122,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 122,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_01_blur.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n",
+              "proc_ms": 141.0,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nPayment due within 3o days of receipt.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.",
+              "proc_ms": 1594.3,
+              "engine_ms": 1594.3,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Invoice number 48127 dated 14 March 2024.\n\nPayment due within 3o days of receipt.\n\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Invoice number 48127 dated 14 March 2024.\nPayment due within 3o days of receipt.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR."
+              },
+              "cer": 0.55224,
+              "wer": 0.6087,
+              "ref_chars": 134,
+              "wer_unordered": 0.04348,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.55224,
+                  "wer": 0.6087,
+                  "ref_chars": 134,
+                  "wer_unordered": 0.04348,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.55224,
+                "wer": 0.6087,
+                "ref_chars": 134,
+                "wer_unordered": 0.04348,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_01_clean.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n",
+              "proc_ms": 137.6,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
+              "proc_ms": 3442.0,
+              "engine_ms": 3442.0,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Invoice number 48127 dated 14 March 2024.\n\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\n\nPayment due within 30 days of receipt.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 134,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 134,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_01_lowdpi.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n",
+              "proc_ms": 121.8,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
+              "proc_ms": 1490.9,
+              "engine_ms": 1490.9,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Invoice number 48127 dated 14 March 2024.\n\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\n\nPayment due within 30 days of receipt.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 134,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 134,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_01_noise.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Invoice nuiber\u201d 48127 dated \u201c14\u00b0 March..2024. >.\nSubtotal..129.95 EUR, (tax :24..69.-EUR,.-total 154.64 \u00b0RUR:\nPayment\u2019 due within 30 days. of -teceipt. - : : os\n",
+              "proc_ms": 165.1,
+              "engine_ms": null,
+              "cer": 0.25373,
+              "wer": 0.78261,
+              "ref_chars": 134,
+              "wer_unordered": 0.82609,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtota1 129.95 EUR, tax 24.69 EUR, total 154.64 EUR\nPayment due within 30 days of receipt",
+              "proc_ms": 1704.6,
+              "engine_ms": 1704.6,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Invoice number 48127 dated 14 March 2024.\n\n## Subtota1 129.95 EUR, tax 24.69 EUR, total 154.64 EUR\n\nPayment due within 30 days of receipt",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Invoice number 48127 dated 14 March 2024.\nSubtota1 129.95 EUR, tax 24.69 EUR, total 154.64 EUR\nPayment due within 30 days of receipt"
+              },
+              "cer": 0.02239,
+              "wer": 0.13043,
+              "ref_chars": 134,
+              "wer_unordered": 0.17391,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.02239,
+                  "wer": 0.13043,
+                  "ref_chars": 134,
+                  "wer_unordered": 0.17391,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.225,
+                "wer": 0.75,
+                "ref_chars": 160,
+                "wer_unordered": 0.75,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_01_skew.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.\n",
+              "proc_ms": 133.2,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt.",
+              "proc_ms": 1602.6,
+              "engine_ms": 1602.6,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "- Invoice number 48127 dated 14 March 2024.\n\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\n\n- Payment due within 30 days of receipt.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Invoice number 48127 dated 14 March 2024.\nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.\nPayment due within 30 days of receipt."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 134,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 134,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 134,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_02_blur.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n",
+              "proc_ms": 159.3,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
+              "proc_ms": 2175.6,
+              "engine_ms": 2175.6,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Chapter 7. Measurement and error.\n\nEvery instrument reports a value and an uncertainty.\n\nA number without an interval is not a measurement.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 137,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 137,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_02_clean.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n",
+              "proc_ms": 140.1,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
+              "proc_ms": 1672.3,
+              "engine_ms": 1672.3,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Chapter 7. Measurement and error.\n\nEvery instrument reports a value and an uncertainty.\n\nA number without an interval is not a measurement.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 137,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 137,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_02_lowdpi.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n",
+              "proc_ms": 131.1,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
+              "proc_ms": 1569.6,
+              "engine_ms": 1569.6,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "## Chapter 7. Measurement and error.\n\n- Every instrument reports a value and an uncertainty.\n- A number without an interval is not a measurement.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 137,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 137,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_02_noise.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\n-. Every instrument reports a value and-an-uncertainty: . :\nA number without-an interval is not a measurement.\n",
+              "proc_ms": 128.4,
+              "engine_ms": null,
+              "cer": 0.07299,
+              "wer": 0.27273,
+              "ref_chars": 137,
+              "wer_unordered": 0.36364,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error\nEvery instrument reports a value and an uncertainty\nA number without an interval is not a measurement",
+              "proc_ms": 1226.3,
+              "engine_ms": 1226.3,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Chapter 7. Measurement and error\n\nEvery instrument reports a value and an uncertainty\n\n## A number without an interval is not a measurement",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Chapter 7. Measurement and error\nEvery instrument reports a value and an uncertainty\nA number without an interval is not a measurement"
+              },
+              "cer": 0.0219,
+              "wer": 0.13636,
+              "ref_chars": 137,
+              "wer_unordered": 0.13636,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0219,
+                  "wer": 0.13636,
+                  "ref_chars": 137,
+                  "wer_unordered": 0.13636,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.09028,
+                "wer": 0.36364,
+                "ref_chars": 144,
+                "wer_unordered": 0.45455,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_02_skew.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.\n",
+              "proc_ms": 136.3,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement.",
+              "proc_ms": 1591.2,
+              "engine_ms": 1591.2,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "- Chapter 7. Measurement and error.\n- Every instrument reports a value and an uncertainty.\n- A number without an interval is not a measurement.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Chapter 7. Measurement and error.\nEvery instrument reports a value and an uncertainty.\nA number without an interval is not a measurement."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 137,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 137,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 137,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_03_blur.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n",
+              "proc_ms": 127.6,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nFive quacking zephyrs jolt my wax bed.\nWaltz, bad nymph, for quick jigs vex.",
+              "proc_ms": 1190.6,
+              "engine_ms": 1190.6,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Sphinx of black quartz, judge my vow.\n\nFive quacking zephyrs jolt my wax bed.\n\nWaltz, bad nymph, for quick jigs vex.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Sphinx of black quartz, judge my vow.\nFive quacking zephyrs jolt my wax bed.\nWaltz, bad nymph, for quick jigs vex."
+              },
+              "cer": 0.5614,
+              "wer": 0.66667,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.5614,
+                  "wer": 0.66667,
+                  "ref_chars": 114,
+                  "wer_unordered": 0.0,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.5614,
+                "wer": 0.66667,
+                "ref_chars": 114,
+                "wer_unordered": 0.0,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_03_clean.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n",
+              "proc_ms": 154.5,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
+              "proc_ms": 1671.7,
+              "engine_ms": 1671.7,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Sphinx of black quartz, judge my vow.\n\nWaltz, bad nymph, for quick jigs vex.\n\nFive quacking zephyrs jolt my wax bed.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 114,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 114,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_03_lowdpi.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n",
+              "proc_ms": 127.8,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nFive quacking zephyrs jolt my wax bed.\nWaltz, bad nymph, for quick jigs vex.",
+              "proc_ms": 1231.1,
+              "engine_ms": 1231.1,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "Sphinx of black quartz, judge my vow.\n\nFive quacking zephyrs jolt my wax bed.\n\nWaltz, bad nymph, for quick jigs vex.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Sphinx of black quartz, judge my vow.\nFive quacking zephyrs jolt my wax bed.\nWaltz, bad nymph, for quick jigs vex."
+              },
+              "cer": 0.5614,
+              "wer": 0.66667,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.5614,
+                  "wer": 0.66667,
+                  "ref_chars": 114,
+                  "wer_unordered": 0.0,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.5614,
+                "wer": 0.66667,
+                "ref_chars": 114,
+                "wer_unordered": 0.0,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_03_noise.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Sphinx of black quartz; judge my vow:\n~ Waltz, bad nymph, \u2018for quick jigs vex. :\nFive quacking Zephyrs jolt my wax bed:\n",
+              "proc_ms": 132.9,
+              "engine_ms": null,
+              "cer": 0.07895,
+              "wer": 0.33333,
+              "ref_chars": 114,
+              "wer_unordered": 0.38095,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow\nWaltz, bad nymph, for quick jigs vex\nFive quacking zephyrs jolt my wax bed",
+              "proc_ms": 1080.4,
+              "engine_ms": 1080.4,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "## Sphinx of black quartz, judge my vow\n\nWaltz, bad nymph, for quick jigs vex\n\n## Five quacking zephyrs jolt my wax bed",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Sphinx of black quartz, judge my vow\nWaltz, bad nymph, for quick jigs vex\nFive quacking zephyrs jolt my wax bed"
+              },
+              "cer": 0.02632,
+              "wer": 0.14286,
+              "ref_chars": 114,
+              "wer_unordered": 0.14286,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.02632,
+                  "wer": 0.14286,
+                  "ref_chars": 114,
+                  "wer_unordered": 0.14286,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.08403,
+                "wer": 0.34783,
+                "ref_chars": 119,
+                "wer_unordered": 0.3913,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "synth_03_skew.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.\n",
+              "proc_ms": 149.1,
+              "engine_ms": null,
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": true
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed.",
+              "proc_ms": 1615.5,
+              "engine_ms": 1615.5,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "- Sphinx of black quartz, judge my vow.\n- Waltz, bad nymph, for quick jigs vex.\n- Five quacking zephyrs jolt my wax bed.",
+              "n_text_items": 3,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 3,
+              "alt_texts": {
+                "all_text_items": "Sphinx of black quartz, judge my vow.\nWaltz, bad nymph, for quick jigs vex.\nFive quacking zephyrs jolt my wax bed."
+              },
+              "cer": 0.0,
+              "wer": 0.0,
+              "ref_chars": 114,
+              "wer_unordered": 0.0,
+              "exact": true,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.0,
+                  "wer": 0.0,
+                  "ref_chars": 114,
+                  "wer_unordered": 0.0,
+                  "exact": true
+                }
+              },
+              "vs_reference": {
+                "cer": 0.0,
+                "wer": 0.0,
+                "ref_chars": 114,
+                "wer_unordered": 0.0,
+                "exact": true
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "tesseract-cli:eng": {
+          "kind": "external",
+          "n": 20,
+          "failures": 0,
+          "mean_cer": 0.02561,
+          "mean_wer": 0.089,
+          "mean_wer_unordered": 0.10027,
+          "mean_cer_vs_reference": null,
+          "median_proc_ms": 133.1,
+          "median_engine_ms": null
+        },
+        "docling-py": {
+          "kind": "external",
+          "n": 20,
+          "failures": 0,
+          "mean_cer": 0.11269,
+          "mean_wer": 0.14367,
+          "mean_wer_unordered": 0.02483,
+          "mean_cer_vs_reference": 0.13405,
+          "median_proc_ms": 1580.4,
+          "median_engine_ms": 1580.4,
+          "alt": {
+            "all_text_items": {
+              "mean_cer": 0.11269,
+              "mean_wer": 0.14367,
+              "n": 20
+            }
+          }
+        }
+      }
+    },
+    "cc0": {
+      "version": 1,
+      "images": "tests/regression/images/cc0",
+      "repeats": 3,
+      "reference_engine": "tesseract-cli:eng",
+      "skipped": {
+        "easyocr-py": "import easyocr failed: No module named 'easyocr'",
+        "paddleocr-py": "import paddleocr failed: No module named 'paddleocr'"
+      },
+      "fixtures": [
+        {
+          "fixture": "commons_example_receipt.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Jackson-Washington\n\n6640 Ortiz Cove, Markmouth, PW\n\n69940\n\nTransaction ID: 8F88C299\n\nDate: 2025-02-16 11:25:12\n\nItem Qty Price\n\nStrategy Accessory 1$ 43.31 $\n\nConference Product 1$ 48.40 $\n\nScientist Item 3 $ 48.07 $\n\nSituation Item 3.$ 23.87 $\n\nLife Accessory 45 48.04 $\n\nMusic Accessory 1$ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\n\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a great day!\n",
+              "proc_ms": 272.0,
+              "engine_ms": null,
+              "cer": 0.01474,
+              "wer": 0.14286,
+              "ref_chars": 407,
+              "wer_unordered": 0.15714,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW 69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem\nQty\nPrice\nStrategy Accessory\n1\n$\n43.31 $\nConference Product\n1\n$\n48.40 $\nScientist Item\n3\n\u015f\n48.07 $\nSituation Item\n3\n$\n23.87\n$\nLife Accessory\n4\n$\n48.04\n\u015f\nMusic Accessory\n1\n$\n24.45\n$\nSubtotal:\nPST (7%):\n$524.14\n$36.69\nGST (5%):\nTotal:\n$26.21\n$587.04\nPayment: Gift Card (****3486) Have a great day!",
+              "proc_ms": 2999.9,
+              "engine_ms": 2999.9,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "## Jackson-Washington\n\n6640 Ortiz Cove, Markmouth, PW 69940\n\nTransaction ID: 8F88C299\n\nDate: 2025-02-16 11:25:12\n\n| Item               |   Qty |    | Price   | Price   | Price   |\n|--------------------|-------|----|---------|---------|---------|\n| Strategy Accessory |     1 | $  | 43.31 $ |         |         |\n| Conference Product |     1 | $  | 48.40 $ |         |         |\n| Scientist Item     |     3 | \u015f  | 48.07 $ |         |         |\n| Situation Item     |     3 | $  | 23.87   | $       |         |\n| Life Accessory     |     4 | $  | 48.04   | \u015f       |         |\n| Music Accessory    |     1 | $  | 24.45   | $       |         |\n\nSubtotal:\n\nPST (7%):\n\n$524.14\n\n$36.69\n\nGST (5%):\n\nTotal:\n\n$26.21\n\n$587.04\n\nPayment: Gift Card (****3486) Have a great day!",
+              "n_text_items": 13,
+              "n_tables": 1,
+              "n_pictures": 0,
+              "regions": 13,
+              "alt_texts": {
+                "all_text_items": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW 69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nSubtotal:\nPST (7%):\n$524.14\n$36.69\nGST (5%):\nTotal:\n$26.21\n$587.04\nPayment: Gift Card (****3486) Have a great day!"
+              },
+              "cer": 0.08845,
+              "wer": 0.14286,
+              "ref_chars": 407,
+              "wer_unordered": 0.05714,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.51351,
+                  "wer": 0.65714,
+                  "ref_chars": 407,
+                  "wer_unordered": 0.55714,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.10422,
+                "wer": 0.30769,
+                "ref_chars": 403,
+                "wer_unordered": 0.16923,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "commons_test_ocr_document.jpg",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "suddenly down, so suddenly that Alice had\nLorem Ipsum not a moment to think about stopping herself\nbefore she found herself falling down what\nAitice was beginning to get very tired of seemed to be a very deep well.\nsitting by her sister in the caf\u00e9, and of having Either the well was very deep, or she fell very\nnothing to do: once or twice she had peeped slowly, for she had plenty of time as she went\ninto the book her sister was reading, but it down to look about her, and to wonder what\nhad no pictures or conversations in it, \u201cand was going to happen next. First, she tried to\nwhat is the use of a book,\u201d thought Alice, look down and make out what she was\n\u201cwithout pictures or conversations?\u201d coming to, but it was too dark to see\nSo she was considering in her own mind, (as anything: then she looked at the sides of the\nwell as she could, for the hot day made her well, and noticed that they were filled with\nfeel very sleepy and stupid,) whether the cupboards and book-shelves: here and there\npleasure of making a daisy-chain would be she saw maps and pictures hung upon pegs.\nworth the trouble of getting up and picking She took down a jar from one of the shelves\nthe daisies, when suddenly a white rabbit with as she passed; it was labelled \u201cORANGE\npink eyes ran close by her. MARMALADE,\u201d but to her great\nThere was nothing so very remarkable in that; aay cee \u2014 Ee mo\nnor did Alice think it so very much out of the BO ae eee ae!\n. ; underneath, so managed to put it into one of\nway to hear the Rabbit say to itself, \u201cOh cyecutowdsanche cilparee\ndear! Oh dear! I shall be too late!\u201d (when she ,\nthought it over afterwards, it occurred to her Jajoute que le fait Pavoir \u00e9t\u00e9, durant plus de\nthat she ought to have wondered at this, but deux ans, le directeur de ?\u2019hdpital du camp et\nat the time it all seemed quite natural;) but @avoir, pendant toute la dur\u00e9e de mon\nwhen the Rabbit actually took a watch out of its internement, donn\u00e9 r\u00e9gulitrement des cours\nwaistcoat-pocket, and looked at it, and then de frangais, Phistoire de la litt\u00e9rature\nhurried on, Alice started to her feet, for it frangaise et Phistoire de la philosophie, m\u2019a\nflashed across her mind that she had never permis @\u2019avoir des relations suivies et intimes\n: before seen a rabbit with either a avec presque tous mes compagnons de\nwaistcoat-pocket, or a watch to take out of it, Paventure. Ces relations et cette intimit\u00e9\nand, burning with curiosity, she ran across the n\u2019ont permis de les connaitre, un par un, de\nfield after it, and was just in time to see it pop voir non seulement leur corps nu, lorsqwils se\ndown a large rabbit-hole under the hedge. pr\u00e9sentaient a la visite m\u00e9dicale, mais aussi\n! , leur dme 4 nu aux heures de confidences.\nIn another moment down went Alice after it,\nnever once considering how in the world she\nwas to get out again. THE END\nThe rabbit-hole went straight on like a\ntunnel for some way, and then dipped :\n",
+              "proc_ms": 1615.3,
+              "engine_ms": null,
+              "cer": 0.75512,
+              "wer": 0.94604,
+              "ref_chars": 2981,
+              "wer_unordered": 0.1241,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Lorem\nAlice was beginning to get very tired of sitting by her sister in the caf\u00e9, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \"and what is the use of a book,\" thought Alice, \"without pictures or conversations?\"\nSo she was considering in her own mind, (as well as she could, for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her.\nThere was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, \"Oh dear! Oh dear! I shall be too late!\" (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural;) but when the Rabbit actually took a watch out of its waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out ofit, and, burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit-hole under the hedge. In another moment down went Alice after it, never once considering how in the world she was to get out again.\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down what seemed to be a very deep well.\nEither the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves: here and there s  s pn s ns pds She took down a jar from one of the shelves as she passed; it was labelled \"ORANGE MARMALADE,\" but to her great disappointment it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of the cupboards as she fell past it.\nJ'ajoute que le fait d'avoir \u00e9t\u00e9, durant plus de deux ans, le directeur de l'h\u00f4pital du camp et d'avoir, pendant toute la dur\u00e9e de mon internement, donn\u00e9 r\u00e9guli\u00e8rement des cours de fran\u00e7ais, d'histoire de la litt\u00e9rature fran\u00e7aise et d'histoire de la philosophie, m'a permis d'avoir des relations suivies et intimes avec presque tous mes compagnons de l'aventure. Ces relations et cette intimit\u00e9 m'ont permis de les conna\u00eetre, un par un, de voir non seulement leur corps nu, lorsqu'ils se pr\u00e9sentaient \u00e0 la visite m\u00e9dicale, mais aussi leur \u00e2me \u00e0 nu aux heures de confidences.\nTHE END",
+              "proc_ms": 6581.2,
+              "engine_ms": 6581.2,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "## Lorem\n\nAlice was beginning to get very tired of sitting by her sister in the caf\u00e9, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \"and what is the use of a book,\" thought Alice, \"without pictures or conversations?\"\n\nSo she was considering in her own mind, (as well as she could, for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her.\n\nThere was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, \"Oh dear! Oh dear! I shall be too late!\" (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural;) but when the Rabbit actually took a watch out of its waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out ofit, and, burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit-hole under the hedge. In another moment down went Alice after it, never once considering how in the world she was to get out again.\n\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down what seemed to be a very deep well.\n\nEither the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves: here and there s  s pn s ns pds She took down a jar from one of the shelves as she passed; it was labelled \"ORANGE MARMALADE,\" but to her great disappointment it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of the cupboards as she fell past it.\n\nJ'ajoute que le fait d'avoir \u00e9t\u00e9, durant plus de deux ans, le directeur de l'h\u00f4pital du camp et d'avoir, pendant toute la dur\u00e9e de mon internement, donn\u00e9 r\u00e9guli\u00e8rement des cours de fran\u00e7ais, d'histoire de la litt\u00e9rature fran\u00e7aise et d'histoire de la philosophie, m'a permis d'avoir des relations suivies et intimes avec presque tous mes compagnons de l'aventure. Ces relations et cette intimit\u00e9 m'ont permis de les conna\u00eetre, un par un, de voir non seulement leur corps nu, lorsqu'ils se pr\u00e9sentaient \u00e0 la visite m\u00e9dicale, mais aussi leur \u00e2me \u00e0 nu aux heures de confidences.\n\nTHE END",
+              "n_text_items": 8,
+              "n_tables": 0,
+              "n_pictures": 0,
+              "regions": 8,
+              "alt_texts": {
+                "all_text_items": "Lorem\nAlice was beginning to get very tired of sitting by her sister in the caf\u00e9, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \"and what is the use of a book,\" thought Alice, \"without pictures or conversations?\"\nSo she was considering in her own mind, (as well as she could, for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink eyes ran close by her.\nThere was nothing so very remarkable in that; nor did Alice think it so very much out of the way to hear the Rabbit say to itself, \"Oh dear! Oh dear! I shall be too late!\" (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite natural;) but when the Rabbit actually took a watch out of its waistcoat-pocket, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either a waistcoat-pocket, or a watch to take out ofit, and, burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit-hole under the hedge. In another moment down went Alice after it, never once considering how in the world she was to get out again.\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself before she found herself falling down what seemed to be a very deep well.\nEither the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything: then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves: here and there s  s pn s ns pds She took down a jar from one of the shelves as she passed; it was labelled \"ORANGE MARMALADE,\" but to her great disappointment it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of the cupboards as she fell past it.\nJ'ajoute que le fait d'avoir \u00e9t\u00e9, durant plus de deux ans, le directeur de l'h\u00f4pital du camp et d'avoir, pendant toute la dur\u00e9e de mon internement, donn\u00e9 r\u00e9guli\u00e8rement des cours de fran\u00e7ais, d'histoire de la litt\u00e9rature fran\u00e7aise et d'histoire de la philosophie, m'a permis d'avoir des relations suivies et intimes avec presque tous mes compagnons de l'aventure. Ces relations et cette intimit\u00e9 m'ont permis de les conna\u00eetre, un par un, de voir non seulement leur corps nu, lorsqu'ils se pr\u00e9sentaient \u00e0 la visite m\u00e9dicale, mais aussi leur \u00e2me \u00e0 nu aux heures de confidences.\nTHE END"
+              },
+              "cer": 0.01811,
+              "wer": 0.05396,
+              "ref_chars": 2981,
+              "wer_unordered": 0.08273,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.01811,
+                  "wer": 0.05396,
+                  "ref_chars": 2981,
+                  "wer_unordered": 0.08273,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.76662,
+                "wer": 0.96909,
+                "ref_chars": 2918,
+                "wer_unordered": 0.16545,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "german_official_print.jpg",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "Sou <r mie SF\neidys- Gefegblatt\n-\n+\n/\nAf 1;\nSuihalt, Verordnung, betreffend das Jntrafttreten der Militdrftvafgeridhtsordnung vom 1. Dezember 1898.\nG.1. \u2014 Verordnung, betreffend die Uebertvagung der Befugnijje de3 preugifden General\nAuditoriats auf da3 Neichsmilitirgerit. G. 2.\nSER SES TS SS Ee eee te eee eee\n(Nr. 2642.) Verovdnung, betreffend bas Gufrafttreten der Militarftvafgeridhtsordniung vom\n1, Dezember 1898. Vom 28. Dezember 1899.\n' yt \u00b0 + SRE FH \u2019\nWir Wilhelin, von Gottes Gnaden Deutfeher Kaijer, Konig\nbon Breufen r.\nverordnen unter Suftimmung de3 Bundesraths auf Grund des \u00a7. 1 de3 Cinfithrungs-\nGelebes sur Militdrftrafgerichtsordnung vom 1. Oezember 1898, was folgt:\nCinziger Paragraph.\nDie MilitarftvafgerichtSordnung vom 1. Dezember 1898 (Meichs-Gefesbl.\n\u00a9. 1189 ff.) tritt am 1. Oftober 1900 in Kraft.\nUrfundlich unter Unjerer Hdchfteigenhindigen Unterfehrift und beigedructtem\nKaiferlichen Gnfiegel.\nGegeben Neues Palais, den 28. Dezember 1899,\n(LL. 8.) Wilhelm.\nHluft gu Hobhenlohe.\nse aaa aie OS\nReid}s- Gefeghl. 1900. 1\nAusgegeben gu Berlin den 6. Januar 1900,\n",
+              "proc_ms": 733.9,
+              "engine_ms": null,
+              "cer": 0.19227,
+              "wer": 0.64179,
+              "ref_chars": 1009,
+              "wer_unordered": 0.69403,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "Reichs-Gesehblatt.\nNf 1.\nInhalt. Beror dnung, betreffend das Inkrafttreten der Milit\u00e4rstrafgerichtsordnung vom 1. Dezember 1898. S.1. \u2014 Berord nung, betreffend die Uebertragung der Befugnisfe des preu\u00dfischeu GeneralAuditoriats auf das Reichsmilit\u00e4rgericht.S. 2.\n(Nr. 2642.) Berorduung, betreffend das Infrafttreten der Milit\u00e4rstrafgerichtsordnung bom 1. Dezember 1898. Bom 28. Dezember 1899.\nvon Preu\u00dfen .\nBir Milhelm, von Gottes Gnaden Deutscher Raiser, R\u00f6nig\nverordnen unter Zustimmung des Bunde\u00dfraths auf Grund des S. 1 des Einf\u00fchrungsgefe\u00dfes zur Milit\u00e4rftrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Milit\u00e4rstrafgerichtsordmung vom 1. Dezember 1898 (Reichs-Gefe\u00dfbl. S. 1189 ff.) tritt am 1. Dktober 1900 in Kraft.\nUrkundlich unter Unferer H\u00f6chsteigenh\u00e4ndigen Unterschrift und beigedrucktem\nKaiferlichenInfiegel.\nGegeben Reues Palais, den 28. Dezember 1899.\n(L. S.)\nWilhelm.\nF\u00fcrft zu Hohenlohe.",
+              "proc_ms": 10296.0,
+              "engine_ms": 10296.0,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "## Reichs-Gesehblatt.\n\nNf 1.\n\nInhalt. Beror dnung, betreffend das Inkrafttreten der Milit\u00e4rstrafgerichtsordnung vom 1. Dezember 1898. S.1. \u2014 Berord nung, betreffend die Uebertragung der Befugnisfe des preu\u00dfischeu GeneralAuditoriats auf das Reichsmilit\u00e4rgericht.S. 2.\n\n(Nr. 2642.) Berorduung, betreffend das Infrafttreten der Milit\u00e4rstrafgerichtsordnung bom 1. Dezember 1898. Bom 28. Dezember 1899.\n\n## von Preu\u00dfen .\n\n## Bir Milhelm, von Gottes Gnaden Deutscher Raiser, R\u00f6nig\n\nverordnen unter Zustimmung des Bunde\u00dfraths auf Grund des S. 1 des Einf\u00fchrungsgefe\u00dfes zur Milit\u00e4rftrafgerichtsordnung vom 1. Dezember 1898, was folgt:\n\n## Einziger Paragraph.\n\nDie Milit\u00e4rstrafgerichtsordmung vom 1. Dezember 1898 (Reichs-Gefe\u00dfbl. S. 1189 ff.) tritt am 1. Dktober 1900 in Kraft.\n\nUrkundlich unter Unferer H\u00f6chsteigenh\u00e4ndigen Unterschrift und beigedrucktem\n\nKaiferlichenInfiegel.\n\nGegeben Reues Palais, den 28. Dezember 1899.\n\n<!-- image -->\n\n(L. S.)\n\nWilhelm.\n\nF\u00fcrft zu Hohenlohe.",
+              "n_text_items": 17,
+              "n_tables": 0,
+              "n_pictures": 1,
+              "regions": 17,
+              "alt_texts": {
+                "all_text_items": "Reichs-Gesehblatt.\nNf 1.\nInhalt. Beror dnung, betreffend das Inkrafttreten der Milit\u00e4rstrafgerichtsordnung vom 1. Dezember 1898. S.1. \u2014 Berord nung, betreffend die Uebertragung der Befugnisfe des preu\u00dfischeu GeneralAuditoriats auf das Reichsmilit\u00e4rgericht.S. 2.\n(Nr. 2642.) Berorduung, betreffend das Infrafttreten der Milit\u00e4rstrafgerichtsordnung bom 1. Dezember 1898. Bom 28. Dezember 1899.\nvon Preu\u00dfen .\nBir Milhelm, von Gottes Gnaden Deutscher Raiser, R\u00f6nig\nverordnen unter Zustimmung des Bunde\u00dfraths auf Grund des S. 1 des Einf\u00fchrungsgefe\u00dfes zur Milit\u00e4rftrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Milit\u00e4rstrafgerichtsordmung vom 1. Dezember 1898 (Reichs-Gefe\u00dfbl. S. 1189 ff.) tritt am 1. Dktober 1900 in Kraft.\nUrkundlich unter Unferer H\u00f6chsteigenh\u00e4ndigen Unterschrift und beigedrucktem\nKaiferlichenInfiegel.\nGegeben Reues Palais, den 28. Dezember 1899.\n(L. S.)\nWilhelm.\nF\u00fcrft zu Hohenlohe.\nReids.Gefe\u00dfbl. 1900.\nAngeben Berlinden6.Jaa 1900."
+              },
+              "cer": 0.14272,
+              "wer": 0.40299,
+              "ref_chars": 1009,
+              "wer_unordered": 0.39552,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.09812,
+                  "wer": 0.38806,
+                  "ref_chars": 1009,
+                  "wer_unordered": 0.40299,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.25092,
+                "wer": 0.64151,
+                "ref_chars": 1084,
+                "wer_unordered": 0.64151,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "receipt_historical.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "WHITE HT. BREAD 39\n\nFRY WENKLS LEMON ange)\nio8 e141. #8\n\nGORING CONFECT. _ oe\n\nGOMTNG CONFECT. . ae\nTHE PAI dd\n\n81 CHANGE\nStee TA cunts Ahi occ\n",
+              "proc_ms": 265.1,
+              "engine_ms": null,
+              "cer": 0.87109,
+              "wer": 0.95833,
+              "ref_chars": 768,
+              "wer_unordered": 0.96528,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "5 e",
+              "proc_ms": 19679.3,
+              "engine_ms": 19679.3,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "| 5 e   |\n|-------|",
+              "n_text_items": 1,
+              "n_tables": 1,
+              "n_pictures": 0,
+              "regions": 1,
+              "alt_texts": {
+                "all_text_items": "NOWDPEN"
+              },
+              "cer": 0.9974,
+              "wer": 1.0,
+              "ref_chars": 768,
+              "wer_unordered": 1.0,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.99089,
+                  "wer": 1.0,
+                  "ref_chars": 768,
+                  "wer_unordered": 1.0,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 0.98561,
+                "wer": 1.0,
+                "ref_chars": 139,
+                "wer_unordered": 1.0,
+                "exact": false
+              }
+            }
+          }
+        },
+        {
+          "fixture": "simple_form.png",
+          "has_truth": true,
+          "engines": {
+            "tesseract-cli:eng": {
+              "kind": "external",
+              "text": "\u2014_ \u2014 (Sasa Gass\na\nas\n\n8 TT Sone wan\n",
+              "proc_ms": 124.3,
+              "engine_ms": null,
+              "cer": 0.90283,
+              "wer": 0.97222,
+              "ref_chars": 247,
+              "wer_unordered": 0.97222,
+              "exact": false
+            },
+            "docling-py": {
+              "kind": "external",
+              "text": "",
+              "proc_ms": 1318.2,
+              "engine_ms": 1318.2,
+              "ocr_backend": {
+                "configured": "auto",
+                "selected": "RapidOcrModel",
+                "selected_kind": "rapidocr",
+                "backend": "torch",
+                "lang": [
+                  "chinese"
+                ],
+                "reader": "RapidOCR",
+                "log_evidence": [
+                  "ocrmac cannot be used because ocrmac is not installed.",
+                  "rapidocr cannot be used because onnxruntime is not installed.",
+                  "easyocr cannot be used because it is not installed.",
+                  "Auto OCR model selected rapidocr with torch."
+                ]
+              },
+              "force_full_page_ocr": false,
+              "markdown": "<!-- image -->\n\n<!-- image -->",
+              "n_text_items": 22,
+              "n_tables": 0,
+              "n_pictures": 2,
+              "regions": 22,
+              "alt_texts": {
+                "all_text_items": "Irput\nTexte\nMumber\nDate\nPassword\na label\nANOTHER LABEL Yet another label\nFinland\nFrance\ncheckbox2\ncheckbox3\nCodelabede\ncode tib\ncode\nButton\nRecherchen\n\"Clslile listen\nTEXTAREA\nTexte\nRado\n\u00a9Drag and drop frames\nOFixe frames"
+              },
+              "cer": 1.0,
+              "wer": 1.0,
+              "ref_chars": 247,
+              "wer_unordered": 1.0,
+              "exact": false,
+              "alt_scores": {
+                "all_text_items": {
+                  "cer": 0.18623,
+                  "wer": 0.41667,
+                  "ref_chars": 247,
+                  "wer_unordered": 0.5,
+                  "exact": false
+                }
+              },
+              "vs_reference": {
+                "cer": 1.0,
+                "wer": 1.0,
+                "ref_chars": 34,
+                "wer_unordered": 1.0,
+                "exact": false
+              }
+            }
+          }
+        }
+      ],
+      "summary": {
+        "tesseract-cli:eng": {
+          "kind": "external",
+          "n": 5,
+          "failures": 0,
+          "mean_cer": 0.54721,
+          "mean_wer": 0.73225,
+          "mean_wer_unordered": 0.58255,
+          "mean_cer_vs_reference": null,
+          "median_proc_ms": 272.0,
+          "median_engine_ms": null
+        },
+        "docling-py": {
+          "kind": "external",
+          "n": 5,
+          "failures": 1,
+          "mean_cer": 0.44934,
+          "mean_wer": 0.51996,
+          "mean_wer_unordered": 0.50708,
+          "mean_cer_vs_reference": 0.62147,
+          "median_proc_ms": 6581.2,
+          "median_engine_ms": 6581.2,
+          "alt": {
+            "all_text_items": {
+              "mean_cer": 0.36137,
+              "mean_wer": 0.50317,
+              "n": 5
+            }
+          }
+        }
+      }
+    }
+  }
+}
