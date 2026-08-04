@@ -104,10 +104,17 @@ def find_dataset(name):
     return None
 
 
-# sm_75's whole menu, in the order worth trying.  FLASHINFER is what vLLM picks
-# on its own; FLEX_ATTENTION is the only other one Qwen2.5-VL has not already
-# refused.  TRITON_ATTN is skipped: the model raises on it by name.
-BACKENDS = os.environ.get("OLMOCR_VLLM_BACKENDS", "FLASHINFER,FLEX_ATTENTION").split(",")
+# "AUTO" means: do not set VLLM_ATTENTION_BACKEND at all.  This distinction is
+# the whole point of run 5.  Setting that variable forces the backend on *both*
+# the language model and the vision tower, and Qwen2.5-VL's ViT refuses every
+# backend sm_75 offers by name — FLASHINFER, TRITON_ATTN and FLEX_ATTENTION all
+# raise "Qwen2.5-VL does not support AttentionBackendEnum.X backend now".  Left
+# unset, the ViT picks its own path and the model *does* construct; run 2 got
+# all the way to FlashInfer's JIT and died only on `cannot find -lcuda`, which
+# the libcuda.so symlink below fixes.  So "forcing a backend fails" and "vLLM
+# cannot serve this model on Turing" are different claims, and only the unset
+# case can decide the second one.
+BACKENDS = os.environ.get("OLMOCR_VLLM_BACKENDS", "AUTO").split(",")
 
 
 def main() -> int:
@@ -181,8 +188,11 @@ def main() -> int:
         result["attempts"] = []
         for backend in BACKENDS:
             print(f"=== trying VLLM_ATTENTION_BACKEND={backend} ===", flush=True)
-            env = dict(os.environ, OLMOCR_VLLM_BACKEND=backend,
-                       VLLM_ATTENTION_BACKEND=backend)
+            env = dict(os.environ, OLMOCR_VLLM_BACKEND=backend)
+            if backend == "AUTO":
+                env.pop("VLLM_ATTENTION_BACKEND", None)
+            else:
+                env["VLLM_ATTENTION_BACKEND"] = backend
             t = time.time()
             rc = subprocess.run([sys.executable, str(Path(__file__).resolve())],
                                 env=env).returncode
@@ -201,9 +211,11 @@ def main() -> int:
                 print(result["verdict"])
                 return 0
         result["verdict"] = (
-            f"vLLM 0.11.2 did not serve {MODEL} on cc {cards[0]['compute_cap']}: "
-            f"no available attention backend started "
-            f"({', '.join(BACKENDS)}; TRITON_ATTN is refused by the model itself)")
+            f"vLLM 0.11.2 did not serve {MODEL} on cc {cards[0]['compute_cap']}; "
+            f"attempted: {', '.join(BACKENDS)}. Measured refusals on this card: "
+            f"forcing FLASHINFER / TRITON_ATTN / FLEX_ATTENTION each raises "
+            f"'Qwen2.5-VL does not support AttentionBackendEnum.X backend now' "
+            f"in the vision tower, and FA2 needs compute capability >= 8.0")
         save()
         print(json.dumps(result, indent=2))
         return 1
