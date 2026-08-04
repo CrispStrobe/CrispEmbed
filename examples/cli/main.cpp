@@ -186,6 +186,11 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --nafnet-model PATH NAFNet denoising GGUF (used with --nafnet-denoise)\n");
     fprintf(stderr, "  --ocr-det MODEL  general OCR: text detection model (DBNet/surya-det)\n");
     fprintf(stderr, "  --ocr-rec MODEL  general OCR: text recognition model (TrOCR, e.g. trocr-printed)\n");
+    fprintf(stderr,
+            "  --ocr-layout M   RT-DETR layout GGUF: enables region routing + markdown assembly (flat pipeline)\n");
+    fprintf(stderr, "  --ocr-table M    table-cell OCR GGUF: routes layout table regions to the table parser\n");
+    fprintf(stderr, "  --ocr-formula M  formula GGUF: routes layout formula regions to PP-FormulaNet\n");
+    fprintf(stderr, "  --ocr-markdown   print the assembled document markdown after the region text\n");
     fprintf(stderr, "  --ocr-cls MODEL  optional line-orientation classifier (PP-LCNet 0/180) for --ocr-engine "
                     "ppocrv6\n");
     fprintf(stderr, "                   use with --ocr IMAGE: detects text regions then recognizes each crop\n");
@@ -255,6 +260,10 @@ static int cli_main(int argc, char ** argv) {
     std::string ocr_det_path;        // general OCR: text detection model (DBNet)
     std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
     std::string ocr_cls_path;        // optional line-orientation classifier (PP-LCNet 0/180)
+    std::string ocr_layout_path;     // optional RT-DETR layout GGUF (enables region routing)
+    std::string ocr_table_path;      // optional table-cell OCR GGUF (routes layout table regions)
+    std::string ocr_formula_path;    // optional formula GGUF (routes layout formula regions)
+    bool ocr_markdown = false;       // print the assembled document markdown after regions
     bool cleanup_mode = false;       // --cleanup: preprocess before OCR
     cleanup_overrides cleanup_ov;    // --no-deskew / --binarize / ... recipe tweaks
     bool image_deskew = false;       // --deskew: deskew before --image embedding
@@ -509,6 +518,14 @@ static int cli_main(int argc, char ** argv) {
             ocr_rec_path = argv[++i];
         } else if (strcmp(argv[i], "--ocr-cls") == 0 && i + 1 < argc) {
             ocr_cls_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-layout") == 0 && i + 1 < argc) {
+            ocr_layout_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-table") == 0 && i + 1 < argc) {
+            ocr_table_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-formula") == 0 && i + 1 < argc) {
+            ocr_formula_path = argv[++i];
+        } else if (strcmp(argv[i], "--ocr-markdown") == 0) {
+            ocr_markdown = true;
         } else if (strcmp(argv[i], "--conf") == 0 && i + 1 < argc) {
             conf_threshold = (float)atof(argv[++i]);
         } else if (strcmp(argv[i], "--lora") == 0 && i + 1 < argc) {
@@ -1110,6 +1127,10 @@ static int cli_main(int argc, char ** argv) {
     // accept-gate escalation. Models default to surya-det + qwen2vl-ocr.
     if (!ocr_pipeline_path.empty()) {
         auto resolve = [&](const std::string & n) { return crispembed_mgr::resolve_model(n, true, accepted_license); };
+        // T11: every ocr_orchestrator::engine value must have a CLI name —
+        // engines without one (deepseek_ocr2, tesseract_fraktur, ...) were
+        // unreachable from the CLI for months, exactly how the ppocrv6 lane
+        // went unbenchmarked. tests/test_cli_engine_names.py asserts coverage.
         auto eng_id = [](const std::string & n) -> int {
             if (n == "surya") return 1;
             if (n == "got") return 2;
@@ -1117,9 +1138,15 @@ static int cli_main(int argc, char ** argv) {
             if (n == "qwen2vl") return 4;
             if (n == "internvl2") return 5;
             if (n == "tesseract") return 6;
+            if (n == "parseq") return 7;
+            if (n == "deepseek-ocr2" || n == "deepseek_ocr2") return 8;
+            if (n == "pix2struct") return 9;
+            if (n == "granite-vision" || n == "granite_vision") return 10;
             if (n == "lightonocr") return 11;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
+            if (n == "unified") return 14;
+            if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             return 0; // dbnet_trocr
@@ -1137,11 +1164,27 @@ static int cli_main(int argc, char ** argv) {
         if (!pipeline_engine.empty()) {
             // Explicit primary engine → single-stage pipeline via the builder.
             const int eid = eng_id(pipeline_engine);
-            const bool is_vlm = (eid >= 2 && eid <= 5) || eid == 11 || eid == 12 || eid == 13;
+            // Single-model lanes: VLMs plus the metadata-dispatched engines.
+            // deepseek-ocr2 / pix2struct / granite-vision do their own
+            // preprocessing like the VLMs (cleanup stays off for them).
+            const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14;
+            if (eid == 14 && ocr_rec_path.empty()) {
+                fprintf(stderr, "error: --ocr-engine unified dispatches on GGUF metadata; provide the model "
+                                "via --ocr-rec FILE\n");
+                return 1;
+            }
+            if (eid == 15 && ocr_rec_path.empty()) {
+                fprintf(stderr, "error: --ocr-engine tesseract-fraktur has no registry default; provide a "
+                                "tesseract-frk GGUF via --ocr-rec FILE\n");
+                return 1;
+            }
             if (is_vlm) {
                 const char * dflt = (eid == 2)    ? "got-ocr2"
                                     : (eid == 3)  ? "glm-ocr"
                                     : (eid == 5)  ? "internvl2-ocr"
+                                    : (eid == 8)  ? "deepseek-ocr2"
+                                    : (eid == 9)  ? "pix2struct-base"
+                                    : (eid == 10) ? "granite-vision"
                                     : (eid == 11) ? "lightonocr"
                                     : (eid == 12) ? "qwen3vl-2b"
                                     : (eid == 13) ? "unlimited-ocr"
@@ -1154,6 +1197,7 @@ static int cli_main(int argc, char ** argv) {
                 const char * ddflt = (eid == 16) ? "ppocrv6-small-det" : "dbnet-det";
                 ma = resolve(ocr_det_path.empty() ? ddflt : ocr_det_path);
                 const char * rdflt = (eid == 6)    ? "tesseract-eng"
+                                     : (eid == 7)  ? "parseq"
                                      : (eid == 16) ? "ppocrv6-small-rec"
                                      : (eid == 17) ? "easyocr-english-g2"
                                                    : "qwen2vl-ocr";
@@ -1224,8 +1268,25 @@ static int cli_main(int argc, char ** argv) {
             pp.tess_model_dir = tess_model_dir.empty() ? nullptr : tess_model_dir.c_str();
             pp.min_chars = min_chars;
             pp.min_confidence = min_conf;
+            // T11 document routing: layout regions route to the table/formula
+            // specialists and build_markdown assembles the result. These
+            // fields exist only on the flat-path params struct, which is why
+            // the whole document pipeline was CLI-unreachable before.
+            std::string layout_m, table_m, formula_m;
+            if (!ocr_layout_path.empty()) layout_m = resolve(ocr_layout_path);
+            if (!ocr_table_path.empty()) table_m = resolve(ocr_table_path);
+            if (!ocr_formula_path.empty()) formula_m = resolve(ocr_formula_path);
+            pp.layout_model = layout_m.empty() ? nullptr : layout_m.c_str();
+            pp.table_model = table_m.empty() ? nullptr : table_m.c_str();
+            pp.formula_model = formula_m.empty() ? nullptr : formula_m.c_str();
+            pp.route_tables = (!layout_m.empty() && !table_m.empty()) ? 1 : 0;
+            pp.route_formulas = (!layout_m.empty() && !formula_m.empty()) ? 1 : 0;
             pctx = crispembed_ocr_pipeline_init(&pp, n_threads);
         }
+        if (!pipeline_engine.empty() &&
+            (!ocr_layout_path.empty() || !ocr_table_path.empty() || !ocr_formula_path.empty()))
+            fprintf(stderr, "warning: --ocr-layout/--ocr-table/--ocr-formula apply to the default flat pipeline "
+                            "only; --ocr-engine stages ignore them (C-ABI stage params carry no document fields)\n");
         if (!pctx) {
             fprintf(stderr, "error: cannot init OCR pipeline\n");
             return 1;
@@ -1265,6 +1326,11 @@ static int cli_main(int argc, char ** argv) {
             printf("regions=%d  mean_conf=%.2f", n_res, mean_conf);
             if (lang && lang[0]) printf("  lang=%s(%.2f)", lang, lang_conf);
             printf("\n%s\n", full_text ? full_text : "");
+        }
+        if (ocr_markdown || !ocr_layout_path.empty()) {
+            int md_len = 0;
+            const char * md = crispembed_ocr_pipeline_markdown(pctx, &md_len);
+            if (md && md_len > 0) printf("--- markdown ---\n%.*s\n", md_len, md);
         }
         crispembed_ocr_pipeline_free(pctx);
         return 0;
