@@ -20,14 +20,16 @@ Turing, and both are worth stating because they are the traps:
    no FlashAttention-2 (`FA2 is only supported on devices with compute
    capability >= 8`), so vLLM chose FLASHINFER, which JIT-builds its prefill
    kernels — and the link failed with `cannot find -lcuda`, because Kaggle
-   ships the driver as `libcuda.so.1` with no linker symlink. Environmental,
-   and avoidable twice over: symlink it, and pick a backend that needs no JIT.
+   ships the driver as `libcuda.so.1` with no linker symlink. Environmental.
+4. Forcing `TRITON_ATTN` to sidestep the JIT hit a hard model-side refusal:
+   `Qwen2.5-VL does not support AttentionBackendEnum.TRITON_ATTN backend now`.
 
-So this version: nothing else on the GPU, no `torch.cuda` call before the
-engine starts (the card is identified through `nvidia-smi`), every statement
-under a `__main__` guard so a spawned worker re-importing this file is inert,
-`VLLM_ATTENTION_BACKEND=TRITON_ATTN`, and the `libcuda.so` symlink in place.
-If the engine starts, it replays the toolkit's own requests so the
+So sm_75 offers exactly three backends — FLASHINFER, TRITON_ATTN,
+FLEX_ATTENTION — one of which this model rejects outright and one of which
+needs a JIT that the image's linker paths broke. This version installs the
+`libcuda.so` symlink and then tries the remaining backends **each in its own
+subprocess**, so one refusal does not end the run and every outcome is
+recorded. If an engine starts, it replays the toolkit's own requests so the
 serving-layer deviation in the gold can be quantified rather than asserted.
 
 Outputs under /kaggle/working: vllm_probe.json, run.log, and on success
@@ -102,20 +104,33 @@ def find_dataset(name):
     return None
 
 
+# sm_75's whole menu, in the order worth trying.  FLASHINFER is what vLLM picks
+# on its own; FLEX_ATTENTION is the only other one Qwen2.5-VL has not already
+# refused.  TRITON_ATTN is skipped: the model raises on it by name.
+BACKENDS = os.environ.get("OLMOCR_VLLM_BACKENDS", "FLASHINFER,FLEX_ATTENTION").split(",")
+
+
 def main() -> int:
     WORK.mkdir(parents=True, exist_ok=True)
-    log = open(WORK / "run.log", "w", buffering=1)
+    worker_backend = os.environ.get("OLMOCR_VLLM_BACKEND", "")
+    tag = f"-{worker_backend}" if worker_backend else ""
+    log = open(WORK / f"run{tag}.log", "w", buffering=1)
     sys.stdout = _Tee(sys.__stdout__, log)
     sys.stderr = _Tee(sys.__stderr__, log)
 
-    result = {"model": MODEL, "pin": "vllm==0.11.2 (olmocr[gpu])"}
+    result = {"model": MODEL, "pin": "vllm==0.11.2 (olmocr[gpu])",
+              "backend": worker_backend or None}
+    out_json = WORK / (f"vllm_probe{tag}.json" if worker_backend else "vllm_probe.json")
 
     def save():
-        (WORK / "vllm_probe.json").write_text(json.dumps(result, indent=2) + "\n")
+        out_json.write_text(json.dumps(result, indent=2) + "\n")
 
-    sh("nvidia-smi || true", check=False)
-    sh("apt-get -qq update >/dev/null 2>&1 && apt-get -qq install -y poppler-utils "
-       ">/dev/null 2>&1 || true", check=False)
+    if not worker_backend:
+        sh("nvidia-smi || true", check=False)
+        # ~10 minutes on a cold Kaggle image; the per-backend workers inherit the
+        # installed package and must not pay for it again.
+        sh("apt-get -qq update >/dev/null 2>&1 && apt-get -qq install -y poppler-utils "
+           ">/dev/null 2>&1 || true", check=False)
 
     cards = gpu_info()
     result["gpus"] = cards
@@ -131,37 +146,67 @@ def main() -> int:
         save()
         return 1
 
-    t0 = time.time()
-    p = subprocess.run([sys.executable, "-m", "pip", "install", "-q", "vllm==0.11.2"],
-                       capture_output=True, text=True)
-    result["install_rc"] = p.returncode
-    result["install_s"] = round(time.time() - t0, 1)
-    result["install_tail"] = (p.stderr or p.stdout)[-1500:]
-    save()
-    if p.returncode != 0:
-        result["verdict"] = f"vllm install failed rc={p.returncode}"
-        save()
-        return 1
-    sh("pip install -q olmocr==0.4.27 img2pdf 2>&1 | tail -3", check=False)
-
-    # Turing has no FlashAttention-2 (needs cc >= 8.0), so vLLM's next choice is
-    # FLASHINFER, which JIT-compiles its prefill kernels with ninja and links
-    # against -lcuda.  Kaggle ships the driver as libcuda.so.1 with no linker
-    # symlink, so that link step dies with "cannot find -lcuda" after ~4 minutes
-    # of compiling.  Two independent fixes, applied together: provide the
-    # symlink, and pick a backend that needs no JIT at all.
-    result["attention_backend_requested"] = os.environ.setdefault(
-        "VLLM_ATTENTION_BACKEND", "TRITON_ATTN")
-    libcuda = subprocess.run("ldconfig -p | grep -m1 'libcuda\\.so\\.1'", shell=True,
-                             capture_output=True, text=True).stdout.strip()
-    result["libcuda_so_1"] = libcuda
-    src = libcuda.split("=>")[-1].strip() if "=>" in libcuda else ""
-    if src and not Path("/usr/lib/x86_64-linux-gnu/libcuda.so").exists():
-        r = subprocess.run(["ln", "-sf", src, "/usr/lib/x86_64-linux-gnu/libcuda.so"],
+    if not worker_backend:
+        t0 = time.time()
+        p = subprocess.run([sys.executable, "-m", "pip", "install", "-q", "vllm==0.11.2"],
                            capture_output=True, text=True)
-        result["libcuda_symlink_rc"] = r.returncode
-    save()
-    print(f"attention backend={result['attention_backend_requested']} libcuda={libcuda}")
+        result["install_rc"] = p.returncode
+        result["install_s"] = round(time.time() - t0, 1)
+        result["install_tail"] = (p.stderr or p.stdout)[-1500:]
+        save()
+        if p.returncode != 0:
+            result["verdict"] = f"vllm install failed rc={p.returncode}"
+            save()
+            return 1
+        sh("pip install -q olmocr==0.4.27 img2pdf 2>&1 | tail -3", check=False)
+
+        # FLASHINFER JIT-compiles its prefill kernels with ninja and links against
+        # -lcuda.  Kaggle ships the driver as libcuda.so.1 with no linker symlink,
+        # so that link dies with "cannot find -lcuda" after ~4 minutes of nvcc.
+        libcuda = subprocess.run("ldconfig -p | grep -m1 'libcuda\\.so\\.1'", shell=True,
+                                 capture_output=True, text=True).stdout.strip()
+        result["libcuda_so_1"] = libcuda
+        src = libcuda.split("=>")[-1].strip() if "=>" in libcuda else ""
+        if src:
+            r = subprocess.run(["ln", "-sf", src, "/usr/lib/x86_64-linux-gnu/libcuda.so"],
+                               capture_output=True, text=True)
+            result["libcuda_symlink_rc"] = r.returncode
+            result["libcuda_symlink_present"] = Path(
+                "/usr/lib/x86_64-linux-gnu/libcuda.so").exists()
+        save()
+        print(f"libcuda={libcuda} symlink={result.get('libcuda_symlink_present')}")
+
+        # Each backend in its own process: a refusal or a JIT failure ends that
+        # attempt, not the run, and the next one still gets measured.
+        result["attempts"] = []
+        for backend in BACKENDS:
+            print(f"=== trying VLLM_ATTENTION_BACKEND={backend} ===", flush=True)
+            env = dict(os.environ, OLMOCR_VLLM_BACKEND=backend,
+                       VLLM_ATTENTION_BACKEND=backend)
+            t = time.time()
+            rc = subprocess.run([sys.executable, str(Path(__file__).resolve())],
+                                env=env).returncode
+            sub = WORK / f"vllm_probe-{backend}.json"
+            entry = json.loads(sub.read_text()) if sub.exists() else {}
+            entry["rc"] = rc
+            entry["wall_s"] = round(time.time() - t, 1)
+            result["attempts"].append({k: v for k, v in entry.items() if k != "pages"})
+            save()
+            if entry.get("init") == "ok":
+                result["verdict"] = (
+                    f"vLLM {entry.get('vllm')} served {MODEL} on {len(cards)}x "
+                    f"{cards[0]['name']} (cc {cards[0]['compute_cap']}) with "
+                    f"VLLM_ATTENTION_BACKEND={backend}")
+                save()
+                print(result["verdict"])
+                return 0
+        result["verdict"] = (
+            f"vLLM 0.11.2 did not serve {MODEL} on cc {cards[0]['compute_cap']}: "
+            f"no available attention backend started "
+            f"({', '.join(BACKENDS)}; TRITON_ATTN is refused by the model itself)")
+        save()
+        print(json.dumps(result, indent=2))
+        return 1
 
     if not REPO.exists():
         REPO.parent.mkdir(parents=True, exist_ok=True)
