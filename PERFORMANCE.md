@@ -713,6 +713,8 @@ All CrispEmbed models verified in Ollama fork with Ollama-compatible GGUF export
 | multilingual-e5-small | 384 | 0.9999 | 0.990 | 126 MB | 115 MB |
 | pixie-rune-v1 | 1024 | cross-lingual OK | cross-lingual OK | 581 MB | 437 MB |
 | arctic-embed-l-v2 | 1024 | L2-norm=1.0 | L2-norm=1.0 | 581 MB | 437 MB |
+| granite-embedding-97m-r2 | 384 | 0.99958 | not built | 106 MB | — |
+| granite-embedding-311m-r2 | 768 | 0.99976 | not built | 331 MB | — |
 
 ### Decoder Models (Q8_0 and Q4_K in Ollama)
 
@@ -802,6 +804,8 @@ Key advantages:
 | multilingual-e5-small | 453 MB | 123 MB | 113 MB | 3.7x |
 | pixie-rune-v1 | 2.2 GB | 580 MB | 436 MB | 3.7x |
 | arctic-embed-l-v2 | 2.2 GB | 580 MB | 436 MB | 3.7x |
+| granite-embedding-97m-r2 | 362 MB (F16) | 106 MB | not built | 3.5x |
+| granite-embedding-311m-r2 | 1.1 GB (F16) | 331 MB | not built | 3.5x |
 | octen-0.6b | 1.6 GB | 607 MB | 397 MB | 2.7x |
 | f2llm-v2-0.6b | 1.6 GB | 607 MB | 397 MB | 2.7x |
 | jina-v5-nano | 585 MB | 219 MB | 164 MB | 2.7x |
@@ -822,6 +826,8 @@ Cosine similarity between F32 and quantized models (1.0 = identical).
 | multilingual-e5-small | 0.9999 | 0.99 |
 | pixie-rune-v1 | 0.9991 | 0.95 |
 | arctic-embed-l-v2 | 0.9989 | 0.95 |
+| granite-embedding-97m-r2 | 0.99958 | not built |
+| granite-embedding-311m-r2 | 0.99976 | not built |
 | octen-0.6b | 0.9995 | 0.97 |
 | harrier-0.6b | 0.9999 | 0.99 |
 | harrier-270m | 0.9998 | 0.99 |

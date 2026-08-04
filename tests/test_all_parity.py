@@ -80,6 +80,10 @@ MODELS = {
     "gte-base-en-v1.5": ("Alibaba-NLP/gte-base-en-v1.5", "cls", False, {}),
     "gte-large-en-v1.5": ("Alibaba-NLP/gte-large-en-v1.5", "cls", False, {}),
 
+    # ── ModernBERT (RoPE, alternating local/global attention) ──
+    "granite-embedding-97m-r2": ("ibm-granite/granite-embedding-97m-multilingual-r2", "cls", False, {}),
+    "granite-embedding-311m-r2": ("ibm-granite/granite-embedding-311m-multilingual-r2", "cls", False, {}),
+
     # ── Qwen3 decoder ──
     "qwen3-embed-0.6b": ("Qwen/Qwen3-Embedding-0.6B", "last", False,
                           {"prefix": "Instruct: Retrieve semantically similar text.\nQuery: "}),

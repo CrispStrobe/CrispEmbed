@@ -38,6 +38,9 @@ MODEL_MAP = {
     # BERT body with XLM-R SentencePiece vocab (model_type=bert, no pos offset)
     "paraphrase-multilingual-MiniLM-L12-v2":
         "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+    # ModernBERT encoder models (granite-embedding r2)
+    "granite-embedding-97m-r2": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "granite-embedding-311m-r2": "ibm-granite/granite-embedding-311m-multilingual-r2",
     # Qwen3 decoder models
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
     "f2llm-v2-0.6b": "codefuse-ai/F2LLM-v2-0.6B",

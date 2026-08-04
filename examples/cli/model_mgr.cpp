@@ -928,6 +928,47 @@ static const ModelEntry k_registry[] = {
       "XLM-R 384d IBM multilingual 107M (IQ4_XS+imatrix)", "115 MB", "apache-2.0",
       "https://huggingface.co/ibm-granite/granite-embedding-107m-multilingual" },
 
+    // granite-embedding-r2: ModernBERT backbone (RoPE, alternating local/global
+    // attention, 8192 ctx), CLS pooling, no query/document prefix. The 97m uses
+    // the o200k BPE split, the 311m a SentencePiece BPE — see
+    // tokenizer.ggml.pre / tokenizer.ggml.is_spm_bpe. Q8_0 is the default
+    // because no imatrix has been calibrated for either yet.
+    { "granite-embedding-97m-r2", "granite-embedding-97m-multilingual-r2-q8_0.gguf",
+      "https://huggingface.co/cstr/granite-embedding-97m-multilingual-r2-GGUF/resolve/main/"
+      "granite-embedding-97m-multilingual-r2-q8_0.gguf",
+      "ModernBERT 384d IBM multilingual r2 97M, 8k ctx (Q8_0, cos 0.9996)", "106 MB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2" },
+
+    { "granite-embedding-97m-r2-q8", "granite-embedding-97m-multilingual-r2-q8_0.gguf",
+      "https://huggingface.co/cstr/granite-embedding-97m-multilingual-r2-GGUF/resolve/main/"
+      "granite-embedding-97m-multilingual-r2-q8_0.gguf",
+      "ModernBERT 384d IBM multilingual r2 97M, 8k ctx (Q8_0)", "106 MB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2" },
+
+    { "granite-embedding-97m-r2-f16", "granite-embedding-97m-multilingual-r2-f16.gguf",
+      "https://huggingface.co/cstr/granite-embedding-97m-multilingual-r2-GGUF/resolve/main/"
+      "granite-embedding-97m-multilingual-r2-f16.gguf",
+      "ModernBERT 384d IBM multilingual r2 97M, 8k ctx (F16, cos 1.0000)", "362 MB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-97m-multilingual-r2" },
+
+    { "granite-embedding-311m-r2", "granite-embedding-311m-multilingual-r2-q8_0.gguf",
+      "https://huggingface.co/cstr/granite-embedding-311m-multilingual-r2-GGUF/resolve/main/"
+      "granite-embedding-311m-multilingual-r2-q8_0.gguf",
+      "ModernBERT 768d IBM multilingual r2 311M, 8k ctx (Q8_0, cos 0.9998)", "331 MB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2" },
+
+    { "granite-embedding-311m-r2-q8", "granite-embedding-311m-multilingual-r2-q8_0.gguf",
+      "https://huggingface.co/cstr/granite-embedding-311m-multilingual-r2-GGUF/resolve/main/"
+      "granite-embedding-311m-multilingual-r2-q8_0.gguf",
+      "ModernBERT 768d IBM multilingual r2 311M, 8k ctx (Q8_0)", "331 MB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2" },
+
+    { "granite-embedding-311m-r2-f16", "granite-embedding-311m-multilingual-r2-f16.gguf",
+      "https://huggingface.co/cstr/granite-embedding-311m-multilingual-r2-GGUF/resolve/main/"
+      "granite-embedding-311m-multilingual-r2-f16.gguf",
+      "ModernBERT 768d IBM multilingual r2 311M, 8k ctx (F16, cos 1.0000)", "1.1 GB", "apache-2.0",
+      "https://huggingface.co/ibm-granite/granite-embedding-311m-multilingual-r2" },
+
     // --- Sparse models ---
 
     { "splade-pp-en-v1", "splade-pp-en-v1-iq4_xs.gguf",

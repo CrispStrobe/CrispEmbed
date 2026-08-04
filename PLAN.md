@@ -1568,6 +1568,96 @@ min .7891 / mean .8345 locally, slightly ABOVE the new corpus's .7821/.8238, so
 the re-calibration is published under `-c2` names and is NOT a promotion
 candidate; its SHA is pinned in `model_hashes.h` and was not overwritten.
 
+**T19-E4 status [DONE 2026-08-04, branch `feat/granite-r2-tokenizers`]:**
+`granite-embedding-{97m,311m}-multilingual-r2` **shipped** (cstr, f16+q8_0,
+registry + SHA pins, Q8_0 default — no imatrix calibrated yet). E2's three
+gap items were all real and all fixed; a fourth defect fell out of the
+token-id diff. Contract from each model card's own snippet: **CLS pooling,
+L2-normalize, NO query or document prefix** (both `config_sentence_transformers.json`
+prompts are empty strings), ModernBERT backbone, 8192 ctx.
+
+- **(a) BPE-vs-SPM detection.** `is_sentencepiece` was
+  `hasattr(sp_model) or vocab_size > 100000`, so any BPE vocab over 100k
+  converted as SentencePiece. tokenizer.json `model.type` now overrides it.
+  WordPiece vocabs over 100k (**LaBSE**, 501k) are deliberately LEFT on the
+  historical path so nothing else changes — **still open**, and its shipped
+  GGUF is worth an audit.
+- **(b) o200k pre-tokenizer (97m).** The first pre-tokenizer here that
+  **branches on letter case** — two of its seven alternatives are
+  `[Lu Lt Lm Lo M]* [Ll Lm Lo M]+` and its mirror. The repo's historical
+  "any byte >= 0x80 is a letter" shortcut puts every non-ASCII letter in BOTH
+  classes, which splits an all-caps German word after its umlaut
+  (`ÄRGER` -> `Ä` + `RGER`). Needed a real general-category table:
+  `src/core/unicode_categ.h` (generated, 2779 ranges, `tools/gen_unicode_categ.py`).
+- **(c) SPM-BPE mode (311m).** Wired via `tokenizer.ggml.is_spm_bpe` (the key
+  the decoder path already read), including across the post-weight-load merges
+  reload. Its post-processor prepends `<bos>` and appends NOTHING and the
+  tokenizer exposes no cls/sep at all, so cls/sep/add_bos/add_eos now come
+  from the TemplateProcessing template, not the BERT 101/102 defaults.
+- **(d) NEW, found by the id diff — the merges blob cannot hold a newline.**
+  `tokenizer.merges` is a NEWLINE-separated tensor, so a merge that CONTAINS a
+  newline is unrepresentable. The Gemma vocab has **465** of them
+  (`"\n\n" -> "\n\n\n"`), so `a\n\nb` tokenized as two separate newline
+  tokens. Fixed with a NUL-separated `tokenizer.merges_nul` tensor emitted
+  ALONGSIDE the legacy one only when needed, preferred when present — old
+  binaries keep reading the legacy tensor unchanged. **Any other SPM-BPE GGUF
+  converted by this script has the same defect baked in; re-conversion is the
+  only fix.**
+
+Numbers (CPU; the HF f32 reference was first validated against each model
+card's own published cos_sim matrix):
+
+| model | token ids vs HF | f16 cos_min | f16 pre-norm ratio | q8_0 cos_min | q8_0 pre-norm ratio | German 10-doc |
+|---|---|---|---|---|---|---|
+| granite-97m-r2 | **20/20 exact** | 1.000000 | 1.000000 | 0.999580 | 0.998388..1.001975 | 5/5 f16 + q8 |
+| granite-311m-r2 | **20/20 exact** | 1.000000 | 1.000000 | 0.999758 | 0.999349..1.000586 | 5/5 f16 + q8 |
+
+The id battery is German umlauts + all-caps, multi-space runs, newlines/tabs/
+CRLF, a code snippet, unicode punctuation/quotes/currency, NBSP + soft hyphen,
+CJK, Cyrillic, emoji, long compounds, contractions and digit groups. Retrieval
+scores match the HF reference to 3 decimals (ECB 0.909/0.939, Rhein
+0.945/0.949, Kartoffelsalat 0.937/0.941).
+
+**Regression (the detection change must not touch any shipped model).** New
+binary vs one built from the SAME tree with only the three changed sources
+reverted — identical compiler flags, identical ggml, so the comparison is not
+confounded: `multilingual-e5-small-q8`, `arctic-embed-m-v2`,
+`gte-modernbert-base`, `f2llm-v2-80m`, `nomic-embed-text-v1.5-q8` are
+**BIT-IDENTICAL, 0 token diffs**, covering the XLM-R/SPM, WordPiece,
+ModernBERT-BPE (incl. the merges-tensor read) and decoder-BPE paths. ⚠ The
+first attempt A/B'd against the main checkout's binary and showed cos ~0.9994
+"changes" — that build has `GGML_METAL=ON` and the worktree's does not
+([[build-dir-can-be-cpu-only]]); token ids were identical throughout, which is
+what said the tokenizer was innocent.
+
+**Guard:** `tests/test_o200k_pretokenize.cpp`, hermetic (no vocab, weights or
+network), goldens from HuggingFace's own `pre_tokenize_str`, in the model-free
+CI job. 85 checks. Written before the implementation and verified to FAIL on
+three independent mutations: the naive non-ASCII-is-a-letter table (27
+failures), `\p{N}{1,3}` narrowed to `{1,1}` (6), and the dropped contraction
+suffix (2).
+
+**Second NEW pre-existing defect, in the pinning tool itself:**
+`tools/fetch_model_hashes.py` matched resolve-URLs with a regex over the raw
+C++, so a URL written as ADJACENT string literals (what clang-format produces
+past 120 columns) never matched and the entry was silently **left unpinned** —
+`unpinned: 0` cannot see it, because such URLs never enter the list. That is
+how **`granite-embedding-278m-multilingual` and `-107m-multilingual` shipped
+with no SHA pin at all.** The tool now splices adjacent literals first; both
+are pinned in this branch's regeneration.
+
+**⚠ MERGE NOTE:** branch `feat/tokenize-simple-audit` adds
+`src/core/unicode_class.h` for the same job. That table carries no case
+information and so cannot serve the o200k split; `unicode_categ.h` here is a
+strict SUPERSET and maps 1:1 onto its enum (mapping documented in the header).
+Keep `unicode_categ.h`, express `core_uc_class` as that mapping, drop the
+other generator.
+
+**Not done / TODO:** no imatrix q4_k for either model (Q8_0 is the registry
+default, mirroring arctic-embed-m-v2 — add them to the imatrix lane); the
+LaBSE >100k-WordPiece detection question above; and neither model was measured
+on Metal (all numbers here are CPU, worktree built `GGML_METAL=OFF`).
+
 ### T19 — German embedder quality snapshot (official MTEB data, 2026-08-04) + port candidates
 
 Sources: MTEB(deu, v1) leaderboard (user-provided, open-weights/license filter)
