@@ -930,6 +930,9 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         // ggml addresses image dimensions as [W,H], while the reference
         // recognizer pools [H,W] with a 3x2 kernel and 3x2 stride. Swap the
         // arguments here so graph pooling matches the CPU sequence contract.
+        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+            fprintf(stderr, "ppocrv6 tiny pre-pool shape: %lld x %lld x %lld x %lld\n", (long long)x->ne[0],
+                    (long long)x->ne[1], (long long)x->ne[2], (long long)x->ne[3]);
         x = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 2, 3, 2, 3, 0, 0);
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "pool", x });
@@ -1720,9 +1723,16 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
                                                             : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
     const char * batch_graph_env = std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH");
     const bool batch_graph_requested = batch_graph_env && std::strcmp(batch_graph_env, "0") != 0;
-    if (batch_graph_requested && (!c->backend || !ggml_backend_is_cpu(c->backend)) &&
-        std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
-        fprintf(stderr, "[ppocrv6-batch-graph] backend=%s action=scalar-fallback reason=metal-fourth-dimension-gated\n",
+    // The historical "metal-fourth-dimension" pooling abort was NOT a Metal
+    // limitation: the fused caller passed a zeroed width into
+    // pp_graph_run_batch's in-out shape parameter, so every batch graph was
+    // built at width 0 and asserted inside ggml_pool_2d on any backend. With
+    // the width seeded, Metal batch execution is permitted behind the same
+    // opt-in; CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY restores the old gate.
+    const bool batch_backend_ok =
+        c->backend && (ggml_backend_is_cpu(c->backend) || !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY"));
+    if (batch_graph_requested && !batch_backend_ok && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+        fprintf(stderr, "[ppocrv6-batch-graph] backend=%s action=scalar-fallback reason=cpu-only-gate\n",
                 c->backend ? ggml_backend_name(c->backend) : "none");
     int max_batch = 4;
     if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_BATCH_MAX")) max_batch = std::max(1, std::atoi(limit));
@@ -1739,11 +1749,17 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
             // every backend accepts the fourth dimension through pooling and
             // the flattened CTC head. The grouped scalar path remains the
             // production default and is the fallback for all other cases.
-            bool fused = graph_accept && batch_graph_requested && c->backend && ggml_backend_is_cpu(c->backend) &&
-                         !c->large_stem && group_count > 1;
+            bool fused = graph_accept && batch_graph_requested && batch_backend_ok && !c->large_stem && group_count > 1;
             std::vector<float> fused_input;
             std::vector<float> fused_output;
-            int tokens = 0, classes = 0;
+            // pp_graph_run_batch's third/fourth parameters are IN-OUT: the
+            // fourth carries the model width IN (pp_graph_build keys on it)
+            // and the token/class counts come back OUT. Passing zeros here
+            // built every batch graph at width 0, which poisoned the stem
+            // shapes until ggml_pool_2d asserted ne[0] > 0 — on every
+            // backend, not just Metal; the recorded "Metal fourth-dimension
+            // pooling" failure was this bug wearing a Metal costume.
+            int tokens = 0, classes = width;
             if (fused) {
                 for (size_t pos = group_start; pos < group_end; ++pos) {
                     const auto & input = prepared[order[pos]].input;
