@@ -509,6 +509,7 @@ class Qwen25VLPy(Engine):
         self._revision = None
         self._warmed = False
         self._applied_template: str | None = None
+        self._placements: list[str] = []
 
     def available(self) -> str:
         try:
@@ -578,6 +579,12 @@ class Qwen25VLPy(Engine):
                 # accelerate already placed every module; record where the inputs
                 # have to go rather than assuming a single device.
                 self._device = next(self._model.parameters()).device
+                # When the weights do not fit, accelerate offloads layers to CPU
+                # or disk and each generated token streams them back.  The
+                # transcripts stay correct and the timings become meaningless, so
+                # record the placements instead of leaving that invisible.
+                self._placements = sorted({
+                    str(v) for v in getattr(self._model, "hf_device_map", {}).values()})
             else:
                 self._model.to(self._device)
             self._model.eval()
@@ -634,6 +641,7 @@ class Qwen25VLPy(Engine):
             "dtype": self.dtype_name,
             "device": str(self._device),
             "device_map": self.device_map or None,
+            "device_map_placements": self._placements or None,
             "prompt": self.PROMPT,
             "max_new_tokens": self.max_new_tokens,
             "do_sample": False,
@@ -659,6 +667,7 @@ class Qwen25VLPy(Engine):
             "dtype": self.dtype_name,
             "device": str(self._device),
             "device_map": self.device_map or None,
+            "device_map_placements": self._placements or None,
             "hardware": hardware,
             "torch": torch.__version__,
             "transformers": transformers.__version__,
