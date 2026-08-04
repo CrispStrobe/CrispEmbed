@@ -190,6 +190,25 @@ MODELS = {
             "q4_k": 0.9654,
         },
     },
+    "f2llm-v2-80m": {
+        "base_model": "codefuse-ai/F2LLM-v2-80M",
+        "arch": "Qwen3",
+        "dim": 320,
+        "layers": 8,
+        "params": "80M",
+        "pooling": "last-token",
+        "tokenizer": "GPT-2 BPE",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": "F2LLM Embedding v2 80M. Qwen3-based, pruned from the 0.6B base; "
+                "the smallest member of the family.",
+        # min cosine vs codefuse-ai/F2LLM-v2-80M (f32 HF AutoModel reference)
+        # over 14 mixed German/English/code texts, measured 2026-08-04.
+        "parity": {
+            "f16":  1.0000,
+            "q8_0": 0.9996,
+        },
+    },
     "f2llm-v2-160m": {
         "base_model": "codefuse-ai/F2LLM-v2-160M",
         "arch": "Qwen3",
@@ -207,6 +226,25 @@ MODELS = {
         "parity": {
             "f16":  1.0000,
             "q8_0": 0.9994,
+        },
+    },
+    "f2llm-v2-330m": {
+        "base_model": "codefuse-ai/F2LLM-v2-330M",
+        "arch": "Qwen3",
+        "dim": 896,
+        "layers": 16,
+        "params": "330M",
+        "pooling": "last-token",
+        "tokenizer": "GPT-2 BPE",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": "F2LLM Embedding v2 330M. Qwen3-based, pruned from the 0.6B base; "
+                "second-best of the family on MTEB(deu, v1) behind the 0.6B.",
+        # min cosine vs codefuse-ai/F2LLM-v2-330M (f32 HF AutoModel reference)
+        # over 14 mixed German/English/code texts, measured 2026-08-04.
+        "parity": {
+            "f16":  1.0000,
+            "q8_0": 0.9989,
         },
     },
     "f2llm-v2-0.6b": {
