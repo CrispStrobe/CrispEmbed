@@ -1201,16 +1201,21 @@ static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vecto
                 W = std::min(W, (natural + 31) / 32 * 32);
             }
         }
-        // Opt-in width bucketing (T4/TurboOCR): round the model width UP to a
-        // multiple of n so nearby widths share one graph shape and land in the
-        // same fused batch group (the receipt has 12 distinct widths over 47
-        // crops without it). Rounding up only ADDS gray padding — the safe
-        // direction: trailing pad decodes to CTC blanks, unlike the shrink
-        // direction the WIDTH_FLOOR experiment takes.
-        if (const char * bucket_env = std::getenv("CRISPEMBED_PPOCRV6_WIDTH_BUCKET")) {
-            const int step = std::atoi(bucket_env);
-            if (step >= 8) W = (W + step - 1) / step * step;
-        }
+        // Width bucketing (T4/TurboOCR), DEFAULT step 64 since 2026-08-04:
+        // round the model width UP to a multiple of the step so nearby widths
+        // share one graph shape and land in the same fused batch group (the
+        // receipt drops from 12 distinct widths to 5 fused groups, recognize
+        // -11%). Rounding up only ADDS gray padding — the safe direction:
+        // trailing pad decodes to CTC blanks, unlike the shrink direction the
+        // WIDTH_FLOOR experiment takes. 25-fixture CER gate: mean 0.06408 vs
+        // 0.06410, jitter both ways (synth_00_noise 0.0082->0.0000,
+        // receipt_historical 0.0273->0.0300, synth_01_noise +0.015,
+        // synth_03_noise and german better). CRISPEMBED_PPOCRV6_WIDTH_BUCKET
+        // overrides the step; 0 disables bucketing.
+        int bucket_step = 64;
+        if (const char * bucket_env = std::getenv("CRISPEMBED_PPOCRV6_WIDTH_BUCKET"))
+            bucket_step = std::atoi(bucket_env);
+        if (bucket_step >= 8) W = (W + bucket_step - 1) / bucket_step * bucket_step;
     }
     out.assign(3 * H * W, 0.0f);
     // The shipped Paddle inference contract is BGR, while the HF processor
