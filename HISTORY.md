@@ -4,6 +4,48 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 5, 2026 — v0.17.3 shipped with no Linux CUDA archive
+
+The ggml 0.10.2 → 0.17.0 pin move brought one consequence nobody checked for:
+ggml 0.17 calls the CUDA **driver** API. `libggml-cuda` therefore has to link
+`libcuda`, which 0.10.2 never needed. The `linux-x86_64-cuda` leg died at the
+link step:
+
+```
+libggml-cuda.so.0.17.0: undefined reference to `cuGetErrorString'
+```
+
+A build machine has no NVIDIA driver — that is what the toolkit's
+`lib64/stubs/libcuda.so` is for — but CMake only finds it when the stubs
+directory is on the library path. On this runner the stub lives at
+`/usr/local/cuda-12.8/targets/x86_64-linux/lib/stubs/libcuda.so`, which is not
+a path CMake searches by default.
+
+Cost: **v0.17.3 published with neither Linux CUDA archive.** Only the Windows
+CUDA zip made it. Windows was unaffected because `cuda.lib` sits in the
+toolkit's `lib/x64`, found without help.
+
+Fixed by locating the stub and passing `-DCMAKE_LIBRARY_PATH`. Two details
+worth keeping:
+
+- The lookup runs **before** the compile and fails the job immediately when the
+  stub is absent. Previously the failure arrived an hour in, at link time,
+  which is precisely why it landed as a silently-missing artifact rather than
+  as a red build somebody reacted to. *Check a build prerequisite at the point
+  you can still cheaply say what is wrong.*
+- Linking the stub gives `libggml-cuda` a `DT_NEEDED` on `libcuda.so.1` — the
+  same driver contract both CUDA archives already declared, and already on
+  `check-bundled-deps.py`'s allow list. The user-facing requirement did not
+  change.
+
+Also a process note: a published tag cannot be repaired by fixing `main`, since
+the release workflow runs from the tagged commit. v0.17.3 keeps its incomplete
+asset set and v0.17.4 supersedes it. A `workflow_dispatch` dry run before
+tagging would have caught this — the mechanism existed by then and was not
+used, because the tag was cut by a different session in parallel.
+
+---
+
 ## August 4, 2026 — Linux glibc floor: 2.38 → 2.27 (#42, second issue)
 
 The other half of #42, and the one that had been sitting in the tree as a
