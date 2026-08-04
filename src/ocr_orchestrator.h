@@ -57,6 +57,7 @@ enum class engine {
     unlimited_ocr,     // unlimited_ocr.cpp (SAM + CLIP + MoE VLM)
     unified,           // metadata-dispatched crispembed_ocr_model_* GGUF
     easyocr,           // easyocr_pipeline.cpp (DBNet detection + EasyOCR CRNN)
+    olmocr,            // qwen2vl_ocr.cpp (olmOCR document fine-tune of Qwen2.5-VL)
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.
