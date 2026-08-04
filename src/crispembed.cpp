@@ -6,6 +6,8 @@
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "core/hparam_keys.h"
+#include "core/init_bench.h"
+#include "core/metal_pipeline_cache_policy.h"
 #include "imatrix.h"
 
 #include "ggml.h"
@@ -81,6 +83,18 @@ static ggml_backend_t crispembed_init_backend(int n_threads) {
             fprintf(stderr, "crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU\n");
         }
         return cpu;
+    }
+    // T18: bound the ggml-metal MTLBinaryArchive open cost before the device is
+    // created (see core/metal_pipeline_cache_policy.h — it was 680 of the 820 ms
+    // fixed init here). CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB=0 restores the
+    // pre-T18 behaviour. Skipped when `--gpu-backend cpu` already means no GPU
+    // device will be created, so its diagnostic does not fire spuriously.
+    {
+        const std::string pref = crispasr_get_gpu_backend_pref();
+        const bool pref_is_cpu = !pref.empty() && pref.size() <= 3 && ci_starts_with("cpu", pref.c_str());
+        if (!pref_is_cpu) {
+            core_metal_cache::apply();
+        }
     }
     return crispasr_init_gpu_backend();
 }
@@ -306,13 +320,25 @@ struct crispembed_context {
 // Loading
 // ---------------------------------------------------------------------------
 
-static bool load_model(crispembed_context * ctx, const char * path) {
+// `pre_g` (optional): a gguf_context the CALLER already parsed for this exact
+// path. crispembed_init() has to open the GGUF once anyway to tell an encoder
+// from a decoder model, and re-parsing it here cost a measured 29 ms on
+// multilingual-e5-small (250k-entry vocab KV array) — 23% of the whole CPU-path
+// init (T18). When pre_g is given we borrow it and the caller keeps ownership.
+// CRISPEMBED_GGUF_REPARSE=1 restores the pre-T18 second parse for A/B.
+static bool load_model(crispembed_context * ctx, const char * path, gguf_context * pre_g = nullptr) {
     auto & m = ctx->model;
     auto & hp = m.hparams;
+    core_initbench::timer ib("load_model");
 
     // Load GGUF metadata first
     gguf_init_params gp = { true, nullptr };
-    gguf_context * g = gguf_init_from_file(path, gp);
+    if (const char * rp = std::getenv("CRISPEMBED_GGUF_REPARSE"); rp && rp[0] && std::strcmp(rp, "0") != 0) {
+        pre_g = nullptr;
+    }
+    const bool own_g = (pre_g == nullptr);
+    gguf_context * g = own_g ? gguf_init_from_file(path, gp) : pre_g;
+    ib.mark(own_g ? "gguf_init_from_file" : "gguf_reuse_caller_parse");
     if (!g) {
         fprintf(stderr, "crispembed: failed to open '%s'\n", path);
         return false;
@@ -477,7 +503,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                     "crispembed: missing required hyperparameter(s) [%s] for architecture '%s' — refusing to load "
                     "with fabricated defaults (CRISPEMBED_STRICT_HPARAMS=1). Unset it to load anyway.\n",
                     joined.c_str(), gguf_arch.empty() ? "(unset)" : gguf_arch.c_str());
-            gguf_free(g);
+            if (own_g) gguf_free(g);
             return false;
         }
         fprintf(stderr,
@@ -501,12 +527,15 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         }
     }
 
+    ib.mark("hparams+kv_merges");
+
     // Load tokenizer vocab from GGUF metadata
     const int64_t ki = gguf_find_key(g, "tokenizer.ggml.tokens");
     if (ki >= 0) {
         const int n = (int)gguf_get_arr_n(g, ki);
         std::vector<std::string> vocab(n);
         for (int i = 0; i < n; i++) vocab[i] = gguf_get_arr_str(g, ki, i);
+        ib.mark("vocab_read");
 
         // Load scores if available (SentencePiece models)
         std::vector<float> scores;
@@ -611,12 +640,16 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             fprintf(stderr, "crispembed: using WordPiece tokenizer (%d tokens, %s)\n", n,
                     do_lower_case ? "uncased" : "cased");
         }
+        ib.mark("tokenizer_build");
     }
 
-    gguf_free(g);
+    if (own_g) gguf_free(g);
+    g = nullptr; // borrowed context stays alive in the caller; do not touch it again
+    ib.mark("gguf_free");
 
     // Initialize backends: try GPU first, CPU always as fallback
     ctx->backend = crispembed_init_backend(ctx->n_threads);
+    ib.mark("backend_init");
     if (!ctx->backend) {
         fprintf(stderr, "crispembed: failed to init backend\n");
         return false;
@@ -642,11 +675,13 @@ static bool load_model(crispembed_context * ctx, const char * path) {
 
     // Allocate metadata buffer for graph building (no_alloc=true pattern)
     ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes + ggml_graph_overhead_custom(graph_nodes, false));
+    ib.mark("sched+meta");
 
     if (!core_gguf::load_weights(path, ctx->backend, "crispembed", ctx->wl)) {
         fprintf(stderr, "crispembed: failed to load weights\n");
         return false;
     }
+    ib.mark("weights_load");
 
     auto get = [&](const std::string & n) -> ggml_tensor * {
         auto it = ctx->wl.tensors.find(n);
@@ -2288,6 +2323,7 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx, const embed_
 // ---------------------------------------------------------------------------
 
 extern "C" crispembed_context * crispembed_init(const char * model_path, int n_threads) {
+    core_initbench::timer ib_init("crispembed_init");
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
     if (model_path) ctx->model_path_for_audio = model_path;
@@ -2313,8 +2349,17 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 is_lfm2 = (arch == "lfm2");
             }
         }
-        gguf_free(g);
     }
+    // T18: keep this parse alive and hand it to load_model() instead of parsing
+    // the same metadata a second time (29 ms on a 250k-vocab GGUF). RAII so the
+    // several `delete ctx; return nullptr;` exits below cannot leak it.
+    struct gguf_holder {
+        gguf_context * g = nullptr;
+        ~gguf_holder() {
+            if (g) gguf_free(g);
+        }
+    } gg{ g };
+    ib_init.mark("arch_detect_gguf_open");
 
     if (is_lfm2) {
         ctx->is_lfm2 = true;
@@ -2372,9 +2417,13 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         crispembed_imatrix_install(ctx->sched);
         ctx->compute_meta.resize(ggml_tensor_overhead() * graph_nodes + ggml_graph_overhead_custom(graph_nodes, false));
 
-        // Load BPE tokenizer from GGUF
+        // Load BPE tokenizer from GGUF. T18: reuse the arch-detect parse rather
+        // than parsing the same metadata again (CRISPEMBED_GGUF_REPARSE=1 keeps
+        // the pre-T18 second parse). `own_g2` decides who frees it.
         gguf_init_params gp2 = { true, nullptr };
-        gguf_context * g2 = gguf_init_from_file(model_path, gp2);
+        const char * reparse2 = std::getenv("CRISPEMBED_GGUF_REPARSE");
+        const bool own_g2 = !gg.g || (reparse2 && reparse2[0] && std::strcmp(reparse2, "0") != 0);
+        gguf_context * g2 = own_g2 ? gguf_init_from_file(model_path, gp2) : gg.g;
         if (g2) {
             const int64_t ki2 = gguf_find_key(g2, "tokenizer.ggml.tokens");
             const int64_t mi2 = gguf_find_key(g2, "tokenizer.ggml.merges");
@@ -2459,14 +2508,15 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                             is_spm_bpe ? "SentencePiece" : "GPT-2", nv, merges.size());
                 }
             }
-            gguf_free(g2);
+            if (own_g2) gguf_free(g2);
         }
     } else {
-        if (!load_model(ctx, model_path)) {
+        if (!load_model(ctx, model_path, gg.g)) {
             delete ctx;
             return nullptr;
         }
     }
+    ib_init.mark("model_load");
     return ctx;
 }
 
@@ -2541,6 +2591,10 @@ extern "C" const char * crispembed_model_card_url(int index) {
 extern "C" const float * crispembed_encode(crispembed_context * ctx, const char * text, int * out_n_dim) {
     if (!ctx || !text) return nullptr;
     auto t_enc_start = std::chrono::steady_clock::now();
+    // T18 instrument: the FIRST encode is where a GPU backend compiles its
+    // compute pipelines, so it is part of the one-shot fixed cost even though
+    // it is not in crispembed_init(). Subsequent encodes report warm compute.
+    core_initbench::timer ib_enc("crispembed_encode");
 
     // Prepend prefix if set (e.g. "query: ", "Represent this sentence: ")
     std::string prefixed;
@@ -2592,6 +2646,7 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
             tokens.attn_mask.resize(actual_len);
         }
     }
+    ib_enc.mark("tokenize");
 
     // CRISPEMBED_DEBUG_TOKENS=1 dumps the final token-id sequence (single encode).
     if (const char * dv = std::getenv("CRISPEMBED_DEBUG_TOKENS"); dv && dv[0] && std::strcmp(dv, "0") != 0) {

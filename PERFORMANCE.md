@@ -1,5 +1,55 @@
 # CrispEmbed Performance
 
+## Embedder one-shot CLI init: 4.8x, and it was a 683 MB shader-cache file (Apple M1 Metal, 2026-08-05)
+
+A one-shot `crispembed -m model.gguf --json "text"` paid ~0.9 s of fixed init
+before doing ~6-20 ms of work, which is why ONNX Runtime "felt faster" despite
+CrispEmbed being ~1.4x ahead warm-vs-warm. T18 profiled it
+(`CRISPEMBED_INIT_BENCH=1`) instead of guessing: 683 of the 820 ms of internal
+init was ggml-metal opening its persistent `MTLBinaryArchive` pipeline cache at
+`~/Library/Caches/ggml-metal/Apple_M1.archive`, which had grown to 683 MB
+(~1 ms/MB to open). The archive is append-only across every engine and binary on
+the machine, it measurably bought nothing (first encode 20.3 ms with it, 17.4 ms
+without), and a one-shot CLI can never write an entry back to it — it is
+serialised from a static destructor and these binaries leave via `_exit()`.
+CrispEmbed now skips an archive above a 64 MB cap
+(`CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB=0` restores the old behaviour).
+
+**Protocol.** Interleaved alternating arms, one process per run, medians over
+7 pairs (one-shot) / 5 pairs (batch); both arms are the SAME binary selected by
+env gate; pairs gated to 1-min `vm.loadavg` <= 8 (observed 1.8-2.5, **0 pairs
+discarded**); an M1 16 GB with an interactive user on it. Nothing trimmed.
+
+| case | before | after | speedup |
+|---|--:|--:|--:|
+| multilingual-e5-small q8_0, one-shot `--json "ein test"` | 895 ms (892-901) | **186 ms** (184-187) | **4.81x** |
+| arctic-embed-m-v2 q8_0, one-shot | 911 ms (908-916) | **202 ms** (200-264) | **4.51x** |
+| e5-small, warm batch of 512 texts | 5977 ms | 5451 ms | 1.10x |
+| arctic, warm batch of 64 texts | 1672 ms | 908 ms | 1.84x |
+
+**Output is byte-identical** — verified on the vectors, 64 texts per model:
+worst cosine 1.000000000, `|before|` = `|after|` = 1.000000 (ratio
+1.000000000), and the emitted JSON compares equal byte-for-byte. Every change
+is in init; no math path was touched. The batch rows are the no-regression
+gate: warm throughput did not move except by the init saving.
+
+Init breakdown, e5-small (before → after): Metal device+pipeline-cache
+683.1 → 29.4 ms; duplicate GGUF metadata parse 29.7 → 0.0 ms (the loader used to
+re-parse a file the caller had already parsed); GGUF parse 29.3 ms, weights
+46.9 ms, vocab read 6.0 ms, **SentencePiece build 12.0 ms** — the 250k-vocab
+XLM-R tokenizer build was the ticket's prime suspect and is 2% of the cost.
+
+Backend/thread sweep after the fix, batch-64 (each arm includes its own init):
+
+| model | Metal `-t 1` | CPU `-t 1` | CPU `-t 4` |
+|---|--:|--:|--:|
+| multilingual-e5-small q8_0 | 0.77 s | 0.76 s | **0.35 s** |
+| arctic-embed-m-v2 q8_0 | **0.91 s** | 2.77 s | 0.91 s |
+
+The backend default is no longer the interesting knob; the `-t 1` default is.
+`--gpu-backend cpu` also now genuinely skips GPU init (0.86 s → 0.14 s one-shot)
+— it previously matched no GPU device, warned, and fell back to Metal anyway.
+
 ## DeepSeek-OCR-2 decode: a persistent step graph is 1.40x — but not for the reason the task assumed (Apple M1 Metal, 2026-08-05)
 
 `deepseek_ocr2` built, allocated, computed and freed **one graph per layer per
