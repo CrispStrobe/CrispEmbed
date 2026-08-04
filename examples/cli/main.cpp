@@ -1220,7 +1220,16 @@ static int cli_main(int argc, char ** argv) {
                     // A warm server amortises the init and keeps the Metal
                     // default. CRISPEMBED_PPOCRV6_ONESHOT_GPU=1 restores the
                     // unconditional Metal path for a one-shot run.
-                    setenv("CRISPEMBED_PPOCRV6_ONESHOT", "1", 0);
+                    // overwrite=0: an explicit CRISPEMBED_PPOCRV6_ONESHOT from
+                    // the environment wins. MSVC has no setenv, and _putenv_s
+                    // always overwrites, so the presence check carries that.
+                    if (!std::getenv("CRISPEMBED_PPOCRV6_ONESHOT")) {
+#ifdef _WIN32
+                        _putenv_s("CRISPEMBED_PPOCRV6_ONESHOT", "1");
+#else
+                        setenv("CRISPEMBED_PPOCRV6_ONESHOT", "1", 0);
+#endif
+                    }
                 }
             }
             crispembed_ocr_stage st;

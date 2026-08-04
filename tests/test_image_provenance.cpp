@@ -18,6 +18,8 @@
 #include "../ggml/examples/stb_image.h"
 
 #include "core/image_out.h"
+#include "core/temp_file.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -26,6 +28,24 @@
 #include <vector>
 
 namespace {
+
+// setenv/unsetenv are POSIX; MSVC has _putenv_s, where an empty value removes
+// the variable. Same shape as the helpers in test_dbnet_diff / test_ocr_pipeline_pool.
+void set_env(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
+void unset_env(const char * name) {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
+    unsetenv(name);
+#endif
+}
 
 int failures = 0;
 int skipped = 0;
@@ -39,11 +59,17 @@ std::string emit_to_string(int w, int h, int comp, const char * engine) {
     std::vector<unsigned char> px((size_t)w * h * comp);
     for (size_t i = 0; i < px.size(); i++) px[i] = (unsigned char)(i * 11 + 3);
 
-    char path[] = "/tmp/crispembed_imgprov_XXXXXX";
-    int fd = mkstemp(path);
-    if (fd < 0) return {};
-    std::FILE * f = fdopen(fd, "wb");
-    if (!f) return {};
+    // core_tmp::make_private is the project's one portable "unpredictable name,
+    // created by us" helper — mkstemp on POSIX, GetTempFileName on Windows.
+    // It returns a path to an already-created file, so plain fopen is safe here.
+    const std::string tmp = core_tmp::make_private();
+    if (tmp.empty()) return {};
+    const char * path = tmp.c_str();
+    std::FILE * f = std::fopen(path, "wb");
+    if (!f) {
+        std::remove(path);
+        return {};
+    }
     const bool ok = core_imgout::emit(f, px.data(), w, h, comp, engine);
     std::fclose(f);
     if (!ok) {
@@ -104,12 +130,12 @@ bool is_png(const std::string & s) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     std::printf("image provenance\n");
 
-    unsetenv("CRISPEMBED_IMAGE_FORMAT");
-    unsetenv("CRISPEMBED_C2PA_CERT");
-    unsetenv("CRISPEMBED_C2PA_KEY");
+    unset_env("CRISPEMBED_IMAGE_FORMAT");
+    unset_env("CRISPEMBED_C2PA_CERT");
+    unset_env("CRISPEMBED_C2PA_KEY");
 
     // ── default: PNG + iTXt, unsigned ────────────────────────────────
     const std::string png = emit_to_string(16, 12, 3, "esrgan-sr");
@@ -131,11 +157,11 @@ int main() {
     check(is_png(gray) && gray.find("engine=dewarp") != std::string::npos, "grayscale path marked too");
 
     // ── escape hatch ─────────────────────────────────────────────────
-    setenv("CRISPEMBED_IMAGE_FORMAT", "ppm", 1);
+    set_env("CRISPEMBED_IMAGE_FORMAT", "ppm");
     const std::string ppm = emit_to_string(16, 12, 3, "esrgan-sr");
     check(ppm.rfind("P6", 0) == 0, "CRISPEMBED_IMAGE_FORMAT=ppm still yields raw Netpbm");
     check(!is_png(ppm), "and is not a PNG");
-    unsetenv("CRISPEMBED_IMAGE_FORMAT");
+    unset_env("CRISPEMBED_IMAGE_FORMAT");
 
 
     // ── the PNG must be structurally valid, not merely accepted ──────
@@ -177,12 +203,12 @@ int main() {
         check(mime == "image/png", "reports image/png so a caller cannot mislabel it");
         check(buf == png, "buffer path is byte-identical to the file path");
 
-        setenv("CRISPEMBED_IMAGE_FORMAT", "ppm", 1);
+        set_env("CRISPEMBED_IMAGE_FORMAT", "ppm");
         std::string pbuf, pmime;
         core_imgout::emit_to_string(pbuf, pmime, px.data(), 16, 12, 3, "esrgan-sr");
         check(pmime == "image/x-portable-pixmap", "ppm mode reports the Netpbm MIME, not image/png");
         check(pbuf.rfind("P6", 0) == 0, "ppm mode buffer really is Netpbm");
-        unsetenv("CRISPEMBED_IMAGE_FORMAT");
+        unset_env("CRISPEMBED_IMAGE_FORMAT");
     }
 
     // ── rejects what it cannot honestly emit ─────────────────────────
@@ -215,14 +241,14 @@ int main() {
             std::vector<unsigned char> px((size_t)W * H * comp);
             for (size_t i = 0; i < px.size(); i++) px[i] = (unsigned char)((i * 37 + 11) & 0xff);
 
-            unsetenv("CRISPEMBED_IMAGE_FORMAT");
+            unset_env("CRISPEMBED_IMAGE_FORMAT");
             std::string as_png, m1;
             core_imgout::emit_to_string(as_png, m1, px.data(), W, H, comp, "esrgan-sr");
 
-            setenv("CRISPEMBED_IMAGE_FORMAT", "ppm", 1);
+            set_env("CRISPEMBED_IMAGE_FORMAT", "ppm");
             std::string as_ppm, m2;
             core_imgout::emit_to_string(as_ppm, m2, px.data(), W, H, comp, "esrgan-sr");
-            unsetenv("CRISPEMBED_IMAGE_FORMAT");
+            unset_env("CRISPEMBED_IMAGE_FORMAT");
 
             int dw = 0, dh = 0, dc = 0;
             unsigned char * dec =
@@ -256,8 +282,8 @@ int main() {
         std::printf("  [skip] signing: set CRISPEMBED_TEST_C2PA_CERT/_KEY to exercise it\n");
         skipped++;
     } else {
-        setenv("CRISPEMBED_C2PA_CERT", cert, 1);
-        setenv("CRISPEMBED_C2PA_KEY", key, 1);
+        set_env("CRISPEMBED_C2PA_CERT", cert);
+        set_env("CRISPEMBED_C2PA_KEY", key);
         check(core_imgout::c2pa_configured(), "reports configured once cert+key are set");
         const std::string signed_png = emit_to_string(16, 12, 3, "esrgan-sr");
         check(is_png(signed_png), "signed output is still a PNG");
@@ -267,8 +293,8 @@ int main() {
               "signed output carries a manifest (grew and contains c2pa markers)");
         check(signed_png.find("algorithmicallyEnhanced") != std::string::npos,
               "signed output still carries the iTXt marking");
-        unsetenv("CRISPEMBED_C2PA_CERT");
-        unsetenv("CRISPEMBED_C2PA_KEY");
+        unset_env("CRISPEMBED_C2PA_CERT");
+        unset_env("CRISPEMBED_C2PA_KEY");
     }
 #endif
 
@@ -278,4 +304,12 @@ int main() {
     }
     std::printf("\nPASS: images are marked%s.\n", skipped ? " (signing not exercised)" : " and signable");
     return 0;
+}
+
+// The guard in tools/check_test_clean_exit.sh: a one-shot binary must not run
+// ggml's static GPU-device destructor at exit (it aborts on Metal / faults on
+// CUDA). These tests touch no GPU today, but they link crispembed-core, so the
+// teardown is one added dependency away from firing.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
