@@ -628,6 +628,22 @@ batch-8 groups; shape rebuilds only ~200 ms) at ~7 GF/s — ggml's Metal conv
 efficiency at 48-pixel heights, not our graph structure. That is
 kernel-level work (upstream ggml territory), recorded as the open item.
 
+**2026-08-04 (night) — the kernel arc ran its course; the residual is now
+exactly attributed and every structural alternative is measured.** Metal
+profiler (host-encode vs GPU-execute) + stage-stop diagnostics on the
+receipt's batch-8 groups: encode <1 ms, ~300 ms/group is GPU execution of 686
+nodes in ONE split (no CPU fallbacks). Backbone (~550 conv nodes) = **58 ms**;
+neck+SVTR decoder (~130 tiny-tensor nodes on [120,320]) = **~250 ms**; head
+free. Group cost scales linearly with items → real per-item work in the
+decoder op mix, not dispatch latency. Four alternatives measured negative,
+kept as env gates (`perf/ppocrv6-conv`, merged): direct-conv kernel
+(recognizer 3.6x slower, detector unchanged — the Metal det penalty is NOT
+im2col), hybrid CPU decoder (scalar 18,710-class head too expensive),
+mega-batch single dispatch (padding waste dominates), plus the earlier F16
+residents and native-q8 negatives. **Remaining speed item: ggml Metal
+kernels for the small-tensor decoder op mix — upstream work with the op-mix
+profile on record.**
+
 Landed: **width bucketing default (step 64)** — model width rounds UP to a
 multiple of 64 so nearby widths share a graph shape and fuse (receipt: 12
 widths → 5 fused groups, recognize −11%; the synth page's 3 crops now fuse
