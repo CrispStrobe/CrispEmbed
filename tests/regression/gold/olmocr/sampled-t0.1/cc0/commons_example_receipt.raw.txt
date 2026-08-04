@@ -1,0 +1,59 @@
+---
+primary_language: en
+is_rotation_valid: True
+rotation_correction: 0
+is_table: False
+is_diagram: False
+---
+Jackson-Washington
+6640 Ortiz Cove, Markmouth, PW
+69940
+
+Transaction ID: 8F88C299
+Date: 2025-02-16 11:25:12
+
+<table>
+  <tr>
+    <th>Item</th>
+    <th>Qty</th>
+    <th>Price</th>
+  </tr>
+  <tr>
+    <td>Strategy Accessory</td>
+    <td>1 $</td>
+    <td>43.31 $</td>
+  </tr>
+  <tr>
+    <td>Conference Product</td>
+    <td>1 $</td>
+    <td>48.40 $</td>
+  </tr>
+  <tr>
+    <td>Scientist Item</td>
+    <td>3 $</td>
+    <td>48.07 $</td>
+  </tr>
+  <tr>
+    <td>Situation Item</td>
+    <td>3 $</td>
+    <td>23.87 $</td>
+  </tr>
+  <tr>
+    <td>Life Accessory</td>
+    <td>4 $</td>
+    <td>48.04 $</td>
+  </tr>
+  <tr>
+    <td>Music Accessory</td>
+    <td>1 $</td>
+    <td>24.45 $</td>
+  </tr>
+</table>
+
+Subtotal: $524.14
+GST (5%): $26.21
+PST (7%): $36.69
+Total: $587.04
+
+Payment: Gift Card (***/**3486)
+Have a great day!

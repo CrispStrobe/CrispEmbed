@@ -1,0 +1,16 @@
+Input
+Texte
+Number
+Date
+Password
+a label   ANOTHER LABEL   Yet another label
+combo suggest
+F
+Finland
+France
+checkbox2
+checkbox3
+Code&labelle
+code&lib
+code
+Button
