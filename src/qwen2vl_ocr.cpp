@@ -2856,6 +2856,12 @@ struct qwen2vl_ocr_context {
     bool is_paddleocr = false;
     int32_t begin_of_sentence_id = 100273; // <|begin_of_sentence|>
 
+    // olmOCR (Qwen2.5-VL document fine-tune): its reference pipeline sends the
+    // instruction text BEFORE the image in the user turn and the model answers
+    // in markdown with a YAML front-matter block. Detected at load time from
+    // the path / general.name.
+    bool is_olmocr = false;
+
     // Tokenize a text string via BPE. Falls back to hardcoded IDs if no
     // tokenizer.
     std::vector<int32_t> tokenize(const std::string & text) {
@@ -2914,29 +2920,40 @@ struct qwen2vl_ocr_context {
             ids.push_back(newline_id);
         }
 
-        // <|im_start|>user\n<|vision_start|>
+        // <|im_start|>user\n
         ids.push_back(im_start_id);
         ids.push_back(user_id);
         ids.push_back(newline_id);
-        ids.push_back(vision_start_id);
 
-        // <|image_pad|> × n_image_tokens
-        for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_pad_id);
-
-        // <|vision_end|>
-        ids.push_back(vision_end_id);
-
-        // User prompt text
-        if (!prompt_ids.empty()) {
-            ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
-        } else {
-            auto toks = tokenize(prompt);
-            if (toks.empty()) {
-                // Fallback: "Describe this image."
-                ids.insert(ids.end(), { 74785, 419, 2168, 13 });
+        auto push_prompt_text = [&]() {
+            if (!prompt_ids.empty()) {
+                ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
             } else {
-                ids.insert(ids.end(), toks.begin(), toks.end());
+                auto toks = tokenize(prompt);
+                if (toks.empty()) {
+                    // Fallback: "Describe this image."
+                    ids.insert(ids.end(), { 74785, 419, 2168, 13 });
+                } else {
+                    ids.insert(ids.end(), toks.begin(), toks.end());
+                }
             }
+        };
+        auto push_vision_block = [&]() {
+            ids.push_back(vision_start_id);
+            for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_pad_id);
+            ids.push_back(vision_end_id);
+        };
+
+        // olmOCR's reference request places the instruction text BEFORE the
+        // image in the user turn; the chat template renders content items in
+        // order, so the token stream must match. Every other model here uses
+        // image-first.
+        if (is_olmocr) {
+            push_prompt_text();
+            push_vision_block();
+        } else {
+            push_vision_block();
+            push_prompt_text();
         }
 
         // <|im_end|>\n<|im_start|>assistant\n
@@ -2973,6 +2990,22 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
                       "format.";
         ctx->max_tokens = 2048;
     }
+    // olmOCR-2: the exact no-anchoring prompt the checkpoint was fine-tuned
+    // with (byte-exact, including the "LateX" spelling — this is the training
+    // contract, do not "fix" it). Reference sends it at temperature 0 with an
+    // 8000-token output budget.
+    auto set_olmocr_mode = [&]() {
+        ctx->is_olmocr = true;
+        ctx->prompt = "Attached is one page of a document that you must process. "
+                      "Just return the plain text representation of this document as if you were reading it naturally. "
+                      "Convert equations to LateX and tables to HTML.\n"
+                      "If there are any figures or charts, label them with the following markdown syntax "
+                      "![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\n"
+                      "Return your output as markdown, with a front matter section on top specifying values for the "
+                      "primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.";
+        ctx->max_tokens = 8000;
+    };
+    if (model_path_lc.find("olmocr") != std::string::npos) set_olmocr_mode();
 
     // Load BPE tokenizer from GGUF metadata
     gguf_context * g = core_gguf::open_metadata(gguf_path);
@@ -3037,7 +3070,7 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
         int arch_idx = gguf_find_key(g, "general.architecture");
         if (arch_idx >= 0) {
             std::string arch = gguf_get_val_str(g, arch_idx);
-            if ((arch == "qwen3vl" || arch == "qwen2vl") && !is_qari && !is_unimumer) {
+            if ((arch == "qwen3vl" || arch == "qwen2vl") && !is_qari && !is_unimumer && !ctx->is_olmocr) {
                 // Both Qwen2.5-VL (arch "qwen2vl") and Qwen3-VL are instruct VLMs whose
                 // default "Describe this image." prompt yields a verbose description
                 // instead of a transcription. Use an explicit OCR prompt so --ocr
@@ -3062,6 +3095,13 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
                               "Output only the transcribed text, nothing else.";
                 if (ctx->inner.verbosity >= 1)
                     fprintf(stderr, "qwen2vl_ocr: detected Qari-OCR from general.name, using OCR prompt\n");
+            }
+            // olmOCR fallback detection from general.name (robust to renamed
+            // files). Same contract as the path-based detection above.
+            if (!ctx->is_olmocr && name_lc.find("olmocr") != std::string::npos) {
+                set_olmocr_mode();
+                if (ctx->inner.verbosity >= 1)
+                    fprintf(stderr, "qwen2vl_ocr: detected olmOCR from general.name, using document prompt\n");
             }
             // PaddleOCR-VL: ERNIE-4.5 text decoder. Its chat tokens differ from
             // Qwen's (which are out of range for the 103424-row embed table), so
@@ -3238,6 +3278,22 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
             }
         }
     }
+    // olmOCR answers in markdown with a YAML front-matter block carrying page
+    // metadata (primary_language / rotation / is_table / is_diagram). The
+    // document text is what OCR callers want, so strip the block by default;
+    // CRISPEMBED_OLMOCR_RAW=1 keeps the full model output.
+    if (ctx->is_olmocr && !getenv("CRISPEMBED_OLMOCR_RAW")) {
+        std::string & r = ctx->last_result;
+        size_t p = r.find_first_not_of(" \n\t");
+        if (p != std::string::npos && r.compare(p, 3, "---") == 0) {
+            size_t close = r.find("\n---", p + 3);
+            if (close != std::string::npos) {
+                size_t body = close + 4; // past "\n---"
+                while (body < r.size() && (r[body] == '\n' || r[body] == ' ')) body++;
+                r.erase(0, body);
+            }
+        }
+    }
     stage_ms("decode_text");
 
     if (out_len) *out_len = (int)ctx->last_result.size();
@@ -3262,6 +3318,14 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
     // Allow runtime override of max_pixels for CPU-friendly inference
     if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) {
         cfg.max_pixels = atoi(mp);
+    }
+    // olmOCR's reference renders every page with its longest side at 1288 px
+    // before the standard resize; match that geometry (up- and downscale).
+    // CRISPEMBED_OLMOCR_LONGEST overrides the target, 0 disables it.
+    if (ctx->is_olmocr) {
+        int tl = 1288;
+        if (const char * e = getenv("CRISPEMBED_OLMOCR_LONGEST")) tl = atoi(e);
+        if (tl > 0) cfg.target_longest = tl;
     }
     for (int i = 0; i < 3; i++) {
         cfg.mean[i] = vhp.image_mean[i];

@@ -281,8 +281,17 @@ bool preprocess_rgb(const uint8_t * rgb, int height, int width, int channels, co
         // detector reported no skew (or bad input) — continue unrotated
     }
     const int factor = cfg.patch_size * cfg.merge_size;
+    // target_longest emulates a fixed-longest-side page render: smart_resize
+    // sees the render's dims, while the single bicubic resample below still
+    // goes straight from the original pixels to the final grid.
+    int nom_h = height, nom_w = width;
+    if (cfg.target_longest > 0) {
+        const double s = (double)cfg.target_longest / (double)std::max(height, width);
+        nom_h = std::max(1, (int)std::lround((double)height * s));
+        nom_w = std::max(1, (int)std::lround((double)width * s));
+    }
     int rh = 0, rw = 0;
-    if (!smart_resize(height, width, factor, cfg.min_pixels, cfg.max_pixels, &rh, &rw)) {
+    if (!smart_resize(nom_h, nom_w, factor, cfg.min_pixels, cfg.max_pixels, &rh, &rw)) {
         return false;
     }
 
