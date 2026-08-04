@@ -16,7 +16,6 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `feat/parity-qwenvl` (delegated agent) | **A2 IN PROGRESS** — transformers Qwen2.5-VL-7B reference arm (MPS, Kaggle fallback documented); gold transcripts → `tests/regression/gold/qwen2.5-vl-7b/`. **A3 → A4 still QUEUED** (olmOCR toolkit, HF DeepSeek-OCR), strictly one heavy reference at a time | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. Pending: local smoke once the heavy slot frees (A2 running), decoded parity vs A3 gold on ≥5 pages | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -1336,6 +1335,24 @@ chars (CER 1.0) as two PICTURE clusters while recognized items score 0.1862;
 (e) 12-24x slower than the load-inclusive tesseract control. (f) Environment:
 `~/.cache/huggingface` symlinks to the backups volume which is 100% FULL —
 every HF download needs `HF_HOME=$HOME/.cache/hf-docling` until cleared.
+
+**A2 status [DONE 2026-08-04, merged `add33c26`]:** `Qwen25VLPy` adapter +
+Kaggle kernel (`chr1s4/crispembed-qwen-vl-ocr-parity`, 2x T4); **25/25 gold**
+transcripts in `tests/regression/gold/qwen2.5-vl-7b/` with full manifest
+(model rev `cc59489`, our lane's exact prompt/template, greedy,
+dtype=float16 — T4 cast, bf16 spot-check on Ampere+ is an open follow-up;
+`sdpa` verified output-identical to eager on 3 fixtures). Numbers: synth
+20/20 CER 0.0 (corpus does not discriminate); CC0 mean CER **0.02902** vs
+tesseract 0.46114 — receipt_historical 0.0195 (vs 0.453/0.997 for
+tesseract/docling), simple_form 0.109 (weakest gold page — eyeballed, real
+form-widget text). Local 7B was abandoned by arithmetic (15.45 GiB weights vs
+16 GiB unified). OOM ledger: ten measured device-split attempts recorded in
+the artifact; the two ~4.8 Mpix pages only pass with heavy host offload
+(`0=1GiB,1=3GiB,cpu=60GiB`, 2512/1414 s) because sm_75 has no
+memory-efficient SDPA for that mask shape — so **no timing column in this
+artifact is latency** (a resident `latency_reference` config is recorded:
+2389.7 ms/page, cannot read the two largest pages). 3B used for smoke only,
+no numbers published (license gate).
 
 **A6 status [DONE 2026-08-04, merged]:** matrix re-verified row by row; every
 claim now cites a gate/code line or a dated measurement, `UNVERIFIED as of
