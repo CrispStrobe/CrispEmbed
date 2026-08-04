@@ -1166,7 +1166,115 @@ Four facts that should stop you re-deriving them:
 
 ---
 
-## OPEN TASKS — ordered by expected value
+## OPEN TASKS — engine-portfolio round (2026-08-04): match/beat the reference implementation of every open-licensed lane
+
+Scope decision: the portfolio targets are **Tesseract, DeepSeek-OCR, olmOCR,
+Qwen2.5-VL, and Docling's open backends**, each held to the PP-OCRv6 standard
+(reference implementation locally runnable; CER/decoded-text gates; net-of-load
+timing; interleaved A/Bs; negatives recorded).
+
+**Licensing gates (checked 2026-08-04):** Tesseract Apache-2.0; DeepSeek-OCR
+MIT; olmOCR Apache-2.0 (Qwen2.5-VL-7B fine-tune); Docling components
+MIT/Apache; **Qwen2.5-VL: 7B Apache-2.0 is shippable, 3B is Qwen Research
+License — dev-reference only, never ship**. dots.ocr: NOT non-commercial (its
+MIT-based agreement allows commercial use), but the 2026 rejection STANDS on
+the supplemental terms (PRC governing law/arbitration, unilateral 90-day
+amendment, use-based prohibitions, mandatory attribution) — see HISTORY;
+re-admitting it is a policy decision, not a technical one. The only surviving
+dots work is an uncommitted qwen2vl-variant diff in a stale worktree.
+
+Method note for every item below: the PP-OCRv6 campaign closed five
+"hard blockers" that were all small mislabeled defects. Assume the same here.
+Reproduce recorded claims before building on them; diff the INPUT each lane
+saw before diffing model stages; audit what every bench line actually spans.
+
+### T11 — Reachability: every engine invocable, the document pipeline reachable from the CLI
+
+Six enum engines have no CLI name (`deepseek_ocr2`, `tesseract_fraktur`,
+`parseq`, `pix2struct`, `granite_vision`, `unified` — `examples/cli/main.cpp`
+`eng_id` map vs `src/ocr_orchestrator.h:41-59`), and `--ocr-pipeline` can
+never set `layout_model`/`table_model`/`formula_model`/`route_*`, so the
+existing layout→table→formula→markdown assembly is C-ABI/server-only. This
+exact bug class hid ppocrv6 for months (no `map_engine` id, no CLI name).
+**Do:** name every engine; add `--ocr-layout/--ocr-table/--ocr-formula` (or
+one `--ocr-document` preset) to the pipeline path; extend
+`tests/test_ocr_backend_matrix.py` to assert enum↔CLI-name coverage so the
+class cannot recur. **Acceptance:** each engine runs by name on a fixture;
+the receipt produces markdown with a table via CLI alone; the matrix smoke
+fails if a future engine ships nameless.
+
+### T12 — External-parity arms + bench-span audit for all six families
+
+`tests/ocr_external_parity.py` covers tesseract/easyocr/paddle only. **Do:**
+add reference arms — pip Docling (full document parse), HF-transformers
+Qwen2.5-VL-7B (dev-only 3B allowed for debugging), olmOCR's own toolkit,
+HF DeepSeek-OCR — plus document-level ground truth (olmOCR's bench data can
+seed it; extend the T1 conventions). Audit every lane's stage-bench line for
+the load-inclusion bug found twice already (ppocrv6 detect spanned stage
+entry; easyocr harness regex captured load-inclusive total). **Acceptance:**
+one table, per family: native CER/WER + net-of-load engine_ms vs its
+reference on shared fixtures; every stage-bench span documented as
+net-of-load or split like `[easyocr-stage-bench]`.
+
+### T13 — olmOCR lane (the one absent family; cheapest add)
+
+Zero trace in the repo. It is an Apache-2.0 Qwen2.5-VL-7B fine-tune, so the
+`qwen2vl_ocr` engine and converter path should carry it. **Do:** convert the
+olmOCR-2 checkpoint; implement its document-anchoring prompt contract;
+registry + CLI name; gold fixtures from its toolkit. q4_k first (16 GB box;
+DeepSeek at 5.3 GB peak ran). **Acceptance:** decoded output parity vs the
+olmOCR toolkit on ≥5 anchored pages (their own eval format), HARD RULE #3
+decoded-text gate, and a T12 harness row.
+
+### T14 — DeepSeek-OCR: persistent decode graph + F16 KV (open lever #2) + CER gate
+
+The decode graph is rebuilt and freed per layer per token, KV is F32 —
+explicitly the one engine the GPU-decode "done" note does not cover
+(§DeepSeek-OCR-2 levers). The qwen2vl engine next door already has the
+persistent `build_decode_step_graph` + F16-KV pattern. Warm profile today:
+~12 s total, decode 3.8 s. **Do:** copy the pattern; keep `DS_*` fallbacks;
+CER gate via T12 BEFORE the perf work (no recorded reference parity exists).
+**Acceptance:** decoded text unchanged on the existing fixtures, warm decode
+time down with interleaved A/B, a reference CER row, and the CLI name from
+T11.
+
+### T15 — SmolDocling: fix the DocTags output before touching speed
+
+Tensor parity 0.9999 but LIVE payload CER 0.86 from duplicated DocTags —
+the harness-blind zone (LEARNINGS: diff the input/output contract, not more
+tensors). Backend is hardcoded `ggml_backend_cpu_init`. **Do:** first
+deduplicate/parse DocTags against reference output on gold pages; only then
+un-hardcode the backend and A/B GPU. **Acceptance:** payload CER on gold
+pages comparable to the reference implementation's own output; then
+backend A/B with text gates. Related Docling-quality debt to carry: layout
+detection score 0.934 vs HF reference 0.955.
+
+### T16 — TableFormer port (MIT) + reading order — the missing Docling half
+
+Tables today are rule-based morphology + Tesseract cells; no learned
+structure model exists. TableFormer (docling-models, MIT) is the port
+target; OTSL output feeds the existing `build_markdown` HTML path. Reading
+order is nobody's job: the two-column fixture scores CER ~0.76 for EVERY
+arm including system Tesseract — a column-aware ordering pass would improve
+all lanes at once. **Acceptance:** table-structure accuracy vs pip Docling
+on shared fixtures; two-column CER drops materially for at least the
+tesseract and ppocrv6 lanes with no single-column regression.
+
+### T17 — Tesseract quality round: Fraktur decode, WER, crop batching
+
+Corpus CER is near-par (0.0290 vs 0.0256) but: Fraktur line decode is WRONG
+vs official (`BEEES` vs `iE` on scan_strip — official binary locally
+runnable, same reference-first bisect as the receipt); WER 0.1623 vs 0.0890
+is spacing/grouping; Fraktur only survives at F32 (Q8 logits 0.9897); DAWGs
+load but production decode ignores them; crops are recognized one at a time
+(46-69 ms/line — the fused-batching/width-bucketing pattern from ppocrv6 is
+the template). **Acceptance:** Fraktur line decode matches official on the
+known fixture; corpus WER moves toward the reference's 0.089; batching
+A/B'd text-identical.
+
+---
+
+## OPEN TASKS — ordered by expected value (prior round)
 
 ### T1 — Transcribe 5-10 CC0 scans [DONE 2026-08-03 for the 5 scoreable English-lane fixtures]
 
