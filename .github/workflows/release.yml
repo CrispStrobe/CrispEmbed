@@ -417,6 +417,27 @@ jobs:
 
       # GGML_NATIVE=OFF — the CUDA tarball still contains ggml-cpu, and this
       # runner is the same heterogeneous ubuntu-latest pool as the cpu leg (#41).
+      # ggml 0.17 calls the CUDA *driver* API (cuGetErrorString), which 0.10.2
+      # did not, so libggml-cuda now has to link libcuda. A build machine has
+      # no driver installed, which is exactly what the toolkit's stub at
+      # lib64/stubs/libcuda.so is for — but CMake only finds it if the stubs
+      # directory is on the library path.
+      #
+      # Without this the link dies with "undefined reference to
+      # `cuGetErrorString'" and the whole leg fails at the very end of a ~1 h
+      # build. v0.17.3 shipped with NO Linux CUDA archive for this reason.
+      # Fail loudly here if the stub is missing rather than an hour later.
+      - name: Locate the CUDA driver stub
+        run: |
+          set -euo pipefail
+          stub=$(find "${CUDA_PATH:-/usr/local/cuda}" -name 'libcuda.so*' -path '*stubs*' 2>/dev/null | head -1)
+          if [ -z "$stub" ]; then
+              echo "No libcuda stub under ${CUDA_PATH:-/usr/local/cuda}; ggml 0.17 cannot link the CUDA driver API." >&2
+              exit 1
+          fi
+          echo "CUDA_STUB_DIR=$(dirname "$stub")" >> "$GITHUB_ENV"
+          echo "driver stub: $stub"
+
       - name: Configure
         run: >
           cmake -S . -B build
@@ -425,6 +446,7 @@ jobs:
           -DGGML_NATIVE=OFF
           -DGGML_CUDA=ON
           -DGGML_BLAS=OFF
+          -DCMAKE_LIBRARY_PATH="$CUDA_STUB_DIR"
           -DCMAKE_C_COMPILER_LAUNCHER=ccache
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
