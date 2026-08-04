@@ -1,0 +1,378 @@
+{
+  "brief": "A3 - parity arm + gold: olmOCR toolkit",
+  "pass": "gold",
+  "model_id": "allenai/olmOCR-2-7B-1025",
+  "revision": "e52d6f090b7a9007afffbbd6ce510876222fea93",
+  "toolkit_default_model": "allenai/olmOCR-2-7B-1025-FP8",
+  "olmocr_version": "0.4.27",
+  "prompt": "Attached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.",
+  "prompt_sha256": "c12f21aca8c6c5599cea6176edd974b7ea6a05cf451497abd6370dd449db3979",
+  "prompt_builder": "olmocr.prompts.build_no_anchoring_v4_yaml_prompt",
+  "message_structure": "one user message; content[0] = text prompt, content[1] = image_url data URI; no system message in the request (the chat template injects 'You are a helpful assistant.')",
+  "render": "pdftoppm -png -r (target*72/longest_mediabox_point) via olmocr.data.renderpdf.render_pdf_to_base64png",
+  "target_longest_image_dim": 1288,
+  "max_tokens": 8000,
+  "temperature_by_attempt": [
+    0.1,
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "dtype": "float16",
+  "serving_stack": "transformers 4.57.3 (torch 2.10.0+cu128), device_map=auto, sdpa",
+  "serving_deviation": "the toolkit serves through vLLM; see vllm_probe.json",
+  "hardware": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
+  "placements": [
+    "0",
+    "1"
+  ],
+  "date": "2026-08-04",
+  "images": "/kaggle/temp/CrispEmbed/tests/regression/images/cc0",
+  "repo_commit": "12bb3b6e9068812443ae9d1804a1fc56b52eb06c",
+  "img2pdf": "img2pdf 0.6.3",
+  "pdftoppm": "pdftoppm version 22.02.0",
+  "img2pdf_recipe": "img2pdf --output <name>.pdf <fixture image>",
+  "renders": [
+    {
+      "corpus": "cc0",
+      "fixture": "commons_example_receipt.png",
+      "pdf": "commons_example_receipt.pdf",
+      "source_wh": [
+        500,
+        650
+      ],
+      "rendered_wh": [
+        991,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        70
+      ],
+      "model_input_wh": [
+        980,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "commons_test_ocr_document.jpg",
+      "pdf": "commons_test_ocr_document.pdf",
+      "source_wh": [
+        1920,
+        2485
+      ],
+      "rendered_wh": [
+        996,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        72
+      ],
+      "model_input_wh": [
+        1008,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "german_official_print.jpg",
+      "pdf": "german_official_print.pdf",
+      "source_wh": [
+        1920,
+        2518
+      ],
+      "rendered_wh": [
+        983,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        70
+      ],
+      "model_input_wh": [
+        980,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "receipt_historical.png",
+      "pdf": "receipt_historical.pdf",
+      "source_wh": [
+        768,
+        1552
+      ],
+      "rendered_wh": [
+        638,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        46
+      ],
+      "model_input_wh": [
+        644,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "simple_form.png",
+      "pdf": "simple_form.pdf",
+      "source_wh": [
+        452,
+        317
+      ],
+      "rendered_wh": [
+        1288,
+        904
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        64,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        896
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "fixture": "commons_example_receipt.png",
+      "stem": "commons_example_receipt",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 1740,
+          "completion_tokens": 428,
+          "total_tokens": 2168,
+          "finish_reason": "stop",
+          "gen_s": 40.38,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            991,
+            1288
+          ],
+          "processor_grid_thw": [
+            1,
+            92,
+            70
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 40.38,
+      "natural_text_chars": 808,
+      "raw_chars": 918
+    },
+    {
+      "fixture": "commons_test_ocr_document.jpg",
+      "stem": "commons_test_ocr_document",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 1786,
+          "completion_tokens": 725,
+          "total_tokens": 2511,
+          "finish_reason": "stop",
+          "gen_s": 68.69,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            996,
+            1288
+          ],
+          "processor_grid_thw": [
+            1,
+            92,
+            72
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 68.69,
+      "natural_text_chars": 2989,
+      "raw_chars": 3099
+    },
+    {
+      "fixture": "german_official_print.jpg",
+      "stem": "german_official_print",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 1740,
+          "completion_tokens": 385,
+          "total_tokens": 2125,
+          "finish_reason": "stop",
+          "gen_s": 36.65,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            983,
+            1288
+          ],
+          "processor_grid_thw": [
+            1,
+            92,
+            70
+          ],
+          "front_matter": {
+            "primary_language": "de",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 36.65,
+      "natural_text_chars": 947,
+      "raw_chars": 1057
+    },
+    {
+      "fixture": "receipt_historical.png",
+      "stem": "receipt_historical",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 1188,
+          "completion_tokens": 489,
+          "total_tokens": 1677,
+          "finish_reason": "stop",
+          "gen_s": 41.39,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            638,
+            1288
+          ],
+          "processor_grid_thw": [
+            1,
+            92,
+            46
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 41.39,
+      "natural_text_chars": 746,
+      "raw_chars": 856
+    },
+    {
+      "fixture": "simple_form.png",
+      "stem": "simple_form",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 1602,
+          "completion_tokens": 104,
+          "total_tokens": 1706,
+          "finish_reason": "stop",
+          "gen_s": 11.41,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            904
+          ],
+          "processor_grid_thw": [
+            1,
+            64,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 11.41,
+      "natural_text_chars": 252,
+      "raw_chars": 362
+    }
+  ]
+}

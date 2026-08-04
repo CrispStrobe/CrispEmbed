@@ -1,0 +1,11 @@
+---
+primary_language: en
+is_rotation_valid: True
+rotation_correction: 0
+is_table: False
+is_diagram: False
+---
+Chapter 7. Measurement and error.
+
+Every instrument reports a value and an uncertainty.
+A number without an interval is not a measurement.

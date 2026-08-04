@@ -1,0 +1,1383 @@
+{
+  "brief": "A3 - parity arm + gold: olmOCR toolkit",
+  "pass": "gold",
+  "model_id": "allenai/olmOCR-2-7B-1025",
+  "revision": "e52d6f090b7a9007afffbbd6ce510876222fea93",
+  "toolkit_default_model": "allenai/olmOCR-2-7B-1025-FP8",
+  "olmocr_version": "0.4.27",
+  "prompt": "Attached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.",
+  "prompt_sha256": "c12f21aca8c6c5599cea6176edd974b7ea6a05cf451497abd6370dd449db3979",
+  "prompt_builder": "olmocr.prompts.build_no_anchoring_v4_yaml_prompt",
+  "message_structure": "one user message; content[0] = text prompt, content[1] = image_url data URI; no system message in the request (the chat template injects 'You are a helpful assistant.')",
+  "render": "pdftoppm -png -r (target*72/longest_mediabox_point) via olmocr.data.renderpdf.render_pdf_to_base64png",
+  "target_longest_image_dim": 1288,
+  "max_tokens": 8000,
+  "temperature_by_attempt": [
+    0.1,
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "dtype": "float16",
+  "serving_stack": "transformers 4.57.3 (torch 2.10.0+cu128), device_map=auto, sdpa",
+  "serving_deviation": "the toolkit serves through vLLM; see vllm_probe.json",
+  "hardware": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
+  "placements": [
+    "0",
+    "1"
+  ],
+  "date": "2026-08-04",
+  "images": "/kaggle/input/datasets/chr1s4/crispembed-ocr-synth",
+  "repo_commit": "12bb3b6e9068812443ae9d1804a1fc56b52eb06c",
+  "img2pdf": "img2pdf 0.6.3",
+  "pdftoppm": "pdftoppm version 22.02.0",
+  "img2pdf_recipe": "img2pdf --output <name>.pdf <fixture image>",
+  "renders": [
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_blur.png",
+      "pdf": "synth_00_blur.pdf",
+      "source_wh": [
+        626,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        387
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_clean.png",
+      "pdf": "synth_00_clean.pdf",
+      "source_wh": [
+        572,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        424
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        30,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        420
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_lowdpi.png",
+      "pdf": "synth_00_lowdpi.pdf",
+      "source_wh": [
+        616,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        312
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        22,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        308
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_noise.png",
+      "pdf": "synth_00_noise.pdf",
+      "source_wh": [
+        617,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        393
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_skew.png",
+      "pdf": "synth_00_skew.pdf",
+      "source_wh": [
+        578,
+        204
+      ],
+      "rendered_wh": [
+        1288,
+        455
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        32,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        448
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_blur.png",
+      "pdf": "synth_01_blur.pdf",
+      "source_wh": [
+        751,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        323
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_clean.png",
+      "pdf": "synth_01_clean.pdf",
+      "source_wh": [
+        766,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        317
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        22,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        308
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_lowdpi.png",
+      "pdf": "synth_01_lowdpi.pdf",
+      "source_wh": [
+        546,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        352
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        26,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        364
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_noise.png",
+      "pdf": "synth_01_noise.pdf",
+      "source_wh": [
+        957,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        254
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        18,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        252
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_skew.png",
+      "pdf": "synth_01_skew.pdf",
+      "source_wh": [
+        772,
+        208
+      ],
+      "rendered_wh": [
+        1289,
+        348
+      ],
+      "rendered_longest": 1289,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_blur.png",
+      "pdf": "synth_02_blur.pdf",
+      "source_wh": [
+        940,
+        188
+      ],
+      "rendered_wh": [
+        1289,
+        258
+      ],
+      "rendered_longest": 1289,
+      "image_grid_thw": [
+        1,
+        18,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        252
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_clean.png",
+      "pdf": "synth_02_clean.pdf",
+      "source_wh": [
+        715,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        339
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_lowdpi.png",
+      "pdf": "synth_02_lowdpi.pdf",
+      "source_wh": [
+        548,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        351
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        26,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        364
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_noise.png",
+      "pdf": "synth_02_noise.pdf",
+      "source_wh": [
+        638,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        380
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_skew.png",
+      "pdf": "synth_02_skew.pdf",
+      "source_wh": [
+        721,
+        208
+      ],
+      "rendered_wh": [
+        1288,
+        372
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        26,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        364
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_blur.png",
+      "pdf": "synth_03_blur.pdf",
+      "source_wh": [
+        503,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        482
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        34,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        476
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_clean.png",
+      "pdf": "synth_03_clean.pdf",
+      "source_wh": [
+        702,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        345
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_lowdpi.png",
+      "pdf": "synth_03_lowdpi.pdf",
+      "source_wh": [
+        424,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        453
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        32,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        448
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_noise.png",
+      "pdf": "synth_03_noise.pdf",
+      "source_wh": [
+        549,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        442
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        32,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        448
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_skew.png",
+      "pdf": "synth_03_skew.pdf",
+      "source_wh": [
+        708,
+        208
+      ],
+      "rendered_wh": [
+        1288,
+        379
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "fixture": "synth_00_blur.png",
+      "stem": "synth_00_blur",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 774,
+          "completion_tokens": 61,
+          "total_tokens": 835,
+          "finish_reason": "stop",
+          "gen_s": 8.62,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            387
+          ],
+          "processor_grid_thw": [
+            1,
+            28,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 8.62,
+      "natural_text_chars": 122,
+      "raw_chars": 232
+    },
+    {
+      "fixture": "synth_00_clean.png",
+      "stem": "synth_00_clean",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 820,
+          "completion_tokens": 61,
+          "total_tokens": 881,
+          "finish_reason": "stop",
+          "gen_s": 5.47,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            424
+          ],
+          "processor_grid_thw": [
+            1,
+            30,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.47,
+      "natural_text_chars": 122,
+      "raw_chars": 232
+    },
+    {
+      "fixture": "synth_00_lowdpi.png",
+      "stem": "synth_00_lowdpi",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 636,
+          "completion_tokens": 61,
+          "total_tokens": 697,
+          "finish_reason": "stop",
+          "gen_s": 5.15,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            312
+          ],
+          "processor_grid_thw": [
+            1,
+            22,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.15,
+      "natural_text_chars": 122,
+      "raw_chars": 232
+    },
+    {
+      "fixture": "synth_00_noise.png",
+      "stem": "synth_00_noise",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 774,
+          "completion_tokens": 61,
+          "total_tokens": 835,
+          "finish_reason": "stop",
+          "gen_s": 5.39,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            393
+          ],
+          "processor_grid_thw": [
+            1,
+            28,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.39,
+      "natural_text_chars": 122,
+      "raw_chars": 232
+    },
+    {
+      "fixture": "synth_00_skew.png",
+      "stem": "synth_00_skew",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 866,
+          "completion_tokens": 61,
+          "total_tokens": 927,
+          "finish_reason": "stop",
+          "gen_s": 5.53,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            455
+          ],
+          "processor_grid_thw": [
+            1,
+            32,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.53,
+      "natural_text_chars": 124,
+      "raw_chars": 234
+    },
+    {
+      "fixture": "synth_01_blur.png",
+      "stem": "synth_01_blur",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 682,
+          "completion_tokens": 90,
+          "total_tokens": 772,
+          "finish_reason": "stop",
+          "gen_s": 7.47,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            323
+          ],
+          "processor_grid_thw": [
+            1,
+            24,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 7.47,
+      "natural_text_chars": 134,
+      "raw_chars": 244
+    },
+    {
+      "fixture": "synth_01_clean.png",
+      "stem": "synth_01_clean",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 636,
+          "completion_tokens": 90,
+          "total_tokens": 726,
+          "finish_reason": "stop",
+          "gen_s": 7.33,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            317
+          ],
+          "processor_grid_thw": [
+            1,
+            22,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 7.33,
+      "natural_text_chars": 134,
+      "raw_chars": 244
+    },
+    {
+      "fixture": "synth_01_lowdpi.png",
+      "stem": "synth_01_lowdpi",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 728,
+          "completion_tokens": 90,
+          "total_tokens": 818,
+          "finish_reason": "stop",
+          "gen_s": 7.48,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            352
+          ],
+          "processor_grid_thw": [
+            1,
+            26,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 7.48,
+      "natural_text_chars": 134,
+      "raw_chars": 244
+    },
+    {
+      "fixture": "synth_01_noise.png",
+      "stem": "synth_01_noise",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 544,
+          "completion_tokens": 90,
+          "total_tokens": 634,
+          "finish_reason": "stop",
+          "gen_s": 7.15,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            254
+          ],
+          "processor_grid_thw": [
+            1,
+            18,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 7.15,
+      "natural_text_chars": 134,
+      "raw_chars": 244
+    },
+    {
+      "fixture": "synth_01_skew.png",
+      "stem": "synth_01_skew",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 682,
+          "completion_tokens": 90,
+          "total_tokens": 772,
+          "finish_reason": "stop",
+          "gen_s": 7.51,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1289,
+            348
+          ],
+          "processor_grid_thw": [
+            1,
+            24,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 7.51,
+      "natural_text_chars": 134,
+      "raw_chars": 244
+    },
+    {
+      "fixture": "synth_02_blur.png",
+      "stem": "synth_02_blur",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 544,
+          "completion_tokens": 58,
+          "total_tokens": 602,
+          "finish_reason": "stop",
+          "gen_s": 4.84,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1289,
+            258
+          ],
+          "processor_grid_thw": [
+            1,
+            18,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 4.84,
+      "natural_text_chars": 137,
+      "raw_chars": 247
+    },
+    {
+      "fixture": "synth_02_clean.png",
+      "stem": "synth_02_clean",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 682,
+          "completion_tokens": 58,
+          "total_tokens": 740,
+          "finish_reason": "stop",
+          "gen_s": 5.16,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            339
+          ],
+          "processor_grid_thw": [
+            1,
+            24,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.16,
+      "natural_text_chars": 137,
+      "raw_chars": 247
+    },
+    {
+      "fixture": "synth_02_lowdpi.png",
+      "stem": "synth_02_lowdpi",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 728,
+          "completion_tokens": 58,
+          "total_tokens": 786,
+          "finish_reason": "stop",
+          "gen_s": 5.22,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            351
+          ],
+          "processor_grid_thw": [
+            1,
+            26,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.22,
+      "natural_text_chars": 139,
+      "raw_chars": 249
+    },
+    {
+      "fixture": "synth_02_noise.png",
+      "stem": "synth_02_noise",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 774,
+          "completion_tokens": 58,
+          "total_tokens": 832,
+          "finish_reason": "stop",
+          "gen_s": 5.29,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            380
+          ],
+          "processor_grid_thw": [
+            1,
+            28,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.29,
+      "natural_text_chars": 138,
+      "raw_chars": 248
+    },
+    {
+      "fixture": "synth_02_skew.png",
+      "stem": "synth_02_skew",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 728,
+          "completion_tokens": 58,
+          "total_tokens": 786,
+          "finish_reason": "stop",
+          "gen_s": 5.26,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            372
+          ],
+          "processor_grid_thw": [
+            1,
+            26,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.26,
+      "natural_text_chars": 137,
+      "raw_chars": 247
+    },
+    {
+      "fixture": "synth_03_blur.png",
+      "stem": "synth_03_blur",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 912,
+          "completion_tokens": 66,
+          "total_tokens": 978,
+          "finish_reason": "stop",
+          "gen_s": 6.17,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            482
+          ],
+          "processor_grid_thw": [
+            1,
+            34,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 6.17,
+      "natural_text_chars": 114,
+      "raw_chars": 224
+    },
+    {
+      "fixture": "synth_03_clean.png",
+      "stem": "synth_03_clean",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 682,
+          "completion_tokens": 66,
+          "total_tokens": 748,
+          "finish_reason": "stop",
+          "gen_s": 5.85,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            345
+          ],
+          "processor_grid_thw": [
+            1,
+            24,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.85,
+      "natural_text_chars": 114,
+      "raw_chars": 224
+    },
+    {
+      "fixture": "synth_03_lowdpi.png",
+      "stem": "synth_03_lowdpi",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 866,
+          "completion_tokens": 66,
+          "total_tokens": 932,
+          "finish_reason": "stop",
+          "gen_s": 6.11,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            453
+          ],
+          "processor_grid_thw": [
+            1,
+            32,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 6.11,
+      "natural_text_chars": 114,
+      "raw_chars": 224
+    },
+    {
+      "fixture": "synth_03_noise.png",
+      "stem": "synth_03_noise",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 866,
+          "completion_tokens": 66,
+          "total_tokens": 932,
+          "finish_reason": "stop",
+          "gen_s": 6.12,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            442
+          ],
+          "processor_grid_thw": [
+            1,
+            32,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 6.12,
+      "natural_text_chars": 114,
+      "raw_chars": 224
+    },
+    {
+      "fixture": "synth_03_skew.png",
+      "stem": "synth_03_skew",
+      "attempts": [
+        {
+          "attempt": 0,
+          "temperature": null,
+          "decoding": "greedy",
+          "valid": true,
+          "parse_error": null,
+          "prompt_tokens": 774,
+          "completion_tokens": 66,
+          "total_tokens": 840,
+          "finish_reason": "stop",
+          "gen_s": 5.96,
+          "deadline_fired": false,
+          "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+          "image_wh": [
+            1288,
+            379
+          ],
+          "processor_grid_thw": [
+            1,
+            28,
+            92
+          ],
+          "front_matter": {
+            "primary_language": "en",
+            "is_rotation_valid": true,
+            "rotation_correction": 0,
+            "is_table": false,
+            "is_diagram": false
+          },
+          "rotation_in": 0
+        }
+      ],
+      "n_attempts": 1,
+      "final_attempt": 0,
+      "final_temperature": null,
+      "deterministic": true,
+      "gen_s": 5.96,
+      "natural_text_chars": 114,
+      "raw_chars": 224
+    }
+  ]
+}
