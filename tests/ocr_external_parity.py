@@ -490,7 +490,7 @@ class Qwen25VLPy(Engine):
                  name: str | None = None, dtype: str = "bfloat16",
                  device: str = "auto", max_new_tokens: int = 2048,
                  transcripts: Path | None = None, device_map: str = "",
-                 max_memory: str = ""):
+                 max_memory: str = "", attn: str = "sdpa"):
         self.model_id = model_id
         short = model_id.split("/")[-1].replace("-Instruct", "").lower()
         self.name = name or f"qwen-vl-py:{short}"
@@ -510,6 +510,13 @@ class Qwen25VLPy(Engine):
         # device 1 was half empty).  Capping the per-device weight budget is what
         # reserves that headroom; it is a placement knob, not a quality one.
         self.max_memory = max_memory
+        # Eager attention materialises the full score matrix.  The vision tower
+        # sees ~6k patches for a 4.8 Mpix scan, so that is a multi-GiB tensor per
+        # full-attention layer and it is what actually ran the device out of
+        # memory.  ``sdpa`` computes the same attention without ever holding the
+        # matrix; it is a memory/implementation choice, not a model change, and
+        # the resolved value is recorded so the claim is checkable.
+        self.attn = attn
         self.max_new_tokens = max_new_tokens
         self.transcripts = Path(transcripts) if transcripts else None
         self._model = None
@@ -519,6 +526,7 @@ class Qwen25VLPy(Engine):
         self._warmed = False
         self._applied_template: str | None = None
         self._placements: list[str] = []
+        self._attn_resolved: str | None = None
 
     def available(self) -> str:
         try:
@@ -578,6 +586,8 @@ class Qwen25VLPy(Engine):
             kw = {key: dtype}
             if self.device_map:
                 kw["device_map"] = self.device_map
+            if self.attn:
+                kw["attn_implementation"] = self.attn
             if self.max_memory:
                 kw["max_memory"] = {
                     (int(k) if k.strip().isdigit() else k.strip()): v.strip()
@@ -605,6 +615,7 @@ class Qwen25VLPy(Engine):
             self._proc = AutoProcessor.from_pretrained(self.model_id)
             cfg = getattr(self._model, "config", None)
             self._revision = getattr(cfg, "_commit_hash", None) or "unknown"
+            self._attn_resolved = getattr(cfg, "_attn_implementation", None) or self.attn
         if not self._warmed:
             # Throwaway generation: pays lazy kernel compile and any first-call
             # allocator growth, neither of which is steady-state page cost.
@@ -656,6 +667,7 @@ class Qwen25VLPy(Engine):
             "device": str(self._device),
             "device_map": self.device_map or None,
             "device_map_placements": self._placements or None,
+            "attn_implementation": self._attn_resolved,
             "prompt": self.PROMPT,
             "max_new_tokens": self.max_new_tokens,
             "do_sample": False,
@@ -683,6 +695,7 @@ class Qwen25VLPy(Engine):
             "device_map": self.device_map or None,
             "device_map_placements": self._placements or None,
             "max_memory": self.max_memory or None,
+            "attn_implementation": self._attn_resolved,
             "hardware": hardware,
             "torch": torch.__version__,
             "transformers": transformers.__version__,
@@ -780,7 +793,8 @@ def build_engines(args) -> list[Engine]:
                                   max_new_tokens=args.qwen_max_new_tokens,
                                   transcripts=args.qwen_transcripts,
                                   device_map=args.qwen_device_map,
-                                  max_memory=args.qwen_max_memory))
+                                  max_memory=args.qwen_max_memory,
+                                  attn=args.qwen_attn))
 
     def model(name: str) -> Path | None:
         return (md / name) if md else None
@@ -826,6 +840,9 @@ def main() -> int:
                          "(the 3B ships under a research licence)")
     ap.add_argument("--qwen-dtype", default="bfloat16")
     ap.add_argument("--qwen-device", default="auto")
+    ap.add_argument("--qwen-attn", default="sdpa",
+                    help="attention implementation; eager materialises the full "
+                         "score matrix and OOMs the vision tower on dense pages")
     ap.add_argument("--qwen-max-memory", default="",
                     help="per-device weight budget for accelerate, e.g. "
                          "'0=9GiB,1=13GiB'; reserves activation headroom on the "
