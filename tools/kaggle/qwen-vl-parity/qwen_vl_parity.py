@@ -12,9 +12,11 @@ vision tokens both fit; the run would be measuring swap.  Quality (CER/WER)
 transfers across hosts, timing does not — the harness JSON records the hardware
 and the numbers from this kernel must never be quoted next to Mac timings.
 
-Placement is handed to accelerate (`--qwen-device-map auto`) because Kaggle
-hands out either one 16 GB card or two 15 GB cards at random and only the
-sharded arrangement fits on both.  dtype follows the hardware: bf16 needs
+Placement is handed to accelerate because Kaggle hands out either one 16 GB card
+or two 15 GB cards at random and only the sharded arrangement fits on both; on a
+multi-GPU draw it uses the mode that keeps device 0 clear of weights, since that
+is where the inputs, the vision activations and the prefill logits all land.
+dtype follows the hardware: bf16 needs
 compute capability >= 8.0, and the cards here are older than that, so the run
 records whichever it actually used rather than claiming bf16.
 
@@ -187,24 +189,19 @@ if token_dir is not None:
 print("=" * 70)
 print("Step 3: parity runs (sequential — one heavy process at a time)")
 print("=" * 70)
-# accelerate fills device 0 with weights before moving to device 1, and the
-# inputs land on device 0 too, so the busiest device ends up with the least free
-# memory.  Measured on 2x T4: a full page asked for 3.98 GiB against 2.26 GiB
-# free on device 0 while device 1 sat half empty.  Cap the *weight* budget per
-# device so the activation headroom exists where it is needed; the synthetic
-# corpus never noticed, only the dense CC0 scans did.
+# Placement, sized from measured failures rather than guessed.  accelerate's
+# "auto" fills device 0 with weights first — and the inputs, the vision tower's
+# activations and the prefill logits all land on device 0 too, so the busiest
+# device ends up with the least free memory.  Measured on 2x T4, dense CC0 scans
+# (~4.8 Mpix, ~6k vision patches) died there twice: first a 3.98 GiB vision
+# activation against 2.26 GiB free, then a 1.02 GiB prefill allocation against
+# 0.5 GiB free.  Hand-capping the per-device weight budget only moved the
+# failure later.  "balanced_low_0" is the placement mode for this exact shape —
+# it deliberately keeps device 0 as empty of weights as possible because that is
+# where the transient tensors live.
+device_map = "balanced_low_0" if n_gpu > 1 else "auto"
 max_memory = ""
-if n_gpu > 1:
-    # Sized from the measured peak, not guessed.  A 4.8 Mpix scan (1920x2518,
-    # ~6k vision patches before merging) asks for a single 4.07 GiB activation
-    # on top of ~3 GiB already live in the vision tower.  5 GiB of headroom was
-    # not enough — those two pages still OOM'd with 2.4 GiB free — so reserve 8.
-    # Weights need 15.45 GiB total and 6+13 = 19 still holds them.
-    head = 8.0  # GiB of activation headroom to keep free on the input device
-    max_memory = ",".join(
-        f"{i}={int(max(vram[i] - (head if i == 0 else 1.0), 4.0))}GiB"
-        for i in range(n_gpu))
-    print(f"max_memory={max_memory}")
+print(f"device_map={device_map}")
 
 results = {}
 for corpus, images in (("synth", synth_local), ("cc0", cc0)):
@@ -215,7 +212,7 @@ for corpus, images in (("synth", synth_local), ("cc0", cc0)):
         sys.executable, str(REPO / "tests" / "ocr_external_parity.py"),
         "--images", str(images), "--require-truth", "--repeats", "1",
         "--qwen", "--qwen-model", MODEL,
-        "--qwen-dtype", dtype, "--qwen-device-map", "auto",
+        "--qwen-dtype", dtype, "--qwen-device-map", device_map,
         *(["--qwen-max-memory", max_memory] if max_memory else []),
         "--qwen-transcripts", str(gold),
         "--hardware", hardware,
