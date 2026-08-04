@@ -26,6 +26,27 @@
 
 namespace {
 
+// setenv/unsetenv are POSIX; MSVC has _putenv_s, where an empty value removes
+// the variable. Same shape as the helpers in test_dbnet_diff / test_ocr_pipeline_pool.
+// Consequence for the "empty is off" case below: Windows cannot hold an
+// empty-valued variable at all, so there it degenerates into the unset case.
+// Both must be off, so the check is still meaningful — just weaker on Windows.
+void set_env(const char * name, const char * value) {
+#ifdef _WIN32
+    _putenv_s(name, value);
+#else
+    setenv(name, value, 1);
+#endif
+}
+
+void unset_env(const char * name) {
+#ifdef _WIN32
+    _putenv_s(name, "");
+#else
+    unsetenv(name);
+#endif
+}
+
 int failures = 0;
 
 void check(bool ok, const char * what) {
@@ -54,16 +75,16 @@ bool roundtrip(const std::string & comment, int & w, int & h) {
 int main() {
     std::printf("Art. 50(2) opt-in marking\n");
 
-    unsetenv("CRISPEMBED_MARK_GENERATED");
+    unset_env("CRISPEMBED_MARK_GENERATED");
     check(!core_prov::marking_enabled(), "disabled when the variable is unset");
     check(core_prov::netpbm_comment("esrgan-sr").empty(), "emits nothing when disabled");
 
-    setenv("CRISPEMBED_MARK_GENERATED", "0", 1);
+    set_env("CRISPEMBED_MARK_GENERATED", "0");
     check(!core_prov::marking_enabled(), "\"0\" is off, not merely 'set'");
-    setenv("CRISPEMBED_MARK_GENERATED", "", 1);
+    set_env("CRISPEMBED_MARK_GENERATED", "");
     check(!core_prov::marking_enabled(), "empty is off");
 
-    setenv("CRISPEMBED_MARK_GENERATED", "1", 1);
+    set_env("CRISPEMBED_MARK_GENERATED", "1");
     check(core_prov::marking_enabled(), "enabled when set");
 
     const std::string c = core_prov::netpbm_comment("esrgan-sr");
@@ -85,7 +106,7 @@ int main() {
     int w = 0, h = 0;
     check(roundtrip(c, w, h), "marked PPM decodes byte-identically via stb_image");
 
-    unsetenv("CRISPEMBED_MARK_GENERATED");
+    unset_env("CRISPEMBED_MARK_GENERATED");
     check(roundtrip(core_prov::netpbm_comment("esrgan-sr"), w, h), "unmarked PPM still decodes");
 
     if (failures) {

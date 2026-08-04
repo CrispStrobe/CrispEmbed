@@ -4,6 +4,35 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — Windows CI unbroken (`build.yml` windows-x86_64)
+
+`build.yml`'s windows leg had been red on every push for the day. Three
+independent Windows-portability breaks, all from work that only ever built on
+Linux/macOS:
+
+- **`<windows.h>`'s `min`/`max` macros.** Any TU that pulls windows.h in
+  transitively turns `std::min(a, b)` into `std::((a) < (b) ? ...)` — MSVC
+  C2589 — and then cascades into unrelated-looking errors many lines away
+  (`'ocr_crop::extract_quad': function does not take 7 arguments`,
+  `'b': references must be initialized` on a range-for, `'hypot': no
+  overloaded function takes 1 arguments`). All of those were one macro in
+  `ocr_orchestrator.cpp`'s crop loop. Fixed globally with `-DNOMINMAX`
+  alongside the existing `_USE_MATH_DEFINES` in the MSVC block; nothing in the
+  tree relies on the macros (checked — every bare `min(`/`max(` is in a
+  comment).
+- **`setenv` in `src/ocr_orchestrator.cpp`.** POSIX-only, added by the
+  PP-OCRv6 one-shot CPU-routing work. Now `set_env_if_unset()`: `_putenv_s`
+  on Windows behind a presence check, which is what `overwrite=0` meant.
+- **`setenv`/`unsetenv`/`mkstemp` in `test_image_provenance` and
+  `test_provenance_marking`** — the two model-free tests `build.yml` runs on
+  every push. Env access now uses the `#ifdef _WIN32 _putenv_s` helper the
+  other tests already carry; the temp file uses `core_tmp::make_private()`,
+  the project's one portable "created by us, unpredictable name" helper.
+  Caveat recorded in the test: Windows cannot hold an empty-valued env var, so
+  the "empty is off" check degenerates to the unset case there.
+
+---
+
 ## August 4, 2026 — release artifacts pinned to a fixed CPU baseline (#41)
 
 **Reported:** v0.16.1's `crispembed-windows-x86_64.zip` (cpu) died with
