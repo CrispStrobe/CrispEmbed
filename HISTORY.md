@@ -4,6 +4,72 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — every Linux tarball was unlaunchable (SubtitleEdit#13205)
+
+**Reported** (via Subtitle Edit, which downloads our prebuilt binaries):
+`crispembed-server` exits with code 127 and prints nothing, on EndeavourOS and
+on Linux Lite. PaddleOCR standalone works on the same machine. The
+`Cannot load libcuda.so.1` line in the terminal is unrelated — that is the
+host app probing hardware decoders at startup.
+
+**Cause.** Exit 127 from a dynamically-linked binary is the loader failing to
+resolve a library; the process dies before `main()`, so nothing of ours can
+print. Verified by parsing the dynamic section of the shipped v0.17.0
+artifacts:
+
+```
+crispembed-server -> libggml.so.0      (bundled, RUNPATH $ORIGIN)
+libggml.so.0      -> libggml-blas.so.0 (bundled)
+libggml-blas.so.0 -> libopenblas.so.0  <-- not in the archive
+```
+
+`-DGGML_BLAS=ON -DGGML_BLAS_VENDOR=OpenBLAS` on the Linux release legs made
+OpenBLAS a hard link-time dependency that the tarball never carried. Both
+`crispembed-linux-x86_64.tar.gz` and `crispembed-linux-arm64.tar.gz` were
+affected, in every release — anyone without OpenBLAS already installed could
+never start it. The workflow apt-installed `libopenblas-dev` so the CMake BLAS
+probe would succeed, so the runner always had the library and the artifact
+never did: the failure could not be reached from CI by construction. Same
+shape as #41.
+
+It was also buying nothing: this repo's own `PERFORMANCE.md` "BLAS
+Acceleration" table measures OpenBLAS at 0.9–1.0x on these models, and
+`LEARNINGS.md` already said BLAS is minimal-benefit here because quantized
+kernels use ggml's SIMD paths. The workflow comment justifying it ("big
+matmuls of large encoders") was never measured.
+
+**Fixed:**
+
+- Linux release legs (x86_64 and arm64) now build `-DGGML_BLAS=OFF`.
+  LLAMAFILE's tinyBLAS stays on for x86_64 and needs no external library.
+  macOS keeps `GGML_BLAS_VENDOR=Apple` — Accelerate is a system framework.
+- `libopenblas-dev` removed from the Linux build deps. A re-enabled
+  `GGML_BLAS` now fails loudly at configure time on CI instead of quietly
+  producing a tarball that exits 127 on every user's machine.
+- New `scripts/check-bundled-deps.py`, run on the staged `pkg/` of every Linux
+  leg. It parses each ELF's dynamic section and fails if a `DT_NEEDED` entry is
+  neither bundled nor part of a base glibc system, and reports the glibc floor.
+  `libgomp.so.1` is deliberately not treated as base-system.
+- `release.yml` gains `workflow_dispatch`, with all seven publish steps guarded
+  on `startsWith(github.ref, 'refs/tags/')`. Previously the only way to see a
+  packaged artifact was to publish a release, which is why nobody looked.
+
+Verified by running the new guard against the actual published v0.17.0
+tarballs: it flags `libggml-blas.so.0.10.2 needs libopenblas.so.0` on both
+architectures and passes everything else.
+
+**Still open:** the tarballs are built on Ubuntu 24.04 and require glibc ≥ 2.38
+/ GLIBCXX ≥ 3.4.32, so they will not start on Ubuntu 22.04 or Debian 12 even
+with OpenBLAS installed. That is a second, independent reason a user can see a
+startup failure. Already recorded for the wheels in `python/pyproject.toml`;
+the fix for both is a manylinux-container build.
+
+**Unrelated observation:** v0.17.0 published no
+`crispembed-linux-x86_64-cuda.tar.gz` or `crispembed-windows-x86_64-cuda.zip` —
+both CUDA legs appear to have failed. Worth a look before the next tag.
+
+---
+
 ## August 4, 2026 — a HuggingFace rate limit was being reported as pin drift
 
 `main-health`'s "Verify model SHA-256 pins are current" step went red with

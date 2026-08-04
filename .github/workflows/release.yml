@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - 'v*'
+  # Dry run: build and inspect the real release artifacts without cutting a
+  # tag. Every publish step below is guarded on refs/tags/, so a dispatch
+  # run uploads workflow artifacts only and creates no GitHub release.
+  # Added because SubtitleEdit#13205 (an unbundled libopenblas.so.0 that
+  # made every Linux tarball exit 127) was only observable in the packaged
+  # artifact, and the only way to produce one was to publish a release.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -35,17 +42,32 @@ jobs:
           # The `Verify portable CPU baseline` step below enforces it so this
           # cannot silently regress again.
           #
-          # BLAS posture matches CrispASR's: ggml-blas backend (OpenBLAS
-          # vendor) for the big matmuls of large encoders (bge-m3,
-          # multilingual-e5-large) + LLAMAFILE's tinyBLAS for the small
-          # matmuls of MiniLM-class encoders. Both are enabled; ggml picks
-          # per call at runtime.
+          # ── No OpenBLAS in the Linux tarballs (SubtitleEdit#13205) ──────
+          # GGML_BLAS=ON gives libggml-blas.so a hard DT_NEEDED on
+          # libopenblas.so.0, which the archive does not ship and which is not
+          # installed by default on most distros. The loader then fails before
+          # main(), so crispembed-server dies with exit code 127 and prints
+          # nothing — reported against EndeavourOS and Linux Lite, and it
+          # affected every Linux user of every release: the runner had
+          # libopenblas-dev installed, so it could only ever fail off-CI.
+          #
+          # It also bought nothing measurable. This repo's own numbers
+          # (PERFORMANCE.md "BLAS Acceleration") put OpenBLAS at 0.9-1.0x —
+          # quantized kernels use ggml's SIMD paths, not BLAS — and
+          # LEARNINGS.md already states BLAS is minimal-benefit here. So the
+          # fix is to drop the dependency, not to bundle it. LLAMAFILE's
+          # tinyBLAS stays on and needs no external library.
+          #
+          # If large-encoder BLAS (bge-m3, multilingual-e5-large — the case
+          # the old comment claimed and never measured) is ever shown to win,
+          # bundle libopenblas.so.0 + its deps into pkg/ rather than
+          # reintroducing an unbundled hard dependency. The
+          # `Verify bundled dependencies` step below enforces that.
           - name: linux-x86_64
             os: ubuntu-latest
             cmake_args: >-
               -DGGML_NATIVE=OFF
-              -DGGML_BLAS=ON
-              -DGGML_BLAS_VENDOR=OpenBLAS
+              -DGGML_BLAS=OFF
               -DGGML_LLAMAFILE=ON
             binaries: crispembed crispembed-server crispembed-quantize
             lib: libcrispembed.so
@@ -53,10 +75,11 @@ jobs:
 
           - name: linux-arm64
             os: ubuntu-24.04-arm
-            # OpenBLAS has aarch64 builds in Ubuntu apt; faster than the
-            # default NEON path for large matmuls. Keep LLAMAFILE off on
-            # arm64 — its tinyBLAS x86 SIMD paths don't have NEON parity,
-            # and stock ggml-cpu's NEON path is already well-tuned.
+            # BLAS off for the same reason as the x86_64 leg: the arm64
+            # tarball carried the identical unbundled libopenblas.so.0
+            # dependency and was equally unlaunchable off-CI. Keep LLAMAFILE
+            # off on arm64 too — its tinyBLAS x86 SIMD paths don't have NEON
+            # parity, and stock ggml-cpu's NEON path is already well-tuned.
             #
             # GGML_CPU_ARM_ARCH pins what -mcpu=native was already resolving
             # to on the Neoverse-N1 runners (armv8.2-a + FP16 + dotprod), so
@@ -67,8 +90,7 @@ jobs:
             cmake_args: >-
               -DGGML_NATIVE=OFF
               -DGGML_CPU_ARM_ARCH=armv8.2-a+fp16+dotprod
-              -DGGML_BLAS=ON
-              -DGGML_BLAS_VENDOR=OpenBLAS
+              -DGGML_BLAS=OFF
               -DGGML_LLAMAFILE=OFF
             binaries: crispembed crispembed-server crispembed-quantize
             lib: libcrispembed.so
@@ -110,11 +132,16 @@ jobs:
           submodules: recursive
 
       - name: Install build deps (Linux)
-        # OpenBLAS must be installed BEFORE cmake configure so the
-        # GGML_BLAS=ON probe finds it. patchelf is bundled here too
-        # even though it's only used at package time — saves a step.
+        # patchelf only — used at package time to rewrite RUNPATH to $ORIGIN.
+        #
+        # libopenblas-dev is deliberately NOT installed any more. It used to be,
+        # so the GGML_BLAS=ON probe would succeed; the effect was that the
+        # runner could link something the shipped archive did not carry
+        # (SubtitleEdit#13205). With it absent, a re-enabled GGML_BLAS fails
+        # loudly at configure time on CI instead of quietly producing a tarball
+        # that exits 127 on every user's machine.
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y patchelf libopenblas-dev
+        run: sudo apt-get update && sudo apt-get install -y patchelf
 
       - name: Configure
         run: >
@@ -233,6 +260,16 @@ jobs:
 
           tar -czf ${{ matrix.archive }} -C pkg .
 
+      # Every DT_NEEDED entry must be either bundled in pkg/ or part of a base
+      # glibc system. An unbundled one makes the loader fail before main(), so
+      # the binary exits 127 having printed nothing — SubtitleEdit#13205, where
+      # libggml-blas.so.0 needed libopenblas.so.0 that the archive never
+      # shipped. The runner has it installed, so this can only be caught by
+      # inspecting the package, never by running it here.
+      - name: Verify bundled dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: python3 scripts/check-bundled-deps.py pkg
+
       - name: Package (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -277,6 +314,7 @@ jobs:
           path: ${{ matrix.archive }}
 
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -374,6 +412,7 @@ jobs:
           path: crispembed-linux-x86_64-cuda.tar.gz
 
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -511,6 +550,7 @@ jobs:
           path: crispembed-windows-x86_64-cuda.zip
 
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -590,6 +630,7 @@ jobs:
           path: crispembed-windows-x86_64-vulkan.zip
 
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -629,6 +670,7 @@ jobs:
           path: crispembed-android-${{ matrix.abi }}.tar.gz
 
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -670,6 +712,7 @@ jobs:
           path: crispembed-ios-arm64.tar.gz
 
       - name: Upload to release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}
@@ -704,6 +747,10 @@ jobs:
           path: dist/
 
       - name: Create release
+        # Tag pushes only. A workflow_dispatch dry run must never publish —
+        # github.ref_name is the BRANCH there, so without this it would cut a
+        # release named after the branch.
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ github.ref_name }}

@@ -142,6 +142,32 @@ No release artifact uses AVX-512 or AMX: no current Intel consumer CPU has
 them. On a pre-AVX2 CPU, build from source with `-DGGML_NATIVE=OFF
 -DGGML_AVX2=OFF -DGGML_AVX=OFF` (much slower, but it runs).
 
+### Linux runtime requirements
+
+The Linux tarballs are self-contained apart from the base C/C++ runtime. They
+need only `libc`, `libm`, `libstdc++`, `libgcc_s` and the loader — no BLAS, no
+OpenMP, nothing to install. `scripts/check-bundled-deps.py` enforces this at
+packaging time:
+
+```bash
+python scripts/check-bundled-deps.py pkg    # every DT_NEEDED bundled or base-system
+```
+
+That guard exists because it was not always true: up to and including v0.17.0,
+`libggml-blas.so.0` carried a hard dependency on `libopenblas.so.0` that the
+archive never shipped, so `crispembed-server` died in the dynamic loader with
+**exit code 127 and no output** on any machine without OpenBLAS installed
+(SubtitleEdit#13205). On an affected release the workaround is
+`sudo apt install libopenblas0` / `sudo pacman -S openblas`.
+
+**glibc floor:** the tarballs are built on Ubuntu 24.04 and require
+**glibc ≥ 2.38** and **GLIBCXX ≥ 3.4.32**. They run on Ubuntu 24.04+,
+Debian 13+, RHEL/EL 9+ and current Arch, but *not* on Ubuntu 22.04 or
+Debian 12, where they fail to start for this separate reason. Build from
+source there. (Same floor as the Python wheels — see the note in
+`python/pyproject.toml`; lowering it means building inside a manylinux
+container.)
+
 ### Mobile & browser
 
 ```bash
