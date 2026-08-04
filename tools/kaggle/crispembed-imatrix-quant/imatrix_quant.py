@@ -408,38 +408,82 @@ QSPECS = [
     ("iq4_xs", True,  "{prefix}-iq4_xs.gguf"),
 ]
 
-_CALIB_FB = [
-    "The quick brown fox jumps over the lazy dog.",
-    "Machine learning models transform raw text into dense vector representations.",
-    "def fibonacci(n): return n if n < 2 else fibonacci(n-1) + fibonacci(n-2)",
-    "Quarterly revenue grew 12% year over year, beating analyst expectations.",
-    "Gravitational waves were first directly detected by LIGO in 2015.",
-    "In distributed systems, consensus protocols like Raft ensure consistency.",
-    "Photosynthesis converts carbon dioxide and water into glucose and oxygen.",
-    "A binary search tree keeps keys in sorted order for O(log n) lookup.",
-    "Neural networks learn hierarchical features through backpropagation.",
-    "Cache invalidation is one of the hardest problems in computer science.",
+# q8_0 is normally only an A/B reference, but for the F2LLM-v2 family it is the
+# SHIPPED default and 0.6B's is known-soft (T19-E1: cos 0.9909 with +3.8% norm
+# inflation) — so that family also gets a q8_0+imatrix arm.
+QSPECS_Q8IM = [
+    ("q8_0",   False, None),
+    ("q8_0",   True,  None),
+    ("q4_k",   False, None),
+    ("q4_k",   True,  "{prefix}-q4_k-imatrix.gguf"),
+    ("iq4_xs", True,  "{prefix}-iq4_xs.gguf"),
 ]
-_EVAL_FB = [
-    "A large language model can summarize documents and answer questions.",
-    "The stock market rallied after the earnings report was released.",
-    "import numpy as np; a = np.zeros((3, 3)); a[1, 1] = 1.0",
-    "A hash map provides average constant-time insertion and lookup.",
-    "Our return policy allows exchanges within thirty days of purchase.",
-]
+for _m in ("f2llm-v2-80m", "f2llm-v2-160m", "f2llm-v2-330m"):
+    OVERRIDES[_m] = {"quants": QSPECS_Q8IM}
+
+# f2llm-v2-0.6b ALREADY ships -q4_k-imatrix.gguf / -iq4_xs.gguf from the earlier
+# batch — and `examples/cli/model_hashes.h` PINS their SHA256. Overwriting them
+# would break the pin for every existing user, so this re-calibration uploads
+# under "-c2" names ("c2" = second-generation calibration corpus: German + the
+# model's own query prompt + newline-bearing text, vs the 10 English one-liners
+# the first run silently fell back to). Promotion is the coordinator's call.
+OVERRIDES["f2llm-v2-0.6b"] = {
+    "meta_prefix": "f2llm-v2-0.6b-c2",
+    "quants": [
+        ("q8_0",   False, None),
+        ("q8_0",   True,  "{prefix}-q8_0-imatrix.gguf"),
+        ("q4_k",   False, None),
+        ("q4_k",   True,  "{prefix}-q4_k-imatrix-c2.gguf"),
+        ("iq4_xs", True,  "{prefix}-iq4_xs-c2.gguf"),
+    ],
+}
 
 
-def read_corpus(name, fallback):
-    p = Path(__file__).resolve().parent / name
-    if p.exists():
-        return [l.strip() for l in p.read_text().splitlines() if l.strip()]
-    return fallback
+# Corpus loading. A Kaggle *script* kernel ships ONLY its code_file — bundled
+# sibling files are NOT readable at runtime (kaggle_usage #26/#19), so the old
+# `Path(__file__).parent / "calib_corpus.txt"` lookup ALWAYS missed on Kaggle and
+# every imatrix quant shipped so far was silently calibrated on the 10-sentence
+# English `_CALIB_FB` fallback (visible as "calib=10" in the uploaded A/B
+# summaries). Corpora are therefore read from the CLONED repo and a miss is FATAL.
+CORPUS_DIR = None      # set by main() to <clone>/tools/kaggle/crispembed-imatrix-quant
+
+def load_corpus(stem):
+    """Load `<stem>.jsonl` (rows {"role","text"}) from the cloned repo; fall back
+    to the legacy line-per-text `<stem>.txt` (role "doc"). Raises if neither
+    exists — a silent fallback is what produced the mis-calibrated batch."""
+    if CORPUS_DIR is None:
+        raise RuntimeError("CORPUS_DIR not set — call after the repo clone")
+    j = CORPUS_DIR / f"{stem}.jsonl"
+    if j.exists():
+        rows = [json.loads(l) for l in j.read_text(encoding="utf-8").splitlines() if l.strip()]
+        return [(r.get("role", "doc"), r["text"]) for r in rows if r.get("text")]
+    t = CORPUS_DIR / f"{stem}.txt"
+    if t.exists():
+        return [("doc", l.strip()) for l in t.read_text(encoding="utf-8").splitlines() if l.strip()]
+    raise RuntimeError(f"no corpus {stem}.jsonl/.txt under {CORPUS_DIR} — refusing "
+                       f"to calibrate on a fallback (that is the bug this fixes)")
 
 
-def embed(cli, model, texts):
+def split_roles(rows):
+    """(queries, docs). Query rows are embedded through the model's OWN query
+    prompt (the CLI auto-prefix: F2LLM's instruction prompt, arctic-v2's
+    "query: "); everything else is embedded with the prefix explicitly OFF,
+    because documents take no prefix in every family we ship."""
+    q = [t for role, t in rows if role.startswith("query")]
+    d = [t for role, t in rows if not role.startswith("query")]
+    return q, d
+
+
+def embed(cli, model, texts, as_query=False):
+    """Embed `texts`. as_query=False forces `--prefix ""` (auto-prefix OFF);
+    as_query=True leaves the CLI's model-derived query prefix in place."""
+    if not texts:
+        return [], 0.0
+    args = [str(cli), "-m", str(model), "--json"]
+    if not as_query:
+        args += ["--prefix", ""]
     t0 = time.time()
-    r = subprocess.run([str(cli), "-m", str(model), "--json", *texts],
-                       capture_output=True, text=True)
+    r = subprocess.run(args + list(texts), capture_output=True, text=True)
     dt = time.time() - t0
     if r.returncode != 0:
         raise RuntimeError(f"embed failed for {model}:\n{r.stderr[-1500:]}")
@@ -447,13 +491,37 @@ def embed(cli, model, texts):
     return [[float(x) for x in o["embedding"]] for o in data if o.get("embedding")], dt
 
 
-def mean_cos(a, b):
-    def cos(u, v):
-        d = sum(x*y for x, y in zip(u, v))
-        nu = math.sqrt(sum(x*x for x in u)); nv = math.sqrt(sum(y*y for y in v))
-        return d/(nu*nv) if nu and nv else 0.0
+def _norm(u):
+    return math.sqrt(sum(x * x for x in u))
+
+
+def _cos(u, v):
+    d = sum(x * y for x, y in zip(u, v))
+    nu, nv = _norm(u), _norm(v)
+    return d / (nu * nv) if nu and nv else 0.0
+
+
+def cos_stats(a, b):
+    """CONTINUOUS metrics, per HARD RULE #2b + the imatrix lesson that a
+    thresholded/mean-only score cannot see quant quality: per-text cosine
+    min/mean/median AND the |quant|/|gold| norm-ratio distribution (cosine is
+    scale-blind — the f2llm-0.6b q8_0 +3.8% norm inflation is invisible to it)."""
     n = min(len(a), len(b))
-    return (sum(cos(a[i], b[i]) for i in range(n)) / n if n else float("nan")), n
+    if not n:
+        return {"n": 0, "cos_min": float("nan"), "cos_mean": float("nan"),
+                "cos_med": float("nan"), "nr_mean": float("nan"),
+                "nr_min": float("nan"), "nr_max": float("nan")}
+    cs = sorted(_cos(a[i], b[i]) for i in range(n))
+    nrs = sorted((_norm(a[i]) / _norm(b[i])) if _norm(b[i]) else float("nan")
+                 for i in range(n))
+    med = cs[n // 2] if n % 2 else 0.5 * (cs[n // 2 - 1] + cs[n // 2])
+    return {"n": n, "cos_min": cs[0], "cos_mean": sum(cs) / n, "cos_med": med,
+            "nr_mean": sum(nrs) / n, "nr_min": nrs[0], "nr_max": nrs[-1]}
+
+
+def mean_cos(a, b):
+    s = cos_stats(a, b)
+    return s["cos_mean"], s["n"]
 
 
 def rerank_scores(cli, model, query, docs):
@@ -620,6 +688,17 @@ def process(name, cli, quant, api, calib, eval_):
 
     mode = MODE.get(name, "embed")     # "embed" (pooled) / "rerank" (cross-encoder) / "ner"
     metric = {"rerank": "tau", "ner": "f1"}.get(mode, "cos")
+    # Corpora arrive as (role, text); the non-embed modes want plain text lists.
+    calib_q, calib_d = split_roles(calib)
+    eval_q, eval_d = split_roles(eval_)
+    calib_txt = [t for _, t in calib]
+    eval_txt = [t for _, t in eval_]
+
+    def embed_eval(model):
+        """Docs (prefix OFF) then queries (model's own query prompt) — one fixed
+        order so every arm's vectors line up index-for-index."""
+        return embed(cli, model, eval_d, as_query=False)[0] + \
+               embed(cli, model, eval_q, as_query=True)[0]
     imat = stage / f"{prefix}.imatrix"; imat.unlink(missing_ok=True)
     env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=str(imat))
     with kh.build_heartbeat(f"{name}.calibrate"):
@@ -654,7 +733,7 @@ def process(name, cli, quant, api, calib, eval_):
                 outlen += len(cal.stdout); err = cal.stderr
         elif mode == "sparse":
             outlen, err = 0, ""
-            for t in calib:
+            for t in calib_txt:
                 cal = subprocess.run([str(cli), "-m", str(csrc), "--json", "--sparse", t],
                                      env=env, capture_output=True, text=True)
                 if cal.returncode != 0:
@@ -662,11 +741,23 @@ def process(name, cli, quant, api, calib, eval_):
                                        f"stderr tail:\n{cal.stderr[-1200:]}")
                 outlen += len(cal.stdout); err = cal.stderr
         else:
-            cal = subprocess.run([str(cli), "-m", str(csrc), "--json", *calib],
-                                 env=env, capture_output=True, text=True)
-            if cal.returncode != 0:
-                raise RuntimeError(f"calibration rc={cal.returncode} for {name}; stderr tail:\n{cal.stderr[-1200:]}")
-            outlen, err = len(cal.stdout), cal.stderr
+            # TWO passes so the collected activations cover both halves of a real
+            # retrieval workload: documents with the prefix OFF, queries through
+            # the model's own query prompt. Both write to the same
+            # CRISPEMBED_IMATRIX_OUT — the collector merges an existing file on
+            # flush, so statistics accumulate across invocations.
+            outlen, err = 0, ""
+            for texts, as_q in ((calib_d, False), (calib_q, True)):
+                if not texts:
+                    continue
+                args = [str(cli), "-m", str(csrc), "--json"]
+                if not as_q:
+                    args += ["--prefix", ""]
+                cal = subprocess.run(args + texts, env=env, capture_output=True, text=True)
+                if cal.returncode != 0:
+                    raise RuntimeError(f"calibration (query={as_q}) rc={cal.returncode} for "
+                                       f"{name}; stderr tail:\n{cal.stderr[-1200:]}")
+                outlen += len(cal.stdout); err = cal.stderr
     # Fail LOUDLY if calibration didn't produce the imatrix — otherwise the quantizer
     # silently falls back to NON-imatrix and uploads mislabeled "-imatrix" quants
     # (observed on qwen3-embed-8b: clean_exit skipped the atexit flush). Surface stderr.
@@ -682,15 +773,16 @@ def process(name, cli, quant, api, calib, eval_):
     elif mode == "colbert":
         gold = [colbert_vecs(cli, csrc, t) for t in COLBERT_EVAL]
     elif mode == "sparse":
-        gold = [(t, sparse_vec(cli, csrc, t)) for t in eval_]
+        gold = [(t, sparse_vec(cli, csrc, t)) for t in eval_txt]
     else:
-        gold = embed(cli, csrc, eval_)[0]
+        gold = embed_eval(csrc)
 
     report = []
     for qtype, use_im, up_tmpl in quants:
         if big and qtype == "q8_0" and not use_im:
             continue  # q8_0 IS the gold for big models — no A/B needed
         tag = f"{qtype}{'-im' if use_im else ''}"
+        stats = {}
         out = stage / f"{prefix}-{tag}.gguf"
         cmd = [str(quant), str(qsrc), str(out), qtype] + (["--imatrix", str(imat)] if use_im else [])
         with kh.build_heartbeat(f"{name}.quant.{tag}"):
@@ -708,12 +800,18 @@ def process(name, cli, quant, api, calib, eval_):
             val = sparse_ab(cli, out, gold)           # val = mean sparse-vector cosine
             extra = ""
         else:
-            vecs, _ = embed(cli, out, eval_)
-            val, _ = mean_cos(vecs, gold); extra = ""
+            st = cos_stats(embed_eval(out), gold)
+            val = st["cos_mean"]
+            # min + median + norm-ratio alongside the mean: a mean-only score
+            # hides both the worst text and any uniform magnitude drift.
+            extra = (f" min={st['cos_min']:.6f} med={st['cos_med']:.6f}"
+                     f" normratio={st['nr_mean']:.4f} [{st['nr_min']:.4f},{st['nr_max']:.4f}]")
+            stats = st
         mb = out.stat().st_size / 1e6
         upname = up_tmpl.format(prefix=prefix) if up_tmpl else "(A/B only)"
         kh.step(f"{name}.ab.{tag}", imatrix=use_im, **{f"{metric}_vs_gold": round(val, 6)},
-                gold=goldlabel, size_mb=round(mb, 1), upload=upname)
+                gold=goldlabel, size_mb=round(mb, 1), upload=upname,
+                **({k: round(v, 6) for k, v in stats.items()} if mode == "embed" else {}))
         report.append(f"{qtype:7s} imatrix={int(use_im)}  {metric}_vs_{goldlabel}={val:.6f}{extra}  {mb:7.1f}MB  -> {upname}")
         if up_tmpl:
             with kh.build_heartbeat(f"{name}.upload.{tag}"):
@@ -724,9 +822,16 @@ def process(name, cli, quant, api, calib, eval_):
 
     calib_n = {"rerank": len(RERANK_CALIB), "ner": len(NER_CALIB), "colbert": len(COLBERT_CALIB)}.get(mode, len(calib))
     eval_n = {"rerank": len(RERANK_EVAL), "ner": len(NER_EVAL), "colbert": len(COLBERT_EVAL)}.get(mode, len(eval_))
+    mix = (f" (calib {len(calib_d)} doc + {len(calib_q)} query-prompted; "
+           f"eval {len(eval_d)} doc + {len(eval_q)} query-prompted)") if mode == "embed" else ""
     summary = (f"imatrix A/B — {name} ({hf_out}), {metric} vs {goldlabel} gold, "
-               f"n={eval_n}, calib={calib_n}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
-    summ = stage / f"{prefix}-imatrix-ab.txt"; summ.write_text(summary)
+               f"n={eval_n}, calib={calib_n}{mix}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
+    # meta_prefix lets a re-calibration publish its .imatrix / A/B summary beside
+    # (not on top of) an earlier run's — the GGUF SHAs are pinned in model_hashes.h.
+    mprefix = ov.get("meta_prefix", prefix)
+    summ = stage / f"{mprefix}-imatrix-ab.txt"; summ.write_text(summary)
+    if mprefix != prefix:
+        imat2 = stage / f"{mprefix}.imatrix"; imat.rename(imat2); imat = imat2
     for p, msg in [(summ, f"A/B summary ({metric} vs gold)"), (imat, "importance matrix (calibration)")]:
         with kh.build_heartbeat(f"{name}.upload.meta"):
             api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name,
@@ -738,11 +843,10 @@ def process(name, cli, quant, api, calib, eval_):
 
 
 def main():
+    global CORPUS_DIR
     kh.init_progress()
     token = kh.resolve_hf_token()
     kh.step("harness_ready", n_models=len(RUN), hf_token_ok=bool(token))
-    calib = read_corpus("calib_corpus.txt", _CALIB_FB)
-    eval_ = read_corpus("eval_corpus.txt", _EVAL_FB)
 
     # build crispembed-cli + crispembed-quantize (CPU; GPU attached only for internet)
     subprocess.check_call([sys.executable, "-m", "pip", "install", "--quiet",
@@ -751,6 +855,14 @@ def main():
     if not repo.exists():
         subprocess.check_call(["git", "clone", "--depth", "1", "--branch", BRANCH, REPO_URL, str(repo)])
         subprocess.check_call(["git", "-C", str(repo), "submodule", "update", "--init", "--recursive"])
+
+    # Corpora come from the CLONE, never from the push dir (kaggle_usage #26).
+    CORPUS_DIR = repo / "tools" / "kaggle" / "crispembed-imatrix-quant"
+    calib = load_corpus("calib_corpus")
+    eval_ = load_corpus("eval_corpus")
+    cq, cd = split_roles(calib)
+    kh.step("corpora", calib=len(calib), eval=len(eval_), calib_query=len(cq), calib_doc=len(cd),
+            newline_bearing=sum("\n" in t for _, t in calib), src=str(CORPUS_DIR))
     kh.install_build_toolchain()
     build = repo / "build"; build.mkdir(exist_ok=True)
     GPU = os.environ.get("CRISP_GPU", "0") != "0"

@@ -1,182 +1,246 @@
 #!/usr/bin/env python3
-"""imatrix_ab.py — A/B harness for C1 (importance-matrix quantization).
+"""imatrix_ab.py — local A/B harness for importance-matrix quantization.
 
-Measures BOTH quality and speed of imatrix vs plain quantization, treating the
-f16/f32 source model's embeddings as the gold reference. Everything runs
-serially (16 GB Mac / 8 GB VPS constraint: never load two heavy models at once).
+Treats the f16/f32 source GGUF's embeddings as gold and compares quantized arms
+against it with CONTINUOUS metrics only. A thresholded pass/fail (or a bare mean)
+cannot see imatrix quality — and cosine is scale-blind (HARD RULE #2b), so the
+norm ratio |quant|/|gold| is reported alongside it. Everything runs serially:
+one model in memory at a time (16 GB Mac / 8 GB VPS).
 
-Pipeline:
-  1. calibration : run crispembed with CRISPEMBED_IMATRIX_OUT over a calibration
-                   corpus (one process, model loaded once) -> <model>.imatrix
-  2. quant A     : crispembed-quantize <src> <out_a> <qtype>              (baseline)
-  3. quant B     : crispembed-quantize <src> <out_b> <qtype> --imatrix    (candidate)
-  4. eval        : embed a held-out corpus with src / A / B, report
-                   mean cosine(A, src) vs mean cosine(B, src), and wall-clock.
+Two modes:
 
-Accept criterion (C1): mean cos(B,src) >= mean cos(A,src) (imatrix must not
-regress; target: close part of the gap to the f16 gold).
+  pipeline (default)  calibrate -> quantize baseline -> quantize +imatrix -> A/B
+      python tools/imatrix_ab.py --cli build/crispembed \\
+          --quant build/crispembed-quantize --src model-f16.gguf --qtype q4_k
 
-Usage:
-  python tools/imatrix_ab.py --cli build/crispembed --quant build/crispembed-quantize \\
-      --src model-f16.gguf --qtype q4_k [--workdir /tmp/ab] [--keep]
+  compare             A/B already-built GGUFs (e.g. downloaded from HF) against
+                      the gold — same texts, same binary, only the GGUF varies
+      python tools/imatrix_ab.py --cli build/crispembed --src model-f16.gguf \\
+          --compare shipped-q4_k.gguf imatrix-q4_k.gguf
+
+Corpora: the role-tagged JSONL under tools/kaggle/crispembed-imatrix-quant/
+(German + English prose, the model's own query prompt, code, newline-heavy
+text). `role: query*` rows are embedded through the CLI's model-derived query
+prefix; every other row is embedded with `--prefix ""` (documents take no prefix
+in every family we ship). A missing corpus is fatal — silently falling back to a
+handful of English one-liners is the defect this harness exists to catch.
 """
-import argparse, json, os, subprocess, sys, time, math
+import argparse
+import json
+import math
+import os
+import statistics
+import subprocess
+import sys
+import time
+from pathlib import Path
 
-# Small but domain-diverse calibration corpus. For production runs, replace with
-# text resembling the target embedding domain (see PLAN.md C1).
-CALIB = [
-    "The quick brown fox jumps over the lazy dog.",
-    "Machine learning models transform raw text into dense vector representations.",
-    "def fibonacci(n): return n if n < 2 else fibonacci(n-1) + fibonacci(n-2)",
-    "The mitochondria is the powerhouse of the cell.",
-    "Quarterly revenue grew 12% year over year, beating analyst expectations.",
-    "To reset your password, click the link in the confirmation email.",
-    "The French Revolution began in 1789 and reshaped European politics.",
-    "SELECT user_id, COUNT(*) FROM orders GROUP BY user_id HAVING COUNT(*) > 5;",
-    "Preheat the oven to 200 degrees and bake the bread for 35 minutes.",
-    "Gravitational waves were first directly detected by LIGO in 2015.",
-    "The customer complained that the package arrived damaged and late.",
-    "In distributed systems, consensus protocols like Raft ensure consistency.",
-    "She walked along the beach at sunset, listening to the waves.",
-    "The GDP deflator measures the price level of all domestically produced goods.",
-    "Kubernetes orchestrates containerized workloads across a cluster of nodes.",
-    "Photosynthesis converts carbon dioxide and water into glucose and oxygen.",
-    "The novel explores themes of memory, loss, and the passage of time.",
-    "Interest rates were held steady by the central bank amid inflation concerns.",
-    "A binary search tree keeps keys in sorted order for O(log n) lookup.",
-    "The hikers reached the summit just before the storm rolled in.",
-    "Antibiotics are ineffective against viral infections such as the common cold.",
-    "The startup raised a Series B round led by a prominent venture firm.",
-    "Regular expressions match patterns of characters within strings of text.",
-    "The treaty established new trade routes between the two nations.",
-    "Neural networks learn hierarchical features through backpropagation.",
-    "The recipe calls for two cups of flour and a pinch of salt.",
-    "Climate models predict rising sea levels over the coming century.",
-    "The API returns a paginated JSON response with a cursor token.",
-    "Shakespeare wrote both comedies and tragedies during his career.",
-    "Vaccines train the immune system to recognize specific pathogens.",
-    "The bridge was engineered to withstand magnitude eight earthquakes.",
-    "Cache invalidation is one of the hardest problems in computer science.",
-]
+CORPUS_DIR = Path(__file__).resolve().parent / "kaggle" / "crispembed-imatrix-quant"
 
-# Held-out eval corpus (disjoint from CALIB).
-EVAL = [
-    "A large language model can summarize documents and answer questions.",
-    "The stock market rallied after the earnings report was released.",
-    "import numpy as np; a = np.zeros((3, 3)); a[1, 1] = 1.0",
-    "The Amazon rainforest produces a significant share of the world's oxygen.",
-    "Please find attached the invoice for the services rendered last month.",
-    "Dijkstra's algorithm finds the shortest path in a weighted graph.",
-    "The orchestra performed a symphony by Beethoven to a full house.",
-    "Enzymes act as catalysts to accelerate biochemical reactions.",
-    "The refugees were granted asylum after a lengthy legal process.",
-    "A hash map provides average constant-time insertion and lookup.",
-    "The telescope captured images of a distant spiral galaxy.",
-    "Our return policy allows exchanges within thirty days of purchase.",
+# German retrieval sanity: each case is (query, [docs]) with docs[0] the only
+# relevant one. Top-1 must be docs[0] — this catches a quant that still scores a
+# respectable cosine but has stopped RANKING correctly.
+DE_RETRIEVAL = [
+    ("Wie hoch ist der Leitzins der Europäischen Zentralbank?", [
+        "Die Europäische Zentralbank hat den Leitzins erneut angehoben, um die Inflation zu dämpfen.",
+        "Der Rhein ist die verkehrsreichste Wasserstraße Europas.",
+        "Kartoffelsalat wird mit Essig, Öl und Brühe angemacht."]),
+    ("Wie funktioniert eine Wärmepumpe?", [
+        "Eine Wärmepumpe transportiert Wärme aus der Umgebungsluft ins Heizsystem, statt sie zu erzeugen.",
+        "Der Deutsche Bundestag wird für vier Jahre gewählt.",
+        "Die Zugspitze ist der höchste Berg Deutschlands."]),
+    ("Welche Symptome hat eine Grippe?", [
+        "Eine Influenza verursacht Fieber, Husten und Gliederschmerzen.",
+        "Ein Sparplan auf einen Indexfonds gilt als kostengünstiger Einstieg.",
+        "Die Hanse prägte den Ostseehandel über Jahrhunderte."]),
+    ("Wie viel Mietkaution darf verlangt werden?", [
+        "Eine Mietkaution darf höchstens drei Nettokaltmieten betragen.",
+        "Antibiotika wirken nicht gegen Viren.",
+        "Der Wolf ist wieder in mehreren Bundesländern heimisch."]),
+    ("Wie backe ich ein Sauerteigbrot?", [
+        "Mehl, Wasser, Salz und ein Sauerteigansatz werden verknetet und über Nacht gehen gelassen.",
+        "Die Bundesnetzagentur überwacht den Wettbewerb im Strommarkt.",
+        "Gravitationswellen wurden 2015 erstmals direkt nachgewiesen."]),
 ]
 
 
-def run(cmd, env=None):
-    return subprocess.run(cmd, env=env, capture_output=True, text=True)
+def load_corpus(stem):
+    j = CORPUS_DIR / f"{stem}.jsonl"
+    if not j.exists():
+        sys.exit(f"missing corpus {j} — refusing to run on a fallback corpus")
+    rows = [json.loads(l) for l in j.read_text(encoding="utf-8").splitlines() if l.strip()]
+    return [(r.get("role", "doc"), r["text"]) for r in rows if r.get("text")]
 
 
-def embed(cli, model, texts):
-    """Return (list_of_vectors, wall_seconds). One process, model loaded once."""
+def split_roles(rows):
+    return ([t for r, t in rows if r.startswith("query")],
+            [t for r, t in rows if not r.startswith("query")])
+
+
+def embed(cli, model, texts, as_query=False):
+    """One process, model loaded once. as_query=False disables the auto prefix."""
+    if not texts:
+        return [], 0.0
+    args = [cli, "-m", str(model), "--json"]
+    if not as_query:
+        args += ["--prefix", ""]
     t0 = time.time()
-    r = run([cli, "-m", model, "--json", *texts])
+    r = subprocess.run(args + list(texts), capture_output=True, text=True)
     dt = time.time() - t0
     if r.returncode != 0:
         sys.exit(f"embed failed for {model}:\n{r.stderr[-2000:]}")
-    # crispembed --json prints a single JSON array of {"text","embedding"} objects.
-    vecs = []
     try:
         data = json.loads(r.stdout)
     except json.JSONDecodeError:
         sys.exit(f"could not parse --json output for {model}:\n{r.stdout[:500]}")
-    for obj in data:
-        emb = obj.get("embedding") if isinstance(obj, dict) else None
-        if isinstance(emb, list) and emb:
-            vecs.append([float(x) for x in emb])
-    return vecs, dt
+    return [[float(x) for x in o["embedding"]] for o in data
+            if isinstance(o, dict) and o.get("embedding")], dt
+
+
+def embed_eval(cli, model, docs, queries):
+    """Docs (prefix off) then queries (model's own prompt) — one fixed order so
+    every arm's vectors line up index-for-index with the gold."""
+    a, t1 = embed(cli, model, docs, as_query=False)
+    b, t2 = embed(cli, model, queries, as_query=True)
+    return a + b, t1 + t2
+
+
+def norm(u):
+    return math.sqrt(sum(x * x for x in u))
 
 
 def cosine(a, b):
-    dot = sum(x * y for x, y in zip(a, b))
-    na = math.sqrt(sum(x * x for x in a))
-    nb = math.sqrt(sum(y * y for y in b))
-    return dot / (na * nb) if na and nb else 0.0
+    na, nb = norm(a), norm(b)
+    return sum(x * y for x, y in zip(a, b)) / (na * nb) if na and nb else 0.0
 
 
-def mean_cos(vs_a, vs_b):
-    n = min(len(vs_a), len(vs_b))
-    if n == 0:
-        return float("nan"), 0
-    return sum(cosine(vs_a[i], vs_b[i]) for i in range(n)) / n, n
+def stats(arm, gold):
+    n = min(len(arm), len(gold))
+    if not n:
+        sys.exit("no vectors to compare — the CLI returned nothing")
+    cs = [cosine(arm[i], gold[i]) for i in range(n)]
+    nr = [norm(arm[i]) / norm(gold[i]) if norm(gold[i]) else float("nan")
+          for i in range(n)]
+    return {
+        "n": n,
+        "cos_min": min(cs), "cos_mean": sum(cs) / n, "cos_med": statistics.median(cs),
+        "nr_mean": sum(nr) / n, "nr_min": min(nr), "nr_max": max(nr),
+        "worst": min(range(n), key=lambda i: cs[i]),
+    }
+
+
+def retrieval_sanity(cli, model):
+    """5 German cases; docs[0] is the only relevant one. Returns (hits, detail)."""
+    hits, detail = 0, []
+    for q, docs in DE_RETRIEVAL:
+        qv, _ = embed(cli, model, [q], as_query=True)
+        dv, _ = embed(cli, model, docs, as_query=False)
+        if not qv or len(dv) != len(docs):
+            detail.append("EMBED-FAIL")
+            continue
+        sims = [cosine(qv[0], d) for d in dv]
+        top = max(range(len(sims)), key=lambda i: sims[i])
+        hits += top == 0
+        detail.append("/".join(f"{s:.3f}" for s in sims) + ("" if top == 0 else " <-MISS"))
+    return hits, detail
+
+
+def row(label, path, st, secs):
+    mb = os.path.getsize(str(path)) / 1e6 if os.path.exists(str(path)) else 0.0
+    return (f"  {label:<28s} {mb:7.1f} MB {secs:5.1f}s  "
+            f"cos min={st['cos_min']:.6f} mean={st['cos_mean']:.6f} med={st['cos_med']:.6f}  "
+            f"norm x{st['nr_mean']:.4f} [{st['nr_min']:.4f},{st['nr_max']:.4f}]")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cli", required=True)
-    ap.add_argument("--quant", required=True)
-    ap.add_argument("--src", required=True, help="f16/f32 source GGUF")
+    ap.add_argument("--quant", help="crispembed-quantize (pipeline mode only)")
+    ap.add_argument("--src", required=True, help="f16/f32 gold GGUF")
     ap.add_argument("--qtype", default="q4_k")
+    ap.add_argument("--compare", nargs="*", default=None,
+                    help="pre-built GGUFs to A/B against the gold (skips quantizing)")
     ap.add_argument("--workdir", default="/tmp/imatrix_ab")
-    ap.add_argument("--keep", action="store_true", help="keep intermediate GGUFs")
+    ap.add_argument("--keep", action="store_true")
+    ap.add_argument("--no-retrieval", action="store_true")
     args = ap.parse_args()
 
-    os.makedirs(args.workdir, exist_ok=True)
-    base = os.path.splitext(os.path.basename(args.src))[0]
-    imat = os.path.join(args.workdir, base + ".imatrix")
-    out_a = os.path.join(args.workdir, f"{base}-{args.qtype}.gguf")
-    out_b = os.path.join(args.workdir, f"{base}-{args.qtype}-imatrix.gguf")
+    calib = load_corpus("calib_corpus")
+    eval_ = load_corpus("eval_corpus")
+    cq, cd = split_roles(calib)
+    eq, ed = split_roles(eval_)
+    eval_order = [r for r in eval_ if not r[0].startswith("query")] + \
+                 [r for r in eval_ if r[0].startswith("query")]
+    print(f"corpus: calib {len(calib)} ({len(cd)} doc + {len(cq)} query-prompted, "
+          f"{sum(chr(10) in t for _, t in calib)} newline-bearing) | "
+          f"eval {len(eval_)} ({len(ed)} doc + {len(eq)} query-prompted)")
 
-    # 1. calibration
-    if os.path.exists(imat):
-        os.remove(imat)
-    print(f"[1/4] calibration over {len(CALIB)} texts -> {imat}")
-    env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=imat)
-    t0 = time.time()
-    r = run([args.cli, "-m", args.src, "--json", *CALIB], env=env)
-    if r.returncode != 0 or not os.path.exists(imat):
-        sys.exit(f"calibration failed:\n{r.stderr[-2000:]}")
-    print(f"      done in {time.time()-t0:.1f}s  ({os.path.getsize(imat)//1024} KB)")
+    if args.compare is not None:
+        arms = [(Path(p).name, p) for p in args.compare]
+    else:
+        if not args.quant:
+            sys.exit("--quant is required in pipeline mode")
+        os.makedirs(args.workdir, exist_ok=True)
+        base = os.path.splitext(os.path.basename(args.src))[0]
+        imat = os.path.join(args.workdir, base + ".imatrix")
+        out_a = os.path.join(args.workdir, f"{base}-{args.qtype}.gguf")
+        out_b = os.path.join(args.workdir, f"{base}-{args.qtype}-imatrix.gguf")
+        if os.path.exists(imat):
+            os.remove(imat)
+        print(f"[1/3] calibration over {len(calib)} texts -> {imat}")
+        env = dict(os.environ, CRISPEMBED_IMATRIX_OUT=imat)
+        for texts, as_q in ((cd, False), (cq, True)):
+            cmd = [args.cli, "-m", args.src, "--json"] + ([] if as_q else ["--prefix", ""])
+            r = subprocess.run(cmd + texts, env=env, capture_output=True, text=True)
+            if r.returncode != 0:
+                sys.exit(f"calibration (query={as_q}) failed:\n{r.stderr[-2000:]}")
+        # Fail loudly: a missing/empty imatrix silently degrades the "+imatrix"
+        # arm into a plain quant (clean_exit skips atexit; the collector flushes
+        # explicitly from crispembed_free).
+        if not os.path.exists(imat) or os.path.getsize(imat) == 0:
+            sys.exit(f"calibration produced NO imatrix at {imat}")
+        print(f"      {os.path.getsize(imat)//1024} KB")
+        print(f"[2/3] quantize baseline / +imatrix ({args.qtype})")
+        for out, extra in ((out_a, []), (out_b, ["--imatrix", imat])):
+            r = subprocess.run([args.quant, args.src, out, args.qtype] + extra,
+                               capture_output=True, text=True)
+            if r.returncode != 0:
+                sys.exit(f"quantize {out} failed:\n{r.stderr[-2000:]}")
+            if extra:
+                tail = [l for l in r.stdout.splitlines() if "with imatrix" in l]
+                if tail:
+                    print("      " + tail[-1].strip())
+        arms = [(f"{args.qtype} baseline", out_a), (f"{args.qtype} +imatrix", out_b)]
 
-    # 2 + 3. quantize baseline and imatrix
-    print(f"[2/4] quantize baseline  -> {out_a}")
-    r = run([args.quant, args.src, out_a, args.qtype])
-    if r.returncode != 0:
-        sys.exit(f"baseline quant failed:\n{r.stderr[-2000:]}")
-    print(f"[3/4] quantize +imatrix  -> {out_b}")
-    r = run([args.quant, args.src, out_b, args.qtype, "--imatrix", imat])
-    if r.returncode != 0:
-        sys.exit(f"imatrix quant failed:\n{r.stderr[-2000:]}")
-    n_im = [l for l in r.stdout.splitlines() if "with imatrix" in l]
-    if n_im:
-        print("      " + n_im[-1].strip())
+    print(f"[3/3] eval over {len(eval_)} held-out texts (serial)")
+    gold, t_gold = embed_eval(args.cli, args.src, ed, eq)
+    results = []
+    for label, path in arms:
+        vecs, secs = embed_eval(args.cli, path, ed, eq)
+        results.append((label, path, stats(vecs, gold), secs))
 
-    # 4. eval (serial: one model in memory at a time)
-    print(f"[4/4] eval over {len(EVAL)} held-out texts")
-    vs_src, t_src = embed(args.cli, args.src, EVAL)
-    vs_a,   t_a   = embed(args.cli, out_a, EVAL)
-    vs_b,   t_b   = embed(args.cli, out_b, EVAL)
+    print(f"\n===== A/B vs {os.path.basename(args.src)} (gold, {t_gold:.1f}s) =====")
+    for label, path, st, secs in results:
+        print(row(label, path, st, secs))
+        w = st["worst"]
+        if w < len(eval_order):
+            print(f"      worst text [{eval_order[w][0]}]: {eval_order[w][1][:70]!r}")
+    if len(results) == 2:
+        a, b = results[0][2], results[1][2]
+        print(f"  delta (arm2-arm1): cos_min {b['cos_min']-a['cos_min']:+.6f}  "
+              f"cos_mean {b['cos_mean']-a['cos_mean']:+.6f}")
 
-    cos_a, na = mean_cos(vs_a, vs_src)
-    cos_b, nb = mean_cos(vs_b, vs_src)
-    sz = lambda p: os.path.getsize(p) / 1e6
+    if not args.no_retrieval:
+        print("\n===== German retrieval sanity (top-1 must be doc[0]) =====")
+        for label, path in [("gold", args.src)] + [(l, p) for l, p, _, _ in results]:
+            hits, detail = retrieval_sanity(args.cli, path)
+            print(f"  {label:<28s} {hits}/{len(DE_RETRIEVAL)}   " + " | ".join(detail))
 
-    print("\n===== A/B RESULT (" + args.qtype + ") =====")
-    print(f"  source     {os.path.basename(args.src):40s} {sz(args.src):7.1f} MB  embed {t_src:5.2f}s")
-    print(f"  A baseline {os.path.basename(out_a):40s} {sz(out_a):7.1f} MB  embed {t_a:5.2f}s  cos(A,src)={cos_a:.6f}")
-    print(f"  B +imatrix {os.path.basename(out_b):40s} {sz(out_b):7.1f} MB  embed {t_b:5.2f}s  cos(B,src)={cos_b:.6f}")
-    print(f"  quality delta (B-A): {cos_b - cos_a:+.6f}   over n={min(na,nb)} texts")
-    verdict = "PASS (imatrix >= baseline)" if cos_b >= cos_a - 1e-6 else "REGRESSION"
-    print(f"  VERDICT: {verdict}")
-
-    if not args.keep:
-        for p in (out_a, out_b):
+    if args.compare is None and not args.keep:
+        for _, p in arms:
             if os.path.exists(p):
                 os.remove(p)
-        print("  (removed intermediate GGUFs; --keep to retain)")
+        print("\n  (removed intermediate GGUFs; --keep to retain)")
 
 
 if __name__ == "__main__":

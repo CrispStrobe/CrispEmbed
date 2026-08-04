@@ -1,0 +1,15 @@
+{
+  "id": "chr1s4/crispembed-imatrix-t19",
+  "title": "crispembed-imatrix-t19",
+  "code_file": "imatrix_t19.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "machine_shape": "NvidiaTeslaT4",
+  "competition_sources": [],
+  "dataset_sources": ["chr1s4/crispasr-hf-token", "chr1s4/crispasr-ccache"],
+  "kernel_sources": [],
+  "model_sources": []
+}
