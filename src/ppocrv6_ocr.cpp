@@ -576,12 +576,17 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     }
     const bool dw = p.groups == p.in_ch;
     const int icg = dw ? 1 : p.in_ch / p.groups;
-    // Depthwise im2col requires F16; regular convolutions stay F32 to preserve
-    // the scalar reference's accumulation precision.
-    // Keep the CPU diagnostic graph in F32 so it can be compared against the
-    // scalar reference without introducing an avoidable half-precision seam;
-    // Metal depthwise im2col still uses F16 for its supported fast path.
-    const ggml_type graph_type = dw && !ggml_backend_is_cpu(c->graph.backend) ? GGML_TYPE_F16 : GGML_TYPE_F32;
+    // Depthwise im2col requires F16 on Metal; regular convolutions stay F32.
+    // NEGATIVE RESULT (2026-08-04, do not retry blindly): making all conv
+    // residents F16 on Metal measured 33% SLOWER in an interleaved A/B
+    // (receipt recognize 3.3-3.4 s vs 2.5 s, 3/3 pairs, text identical) —
+    // these shapes hit a slower F16 conv path, so the bandwidth theory lost
+    // to the kernel choice. CRISPEMBED_PPOCRV6_GRAPH_F16=1 re-enables the
+    // experiment.
+    const bool cpu_graph = ggml_backend_is_cpu(c->graph.backend);
+    const ggml_type graph_type =
+        cpu_graph ? GGML_TYPE_F32
+                  : ((dw || std::getenv("CRISPEMBED_PPOCRV6_GRAPH_F16")) ? GGML_TYPE_F16 : GGML_TYPE_F32);
     ggml_tensor * w = pp_graph_resident_conv(c, p, graph_type);
     if (!w) {
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
@@ -658,7 +663,17 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph missing linear weights\n");
         return nullptr;
     }
-    ggml_tensor * w = pp_graph_resident(c, wt, GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
+    // Residents stay F32 by default: an interleaved A/B measured F16 conv
+    // residents 33% SLOWER on Metal for these shapes (3.3-3.4 s vs 2.5 s
+    // receipt recognize), so half-precision is not a free lunch here. The one
+    // exception worth taking: a linear weight that arrives QUANTIZED (q8_0
+    // artifact) is kept in its native type on accelerator backends —
+    // ggml's quantized mul_mat kernels are the fast path and the 18,710-class
+    // head weight is the single biggest read in the graph.
+    // CRISPEMBED_PPOCRV6_GRAPH_DEQUANT=1 restores the old upcast-everything.
+    const bool native_quant = !ggml_backend_is_cpu(c->graph.backend) && ggml_is_quantized(wt->type) &&
+                              !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEQUANT");
+    ggml_tensor * w = pp_graph_resident(c, wt, native_quant ? wt->type : GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
     if (!w) return nullptr;
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "ppocrv6 graph linear wt=%lldx%lld x=%lldx%lld\n", (long long)wt->ne[0], (long long)wt->ne[1],
@@ -1186,6 +1201,21 @@ static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vecto
                 W = std::min(W, (natural + 31) / 32 * 32);
             }
         }
+        // Width bucketing (T4/TurboOCR), DEFAULT step 64 since 2026-08-04:
+        // round the model width UP to a multiple of the step so nearby widths
+        // share one graph shape and land in the same fused batch group (the
+        // receipt drops from 12 distinct widths to 5 fused groups, recognize
+        // -11%). Rounding up only ADDS gray padding — the safe direction:
+        // trailing pad decodes to CTC blanks, unlike the shrink direction the
+        // WIDTH_FLOOR experiment takes. 25-fixture CER gate: mean 0.06408 vs
+        // 0.06410, jitter both ways (synth_00_noise 0.0082->0.0000,
+        // receipt_historical 0.0273->0.0300, synth_01_noise +0.015,
+        // synth_03_noise and german better). CRISPEMBED_PPOCRV6_WIDTH_BUCKET
+        // overrides the step; 0 disables bucketing.
+        int bucket_step = 64;
+        if (const char * bucket_env = std::getenv("CRISPEMBED_PPOCRV6_WIDTH_BUCKET"))
+            bucket_step = std::atoi(bucket_env);
+        if (bucket_step >= 8) W = (W + bucket_step - 1) / bucket_step * bucket_step;
     }
     out.assign(3 * H * W, 0.0f);
     // The shipped Paddle inference contract is BGR, while the HF processor
