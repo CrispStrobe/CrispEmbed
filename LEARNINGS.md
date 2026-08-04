@@ -5899,3 +5899,28 @@ Durable rules from the wreckage:
   expired when paddleocr 3.x and community ONNX exports shipped; nobody
   re-checked. Two pip installs turned an "unfalsifiable" quality question into
   a 2-minute experiment. Re-date your impossibility claims.
+
+## A reference dump that mirrors your preprocessing proves nothing about the input contract (2026-08-04, T15 SmolDocling)
+
+The engine sat at tensor parity 0.9999 for months while shipping payload CER
+0.86 — because `tools/dump_smoldocling_reference.py` hand-resized the image to
+512x512 exactly like the C++ did, instead of running the reference pipeline's
+own processor. Both sides of the diff harness saw the same WRONG input (the
+real contract is Lanczos longest-edge-2048 → 512-multiple round-up → 512² tiles
++ global view + `<row_r_col_c>` prompt structure), so every stage cosine was
+perfect and the decoder's duplicated-region hallucination looked like a "model
+quality" issue. Three stacked defects hid there: the converter dropped all 145
+added tokens (detok silently deleted every `<loc_N>`; `decode()` skipped
+out-of-range ids without a whisper), preprocessing squashed the page, and a
+parity-era `max_tokens=128` TODO truncated everything — none visible to the
+harness, all visible in one run of the model-card `AutoProcessor` + `generate`
+next to the CLI. Durable rules: (a) the reference arm for an OUTPUT gate must
+be the reference implementation's OWN pipeline, processor included — a
+matched-preprocessing dump is only valid for isolating graph math, and must
+never be quoted as lane parity; (b) prompt-token parity vs the real processor
+(dump `input_ids`, compare byte-for-byte) is a cheap structural gate that
+catches template/tiling drift instantly — SmolDocling passed 347/347 only
+after the port; (c) a detokenizer that `continue`s on out-of-range ids
+converts a truncated vocab into silently-missing markup — fail loudly or log
+once. Bonus symptom table: "model duplicates regions" on non-square pages =
+suspect aspect-destroying preprocessing before suspecting the decoder.
