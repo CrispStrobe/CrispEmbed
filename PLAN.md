@@ -1369,6 +1369,33 @@ comment still describes the retired `DET_GRAPH` gate.
 *(T13-T17 below are NOT agent-delegable as-is: they are port/bisect work —
 run them as dedicated sessions with the full board context.)*
 
+### T18 — Embedder one-shot fixed init (~1.2-1.4 s) dominates CLI latency; warm compute already beats onnxruntime
+
+Measured 2026-08-04, M1 16GB, same-window A/B, 64 German sentences (~12 words,
+padded len 30), multilingual-e5-small q8_0 vs the official fp32 ONNX export on
+onnxruntime 1.25.1 CPU EP (tokenizers batch, mean-pool+L2, warm):
+
+| config | load/init | warm per-text (batch 64) | single-text warm |
+|---|--:|--:|--:|
+| crispembed q8_0 (Metal, one-shot CLI) | **~1.2-1.4 s** | 5.7-11.7 ms (marginal) | n/a (one-shot pays init) |
+| onnxruntime fp32 CPU | 0.44 s session | 12.1-14.4 ms | 13.6 ms |
+
+Output parity q8 vs ONNX fp32: cosine min 0.99993 / mean 0.99995 (n=64).
+So the "ONNX is much faster" experience is NOT compute — warm-vs-warm we are
+~1.4x ahead — it is the **fixed one-shot init**: ~1.2-1.4 s regardless of
+model size (132 MB e5 and 23 MB MiniLM both pay it → not weight I/O), and
+`--gpu-backend cpu` still initializes the Metal device (stderr shows the
+pipeline-cache load either way), so the flag does not skip the cost.
+**Do:** (a) make `--gpu-backend cpu` actually skip GPU device init for the
+embed path; (b) profile the remaining fixed cost (SPM tokenizer build for the
+250k XLM-R vocab is a suspect) and lazy-init what one-shot embedding does not
+need; (c) consider a CPU-default for small embedders in one-shot CLI mode
+(T5 precedent: workload-dependent backend). Server mode already amortizes —
+this is a CLI/scripting-latency item. **Acceptance:** one-shot
+`crispembed -m multilingual-e5-small --json "text"` total time down ~oe;3x with
+embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
+in warm batch throughput.
+
 ### T13 — olmOCR lane (the one absent family; cheapest add)
 
 Zero trace in the repo. It is an Apache-2.0 Qwen2.5-VL-7B fine-tune, so the
