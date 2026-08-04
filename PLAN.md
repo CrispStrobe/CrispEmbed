@@ -1396,6 +1396,46 @@ this is a CLI/scripting-latency item. **Acceptance:** one-shot
 embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
 in warm batch throughput.
 
+### T19 — German embedder quality snapshot (official MTEB data, 2026-08-04) + port candidates
+
+Sources: MTEB(deu, v1) leaderboard (user-provided, open-weights/license filter)
++ our own extraction from the official `mteb/results` parquet (8.6M rows; 4
+canonical German retrieval/rerank tasks, full-coverage models only). The two
+agree where they overlap.
+
+**German mean (MTEB deu v1) by size class, open models:**
+`F2LLM-v2` (codefuse-ai, **Qwen3Model arch, Apache-2.0**) dominates every
+class: 0.6B=63.08, 330M=61.61, **160M=57.35** (beats e5-large-instruct at
+3.5x smaller), 80M=55.56. Caveat: zero-shot 63% (vs e5's 94%) — part of the
+edge may be benchmark-adjacent training. Established models: e5-large-instr
+57.14, arctic-l-v2 55.72 (best Retr. column of the field: **57.09**),
+e5-base 53.03, e5-small 51.49, granite-278m 51.79/107m 50.16.
+**German retrieval-only (our parquet extraction, ret4):** embeddinggemma-300m
+**0.8947** (best <600M, gemma license), jina-v5-small 0.8761 (CC-BY-NC — dev
+only), arctic-l-v2 0.8725, bge-m3 0.8714, arctic-m-v2 0.8569,
+qwen3-embed-0.6b 0.8562, e5-base 0.8513, harrier-0.6b 0.8382,
+granite-311m-r2 0.8287, harrier-270m 0.8240, granite-97m-r2 0.8005,
+e5-small 0.7488 (n=2), MiniLM-multi 0.7327.
+
+**In-registry verdict for German today:** `arctic-embed-l-v2` is the
+evidence-backed quality pick (NOT qwen3-embed/harrier — qwen3-embed has no
+official deu coverage and trails on ret4; harrier's "SOTA" desc oversells
+German). `bge-m3` when hybrid dense+sparse+colbert wanted.
+`embeddinggemma-300m` is in the registry (gemma license gate) and is the top
+small retrieval scorer — but carries the known ~0.002 backbone discrepancy
+(C8); spot-check German retrieval quality of OUR artifact before recommending.
+`multilingual-e5-small` demoted to "cheapest acceptable" (51.49; fine at
+118 MB, auto-prefixed).
+
+**Port candidates, by value:** (1) **F2LLM-v2 family** — Qwen3Model + Apache;
+likely loads via the existing qwen3-embed converter path with minor config
+deltas; the 160M (57.35 deu, 640d, 40k ctx) would be the best small German
+embedder we ship, 0.6B the best overall. (2) arctic-embed-m-v2.0 (0.8569
+ret4, 305M — sibling of the l-v2 we already ship). (3) granite-r2 97m/311m
+(8k ctx, Apache). Verify each with a German retrieval smoke vs the HF
+reference before registry entry (decoded-embedding cosine + a 10-doc German
+retrieval sanity, per HARD RULE #3 analog).
+
 ### T13 — olmOCR lane (the one absent family; cheapest add)
 
 Zero trace in the repo. It is an Apache-2.0 Qwen2.5-VL-7B fine-tune, so the
