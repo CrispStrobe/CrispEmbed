@@ -74,13 +74,14 @@ jobs:
         run: |
           cmake --build build --config Release -j4 \
             --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file test-render-provenance \
-                     test-qwen-pretokenize
+                     test-qwen-pretokenize test-o200k-pretokenize
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
           ./build/test-temp-file
           ./build/test-render-provenance
           ./build/test-qwen-pretokenize
+          ./build/test-o200k-pretokenize
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'

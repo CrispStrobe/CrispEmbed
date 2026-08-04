@@ -158,6 +158,21 @@ public:
     // Set separately from load() so a merges reload does not clear it.
     void set_gpt2_regex_pretok(bool v) { gpt2_regex_pretok_ = v; }
 
+    // Enable the o200k_base regex pre-tokenizer (tokenizer.ggml.pre = "o200k";
+    // granite-embedding-97m-multilingual-r2). Takes precedence over the GPT-2
+    // regex flag. `ignore_merges` mirrors the tokenizer.json BPE flag: a
+    // pre-token that is itself a vocab entry skips the merge table. Set
+    // separately from load() so a merges reload does not clear it.
+    void set_o200k_regex_pretok(bool v, bool ignore_merges = true) {
+        o200k_regex_pretok_ = v;
+        ignore_merges_ = ignore_merges;
+    }
+
+    // SentencePiece-BPE mode (▁ space marker). load() takes it as a parameter
+    // and therefore resets it; the encoder path reads it back here across its
+    // post-weight-load merges reload.
+    bool spm_style() const { return spm_style_; }
+
     int vocab_size() const { return (int)id_to_token_.size(); }
     int bos_id() const { return bos_id_; }
     int eos_id() const { return eos_id_; }
@@ -170,12 +185,14 @@ private:
     std::vector<std::string> id_to_token_;
     int eos_id_ = 151645;
     int pad_id_ = 151643;
-    int suffix_id_ = 151643;         // token appended after text (model-specific)
-    int bos_id_ = -1;                // BOS token (-1 = none)
-    bool spm_style_ = false;         // SentencePiece BPE mode
-    bool spm_dummy_prefix_ = false;  // SentencePiece add_dummy_prefix
-    bool clip_style_ = false;        // OpenAI CLIP text BPE (</w> end-of-word suffix)
-    bool gpt2_regex_pretok_ = false; // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
+    int suffix_id_ = 151643;          // token appended after text (model-specific)
+    int bos_id_ = -1;                 // BOS token (-1 = none)
+    bool spm_style_ = false;          // SentencePiece BPE mode
+    bool spm_dummy_prefix_ = false;   // SentencePiece add_dummy_prefix
+    bool clip_style_ = false;         // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    bool gpt2_regex_pretok_ = false;  // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
+    bool o200k_regex_pretok_ = false; // o200k_base regex pre-tokenizer (granite-r2 97m)
+    bool ignore_merges_ = true;       // o200k: a whole-pre-token vocab hit skips the merges
     int max_length_ = 8192;
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text

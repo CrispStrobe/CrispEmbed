@@ -570,15 +570,29 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             // BPE merges stored as tensor (newline blob) OR the tokenizer.ggml.merges
             // KV array (kv_merges, read above) — applied after weight loading.
             std::vector<std::string> empty_merges;
+            // A BPE vocab whose tokenizer.json declares the SentencePiece
+            // normalizer (space → ▁) is a SPM-BPE, not a byte-level one. The
+            // converter says so with `tokenizer.ggml.is_spm_bpe` (the same key
+            // the decoder-embedder path already reads); an ABSENT key keeps the
+            // historical byte-level behavior, so every published GGUF is
+            // unaffected. granite-embedding-311m-multilingual-r2 needs it.
+            const bool is_spm_bpe = u32("tokenizer.ggml.is_spm_bpe", 0) != 0;
             // For encoder BPE: eos=SEP, suffix=-1 (handled by encode), bos=CLS
-            ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, -1, cls_id, false, hp.n_max_tokens);
+            ctx->bpe_tokenizer.load(vocab, empty_merges, sep_id, pad_id, -1, cls_id, is_spm_bpe, hp.n_max_tokens);
             ctx->use_bpe = true;
+            // Pre-tokenizer selection, self-described by `tokenizer.ggml.pre`:
             // ModernBERT tokenizes with the GPT-2 ByteLevel regex pre-tokenizer
-            // (tokenizer.ggml.pre = "modern-bert"); the default whitespace-split
-            // pre-tokenizer mis-splits punctuation/digits. Enable the regex path.
-            if (gguf_arch == "modern-bert" || strv("tokenizer.ggml.pre") == "modern-bert")
+            // ("modern-bert"); granite-embedding-97m-multilingual-r2 with the
+            // o200k_base split ("o200k"). The default whitespace-split
+            // pre-tokenizer mis-splits punctuation/digits for both.
+            const std::string tok_pre = strv("tokenizer.ggml.pre");
+            if (tok_pre == "o200k")
+                ctx->bpe_tokenizer.set_o200k_regex_pretok(true,
+                                                          core_gguf::kv_bool(g, "tokenizer.ggml.ignore_merges", true));
+            else if (gguf_arch == "modern-bert" || tok_pre == "modern-bert")
                 ctx->bpe_tokenizer.set_gpt2_regex_pretok(true);
-            fprintf(stderr, "crispembed: using BPE tokenizer (%d tokens)\n", n);
+            fprintf(stderr, "crispembed: using %s BPE tokenizer (%d tokens, pre=%s)\n",
+                    is_spm_bpe ? "SentencePiece" : "GPT-2", n, tok_pre.empty() ? "default" : tok_pre.c_str());
         } else {
             // WordPiece / BERT
             int cls_id = u32("tokenizer.ggml.cls_token_id", 101);
@@ -844,14 +858,21 @@ static bool load_model(crispembed_context * ctx, const char * path) {
     if (ctx->use_bpe) {
         std::vector<std::string> merges;
         const char * src = nullptr;
-        if (ggml_tensor * merge_t = get("tokenizer.merges")) {
+        // `tokenizer.merges_nul` is the NUL-separated blob. It exists only for
+        // vocabs whose merges contain newlines (SentencePiece-BPE), which the
+        // newline-separated `tokenizer.merges` cannot encode; prefer it when
+        // present, otherwise the historical tensor, so published GGUFs that
+        // lack the key behave exactly as before.
+        ggml_tensor * merge_t = get("tokenizer.merges_nul");
+        const char sep = merge_t ? '\0' : '\n';
+        if (!merge_t) merge_t = get("tokenizer.merges");
+        if (merge_t) {
             size_t nbytes = ggml_nbytes(merge_t);
             std::vector<uint8_t> blob(nbytes);
             ggml_backend_tensor_get(merge_t, blob.data(), 0, nbytes);
-            // Parse newline-separated merges
             std::string current;
             for (size_t i = 0; i < nbytes; i++) {
-                if (blob[i] == '\n') {
+                if ((char)blob[i] == sep) {
                     if (!current.empty()) merges.push_back(current);
                     current.clear();
                 } else {
@@ -859,7 +880,7 @@ static bool load_model(crispembed_context * ctx, const char * path) {
                 }
             }
             if (!current.empty()) merges.push_back(current);
-            src = "tensor";
+            src = sep == '\0' ? "tensor (NUL-separated)" : "tensor";
         } else if (!kv_merges.empty()) {
             merges = std::move(kv_merges);
             src = "KV array";
@@ -869,7 +890,10 @@ static bool load_model(crispembed_context * ctx, const char * path) {
             int cls_id = ctx->bpe_tokenizer.bos_id();
             int sep_id = ctx->bpe_tokenizer.eos_id();
             int pad_id = ctx->bpe_tokenizer.pad_id();
-            ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges, sep_id, pad_id, -1, cls_id, false,
+            // load() resets spm_style, so re-apply it after the reload (the
+            // pre-tokenizer flags are setters and survive on their own).
+            const bool is_spm_bpe = ctx->bpe_tokenizer.spm_style();
+            ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges, sep_id, pad_id, -1, cls_id, is_spm_bpe,
                                     hp.n_max_tokens);
             fprintf(stderr, "crispembed: loaded %zu BPE merges from %s\n", merges.size(), src);
         }
@@ -1713,6 +1737,11 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
     float norm = 0;
     for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
     norm = sqrtf(std::max(norm, 1e-12f));
+    // Diagnostic: the pre-normalization magnitude is the only scale signal a
+    // caller can see (the returned vector is unit-length by contract), so a
+    // uniform scale error is invisible to cosine parity. Print it on request —
+    // same lever as CRISPEMBED_DECODER_EMBED_RAW_NORM on the decoder path.
+    if (std::getenv("CRISPEMBED_EMBED_RAW_NORM")) fprintf(stderr, "[crispembed-rawnorm] %.6f\n", norm);
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
     if (bench) {
         double ms_pool = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_pool).count();
@@ -1909,6 +1938,8 @@ static std::vector<float> pool_and_norm(const float * rows, int n, int H, int di
     float norm = 0;
     for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
     norm = sqrtf(std::max(norm, 1e-12f));
+    // See encode_tokens: pre-normalization magnitude, on request.
+    if (std::getenv("CRISPEMBED_EMBED_RAW_NORM")) fprintf(stderr, "[crispembed-rawnorm] %.6f\n", norm);
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
     return pooled;
 }
