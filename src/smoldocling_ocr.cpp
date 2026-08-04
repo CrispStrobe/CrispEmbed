@@ -244,7 +244,7 @@ struct smoldocling_context {
 smoldocling_context * smoldocling_init(const char * model_path, int n_threads) {
     auto * ctx = new smoldocling_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
-    ctx->max_tokens = 128; // TODO: increase after parity is verified
+    ctx->max_tokens = 1024;
     ctx->kv_allocated = 0;
     ctx->n_past = 0;
 
@@ -339,6 +339,10 @@ void smoldocling_free(smoldocling_context * ctx) {
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }
+}
+
+void smoldocling_set_max_tokens(smoldocling_context * ctx, int max_tokens) {
+    if (ctx && max_tokens > 0) ctx->max_tokens = max_tokens;
 }
 
 // ── SigLIP Vision Encoder (ggml graph — BLAS accelerated) ────────────
@@ -962,6 +966,188 @@ static void sd_llm_decode_step(smoldocling_context * ctx, const float * token_em
     }
 }
 
+// ── Reference-pipeline preprocessing (aspect resize + tiling) ─────────
+//
+// The document-VLM reference pipeline does NOT feed one squashed square
+// image: it (1) rescales the longest edge to 2048 preserving aspect,
+// (2) rounds both dims up to multiples of the vision size (512),
+// (3) splits into 512x512 tiles PLUS a squashed 512x512 global view, and
+// (4) lays the prompt out per tile with <row_r_col_c> markers. Feeding a
+// single squashed image instead makes the decoder hallucinate duplicated
+// text regions (payload CER 0.86 on the fox fixture vs 0.0 for the
+// reference on the same page).
+
+static inline float sd_lanczos3(float x) {
+    if (x <= -3.0f || x >= 3.0f) return 0.0f;
+    if (x == 0.0f) return 1.0f;
+    const float pi = 3.14159265358979323846f;
+    float a = pi * x;
+    return 3.0f * sinf(a) * sinf(a / 3.0f) / (a * a);
+}
+
+// One separable resampling pass along x for a single channel plane.
+// Lanczos-3 with support widened by the scale factor on downscale (the
+// convention of the reference pipeline's image library).
+static void sd_resample_pass_x(const float * src, int sw, int sh, float * dst, int dw) {
+    float scale = (float)sw / dw;
+    float fscale = scale > 1.0f ? scale : 1.0f;
+    float support = 3.0f * fscale;
+    std::vector<int> xmins(dw), xlens(dw);
+    std::vector<std::vector<float>> weights(dw);
+    for (int xo = 0; xo < dw; xo++) {
+        float center = (xo + 0.5f) * scale;
+        int xmin = (int)floorf(center - support);
+        int xmax = (int)ceilf(center + support);
+        if (xmin < 0) xmin = 0;
+        if (xmax > sw) xmax = sw;
+        xmins[xo] = xmin;
+        xlens[xo] = xmax - xmin;
+        auto & w = weights[xo];
+        w.resize(xlens[xo]);
+        float wsum = 0.0f;
+        for (int x = xmin; x < xmax; x++) {
+            float ww = sd_lanczos3((x + 0.5f - center) / fscale);
+            w[x - xmin] = ww;
+            wsum += ww;
+        }
+        if (wsum != 0.0f)
+            for (auto & ww : w) ww /= wsum;
+    }
+    for (int y = 0; y < sh; y++) {
+        const float * row = src + (size_t)y * sw;
+        float * orow = dst + (size_t)y * dw;
+        for (int xo = 0; xo < dw; xo++) {
+            float acc = 0.0f;
+            const float * w = weights[xo].data();
+            const float * s = row + xmins[xo];
+            for (int k = 0; k < xlens[xo]; k++) acc += s[k] * w[k];
+            orow[xo] = acc;
+        }
+    }
+}
+
+// Full 2-D Lanczos resize of one plane [sh x sw] -> [dh x dw].
+static void sd_lanczos_resize_plane(const float * src, int sw, int sh, float * dst, int dw, int dh) {
+    std::vector<float> tmp((size_t)sh * dw);
+    sd_resample_pass_x(src, sw, sh, tmp.data(), dw);
+    // vertical pass = horizontal pass on the transposed plane
+    std::vector<float> tmp_t((size_t)dw * sh), out_t((size_t)dw * dh);
+    for (int y = 0; y < sh; y++)
+        for (int x = 0; x < dw; x++) tmp_t[(size_t)x * sh + y] = tmp[(size_t)y * dw + x];
+    sd_resample_pass_x(tmp_t.data(), sh, dw, out_t.data(), dh);
+    for (int x = 0; x < dw; x++)
+        for (int y = 0; y < dh; y++) dst[(size_t)y * dw + x] = out_t[(size_t)x * dh + y];
+}
+
+// Longest edge -> max_len, aspect preserved, odd result bumped to even.
+static void sd_rescale_to_max_len(int h, int w, int max_len, int * oh, int * ow) {
+    float aspect = (float)w / (float)h;
+    if (w >= h) {
+        w = max_len;
+        h = (int)(w / aspect);
+        if (h % 2 != 0) h += 1;
+    } else {
+        h = max_len;
+        w = (int)(h * aspect);
+        if (w % 2 != 0) w += 1;
+    }
+    *oh = h > 1 ? h : 1;
+    *ow = w > 1 ? w : 1;
+}
+
+// Round both dims up to multiples of `vis` recomputing the short side from
+// the aspect ratio first (reference resize_for_vision_encoder).
+static void sd_round_up_to_vis(int h, int w, int vis, int * oh, int * ow) {
+    float aspect = (float)w / (float)h;
+    if (w >= h) {
+        w = ((w + vis - 1) / vis) * vis;
+        h = (int)(w / aspect);
+        h = ((h + vis - 1) / vis) * vis;
+    } else {
+        h = ((h + vis - 1) / vis) * vis;
+        w = (int)(h * aspect);
+        w = ((w + vis - 1) / vis) * vis;
+    }
+    *oh = h;
+    *ow = w;
+}
+
+struct sd_preproc_result {
+    // Normalized CHW float images (3 * vis * vis each): tiles row-major,
+    // then the squashed global view last. rows==cols==0 => single image.
+    std::vector<std::vector<float>> images;
+    int rows = 0, cols = 0;
+};
+
+static void sd_preprocess_reference(const uint8_t * pixels, int width, int height, int channels, int vis,
+                                    sd_preproc_result & out) {
+    // Planar float RGB [0,255] at source size.
+    std::vector<float> plane[3];
+    for (int c = 0; c < 3; c++) plane[c].resize((size_t)height * width);
+    for (int y = 0; y < height; y++)
+        for (int x = 0; x < width; x++) {
+            size_t si = ((size_t)y * width + x) * (channels >= 3 ? channels : 1);
+            for (int c = 0; c < 3; c++) {
+                int sc = channels >= 3 ? c : 0;
+                plane[c][(size_t)y * width + x] = (float)pixels[si + sc];
+            }
+        }
+
+    // Pass 1: longest edge -> 2048 (upscales small pages too — that is the
+    // reference behavior; tiling below is what recovers detail).
+    int h1, w1;
+    sd_rescale_to_max_len(height, width, 2048, &h1, &w1);
+    // Pass 2: round up to multiples of the vision size.
+    int h2, w2;
+    sd_round_up_to_vis(h1, w1, vis, &h2, &w2);
+
+    std::vector<float> resized[3];
+    for (int c = 0; c < 3; c++) {
+        std::vector<float> mid((size_t)h1 * w1);
+        sd_lanczos_resize_plane(plane[c].data(), width, height, mid.data(), w1, h1);
+        resized[c].resize((size_t)h2 * w2);
+        sd_lanczos_resize_plane(mid.data(), w1, h1, resized[c].data(), w2, h2);
+    }
+
+    auto normalize_into = [&](const float * ch_planes[3], int sw, std::vector<float> & img, int x0, int y0) {
+        img.resize((size_t)3 * vis * vis);
+        for (int c = 0; c < 3; c++)
+            for (int y = 0; y < vis; y++)
+                for (int x = 0; x < vis; x++) {
+                    float v = ch_planes[c][(size_t)(y0 + y) * sw + (x0 + x)];
+                    if (v < 0.0f) v = 0.0f;
+                    if (v > 255.0f) v = 255.0f;
+                    img[(size_t)c * vis * vis + (size_t)y * vis + x] = v / 127.5f - 1.0f;
+                }
+    };
+
+    out.images.clear();
+    if (h2 > vis || w2 > vis) {
+        out.rows = h2 / vis;
+        out.cols = w2 / vis;
+        const float * rp[3] = { resized[0].data(), resized[1].data(), resized[2].data() };
+        for (int r = 0; r < out.rows; r++)
+            for (int cc = 0; cc < out.cols; cc++) {
+                out.images.emplace_back();
+                normalize_into(rp, w2, out.images.back(), cc * vis, r * vis);
+            }
+        // Global view: the tiled image squashed to vis x vis.
+        std::vector<float> glob[3];
+        for (int c = 0; c < 3; c++) {
+            glob[c].resize((size_t)vis * vis);
+            sd_lanczos_resize_plane(resized[c].data(), w2, h2, glob[c].data(), vis, vis);
+        }
+        const float * gp[3] = { glob[0].data(), glob[1].data(), glob[2].data() };
+        out.images.emplace_back();
+        normalize_into(gp, vis, out.images.back(), 0, 0);
+    } else {
+        out.rows = out.cols = 0;
+        const float * rp[3] = { resized[0].data(), resized[1].data(), resized[2].data() };
+        out.images.emplace_back();
+        normalize_into(rp, w2, out.images.back(), 0, 0);
+    }
+}
+
 // ── Main recognize (from raw pixels) ──────────────────────────────────
 
 const char * smoldocling_recognize_raw(smoldocling_context * ctx, const uint8_t * pixels, int width, int height,
@@ -974,80 +1160,145 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx, const uint8_t 
     int T_vis = n_patches_side * n_patches_side; // 1024
     int D = ctx->llm_dim;
 
-    // Preprocess: resize to img_size x img_size, normalize to [-1, 1]
-    // Formula: pixel / 127.5 - 1.0
-    std::vector<float> image(3 * img_size * img_size);
-    for (int c = 0; c < 3; c++)
-        for (int y = 0; y < img_size; y++)
-            for (int x = 0; x < img_size; x++) {
-                float sy = (y + 0.5f) * height / img_size - 0.5f;
-                float sx = (x + 0.5f) * width / img_size - 0.5f;
-                int iy = std::max(0, std::min(height - 1, (int)(sy + 0.5f)));
-                int ix = std::max(0, std::min(width - 1, (int)(sx + 0.5f)));
-                int src_c = c;
-                if (channels == 1) src_c = 0; // grayscale
-                int src_idx = channels >= 3 ? (iy * width + ix) * channels + src_c : iy * width + ix;
-                image[c * img_size * img_size + y * img_size + x] = pixels[src_idx] / 127.5f - 1.0f;
-            }
+    // SMOLDOCLING_LEGACY_PREPROC=1 restores the pre-tiling single squashed
+    // 512x512 input (regression-bisection gate; known to hallucinate
+    // duplicated regions on non-square pages).
+    const char * legacy_env = getenv("SMOLDOCLING_LEGACY_PREPROC");
+    const bool legacy = legacy_env && legacy_env[0] == '1';
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
-    // Vision encoder
-    fprintf(stderr, "smoldocling: running vision encoder...\n");
+    sd_preproc_result prep;
+    if (legacy) {
+        // Single squashed image, nearest-neighbor (historical behavior).
+        prep.rows = prep.cols = 0;
+        prep.images.emplace_back();
+        auto & image = prep.images.back();
+        image.resize((size_t)3 * img_size * img_size);
+        for (int c = 0; c < 3; c++)
+            for (int y = 0; y < img_size; y++)
+                for (int x = 0; x < img_size; x++) {
+                    float sy = (y + 0.5f) * height / img_size - 0.5f;
+                    float sx = (x + 0.5f) * width / img_size - 0.5f;
+                    int iy = std::max(0, std::min(height - 1, (int)(sy + 0.5f)));
+                    int ix = std::max(0, std::min(width - 1, (int)(sx + 0.5f)));
+                    int src_c = c;
+                    if (channels == 1) src_c = 0; // grayscale
+                    int src_idx = channels >= 3 ? (iy * width + ix) * channels + src_c : iy * width + ix;
+                    image[(size_t)c * img_size * img_size + (size_t)y * img_size + x] = pixels[src_idx] / 127.5f - 1.0f;
+                }
+    } else {
+        sd_preprocess_reference(pixels, width, height, channels, img_size, prep);
+    }
+    const int n_imgs = (int)prep.images.size();
+
+    // Vision encoder + connector per sub-image (tiles then global view).
+    fprintf(stderr, "smoldocling: running vision encoder on %d sub-image(s) (%dx%d grid)...\n", n_imgs, prep.rows,
+            prep.cols);
     auto t_vis = std::chrono::steady_clock::now();
-    std::vector<float> vis_features(T_vis * ctx->vis_dim);
-    int n_vis_tokens = 0;
-    sd_vision_forward(ctx, image.data(), img_size, img_size, vis_features.data(), &n_vis_tokens);
-    fprintf(stderr, "smoldocling: vision done, %d tokens, first4=[%.4f,%.4f,%.4f,%.4f]\n", n_vis_tokens,
-            vis_features[0], vis_features[1], vis_features[2], vis_features[3]);
+    std::vector<float> vis_features((size_t)T_vis * ctx->vis_dim);
+    std::vector<float> connector_all; // [n_imgs * seq_per_img, D]
+    int seq_per_img = 0;
+    for (int i = 0; i < n_imgs; i++) {
+        int n_vis_tokens = 0;
+        sd_vision_forward(ctx, prep.images[i].data(), img_size, img_size, vis_features.data(), &n_vis_tokens);
+        int n_conn = 0;
+        std::vector<float> conn((size_t)n_vis_tokens * D);
+        sd_connector(ctx, vis_features.data(), n_vis_tokens, conn.data(), &n_conn);
+        if (seq_per_img == 0) {
+            seq_per_img = n_conn;
+            connector_all.reserve((size_t)n_imgs * n_conn * D);
+        }
+        connector_all.insert(connector_all.end(), conn.begin(), conn.begin() + (size_t)n_conn * D);
+    }
+    const int n_connector_tokens = n_imgs * seq_per_img;
+    fprintf(stderr, "smoldocling: vision+connector done, %d tokens (%d per sub-image)\n", n_connector_tokens,
+            seq_per_img);
     if (bench) {
         auto ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_vis).count();
-        fprintf(stderr, "[smoldocling-bench] vision_encoder: %lldms\n", (long long)ms);
+        fprintf(stderr, "[smoldocling-bench] vision_encoder+connector: %lldms\n", (long long)ms);
     }
 
-    // Connector: pixel shuffle + projection
-    auto t_connector = std::chrono::steady_clock::now();
-    int n_connector_tokens = 0;
-    std::vector<float> connector_out(n_vis_tokens * D); // will be <= n_vis_tokens
-    sd_connector(ctx, vis_features.data(), n_vis_tokens, connector_out.data(), &n_connector_tokens);
-    fprintf(stderr, "smoldocling: connector done, %d tokens\n", n_connector_tokens);
-    if (bench) {
-        auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_connector)
-                      .count();
-        fprintf(stderr, "[smoldocling-bench] connector: %lldms\n", (long long)ms);
-    }
-
-    // Build input token sequence following SmolDocling chat template:
-    //   <|im_start|>User:<image>Convert this page to docling.<end_of_utterance>\nAssistant:
-    // Special tokens must be inserted by ID, not BPE-encoded.
-    // BOS=1 (<|im_start|>), EOS=2 (<|im_end|>), end_of_utterance=49279
+    // Build input token sequence following the SmolDocling chat template:
+    //   <|im_start|>User:<IMAGE-PROMPT>Convert this page to docling.<end_of_utterance>\nAssistant:
+    // where <IMAGE-PROMPT> is, per split image,
+    //   (<fake_token_around_image><row_r_col_c><image>*seq)+ "\n" per row,
+    //   then "\n" <fake_token_around_image><global-img><image>*seq<fake_token_around_image>
+    // and for a single image just the global wrapper. Text runs between
+    // special tokens must be BPE-encoded as ONE chunk (the row-final "\n"
+    // and the global-prefix "\n" merge into a single "\n\n" token).
+    // Special tokens are inserted by ID, never BPE-encoded.
     std::vector<int> input_ids;
+    std::string pending_text;
+    auto flush_text = [&]() {
+        if (pending_text.empty()) return;
+        auto ids = ctx->tokenizer.encode(pending_text);
+        input_ids.insert(input_ids.end(), ids.begin(), ids.end());
+        pending_text.clear();
+    };
+    auto push_special = [&](int id) {
+        flush_text();
+        input_ids.push_back(id);
+    };
+    auto special_id = [&](const std::string & name, int fallback) {
+        auto it = ctx->tokenizer.token_to_id.find(name);
+        if (it != ctx->tokenizer.token_to_id.end()) return it->second;
+        return fallback;
+    };
+    const int fake_id = special_id("<fake_token_around_image>", 49189);
+    const int global_id = special_id("<global-img>", 49152);
 
-    // <|im_start|> (BOS, id=1)
-    input_ids.push_back(1);
+    input_ids.push_back(1); // <|im_start|> (BOS)
+    pending_text = "User:";
+    if (prep.rows > 0) {
+        for (int r = 0; r < prep.rows; r++) {
+            for (int c = 0; c < prep.cols; c++) {
+                push_special(fake_id);
+                char rowcol[32];
+                snprintf(rowcol, sizeof(rowcol), "<row_%d_col_%d>", r + 1, c + 1);
+                push_special(special_id(rowcol, -1));
+                for (int i = 0; i < seq_per_img; i++) input_ids.push_back(ctx->image_token_id);
+            }
+            pending_text += "\n";
+        }
+        pending_text += "\n";
+        push_special(fake_id);
+        push_special(global_id);
+        for (int i = 0; i < seq_per_img; i++) input_ids.push_back(ctx->image_token_id);
+        push_special(fake_id);
+    } else if (!legacy) {
+        push_special(fake_id);
+        push_special(global_id);
+        for (int i = 0; i < seq_per_img; i++) input_ids.push_back(ctx->image_token_id);
+        push_special(fake_id);
+    } else {
+        // Historical prompt: bare <image> run with no wrapper tokens.
+        flush_text();
+        for (int i = 0; i < n_connector_tokens; i++) input_ids.push_back(ctx->image_token_id);
+    }
+    pending_text += "Convert this page to docling.";
+    push_special(49279); // <end_of_utterance>
+    pending_text = "\nAssistant:";
+    flush_text();
 
-    // "User:" — BPE encode
-    auto user_ids = ctx->tokenizer.encode("User:");
-    input_ids.insert(input_ids.end(), user_ids.begin(), user_ids.end());
-
-    // Image token placeholders
-    for (int i = 0; i < n_connector_tokens; i++) input_ids.push_back(ctx->image_token_id);
-
-    // "Convert this page to docling." — BPE encode
-    auto prompt_ids = ctx->tokenizer.encode("Convert this page to docling.");
-    input_ids.insert(input_ids.end(), prompt_ids.begin(), prompt_ids.end());
-
-    // <end_of_utterance> (id=49279)
-    input_ids.push_back(49279);
-
-    // "\nAssistant:" — BPE encode
-    auto asst_ids = ctx->tokenizer.encode("\nAssistant:");
-    input_ids.insert(input_ids.end(), asst_ids.begin(), asst_ids.end());
+    if (input_ids.end() != std::find(input_ids.begin(), input_ids.end(), -1)) {
+        fprintf(stderr, "smoldocling: missing <row_r_col_c> special token in vocab (stale GGUF without added "
+                        "tokens?) — falling back may produce degraded output\n");
+    }
 
     fprintf(stderr, "smoldocling: prompt has %d tokens (%d image + %d text)\n", (int)input_ids.size(),
             n_connector_tokens, (int)input_ids.size() - n_connector_tokens);
+
+    // Prompt-contract debug: dump the prefill ids for parity checks against
+    // the reference processor (one id per line).
+    if (const char * dump_path = getenv("SMOLDOCLING_DEBUG_PROMPT")) {
+        if (FILE * f = fopen(dump_path, "w")) {
+            for (int id : input_ids) fprintf(f, "%d\n", id);
+            fclose(f);
+        }
+    }
 
     // Get embedding weights — DequantCache keeps the pointer stable across calls
     const float * embed_w = ctx->get("llm.embed.weight");
@@ -1063,7 +1314,7 @@ const char * smoldocling_recognize_raw(smoldocling_context * ctx, const uint8_t 
         for (int t = 0; t < prefill_len; t++) {
             float * dst = prefill_embeds.data() + (size_t)t * D;
             if (input_ids[t] == ctx->image_token_id && vis_idx < n_connector_tokens) {
-                memcpy(dst, connector_out.data() + (size_t)vis_idx * D, D * sizeof(float));
+                memcpy(dst, connector_all.data() + (size_t)vis_idx * D, D * sizeof(float));
                 vis_idx++;
             } else {
                 memcpy(dst, embed_w + (size_t)input_ids[t] * D, D * sizeof(float));

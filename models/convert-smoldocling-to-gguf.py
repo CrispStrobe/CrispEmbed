@@ -252,16 +252,28 @@ def main():
     tok_model = tok_data.get("model", {})
     vocab = tok_model.get("vocab", {})
     merges = tok_model.get("merges", [])
-    print(f"Tokenizer: {len(vocab)} tokens, {len(merges)} merges")
+    # added_tokens live OUTSIDE model.vocab: the low control ids (0-16) and the
+    # entire DocTags special range (49152-49279: <loc_, <doctag>, <row_r_col_c>,
+    # <global-img>, <fake_token_around_image>, <end_of_utterance>, ...).
+    # Dropping them truncates the vocab to 49152 and the runtime then silently
+    # deletes every generated structural token at detokenization.
+    added = {t["content"]: t["id"] for t in tok_data.get("added_tokens", [])}
+    print(f"Tokenizer: {len(vocab)} tokens + {len(added)} added, "
+          f"{len(merges)} merges")
 
     # Build token list and scores arrays
-    n_tokens = max(vocab.values()) + 1 if vocab else 0
+    all_ids = list(vocab.values()) + list(added.values())
+    n_tokens = max(all_ids) + 1 if all_ids else 0
     tokens = [""] * n_tokens
     scores = [0.0] * n_tokens
     for tok, idx in vocab.items():
         if idx < n_tokens:
             tokens[idx] = tok
             # BPE: use negative index as score (earlier = higher priority)
+            scores[idx] = -float(idx)
+    for tok, idx in added.items():
+        if idx < n_tokens:
+            tokens[idx] = tok
             scores[idx] = -float(idx)
 
     # Create GGUF writer
