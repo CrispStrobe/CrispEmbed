@@ -3286,9 +3286,23 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         std::string & r = ctx->last_result;
         size_t p = r.find_first_not_of(" \n\t");
         if (p != std::string::npos && r.compare(p, 3, "---") == 0) {
+            size_t body = std::string::npos;
             size_t close = r.find("\n---", p + 3);
             if (close != std::string::npos) {
-                size_t body = close + 4; // past "\n---"
+                body = close + 4; // past "\n---"
+            } else {
+                // Quantized decodes sometimes drop the closing "---" and end
+                // the block with a blank line instead (the reference pipeline
+                // would reject such a page and retry; we salvage the text).
+                // Only treat it as front matter if the lines look like the
+                // contract's "key: value" fields.
+                size_t blank = r.find("\n\n", p + 3);
+                if (blank != std::string::npos && blank < (size_t)512 &&
+                    r.find("primary_language:", p) != std::string::npos && r.find("primary_language:", p) < blank) {
+                    body = blank + 2;
+                }
+            }
+            if (body != std::string::npos) {
                 while (body < r.size() && (r[body] == '\n' || r[body] == ' ')) body++;
                 r.erase(0, body);
             }
