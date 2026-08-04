@@ -1179,11 +1179,6 @@ static int cli_main(int argc, char ** argv) {
                                 "tesseract-frk GGUF via --ocr-rec FILE\n");
                 return 1;
             }
-            if (eid == 18 && ocr_rec_path.empty()) {
-                fprintf(stderr, "error: --ocr-engine olmocr has no registry default yet; provide an "
-                                "olmOCR GGUF via --ocr-rec FILE\n");
-                return 1;
-            }
             if (is_vlm) {
                 const char * dflt = (eid == 2)    ? "got-ocr2"
                                     : (eid == 3)  ? "glm-ocr"
@@ -1194,6 +1189,7 @@ static int cli_main(int argc, char ** argv) {
                                     : (eid == 11) ? "lightonocr"
                                     : (eid == 12) ? "qwen3vl-2b"
                                     : (eid == 13) ? "unlimited-ocr"
+                                    : (eid == 18) ? "olmocr-2-7b"
                                                   : "qwen2vl-ocr";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
