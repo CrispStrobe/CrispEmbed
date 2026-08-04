@@ -1,4 +1,4 @@
 [submodule "ggml"]
 	path = ggml
 	url = https://github.com/CrispStrobe/ggml.git
-	branch = crispstrobe-ops
+	branch = sync/upstream-v0.17
