@@ -489,7 +489,8 @@ class Qwen25VLPy(Engine):
     def __init__(self, model_id: str = "Qwen/Qwen2.5-VL-7B-Instruct",
                  name: str | None = None, dtype: str = "bfloat16",
                  device: str = "auto", max_new_tokens: int = 2048,
-                 transcripts: Path | None = None, device_map: str = ""):
+                 transcripts: Path | None = None, device_map: str = "",
+                 max_memory: str = ""):
         self.model_id = model_id
         short = model_id.split("/")[-1].replace("-Instruct", "").lower()
         self.name = name or f"qwen-vl-py:{short}"
@@ -501,6 +502,14 @@ class Qwen25VLPy(Engine):
         # smaller GPUs; when it is set the model is already placed and must not
         # be moved with ``.to()``.
         self.device_map = device_map
+        # accelerate's placement fills the first device before moving on, so the
+        # weights can leave a device with almost nothing free — and the *inputs*
+        # all live on that first device.  A dense page then asks for a multi-GiB
+        # activation and OOMs even though the box has spare VRAM elsewhere
+        # (measured: 3.98 GiB requested against 2.26 GiB free on device 0, while
+        # device 1 was half empty).  Capping the per-device weight budget is what
+        # reserves that headroom; it is a placement knob, not a quality one.
+        self.max_memory = max_memory
         self.max_new_tokens = max_new_tokens
         self.transcripts = Path(transcripts) if transcripts else None
         self._model = None
@@ -569,6 +578,11 @@ class Qwen25VLPy(Engine):
             kw = {key: dtype}
             if self.device_map:
                 kw["device_map"] = self.device_map
+            if self.max_memory:
+                kw["max_memory"] = {
+                    (int(k) if k.strip().isdigit() else k.strip()): v.strip()
+                    for k, v in (part.split("=", 1)
+                                 for part in self.max_memory.split(","))}
             self._model = cls.from_pretrained(self.model_id, **kw)
             got = next(self._model.parameters()).dtype
             if got != dtype:
@@ -668,6 +682,7 @@ class Qwen25VLPy(Engine):
             "device": str(self._device),
             "device_map": self.device_map or None,
             "device_map_placements": self._placements or None,
+            "max_memory": self.max_memory or None,
             "hardware": hardware,
             "torch": torch.__version__,
             "transformers": transformers.__version__,
@@ -764,7 +779,8 @@ def build_engines(args) -> list[Engine]:
                                   device=args.qwen_device,
                                   max_new_tokens=args.qwen_max_new_tokens,
                                   transcripts=args.qwen_transcripts,
-                                  device_map=args.qwen_device_map))
+                                  device_map=args.qwen_device_map,
+                                  max_memory=args.qwen_max_memory))
 
     def model(name: str) -> Path | None:
         return (md / name) if md else None
@@ -810,6 +826,10 @@ def main() -> int:
                          "(the 3B ships under a research licence)")
     ap.add_argument("--qwen-dtype", default="bfloat16")
     ap.add_argument("--qwen-device", default="auto")
+    ap.add_argument("--qwen-max-memory", default="",
+                    help="per-device weight budget for accelerate, e.g. "
+                         "'0=9GiB,1=13GiB'; reserves activation headroom on the "
+                         "device the inputs land on")
     ap.add_argument("--qwen-device-map", default="",
                     help="hand placement to accelerate (e.g. 'auto') so the "
                          "weights can shard across several GPUs")
@@ -855,7 +875,21 @@ def main() -> int:
     for fx in fixtures:
         record = {"fixture": fx["name"], "has_truth": fx["truth"] is not None, "engines": {}}
         for e in active:
-            text, proc_ms, engine_ms, extra = e.run(fx["path"], args.repeats)
+            # One page must not be able to destroy a run.  A VLM arm costs
+            # GPU-minutes per fixture, and a single dense page that exhausts
+            # device memory used to abort the whole corpus and throw away every
+            # transcript already produced.  Record the failure as a row instead:
+            # `error` is a result, and an arm that cannot read a page should show
+            # up as a failure on that page rather than as a missing corpus.
+            try:
+                text, proc_ms, engine_ms, extra = e.run(fx["path"], args.repeats)
+            except Exception as exc:
+                print(f"  {fx['name']:28} {e.name:22} FAILED: {exc}", flush=True)
+                record["engines"][e.name] = {
+                    "kind": e.kind, "text": "", "proc_ms": None, "engine_ms": None,
+                    "error": f"{type(exc).__name__}: {exc}",
+                }
+                continue
             entry = {
                 "kind": e.kind,
                 "text": text,
@@ -942,7 +976,11 @@ def summarize(result: dict) -> dict:
                     agg["wer_unordered"].append(entry["wer_unordered"])
             if entry.get("vs_reference", {}).get("cer") is not None:
                 agg["ref_cer"].append(entry["vs_reference"]["cer"])
-            agg["proc_ms"].append(entry["proc_ms"])
+            # A failed fixture has no timing; keeping it out of the median means
+            # the latency column describes the pages the arm actually read,
+            # while `failures` still says how many it did not.
+            if entry["proc_ms"] is not None:
+                agg["proc_ms"].append(entry["proc_ms"])
             if entry["engine_ms"] is not None:
                 agg["engine_ms"].append(entry["engine_ms"])
     out = {}
