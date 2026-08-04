@@ -409,13 +409,25 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
                 }
                 scan = s + 2; // try the next `<|` occurrence
             }
+            // Qwen2/Qwen3 ByteLevel pre-tokenization. `tokenize_simple` splits
+            // on whitespace and rejoins with a single space, which silently
+            // deletes newlines and indentation — measured against the HF
+            // reference on F2LLM-v2-160M that costs cosine 0.980 on a code
+            // snippet and 0.991 on this family's own "Instruct: …\nQuery: "
+            // prompt, while newline-free text is unaffected (1.000000).
+            // CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior.
+            static const bool legacy_ws = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);
+            auto tokenize_run = [&](const std::string & t) {
+                return legacy_ws ? core_bpe::tokenize_simple(token_to_id_, merge_rank_, t)
+                                 : core_bpe::tokenize_qwen(token_to_id_, merge_rank_, t);
+            };
             if (special_start == std::string::npos) {
-                auto sub = core_bpe::tokenize_simple(token_to_id_, merge_rank_, text.substr(pos));
+                auto sub = tokenize_run(text.substr(pos));
                 ids.insert(ids.end(), sub.begin(), sub.end());
                 break;
             }
             if (special_start > pos) {
-                auto sub = core_bpe::tokenize_simple(token_to_id_, merge_rank_, text.substr(pos, special_start - pos));
+                auto sub = tokenize_run(text.substr(pos, special_start - pos));
                 ids.insert(ids.end(), sub.begin(), sub.end());
             }
             ids.push_back(special_id);

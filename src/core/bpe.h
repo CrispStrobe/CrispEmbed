@@ -309,4 +309,157 @@ inline std::vector<int32_t> tokenize_simple(const std::unordered_map<std::string
     return result;
 }
 
+// --- Qwen2/Qwen3 ByteLevel pre-tokenizer -----------------------------------
+//
+// `tokenize_simple` above throws whitespace away: it splits on space/tab/
+// newline and rejoins the runs with a single space, so "a\n\n  b" and "a b"
+// produce identical ids. For Qwen-family models that is a real defect — the
+// newline is a meaningful token and the instruction prompts these embedding
+// models ship contain one ("Instruct: ...\nQuery: ").
+//
+// The functions below implement the pre-tokenizer regex that Qwen2/Qwen3
+// tokenizer.json actually declares, verbatim:
+//
+//   (?i:'s|'t|'re|'ve|'m|'ll|'d)   -- 1: contraction, case-insensitive
+//   |[^\r\n\p{L}\p{N}]?\p{L}+      -- 2: one optional non-CR/LF/alnum char, letters
+//   |\p{N}                         -- 3: exactly ONE digit (Qwen splits digits)
+//   | ?[^\s\p{L}\p{N}]+[\r\n]*     -- 4: optional space, punctuation, trailing CR/LF
+//   |\s*[\r\n]+                    -- 5: whitespace run ending in newlines
+//   |\s+(?!\S)                     -- 6: trailing whitespace
+//   |\s+                           -- 7: any whitespace
+//
+// Alternatives are tried in order at each position, exactly as a regex engine
+// would. \p{L} is approximated as ASCII letters plus any non-ASCII codepoint
+// and \p{N} as ASCII digits — the same approximation the CLIP/GPT-2
+// pre-tokenizers in this repo already use.
+inline bool qwen_is_ascii_digit(unsigned char c) {
+    return c >= '0' && c <= '9';
+}
+
+inline bool qwen_is_space(unsigned char c) {
+    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
+}
+
+// \p{L}: ASCII letters + any non-ASCII lead byte (approximation).
+inline bool qwen_is_letter(unsigned char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c >= 0x80;
+}
+
+inline bool qwen_is_newline(unsigned char c) {
+    return c == '\r' || c == '\n';
+}
+
+inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
+    std::vector<std::string> out;
+    const size_t n = s.size();
+    size_t i = 0;
+    while (i < n) {
+        const unsigned char c = (unsigned char)s[i];
+
+        // 1. (?i:'s|'t|'re|'ve|'m|'ll|'d)
+        if (c == '\'' && i + 1 < n) {
+            auto lower = [](unsigned char x) -> unsigned char {
+                return (x >= 'A' && x <= 'Z') ? (unsigned char)(x - 'A' + 'a') : x;
+            };
+            const unsigned char d1 = lower((unsigned char)s[i + 1]);
+            const unsigned char d2 = (i + 2 < n) ? lower((unsigned char)s[i + 2]) : 0;
+            if ((d1 == 'r' && d2 == 'e') || (d1 == 'v' && d2 == 'e') || (d1 == 'l' && d2 == 'l')) {
+                out.push_back(s.substr(i, 3));
+                i += 3;
+                continue;
+            }
+            if (d1 == 's' || d1 == 't' || d1 == 'm' || d1 == 'd') {
+                out.push_back(s.substr(i, 2));
+                i += 2;
+                continue;
+            }
+        }
+
+        // 2. [^\r\n\p{L}\p{N}]?\p{L}+
+        //    The optional first char is ANY single char that is not CR/LF and
+        //    not a letter or digit — a space, but also '(' or '-'.
+        {
+            size_t k = i;
+            if (!qwen_is_newline(c) && !qwen_is_letter(c) && !qwen_is_ascii_digit(c)) k += utf8_len(c);
+            if (k < n && qwen_is_letter((unsigned char)s[k])) {
+                size_t j = k;
+                while (j < n && qwen_is_letter((unsigned char)s[j])) j += utf8_len((unsigned char)s[j]);
+                out.push_back(s.substr(i, j - i));
+                i = j;
+                continue;
+            }
+        }
+
+        // 3. \p{N} — a single digit, never a run.
+        if (qwen_is_ascii_digit(c)) {
+            out.push_back(s.substr(i, 1));
+            i += 1;
+            continue;
+        }
+
+        // 4. ` ?[^\s\p{L}\p{N}]+[\r\n]*`
+        {
+            size_t k = i;
+            if (c == ' ') k++;
+            if (k < n) {
+                const unsigned char cc = (unsigned char)s[k];
+                if (!qwen_is_space(cc) && !qwen_is_letter(cc) && !qwen_is_ascii_digit(cc)) {
+                    size_t j = k;
+                    while (j < n) {
+                        const unsigned char e = (unsigned char)s[j];
+                        if (qwen_is_space(e) || qwen_is_letter(e) || qwen_is_ascii_digit(e)) break;
+                        j += utf8_len(e);
+                    }
+                    while (j < n && qwen_is_newline((unsigned char)s[j])) j++;
+                    out.push_back(s.substr(i, j - i));
+                    i = j;
+                    continue;
+                }
+            }
+        }
+
+        // 5. `\s*[\r\n]+` — a whitespace run that contains a newline. Take the
+        //    longest prefix of whitespace ending at the last newline of the run.
+        {
+            size_t j = i;
+            while (j < n && qwen_is_space((unsigned char)s[j])) j++;
+            size_t last_nl = std::string::npos;
+            for (size_t t = i; t < j; t++)
+                if (qwen_is_newline((unsigned char)s[t])) last_nl = t;
+            if (last_nl != std::string::npos) {
+                out.push_back(s.substr(i, last_nl + 1 - i));
+                i = last_nl + 1;
+                continue;
+            }
+
+            // 6/7. `\s+(?!\S)` then `\s+`: a whitespace run with no newline.
+            //      When the run is followed by a non-space, the last space is
+            //      left for the next token's leading ` ?`.
+            if (j == n || (j - i) == 1) {
+                out.push_back(s.substr(i, j - i));
+                i = j;
+            } else {
+                out.push_back(s.substr(i, (j - 1) - i));
+                i = j - 1;
+            }
+            continue;
+        }
+    }
+    return out;
+}
+
+// Qwen2/Qwen3 pre-tokenizer + BPE merge pass. Drop-in replacement for
+// tokenize_simple for Qwen-family vocabs; unlike that function it is
+// whitespace- and newline-faithful.
+inline std::vector<int32_t> tokenize_qwen(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                          const std::unordered_map<std::string, int32_t> & merge_rank,
+                                          const std::string & text) {
+    std::vector<int32_t> result;
+    for (const auto & pt : qwen_pretokenize(text)) {
+        std::string encoded = bytes_to_unicode(pt.data(), pt.size());
+        bpe_one(token_to_id, merge_rank, encoded, result);
+    }
+    return result;
+}
+
 } // namespace core_bpe
