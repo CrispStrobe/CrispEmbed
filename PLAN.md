@@ -88,6 +88,23 @@ right after. First place to look if this model misbehaves again.
   source via `path_in_repo`.
 - **`.env` breaks `git push`.** Sourcing it injects a token that overrides the
   credential helper — `env -u GH_TOKEN -u GITHUB_TOKEN git push`.
+- **A shipped binary must be checked as a PACKAGE, not as a build.**
+  SubtitleEdit#13205: every Linux tarball through v0.17.0 was unlaunchable —
+  `libggml-blas.so.0` hard-needed `libopenblas.so.0`, which the archive never
+  carried, so `crispembed-server` died in the loader with exit 127 and no
+  output. The workflow apt-installed `libopenblas-dev` so the BLAS probe would
+  pass, which means the runner always had the library and the artifact never
+  did: **the failure was structurally unreachable from CI**. And BLAS was
+  measured at 0.9–1.0x here (`PERFORMANCE.md`), so it was costing a platform
+  for nothing. Linux release legs are now `-DGGML_BLAS=OFF`, the apt install is
+  gone (a re-enabled BLAS now fails loudly at configure), and
+  `scripts/check-bundled-deps.py` fails packaging on any `DT_NEEDED` that is
+  neither bundled nor base-system. `release.yml` also takes
+  `workflow_dispatch` now (publish steps guarded on `refs/tags/`) so an
+  artifact can be produced and inspected without cutting a tag. Still open:
+  the glibc 2.38 / GLIBCXX 3.4.32 floor from building on Ubuntu 24.04 — no
+  Ubuntu 22.04 or Debian 12 — which needs a manylinux-container build, same as
+  the wheels (`python/pyproject.toml`).
 - **`GGML_NATIVE` probes the BUILD machine — never ship a native build.** It
   defaults ON and *runs* code on the builder: an AVX-512 `check_c_source_runs`
   probe on MSVC, `-march=native` on GCC/Clang, `-mcpu=native` plus

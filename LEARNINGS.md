@@ -3140,6 +3140,50 @@ cmake -S . -B build -DGGML_AVX512=ON      # if CPU supports (check /proc/cpuinfo
 
 > Never do this for a binary you ship — see the next section.
 
+## Exit 127 with no output = the dynamic loader, not your code
+
+SubtitleEdit#13205: `crispembed-server` from the Linux tarball exited **127**
+and printed nothing, on EndeavourOS and on Linux Lite. 127 from a
+dynamically-linked binary means the loader could not resolve a `DT_NEEDED`
+library, so the process dies before `main()` — no log line of ours can ever
+appear. The chain was:
+
+```
+crispembed-server -> libggml.so.0      (bundled, RUNPATH $ORIGIN)
+libggml.so.0      -> libggml-blas.so.0 (bundled)
+libggml-blas.so.0 -> libopenblas.so.0  <-- not bundled, not installed by default
+```
+
+`-DGGML_BLAS=ON` on the release legs put a hard link-time dependency on
+OpenBLAS into every Linux artifact, x86_64 and arm64 alike. The workflow
+apt-installed `libopenblas-dev` so the CMake BLAS probe would succeed, which
+means **the runner always had it and the artifact never did** — the failure was
+structurally unreachable from CI. Same shape as [#41]: a property of the build
+environment leaking into the shipped artifact.
+
+Three things worth carrying:
+
+1. **It bought nothing.** `PERFORMANCE.md` "BLAS Acceleration" measures OpenBLAS
+   at 0.9–1.0x on these models, and the section above already says BLAS is
+   minimal-benefit because quantized kernels use ggml's SIMD paths. The release
+   comment justifying it ("big matmuls of large encoders") was never measured.
+   A dependency that costs a whole platform must at least be earning something.
+2. **Verify the package, not the build.** `ldd`-equivalent inspection of the
+   staged `pkg/` is the only check that can see this;
+   `scripts/check-bundled-deps.py` parses each ELF's dynamic section and fails
+   if a `DT_NEEDED` is neither bundled nor part of a base glibc system. It
+   deliberately does not treat `libgomp.so.1` as base-system.
+3. **A release you cannot dry-run is a release you cannot check.** `release.yml`
+   only triggered on tag pushes, so the only way to see a packaged artifact was
+   to publish one. It now also takes `workflow_dispatch`, with every publish
+   step guarded on `refs/tags/`.
+
+Related but distinct, and still open: the tarballs are built on Ubuntu 24.04 so
+they need **glibc ≥ 2.38 / GLIBCXX ≥ 3.4.32** and will not start on Ubuntu
+22.04 or Debian 12 even with OpenBLAS present. Already recorded for the wheels
+in `python/pyproject.toml`; the fix for both is to build inside a manylinux
+container.
+
 ## GGML_NATIVE probes the BUILD machine — never ship a native build
 
 `GGML_NATIVE` defaults to ON and is *not* a compile-time-only heuristic: it
