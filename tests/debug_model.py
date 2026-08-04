@@ -47,6 +47,8 @@ GGUF_TO_HF = {
     # tests/check_registry_urls.py harness catches it.
     "pixie-rune-v1": "telepix/PIXIE-Rune-v1.0",
     "arctic-embed-l-v2": "Snowflake/snowflake-arctic-embed-l-v2.0",
+    "granite-embedding-97m-r2": "ibm-granite/granite-embedding-97m-multilingual-r2",
+    "granite-embedding-311m-r2": "ibm-granite/granite-embedding-311m-multilingual-r2",
     "octen-0.6b": "Octen/Octen-Embedding-0.6B",
     "f2llm-v2-0.6b": "codefuse-ai/F2LLM-v2-0.6B",
     # Jina v5 was published with a `text-` infix (`*-text-nano`, `*-text-small`);

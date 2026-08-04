@@ -223,13 +223,15 @@ multi-vector heads all run through ggml graphs with GPU dispatch.
 
 ### Verified parity (cos vs HuggingFace)
 
-28 embedding models validated at cos ≥ 0.965; a representative slice:
+30 embedding models validated at cos ≥ 0.965; a representative slice:
 
 | Model | Type | Dim | F32 | Q8_0 | Q4_K |
 |-------|------|-----|-----|------|------|
 | all-MiniLM-L6-v2 | BERT | 384 | 0.999999 | 0.9995 | 0.97 |
 | multilingual-e5-large | XLM-R | 1024 | 0.999997 | 0.9999 | 0.99 |
 | gte-modernbert-base | ModernBERT | 768 | 0.999991 | 0.9999 | — |
+| granite-embedding-311m-r2 | ModernBERT | 768 | 1.000000 | 0.9998 | — |
+| granite-embedding-97m-r2 | ModernBERT | 384 | 1.000000 | 0.9996 | — |
 | nomic-embed-text-v2-moe | NomicBERT MoE | 768 | 1.000000 | 0.9996 | 0.966 |
 | EmbeddingGemma-300m | Gemma3 | 768 | 1.000000 | 0.9998 | 0.98 |
 | Qwen3-Embedding-0.6B | Qwen3 | 1024 | 0.999895 | 0.9996 | 0.97 |

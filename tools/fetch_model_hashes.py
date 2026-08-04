@@ -66,6 +66,16 @@ def registry_urls(cpp_path: Path) -> "OrderedDict[str, dict]":
     end = text.index("\n};", start)
     body = text[start:end]
 
+    # A URL longer than the 120-column limit is written as ADJACENT string
+    # literals ("https://...main/" "file.gguf"), which C++ concatenates but a
+    # regex over the raw source does not: URL_RE then finds no match at all and
+    # the entry is silently left UNPINNED — `unpinned: 0` never notices,
+    # because such URLs never enter the list. That is how
+    # granite-embedding-{278m,107m}-multilingual shipped with no pin. Splice
+    # adjacent literals back together first. Only concatenation is spliced;
+    # `"a", "b"` (a comma between) is two separate fields and is left alone.
+    body = re.sub(r'"\s*"', "", body)
+
     out: "OrderedDict[str, dict]" = OrderedDict()
     for m in URL_RE.finditer(body):
         out.setdefault(m.group(0), m.groupdict())
