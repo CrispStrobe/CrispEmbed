@@ -384,6 +384,8 @@ static const ModelHash k_model_hashes[] = {
       "8d89800c9097fbf079ece18a615b4b1cc1b1dbc5f66eba2d3cbc2cf96b7979e7" },
     { "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
       "4cc16e226005a2d7ecce7749d5a876704a499ca301428167f5ceb3b75b967312" },
+    { "https://huggingface.co/cstr/olmOCR-2-7B-1025-GGUF/resolve/main/olmocr-2-7b-q4_k.gguf",
+      "de728beec9137728f259e7129f92f6faa946687b16803b9fa0cb97f4a85d9761" },
     { "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
       "3651e80aa17d973fe2b12e234eba0f5e3735e2dfc9983448b9a8c4badf3c7de7" },
     { "https://huggingface.co/cstr/german-ocr-3.1-crispembed-GGUF/resolve/main/german-ocr-3.1-q4_k.gguf",
