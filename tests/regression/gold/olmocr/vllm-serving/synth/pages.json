@@ -1,0 +1,222 @@
+[
+  {
+    "fixture": "synth_00_blur.png",
+    "stem": "synth_00_blur",
+    "gen_s": 31.92,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 774,
+    "completion_tokens": 61,
+    "natural_text_chars": 122,
+    "raw_chars": 232
+  },
+  {
+    "fixture": "synth_00_clean.png",
+    "stem": "synth_00_clean",
+    "gen_s": 3.92,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 820,
+    "completion_tokens": 61,
+    "natural_text_chars": 122,
+    "raw_chars": 232
+  },
+  {
+    "fixture": "synth_00_lowdpi.png",
+    "stem": "synth_00_lowdpi",
+    "gen_s": 3.15,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 636,
+    "completion_tokens": 61,
+    "natural_text_chars": 122,
+    "raw_chars": 232
+  },
+  {
+    "fixture": "synth_00_noise.png",
+    "stem": "synth_00_noise",
+    "gen_s": 3.18,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 774,
+    "completion_tokens": 61,
+    "natural_text_chars": 122,
+    "raw_chars": 232
+  },
+  {
+    "fixture": "synth_00_skew.png",
+    "stem": "synth_00_skew",
+    "gen_s": 3.32,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 866,
+    "completion_tokens": 61,
+    "natural_text_chars": 122,
+    "raw_chars": 232
+  },
+  {
+    "fixture": "synth_01_blur.png",
+    "stem": "synth_01_blur",
+    "gen_s": 4.47,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 682,
+    "completion_tokens": 90,
+    "natural_text_chars": 134,
+    "raw_chars": 244
+  },
+  {
+    "fixture": "synth_01_clean.png",
+    "stem": "synth_01_clean",
+    "gen_s": 4.6,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 636,
+    "completion_tokens": 90,
+    "natural_text_chars": 134,
+    "raw_chars": 244
+  },
+  {
+    "fixture": "synth_01_lowdpi.png",
+    "stem": "synth_01_lowdpi",
+    "gen_s": 4.69,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 728,
+    "completion_tokens": 90,
+    "natural_text_chars": 134,
+    "raw_chars": 244
+  },
+  {
+    "fixture": "synth_01_noise.png",
+    "stem": "synth_01_noise",
+    "gen_s": 4.46,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 544,
+    "completion_tokens": 90,
+    "natural_text_chars": 134,
+    "raw_chars": 244
+  },
+  {
+    "fixture": "synth_01_skew.png",
+    "stem": "synth_01_skew",
+    "gen_s": 4.48,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 682,
+    "completion_tokens": 90,
+    "natural_text_chars": 134,
+    "raw_chars": 244
+  },
+  {
+    "fixture": "synth_02_blur.png",
+    "stem": "synth_02_blur",
+    "gen_s": 2.93,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 544,
+    "completion_tokens": 58,
+    "natural_text_chars": 137,
+    "raw_chars": 247
+  },
+  {
+    "fixture": "synth_02_clean.png",
+    "stem": "synth_02_clean",
+    "gen_s": 3.14,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 682,
+    "completion_tokens": 58,
+    "natural_text_chars": 137,
+    "raw_chars": 247
+  },
+  {
+    "fixture": "synth_02_lowdpi.png",
+    "stem": "synth_02_lowdpi",
+    "gen_s": 3.13,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 728,
+    "completion_tokens": 58,
+    "natural_text_chars": 137,
+    "raw_chars": 247
+  },
+  {
+    "fixture": "synth_02_noise.png",
+    "stem": "synth_02_noise",
+    "gen_s": 3.17,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 774,
+    "completion_tokens": 58,
+    "natural_text_chars": 138,
+    "raw_chars": 248
+  },
+  {
+    "fixture": "synth_02_skew.png",
+    "stem": "synth_02_skew",
+    "gen_s": 3.17,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 728,
+    "completion_tokens": 58,
+    "natural_text_chars": 137,
+    "raw_chars": 247
+  },
+  {
+    "fixture": "synth_03_blur.png",
+    "stem": "synth_03_blur",
+    "gen_s": 3.68,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 912,
+    "completion_tokens": 66,
+    "natural_text_chars": 114,
+    "raw_chars": 224
+  },
+  {
+    "fixture": "synth_03_clean.png",
+    "stem": "synth_03_clean",
+    "gen_s": 3.46,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 682,
+    "completion_tokens": 66,
+    "natural_text_chars": 114,
+    "raw_chars": 224
+  },
+  {
+    "fixture": "synth_03_lowdpi.png",
+    "stem": "synth_03_lowdpi",
+    "gen_s": 3.55,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 866,
+    "completion_tokens": 66,
+    "natural_text_chars": 114,
+    "raw_chars": 224
+  },
+  {
+    "fixture": "synth_03_noise.png",
+    "stem": "synth_03_noise",
+    "gen_s": 3.59,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 866,
+    "completion_tokens": 66,
+    "natural_text_chars": 114,
+    "raw_chars": 224
+  },
+  {
+    "fixture": "synth_03_skew.png",
+    "stem": "synth_03_skew",
+    "gen_s": 3.5,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 774,
+    "completion_tokens": 66,
+    "natural_text_chars": 114,
+    "raw_chars": 224
+  }
+]

@@ -149,6 +149,20 @@ MODELS = {
         "langs": ["en"],
         "desc": "Snowflake Arctic Embed L v2.0. High-quality retrieval embeddings, 1024-dimensional.",
     },
+    "arctic-embed-m-v2": {
+        "base_model": "Snowflake/snowflake-arctic-embed-m-v2.0",
+        "arch": "GTE v1.5 (RoPE, GeGLU, post-LN)",
+        "dim": 768,
+        "layers": 12,
+        "params": "305M",
+        "pooling": "CLS",
+        "tokenizer": "SentencePiece",
+        "license": "apache-2.0",
+        "langs": ["multilingual"],
+        "desc": ("Snowflake Arctic Embed M v2.0. Multilingual retrieval embeddings, "
+                 "768-dimensional, 8192-token context. Queries take the prefix "
+                 "\"query: \"; documents take no prefix."),
+    },
     "octen-0.6b": {
         "base_model": "Octen/Octen-Embedding-0.6B",
         "arch": "Qwen3",
