@@ -931,9 +931,10 @@ static void append_component(const std::vector<float> & prob, int h, int w, floa
 
 context * init(const char * path, int) {
     auto * c = new context();
-    // The production detector path is CPU: its ggml graph is diagnostic-only
-    // until box geometry reaches parity, so outside CRISPEMBED_PPOCRV6_DET_GRAPH
-    // this backend does nothing but pull the GGUF through
+    // The production detector path runs its graph on the CPU backend (default
+    // since 2026-08-04; CRISPEMBED_PPOCRV6_DET_SCALAR restores scalar and
+    // CRISPEMBED_PPOCRV6_DET_GPU_LOAD is the explicit GPU opt-in), so this
+    // backend normally does nothing but pull the GGUF through
     // core_gguf::load_weights, and asking for a GPU one spins up Metal for a
     // device the detector never computes on. That drops the detector's own load
     // from ~7.3 s to 146 ms.
