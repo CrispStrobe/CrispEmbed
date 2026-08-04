@@ -15,16 +15,9 @@
 //     every non-ASCII letter in BOTH classes an all-caps German word splits
 //     after its umlaut ("AERGER" with an umlaut -> "AE" + "RGER").
 //
-// ⚠ MERGE NOTE: branch `feat/tokenize-simple-audit` adds `core/unicode_class.h`,
-// a second generated table for the same job. That one has no case information,
-// so it cannot serve the o200k split; this one is a strict SUPERSET of it and
-// maps 1:1 onto its enum:
-//     CORE_UC_L <- CAT_LU | CAT_LL | CAT_LO      CORE_UC_P <- CAT_P
-//     CORE_UC_M <- CAT_M   CORE_UC_N <- CAT_N    CORE_UC_Z <- CAT_WS
-//     CORE_UC_O <- CAT_C
-// On merge, keep THIS table, express `core_uc_class` as that mapping, and drop
-// the other generator. Both default unlisted codepoints to "letter", so the
-// approximation for unassigned codepoints is identical in either direction.
+// core/unicode_class.h derives its coarse `core_uc_class` view from this
+// table (reconciled 2026-08-04; the second generator was dropped). This is
+// the repo's single generated Unicode table — extend HERE.
 
 #pragma once
 
