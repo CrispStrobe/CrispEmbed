@@ -222,12 +222,14 @@ ARM = "qwen-vl-py:" + MODEL.split("/")[-1].replace("-Instruct", "").lower()
 # memory buys that headroom back.  It costs a lot of time per token and is
 # therefore used ONLY for the fixtures that failed, and the rows it produces are
 # flagged so nobody reads their latency as comparable.
-# Sized from the retry's own failure: at 6/6 the vision attention fit, and the
-# run then died on the 1.02 GiB prefill logits with 0.7 GiB free — device 0 was
-# still holding ~9 GiB of live vision activations. So device 0 needs ~10.5 GiB
-# free, which means almost no weights on it at all.
-RETRY_MAX_MEMORY = ("0=2GiB," + ",".join(f"{i}=7GiB" for i in range(1, n_gpu))
-                    + ",cpu=40GiB") if n_gpu > 1 else ""
+# Sized from three measured retries, each of which narrowed the requirement
+# rather than guessing at it.  The device that ends up holding the vision tower
+# needs ~9 GiB free for one page: at 6/6 it had 6.96 GiB of weights plus 4.9 GiB
+# live and asked for 3.98 GiB more.  So cap it near zero and let host memory hold
+# the rest; ~11.5 GiB of weights then live on the CPU and generation is slow, but
+# these are two fixtures and their rows are flagged non-comparable anyway.
+RETRY_MAX_MEMORY = ("0=1GiB," + ",".join(f"{i}=3GiB" for i in range(1, n_gpu))
+                    + ",cpu=60GiB") if n_gpu > 1 else ""
 
 
 def run_parity(images, gold, out_json, out_md, mem, only=""):
