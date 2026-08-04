@@ -11,8 +11,8 @@ group width seeded: CPU two-crop contract passes byte-identical
 with all items scalar-identical at **54.9 ms vs 118.6 ms scalar (2.2x)**.
 The lane is the DEFAULT since the large-stem extension and 26/26 sweep (non-CPU
 backends can be re-gated with `CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY`);
-promotion needs the large-stem (small/medium) extension plus a multi-fixture
-sweep. Historical investigation below, kept for the record — its Metal
+both prerequisites — the large-stem extension and the 26-fixture
+sweep (0 diffs) — are met. Historical investigation below, kept for the record — its Metal
 conclusions are superseded.
 
 ## What was implemented
