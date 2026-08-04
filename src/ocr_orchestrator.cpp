@@ -603,30 +603,41 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             return {};
         }
         if (!ctx->ppdet) ctx->ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
+        if (!ctx->ppdet) return {};
         const auto ppocr_det_loaded = std::chrono::steady_clock::now();
-        if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
-        if (!ctx->ppori && !st.model_c.empty())
-            ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
-        const auto ppocr_load_done = std::chrono::steady_clock::now();
-        if (!ctx->ppdet || !ctx->pprec) return {};
-        // Model load is reported separately: the `detect` figure below spans
-        // from stage entry, so without this split a slow *loader* is
-        // indistinguishable from a slow detector. That distinction was worth
-        // 12.5x in the tesseract lane, where a CPU-only recognizer was
-        // initialising Metal purely to read its own weights.
-        if (ppocr_bench) {
-            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
-            fprintf(stderr, "[ppocrv6-load-bench] detector=%.1f ms recognizer+orientation=%.1f ms total=%.1f ms\n",
-                    ms(ppocr_started, ppocr_det_loaded), ms(ppocr_det_loaded, ppocr_load_done),
-                    ms(ppocr_started, ppocr_load_done));
-        }
         // PP-OCRv6's official predictor applies resize_long=960/max-side and
         // rounds dimensions to a 32-pixel grid before inference.  Do not use
         // detect_raw here: the routed C API has the original page pixels, and
         // bypassing this geometry produces a different probability map and
         // materially different region counts on large fixtures.
+        //
+        // Detection deliberately runs BEFORE the recognizer loads: the
+        // detector is a cheap CPU load (~3 ms), and the box count is the one
+        // number that decides whether the recognizer's ~1.1 s Metal init pays
+        // for itself (T5). Measured one-shot: 3 boxes -> CPU wins (1.86 s vs
+        // 2.04-2.17 s); 47 boxes -> Metal wins (8.1 s vs 14.0 s). Crossover
+        // at ~175 ms/crop CPU-minus-Metal against the 1.1 s init: ~6-8 boxes.
         auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
         const auto ppocr_detect_done = std::chrono::steady_clock::now();
+        if (!ctx->pprec && std::getenv("CRISPEMBED_PPOCRV6_ONESHOT") && !std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU")) {
+            int cpu_max_regions = 8;
+            if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_ONESHOT_CPU_MAX_REGIONS")) {
+                const int parsed = std::atoi(limit);
+                if (parsed >= 0) cpu_max_regions = parsed;
+            }
+            if ((int)boxes.size() <= cpu_max_regions) setenv("CRISPEMBED_PPOCRV6_FORCE_CPU", "1", 0);
+        }
+        if (!ctx->pprec) ctx->pprec = ppocrv6_ocr_init(st.model_b.c_str(), ctx->n_threads);
+        if (!ctx->ppori && !st.model_c.empty())
+            ctx->ppori = pplcnet_orientation::init(st.model_c.c_str(), ctx->n_threads);
+        const auto ppocr_load_done = std::chrono::steady_clock::now();
+        if (!ctx->pprec) return {};
+        if (ppocr_bench) {
+            const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+            fprintf(stderr, "[ppocrv6-load-bench] detector=%.1f ms recognizer+orientation=%.1f ms total=%.1f ms\n",
+                    ms(ppocr_started, ppocr_det_loaded), ms(ppocr_detect_done, ppocr_load_done),
+                    ms(ppocr_started, ppocr_det_loaded) + ms(ppocr_detect_done, ppocr_load_done));
+        }
         if (boxes.empty()) return {};
         if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
             int max_graph_regions = 8;
@@ -728,17 +739,20 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         }
         if (ppocr_bench) {
             const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
-            // detect/total start at ppocr_load_done, NOT stage entry: the load
-            // cost is on the [ppocrv6-load-bench] line above. The pre-2026-08
-            // figures spanned stage entry, silently folding a ~1.1 s one-shot
-            // Metal init into "detect" — which inflated every load-excluded
-            // engine_ms comparison built on this line.
+            // detect/total exclude model-load time: the load cost is on the
+            // [ppocrv6-load-bench] line above. The pre-2026-08 figures spanned
+            // stage entry, silently folding a ~1.1 s one-shot Metal init into
+            // "detect" — which inflated every load-excluded engine_ms
+            // comparison built on this line. Detection now runs before the
+            // recognizer loads (box-count backend choice), so total is the
+            // detect span plus the post-load span.
             fprintf(
                 stderr,
                 "[ppocrv6-stage-bench] detect=%.1f ms crop=%.1f ms orientation=%.1f ms recognize=%.1f ms total=%.1f ms "
                 "boxes=%zu results=%zu\n",
-                ms(ppocr_load_done, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
-                ms(ppocr_load_done, std::chrono::steady_clock::now()), boxes.size(), results.size());
+                ms(ppocr_det_loaded, ppocr_detect_done), crop_ms, orientation_ms, recognize_ms,
+                ms(ppocr_det_loaded, ppocr_detect_done) + ms(ppocr_load_done, std::chrono::steady_clock::now()),
+                boxes.size(), results.size());
             fprintf(stderr, "[ppocrv6-width-bench] crops=%zu unique_model_widths=%zu widths=", boxes.size(),
                     model_widths.size());
             for (size_t i = 0; i < model_widths.size(); ++i) fprintf(stderr, "%s%d", i ? "," : "", model_widths[i]);
