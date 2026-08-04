@@ -3184,6 +3184,43 @@ they need **glibc ≥ 2.38 / GLIBCXX ≥ 3.4.32** and will not start on Ubuntu
 in `python/pyproject.toml`; the fix for both is to build inside a manylinux
 container.
 
+## The build environment is part of the artifact
+
+Three separate outages this session traced to the same root: a property of the
+machine that did the build silently became a requirement of the thing shipped,
+and CI could not see it because CI *was* that machine.
+
+| what leaked in | symptom for the user | why CI was blind |
+|---|---|---|
+| runner's CPU had AVX-512 | `Illegal instruction` (#41) | no runner lacks it |
+| runner had `libopenblas-dev` | `exit 127`, no output (SubtitleEdit#13205) | the workflow installed it so the probe would pass |
+| runner's glibc was 2.38 | won't start on Ubuntu 22.04 (#42) | every runner is newer |
+
+The shape is always the same, so the defence is too: **inspect the package, not
+the build.** `scripts/check-cpu-baseline.py` reads the configured ISA and the
+generated compile lines; `scripts/check-bundled-deps.py` parses each ELF's
+dynamic section for unbundled `DT_NEEDED` entries and the glibc floor. Both run
+at packaging time and fail the release. Neither is a test — a test would have
+to run on hardware we do not have.
+
+Corollaries worth keeping:
+
+- **A dependency that costs you a platform must be earning something.** The
+  OpenBLAS that made every Linux archive unlaunchable measured 0.9–1.0x here.
+- **`|| true` on a copy is how a licence file silently stops shipping.** The
+  bundled CUDA archive claimed an `NVIDIA-EULA.txt` it did not contain, because
+  `cp "$CUDA_PATH/EULA.txt" … || true` swallowed the miss for a file the
+  sub-package install never lays down.
+- **Verify the real payload, not a copy you staged to verify with.** A check of
+  mine failed on its own `find -type f` staging (which drops SONAME symlinks)
+  while the artifact was fine.
+- **`DT_RUNPATH` is not transitive.** Bundled libs each need their own
+  `$ORIGIN`; a sibling does not inherit the caller's.
+- **A release you cannot dry-run is a release you cannot check.** `release.yml`
+  only triggered on tags, so the only way to see a packaged artifact was to
+  publish one. It now takes `workflow_dispatch` with every publish step guarded
+  on `refs/tags/`.
+
 ## GGML_NATIVE probes the BUILD machine — never ship a native build
 
 `GGML_NATIVE` defaults to ON and is *not* a compile-time-only heuristic: it
