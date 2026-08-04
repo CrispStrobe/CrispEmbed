@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import fnmatch
 import struct
 import sys
 from pathlib import Path
@@ -64,8 +65,14 @@ PT_DYNAMIC, SHT_NOBITS = 2, 8
 MACHINES = {0x3E: "x86-64", 0xB7: "aarch64", 0x28: "arm", 0xF3: "riscv"}
 
 
-def is_system(lib: str) -> bool:
-    return lib in SYSTEM_LIBS or lib.startswith(SYSTEM_PREFIXES)
+def is_system(lib: str, extra_allowed: list[str] | None = None) -> bool:
+    if lib in SYSTEM_LIBS or lib.startswith(SYSTEM_PREFIXES):
+        return True
+    # --allow patterns: an externally-provided dependency the archive
+    # deliberately does not carry. Passing one is a statement about the
+    # artifact's contract, so each variant declares its own set and the
+    # contract becomes checked rather than assumed.
+    return any(fnmatch.fnmatch(lib, pat) for pat in (extra_allowed or []))
 
 
 def parse_elf(data: bytes) -> dict | None:
@@ -184,6 +191,10 @@ def main() -> int:
     ap.add_argument("pkg_dir", help="staged package directory (contents of the archive)")
     ap.add_argument("--max-glibc", default=None,
                     help="fail if any binary requires a glibc newer than this (e.g. 2.35)")
+    ap.add_argument("--allow", action="append", default=[], metavar="PATTERN",
+                    help="fnmatch pattern for a dependency this archive deliberately does "
+                         "NOT bundle (repeatable), e.g. --allow 'libcuda.so.*'. Use only for "
+                         "libraries the documented contract requires the host to provide.")
     args = ap.parse_args()
 
     root = Path(args.pkg_dir)
@@ -211,7 +222,9 @@ def main() -> int:
             continue
         scanned += 1
         rel = str(path.relative_to(root))
-        missing = [n for n in info["needed"] if not is_system(n) and n not in provided]
+        missing = [
+            n for n in info["needed"] if not is_system(n, args.allow) and n not in provided
+        ]
         g = max_version(info["versions"], "GLIBC_")
         gxx = max_version(info["versions"], "GLIBCXX_")
         if g and tuple(int(x) for x in g.split(".")) > tuple(
@@ -227,6 +240,8 @@ def main() -> int:
 
     print(f"\nscanned {scanned} ELF file(s); highest glibc requirement: "
           f"{glibc_floor[0] or 'none'}" + (f" (from {glibc_floor[1]})" if glibc_floor[0] else ""))
+    if args.allow:
+        print(f"host-provided by contract (not bundled): {', '.join(args.allow)}")
 
     rc = 0
     if unbundled:

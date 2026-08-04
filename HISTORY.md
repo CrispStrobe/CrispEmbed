@@ -4,6 +4,65 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — Linux CUDA archive: a second, self-inflicted exit 127 (#42)
+
+Filed upstream by `niksedk` after SubtitleEdit#13205, and correct on every
+point — including one this repo had written down as a deliberate choice and
+never re-examined.
+
+`crispembed-linux-x86_64-cuda.tar.gz` bundles no CUDA runtime. The workflow
+comment stated the contract as *"End users must have a matching CUDA driver
+(12.x) on the host"*, which is **wrong**: a driver provides `libcuda.so.1`,
+while `libcudart.so.12` / `libcublas.so.12` come from the CUDA *toolkit*.
+Verified against the published v0.17.1 archive:
+
+```
+libggml.so.0      -> libggml-cuda.so.0  (bundled, hard DT_NEEDED)
+libggml-cuda.so.0 -> libcudart.so.12    <-- toolkit, not bundled
+                  -> libcublas.so.12    <-- toolkit, not bundled
+                  -> libcuda.so.1       <-- driver, correctly external
+```
+
+Because `libggml.so` hard-links `libggml-cuda.so`, a driver-only machine dies
+in the loader at startup — exit 127, no output, and **no degrading to the CPU
+backend**, since the process never starts. Identical failure mode to the
+OpenBLAS one. The Windows CUDA zip has bundled `cudart64_12.dll` +
+`cublas64_12.dll` all along, which is the only reason this never bit Windows;
+the Linux/Windows asymmetry was the bug.
+
+Fixed by shipping **both**, rather than changing what an existing pin resolves
+to (Subtitle Edit and others pin these exact filenames):
+
+- `crispembed-linux-x86_64-cuda.tar.gz` — unchanged name, unchanged contents,
+  now honestly documented as requiring the toolkit runtime.
+- `crispembed-linux-x86_64-cuda-bundled.tar.gz` — same build plus the CUDA
+  runtime closure, needing only the driver.
+
+Implementation notes worth keeping:
+
+- The closure is taken from `ldd` output rather than a hardcoded list, so
+  `libcublasLt` and `libnvJitLink` (which `libcublasLt` pulls in on 12.x) come
+  along on their own and the set cannot rot on a CUDA bump.
+- `libcuda.so.1` is explicitly excluded. Bundling a driver library would pin
+  users to whatever driver the runner had.
+- **`DT_RUNPATH` is not transitive**: `libcublas.so.12` resolving
+  `libcublasLt.so.12` does not inherit `libggml-cuda.so`'s `RUNPATH`, so every
+  bundled CUDA lib needs its own `$ORIGIN` (what manylinux/PyTorch wheels do
+  to their vendored CUDA libs).
+- NVIDIA's EULA permits redistributing these runtime components; the bundled
+  archive carries `NVIDIA-EULA.txt` + a `NVIDIA-NOTICE.txt` saying what is
+  NVIDIA's and that the driver library is not included.
+- `scripts/check-bundled-deps.py` gained `--allow PATTERN`, and each archive is
+  now verified against its **own** contract: slim may want the toolkit runtime,
+  bundled may want only the driver. The assumption that "CUDA users normally
+  have CUDA installed" is now a checked fact instead of a comment.
+
+Also confirmed from #42 and already fixed in v0.17.1: the CI-drift observation
+(`build.yml` said `-DGGML_BLAS=OFF` while the release tarball shipped
+`libggml-blas.so`) — `release.yml` had diverged from `build.yml`.
+
+---
+
 ## August 4, 2026 — crispembed-sys required sources even to link a prebuilt
 
 `build.rs` called `resolve_src_root()` unconditionally as the first statement

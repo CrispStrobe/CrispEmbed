@@ -160,6 +160,21 @@ archive never shipped, so `crispembed-server` died in the dynamic loader with
 (SubtitleEdit#13205). On an affected release the workaround is
 `sudo apt install libopenblas0` / `sudo pacman -S openblas`.
 
+**CUDA on Linux — two archives, pick by what the host already has:**
+
+| archive | size | host must provide |
+|---------|------|-------------------|
+| `crispembed-linux-x86_64-cuda.tar.gz` | small | NVIDIA driver **and** the CUDA 12.x toolkit runtime (`libcudart`, `libcublas`) |
+| `crispembed-linux-x86_64-cuda-bundled.tar.gz` | large | NVIDIA driver only (`libcuda.so.1`) |
+
+The slim archive is the original and keeps its name so existing pins stay
+valid — but note its requirement is the **toolkit**, not merely a driver. A
+driver alone provides `libcuda.so.1`; `libcudart`/`libcublas` come from the
+toolkit, and because `libggml.so` hard-links `libggml-cuda.so`, a driver-only
+machine fails at load with exit 127 rather than falling back to CPU (#42). If
+you are not sure the toolkit is installed, take the bundled one. Both archives
+are checked against their own contract at packaging time.
+
 **glibc floor:** the tarballs are built on Ubuntu 24.04 and require
 **glibc ≥ 2.38** and **GLIBCXX ≥ 3.4.32**. They run on Ubuntu 24.04+,
 Debian 13+, RHEL/EL 9+ and current Arch, but *not* on Ubuntu 22.04 or
