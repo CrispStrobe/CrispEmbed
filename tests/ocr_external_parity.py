@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Head-to-head OCR parity: CrispEmbed vs Tesseract / EasyOCR / PaddleOCR.
+"""Head-to-head OCR parity: CrispEmbed vs Tesseract / EasyOCR / PaddleOCR /
+a full document parser.
 
 Existing harnesses in this repo compare CrispEmbed against per-stage tensor
 references.  That proves a graph is faithful; it says nothing about whether the
@@ -21,11 +22,22 @@ including model load — what a CLI user pays — while ``engine_ms`` excludes m
 load (parsed from native stage-bench stderr, or measured directly for the
 in-process Python engines).  Never mix the two columns in a speed claim.
 
+One arm is not a flat OCR engine at all but a whole document parser (layout +
+OCR + table structure).  It is scored the same way on purpose: what a caller
+gets back from a document parser is the exported document, so its layout stage
+is part of its transcription quality, not a separate concern.  See ``DoclingPy``
+for the two views it records and why.
+
 Usage:
   python tests/ocr_synth_corpus.py --output /tmp/ocr-synth
   python tests/ocr_external_parity.py --images /tmp/ocr-synth \
       --model-dir /Volumes/backups/ai/crispembed-gguf --repeats 3 \
       --output /tmp/ocr-parity.json --markdown /tmp/ocr-parity.md
+
+  # document-parser arm only (its own venv), labelled fixtures only:
+  HF_HOME=$HOME/.cache/hf-docling ~/venvs/docling/bin/python \
+      tests/ocr_external_parity.py --images tests/regression/images/cc0 \
+      --require-truth --repeats 3 --output /tmp/cc0.json
 """
 
 from __future__ import annotations
@@ -92,8 +104,16 @@ def score(hyp: str, ref: str) -> dict:
     cer = _edit(h, r) / len(r)
     hw, rw = h.split(), r.split()
     wer = _edit(hw, rw) / max(1, len(rw))
+    # A document parser emits blocks in the order its reading-order stage chose,
+    # which can differ from the page order the ground truth records while every
+    # glyph is right; CER charges that at roughly half the page.  Comparing the
+    # two word *multisets* is blind to both ordering and to how the arm chunks
+    # the page into lines or paragraphs, so a gap between `wer` and
+    # `wer_unordered` localises the defect to reading order rather than
+    # recognition.  It is a diagnostic, not a better headline: quote both.
+    unordered = _edit(sorted(hw), sorted(rw)) / max(1, len(rw))
     return {"cer": round(cer, 5), "wer": round(wer, 5), "ref_chars": len(r),
-            "exact": h == r}
+            "wer_unordered": round(unordered, 5), "exact": h == r}
 
 
 # ------------------------------------------------------------- engine adapters
@@ -227,6 +247,205 @@ class PaddleOCRPy(Engine):
         return "\n".join(texts), med, med, {"regions": len(texts)}
 
 
+class DoclingPy(Engine):
+    """Full document-parser arm: layout analysis + OCR + structure, in-process.
+
+    This is a different *shape* of reference from the flat OCR arms above.  A
+    document parser does not emit "every recognised line"; it emits a document
+    tree, and only the text its layout stage files under a text-bearing element
+    survives into the export.  Anything the layout model calls a picture is
+    exported as an image placeholder and its recognised words are dropped.  So
+    two numbers are recorded per fixture:
+
+      * ``text``          — the plain text of the exported document.  This is
+                            what a caller of the library actually receives, and
+                            it is what CER/WER score.
+      * ``alt_texts["all_text_items"]`` — every recognised text item in the
+                            document, including ones nested under a picture.
+                            Scoring both separates "the OCR missed it" from
+                            "the layout stage discarded it"; collapsing them
+                            into one number would blame the recogniser for a
+                            layout decision.
+
+    Markdown is kept alongside (``extra["markdown"]``) so a later structure gate
+    can score tables/headings without re-running the parse.
+
+    The parser is built once and warmed with a throwaway parse, so the reported
+    ``proc_ms`` and ``engine_ms`` are the same load-excluded number.  The warm-up
+    matters more than usual here: the layout detector runs under a tracing JIT,
+    so the very first parse pays a multi-second compile that is not part of
+    steady-state cost.
+    """
+
+    kind = "external"
+
+    def __init__(self, name: str = "docling-py", force_full_page_ocr: bool = False,
+                 ocr_engine: str = "auto"):
+        self.name = name
+        self.force_full_page_ocr = force_full_page_ocr
+        self.ocr_engine = ocr_engine
+        self._conv = None
+        self._backend = None
+        self._warmed = False
+        self._log_evidence: list[str] = []
+
+    def available(self) -> str:
+        try:
+            import docling  # noqa: F401
+            import docling_core  # noqa: F401
+        except Exception as exc:  # pragma: no cover - environment probe
+            return f"import docling failed: {exc}"
+        return ""
+
+    # The engine that actually reads the pixels is picked at pipeline-build time
+    # from whatever happens to be importable in this environment, so the
+    # configured value ("auto") is not the answer.  Read it off the constructed
+    # pipeline after the warm-up parse, and record the concrete model files.
+    def _detect_backend(self) -> dict:
+        info: dict = {"configured": self.ocr_engine, "selected": "unknown"}
+        pipelines = list(getattr(self._conv, "initialized_pipelines", {}).values())
+        for pipe in pipelines:
+            model = getattr(pipe, "ocr_model", None)
+            if model is None:
+                continue
+            # The auto-selector delegates to a concrete model it holds privately.
+            inner = getattr(model, "_engine", None) or model
+            info["selected"] = type(inner).__name__
+            opts = getattr(inner, "options", None)
+            if opts is not None:
+                info["selected_kind"] = getattr(opts, "kind", None)
+                for attr in ("backend", "lang", "model_storage_directory"):
+                    if hasattr(opts, attr):
+                        info[attr] = getattr(opts, attr)
+            reader = getattr(inner, "reader", None)
+            if reader is not None:
+                info["reader"] = type(reader).__name__
+            break
+        if self._log_evidence:
+            info["log_evidence"] = self._log_evidence
+        return info
+
+    @staticmethod
+    def _capture_selection_log(fn):
+        """Run ``fn`` with INFO capture, keeping the lines that name an engine.
+
+        The selection is only ever *announced*; there is no attribute holding
+        "which weights did you just load".  Keeping the log lines verbatim means
+        the recorded backend is evidence rather than an inference.
+        """
+        import logging
+
+        wanted = re.compile(r"(?i)(ocr model selected|cannot be used|Using .*\.(pth|onnx))")
+        seen: list[str] = []
+
+        class _Grab(logging.Handler):
+            def emit(self, record):
+                try:
+                    msg = record.getMessage()
+                except Exception:  # pragma: no cover - defensive
+                    return
+                if wanted.search(msg) and msg not in seen:
+                    seen.append(msg)
+
+        root = logging.getLogger()
+        handler, old_level = _Grab(level=logging.INFO), root.level
+        root.addHandler(handler)
+        if old_level > logging.INFO or old_level == logging.NOTSET:
+            root.setLevel(logging.INFO)
+        try:
+            fn()
+        finally:
+            root.removeHandler(handler)
+            root.setLevel(old_level)
+        return seen
+        return info
+
+    def _ensure(self, image: Path):
+        if self._conv is None:
+            from docling.datamodel.base_models import InputFormat
+            from docling.datamodel.pipeline_options import PdfPipelineOptions
+            from docling.document_converter import (
+                DocumentConverter,
+                ImageFormatOption,
+                PdfFormatOption,
+            )
+
+            opts = PdfPipelineOptions()
+            opts.do_ocr = True
+            if self.ocr_engine != "auto":
+                from docling.models.factories import get_ocr_factory
+
+                factory = get_ocr_factory()
+                opts.ocr_options = factory.create_options(kind=self.ocr_engine)
+            opts.ocr_options.force_full_page_ocr = self.force_full_page_ocr
+            self._conv = DocumentConverter(
+                allowed_formats=[InputFormat.IMAGE, InputFormat.PDF],
+                format_options={
+                    InputFormat.IMAGE: ImageFormatOption(pipeline_options=opts),
+                    InputFormat.PDF: PdfFormatOption(pipeline_options=opts),
+                },
+            )
+        if not self._warmed:
+            # Throwaway parse: builds the pipeline, downloads/loads every model
+            # and pays the JIT compile, so nothing below times model load.
+            self._log_evidence = self._capture_selection_log(
+                lambda: self._conv.convert(str(image))
+            )
+            self._warmed = True
+            self._backend = self._detect_backend()
+        return self._conv
+
+    @staticmethod
+    def _plain_text(doc) -> str:
+        """Document text with the markdown decoration removed.
+
+        ``export_to_text`` still serialises tables with pipe separators, which
+        would be scored as character errors against plain ground truth.  Walk
+        the tree instead and take the raw strings, table cells included.
+        """
+        from docling_core.types.doc import TableItem, TextItem
+
+        parts: list[str] = []
+        for item, _level in doc.iterate_items():
+            if isinstance(item, TableItem):
+                seen = set()
+                for cell in item.data.table_cells:
+                    key = (cell.start_row_offset_idx, cell.start_col_offset_idx)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    if cell.text:
+                        parts.append(cell.text)
+            elif isinstance(item, TextItem):
+                if item.text:
+                    parts.append(item.text)
+        return "\n".join(parts)
+
+    def run(self, image: Path, repeats: int):
+        conv = self._ensure(image)
+        times, doc = [], None
+        for _ in range(repeats):
+            t = time.perf_counter()
+            res = conv.convert(str(image))
+            times.append((time.perf_counter() - t) * 1000)
+            doc = res.document
+        med = statistics.median(times)
+        text = self._plain_text(doc)
+        every = "\n".join(t.text for t in doc.texts if t.text)
+        extra = {
+            "ocr_backend": self._backend,
+            "force_full_page_ocr": self.force_full_page_ocr,
+            "markdown": doc.export_to_markdown(),
+            "n_text_items": len(doc.texts),
+            "n_tables": len(doc.tables),
+            "n_pictures": len(doc.pictures),
+            "regions": len(doc.texts),
+            "alt_texts": {"all_text_items": every},
+        }
+        # In-process and pre-warmed: wall time is the engine cost.
+        return text, med, med, extra
+
+
 class CrispEmbedCLI(Engine):
     kind = "crispembed"
 
@@ -305,6 +524,8 @@ def build_engines(args) -> list[Engine]:
         TesseractCLI(args.tesseract_lang, args.psm),
         EasyOCRPy(),
         PaddleOCRPy(),
+        DoclingPy(force_full_page_ocr=args.docling_full_page,
+                  ocr_engine=args.docling_ocr),
     ]
 
     def model(name: str) -> Path | None:
@@ -340,6 +561,14 @@ def main() -> int:
     ap.add_argument("--easyocr-rec", default="easyocr-english-g2-f16.gguf")
     ap.add_argument("--ppocr-det", default="PP-OCRv6_small_det-f16.gguf")
     ap.add_argument("--ppocr-rec", default="PP-OCRv6_small_rec-f16.gguf")
+    ap.add_argument("--docling-full-page", action="store_true",
+                    help="force the document parser to OCR whole pages")
+    ap.add_argument("--docling-ocr", default="auto",
+                    help="document-parser OCR engine ('auto' lets it choose)")
+    ap.add_argument("--require-truth", action="store_true",
+                    help="only run fixtures that ground_truth.json labels; "
+                         "unlabelled fixtures in a corpus are out of scope, and "
+                         "running them costs time without producing a number")
     ap.add_argument("--reference", default="tesseract-cli:eng",
                     help="engine whose output port-fidelity CER is measured against")
     ap.add_argument("--skip", action="append", default=[])
@@ -348,6 +577,8 @@ def main() -> int:
     args = ap.parse_args()
 
     fixtures = load_fixtures(args.images)
+    if args.require_truth:
+        fixtures = [f for f in fixtures if f["truth"]]
     if args.limit:
         fixtures = fixtures[: args.limit]
     if not fixtures:
@@ -379,6 +610,15 @@ def main() -> int:
             }
             if fx["truth"]:
                 entry.update(score(text, fx["truth"]))
+                # An arm may expose a second view of the same run (e.g. the
+                # recognised text a document parser discarded during layout).
+                # Score it separately so the primary CER stays the number a
+                # caller of that arm would actually get.
+                alts = entry.get("alt_texts") or {}
+                if alts:
+                    entry["alt_scores"] = {
+                        k: score(v, fx["truth"]) for k, v in alts.items()
+                    }
             record["engines"][e.name] = entry
             tag = f"cer={entry.get('cer')}" if fx["truth"] else f"chars={len(normalize(text))}"
             print(f"  {fx['name']:28} {e.name:22} {proc_ms:8.1f} ms  {tag}", flush=True)
@@ -419,14 +659,23 @@ def summarize(result: dict) -> dict:
         for name, entry in fx["engines"].items():
             agg = per_engine.setdefault(name, {
                 "kind": entry["kind"], "cer": [], "wer": [], "ref_cer": [],
+                "wer_unordered": [],
                 "proc_ms": [], "engine_ms": [], "failures": 0, "n": 0,
+                "alt": {},
             })
+            for key, sc in (entry.get("alt_scores") or {}).items():
+                if sc.get("cer") is not None:
+                    slot = agg["alt"].setdefault(key, {"cer": [], "wer": []})
+                    slot["cer"].append(sc["cer"])
+                    slot["wer"].append(sc["wer"])
             agg["n"] += 1
             if entry.get("returncode", 0) != 0 or not entry["text"].strip():
                 agg["failures"] += 1
             if entry.get("cer") is not None:
                 agg["cer"].append(entry["cer"])
                 agg["wer"].append(entry["wer"])
+                if entry.get("wer_unordered") is not None:
+                    agg["wer_unordered"].append(entry["wer_unordered"])
             if entry.get("vs_reference", {}).get("cer") is not None:
                 agg["ref_cer"].append(entry["vs_reference"]["cer"])
             agg["proc_ms"].append(entry["proc_ms"])
@@ -442,10 +691,17 @@ def summarize(result: dict) -> dict:
             "failures": agg["failures"],
             "mean_cer": mean(agg["cer"]),
             "mean_wer": mean(agg["wer"]),
+            "mean_wer_unordered": mean(agg["wer_unordered"]),
             "mean_cer_vs_reference": mean(agg["ref_cer"]),
             "median_proc_ms": med(agg["proc_ms"]),
             "median_engine_ms": med(agg["engine_ms"]),
         }
+        if agg["alt"]:
+            out[name]["alt"] = {
+                k: {"mean_cer": mean(v["cer"]), "mean_wer": mean(v["wer"]),
+                    "n": len(v["cer"])}
+                for k, v in agg["alt"].items()
+            }
     return out
 
 
@@ -457,16 +713,32 @@ def render_markdown(result: dict) -> str:
         "`proc_ms` includes model load (one CLI invocation); `engine_ms` excludes it.",
         "The two columns are not comparable to each other.",
         "",
-        "| engine | kind | n | fail | CER↓ | WER↓ | CER vs ref | proc ms | engine ms |",
-        "|---|---|--:|--:|--:|--:|--:|--:|--:|",
+        "`WER (unord)` compares the two word multisets: a gap to `WER` is a",
+        "reading-order difference, not a recognition one.",
+        "",
+        "| engine | kind | n | fail | CER↓ | WER↓ | WER (unord)↓ | CER vs ref | proc ms | engine ms |",
+        "|---|---|--:|--:|--:|--:|--:|--:|--:|--:|",
     ]
     fmt = lambda v: "—" if v is None else f"{v}"  # noqa: E731
     for name, s in sorted(result["summary"].items(), key=lambda kv: (kv[1]["kind"], kv[0])):
         lines.append(
             f"| `{name}` | {s['kind']} | {s['n']} | {s['failures']} | {fmt(s['mean_cer'])} | "
-            f"{fmt(s['mean_wer'])} | {fmt(s['mean_cer_vs_reference'])} | "
+            f"{fmt(s['mean_wer'])} | {fmt(s.get('mean_wer_unordered'))} | "
+            f"{fmt(s['mean_cer_vs_reference'])} | "
             f"{fmt(s['median_proc_ms'])} | {fmt(s['median_engine_ms'])} |"
         )
+    alt_rows = [(n, k, v) for n, s in sorted(result["summary"].items())
+                for k, v in (s.get("alt") or {}).items()]
+    if alt_rows:
+        lines += [
+            "",
+            "Secondary views of the same runs (not what the arm returns to a caller):",
+            "",
+            "| engine | view | n | CER↓ | WER↓ |",
+            "|---|---|--:|--:|--:|",
+        ]
+        for n, k, v in alt_rows:
+            lines.append(f"| `{n}` | {k} | {v['n']} | {fmt(v['mean_cer'])} | {fmt(v['mean_wer'])} |")
     if result["skipped"]:
         lines += ["", "Skipped: " + ", ".join(f"`{k}` ({v})" for k, v in result["skipped"].items())]
     return "\n".join(lines) + "\n"
