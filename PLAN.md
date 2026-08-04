@@ -19,7 +19,7 @@ races). Remove the row when the branch lands.
 | 2026-08-04 | `feat/olmocr-lane` **MERGED to main** | **T13 DONE** — olmOCR lane live: engine id 18 / CLI `olmocr` / registry `olmocr-2-7b` (q4_k pinned). Contract byte-exact vs toolkit (A3-confirmed). Acceptance vs 25-page gold: synth-class + clean pages at parity (0.006-0.017), receipt_historical 0.093, german 0.105-0.149 (band edge), receipt-class table pages CHAOTICALLY format-sensitive in lane AND reference alike (our backend-to-backend spread 0.314 ≈ reference stack-to-stack 0.372) — recorded limitation, not a lane defect. Mitigations queued: strict-front-matter retry, env-gated plain-table prompt. q8 is CPU-only on 16 GB (Metal OOM) | **DONE** |
 | 2026-08-04 | `feat/t14-deepseek2-decode-graph` (agent) | **T14** — deepseek_ocr2 persistent decode-step graph + F16 KV, copying qwen2vl `build_decode_step_graph` (`src/qwen2vl_ocr.cpp:2313`). FIRST add the missing `[deepseek-ocr2-stage-bench]` net-of-load line (T12 gap). Gate: CER vs `tests/regression/gold/deepseek-ocr2/` (threshold, never byte-diff) + interleaved same-window A/B. Holds the box's single heavy-process slot; timing runs quiet-machine only. **Checkpoint 1:** `[deepseek-ocr2-stage-bench]` landed (`CRISPEMBED_DEEPSEEK_OCR2_BENCH=1`, net-of-load, prefill/decode split); persistent step graph implemented behind `DS2_LEGACY_DECODE` / `DS2_FAST_DECODE` / `DS2_KV_F16` / `DS2_FORCE_CPU`; baseline run pending model download | IN PROGRESS |
 | 2026-08-04 | `feat/granite-r2-tokenizers` (agent) | **granite-r2 97m/311m** — three E2-located tokenizer items: (a) BPE-vs-SPM detection reads tokenizer.json `model.type` in `convert-bert-to-gguf.py:418` AND `crispembed.cpp:546/576`; (b) o200k-style pre-tokenizer for 97m beside `gpt2_pretokenize`; (c) wire existing `spm_style` for 311m. Then convert/verify/ship both (cstr). Backbone already PROVEN cos 0.99994+ via token-id bypass | IN PROGRESS |
-| 2026-08-04 | `feat/imatrix-quants` (Kaggle, agent) | **imatrix quants** — arctic-embed-m-v2 (q4_k cos_min 0.954 without imatrix) + f2llm family (0.6B q8 0.9909 known-soft); continuous metrics only. **Found: the calibration corpus NEVER SHIPPED** — a Kaggle script kernel carries only its `code_file` (usage #26), so every imatrix quant to date silently calibrated on the 10-sentence English fallback (`calib=10` is recorded in the uploaded `*-imatrix-ab.txt`; f2llm-0.6b q4_k+imatrix scores cos 0.830 vs f16). Fixed: corpora load from the CLONE and a miss now raises; new 134/65 role-tagged German+English+query-prompt+newline corpus; two-pass calibration (queries through the model's own prompt, docs with `--prefix ""`); A/B now min/mean/median + norm ratio. **SECOND finding — imatrix covers only HALF of arctic's quantized weights.** `src/crispembed.cpp:799-832` pre-merges q/k/v into one F32 `L.qkv_w` at load time and never `ggml_set_name`s it, so the collector files that matmul's statistics under ggml's auto name `leaf_N`; it matches nothing at quantize time and `enc.N.attn.{q,k,v}.weight` (36 of 73 quantized tensors, ~half the quantized bytes) are quantized with NO importance. Measured: arctic `36 with imatrix` / 73 quantized vs f2llm-80m `56 with imatrix` / 57 (the Qwen3 decoder path does not pre-merge). The collected `leaf_N` vector is width 768 = the QKV input, i.e. exactly the right importance vector for all three — a naming + quantizer-alias fix, NOT new infrastructure. Affects every BERT-family imatrix quant shipped (bge/e5/MiniLM/mpnet/gte/arctic). **Local A/B, arctic q4_k vs f32 gold over 65 texts** (baseline arm byte-identical to the shipped `-q4_k.gguf`): cos min 0.9475→0.9498, mean 0.9607→0.9637 with imatrix; German retrieval 5/5 both. Real but small — consistent with 49 % coverage; q8_0 stays the right default. Kernel `chr1s4/crispembed-imatrix-t19` RUNNING (5 models). Registry untouched — promotion is the coordinator's call | IN PROGRESS |
+| 2026-08-04 | `feat/imatrix-quants` (Kaggle, agent) | **imatrix quants** — arctic-embed-m-v2 (q4_k cos_min 0.954 without imatrix) + f2llm family (0.6B q8 0.9909 known-soft); continuous metrics only. **Found: the calibration corpus NEVER SHIPPED** — a Kaggle script kernel carries only its `code_file` (usage #26), so every imatrix quant to date silently calibrated on the 10-sentence English fallback (`calib=10` is recorded in the uploaded `*-imatrix-ab.txt`; f2llm-0.6b q4_k+imatrix scores cos 0.830 vs f16). Fixed: corpora load from the CLONE and a miss now raises; new 134/65 role-tagged German+English+query-prompt+newline corpus; two-pass calibration (queries through the model's own prompt, docs with `--prefix ""`); A/B now min/mean/median + norm ratio. Plus two more findings (imatrix covers only half of arctic's weights; imatrix is a NO-OP for q8_0) and the full 5-model A/B table — see **"T19-E3 status"** below. Registry untouched — promotion is the coordinator's call | IN PROGRESS |
 | 2026-08-04 | `feat/tokenize-simple-audit` (agent) | **tokenize_simple whitespace audit** (E1 follow-up) — callers `src/lfm2_embed.cpp:362`, `src/unlimited_ocr.cpp:2877`, `src/deepseek_ocr2.cpp:2304/2417` share the collapse-whitespace defect class; E1's `qwen_pretokenize` fix + hermetic `tests/test_qwen_pretokenize.cpp` is the template. Decoded-output gates per engine | **PUSHED, awaiting merge** (`29cf3531`) — all 4 sites converted to declared-regex pre-tokenizers (`tokenize_lfm2`, `tokenize_deepseek`), gate extended. **Headline: deepseek-ocr2's `"\nFree OCR."` ids did NOT match the contract** — newline deleted, 3 ids vs the reference's `[201,21431,126041,16]`; now byte-exact. Two further pre-existing bugs found+fixed: non-ASCII `\p{L}` approximation (German typographic quotes retokenized on every Qwen embedder) and a missing `bpe_one` merge tie-break. New hermetic guard `test-bpe-pretokenize` (246 checks, in model-free CI, verified fail-on-broken at 40 failures). lfm2 cos vs HF 0.9857→0.9997; deepseek/uocr models NOT run — decode gate is the coordinator's. See T19-E1-FOLLOWUP status block |
 | 2026-08-04 | `feat/t18-embed-oneshot-init` (agent) | **T18** — embedder one-shot fixed init ~1.3 s: make `--gpu-backend cpu` skip Metal init; profile fixed cost (250k-vocab SPM build suspect); acceptance ≥3x one-shot, cosine ≥0.9999, no warm-batch regression. QUEUED — timing acceptance needs the quiet machine, starts after T14's A/B completes | QUEUED |
 | 2026-08-04 | `feat/t15-smoldocling-doctags` (this session) | **T15 checkpoint 1 (`b40d0029` pushed):** THREE defects found by output-contract diff (tensor parity had masked all of them) — (1) converter dropped ALL 145 added tokens (vocab 49152 not 49280) so detok silently deleted every `<loc_N>`/`<doctag>` special; (2) preprocessing fed one squashed nearest-neighbor 512² image where the reference does Lanczos longest-edge-2048 + 512² tiling + global view + `<row_r_col_c>` prompt — squash caused the hallucinated duplicate regions; (3) max_tokens hardcoded 128, `--ocr-max-tokens` not dispatched. All fixed: fox.png prompt ids byte-identical to reference processor (347/347), payload CER **0.86 → 0.0** (payload exact, duplicates gone). Next: multi-page reference comparison, re-ship GGUF (old artifact carries truncated vocab), docs | IN PROGRESS |
@@ -1491,6 +1491,65 @@ runtime (`crispembed.cpp:546/576`) → fix = read tokenizer.json `model.type`;
 prefix to documents too (`examples/cli/main.cpp:2461`, context-level prefix)
 — affects bge/e5/nomic/lfm2/arctic; cost ~0.03-0.07 cosine, no rank flips
 measured, but needs its own A/B before changing (silently alters output).
+
+**T19-E3 status [branch `feat/imatrix-quants`, 2026-08-04]:** imatrix quants for
+`arctic-embed-m-v2` + the F2LLM-v2 family. Support already existed end to end
+(`src/imatrix.{h,cpp}` collector gated on `CRISPEMBED_IMATRIX_OUT`, installed on
+the sched in `crispembed.cpp:627/2341` and flushed from `crispembed_free`;
+`tools/quantize.cpp --imatrix`; `tools/kaggle/crispembed-imatrix-quant/`;
+`tools/imatrix_ab.py`) — nothing new was built. Three defects were found in it.
+
+**(1) The calibration corpus never shipped.** A Kaggle *script* kernel carries
+only its `code_file` (usage #26), so `read_corpus`'s `Path(__file__).parent`
+lookup always missed and every imatrix quant to date silently calibrated on the
+10-sentence English `_CALIB_FB` fallback — recorded as `calib=10` in the
+uploaded `*-imatrix-ab.txt`. Corpora now load from the CLONE and a miss raises.
+
+**(2) imatrix covers only 36 of arctic's 73 quantized tensors.**
+`src/crispembed.cpp:799-832` pre-merges q/k/v into one F32 `L.qkv_w` at load
+time and never `ggml_set_name`s it, so the collector files that matmul's
+statistics under ggml's auto name `leaf_N`, which matches nothing at quantize
+time — every `enc.N.attn.{q,k,v}.weight` is quantized with NO importance
+(quantizer prints `36 with imatrix`, vs f2llm-80m's `56` of 57 and 0.6b's `196`
+of 197; the decoder path does not pre-merge). The collected `leaf_N` vector is
+width 768 = the QKV input, i.e. already the correct importance vector for all
+three — so the fix is naming + a quantizer alias, not new infrastructure.
+**Affects every BERT-family imatrix quant shipped** (bge / e5 / MiniLM / mpnet /
+gte / arctic). TODO, not done here (runtime graph code).
+
+**(3) imatrix is a NO-OP for q8_0.** Every f2llm q8_0-vs-q8_0+imatrix pair came
+back identical to 6 dp (0.999684 / 0.999555 / 0.999161 / 0.992944) —
+`ggml_quantize_chunk` ignores the importance vector for Q8_0. So the "soft
+0.6B q8_0" cannot be improved this way; that lane is closed.
+
+A/B: cosine vs the full-precision GGUF over 65 held-out texts (43 doc + 22
+through the model's own query prompt; German + English + code + newline-heavy),
+calibrated on 134 disjoint texts. Kaggle CPU arms, cross-checked locally on
+Metal (arctic mean 0.9584 vs 0.9607 local — backend FP delta only):
+
+| model | q8_0 min/mean | q4_k min/mean | q4_k+imat min/mean | verdict |
+|---|---|---|---|---|
+| arctic-embed-m-v2 | .9994/.9996 | .9466/.9584 | .9480/.9614 | better, still weak |
+| f2llm-v2-80m | .9992/.9997 | .9499/.9727 | .9455/.9767 | mean better, **min worse** |
+| f2llm-v2-160m | .9993/.9996 | .9331/.9652 | .9495/.9719 | better |
+| f2llm-v2-330m | .9986/.9992 | .8840/.9230 | .9179/.9501 | clearly better |
+| f2llm-v2-0.6b (local) | .9964/.9975 | .6044/.6911 | .7821/.8238 | far better, still unusable |
+
+Norm ratio is 1.0000 for every arm on every text: the pooled-embedding API
+L2-normalizes, so the "+3.8 % norm inflation" noted in E1 is not observable (or
+consequential) through it — that metric only guards against a quant that breaks
+normalization. German retrieval stayed 5/5 top-1 for EVERY arm including
+0.6b q4_k at cos 0.69, which is exactly why a thresholded check cannot gate an
+imatrix decision; its distractor scores tell the real story (gold
+0.628/0.167/0.039 vs q4_k 0.786/0.519/**0.480**).
+
+**Conclusion: imatrix helps q4_k everywhere but promotes nothing.** q4_k stays
+far below q8_0 on all five, so q8_0 remains the right default and no registry
+default was flipped. The one shipped file this touches — f2llm-v2-0.6b's
+existing `-q4_k-imatrix.gguf` (calibrated on the 10-text fallback) — measures
+min .7891 / mean .8345 locally, slightly ABOVE the new corpus's .7821/.8238, so
+the re-calibration is published under `-c2` names and is NOT a promotion
+candidate; its SHA is pinned in `model_hashes.h` and was not overwritten.
 
 ### T19 — German embedder quality snapshot (official MTEB data, 2026-08-04) + port candidates
 
