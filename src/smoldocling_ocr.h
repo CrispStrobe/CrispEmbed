@@ -21,6 +21,9 @@ typedef struct smoldocling_context smoldocling_context;
 smoldocling_context * smoldocling_init(const char * model_path, int n_threads);
 void smoldocling_free(smoldocling_context * ctx);
 
+// Cap on generated DocTags tokens (default 1024).
+void smoldocling_set_max_tokens(smoldocling_context * ctx, int max_tokens);
+
 // Recognize text from an image file (JPEG/PNG). Returns UTF-8 DocTags
 // (owned by ctx, valid until next call or free).
 const char * smoldocling_recognize(smoldocling_context * ctx, const char * image_path, int * out_len);

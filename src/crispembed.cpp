@@ -4527,6 +4527,9 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
     case OCR_MODEL_LIGHTONOCR:
         lightonocr_set_max_tokens((lightonocr_context *)u->ctx, max_tokens);
         break;
+    case OCR_MODEL_SMOLDOCLING:
+        smoldocling_set_max_tokens((smoldocling_context *)u->ctx, max_tokens);
+        break;
     default:
         break; // formula OCR engines: no-op
     }
