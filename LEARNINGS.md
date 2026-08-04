@@ -5961,3 +5961,67 @@ after the port; (c) a detokenizer that `continue`s on out-of-range ids
 converts a truncated vocab into silently-missing markup — fail loudly or log
 once. Bonus symptom table: "model duplicates regions" on non-square pages =
 suspect aspect-destroying preprocessing before suspecting the decoder.
+
+## "Non-ASCII means letter" is a Unicode approximation that silently retokenizes German (2026-08-04, `feat/tokenize-simple-audit`)
+
+Every byte-level BPE pre-tokenizer in this repo approximated `\p{L}` as "ASCII
+letter, or any byte >= 0x80". That is not a rounding error, it is a different
+regex. The Qwen/LFM2/DeepSeek pattern all key off `\p{L}` and its complement, so
+the approximation moves token boundaries the moment a non-ASCII **punctuation**
+character appears — and the languages that need this repo's German retrieval
+work are exactly the ones that use them:
+
+```
+sagte „Hallo“ heute   HF: sagte | Ġ„ | Hallo | “ | Ġheute      (5 pre-tokens)
+                      us: sagte | Ġ„Hallo“ | Ġheute            (3)
+«quote»               HF: Â«quote | Â»          us: Â«quoteÂ»
+€£abc                 HF: âĤ¬Â£ | abc           us: âĤ¬Â£abc
+中文，测试。            HF: 中文 | ，测试 | 。      us: one piece
+```
+
+This survived the T19-E1 fix — that commit replaced the whitespace-collapsing
+`tokenize_simple` with a real declared-regex pre-tokenizer and a 39-check
+HF-golden guard, and it was *right about whitespace*. The battery just had no
+non-ASCII punctuation in it, so the residual defect passed 39/39. **A guard
+proves only what its cases contain**: when you transcribe a regex that
+references Unicode general categories, put a case in for each category you
+approximate, or you have tested the ASCII subset and shipped the rest.
+
+Fix: classify against the real categories. `tools/gen_unicode_class.py` emits
+`src/core/unicode_class.h` (774 ranges, binary-searched) for `\p{M}`, `\p{N}`,
+`\p{P}|\p{S}` and White_Space, defaulting to letter — the default is safe
+because unlisted non-ASCII really is letters (CJK, Cyrillic, Greek, Arabic,
+Hangul, Devanagari). `\p{P}` and `\p{S}` share one class deliberately: every
+regex in `core/bpe.h` uses them only as the union.
+
+**Fuzz the transcription, don't just fixture it.** 40 curated cases found the
+bug; 4000 random mixed-script strings compared against HuggingFace's own
+`pre_tokenize_str()` are what proved the replacement correct (0 mismatches for
+all three families), and 1508 strings run through the real vocab+merges proved
+the *ids* match end to end. Both harnesses are ~40 lines of Python driving a
+tiny stdin/stdout C++ binary. Build one before believing a hand-transcribed
+regex.
+
+## `std::priority_queue` ties are unspecified — HuggingFace BPE breaks them leftmost (2026-08-04, `feat/tokenize-simple-audit`)
+
+`core_bpe::bpe_one` ordered its merge heap by rank alone:
+
+```cpp
+auto cmp = [](const PQEntry & a, const PQEntry & b) { return a.first > b.first; };
+```
+
+`std::priority_queue` gives no ordering guarantee among equal keys, so a run of
+equal-rank pairs could merge from anywhere in the middle. HuggingFace's BPE
+orders its heap by `(rank, pos)` **both ascending**, i.e. leftmost wins a tie.
+Result: `"qqqqqc"` with one merge rule came out `qq q qq c` instead of
+`qq qq q c` — a genuinely different token id, in a code path shared by every
+byte-level BPE engine in the repo. Measured: 4 of 1508 random strings per
+vocab, on all three tokenizers tried. The fix is one line
+(`a.first != b.first ? a.first > b.first : a.second > b.second`).
+
+Two things made it hard to see. It is **rare** (~0.3%), so any pass/fail
+fixture misses it. And it is **not reproducible from short inputs**: with three
+symbols the heap happens to come out leftmost anyway, so the obvious four-token
+regression test passes on the broken code. The guard needs a five-symbol run
+(`tests/test_bpe_pretokenize.cpp`) — a reminder that a test which cannot fail
+on the pre-fix build is not a guard, whatever it is named.

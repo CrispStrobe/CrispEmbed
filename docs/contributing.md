@@ -465,9 +465,17 @@ Utility libraries (not model backends) follow a lighter pattern.
   than on Linux, so a Linux-formatted tree can still fail.)
 - **Model-free tests run on every push** and need no weights or network:
   ```bash
-  cmake --build build --target test-image-provenance test-provenance-marking test-msac-tiling
+  cmake --build build --target test-image-provenance test-provenance-marking test-msac-tiling \
+    test-qwen-pretokenize test-bpe-pretokenize
   ./build/test-image-provenance && ./build/test-provenance-marking && ./build/test-msac-tiling
+  ./build/test-qwen-pretokenize && ./build/test-bpe-pretokenize
   ```
+  `test-qwen-pretokenize` / `test-bpe-pretokenize` guard the byte-level BPE
+  pre-tokenizers in `src/core/bpe.h` against HuggingFace's own
+  `pre_tokenize_str()` output. Their case tables are GENERATED — if you change a
+  pre-tokenizer, rerun `python tools/gen_bpe_pretokenize_test.py
+  tests/test_bpe_pretokenize.cpp && tools/format.sh --fix` (needs network and the
+  `tokenizers` package) rather than hand-editing the goldens.
   Anything you add that can be checked without a checkpoint belongs here rather
   than in the artifact-gated tiers — a test that only runs on an equipped runner
   gates nothing on most pushes.

@@ -267,6 +267,15 @@ LFM2.5-ColBERT (128-d per token) and all seven cross-encoder rerankers are
 supported. Sparse/ColBERT heads are written into the GGUF by the converter and
 detected via `has_sparse` / `has_colbert`.
 
+**Byte-level BPE tokenizers transcribe the pre-tokenizer regex the checkpoint
+declares** (`src/core/bpe.h`), one per family — Qwen2/Qwen3, LFM2.5, and the
+DeepSeek-OCR-2 / Unlimited-OCR Split sequence — validated against HuggingFace's
+own `pre_tokenize_str()` in model-free CI. Older builds used a whitespace-split
+approximation that collapsed whitespace runs and dropped newlines, so multi-line
+documents and non-ASCII punctuation (German typographic quotes, dashes,
+currency) tokenized differently from the reference. Set
+`CRISPEMBED_BPE_LEGACY_WHITESPACE=1` to restore the old ids for bisection.
+
 ---
 
 ## OCR & document AI

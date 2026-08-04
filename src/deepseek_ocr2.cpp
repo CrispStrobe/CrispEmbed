@@ -2301,7 +2301,9 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         int D = mdl.lhp.hidden;
         auto embed_w = to_f32(mdl.embed_tokens);
         std::vector<int32_t> ids = { 0 }; // bos
-        auto more = core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, tt);
+        auto more = core_bpe::legacy_whitespace()
+                        ? core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, tt)
+                        : core_bpe::tokenize_deepseek(ctx->inner.token_to_id, ctx->inner.merge_rank, tt);
         ids.insert(ids.end(), more.begin(), more.end());
         std::vector<float> pe((size_t)ids.size() * D);
         for (size_t i = 0; i < ids.size(); i++)
@@ -2413,8 +2415,17 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
     auto vsep = to_f32(mdl.view_separator); // [D]
 
     // Instruction text after <image>. DeepSeek-OCR2 plain prompt: "\nFree OCR."
+    //
+    // `tokenize_simple` DELETED that leading newline, so this emitted 3 ids
+    // where the reference tokenizer emits 4: HF gives [201, 21431, 126041, 16]
+    // ("\n" "Free" " OCR" "."), we sent [21431, 126041, 16]. The prompt is
+    // fixed text, so the loss was deterministic on every page. Now transcribes
+    // the pre_tokenizer DeepSeek-OCR-2's tokenizer.json declares and matches HF
+    // exactly. CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old 3-id prompt.
     std::vector<int32_t> instr_ids =
-        core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.");
+        core_bpe::legacy_whitespace()
+            ? core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.")
+            : core_bpe::tokenize_deepseek(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.");
 
     int n_img_tokens = n_enc_tokens; // 256 global features
     int n_prompt = 1 /*bos*/ + n_img_tokens + 1 /*view_sep*/ + (int)instr_ids.size();

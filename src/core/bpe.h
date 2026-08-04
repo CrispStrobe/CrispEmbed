@@ -22,9 +22,11 @@
 #pragma once
 
 #include "unicode_categ.h"
+#include "unicode_class.h"
 
 #include <climits>
 #include <cstdint>
+#include <cstdlib>
 #include <cstring>
 #include <queue>
 #include <string>
@@ -208,9 +210,16 @@ inline void bpe_one(const std::unordered_map<std::string, int32_t> & token_to_id
             nodes[i].next = i < n - 1 ? i + 1 : -1;
         }
 
-        // (rank, left_node_id) — lower rank = higher priority
+        // (rank, left_node_id) — lower rank = higher priority, and on a TIE the
+        // leftmost pair wins. The tie-break is not cosmetic: HuggingFace's BPE
+        // orders its heap by (rank, pos) both ascending, so "qqqc" merges as
+        // "qq"+"q"+"c". Without the second key std::priority_queue leaves equal
+        // ranks in an unspecified order and the same input came out "q"+"qq"+"c"
+        // — a different token id, on 4 of 1508 random strings per vocab.
         using PQEntry = std::pair<int32_t, int>;
-        auto cmp = [](const PQEntry & a, const PQEntry & b) { return a.first > b.first; };
+        auto cmp = [](const PQEntry & a, const PQEntry & b) {
+            return a.first != b.first ? a.first > b.first : a.second > b.second;
+        };
         std::priority_queue<PQEntry, std::vector<PQEntry>, decltype(cmp)> pq(cmp);
 
         // Helper: try to add pair (i, nodes[i].next) to the queue
@@ -311,52 +320,83 @@ inline std::vector<int32_t> tokenize_simple(const std::unordered_map<std::string
     return result;
 }
 
-// --- Qwen2/Qwen3 ByteLevel pre-tokenizer -----------------------------------
+// CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores `tokenize_simple` at every call
+// site this audit converted to a declared-regex pre-tokenizer, so the old
+// token ids stay reachable for bisection without a rebuild. Read once.
+//
+// Covered sites: src/tokenizer_bpe.cpp (Qwen-family embedders, T19-E1),
+// src/lfm2_embed.cpp, src/deepseek_ocr2.cpp (x2), src/unlimited_ocr.cpp.
+inline bool legacy_whitespace() {
+    static const bool v = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);
+    return v;
+}
+
+// --- Declared-regex ByteLevel pre-tokenizers --------------------------------
 //
 // `tokenize_simple` above throws whitespace away: it splits on space/tab/
 // newline and rejoins the runs with a single space, so "a\n\n  b" and "a b"
-// produce identical ids. For Qwen-family models that is a real defect — the
-// newline is a meaningful token and the instruction prompts these embedding
-// models ship contain one ("Instruct: ...\nQuery: ").
+// produce identical ids. That is a real defect for every byte-level BPE model
+// — the newline is a meaningful token, the instruction prompts these models
+// ship contain one ("Instruct: ...\nQuery: ", "\nFree OCR."), and the damage
+// is invisible on newline-free text, which is why it shipped.
 //
-// The functions below implement the pre-tokenizer regex that Qwen2/Qwen3
-// tokenizer.json actually declares, verbatim:
+// The functions below transcribe the pre_tokenizer regex each family's
+// tokenizer.json actually declares. Three families are covered; they differ
+// less than they look, so read `bytelevel_pretokenize` first and the DeepSeek
+// section second.
+//
+// Callers, and what each one's checkpoint declares:
+//
+//   qwen_pretokenize      Qwen2/Qwen3 vocabs (src/tokenizer_bpe.cpp)
+//   lfm2_pretokenize      LiquidAI/LFM2.5-Embedding-350M (src/lfm2_embed.cpp)
+//   deepseek_pretokenize  deepseek-ai/DeepSeek-OCR-2 (src/deepseek_ocr2.cpp)
+//                         == baidu/Unlimited-OCR (src/unlimited_ocr.cpp); the
+//                         two pre_tokenizer sections are byte-identical.
+//
+// Every case is pinned against HuggingFace's own `pre_tokenize_str()` output
+// in tests/test_qwen_pretokenize.cpp and tests/test_bpe_pretokenize.cpp.
+
+// Decode the codepoint starting at `s[i]`; `len` receives its byte length
+// (>= 1, so callers always make forward progress on malformed input).
+inline uint32_t utf8_decode_at(const std::string & s, size_t i, size_t & len) {
+    const unsigned char c = (unsigned char)s[i];
+    len = utf8_len(c);
+    if (i + len > s.size()) len = 1;
+    if (len == 1) return c;
+    if (len == 2) return ((uint32_t)(c & 0x1F) << 6) | (uint32_t)(s[i + 1] & 0x3F);
+    if (len == 3)
+        return ((uint32_t)(c & 0x0F) << 12) | ((uint32_t)(s[i + 1] & 0x3F) << 6) | (uint32_t)(s[i + 2] & 0x3F);
+    return ((uint32_t)(c & 0x07) << 18) | ((uint32_t)(s[i + 1] & 0x3F) << 12) | ((uint32_t)(s[i + 2] & 0x3F) << 6) |
+           (uint32_t)(s[i + 3] & 0x3F);
+}
+
+// Unicode general category of the codepoint at `s[i]` (see unicode_class.h).
+inline core_uc_class uc_at(const std::string & s, size_t i, size_t & len) {
+    return core_uc_classify(utf8_decode_at(s, i, len));
+}
+
+// The GPT-4-family regex, shared by Qwen2/Qwen3 and LFM2. They are the same
+// pattern except for how many digits one token may hold:
 //
 //   (?i:'s|'t|'re|'ve|'m|'ll|'d)   -- 1: contraction, case-insensitive
 //   |[^\r\n\p{L}\p{N}]?\p{L}+      -- 2: one optional non-CR/LF/alnum char, letters
-//   |\p{N}                         -- 3: exactly ONE digit (Qwen splits digits)
+//   |\p{N}{1,MAX}                  -- 3: digits; MAX is 1 for Qwen, 3 for LFM2
 //   | ?[^\s\p{L}\p{N}]+[\r\n]*     -- 4: optional space, punctuation, trailing CR/LF
 //   |\s*[\r\n]+                    -- 5: whitespace run ending in newlines
 //   |\s+(?!\S)                     -- 6: trailing whitespace
 //   |\s+                           -- 7: any whitespace
 //
-// Alternatives are tried in order at each position, exactly as a regex engine
-// would. \p{L} is approximated as ASCII letters plus any non-ASCII codepoint
-// and \p{N} as ASCII digits — the same approximation the CLIP/GPT-2
-// pre-tokenizers in this repo already use.
-inline bool qwen_is_ascii_digit(unsigned char c) {
-    return c >= '0' && c <= '9';
-}
-
-inline bool qwen_is_space(unsigned char c) {
-    return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v';
-}
-
-// \p{L}: ASCII letters + any non-ASCII lead byte (approximation).
-inline bool qwen_is_letter(unsigned char c) {
-    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c >= 0x80;
-}
-
-inline bool qwen_is_newline(unsigned char c) {
-    return c == '\r' || c == '\n';
-}
-
-inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
+// Alternatives are tried in order at each position, leftmost-first, exactly as
+// the Rust regex engine behind HuggingFace `tokenizers` does.
+inline std::vector<std::string> bytelevel_pretokenize(const std::string & s, int max_digit_run) {
     std::vector<std::string> out;
     const size_t n = s.size();
     size_t i = 0;
+    size_t len = 0;
     while (i < n) {
         const unsigned char c = (unsigned char)s[i];
+        const core_uc_class cls = uc_at(s, i, len);
+        const size_t clen = len;
 
         // 1. (?i:'s|'t|'re|'ve|'m|'ll|'d)
         if (c == '\'' && i + 1 < n) {
@@ -378,24 +418,28 @@ inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
         }
 
         // 2. [^\r\n\p{L}\p{N}]?\p{L}+
-        //    The optional first char is ANY single char that is not CR/LF and
-        //    not a letter or digit — a space, but also '(' or '-'.
+        //    The optional first char is ANY single codepoint that is not CR/LF
+        //    and not a letter or digit — a space, but also '(' or '-' or '«'.
         {
             size_t k = i;
-            if (!qwen_is_newline(c) && !qwen_is_letter(c) && !qwen_is_ascii_digit(c)) k += utf8_len(c);
-            if (k < n && qwen_is_letter((unsigned char)s[k])) {
+            if (c != '\r' && c != '\n' && cls != CORE_UC_L && cls != CORE_UC_N) k += clen;
+            if (k < n && uc_at(s, k, len) == CORE_UC_L) {
                 size_t j = k;
-                while (j < n && qwen_is_letter((unsigned char)s[j])) j += utf8_len((unsigned char)s[j]);
+                while (j < n && uc_at(s, j, len) == CORE_UC_L) j += len;
                 out.push_back(s.substr(i, j - i));
                 i = j;
                 continue;
             }
+            // No backtracking arm: retrying without the optional codepoint
+            // needs \p{L} at `i`, and `cls != CORE_UC_L` got us here.
         }
 
-        // 3. \p{N} — a single digit, never a run.
-        if (qwen_is_ascii_digit(c)) {
-            out.push_back(s.substr(i, 1));
-            i += 1;
+        // 3. \p{N}{1,max_digit_run}
+        if (cls == CORE_UC_N) {
+            size_t j = i;
+            for (int taken = 0; taken < max_digit_run && j < n && uc_at(s, j, len) == CORE_UC_N; taken++) j += len;
+            out.push_back(s.substr(i, j - i));
+            i = j;
             continue;
         }
 
@@ -404,30 +448,40 @@ inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
             size_t k = i;
             if (c == ' ') k++;
             if (k < n) {
-                const unsigned char cc = (unsigned char)s[k];
-                if (!qwen_is_space(cc) && !qwen_is_letter(cc) && !qwen_is_ascii_digit(cc)) {
+                const core_uc_class ck = uc_at(s, k, len);
+                if (ck != CORE_UC_Z && ck != CORE_UC_L && ck != CORE_UC_N) {
                     size_t j = k;
                     while (j < n) {
-                        const unsigned char e = (unsigned char)s[j];
-                        if (qwen_is_space(e) || qwen_is_letter(e) || qwen_is_ascii_digit(e)) break;
-                        j += utf8_len(e);
+                        const core_uc_class e = uc_at(s, j, len);
+                        if (e == CORE_UC_Z || e == CORE_UC_L || e == CORE_UC_N) break;
+                        j += len;
                     }
-                    while (j < n && qwen_is_newline((unsigned char)s[j])) j++;
+                    while (j < n && (s[j] == '\r' || s[j] == '\n')) j++;
                     out.push_back(s.substr(i, j - i));
                     i = j;
                     continue;
                 }
             }
+            // No backtracking arm either: dropping the optional ' ' needs a
+            // non-\s codepoint at `i`, and ' ' is \s.
         }
 
         // 5. `\s*[\r\n]+` — a whitespace run that contains a newline. Take the
         //    longest prefix of whitespace ending at the last newline of the run.
         {
             size_t j = i;
-            while (j < n && qwen_is_space((unsigned char)s[j])) j++;
+            while (j < n && uc_at(s, j, len) == CORE_UC_Z) j += len;
+            if (j == i) {
+                // Unreachable for well-formed input: alternatives 2/3/4 cover
+                // every class except \s. Emit one codepoint so a malformed
+                // byte cannot spin here.
+                out.push_back(s.substr(i, clen));
+                i += clen;
+                continue;
+            }
             size_t last_nl = std::string::npos;
             for (size_t t = i; t < j; t++)
-                if (qwen_is_newline((unsigned char)s[t])) last_nl = t;
+                if (s[t] == '\r' || s[t] == '\n') last_nl = t;
             if (last_nl != std::string::npos) {
                 out.push_back(s.substr(i, last_nl + 1 - i));
                 i = last_nl + 1;
@@ -435,14 +489,25 @@ inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
             }
 
             // 6/7. `\s+(?!\S)` then `\s+`: a whitespace run with no newline.
-            //      When the run is followed by a non-space, the last space is
-            //      left for the next token's leading ` ?`.
-            if (j == n || (j - i) == 1) {
+            //      When the run is followed by a non-space, `\s+(?!\S)`
+            //      backtracks off the last whitespace codepoint, leaving it
+            //      for the next token's leading ` ?`.
+            size_t last = j;
+            {
+                size_t t = i, prev = i, l2 = 0;
+                while (t < j) {
+                    prev = t;
+                    utf8_decode_at(s, t, l2);
+                    t += l2;
+                }
+                last = prev;
+            }
+            if (j == n || last == i) {
                 out.push_back(s.substr(i, j - i));
                 i = j;
             } else {
-                out.push_back(s.substr(i, (j - 1) - i));
-                i = j - 1;
+                out.push_back(s.substr(i, last - i));
+                i = last;
             }
             continue;
         }
@@ -450,14 +515,178 @@ inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
     return out;
 }
 
-// Qwen2/Qwen3 pre-tokenizer + BPE merge pass. Drop-in replacement for
-// tokenize_simple for Qwen-family vocabs; unlike that function it is
+// Qwen2/Qwen3: one token per digit.
+inline std::vector<std::string> qwen_pretokenize(const std::string & s) {
+    return bytelevel_pretokenize(s, 1);
+}
+
+// LFM2.5: identical regex, but digit runs of up to three.
+inline std::vector<std::string> lfm2_pretokenize(const std::string & s) {
+    return bytelevel_pretokenize(s, 3);
+}
+
+// --- DeepSeek-OCR-2 / Unlimited-OCR ByteLevel pre-tokenizer -----------------
+//
+// Both checkpoints declare the SAME pre_tokenizer, and it is not one regex but
+// a Sequence of three `Split`s with behavior "Isolated", each applied to the
+// pieces the previous one produced:
+//
+//   1. \p{N}{1,3}
+//   2. [一-龥぀-ゟ゠-ヿ]+                      (CJK ideographs, hiragana, katakana)
+//   3. [!"#$%&'()*+,\-./:;<=>?@\[\\\]^_`{|}~][A-Za-z]+
+//      |[^\r\n\p{L}\p{P}\p{S}]?[\p{L}\p{M}]+
+//      | ?[\p{P}\p{S}]+[\r\n]*
+//      |\s*[\r\n]+|\s+(?!\S)|\s+
+//
+// "Isolated" means the matches AND the text between them both become pieces.
+// Stage 3 has no \p{N} alternative at all — stage 1 has already isolated every
+// digit run, so a stage-3 piece is either all digits (and matches nothing,
+// surviving whole) or contains none.
+//
+// Versus the Qwen/LFM2 regex the differences that actually move tokens are:
+// CJK runs are cut away from adjacent Latin ("中文abc" -> "中文" + "abc"), the
+// letter alternative admits combining marks, and the leading-character class is
+// built on [\p{P}\p{S}] instead of [^\s\p{L}\p{N}] so "«quote»" splits three
+// ways here and two ways under Qwen.
+
+// The literal ranges of stage 2: U+4E00..U+9FA5, U+3040..U+309F, U+30A0..U+30FF.
+inline bool ds_is_cjk(uint32_t cp) {
+    return (cp >= 0x4E00 && cp <= 0x9FA5) || (cp >= 0x3040 && cp <= 0x309F) || (cp >= 0x30A0 && cp <= 0x30FF);
+}
+
+// Stage 1 + stage 2 share this shape: walk the piece, and whenever `match`
+// starts at the cursor, flush the pending gap and emit the matched run.
+template <typename MatchFn>
+inline void ds_split_isolated(const std::string & s, MatchFn match, std::vector<std::string> & out) {
+    const size_t n = s.size();
+    size_t i = 0, gap = 0, len = 0;
+    while (i < n) {
+        const size_t j = match(s, i);
+        if (j > i) {
+            if (i > gap) out.push_back(s.substr(gap, i - gap));
+            out.push_back(s.substr(i, j - i));
+            i = j;
+            gap = i;
+        } else {
+            utf8_decode_at(s, i, len);
+            i += len;
+        }
+    }
+    if (n > gap) out.push_back(s.substr(gap, n - gap));
+}
+
+// Stage 3's alternation. Returns the end offset of the match starting at `i`,
+// or `i` when no alternative applies (the codepoint joins the gap).
+inline size_t ds_match_main(const std::string & s, size_t i) {
+    const size_t n = s.size();
+    size_t len = 0;
+    const unsigned char c = (unsigned char)s[i];
+    const core_uc_class cls = uc_at(s, i, len);
+    const size_t clen = len;
+
+    // 1. `[<ascii punct/symbol>][A-Za-z]+` — the 32 ASCII characters the regex
+    //    lists are exactly the ASCII members of \p{P} u \p{S}.
+    if (c < 0x80 && cls == CORE_UC_P) {
+        size_t j = i + 1;
+        while (j < n && (((unsigned char)s[j] >= 'a' && (unsigned char)s[j] <= 'z') ||
+                         ((unsigned char)s[j] >= 'A' && (unsigned char)s[j] <= 'Z')))
+            j++;
+        if (j > i + 1) return j;
+    }
+
+    // 2. `[^\r\n\p{L}\p{P}\p{S}]?[\p{L}\p{M}]+`
+    {
+        auto is_lm = [](core_uc_class k) { return k == CORE_UC_L || k == CORE_UC_M; };
+        size_t k = i;
+        bool took_optional = false;
+        if (c != '\r' && c != '\n' && cls != CORE_UC_L && cls != CORE_UC_P) {
+            k += clen;
+            took_optional = true;
+        }
+        size_t start = std::string::npos;
+        if (k < n && is_lm(uc_at(s, k, len)))
+            start = k;
+        else if (took_optional && is_lm(cls))
+            start = i; // backtrack: the optional class also admits \p{M}
+        if (start != std::string::npos) {
+            size_t j = start;
+            while (j < n && is_lm(uc_at(s, j, len))) j += len;
+            return j;
+        }
+    }
+
+    // 3. ` ?[\p{P}\p{S}]+[\r\n]*`
+    {
+        size_t k = i;
+        if (c == ' ') k++;
+        if (k < n && uc_at(s, k, len) == CORE_UC_P) {
+            size_t j = k;
+            while (j < n && uc_at(s, j, len) == CORE_UC_P) j += len;
+            while (j < n && (s[j] == '\r' || s[j] == '\n')) j++;
+            return j;
+        }
+    }
+
+    // 4/5/6. `\s*[\r\n]+` then `\s+(?!\S)` then `\s+` — identical semantics to
+    //        alternatives 5/6/7 of bytelevel_pretokenize above.
+    {
+        size_t j = i;
+        while (j < n && uc_at(s, j, len) == CORE_UC_Z) j += len;
+        if (j == i) return i;
+        size_t last_nl = std::string::npos;
+        for (size_t t = i; t < j; t++)
+            if (s[t] == '\r' || s[t] == '\n') last_nl = t;
+        if (last_nl != std::string::npos) return last_nl + 1;
+        size_t last = i, t = i, l2 = 0;
+        while (t < j) {
+            last = t;
+            utf8_decode_at(s, t, l2);
+            t += l2;
+        }
+        return (j == n || last == i) ? j : last;
+    }
+}
+
+inline std::vector<std::string> deepseek_pretokenize(const std::string & s) {
+    std::vector<std::string> stage, next;
+
+    // 1. \p{N}{1,3}
+    ds_split_isolated(
+        s,
+        [](const std::string & t, size_t i) {
+            size_t j = i, len = 0;
+            for (int taken = 0; taken < 3 && j < t.size() && uc_at(t, j, len) == CORE_UC_N; taken++) j += len;
+            return j;
+        },
+        stage);
+
+    // 2. [一-龥぀-ゟ゠-ヿ]+
+    for (const auto & p : stage)
+        ds_split_isolated(
+            p,
+            [](const std::string & t, size_t i) {
+                size_t j = i, len = 0;
+                while (j < t.size() && ds_is_cjk(utf8_decode_at(t, j, len))) j += len;
+                return j;
+            },
+            next);
+    stage.swap(next);
+    next.clear();
+
+    // 3. the main alternation
+    for (const auto & p : stage) ds_split_isolated(p, ds_match_main, next);
+    return next;
+}
+
+// --- pre-tokenizer + BPE merge pass ----------------------------------------
+//
+// Drop-in replacements for tokenize_simple; unlike that function they are
 // whitespace- and newline-faithful.
-inline std::vector<int32_t> tokenize_qwen(const std::unordered_map<std::string, int32_t> & token_to_id,
-                                          const std::unordered_map<std::string, int32_t> & merge_rank,
-                                          const std::string & text) {
+inline std::vector<int32_t> tokenize_pretokenized(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                                  const std::unordered_map<std::string, int32_t> & merge_rank,
+                                                  const std::vector<std::string> & pretokens) {
     std::vector<int32_t> result;
-    for (const auto & pt : qwen_pretokenize(text)) {
+    for (const auto & pt : pretokens) {
         std::string encoded = bytes_to_unicode(pt.data(), pt.size());
         bpe_one(token_to_id, merge_rank, encoded, result);
     }
@@ -661,6 +890,24 @@ inline std::vector<int32_t> tokenize_o200k(const std::unordered_map<std::string,
         bpe_one(token_to_id, merge_rank, encoded, result);
     }
     return result;
+}
+
+inline std::vector<int32_t> tokenize_qwen(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                          const std::unordered_map<std::string, int32_t> & merge_rank,
+                                          const std::string & text) {
+    return tokenize_pretokenized(token_to_id, merge_rank, qwen_pretokenize(text));
+}
+
+inline std::vector<int32_t> tokenize_lfm2(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                          const std::unordered_map<std::string, int32_t> & merge_rank,
+                                          const std::string & text) {
+    return tokenize_pretokenized(token_to_id, merge_rank, lfm2_pretokenize(text));
+}
+
+inline std::vector<int32_t> tokenize_deepseek(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                              const std::unordered_map<std::string, int32_t> & merge_rank,
+                                              const std::string & text) {
+    return tokenize_pretokenized(token_to_id, merge_rank, deepseek_pretokenize(text));
 }
 
 } // namespace core_bpe
