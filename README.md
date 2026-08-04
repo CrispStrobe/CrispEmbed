@@ -83,9 +83,12 @@ table, and formula modules:
 curl http://localhost:8080/capabilities
 ```
 
-The server also provides `/health/live` and `/health/ready`. Text recognition
-can be swapped independently for TrOCR, Tesseract-LSTM, PP-OCRv6, EasyOCR,
-PARSeq, or a VLM.
+The server also provides `/health/live` and `/health/ready`. `/health` doubles as
+a capability probe (`reranker`, `sparse`, `colbert`, `ocr_pipeline`, `layout`, …),
+but those keys are **present-when-active**: an inactive capability is omitted
+rather than reported as `false`, so test for the key's presence, not its value.
+Text recognition can be swapped independently for TrOCR, Tesseract-LSTM,
+PP-OCRv6, EasyOCR, PARSeq, or a VLM.
 
 ---
 
