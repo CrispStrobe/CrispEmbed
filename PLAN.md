@@ -16,7 +16,6 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `feat/parity-docling` (delegated agent) | **Picked: A1** — pip document-parser (Docling) reference arm for `tests/ocr_external_parity.py`; harness rows on synth + CC0 corpora | **IN PROGRESS** |
 | 2026-08-04 | *(queued, serialized — one heavy ref at a time)* | **Claimed: A2 → A3 → A4** — transformers Qwen2.5-VL-7B arm, olmOCR-toolkit arm + gold, HF DeepSeek-OCR arm + gold. Run strictly one at a time after A1/A6; rows update as each starts | **QUEUED** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion kernel `chr1s4/crispembed-olmocr-2-7b-gguf-conversion` RUNNING on Kaggle (allenai/olmOCR-2-7B-1025 → cstr/olmOCR-2-7B-1025-GGUF q8_0+q4_k). Pending: registry entry + pin after upload, token-order refactor byte-identity A/B on qwen2vl-3b, decoded parity vs A3 gold on ≥5 pages | **IN PROGRESS** |
 
@@ -1291,6 +1290,35 @@ defaults; detector graph rows). Re-date or delete impossibility claims per
 the LEARNINGS rule ("re-date your impossibility claims"). **Acceptance:**
 `tests/test_ocr_backend_matrix.py` and `tests/test_cli_engine_names.py` pass
 and every matrix claim cites a gate or a dated measurement.
+
+**A1 status [DONE 2026-08-04, merged `7b4d8fa7`]:** `DoclingPy` arm +
+order-blind `wer_unordered` metric in `tests/ocr_external_parity.py`; artifact
+`tests/results/ocr_parity_docling_2026-08-04.json` (versions pinned, repro
+lines). Numbers (repeats=3, warm ⇒ proc_ms==engine_ms; `tesseract-cli:eng`
+same-window control, its proc_ms is load-INCLUSIVE):
+
+| corpus | n | arm | CER | WER | WER-unord | med engine_ms |
+|---|--:|---|--:|--:|--:|--:|
+| synth | 20 | docling-py | 0.11269 | 0.14367 | **0.02483** | 1580 |
+| synth | 20 | tesseract-cli | 0.02561 | 0.08900 | 0.10027 | (proc 133) |
+| cc0-labelled | 5 | docling-py | 0.44934 | 0.51996 | 0.50708 | 6581 |
+| cc0-labelled | 5 | tesseract-cli | 0.54721 | 0.73225 | 0.58255 | (proc 272) |
+
+Findings that gate how this arm may be quoted: (a) **backend trap confirmed**
+— auto-selection picked **RapidOCR/torch with the default `lang=["chinese"]`
+PP-OCRv6-small models** (ocrmac/onnxruntime/easyocr absent in the venv), so
+this arm is near-same-model as our `ppocrv6` lane, NOT an independent
+recognizer; differences measure pipeline/layout, and installing ocrmac or
+onnxruntime silently changes the arm. (b) ~83% of its synth word error is
+READING ORDER (4/20 fixtures glyph-perfect with swapped lines); unordered its
+recognition beats the tesseract control — both metrics now reported. (c) The
+layout stage can silently discard OCR'd text: `simple_form.png` exports 0
+chars (CER 1.0) as two PICTURE clusters while recognized items score 0.1862;
+`force_full_page_ocr` does not help; adapter records both views. (d)
+`receipt_historical.png` total failure: CER 0.9974 at 19.7 s (slowest).
+(e) 12-24x slower than the load-inclusive tesseract control. (f) Environment:
+`~/.cache/huggingface` symlinks to the backups volume which is 100% FULL —
+every HF download needs `HF_HOME=$HOME/.cache/hf-docling` until cleared.
 
 **A6 status [DONE 2026-08-04, merged]:** matrix re-verified row by row; every
 claim now cites a gate/code line or a dated measurement, `UNVERIFIED as of
