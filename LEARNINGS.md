@@ -5764,3 +5764,48 @@ Durable rules:
   The converse also held here, usefully: the surviving `e`->`c` confusion on a
   31 px line reproduced byte-identically in the Python reference, which is how
   we know *that* one is model capacity and not a port bug.
+
+## Five "hard blockers", zero hard bugs: every wall in the PP-OCRv6 ledger was a small defect with a big wrong label (2026-08-04)
+
+One session closed five long-standing blockers, and the post-mortem pattern is
+identical for all of them — the recorded diagnosis was wrong, the actual defect
+was small, and the fix was found by reproducing the claim rather than working
+from it:
+
+| recorded label | actual defect | fix size |
+|---|---|---|
+| "recognizer quality gap vs official ($→S, I→:)" | the pipeline's scan-cleanup (despeckle/blackfilter, no CLI switches) eroded thin strokes BEFORE detection | 1 carve-out |
+| "1.48x warm speed gap vs official python" | stage-bench `detect` spanned stage entry, folding a ~1.1 s Metal init into a "load-excluded" column | timestamp base |
+| "detector graph geometry divergence (31 vs 30 boxes)" | a stray second `ggml_scale(gate, 0.2f)` squashed one SE hard-sigmoid to 0.04x+0.5 | 1 line |
+| "detector graph 2.6-6.8x slower than scalar" | `DET_GRAPH` implied GPU load, so the graph had only ever been timed on Metal; on CPU it was 1.5-1.7x FASTER | measurement |
+| "Metal fourth-dimension pooling limitation (batch graph)" | the fused caller passed a zeroed value into an in-out width parameter; every batch graph was built at width 0 and asserted on ANY backend | seed 1 param |
+
+Durable rules from the wreckage:
+
+- **Reproduce the failure on a different backend before accepting a
+  backend-specific theory.** The "Metal pooling" abort reproduced on CPU in
+  one run, which killed the theory instantly. A limitation that is not
+  backend-specific is a bug wearing a backend costume.
+- **When a lane misreads but a direct harness reads fine, diff the INPUT each
+  one saw before diffing any model stage.** The $→S bisect never needed a
+  single tensor: recognizer-on-raw-crops was correct, direct-harness-on-the-
+  cleaned-image reproduced the corruption byte-for-byte. The bug was upstream
+  of the model entirely.
+- **Audit what a bench line actually spans before building comparisons on
+  it.** `engine_ms` claimed load-excluded and was not (ppocrv6 stage-bench
+  spanned stage entry; the easyocr harness regex captured the load-inclusive
+  `total=` although the line itself printed a correct `detect+recognize=`).
+  One inflated column produced a whole quarter's "we are 1.48x slower" verdict.
+- **Check which backend a "graph is slow" number was measured on.** The env
+  flag that enabled the graph also switched the backend to GPU, so the two
+  variables were never separated. Same-graph CPU-vs-Metal on these conv shapes
+  differs by 9x — in CPU's favour.
+- **In-out shape parameters must be seeded at every call site.** The batch
+  lane passed output-only variables (zeros) where the build expected the input
+  width. The graph built "successfully" and failed deep inside ggml with an
+  assert that pointed at pooling, three abstraction layers from the cause.
+- **Externally-runnable references end "unrecoverable" stalemates.** The
+  official-v6-locally-unavailable premise (true in 2026-08-01) silently
+  expired when paddleocr 3.x and RapidOCR's ONNX exports shipped; nobody
+  re-checked. Two pip installs turned an "unfalsifiable" quality question into
+  a 2-minute experiment. Re-date your impossibility claims.
