@@ -15,7 +15,6 @@ races). Remove the row when the branch lands.
 |-------|-------------------|------|--------|
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
-| 2026-08-04 | `perf/ppocrv6-speed` / `.claude/worktrees/perf-ppocrv6-speed` | **Picked:** close the ppocrv6-vs-official-python speed gap. Found first: `[ppocrv6-stage-bench]` detect/total spanned STAGE ENTRY, folding the ~1.1 s one-shot Metal init into every "load-excluded" engine_ms — true warm compute on synth_00_clean is ~880 ms (detect 315 conv 285 + rec 566), near-par with paddle-3.7 v6_small's 830 ms. Round: (1) fix stage-bench to net-of-load; (2) T5 CLI one-shot → FORCE_CPU wiring (A/B 1.86 s vs 2.04-2.17 s, text identical, `CRISPEMBED_PPOCRV6_ONESHOT_GPU=1` escape); (3) gated `CRISPEMBED_PPOCRV6_WIDTH_FLOOR` narrow-crop experiment (T4). NOT touching N1 (Metal fused batch graph — owned) | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -33,7 +32,7 @@ exactly how a fresh session re-derives something already shipped.
 #### Owned and in flight — coordinate before touching
 | # | Item | Owner |
 |---|---|---|
-| N1 | PP-OCRv6 fused batch graph on Metal: per-item branch/sequence dim surviving pooling + CTC flatten, two-crop gold-logit contract before any Metal batch exec; `CRISPEMBED_PPOCRV6_BATCH_GRAPH` stays CPU-only until it passes | `feat/ppocr-next-20260731` |
+| N1 | PP-OCRv6 fused batch graph on Metal: per-item branch/sequence dim surviving pooling + CTC flatten, two-crop gold-logit contract before any Metal batch exec; `CRISPEMBED_PPOCRV6_BATCH_GRAPH` stays CPU-only until it passes | *(2026-08-04: prior ownership stale — adopted by the `perf/ppocrv6-speed` GPU-graph track; branch `feat/ppocr-next-20260731` still holds unmerged work, check `main..` before re-implementing)* |
 | N2 | EasyOCR full-page quality. Per-stage diff on identical crops already **passes** (input 0.99981, recurrent/logits ≥0.99972) ⇒ the gap is detector geometry / crop selection / postprocess confidence. **Do not re-open the LSTM.** | `feat/easyocr-ggml` |
 | N3 | OCR perf H-items — **now UNOWNED**: `perf/ocr-h-items` landed and archived its row while this cleanup was in progress. Remaining: H2 detector scalar path, H4 batched crops, H5 tesseract load, H6 resize-by-text-height. H1/H3/H7 done. Brief + measurement rules in §"OCR performance — self-contained handover prompts" | *(free to pick up)* |
 | — | OCR external head-to-head (CER/WER + latency vs system Tesseract / EasyOCR / PaddleOCR) | `feat/ocr-engine-parity` |
@@ -574,6 +573,50 @@ than the 1.4x measured against the 2.10/v4 arm); receipt official **5.9 s** vs
 our 6.2 s (near par). RapidOCR/onnxruntime does the receipt in **2.2 s** —
 2.7x faster than both Paddle and us; that is the realistic CPU ceiling to aim
 at, and ORT gets it with width-bucketed batching (see T4 notes).
+
+#### 2026-08-04 — speed round (`perf/ppocrv6-speed`, merged): the "1.48x warm gap" was mostly an accounting artifact; one-shot is now workload-adaptive
+
+**The stage-bench was lying.** `[ppocrv6-stage-bench] detect/total` spanned
+STAGE ENTRY, folding the ~1.1 s one-shot recognizer Metal init into "detect"
+— so every "load-excluded" `engine_ms` built on that line (including the
+2026-08-03 1.48x verdict) was inflated by ~1.1 s. Fixed to net-of-load (the
+tesseract lane was already correct; the easyocr harness regex captured the
+load-inclusive `total=` and now captures `detect+recognize=`).
+
+**Corrected numbers (same binary, quiet windows, tesseract-cli control
+184-480 ms).** synth_00_clean true warm compute: detect 320 ms (conv 285 of
+it) + recognize 553 ms Metal = **874 ms vs official paddle-3.7 v6_small's
+830 ms warm in-process — 1.05x, near-parity**, not 1.48x. Corpus medians,
+net-of-load: synth native-Metal 1018 ms / native-CPU 2001 ms; labelled-CC0
+native-Metal **6712 ms** — faster than paddleocr-2.10's 7933 ms and in the
+same band as paddle-3.7 (receipt: official 5.9 s vs our 6.5 s window-noisy).
+
+**T5 landed, then corrected to workload-adaptive.** Always-CPU one-shot
+(first cut) was right for a 3-box page (1.86 s vs 2.04-2.17 s Metal) and
+wrong for a 47-box page (14.0 s vs 8.1 s). Detection (a ~3 ms CPU load) now
+runs BEFORE the recognizer initialises; in CLI one-shot mode
+(`CRISPEMBED_PPOCRV6_ONESHOT`) the orchestrator forces CPU only when boxes <=
+`CRISPEMBED_PPOCRV6_ONESHOT_CPU_MAX_REGIONS` (default 8, from the ~175 ms/crop
+CPU-minus-Metal delta vs the ~1.1 s init). Measured one-shot walls:
+synth_00_clean **1.83-1.99 s** (CPU picked), receipt **7.37-8.08 s** (Metal
+picked), text byte-identical both. Server/library defaults unchanged.
+
+**T4 narrow-crop experiment: real but not free — kept opt-in.**
+`CRISPEMBED_PPOCRV6_WIDTH_FLOOR=<n>` replaces the pad-everything-to-320
+contract with natural width (ceil to 32). Receipt recognize 12425→8097 ms at
+floor 128 (1.53x) with byte-identical text — but the full-corpus gate found
+floor<=192 flips 1-2 tiny single-glyph crops (`@`→`0` on receipt_historical
+at 128; same fixtures still differ at 192), so the official 320 floor stays
+default. All 20 synth fixtures are byte-identical at any floor (their crops
+are wider than 320 natural).
+
+**What still separates us from the ceiling.** (a) detector conv 285 ms
+scalar (pointwise ~10-16 GF/s, 7x7 depthwise ~2 GF/s) — T3/H2 kernel work;
+(b) many-crop pages want the Metal fused batch graph (N1, adopted): scalar
+per-crop dispatch is the remaining 6.5-vs-2.2 s distance to TurboOCR's
+onnxruntime ceiling on the receipt; (c) T7 detector-graph geometry parity is
+the gate for a full-GPU detector (graph currently also SLOWER than scalar —
+2.6-6.8x, undiagnosed; profile before optimizing).
 
 **2026-08-04 postscript — resolved.** The stage-diff never had to run: the
 bisection (recognizer correct on raw crops, corruption reproduced by running
