@@ -94,9 +94,12 @@ if [ "$WEBGPU" = "ON" ]; then
     # + a warning when the encoder silently skips an unsupported op. All
     # validated in-browser via ggml test-backend-ops (see
     # tests/wasm-browser/README note + LEARNINGS). Idempotent apply.
-    # NOTE (2026-07): these webgpu ops now live in the pinned ggml submodule
-    # (CrispStrobe/ggml @ crispstrobe-ops = v0.10.2 + our ops), so the old
-    # build-time patch is no longer applied. Kept in patches/ for provenance.
+    # NOTE (2026-07): these webgpu ops now live in the pinned ggml submodule,
+    # so the old build-time patch is no longer applied. Kept in patches/ for
+    # provenance. (2026-08: the pin moved from crispstrobe-ops = v0.10.2 + our
+    # ops to sync/upstream-v0.17 = v0.17.0, where the same ops are already
+    # forward-ported — same fork, newer base. This matches the ggml CrispASR
+    # ships, so an app bundling both libraries has one ABI, not two.)
     echo "[INFO] ggml-webgpu ops (NORM/arange/pool2d/conv_transpose_2d + upstreamed im2col/upscale) are baked into the pinned CrispStrobe/ggml submodule"
     # Experimental: ggml-webgpu links the emdawnwebgpu port and adds
     # -sASYNCIFY itself (INTERFACE link options). Separate output dir so all
