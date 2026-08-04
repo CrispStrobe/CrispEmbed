@@ -203,6 +203,13 @@ static const char * query_prefix(const char * model) {
         return "Represent this sentence for searching relevant passages: ";
     // E5 models
     if (strstr(model, "-e5-")) return "query: ";
+    // Snowflake Arctic Embed. v2.0 (l-v2 / m-v2) ships prompts.query = "query: ";
+    // v1 (xs / m / l) ships the BGE-style instruction. Documents take no prefix
+    // in either generation, so passage_prefix() stays silent for arctic.
+    if (strstr(model, "arctic-embed")) {
+        if (strstr(model, "-v2")) return "query: ";
+        return "Represent this sentence for searching relevant passages: ";
+    }
     // Nomic
     if (strstr(model, "nomic-embed")) return "search_query: ";
     // Jina v5
@@ -325,6 +332,23 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/arctic-embed-l-v2-GGUF/resolve/main/arctic-embed-l-v2-q8_0.gguf",
       "XLM-R 1024d CLS English (Q8_0)", "610 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-l-v2.0" },
+
+    // Arctic Embed M v2.0 is GTE v1.5 (RoPE + GeGLU + post-LN), NOT the XLM-R
+    // backbone its l-v2 sibling uses; only the SentencePiece vocab is shared.
+    // Default is Q8_0: no imatrix has been calibrated for this model yet and
+    // plain Q4_K measures cos 0.954 vs HF (Q8_0 measures 0.9997).
+    { "arctic-embed-m-v2", "arctic-embed-m-v2-q8_0.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q8_0.gguf",
+      "GTE-v1.5 768d CLS multilingual (Q8_0)", "315 MB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
+    { "arctic-embed-m-v2-q8", "arctic-embed-m-v2-q8_0.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q8_0.gguf",
+      "GTE-v1.5 768d CLS multilingual (Q8_0)", "315 MB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
+    { "arctic-embed-m-v2-q4k", "arctic-embed-m-v2-q4_k.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q4_k.gguf",
+      "GTE-v1.5 768d CLS multilingual (Q4_K)", "261 MB", "apache-2.0",
+      "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
 
     { "octen-0.6b", "octen-0.6b-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/octen-0.6b-GGUF/resolve/main/octen-0.6b-q4_k-imatrix.gguf",
