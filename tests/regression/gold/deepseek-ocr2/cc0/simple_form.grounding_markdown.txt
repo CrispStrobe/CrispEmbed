@@ -1,0 +1,71 @@
+<|ref|>text<|/ref|><|det|>[[3, 9, 45, 36]]<|/det|>
+Input
+
+<|ref|>text<|/ref|><|det|>[[12, 55, 61, 80]]<|/det|>
+Texte
+
+<|ref|>text<|/ref|><|det|>[[12, 111, 77, 135]]<|/det|>
+Humber
+
+<|ref|>text<|/ref|><|det|>[[12, 179, 54, 203]]<|/det|>
+Date
+
+<|ref|>text<|/ref|><|det|>[[12, 245, 99, 270]]<|/det|>
+Password
+
+<|ref|>text<|/ref|><|det|>[[12, 312, 80, 336]]<|/det|>
+a label
+
+<|ref|>text<|/ref|><|det|>[[110, 312, 320, 339]]<|/det|>
+ANOTHER LABEL Yet another label
+
+<|ref|>text<|/ref|><|det|>[[3, 370, 110, 396]]<|/det|>
+combo suggest
+
+<|ref|>text<|/ref|><|det|>[[12, 409, 33, 435]]<|/det|>
+F
+
+<|ref|>text<|/ref|><|det|>[[12, 448, 79, 473]]<|/det|>
+Finland
+
+<|ref|>text<|/ref|><|det|>[[12, 492, 77, 519]]<|/det|>
+France
+
+<|ref|>text<|/ref|><|det|>[[12, 530, 120, 555]]<|/det|>
+checkbox2
+
+<|ref|>text<|/ref|><|det|>[[12, 616, 120, 643]]<|/det|>
+checkbox3
+
+<|ref|>text<|/ref|><|det|>[[3, 671, 87, 696]]<|/det|>
+CodeLabel
+
+<|ref|>text<|/ref|><|det|>[[12, 717, 77, 742]]<|/det|>
+code lib
+
+<|ref|>text<|/ref|><|det|>[[12, 775, 57, 800]]<|/det|>
+code
+
+<|ref|>text<|/ref|><|det|>[[3, 880, 54, 905]]<|/det|>
+Button
+
+<|ref|>text<|/ref|><|det|>[[72, 916, 188, 944]]<|/det|>
+Rechercher
+
+<|ref|>text<|/ref|><|det|>[[201, 916, 328, 944]]<|/det|>
+Déclarer bientot
+
+<|ref|>text<|/ref|><|det|>[[521, 9, 603, 36]]<|/det|>
+TEXTAREA
+
+<|ref|>text<|/ref|><|det|>[[530, 55, 580, 80]]<|/det|>
+Texte
+
+<|ref|>text<|/ref|><|det|>[[520, 332, 564, 357]]<|/det|>
+Radio
+
+<|ref|>text<|/ref|><|det|>[[530, 365, 880, 400]]<|/det|>
+Drag and drop frames ✓ Fixe frames
+
+<|ref|>text<|/ref|><|det|>[[530, 361, 884, 400]]<|/det|>
+☐

@@ -1,0 +1,4 @@
+<|ref|>text<|/ref|><|det|>[[0, 0, 999, 999]]<|/det|>
+Sphinx of black quartz, judge my vow.
+Waltz, bad nymph, for quick jigs vex.
+Five quacking zephyrs jolt my wax bed.

@@ -1,0 +1,8 @@
+<|ref|>text<|/ref|><|det|>[[34, 181, 777, 288]]<|/det|>
+Invoice number 48127 dated 14 March 2024. 
+
+<|ref|>text<|/ref|><|det|>[[34, 333, 963, 450]]<|/det|>
+Subtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR. 
+
+<|ref|>text<|/ref|><|det|>[[34, 499, 675, 610]]<|/det|>
+Payment due within 30 days of receipt.

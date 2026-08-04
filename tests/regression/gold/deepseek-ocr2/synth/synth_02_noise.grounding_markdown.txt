@@ -1,0 +1,4 @@
+<|ref|>text<|/ref|><|det|>[[0, 0, 999, 999]]<|/det|>
+Chapter 7. Measurement and error.
+Every instrument reports a value and an uncertainty.
+A number without an interval is not a measurement.

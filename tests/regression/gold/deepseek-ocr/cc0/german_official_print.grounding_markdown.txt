@@ -1,0 +1,40 @@
+<|ref|>title<|/ref|><|det|>[[125, 92, 722, 163]]<|/det|>
+# Reichs=Gesetzblatt. 
+
+<|ref|>sub_title<|/ref|><|det|>[[380, 202, 479, 230]]<|/det|>
+## № 1. 
+
+<|ref|>text<|/ref|><|det|>[[58, 255, 813, 303]]<|/det|>
+Inhalt. Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsbörnung vom 1. Dezember 1898.  S. 1. — Verordnung, betreffend die Uebetragung der Befugnisse des preußischen General-  Auditorats auf das Reichs-militärgericht. S. 2. 
+
+<|ref|>text<|/ref|><|det|>[[40, 343, 812, 380]]<|/det|>
+(Nr. 2642.) Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsbörnunq vom 1. Dezember 1898. Vom 28. Dezember 1899. 
+
+<|ref|>sub_title<|/ref|><|det|>[[35, 378, 810, 448]]<|/det|>
+## Wir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König von Preußen 2c. 
+
+<|ref|>text<|/ref|><|det|>[[33, 453, 808, 494]]<|/det|>
+verordnen unter Zustimmung des Bundesrathes auf Grund des §. 1 des Einführungs- gesetzes zur Militärstrafgerichtsbörnunq vom 1. Dezember 1898, was folgt: 
+
+<|ref|>sub_title<|/ref|><|det|>[[295, 510, 537, 531]]<|/det|>
+## Einziger Paragrapb. 
+
+<|ref|>text<|/ref|><|det|>[[33, 530, 807, 571]]<|/det|>
+Die Militärstrafgerichtsbörnung vom 1. Dezember 1898 (Reichs=Gesetzbl.  S. 1189 ff.) tritt am 1. Oktober 1900 in Kraft. 
+
+<|ref|>text<|/ref|><|det|>[[30, 579, 806, 620]]<|/det|>
+Urkundlich unter Unserer Schöfteigenhändigen Unterfchrift und beigedruckten  Kaiserlichen Ziniegel. 
+
+<|ref|>text<|/ref|><|det|>[[88, 623, 571, 644]]<|/det|>
+Gegeben Neues Palais, den 28. Dezember 1899. 
+
+<|ref|>text<|/ref|><|det|>[[368, 672, 706, 736]]<|/det|>
+(L. S.) Wilhelm.
+
+Fürst zu Hohenlohe. 
+
+<|ref|>text<|/ref|><|det|>[[42, 900, 194, 915]]<|/det|>
+Reichs=Gesetzbl. 1900. 
+
+<|ref|>text<|/ref|><|det|>[[75, 928, 447, 947]]<|/det|>
+Ausgegeben zu Berlin den 6. Januar 1900.

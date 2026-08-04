@@ -1,0 +1,29 @@
+Input  
+Texte  
+Number  
+Date  
+Password  
+
+a label  
+ANOTHER LABEL  
+Yet another label  
+
+combo suggestion  
+France  
+📋 checkBox2  
+📋 checkBox3  
+
+CodeTable  
+code.lib  
+code  
+
+Button  
+Rechercher  
+Détailer Details  
+
+TEXTAREA  
+Texte  
+
+Radio  
+☐ Drag and drop frames  
+☐ Fixe frames
