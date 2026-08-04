@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import re
 import shutil
 import statistics
@@ -446,6 +447,224 @@ class DoclingPy(Engine):
         return text, med, med, extra
 
 
+class Qwen25VLPy(Engine):
+    """Vision-language transcription arm, run through the reference PyTorch stack.
+
+    This exists to give the native VL lane (``src/qwen2vl_ocr.cpp``) a gold it can
+    be held to.  Unlike the flat OCR arms, the *only* thing that makes a VL model
+    an OCR engine is the prompt, so the contract this adapter reproduces is the
+    native lane's, verbatim:
+
+      * ``PROMPT`` below is byte-for-byte the string the native lane uses when it
+        detects a plain Qwen2.5-VL checkpoint.  Changing it changes the arm's
+        quality; changing it *silently* would make the gold measure a different
+        question than the lane answers.
+      * The chat wrapper is produced by the checkpoint's own chat template — not
+        hand-rolled — with the default system turn and a single user turn whose
+        content is [image, text] in that order.  The applied string is recorded
+        per run so a template change upstream shows up as a diff, not as a
+        mysterious quality shift.
+      * Greedy decoding, no sampling.  Anything else makes the gold irreproducible.
+      * Preprocessor defaults are left alone: ``min_pixels``/``max_pixels`` decide
+        how many vision tokens a page gets, i.e. the effective resolution the model
+        reads at, and overriding them would make the numbers unquotable against the
+        published model.
+
+    Weights are loaded once and warmed with a throwaway generation, so ``proc_ms``
+    and ``engine_ms`` are the same load-excluded number.  A page here costs seconds
+    to minutes, so ``--repeats 1`` is the expected setting; timing is only ever
+    comparable within one host.
+
+    ``transcripts`` writes one ``<fixture>.txt`` per page plus a ``manifest.json``
+    pinning model id, resolved revision, prompt, decoding params and hardware —
+    that directory is the artifact the native lane's CER gate reads.
+    """
+
+    kind = "external"
+
+    # Must stay identical to the OCR prompt in src/qwen2vl_ocr.cpp.
+    PROMPT = "Read all the text in this image. Output the exact text content only."
+    SYSTEM = "You are a helpful assistant."
+
+    def __init__(self, model_id: str = "Qwen/Qwen2.5-VL-7B-Instruct",
+                 name: str | None = None, dtype: str = "bfloat16",
+                 device: str = "auto", max_new_tokens: int = 2048,
+                 transcripts: Path | None = None, device_map: str = ""):
+        self.model_id = model_id
+        short = model_id.split("/")[-1].replace("-Instruct", "").lower()
+        self.name = name or f"qwen-vl-py:{short}"
+        self.dtype_name = dtype
+        self.device_arg = device
+        # 7B at 16-bit is ~15.5 GiB of weights, which does not fit one 16 GB
+        # accelerator alongside a page's vision tokens.  ``device_map`` hands
+        # placement to accelerate so the same script runs sharded across several
+        # smaller GPUs; when it is set the model is already placed and must not
+        # be moved with ``.to()``.
+        self.device_map = device_map
+        self.max_new_tokens = max_new_tokens
+        self.transcripts = Path(transcripts) if transcripts else None
+        self._model = None
+        self._proc = None
+        self._device = None
+        self._revision = None
+        self._warmed = False
+        self._applied_template: str | None = None
+
+    def available(self) -> str:
+        try:
+            import torch  # noqa: F401
+            import transformers  # noqa: F401
+        except Exception as exc:  # pragma: no cover - environment probe
+            return f"import torch/transformers failed: {exc}"
+        if self._vl_class() is None:
+            return ("transformers has no Qwen2_5_VL generation class "
+                    f"(version {transformers.__version__})")
+        return ""
+
+    @staticmethod
+    def _vl_class():
+        """The Qwen2.5-VL head moved names across transformers majors.
+
+        Probing for it (rather than importing one path) is what lets this adapter
+        skip cleanly on an old install instead of dying at fixture time.
+        """
+        import transformers
+
+        for attr in ("Qwen2_5_VLForConditionalGeneration",
+                     "Qwen2_5_VLForVisionText2Text",
+                     "AutoModelForImageTextToText"):
+            cls = getattr(transformers, attr, None)
+            if cls is not None:
+                return cls
+        return None
+
+    def _pick_device(self):
+        import torch
+
+        if self.device_arg != "auto":
+            return torch.device(self.device_arg)
+        if torch.cuda.is_available():
+            return torch.device("cuda")
+        if getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
+            return torch.device("mps")
+        return torch.device("cpu")
+
+    def _ensure(self, image: Path):
+        if self._model is None:
+            import torch
+            from transformers import AutoProcessor
+
+            dtype = getattr(torch, self.dtype_name)
+            self._device = self._pick_device()
+            cls = self._vl_class()
+            # transformers renamed the weight-dtype kwarg (``torch_dtype`` ->
+            # ``dtype``) in v5.  Both are swallowed by **kwargs, so a wrong guess
+            # does not raise — it silently loads fp32 and doubles the footprint.
+            # Branch on the major version and assert the result instead.
+            import transformers
+
+            major = int(transformers.__version__.split(".")[0])
+            key = "dtype" if major >= 5 else "torch_dtype"
+            kw = {key: dtype}
+            if self.device_map:
+                kw["device_map"] = self.device_map
+            self._model = cls.from_pretrained(self.model_id, **kw)
+            got = next(self._model.parameters()).dtype
+            if got != dtype:
+                raise RuntimeError(
+                    f"requested {dtype} but weights loaded as {got}; the "
+                    f"'{key}' kwarg was ignored by transformers {transformers.__version__}")
+            if self.device_map:
+                # accelerate already placed every module; record where the inputs
+                # have to go rather than assuming a single device.
+                self._device = next(self._model.parameters()).device
+            else:
+                self._model.to(self._device)
+            self._model.eval()
+            self._proc = AutoProcessor.from_pretrained(self.model_id)
+            cfg = getattr(self._model, "config", None)
+            self._revision = getattr(cfg, "_commit_hash", None) or "unknown"
+        if not self._warmed:
+            # Throwaway generation: pays lazy kernel compile and any first-call
+            # allocator growth, neither of which is steady-state page cost.
+            self._generate(image, max_new_tokens=8)
+            self._warmed = True
+        return self._model
+
+    def _messages(self) -> list[dict]:
+        return [
+            {"role": "system", "content": [{"type": "text", "text": self.SYSTEM}]},
+            {"role": "user", "content": [{"type": "image"},
+                                         {"type": "text", "text": self.PROMPT}]},
+        ]
+
+    def _generate(self, image: Path, max_new_tokens: int | None = None) -> tuple[str, int]:
+        import torch
+        from PIL import Image
+
+        img = Image.open(image).convert("RGB")
+        text = self._proc.apply_chat_template(self._messages(), tokenize=False,
+                                              add_generation_prompt=True)
+        self._applied_template = text
+        inputs = self._proc(text=[text], images=[img], return_tensors="pt")
+        inputs = {k: (v.to(self._device) if hasattr(v, "to") else v)
+                  for k, v in inputs.items()}
+        with torch.inference_mode():
+            out = self._model.generate(**inputs, do_sample=False,
+                                       max_new_tokens=max_new_tokens or self.max_new_tokens)
+        n_in = inputs["input_ids"].shape[1]
+        new = out[0][n_in:]
+        decoded = self._proc.tokenizer.decode(new, skip_special_tokens=True)
+        return decoded.strip(), int(new.shape[0])
+
+    def run(self, image: Path, repeats: int):
+        self._ensure(image)
+        times, text, n_new = [], "", 0
+        for _ in range(repeats):
+            t = time.perf_counter()
+            text, n_new = self._generate(image)
+            times.append((time.perf_counter() - t) * 1000)
+        med = statistics.median(times)
+        if self.transcripts:
+            self.transcripts.mkdir(parents=True, exist_ok=True)
+            (self.transcripts / f"{image.name}.txt").write_text(text + "\n")
+        extra = {
+            "model_id": self.model_id,
+            "revision": self._revision,
+            "dtype": self.dtype_name,
+            "device": str(self._device),
+            "device_map": self.device_map or None,
+            "prompt": self.PROMPT,
+            "max_new_tokens": self.max_new_tokens,
+            "do_sample": False,
+            "new_tokens": n_new,
+            "regions": len([ln for ln in text.splitlines() if ln.strip()]),
+        }
+        # In-process and pre-warmed: wall time is the engine cost.
+        return text, med, med, extra
+
+    def manifest(self, hardware: str) -> dict:
+        import torch
+        import transformers
+
+        return {
+            "model_id": self.model_id,
+            "revision": self._revision,
+            "prompt": self.PROMPT,
+            "system": self.SYSTEM,
+            "chat_template_applied_example": self._applied_template,
+            "decoding": {"do_sample": False, "num_beams": 1,
+                         "max_new_tokens": self.max_new_tokens},
+            "preprocessor": "model defaults (min_pixels/max_pixels not overridden)",
+            "dtype": self.dtype_name,
+            "device": str(self._device),
+            "device_map": self.device_map or None,
+            "hardware": hardware,
+            "torch": torch.__version__,
+            "transformers": transformers.__version__,
+        }
+
+
 class CrispEmbedCLI(Engine):
     kind = "crispembed"
 
@@ -527,6 +746,16 @@ def build_engines(args) -> list[Engine]:
         DoclingPy(force_full_page_ocr=args.docling_full_page,
                   ocr_engine=args.docling_ocr),
     ]
+    # The VL arm is opt-in rather than probe-and-skip like the others: its
+    # availability probe (torch + transformers) is satisfied by several unrelated
+    # venvs in this repo, and being "available" there would silently start a
+    # multi-GB weight download in a run that only wanted the OCR arms.
+    if args.qwen:
+        engines.append(Qwen25VLPy(model_id=args.qwen_model, dtype=args.qwen_dtype,
+                                  device=args.qwen_device,
+                                  max_new_tokens=args.qwen_max_new_tokens,
+                                  transcripts=args.qwen_transcripts,
+                                  device_map=args.qwen_device_map))
 
     def model(name: str) -> Path | None:
         return (md / name) if md else None
@@ -565,6 +794,23 @@ def main() -> int:
                     help="force the document parser to OCR whole pages")
     ap.add_argument("--docling-ocr", default="auto",
                     help="document-parser OCR engine ('auto' lets it choose)")
+    ap.add_argument("--qwen", action="store_true",
+                    help="enable the vision-language arm (downloads weights)")
+    ap.add_argument("--qwen-model", default="Qwen/Qwen2.5-VL-7B-Instruct",
+                    help="VL checkpoint; only the 7B is quotable as a reference "
+                         "(the 3B ships under a research licence)")
+    ap.add_argument("--qwen-dtype", default="bfloat16")
+    ap.add_argument("--qwen-device", default="auto")
+    ap.add_argument("--qwen-device-map", default="",
+                    help="hand placement to accelerate (e.g. 'auto') so the "
+                         "weights can shard across several GPUs")
+    ap.add_argument("--qwen-max-new-tokens", type=int, default=2048)
+    ap.add_argument("--qwen-transcripts", type=Path,
+                    help="directory to write one transcript per fixture plus a "
+                         "manifest.json pinning model/prompt/decoding/hardware")
+    ap.add_argument("--hardware", default="",
+                    help="free-text hardware label recorded in the transcript "
+                         "manifest; timings are only comparable within one host")
     ap.add_argument("--require-truth", action="store_true",
                     help="only run fixtures that ground_truth.json labels; "
                          "unlabelled fixtures in a corpus are out of scope, and "
@@ -643,6 +889,15 @@ def main() -> int:
     }
     summary = summarize(result)
     result["summary"] = summary
+    for e in active:
+        if isinstance(e, Qwen25VLPy) and e.transcripts:
+            man = e.manifest(args.hardware or platform.platform())
+            man["images"] = str(args.images)
+            man["fixtures"] = [fx["name"] for fx in fixtures]
+            man["date"] = time.strftime("%Y-%m-%d")
+            (e.transcripts / "manifest.json").write_text(
+                json.dumps(man, indent=2) + "\n")
+            result["vl_manifest"] = man
     if args.output:
         args.output.write_text(json.dumps(result, indent=2) + "\n")
     md = render_markdown(result)
