@@ -46,6 +46,40 @@ jobs:
       - name: Build the wrapper and the -sys crate
         run: cargo build --workspace --release
 
+      # The prebuilt-library path must work with NO C/C++ sources present —
+      # that is the whole point of CRISPEMBED_SYS_LIB_DIR, and the README
+      # documents it as "no cmake, no source build". It regressed silently when
+      # build.rs started calling resolve_src_root() unconditionally at the top
+      # of main(): a consumer with a perfectly good libcrispembed.so got
+      # "crispembed sources not found" instead. Nothing here caught it, because
+      # every other job runs in-tree where the sources obviously exist.
+      #
+      # Compiling build.rs standalone is enough to exercise the decision, and
+      # costs a second — a full `cargo build` would drag in the crate's deps
+      # and, on the failure path, an actual cmake run.
+      - name: build.rs honours a prebuilt without any sources
+        run: |
+          set -euo pipefail
+          work=$(mktemp -d)
+          mkdir -p "$work/consumer/crispembed-sys" "$work/prebuilt"
+          : > "$work/prebuilt/libcrispembed.so"
+          CARGO_MANIFEST_DIR="$work/consumer/crispembed-sys" \
+            rustc --edition 2021 crispembed-sys/build.rs -o "$work/buildrs"
+          # Match on the trailing component rather than the absolute path: the
+          # emitted path is whatever the process sees, which is not always
+          # byte-identical to the shell's $work.
+          out=$(CRISPEMBED_SYS_LIB_DIR="$work/prebuilt" CARGO_CFG_TARGET_OS=linux "$work/buildrs")
+          echo "$out"
+          grep -qE '^cargo:LIB_DIR=.*[/\\]prebuilt$' <<<"$out" || {
+              echo "FAIL: build.rs did not link the prebuilt library" >&2; exit 1; }
+          # And the sibling build/ probe, also without sources.
+          mkdir -p "$work/consumer/build"
+          : > "$work/consumer/build/libcrispembed.so"
+          out=$(CARGO_CFG_TARGET_OS=linux "$work/buildrs")
+          grep -qE '^cargo:LIB_DIR=.*[/\\]build$' <<<"$out" || {
+              echo "FAIL: build.rs did not find the sibling build/ directory" >&2; exit 1; }
+          echo "OK: prebuilt paths work with no sources present"
+
       - name: Vendor the C/C++ sources
         run: scripts/vendor_rust_sources.sh
 

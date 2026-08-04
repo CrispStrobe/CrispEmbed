@@ -66,20 +66,50 @@ fn has_prebuilt(dir: &Path) -> bool {
         || dir.join("libcrispembed.dylib").exists()
 }
 
-fn try_prebuilt(src_root: &Path) -> Option<PathBuf> {
+/// Look for an already-built `libcrispembed` before considering a source build.
+///
+/// This deliberately takes `manifest_dir` rather than a resolved source root:
+/// a prebuilt library is usable with NO C/C++ sources present at all, which is
+/// the entire point of shipping one. Requiring `resolve_src_root` to succeed
+/// first meant a consumer holding a perfectly good `libcrispembed.so` still had
+/// to check out ~1 GB of sources plus the ggml submodule, or the build panicked
+/// before it ever looked. v0.16.1 did not have that constraint.
+fn try_prebuilt(manifest_dir: &Path) -> Option<PathBuf> {
     if let Ok(dir) = env::var("CRISPEMBED_SYS_LIB_DIR") {
         let path = PathBuf::from(dir);
         if has_prebuilt(&path) {
             return Some(path);
         }
+        // Set but unusable. Say so — the alternative is a silent ~10-minute
+        // source build (or a confusing "sources not found" panic) when the
+        // user believed they had opted out of building entirely.
+        println!(
+            "cargo:warning=CRISPEMBED_SYS_LIB_DIR={} is set but contains no crispembed library \
+             (looked for crispembed.lib, Release/crispembed.lib, libcrispembed.so, \
+             libcrispembed.dylib) — ignoring it",
+            path.display()
+        );
     }
 
-    let candidates = [
-        src_root.join("build-cuda"),
-        src_root.join("build"),
-        src_root.join("build-vulkan"),
+    // In-tree build directories, probed relative to the crate's parent (the
+    // repo root for a checkout) and to the vendored copy. No source-tree
+    // validation: `build/libcrispembed.so` is just as linkable whether or not
+    // the ggml submodule was ever initialised.
+    let roots = [
+        manifest_dir.parent().map(Path::to_path_buf),
+        Some(manifest_dir.join("vendor")),
     ];
-    candidates.into_iter().find(|path| has_prebuilt(path))
+    roots
+        .into_iter()
+        .flatten()
+        .flat_map(|root| {
+            [
+                root.join("build-cuda"),
+                root.join("build"),
+                root.join("build-vulkan"),
+            ]
+        })
+        .find(|path| has_prebuilt(path))
 }
 
 fn run(cmd: &mut Command, what: &str) {
@@ -142,6 +172,10 @@ fn configure_and_build(src_root: &Path) -> PathBuf {
 /// published to crates.io they are `vendor/`, because cargo only packages files
 /// under the crate root. The repository copy wins when present, so a
 /// development build never compiles a stale vendored snapshot.
+///
+/// Call this ONLY once a source build is known to be necessary — it panics when
+/// the sources are absent, which is a perfectly normal state for a consumer
+/// linking a prebuilt library.
 fn resolve_src_root(manifest_dir: &Path) -> PathBuf {
     // Probe for CMakeLists.txt AND ggml, not just the directory: in a published
     // crate the parent is the cargo registry's `src/` directory, which exists
@@ -169,11 +203,15 @@ fn resolve_src_root(manifest_dir: &Path) -> PathBuf {
 
 fn main() {
     let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let src_root = &resolve_src_root(&manifest_dir);
 
     println!("cargo:rerun-if-env-changed=CRISPEMBED_SYS_LIB_DIR");
 
-    let lib_dir = try_prebuilt(src_root).unwrap_or_else(|| configure_and_build(src_root));
+    // Prebuilt first, and only resolve the C/C++ sources if we actually have to
+    // build them. Resolving unconditionally made `resolve_src_root`'s panic
+    // reachable for consumers who had a perfectly good prebuilt library,
+    // defeating both `CRISPEMBED_SYS_LIB_DIR` and the `build/` probe.
+    let lib_dir = try_prebuilt(&manifest_dir)
+        .unwrap_or_else(|| configure_and_build(&resolve_src_root(&manifest_dir)));
     print_link_info(&lib_dir);
     emit_runtime_rpath(&lib_dir);
 

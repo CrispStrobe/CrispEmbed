@@ -17,6 +17,8 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-04 | `feat/parity-olmocr` (delegated agent) | **A3 IN PROGRESS** — olmOCR-toolkit reference arm on Kaggle (chr1s4), runtime prompt-contract capture + raw/parsed gold → `tests/regression/gold/olmocr/`; T13 acceptance reference. **A4 QUEUED** | **IN PROGRESS** |
+| 2026-08-04 | `feat/embed-f2llm` (delegated agent) | **T19-E1** — port F2LLM-v2 160M+0.6B (Qwen3Model, Apache) via convert-decoder-embed (docstring claims support — verify); cosine+norm parity vs HF, German retrieval sanity, upload cstr, registry+pins | **IN PROGRESS** |
+| 2026-08-04 | `feat/embed-arctic-granite` (delegated agent) | **T19-E2** — arctic-embed-m-v2.0 + granite-r2 97m/311m: arch check first (granite-r2 may be ModernBERT — report, don't force), then convert/verify/upload/registry | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. Pending: local smoke once the heavy slot frees (A2 running), decoded parity vs A3 gold on ≥5 pages | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -1368,6 +1370,73 @@ comment still describes the retired `DET_GRAPH` gate.
 
 *(T13-T17 below are NOT agent-delegable as-is: they are port/bisect work —
 run them as dedicated sessions with the full board context.)*
+
+### T18 — Embedder one-shot fixed init (~1.2-1.4 s) dominates CLI latency; warm compute already beats onnxruntime
+
+Measured 2026-08-04, M1 16GB, same-window A/B, 64 German sentences (~12 words,
+padded len 30), multilingual-e5-small q8_0 vs the official fp32 ONNX export on
+onnxruntime 1.25.1 CPU EP (tokenizers batch, mean-pool+L2, warm):
+
+| config | load/init | warm per-text (batch 64) | single-text warm |
+|---|--:|--:|--:|
+| crispembed q8_0 (Metal, one-shot CLI) | **~1.2-1.4 s** | 5.7-11.7 ms (marginal) | n/a (one-shot pays init) |
+| onnxruntime fp32 CPU | 0.44 s session | 12.1-14.4 ms | 13.6 ms |
+
+Output parity q8 vs ONNX fp32: cosine min 0.99993 / mean 0.99995 (n=64).
+So the "ONNX is much faster" experience is NOT compute — warm-vs-warm we are
+~1.4x ahead — it is the **fixed one-shot init**: ~1.2-1.4 s regardless of
+model size (132 MB e5 and 23 MB MiniLM both pay it → not weight I/O), and
+`--gpu-backend cpu` still initializes the Metal device (stderr shows the
+pipeline-cache load either way), so the flag does not skip the cost.
+**Do:** (a) make `--gpu-backend cpu` actually skip GPU device init for the
+embed path; (b) profile the remaining fixed cost (SPM tokenizer build for the
+250k XLM-R vocab is a suspect) and lazy-init what one-shot embedding does not
+need; (c) consider a CPU-default for small embedders in one-shot CLI mode
+(T5 precedent: workload-dependent backend). Server mode already amortizes —
+this is a CLI/scripting-latency item. **Acceptance:** one-shot
+`crispembed -m multilingual-e5-small --json "text"` total time down ≥3x with
+embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
+in warm batch throughput.
+
+### T19 — German embedder quality snapshot (official MTEB data, 2026-08-04) + port candidates
+
+Sources: MTEB(deu, v1) leaderboard (user-provided, open-weights/license filter)
++ our own extraction from the official `mteb/results` parquet (8.6M rows; 4
+canonical German retrieval/rerank tasks, full-coverage models only). The two
+agree where they overlap.
+
+**German mean (MTEB deu v1) by size class, open models:**
+`F2LLM-v2` (codefuse-ai, **Qwen3Model arch, Apache-2.0**) dominates every
+class: 0.6B=63.08, 330M=61.61, **160M=57.35** (beats e5-large-instruct at
+3.5x smaller), 80M=55.56. Caveat: zero-shot 63% (vs e5's 94%) — part of the
+edge may be benchmark-adjacent training. Established models: e5-large-instr
+57.14, arctic-l-v2 55.72 (best Retr. column of the field: **57.09**),
+e5-base 53.03, e5-small 51.49, granite-278m 51.79/107m 50.16.
+**German retrieval-only (our parquet extraction, ret4):** embeddinggemma-300m
+**0.8947** (best <600M, gemma license), jina-v5-small 0.8761 (CC-BY-NC — dev
+only), arctic-l-v2 0.8725, bge-m3 0.8714, arctic-m-v2 0.8569,
+qwen3-embed-0.6b 0.8562, e5-base 0.8513, harrier-0.6b 0.8382,
+granite-311m-r2 0.8287, harrier-270m 0.8240, granite-97m-r2 0.8005,
+e5-small 0.7488 (n=2), MiniLM-multi 0.7327.
+
+**In-registry verdict for German today:** `arctic-embed-l-v2` is the
+evidence-backed quality pick (NOT qwen3-embed/harrier — qwen3-embed has no
+official deu coverage and trails on ret4; harrier's "SOTA" desc oversells
+German). `bge-m3` when hybrid dense+sparse+colbert wanted.
+`embeddinggemma-300m` is in the registry (gemma license gate) and is the top
+small retrieval scorer — but carries the known ~0.002 backbone discrepancy
+(C8); spot-check German retrieval quality of OUR artifact before recommending.
+`multilingual-e5-small` demoted to "cheapest acceptable" (51.49; fine at
+118 MB, auto-prefixed).
+
+**Port candidates, by value:** (1) **F2LLM-v2 family** — Qwen3Model + Apache;
+likely loads via the existing qwen3-embed converter path with minor config
+deltas; the 160M (57.35 deu, 640d, 40k ctx) would be the best small German
+embedder we ship, 0.6B the best overall. (2) arctic-embed-m-v2.0 (0.8569
+ret4, 305M — sibling of the l-v2 we already ship). (3) granite-r2 97m/311m
+(8k ctx, Apache). Verify each with a German retrieval smoke vs the HF
+reference before registry entry (decoded-embedding cosine + a 10-doc German
+retrieval sanity, per HARD RULE #3 analog).
 
 ### T13 — olmOCR lane (the one absent family; cheapest add)
 

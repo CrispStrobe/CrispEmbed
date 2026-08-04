@@ -471,6 +471,15 @@ export CRISPEMBED_SYS_LIB_DIR=$PWD/lib
 cargo build       # links the prebuilt; no cmake, no source build
 ```
 
+No C/C++ sources are needed on this path — not the repository, not the ggml
+submodule, not the vendored copy. `build.rs` looks for a prebuilt library
+first and only resolves sources if it actually has to compile them. (Between
+`a3156a2a` and v0.17.0 it resolved sources unconditionally, so this documented
+workflow failed with *"crispembed sources not found"* even with a valid
+`CRISPEMBED_SYS_LIB_DIR`; `rust-crates.yml` now regression-tests it.) If the
+variable points somewhere without a library, build.rs emits a `cargo:warning`
+and falls back rather than failing silently.
+
 The release tarballs ship `libcrispembed` alongside separate `libggml*`
 libraries, so with this path all of them have to travel with your binary — the
 from-source default produces just the one. Release assets exist for linux
