@@ -40,10 +40,13 @@ def pipeline_engine(entry: dict) -> str:
 def normalize(s: str) -> str:
     s = s.replace("\r", "").strip()
     s = re.sub(r"(?m)^regions=\d+\s+mean_conf=[0-9.]+\s*$", "", s)
-    # SmolDocling emits DocTags coordinates around text payloads.  Compare
+    # SmolDocling emits DocTags markup around text payloads.  Compare
     # payload quality here; retain the raw output so duplicate/structure
     # errors remain visible in the benchmark artifact.
-    s = re.sub(r"</?text>", "", s)
+    s = re.sub(r"<loc_\d+>", "", s)
+    s = re.sub(r"</?[a-z_]+(?:_level_\d+)?>", "", s)
+    # Legacy mangled forms from GGUFs converted before the added-token fix
+    # (vocab truncated at 49152 rendered "<loc_17>" as "17>").
     s = re.sub(r"(?m)^\d+>\d+>\d+>\d+>", "", s)
     s = re.sub(r"\s+", " ", s)
     return s
