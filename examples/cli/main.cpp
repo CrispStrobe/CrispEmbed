@@ -206,7 +206,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "Model names (auto-download from HuggingFace):\n");
     fprintf(stderr, "  all-MiniLM-L6-v2, gte-small, arctic-embed-xs,\n");
     fprintf(stderr, "  multilingual-e5-small, pixie-rune-v1, arctic-embed-l-v2,\n");
-    fprintf(stderr, "  octen-0.6b, f2llm-v2-160m, f2llm-v2-0.6b, jina-v5-nano, jina-v5-small,\n");
+    fprintf(stderr, "  octen-0.6b, f2llm-v2-80m, f2llm-v2-160m, f2llm-v2-330m, f2llm-v2-0.6b,\n");
+    fprintf(stderr, "  jina-v5-nano, jina-v5-small,\n");
     fprintf(stderr, "  harrier-0.6b, harrier-270m, qwen3-embed-0.6b,\n");
     fprintf(stderr, "  lfm2-embed, lfm2-embed-q4k,\n");
     fprintf(stderr, "  yunet (face detection, 0.2 MB)\n");

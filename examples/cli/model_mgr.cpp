@@ -378,6 +378,20 @@ static const ModelEntry k_registry[] = {
     { "octen-8b-q8", "octen-8b-q8_0.gguf", "https://huggingface.co/cstr/octen-8b-GGUF/resolve/main/octen-8b-q8_0.gguf",
       "Qwen3 4096d multilingual (Q8_0)", "8.0 GB", "apache-2.0", "https://huggingface.co/Octen/Octen-Embedding-8B" },
 
+    // The 80M/160M/330M are all pruned from the 0.6B base. All three survive
+    // Q8_0 far better than the 0.6B itself does (worst cosine vs the f32 HF
+    // reference over 14 mixed German/English/code texts: 0.9996 / 0.9994 /
+    // 0.9989, against 0.9909 for the 0.6B), so Q8_0 is the default for each.
+    { "f2llm-v2-80m", "f2llm-v2-80m-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-80m-GGUF/resolve/main/f2llm-v2-80m-q8_0.gguf",
+      "Qwen3 320d multilingual (Q8_0)", "86 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-80M" },
+    { "f2llm-v2-80m-q8", "f2llm-v2-80m-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-80m-GGUF/resolve/main/f2llm-v2-80m-q8_0.gguf",
+      "Qwen3 320d multilingual (Q8_0)", "86 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-80M" },
+    { "f2llm-v2-80m-f16", "f2llm-v2-80m.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-80m-GGUF/resolve/main/f2llm-v2-80m.gguf", "Qwen3 320d multilingual (F16)",
+      "250 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-80M" },
+
     // Default = Q8_0. The 160M is pruned from the 0.6B base and is the best
     // sub-200M German embedder on MTEB(deu, v1); unlike the 0.6B it survives
     // Q8_0 essentially intact (worst cosine 0.9994 vs the f32 HF reference
@@ -391,6 +405,16 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-160m-f16", "f2llm-v2-160m.gguf",
       "https://huggingface.co/cstr/f2llm-v2-160m-GGUF/resolve/main/f2llm-v2-160m.gguf", "Qwen3 640d multilingual (F16)",
       "494 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-160M" },
+
+    { "f2llm-v2-330m", "f2llm-v2-330m-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m-q8_0.gguf",
+      "Qwen3 896d multilingual (Q8_0)", "344 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-330M" },
+    { "f2llm-v2-330m-q8", "f2llm-v2-330m-q8_0.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m-q8_0.gguf",
+      "Qwen3 896d multilingual (Q8_0)", "344 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-330M" },
+    { "f2llm-v2-330m-f16", "f2llm-v2-330m.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-330m-GGUF/resolve/main/f2llm-v2-330m.gguf", "Qwen3 896d multilingual (F16)",
+      "903 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-330M" },
 
     { "f2llm-v2-0.6b", "f2llm-v2-0.6b-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
