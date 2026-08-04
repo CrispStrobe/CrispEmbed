@@ -19,6 +19,10 @@ jobs:
   build:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    # The Linux legs build inside a manylinux image; every other leg leaves this
+    # empty, which GitHub treats as "no container". See the glibc note on the
+    # linux-x86_64 entry below.
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
@@ -63,8 +67,20 @@ jobs:
           # bundle libopenblas.so.0 + its deps into pkg/ rather than
           # reintroducing an unbundled hard dependency. The
           # `Verify bundled dependencies` step below enforces that.
+          # ── glibc floor (#42, second issue) ────────────────────────
+          # Built on the runner (Ubuntu 24.04) these needed GLIBC_2.38 /
+          # GLIBCXX_3.4.32, so they refused to start on Ubuntu 22.04, Debian 12
+          # and anything else on glibc <= 2.37 — a second, independent reason a
+          # user saw a startup failure, distinct from the OpenBLAS one.
+          #
+          # manylinux_2_28 is AlmaLinux 8: glibc 2.28, with a modern gcc-toolset
+          # so C++17 is still available. That covers Ubuntu 20.04+, Debian 11+,
+          # RHEL 8+. `Verify bundled dependencies --max-glibc` enforces it, so a
+          # future base-image change cannot silently raise the floor again.
           - name: linux-x86_64
             os: ubuntu-latest
+            container: quay.io/pypa/manylinux_2_28_x86_64
+            max_glibc: "2.28"
             cmake_args: >-
               -DGGML_NATIVE=OFF
               -DGGML_BLAS=OFF
@@ -87,6 +103,8 @@ jobs:
             # dotprod quant kernels while making the artifact independent of
             # which arm host built it (an SVE/SME-capable runner would
             # otherwise emit instructions Neoverse-N1 and Cortex-A cannot run).
+            container: quay.io/pypa/manylinux_2_28_aarch64
+            max_glibc: "2.28"
             cmake_args: >-
               -DGGML_NATIVE=OFF
               -DGGML_CPU_ARM_ARCH=armv8.2-a+fp16+dotprod
@@ -127,12 +145,21 @@ jobs:
             archive: crispembed-windows-x86_64.zip
 
     steps:
+      # Inside a container the workspace is owned by a different uid than the
+      # one git runs as, so git refuses to touch it ("dubious ownership") and
+      # the submodule checkout fails. Must precede actions/checkout.
+      - name: Trust the workspace (container builds)
+        if: matrix.container != ''
+        run: git config --global --add safe.directory '*'
+
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
       - name: Install build deps (Linux)
         # patchelf only — used at package time to rewrite RUNPATH to $ORIGIN.
+        # The manylinux image already ships it, and is AlmaLinux (no apt, no
+        # sudo), so this is only for a Linux leg running on the bare runner.
         #
         # libopenblas-dev is deliberately NOT installed any more. It used to be,
         # so the GGML_BLAS=ON probe would succeed; the effect was that the
@@ -140,8 +167,30 @@ jobs:
         # (SubtitleEdit#13205). With it absent, a re-enabled GGML_BLAS fails
         # loudly at configure time on CI instead of quietly producing a tarball
         # that exits 127 on every user's machine.
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && matrix.container == ''
         run: sudo apt-get update && sudo apt-get install -y patchelf
+
+      # The manylinux images carry patchelf and a gcc-toolset, but no cmake, and
+      # `python`/`python3` are pyenv shims rather than a system interpreter.
+      # Record what we actually got: if the base image ever changes toolchain,
+      # this is the line that explains the resulting build.
+      - name: Prepare manylinux toolchain
+        if: matrix.container != ''
+        run: |
+          set -euo pipefail
+          if ! command -v cmake >/dev/null 2>&1; then
+              # AlmaLinux 8's cmake is 3.26, comfortably above our 3.14 floor.
+              # pip is the fallback because the image's python3 is not
+              # guaranteed to have it.
+              dnf install -y cmake >/dev/null 2>&1 \
+                || python3 -m pip install --no-cache-dir cmake
+          fi
+          command -v patchelf >/dev/null 2>&1 || dnf install -y patchelf
+          echo "gcc     : $(gcc --version | head -1)"
+          echo "g++     : $(g++ --version | head -1)"
+          echo "cmake   : $(cmake --version | head -1)"
+          echo "patchelf: $(patchelf --version)"
+          echo "glibc   : $(ldd --version | head -1)"
 
       - name: Configure
         run: >
@@ -153,8 +202,9 @@ jobs:
       # Fails the release if the configured tree targets the builder's CPU
       # instead of a fixed baseline (#41). Cheap, and it catches the case a
       # test suite cannot: CI has no machine that lacks the extension.
+      # `python3` on Linux/macOS: the manylinux image has no bare `python`.
       - name: Verify portable CPU baseline
-        run: python scripts/check-cpu-baseline.py build
+        run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check-cpu-baseline.py build
 
       - name: Build
         run: cmake --build build --config Release -j4
@@ -266,9 +316,14 @@ jobs:
       # libggml-blas.so.0 needed libopenblas.so.0 that the archive never
       # shipped. The runner has it installed, so this can only be caught by
       # inspecting the package, never by running it here.
+      # --max-glibc also pins the FLOOR, not just the bundling: the whole point
+      # of the manylinux container is that the artifact stays runnable on older
+      # distros, and that guarantee needs to be checked rather than assumed.
       - name: Verify bundled dependencies (Linux)
         if: runner.os == 'Linux'
-        run: python3 scripts/check-bundled-deps.py pkg
+        run: >
+          python3 scripts/check-bundled-deps.py pkg
+          ${{ matrix.max_glibc && format('--max-glibc {0}', matrix.max_glibc) || '' }}
 
       - name: Package (Windows)
         if: runner.os == 'Windows'
