@@ -1,0 +1,65 @@
+{"role": "doc.de", "text": "Bei der Photosynthese wandeln grüne Pflanzen Sonnenlicht, Wasser und Kohlendioxid in Traubenzucker und Sauerstoff um."}
+{"role": "doc.de", "text": "Der Betriebsrat muss bei Kündigungen angehört werden; unterbleibt die Anhörung, ist die Kündigung unwirksam."}
+{"role": "doc.de", "text": "Im Mittelalter verbanden Handelswege wie die Via Regia entfernte Städte über mehrere Landesgrenzen hinweg."}
+{"role": "doc.de", "text": "Erneuerbare Energiequellen wie Wind- und Sonnenkraft werden pro Kilowattstunde stetig günstiger."}
+{"role": "doc.de", "text": "Ein Sparplan auf einen breit gestreuten Indexfonds gilt als kostengünstiger Einstieg in den Kapitalmarkt."}
+{"role": "doc.de", "text": "Der Nationalpark Wattenmeer gehört seit 2009 zum Weltnaturerbe der UNESCO."}
+{"role": "doc.de", "text": "Der Datenschutzbeauftragte überwacht die Einhaltung der Datenschutz-Grundverordnung im Unternehmen."}
+{"role": "doc.de", "text": "Eine Photovoltaikanlage auf dem Dach eines Einfamilienhauses amortisiert sich meist nach zehn bis zwölf Jahren."}
+{"role": "doc.de", "text": "Die Elbe entspringt im Riesengebirge und mündet bei Cuxhaven in die Nordsee."}
+{"role": "doc.de", "text": "Die Hanse war ein Bund von Kaufleuten und Städten, der den Ostseehandel jahrhundertelang prägte."}
+{"role": "doc.de", "text": "Die Kartoffel gelangte im sechzehnten Jahrhundert aus Südamerika nach Europa und wurde zum Grundnahrungsmittel."}
+{"role": "doc.de", "text": "Bei Gewitter sollte man freistehende Bäume meiden und Schutz in einem Gebäude oder Fahrzeug suchen."}
+{"role": "doc.de", "text": "Sprachmodelle zerlegen Text zunächst in Token und bilden diese anschließend auf dichte Vektoren ab."}
+{"role": "doc.de", "text": "Der Mindestlohn wird von einer unabhängigen Kommission regelmäßig überprüft und angepasst."}
+{"role": "doc.de", "text": "Impfstoffe trainieren das Immunsystem, indem sie ein harmloses Antigen präsentieren."}
+{"role": "doc.de", "text": "Ein Kühlschrank arbeitet nach dem Prinzip der Verdampfung und Kondensation eines Kältemittels."}
+{"role": "doc.de", "text": "Der Schwarzwald ist bekannt für seine Tannenwälder, Uhrmachertradition und die Kirschtorte."}
+{"role": "doc.de", "text": "Die Zugspitze ist mit 2962 Metern der höchste Berg Deutschlands."}
+{"role": "doc.en", "text": "A balanced diet rich in vegetables, legumes and whole grains lowers cardiovascular risk."}
+{"role": "doc.en", "text": "Renewable sources such as wind and solar keep getting cheaper per kilowatt hour."}
+{"role": "doc.en", "text": "In distributed systems, consensus protocols like Raft keep replicated logs consistent under failure."}
+{"role": "doc.en", "text": "Gravitational waves were directly detected for the first time by the LIGO observatories in 2015."}
+{"role": "doc.en", "text": "Antibiotics act only against bacteria and have no effect on viral infections."}
+{"role": "doc.en", "text": "Cache invalidation and naming things remain the two genuinely hard problems in computing."}
+{"role": "doc.en", "text": "A well-diversified index fund is generally considered a low-cost entry point to equity markets."}
+{"role": "doc.en", "text": "The Hanseatic League was a confederation of merchant guilds that dominated Baltic trade for centuries."}
+{"role": "doc.en", "text": "Rayleigh scattering favours shorter wavelengths, which is why the daytime sky appears blue."}
+{"role": "doc.en", "text": "Continuous integration catches regressions early by building and testing every pushed commit."}
+{"role": "doc.en", "text": "Solid-state drives store data in flash cells and have no moving parts to fail mechanically."}
+{"role": "doc.en", "text": "The manuscript was rejected because the control group was too small to support the conclusion."}
+{"role": "doc.en", "text": "The refund policy allows exchanges within thirty days of purchase with the original receipt."}
+{"role": "doc.en", "text": "The bridge spans nearly two kilometres and carries both rail and road traffic across the bay."}
+{"role": "query.de", "text": "Wie wirken Impfstoffe im Körper?"}
+{"role": "query.de", "text": "Was ist der Unterschied zwischen Brutto und Netto?"}
+{"role": "query.de", "text": "Wann verjährt eine Forderung nach deutschem Recht?"}
+{"role": "query.de", "text": "Wie backe ich ein Brot mit Sauerteig?"}
+{"role": "query.de", "text": "Warum ist der Himmel blau?"}
+{"role": "query.de", "text": "Wie beantrage ich Elterngeld?"}
+{"role": "query.de", "text": "Wo entspringt die Elbe?"}
+{"role": "query.de", "text": "Wie lange muss ich Kontoauszüge aufbewahren?"}
+{"role": "query.de", "text": "Was kostet eine Photovoltaikanlage für ein Einfamilienhaus?"}
+{"role": "query.de", "text": "Wie funktioniert maschinelles Lernen einfach erklärt?"}
+{"role": "query.de", "text": "Was ist der Unterschied zwischen Bakterien und Viren?"}
+{"role": "query.de", "text": "Wie hoch ist der gesetzliche Mindestlohn?"}
+{"role": "query.en", "text": "What is the best programming language for data science?"}
+{"role": "query.en", "text": "How does a heat pump work in cold weather?"}
+{"role": "query.en", "text": "What is retrieval-augmented generation?"}
+{"role": "query.en", "text": "How much should I save for retirement each month?"}
+{"role": "query.en", "text": "How does a solid-state drive store data?"}
+{"role": "query.en", "text": "What causes migraine headaches?"}
+{"role": "query.en", "text": "How do I make sourdough starter from scratch?"}
+{"role": "query.en", "text": "What are the health benefits of aerobic exercise?"}
+{"role": "query.en", "text": "How do I debug a segmentation fault in C++?"}
+{"role": "query.en", "text": "What should I look for when buying a used car?"}
+{"role": "code", "text": "SELECT customer_id, SUM(amount) AS total\nFROM orders\nWHERE created_at >= '2026-01-01'\nGROUP BY customer_id\nHAVING SUM(amount) > 1000\nORDER BY total DESC;"}
+{"role": "code", "text": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.map((u) => fetch(u).then((r) => r.json()))\n  );\n  return results.filter(Boolean);\n}"}
+{"role": "code", "text": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Option<u32> {\n        if self.count < 5 {\n            self.count += 1;\n            Some(self.count)\n        } else {\n            None\n        }\n    }\n}"}
+{"role": "code", "text": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        return (\"Instruct: Given a question, retrieve passages \"\n                \"that can help answer the question.\\nQuery: \")\n    if \"arctic-embed\" in model and \"-v2\" in model:\n        return \"query: \"\n    return None\n"}
+{"role": "code", "text": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nconst unwrap = <T,>(r: Result<T>): T => {\n  if (!r.ok) throw new Error(r.error);\n  return r.value;\n};"}
+{"role": "code", "text": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_average(const float * x, int n, int w) {\n    float s = 0.0f;\n    for (int i = n - w; i < n; ++i) s += x[i];\n    return s / (float) w;\n}"}
+{"role": "struct", "text": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die Wohnung in der\nBeispielstraße 12, 10115 Berlin, fristgerecht zum 30. September.\n\nMit freundlichen Grüßen\nMax Mustermann"}
+{"role": "struct", "text": "Checklist before release\n\n[x] unit tests green\n[x] clang-format clean\n[ ] PERFORMANCE.md updated\n[ ] registry pin refreshed\n[ ] CHANGELOG entry written\n"}
+{"role": "struct", "text": "Agenda\n\n09:00  Begrüßung\n09:15  Stand der Migration\n10:00  Pause\n10:15  Diskussion: Quantisierung und Qualität\n11:30  Beschlüsse\n12:00  Ende\n"}
+{"role": "struct", "text": "Article 5\n\n1. Personal data shall be processed lawfully, fairly and transparently.\n2. Data shall be collected for specified, explicit and legitimate purposes.\n3. Data shall be adequate, relevant and limited to what is necessary.\n"}
+{"role": "struct", "text": "Rechnung Nr. 2026-0815\n\nPos.  Beschreibung              Menge   Einzelpreis   Gesamt\n1     Beratungsleistung          8 h      120,00 €    960,00 €\n2     Reisekosten                1        215,50 €    215,50 €\n\nZwischensumme: 1.175,50 €\nUmsatzsteuer 19 %: 223,35 €\nGesamtbetrag: 1.398,85 €\n"}
