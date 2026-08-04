@@ -127,6 +127,29 @@ jobs:
           cp -P build/libcrispembed.* python/crispembed/ 2>/dev/null || true
           find build/ggml/src -name 'libggml*' \( -type f -o -type l \) \
             -exec cp -P {} python/crispembed/ \; 2>/dev/null || true
+
+      # Point the staged libs at their siblings. The release packaging has
+      # always done this; the wheels flow only ever copied, so libcrispembed.so
+      # kept the build-tree RUNPATH (absolute paths inside the build container).
+      # Nothing could resolve libggml-base.so.0 from there, which is exactly how
+      # `auditwheel repair` failed: "Cannot repair wheel, because required
+      # library libggml-base.so.0 could not be located". It also makes the
+      # wheel's own libs self-locating at load time instead of relying on the
+      # binding importing them in dependency order.
+      - name: Point the staged libs at their siblings (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          command -v patchelf >/dev/null 2>&1 || sudo apt-get install -y patchelf
+          for f in python/crispembed/*.so*; do
+              [ -f "$f" ] || continue
+              [ -L "$f" ] && continue
+              patchelf --set-rpath '$ORIGIN' "$f"
+          done
+          echo "RUNPATHs after patching:"
+          for f in python/crispembed/*.so*; do
+              [ -f "$f" ] && [ ! -L "$f" ] && echo "  $(basename "$f"): $(patchelf --print-rpath "$f")"
+          done
           ls -la python/crispembed/
 
       # The wheel's compatibility claim rests on this, so assert it against the
