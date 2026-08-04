@@ -1,0 +1,57 @@
+[
+  {
+    "fixture": "commons_example_receipt.png",
+    "stem": "commons_example_receipt",
+    "gen_s": 20.52,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 1740,
+    "completion_tokens": 427,
+    "natural_text_chars": 806,
+    "raw_chars": 916
+  },
+  {
+    "fixture": "commons_test_ocr_document.jpg",
+    "stem": "commons_test_ocr_document",
+    "gen_s": 33.92,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 1786,
+    "completion_tokens": 726,
+    "natural_text_chars": 2992,
+    "raw_chars": 3102
+  },
+  {
+    "fixture": "german_official_print.jpg",
+    "stem": "german_official_print",
+    "gen_s": 18.77,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 1740,
+    "completion_tokens": 385,
+    "natural_text_chars": 947,
+    "raw_chars": 1057
+  },
+  {
+    "fixture": "receipt_historical.png",
+    "stem": "receipt_historical",
+    "gen_s": 22.77,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 1188,
+    "completion_tokens": 488,
+    "natural_text_chars": 737,
+    "raw_chars": 847
+  },
+  {
+    "fixture": "simple_form.png",
+    "stem": "simple_form",
+    "gen_s": 4.84,
+    "finish_reason": "stop",
+    "parse_error": null,
+    "prompt_tokens": 1602,
+    "completion_tokens": 81,
+    "natural_text_chars": 161,
+    "raw_chars": 271
+  }
+]

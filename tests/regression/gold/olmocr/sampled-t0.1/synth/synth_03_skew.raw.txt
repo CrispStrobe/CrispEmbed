@@ -1,0 +1,10 @@
+---
+primary_language: en
+is_rotation_valid: True
+rotation_correction: 0
+is_table: False
+is_diagram: False
+---
+Sphinx of black quartz, judge my vow.
+Waltz, bad nymph, for quick jigs vex.
+Five quacking zephyrs jolt my wax bed.

@@ -1,0 +1,49 @@
+{
+  "model": "allenai/olmOCR-2-7B-1025",
+  "pin": "vllm==0.11.2 (olmocr[gpu])",
+  "backend": null,
+  "gpus": [
+    {
+      "name": "Tesla T4",
+      "compute_cap": "7.5",
+      "memory": "15360 MiB"
+    },
+    {
+      "name": "Tesla T4",
+      "compute_cap": "7.5",
+      "memory": "15360 MiB"
+    }
+  ],
+  "install_rc": 0,
+  "install_s": 159.4,
+  "install_tail": "ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\nbigframes 2.39.0 requires google-cloud-bigquery-storage<3.0.0,>=2.30.0, which is not installed.\ngoogle-adk 1.29.0 requires google-cloud-bigquery-storage>=2.0.0, which is not installed.\ngrpcio-tools 1.71.2 requires protobuf<6.0dev,>=5.26.1, but you have protobuf 6.33.6 which is incompatible.\ngoogle-ai-generativelanguage 0.6.15 requires protobuf!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<6.0.0dev,>=3.20.2, but you have protobuf 6.33.6 which is incompatible.\ngrpcio-status 1.71.2 requires protobuf<6.0dev,>=5.26.1, but you have protobuf 6.33.6 which is incompatible.\ngoogle-adk 1.29.0 requires starlette<1.0.0,>=0.49.1, but you have starlette 1.3.1 which is incompatible.\ngradio 5.50.0 requires starlette<1.0,>=0.40.0, but you have starlette 1.3.1 which is incompatible.\n",
+  "libcuda_so_1": "libcuda.so.1 (libc6,x86-64) => /usr/local/nvidia/lib64/libcuda.so.1",
+  "libcuda_symlink_rc": 0,
+  "libcuda_symlink_present": true,
+  "attempts": [
+    {
+      "model": "allenai/olmOCR-2-7B-1025",
+      "pin": "vllm==0.11.2 (olmocr[gpu])",
+      "backend": "AUTO",
+      "gpus": [
+        {
+          "name": "Tesla T4",
+          "compute_cap": "7.5",
+          "memory": "15360 MiB"
+        },
+        {
+          "name": "Tesla T4",
+          "compute_cap": "7.5",
+          "memory": "15360 MiB"
+        }
+      ],
+      "vllm": "0.11.2",
+      "init": "ok",
+      "init_s": 356.3,
+      "verdict": "vLLM 0.11.2 served allenai/olmOCR-2-7B-1025 on 2x Tesla T4 (cc 7.5)",
+      "rc": 0,
+      "wall_s": 615.6
+    }
+  ],
+  "verdict": "vLLM 0.11.2 served allenai/olmOCR-2-7B-1025 on 2x Tesla T4 (cc 7.5) with VLLM_ATTENTION_BACKEND=AUTO"
+}
