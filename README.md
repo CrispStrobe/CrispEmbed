@@ -175,13 +175,18 @@ machine fails at load with exit 127 rather than falling back to CPU (#42). If
 you are not sure the toolkit is installed, take the bundled one. Both archives
 are checked against their own contract at packaging time.
 
-**glibc floor:** the tarballs are built on Ubuntu 24.04 and require
-**glibc ≥ 2.38** and **GLIBCXX ≥ 3.4.32**. They run on Ubuntu 24.04+,
-Debian 13+, RHEL/EL 9+ and current Arch, but *not* on Ubuntu 22.04 or
-Debian 12, where they fail to start for this separate reason. Build from
-source there. (Same floor as the Python wheels — see the note in
-`python/pyproject.toml`; lowering it means building inside a manylinux
-container.)
+**glibc floor:** the Linux tarballs are built inside
+`quay.io/pypa/manylinux_2_28` and require **glibc ≥ 2.28** — measured at
+2.27 / GLIBCXX 3.4.22 — so they run on Ubuntu 18.04+, Debian 10+, RHEL/EL 8+
+and any current rolling distro. The packaging gate enforces this
+(`check-bundled-deps.py --max-glibc 2.28`), so a future base-image change
+cannot silently raise it.
+
+Up to and including v0.17.2 they were built on the runner's Ubuntu 24.04 and
+needed **glibc 2.38 / GLIBCXX 3.4.32**, which meant they would not start on
+Ubuntu 22.04 or Debian 12 — a second, independent startup failure on top of
+the OpenBLAS one (#42). The CUDA archives are still built outside the
+container and keep the higher floor.
 
 ### Mobile & browser
 

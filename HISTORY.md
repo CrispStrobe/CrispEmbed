@@ -4,6 +4,53 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — Linux glibc floor: 2.38 → 2.27 (#42, second issue)
+
+The other half of #42, and the one that had been sitting in the tree as a
+known limitation rather than a bug. Built on the `ubuntu-latest` runner, the
+Linux archives required `GLIBC_2.38` / `GLIBCXX_3.4.32`, so they refused to
+start on Ubuntu 22.04, Debian 12 and anything else on glibc ≤ 2.37 — an
+independent second reason a user saw a startup failure, unfixed by v0.17.1's
+OpenBLAS work.
+
+Both Linux release legs now build inside `quay.io/pypa/manylinux_2_28`
+(AlmaLinux 8). Measured on the resulting artifact:
+
+| | before | after |
+|---|---|---|
+| glibc | 2.38 | **2.27** |
+| GLIBCXX | 3.4.32 | **3.4.22** |
+| runs on | Ubuntu 24.04+, Debian 13+, EL 9+ | **Ubuntu 18.04+, Debian 10+, EL 8+** |
+
+Container toolchain: gcc/g++ 14.2.1, cmake 4.4.2, patchelf 0.17.2, glibc 2.28.
+C++17 is unaffected — an old *glibc* does not mean an old compiler, which is
+the whole reason manylinux images pair a modern gcc-toolset with an ancient
+libc.
+
+Mechanics worth keeping:
+
+- `container:` is a **matrix key**, empty on the macOS/Windows entries, which
+  GitHub treats as "no container". One job still covers all four platforms.
+- `git config --global --add safe.directory '*'` **before** `actions/checkout`:
+  in a container the workspace uid differs from git's, and the submodule
+  checkout otherwise dies on "dubious ownership".
+- The apt/sudo deps step is skipped in-container — AlmaLinux has neither, and
+  the image already ships patchelf. A toolchain step prints
+  gcc/cmake/patchelf/glibc versions so a future base-image change is visible
+  in the log rather than inferred from a mystery failure.
+- `python` → `python3` for the check scripts: the manylinux image has no bare
+  `python`.
+- `check-bundled-deps.py --max-glibc 2.28` runs on those legs, so the floor is
+  **enforced rather than assumed**. Confirmed the gate bites by running it
+  against the published v0.17.2 tarball: exit 1, *"requires GLIBC_2.38 … but
+  the declared floor is 2.28"*.
+
+Still outside the container: the CUDA legs (they need the CUDA toolkit
+installed on the host), so those archives keep the higher floor. Recorded in
+the README rather than left to be rediscovered.
+
+---
+
 ## August 4, 2026 — Linux CUDA archive: a second, self-inflicted exit 127 (#42)
 
 Filed upstream by `niksedk` after SubtitleEdit#13205, and correct on every
