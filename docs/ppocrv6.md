@@ -57,60 +57,86 @@ normalization. These values must remain part of the parity fixtures.
 
 ## Backend status and GPU roadmap
 
-The default PP-OCRv6 detector, recognizer, and PP-LCNet orientation runtime
-remain correctness-first CPU implementations. An experimental persistent GGML
-full recognizer graph is available for tiny/small recognizers with
-`CRISPEMBED_PPOCRV6_GRAPH=1`; it covers the stem, depthwise/pointwise blocks,
-SE gates, activations, residuals, all four backbone stages, pooled head,
-folded batch norms, and projection logits. The detector/orientation paths
-remain on the CPU reference path until their graph parity gates are complete.
+**Status as of 2026-08-04.** The graph paths described below are no longer
+staged experiments — read this section against `src/ppocrv6_det.cpp` and
+`src/ppocrv6_ocr.cpp`, not against the older staged-rollout wording it replaces.
 
-The graph port is staged: first reproduce detector, SVTR recognizer, and
-PP-LCNet logits with persistent ggml graphs and CPU parity taps; then enable
-Metal/CUDA scheduling with residency checks; finally batch line crops and cache
-static-shape graphs and dequantized critical tensors. Every stage must pass
-cosine/logit parity and live CER gates on the CC0/German corpus.
+The **detector full graph is the default for tiny, small and medium** since
+2026-08-04 (`ppocrv6_det.cpp::graph_build`). It covers the stem, backbone,
+neck — including medium's RepLKFPN neck — and head.
+`CRISPEMBED_PPOCRV6_DET_SCALAR=1` restores the scalar reference, which is the
+bisection lever. The historical `CRISPEMBED_PPOCRV6_DET_GRAPH` /
+`CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT` opt-in pair no longer exists.
 
-Until those gates pass, PP-OCRv6 remains explicitly CPU-first; enabling the
-experimental graph does not silently change the default execution path.
+The detector graph deliberately runs on the **CPU backend**: Metal ran the same
+graph 9x slower (1693 ms vs 187 ms on `synth_00_clean`, 2026-08-04) because conv
+at these spatial sizes does not pay for the dispatch.
+`CRISPEMBED_PPOCRV6_DET_GPU_LOAD=1` is the explicit GPU opt-in and
+`CRISPEMBED_PPOCRV6_FORCE_CPU` pins CPU.
 
-The detector has a separate staged graph switch,
-`CRISPEMBED_PPOCRV6_DET_GRAPH=1`. For tiny/small models it constructs the
-detector stem, backbone, neck, and head graph. Its probability map remains
-diagnostic-only until tensor/box parity is complete; setting
-`CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT=1` explicitly accepts non-empty graph
-detections. Without that second switch, the pipeline uses the CPU reference
-path, preventing graph geometry or score drift from changing OCR results.
+Promotion evidence (2026-08-04), after the insert-SE double-scale fix that was
+the actual cause of the old geometry mismatch: probability cosine ~1e-8 versus
+the scalar path, 25-fixture labelled CER net-better at 0.06394 vs 0.06410, and
+1.5-1.7x faster (`synth_00_clean` 175 ms vs 316 ms; a 1920x2518 page 1363 ms vs
+2056 ms). Medium was validated the same day: every `med_*` tap at cosine
+0.99999998-1.0, probability 0.99999999 with equal norms, identical box counts,
+detector time 6.9 s -> 1.0 s on `synth_00_clean` and 41.4 s -> 8.7 s on
+`german_official_print`, German CER 0.04856 graph vs 0.04955 scalar.
 
-The current CPU parity probe reports detector probability-map cosine 0.99113
-and head pre-sigmoid cosine 0.99898 on the German CC0 fixture. The graph still
-produces one extra box (31 vs 30), so the explicit accept switch remains a
-debug gate rather than a production setting.
+This supersedes the earlier probe that reported detector probability-map cosine
+0.99113, head pre-sigmoid 0.99898 and one extra box (31 vs 30) on the German CC0
+fixture; that measurement was taken on 2026-08-01, before the double-scale fix,
+and is kept here only so the number is not re-derived as a live defect.
 
-Use `CRISPEMBED_PPOCRV6_DET_BENCH=1` to print the detector timing split. On
-the German CC0 page, CPU normalization is about 2.5 ms while the scalar
-detector work is about 626 ms; the graph diagnostic reports about 590 ms on
-this CPU build before its CPU fallback. This keeps preprocessing on CPU unless
-a backend-specific measurement proves the transfer worthwhile.
+Use `CRISPEMBED_PPOCRV6_DET_BENCH=1` to print the detector timing split, and
+`CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE=1` to run the scalar reference alongside
+the graph. On the German CC0 page (2026-08-01, CPU build) normalization was
+about 2.5 ms while the scalar detector work was about 626 ms; preprocessing
+stays on CPU unless a backend-specific measurement proves the transfer
+worthwhile.
 
 Use `CRISPEMBED_PPOCRV6_BENCH=1` for the routed end-to-end split, including
 quad crop geometry, orientation, and recognition. On the German CC0 page the
-Metal build measured detector 6.9 s, crop 3.4 ms, orientation 358.6 ms, and
-recognition 455.2 ms; geometry is therefore not a useful GPU-offload target
-yet, while orientation is a separate graph optimization target.
+Metal build measured (2026-08-01, before the detector graph was promoted)
+detector 6.9 s, crop 3.4 ms, orientation 358.6 ms, and recognition 455.2 ms;
+geometry is therefore not a useful GPU-offload target, while orientation is a
+separate graph optimization target. The detector number is superseded: the
+medium graph took the same fixture family from 6.9 s to 1.0 s on 2026-08-04.
 
-Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` to print per-line recognizer graph
-latency and the selected backend. On the Metal build this is a graph execution
-measurement, not a production quality claim. The tiny recognizer graph now
-executes at roughly 19--24 ms/crop on MTL0, but its decoded output is not yet
-CPU-parity; it is diagnostic-only unless `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT=1`
-is set, and the CPU recognizer remains the fallback result. The current small
-and medium recognizers have an opt-in full SVTR graph. Set
+**The small/medium recognizer graph is the default since 2026-08-02**
+(`ppocrv6_ocr.cpp::pp_graph_enabled`). It was promoted on evidence: decoded text
+identical to the CPU reference on all 26 fixtures tried (20 synthetic plus 6 CC0
+scans, the largest 71 regions), and ~1.9x faster end-to-end on a quiet box
+(`synth_00_clean` 1230 -> 646 ms; the 1920x2518 `german_official_print` scan
+9369 -> 4964 ms). `CRISPEMBED_PPOCRV6_NO_GRAPH=1` restores the CPU reference
+everywhere.
+
+The **fused batch graph is also the default since 2026-08-04**: same-width crops
+are grouped (`CRISPEMBED_PPOCRV6_BATCH_MAX`, default 8) and run as one graph.
+26/26 fixtures decode byte-identical to the scalar-per-crop path and a 47-crop
+receipt runs recognize 3743 -> 2563 ms on Metal.
+`CRISPEMBED_PPOCRV6_BATCH_GRAPH=0` (or `CRISPEMBED_PPOCRV6_NO_BATCH_GRAPH`)
+disables it; `CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY=1` restores the old
+backend gate. The recorded "Metal fourth-dimension pooling" failure that kept
+this lane CPU-only was a zeroed in-out width parameter, not a backend
+limitation — every batch graph was built at width 0 and asserted on any backend.
+
+Recognizer input width is bucketed up to a multiple of 64 by default since
+2026-08-04, so nearby widths share one graph shape and land in the same fused
+group (`CRISPEMBED_PPOCRV6_WIDTH_BUCKET=<n>` overrides the step, `0` disables).
+Rounding up only adds gray padding, which decodes to CTC blanks. 25-fixture CER
+gate: 0.06408 vs 0.06410, jitter in both directions.
+
+What is still gated: the **tiny** variant's single-crop full-logits lane remains
+diagnostic-only unless `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT=1` is set, and the CPU
+recognizer remains the fallback result for it. The fused batch lane (groups of
+two or more equal-width crops) accepts graph logits without that switch.
 `CRISPEMBED_PPOCRV6_SVTR_GRAPH=1` and
-`CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH=1` together with
-`CRISPEMBED_PPOCRV6_GRAPH=1` to graph the asymmetric stem, backbone,
-tokenization, attention/MLP blocks, and final norm. CPU CTC decoding remains
-the output boundary until the graph is explicitly accepted.
+`CRISPEMBED_PPOCRV6_SVTR_DECODER_GRAPH=1` remain available for bisecting the
+SVTR tokenization and attention/MLP seams, and
+`CRISPEMBED_PPOCRV6_GRAPH_STOP=backbone` stops the graph at the backbone
+boundary. Use `CRISPEMBED_PPOCRV6_GRAPH_BENCH=1` for per-line recognizer graph
+latency and the selected backend.
 
 The tiny/small static-shape graph allocation is retained across line crops.
 Only the input staging tensor is refreshed per crop; backend buffer planning is
@@ -123,16 +149,19 @@ The graph-output gate is stricter than activation-reference parity: on the
 Metal. Small/medium full-graph gold validation passes Arabic, receipt, and
 German fixtures via `tests/test_ppocrv6_graph_gold.py --require`: CPU logits
 cosine is `0.999995–0.999996`, Metal is `0.999956–0.999982`, with unchanged
-decoded text. The graph remains diagnostic-only unless explicitly accepted.
+decoded text. Only the tiny single-crop lane still needs the explicit accept
+switch; small and medium are accepted by default (see above).
 Regenerated references are backed up under
 `/Volumes/backups/ai/crispembed-gguf/` and belong in the corresponding
 `cstr/PP-OCRv6_*_rec-GGUF` repositories.
 
-Non-CPU detector graphs use F16 resident convolution weights by default for
-backend throughput; set `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a
-high-precision backend comparison. On the Apple M1 probe this reduced the
-diagnostic detector graph from roughly 3.6 s to 3.3 s without changing the
-reported parity cosines.
+Non-CPU detector graphs use F16 resident convolution weights; the CPU graph
+stays F32 (`ppocrv6_det.cpp::graph_conv`). Set
+`CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS=1` when running a high-precision backend
+comparison. On the Apple M1 probe (2026-08-01) this reduced the detector graph
+from roughly 3.6 s to 3.3 s without changing the reported parity cosines — note
+that the detector now defaults to the CPU backend, so this only applies under
+`CRISPEMBED_PPOCRV6_DET_GPU_LOAD=1`.
 
 The PP-LCNet orientation graph is also opt-in with
 `PPLCNET_ORIENTATION_GRAPH=1` and `PPLCNET_ORIENTATION_GRAPH_PIPELINE=1`. It uses a backend scheduler with CPU fallback
