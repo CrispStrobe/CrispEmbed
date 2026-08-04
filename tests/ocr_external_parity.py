@@ -52,6 +52,7 @@ import statistics
 import subprocess
 import sys
 import time
+import traceback
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -928,6 +929,10 @@ def main() -> int:
                 record["engines"][e.name] = {
                     "kind": e.kind, "text": "", "proc_ms": None, "engine_ms": None,
                     "error": f"{type(exc).__name__}: {exc}",
+                    # The message alone says how big the failed allocation was
+                    # but not which stage asked for it, which is the half that
+                    # tells you what to change.  Keep the frames.
+                    "traceback": traceback.format_exc().splitlines()[-25:],
                 }
                 continue
             entry = {

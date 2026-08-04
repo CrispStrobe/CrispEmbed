@@ -90,7 +90,10 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 # A dense page asks for one multi-GiB activation; with the default allocator that
 # request has to find a single contiguous block, which fragmentation can deny even
 # when the total is available.
+# torch renamed this to PYTORCH_ALLOC_CONF; the old name is still read but the
+# OOM message quotes the new one, so set both rather than assume which is live.
 os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
+os.environ.setdefault("PYTORCH_ALLOC_CONF", "expandable_segments:True")
 
 
 def sh(cmd, check=True, cwd=None):
@@ -200,7 +203,12 @@ print("=" * 70)
 # single measured activation of 4.07 GiB (a 4.8 Mpix scan).  An even cap is the
 # only split where *both* devices keep more free memory than that peak needs.
 device_map = "auto"
-max_memory = ",".join(f"{i}=8GiB" for i in range(n_gpu)) if n_gpu > 1 else ""
+# Refined once more from the per-device readout: an even 8/8 cap left device 0
+# with 6.62 GiB of weights, 4.77 GiB of live activations and a 3.98 GiB request
+# it could not fit.  The vision-heavy device needs ~10 GiB free, and the other
+# device only ever peaked ~0.7 GiB above its weights, so the split should be
+# lopsided the *other* way: starve the device that does the work.
+max_memory = "0=5GiB," + ",".join(f"{i}=11GiB" for i in range(1, n_gpu)) if n_gpu > 1 else ""
 print(f"device_map={device_map} max_memory={max_memory}")
 
 results = {}
