@@ -85,6 +85,10 @@ GOLD = WORK / "gold"
 # the ephemeral layer under /tmp has ~70 GB.
 os.environ["HF_HOME"] = "/tmp/hf"
 os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# A dense page asks for one multi-GiB activation; with the default allocator that
+# request has to find a single contiguous block, which fragmentation can deny even
+# when the total is available.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
 
 def sh(cmd, check=True, cwd=None):
@@ -183,6 +187,20 @@ if token_dir is not None:
 print("=" * 70)
 print("Step 3: parity runs (sequential — one heavy process at a time)")
 print("=" * 70)
+# accelerate fills device 0 with weights before moving to device 1, and the
+# inputs land on device 0 too, so the busiest device ends up with the least free
+# memory.  Measured on 2x T4: a full page asked for 3.98 GiB against 2.26 GiB
+# free on device 0 while device 1 sat half empty.  Cap the *weight* budget per
+# device so the activation headroom exists where it is needed; the synthetic
+# corpus never noticed, only the dense CC0 scans did.
+max_memory = ""
+if n_gpu > 1:
+    head = 5.0  # GiB of activation headroom to keep free on the input device
+    max_memory = ",".join(
+        f"{i}={int(max(vram[i] - (head if i == 0 else 1.0), 4.0))}GiB"
+        for i in range(n_gpu))
+    print(f"max_memory={max_memory}")
+
 results = {}
 for corpus, images in (("synth", synth_local), ("cc0", cc0)):
     out_json = WORK / f"parity_{corpus}.json"
@@ -193,6 +211,7 @@ for corpus, images in (("synth", synth_local), ("cc0", cc0)):
         "--images", str(images), "--require-truth", "--repeats", "1",
         "--qwen", "--qwen-model", MODEL,
         "--qwen-dtype", dtype, "--qwen-device-map", "auto",
+        *(["--qwen-max-memory", max_memory] if max_memory else []),
         "--qwen-transcripts", str(gold),
         "--hardware", hardware,
         "--skip", "docling-py", "--skip", "easyocr-py", "--skip", "paddleocr-py",
