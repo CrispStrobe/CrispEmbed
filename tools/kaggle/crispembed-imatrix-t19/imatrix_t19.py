@@ -37,6 +37,44 @@ os.environ["MODELS"] = ("arctic-embed-m-v2,f2llm-v2-80m,f2llm-v2-160m,"
 # f2llm-v2-0.6b already has imatrix files, so the idempotence skip must be off.
 os.environ["FORCE"] = "1"
 
+# ── HF token: glob BOTH mount layouts before handing over to the harness ─────
+# Run 1 of this kernel died with `hf_token_ok: False` and a 401 on every upload
+# after a full 21-minute pipeline. The log says why:
+#   "HF auth: /kaggle/input contains 1 entries: ['datasets']"
+# On that worker the attached datasets mounted ONLY under the long path
+# /kaggle/input/datasets/<acct>/<slug>/ (kaggle_usage #19). The harness's ccache
+# warm globs that layout — `_warm_ccache_from_dataset` found
+# /kaggle/input/datasets/chr1s4/crispasr-ccache/.ccache and warmed 2974 files —
+# but `resolve_hf_token()` does not, so it returned None, `HfApi(token=None)`
+# went out unauthenticated, and a *public* repo answered 401/RepositoryNotFound.
+# resolve_hf_token() checks the environment FIRST, so exporting it here fixes
+# the run without patching CrispASR (a harness fix is filed separately).
+def _find_hf_token():
+    import glob
+    pats = ["/kaggle/input/*/hf_token.txt", "/kaggle/input/datasets/*/*/hf_token.txt"]
+    for pat in pats:
+        for p in sorted(glob.glob(pat)):
+            try:
+                tok = Path(p).read_text().strip()
+            except OSError:
+                continue
+            if tok:
+                print(f"[t19] HF token found at {p} (len {len(tok)})", flush=True)
+                return tok
+    print(f"[t19] WARNING: no hf_token.txt under {pats}", flush=True)
+    return None
+
+
+if not os.environ.get("HF_TOKEN"):
+    _tok = _find_hf_token()
+    if _tok:
+        os.environ["HF_TOKEN"] = _tok
+        os.environ["HUGGING_FACE_HUB_TOKEN"] = _tok
+        os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "1")
+    else:
+        # Never burn 21 minutes of quota to fail at the first upload again.
+        raise SystemExit("[t19] FATAL: no HF token — uploads would 401; aborting early")
+
 REPO_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 repo = WORK / "CrispEmbed"
 if not repo.exists():
