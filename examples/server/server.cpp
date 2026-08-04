@@ -1215,11 +1215,9 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string text;
-        auto pos = body.find("\"text\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 6);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) text = body.substr(q1 + 1, q2 - q1 - 1);
+        {
+            std::vector<std::string> vals;
+            if (json_extract_strings(body, "text", vals) > 0) text = vals[0];
         }
         if (text.empty()) {
             res.status = 400;
@@ -1869,12 +1867,8 @@ int main(int argc, char ** argv) {
         // Parse "text"
         std::string text;
         {
-            auto pos = body.find("\"text\"");
-            if (pos != std::string::npos) {
-                auto q1 = body.find('"', pos + 6);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos) text = body.substr(q1 + 1, q2 - q1 - 1);
-            }
+            std::vector<std::string> vals;
+            if (json_extract_strings(body, "text", vals) > 0) text = vals[0];
         }
 
         // Parse "labels" array
@@ -1932,11 +1926,9 @@ int main(int argc, char ** argv) {
 
         auto body = req.body;
         std::string text;
-        auto pos = body.find("\"text\"");
-        if (pos != std::string::npos) {
-            auto q1 = body.find('"', pos + 6);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) text = body.substr(q1 + 1, q2 - q1 - 1);
+        {
+            std::vector<std::string> vals;
+            if (json_extract_strings(body, "text", vals) > 0) text = vals[0];
         }
 
         if (text.empty()) {
@@ -2375,11 +2367,9 @@ int main(int argc, char ** argv) {
 
         // Parse format
         std::string format = "text";
-        auto fpos = body.find("\"format\"");
-        if (fpos != std::string::npos) {
-            auto q1 = body.find('"', fpos + 8);
-            auto q2 = body.find('"', q1 + 1);
-            if (q1 != std::string::npos && q2 != std::string::npos) format = body.substr(q1 + 1, q2 - q1 - 1);
+        {
+            std::vector<std::string> vals;
+            if (json_extract_strings(body, "format", vals) > 0) format = vals[0];
         }
 
         // Parse page dimensions
@@ -2391,9 +2381,9 @@ int main(int argc, char ** argv) {
         // Each result: {"text":"...","x":N,"y":N,"w":N,"h":N,"confidence":F}
         std::vector<crispembed_ocr_result> results;
         std::vector<std::string> texts; // keep text alive
-        auto rpos = body.find("\"results\"");
-        if (rpos != std::string::npos) {
-            auto arr_start = body.find('[', rpos);
+        auto rpos = core_json::json_find_key_value(body, "results");
+        if (rpos != std::string::npos && body[rpos] == '[') {
+            auto arr_start = rpos;
             auto arr_end = body.rfind(']');
             if (arr_start != std::string::npos && arr_end != std::string::npos) {
                 std::string arr = body.substr(arr_start, arr_end - arr_start + 1);
@@ -2406,17 +2396,12 @@ int main(int argc, char ** argv) {
                     p = e + 1;
 
                     crispembed_ocr_result r = {};
-                    // Extract text
-                    auto tp = obj.find("\"text\"");
-                    if (tp != std::string::npos) {
-                        auto tq1 = obj.find('"', tp + 6);
-                        auto tq2 = obj.find('"', tq1 + 1);
-                        if (tq1 != std::string::npos && tq2 != std::string::npos)
-                            texts.push_back(obj.substr(tq1 + 1, tq2 - tq1 - 1));
-                        else
-                            texts.push_back("");
-                    } else
-                        texts.push_back("");
+                    // Extract text (escape-aware, depth-1 within this object)
+                    {
+                        std::vector<std::string> vals;
+                        json_extract_strings(obj, "text", vals);
+                        texts.push_back(vals.empty() ? "" : vals[0]);
+                    }
                     r.text = texts.back().c_str();
                     r.text_len = (int)texts.back().size();
                     // Extract numbers (per-object; decoy-safe depth-1 finder)
@@ -3240,32 +3225,27 @@ int main(int argc, char ** argv) {
         } else {
             // JSON mode: parse image paths
             auto body = req.body;
-            auto fpos = body.find("\"format\"");
-            if (fpos != std::string::npos) {
-                auto q1 = body.find('"', fpos + 8);
-                auto q2 = body.find('"', q1 + 1);
-                if (q1 != std::string::npos && q2 != std::string::npos) format = body.substr(q1 + 1, q2 - q1 - 1);
+            {
+                std::vector<std::string> vals;
+                if (json_extract_strings(body, "format", vals) > 0) format = vals[0];
             }
-            auto rpos = body.find("\"autorotate\"");
-            if (rpos != std::string::npos) {
-                auto value = body.find_first_not_of(" \t\r\n:", rpos + 12);
-                do_autorotate = value != std::string::npos && body.compare(value, 4, "true") == 0;
-            }
-            // Parse "images" array
-            auto apos = body.find("\"images\"");
-            if (apos != std::string::npos) {
-                auto arr_start = body.find('[', apos);
-                auto arr_end = body.find(']', arr_start);
-                if (arr_start != std::string::npos && arr_end != std::string::npos) {
-                    size_t p = arr_start;
-                    while ((p = body.find('"', p + 1)) < arr_end) {
-                        auto q2 = body.find('"', p + 1);
-                        if (q2 < arr_end) {
-                            page_paths.push_back(body.substr(p + 1, q2 - p - 1));
-                            p = q2;
-                        } else
-                            break;
+            auto rpos = core_json::json_find_key_value(body, "autorotate");
+            if (rpos != std::string::npos) do_autorotate = body.compare(rpos, 4, "true") == 0;
+            // Parse "images" array (handles both a single string and an array).
+            // Each entry is a client-supplied filesystem path, so it gets the
+            // same --image-root confinement as the single-image field — this
+            // array was the one path-valued input that bypassed it.
+            {
+                std::vector<std::string> vals;
+                json_extract_strings(body, "images", vals);
+                for (const auto & p : vals) {
+                    if (p.empty()) continue;
+                    if (!path_within(p, g_image_root)) {
+                        fprintf(stderr, "crispembed-server: rejected 'images' path outside --image-root (%s): %s\n",
+                                g_image_root.c_str(), p.c_str());
+                        continue;
                     }
+                    page_paths.push_back(p);
                 }
             }
             // Single image shortcut

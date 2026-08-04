@@ -1387,6 +1387,7 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
         fprintf(stderr, "math_ocr: can't open %s\n", model_path);
         return nullptr;
     }
+    const std::string gguf_arch = core_gguf::kv_str(gctx, "general.architecture", "(none)");
 
     auto & hp = ctx->hparams;
     hp.enc_layers = core_gguf::kv_u32(gctx, "encoder.num_hidden_layers", 12);
@@ -1479,6 +1480,21 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
     for (int i = 0; i < hp.dec_layers; i++)
         if (ctx->dec_layers[i].self_q_w) md++;
     fprintf(stderr, "math_ocr: mapped %d/%d enc, %d/%d dec\n", me, hp.enc_layers, md, hp.dec_layers);
+
+    // Every hparam above has a default, so a foreign GGUF (e.g. a Tesseract
+    // LSTM handed to the flat pipeline's rec slot) "loads" as a vocab-1200
+    // math model with every tensor pointer null and segfaults on the first
+    // crop. Fail loudly here instead.
+    if (me == 0 || md == 0 || !ctx->patch_proj_w || !ctx->tok_embed) {
+        fprintf(stderr,
+                "math_ocr: %s is not a TrOCR-style encoder/decoder GGUF "
+                "(general.architecture=%s, %d/%d enc + %d/%d dec layers mapped) — "
+                "refusing to run with missing tensors. Pass this model to the "
+                "engine that matches its architecture instead.\n",
+                model_path, gguf_arch.c_str(), me, hp.enc_layers, md, hp.dec_layers);
+        math_ocr_free(ctx.release());
+        return nullptr;
+    }
 
     ctx->bench = (std::getenv("CRISPEMBED_MATH_OCR_BENCH") != nullptr);
 
