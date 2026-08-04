@@ -1,0 +1,15 @@
+{
+  "id": "chr1s4/crispembed-deepseek-ocr-reference-parity",
+  "title": "CrispEmbed DeepSeek OCR Reference Parity",
+  "code_file": "deepseek_ocr_parity.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "machine_shape": "NvidiaTeslaT4",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": ["chr1s4/crispasr-hf-token", "chr1s4/crispembed-ocr-synth"],
+  "kernel_sources": [],
+  "model_sources": []
+}
