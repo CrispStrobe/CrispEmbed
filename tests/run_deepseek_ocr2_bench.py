@@ -49,6 +49,106 @@ def parse_bench(err: str) -> dict:
     return out
 
 
+def run_once(binary: Path, model: Path, image: Path, env: dict, gpu_backend: str | None):
+    cmd = [str(binary), "--ocr-pipeline", str(image),
+           "--ocr-engine", "deepseek-ocr2", "--ocr-rec", str(model)]
+    if gpu_backend:
+        cmd += ["--gpu-backend", gpu_backend]
+    t0 = time.perf_counter()
+    p = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=3600)
+    wall_ms = (time.perf_counter() - t0) * 1000.0
+    text = REGIONS_RE.sub("", p.stdout).strip()
+    return text, wall_ms, parse_bench(p.stderr), p.returncode, p.stderr
+
+
+def interleave(args, base_env: dict) -> int:
+    """Alternate the two arms on one fixture, one process per run.
+
+    Interleaved rather than blocked because a 16 GB box shared with other
+    agents drifts: running all of arm A then all of arm B measures the drift,
+    not the change.  The first pair is discarded as cold, and each run is its
+    own process (a second inference spawned immediately after the first in the
+    same shell has exited at 0 s on a resource-release race).
+    """
+    img = Path(args.interleave)
+    # The persistent arm is selected EXPLICITLY via DS2_FAST_DECODE=1 rather
+    # than by omitting the legacy gate, because the shipped default is legacy.
+    arms = {"legacy": dict(base_env, DS2_LEGACY_DECODE="1"),
+            "persistent": dict(base_env, DS2_FAST_DECODE="1")}
+    arms["persistent"].pop("DS2_LEGACY_DECODE", None)
+    samples: dict[str, list[dict]] = {k: [] for k in arms}
+    texts: dict[str, set[str]] = {k: set() for k in arms}
+    pairs_out, dropped = [], []
+
+    for pair in range(args.pairs + 1):  # +1: pair 0 is the discarded cold pair
+        load1 = float(os.popen("sysctl -n vm.loadavg").read().split()[1])
+        rec_pair = {"pair": pair, "load_at_start": load1}
+        for arm, env in arms.items():
+            text, wall_ms, bench, rc, err = run_once(
+                args.binary, args.model, img, env, args.gpu_backend)
+            ok = rc == 0 and bool(text)
+            texts[arm].add(text)
+            rec = {"pair": pair, "ok": ok, "wall_ms": round(wall_ms, 1), **bench}
+            rec_pair[arm] = rec
+            if pair > 0 and ok and load1 <= args.max_load:
+                samples[arm].append(rec)
+            print(f"pair {pair} {arm:11s} ok={ok} decode={bench.get('decode')} "
+                  f"total={bench.get('total')} chars={len(text)} load1={load1}", flush=True)
+        # The user is on this machine; a fully quiet window may never arrive, so
+        # pairs started under heavy load are recorded but excluded from the
+        # verdict rather than silently averaged in.
+        both_ok = all(rec_pair[a].get("ok") for a in arms)
+        if pair > 0 and both_ok:
+            ld = rec_pair["legacy"].get("decode")
+            pd = rec_pair["persistent"].get("decode")
+            if ld and pd:
+                rec_pair["ratio_persistent_over_legacy"] = round(pd / ld, 4)
+        if pair > 0 and load1 > args.max_load:
+            dropped.append(pair)
+            rec_pair["dropped_reason"] = f"load {load1} > {args.max_load}"
+        pairs_out.append(rec_pair)
+
+    def stats(vals: list[float]) -> dict:
+        vals = sorted(vals)
+        n = len(vals)
+        if not n:
+            return {}
+        med = vals[n // 2] if n % 2 else (vals[n // 2 - 1] + vals[n // 2]) / 2
+        spread = (vals[-1] - vals[0]) / med if med else 0.0
+        return {"n": n, "median": round(med, 1), "min": round(vals[0], 1),
+                "max": round(vals[-1], 1), "spread_frac": round(spread, 3)}
+
+    summary = {}
+    for arm, rows in samples.items():
+        summary[arm] = {
+            "decode_ms": stats([r["decode"] for r in rows if "decode" in r]),
+            "total_ms": stats([r["total"] for r in rows if "total" in r]),
+            "prefill_ms": stats([r["prefill"] for r in rows if "prefill" in r]),
+            "sam_ms": stats([r["sam"] for r in rows if "sam" in r]),
+            "qwen2_enc_ms": stats([r["qwen2_enc"] for r in rows if "qwen2_enc" in r]),
+            "wall_ms": stats([r["wall_ms"] for r in rows]),
+            "distinct_texts": len(texts[arm]),
+        }
+    ratios = [p["ratio_persistent_over_legacy"] for p in pairs_out
+              if p["pair"] > 0 and "ratio_persistent_over_legacy" in p
+              and p["load_at_start"] <= args.max_load]
+    ratio_stats = stats(ratios) if ratios else {}
+    doc = {"fixture": img.name, "pairs": args.pairs, "max_load": args.max_load,
+           "gpu_backend": args.gpu_backend or "default",
+           "base_env": args.env, "samples": samples, "summary": summary,
+           "per_pair": pairs_out, "dropped_pairs_high_load": dropped,
+           "ratio_persistent_over_legacy": ratio_stats,
+           "text_identical_across_arms": len(texts["legacy"] | texts["persistent"]) == 1}
+    args.out.mkdir(parents=True, exist_ok=True)
+    (args.out / f"interleaved_{img.stem}.json").write_text(json.dumps(doc, indent=2) + "\n")
+    print(json.dumps(summary, indent=2))
+    print(f"per-pair persistent/legacy decode ratios (load-gated): {ratios}")
+    print(f"ratio stats: {ratio_stats}")
+    print(f"dropped for load > {args.max_load}: {dropped}")
+    print(f"text identical across arms: {doc['text_identical_across_arms']}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--binary", required=True, type=Path)
@@ -65,6 +165,16 @@ def main() -> int:
                          "ground_truth.json (the CC0 dir holds 14 images but "
                          "only 5 are transcribed, and the rest are Fraktur / "
                          "Arabic / handwriting the English gate does not score)")
+    ap.add_argument("--interleave", type=Path, default=None,
+                    help="A/B one fixture: alternate legacy/persistent arms, "
+                         "one process per run, instead of sweeping a corpus")
+    ap.add_argument("--max-load", type=float, default=8.0,
+                    help="drop pairs whose 1-min load average at pair start "
+                         "exceeds this; the machine has an interactive user, so "
+                         "a fully quiet window may never arrive")
+    ap.add_argument("--pairs", type=int, default=5,
+                    help="interleave mode: scored pairs (a cold pair 0 is "
+                         "always run first and discarded)")
     args = ap.parse_args()
 
     env = os.environ.copy()
@@ -72,6 +182,9 @@ def main() -> int:
     for kv in args.env:
         k, _, v = kv.partition("=")
         env[k] = v
+
+    if args.interleave:
+        return interleave(args, env)
 
     args.out.mkdir(parents=True, exist_ok=True)
     images = sorted(p for p in args.images.iterdir() if p.suffix.lower() in IMAGE_SUFFIXES)
@@ -84,22 +197,15 @@ def main() -> int:
 
     rows, failures = [], []
     for img in images:
-        cmd = [str(args.binary), "--ocr-pipeline", str(img),
-               "--ocr-engine", "deepseek-ocr2", "--ocr-rec", str(args.model)]
-        if args.gpu_backend:
-            cmd += ["--gpu-backend", args.gpu_backend]
-        t0 = time.perf_counter()
-        p = subprocess.run(cmd, capture_output=True, text=True, env=env, timeout=3600)
-        wall_ms = (time.perf_counter() - t0) * 1000.0
-        text = REGIONS_RE.sub("", p.stdout).strip()
-        bench = parse_bench(p.stderr)
+        text, wall_ms, bench, rc, err = run_once(
+            args.binary, args.model, img, env, args.gpu_backend)
         # A crash or an empty transcript is never timed as a win.
-        ok = p.returncode == 0 and bool(text)
+        ok = rc == 0 and bool(text)
         if not ok:
-            failures.append({"fixture": img.name, "returncode": p.returncode,
-                             "stderr_tail": p.stderr[-800:]})
+            failures.append({"fixture": img.name, "returncode": rc,
+                             "stderr_tail": err[-800:]})
         (args.out / (img.stem + ".txt")).write_text(text)
-        rows.append({"fixture": img.name, "ok": ok, "returncode": p.returncode,
+        rows.append({"fixture": img.name, "ok": ok, "returncode": rc,
                      "chars": len(text), "wall_ms": round(wall_ms, 1), **bench})
         print(f"{img.name:36s} ok={ok} chars={len(text):5d} "
               f"decode={bench.get('decode')} total={bench.get('total')} "

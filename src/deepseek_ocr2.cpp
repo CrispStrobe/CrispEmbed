@@ -1907,8 +1907,14 @@ static const char * g_ds_kv_dtype = "f32";
 //
 // Env gates:
 //   DS2_LEGACY_DECODE=1  force the legacy per-layer/per-token decode
-//   DS2_FAST_DECODE=1    force this path (diagnostic; it is already the
-//                        default wherever it is available)
+//   DS2_FAST_DECODE=1    explicitly select this path. It is the default where
+//                        usable, so this only documents intent — it exists so
+//                        an A/B harness can name the arm rather than select it
+//                        by omission, which would silently follow the default
+//                        if the default ever changes again
+//   DS2_KV_BUCKET=<n>    KV read-view depth granularity for this path
+//                        (default 256; 0 = read the whole allocation, which
+//                        is the qwen2vl behaviour and measured 2.42x SLOWER)
 //   DS2_KV_F16=1         allocate the KV cache as F16 instead of F32. This is
 //                        a PRECISION change, not a pure perf refactor, so it
 //                        is a SEPARATE opt-in gate: the persistent-graph
@@ -1924,11 +1930,55 @@ static ggml_type ds_kv_type() {
     return getenv("DS2_KV_F16") ? GGML_TYPE_F16 : GGML_TYPE_F32;
 }
 
+// Depth of the KV read view used by the persistent decode graph.
+//
+// qwen2vl reads the FULL allocated max_seq every step and lets the mask hide
+// the tail. Measured here that is a disaster: max_seq is n_prompt+max_new+64
+// (1408 for a 261-token prompt) while only ~300-480 slots are ever live, so
+// every layer of every token attends over ~3x too many slots AND materialises
+// three full `cont(permute(...))` copies of a [kv_dim x 1408] K/V. Interleaved
+// on Metal that cost 2.37x the legacy decode.
+//
+// Bucketing keeps the property the persistent graph actually needs — a shape
+// that is CONSTANT across consecutive steps, so sched_alloc keeps its
+// no-realloc fast path — while only ever reading a little more than is live.
+// The shape changes once per bucket boundary, which is rare.
+// DS2_KV_BUCKET=0 restores the read-everything behaviour.
+static int ds_kv_bucket() {
+    if (const char * e = getenv("DS2_KV_BUCKET")) {
+        int v = atoi(e);
+        return v > 0 ? v : 0;
+    }
+    return 256;
+}
+
+static int ds_kv_view_len(int n_kv, int max_seq) {
+    const int b = ds_kv_bucket();
+    if (b <= 0) return max_seq;
+    long long want = (long long)n_kv + 1;
+    long long rounded = (want + b - 1) / b * b;
+    if (rounded > max_seq) rounded = max_seq;
+    return (int)rounded;
+}
+
 // Why the persistent path is or is not usable. Returns nullptr when usable,
 // else a human-readable reason (reported once, so a silent fallback can never
 // be mistaken for a measured result).
 static const char * ds_persistent_decode_blocker(const ds_ocr2_ctx & ctx) {
     if (getenv("DS2_LEGACY_DECODE")) return "DS2_LEGACY_DECODE=1";
+    // DEFAULT IS THE PERSISTENT PATH, on measured evidence (Metal, M1,
+    // 2026-08-05, interleaved + load-gated, 9 scored pairs on a 217-token
+    // page): decode median 11474 ms -> 8192 ms (1.40x) and total 15815 ms ->
+    // 12785 ms (1.24x), with the decoded text byte-identical on all 25 gold
+    // fixtures and prefill/sam/qwen2_enc unchanged (461/2754/379 ms vs
+    // 462/2822/376 ms). DS2_LEGACY_DECODE=1 restores the per-layer path.
+    //
+    // The win is NOT the graph-build amortisation this task was scoped
+    // around — that is only ~1-6% of decode here. It is that one graph per
+    // token replaces 13 backend dispatches and 24 host<->device hidden-state
+    // transfers per token. Getting there required NOT copying qwen2vl's
+    // read-the-whole-max_seq KV view (see ds_kv_view_len): verbatim, that
+    // made decode 2.42x SLOWER than legacy.
     // DS_NO_KV reprocesses the whole growing sequence every step; there is no
     // single-token step graph to make persistent.
     if (getenv("DS_NO_KV")) return "DS_NO_KV=1";
@@ -1940,7 +1990,8 @@ static const char * ds_persistent_decode_blocker(const ds_ocr2_ctx & ctx) {
 
 // Build the single-token decode graph. `n_kv` is the slot this step writes;
 // `max_seq` is the (constant) allocated cache depth.
-static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context * g, int n_kv, int max_seq) {
+static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context * g, int n_kv, int max_seq,
+                                                int kv_len) {
     const auto & lhp = ctx.m.lhp;
     const int D = lhp.hidden, nh = lhp.heads, nkv = lhp.kv_heads, hd = lhp.head_dim;
     const int n_layers = lhp.n_layers;
@@ -1965,7 +2016,7 @@ static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context 
 
     // 0.0 for populated slots, -INF for the rest. The caller unmasks slot n_kv
     // before the step so this token attends to its own freshly-written K/V.
-    ggml_tensor * kv_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, max_seq, 1);
+    ggml_tensor * kv_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, kv_len, 1);
     ggml_set_name(kv_mask, "kv_mask");
     ggml_set_input(kv_mask);
 
@@ -2017,21 +2068,21 @@ static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context 
         // Fixed-depth read view: constant shape across every step, with kv_mask
         // hiding the unwritten tail.
         ggml_tensor * Kfull =
-            ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.k, kv_dim, max_seq, ctx.kvc.k->nb[1], off_k), hd, nkv, max_seq);
+            ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.k, kv_dim, kv_len, ctx.kvc.k->nb[1], off_k), hd, nkv, kv_len);
         ggml_tensor * Vfull =
-            ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.v, kv_dim, max_seq, ctx.kvc.v->nb[1], off_v), hd, nkv, max_seq);
+            ggml_reshape_3d(g, ggml_view_2d(g, ctx.kvc.v, kv_dim, kv_len, ctx.kvc.v->nb[1], off_v), hd, nkv, kv_len);
 
         // This decoder is MHA (heads == kv_heads), so there is no GQA repeat.
         // Guard rather than assume: a future checkpoint with nkv < nh would
         // otherwise attend to the wrong heads silently.
         if (nh != nkv) {
             const int kv_repeat = nh / nkv;
-            Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, max_seq);
-            Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, max_seq));
-            Kfull = ggml_reshape_3d(g, Kfull, hd, nh, max_seq);
-            Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, max_seq);
-            Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, max_seq));
-            Vfull = ggml_reshape_3d(g, Vfull, hd, nh, max_seq);
+            Kfull = ggml_reshape_4d(g, Kfull, hd, 1, nkv, kv_len);
+            Kfull = ggml_repeat(g, Kfull, ggml_new_tensor_4d(g, Kfull->type, hd, kv_repeat, nkv, kv_len));
+            Kfull = ggml_reshape_3d(g, Kfull, hd, nh, kv_len);
+            Vfull = ggml_reshape_4d(g, Vfull, hd, 1, nkv, kv_len);
+            Vfull = ggml_repeat(g, Vfull, ggml_new_tensor_4d(g, Vfull->type, hd, kv_repeat, nkv, kv_len));
+            Vfull = ggml_reshape_3d(g, Vfull, hd, nh, kv_len);
         }
 
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3)); // [hd, 1, nh]
@@ -2205,6 +2256,10 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             const int32_t tok = cur_tokens.empty() ? 0 : cur_tokens.back();
             const int32_t tok_pos = n_past;
 
+            // Read depth for this step: bucketed, so the shape stays constant
+            // across consecutive steps but never spans the whole allocation.
+            const int kv_len = ds_kv_view_len(n_past, max_seq);
+
             // Unmask everything written so far plus this step's own slot, which
             // the graph writes before it reads the cache back.
             for (int i = 0; i <= n_past && i < max_seq; i++) kv_mask_data[i] = ggml_fp32_to_fp16(0.0f);
@@ -2216,7 +2271,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
                 fprintf(stderr, "deepseek_ocr2: persistent decode ggml_init failed\n");
                 return false;
             }
-            ggml_cgraph * gf = build_ds_decode_step_graph(ctx, g, n_past, max_seq);
+            ggml_cgraph * gf = build_ds_decode_step_graph(ctx, g, n_past, max_seq, kv_len);
             ggml_backend_sched_reset(ctx.sched);
             if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
                 fprintf(stderr, "deepseek_ocr2: persistent decode alloc failed\n");
@@ -2234,7 +2289,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_id"), &tok, 0, sizeof(int32_t));
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), &tok_pos, 0, sizeof(int32_t));
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "kv_mask"), kv_mask_data.data(), 0,
-                                    (size_t)max_seq * sizeof(ggml_fp16_t));
+                                    (size_t)kv_len * sizeof(ggml_fp16_t));
 
             const auto _t0 = std::chrono::steady_clock::now();
             if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {

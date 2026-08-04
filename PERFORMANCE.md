@@ -1,5 +1,101 @@
 # CrispEmbed Performance
 
+## DeepSeek-OCR-2 decode: a persistent step graph is 1.40x — but not for the reason the task assumed (Apple M1 Metal, 2026-08-05)
+
+`deepseek_ocr2` built, allocated, computed and freed **one graph per layer per
+token** (12 per token) plus a separate LM-head graph, bouncing the hidden state
+host<->device 24 times per token. T14 replaced that with a single decode-step
+graph (embedding lookup -> 12 layers -> final norm -> logits), the
+`qwen2vl_ocr.cpp::build_decode_step_graph` pattern.
+
+**Protocol.** Interleaved, alternating arms, one process per run, 9 scored pairs
+plus a discarded cold pair, `commons_example_receipt.png` (217 generated tokens,
+both arms identical), pairs gated to 1-min loadavg <= 8 (observed 1.4-2.5) on an
+otherwise idle M1 with an interactive user. Both arms are the SAME binary
+selected by env gate. Numbers are the `[deepseek-ocr2-stage-bench]` line, which
+is net-of-load.
+
+| arm | decode med | min | max | spread | total med | prefill med | sam med | qwen2_enc med |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| legacy per-layer | 11473.7 ms | 11022.9 | 12117.2 | 0.095 | 15815.2 ms | 461.1 | 2754.4 | 378.6 |
+| persistent (default) | **8191.5 ms** | 8035.6 | 13463.7 | 0.663 | **12784.8 ms** | 462.1 | 2821.5 | 375.5 |
+
+**1.40x decode / 1.24x end-to-end, decoded text byte-identical on all 25 gold
+fixtures.** Per-pair ratios 0.700 / 0.676 / 0.971 / 0.694 / 1.049 / 0.697 /
+0.718 / 1.176 / 0.725, median **0.700**; 6 of 9 sit at 0.68-0.73. The persistent
+arm's 0.663 spread is three upward excursions, not a wider distribution — its
+floor is flat at 8035-8192 ms while legacy's own spread is 0.095. Median quoted,
+spread quoted, nothing trimmed. Stages neither arm touches are unchanged, which
+is the control: prefill 461 vs 462 ms, sam 2754 vs 2822 ms, qwen2_enc 379 vs
+376 ms.
+
+**CPU arm — 5/5 synth byte-identical; ONE cc0 fixture differs by ONE codepoint,
+and it is explained.** On `commons_example_receipt.png` under `DS2_FORCE_CPU=1`
+the legacy arm emits `**Jackson–Washington**` (U+2013 en dash) where the
+persistent arm emits `**Jackson-Washington**` (ASCII hyphen), plus one extra
+blank line. That is the entire diff. Mechanism: the legacy path runs the final
+RMSNorm host-side in `rmsnorm_cpu` (sequential f32 accumulation) and dispatches
+the LM head as its own graph, while the persistent path does both in-graph with
+a different reduction order; the last-bit logit difference resolves a near-tie
+between `-` and `–`. The comparison matrix shows this is a property of the
+FIXTURE, not of the new path:
+
+| config | bytes | sha12 | CER |
+|---|--:|---|--:|
+| CPU legacy | 574 | `ad1afaa6e857` | 0.22604 |
+| CPU persistent | 573 | `06cc11c9184c` | **0.22359** |
+| Metal legacy | 566 | `046b089ec4e7` | **0.22359** |
+| Metal persistent | 566 | `046b089ec4e7` | **0.22359** |
+
+Three of the four configurations agree exactly, and the outlier is **legacy on
+CPU**, not the new path — the persistent arm on CPU converges to the same text
+both Metal arms produce. CPU-vs-Metal disagreement (table-cell whitespace) is
+strictly larger than arm-vs-arm disagreement on this page. CER moves 0.22604 ->
+0.22359 on this one fixture, i.e. toward the cross-backend consensus; every other
+scored fixture is bit-for-bit equal, so both corpora's mean CER is identical to
+5 decimals between arms.
+
+### The premise was wrong: build+alloc was 1%, not the bottleneck
+
+The task was scoped as "amortise the per-layer graph rebuild". `DS_PROFILE=1`
+says that rebuild is **26 ms out of 5223 ms of decode on CPU (1%)** and ~3-6% on
+Metal. Amortising it could never have paid 40%. What actually paid is that one
+graph per token replaces **13 backend dispatches and 24 host<->device
+hidden-state transfers per token**. **Before porting this pattern to
+qwen2vl/granite/smoldocling, measure the overhead fraction** — the lever is
+dispatch and transfer count, not graph construction, and an engine whose decode
+is already one dispatch per token has nothing to win here.
+
+### Copying qwen2vl's KV read verbatim was a 2.42x REGRESSION
+
+qwen2vl reads the FULL allocated `max_seq` every step and lets an F16 mask hide
+the unwritten tail — correct, and cheap at its shapes. Here `max_seq` is
+`n_prompt + max_new + 64` = **1408** while only ~478 slots are ever live, so every
+layer of every token attended over ~3x too many slots and materialised three full
+`cont(permute(...))` copies of a `[1280 x 1408]` K/V. Measured, same protocol,
+5 pairs:
+
+| arm | decode med | per-pair ratio vs legacy |
+|---|--:|---|
+| legacy per-layer | 13654.9 ms | — |
+| persistent, full-`max_seq` read | 32419.5 ms | 2.669 / 2.098 / 2.424 / 3.439 / 2.362 (med **2.424**) |
+
+Fixed by bucketing the read depth to a multiple of 256 (`DS2_KV_BUCKET`, default
+256; `0` restores the qwen2vl behaviour), which keeps the shape CONSTANT across
+consecutive steps — the property `sched_alloc`'s no-realloc fast path actually
+needs — while reading only a little more than is live. Decode 32419 -> 8192 ms.
+**A borrowed pattern can invert on the ratio of allocated `max_seq` to live
+slots; that ratio is the thing to check before copying one.**
+
+### Gates
+
+`CRISPEMBED_DEEPSEEK_OCR2_BENCH=1` emits `[deepseek-ocr2-stage-bench]`
+(net-of-load; prefill and decode accumulated separately). Decode path:
+`DS2_LEGACY_DECODE=1` restores per-layer, `DS2_FAST_DECODE=1` names the default
+explicitly, `DS2_KV_BUCKET=<n>` tunes the read depth, `DS2_KV_F16=1` switches the
+cache to F16 (a PRECISION change, gated separately and NOT part of the
+byte-identity gate — unquantified), `DS2_FORCE_CPU=1` pins the CPU backend.
+
 ## Tesseract lane: classical page segmentation is 4x faster — on the pages it suits
 
 Measured 2026-08-02/03 on a genuinely quiet box (load 1.7-3.4, the first quiet
@@ -1065,7 +1161,7 @@ runtime category. "Existing" means the optimization is already implemented;
 | 3 | **got_ocr** | ggml flash_attn | F16 ggml tensor | Yes |
 | 4 | **qwen2vl_ocr** | ggml + `build_decode_step_graph` | **F16 ggml backend** (`alloc_kv_cache`) | Yes |
 | 5 | **lightonocr** | ggml flash_attn | F16 ggml persistent (`ggml_cpy`) | Yes |
-| 6 | **deepseek_ocr2** | ggml per-layer graphs + flash | **F32** ggml (`alloc_ds_kv_cache`); F16 KV + persistent single-graph both still OPEN here | Yes |
+| 6 | **deepseek_ocr2** | ggml per-layer graphs (default); persistent single-graph decode implemented but **opt-in** `DS2_FAST_DECODE=1` — measured NO win 2026-08-05, see the T14 section | **F32** default (`alloc_ds_kv_cache`); F16 opt-in `DS2_KV_F16=1` | Yes |
 | 7 | **smoldocling_ocr** | `sd_run_llm_body` ggml (default; `use_ggml`) | **F16 ggml backend**; core_vlm = fallback | Yes |
 | 8 | **granite_vision_ocr** | `gv_run_llm_body` ggml (default; diff cos 0.9999) | **F16 ggml backend**; core_vlm = opt-out | Yes |
 | 9 | **pix2struct** | CPU scalar + DequantCache | KV cache (Phase 2) — CPU, GPU port low-priority | No |
@@ -1390,7 +1486,7 @@ here were verified against current code (`git` HEAD), not carried from the doc.
 |---|---|---|
 | `conv2d_cpu` "still scalar / needs im2col restructure" (arch-rec #2) | Per-patch gather into a `thread_local` buffer + SIMD `dot_product` per output channel, with a hoisted interior-fast-path boundary check. Effectively single-patch im2col+SIMD. | `core/cpu_ops.h:345-400` |
 | `mel.cpp` projection "naive triple-loop matmul" | `core_cpu::dot_product` fast path for the contiguous layout; scalar retained only for transposed/accumulator cases | `core/mel.cpp:116-117` |
-| VLM decoders "F32 CPU KV re-uploaded each step / CPU-scalar" (qwen2vl, deepseek, smoldocling, granite, pix2struct) | All default to ggml graphs with **F16 device-resident KV** + `ggml_flash_attn_ext`. Scalar is an env-gated fallback. | qwen2vl_ocr.cpp:1091-1092,2412; deepseek_ocr2.cpp:154,1604-1620; granite_vision_ocr.cpp:626-627; smoldocling_ocr.cpp:685-686; pix2struct.cpp:347 |
+| VLM decoders "F32 CPU KV re-uploaded each step / CPU-scalar" (qwen2vl, deepseek, smoldocling, granite, pix2struct) | Device-resident KV everywhere, but the F16 half of this claim was **WRONG for deepseek_ocr2** and is corrected 2026-08-05: its cache is device-resident **F32** by default (`alloc_ds_kv_cache`), F16 only under `DS2_KV_F16=1`. Its flash path is also opt-in (`DS_LLM_FLASH`), not the default. | qwen2vl_ocr.cpp:1091-1092,2412; deepseek_ocr2.cpp `alloc_ds_kv_cache`/`ds_kv_type`; granite_vision_ocr.cpp:626-627; smoldocling_ocr.cpp:685-686; pix2struct.cpp:347 |
 | SR "No SIMD anywhere / no dequant caching 12-of-13 / no tiling" | 11/13 SR runtimes on ggml graphs; DequantCache fleet-wide (12 files); Hann-window tiling universal | esrgan_sr.cpp:362; instructir.cpp:164; scunet_denoise.cpp:327 |
 | decoder_embed "no flash in single-text path" | Single-text path (B≤1) now calls `ggml_flash_attn_ext` | decoder_embed.cpp:1196,1421 |
 | gliner "BiLSTM fully scalar" | Gate matmuls use `core_cpu::dot_product` (SIMD); only the per-timestep sequencing is inherent | gliner_ner.cpp:915-916 |
@@ -1399,10 +1495,13 @@ here were verified against current code (`git` HEAD), not carried from the doc.
 
 ### Verified DONE since June (net-new work)
 
-- **Device-resident F16 KV cache** across the VLM decoder set; **persistent
-  single decode graph** in deepseek_ocr2 and math_ocr (TrOCR ~4×). Other VLM
-  decoders (qwen2vl/granite/smoldocling) have device-resident KV but still
-  rebuild the decode graph per step.
+- **Device-resident KV cache** across the VLM decoder set; **persistent
+  single decode graph** in math_ocr (TrOCR ~4×). **Correction 2026-08-05:** the
+  claim that deepseek_ocr2 had a persistent single decode graph was wrong — it
+  rebuilt 12 graphs per token until T14 built one, and the result was measured
+  as no win and left opt-in (`DS2_FAST_DECODE=1`). Its KV is F32, not F16.
+  Other VLM decoders (qwen2vl/granite/smoldocling) have device-resident KV but
+  still rebuild the decode graph per step.
 - **WebGPU/WASM tier** (OCR build): ~950 lines of authored WGSL kernels
   (LayerNorm, IM2COL/CONV_2D/POOL_2D/CONV_TRANSPOSE_2D/UPSCALE/ARANGE) landed in
   the pinned `ggml` submodule. Detection ~60×, det+rec pipeline ~1.8×, ~2.8×
@@ -1424,7 +1523,7 @@ here were verified against current code (`git` HEAD), not carried from the doc.
 | **P2** | SR-on-GPU (whole family) | **Correction:** the ENTIRE SR family runs conv on a CPU-only `enc_sched` (`swinir_sr.cpp:447` prints `ggml_conv_2d (CPU sched)`); dat/hat/swinir use `init_best` only to LOAD weights, then copy dequantized weights into a CPU-resident context. esrgan/safmn/restormer/instructir just skip that copy. There is no GPU sibling to match — SR-on-GPU is unsolved research (Metal `ggml_conv_2d` + GPU-resident weight/graph path), not a residency toggle | Reprioritized down |
 | DONE | safmn honor `n_threads` | Was hardcoded to a 1-thread conv sched (`safmn_sr.cpp:255`); now honors `-t N` like siblings | **~2.3×** (16.2s→7.1s, 8-core Mac), bit-identical output |
 | **P2** | mixtex_ocr | Swin window attention still scalar (`mixtex_ocr.cpp:126`) | Encoder O(N²·D)-bound |
-| **P2** | qwen2vl/granite/smoldocling | Decode graph rebuilt per step (KV device-resident, but not the persistent-graph pattern deepseek/math use) | Per-step build/launch overhead |
+| **P2** | qwen2vl/granite/smoldocling | Decode graph rebuilt per step (KV device-resident, but not the persistent-graph pattern math_ocr uses; deepseek_ocr2 was wrongly listed here — see 2026-08-05 correction). **Measure the overhead fraction before porting:** deepseek's per-step build+alloc was only 1-6% of decode, so its persistent graph won nothing | Per-step build/launch overhead — only where it is actually a large fraction |
 | **P2** | deepseek_ocr2 | LLM/enc flash are opt-in default-off (measured slower on CPU); re-benchmark on Metal/CUDA | Backend-dependent |
 | **P3** | Build/infra | No LTO/IPO; `GGML_BLAS=OFF` (Accelerate not guaranteed for CPU-fallback matmul); `--gpu-backend` ignored (`crispembed.cpp:81` calls `init_best()` directly); app-level OpenMP possibly unlinked; Metal F16 mul_mm guard in only 5/~40 GPU files | Broad low-effort |
 | **P3** | Misc | ocr_orchestrator PNG round-trip + N reloads; gliner DeBERTa rel-pos [H,T²] ~117MB/call; ppformulanet_l decoder scalar; `conv2d_cpu` not GEMM-batched/multithreaded | Localized |

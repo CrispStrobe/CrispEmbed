@@ -1804,6 +1804,156 @@ CER gate via T12 BEFORE the perf work (no recorded reference parity exists).
 time down with interleaved A/B, a reference CER row, and the CLI name from
 T11.
 
+### T14 status [DONE 2026-08-05, `feat/t14-deepseek2-decode-graph`]
+
+**Shipped:** `[deepseek-ocr2-stage-bench]` (the T12 gap — `CRISPEMBED_DEEPSEEK_OCR2_BENCH=1`,
+net-of-load, prefill/decode split so a prefill change cannot masquerade as a
+decode win) + a persistent single-graph decode step, now the DEFAULT, with the
+per-layer path kept selectable (`DS2_LEGACY_DECODE=1`).
+
+**Acceptance (a) decoded text:** byte-identical, legacy vs persistent, on all
+**25** gold fixtures on Metal (20 synth + 5 labelled CC0; identical SHA-256 over
+the concatenated transcripts and identical `gen_tokens` per page) and on the CPU
+subset. Never diffed against the gold itself — gold is a threshold reference.
+
+**Acceptance (b) interleaved same-window A/B** (Metal, M1, `commons_example_receipt.png`,
+217 generated tokens, 9 scored pairs + a discarded cold pair, alternating arms,
+one process per run, pairs load-gated at 1-min loadavg ≤ 8; observed 1.4-2.5):
+
+| arm | decode med | min | max | spread | total med | prefill med | sam med |
+|---|--:|--:|--:|--:|--:|--:|--:|
+| legacy per-layer | 11473.7 ms | 11022.9 | 12117.2 | 0.095 | 15815.2 ms | 461.1 ms | 2754.4 ms |
+| persistent graph | **8191.5 ms** | 8035.6 | 13463.7 | 0.663 | **12784.8 ms** | 462.1 ms | 2821.5 ms |
+
+**1.40x decode, 1.24x end-to-end.** Per-pair ratios 0.700 / 0.676 / 0.971 /
+0.694 / 1.049 / 0.697 / 0.718 / 1.176 / 0.725 — median **0.700**, with 6 of 9
+clustered at 0.68-0.73 and three upward excursions. Legacy's own spread is only
+0.095, so the persistent arm's 0.663 is excursion-driven, not a wider
+distribution; the median is the honest headline and the spread is quoted rather
+than trimmed. **(c) No regression in the untouched stages:** prefill 461 vs 462
+ms, sam 2754 vs 2822 ms, qwen2_enc 379 vs 376 ms — prefill deliberately still
+runs the per-layer path.
+
+**The task's stated premise was wrong, and that is the reusable finding.** T14
+was scoped as "the decode graph is rebuilt and freed per layer per token" ⇒
+amortise the rebuild. Measured with `DS_PROFILE=1`, the legacy path's graph
+build+alloc is **1% of decode on CPU (26 ms of 5223 ms) and ~3-6% on Metal** —
+there was never enough build overhead to be worth amortising. The win is
+elsewhere: one graph per token replaces **13 backend dispatches and 24
+host<->device hidden-state transfers per token**. Before porting this pattern to
+qwen2vl/granite/smoldocling (PERFORMANCE.md P2), measure the overhead fraction
+first — the lever is dispatch/transfer count, not graph construction.
+
+**Copying qwen2vl verbatim was a 2.42x REGRESSION, and this is the trap to
+record.** qwen2vl reads the full allocated `max_seq` every step and lets the
+mask hide the tail. Here `max_seq` is `n_prompt+max_new+64` = 1408 while only
+~478 slots are ever live, so every layer of every token attended over ~3x too
+many slots and materialised three full `cont(permute(...))` copies of a
+`[1280 x 1408]` K/V. Interleaved on Metal: decode 13654.9 ms legacy vs 32419.5
+ms persistent, per-pair ratios 2.669 / 2.098 / 2.424 / 3.439 / 2.362 (median
+**2.424**), no overlap. Fixed by bucketing the read depth to a multiple of 256
+(`DS2_KV_BUCKET`, 0 restores the qwen2vl behaviour), which keeps the constant
+shape that lets `sched_alloc` skip reallocation while reading only a little more
+than is live: decode 32419 ms -> 8192 ms. **A pattern that is right for one
+engine can be inverted by that engine's `max_seq`-to-live-slots ratio.**
+
+**F16 KV (`DS2_KV_F16=1`) is implemented but deliberately NOT measured as part of
+the acceptance gate and NOT default.** It is a precision change, so bundling it
+with the graph refactor would have made any text diff unattributable; the
+byte-identity gate ran with the cache dtype held fixed at F32. Quantifying it is
+open work.
+
+**Blocking infra bug found and worked around: Metal was silently OFF.** A build
+dir configured once without Metal caches `GGML_METAL_EMBED_LIBRARY=OFF`, and
+`option()` never revisits a cached value, so a later `-DGGML_METAL=ON` leaves the
+library un-embedded; ggml then writes `default.metallib` to `build/bin/` while
+`ggml_metal_library_init` looks beside `argv[0]` in `build/`, fails, and falls
+back to CPU **while `CMakeCache.txt` still reads `GGML_METAL:BOOL=ON`**. Every
+measurement taken before this was found was CPU mislabelled as Metal (`sam`
+17.7 s vs 3.2 s). Worked around with `ln -sf bin/default.metallib
+build/default.metallib`; the real fix (`GGML_METAL_EMBED_LIBRARY=ON`, or CMake
+copying the metallib beside the executable) is **unowned follow-up work** —
+it affects every Metal claim this repo makes from a `build/` binary. Full
+mechanism in LEARNINGS.md.
+
+**CPU arm — 5/5 synth byte-identical; ONE cc0 fixture differs by ONE codepoint,
+and it is explained.** On `commons_example_receipt.png` under `DS2_FORCE_CPU=1`
+the legacy arm emits `**Jackson–Washington**` (U+2013 en dash) where the
+persistent arm emits `**Jackson-Washington**` (ASCII hyphen), plus one extra
+blank line. That is the entire diff. Mechanism: the legacy path runs the final
+RMSNorm host-side in `rmsnorm_cpu` (sequential f32 accumulation) and dispatches
+the LM head as its own graph, while the persistent path does both in-graph with
+a different reduction order; the last-bit logit difference resolves a near-tie
+between `-` and `–`. The comparison matrix shows this is a property of the
+FIXTURE, not of the new path:
+
+| config | bytes | sha12 | CER |
+|---|--:|---|--:|
+| CPU legacy | 574 | `ad1afaa6e857` | 0.22604 |
+| CPU persistent | 573 | `06cc11c9184c` | **0.22359** |
+| Metal legacy | 566 | `046b089ec4e7` | **0.22359** |
+| Metal persistent | 566 | `046b089ec4e7` | **0.22359** |
+
+Three of the four configurations agree exactly, and the outlier is **legacy on
+CPU**, not the new path — the persistent arm on CPU converges to the same text
+both Metal arms produce. CPU-vs-Metal disagreement (table-cell whitespace) is
+strictly larger than arm-vs-arm disagreement on this page. CER moves 0.22604 ->
+0.22359 on this one fixture, i.e. toward the cross-backend consensus; every other
+scored fixture is bit-for-bit equal, so both corpora's mean CER is identical to
+5 decimals between arms.
+
+**CER vs the A4 gold's own ground truth (threshold reference, never a byte
+diff).** Both arms score IDENTICALLY to 5 decimals, as byte-identity requires —
+so this is a threshold observation about the lane, not a T14 result. Numbers are
+**pre-`feat/tokenize-simple-audit`** (that branch restores the dropped `\n` in
+`"\nFree OCR."` and will move every page; a post-merge re-gate is owed):
+
+| corpus | n | arm | CER raw | CER stripped | reference (A4) |
+|---|--:|---|--:|--:|--:|
+| synth | 20 | legacy | 0.00567 | 0.00348 | 0.00199 |
+| synth | 20 | persistent | 0.00567 | 0.00348 | 0.00199 |
+| cc0 | 5 | legacy | 1.06321 | 1.01739 | 0.18743 / 0.11063 |
+| cc0 | 5 | persistent | 1.06321 | 1.01739 | 0.18743 / 0.11063 |
+
+The cc0 mean is **not** a broad recognition gap — it is two pages spiralling into
+the `max_new`=1024 cap:
+
+| fixture | native CER | stripped | ref CER | chars | ref chars | gen tokens |
+|---|--:|--:|--:|--:|--:|--:|
+| `commons_example_receipt.png` | 0.2236 | 0.0270 | 0.2113 | 566 | 559 | 217 |
+| `commons_test_ocr_document.jpg` | 0.0406 | 0.0339 | 0.0074 | 2958 | 2991 | 690 |
+| `receipt_historical.png` | **0.1198** | 0.1263 | 0.3633 | 753 | 1070 | 434 |
+| `german_official_print.jpg` | 2.2438 | 2.2398 | 0.1933 | 2962 | 1078 | **1024** |
+| `simple_form.png` | 2.6883 | 2.6599 | 0.1619 | 762 | 287 | **1024** |
+
+On the three pages that terminate normally the lane is competitive and
+`receipt_historical` **beats** the reference (0.1198 vs 0.3633). The two capped
+pages end in literal `FinlandFinlandFinland...`.
+
+**Root cause of that, found not fixed — the lane implements no repetition guard
+at all.** The captured contract (`tests/regression/gold/deepseek-ocr2/`) records
+the reference generating with **`no_repeat_ngram_size=20`**; `src/deepseek_ocr2.cpp`
+takes a plain `std::max_element` argmax with no equivalent, while
+`qwen2vl_ocr.cpp` and `internvl2_ocr.cpp` both already carry
+`argmax_no_repeat_ngram`. Porting that helper is a self-contained, high-value
+follow-up that should recover both capped pages; it is deliberately out of this
+branch because it changes decoded output and needs its own quality gate.
+
+**Found, not fixed (each is someone else's lane):** (1) `--gpu-backend cpu`
+silently falls through to Metal because `crispasr_init_gpu_backend()` scans only
+GPU/iGPU devices — T18 owns it; this branch added the engine-local
+`DS2_FORCE_CPU=1` it needed instead. (2) The lane feeds a single 1024x1024 view
+(257 image tokens) while the A4 reference uses dynamic cropping (up to 1121
+tokens), so native CC0 CER cannot approach the reference's until crop mode is
+ported — a contract gap, not a T14 regression, and both arms share it
+identically. (3) `--ocr-engine`'s help string omits `deepseek-ocr2` (and other
+ids) though `eng_id` accepts it. (4) Two CC0 pages hit the 1024 `max_new` cap in
+both arms.
+
+**Artifacts:** `tests/results/t14/` (per-fixture transcripts + `runs.json`
+stage-bench rows for every arm, both A/B windows) and
+`tests/run_deepseek_ocr2_bench.py` (sweep + load-gated interleave modes).
+
 ### T15 — SmolDocling: fix the DocTags output before touching speed
 
 Tensor parity 0.9999 but LIVE payload CER 0.86 from duplicated DocTags —
