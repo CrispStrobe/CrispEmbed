@@ -119,6 +119,7 @@ n_gpu = torch.cuda.device_count()
 caps = [torch.cuda.get_device_capability(i) for i in range(n_gpu)]
 names = [torch.cuda.get_device_name(i) for i in range(n_gpu)]
 vram = [torch.cuda.get_device_properties(i).total_memory / 2 ** 30 for i in range(n_gpu)]
+arch_list = torch.cuda.get_arch_list()
 # bf16 arithmetic needs Ampere or newer; on an older card torch will accept the
 # dtype and then run it through a slow emulated path, so choose fp16 explicitly
 # instead of silently paying for that.
@@ -126,7 +127,31 @@ dtype = "bfloat16" if caps and all(c[0] >= 8 for c in caps) else "float16"
 hardware = f"Kaggle {n_gpu}x {names[0] if names else 'CPU'} ({sum(vram):.0f} GiB VRAM total)"
 print(f"torch={torch.__version__} transformers={transformers.__version__}")
 print(f"gpus={names} caps={caps} vram={[round(v, 1) for v in vram]}")
+print(f"arch_list={arch_list}")
 print(f"dtype={dtype}  hardware={hardware}")
+
+# `torch.cuda.is_available()` is True on a card the installed wheel has no SASS
+# for; the failure only surfaces at the first launch, as
+# `cudaErrorNoKernelImageForDevice`, ~90 s into a run.  Check the card against
+# the wheel's compiled arch list up front so a bad draw is one line, not a
+# wasted GPU-hour.  (Measured: a P100 draw died exactly this way — cu128 wheels
+# ship no sm_60.)
+missing = [f"sm_{c[0]}{c[1]}" for c in caps if f"sm_{c[0]}{c[1]}" not in arch_list]
+if missing:
+    raise SystemExit(
+        f"torch {torch.__version__} has no kernels for {missing} "
+        f"(compiled for {arch_list}); re-push pinning a supported accelerator "
+        f"via kernel-metadata machine_shape")
+# 7B at 16-bit is 15.45 GiB of weights.  A single 16 GiB card leaves nothing for
+# a page's vision tokens, so accelerate silently offloads layers to CPU and every
+# generated token then streams them back over PCIe.  That still produces correct
+# transcripts, but the timing means something completely different — refuse it
+# rather than publish a number nobody can interpret.
+WEIGHTS_GIB = 15.45
+if sum(vram) < WEIGHTS_GIB + 4:
+    raise SystemExit(
+        f"{sum(vram):.1f} GiB VRAM cannot hold {WEIGHTS_GIB} GiB of weights plus "
+        f"activations without CPU offload; re-push pinning a larger accelerator")
 
 print("=" * 70)
 print("Step 2: repo + fixtures")
