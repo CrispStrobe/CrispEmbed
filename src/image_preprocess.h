@@ -56,6 +56,11 @@ struct config {
     // must not be rotated; enable for scanned-document embeddings.
     int deskew = 0;
     float deskew_max_angle = 15.0f;
+    // If > 0, pre-scale the nominal input dims so the longest side equals this
+    // value before smart_resize (both up and down). Emulates pipelines that
+    // render every page at a fixed longest side and then apply the standard
+    // HF resize; the actual pixel resample still happens in one step.
+    int target_longest = 0;
 };
 
 struct result {
