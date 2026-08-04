@@ -1739,22 +1739,28 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
         }
         return text;
     };
-    const bool graph_accept = c->graph_accept_override >= 0 ? c->graph_accept_override != 0
-                                                            : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
-    const char * batch_graph_env = std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH");
-    const bool batch_graph_requested = batch_graph_env && std::strcmp(batch_graph_env, "0") != 0;
-    // The historical "metal-fourth-dimension" pooling abort was NOT a Metal
-    // limitation: the fused caller passed a zeroed width into
+    // The fused batch graph is the DEFAULT since 2026-08-04. History: the
+    // "metal-fourth-dimension" pooling abort that kept this lane CPU-only was
+    // NOT a Metal limitation — the fused caller passed a zeroed width into
     // pp_graph_run_batch's in-out shape parameter, so every batch graph was
     // built at width 0 and asserted inside ggml_pool_2d on any backend. With
-    // the width seeded, Metal batch execution is permitted behind the same
-    // opt-in; CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY restores the old gate.
+    // the width seeded and the large-stem lane finishing in-graph, the
+    // 26-fixture sweep decodes byte-identical to the scalar-per-crop path,
+    // and the 47-crop receipt runs recognize 3743 -> 2563 ms on Metal.
+    // CRISPEMBED_PPOCRV6_BATCH_GRAPH=0 (or NO_BATCH_GRAPH) disables;
+    // CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY restores the old backend gate.
+    // An explicit accept-override of 0 (diagnostic runs demanding the scalar
+    // reference) also disables the fused lane.
+    const char * batch_graph_env = std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH");
+    const bool batch_graph_enabled = (batch_graph_env ? std::strcmp(batch_graph_env, "0") != 0
+                                                      : std::getenv("CRISPEMBED_PPOCRV6_NO_BATCH_GRAPH") == nullptr) &&
+                                     c->graph_accept_override != 0;
     const bool batch_backend_ok =
         c->backend && (ggml_backend_is_cpu(c->backend) || !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY"));
-    if (batch_graph_requested && !batch_backend_ok && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+    if (batch_graph_enabled && !batch_backend_ok && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
         fprintf(stderr, "[ppocrv6-batch-graph] backend=%s action=scalar-fallback reason=cpu-only-gate\n",
                 c->backend ? ggml_backend_name(c->backend) : "none");
-    int max_batch = 4;
+    int max_batch = 8;
     if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_BATCH_MAX")) max_batch = std::max(1, std::atoi(limit));
     int completed = 0;
     for (size_t start = 0; start < order.size();) {
@@ -1772,7 +1778,7 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
             // large_stem (small/medium) is included since 2026-08-04: the
             // batch>1 graph finishes in-graph (skip + head) and returns
             // per-item logits exactly like the tiny lane.
-            bool fused = graph_accept && batch_graph_requested && batch_backend_ok && group_count > 1;
+            bool fused = batch_graph_enabled && batch_backend_ok && group_count > 1;
             std::vector<float> fused_input;
             std::vector<float> fused_output;
             // pp_graph_run_batch's third/fourth parameters are IN-OUT: the
