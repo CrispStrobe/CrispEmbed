@@ -1,5 +1,5 @@
 {
-  "id": "chr1s4/crispembed-qwen-vl-parity",
+  "id": "chr1s4/crispembed-qwen-vl-ocr-parity",
   "title": "CrispEmbed Qwen VL OCR Parity",
   "code_file": "qwen_vl_parity.py",
   "language": "python",
