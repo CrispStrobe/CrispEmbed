@@ -53,8 +53,8 @@
       "name": "simple_form.png",
       "file": "simple_form.png",
       "confidence": "medium",
-      "notes": "452x317 UI screenshot, ~7 px labels. Order: left panel top-to-bottom, then right panel. 'checkbox1' is partially occluded by the open dropdown but its fragment is consistent with the checkbox2/3 pattern; the checkbox group header is almost fully occluded (only 'cl' visible) and is excluded. 'code/lib' separator and 'Code/labelle' verified at 16x/8x zoom but remain the least certain tokens. Typed combo content is the single letter 'F'.",
-      "text": "Input\nTexte\nNumber\nDate\nPassword\na label\nANOTHER LABEL\nYet another label\ncombo suggest\nF\nFinland\nFrance\ncheckbox1\ncheckbox2\ncheckbox3\nCode/labelle\ncode/lib\ncode\nButton\nRechercher\nDisable button\nTEXTAREA\nTexte\nRadio\nDrag and drop frames\nFixe frames"
+      "notes": "Re-verified by user 2026-08-04 + image zoom review. checkbox1 is partially OCCLUDED by the open combo dropdown (visible checkboxes are 2 and 3; engines that omit checkbox1 are reading the visible page faithfully). The separator in 'code-lib' is a single ambiguous glyph at native resolution — independent readers produced '-', '/', ':', '.', ' '; scored as '-' per the latest human review, treat 1-char diffs on that line as noise.",
+      "text": "Input\nTexte\nNumber\nDate\nPassword\na label\nANOTHER LABEL\nYet another label\ncombo suggest\nF\nFinland\nFrance\ncheckbox1\ncheckbox2\ncheckbox3\nCode/labelle\ncode-lib\ncode\nButton\nRechercher\nDisable button\nTEXTAREA\nTexte\nRadio\nDrag and drop frames\nFixe frames"
     }
   ]
 }
