@@ -1,0 +1,1507 @@
+{
+  "version": 1,
+  "date": "2026-08-04",
+  "brief": "A3 - parity arm + gold: olmOCR toolkit (allenai/olmOCR-2-7B-1025)",
+  "harness": "tests/score_gold_transcripts.py (imports normalize/score/summarize/render_markdown from tests/ocr_external_parity.py)",
+  "gold": "tests/regression/gold/olmocr/{synth,cc0}",
+  "kernels": [
+    "tools/kaggle/olmocr-parity (gold + contract capture)",
+    "tools/kaggle/olmocr-vllm-probe (serving-layer probe)"
+  ],
+  "repro": [
+    "# local: the toolkit itself, for the CPU-side contract capture",
+    "~/miniconda3/bin/python -m venv ~/venvs/olmocr && ~/venvs/olmocr/bin/pip install olmocr",
+    "# wrap each labelled fixture into a single-page PDF (lossless embed)",
+    "img2pdf --output <stem>.pdf <fixture image>   # img2pdf 0.6.3",
+    "# reference run (Kaggle GPU, chr1s4)",
+    "KAGGLE_API_TOKEN=<chr1s4> python -c \"from kaggle import KaggleApi; a=KaggleApi(); a.authenticate(); print(a.kernels_push('tools/kaggle/olmocr-parity'))\"",
+    "# scoring, offline, from the retrieved transcripts",
+    "python tests/score_gold_transcripts.py --images ~/crispembed-ocr-synth --gold tests/regression/gold/olmocr/synth --engine olmocr-toolkit --strip-markup --output /tmp/olmocr_synth.json",
+    "python tests/score_gold_transcripts.py --images tests/regression/images/cc0 --gold tests/regression/gold/olmocr/cc0 --engine olmocr-toolkit --strip-markup --output /tmp/olmocr_cc0.json"
+  ],
+  "notes": [
+    "NO TIMING COLUMN HERE IS A LATENCY MEASUREMENT. `generation_s` is wall time for one transformers generate() call on a Kaggle 2x T4 pair with the weights split across both cards by accelerate - a model-parallel pipeline, not a serving configuration. It is recorded so a page that took 69 s is visible, and for no other purpose. It must never be quoted next to a Mac number or next to the toolkit's own vLLM throughput.",
+    "The serving layer is a deviation from the toolkit: olmocr[gpu] pins vllm==0.11.2 and generation here ran through transformers 4.57.3 (the version that same extra pins). The *request* is not a deviation - it is built by importing olmocr.pipeline.build_page_query, so prompt, message order, render and sampling params are the toolkit's own code.",
+    "The checkpoint is a deviation: the toolkit defaults to allenai/olmOCR-2-7B-1025-FP8 whose quantised kernels need sm_89+; the unquantised sibling ran instead.",
+    "fp16, not the checkpoint's bf16: the cards are compute capability 7.5, where torch emulates bf16. Same open follow-up as the Qwen2.5-VL arm.",
+    "The primary CER keeps the markdown/HTML the prompt asks for, because that is what the arm returns to a caller. cer_markup_stripped is a diagnostic second view: on commons_example_receipt.png the model emitted the receipt table as <table> markup exactly as instructed, which plain-text CER charges at 0.70 while the words are right (0.00983 stripped). Note the stripping is not free: on receipt_historical.png it removes real characters and the stripped CER is slightly worse (0.05469 -> 0.06120), so quote both.",
+    "Every one of the 25 pages passed the toolkit's validity rules on attempt 0 in both passes, so no page in this gold was produced at temperature > 0 and none is a pdftotext fallback.",
+    "The gold ships from the transformers pass rather than the vLLM one because vLLM returns a truncated simple_form.png (CER 0.37247 vs 0.04858) while claiming finish_reason 'stop'. Both sets are in the gold directory; vllm-serving/ is the toolkit's actual stack and is the reason no gate may be a byte diff."
+  ],
+  "contract": {
+    "captured_at_runtime": true,
+    "olmocr_version": "0.4.27",
+    "olmocr_builder": "olmocr.pipeline.build_page_query (imported, not reimplemented)",
+    "prompt_builder": "olmocr.prompts.build_no_anchoring_v4_yaml_prompt",
+    "prompt": "Attached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.",
+    "prompt_sha256": "c12f21aca8c6c5599cea6176edd974b7ea6a05cf451497abd6370dd449db3979",
+    "prompt_bytes": 557,
+    "request_skeleton": {
+      "model": "allenai/olmOCR-2-7B-1025",
+      "messages": [
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text": "Attached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters."
+            },
+            {
+              "type": "image_url",
+              "image_url": {
+                "url": "<data:image/png;base64, PNG bytes of the pdftoppm render>"
+              }
+            }
+          ]
+        }
+      ],
+      "max_tokens": 8000,
+      "temperature": 0.0
+    },
+    "message_structure": "one user message; content[0] = text prompt, content[1] = image_url data URI; no system message in the request (the chat template injects 'You are a helpful assistant.')",
+    "max_tokens": 8000,
+    "temperature_first_attempt": 0.1,
+    "temperature_by_attempt": [
+      0.1,
+      0.1,
+      0.2,
+      0.3,
+      0.5,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "temperature_in_skeleton": 0.0,
+    "temperature_note": "build_page_query sets 0.0 and try_single_page then overwrites it with TEMPERATURE_BY_ATTEMPT[attempt]; attempt 0 therefore runs at 0.1, i.e. sampling.",
+    "target_longest_image_dim": 1288,
+    "render": "pdftoppm -png -r (target*72/longest_mediabox_point) via olmocr.data.renderpdf.render_pdf_to_base64png",
+    "max_model_len": 16384,
+    "max_page_retries_default": 8,
+    "guided_decoding_default": false,
+    "img2pdf": "img2pdf 0.6.3",
+    "pdftoppm": "pdftoppm version 22.02.0",
+    "img2pdf_recipe": "img2pdf --output <name>.pdf <fixture image>",
+    "renders": [
+      {
+        "corpus": "synth",
+        "fixture": "synth_00_blur.png",
+        "pdf": "synth_00_blur.pdf",
+        "source_wh": [
+          626,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          387
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          28,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          392
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_00_clean.png",
+        "pdf": "synth_00_clean.pdf",
+        "source_wh": [
+          572,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          424
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          30,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          420
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_00_lowdpi.png",
+        "pdf": "synth_00_lowdpi.pdf",
+        "source_wh": [
+          616,
+          149
+        ],
+        "rendered_wh": [
+          1288,
+          312
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          22,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          308
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_00_noise.png",
+        "pdf": "synth_00_noise.pdf",
+        "source_wh": [
+          617,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          393
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          28,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          392
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_00_skew.png",
+        "pdf": "synth_00_skew.pdf",
+        "source_wh": [
+          578,
+          204
+        ],
+        "rendered_wh": [
+          1288,
+          455
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          32,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          448
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_01_blur.png",
+        "pdf": "synth_01_blur.pdf",
+        "source_wh": [
+          751,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          323
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          24,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          336
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_01_clean.png",
+        "pdf": "synth_01_clean.pdf",
+        "source_wh": [
+          766,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          317
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          22,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          308
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_01_lowdpi.png",
+        "pdf": "synth_01_lowdpi.pdf",
+        "source_wh": [
+          546,
+          149
+        ],
+        "rendered_wh": [
+          1288,
+          352
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          26,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          364
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_01_noise.png",
+        "pdf": "synth_01_noise.pdf",
+        "source_wh": [
+          957,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          254
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          18,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          252
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_01_skew.png",
+        "pdf": "synth_01_skew.pdf",
+        "source_wh": [
+          772,
+          208
+        ],
+        "rendered_wh": [
+          1289,
+          348
+        ],
+        "rendered_longest": 1289,
+        "image_grid_thw": [
+          1,
+          24,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          336
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_02_blur.png",
+        "pdf": "synth_02_blur.pdf",
+        "source_wh": [
+          940,
+          188
+        ],
+        "rendered_wh": [
+          1289,
+          258
+        ],
+        "rendered_longest": 1289,
+        "image_grid_thw": [
+          1,
+          18,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          252
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_02_clean.png",
+        "pdf": "synth_02_clean.pdf",
+        "source_wh": [
+          715,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          339
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          24,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          336
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_02_lowdpi.png",
+        "pdf": "synth_02_lowdpi.pdf",
+        "source_wh": [
+          548,
+          149
+        ],
+        "rendered_wh": [
+          1288,
+          351
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          26,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          364
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_02_noise.png",
+        "pdf": "synth_02_noise.pdf",
+        "source_wh": [
+          638,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          380
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          28,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          392
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_02_skew.png",
+        "pdf": "synth_02_skew.pdf",
+        "source_wh": [
+          721,
+          208
+        ],
+        "rendered_wh": [
+          1288,
+          372
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          26,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          364
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_03_blur.png",
+        "pdf": "synth_03_blur.pdf",
+        "source_wh": [
+          503,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          482
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          34,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          476
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_03_clean.png",
+        "pdf": "synth_03_clean.pdf",
+        "source_wh": [
+          702,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          345
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          24,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          336
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_03_lowdpi.png",
+        "pdf": "synth_03_lowdpi.pdf",
+        "source_wh": [
+          424,
+          149
+        ],
+        "rendered_wh": [
+          1288,
+          453
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          32,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          448
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_03_noise.png",
+        "pdf": "synth_03_noise.pdf",
+        "source_wh": [
+          549,
+          188
+        ],
+        "rendered_wh": [
+          1288,
+          442
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          32,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          448
+        ]
+      },
+      {
+        "corpus": "synth",
+        "fixture": "synth_03_skew.png",
+        "pdf": "synth_03_skew.pdf",
+        "source_wh": [
+          708,
+          208
+        ],
+        "rendered_wh": [
+          1288,
+          379
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          28,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          392
+        ]
+      },
+      {
+        "corpus": "cc0",
+        "fixture": "commons_example_receipt.png",
+        "pdf": "commons_example_receipt.pdf",
+        "source_wh": [
+          500,
+          650
+        ],
+        "rendered_wh": [
+          991,
+          1288
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          92,
+          70
+        ],
+        "model_input_wh": [
+          980,
+          1288
+        ]
+      },
+      {
+        "corpus": "cc0",
+        "fixture": "commons_test_ocr_document.jpg",
+        "pdf": "commons_test_ocr_document.pdf",
+        "source_wh": [
+          1920,
+          2485
+        ],
+        "rendered_wh": [
+          996,
+          1288
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          92,
+          72
+        ],
+        "model_input_wh": [
+          1008,
+          1288
+        ]
+      },
+      {
+        "corpus": "cc0",
+        "fixture": "german_official_print.jpg",
+        "pdf": "german_official_print.pdf",
+        "source_wh": [
+          1920,
+          2518
+        ],
+        "rendered_wh": [
+          983,
+          1288
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          92,
+          70
+        ],
+        "model_input_wh": [
+          980,
+          1288
+        ]
+      },
+      {
+        "corpus": "cc0",
+        "fixture": "receipt_historical.png",
+        "pdf": "receipt_historical.pdf",
+        "source_wh": [
+          768,
+          1552
+        ],
+        "rendered_wh": [
+          638,
+          1288
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          92,
+          46
+        ],
+        "model_input_wh": [
+          644,
+          1288
+        ]
+      },
+      {
+        "corpus": "cc0",
+        "fixture": "simple_form.png",
+        "pdf": "simple_form.pdf",
+        "source_wh": [
+          452,
+          317
+        ],
+        "rendered_wh": [
+          1288,
+          904
+        ],
+        "rendered_longest": 1288,
+        "image_grid_thw": [
+          1,
+          64,
+          92
+        ],
+        "model_input_wh": [
+          1288,
+          896
+        ]
+      }
+    ],
+    "image_processor": "Qwen2VLImageProcessorFast",
+    "image_processor_note": "transformers 4.57.3 loads the FAST image processor by default even though the checkpoint saved a slow one; left at the default because that is what the toolkit's own serving stack gets",
+    "preprocessor_config": {
+      "min_pixels": 3136,
+      "max_pixels": 12845056,
+      "patch_size": 14,
+      "merge_size": 2,
+      "image_mean": [
+        0.48145466,
+        0.4578275,
+        0.40821073
+      ],
+      "image_std": [
+        0.26862954,
+        0.26130258,
+        0.27577711
+      ]
+    },
+    "chat_prompt_applied": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n",
+    "chat_template_note": "the request carries no system message; the checkpoint's chat template injects '<|im_start|>system\\nYou are a helpful assistant.<|im_end|>' and renders content in order, so the instruction text precedes <|vision_start|><|image_pad|><|vision_end|>"
+  },
+  "environment": {
+    "reference_host": "Kaggle 2x Tesla T4 (29 GiB VRAM total)",
+    "placements": [
+      "0",
+      "1"
+    ],
+    "reference_dtype": "float16",
+    "torch": "2.10.0+cu128",
+    "transformers": "4.57.3",
+    "olmocr": "0.4.27",
+    "model_load_s": 116.5,
+    "repo_commit": "12bb3b6e9068812443ae9d1804a1fc56b52eb06c",
+    "img2pdf": "img2pdf 0.6.3",
+    "pdftoppm": "pdftoppm version 22.02.0",
+    "local_venv": "~/venvs/olmocr (python 3.11.8, olmocr 0.4.27) - contract capture only"
+  },
+  "determinism": {
+    "question": "is the toolkit's own first attempt reproducible?",
+    "answer": "no",
+    "why": "build_page_query sets temperature 0.0 and try_single_page overwrites it with TEMPERATURE_BY_ATTEMPT[attempt]; attempt 0 is 0.1, i.e. sampling",
+    "measured": "the gold pass (greedy) and a second pass at the toolkit's own 0.1 agree byte-for-byte on 20/20 synth fixtures and 2/5 cc0 fixtures; the three that differ do so at CER 0.00106-0.00637 against the greedy gold",
+    "consequence": "a native lane must never be gated on byte-identity with a transcript produced by the toolkit's default configuration"
+  },
+  "corpora": {
+    "synth": {
+      "images": "/Users/christianstrobele/crispembed-ocr-synth",
+      "n": 20,
+      "failures": 0,
+      "mean_cer": 0.0,
+      "mean_wer": 0.0,
+      "mean_wer_unordered": 0.0,
+      "mean_cer_markup_stripped": 0.0,
+      "mean_wer_markup_stripped": 0.0,
+      "median_generation_s": 5.91,
+      "pages_needing_retry": [],
+      "pages_where_temperature_0.1_diverges_from_greedy": [],
+      "fixtures": [
+        {
+          "fixture": "synth_00_blur.png",
+          "ref_chars": 122,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 8.62,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_00_clean.png",
+          "ref_chars": 122,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.47,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_00_lowdpi.png",
+          "ref_chars": 122,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.15,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_00_noise.png",
+          "ref_chars": 122,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.39,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_00_skew.png",
+          "ref_chars": 122,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.53,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_01_blur.png",
+          "ref_chars": 134,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 7.47,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_01_clean.png",
+          "ref_chars": 134,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 7.33,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_01_lowdpi.png",
+          "ref_chars": 134,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 7.48,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_01_noise.png",
+          "ref_chars": 134,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 7.15,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_01_skew.png",
+          "ref_chars": 134,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 7.51,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_02_blur.png",
+          "ref_chars": 137,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 4.84,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_02_clean.png",
+          "ref_chars": 137,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.16,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_02_lowdpi.png",
+          "ref_chars": 137,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.22,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_02_noise.png",
+          "ref_chars": 137,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.29,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_02_skew.png",
+          "ref_chars": 137,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.26,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_03_blur.png",
+          "ref_chars": 114,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 6.17,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_03_clean.png",
+          "ref_chars": 114,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.85,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_03_lowdpi.png",
+          "ref_chars": 114,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 6.11,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_03_noise.png",
+          "ref_chars": 114,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 6.12,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "synth_03_skew.png",
+          "ref_chars": 114,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 5.96,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        }
+      ]
+    },
+    "cc0": {
+      "images": "tests/regression/images/cc0",
+      "n": 5,
+      "failures": 0,
+      "mean_cer": 0.17735,
+      "mean_wer": 0.23857,
+      "mean_wer_unordered": 0.29714,
+      "mean_cer_markup_stripped": 0.04057,
+      "mean_wer_markup_stripped": 0.08698,
+      "median_generation_s": 40.38,
+      "pages_needing_retry": [],
+      "pages_where_temperature_0.1_diverges_from_greedy": [
+        "commons_test_ocr_document.jpg",
+        "german_official_print.jpg",
+        "simple_form.png"
+      ],
+      "fixtures": [
+        {
+          "fixture": "commons_example_receipt.png",
+          "ref_chars": 407,
+          "cer": 0.70025,
+          "wer": 0.8,
+          "wer_unordered": 1.05714,
+          "cer_markup_stripped": 0.00983,
+          "wer_markup_stripped": 0.01429,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 40.38,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "commons_test_ocr_document.jpg",
+          "ref_chars": 2981,
+          "cer": 0.0,
+          "wer": 0.0,
+          "wer_unordered": 0.0,
+          "cer_markup_stripped": 0.0,
+          "wer_markup_stripped": 0.0,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 68.69,
+          "sampled_t0.1_identical_to_greedy": false,
+          "sampled_t0.1_cer_vs_greedy": 0.00637
+        },
+        {
+          "fixture": "german_official_print.jpg",
+          "ref_chars": 1009,
+          "cer": 0.08325,
+          "wer": 0.15672,
+          "wer_unordered": 0.17164,
+          "cer_markup_stripped": 0.08325,
+          "wer_markup_stripped": 0.15672,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 36.65,
+          "sampled_t0.1_identical_to_greedy": false,
+          "sampled_t0.1_cer_vs_greedy": 0.00106
+        },
+        {
+          "fixture": "receipt_historical.png",
+          "ref_chars": 768,
+          "cer": 0.05469,
+          "wer": 0.125,
+          "wer_unordered": 0.14583,
+          "cer_markup_stripped": 0.0612,
+          "wer_markup_stripped": 0.15278,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 41.39,
+          "sampled_t0.1_identical_to_greedy": true,
+          "sampled_t0.1_cer_vs_greedy": 0.0
+        },
+        {
+          "fixture": "simple_form.png",
+          "ref_chars": 247,
+          "cer": 0.04858,
+          "wer": 0.11111,
+          "wer_unordered": 0.11111,
+          "cer_markup_stripped": 0.04858,
+          "wer_markup_stripped": 0.11111,
+          "attempts": 1,
+          "final_temperature": null,
+          "deterministic": true,
+          "generation_s": 11.41,
+          "sampled_t0.1_identical_to_greedy": false,
+          "sampled_t0.1_cer_vs_greedy": 0.00422
+        }
+      ]
+    }
+  },
+  "serving_stack": {
+    "gold_produced_by": "transformers 4.57.3, device_map=auto over 2x T4, sdpa, greedy",
+    "toolkit_stack": "vllm 0.11.2 (the pin in olmocr[gpu])",
+    "vllm_on_this_hardware": "works, once two environment problems are fixed",
+    "vllm_bring_up": {
+      "engine_init_s": 356.3,
+      "config": "dtype=half, tensor_parallel_size=2, max_model_len=16384, gpu_memory_utilization=0.90, enforce_eager=True",
+      "fix_1": "symlink libcuda.so -> /usr/local/nvidia/lib64/libcuda.so.1; without it FlashInfer's JIT link fails with 'cannot find -lcuda' after ~4 min of nvcc",
+      "fix_2": "leave VLLM_ATTENTION_BACKEND UNSET; it forces the vision tower too, and Qwen2.5-VL refuses every backend sm_75 offers by name (FLASHINFER, TRITON_ATTN, FLEX_ATTENTION) - FA2 itself needs compute capability >= 8.0",
+      "non_findings": [
+        "probing inside the gold kernel measured the gold kernel's own resident weights ('Free memory on device (7.14/14.56 GiB)'), not Turing",
+        "VLLM_WORKER_MULTIPROC_METHOD=spawn plus a torch.cuda call before vllm.LLM() makes a spawned worker re-import the kernel script"
+      ]
+    },
+    "cross_stack_agreement": {
+      "note": "both stacks greedy, same weights, same request object - and they do not agree on document pages. This is the ceiling on any byte-level claim about the native lane.",
+      "identical_synth": "20/20",
+      "identical_cc0": "1/5",
+      "worst": {
+        "fixture": "simple_form.png",
+        "cer_vllm_vs_gold": 0.34177,
+        "cer_vs_ground_truth": {
+          "transformers_gold": 0.04858,
+          "vllm": 0.37247
+        },
+        "cause": "the vLLM decode emits an early stop token and returns five of the page's ten blocks, with finish_reason 'stop' - nothing flags it"
+      },
+      "per_fixture": {
+        "synth": [
+          {
+            "fixture": "synth_00_blur.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_00_clean.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_00_lowdpi.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_00_noise.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_00_skew.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_01_blur.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_01_clean.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_01_lowdpi.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_01_noise.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_01_skew.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_02_blur.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_02_clean.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_02_lowdpi.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_02_noise.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_02_skew.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_03_blur.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_03_clean.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_03_lowdpi.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_03_noise.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          },
+          {
+            "fixture": "synth_03_skew.png",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.0
+          }
+        ],
+        "cc0": [
+          {
+            "fixture": "commons_example_receipt.png",
+            "identical": false,
+            "cer_vllm_vs_transformers": 0.00289,
+            "cer_gt_transformers": 0.70025,
+            "cer_gt_vllm": 0.69533
+          },
+          {
+            "fixture": "commons_test_ocr_document.jpg",
+            "identical": false,
+            "cer_vllm_vs_transformers": 0.00101,
+            "cer_gt_transformers": 0.0,
+            "cer_gt_vllm": 0.00101
+          },
+          {
+            "fixture": "german_official_print.jpg",
+            "identical": true,
+            "cer_vllm_vs_transformers": 0.0,
+            "cer_gt_transformers": 0.08325,
+            "cer_gt_vllm": 0.08325
+          },
+          {
+            "fixture": "receipt_historical.png",
+            "identical": false,
+            "cer_vllm_vs_transformers": 0.02423,
+            "cer_gt_transformers": 0.05469,
+            "cer_gt_vllm": 0.0625
+          },
+          {
+            "fixture": "simple_form.png",
+            "identical": false,
+            "cer_vllm_vs_transformers": 0.34177,
+            "cer_gt_transformers": 0.04858,
+            "cer_gt_vllm": 0.37247
+          }
+        ]
+      }
+    },
+    "vllm_generation_s": {
+      "synth": [
+        {
+          "fixture": "synth_00_blur.png",
+          "gen_s": 31.92,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_00_clean.png",
+          "gen_s": 3.92,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_00_lowdpi.png",
+          "gen_s": 3.15,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_00_noise.png",
+          "gen_s": 3.18,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_00_skew.png",
+          "gen_s": 3.32,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_01_blur.png",
+          "gen_s": 4.47,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_01_clean.png",
+          "gen_s": 4.6,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_01_lowdpi.png",
+          "gen_s": 4.69,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_01_noise.png",
+          "gen_s": 4.46,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_01_skew.png",
+          "gen_s": 4.48,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_02_blur.png",
+          "gen_s": 2.93,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_02_clean.png",
+          "gen_s": 3.14,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_02_lowdpi.png",
+          "gen_s": 3.13,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_02_noise.png",
+          "gen_s": 3.17,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_02_skew.png",
+          "gen_s": 3.17,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_03_blur.png",
+          "gen_s": 3.68,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_03_clean.png",
+          "gen_s": 3.46,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_03_lowdpi.png",
+          "gen_s": 3.55,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_03_noise.png",
+          "gen_s": 3.59,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "synth_03_skew.png",
+          "gen_s": 3.5,
+          "finish_reason": "stop"
+        }
+      ],
+      "cc0": [
+        {
+          "fixture": "commons_example_receipt.png",
+          "gen_s": 20.52,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "commons_test_ocr_document.jpg",
+          "gen_s": 33.92,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "german_official_print.jpg",
+          "gen_s": 18.77,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "receipt_historical.png",
+          "gen_s": 22.77,
+          "finish_reason": "stop"
+        },
+        {
+          "fixture": "simple_form.png",
+          "gen_s": 4.84,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    "vllm_is_faster": "median 3.55 s/page synth against 5.9 s; 20.5 s against 40.4 s on commons_example_receipt.png. Still not a latency measurement - different serving models on a shared host.",
+    "probe_raw": {
+      "model": "allenai/olmOCR-2-7B-1025",
+      "pin": "vllm==0.11.2 (olmocr[gpu])",
+      "backend": null,
+      "gpus": [
+        {
+          "name": "Tesla T4",
+          "compute_cap": "7.5",
+          "memory": "15360 MiB"
+        },
+        {
+          "name": "Tesla T4",
+          "compute_cap": "7.5",
+          "memory": "15360 MiB"
+        }
+      ],
+      "install_rc": 0,
+      "install_s": 159.4,
+      "install_tail": "ERROR: pip's dependency resolver does not currently take into account all the packages that are installed. This behaviour is the source of the following dependency conflicts.\nbigframes 2.39.0 requires google-cloud-bigquery-storage<3.0.0,>=2.30.0, which is not installed.\ngoogle-adk 1.29.0 requires google-cloud-bigquery-storage>=2.0.0, which is not installed.\ngrpcio-tools 1.71.2 requires protobuf<6.0dev,>=5.26.1, but you have protobuf 6.33.6 which is incompatible.\ngoogle-ai-generativelanguage 0.6.15 requires protobuf!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<6.0.0dev,>=3.20.2, but you have protobuf 6.33.6 which is incompatible.\ngrpcio-status 1.71.2 requires protobuf<6.0dev,>=5.26.1, but you have protobuf 6.33.6 which is incompatible.\ngoogle-adk 1.29.0 requires starlette<1.0.0,>=0.49.1, but you have starlette 1.3.1 which is incompatible.\ngradio 5.50.0 requires starlette<1.0,>=0.40.0, but you have starlette 1.3.1 which is incompatible.\n",
+      "libcuda_so_1": "libcuda.so.1 (libc6,x86-64) => /usr/local/nvidia/lib64/libcuda.so.1",
+      "libcuda_symlink_rc": 0,
+      "libcuda_symlink_present": true,
+      "attempts": [
+        {
+          "model": "allenai/olmOCR-2-7B-1025",
+          "pin": "vllm==0.11.2 (olmocr[gpu])",
+          "backend": "AUTO",
+          "gpus": [
+            {
+              "name": "Tesla T4",
+              "compute_cap": "7.5",
+              "memory": "15360 MiB"
+            },
+            {
+              "name": "Tesla T4",
+              "compute_cap": "7.5",
+              "memory": "15360 MiB"
+            }
+          ],
+          "vllm": "0.11.2",
+          "init": "ok",
+          "init_s": 356.3,
+          "verdict": "vLLM 0.11.2 served allenai/olmOCR-2-7B-1025 on 2x Tesla T4 (cc 7.5)",
+          "rc": 0,
+          "wall_s": 615.6
+        }
+      ],
+      "verdict": "vLLM 0.11.2 served allenai/olmOCR-2-7B-1025 on 2x Tesla T4 (cc 7.5) with VLLM_ATTENTION_BACKEND=AUTO"
+    }
+  }
+}
