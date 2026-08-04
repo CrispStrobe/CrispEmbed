@@ -284,8 +284,12 @@ via `json_escape`. Also add the capability flag to `/health` and the startup lis
 | `POST /sparse` | `has_sparse` | `crispembed_encode_sparse` | `{"texts":[...]}` → `{"results":[{"weights":{"<token_id>":w}}]}` (SPLADE/BGE-M3) |
 | `POST /colbert/score` | `has_colbert` | `crispembed_encode_multivec` | `{"query","documents"}` → per-doc MaxSim scores |
 
-`/health` reports `reranker` / `sparse` / `colbert` booleans so a sidecar client can
-discover the routes. **Still unrouted (lower priority):** `crispembed_encode_audio`
+`/health` reports `reranker` / `sparse` / `colbert` so a sidecar client can discover
+the routes. These keys are **present-when-active**, not always-present booleans: a
+capability that is off is omitted from the JSON entirely, never emitted as `false`.
+Probe with `"reranker" in health` rather than `health["reranker"] == True` (#41).
+Follow that convention when adding a capability — the whole block is a chain of
+`if (cap) js << ", \"cap\": true"`. **Still unrouted (lower priority):** `crispembed_encode_audio`
 (omnimodal audio embed) and a bi-encoder variant of `/rerank` — add them the same way
 if a use case appears.
 
