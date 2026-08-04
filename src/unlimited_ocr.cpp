@@ -2874,7 +2874,14 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         int D = mdl.lhp.hidden;
         auto embed_w = to_f32(mdl.embed_tokens);
         std::vector<int32_t> ids = { 0 }; // bos
-        auto more = core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, tt);
+        // baidu/Unlimited-OCR declares the same pre_tokenizer as
+        // DeepSeek-OCR-2 (byte-identical section), so it uses the same
+        // transcription. `tokenize_simple` deleted newlines from this
+        // developer-supplied text; the production prompt is hardcoded ids
+        // below, so the defect was latent here rather than live.
+        auto more = core_bpe::legacy_whitespace()
+                        ? core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, tt)
+                        : core_bpe::tokenize_deepseek(ctx->inner.token_to_id, ctx->inner.merge_rank, tt);
         ids.insert(ids.end(), more.begin(), more.end());
         std::vector<float> pe((size_t)ids.size() * D);
         for (size_t i = 0; i < ids.size(); i++)

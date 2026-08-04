@@ -358,8 +358,18 @@ int lfm2_embed_n_embd(const lfm2_embed_ctx * ctx) {
 // ============================================================================
 
 static std::vector<int32_t> lfm2_tokenize(const lfm2_embed_model & m, const char * text) {
-    // BPE-encode the text (whitespace pre-tokeniser, GPT-2 byte encoding)
-    std::vector<int32_t> ids = core_bpe::tokenize_simple(m.token_to_id, m.merge_rank, std::string(text));
+    // BPE-encode the text (GPT-2 byte encoding) using the pre-tokenizer regex
+    // LFM2.5-Embedding-350M's tokenizer.json actually declares — the Qwen
+    // ByteLevel pattern with `\p{N}{1,3}` digit runs. This used to call
+    // `tokenize_simple`, which collapsed every whitespace run to one space and
+    // deleted newlines: measured against the HF tokenizer on 1508 strings that
+    // produced the wrong token ids for 63% of them, and it dropped the leading
+    // newline of any multi-line document. This is arbitrary user text, so the
+    // defect was live, not latent.
+    // CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior.
+    std::vector<int32_t> ids = core_bpe::legacy_whitespace()
+                                   ? core_bpe::tokenize_simple(m.token_to_id, m.merge_rank, std::string(text))
+                                   : core_bpe::tokenize_lfm2(m.token_to_id, m.merge_rank, std::string(text));
 
     // Wrap per the C2 behavior flags (LFM2.5 ships BOS-only:
     // add_bos_token=true, add_eos_token=false)
