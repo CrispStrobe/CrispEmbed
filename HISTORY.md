@@ -49,6 +49,45 @@ Still outside the container: the CUDA legs (they need the CUDA toolkit
 installed on the host), so those archives keep the higher floor. Recorded in
 the README rather than left to be rediscovered.
 
+### The wheels, and the RUNPATH bug hiding behind the floor
+
+`python/pyproject.toml` recorded this as blocked on "reshuffling pyproject.toml
+to repo root + CMake in `CIBW_BEFORE_ALL_LINUX`". It was not: cibuildwheel
+needs docker itself, so it cannot run inside a job-level container — but
+nothing stops calling `docker run` directly with the same image it packages
+into. The `.so` is now compiled in `manylinux_2_28_{x86_64,aarch64}` and staged
+as before.
+
+Removing the cause let `repair-wheel-command` go back to a real
+`auditwheel repair` instead of the `cp {wheel} {dest_dir}/` workaround. Result:
+wheels now carry
+`manylinux_2_27_aarch64.manylinux_2_28_aarch64` tags — PyPI-acceptable, where
+the previous bare `linux_aarch64` is rejected outright.
+
+Two things surfaced only by doing it, each hidden behind the previous one:
+
+1. **My own check staged its input wrong.** The first verification step built a
+   `_wheelcheck/` directory with `find -type f`, which drops the SONAME
+   symlinks, so `libggml-base.so.0` read as unbundled and the step failed on
+   its own staging while the artifact was fine. Fixed by checking
+   `python/crispembed` — the directory cibuildwheel actually packages — which
+   is both simpler and a stronger assertion. *Verify the real payload, not a
+   copy you assembled to verify with.*
+2. **The wheels never patched RUNPATH.** `auditwheel repair` then failed with
+   *"Cannot repair wheel, because required library libggml-base.so.0 could not
+   be located"* — the staged libs still carried the build-tree RUNPATH
+   (absolute paths inside the build container), so nothing could resolve a
+   sibling. The release packaging has patched `$ORIGIN` since forever; the
+   wheels only ever copied. It went unnoticed because the repair command was a
+   `cp` no-op and the Python binding happens to import the libs in dependency
+   order at load time — so the wheels worked by accident rather than by
+   construction.
+
+Confirmed end to end: RUNPATH `$ORIGIN`, floor 2.27, and cibuildwheel's own
+`test-command` (which imports the package and calls `_find_lib()`) passing on
+all four platforms, so auditwheel's relocation demonstrably did not break lib
+discovery.
+
 ---
 
 ## August 4, 2026 — Linux CUDA archive: a second, self-inflicted exit 127 (#42)
