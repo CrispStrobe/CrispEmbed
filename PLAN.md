@@ -17,7 +17,6 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-04 | `feat/parity-docling` (delegated agent) | **Picked: A1** — pip document-parser (Docling) reference arm for `tests/ocr_external_parity.py`; harness rows on synth + CC0 corpora | **IN PROGRESS** |
-| 2026-08-04 | `chore/docs-matrix-hygiene` (delegated agent) | **Picked: A6** — re-verify every `docs/ocr_backend_matrix.md` row against actual gates; re-date/delete stale impossibility claims | **IN PROGRESS** |
 | 2026-08-04 | *(queued, serialized — one heavy ref at a time)* | **Claimed: A2 → A3 → A4** — transformers Qwen2.5-VL-7B arm, olmOCR-toolkit arm + gold, HF DeepSeek-OCR arm + gold. Run strictly one at a time after A1/A6; rows update as each starts | **QUEUED** |
 | 2026-08-04 | `feat/olmocr-lane` / worktree TBD | **Picked: T13** — olmOCR lane on the `qwen2vl_ocr` engine: convert olmOCR-2 checkpoint (q4_k first, Kaggle offload if needed), anchored-prompt contract, registry + CLI name, gold from A3. Acceptance: decoded parity vs toolkit on ≥5 anchored pages + T12 harness row | **IN PROGRESS** |
 
@@ -1292,6 +1291,17 @@ defaults; detector graph rows). Re-date or delete impossibility claims per
 the LEARNINGS rule ("re-date your impossibility claims"). **Acceptance:**
 `tests/test_ocr_backend_matrix.py` and `tests/test_cli_engine_names.py` pass
 and every matrix claim cites a gate or a dated measurement.
+
+**A6 status [DONE 2026-08-04, merged]:** matrix re-verified row by row; every
+claim now cites a gate/code line or a dated measurement, `UNVERIFIED as of
+2026-08-04` labels where neither exists (PARSeq, SMT-family, Unlimited-OCR,
+PP-FormulaNet-L residency; Surya timing; CUDA never smoked here).
+PP-FormulaNet-L split out as GPU-capable; batch-graph/width-bucketing/detector
+graph defaults corrected; `docs/ppocrv6.md` rewritten (it documented gates that
+no longer exist). Surprises: DBNet detection is deliberately CPU-default (GPU
+measured 14x WORSE, issue #25); `GRAPH_ACCEPT` gates only the single-crop lane.
+Known leftover for the next ppocrv6 toucher: `src/ppocrv6_det.cpp:935-940`
+comment still describes the retired `DET_GRAPH` gate.
 
 *(T13-T17 below are NOT agent-delegable as-is: they are port/bisect work —
 run them as dedicated sessions with the full board context.)*
