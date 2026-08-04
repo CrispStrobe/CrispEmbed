@@ -975,6 +975,10 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
     float norm = 0;
     for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
     norm = sqrtf(std::max(norm, 1e-12f));
+    // Diagnostic: the pre-normalization magnitude is the only scale signal a
+    // caller can see (the returned vector is unit-length by contract), so a
+    // uniform scale error is invisible to cosine parity. Print it on request.
+    if (std::getenv("CRISPEMBED_DECODER_EMBED_RAW_NORM")) fprintf(stderr, "[decoder_embed-rawnorm] %.6f\n", norm);
     for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
 
     if (bench) {
@@ -1607,6 +1611,8 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
         float norm = 0;
         for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
         norm = sqrtf(std::max(norm, 1e-12f));
+        // See the single-text path: pre-normalization magnitude, on request.
+        if (std::getenv("CRISPEMBED_DECODER_EMBED_RAW_NORM")) fprintf(stderr, "[decoder_embed-rawnorm] %.6f\n", norm);
         for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
 
         results[b] = std::move(pooled);

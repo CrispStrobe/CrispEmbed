@@ -630,6 +630,10 @@ target_link_libraries(test-conv-ext PRIVATE crispembed)
 add_executable(test-tokenizer tests/test_tokenizer.cpp)
 target_link_libraries(test-tokenizer PRIVATE crispembed)
 
+# Hermetic: core/bpe.h is header-only, so this needs no model, vocab or ggml.
+add_executable(test-qwen-pretokenize tests/test_qwen_pretokenize.cpp)
+target_include_directories(test-qwen-pretokenize PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 
