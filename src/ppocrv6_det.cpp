@@ -502,7 +502,13 @@ static ggml_tensor * graph_block(context * c, ggml_context * g, ggml_tensor * x,
 static bool graph_build(context * c, int h, int w) {
     if (c->graph.attempted) return c->graph.ready && c->graph.h == h && c->graph.w == w;
     c->graph.attempted = true;
-    if (c->variant == "medium" || !std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH")) return false;
+    // Graph is the default since 2026-08-04: after the insert-SE double-scale
+    // fix it matches the scalar path to probability cosine ~1e-8, runs 186 ms
+    // vs 315 ms scalar on synth_00_clean (CPU backend), and the 25-fixture CER
+    // gate came out net-better (labelled mean 0.06394 vs 0.06410; receipt
+    // 0.0000). CRISPEMBED_PPOCRV6_DET_SCALAR=1 restores the scalar reference.
+    // medium stays scalar until its graph gets the same validation.
+    if (c->variant == "medium" || std::getenv("CRISPEMBED_PPOCRV6_DET_SCALAR")) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
     if (ggml_backend_is_cpu(c->graph.backend)) {
@@ -835,8 +841,11 @@ context * init(const char * path, int) {
     // while user+sys stayed stable. An earlier cross-run wall comparison
     // reported the opposite result.)
     const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
-    const bool want_gpu = !force_cpu && (std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr ||
-                                         std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH") != nullptr);
+    // The detector graph defaults to the CPU backend: Metal ran the same graph
+    // 9x slower (1693 ms vs 187 ms on synth_00_clean) — conv at these spatial
+    // sizes does not pay for the dispatch. DET_GPU_LOAD is the explicit GPU
+    // opt-in; DET_GRAPH no longer implies it.
+    const bool want_gpu = !force_cpu && std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr;
     c->backend = want_gpu ? crispasr_init_gpu_backend_shared() : ggml_backend_cpu_init();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     auto * meta = core_gguf::open_metadata(path);
@@ -1021,7 +1030,11 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
             }
         }
         if (compare_graph) graph_boxes = out;
-        if (!out.empty() && std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_ACCEPT")) {
+        // Graph boxes are accepted by default (validated 2026-08-04, see
+        // graph_build). Compare mode still falls through to the scalar
+        // reference so the diagnostic diff has both sides;
+        // CRISPEMBED_PPOCRV6_DET_SCALAR disables the graph entirely upstream.
+        if (!out.empty() && !compare_graph) {
             if (bench) {
                 const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
                 fprintf(stderr,
