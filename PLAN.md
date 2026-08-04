@@ -17,7 +17,6 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-04 | `feat/embed-f2llm` (delegated agent) | **T19-E1** — port F2LLM-v2 160M+0.6B (Qwen3Model, Apache) via convert-decoder-embed (docstring claims support — verify); cosine+norm parity vs HF, German retrieval sanity, upload cstr, registry+pins | **IN PROGRESS** |
-| 2026-08-04 | `feat/embed-arctic-granite` (delegated agent) | **T19-E2** — arctic-embed-m-v2.0 + granite-r2 97m/311m: arch check first (granite-r2 may be ModernBERT — report, don't force), then convert/verify/upload/registry | **IN PROGRESS** |
 | 2026-08-04 | `feat/olmocr-lane` / `.claude/worktrees/feat-olmocr-lane` | **Picked: T13** — olmOCR lane. DONE so far: engine id 18 + CLI name `olmocr` (pushed on branch): load-time detection → byte-exact no-anchoring v4 prompt ("LateX" typo preserved), text-BEFORE-image user turn (reference sends prompt first), YAML front-matter strip (`CRISPEMBED_OLMOCR_RAW=1` keeps), `target_longest=1288` preprocess emulating the reference's fixed-dim page render (`CRISPEMBED_OLMOCR_LONGEST` overrides), max_tokens 8000. Conversion DONE on Kaggle (~30 min): cstr/olmOCR-2-7B-1025-GGUF q8_0 8.4 GiB + q4_k 5.3 GiB (vision Q8_0 floor) + model card. Registry entry `olmocr-2-7b` + SHA pin landed on branch (`--ocr-engine olmocr` resolves from registry; pin checks pass 243 pinned). Token-order refactor byte-identity A/B PASSED (qwen2vl-3b q4_k, old vs new binary, decoded output byte-identical). q4_k downloading locally for the first decoded smoke. T13 ACCEPTANCE RUN (2026-08-04, q4_k, 5 cc0 pages vs A3 transformers-pass gold, CER-threshold gate per A3's findings): commons_test_ocr_document **0.00637**, simple_form **0.01688**, receipt_historical 0.09287 — 3/5 within the 0.10 near-parity band; german_official_print 0.14909 (abs 0.216 vs gold's 0.083) and commons_example_receipt 0.46387 FAIL — the receipt page emits broken markup fragments where the reference emits a clean HTML table, mean_conf 0.74 (vs 0.98 on synth), similar output length (no truncation). Prime suspect: q4_k formatting instability on table-ish pages — the same instability mode the REFERENCE shows across its own serving stacks (vLLM vs transformers CER 0.372 on simple_form). NEXT: q8_0 discrimination run on the two failing pages (q8 = 8.4 GiB, needs the heavy slot free); if q8 closes the gap → publish q8 as the quality tier and mark q4_k "fast, format-unstable on tables"; if not → bisect the lane (logits vs sampling vs front-matter parse) | **IN PROGRESS** |
 
 ### Next actions — scoped for a fresh session
@@ -1418,6 +1417,33 @@ this is a CLI/scripting-latency item. **Acceptance:** one-shot
 `crispembed -m multilingual-e5-small --json "text"` total time down ≥3x with
 embeddings byte-identical (or cosine ≥0.9999) to today's, and no regression
 in warm batch throughput.
+
+**T19-E2 status [DONE 2026-08-04, merged]:** `arctic-embed-m-v2` shipped
+(f32/q8_0/q4_k on cstr, registry+pins, q8_0 default — q4_k without imatrix is
+weak here: cos_min 0.954, imatrix TODO). Per-stage parity cos 1.000000 after
+TWO REAL pre-existing bugs the port exposed: (1) **the fused gated-FFN branch
+never applied `ffn.fc2.bias`** — invisible on ModernBERT (no bias) but live in
+every shipped GTE v1.5 GGUF; the tensors are IN the published files, so
+`gte-base/large-en-v1.5` are repaired in place (shipped q8_0 cos vs HF
+0.985→0.9996), no re-upload needed; (2) gated-FFN activation was guessed
+per-arch (tanh) where HF uses exact-erf — now self-describing via
+`bert.ffn_act` (absent key = historical behavior, published GGUFs
+byte-identical). Also: `query_prefix()` had NO arctic rule — the shipped
+`arctic-embed-l-v2`/v1 models were running UNPREFIXED; wired for both
+generations. German retrieval sanity 5/5 top-1 at f16/q8/q4; independently
+re-verified end-to-end at merge (registry download + auto-prefix + erf
+kernel; ECB 0.652 > Rhein 0.307 > Kartoffelsalat 0.055).
+**granite-r2 gap report (backbone PROVEN via token-id bypass, per-stage cos
+0.99994+):** blocked ONLY on tokenizers — (a) `is_sentencepiece` misfires on
+BPE vocabs >100k in BOTH converter (`convert-bert-to-gguf.py:418`) and
+runtime (`crispembed.cpp:546/576`) → fix = read tokenizer.json `model.type`;
+(b) 97m needs an o200k-style regex pre-tokenizer (~1 function beside
+`gpt2_pretokenize`); (c) 311m needs the existing SPM-BPE mode wired
+(embedder path hardcodes `spm_style=false`). Small, well-scoped follow-up.
+**New open item (repo-wide, pre-existing):** `--biencoder` applies the QUERY
+prefix to documents too (`examples/cli/main.cpp:2461`, context-level prefix)
+— affects bge/e5/nomic/lfm2/arctic; cost ~0.03-0.07 cosine, no rank flips
+measured, but needs its own A/B before changing (silently alters output).
 
 ### T19 — German embedder quality snapshot (official MTEB data, 2026-08-04) + port candidates
 
