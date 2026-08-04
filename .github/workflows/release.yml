@@ -457,7 +457,27 @@ jobs:
 
           # NVIDIA's EULA permits redistributing these runtime components with
           # an application, and requires the terms to travel with them.
-          cp "$CUDA_PATH/EULA.txt" pkg-bundled/NVIDIA-EULA.txt 2>/dev/null || true
+          #
+          # The `cp "$CUDA_PATH/EULA.txt"` this replaces silently did nothing:
+          # the sub-package install (nvcc/cudart/cublas) does not lay down
+          # EULA.txt at the toolkit root, so v0.17.2 shipped the NOTICE alone
+          # while the docs claimed both. Search the likely locations, and say
+          # out loud which way it went instead of hiding it behind `|| true`.
+          eula=""
+          for cand in "$CUDA_PATH/EULA.txt" "$CUDA_PATH/doc/EULA.txt" \
+                      "$CUDA_PATH/share/doc/EULA.txt" /usr/local/cuda/EULA.txt \
+                      /usr/share/doc/cuda-toolkit*/EULA.txt; do
+              [ -f "$cand" ] && { eula="$cand"; break; }
+          done
+          if [ -z "$eula" ]; then
+              eula=$(find /usr/local/cuda* /usr/share/doc -maxdepth 3 -name 'EULA*' -type f 2>/dev/null | head -1)
+          fi
+          if [ -n "$eula" ]; then
+              cp "$eula" pkg-bundled/NVIDIA-EULA.txt
+              echo "bundled NVIDIA EULA text from $eula"
+          else
+              echo "NOTE: no EULA.txt found in this CUDA install; NVIDIA-NOTICE.txt carries the terms by reference"
+          fi
           {
             echo "This archive bundles NVIDIA CUDA runtime libraries"
             echo "(libcudart / libcublas / libcublasLt and their dependencies),"

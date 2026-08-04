@@ -50,8 +50,16 @@ Implementation notes worth keeping:
   bundled CUDA lib needs its own `$ORIGIN` (what manylinux/PyTorch wheels do
   to their vendored CUDA libs).
 - NVIDIA's EULA permits redistributing these runtime components; the bundled
-  archive carries `NVIDIA-EULA.txt` + a `NVIDIA-NOTICE.txt` saying what is
-  NVIDIA's and that the driver library is not included.
+  archive carries `NVIDIA-NOTICE.txt` saying what is NVIDIA's, under which
+  terms, and that the driver library is not included.
+  **Correction (found by inspecting the published v0.17.2 archive):** it was
+  meant to carry `NVIDIA-EULA.txt` as well, and does not. The
+  `cp "$CUDA_PATH/EULA.txt" … || true` silently did nothing, because the
+  sub-package install (nvcc/cudart/cublas) lays down no `EULA.txt` at the
+  toolkit root. The copy now searches the plausible locations and *logs*
+  which way it went instead of swallowing the failure. `NVIDIA-NOTICE.txt`
+  carries the terms by reference either way, so v0.17.2 is not
+  mis-licensed — but the documentation overclaimed, which is its own defect.
 - `scripts/check-bundled-deps.py` gained `--allow PATTERN`, and each archive is
   now verified against its **own** contract: slim may want the toolkit runtime,
   bundled may want only the driver. The assumption that "CUDA users normally
