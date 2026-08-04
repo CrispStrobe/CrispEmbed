@@ -1,6 +1,19 @@
 # PP-OCRv6 batching investigation
 
-Status: the production route is safe and ordered, but fused GGML batch execution is not promoted.
+Status 2026-08-04: **the fused lane runs on CPU AND Metal with scalar-identical
+output** — the historical blocker was never a Metal limitation. The fused
+caller passed a zeroed value into `pp_graph_run_batch`'s in-out width
+parameter, so every batch graph was built at width 0; the stem shapes
+collapsed until `ggml_pool_2d` asserted `ne[0] > 0` on *any* backend, and the
+failure was mis-filed as a "Metal fourth-dimension pooling" issue. With the
+group width seeded: CPU two-crop contract passes byte-identical
+(`parity=PASS`), and the Metal probe runs `width=320 batch=3 action=fused`
+with all items scalar-identical at **54.9 ms vs 118.6 ms scalar (2.2x)**.
+The lane stays behind `CRISPEMBED_PPOCRV6_BATCH_GRAPH` (tiny-only, non-CPU
+backends can be re-gated with `CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY`);
+promotion needs the large-stem (small/medium) extension plus a multi-fixture
+sweep. Historical investigation below, kept for the record — its Metal
+conclusions are superseded.
 
 ## What was implemented
 
