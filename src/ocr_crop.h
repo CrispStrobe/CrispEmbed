@@ -32,7 +32,7 @@ std::vector<uint8_t> extract(const uint8_t * pixels, int width, int height, int 
                              int crop_h, int padding, int * out_width, int * out_height);
 
 // Perspective-rectify an ordered quadrilateral (TL, TR, BR, BL).  This is
-// the crop contract used by PaddleOCR/RapidOCR after DBPostProcess; retaining
+// the upstream PP-OCR crop contract after DBPostProcess; retaining
 // the polygon is essential for skewed and rotated text lines.
 std::vector<uint8_t> extract_quad(const uint8_t * pixels, int width, int height, int channels, const float qx[4],
                                   const float qy[4], int padding, int * out_width, int * out_height);

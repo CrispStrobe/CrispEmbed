@@ -1188,7 +1188,7 @@ static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vecto
     int W = fixed ? W_MIN : std::max(W_MIN, int(H * std::max(W_MIN / float(H), ratio)));
     // Opt-in narrow-crop experiment (T4): PaddleOCR pads every crop to >=320
     // columns, so an 86x28 price cell wastes >2x its width on gray padding.
-    // TurboOCR's CPU pipeline runs natural content width with a floor of 32
+    // Production ONNX pipelines run natural content width with floors as low as 32
     // and validates parity on FUNSD; CRISPEMBED_PPOCRV6_WIDTH_FLOOR=<n>
     // (n < 320) tries that here: W = max(n, natural), rounded up to a
     // multiple of 32 to bound the number of distinct graph widths. Default
@@ -1201,7 +1201,7 @@ static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vecto
                 W = std::min(W, (natural + 31) / 32 * 32);
             }
         }
-        // Width bucketing (T4/TurboOCR), DEFAULT step 64 since 2026-08-04:
+        // Width bucketing (T4), DEFAULT step 64 since 2026-08-04:
         // round the model width UP to a multiple of the step so nearby widths
         // share one graph shape and land in the same fused batch group (the
         // receipt drops from 12 distinct widths to 5 fused groups, recognize
