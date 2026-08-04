@@ -1304,9 +1304,19 @@ synth_00_clean and **1363 ms vs 2056 ms** on the 1920x2518 Fraktur page.
 Promoted to default for tiny/small on CPU (25-fixture labelled CER net-better,
 0.06394 vs 0.06410; receipt hits 0.00000; box-level diffs are threshold
 jitter). `CRISPEMBED_PPOCRV6_DET_SCALAR=1` restores scalar;
-`CRISPEMBED_PPOCRV6_DET_GPU_LOAD` is the explicit GPU opt-in. Remaining:
-medium-tier validation, Metal conv perf, and the comparator's own graph-box
-extraction (emits `graph=0` — the accept path is exercised instead).
+`CRISPEMBED_PPOCRV6_DET_GPU_LOAD` is the explicit GPU opt-in.
+
+**Same day, the medium tier followed:** `run_medium_neck` (RepLKFPN: adjust /
+top-down / project / bottom-up / lateral / med_ic refinement) is now in the
+persistent graph, every `med_*` tap at cosine 0.99999998-1.0, probability
+0.99999999 with equal norms and same box counts. Detector time
+**6911→1024 ms** (synth page) and **41438→8711 ms** (`german_official_print`),
+German CER graph 0.04856 vs scalar 0.04955 — the CPU-scalar medium detector
+was why the medium tier blew the 120 s benchmark guard, so the highest-quality
+tier is now actually usable. Medium graph default like tiny/small.
+
+Remaining: Metal conv perf, and the comparator's own graph-box extraction
+(emits `graph=0` — the accept path is exercised instead).
 
 ---
 
