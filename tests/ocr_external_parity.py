@@ -881,6 +881,9 @@ def main() -> int:
     ap.add_argument("--hardware", default="",
                     help="free-text hardware label recorded in the transcript "
                          "manifest; timings are only comparable within one host")
+    ap.add_argument("--only", default="",
+                    help="comma-separated fixture filenames to run; lets a "
+                         "retry pass revisit just the fixtures that failed")
     ap.add_argument("--require-truth", action="store_true",
                     help="only run fixtures that ground_truth.json labels; "
                          "unlabelled fixtures in a corpus are out of scope, and "
@@ -895,6 +898,9 @@ def main() -> int:
     fixtures = load_fixtures(args.images)
     if args.require_truth:
         fixtures = [f for f in fixtures if f["truth"]]
+    if args.only:
+        want = {n.strip() for n in args.only.split(",") if n.strip()}
+        fixtures = [f for f in fixtures if f["name"] in want]
     if args.limit:
         fixtures = fixtures[: args.limit]
     if not fixtures:
