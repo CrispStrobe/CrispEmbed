@@ -2670,3 +2670,28 @@ benchmark a release artifact and attribute a delta to an ISA the artifact is
 no longer allowed to use. Benchmark *local* builds (`-march=native`, the
 default) when the question is peak CPU throughput, and say which of the two
 you measured.
+
+## SmolDocling DocTags contract fix — stage split after the tiling port (2026-08-04, M1, CPU-only build)
+
+The T15 output-contract fix (added-token vocab restore, reference tiling
+preprocessing, max-tokens wiring — PLAN T15) changes the engine's cost
+shape: vision now runs N tiles + 1 global view per page instead of one
+squashed 512x512, so vision dominates end-to-end time. Measured with
+`CRISPEMBED_SMOLDOCLING_BENCH=1`, q8_0, warm, CPU backend (build had
+GGML_METAL=OFF; the engine is CPU-hardcoded regardless — see the backend
+matrix row):
+
+| fixture | grid (tiles+global) | vision+connector | prefill | decode | total |
+|---|---|--:|--:|--:|--:|
+| fox.png 800x200 | 1x4 + 1 = 5 | 31,744 ms | 3,760 ms (347 tok) | 1,332 ms (44 tok) | 37,296 ms |
+
+Per-512px-tile SigLIP forward is ~6.3 s CPU — the single dominant cost.
+Full pages (12 tiles + global, e.g. 606x1000 scan_page_pd) measured
+71-103 s wall end-to-end in the same configuration. Quality on the same
+run: fox payload CER 0.86 -> 0.0 (payload exact vs ground truth), prompt
+ids byte-identical to the reference processor (347/347). The obvious next
+perf lever is the backend port of the SigLIP graph (matrix row TODO):
+per-tile vision is compute-bound, exactly the shape that wins on GPU,
+while the 135M-LLM per-token decode is the shape recorded as CPU-favored
+(see the persistent-decode LEARNINGS entry) — split residency, don't move
+the decode blindly.
