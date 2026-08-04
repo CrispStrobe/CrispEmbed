@@ -238,7 +238,8 @@ struct crispembed_context {
     int global_attn_every_n = 0;    // ModernBERT: every Nth layer uses global attention (0 = all same)
     int local_attention_window = 0; // ModernBERT: sliding-window size for local layers (0 = no window)
     bool pre_ln = false;            // pre-LN (ModernBERT) vs post-LN (BERT) ordering
-    bool geglu_erf = false;         // GeGLU uses exact-erf gelu (ModernBERT) vs tanh (GTE v1.5)
+    bool geglu_erf = false;         // gated FFN uses exact-erf gelu instead of the tanh approximation
+    bool ffn_swiglu = false;        // gated FFN uses silu (SwiGLU) instead of any gelu flavour
     bool dump_layers = false;       // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
     int position_buckets = 0;       // DeBERTa log-bucket count (0 = linear positions)
     int matryoshka_dim = 0;         // 0 = use model default
@@ -445,6 +446,21 @@ static bool load_model(crispembed_context * ctx, const char * path) {
         ctx->local_attention_window = opt_u32({ ak("attention.sliding_window") }, 128);
         ctx->pre_ln = true;
         ctx->geglu_erf = true;
+    }
+
+    // Self-describing gated-FFN activation (`bert.ffn_act`, written by
+    // convert-bert-to-gguf.py from config.hidden_act / hidden_activation).
+    // Absent = keep the historical per-arch default set above, so already
+    // published GGUFs are byte-for-byte unaffected.
+    {
+        const std::string ffn_act = strv("bert.ffn_act");
+        if (ffn_act == "silu" || ffn_act == "swish") {
+            ctx->ffn_swiglu = true;
+        } else if (ffn_act == "gelu") {
+            ctx->geglu_erf = true; // HF ACT2FN["gelu"] is the exact erf GELU
+        } else if (ffn_act == "gelu_pytorch_tanh" || ffn_act == "gelu_new") {
+            ctx->geglu_erf = false;
+        }
     }
 
     hp.n_experts = opt_u32({ "bert.num_experts", ak("expert_count") }, 0);
@@ -1241,14 +1257,23 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
             if (L.moe_ffn_bias) ffn = ggml_add(gctx, ffn, L.moe_ffn_bias);
 
         } else if (L.ffn_up_gate_w) {
-            // Fused GeGLU (ModernBERT/GTE v1.5): single matmul → ggml_geglu → down.
-            // Both use gelu(first_half)*second_half (non-swapped) layout; they
-            // differ only in the gelu approximation: GTE v1.5 = tanh, ModernBERT
-            // = exact erf (config hidden_activation="gelu"). geglu_erf is gated on
-            // arch so the validated GTE v1.5 path (tanh) is untouched.
-            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur);                 // [2*inter, T]
-            ffn = ctx->geglu_erf ? ggml_geglu_erf(gctx, up_gate) : ggml_geglu(gctx, up_gate); // → [inter, T]
+            // Fused gated FFN (ModernBERT / GTE v1.5): one matmul → GLU → down.
+            // All flavours use act(first_half)*second_half (non-swapped) layout
+            // and differ only in the activation, which `bert.ffn_act` now names
+            // explicitly (silu → SwiGLU, gelu → exact erf, gelu_pytorch_tanh →
+            // tanh approximation). Without that key the historical per-arch
+            // default applies, so published GGUFs keep their exact behaviour.
+            ggml_tensor * up_gate = ggml_mul_mat(gctx, L.ffn_up_gate_w, cur); // [2*inter, T]
+            if (ctx->ffn_swiglu)
+                ffn = ggml_swiglu(gctx, up_gate);
+            else
+                ffn = ctx->geglu_erf ? ggml_geglu_erf(gctx, up_gate) : ggml_geglu(gctx, up_gate); // → [inter, T]
             ffn = ggml_mul_mat(gctx, L.fc2_w, ffn);
+            // GTE v1.5's GteGatedMLP.down_proj is nn.Linear(..., bias=True) and the
+            // converter emits ffn.fc2.bias; ModernBERT's mlp.Wo has no bias, so a
+            // missing add here was invisible on ModernBERT but silently dropped a
+            // whole per-layer bias vector on every GTE v1.5 model.
+            if (L.fc2_b) ffn = ggml_add(gctx, ffn, L.fc2_b);
         } else if (L.ffn_gate_w) {
             // Separate SwiGLU (NomicBERT)
             ggml_tensor * up = ggml_mul_mat(gctx, L.fc1_w, cur);
