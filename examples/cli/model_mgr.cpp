@@ -1272,6 +1272,11 @@ static const ModelEntry k_registry[] = {
       "olmOCR-2-7B document OCR (Qwen2.5-VL-7B fine-tune, markdown+front-matter output)", "5468 MB", "apache-2.0",
       "https://huggingface.co/allenai/olmOCR-2-7B-1025" },
 
+    { "smoldocling", "smoldocling-q8_0.gguf",
+      "https://huggingface.co/cstr/smoldocling-GGUF/resolve/main/smoldocling-q8_0.gguf",
+      "SmolDocling-256M full-page DocTags OCR (SigLIP + SmolLM2, tiled 512px input)", "261 MB", "apache-2.0",
+      "https://huggingface.co/ds4sd/SmolDocling-256M-preview" },
+
     { "qwen3vl-2b", "qwen3-vl-2b-q4_k.gguf",
       "https://huggingface.co/cstr/qwen3-vl-2b-crispembed-gguf/resolve/main/qwen3-vl-2b-q4_k.gguf",
       "Qwen3-VL-2B VLM OCR (24-layer ViT + 28-layer Qwen3, DeepStack, IMROPE)", "1590 MB", "apache-2.0",
