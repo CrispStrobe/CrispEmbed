@@ -19,6 +19,7 @@
 
 #include "core/image_out.h"
 #include "core/temp_file.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -129,7 +130,7 @@ bool is_png(const std::string & s) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     std::printf("image provenance\n");
 
     unset_env("CRISPEMBED_IMAGE_FORMAT");
@@ -303,4 +304,12 @@ int main() {
     }
     std::printf("\nPASS: images are marked%s.\n", skipped ? " (signing not exercised)" : " and signable");
     return 0;
+}
+
+// The guard in tools/check_test_clean_exit.sh: a one-shot binary must not run
+// ggml's static GPU-device destructor at exit (it aborts on Metal / faults on
+// CUDA). These tests touch no GPU today, but they link crispembed-core, so the
+// teardown is one added dependency away from firing.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

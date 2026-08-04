@@ -36,6 +36,13 @@ if(MSVC)
     # message. Suppress the macros globally rather than per-call-site
     # `(std::min)(...)` parens, which only survive until the next author.
     add_definitions(-DNOMINMAX)
+    # Without this, <windows.h> drags in the ancient <winsock.h>. Anything that
+    # later includes <winsock2.h> — httplib.h does, so the whole server — then
+    # fails with ~100 "'sockaddr': 'struct' type redefinition" errors in the
+    # Windows SDK itself. It bites on include ORDER, so it is invisible until
+    # someone adds a header: server.cpp includes core/temp_file.h (windows.h)
+    # at line 38 and httplib.h (winsock2.h) at line 47.
+    add_definitions(-DWIN32_LEAN_AND_MEAN)
 endif()
 
 # ---------------------------------------------------------------------------

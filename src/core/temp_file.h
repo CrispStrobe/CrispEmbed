@@ -21,6 +21,14 @@
 #include <vector>
 
 #ifdef _WIN32
+// Plain <windows.h> pulls in the legacy <winsock.h>, which then collides with
+// <winsock2.h> in any TU that also does networking (server.cpp includes this
+// header before httplib.h). The build passes -DWIN32_LEAN_AND_MEAN globally;
+// repeat it here so an out-of-tree consumer of this header cannot inherit the
+// clash. Guarded so the two definitions cannot conflict (C4005).
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 #else
 #include <unistd.h>

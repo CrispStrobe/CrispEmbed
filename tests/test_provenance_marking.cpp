@@ -17,6 +17,7 @@
 #include "../ggml/examples/stb_image.h"
 
 #include "core/provenance.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -72,7 +73,7 @@ bool roundtrip(const std::string & comment, int & w, int & h) {
 
 } // namespace
 
-int main() {
+static int crispembed_test_main() {
     std::printf("Art. 50(2) opt-in marking\n");
 
     unset_env("CRISPEMBED_MARK_GENERATED");
@@ -115,4 +116,12 @@ int main() {
     }
     std::printf("\nPASS: marking is opt-in, well-formed, and decode-safe.\n");
     return 0;
+}
+
+// The guard in tools/check_test_clean_exit.sh: a one-shot binary must not run
+// ggml's static GPU-device destructor at exit (it aborts on Metal / faults on
+// CUDA). These tests touch no GPU today, but they link crispembed-core, so the
+// teardown is one added dependency away from firing.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }

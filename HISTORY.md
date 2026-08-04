@@ -31,6 +31,29 @@ Linux/macOS:
   Caveat recorded in the test: Windows cannot hold an empty-valued env var, so
   the "empty is off" check degenerates to the unset case there.
 
+Fixing those let the build get far enough to expose two more, plus a static
+guard that had been failing alongside it the whole time:
+
+- **`<windows.h>` drags in the legacy `<winsock.h>`**, which then collides with
+  `<winsock2.h>` — 102 `'sockaddr': 'struct' type redefinition` errors inside
+  the Windows SDK, all from `crispembed-server`. It bites on include *order*
+  and so was invisible until someone added a header: `server.cpp` includes
+  `core/temp_file.h` (windows.h) at line 38 and `httplib.h` (winsock2.h) at
+  line 47. Fixed with `-DWIN32_LEAN_AND_MEAN` globally, repeated defensively in
+  `core/temp_file.h` for out-of-tree consumers. Nothing in the tree uses an API
+  that flag excludes (checked).
+- **A second POSIX `setenv`** in `examples/cli/main.cpp`, from the same
+  one-shot routing work. `--cache-dir` two lines away already had the
+  `#ifdef _WIN32 _putenv_s` guard, which is what the new call should have
+  copied.
+- **`tools/check_test_clean_exit.sh`** was red on five tests
+  (`test_image_provenance`, `test_msac_tiling`, `test_provenance_marking`,
+  `test_render_provenance`, `test_temp_file`). Each now follows the documented
+  pattern: body renamed to `crispembed_test_main()`, thin
+  `main() { core_util::clean_exit(crispembed_test_main()); }`. None touches a
+  GPU today, but they link `crispembed-core`, so ggml's static device teardown
+  is one dependency away.
+
 ---
 
 ## August 4, 2026 — release artifacts pinned to a fixed CPU baseline (#41)
