@@ -4,6 +4,38 @@ Completed milestones and work log. See PLAN.md for current roadmap.
 
 ---
 
+## August 4, 2026 — a HuggingFace rate limit was being reported as pin drift
+
+`main-health`'s "Verify model SHA-256 pins are current" step went red with
+`model_hashes.h is stale`. It was not stale. Every one of the ~240 HF tree-API
+probes came back `HTTP 429`, so every pin resolved to nothing, the regenerated
+header naturally differed from the committed one, and the job announced drift
+that did not exist. The licence step next to it already degrades transient
+failures to "?" rather than "✗"; the pin step had no such distinction.
+
+`tools/fetch_model_hashes.py` now separates "upstream did not answer" from
+"upstream answered differently":
+
+- New `TransientFetchError` for 408/425/429/5xx and socket timeouts, with four
+  attempts and exponential backoff that honours `Retry-After` (capped at 30 s).
+  A 404 still propagates — a renamed or deleted repo IS drift and must fail.
+- `resolve()` returns the unreachable repo keys. `--check` reports
+  **INCONCLUSIVE** (exit 0) when the header differs *and* something was
+  unreachable, and still fails when everything was reachable and the header
+  differs.
+- Generating the header now REFUSES to write when any repo was unreachable
+  (`--force` overrides). Previously a run during a rate limit would have
+  silently rewritten 117 good pins as unpinned — the check that exists to stop
+  a swapped re-host, disarmed by a transient network condition.
+- Optional `HF_TOKEN` (wired in `main-health.yml`, empty when no secret is
+  configured) raises the anonymous per-IP ceiling.
+
+Verified against mocked responses: persistent 429 → `TransientFetchError`;
+404 → propagates; 503-then-200 → recovers on the third attempt; header-differs
++ unreachable → exit 0, header-differs + all-reachable → exit 1.
+
+---
+
 ## August 4, 2026 — Windows CI unbroken (`build.yml` windows-x86_64)
 
 `build.yml`'s windows leg had been red on every push for the day. Three

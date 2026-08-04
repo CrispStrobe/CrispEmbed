@@ -113,11 +113,20 @@ jobs:
       # content changed underneath us, which is the case worth a red build.
       # A registry entry added without re-running the generator also lands
       # here, since an unpinned URL now refuses to download at all.
+      # HF_TOKEN is optional: the anonymous API is rate-limited per IP and this
+      # walks ~240 repos, which was enough to get every probe 429'd on
+      # 2026-08-04. With no secret configured this is an empty string and the
+      # script falls back to its retry/backoff. Either way a rate limit is now
+      # reported as INCONCLUSIVE, never as "the header is stale".
       - name: Verify model SHA-256 pins are current
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python tools/fetch_model_hashes.py --check
 
       # The declared size is what a user sees before agreeing to a download.
       # Same daily-job rationale (one API call per repo), and it catches the
       # same class of drift as the pin check: a re-upload at a different quant.
       - name: Verify registry sizes match the published files
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: python tools/fetch_model_hashes.py --check-sizes

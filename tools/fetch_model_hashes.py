@@ -34,8 +34,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import sys
+import time
 import urllib.error
 import urllib.request
 from collections import OrderedDict
@@ -102,12 +104,65 @@ def registry_sizes(cpp_path: Path) -> "OrderedDict[str, tuple]":
     return out
 
 
-def fetch_tree(owner: str, repo: str, rev: str) -> dict:
-    """path -> (sha256, size_bytes), for LFS-backed files only."""
+class TransientFetchError(Exception):
+    """Upstream was unreachable. Says NOTHING about whether the pin drifted.
+
+    Kept distinct from a 404 (repo renamed or deleted — real drift, must fail)
+    so that a rate limit cannot be reported as "model_hashes.h is stale". That
+    conflation turned main-health red on 2026-08-04: all ~240 repo probes came
+    back 429, every pin became "unpinned", the regenerated header naturally
+    differed from the committed one, and the job announced staleness that did
+    not exist.
+    """
+
+
+# Retryable: rate limit, request timeouts, and HF's transient 5xx.
+_TRANSIENT_STATUS = {408, 425, 429, 500, 502, 503, 504}
+
+
+def fetch_tree(owner: str, repo: str, rev: str, attempts: int = 4) -> dict:
+    """path -> (sha256, size_bytes), for LFS-backed files only.
+
+    Raises TransientFetchError once the retries are spent on a retryable
+    status; any other HTTP error propagates as-is (it is a fact about the
+    repo, not about the network).
+    """
     url = API.format(owner=owner, repo=repo, rev=rev)
-    req = urllib.request.Request(url, headers={"User-Agent": "crispembed-hash-pin"})
-    with urllib.request.urlopen(req, timeout=60) as resp:
-        entries = json.load(resp)
+    headers = {"User-Agent": "crispembed-hash-pin"}
+    # Anonymous HF API calls are rate-limited per IP, and this walks ~240
+    # repos in a loop — enough to trip the limit on a shared CI egress. A
+    # token raises the ceiling; absent one, the retry/backoff below carries it.
+    token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    entries: list = []
+    delay = 2.0
+    for attempt in range(1, attempts + 1):
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                entries = json.load(resp)
+            break
+        except urllib.error.HTTPError as exc:
+            if exc.code not in _TRANSIENT_STATUS:
+                raise
+            if attempt == attempts:
+                raise TransientFetchError(f"HTTP {exc.code} after {attempts} attempts") from exc
+            # Respect Retry-After when HF sends one; cap it so a long hint
+            # cannot stall the job past its timeout.
+            hinted = exc.headers.get("Retry-After") if exc.headers else None
+            try:
+                wait = float(hinted) if hinted else delay
+            except ValueError:
+                wait = delay
+            time.sleep(min(wait, 30.0))
+            delay *= 2
+        except (urllib.error.URLError, TimeoutError) as exc:
+            if attempt == attempts:
+                raise TransientFetchError(f"{exc} after {attempts} attempts") from exc
+            time.sleep(delay)
+            delay *= 2
     return {
         e["path"]: (e["lfs"]["oid"], int(e["lfs"].get("size") or e.get("size") or 0))
         for e in entries
@@ -116,10 +171,17 @@ def fetch_tree(owner: str, repo: str, rev: str) -> dict:
 
 
 def resolve(urls: "OrderedDict[str, dict]", verbose: bool = True):
-    """Returns (pins, unpinned) — unpinned carries a human-readable reason."""
+    """Returns (pins, unpinned, unreachable).
+
+    `unpinned` carries a human-readable reason. `unreachable` holds the repo
+    keys the network never answered for — the caller must not read those as
+    drift, because their pins are missing for a reason that has nothing to do
+    with what upstream serves.
+    """
     trees: dict = {}
     pins: "OrderedDict[str, str]" = OrderedDict()
     unpinned: list = []
+    unreachable: set = set()
 
     for url, parts in urls.items():
         key = (parts["owner"], parts["repo"], parts["rev"])
@@ -129,6 +191,11 @@ def resolve(urls: "OrderedDict[str, dict]", verbose: bool = True):
                 if verbose:
                     print(f"  {key[0]}/{key[1]}@{key[2]}: {len(trees[key])} LFS files",
                           file=sys.stderr)
+            except TransientFetchError as exc:
+                trees[key] = {}
+                unreachable.add(key)
+                if verbose:
+                    print(f"  {key[0]}/{key[1]}@{key[2]}: UNREACHABLE ({exc})", file=sys.stderr)
             except (urllib.error.URLError, urllib.error.HTTPError, ValueError) as exc:
                 trees[key] = {}
                 if verbose:
@@ -138,9 +205,11 @@ def resolve(urls: "OrderedDict[str, dict]", verbose: bool = True):
         sha = entry[0] if entry else None
         if sha:
             pins[url] = sha
+        elif key in unreachable:
+            unpinned.append((url, "upstream unreachable (transient)"))
         else:
             unpinned.append((url, "not an LFS file, or repo/path unreachable"))
-    return pins, unpinned
+    return pins, unpinned, unreachable
 
 
 def render_header(pins: "OrderedDict[str, str]", unpinned: list) -> str:
@@ -222,7 +291,10 @@ def check_sizes(tolerance: float = 0.25, floor_bytes: int = 2_000_000,
         if key not in trees:
             try:
                 trees[key] = fetch_tree(*key)
-            except (urllib.error.URLError, urllib.error.HTTPError, ValueError):
+            except (TransientFetchError, urllib.error.URLError,
+                    urllib.error.HTTPError, ValueError):
+                # Either way the entry lands in `unknown` below, which never
+                # fails the check — only a size we actually read can do that.
                 trees[key] = {}
         entry = trees[key].get(parts["path"])
         if not entry or not entry[1]:
@@ -261,6 +333,9 @@ def main() -> int:
     ap.add_argument("--json", action="store_true", help="dump resolved pins as JSON")
     ap.add_argument("--check-sizes", action="store_true",
                     help="verify each entry's declared size against the real file")
+    ap.add_argument("--force", action="store_true",
+                    help="rewrite the header even if some repos were unreachable "
+                         "(their entries are written back UNPINNED)")
     args = ap.parse_args()
 
     if args.check_sizes:
@@ -269,7 +344,7 @@ def main() -> int:
     urls = registry_urls(REGISTRY_CPP)
     print(f"registry: {len(urls)} distinct download URLs", file=sys.stderr)
 
-    pins, unpinned = resolve(urls, verbose=not args.json)
+    pins, unpinned, unreachable = resolve(urls, verbose=not args.json)
 
     if args.json:
         json.dump({"pinned": pins, "unpinned": [u for u, _ in unpinned]},
@@ -281,14 +356,36 @@ def main() -> int:
 
     header = render_header(pins, unpinned)
 
+    if unreachable:
+        print(f"WARNING: {len(unreachable)} repo(s) unreachable (rate limit / network). "
+              f"Their pins are missing from this run for a reason that has nothing to do "
+              f"with what upstream serves.", file=sys.stderr)
+
     if args.check:
         current = HEADER_OUT.read_text(encoding="utf-8") if HEADER_OUT.exists() else ""
-        if current != header:
-            print("model_hashes.h is stale — re-run tools/fetch_model_hashes.py",
-                  file=sys.stderr)
-            return 1
-        print("model_hashes.h is current", file=sys.stderr)
-        return 0
+        if current == header:
+            print("model_hashes.h is current", file=sys.stderr)
+            return 0
+        if unreachable:
+            # Cannot tell drift from a transient failure, and calling it drift
+            # is worse than saying nothing: it trains people to ignore a red
+            # supply-chain check. The daily schedule re-checks.
+            print("INCONCLUSIVE: the header differs, but this run could not reach "
+                  f"{len(unreachable)} repo(s), so the difference is explained. "
+                  "Not failing; the next scheduled run re-checks.", file=sys.stderr)
+            return 0
+        print("model_hashes.h is stale — re-run tools/fetch_model_hashes.py",
+              file=sys.stderr)
+        return 1
+
+    if unreachable and not args.force:
+        # Writing now would DROP every pin this run failed to fetch, quietly
+        # unpinning models that are perfectly fine. Refuse rather than corrupt.
+        print(f"REFUSING to rewrite {HEADER_OUT.name}: {len(unreachable)} repo(s) were "
+              f"unreachable, so {len(unpinned)} entr(ies) would be written back unpinned. "
+              f"Re-run when upstream answers, or pass --force if that is really intended.",
+              file=sys.stderr)
+        return 1
 
     HEADER_OUT.write_text(header, encoding="utf-8")
     print(f"wrote {HEADER_OUT.relative_to(REPO_ROOT)}", file=sys.stderr)
