@@ -1,0 +1,651 @@
+{
+  "captured_at_runtime": true,
+  "olmocr_version": "0.4.27",
+  "olmocr_builder": "olmocr.pipeline.build_page_query (imported, not reimplemented)",
+  "prompt_builder": "olmocr.prompts.build_no_anchoring_v4_yaml_prompt",
+  "prompt": "Attached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.",
+  "prompt_sha256": "c12f21aca8c6c5599cea6176edd974b7ea6a05cf451497abd6370dd449db3979",
+  "prompt_bytes": 557,
+  "request_skeleton": {
+    "model": "allenai/olmOCR-2-7B-1025",
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Attached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters."
+          },
+          {
+            "type": "image_url",
+            "image_url": {
+              "url": "<data:image/png;base64, PNG bytes of the pdftoppm render>"
+            }
+          }
+        ]
+      }
+    ],
+    "max_tokens": 8000,
+    "temperature": 0.0
+  },
+  "message_structure": "one user message; content[0] = text prompt, content[1] = image_url data URI; no system message in the request (the chat template injects 'You are a helpful assistant.')",
+  "max_tokens": 8000,
+  "temperature_first_attempt": 0.1,
+  "temperature_by_attempt": [
+    0.1,
+    0.1,
+    0.2,
+    0.3,
+    0.5,
+    0.8,
+    0.9,
+    1.0
+  ],
+  "temperature_in_skeleton": 0.0,
+  "temperature_note": "build_page_query sets 0.0 and try_single_page then overwrites it with TEMPERATURE_BY_ATTEMPT[attempt]; attempt 0 therefore runs at 0.1, i.e. sampling.",
+  "target_longest_image_dim": 1288,
+  "render": "pdftoppm -png -r (target*72/longest_mediabox_point) via olmocr.data.renderpdf.render_pdf_to_base64png",
+  "max_model_len": 16384,
+  "max_page_retries_default": 8,
+  "guided_decoding_default": false,
+  "img2pdf": "img2pdf 0.6.3",
+  "pdftoppm": "pdftoppm version 22.02.0",
+  "img2pdf_recipe": "img2pdf --output <name>.pdf <fixture image>",
+  "renders": [
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_blur.png",
+      "pdf": "synth_00_blur.pdf",
+      "source_wh": [
+        626,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        387
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_clean.png",
+      "pdf": "synth_00_clean.pdf",
+      "source_wh": [
+        572,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        424
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        30,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        420
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_lowdpi.png",
+      "pdf": "synth_00_lowdpi.pdf",
+      "source_wh": [
+        616,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        312
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        22,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        308
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_noise.png",
+      "pdf": "synth_00_noise.pdf",
+      "source_wh": [
+        617,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        393
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_00_skew.png",
+      "pdf": "synth_00_skew.pdf",
+      "source_wh": [
+        578,
+        204
+      ],
+      "rendered_wh": [
+        1288,
+        455
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        32,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        448
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_blur.png",
+      "pdf": "synth_01_blur.pdf",
+      "source_wh": [
+        751,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        323
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_clean.png",
+      "pdf": "synth_01_clean.pdf",
+      "source_wh": [
+        766,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        317
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        22,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        308
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_lowdpi.png",
+      "pdf": "synth_01_lowdpi.pdf",
+      "source_wh": [
+        546,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        352
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        26,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        364
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_noise.png",
+      "pdf": "synth_01_noise.pdf",
+      "source_wh": [
+        957,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        254
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        18,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        252
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_01_skew.png",
+      "pdf": "synth_01_skew.pdf",
+      "source_wh": [
+        772,
+        208
+      ],
+      "rendered_wh": [
+        1289,
+        348
+      ],
+      "rendered_longest": 1289,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_blur.png",
+      "pdf": "synth_02_blur.pdf",
+      "source_wh": [
+        940,
+        188
+      ],
+      "rendered_wh": [
+        1289,
+        258
+      ],
+      "rendered_longest": 1289,
+      "image_grid_thw": [
+        1,
+        18,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        252
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_clean.png",
+      "pdf": "synth_02_clean.pdf",
+      "source_wh": [
+        715,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        339
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_lowdpi.png",
+      "pdf": "synth_02_lowdpi.pdf",
+      "source_wh": [
+        548,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        351
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        26,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        364
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_noise.png",
+      "pdf": "synth_02_noise.pdf",
+      "source_wh": [
+        638,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        380
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_02_skew.png",
+      "pdf": "synth_02_skew.pdf",
+      "source_wh": [
+        721,
+        208
+      ],
+      "rendered_wh": [
+        1288,
+        372
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        26,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        364
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_blur.png",
+      "pdf": "synth_03_blur.pdf",
+      "source_wh": [
+        503,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        482
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        34,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        476
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_clean.png",
+      "pdf": "synth_03_clean.pdf",
+      "source_wh": [
+        702,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        345
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        24,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        336
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_lowdpi.png",
+      "pdf": "synth_03_lowdpi.pdf",
+      "source_wh": [
+        424,
+        149
+      ],
+      "rendered_wh": [
+        1288,
+        453
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        32,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        448
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_noise.png",
+      "pdf": "synth_03_noise.pdf",
+      "source_wh": [
+        549,
+        188
+      ],
+      "rendered_wh": [
+        1288,
+        442
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        32,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        448
+      ]
+    },
+    {
+      "corpus": "synth",
+      "fixture": "synth_03_skew.png",
+      "pdf": "synth_03_skew.pdf",
+      "source_wh": [
+        708,
+        208
+      ],
+      "rendered_wh": [
+        1288,
+        379
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        28,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        392
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "commons_example_receipt.png",
+      "pdf": "commons_example_receipt.pdf",
+      "source_wh": [
+        500,
+        650
+      ],
+      "rendered_wh": [
+        991,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        70
+      ],
+      "model_input_wh": [
+        980,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "commons_test_ocr_document.jpg",
+      "pdf": "commons_test_ocr_document.pdf",
+      "source_wh": [
+        1920,
+        2485
+      ],
+      "rendered_wh": [
+        996,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        72
+      ],
+      "model_input_wh": [
+        1008,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "german_official_print.jpg",
+      "pdf": "german_official_print.pdf",
+      "source_wh": [
+        1920,
+        2518
+      ],
+      "rendered_wh": [
+        983,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        70
+      ],
+      "model_input_wh": [
+        980,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "receipt_historical.png",
+      "pdf": "receipt_historical.pdf",
+      "source_wh": [
+        768,
+        1552
+      ],
+      "rendered_wh": [
+        638,
+        1288
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        92,
+        46
+      ],
+      "model_input_wh": [
+        644,
+        1288
+      ]
+    },
+    {
+      "corpus": "cc0",
+      "fixture": "simple_form.png",
+      "pdf": "simple_form.pdf",
+      "source_wh": [
+        452,
+        317
+      ],
+      "rendered_wh": [
+        1288,
+        904
+      ],
+      "rendered_longest": 1288,
+      "image_grid_thw": [
+        1,
+        64,
+        92
+      ],
+      "model_input_wh": [
+        1288,
+        896
+      ]
+    }
+  ],
+  "image_processor": "Qwen2VLImageProcessorFast",
+  "image_processor_note": "transformers 4.57.3 loads the FAST image processor by default even though the checkpoint saved a slow one; left at the default because that is what the toolkit's own serving stack gets",
+  "preprocessor_config": {
+    "min_pixels": 3136,
+    "max_pixels": 12845056,
+    "patch_size": 14,
+    "merge_size": 2,
+    "image_mean": [
+      0.48145466,
+      0.4578275,
+      0.40821073
+    ],
+    "image_std": [
+      0.26862954,
+      0.26130258,
+      0.27577711
+    ]
+  },
+  "chat_prompt_applied": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it naturally. Convert equations to LateX and tables to HTML.\nIf there are any figures or charts, label them with the following markdown syntax ![Alt text describing the contents of the figure](page_startx_starty_width_height.png)\nReturn your output as markdown, with a front matter section on top specifying values for the primary_language, is_rotation_valid, rotation_correction, is_table, and is_diagram parameters.<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n",
+  "chat_template_note": "the request carries no system message; the checkpoint's chat template injects '<|im_start|>system\\nYou are a helpful assistant.<|im_end|>' and renders content in order, so the instruction text precedes <|vision_start|><|image_pad|><|vision_end|>"
+}

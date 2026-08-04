@@ -1,0 +1,222 @@
+[
+  {
+    "fixture": "commons_example_receipt.png",
+    "stem": "commons_example_receipt",
+    "attempts": [
+      {
+        "attempt": 0,
+        "temperature": null,
+        "decoding": "greedy",
+        "valid": true,
+        "parse_error": null,
+        "prompt_tokens": 1740,
+        "completion_tokens": 428,
+        "total_tokens": 2168,
+        "finish_reason": "stop",
+        "gen_s": 40.38,
+        "deadline_fired": false,
+        "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+        "image_wh": [
+          991,
+          1288
+        ],
+        "processor_grid_thw": [
+          1,
+          92,
+          70
+        ],
+        "front_matter": {
+          "primary_language": "en",
+          "is_rotation_valid": true,
+          "rotation_correction": 0,
+          "is_table": false,
+          "is_diagram": false
+        },
+        "rotation_in": 0
+      }
+    ],
+    "n_attempts": 1,
+    "final_attempt": 0,
+    "final_temperature": null,
+    "deterministic": true,
+    "gen_s": 40.38,
+    "natural_text_chars": 808,
+    "raw_chars": 918
+  },
+  {
+    "fixture": "commons_test_ocr_document.jpg",
+    "stem": "commons_test_ocr_document",
+    "attempts": [
+      {
+        "attempt": 0,
+        "temperature": null,
+        "decoding": "greedy",
+        "valid": true,
+        "parse_error": null,
+        "prompt_tokens": 1786,
+        "completion_tokens": 725,
+        "total_tokens": 2511,
+        "finish_reason": "stop",
+        "gen_s": 68.69,
+        "deadline_fired": false,
+        "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+        "image_wh": [
+          996,
+          1288
+        ],
+        "processor_grid_thw": [
+          1,
+          92,
+          72
+        ],
+        "front_matter": {
+          "primary_language": "en",
+          "is_rotation_valid": true,
+          "rotation_correction": 0,
+          "is_table": false,
+          "is_diagram": false
+        },
+        "rotation_in": 0
+      }
+    ],
+    "n_attempts": 1,
+    "final_attempt": 0,
+    "final_temperature": null,
+    "deterministic": true,
+    "gen_s": 68.69,
+    "natural_text_chars": 2989,
+    "raw_chars": 3099
+  },
+  {
+    "fixture": "german_official_print.jpg",
+    "stem": "german_official_print",
+    "attempts": [
+      {
+        "attempt": 0,
+        "temperature": null,
+        "decoding": "greedy",
+        "valid": true,
+        "parse_error": null,
+        "prompt_tokens": 1740,
+        "completion_tokens": 385,
+        "total_tokens": 2125,
+        "finish_reason": "stop",
+        "gen_s": 36.65,
+        "deadline_fired": false,
+        "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+        "image_wh": [
+          983,
+          1288
+        ],
+        "processor_grid_thw": [
+          1,
+          92,
+          70
+        ],
+        "front_matter": {
+          "primary_language": "de",
+          "is_rotation_valid": true,
+          "rotation_correction": 0,
+          "is_table": false,
+          "is_diagram": false
+        },
+        "rotation_in": 0
+      }
+    ],
+    "n_attempts": 1,
+    "final_attempt": 0,
+    "final_temperature": null,
+    "deterministic": true,
+    "gen_s": 36.65,
+    "natural_text_chars": 947,
+    "raw_chars": 1057
+  },
+  {
+    "fixture": "receipt_historical.png",
+    "stem": "receipt_historical",
+    "attempts": [
+      {
+        "attempt": 0,
+        "temperature": null,
+        "decoding": "greedy",
+        "valid": true,
+        "parse_error": null,
+        "prompt_tokens": 1188,
+        "completion_tokens": 489,
+        "total_tokens": 1677,
+        "finish_reason": "stop",
+        "gen_s": 41.39,
+        "deadline_fired": false,
+        "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+        "image_wh": [
+          638,
+          1288
+        ],
+        "processor_grid_thw": [
+          1,
+          92,
+          46
+        ],
+        "front_matter": {
+          "primary_language": "en",
+          "is_rotation_valid": true,
+          "rotation_correction": 0,
+          "is_table": false,
+          "is_diagram": false
+        },
+        "rotation_in": 0
+      }
+    ],
+    "n_attempts": 1,
+    "final_attempt": 0,
+    "final_temperature": null,
+    "deterministic": true,
+    "gen_s": 41.39,
+    "natural_text_chars": 746,
+    "raw_chars": 856
+  },
+  {
+    "fixture": "simple_form.png",
+    "stem": "simple_form",
+    "attempts": [
+      {
+        "attempt": 0,
+        "temperature": null,
+        "decoding": "greedy",
+        "valid": true,
+        "parse_error": null,
+        "prompt_tokens": 1602,
+        "completion_tokens": 104,
+        "total_tokens": 1706,
+        "finish_reason": "stop",
+        "gen_s": 11.41,
+        "deadline_fired": false,
+        "chat_prompt_head": "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n<|im_start|>user\nAttached is one page of a document that you must process. Just return the plain text representation of this document as if you were reading it na",
+        "image_wh": [
+          1288,
+          904
+        ],
+        "processor_grid_thw": [
+          1,
+          64,
+          92
+        ],
+        "front_matter": {
+          "primary_language": "en",
+          "is_rotation_valid": true,
+          "rotation_correction": 0,
+          "is_table": false,
+          "is_diagram": false
+        },
+        "rotation_in": 0
+      }
+    ],
+    "n_attempts": 1,
+    "final_attempt": 0,
+    "final_temperature": null,
+    "deterministic": true,
+    "gen_s": 11.41,
+    "natural_text_chars": 252,
+    "raw_chars": 362
+  }
+]
