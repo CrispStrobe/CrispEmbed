@@ -51,7 +51,7 @@ def _excepthook(et, ev, tb):
     print(msg, flush=True)
 sys.excepthook = _excepthook
 
-hf_token = kh.resolve_hf_token()
+hf_token = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (F9b)
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
 # --- deps. Pin transformers==4.57.6: the Kaggle image's build crashes BidirLM's Qwen2
