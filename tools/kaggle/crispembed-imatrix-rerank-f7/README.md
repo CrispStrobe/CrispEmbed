@@ -76,6 +76,73 @@ miniconda torch mis-executes BERT-class forwards — never use it as reference).
 Result is printed and uploaded as `…-g7c-f7-spotcheck.txt`. Non-fatal by
 design: the artifacts are already published by then.
 
+## Result (kernel v1, 2026-08-05, ~40 min, all 7 models, 0 failures)
+
+**Coverage — the defect is gone everywhere.** Every re-collected `.imatrix` has
+`leaf_N=0`, and the quantizer's own stdout confirms the tensors took importance
+(`imatrix vectors loaded` → `N with imatrix`; the gap is the F7 alias expanding
+one merged QKV vector into three per-layer weights):
+
+| model | vectors loaded | `N with imatrix` / quantized | before |
+|---|--:|--:|--:|
+| ms-marco-MiniLM-L-6-v2 | 36 | **36** / 38 | 18 |
+| ms-marco-MiniLM-L-12-v2 | 72 | **72** / 74 | 36 |
+| mxbai-rerank-xsmall-v1 | 72 | **72** / 74 | 60 |
+| mxbai-rerank-base-v1 | 72 | **72** / 74 | 60 |
+| bge-reranker-base (control) | 72 | **72** / 74 | 72 |
+| jina-reranker-v2-base-ml | 48 | **72** / 74 | 36 |
+| bge-reranker-v2-m3 | 96 | **144** / 146 | 72 |
+
+**A/B, mean Kendall-tau (n=30 pairs × 6 docs) and mean `|dscore|` vs the
+full-precision gold**, old published run → this run:
+
+| model | q4_k (no imx) | q4_k+imx old | q4_k+imx new | iq4_xs old | iq4_xs new |
+|---|--:|--:|--:|--:|--:|
+| ms-marco-L-6 † | .9689/.145 | .9333/.0069 | .9644/.130 | .9467/.0095 | .9644/.138 |
+| ms-marco-L-12 † | .9556/.169 | .9289/.0076 | .9600/.166 | .9156/.0090 | .9556/.165 |
+| mxbai-xsmall | .7289/.038 | .6533/.0315 | .6978/.0268 | .7422/.0317 | .6978/.0302 |
+| mxbai-base | .7911/.102 | .7156/.0580 | .7644/.0737 | .7556/.0501 | .7378/.0498 |
+| bge-reranker-base | .9511/.446 | .9511/.3165 | .9511/.3165 | .9333/.3694 | .9333/.3694 |
+| jina-reranker-v2 | .9289/.134 | .9422/.1032 | .9422/**.0792** | .9378/.0979 | .9467/**.0903** |
+| bge-reranker-v2-m3 | .9244/.400 | .9244/.3053 | **.9556**/**.2245** | .8933/.4101 | **.9467**/**.2546** |
+
+† ms-marco `dscore` is NOT comparable across the G7c boundary: the old run
+scored the broken 1-layer head (±0.2 range), this one the corrected 2-layer
+head (±11). Tau is.
+
+`bge-reranker-base` reproduces its old numbers to 4 dp on all four arms — the
+expected control result (its imatrix was already clean), and it doubles as
+proof the pipeline is deterministic, so the other deltas are real.
+
+Clear wins: **bge-reranker-v2-m3** (tau .9244→.9556, dscore −26 %) and
+**jina** (dscore −23 %). Both ms-marco models improve on tau. **mxbai is the
+one soft spot** — see below.
+
+**Spot-check** (`ms-marco-MiniLM-L-6-v2-g7c-f7-spotcheck.txt`), uploaded
+artifact re-downloaded from HF and scored against ONNX Runtime on
+`Xenova/ms-marco-MiniLM-L-6-v2`:
+
+```
+ONNX ref                       [0] +8.846 [1] -10.886 [2] +7.401 [3] -11.225 [4] -5.200 [5] -4.944
+…-g7c.gguf (f16 base)          max|delta|=0.0003  score_range=20.071  HF-scale OK
+…-q4_k-imatrix-g7c-f7.gguf     max|delta|=0.0994  score_range=20.091  HF-scale OK
+…-iq4_xs-g7c-f7.gguf           max|delta|=0.3495  score_range=19.785  HF-scale OK
+```
+
+### Recorded, not fixed: mxbai q/k importance has the wrong provenance
+
+The mxbai coverage digest shows `blk.N.attn_q.weight` and `blk.N.attn_k.weight`
+collected **separately** from `enc.N.attn.qkv_merged.weight`. That is DeBERTa-v2
+disentangled attention: `src/crispembed.cpp` applies `q_w`/`k_w` a second time to
+the relative-position embeddings (`Pk = mul_mat(k_w, P)`, `Pq = mul_mat(q_w,
+P_p2c)`), and those matmuls name the weights. `tools/quantize.cpp` prefers a
+direct name match over the alias, so post-F7 mxbai's q and k take importance
+collected **only over rel-position inputs** (T×T rows, dominating any merge)
+while v takes the correct hidden-state vector. This is the likely cause of
+mxbai being the only family where a tail arm regresses (iq4_xs tau .7422→.6978
+xsmall, .7556→.7378 base). Options if pursued: prefer the merged alias for
+DeBERTa, or accumulate both into one vector. Needs its own A/B — not touched here.
+
 ## Push
 
 ```bash
