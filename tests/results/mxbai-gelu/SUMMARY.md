@@ -92,3 +92,19 @@ MXGELU_WORK=<workdir> python tabulate.py
 conversions), `mxbai-{xsmall,base}-q8_0-new.gguf`, and the two downloaded
 shipped `*-q8_0.gguf` files. Raw per-arm outputs: `arms_raw.txt`,
 `scores.md`; ONNX reference: `onnx_ref.txt`.
+
+## Re-ship (2026-08-05, coordinator's own work — finding 2 actioned)
+
+Both models regenerated from fresh `mixedbread-ai` checkpoints with the main
+converter (ollama mode, `pooler: ok (act=gelu)` both), quantized to the same
+tier set the repos ship (q8_0 / q4_k / q4_k+imatrix / iq4_xs; the imatrix
+quants use the fresh `-f7` imatrices, "72 with imatrix" both models), and
+gated on decoded scores vs the committed ONNX refs before upload: f16 max
+|delta| 3e-6 (xsmall) / 9e-6 (base) with all orderings identical; q8_0
+0.04-0.10; 4-bit tiers 0.14-0.71 with two documented near-tie swaps (xsmall
+q4_k q1: top-2 pair at ref gap 0.22 both near zero; base iq4_xs q1: deep-tail
+gap 0.10) — known 4-bit behavior, q8_0 stays the pinned tier. 10 artifacts
+uploaded as `*-g7c.gguf` (old files kept for released binaries' pins),
+READMEs note the defect, registry aliases re-pointed + 2 new
+`model_hashes.h` pins, fresh-download SHA-verified spot-runs on both aliases
+(HF-scale scores, correct top-1).

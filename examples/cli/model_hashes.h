@@ -254,6 +254,12 @@ static const ModelHash k_model_hashes[] = {
       "901aa5f99210dd3ed0d6e9d8bd1e5511d587c5df43591f51a88458e1a02d53c3" },
     { "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0.gguf",
       "12ad024e86cb22d285e73adf1d510840826357e73a95a7460399a8e25f9b7b2d" },
+    // -g7c re-conversions (2026-08-05): the original artifacts were missing the
+    // DeBERTa ContextPooler stage — see tests/results/mxbai-gelu/SUMMARY.md.
+    { "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
+      "4dbf6645891bb8816e922025e634b1640b7e010ae2ab96d900d2c06d796a76b8" },
+    { "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0-g7c.gguf",
+      "5537465fc0f0c23d498db409775226b5cd7b172c64f477f2558fe2772dc5a935" },
     { "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base-iq4_xs.gguf",
       "ab1b9185817865a8a227d1a75b84d37e637e78b7f228db567c3907d64ae9bffc" },
     { "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base-q4_k-imatrix.gguf",
