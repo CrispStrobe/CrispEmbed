@@ -126,6 +126,36 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## layout_detect Phase 1 (O1): steady-state Metal compute, no warmup story; F16 conv path measured SLOWER on M1 and stays gated (2026-08-05)
+
+Follow-up to the Phase-2 fix below, branch `perf/layout-phase1`,
+`layout-heron-f32.gguf` / `scan_page_pd.png`, Metal build.
+
+- **Warm == cold.** With the new `CRISPEMBED_LAYOUT_REPEAT=N` CLI diagnostic,
+  three back-to-back detects in one process timed 1603.7 / 1404.1 / 1524.1 ms
+  of Phase 1 — no meaningful pipeline-warmup component. The new bench-line
+  split shows graph compute is all of it (feat readback+misc: 5-8 ms).
+- **The ~1.4 s is the post-9.8x state**: the in-code metal-prof note records
+  direct convs at 11.4 s and the im2col+GEMM rewrite at ~1.2 s; the graph is
+  ~99.6% GPU-execute. For a ~100-GFLOP-class detector this is a few percent
+  of M1 f32 peak — the inefficiency is per-op (im2col traffic, f32 GEMM), not
+  graph-structural.
+- **`LAYOUT_CONV_F16=1` (new, opt-in, default OFF) LOSES on M1 Metal:**
+  Phase 1 2241/2181 ms vs 1661/1408 ms F32 in the same interleaved session.
+  The path composes F32-activation `ggml_im2col` with an F16 destination +
+  F16xF16 `mul_mat` (the fork's `ggml_conv_2d` forces F32 im2col for F32
+  activations, and Metal's im2col kernel rejects an F16 *source* — the naive
+  cast-both-inputs version aborts with `unsupported op 'IM2COL'`). Quality is
+  not the problem: same 20 regions, same order, scores within ±0.002, boxes
+  within ±0.1 px. Kept gated per the plausible-path rule — on F16-tensor-core
+  backends (CUDA/A1000) this is the first one-env A/B to run.
+- **O2a rider:** the Phase-2 self-attn block re-read and re-transposed
+  ~0.85 MB x 6 layers of immutable weights every call; now cached per layer.
+  Regions byte-identical (verified pre- and post-format). The saving is below
+  the loaded dev box's noise floor and is recorded as removed work, not a ms
+  claim. Next Phase-2 candidate: value projection on GPU (est. 101 -> ~30 ms
+  at `-t 4`), open as O2b.
+
 ## scunet_denoise R7 closed by measurement: weight dequant copies are ~0.1% of a tile pass — no DequantCache (Apple M1, 2026-08-05)
 
 The R7 backlog item ("only SR engine without a DequantCache") argued from
