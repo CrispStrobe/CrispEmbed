@@ -3399,37 +3399,16 @@ extern "C" int crispembed_rerank_batch(crispembed_context * ctx, const char * qu
     if (!ctx || !query || !documents || !out_scores || n_docs <= 0) return 0;
     if (!ctx->model.is_reranker || ctx->is_decoder) return 0;
 
-    // Warm the classifier cache with a dummy call
-    // (actual encoding happens per-doc below)
-    if (!ctx->rerank_cache_valid) {
-        // Force cache population by reading weights directly
-        const int H = ctx->model.hparams.n_embd;
-        if (ctx->model.classifier_2layer) {
-            ctx->rerank_dw.resize(H * H);
-            ctx->rerank_db.resize(H);
-            ctx->rerank_ow.resize(H);
-            ggml_backend_tensor_get(ctx->model.classifier_dense_w, ctx->rerank_dw.data(), 0, H * H * sizeof(float));
-            ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H * sizeof(float));
-            ggml_backend_tensor_get(ctx->model.classifier_out_w, ctx->rerank_ow.data(), 0, H * sizeof(float));
-            ctx->rerank_out_has_bias = ctx->model.classifier_out_b != nullptr;
-            if (ctx->rerank_out_has_bias)
-                ggml_backend_tensor_get(ctx->model.classifier_out_b, &ctx->rerank_out_bias, 0, sizeof(float));
-        } else if (ctx->model.classifier_w) {
-            ctx->rerank_ow.resize(H);
-            ggml_backend_tensor_get(ctx->model.classifier_w, ctx->rerank_ow.data(), 0, H * sizeof(float));
-            ctx->rerank_out_has_bias = ctx->model.classifier_b != nullptr;
-            if (ctx->rerank_out_has_bias)
-                ggml_backend_tensor_get(ctx->model.classifier_b, &ctx->rerank_out_bias, 0, sizeof(float));
-        }
-        ctx->rerank_has_pooler = ctx->model.pooler_w && ctx->model.pooler_b;
-        if (ctx->rerank_has_pooler) {
-            ctx->rerank_pw.resize(H * H);
-            ctx->rerank_pb.resize(H);
-            ggml_backend_tensor_get(ctx->model.pooler_w, ctx->rerank_pw.data(), 0, H * H * sizeof(float));
-            ggml_backend_tensor_get(ctx->model.pooler_b, ctx->rerank_pb.data(), 0, H * sizeof(float));
-        }
-        ctx->rerank_cache_valid = true;
-    }
+    // The classifier/pooler cache is populated lazily by
+    // crispembed_apply_classifier() below, which dequantises the 2-D weights
+    // via core_cpu::to_f32. This entry point used to duplicate that block
+    // with raw H*H*sizeof(float) ggml_backend_tensor_get() calls, which
+    // overrun ggml_nbytes on a Q8_0/Q4_K weight and abort the whole process
+    // ("tensor read out of bounds") — the crash the single-document path was
+    // already fixed for. The quantizer does quantise both classifier.dense
+    // (2-layer heads: jina-reranker-v2) and pooler.weight (DeBERTa
+    // ContextPooler: mxbai-rerank), so the duplicate was live on the server's
+    // /rerank endpoint. Removed; there is nothing to warm here.
 
     int scored = 0;
     for (int d = 0; d < n_docs; d++) {
