@@ -47,6 +47,28 @@ def ranges():
     return [r for r in out if r[1] >= 0x80]  # ASCII has a fast path
 
 
+def punct_ranges():
+    """Non-ASCII P* ranges (punctuation proper, NO symbols).
+
+    CAT_P above collapses P* | S* because the BPE regex pre-tokenizers never
+    branch on the difference. The BERT pre-tokenizer DOES: HF `is_bert_punc`
+    isolates ASCII punctuation plus Unicode P* only, so a currency symbol
+    (Sc, e.g. the euro/pound sign) stays attached to its number while a
+    guillemet (Pi/Pf) is split off. Emitted as a separate table so CAT_P
+    semantics — and every existing caller — stay byte-identical.
+    """
+    out, prev, start = [], False, 0
+    for cp in range(0x110000):
+        c = (not (0xD800 <= cp < 0xE000)) and unicodedata.category(chr(cp))[0] == "P"
+        if c != prev:
+            if prev:
+                out.append((start, cp - 1))
+            start, prev = cp, c
+    if prev:
+        out.append((start, 0x10FFFF))
+    return [r for r in out if r[1] >= 0x80]  # ASCII has a fast path
+
+
 NAMES = {CAT_LU: "CAT_LU", CAT_LL: "CAT_LL", CAT_M: "CAT_M", CAT_N: "CAT_N",
          CAT_P: "CAT_P", CAT_WS: "CAT_WS", CAT_C: "CAT_C"}
 
@@ -67,16 +89,9 @@ HEADER = '''// src/core/unicode_categ.h -- GENERATED, do not edit by hand.
 //     every non-ASCII letter in BOTH classes an all-caps German word splits
 //     after its umlaut ("AERGER" with an umlaut -> "AE" + "RGER").
 //
-// ⚠ MERGE NOTE: branch `feat/tokenize-simple-audit` adds `core/unicode_class.h`,
-// a second generated table for the same job. That one has no case information,
-// so it cannot serve the o200k split; this one is a strict SUPERSET of it and
-// maps 1:1 onto its enum:
-//     CORE_UC_L <- CAT_LU | CAT_LL | CAT_LO      CORE_UC_P <- CAT_P
-//     CORE_UC_M <- CAT_M   CORE_UC_N <- CAT_N    CORE_UC_Z <- CAT_WS
-//     CORE_UC_O <- CAT_C
-// On merge, keep THIS table, express `core_uc_class` as that mapping, and drop
-// the other generator. Both default unlisted codepoints to "letter", so the
-// approximation for unassigned codepoints is identical in either direction.
+// core/unicode_class.h derives its coarse `core_uc_class` view from this
+// table (reconciled 2026-08-04; the second generator was dropped). This is
+// the repo's single generated Unicode table — extend HERE.
 
 #pragma once
 
@@ -108,8 +123,43 @@ struct range {
 static const range k_ranges[] = {
 '''
 
-FOOTER = '''};
+MID = '''};
 static const size_t k_nranges = sizeof(k_ranges) / sizeof(k_ranges[0]);
+
+// Non-ASCII P* ranges (punctuation proper, NO symbols). CAT_P above collapses
+// P* | S* because the BPE regex pre-tokenizers never branch on the difference;
+// the BERT pre-tokenizer does (HF `is_bert_punc` = ASCII punctuation | \\p{P},
+// so a currency symbol stays attached to its number while a guillemet is
+// isolated). A separate table keeps CAT_P — and every existing caller —
+// byte-identical.
+struct cp_range {
+    uint32_t lo;
+    uint32_t hi;
+};
+
+static const cp_range k_punct_nonascii[] = {
+'''
+
+FOOTER = '''};
+static const size_t k_npunct = sizeof(k_punct_nonascii) / sizeof(k_punct_nonascii[0]);
+
+// True iff cp is a non-ASCII P* codepoint (symbols S* excluded). ASCII is the
+// caller's business — HF's BERT splitter treats ALL ASCII punctuation and
+// symbols as punctuation, which is exactly `cp < 0x80 && category(cp) == CAT_P`.
+inline bool is_punct_nonascii(uint32_t cp) {
+    if (cp < 0x80) return false;
+    size_t lo = 0, hi = k_npunct;
+    while (lo < hi) {
+        const size_t mid = (lo + hi) / 2;
+        if (cp < k_punct_nonascii[mid].lo)
+            hi = mid;
+        else if (cp > k_punct_nonascii[mid].hi)
+            lo = mid + 1;
+        else
+            return true;
+    }
+    return false;
+}
 
 // Category of one codepoint. ASCII is answered without touching the table.
 inline uint8_t category(uint32_t cp) {
@@ -171,9 +221,11 @@ inline uint32_t utf8_next(const char * s, size_t n, size_t & i) {
 
 def main():
     rs = ranges()
-    sys.stderr.write("ranges: %d\n" % len(rs))
+    ps = punct_ranges()
+    sys.stderr.write("ranges: %d, punct ranges: %d\n" % (len(rs), len(ps)))
     body = "\n".join("    { 0x%04X, 0x%04X, %s }," % (lo, hi, NAMES[c]) for lo, hi, c in rs)
-    sys.stdout.write(HEADER % unicodedata.unidata_version + body + "\n" + FOOTER + "\n")
+    pbody = "\n".join("    { 0x%04X, 0x%04X }," % (lo, hi) for lo, hi in ps)
+    sys.stdout.write(HEADER % unicodedata.unidata_version + body + "\n" + MID + pbody + "\n" + FOOTER + "\n")
 
 
 if __name__ == "__main__":
