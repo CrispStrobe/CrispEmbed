@@ -1,5 +1,131 @@
 # CrispEmbed Performance
 
+## OCR runtime residency survey — which engine computes where, and why (2026-08-05)
+
+Code-verified sweep at `9f731fb5` of every OCR-lane engine's backend selection
+and `ggml_backend_sched` composition. **The backend/residency column below was
+read out of the source, not carried from the audit tables further down this
+file** — those are stale in both directions (see "Corrections" at the end of
+this section). Timing figures are cited from their own dated sections.
+
+### The distinction that matters: loading backend != computing backend
+
+Nearly every engine calls `crispasr_init_gpu_backend()`
+(`src/core/gpu_backend_pref.h`) with a `*_FORCE_CPU` escape, so grepping for
+that call tells you almost nothing about where the math runs. Three patterns
+exist:
+
+1. **GPU sched** — `ggml_backend_sched_new({gpu, cpu_fallback}, …, 2, …)`.
+   Real GPU compute; the CPU entry is only the ggml-mandated last-backend
+   fallback.
+2. **GPU load, CPU compute** — weights pulled through a GPU backend, then a
+   *separate* `enc_sched` built over a lone `ggml_backend_cpu_init()`. The GPU
+   handle is frequently freed immediately after load. Reading the load site
+   alone misreads these as GPU engines.
+3. **CPU everywhere** — deliberate, because Metal lost the measured A/B, or
+   because the engine has no ggml graph at all.
+
+### Detector + recognizer lanes (the document baseline)
+
+| Engine | Compute default | Why | Optimizations present |
+|---|---|---|---|
+| DBNet `ocr_detect` | **CPU** (GPU only under `OCR_DETECT_USE_GPU=1`) | Metal `conv_2d`/`conv_transpose_2d` measured slower than the SIMD CPU path at these resolutions; recorded in `gpu_backend_pref.h` | ggml graph (ResNet+FPN), persistent `gallocr`, scanline box scoring, convex hull + rotating calipers, degenerate-component fallback |
+| TrOCR `math_ocr` (rec half of `dbnet_trocr`) | **GPU sched** | Transformer, matmul-bound | **Persistent single decode graph (~4x)** — one of only three engines that reuse a cgraph; beam search; dequant cache; embeddings pre-cached before the decode loop |
+| PP-OCRv6 det | **CPU** (`CRISPEMBED_PPOCRV6_DET_GPU_LOAD=1` for GPU) | Same conv verdict as DBNet | ggml graph is the default (`…_DET_SCALAR=1` restores scalar). Medium tier 6.9 s -> 1.0 s and 41.4 s -> 8.7 s vs the scalar detector |
+| PP-OCRv6 rec | **GPU sched** (shared backend) | matmul/CTC-bound | **Shape-keyed graph cache** (rebuild only on width/batch change) + **batch-fused multi-crop graph** (`CRISPEMBED_PPOCRV6_BATCH_GRAPH`, on by default; `…_BATCH_GRAPH_CPU_ONLY` restores the old CPU-only restriction) |
+| EasyOCR CRAFT + CRNN | **GPU sched** both | — | **Graph built once in `_init` and reused** (`ggml_gallocr_alloc_graph` at init) — the static input shape makes this free |
+| Surya det | **GPU sched** | — | Hybrid *by design*: stages 0-2 ggml graph, stage-3 LiteMLA CPU-scalar (runs at 38x38, cheap); BN pre-folded into conv; `nth_element` thresholds |
+| PARSeq | **GPU sched** | — | 12-layer ViT graph with flash-attn, dequant cache, cross-attention K/V precompute |
+| Tesseract-LSTM | **CPU only** — zero `ggml_build_forward_expand` in the file | Hand-written LSTM, no graph. `CRISPEMBED_TESSERACT_GPU_LOAD=1` only pulls weights and then frees the backend; T18 measured Metal init at ~85% of a one-shot CLI | All weights dequantized at load (zero runtime dequant), SIMD `core_cpu::dot_product` gates, gated int8 recurrent-kernel cache, ~30 opt-in gates (recode/DAWG/pageseg). Parallelism lives in the orchestrator: `CRISPEMBED_TESSERACT_WORKERS` 1 -> 690 ms, 4 -> 300 ms, 8 -> 292 ms |
+| `layout_detect` (RT-DETR) | **GPU sched** | — | Backbone+FPN+AIFI in one graph with flash-attn, persistent gallocr, `partial_sort` top-K |
+
+### VLM OCR engines
+
+| Engine | Compute | KV cache | Notes |
+|---|---|---|---|
+| internvl2, glm, got | GPU sched | F16 ggml, zero-copy | flash-attn; internvl2 caches the *vision* graph (`vis_graph_cached`) |
+| qwen2vl / qwen3vl / olmocr | GPU sched | F16 device-resident | fused QKV, precomputed 2D RoPE; decode graph **rebuilt per step**; manual Q@K+softmax+V, no flash |
+| deepseek_ocr2 (MoE) | GPU sched | **F32** default; `DS2_KV_F16=1` opt-in (memory win, not quality-neutral on CPU — see the G6 row) | 12 per-layer graphs per token; `DS2_FAST_DECODE=1` persistent graph **measured no win** (build+alloc was 1-6% of decode) and stays opt-in. `DS_LLM_FLASH` opt-in, slower on CPU |
+| unlimited_ocr (SAM+CLIP+MoE) | GPU sched | — | ~40 `UOCR_*` gates. `UOCR_PD=1` persistent-decode path **segfaults at gen=2** (pre-existing, opt-in, default unaffected, unowned) |
+| smoldocling | **split**: SigLIP vision on GPU, connector + LLM + KV + LM-head on CPU | F16 | G1/F4: vision 2.9-4.6x, totals 2.1-2.25x |
+| granite_vision | **split**, same shape | F16 | — |
+| **lightonocr** | **CPU only** — `ggml_backend_cpu_init()` hardcoded, no env escape | F16 persistent | Has flash-attn and a monolithic vision graph, all of it on CPU. 31.6 s cold on M1 |
+| **pix2struct** | **CPU only** | present | ggml encoder graph on a CPU-only `enc_sched` |
+
+### Math / formula / music OCR
+
+| Engine | Compute | Note |
+|---|---|---|
+| math_ocr, ppformulanet_l, smt_ocr, transcoda, tromr | GPU sched | ppformulanet_l has batched windows + precomputed RPE, but its 8-layer D=512 decoder is still scalar |
+| **bttr, hmer, posformer, mixtex, flova, ppformulanet** | **CPU** | Pattern 2's worst case: the encoders *were* ported to ggml graphs, but `enc_sched` is built over a single `ggml_backend_cpu_init()`. The "prefer GPU backend" comments above those load sites are stale — the code below them calls `ggml_backend_cpu_init()`. mixtex's Swin window attention is additionally still scalar |
+
+### SR / denoise (feeds the OCR chains)
+
+The family computes on a CPU-only `enc_sched`. `dat/hat/swinir` use `init_best`
+**only to load**, then copy dequantized weights into a CPU-resident context;
+`esrgan/safmn/restormer/instructir` skip even that copy. This is already
+recorded as reprioritized-down: there is no GPU sibling to match, so SR-on-GPU
+is unsolved research (Metal `ggml_conv_2d` + a GPU-resident weight/graph path),
+not a residency toggle. `nafnet`, `safmn` and `pplcnet_orientation` do build
+two-backend scheds and will use the GPU.
+
+### Corrections to the audit tables below
+
+- `bttr`/`posformer`/`hmer`/`flova`/`mixtex`/`ppformulanet` are listed in the
+  2026-07-11 re-verification as "DenseNet/HGNetv2 -> ggml graphs (default)".
+  True, and incomplete: those graphs run on a **CPU-only sched**, so the port
+  bought SIMD, not GPU dispatch.
+- `lightonocr` appears in the VLM maturity table with "GPU: Yes". It is
+  **CPU-only** at HEAD (`lightonocr.cpp:239`), and unlike its siblings has no
+  `*_FORCE_CPU`-style gate, so it cannot even be A/B'd without a code change.
+- The P3 "`--gpu-backend` ignored (`crispembed.cpp:81` calls `init_best()`
+  directly)" gap is **closed** — `crispembed.cpp:101` routes through
+  `crispasr_init_gpu_backend()`.
+- "0 runtimes reuse the built cgraph" is no longer literally true: math_ocr
+  (persistent decode graph), easyocr (static-shape init-time graph) and
+  ppocrv6 rec (shape-keyed cache) all do. The claim holds for the VLM decode
+  step.
+
+### Where more optimization would pay, ranked by strength of evidence
+
+1. **Tesseract recognizer batching + weight/graph reuse.** The only gap with
+   hard numbers on both ends: recognition is 260-354 ms of a ~310 ms stage on
+   `scan_strip`, and **38.34 s of 38.69 s** on the German Fraktur page against
+   official Tesseract's 9.34 s — an explicit speed *and* quality blocker.
+   Detector and crop are 3-4 ms and 102/250 ms. `…_REUSE_SCRATCH` exists but
+   its variance (279 vs 282 ms in one pair, 329-338 vs ~300 in others) is too
+   wide to claim a win; it needs a warm/paired protocol before anything else.
+2. **`layout_detect` deformable cross-attention** — still a 6-nested-loop CPU
+   bilinear grid-sample, instrumented as the dominant Phase-2 decoder cost
+   (`_deform_ms`, `layout_detect.cpp:1430`). Last surviving June P0.
+3. **The CPU-sched formula encoders** (bttr, hmer, posformer, mixtex, flova,
+   ppformulanet, pix2struct) — the expensive half of the port is done; they are
+   one `sched_new` argument from GPU dispatch. Best work-to-payoff ratio here,
+   but the DBNet/PP-OCRv6-det verdict warns that conv-heavy graphs can lose on
+   Metal, so each needs its own A/B.
+4. **lightonocr's hardcoded CPU backend** — a flash-attn, monolithic-graph
+   engine spending 31.6 s cold on CPU with no gate to A/B it.
+5. **Decode-step graph caching — but measure first.** Still the nominal #1
+   unrealized lever, yet the one time it was built (deepseek T14) it won
+   nothing because build+alloc was 1-6% of decode. qwen2vl/granite/smoldocling
+   are the remaining candidates; profile the overhead fraction before porting.
+   Also blocked on WebGPU (traps `unreachable`), so it needs per-backend
+   gating.
+6. **`conv2d_cpu` per-patch gather -> true im2col+GEMM, and multithread it.**
+   `core/cpu_ops.h:577`, patch buffer at `:609` — one patch at a time into a
+   `thread_local` buffer, with a SIMD dot per output channel. This is
+   the shared floor under every CPU-resident conv engine — the whole SR family,
+   DBNet, PP-OCRv6 det, the DenseNet encoders. Single highest-leverage core
+   change.
+7. **`scunet_denoise`** — the only SR engine with no `DequantCache` (18 other
+   `.cpp` files have one; `grep DequantCache src/scunet_denoise.cpp` is empty).
+   Its Swin blocks are still scalar, though no longer serial: WMSA is now
+   window-parallel across `n_threads` (`scunet_denoise.cpp:37,269,538`), which
+   the stale audit row below predates.
+8. **ggml-metal ICB (indirect command buffer) replay** — Metal decode is
+   per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
+   highest cost, upstream-shaped work.
+
 ## Embedder one-shot CLI init: 4.8x, and it was a 683 MB shader-cache file (Apple M1 Metal, 2026-08-05)
 
 A one-shot `crispembed -m model.gguf --json "text"` paid ~0.9 s of fixed init
