@@ -50,6 +50,37 @@ static std::map<std::string, std::vector<float>> g_imatrix;
 // src/crispembed.cpp and guarded by tests/test_imatrix_alias.cpp.
 using core_imatrix::qkv_merged_alias;
 
+// How to resolve importance for an attn q/k/v weight that has BOTH a direct
+// entry and a merged-QKV alias entry (`CRISPEMBED_QUANT_IMATRIX_QKV`):
+//
+//   direct (default) — the shipped behaviour: a direct entry wins.
+//   merged           — the alias wins; the direct entry is ignored.
+//   sum              — element-wise sum of both vectors.
+//
+// It matters for DeBERTa-v2 (mxbai-rerank-*): disentangled attention applies
+// L.q_w / L.k_w a SECOND time, to the relative-position embeddings, under the
+// weights' own GGUF names. The collector therefore files a direct
+// blk.N.attn_{q,k}.weight entry whose input statistics come from the shared
+// rel-position tensor, not the token stream, and that entry shadows the
+// correct merged-alias vector. See tests/results/mxbai-qk-imatrix/SUMMARY.md.
+enum class qkv_imatrix_mode { direct, merged, sum };
+
+static qkv_imatrix_mode g_qkv_mode = qkv_imatrix_mode::direct;
+
+static void init_qkv_imatrix_mode() {
+    const char * e = std::getenv("CRISPEMBED_QUANT_IMATRIX_QKV");
+    if (!e || !*e) return;
+    if (strcmp(e, "merged") == 0) {
+        g_qkv_mode = qkv_imatrix_mode::merged;
+    } else if (strcmp(e, "sum") == 0) {
+        g_qkv_mode = qkv_imatrix_mode::sum;
+    } else if (strcmp(e, "direct") != 0) {
+        fprintf(stderr, "imatrix: unknown CRISPEMBED_QUANT_IMATRIX_QKV='%s' (direct|merged|sum), using direct\n", e);
+        return;
+    }
+    fprintf(stderr, "imatrix: attn q/k/v importance mode = %s\n", e);
+}
+
 static bool load_imatrix(const std::string & path) {
     struct ggml_context * ctx = nullptr;
     struct gguf_init_params p = { /*no_alloc*/ false, /*ctx*/ &ctx };
@@ -720,18 +751,33 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             // Importance matrix (if loaded and shape-matched): steers k-quant/IQ
             // precision toward the columns the calibration data actually exercised.
             const float * imatrix = nullptr;
+            std::vector<float> imatrix_sum; // storage for the `sum` mode; must outlive the call below
             if (!g_imatrix.empty()) {
                 auto it = g_imatrix.find(sname);
+                // BERT-family attn q/k/v statistics live under the runtime's
+                // merged-QKV name (same input width). Usually there is no
+                // direct entry at all and the alias is the only source; when
+                // both exist, g_qkv_mode decides.
+                const std::string alias = qkv_merged_alias(sname);
+                auto ait = alias.empty() ? g_imatrix.end() : g_imatrix.find(alias);
+                const bool both = it != g_imatrix.end() && ait != g_imatrix.end();
                 if (it == g_imatrix.end()) {
-                    // No direct entry: BERT-family attn q/k/v statistics live
-                    // under the runtime's merged-QKV name (same input width).
-                    // A direct entry, if one ever exists, stays preferred.
-                    const std::string alias = qkv_merged_alias(sname);
-                    if (!alias.empty()) it = g_imatrix.find(alias);
+                    it = ait;
+                } else if (both && g_qkv_mode == qkv_imatrix_mode::merged) {
+                    it = ait;
                 }
                 if (it != g_imatrix.end()) {
                     if ((int64_t)it->second.size() == t->ne[0]) {
                         imatrix = it->second.data();
+                        if (both && g_qkv_mode == qkv_imatrix_mode::sum && ait->second.size() == it->second.size()) {
+                            // Both vectors are per-input-column mean squared
+                            // activations over the same column axis, so an
+                            // element-wise sum keeps every column exercised by
+                            // either provenance visible to the quantizer.
+                            imatrix_sum = it->second;
+                            for (size_t c = 0; c < imatrix_sum.size(); c++) imatrix_sum[c] += ait->second[c];
+                            imatrix = imatrix_sum.data();
+                        }
                         n_imatrix++;
                         printf("(imatrix) ");
                     } else {
@@ -845,6 +891,7 @@ int main(int argc, char ** argv) {
 
     if (!imatrix_path.empty()) {
         load_imatrix(imatrix_path); // non-fatal: falls back to unweighted if empty
+        init_qkv_imatrix_mode();
     }
 
     if (!quantize_model(fname_inp, fname_out, it->second)) {
