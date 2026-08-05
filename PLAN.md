@@ -14,7 +14,7 @@ races). Remove the row when the branch lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-08-05 | *(landed, coordinator's own work)* | **G2/F5 MERGED** (`d5788a88` port + `e81c827e` acceptance): DeepSeek-OCR2 dynamic-crop, opt-in `DS2_CROP_MODE=1`, blueprint line-by-line at pinned `aaa02f38`. Full gates in `tests/results/g2/SUMMARY.md`: crop-off byte-identical to f1 baselines 10/10 both backends; cc0 raw CER mean Metal 0.657→**0.236**, CPU 0.279→**0.185 (beats the A4 reference 0.187)**; commons_test 0.0074 both backends; **F1's Metal german 1024-cap FIXED** (366 tok, CER 2.14→0.195); gold gate cer=0.000 both manifest entries. Stays opt-in per A/B rule: Metal `receipt_historical` regresses 0.138→0.305 with crops (CPU improves — Metal-specific) + synth_01_noise 0.015→0.045. **Follow-up G2b:** diagnose that Metal crop regression, then decide the default flip (reference contract runs crop_mode=True). `~/.cache/hf-regression` restored by the gold-gate re-download | **DONE** |
-| 2026-08-05 | `feat/ds2-kv-f16-quant` *(delegated; coordinator verifies before merge)* | **Picked (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — byte-compare + CER vs the `tests/results/f1/` baselines, KV-alloc memory lines, decode medians + one interleaved load-gated pair; results to `tests/results/g6/`. Promotion decision stays with the coordinator | **IN PROGRESS** |
+| 2026-08-05 | *(landed round-3 wave 2)* | **G6 MERGED** (`510f35d0` results + `73beea9f` gate fix, coordinator-verified: byte-identity claims re-checked with my own cmp both directions, diff scope confirmed results-only, gate fix spot-run in both spellings). Verdict: `DS2_KV_F16` **stays opt-in** — memory feature (KV 165→82.5 MB, −84 MB footprint), timing parity (~1% within noise, 4 interleaved pairs), NOT quality-neutral on CPU (all 5 cc0 pages perturb, aggregate +0.008 CER; Metal 24/25 identical, its one "win" is a cap-adjacent greedy lottery). Agent found the gate was presence-based (`DS2_KV_F16=0` ENABLED f16) — now value-parsed. Full tables `tests/results/g6/SUMMARY.md`. **G5 DONE + MERGED** (`5fcd7006`, coordinator's own A/B + decision): embed one-shot defaults to `min(4, cores)` threads (−t1 lost 2-3× on every model tested: e5 0.84→0.40 s, arctic 3.05→1.01, f2llm-330m 2.95→1.01; embeddings md5-identical across thread counts); Metal stays default backend (model-dependent vs CPU-t4), `CRISPEMBED_ONESHOT_CPU` stays OFF | **DONE** |
 | 2026-08-05 | *(landed round-3 wave 1)* | **G4 MERGED** (`c1ccb1f4`, coordinator-verified: diff inspected — single-site hoist in `crispasr_init_gpu_backend()` covers all ~40 lanes with the EMBED path's exact guard, + two direct-`init_best` bypass sites (nafnet enc, safmn opt-in); my own pix2tex spot-run: 3 arms byte-identical, cap diagnostic fires on new binary, `MAX_MB=0` bypass restores archive load, MTL0 in every stderr; `test-backend-smoke` re-run green). Agent's per-lane table in its branch commit message; clean verdict pix2tex init 985→313 ms (~1 ms/MB of the 652 MiB archive). Brief corrections found: SmolDocling is CPU-only (no Metal lane), `CRISPEMBED_INIT_BENCH` exists only in the EMBED path. **683 MB `~/Library/Caches/ggml-metal/Apple_M1.archive` DELETED** (the scheduled coordinator step). **G3 DONE + MERGED** (`464f812f`): local Metal+CPU cross-check reproduced the Kaggle F7b numbers (CPU to 4dp; Metal delta ≤0.002, same ordering) → BOTH arctic sub-Q8 aliases re-pinned to `-f7` (q4_k+imx .9614→.9937 mean, iq4_xs .9757→.9867), fresh-download SHA-verified spot-run OK, `test-imatrix-alias` 59/59. q8_0 stays default. **Granite-r2 decision: NO new sub-Q8 aliases** (311m gain .99745→.99823 negligible, 97m artifacts stay HF-only; ab numbers in `cstr/granite-embedding-*-r2-GGUF/*-imatrix-ab.txt`) | **DONE** |
 | 2026-08-05 | *(landed round-3 wave 1)* | **G7d MERGED** (`10d160ba`, coordinator-verified: diff inspected, `require=` kwarg confirmed in the harness the drivers bootstrap, py_compile + vendored-harness guard re-run myself — 106 checks, 0 failures, 15 copies): the three upload-bearing drivers (`unlimited-ocr-convert`, `crispembed-splade-fix`, `deepseek-ocr2-convert`) now call `resolve_hf_token(require=True)` before any compute | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
@@ -28,7 +28,97 @@ races). Remove the row when the branch lands.
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
-## HANDOVER — round 3 (written 2026-08-05 evening, for the next orchestrator session)
+## HANDOVER — round 4 (written 2026-08-05 late, for the next orchestrator session)
+
+Round 3 is COMPLETE — every G-item except G1/G8 consumed, all
+coordinator-verified before merge: **G2** (deepseek dynamic-crop port
+`d5788a88`+`e81c827e` — CPU cc0 CER now BEATS the A4 reference, Metal german
+1024-cap fixed; opt-in `DS2_CROP_MODE=1`), **G3** (arctic sub-Q8 aliases
+re-pinned to `-f7` `464f812f`, granite-r2 alias decision: none), **G4**
+(Metal cache cap in every GPU lane `c1ccb1f4`; 683 MB archive DELETED),
+**G5** (embed one-shot `-t` default → min(4,cores) `5fcd7006`), **G6**
+(`DS2_KV_F16` quantified, stays opt-in; gate value-parsed `73beea9f`),
+**G7d** (driver fail-fast `10d160ba`). Evidence: board rows above,
+`tests/results/g2/SUMMARY.md`, `tests/results/g6/SUMMARY.md`. Do not
+re-derive.
+
+### Remaining work, in value order
+
+**G1 = F4 — SmolDocling vision backend split-residency (OWN WORK, quiet
+box).** Brief unchanged in the round-2 archive below. G4 confirmed at run
+time the engine is CPU-only today (`ggml_backend_cpu_init`,
+src/smoldocling_ocr.cpp:297) — exactly what this item changes.
+
+**G2b — deepseek crop-mode follow-ups (new, from G2's acceptance).**
+(a) The Metal `receipt_historical` CER regression under crops (0.138→0.305)
+is FORMATTING drift, not content garbage — Metal's decode wraps items in
+heavier markdown (`- **item**: price`) than the plain-text GT; CPU reads the
+same content at 0.135. Diagnose why the Metal trajectory goes markdown-heavy
+(same class as the T14 near-tie divergence), then (b) decide the
+`DS2_CROP_MODE` default flip — the reference contract runs crop_mode=True,
+so default-ON is the contract-faithful end state; the flip is a coordinator
+decision and also needs the synth_01_noise 0.015→0.045 delta re-examined.
+
+**G7a/b/c — LaBSE/WordPiece leftovers (small, unowned).** (a) publishing a
+LaBSE GGUF stays OPTIONAL (no demand signal this round — convert with
+`--crisp`, battery, upload, pin; REGENERATE the f16, don't trust leftovers);
+(b) ST `2_Dense`==BertPooler parity (cos ≈ −0.05 vs full ST stack) — wants a
+product decision; (c) `bert.pooler_act` gelu-vs-tanh default (rerank-only
+today) — changing it perturbs rerank outputs, needs its own A/B.
+
+**G8 = F10 — CrispASR twins (other repo, coordinate before touching).**
+Brief in the round-2 archive. CrispASR main was active again today.
+
+**T16 (TableFormer), T17 (Fraktur bisect)** — dedicated sessions, briefs in
+OPEN TASKS. **N3 OCR perf H-items, N4 esrgan/scunet q8 publish, N7 OCR/VL
+quantize-and-run sweep** — unowned, briefs in the round-2 archive sections.
+
+### Discipline deltas learned THIS round (additive)
+
+- **Value-parse env gates; presence-based gates invert `=0`.** `DS2_KV_F16=0`
+  ENABLED f16 until `73beea9f`. When touching any engine, check its gates for
+  the `getenv(X) ?` pattern before A/B-ing with `X=0`.
+- **Hoisting an Apple-specific header into a shared header breaks non-Apple
+  builds** — G4's hoist needed a platform guard, caught and fixed by a
+  parallel session (`bbc2a516`). Guard before pushing, not after CI reds.
+- **Read the transcripts before classifying a CER delta.** The "Metal crop
+  regression" is markdown-formatting drift with correct content; a CER
+  number alone would have mis-filed it as a vision bug.
+- **Serialize heavy work even when only correctness is claimed.** Running
+  the G2 matrix + G3 downloads + the G4 agent concurrently produced a
+  69-minute page decode (results valid, wall-clock wrecked). One heavy
+  consumer at a time is also a throughput rule.
+- **`tools/format.sh --fix` prints "rewrote N files" even when bytes are
+  unchanged** (idempotent output) — don't panic-rebuild on the message, but
+  the cheap rebuild habit stays correct.
+- **Gold-gate artifacts cache under `/tmp/crispembed-regression/`**
+  (`run_one.py --work-dir` default, `REGRESSION_WORK` env) — NOT
+  `~/.cache/hf-regression` (a round-3 note said hf-regression was the cache;
+  it never was for run_one; /tmp is reboot-ephemeral, so gold gates after a
+  reboot re-download ~4.5 GB).
+- **Main moves under you mid-round** (two pushes from parallel sessions
+  today) — always `git fetch` + rebase before the ff-merge push; the board
+  table prevented all duplicate work.
+
+### Environment as left (2026-08-05 late)
+
+- Main volume ~23 GB free. `~/.cache/hf-f7` grew to 2.9 GB (arctic f32 gold
+  + 5 quants — served G3's cross-check, now DELETABLE). `~/.cache/hf-f8`
+  (3.5 GB) still deletable once G7a is decided. `/tmp/crispembed-regression`
+  holds ~4.5 GB of gold-gate deepseek artifacts (ephemeral, safe to leave).
+  `~/.cache/crispembed/arctic-embed-m-v2-q4_k-imatrix-f7.gguf` is the newly
+  pinned registry artifact (keep).
+- **The 683 MB Metal shader archive is DELETED** (G4's scheduled step). It
+  can only regrow from long-running processes (one-shot CLIs `_exit()` before
+  the write); the cap keeps any regrowth bounded at open time.
+- All round-3 worktrees/branches removed. Remaining worktrees belong to the
+  three pre-existing IN PROGRESS sessions (board table) + older .codex ones.
+- Kaggle unchanged (`chr1s4/crispembed-imatrix-t19` v3 latest good run).
+  v0.17.4 remains the latest tag; this round shipped no tag — the accumulated
+  main (crop port, cache cap, re-pin, thread default) is a reasonable v0.17.5
+  candidate for a session that wants a release.
+
+## HANDOVER — round 3 (ARCHIVED 2026-08-05 late; G2-G7d consumed — see round 4 above; G1/G8 briefs still live below)
 
 Read this section, the "Active work in flight" table above, and the status
 blocks it references BEFORE doing anything. The 2026-08-05 follow-up round is
