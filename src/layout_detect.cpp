@@ -1145,6 +1145,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     std::vector<float> memory(D * total_tokens);
     int level_starts[3], level_sizes[3];
     int offset = 0;
+    auto _t_lp = std::chrono::steady_clock::now();
     for (int lv = 0; lv < 3; lv++) {
         level_starts[lv] = offset;
         level_sizes[lv] = feats[lv].W * feats[lv].H;
@@ -1169,12 +1170,40 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
                 auto b = tensor_to_f32(b_t);
                 if (W.empty()) W.resize(D * D, 0.0f);
                 if (b.empty()) b.resize(D, 0.0f);
-                for (int n = 0; n < N_lv; n++) {
-                    for (int o = 0; o < D; o++) {
-                        float sum = b[o];
-                        for (int i = 0; i < D; i++) sum += W[i + o * D] * feat_col[i * N_lv + n];
-                        proj[o * N_lv + n] = sum;
+                // AXPY form of the same projection, threaded over output rows
+                // (the 2a43e4f4 cpu_linear pattern; cpu_linear itself can't be
+                // used here because its square-weight heuristic would pick the
+                // MatMul convention and this weight is ONNX Conv (out, in)).
+                // Per-element accumulation order over i is unchanged and each
+                // output row is written by exactly one thread, so the result
+                // is byte-identical to the old (n, o, i) scalar nest — which
+                // strode feat_col by N_lv in its inner reduction and was
+                // measured at 549 ms of the 856 ms Phase 2 (64%) on
+                // scan_page_pd at -t 4, the actual dominant decoder cost.
+                auto compute_rows = [&](int o0, int o1) {
+                    for (int o = o0; o < o1; o++) {
+                        float * po = proj.data() + (size_t)o * N_lv;
+                        const float bo = b[o];
+                        for (int n = 0; n < N_lv; n++) po[n] = bo;
+                        const float * wrow = W.data() + (size_t)o * D;
+                        for (int i = 0; i < D; i++) {
+                            const float w = wrow[i];
+                            const float * xi = feat_col.data() + (size_t)i * N_lv;
+                            for (int n = 0; n < N_lv; n++) po[n] += w * xi[n];
+                        }
                     }
+                };
+                const int nt = std::max(1, std::min(ctx->n_threads, D));
+                if (nt <= 1) {
+                    compute_rows(0, D);
+                } else {
+                    std::vector<std::thread> pool;
+                    const int chunk = (D + nt - 1) / nt;
+                    for (int t = 0; t < nt; t++) {
+                        const int o0 = t * chunk, o1 = std::min(D, o0 + chunk);
+                        if (o0 < o1) pool.emplace_back(compute_rows, o0, o1);
+                    }
+                    for (auto & th : pool) th.join();
                 }
             }
             // Copy projected features to memory
@@ -1187,6 +1216,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         }
         offset += N_lv;
     }
+    const double _levproj_ms =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_lp).count();
 
     // Initialize queries from anchors
     // anchors: [300, 4] — reference points (cx, cy, w, h) in [0, 1]
@@ -1347,6 +1378,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     //    HF: enc_outputs_coord_logits = enc_bbox_head(output_memory) + anchors
     //        reference_points = sigmoid(gather(enc_outputs_coord_logits, topk_ind))
     std::vector<float> ref_points(N_queries * 4);
+    auto _t_eb = std::chrono::steady_clock::now();
     {
         // Run enc_bbox_head on ALL enc_output tokens (not just top-K queries)
         // enc_bbox_head is a 3-layer MLP: Linear(256,256) → ReLU → Linear(256,256) → ReLU → Linear(256,4)
@@ -1379,6 +1411,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             }
         }
     }
+    const double _encbbox_ms =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_eb).count();
 
     // Compute query position encoding from reference points via query_pos_head MLP
     // ref_points → linear0 → ReLU → linear1 → ReLU → linear2 → pos_enc  [D, N_queries]
@@ -1427,7 +1461,13 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
          token_scores[N_queries - 1].first);
     LDBG("layout_detect: running decoder (6 layers, %d queries)...\n", N_queries);
 
-    double _deform_ms = 0; // profiling accumulator for the deformable-sampling loop
+    // Per-stage profiling accumulators for the bench line. The deform loop got
+    // its timer first because it was once the dominant cost; after the
+    // 2a43e4f4 cpu_linear threading it is ~1.5-2% of Phase 2, so the other
+    // stages are timed too — do not optimize any of them without reading this
+    // breakdown on the current build first.
+    double _deform_ms = 0;
+    double _sattn_ms = 0, _valproj_ms = 0, _ffn_ms = 0;
     for (int li = 0; li < 6; li++) {
         // Recompute pos_enc from current reference points each layer (matches HF)
         compute_pos_enc(ref_points.data(), pos_enc.data());
@@ -1435,6 +1475,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
         // --- Self-attention via ggml graph (BLAS-accelerated) ---
         std::vector<float> residual = queries;
+        auto _t_sa = std::chrono::steady_clock::now();
         {
             int hd = D / N_heads;
             size_t sb = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(64, false) + 16 * 1024 * 1024;
@@ -1550,6 +1591,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
             ggml_free(gc);
         }
+        _sattn_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_sa).count();
         if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
             for (auto v : queries) {
@@ -1563,8 +1605,10 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         residual = queries;
 
         // Value projection: [D, N_total] → [D, N_total]
+        auto _t_vp = std::chrono::steady_clock::now();
         std::vector<float> values(D * total_tokens);
         cpu_linear(memory.data(), values.data(), D, D, total_tokens, layer.cross_value_w, layer.cross_value_b);
+        _valproj_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_vp).count();
         if (li == 0 && layout_debug()) {
             float vmin = 1e9, vmax = -1e9;
             for (auto v : values) {
@@ -1768,6 +1812,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         }
         // --- FFN via ggml graph (BLAS-accelerated) ---
         residual = queries;
+        auto _t_ffn = std::chrono::steady_clock::now();
         {
             size_t fb = ggml_tensor_overhead() * 32 + ggml_graph_overhead_custom(32, false) + 8 * 1024 * 1024;
             std::vector<uint8_t> fbuf(fb);
@@ -1814,6 +1859,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
             ggml_free(gc);
         }
+        _ffn_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_ffn).count();
 
         if (layout_debug()) {
             float mn = 1e9, mx = -1e9;
@@ -1896,8 +1942,11 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase2).count();
-        fprintf(stderr, "[layout_detect-bench] Phase 2 decoder: %.1f ms (deformable-sample loop: %.1f ms)\n", ms,
-                _deform_ms);
+        fprintf(stderr,
+                "[layout_detect-bench] Phase 2 decoder: %.1f ms (level-proj: %.1f, enc-bbox-head: %.1f, "
+                "self-attn: %.1f, value-proj: %.1f, ffn: %.1f, deformable-sample loop: %.1f, other: %.1f)\n",
+                ms, _levproj_ms, _encbbox_ms, _sattn_ms, _valproj_ms, _ffn_ms, _deform_ms,
+                ms - _levproj_ms - _encbbox_ms - _sattn_ms - _valproj_ms - _ffn_ms - _deform_ms);
     }
 
     // --- Phase 3: Detection heads ---
