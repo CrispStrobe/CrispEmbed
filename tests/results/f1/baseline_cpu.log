@@ -1,0 +1,15 @@
+commons_example_receipt.png          ok=True chars=  573 decode=4675.3 total=12806.1 path=persistent kv=f32
+commons_test_ocr_document.jpg        ok=True chars= 2750 decode=17667.6 total=25262.8 path=persistent kv=f32
+german_official_print.jpg            ok=True chars= 2710 decode=35061.2 total=44122.8 path=persistent kv=f32
+receipt_historical.png               ok=True chars=  847 decode=12052.2 total=20889.4 path=persistent kv=f32
+simple_form.png                      ok=True chars=  315 decode=1999.4 total=10791.9 path=persistent kv=f32
+
+5 pages, 0 failures -> tests/results/f1/c-base-persist-cc0
+commons_example_receipt.png          ok=True chars=  573 decode=4664.6 total=13351.0 path=per-layer kv=f32
+commons_test_ocr_document.jpg        ok=True chars= 2768 decode=17843.8 total=27426.0 path=per-layer kv=f32
+german_official_print.jpg            ok=True chars=  637 decode=4853.9 total=14293.4 path=per-layer kv=f32
+receipt_historical.png               ok=True chars=  863 decode=12351.5 total=21838.8 path=per-layer kv=f32
+simple_form.png                      ok=True chars=  268 decode=1650.6 total=11586.0 path=per-layer kv=f32
+
+5 pages, 0 failures -> tests/results/f1/c-base-legacy-cc0
+BASELINE-CPU-DONE

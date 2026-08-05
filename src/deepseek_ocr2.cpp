@@ -13,6 +13,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/no_repeat_ngram.h"
 
 #include <algorithm>
 #include <array>
@@ -1949,46 +1950,14 @@ static int ds_no_repeat_ngram() {
     return 20;
 }
 
-// Greedy argmax with HF-style no-repeat-ngram banning: a candidate is banned
-// when the last (ngram-1) generated tokens plus the candidate would repeat an
+// Greedy argmax with HF-style no-repeat-ngram banning
+// (core/no_repeat_ngram.h, hermetically tested): a candidate is banned when
+// the last (ngram-1) generated tokens plus the candidate would repeat an
 // ngram already present in the generated history. HF bans over prompt +
 // generation; here the history is generation-only (the prompt reaches the
 // decoder as embeddings), which for ngram=20 over a 4-token text prompt
-// cannot differ. Same helper as qwen2vl_ocr.cpp / internvl2_ocr.cpp.
-static int argmax_no_repeat_ngram(const float * logits, int V, const std::vector<int32_t> & hist, int ngram) {
-    std::unordered_set<int> banned;
-    const int k = ngram - 1;
-    const int n = (int)hist.size();
-    if (ngram > 1 && n >= k && k > 0) {
-        for (int i = 0; i + k < n; i++) {
-            bool match = true;
-            for (int j = 0; j < k; j++) {
-                if (hist[i + j] != hist[n - k + j]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) banned.insert((int)hist[i + k]);
-        }
-    }
-    int best_id = -1;
-    float best = -INFINITY;
-    for (int v = 0; v < V; v++) {
-        if (!banned.empty() && banned.count(v)) continue;
-        if (logits[v] > best) {
-            best = logits[v];
-            best_id = v;
-        }
-    }
-    if (best_id < 0) {
-        for (int v = 0; v < V; v++)
-            if (logits[v] > best) {
-                best = logits[v];
-                best_id = v;
-            }
-    }
-    return best_id;
-}
+// cannot differ. Shared with qwen2vl_ocr.cpp / internvl2_ocr.cpp.
+using core_decode::argmax_no_repeat_ngram;
 
 // Depth of the KV read view used by the persistent decode graph.
 //
