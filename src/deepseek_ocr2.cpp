@@ -168,8 +168,16 @@ struct ds_ocr2_ctx {
         bool allocated = false;
     } kvc;
 
-    // Precomputed RPE tables
+    // Precomputed RPE tables (default grid = image_size/patch_size)
     std::vector<std::vector<float>> rp_h_per_layer, rp_w_per_layer;
+
+    // Crop-mode (DS2_CROP_MODE) lazily-built caches for the 768² tile grid:
+    // global-attn RPE tables at the tile grid and the bicubic-resampled SAM
+    // position embedding. grid==0 means not built yet.
+    std::vector<std::vector<float>> rp_h_crop, rp_w_crop;
+    int rp_crop_grid = 0;
+    std::vector<float> pos_embed_crop;
+    int pos_crop_grid = 0;
 
     int n_threads = 4, verbosity = 1;
     std::string diff_ref_path;
@@ -367,7 +375,11 @@ static std::vector<float> get_rel_pos(int q_size, int k_size, const float * rel_
     std::vector<float> resized(hd * max_rd);
     for (int c = 0; c < hd; c++)
         for (int i = 0; i < max_rd; i++) {
-            float src = (float)i * (L - 1) / std::max(max_rd - 1, 1);
+            // F.interpolate(mode='linear') default align_corners=False:
+            // src = (i+0.5)*L/out - 0.5, clamped. The 64-grid tables have
+            // L == max_rd (no resize), so only the 48-grid crop tables hit this.
+            float src = ((float)i + 0.5f) * (float)L / (float)max_rd - 0.5f;
+            src = std::min(std::max(src, 0.0f), (float)(L - 1));
             int lo = (int)src, hi = std::min(lo + 1, L - 1);
             float frac = src - lo;
             resized[i * hd + c] = rel_pos[lo * hd + c] * (1.0f - frac) + rel_pos[hi * hd + c] * frac;
@@ -388,6 +400,72 @@ static void reformat_rp_table(const float * rp_in, float * rp_out, int aH, int h
     for (int q = 0; q < aH; q++)
         for (int k = 0; k < aH; k++)
             for (int d = 0; d < hd; d++) rp_out[d + k * hd + q * aH * hd] = rp_in[(q * aH + k) * hd + d];
+}
+
+// Antialiased separable bicubic 1-D weights (PIL/torch downscale algorithm:
+// kernel support and argument scaled by src/dst). `a` selects the cubic:
+// torch F.interpolate(mode='bicubic', antialias=True) uses a=-0.75 (the SAM
+// pos-embed 64→48 resize); PIL Image.resize(BICUBIC) uses a=-0.5 (the crop
+// tile resize in dynamic_preprocess).
+struct bicubic_taps {
+    std::vector<int> lo;  // first source index per output index
+    std::vector<int> n;   // tap count per output index
+    std::vector<float> w; // taps, max_taps stride
+    int max_taps = 0;
+};
+
+static bicubic_taps bicubic_aa_taps(int src, int dst, float a) {
+    auto cubic = [a](float x) {
+        x = fabsf(x);
+        if (x <= 1.0f) return ((a + 2.0f) * x - (a + 3.0f)) * x * x + 1.0f;
+        if (x < 2.0f) return (((x - 5.0f) * x + 8.0f) * x - 4.0f) * a;
+        return 0.0f;
+    };
+    float fs = std::max((float)src / dst, 1.0f); // filter scale (>=1 downscale)
+    float support = 2.0f * fs;
+    bicubic_taps t;
+    t.max_taps = (int)ceilf(support) * 2 + 2;
+    t.lo.resize(dst);
+    t.n.resize(dst);
+    t.w.assign((size_t)dst * t.max_taps, 0.0f);
+    for (int i = 0; i < dst; i++) {
+        float center = ((float)i + 0.5f) * src / dst;
+        int xmin = std::max(0, (int)(center - support + 0.5f));
+        int xmax = std::min(src, (int)(center + support + 0.5f));
+        t.lo[i] = xmin;
+        t.n[i] = xmax - xmin;
+        float sum = 0.0f;
+        for (int k = xmin; k < xmax; k++) {
+            float wv = cubic(((float)k + 0.5f - center) / fs);
+            t.w[(size_t)i * t.max_taps + (k - xmin)] = wv;
+            sum += wv;
+        }
+        if (sum != 0.0f)
+            for (int k = 0; k < t.n[i]; k++) t.w[(size_t)i * t.max_taps + k] /= sum;
+    }
+    return t;
+}
+
+// Resample a [srcH x srcW] plane (row-major, stride `stride` floats between
+// consecutive samples along W, `row_stride` between rows) into dst (compact).
+static void bicubic_aa_resample_plane(const float * in, int srcW, int srcH, float * out, int dstW, int dstH, float a) {
+    bicubic_taps tw = bicubic_aa_taps(srcW, dstW, a);
+    bicubic_taps th = bicubic_aa_taps(srcH, dstH, a);
+    std::vector<float> tmp((size_t)srcH * dstW); // horizontal pass first
+    for (int y = 0; y < srcH; y++)
+        for (int x = 0; x < dstW; x++) {
+            float acc = 0.0f;
+            for (int k = 0; k < tw.n[x]; k++)
+                acc += tw.w[(size_t)x * tw.max_taps + k] * in[(size_t)y * srcW + tw.lo[x] + k];
+            tmp[(size_t)y * dstW + x] = acc;
+        }
+    for (int y = 0; y < dstH; y++)
+        for (int x = 0; x < dstW; x++) {
+            float acc = 0.0f;
+            for (int k = 0; k < th.n[y]; k++)
+                acc += th.w[(size_t)y * th.max_taps + k] * tmp[(size_t)(th.lo[y] + k) * dstW + x];
+            out[(size_t)y * dstW + x] = acc;
+        }
 }
 
 // ---------------------------------------------------------------------------
@@ -700,6 +778,39 @@ static void precompute_rpe_tables(ds_ocr2_ctx & ctx) {
     }
 }
 
+// Crop-mode grid caches. Windowed layers' RPE tables are grid-invariant
+// (aH == window_size); only the global-attn layers need tables at the tile
+// grid (get_rel_pos then really interpolates: 127 rows → 2*nP-1).
+static void ensure_crop_rpe_tables(ds_ocr2_ctx & ctx, int nP) {
+    if (ctx.rp_crop_grid == nP) return;
+    auto & s = ctx.m.shp;
+    int hd = s.head_dim;
+    ctx.rp_h_crop.assign(s.depth, {});
+    ctx.rp_w_crop.assign(s.depth, {});
+    for (int li = 0; li < s.depth; li++) {
+        auto & blk = ctx.m.sam_blocks[li];
+        if (!blk.rel_pos_h || !blk.rel_pos_w || !blk.is_global) continue;
+        auto rph = to_f32(blk.rel_pos_h), rpw = to_f32(blk.rel_pos_w);
+        int L_h = (int)blk.rel_pos_h->ne[1], L_w = (int)blk.rel_pos_w->ne[1];
+        ctx.rp_h_crop[li] = get_rel_pos(nP, nP, rph.data(), L_h, hd);
+        ctx.rp_w_crop[li] = get_rel_pos(nP, nP, rpw.data(), L_w, hd);
+    }
+    ctx.rp_crop_grid = nP;
+}
+
+// get_abs_pos_sam: bicubic (torch a=-0.75), antialias=True, align_corners=False.
+static void ensure_crop_pos_embed(ds_ocr2_ctx & ctx, const std::vector<float> & pos_default, int nP0, int nP, int C) {
+    if (ctx.pos_crop_grid == nP) return;
+    ctx.pos_embed_crop.assign((size_t)nP * nP * C, 0.0f);
+    std::vector<float> plane_in((size_t)nP0 * nP0), plane_out((size_t)nP * nP);
+    for (int c = 0; c < C; c++) {
+        for (int t = 0; t < nP0 * nP0; t++) plane_in[t] = pos_default[(size_t)t * C + c];
+        bicubic_aa_resample_plane(plane_in.data(), nP0, nP0, plane_out.data(), nP, nP, -0.75f);
+        for (int t = 0; t < nP * nP; t++) ctx.pos_embed_crop[(size_t)t * C + c] = plane_out[t];
+    }
+    ctx.pos_crop_grid = nP;
+}
+
 // ---------------------------------------------------------------------------
 // SAM ViT-B per-layer ggml graph (same pattern as got_ocr.cpp)
 // ---------------------------------------------------------------------------
@@ -878,11 +989,17 @@ static ggml_cgraph * build_sam_neck_graph(ggml_context * g, int nP, int C, int n
     return gf;
 }
 
+// `imgS_in` selects the input resolution: 0 (default) = shp.image_size (the
+// 1024² global view); crop mode passes 768 for the dynamic-preprocess tiles.
 static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<float> & out_features, int & out_n_tokens,
-                       int & out_dim) {
+                       int & out_dim, int imgS_in = 0) {
     auto & s = ctx.m.shp;
-    int C = s.hidden, PS = s.patch_size, nP = s.image_size / PS;
+    const int imgS = imgS_in > 0 ? imgS_in : s.image_size;
+    int C = s.hidden, PS = s.patch_size, nP = imgS / PS;
+    const int nP0 = s.image_size / PS; // grid the pos-embed / RPE tables ship at
+    const bool crop_grid = nP != nP0;
     int N = nP * nP, hd = s.head_dim, ws = s.window_size;
+    if (crop_grid) ensure_crop_rpe_tables(ctx, nP);
     auto _sam_t = std::chrono::steady_clock::now();
     auto sam_mark = [&](const char * w) {
         if (!getenv("DS_DBG")) return;
@@ -896,6 +1013,10 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
     auto pe_w = to_f32(ctx.m.patch_embed_w);
     auto pe_b = to_f32(ctx.m.patch_embed_b);
     auto pos = to_f32(ctx.m.pos_embed);
+    if (crop_grid && !pos.empty()) {
+        ensure_crop_pos_embed(ctx, pos, nP0, nP, C);
+        pos = ctx.pos_embed_crop;
+    }
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
@@ -905,11 +1026,10 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
         std::vector<uint8_t> mb(meta_sz);
         ggml_init_params ip = { meta_sz, mb.data(), true };
         ggml_context * gc = ggml_init(ip);
-        ggml_cgraph * gf = build_sam_patch_graph(gc, s.image_size, PS, C, nP);
+        ggml_cgraph * gf = build_sam_patch_graph(gc, imgS, PS, C, nP);
         ggml_backend_sched_reset(ctx.sched);
         ggml_backend_sched_alloc_graph(ctx.sched, gf);
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0,
-                                (size_t)3 * s.image_size * s.image_size * sizeof(float));
+        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0, (size_t)3 * imgS * imgS * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "w_patch"), pe_w.data(), 0, pe_w.size() * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pe_b"), pe_b.data(), 0, pe_b.size() * sizeof(float));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos"), pos.data(), 0, pos.size() * sizeof(float));
@@ -928,8 +1048,7 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
                         for (int ky = 0; ky < PS; ky++)
                             for (int kx = 0; kx < PS; kx++)
                                 patch[c * PS * PS + ky * PS + kx] =
-                                    pixels[c * s.image_size * s.image_size + (py * PS + ky) * s.image_size +
-                                           (px * PS + kx)];
+                                    pixels[c * imgS * imgS + (py * PS + ky) * imgS + (px * PS + kx)];
                     for (int o = 0; o < C; o++) {
                         float sv = pe_b.empty() ? 0.0f : pe_b[o];
                         for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
@@ -995,12 +1114,16 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
             window_partition(hidden.data(), residual_input.data(), nP, ws, C);
         }
 
+        // Global layers on the crop grid use the tables interpolated for nP;
+        // windowed layers' tables (aH == ws) are grid-invariant.
+        const auto & rp_h_src = (crop_grid && is_global) ? ctx.rp_h_crop[li] : ctx.rp_h_per_layer[li];
+        const auto & rp_w_src = (crop_grid && is_global) ? ctx.rp_w_crop[li] : ctx.rp_w_per_layer[li];
         if (getenv("DS_DBG"))
             fprintf(stderr, "  [dbg] sam li=%d is_global=%d aH=%d nW=%d T=%d rp_h.sz=%zu\n", li, is_global, aH, nW, T,
-                    ctx.rp_h_per_layer[li].size());
+                    rp_h_src.size());
         std::vector<float> rp_h_ggml(aH * aH * hd), rp_w_ggml(aW * aW * hd);
-        reformat_rp_table(ctx.rp_h_per_layer[li].data(), rp_h_ggml.data(), aH, hd);
-        reformat_rp_table(ctx.rp_w_per_layer[li].data(), rp_w_ggml.data(), aW, hd);
+        reformat_rp_table(rp_h_src.data(), rp_h_ggml.data(), aH, hd);
+        reformat_rp_table(rp_w_src.data(), rp_w_ggml.data(), aW, hd);
         if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] sam li=%d reformat ok, building graph\n", li);
 
         size_t meta_sz = 8 * 1024 * 1024;
@@ -1265,9 +1388,14 @@ static bool encode_qwen2(ds_ocr2_ctx & ctx, const float * vis_features, int n_vi
     int hd = D / nh, kv_repeat = nh / nkv, inter = qhp.intermediate;
     float eps = qhp.rms_eps;
 
-    // Build token sequence: query tokens + vis features
-    // Use query_1024 for 1024-size images (default)
-    auto query_data = to_f32(ctx.m.query_1024 ? ctx.m.query_1024 : ctx.m.query_768);
+    // Build token sequence: vis features + query tokens. The blueprint
+    // (Qwen2Decoder2Encoder.forward) selects the query bank by the SAM token
+    // count: n_query==144 → query_768 (crop tiles), n_query==256 → query_1024
+    // (the 1024² global view). Fall back to the other bank if the matching one
+    // is absent (pre-crop GGUFs always carried both).
+    ggml_tensor * query_t = ctx.m.query_1024 ? ctx.m.query_1024 : ctx.m.query_768;
+    if (n_vis == 144 && ctx.m.query_768) query_t = ctx.m.query_768;
+    auto query_data = to_f32(query_t);
     int n_query = query_data.empty() ? 0 : (int)(query_data.size() / D);
 
     // Total tokens = n_query + n_vis
@@ -2806,6 +2934,77 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         }
     }
 
+    // G2 (F5): dynamic-crop mode, opt-in via DS2_CROP_MODE=1. Mirrors the
+    // reference infer() with crop_mode=True: an image over 768 px in either
+    // dimension additionally yields N=2..6 local 768² tiles (dynamic_preprocess:
+    // closest-aspect grid (gw,gh) with 2<=gw*gh<=6, whole image resized to
+    // (768*gw, 768*gh), split in raster order). The 1024² padded global view
+    // above is unchanged in both modes.
+    const int tileS = 768;
+    const bool crop_mode = [] {
+        const char * e = getenv("DS2_CROP_MODE");
+        return e && strcmp(e, "0") != 0;
+    }();
+    int crop_gw = 1, crop_gh = 1;
+    std::vector<std::vector<float>> crop_px; // per tile: 3*768*768, normalized
+    if (crop_mode && (w > tileS || h > tileS)) {
+        // find_closest_aspect_ratio over all (i,j) with 2 <= i*j <= 6, sorted
+        // by i*j (ties among equal products broken by i — the reference's set
+        // iteration order is unspecified there; only exact-tie targets differ).
+        std::vector<std::pair<int, int>> ratios;
+        for (int i = 1; i <= 6; i++)
+            for (int j = 1; j <= 6; j++)
+                if (i * j >= 2 && i * j <= 6) ratios.push_back({ i, j });
+        std::stable_sort(ratios.begin(), ratios.end(),
+                         [](auto & a, auto & b) { return a.first * a.second < b.first * b.second; });
+        float ar = (float)w / h;
+        float best_diff = 1e30f;
+        std::pair<int, int> best = { 1, 1 };
+        for (auto & r : ratios) {
+            float rd = fabsf(ar - (float)r.first / r.second);
+            if (rd < best_diff) {
+                best_diff = rd;
+                best = r;
+            } else if (rd == best_diff && (float)w * h > 0.5f * tileS * tileS * r.first * r.second) {
+                best = r;
+            }
+        }
+        crop_gw = best.first;
+        crop_gh = best.second;
+        const int tw = tileS * crop_gw, th = tileS * crop_gh;
+        // PIL Image.resize default = antialiased bicubic a=-0.5 on uint8 (the
+        // blueprint resizes the PIL image, then ToTensor+Normalize). Round and
+        // clamp to byte like PIL before normalizing.
+        std::vector<float> plane_in((size_t)w * h), plane_out((size_t)tw * th);
+        std::vector<std::vector<float>> resized(3, std::vector<float>((size_t)tw * th));
+        for (int c = 0; c < 3; c++) {
+            int ci = std::min(c, ch - 1);
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++) plane_in[(size_t)y * w + x] = (float)px[((size_t)y * w + x) * ch + ci];
+            bicubic_aa_resample_plane(plane_in.data(), w, h, plane_out.data(), tw, th, -0.5f);
+            for (size_t i = 0; i < plane_out.size(); i++) {
+                float v = roundf(plane_out[i]);
+                resized[c][i] = std::min(255.0f, std::max(0.0f, v));
+            }
+        }
+        crop_px.resize((size_t)crop_gw * crop_gh);
+        for (int ty = 0; ty < crop_gh; ty++)
+            for (int tx = 0; tx < crop_gw; tx++) {
+                auto & tile = crop_px[(size_t)ty * crop_gw + tx];
+                tile.resize((size_t)3 * tileS * tileS);
+                for (int c = 0; c < 3; c++)
+                    for (int y = 0; y < tileS; y++)
+                        for (int x = 0; x < tileS; x++) {
+                            float v01 = resized[c][(size_t)(ty * tileS + y) * tw + (tx * tileS + x)] / 255.0f;
+                            tile[(size_t)c * tileS * tileS + (size_t)y * tileS + x] =
+                                (v01 - s.image_mean[c]) / s.image_std[c];
+                        }
+            }
+        if (getenv("DS_DBG"))
+            fprintf(stderr, "  [dbg] crop_mode: %dx%d source -> %dx%d grid (%zu tiles)\n", w, h, crop_gw, crop_gh,
+                    crop_px.size());
+    }
+
     const auto _b_prep = std::chrono::steady_clock::now();
 
     bool dbg_t = getenv("DS_DBG") != nullptr;
@@ -2848,10 +3047,31 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         return "";
     }
     stage_ms("projector");
+
+    // Crop tiles through the same SAM → qwen2(query_768) → projector stack.
+    // Reference embedding order (masked_scatter fill): local tile features
+    // FIRST (raster order), then the 256 global features, then view_seperator.
+    std::vector<float> crops_proj;
+    int n_crop_tokens = 0;
+    for (size_t t = 0; t < crop_px.size(); t++) {
+        std::vector<float> c_sam, c_enc, c_proj;
+        int c_n_sam, c_sam_dim, c_n_enc, c_enc_dim;
+        if (!encode_sam(ctx->inner, crop_px[t].data(), c_sam, c_n_sam, c_sam_dim, tileS) ||
+            !encode_qwen2(ctx->inner, c_sam.data(), c_n_sam, c_sam_dim, c_enc, c_n_enc, c_enc_dim) ||
+            !project_to_llm(ctx->inner, c_enc.data(), c_n_enc, c_enc_dim, c_proj)) {
+            fprintf(stderr, "deepseek_ocr2: crop tile %zu encoding failed\n", t);
+            if (out_len) *out_len = 0;
+            return "";
+        }
+        crops_proj.insert(crops_proj.end(), c_proj.begin(), c_proj.end());
+        n_crop_tokens += c_n_enc;
+        if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] crop tile %zu: sam=%d qwen2=%d tokens\n", t, c_n_sam, c_n_enc);
+    }
+    if (!crop_px.empty()) stage_ms("crops");
     const auto _b_proj = std::chrono::steady_clock::now();
 
-    fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens\n", n_sam_tokens, sam_dim,
-            n_enc_tokens, enc_dim, n_enc_tokens);
+    fprintf(stderr, "deepseek_ocr2: stages done — sam=%d/%d qwen2=%d/%d proj=%d image tokens (+%d crop tokens)\n",
+            n_sam_tokens, sam_dim, n_enc_tokens, enc_dim, n_enc_tokens, n_crop_tokens);
 
     // 4. Assemble the LLM prompt embeddings. The HF reference (infer + plain
     //    template, prompt "<image>\nFree OCR.") builds the token sequence:
@@ -2880,8 +3100,12 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
             ? core_bpe::tokenize_simple(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.")
             : core_bpe::tokenize_deepseek(ctx->inner.token_to_id, ctx->inner.merge_rank, "\nFree OCR.");
 
+    // Crop mode: the reference's contiguous image-token block is filled in
+    // feature order [local tiles (144·N), global (256), view_seperator], so the
+    // sequence is [bos][crop features][global features][vsep][instr]. With no
+    // crops this reduces to the historical layout exactly.
     int n_img_tokens = n_enc_tokens; // 256 global features
-    int n_prompt = 1 /*bos*/ + n_img_tokens + 1 /*view_sep*/ + (int)instr_ids.size();
+    int n_prompt = 1 /*bos*/ + n_crop_tokens + n_img_tokens + 1 /*view_sep*/ + (int)instr_ids.size();
     std::vector<float> prompt_embeds((size_t)n_prompt * D);
 
     int row = 0;
@@ -2890,6 +3114,10 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         row++;
     };
     put_tok(0); // bos = <｜begin▁of▁sentence｜>
+    for (int i = 0; i < n_crop_tokens; i++) {
+        memcpy(prompt_embeds.data() + (size_t)row * D, crops_proj.data() + (size_t)i * D, D * sizeof(float));
+        row++;
+    }
     for (int i = 0; i < n_img_tokens; i++) {
         memcpy(prompt_embeds.data() + (size_t)row * D, proj_out.data() + (size_t)i * D, D * sizeof(float));
         row++;
@@ -2899,8 +3127,9 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
     for (int32_t id : instr_ids) put_tok(id);
 
     if (getenv("DS_DBG")) {
-        fprintf(stderr, "  [dbg] prompt: bos + %d img + sep + %zu instr = %d tokens; instr_ids:", n_img_tokens,
-                instr_ids.size(), n_prompt);
+        fprintf(stderr,
+                "  [dbg] prompt: bos + %d crop + %d img + sep + %zu instr = %d tokens; instr_ids:", n_crop_tokens,
+                n_img_tokens, instr_ids.size(), n_prompt);
         for (int32_t id : instr_ids) fprintf(stderr, " %d", id);
         fprintf(stderr, "\n");
     }
@@ -2932,11 +3161,11 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         // whichever decode path ran. decode_path names the arm under A/B.
         fprintf(stderr,
                 "[deepseek-ocr2-stage-bench] preprocess=%.1f ms sam=%.1f ms qwen2_enc=%.1f ms projector=%.1f ms "
-                "prompt=%.1f ms prefill=%.1f ms decode=%.1f ms total=%.1f ms image_tokens=%d prompt_tokens=%d "
-                "gen_tokens=%d decode_path=%s kv=%s\n",
+                "prompt=%.1f ms prefill=%.1f ms decode=%.1f ms total=%.1f ms image_tokens=%d crop_tokens=%d "
+                "prompt_tokens=%d gen_tokens=%d decode_path=%s kv=%s\n",
                 ms(_b_start, _b_prep), ms(_b_prep, _b_sam), ms(_b_sam, _b_enc), ms(_b_enc, _b_proj),
                 ms(_b_proj, _b_prompt), g_ds_prefill_us / 1000.0, g_ds_decode_us / 1000.0, ms(_b_start, _b_end),
-                n_img_tokens, n_prompt, g_ds_n_generated, g_ds_decode_path, g_ds_kv_dtype);
+                n_img_tokens, n_crop_tokens, n_prompt, g_ds_n_generated, g_ds_decode_path, g_ds_kv_dtype);
     }
 
     if (out_len) *out_len = (int)ctx->result.size();
