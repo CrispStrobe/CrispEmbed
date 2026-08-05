@@ -34,6 +34,7 @@
 #include <limits>
 #include <sstream>
 #include <string>
+#include <thread>
 #include <utility>
 #include <vector>
 
@@ -229,6 +230,7 @@ static int cli_main(int argc, char ** argv) {
     std::string biencoder_query;
     std::vector<std::string> texts;
     int n_threads = 1;
+    bool threads_set = false;
     int output_dim = 0; // 0 = model default
     int top_n = 0;      // 0 = all
     bool json_output = false;
@@ -332,6 +334,7 @@ static int cli_main(int argc, char ** argv) {
             file_path = argv[++i];
         } else if (strcmp(argv[i], "-t") == 0 && i + 1 < argc) {
             n_threads = atoi(argv[++i]);
+            threads_set = true;
         } else if (strcmp(argv[i], "--gpu-backend") == 0 && i + 1 < argc) {
             crispembed_set_gpu_backend(argv[++i]);
             gpu_backend_set = true;
@@ -2114,6 +2117,18 @@ static int cli_main(int argc, char ** argv) {
             fprintf(stderr, "crispembed: CRISPEMBED_ONESHOT_CPU=1 — selecting the CPU backend for this one-shot run\n");
             crispembed_set_gpu_backend("cpu");
         }
+    }
+
+    // G5 (F3): the EMBED one-shot's CPU path was crippled by the blanket -t 1
+    // default — measured 2026-08-05 (batch-64 incl. init, interleaved, quiet
+    // box): CPU -t1 vs -t4 = e5-small 0.84→0.40 s, arctic-m-v2 3.05→1.01 s,
+    // f2llm-330m 2.95→1.01 s; embeddings byte-identical across thread counts.
+    // Metal stays the default backend (it wins arctic, loses e5/f2llm — model-
+    // dependent, so no blanket backend flip; CRISPEMBED_ONESHOT_CPU ships OFF).
+    // Applies to the embed path only; an explicit -t always wins.
+    if (!threads_set) {
+        unsigned hc = std::thread::hardware_concurrency();
+        n_threads = (int)std::min(4u, hc ? hc : 1u);
     }
 
     // Init model
