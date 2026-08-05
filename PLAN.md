@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | *(round-7 coordinator)* | **v0.17.6 CUT** (`23a5d5e0` bump + tag on green-CI tip `902a6e1b`): /rerank server abort fix, mxbai/ms-marco -g7c re-ships, erf pooler default, DS_/BENCH/UOCR_* `=0` gate audits (incl. the `UOCR_PD=0` segfault), reranker -f7 imatrix re-pins + new bge-v2-m3-q4k alias, `CRISPEMBED_QUANT_IMATRIX_QKV` selector, Windows `test_env_gate` MSVC fix (**Windows CI was red since `d04f3572`** — now green). Release run in flight; verify assets before touching the tag (red run may be per-platform flaky) | **IN PROGRESS** |
+| 2026-08-05 | *(landed, round-7 coordinator)* | **v0.17.6 RELEASED** (`23a5d5e0` bump + tag on green-CI tip `902a6e1b`; release run `31016913759` SUCCESS, **16/16 assets verified** — same complete set as v0.17.5): /rerank server abort fix, mxbai/ms-marco -g7c re-ships, erf pooler default, DS_/BENCH/UOCR_* `=0` gate audits (incl. the `UOCR_PD=0` segfault), reranker -f7 imatrix re-pins + new bge-v2-m3-q4k alias, `CRISPEMBED_QUANT_IMATRIX_QKV` selector, Windows `test_env_gate` MSVC fix (**Windows CI had been red since `d04f3572`** — now green). Published notes dropped from the tree (`5f756ab5`, tag retains its copy) | **DONE** |
 | 2026-08-05 | *(landed `f34bf0b5`, round-7 coordinator's own work)* | **Reranker sub-Q8 re-pin DONE**: local Metal+CPU cross-check reproduced the Kaggle rerank-f7 A/B (f16 raw scores to ~3dp, f7 dscore to 4dp; tau band ±0.009-0.013 = 2-3 near-tie flips, q8_0 itself swings 0.009 across backends). jina `-q4k` alias re-pinned to `-f7` (dscore −25% both backends, tau in-band); **bge-reranker-v2-m3 got its FIRST sub-Q8 alias** `bge-reranker-v2-m3-q4k` → `-q4_k-imatrix-f7` (tau .920→.942 CPU / .947 Metal, dscore −29/−33%; beats iq4_xs-f7 on tau both backends). q8_0 stays default both families; jina iq4_xs-f7 best-tau finding recorded, no alias added. Both aliases fresh-download SHA-verified on the rebuilt binary (MTL0 proven, HF-scale scores, correct ordering). Evidence `tests/results/repin-f7/SUMMARY.md` | **DONE** |
 | 2026-08-05 | *(landed `f7d34896`+`cb2489bb`; delegated + coordinator-verified: diff read line-by-line — default path structurally identical to shipped behavior; `test-imatrix-alias` 59/59 re-run; the key artifact claim re-verified independently with my own gguf read — 24 direct q/k keys bit-identical, cos vs merged L0 = 0.215)* | **mxbai q/k imatrix provenance A/B MERGED** — finding REAL: DeBERTa-v2 applies q/k a second time to rel-position embeddings (`crispembed.cpp:1166/:1195`), so the collector files direct `blk.N.attn_{q,k}` entries carrying rel-pos statistics (bit-identical across all layers, zero q-vs-k info) that shadow the correct merged-alias vector. **But NOT a quality defect**: 6-cell A/B (q4_k/iq4_xs/q3_k × both models, 192 scores/cell vs official ONNX) — `direct` pooled best (.2677 vs merged .2927), and wins BOTH models at q3_k where importance matters most. **Coordinator decision: default stays `direct`**; new opt-in selector `CRISPEMBED_QUANT_IMATRIX_QKV=direct\|merged\|sum` (default reproduces the shipped xsmall q4_k-imatrix-g7c BIT-FOR-BIT). **Premise correction (imatrix-row claim from `87e11a4e`): the Kaggle "mxbai regressing tail arm" was measured on the pre-g7c ContextPooler-less base (`quant_src` header) — on the corrected -g7c base imatrix HELPS (xsmall q4_k τ .9067→.9333); no re-pin/re-ship warranted.** Evidence `tests/results/mxbai-qk-imatrix/SUMMARY.md` | **DONE** |
 | 2026-08-05 | *(landed `d45f3889`+`ee576e23`; delegated + coordinator-verified: test-env-gate re-run, base/PD=0/DBG=1/DBG=0 arms re-run myself on the agent binary — stdout byte-identical to the recorded arms and to manifest gold, MTL0 confirmed in all 44 recorded stderr files, pre-fix segfault artifact + code mechanism read directly)* | **UOCR_* gate sweep MERGED** — 40 call sites / 17 boolean vars → `core_env::on()`; 7 value-carrying vars + BENCH left; new `UOCR_DBG=1` gate-resolution line. **Headline: on pre-fix main, `UOCR_PD=0` turned the persistent-decode path ON and SEGFAULTED with empty stdout** (crash-severity `=0` inversion — strongest case yet for the remaining sweep). No-op on defaults: parent-commit default run byte-identical, CER 0.0000 vs manifest gold. Evidence `tests/results/uocr-gates/SUMMARY.md` (44 serialized model runs, 83 checks). **Follow-up, unowned: the `UOCR_PD=1` persistent-decode path segfaults at gen=2 on main (pre-existing, 7/44 runs, all PD-path)** — opt-in path, default unaffected; needs its own session. Parse-level-only verification recorded honestly for `UOCR_FA_F32`/`UOCR_OPT_PD_F32`/`UOCR_INJECT_*` (no observable marker / crash-shadowed / needs a ref dump) | **DONE** |
@@ -41,7 +41,94 @@ races). Remove the row when the branch lands.
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
-## HANDOVER — round 7 (written 2026-08-05, after the round-6 session)
+## HANDOVER — round 8 (written 2026-08-05, after the round-7 session)
+
+Round 7 is COMPLETE (evidence in the board rows above — do not re-derive):
+**reranker -f7 re-pins** (`f34bf0b5`: jina q4k re-pinned, FIRST bge-v2-m3
+sub-Q8 alias added, local Metal+CPU cross-check reproduced Kaggle to 4dp on
+dscore), **mxbai q/k imatrix provenance A/B** (`f7d34896`: defect REAL —
+bit-identical rel-pos direct entries shadow the merged vector — but NOT a
+quality defect; default stays `direct`, opt-in
+`CRISPEMBED_QUANT_IMATRIX_QKV=direct|merged|sum`; the Kaggle "mxbai
+regressing tail" premise was a pre-g7c-base artifact, no re-ship needed),
+**UOCR_* gate sweep** (`d45f3889`: 40 sites/17 vars value-parsed;
+**`UOCR_PD=0` used to SEGFAULT with empty output** — crash-severity `=0`
+inversion), and **v0.17.6 RELEASED** (16/16 assets; Windows CI fixed — it
+had been red since `d04f3572` under cancelled/superseded runs).
+
+### Remaining work, in value order (orchestrator Fable; per-task tiers noted)
+
+- **Non-BENCH presence-gate sweep, remainder** (successor; Opus-capable with
+  the ds/uocr-gates methodology, conversion-set + merge decisions
+  coordinator's). UOCR_* is done; ~227 presence-based sites over ~139 vars
+  remain, several output-affecting: `CRISPEMBED_PPOCRV6_FORCE_CPU`,
+  `EASYOCR_FORCE_CPU`, `NAFNET_CPU`, `CRISPEMBED_TESSERACT_FORCE_CPU`,
+  `SAFMN_SR_METAL`, `ESRGAN_SCALAR`, `CRISPEMBED_PPOCRV6_NO_GRAPH`,
+  `GLM_OCR_DECODE_CACHE`, `CRISPEMBED_NO_KV_CACHE`, `LAYOUT_DETECT_FLASH`
+  (full list `tests/results/bench-gates/SUMMARY.md` §out-of-scope). The UOCR
+  precedent shows this class can be crash-severity, not cosmetic. Per-gate
+  decoded-output A/B, three spellings; engine-sized batches, one engine per
+  branch.
+- **UOCR_PD segfault bisect** (new, unowned; Fable-tier — decode-graph work,
+  never delegate the math). The opt-in persistent-decode path
+  (`UOCR_PD=1`) faults at gen=2 in the compute, 7/7 reproductions,
+  pre-existing on main, default path unaffected. Evidence pointers in
+  `tests/results/uocr-gates/SUMMARY.md`; deepseek's working PD path
+  (`DS_*` twin engine) is the reference implementation to diff against.
+- **T16 (TableFormer port), T17 (Fraktur bisect)** — dedicated sessions,
+  briefs in OPEN TASKS; Fable-tier. T16 still needs the A5
+  document-structure gold.
+- **N3 (OCR perf H2/H4/H5/H6), N4 (esrgan/scunet q8 publish — NEVER ship
+  esrgan q4_k), N7 (OCR/VL quantize-and-run sweep)** — unowned, briefs in
+  the round-2 archive.
+- No release next round unless something lands: v0.17.6 is fresh.
+
+### Discipline deltas learned THIS round (additive)
+
+- **The cwd trap bit a merge this round**: an ff-merge run inside the
+  feature worktree prints "Already up to date" + "Everything up-to-date" and
+  main NEVER MOVES — it looks exactly like success. Merge from the main
+  tree, confirm `git branch --show-current` = main, and judge by the push
+  line showing `<old>..<new> main -> main`.
+- **Check `gh run list` conclusions on main before trusting "CI is fine"** —
+  Windows had been red for a full day of merges, masked by rapid pushes
+  cancelling runs (cancelled ≠ green). Rapid-push cancellation makes red
+  invisible unless you look at the last COMPLETED run per workflow. Always
+  do this before a release bump.
+- **MSVC portability**: no `setenv`/`unsetenv` (use `_putenv_s`); the
+  Windows CRT cannot represent a set-but-empty env var (`set FOO=` deletes
+  it) — compile such checks out on `_WIN32` rather than faking them.
+- **Read a Kaggle ab-record's `quant_src=` header before trusting its
+  verdict** — the "mxbai imatrix regression" was measured against the
+  broken pre-g7c base; on the corrected base the sign flips. A/B records
+  inherit the defects of their baseline artifact.
+- **tau on the 30-pair RERANK_EVAL fixture has a ±0.009–0.013
+  cross-build/backend near-tie band** (q8_0 itself swings 0.009 between
+  CPU and Metal). Judge imatrix quality by mean|dscore| (continuous);
+  use tau only for orderings, never for sub-0.01 verdicts.
+- **Marker-file gating works for cross-agent heavy-run serialization**: the
+  coordinator touches `<scratch>/MATRIX_DONE` when its heavy runs end; the
+  agent's brief says poll-then-serialize. Round 7 ran three lanes of model
+  runs on the 16 GB box with zero overlap incidents.
+
+### Environment as left (2026-08-05, post-round-7)
+
+- Main volume ~16 GB free. Session scratchpad model caches deleted (repin
+  evidence copied into `tests/results/repin-f7/`). `/tmp/crispembed-regression`
+  untouched. `~/.cache/crispembed-local/` unchanged.
+- **v0.17.6 is the latest tag** (16 assets verified). main = `5f756ab5`+.
+  Round-7 worktrees/branches all removed; the three pre-existing IN PROGRESS
+  rows (feat/ocr-engine-parity, feat/easyocr-ggml, feat/ppocr-next-20260731)
+  + older .codex worktrees remain — check the board before touching.
+- No new HF artifacts this round (re-pins/aliases only point at the
+  round-6 `-f7` uploads; nothing replaced).
+- HF account cstr, token `../.env`; always `HF_HOME=~/.cache/hf-<task>` or
+  the session scratchpad. Kaggle chr1s4, one kernel at a time. Python
+  `/Users/christianstrobele/miniconda3/bin/python` — NOT for torch parity
+  on BERT-class forwards (ONNX Runtime instead). CrispASR unchanged this
+  round (their main `057ce9f3`+; push a ## CLAIMED block before touching).
+
+## HANDOVER — round 7 (ARCHIVED 2026-08-05; all four lanes + release consumed — see round 8 above)
 
 Round 6 is COMPLETE (evidence in the board rows above — do not re-derive):
 **G8=F10** (CrispASR `fd3c0e5e`: T18 cpu short-circuit synced, a pre-existing
