@@ -126,6 +126,20 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## scunet_denoise R7 closed by measurement: weight dequant copies are ~0.1% of a tile pass — no DequantCache (Apple M1, 2026-08-05)
+
+The R7 backlog item ("only SR engine without a DequantCache") argued from
+presence, not cost. A permanent atomic accumulator in `to_f32` (printed on the
+`CRISPEMBED_SCUNET_BENCH` total line, branch `perf/r7-scunet`) measured, on
+`scunet-color-f32.gguf` / `scan_strip.png` 520x260 at `-t 4`: **all weight
+`to_f32` copies sum to ~4-5 ms of a ~4.3 s tile pass** (14.1 ms cumulative
+over three tile passes totalling ~12.7 s). For an f16 artifact (fp16→fp32
+conversion of ~18 MB of weights per tile) the bound is a few times that —
+still ~1%. No cache added; denoised PPM output byte-identical with the
+instrumentation in place. scunet's actual cost is the Swin/conv compute
+(~27 s for this small image), which belongs to the deprioritized SR-on-GPU
+research item, not to caching.
+
 ## layout_detect Phase 2: the R2 "deform loop dominates" claim was stale — the level input projection was 64%, fixed 2.66x, byte-identical (Apple M1, 2026-08-05)
 
 Measure-first pass on the R2 backlog item (branch `perf/r2-deform`,

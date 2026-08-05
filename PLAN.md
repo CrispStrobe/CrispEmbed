@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | `perf/r7-scunet` (`.claude/worktrees/perf-r7-scunet`) | **R7 — scunet_denoise DequantCache** (only SR engine without one; measure-first per the R2 lesson: profile where the time actually goes on `scunet-color-f32.gguf`, then cache the per-block-forward weight dequant copies; byte-identical output gate) | IN PROGRESS |
+| 2026-08-05 | *(landed via `perf/r7-scunet`)* | **R7 measured and CLOSED — no DequantCache warranted**: new permanent `to_f32` timing on the `CRISPEMBED_SCUNET_BENCH` line shows ALL weight dequant copies are **~4-5 ms of a ~4.3 s tile pass (~0.1%)** on the f32 artifact (f16 bound: ~1%). The item argued from grep-presence, not cost — third stale backlog premise caught by measure-first this session. Output byte-identical with the instrumentation; scunet's real cost is Swin/conv compute (deprioritized SR-on-GPU research) | **DONE** |
 | 2026-08-05 | *(landed via `perf/r2-deform`)* | **R2 premise STALE — real hotspot found + fixed, 2.66x Phase 2** — measured FIRST (new permanent per-stage timers behind `CRISPEMBED_LAYOUT_DETECT_BENCH`): the deform loop is **16 ms of 856 ms Phase 2 (~2%)** on current main — the survey's "dominant cost" claim predates `2a43e4f4`. Actual hotspot: decoder **level input projection** (scalar strided nest, single-threaded) at **549 ms = 64% of Phase 2**; rewritten AXPY+threaded (byte-identical accumulation), level-proj ~15x at `-t 4`, **Phase 2 846→318 ms**, layout call 2332→~1700 ms, **CLI regions byte-identical** both thread counts. Deform loop deliberately untouched. New top costs recorded in the R2 backlog note: Phase 1 Metal backbone ~1.4 s (~80% of call), then value-proj + self-attn weight re-upload | **DONE** |
 | 2026-08-05 | *(landed via `perf/conv2d-gemm`)* | **R6 built + M1-measured, R4 DONE** — `core_cpu::conv2d_im2col_cpu` (im2col tiles + oc-outer interchange + fork-join threads), **bitwise-identical by construction** (exact-equality unit guard, 9 shapes, nt=1+4; 180/180). Gated `CRISPEMBED_CONV2D_GEMM=1`/`CRISPEMBED_CONV2D_THREADS=N`, default OFF. M1 A/B (PP-OCRv6 medium scalar det, 5 interleaved pairs): **nt=4 wall 2.04x, won every pair; nt=1 4-7% SLOWER** (12 MB shared L2 already holds the weights — threading is the M1 win, interchange needs the small-L2 x86/Kaggle arm, TODO). R4: `CRISPEMBED_LIGHTONOCR_GPU=1`/`_FORCE_CPU=1` gate landed (got_ocr sched pattern); default verified byte-identical + 0 Metal markers; Metal arm proven live, decoded text identical, no wall win on the small fixture → CPU stays default. Evidence: `PERFORMANCE.md` "R6 conv2d_cpu im2col-tile A/B" | **DONE** |
 | 2026-08-05 | *(landed on `main`, docs only — no code touched)* | **OCR runtime residency survey DONE** — code-verified sweep at `9f731fb5` of every OCR-lane engine's backend selection + `ggml_backend_sched` composition. Full tables in `PERFORMANCE.md` ("OCR runtime residency survey", top of file); ranked backlog as **R1-R8** in "OPEN TASKS — OCR runtime residency and optimization backlog" below. **Key correction: the loading backend is not the computing backend** — bttr/hmer/posformer/mixtex/flova/ppformulanet build ggml encoder graphs but run them on a CPU-only `enc_sched` (their "prefer GPU backend" comments are stale), and `lightonocr` is hardcoded CPU with no `*_FORCE_CPU` gate despite the VLM maturity table claiming "GPU: Yes". Also closed: the P3 "`--gpu-backend` ignored" gap (`crispembed.cpp:101` routes through the helper). **No engine defaults changed** | **DONE** |
@@ -3814,15 +3814,22 @@ win available today is threading. Remaining, in order:
    `unlimited_ocr.cpp:267`) onto the shared kernel once its default story
    settles.
 
-### R7 — `scunet_denoise` — the missing `DequantCache`
+### R7 — `scunet_denoise` — the missing `DequantCache` — **CLOSED 2026-08-05: measured, not worth it**
 
-Still the only SR engine without one: `grep DequantCache src/scunet_denoise.cpp`
-is empty while 18 other `.cpp` files have it. Localized win.
+The item argued from presence (18 other files have one), not from cost.
+Measured on `perf/r7-scunet` (permanent atomic accumulator in `to_f32`,
+printed on the `CRISPEMBED_SCUNET_BENCH` total line): on
+`scunet-color-f32.gguf` / `scan_strip.png` at `-t 4`, ALL weight `to_f32`
+copies sum to **~4-5 ms of a ~4.3 s tile pass (~0.1%)**. A cache would be
+dead code; for an f16 artifact the bound is a few times that — still ~1%.
+**No DequantCache added; the instrumentation stays** so the number is
+re-checkable per artifact. scunet's real cost is the Swin/conv compute itself
+(~27 s for a 520x260 image), which belongs to the explicitly-deprioritized
+SR-on-GPU research item. Third stale premise found by measure-first this
+session (after R2's deform loop and R4's "31.6 s cold").
 
-Correction to the older audit row: its Swin blocks are still scalar but no
-longer *serial* — WMSA is window-parallel across `n_threads`
-(`scunet_denoise.cpp:37,269,538`, default now follows `-t`). Re-measure before
-assuming the scalar half is still the dominant cost.
+Prior correction retained: WMSA is window-parallel across `n_threads`
+(default follows `-t`).
 
 ### R8 — ggml-metal ICB (indirect command buffer) replay
 
