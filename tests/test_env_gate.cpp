@@ -23,10 +23,19 @@ static void expect(bool got, bool want, const char * what) {
 }
 
 static void set_var(const char * value) {
+#ifdef _WIN32
+    // MSVC has no setenv/unsetenv. _putenv_s with "" REMOVES the variable —
+    // the Windows CRT cannot represent a set-but-empty variable at all (a
+    // real `set FOO=` on cmd.exe deletes it too), so nullptr and "" are the
+    // same operation here and the POSIX-only empty-string check below is
+    // compiled out rather than faked.
+    _putenv_s("CRISPEMBED_TEST_ENV_GATE", value ? value : "");
+#else
     if (value)
         setenv("CRISPEMBED_TEST_ENV_GATE", value, 1);
     else
         unsetenv("CRISPEMBED_TEST_ENV_GATE");
+#endif
 }
 
 static int crispembed_test_main() {
@@ -40,10 +49,13 @@ static int crispembed_test_main() {
     set_var("1");
     expect(core_env::on(V), true, "\"1\" => on");
 
+#ifndef _WIN32
     // Empty string is a set-but-blank variable (`FOO= cmd`): off, because the
-    // operator supplied no value to turn anything on with.
+    // operator supplied no value to turn anything on with. POSIX-only: the
+    // Windows CRT cannot hold an empty-valued variable (see set_var).
     set_var("");
     expect(core_env::on(V), false, "\"\" => off");
+#endif
 
     // Any other non-empty value is on — gates are booleans, not enums, and a
     // typo must not silently disable an instrument the operator asked for.
