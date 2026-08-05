@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "images": "tests/regression/images/cc0",
+  "repeats": 1,
+  "reference_engine": "",
+  "skipped": {},
+  "fixtures": [
+    {
+      "fixture": "commons_example_receipt.png",
+      "truth_chars": 407,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "**Jackson-Washington**  \n6640 Ortiz Cove, Markmouth, PW 69940  \n\nTransaction ID: 8F88C299  \nDate: 2025-02-16 11:25:12  \n\n| Item    | Qty  | Price  |\n|---|---|---|\n| Strategy Accessory    | 1    | $43.31 | $    |\n| Conference Product    | 1    | $48.40 | $    |\n| Scientist Item    | 3    | $48.07 | $    |\n| Situation Item    | 3    | $23.87 | $    |\n| Life Accessory    | 4    | $48.04 | $    |\n| Music Accessory    | 1    | $24.45 | $    |\n\nSubtotal: $524.14  \nGST (5%): $26.21  \nPST (7%): $36.69  \n\n**Total:** $587.04  \n\nPayment: Gift Card (****3486)  \nHave a great day!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.22113,
+          "wer": 0.61429,
+          "ref_chars": 407,
+          "wer_unordered": 0.75714,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "commons_test_ocr_document.jpg",
+      "truth_chars": 2981,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "# Lorem Ipsum\n\nAlice was beginning to get very tired of sitting by her sister in the caf\u00e9, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \u201cand what is the use of a book,\u201d thought Alice, \u201cwithout pictures or conversations?\u201d\n\nSo she was considering in her own mind, (as well as she could, for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a little rabbit with pink ears ran close by her.\n\nThere was nothing so very remarkable in that; nor did Alice think it so very much out of the way to her character just to tell it, \u201cOh dear! Oh dear! I shall be too late!\u201d (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite naturally; but when the Rabbit actually got nearer and nearer to us, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either waistcoat-pocket, or watch to take out of it, and, burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it, never once considering how in the world she was to get out again.\n\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself by feeling her cheek up well.\n\nEither the well was very deep, or she fell very slowly, for she had plenty of time as she went down to look about her, and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with rubbish, and that they were filled with rubbish, and that they were filled with rubbish, and that they were all the same kind of rubbish, and that they were all the same kind of rubbish, and that they were all the most rubbishy rubbish, and that they were all the most rubbishy rubbish, and that they were all the same kind of rubbish, and that they were all the worst rubbishy rubbish, and that they were all the worst rubbishy rubbish, and that they were all the most rubbishy rubbishy rubbish, and that they were all the most rubbishy rubbishy rubbishy rubbishy rubbishy rubbishy rubbishy rubbishy rubbishy rubbishy rubbish, and that they were all the most rubbishy rubbishy rubbishy stuff.\n\nThe rabbit, who was now quite sure of his luck, ran after it, and when he came to a sudden stop, he found that it was just as dark as before, and that it was just as dirty as before, and that it was just as dirty as before.\n\nThe rabbit, who was now quite sure of his luck, ran after it, and when it came to a sudden stop, it found that it was just as dark as before, and that it was just as dirty as before.\n\nThe rabbit, who was now very much afraid, ran away, and Alice followed her.\n\n---\n\n**THE END**",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.33311,
+          "wer": 0.45324,
+          "ref_chars": 2981,
+          "wer_unordered": 0.59173,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "german_official_print.jpg",
+      "truth_chars": 1009,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Reichs-Gesetzblatt.\n\nNo. 1.\n\nInhalt. Verordnungen, betreffend das Auftaktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden vom 1. Dezember 1898.  \nS. 1. \u2014 Verordnungen, betreffend die Abkommenung der Belastungsf\u00e4lle des preu\u00dfischen General-Admiralty auf das Reichs-Milit\u00e4rgesetzblatt. \u00a7. 2.\n\n(Ver. 2642.) Verordnungen, betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden vom 1. Dezember 1889.  \nNo. 2. \u2014 Verordnungen, betreffend das Aufraktvertreten der Milit\u00e4rstaffel gerichtsbeh\u00f6rden vom 1. Dezember 1898.  \nS. 1. des Einf\u00fchrungsgesetzes.\n\nVerordnen unter Ausnahmef\u00e4llen des Au\u00dfenauskarlmens des General-Admiralty.  \n\u00a7. 1. \u2014 Verordnungen, betreffend die Aufnahme von Kriegsmarine-Grenzen in das Reichs-Milit\u00e4rgesetzblatt.  \nS. 1. des Einf\u00fchrungsgesetzes.\n\n(Verordnungen, betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichtshofers des General-Admiralty. \u00a7. 1. des Einf\u00fchrungsgesetzes.)\n\nReichs-Gesetzblatt. 1890.\n\nSekretariat des Kriegsmarine-Genarchives.\n\nNo. 1. \u2014 Verordnungen, betreffend das Aufraktvertreten der Milit\u00e4r staffelgerichtsbeh\u00f6rden vom 1. Dezember 1898.  \nS. 2. \u2014 Verordnungen, betreffend das Aufraktvertreten des General-Admiralty in das Reichs-Milit\u00e4rgesetzblatt.  \nS. 2. des Einf\u00fchrungsgesetzes.\n\nVerordnungen, betreffend das Aufraktvertreten der Milit\u00e4rstaffel gerichtshofers des General-Admiralty. \u00a7. 2. des Einf\u00fchrungsgesetzes.\n\nReichs-Gesetzblatt. 1900.\n\nSekretariat des Kriegsmarine-Genarchives.\n\nNo. 1.\n\nVerordnungen, betreffend das Aufraktvertreten der Milit\u00e4rstaff elgerichtsbeh\u00f6rden vom 1. Dezember 1898.  \nS. 1.\n\nVerordnungen, betreffend das Aufraktvertreten der Mil i t\u00e4r staffelgerichtsbeh\u00f6rden vom 1. Dezember 1898.  \nSekretariat des Kriegsmarine-Genarchives.\n\nNo. 1.\n\nVer ordnungen, betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichts beh\u00f6rden vom 1. Dezember 1898.  \nS. 1.\n\nVerordnunge, betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6r den vom 1. Dezember 1898.  \nS. 1.\n\nVerordnungen betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden.  \nS. 1.\n\nVerordnungen betreffend das Aufraktvertre ten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden.  \nS. 1.\n\nVerord nungen, betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden.  \nS. 1.\n\nVerordnungen betreffend das Aufraktvert renen der Milit\u00e4rstaffelgerichtsbeh\u00f6rden.  \nS. 1.\n\nVerordnen, betreffend das Aufraktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rde n.  \nS. 1.\n\nVerordnungen, betreffend das Aufraktvert renen der Milit\u00e4rstaffelgerichtsbeh\u00f6rden .  \nS. 1.\n\nVerordnungen, betreffend das Aufraktvertre ten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden .  \nS. 1.\n\nVerord nungen, betreffend das Aufraktvertre ten der Milit\u00e4rstaffelgerichtsbeh \u00f6rden.  \nS. 1.\n\nVerordnungen, betreffend das Aufraktvert ren der Milit\u00e4rstaffelgerichtsbeh\u00f6rden.  \nS. 1.\n\nVerordne nungen, betreffend das Aufraktvertre ten der Milit\u00e4rstaffelgerichts beh\u00f6rden.  \nS. 1.\n\nVerordnungen, betreffend das Aufrakt vertre ten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden.  \nS. 1.\n\nReichs-Gesetzblatt. 1900",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 2.13875,
+          "wer": 2.06716,
+          "ref_chars": 1009,
+          "wer_unordered": 1.97761,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "receipt_historical.png",
+      "truth_chars": 768,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "# FLEXHANDLER'S HANOVER ST.\n# THE \"SUPER\" MARKET\n# 11-18-12:21PM STORE 16\n# CUST 94 REG 8 OPR 1.71\n\nGROCERY 6.60  \nHOOD HOODSIE CUP 1.99  \nHOOD HOODSIE CUP 1.99  \nHF ORANGE JC 642 1.29  \nBC WHITE CAKE 18 0.73  \nBC WHITE CAKE 18 0.73  \nSLICE O'M'AN ORZL 0.89  \nS/K NAPKINS 140 0.63  \nSLICE CHR COLA2L 1.39  \n6 0 6.89  \n\nLOOSE BULKY RLS 0.89  \nTUNA SALHO SAND 1.99*TX  \nWHITE HT. BREED 0.99  \nFLEX STRIPS 0.89*  \nSWTHR PLATES?*48 1.63*  \nFRT WRINKLS LEMON 1.79  \nBEEF PATTIES 75% 2.21  \nSNK FRT'S CHRY 1.89  \n30 LB 0 1.59  \n\nCARTWELLS 0.18  \nBFLUONS 140T 1.25*  \nLGE BRIN 8PK 0.65  \nKLEENEX POCKET 1.29*  \nM&M 15PREE 1884 1.99  \n1 0 2-1.00  \nDOPINO CONFECT 0.50  \n1 0 2-1.00  \nDOPINO CONFECT 0.00  \nK&LR T-HOUSE168N 1.69  \nBAKERY 4.99  \nCHEER 962PP499 0.49  \nTOTAL $39.99  \nCASH TEND 48.00  \n\nSUBTOTAL 39.85  \nTHX FRI 0.14  \n\n# 01 CHANGE",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.13802,
+          "wer": 0.46528,
+          "ref_chars": 768,
+          "wer_unordered": 0.55556,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "simple_form.png",
+      "truth_chars": 247,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Input  \nText  \nNumber  \nDate  \nPassword  \n\na label  \nANOTHER LABEL  \nYet another label  \n\ncombo suggestion  \nFrance  \n@checkbox2  \n\ncode  \ncode1b  \n\nButton  \nRechercher  \n\u0414\u0435\u0439\u0441\u0442\u0432\u0438\u0435 \u043a\u043e\u043f\u0438\u0440\u043e\u0432\u0430\u0442\u044c",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.45344,
+          "wer": 0.58333,
+          "ref_chars": 247,
+          "wer_unordered": 0.63889,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    }
+  ],
+  "gold_dir": "/Users/christianstrobele/code/CrispEmbed/tests/results/f1/m-guard-persist-cc0",
+  "gold_manifest": {},
+  "missing_transcripts": [],
+  "summary": {
+    "native": {
+      "kind": "external",
+      "n": 5,
+      "failures": 0,
+      "mean_cer": 0.65689,
+      "mean_wer": 0.83666,
+      "mean_wer_unordered": 0.90419,
+      "mean_cer_vs_reference": null,
+      "median_proc_ms": null,
+      "median_engine_ms": null
+    }
+  }
+}

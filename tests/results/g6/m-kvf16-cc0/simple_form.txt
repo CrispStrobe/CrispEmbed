@@ -1,0 +1,20 @@
+Input  
+Text  
+Number  
+Date  
+Password  
+
+a label  
+ANOTHER LABEL  
+Yet another label  
+
+combo suggestion  
+France  
+@checkbox2  
+
+code  
+code1b  
+
+Button  
+Rechercher  
+Действие копировать

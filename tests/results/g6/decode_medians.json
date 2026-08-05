@@ -1,0 +1,42 @@
+{
+  "m-kvf16-cc0": {
+    "n_common": 5,
+    "n_identical_text": 4,
+    "mspt_all_f16": 42.1,
+    "mspt_all_f32": 90.4,
+    "mspt_ratio_all": 0.466,
+    "decode_med_ident_f16": 13399.6,
+    "decode_med_ident_f32": 29130.4,
+    "mspt_ident_f16": 39.3,
+    "mspt_ident_f32": 85.9
+  },
+  "m-kvf16-synth": {
+    "n_common": 20,
+    "n_identical_text": 20,
+    "mspt_all_f16": 35.8,
+    "mspt_all_f32": 44.7,
+    "mspt_ratio_all": 0.801,
+    "decode_med_ident_f16": 1291.8,
+    "decode_med_ident_f32": 1546.4,
+    "mspt_ident_f16": 35.8,
+    "mspt_ident_f32": 44.7
+  },
+  "c-kvf16-cc0": {
+    "n_common": 5,
+    "n_identical_text": 0,
+    "mspt_all_f16": 16.8,
+    "mspt_all_f32": 34.8,
+    "mspt_ratio_all": 0.483
+  },
+  "c-kvf16-synth": {
+    "n_common": 5,
+    "n_identical_text": 5,
+    "mspt_all_f16": 15.6,
+    "mspt_all_f32": 22.0,
+    "mspt_ratio_all": 0.709,
+    "decode_med_ident_f16": 516.4,
+    "decode_med_ident_f32": 726.9,
+    "mspt_ident_f16": 15.6,
+    "mspt_ident_f32": 22.0
+  }
+}
