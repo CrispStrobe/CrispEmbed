@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | `perf/layout-phase1` (`.claude/worktrees/perf-layout-phase1`) | **O1+O2 — layout Phase 1 profile (warmup vs steady, sched splits, where the ~1.4 s goes) + Phase 2 residue (cache per-layer self-attn/FFN weight dequant+transpose+upload; value-proj batching)** — byte-identical output gate throughout | IN PROGRESS |
+| 2026-08-05 | *(landed via `perf/layout-phase1`)* | **O1 answered + O2a landed** — Phase 1 (~1.4 s) is **steady-state Metal compute, not warmup** (new `CRISPEMBED_LAYOUT_REPEAT=N` CLI diagnostic: warm==cold; new compute/readback bench split: readback ~5-8 ms). New opt-in `LAYOUT_CONV_F16=1` (F16-dst im2col + F16 mul_mm) **measured SLOWER on M1 Metal (2.2 s vs 1.4 s)**, quality fine (±0.002 score) — kept gated for CUDA/A1000 where it should win. O2a: per-call self-attn weight re-read/re-transpose (~5 MB/call) cached in the layer, **regions byte-identical**; saving below the loaded box's noise floor, claimed as removed work only. Next Phase-2 candidate recorded: value-proj on GPU (est. 101→~30 ms) | **DONE** |
 | 2026-08-05 | *(landed via `perf/r7-scunet`)* | **R7 measured and CLOSED — no DequantCache warranted**: new permanent `to_f32` timing on the `CRISPEMBED_SCUNET_BENCH` line shows ALL weight dequant copies are **~4-5 ms of a ~4.3 s tile pass (~0.1%)** on the f32 artifact (f16 bound: ~1%). The item argued from grep-presence, not cost — third stale backlog premise caught by measure-first this session. Output byte-identical with the instrumentation; scunet's real cost is Swin/conv compute (deprioritized SR-on-GPU research) | **DONE** |
 | 2026-08-05 | *(landed via `perf/r2-deform`)* | **R2 premise STALE — real hotspot found + fixed, 2.66x Phase 2** — measured FIRST (new permanent per-stage timers behind `CRISPEMBED_LAYOUT_DETECT_BENCH`): the deform loop is **16 ms of 856 ms Phase 2 (~2%)** on current main — the survey's "dominant cost" claim predates `2a43e4f4`. Actual hotspot: decoder **level input projection** (scalar strided nest, single-threaded) at **549 ms = 64% of Phase 2**; rewritten AXPY+threaded (byte-identical accumulation), level-proj ~15x at `-t 4`, **Phase 2 846→318 ms**, layout call 2332→~1700 ms, **CLI regions byte-identical** both thread counts. Deform loop deliberately untouched. New top costs recorded in the R2 backlog note: Phase 1 Metal backbone ~1.4 s (~80% of call), then value-proj + self-attn weight re-upload | **DONE** |
 | 2026-08-05 | *(landed via `perf/conv2d-gemm`)* | **R6 built + M1-measured, R4 DONE** — `core_cpu::conv2d_im2col_cpu` (im2col tiles + oc-outer interchange + fork-join threads), **bitwise-identical by construction** (exact-equality unit guard, 9 shapes, nt=1+4; 180/180). Gated `CRISPEMBED_CONV2D_GEMM=1`/`CRISPEMBED_CONV2D_THREADS=N`, default OFF. M1 A/B (PP-OCRv6 medium scalar det, 5 interleaved pairs): **nt=4 wall 2.04x, won every pair; nt=1 4-7% SLOWER** (12 MB shared L2 already holds the weights — threading is the M1 win, interchange needs the small-L2 x86/Kaggle arm, TODO). R4: `CRISPEMBED_LIGHTONOCR_GPU=1`/`_FORCE_CPU=1` gate landed (got_ocr sched pattern); default verified byte-identical + 0 Metal markers; Metal arm proven live, decoded text identical, no wall win on the small fixture → CPU stays default. Evidence: `PERFORMANCE.md` "R6 conv2d_cpu im2col-tile A/B" | **DONE** |
@@ -3870,18 +3870,26 @@ Kaggle batch (O8+O9) interleaved as the discrete-GPU unlock.
 
 ### Lane A — local (M1), immediately actionable
 
-- **O1. Layout Phase 1 profile — the Metal backbone+encoder (~1.4 s, now
-  ~80% of the layout call).** Composition unknown: warmup vs steady-state,
-  sched splits, conv-on-Metal cost, host<->device copies. Instrument first
-  (repeat-call timing, `GGML_SCHED_DEBUG=2` split census, per-stage timers
-  like the Phase-2 ones). Expected outcome: even odds of a structural >=1.5x
-  finding or a documented "it is what Metal costs"; either result feeds the
-  region-routing pipeline (`--ocr-layout`) directly.
-- **O2. Layout Phase 2 residue.** Two bounded fixes: cache the per-layer
-  dequant+transpose+re-upload of self-attn/FFN weights in the context
-  (byte-identical, mechanical), and batch/move the six 256x256x8400 value
-  projections. Expected outcome (high confidence): Phase 2 ~318 -> ~150-220
-  ms. Do together with O1 — same engine, same fixtures, compounding.
+- **O1. Layout Phase 1 profile — DONE 2026-08-05** (`perf/layout-phase1`).
+  Answer: the ~1.4 s is **steady-state Metal graph compute** — warm calls
+  equal cold (`CRISPEMBED_LAYOUT_REPEAT=N` diagnostic landed), feat readback
+  is 5-8 ms (bench line now splits compute/readback), and the earlier
+  direct->im2col 9.8x is the state of the art for this graph on M1. The
+  "structural >=1.5x" hope did NOT materialize on Metal: the new opt-in
+  `LAYOUT_CONV_F16=1` path (F16-dst im2col + F16 mul_mm, composed manually
+  because the fork forces F32 im2col for F32 activations and Metal im2col
+  rejects F16 sources) measured **SLOWER — 2.2 s vs 1.4 s** — with quality
+  fine (same 20 regions, ±0.002 score / ±0.1 px). Kept gated: on CUDA/A1000
+  tensor cores this path is the one-env A/B to run first (see O9/O11).
+  Remaining M1 lever is per-op Metal kernel work (R8 territory).
+- **O2. Layout Phase 2 residue — O2a DONE, O2b open.** O2a (landed, same
+  branch): the self-attn block re-read + re-transposed ~5 MB of immutable
+  weights per call; now cached per layer, regions byte-identical; saving is
+  real but below the loaded dev box's noise floor (claimed as removed work,
+  not a ms figure). **O2b (open): value projection on the GPU** — six
+  256x256 x 8400-token matmuls, est. 101 -> ~30 ms at `-t 4` (upload 8.6 MB
+  once, read back 51 MB, ~10 ms GPU compute); needs a quiet box or
+  Kaggle-style pairs to prove.
 - **O3. R3 one engine at a time** — flip the formula-encoder `enc_sched`s to
   `{gpu, cpu}` behind per-engine gates (bttr, hmer, posformer, mixtex, flova,
   ppformulanet, pix2struct; several models cached locally). Expected outcome:
