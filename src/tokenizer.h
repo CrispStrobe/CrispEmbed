@@ -16,6 +16,41 @@ struct embed_tokens {
     std::vector<int32_t> attn_mask; // 1 for real tokens, 0 for padding
 };
 
+// Resolve the tokenizer FAMILY (0=WordPiece, 1=BPE, 2=SentencePiece) an
+// encoder GGUF selects. Pure function so the decision table is hermetically
+// testable (tests/test_bert_pretokenize.cpp).
+//
+// Sources, in order of authority:
+//   * `tokenizer.ggml.type` (CrispEmbed's own numeric key). When PRESENT it
+//     is a declaration and is final — in particular an explicit WordPiece
+//     (0) is honoured for vocabs over 100k (LaBSE, 501k tokens). No
+//     historical GGUF carries type=0 with such a vocab (the old converter
+//     could not produce one), so honouring it changes nothing shipped.
+//   * `tokenizer.ggml.model` (community/llama.cpp string key: gpt2/bpe ->
+//     BPE; t5/unigram/spm/llama -> SentencePiece; bert/wordpiece ->
+//     WordPiece). Mapped exactly as before — including that a "bert" GGUF
+//     with a >100k vocab still falls to the legacy heuristic below, wrong as
+//     that is for a community LaBSE file: absent CrispEmbed metadata keeps
+//     absolutely the historical behavior.
+//   * Legacy fallback for GGUFs with neither key: vocabs over 100k are
+//     assumed SentencePiece (the pre-tokenizer.json heuristic).
+inline int resolve_tokenizer_family(bool type_key_present, int declared_type, const std::string & model_str,
+                                    int64_t vocab_n) {
+    int family = type_key_present ? declared_type : 0;
+    if (!type_key_present) {
+        if (model_str == "gpt2" || model_str == "bpe")
+            family = 1;
+        else if (model_str == "t5" || model_str == "unigram" || model_str == "spm" || model_str == "llama")
+            family = 2;
+        else if (model_str == "bert" || model_str == "wordpiece")
+            family = 0;
+        // else: leave 0 and let the legacy `n > 100000 -> SPM` heuristic
+        // below decide (covers old GGUFs with neither key).
+    }
+    if (family == 0 && !type_key_present && vocab_n > 100000) family = 2;
+    return family;
+}
+
 class WordPieceTokenizer {
 public:
     // Load vocab from a list of tokens (index = token id).
@@ -29,6 +64,14 @@ public:
     // Tokenize a sentence pair for cross-encoders/rerankers:
     // [CLS] text_a [SEP] text_b [SEP], type_ids 0/1, padded to max_length.
     embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
+
+    // Enable the HF BertNormalizer + BertPreTokenizer pre-tokenization
+    // (core/bert_pretok.h): Unicode whitespace, \p{P} isolation, per-ideograph
+    // CJK split, control/format removal. Selected by `tokenizer.ggml.pre =
+    // "bert"` — an ABSENT key keeps the historical per-byte
+    // isspace/ispunct path, so every shipped GGUF tokenizes byte-identically.
+    // Needed by LaBSE-class GGUFs (cased multilingual WordPiece).
+    void set_bert_pretok(bool on) { bert_pretok_ = on; }
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
@@ -51,6 +94,11 @@ private:
     int pad_id_ = 0;
     int max_length_ = 512;
     bool do_lower_case_ = true;
+    bool bert_pretok_ = false; // HF Bert pre-tokenization; off = historical byte path
+
+    // Pre-tokenize `text` into words: core_bert::pretokenize when
+    // bert_pretok_, else the historical per-byte isspace/ispunct split.
+    std::vector<std::string> split_words(const std::string & text) const;
 
     // Trie for O(len) longest-match WordPiece lookup.
     // Two roots: trie_root_ for first pieces, trie_cont_ for ## continuations.

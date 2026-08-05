@@ -548,24 +548,22 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
         }
 
         // Detect tokenizer type: 0=WordPiece, 1=BPE, 2=SentencePiece.
-        // CrispEmbed's own GGUFs write the numeric `tokenizer.ggml.type`.
+        // CrispEmbed's own GGUFs write the numeric `tokenizer.ggml.type`,
+        // which when present is FINAL — an explicit WordPiece (0) is honoured
+        // even for a >100k vocab (LaBSE, 501k; before this the legacy
+        // heuristic below routed it into the SPM tokenizer, which wrapped
+        // with bos=0/eos=2 instead of [CLS]/[SEP] and emitted the literal
+        // "▁" vocab token for every space — 0/20 on the HF id battery).
         // Community/llama.cpp GGUFs instead write the STRING `tokenizer.ggml.model`
         // (gpt2 / bert / t5 / llama / unigram) with NO numeric type — for those the
         // model string is AUTHORITATIVE over the old vocab-size heuristic. Without
         // this a gpt2/modern-bert BPE GGUF (50368 vocab, no type) fell through to
         // WordPiece and produced garbage embeddings from token 0.
-        int tokenizer_type = u32("tokenizer.ggml.type", 0);
-        if (gguf_find_key(g, "tokenizer.ggml.type") < 0) {
-            const std::string tok_model = strv("tokenizer.ggml.model");
-            if (tok_model == "gpt2" || tok_model == "bpe")
-                tokenizer_type = 1; // BPE
-            else if (tok_model == "t5" || tok_model == "unigram" || tok_model == "spm" || tok_model == "llama")
-                tokenizer_type = 2; // SentencePiece
-            else if (tok_model == "bert" || tok_model == "wordpiece")
-                tokenizer_type = 0; // WordPiece
-            // else: leave 0 and let the legacy `n > 100000 → SPM` heuristic below
-            // decide (covers old GGUFs with neither type nor a known model string).
-        }
+        // The decision table lives in resolve_tokenizer_family (tokenizer.h),
+        // hermetically tested by tests/test_bert_pretokenize.cpp.
+        const int tokenizer_type =
+            resolve_tokenizer_family(gguf_find_key(g, "tokenizer.ggml.type") >= 0, (int)u32("tokenizer.ggml.type", 0),
+                                     strv("tokenizer.ggml.model"), n);
         // C2 behavior flags (llama.cpp convention, BOOL-typed; absent or
         // non-BOOL → default true = the historical wrap behavior, so every
         // shipped GGUF is byte-identical). Read while `g` is live (gguf_free
@@ -573,7 +571,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
         const bool tok_add_bos = core_gguf::kv_bool(g, "tokenizer.ggml.add_bos_token", true);
         const bool tok_add_eos = core_gguf::kv_bool(g, "tokenizer.ggml.add_eos_token", true);
 
-        if (tokenizer_type == 2 || (tokenizer_type == 0 && n > 100000)) {
+        if (tokenizer_type == 2) {
             // SentencePiece / XLM-RoBERTa
             int bos_id = u32("tokenizer.ggml.bos_token_id", 0);
             int eos_id = u32("tokenizer.ggml.eos_token_id", 2);
@@ -637,8 +635,15 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
                 }
             }
             ctx->wp_tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens, do_lower_case);
-            fprintf(stderr, "crispembed: using WordPiece tokenizer (%d tokens, %s)\n", n,
-                    do_lower_case ? "uncased" : "cased");
+            // `tokenizer.ggml.pre = "bert"` selects the HF BertNormalizer +
+            // BertPreTokenizer path (core/bert_pretok.h) — written by the
+            // converter when tokenizer.json itself declares it (LaBSE class).
+            // ABSENT key = the historical per-byte splitter, so every shipped
+            // WordPiece GGUF tokenizes byte-identically.
+            const bool bert_pre = strv("tokenizer.ggml.pre") == "bert";
+            ctx->wp_tokenizer.set_bert_pretok(bert_pre);
+            fprintf(stderr, "crispembed: using WordPiece tokenizer (%d tokens, %s%s)\n", n,
+                    do_lower_case ? "uncased" : "cased", bert_pre ? ", pre=bert" : "");
         }
         ib.mark("tokenizer_build");
     }

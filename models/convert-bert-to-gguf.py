@@ -431,15 +431,18 @@ def main():
     # Detect tokenizer type.
     #
     # The `vocab_size > 100000` heuristic predates any tokenizer.json inspection
-    # and mislabels every LARGE BPE vocab as SentencePiece — which is exactly
-    # what granite-embedding-{97m,311m}-multilingual-r2 are (180k and 262k BPE).
-    # A declared "BPE" is authoritative and overrides it. WordPiece vocabs over
-    # 100k (LaBSE) are deliberately LEFT on the historical path here so this
-    # change cannot alter any other model's conversion; that one is a separate,
-    # still-open question.
+    # and mislabels every LARGE vocab as SentencePiece — big BPEs
+    # (granite-embedding-{97m,311m}-multilingual-r2: 180k and 262k) and big
+    # WordPieces (LaBSE: 501k) alike. A declared model.type is authoritative
+    # and overrides it. The LaBSE class was confirmed broken on the old path
+    # (0/20 HF token-id parity: SPM routing wrapped with bos=0/eos=2 instead
+    # of [CLS]/[SEP] and emitted the literal "▁" vocab token for every space).
     if tj_model_type == "BPE":
         is_sentencepiece = False
         print("  tokenizer.json declares model.type=BPE (overrides the vocab-size heuristic)")
+    elif tj_model_type == "WordPiece":
+        is_sentencepiece = False
+        print("  tokenizer.json declares model.type=WordPiece (overrides the vocab-size heuristic)")
     else:
         is_sentencepiece = hasattr(tokenizer, 'sp_model') or config.vocab_size > 100000
 
@@ -641,6 +644,31 @@ def main():
                     if last_id is not None:
                         sep_tok_id = last_id
                     print(f"  post-processor: bos={first_id} eos={last_id}")
+
+            if not is_bpe_tokenizer:
+                # WordPiece pre-tokenization is self-described the same way the
+                # BPE flavours above are. The runtime's default WordPiece
+                # splitter is per-byte ASCII isspace/ispunct — frozen for every
+                # shipped GGUF — which cannot match HF outside ASCII (no CJK
+                # per-ideograph split, no Unicode punctuation isolation, NBSP
+                # treated as a letter, soft hyphen kept). When tokenizer.json
+                # declares the plain cased BertNormalizer + BertPreTokenizer
+                # (the LaBSE class: no lowercasing, no accent stripping),
+                # `tokenizer.ggml.pre = "bert"` selects the faithful
+                # core/bert_pretok.h path; an ABSENT key keeps the historical
+                # behavior. Lowercasing/accent-stripping variants stay on the
+                # historical path: the runtime has no Unicode lowercase map,
+                # and pretending otherwise would be silently wrong.
+                _norm = tj.get("normalizer") or {}
+                _pre = tj.get("pre_tokenizer") or {}
+                if (_pre.get("type") == "BertPreTokenizer"
+                        and _norm.get("type") == "BertNormalizer"
+                        and _norm.get("clean_text", True)
+                        and _norm.get("handle_chinese_chars", True)
+                        and not _norm.get("lowercase", True)
+                        and not _norm.get("strip_accents")):
+                    writer.add_string("tokenizer.ggml.pre", "bert")
+                    print("  tokenizer.ggml.pre: bert (cased BertNormalizer + BertPreTokenizer)")
 
             writer.add_uint32("tokenizer.ggml.cls_token_id", cls_tok_id if cls_tok_id is not None else 101)
             writer.add_uint32("tokenizer.ggml.sep_token_id", sep_tok_id if sep_tok_id is not None else 102)

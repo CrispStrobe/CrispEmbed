@@ -654,6 +654,11 @@ target_include_directories(test-o200k-pretokenize PRIVATE src)
 add_executable(test-bpe-pretokenize tests/test_bpe_pretokenize.cpp)
 target_include_directories(test-bpe-pretokenize PRIVATE src)
 
+# Hermetic: core/bert_pretok.h HF-Bert pre-tokenization (LaBSE-class WordPiece,
+# tokenizer.ggml.pre = "bert") + the tokenizer-family routing table.
+add_executable(test-bert-pretokenize tests/test_bert_pretokenize.cpp)
+target_include_directories(test-bert-pretokenize PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 

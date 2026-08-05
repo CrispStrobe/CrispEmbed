@@ -2,6 +2,8 @@
 
 #include "tokenizer.h"
 
+#include "core/bert_pretok.h"
+
 #include <algorithm>
 #include <cctype>
 #include <cstring>
@@ -143,8 +145,19 @@ std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
     return ids;
 }
 
-embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
-    // Basic preprocessing: lowercase + split on whitespace/punctuation
+std::vector<std::string> WordPieceTokenizer::split_words(const std::string & text) const {
+    if (bert_pretok_) {
+        // HF BertNormalizer + BertPreTokenizer (tokenizer.ggml.pre = "bert").
+        std::vector<std::string> words = core_bert::pretokenize(text);
+        if (do_lower_case_) {
+            for (auto & w : words)
+                for (auto & c : w) c = (char)std::tolower((unsigned char)c);
+        }
+        return words;
+    }
+    // Historical per-byte preprocessing: lowercase + split on ASCII
+    // whitespace/punctuation. FROZEN — every shipped WordPiece GGUF
+    // tokenizes through this exact loop.
     std::vector<std::string> words;
     std::string current;
     for (size_t i = 0; i < text.size(); i++) {
@@ -165,6 +178,11 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
         }
     }
     if (!current.empty()) words.push_back(current);
+    return words;
+}
+
+embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
+    std::vector<std::string> words = split_words(text);
 
     // Tokenize each word via WordPiece
     std::vector<int32_t> ids;
@@ -198,29 +216,8 @@ embed_tokens WordPieceTokenizer::encode(const std::string & text) const {
 embed_tokens WordPieceTokenizer::encode_pair(const std::string & text_a, const std::string & text_b) const {
     // Tokenize a string to raw subword ids (no special tokens, no padding)
     auto tokenize_raw = [&](const std::string & text) -> std::vector<int32_t> {
-        std::vector<std::string> words;
-        std::string cur;
-        for (size_t i = 0; i < text.size(); i++) {
-            unsigned char c = text[i];
-            if (std::isspace(c)) {
-                if (!cur.empty()) {
-                    words.push_back(cur);
-                    cur.clear();
-                }
-            } else if (std::ispunct(c)) {
-                if (!cur.empty()) {
-                    words.push_back(cur);
-                    cur.clear();
-                }
-                words.push_back(std::string(1, (char)c));
-            } else {
-                cur += do_lower_case_ ? (char)std::tolower(c) : (char)c;
-            }
-        }
-        if (!cur.empty()) words.push_back(cur);
-
         std::vector<int32_t> ids;
-        for (const auto & w : words)
+        for (const auto & w : split_words(text))
             for (int id : wordpiece(w)) ids.push_back(id);
         return ids;
     };
