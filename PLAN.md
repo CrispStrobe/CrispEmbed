@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | `perf/r2-deform` (`.claude/worktrees/perf-r2-deform`) | **R2 — `layout_detect` deformable cross-attention loop** (`layout_detect.cpp:1619`, `_deform_ms`-instrumented dominant Phase-2 cost): restructure the strided `values` access for contiguity, SIMD the head-dim inner loop, thread over queries; env-gated until the A/B (decoded layout output + `_deform_ms`) wins. Same session as the R6/R4 landing | IN PROGRESS |
+| 2026-08-05 | *(landed via `perf/r2-deform`)* | **R2 premise STALE — real hotspot found + fixed, 2.66x Phase 2** — measured FIRST (new permanent per-stage timers behind `CRISPEMBED_LAYOUT_DETECT_BENCH`): the deform loop is **16 ms of 856 ms Phase 2 (~2%)** on current main — the survey's "dominant cost" claim predates `2a43e4f4`. Actual hotspot: decoder **level input projection** (scalar strided nest, single-threaded) at **549 ms = 64% of Phase 2**; rewritten AXPY+threaded (byte-identical accumulation), level-proj ~15x at `-t 4`, **Phase 2 846→318 ms**, layout call 2332→~1700 ms, **CLI regions byte-identical** both thread counts. Deform loop deliberately untouched. New top costs recorded in the R2 backlog note: Phase 1 Metal backbone ~1.4 s (~80% of call), then value-proj + self-attn weight re-upload | **DONE** |
 | 2026-08-05 | *(landed via `perf/conv2d-gemm`)* | **R6 built + M1-measured, R4 DONE** — `core_cpu::conv2d_im2col_cpu` (im2col tiles + oc-outer interchange + fork-join threads), **bitwise-identical by construction** (exact-equality unit guard, 9 shapes, nt=1+4; 180/180). Gated `CRISPEMBED_CONV2D_GEMM=1`/`CRISPEMBED_CONV2D_THREADS=N`, default OFF. M1 A/B (PP-OCRv6 medium scalar det, 5 interleaved pairs): **nt=4 wall 2.04x, won every pair; nt=1 4-7% SLOWER** (12 MB shared L2 already holds the weights — threading is the M1 win, interchange needs the small-L2 x86/Kaggle arm, TODO). R4: `CRISPEMBED_LIGHTONOCR_GPU=1`/`_FORCE_CPU=1` gate landed (got_ocr sched pattern); default verified byte-identical + 0 Metal markers; Metal arm proven live, decoded text identical, no wall win on the small fixture → CPU stays default. Evidence: `PERFORMANCE.md` "R6 conv2d_cpu im2col-tile A/B" | **DONE** |
 | 2026-08-05 | *(landed on `main`, docs only — no code touched)* | **OCR runtime residency survey DONE** — code-verified sweep at `9f731fb5` of every OCR-lane engine's backend selection + `ggml_backend_sched` composition. Full tables in `PERFORMANCE.md` ("OCR runtime residency survey", top of file); ranked backlog as **R1-R8** in "OPEN TASKS — OCR runtime residency and optimization backlog" below. **Key correction: the loading backend is not the computing backend** — bttr/hmer/posformer/mixtex/flova/ppformulanet build ggml encoder graphs but run them on a CPU-only `enc_sched` (their "prefer GPU backend" comments are stale), and `lightonocr` is hardcoded CPU with no `*_FORCE_CPU` gate despite the VLM maturity table claiming "GPU: Yes". Also closed: the P3 "`--gpu-backend` ignored" gap (`crispembed.cpp:101` routes through the helper). **No engine defaults changed** | **DONE** |
 | 2026-08-05 | *(landed, round-7 coordinator)* | **v0.17.6 RELEASED** (`23a5d5e0` bump + tag on green-CI tip `902a6e1b`; release run `31016913759` SUCCESS, **16/16 assets verified** — same complete set as v0.17.5): /rerank server abort fix, mxbai/ms-marco -g7c re-ships, erf pooler default, DS_/BENCH/UOCR_* `=0` gate audits (incl. the `UOCR_PD=0` segfault), reranker -f7 imatrix re-pins + new bge-v2-m3-q4k alias, `CRISPEMBED_QUANT_IMATRIX_QKV` selector, Windows `test_env_gate` MSVC fix (**Windows CI had been red since `d04f3572`** — now green). Published notes dropped from the tree (`5f756ab5`, tag retains its copy) | **DONE** |
@@ -3720,13 +3720,27 @@ weights/scratch across lines. `CRISPEMBED_TESSERACT_WORKERS` already gives
 1 -> 690 ms, 4 -> 300 ms, 8 -> 292 ms, i.e. thread-level parallelism has
 saturated; the remaining win is per-line work, not more workers.
 
-### R2 — `layout_detect` deformable cross-attention
+### R2 — `layout_detect` deformable cross-attention — **PREMISE STALE; real hotspot found + FIXED 2026-08-05**
 
-Still a 6-nested-loop CPU bilinear grid-sample (`layout_detect.cpp:1430`,
-`bilinear_sample` at `:844`), instrumented as the dominant Phase-2 decoder cost
-via `_deform_ms`. The last surviving P0 from the June audit. The engine's
-backbone/FPN/AIFI already run on a GPU sched, so this is the one scalar island
-in an otherwise accelerated graph.
+**The "dominant Phase-2 cost" claim was measured before `2a43e4f4`** (the
+2026-07-11 cpu_linear threading) and survived into the survey uncorrected: on
+current main the deform loop is **16 ms of an 856 ms Phase 2 (~2%)** on
+`scan_page_pd` at `-t 4`. New permanent per-stage timers behind
+`CRISPEMBED_LAYOUT_DETECT_BENCH` found the ACTUAL dominant cost: the decoder
+**level input projection** (1x1 conv over 8400 tokens; scalar `(n,o,i)` nest,
+inner reduction striding `feat_col` by N_lv, single-threaded) — **549 ms,
+64% of Phase 2**. Landed on `perf/r2-deform`: rewritten in the `2a43e4f4`
+AXPY form + threaded over output rows, byte-identical accumulation order.
+Result: level-proj 549 -> 77.6 ms at `-t 1` (contiguity alone, 7.1x) and
+~30 ms at `-t 4` (~15x); **Phase 2 846 -> 318 ms median (2.66x)**; whole
+layout call 2332 -> ~1700 ms. **CLI region output byte-identical** at both
+thread counts. The deform loop itself stays as-is deliberately (16 ms does
+not justify restructuring risk). Remaining, re-scoped honestly: **Phase 1
+(Metal backbone+encoder, ~1.4 s) is now ~80% of the layout call** — that is a
+GPU-graph question (profile split composition/warmup vs steady-state before
+touching), not a scalar-island one; and Phase 2's next items are value-proj
+(101 ms) + the per-call weight re-dequant/re-transpose/re-upload in the
+self-attn ggml block.
 
 ### R3 — Promote the CPU-sched formula encoders to a GPU sched
 

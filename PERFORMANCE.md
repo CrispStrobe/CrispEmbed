@@ -126,6 +126,46 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## layout_detect Phase 2: the R2 "deform loop dominates" claim was stale — the level input projection was 64%, fixed 2.66x, byte-identical (Apple M1, 2026-08-05)
+
+Measure-first pass on the R2 backlog item (branch `perf/r2-deform`,
+`layout-heron-f32.gguf`, `scan_page_pd.png` 606x1000, Metal build, `-t 4`).
+New per-stage timers are permanent behind `CRISPEMBED_LAYOUT_DETECT_BENCH`:
+
+| Phase-2 stage | before (ms) | after (ms) |
+|---|--:|--:|
+| level input projection | **548.8** | 28.5-37.0 |
+| value projection | 110.5 | 100.7-115.9 |
+| enc-bbox-head | 37.6 | 37.2-38.0 |
+| self-attn ggml block | 70.4 | 44.2-49.4 |
+| ffn ggml block | 13.1 | 12.8-14.7 |
+| deformable-sample loop | 16.1 | 14.7-18.3 |
+| **Phase 2 total** | **846-856** | **311-337 (median 318)** |
+
+The deformable-sample loop — the R2 backlog's named target, "instrumented as
+the dominant Phase-2 decoder cost" — is **~2% of Phase 2 on current main**;
+that claim predates `2a43e4f4` (2026-07-11), which threaded the decoder
+cpu_linears and dethroned it. The survey carried it forward unverified.
+
+The actual hotspot was the decoder **level input projection** (1x1 conv over
+8400 tokens, `layout_detect.cpp` `input_proj`): a scalar `(n, o, i)` nest
+whose inner reduction strode `feat_col` by N_lv, single-threaded — 549 ms.
+Rewritten in the `2a43e4f4` AXPY form (contiguous inner axis, identical
+per-element accumulation order over `i`, threaded over disjoint output rows;
+`cpu_linear` itself could not serve because its square-weight heuristic picks
+the MatMul convention and this weight is ONNX Conv `(out, in)`). Ungated, per
+the `2a43e4f4` precedent, because the arithmetic is order-identical:
+**CLI region output byte-identical to baseline at `-t 1` and `-t 4`**,
+re-verified after the clang-format rebuild. Contiguity alone (before
+threading) is 549 -> 77.6 ms at `-t 1` (7.1x).
+
+Whole layout call: 2332 -> 1686-1817 ms. **Phase 1 (Metal backbone+encoder,
+~1.4 s, thread-count-invariant) is now ~80% of the call** — the next lever is
+GPU-graph-side (profile warmup vs steady-state and sched composition first),
+not another scalar island. After it, Phase 2's remaining items are the
+value projection (~101 ms) and the self-attn block's per-call weight
+re-dequant/re-transpose/re-upload.
+
 ## R6 conv2d_cpu im2col-tile A/B: threading is the win (2.04x wall at nt=4), the interchange alone is not — on M1 (2026-08-05)
 
 `core_cpu::conv2d_im2col_cpu` (branch `perf/conv2d-gemm`) gathers a tile of
