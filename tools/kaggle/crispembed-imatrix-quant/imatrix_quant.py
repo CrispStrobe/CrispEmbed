@@ -656,6 +656,23 @@ def pick_base_gguf(ggs, name):
 # (streaming, per-tensor). Big files stage in /tmp (~70GB) not /kaggle/working (~20GB).
 BIG_BYTES = 10 * 1000**3
 
+
+def imatrix_coverage(path):
+    """Digest of a collected .imatrix: per-shape tensor-key counts. `leaf_N` keys
+    are ggml auto-names for an UNNAMED graph leaf — the F7 defect signature (the
+    pre-merged BERT QKV weight), and they match nothing at quantize time."""
+    try:
+        from gguf import GGUFReader
+        import collections
+        names = [t.name for t in GGUFReader(str(path)).tensors]
+        c = collections.Counter(re.sub(r"\d+", "N", n) for n in names)
+        leaf = sum(v for k, v in c.items() if k.startswith("leaf_"))
+        head = f"    {len(names)} keys, leaf_N={leaf} ({'DEFECT' if leaf else 'OK — no unnamed leaves'})"
+        return "\n".join([head] + [f"    {v:4d}  {k}" for k, v in sorted(c.items())])
+    except Exception as e:                                  # never fail a run on a digest
+        return f"    (coverage digest unavailable: {type(e).__name__}: {e})"
+
+
 def process(name, cli, quant, api, calib, eval_):
     from huggingface_hub import hf_hub_download
     ov = OVERRIDES.get(name, {})
@@ -666,6 +683,19 @@ def process(name, cli, quant, api, calib, eval_):
     ggs = {s.rfilename: (s.size or 0) for s in api.repo_info(hf_out, files_metadata=True).siblings
            if s.rfilename.endswith(".gguf")}
     base_fn, prefix = pick_base_gguf(ggs, name)
+    # `base_file` pins the full-precision source explicitly. pick_base_gguf prefers
+    # the exact `<name>.gguf`, which is WRONG whenever a repo carries a corrected
+    # re-conversion beside the original (ms-marco: `<name>-g7c.gguf` is the artifact
+    # with the BertPooler stage; `<name>.gguf` is the superseded 1-layer-head file).
+    # `prefix` then keeps the intermediate/upload stems on the canonical model name
+    # instead of inheriting the correction suffix.
+    if ov.get("base_file"):
+        base_fn = ov["base_file"]
+        if base_fn not in ggs:
+            raise RuntimeError(f"base_file {base_fn} not in {hf_out} (have {sorted(ggs)})")
+        prefix = ov.get("prefix", base_fn[:-5])
+    elif ov.get("prefix"):
+        prefix = ov["prefix"]
     base_sz = ggs.get(base_fn, 0)
     big = base_sz > BIG_BYTES
     stage = Path("/tmp/crisp-stage") if big else WORK
@@ -778,6 +808,11 @@ def process(name, cli, quant, api, calib, eval_):
         gold = embed_eval(csrc)
 
     report = []
+    scale = []
+    if mode == "rerank":
+        scale.append(f'  RAW SCORES, query "{RERANK_EVAL[0][0]}" x {len(RERANK_EVAL[0][1])} docs')
+        scale.append("  " + f"{goldlabel:9s} " + " ".join(
+            f"[{i}]{s:+8.3f}" for i, s in sorted(gold[0].items())))
     for qtype, use_im, up_tmpl in quants:
         if big and qtype == "q8_0" and not use_im:
             continue  # q8_0 IS the gold for big models — no A/B needed
@@ -786,7 +821,25 @@ def process(name, cli, quant, api, calib, eval_):
         out = stage / f"{prefix}-{tag}.gguf"
         cmd = [str(quant), str(qsrc), str(out), qtype] + (["--imatrix", str(imat)] if use_im else [])
         with kh.build_heartbeat(f"{name}.quant.{tag}"):
-            subprocess.check_call(cmd)
+            qp = subprocess.run(cmd, capture_output=True, text=True)
+        # Judge coverage by the QUANTIZER'S OWN stdout, never by the exit code: a
+        # name mismatch between the collected imatrix and the artifact's tensors
+        # (crisp-mode vs ollama-mode conversion, or the pre-F7 `leaf_N` defect)
+        # exits 0 and silently ships an "-imatrix" file with NO importance.
+        qout = (qp.stdout or "") + (qp.stderr or "")
+        print(qout, flush=True)
+        if qp.returncode != 0:
+            raise RuntimeError(f"quantize {tag} rc={qp.returncode} for {name}:\n{qout[-2000:]}")
+        m_cov = re.search(r"(\d+) quantized, (\d+) kept(?:, (\d+) with imatrix)?", qout)
+        m_load = re.search(r"imatrix: loaded importance vectors for (\d+) tensors", qout)
+        cov_line = m_cov.group(0) if m_cov else "(no quantizer coverage line!)"
+        n_cov = int(m_cov.group(3)) if (m_cov and m_cov.group(3)) else 0
+        n_load = int(m_load.group(1)) if m_load else 0
+        if use_im and n_cov == 0:
+            raise RuntimeError(
+                f"{name} {tag}: quantizer reported '{cov_line}' (imatrix file loaded "
+                f"{n_load} vectors) — ZERO tensors took importance; refusing to upload "
+                f"a mislabeled -imatrix artifact")
         if mode == "rerank":
             val, dscore = rerank_ab(cli, out, gold)   # val = mean Kendall-tau
             extra = f" dscore={dscore:.4f}"
@@ -810,9 +863,18 @@ def process(name, cli, quant, api, calib, eval_):
         mb = out.stat().st_size / 1e6
         upname = up_tmpl.format(prefix=prefix) if up_tmpl else "(A/B only)"
         kh.step(f"{name}.ab.{tag}", imatrix=use_im, **{f"{metric}_vs_gold": round(val, 6)},
-                gold=goldlabel, size_mb=round(mb, 1), upload=upname,
+                gold=goldlabel, size_mb=round(mb, 1), upload=upname, quant_coverage=cov_line,
+                imatrix_vectors_loaded=n_load, n_with_imatrix=n_cov,
                 **({k: round(v, 6) for k, v in stats.items()} if mode == "embed" else {}))
-        report.append(f"{qtype:7s} imatrix={int(use_im)}  {metric}_vs_{goldlabel}={val:.6f}{extra}  {mb:7.1f}MB  -> {upname}")
+        report.append(f"{qtype:7s} imatrix={int(use_im)}  {metric}_vs_{goldlabel}={val:.6f}{extra}  "
+                      f"{mb:7.1f}MB  [{cov_line}]  -> {upname}")
+        if mode == "rerank":
+            # RAW decoded scores for one eval pair, per arm. A reranker's absolute
+            # scale is the thing tau/dscore cannot see (G7c: a structurally broken
+            # head still ranked, but scored +-0.2 instead of +-11), so the summary
+            # carries the actual logits alongside the gold's.
+            scale.append(f"  {tag:9s} " + " ".join(
+                f"[{i}]{s:+8.3f}" for i, s in sorted(rerank_scores(cli, out, *RERANK_EVAL[0]).items())))
         if up_tmpl:
             with kh.build_heartbeat(f"{name}.upload.{tag}"):
                 api.upload_file(path_or_fileobj=str(out), path_in_repo=upname,
@@ -826,6 +888,10 @@ def process(name, cli, quant, api, calib, eval_):
            f"eval {len(eval_d)} doc + {len(eval_q)} query-prompted)") if mode == "embed" else ""
     summary = (f"imatrix A/B — {name} ({hf_out}), {metric} vs {goldlabel} gold, "
                f"n={eval_n}, calib={calib_n}{mix}, quant_src={base_fn}\n" + "\n".join(report) + "\n")
+    summary += "\nimatrix tensor coverage (collector keys; any `leaf_N` = uncovered matmul):\n"
+    summary += imatrix_coverage(imat) + "\n"
+    if scale:
+        summary += "\n" + "\n".join(scale) + "\n"
     # meta_prefix lets a re-calibration publish its .imatrix / A/B summary beside
     # (not on top of) an earlier run's — the GGUF SHAs are pinned in model_hashes.h.
     mprefix = ov.get("meta_prefix", prefix)
