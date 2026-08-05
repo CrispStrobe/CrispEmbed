@@ -1,0 +1,60 @@
++ /Users/christianstrobele/miniconda3/bin/python tests/run_deepseek_ocr2_bench.py --binary build/crispembed --model /Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf --images tests/regression/images/cc0 --labelled-only --out tests/results/g2/m-crop-cc0 --gpu-backend metal --env DS2_FAST_DECODE=1 --env DS2_CROP_MODE=1
+commons_example_receipt.png          ok=True chars=  573 decode=17620.6 total=27356.5 path=persistent kv=f32
+commons_test_ocr_document.jpg        ok=True chars= 2991 decode=4135610.0 total=4163840.1 path=persistent kv=f32
+german_official_print.jpg            ok=True chars= 1101 decode=29793.5 total=45586.6 path=persistent kv=f32
+receipt_historical.png               ok=True chars= 1008 decode=28419.7 total=36725.4 path=persistent kv=f32
+simple_form.png                      ok=True chars=  190 decode=1879.5 total=7149.9 path=persistent kv=f32
+
+5 pages, 0 failures -> tests/results/g2/m-crop-cc0
++ /Users/christianstrobele/miniconda3/bin/python tests/run_deepseek_ocr2_bench.py --binary build/crispembed --model /Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf --images tests/regression/images/cc0 --labelled-only --out tests/results/g2/m-base-cc0 --gpu-backend metal --env DS2_FAST_DECODE=1
+commons_example_receipt.png          ok=True chars=  573 decode=8172.0 total=14560.3 path=persistent kv=f32
+commons_test_ocr_document.jpg        ok=True chars= 3177 decode=34005.5 total=38787.4 path=persistent kv=f32
+german_official_print.jpg            ok=True chars= 2980 decode=54758.6 total=59077.5 path=persistent kv=f32
+receipt_historical.png               ok=True chars=  835 decode=18012.5 total=22198.4 path=persistent kv=f32
+simple_form.png                      ok=True chars=  190 decode=1733.8 total=6327.2 path=persistent kv=f32
+
+5 pages, 0 failures -> tests/results/g2/m-base-cc0
++ /Users/christianstrobele/miniconda3/bin/python tests/run_deepseek_ocr2_bench.py --binary build/crispembed --model /Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf --images tests/regression/images/cc0 --labelled-only --out tests/results/g2/c-crop-cc0 --gpu-backend cpu --env DS2_FAST_DECODE=1 --env DS2_CROP_MODE=1
+commons_example_receipt.png          ok=True chars=  573 decode=6812.2 total=17930.8 path=persistent kv=f32
+commons_test_ocr_document.jpg        ok=True chars= 2991 decode=44757.2 total=98580.4 path=persistent kv=f32
+german_official_print.jpg            ok=True chars= 1048 decode=23323.1 total=67726.7 path=persistent kv=f32
+receipt_historical.png               ok=True chars=  895 decode=19084.2 total=42085.4 path=persistent kv=f32
+simple_form.png                      ok=True chars=  315 decode=2234.0 total=11959.7 path=persistent kv=f32
+
+5 pages, 0 failures -> tests/results/g2/c-crop-cc0
++ /Users/christianstrobele/miniconda3/bin/python tests/run_deepseek_ocr2_bench.py --binary build/crispembed --model /Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf --images tests/regression/images/cc0 --labelled-only --out tests/results/g2/c-base-cc0 --gpu-backend cpu --env DS2_FAST_DECODE=1
+commons_example_receipt.png          ok=True chars=  573 decode=5621.4 total=15690.3 path=persistent kv=f32
+commons_test_ocr_document.jpg        ok=True chars= 2750 decode=22529.1 total=33264.0 path=persistent kv=f32
+german_official_print.jpg            ok=True chars=  625 decode=7363.4 total=20106.2 path=persistent kv=f32
+receipt_historical.png               ok=True chars=  848 decode=23527.1 total=39140.0 path=persistent kv=f32
+simple_form.png                      ok=True chars=  315 decode=4065.6 total=22377.2 path=persistent kv=f32
+
+5 pages, 0 failures -> tests/results/g2/c-base-cc0
++ /Users/christianstrobele/miniconda3/bin/python tests/run_deepseek_ocr2_bench.py --binary build/crispembed --model /Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf --images /Users/christianstrobele/crispembed-ocr-synth --limit 10 --out tests/results/g2/m-crop-synth --gpu-backend metal --env DS2_FAST_DECODE=1 --env DS2_CROP_MODE=1
+synth_00_blur.png                    ok=True chars=  126 decode=3009.4 total=10849.2 path=persistent kv=f32
+synth_00_clean.png                   ok=True chars=  126 decode=1834.8 total=7798.9 path=persistent kv=f32
+synth_00_lowdpi.png                  ok=True chars=  126 decode=1611.6 total=7635.9 path=persistent kv=f32
+synth_00_noise.png                   ok=True chars=  126 decode=2565.3 total=9386.9 path=persistent kv=f32
+synth_00_skew.png                    ok=True chars=  126 decode=1907.0 total=7901.0 path=persistent kv=f32
+synth_01_blur.png                    ok=True chars=  138 decode=3191.2 total=9745.0 path=persistent kv=f32
+synth_01_clean.png                   ok=True chars=  138 decode=3449.3 total=8412.0 path=persistent kv=f32
+synth_01_lowdpi.png                  ok=True chars=  138 decode=3811.1 total=11233.3 path=persistent kv=f32
+synth_01_noise.png                   ok=True chars=  140 decode=5259.5 total=28502.0 path=persistent kv=f32
+synth_01_skew.png                    ok=True chars=  138 decode=7341.8 total=25605.7 path=persistent kv=f32
+
+10 pages, 0 failures -> tests/results/g2/m-crop-synth
++ /Users/christianstrobele/miniconda3/bin/python tests/run_deepseek_ocr2_bench.py --binary build/crispembed --model /Users/christianstrobele/.cache/crispembed-local/deepseek-ocr2-q4_k-stacked.gguf --images /Users/christianstrobele/crispembed-ocr-synth --limit 10 --out tests/results/g2/m-base-synth --gpu-backend metal --env DS2_FAST_DECODE=1
+synth_00_blur.png                    ok=True chars=  126 decode=2453.3 total=7104.9 path=persistent kv=f32
+synth_00_clean.png                   ok=True chars=  126 decode=1446.0 total=6567.8 path=persistent kv=f32
+synth_00_lowdpi.png                  ok=True chars=  126 decode=2438.8 total=6833.2 path=persistent kv=f32
+synth_00_noise.png                   ok=True chars=  126 decode=1286.2 total=5197.2 path=persistent kv=f32
+synth_00_skew.png                    ok=True chars=  126 decode=1432.9 total=5420.6 path=persistent kv=f32
+synth_01_blur.png                    ok=True chars=  138 decode=2145.7 total=6421.1 path=persistent kv=f32
+synth_01_clean.png                   ok=True chars=  138 decode=1879.5 total=5766.2 path=persistent kv=f32
+synth_01_lowdpi.png                  ok=True chars=  138 decode=1918.3 total=5838.7 path=persistent kv=f32
+synth_01_noise.png                   ok=True chars=  136 decode=1844.6 total=5964.7 path=persistent kv=f32
+synth_01_skew.png                    ok=True chars=  138 decode=1789.3 total=8536.6 path=persistent kv=f32
+
+10 pages, 0 failures -> tests/results/g2/m-base-synth
++ echo 'G2 MATRIX DONE'
+G2 MATRIX DONE

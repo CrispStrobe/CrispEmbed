@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "images": "/Users/christianstrobele/crispembed-ocr-synth",
+  "repeats": 1,
+  "reference_engine": "",
+  "skipped": {},
+  "fixtures": [
+    {
+      "fixture": "synth_00_blur.png",
+      "truth_chars": 122,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "The quick brown fox jumps over the lazy dog.  \nPack my box with five dozen liquor jugs.  \nHow vexingly quick daft zebras jump!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 122,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_00_clean.png",
+      "truth_chars": 122,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "The quick brown fox jumps over the lazy dog.  \nPack my box with five dozen liquor jugs.  \nHow vexingly quick daft zebras jump!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 122,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_00_lowdpi.png",
+      "truth_chars": 122,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "The quick brown fox jumps over the lazy dog.  \nPack my box with five dozen liquor jugs.  \nHow vexingly quick daft zebras jump!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 122,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_00_noise.png",
+      "truth_chars": 122,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "The quick brown fox jumps over the lazy dog.  \nPack my box with five dozen liquor jugs.  \nHow vexingly quick daft zebras jump!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 122,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_00_skew.png",
+      "truth_chars": 122,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "The quick brown fox jumps over the lazy dog.  \nPack my box with five dozen liquor jugs.  \nHow vexingly quick daft zebras jump!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 122,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_01_blur.png",
+      "truth_chars": 134,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Invoice number 48127 dated 14 March 2024.  \nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.  \nPayment due within 30 days of receipt.",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 134,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_01_clean.png",
+      "truth_chars": 134,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Invoice number 48127 dated 14 March 2024.  \nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.  \nPayment due within 30 days of receipt.",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 134,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_01_lowdpi.png",
+      "truth_chars": 134,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Invoice number 48127 dated 14 March 2024.  \nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.  \nPayment due within 30 days of receipt.",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 134,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_01_noise.png",
+      "truth_chars": 134,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Invoice number: 48127 dated 14 March 2024  \nSubtotal: 129.95 EUR, tax: 24.69 EUR, total: 154.64 EUR  \nPayment due within 30 days of receipt.",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.04478,
+          "wer": 0.26087,
+          "ref_chars": 134,
+          "wer_unordered": 0.30435,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "synth_01_skew.png",
+      "truth_chars": 134,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Invoice number 48127 dated 14 March 2024.  \nSubtotal 129.95 EUR, tax 24.69 EUR, total 154.64 EUR.  \nPayment due within 30 days of receipt.",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.0,
+          "wer": 0.0,
+          "ref_chars": 134,
+          "wer_unordered": 0.0,
+          "exact": true,
+          "alt_scores": {}
+        }
+      }
+    }
+  ],
+  "gold_dir": "tests/results/g2/m-crop-synth",
+  "gold_manifest": {},
+  "missing_transcripts": [
+    "synth_02_blur.png",
+    "synth_02_clean.png",
+    "synth_02_lowdpi.png",
+    "synth_02_noise.png",
+    "synth_02_skew.png",
+    "synth_03_blur.png",
+    "synth_03_clean.png",
+    "synth_03_lowdpi.png",
+    "synth_03_noise.png",
+    "synth_03_skew.png"
+  ],
+  "summary": {
+    "native": {
+      "kind": "external",
+      "n": 10,
+      "failures": 0,
+      "mean_cer": 0.00448,
+      "mean_wer": 0.02609,
+      "mean_wer_unordered": 0.03044,
+      "mean_cer_vs_reference": null,
+      "median_proc_ms": null,
+      "median_engine_ms": null
+    }
+  }
+}
