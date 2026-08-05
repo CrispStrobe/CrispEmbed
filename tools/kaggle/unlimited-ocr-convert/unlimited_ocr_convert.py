@@ -40,7 +40,7 @@ if str(_CRISPASR / "tools" / "kaggle") not in sys.path:
 import kaggle_harness as kh  # noqa: E402
 
 kh.init_progress()
-hf_token = kh.resolve_hf_token()
+hf_token = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (G7d)
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
 # %% [code]

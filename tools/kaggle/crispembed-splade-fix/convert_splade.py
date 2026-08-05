@@ -23,7 +23,7 @@ if not _CRISPASR_DIR.exists():
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh
 kh.init_progress()
-hf_token = kh.resolve_hf_token()
+hf_token = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (G7d)
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
 SRC_ID  = "prithivida/Splade_PP_en_v1"
