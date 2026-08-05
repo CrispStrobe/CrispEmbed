@@ -1,0 +1,126 @@
+== A. pre-fix controls: =0 USED to engage (parent-commit binary)
+OK   pre-fix UOCR_DBG=0 emitted [dbg] lines (=0 was ON)
+OK   pre-fix UOCR_PD=0 took the persistent-decode path (pd=1)
+OK   pre-fix UOCR_NO_KV=0 disabled the KV cache (n_past stays 0 at gen=1)
+OK   pre-fix default run produced text
+OK   pre-fix UOCR_PD=0 produced EMPTY stdout (it segfaulted — the =0 inversion destroyed output)
+OK   post-fix UOCR_PD=0 produced text (the fix)
+== B. post-fix: UOCR_DBG three spellings
+OK   UOCR_DBG=1 stdout == base
+OK   UOCR_DBG=0 stdout == base
+OK   no [dbg] lines when UOCR_DBG absent
+OK   no [dbg] lines at UOCR_DBG=0 (the fix)
+OK   gate-resolution line at UOCR_DBG=1
+== C. post-fix: every =0 arm parses off, and is byte-identical to base
+OK   UOCR_MMAP=0 parses off
+OK   UOCR_MMAP=1 parses on
+OK   UOCR_MMAP=0 stdout == base
+OK   UOCR_MOE_CPU=0 parses off
+OK   UOCR_MOE_CPU=1 parses on
+OK   UOCR_MOE_CPU=0 stdout == base
+OK   UOCR_SAM_CONV_CPU=0 parses off
+OK   UOCR_SAM_CONV_CPU=1 parses on
+OK   UOCR_SAM_CONV_CPU=0 stdout == base
+OK   UOCR_OPT_GRAPH_LN=0 parses off
+OK   UOCR_OPT_GRAPH_LN=1 parses on
+OK   UOCR_OPT_GRAPH_LN=0 stdout == base
+OK   UOCR_CLIP_DBG=0 parses off
+OK   UOCR_CLIP_DBG=1 parses on
+OK   UOCR_CLIP_DBG=0 stdout == base
+OK   UOCR_FA_F32=0 parses off
+OK   UOCR_FA_F32=1 parses on
+OK   UOCR_FA_F32=0 stdout == base
+OK   UOCR_LMHEAD_CPU=0 parses off
+OK   UOCR_LMHEAD_CPU=1 parses on
+OK   UOCR_LMHEAD_CPU=0 stdout == base
+OK   UOCR_NO_KV=0 parses off
+OK   UOCR_NO_KV=1 parses on
+OK   UOCR_NO_KV=0 stdout == base
+OK   UOCR_OPT_FUSED_DECODE=0 parses off
+OK   UOCR_OPT_FUSED_DECODE=1 parses on
+OK   UOCR_OPT_FUSED_DECODE=0 stdout == base
+OK   UOCR_DECODE_TIMING=0 parses off
+OK   UOCR_DECODE_TIMING=1 parses on
+OK   UOCR_DECODE_TIMING=0 stdout == base
+OK   UOCR_INJECT_VIS=0 parses off
+OK   UOCR_INJECT_VIS=1 parses on
+OK   UOCR_INJECT_VIS=0 stdout == base
+OK   UOCR_INJECT_REF=0 parses off
+OK   UOCR_INJECT_REF=1 parses on
+OK   UOCR_INJECT_REF=0 stdout == base
+OK   UOCR_PD=0 parses off
+OK   UOCR_PD=1 parses on
+OK   UOCR_PD=0 stdout == base
+== D. PD-conditional gates (baseline = pd-base, i.e. UOCR_PD=1 held)
+OK   UOCR_OPT_PD_F32=0 parses off
+OK   UOCR_OPT_PD_F32=1 parses on
+OK   UOCR_OPT_PD_F32=0 stdout == pd-base
+OK   UOCR_PD_DBG=0 parses off
+OK   UOCR_PD_DBG=1 parses on
+OK   UOCR_PD_DBG=0 stdout == pd-base
+OK   UOCR_DECODE_REBUILD=0 parses off
+OK   UOCR_DECODE_REBUILD=1 parses on
+OK   UOCR_DECODE_REBUILD=0 stdout == pd-base
+== E. =1 engagement proofs (each in that run's OWN stderr)
+OK   UOCR_DBG=1 emits [dbg] lines
+OK   UOCR_MOE_CPU=1 skips the prestacked/Metal MoE path
+OK   UOCR_PD=1 takes the persistent-decode path
+OK   absent UOCR_PD -> rebuild path (pd=0)
+OK   UOCR_DECODE_TIMING=1 prints [rb_timing]
+OK   UOCR_DECODE_TIMING=0 prints no [rb_timing]
+OK   UOCR_PD_DBG=1 prints [rb_dbg] per-layer dumps (rebuild path)
+OK   UOCR_PD_DBG=0 prints none (rebuild path)
+OK   UOCR_PD_DBG=0 (rebuild) stdout == base
+OK   UOCR_PD_DBG=0 prints no [pd_dbg]
+OK   UOCR_DECODE_REBUILD=1 disables PD even with UOCR_PD=1
+OK   pd-base (UOCR_PD=1) uses PD
+OK   UOCR_OPT_FUSED_DECODE=1 took the fused path (rebuild block skipped)
+OK   UOCR_OPT_FUSED_DECODE=0 took the rebuild path (the fix)
+OK   UOCR_OPT_FUSED_DECODE=1 stdout == base
+OK   UOCR_OPT_FUSED_DECODE=0 stdout == base
+OK   UOCR_CLIP_DBG=1 prints CLIP debug dumps
+OK   UOCR_CLIP_DBG=0 prints none
+OK   UOCR_NO_KV=1 disables the KV cache (n_past stays 0)
+OK   UOCR_NO_KV=0 keeps the KV cache (the fix)
+OK   UOCR_MOE_CPU=0 keeps the Metal MoE path (the fix)
+OK   UOCR_MOE_CPU=0 still uses prestacked/Metal MoE
+== F. gold fixture: base decodes the manifest gold text
+     gold : 'title [33, 196, 636, 360]The quick brown fox jumps\ntitle [34, 548, 588, 740]over the lazy dog. 12345'
+     base : 'title [33, 196, 636, 360]The quick brown fox jumps\ntitle [34, 548, 588, 740]over the lazy dog. 12345\n'
+OK     base CER=0.0000 (max_cer=0.15)
+== G. no-op vs main: default-env run identical pre-fix and post-fix
+OK   default-env stdout pre-fix == post-fix
+== H. output differences recorded verbatim (informational, not pass/fail)
+SAME UOCR_MMAP=1 stdout == base
+SAME UOCR_MOE_CPU=1 stdout == base
+SAME UOCR_SAM_CONV_CPU=1 stdout == base
+NOTE UOCR_OPT_GRAPH_LN=1 stdout DIFFERS from base:
+       1,2c1,2
+       < title [33, 196, 636, 360]The quick brown fox jumps
+       < title [34, 548, 588, 740]over the lazy dog. 12345
+       ---
+       > title [33, 232, 636, 360]The quick brown fox jumps
+       > title [33, 498, 588, 660]over the lazy dog. 12345
+SAME UOCR_CLIP_DBG=1 stdout == base
+SAME UOCR_FA_F32=1 stdout == base
+SAME UOCR_LMHEAD_CPU=1 stdout == base
+SAME UOCR_NO_KV=1 stdout == base
+SAME UOCR_OPT_FUSED_DECODE=1 stdout == base
+SAME UOCR_DECODE_TIMING=1 stdout == base
+SAME UOCR_INJECT_VIS=1 stdout == base
+SAME UOCR_INJECT_REF=1 stdout == base
+NOTE UOCR_PD=1 stdout DIFFERS from base:
+       1,2d0
+       < title [33, 196, 636, 360]The quick brown fox jumps
+       < title [34, 548, 588, 740]over the lazy dog. 12345
+SAME UOCR_OPT_PD_F32=1 stdout == pd-base
+SAME UOCR_PD_DBG=1 stdout == pd-base
+NOTE UOCR_DECODE_REBUILD=1 stdout DIFFERS from pd-base:
+       0a1,2
+       > title [33, 196, 636, 360]The quick brown fox jumps
+       > title [34, 548, 588, 740]over the lazy dog. 12345
+NOTE pd-base (UOCR_PD=1) stdout DIFFERS from base:
+       1,2d0
+       < title [33, 196, 636, 360]The quick brown fox jumps
+       < title [34, 548, 588, 740]over the lazy dog. 12345
+GATES_DONE fail=0

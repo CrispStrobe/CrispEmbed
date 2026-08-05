@@ -1,0 +1,61 @@
+GATE OPEN Wed Aug  5 15:38:56 CEST 2026
+== pre-fix controls (parent-commit binary)
+RUN pre-base rc=0 wall=45s mtl0=2
+RUN pre-DBG-0 rc=0 wall=18s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 24914 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN pre-PD-0 rc=139 wall=12s mtl0=2
+RUN pre-NO_KV-0 rc=0 wall=71s mtl0=2
+== post-fix baselines
+RUN base rc=0 wall=21s mtl0=2
+RUN base-dbg rc=0 wall=17s mtl0=2
+RUN UOCR_DBG-0 rc=0 wall=17s mtl0=2
+== post-fix per-gate arms (UOCR_DBG=1 held constant; it writes stderr only)
+RUN UOCR_MMAP-0 rc=0 wall=17s mtl0=2
+RUN UOCR_MMAP-1 rc=0 wall=15s mtl0=2
+RUN UOCR_MOE_CPU-0 rc=0 wall=17s mtl0=2
+RUN UOCR_MOE_CPU-1 rc=0 wall=276s mtl0=2
+RUN UOCR_SAM_CONV_CPU-0 rc=0 wall=22s mtl0=2
+RUN UOCR_SAM_CONV_CPU-1 rc=0 wall=64s mtl0=2
+RUN UOCR_OPT_GRAPH_LN-0 rc=0 wall=20s mtl0=2
+RUN UOCR_OPT_GRAPH_LN-1 rc=0 wall=17s mtl0=2
+RUN UOCR_CLIP_DBG-0 rc=0 wall=16s mtl0=2
+RUN UOCR_CLIP_DBG-1 rc=0 wall=17s mtl0=2
+RUN UOCR_FA_F32-0 rc=0 wall=18s mtl0=2
+RUN UOCR_FA_F32-1 rc=0 wall=20s mtl0=2
+RUN UOCR_LMHEAD_CPU-0 rc=0 wall=18s mtl0=2
+RUN UOCR_LMHEAD_CPU-1 rc=0 wall=35s mtl0=2
+RUN UOCR_NO_KV-0 rc=0 wall=17s mtl0=2
+RUN UOCR_NO_KV-1 rc=0 wall=51s mtl0=2
+RUN UOCR_OPT_FUSED_DECODE-0 rc=0 wall=16s mtl0=2
+RUN UOCR_OPT_FUSED_DECODE-1 rc=0 wall=14s mtl0=2
+RUN UOCR_DECODE_TIMING-0 rc=0 wall=17s mtl0=2
+RUN UOCR_DECODE_TIMING-1 rc=0 wall=18s mtl0=2
+RUN UOCR_INJECT_VIS-0 rc=0 wall=19s mtl0=2
+RUN UOCR_INJECT_VIS-1 rc=0 wall=19s mtl0=2
+RUN UOCR_INJECT_REF-0 rc=0 wall=18s mtl0=2
+RUN UOCR_INJECT_REF-1 rc=0 wall=17s mtl0=2
+RUN UOCR_PD-0 rc=0 wall=18s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 26959 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN UOCR_PD-1 rc=139 wall=13s mtl0=2
+== PD-conditional gates (UOCR_PD=1 held constant — they only matter when the PD graph is built)
+tests/results/uocr-gates/run_gates.sh: line 21: 26986 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN pd-base rc=139 wall=20s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 27076 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN UOCR_OPT_PD_F32-0 rc=139 wall=25s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 27105 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN UOCR_OPT_PD_F32-1 rc=139 wall=27s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 27129 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN UOCR_PD_DBG-0 rc=139 wall=31s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 27162 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN UOCR_PD_DBG-1 rc=139 wall=37s mtl0=2
+tests/results/uocr-gates/run_gates.sh: line 21: 27375 Segmentation fault: 11  env "$@" "$bin" -m "$MODEL" --ocr "$FOX" --gpu-backend metal > "$OUT/$name.txt" 2> "$OUT/$name.err"
+RUN UOCR_DECODE_REBUILD-0 rc=139 wall=14s mtl0=2
+RUN UOCR_DECODE_REBUILD-1 rc=0 wall=28s mtl0=2
+GATES_RUNS_DONE
+DRIVER_EXIT rc=0
+== UOCR_PD_DBG on the rebuild path (no UOCR_PD)   [STAGE=rb, re-run standalone]
+RUN UOCR_PD_DBG-rb-0 rc=0 wall=22s mtl0=2
+RUN UOCR_PD_DBG-rb-1 rc=0 wall=19s mtl0=2
+== UOCR_OPT_FUSED_DECODE engagement probe          [STAGE=fd, re-run standalone]
+RUN UOCR_OPT_FUSED_DECODE-t-0 rc=0 wall=15s mtl0=2
+RUN UOCR_OPT_FUSED_DECODE-t-1 rc=0 wall=14s mtl0=2
