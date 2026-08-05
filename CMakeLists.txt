@@ -659,6 +659,11 @@ target_include_directories(test-bpe-pretokenize PRIVATE src)
 add_executable(test-bert-pretokenize tests/test_bert_pretokenize.cpp)
 target_include_directories(test-bert-pretokenize PRIVATE src)
 
+# Hermetic: core/imatrix_alias.h — the F7 naming contract between the
+# runtime's pre-merged QKV tensor and the quantizer's imatrix alias lookup.
+add_executable(test-imatrix-alias tests/test_imatrix_alias.cpp)
+target_include_directories(test-imatrix-alias PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 

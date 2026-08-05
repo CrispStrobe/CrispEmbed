@@ -6,6 +6,7 @@
 #include "core/cpu_ops.h"
 #include "core/gguf_loader.h"
 #include "core/hparam_keys.h"
+#include "core/imatrix_alias.h"
 #include "core/init_bench.h"
 #include "core/metal_pipeline_cache_policy.h"
 #include "imatrix.h"
@@ -861,13 +862,12 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             L.qkv_w = ggml_new_tensor_2d(ctx->qkv_ctx, GGML_TYPE_F32, H, 3 * H);
             // Name the merged tensor so the imatrix collector files its matmul
             // statistics under a stable per-layer key instead of ggml's auto
-            // "leaf_N" (which matches nothing at quantize time). The name must
-            // not collide with any real GGUF tensor name — loaders read
-            // "attn.qkv.weight" / "attn_qkv.weight", never "qkv_merged".
-            // The matmul input width equals the shared QKV input (n_embd), so
-            // the collected vector applies verbatim to attn.{q,k,v}.weight;
-            // tools/quantize.cpp resolves that alias.
-            ggml_format_name(L.qkv_w, "enc.%d.attn.qkv_merged.weight", i);
+            // "leaf_N" (which matches nothing at quantize time). The matmul
+            // input width equals the shared QKV input (n_embd), so the
+            // collected vector applies verbatim to attn.{q,k,v}.weight. The
+            // name contract lives in core/imatrix_alias.h, shared with the
+            // quantizer's alias lookup and guarded by tests/test_imatrix_alias.cpp.
+            ggml_set_name(L.qkv_w, core_imatrix::qkv_merged_name(i).c_str());
             if (L.q_b && L.k_b && L.v_b) L.qkv_b = ggml_new_tensor_1d(ctx->qkv_ctx, GGML_TYPE_F32, 3 * H);
         }
 
