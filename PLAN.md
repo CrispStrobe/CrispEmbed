@@ -3851,6 +3851,101 @@ Listed so it is not rediscovered as a cheap idea.
   correctness bug on an opt-in path, tracked in the round-7 board row — not a
   performance item.
 
+## OPEN TASKS — OCR optimization roadmap after the R2/R4/R6/R7 session (2026-08-05)
+
+State after that session: R6 built + M1-measured (opt-in), R4 done, R2's real
+hotspot fixed 2.66x, R7 closed by measurement. **Meta-finding that governs
+everything below: three of the four backlog premises tested did not survive
+measurement** (R2's "deform loop dominates" was ~2%, R4's "31.6 s cold" did
+not reproduce, R7's cache-by-analogy was 0.1%). Every item here therefore
+starts with a measure step, and its "expected outcome" is a forecast to be
+checked, not a promise.
+
+**Priority (user-directed, 2026-08-05): work that helps the best runtimes
+first** — the document pipeline (PP-OCRv6, layout_detect), Tesseract, and the
+production VLM lanes. Agreed order: **O1+O2 (layout) → O13b (PP-OCR profile)
+→ O5 (VLM decode measure-first) → O4 (Tesseract R1, own session)**, with the
+Kaggle batch (O8+O9) interleaved as the discrete-GPU unlock.
+
+### Lane A — local (M1), immediately actionable
+
+- **O1. Layout Phase 1 profile — the Metal backbone+encoder (~1.4 s, now
+  ~80% of the layout call).** Composition unknown: warmup vs steady-state,
+  sched splits, conv-on-Metal cost, host<->device copies. Instrument first
+  (repeat-call timing, `GGML_SCHED_DEBUG=2` split census, per-stage timers
+  like the Phase-2 ones). Expected outcome: even odds of a structural >=1.5x
+  finding or a documented "it is what Metal costs"; either result feeds the
+  region-routing pipeline (`--ocr-layout`) directly.
+- **O2. Layout Phase 2 residue.** Two bounded fixes: cache the per-layer
+  dequant+transpose+re-upload of self-attn/FFN weights in the context
+  (byte-identical, mechanical), and batch/move the six 256x256x8400 value
+  projections. Expected outcome (high confidence): Phase 2 ~318 -> ~150-220
+  ms. Do together with O1 — same engine, same fixtures, compounding.
+- **O3. R3 one engine at a time** — flip the formula-encoder `enc_sched`s to
+  `{gpu, cpu}` behind per-engine gates (bttr, hmer, posformer, mixtex, flova,
+  ppformulanet, pix2struct; several models cached locally). Expected outcome:
+  split verdict — conv-heavy DenseNet encoders likely LOSE on Metal (DBNet
+  precedent), attention-shaped ones (pix2struct) may win; guaranteed
+  deliverable is measurability + dead stale comments, and the gates matter
+  because the verdicts likely FLIP on discrete GPUs (see O9/O11).
+- **O4. R1 Tesseract recognizer** — the biggest honest gap (38.7 s native vs
+  9.3 s official on the Fraktur page; recognition is ~99% of it). Fix the
+  measurement protocol first, then per-line batching + weight/scratch reuse
+  (thread-level parallelism is already saturated). Expected outcome: least
+  predictable; 1.5-3x plausible from batching, full parity probably also
+  needs the decoder-semantics quality lane. Multi-session, Fable-tier, never
+  delegate the math.
+- **O5. R5 measure-first** — profile decode-graph build+alloc as a fraction
+  of decode on qwen2vl / granite / smoldocling before porting anything.
+  Expected outcome: most likely CLOSES the item for 2-3 engines (deepseek
+  precedent: 1-6%); small chance one engine shows a deepseek-like 1.4x where
+  the real cost is host<->device bounces rather than build time. Cheap
+  (an afternoon), information-dense.
+- **O6. `UOCR_PD=1` gen=2 segfault** — correctness, opt-in path, already
+  reproduced 7/44. Expected outcome: findable memory-lifetime bug (KV-view /
+  `ggml_cont` class is the usual suspect); one session.
+- **O7. R6 engine adoption** — pass engine `n_threads` into
+  `conv2d_im2col_cpu` on latency-sensitive CPU conv paths (SR family,
+  pplcnet, det scalar fallback). Expected outcome (high confidence, already
+  measured): ~2x wall on those paths; needs per-engine wiring + pairs.
+
+### Lane B — offloaded (Kaggle), unblocks the discrete-GPU story
+
+- **O8. R6 x86/AVX2 three-arm A/B** (legacy / im2col nt=1 / im2col nt=4).
+  Decides the interchange's fate where L2 is small; also the honest CPU
+  baseline for any CUDA residency decision. Expected outcome: threading wins
+  again; interchange-alone somewhere between neutral and +30% (genuinely
+  uncertain — that is the point of the run).
+- **O9. CUDA residency re-A/Bs** — DBNet + PP-OCRv6-det conv graphs on a real
+  CUDA box, decoded-output roundtrips included (CUDA's stricter contiguity
+  asserts make Metal/CPU passes non-transferable). Expected outcome:
+  moderately confident the Metal "CPU by measurement" verdicts flip on CUDA,
+  which would make them Metal-only defaults and justify O11. **This is the
+  single most PP-OCR-relevant open item for discrete-GPU users.**
+- **O10. Vulkan bring-up decision** — try Vulkan compute on a Kaggle GPU
+  image, or wait for a local discrete-GPU box. Expected outcome: uncertain
+  (headless ICDs may not work); the deliverable is knowing where Vulkan can
+  be tested at all. Until then "fast on Vulkan" is unverifiable by policy.
+
+### Lane C — architecture, once Lane B lands
+
+- **O11. Per-backend-kind residency defaults** in `gpu_backend_pref.h` —
+  default = f(engine, backend kind), so an A1000/CUDA user gets GPU conv
+  engines while M1 keeps its measured CPU defaults. Mechanical once O8/O9
+  supply verdicts.
+- **O12. R8 ggml-metal ICB replay** — upstream-shaped, highest Metal-decode
+  ceiling, weeks not days; CUDA already has graph capture so this is
+  Metal-only leverage.
+- **O13. Backlog hygiene** — (a) re-measure the remaining R-items' premises
+  before investing (R1's stage split, R5's per-engine numbers); (b)
+  **PP-OCR-specific measure-first profile (O13b)**: det is already ggml-graph
+  (6.9 -> 1.0 s medium tier) and rec has the batch-fused shape-keyed graph,
+  so the next PP-OCR win is NOT on the old list — profile the current
+  det+rec+orientation pipeline end-to-end on the medium tier to find the
+  current hotspot (crop/resize? rec width buckets? orientation? det
+  postprocess?) before prescribing anything. Expected outcome per this
+  session's base rate: the profile will name something the backlog does not.
+
 ## OCR pipeline workstream — actionable items
 
 ### EasyOCR / LayoutLM compatibility — IN PROGRESS
