@@ -14,6 +14,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "core/no_repeat_ngram.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <array>
@@ -2906,7 +2907,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
     // any of these figures, so `total` is net-of-load by construction (the
     // ppocrv6 convention, without ppocrv6's stage-entry correction: no stage
     // here loads anything).
-    const bool ds_bench = getenv("CRISPEMBED_DEEPSEEK_OCR2_BENCH") != nullptr;
+    const bool ds_bench = core_env::on("CRISPEMBED_DEEPSEEK_OCR2_BENCH");
     const auto _b_start = std::chrono::steady_clock::now();
 
     auto & s = ctx->inner.m.shp;

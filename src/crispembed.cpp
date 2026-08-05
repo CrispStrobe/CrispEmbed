@@ -17,6 +17,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "ocr_pipeline.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <atomic>
@@ -2342,7 +2343,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
     if (model_path) ctx->model_path_for_audio = model_path;
     ctx->dump_layers = (std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr);
-    ctx->bench = (std::getenv("CRISPEMBED_CRISPEMBED_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_CRISPEMBED_BENCH");
 
     // Detect model type from GGUF metadata.
     // Decoder models have either decoder.hidden_size (CrispEmbed-native) or

@@ -22,6 +22,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "core/metal_pipeline_cache_policy.h" // G4: cap the Metal pipeline-archive open
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -384,7 +385,7 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     for (int i = 0; i < (int)ctx->dec_blk_nums.size(); i++) fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
-    ctx->bench = (std::getenv("CRISPEMBED_NAFNET_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_NAFNET_BENCH");
 
     // ggml conv infrastructure. Default GPU: NAFNet is compute-bound (32–256-ch
     // convs over the UNet), so the fused-block graph pays off on Metal (unlike

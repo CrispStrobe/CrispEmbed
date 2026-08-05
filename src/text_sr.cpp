@@ -13,6 +13,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -294,7 +295,7 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
     for (int i = 0; i < (int)ctx->dec_blk_nums.size(); i++) fprintf(stderr, "%s%d", i ? "," : "", ctx->dec_blk_nums[i]);
     fprintf(stderr, "], %d tensors\n", (int)ctx->wl.tensors.size());
 
-    ctx->bench = (std::getenv("CRISPEMBED_TEXT_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_TEXT_SR_BENCH");
 
     ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {

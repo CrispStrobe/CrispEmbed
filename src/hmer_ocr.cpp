@@ -18,6 +18,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -310,7 +311,7 @@ hmer_ocr_context * hmer_ocr_init(const char * model_path, int n_threads) {
         if (l.conv1_w) mapped++;
     fprintf(stderr, "hmer_ocr: mapped %d/42 dense layers, %zu vocab tokens\n", mapped, ctx->vocab.size());
 
-    ctx->bench = (std::getenv("CRISPEMBED_HMER_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_HMER_BENCH");
 
     // Set up ggml backend + scheduler for encoder graph
     ctx->enc_backend = ggml_backend_cpu_init();

@@ -17,6 +17,7 @@
 #include "core/bpe.h"
 #include "crispembed_diff.h"
 #include "imatrix.h"
+#include "core/env_gate.h"
 
 #include <cassert>
 #include <chrono>
@@ -162,7 +163,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 
     auto * ctx = new lfm2_embed_ctx;
     ctx->backend = backend;
-    ctx->bench = (std::getenv("CRISPEMBED_LFM2_EMBED_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_LFM2_EMBED_BENCH");
     auto & hp = ctx->model.hparams;
 
     // Prefer our converter's `lfm2.<our>` keys; fall back to the canonical

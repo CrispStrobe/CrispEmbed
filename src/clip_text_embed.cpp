@@ -19,6 +19,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -88,7 +89,7 @@ bool load(context ** out, const char * path, int n_threads) {
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_CLIP_TEXT_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_CLIP_TEXT_BENCH");
 
     gguf_context * g = core_gguf::open_metadata(path);
     if (!g) {

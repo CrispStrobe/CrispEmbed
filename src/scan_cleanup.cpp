@@ -7,6 +7,7 @@
 #include "scan_cleanup.h"
 #include "classical_preproc.h"
 #include "nafnet_denoise.h"
+#include "core/env_gate.h"
 
 #include <chrono>
 #include <cmath>
@@ -53,7 +54,7 @@ scan_cleanup_params scan_cleanup_defaults(void) {
 scan_cleanup_ctx * scan_cleanup_init(const char * model_path, int n_threads) {
     auto * ctx = new scan_cleanup_ctx;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
-    ctx->bench = (std::getenv("CRISPEMBED_SCAN_CLEANUP_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_SCAN_CLEANUP_BENCH");
     if (model_path) {
         ctx->nafnet = nafnet_init(model_path, n_threads);
         if (!ctx->nafnet) {

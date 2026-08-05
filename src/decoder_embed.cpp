@@ -13,6 +13,7 @@
 
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -521,7 +522,7 @@ static void build_mrope_positions_3d(const dec_model & m, const embed_tokens & t
 std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t backend, const embed_tokens & tokens,
                                          int n_threads, ggml_backend_sched_t sched, std::vector<uint8_t> * compute_meta,
                                          const dec_image_input * img) {
-    const bool bench = (std::getenv("CRISPEMBED_DECODER_EMBED_BENCH") != nullptr);
+    const bool bench = core_env::on("CRISPEMBED_DECODER_EMBED_BENCH");
     auto t_total = std::chrono::steady_clock::now();
     auto t_build0 = std::chrono::steady_clock::now();
 

@@ -669,6 +669,12 @@ target_include_directories(test-imatrix-alias PRIVATE src)
 add_executable(test-no-repeat-ngram tests/test_no_repeat_ngram.cpp)
 target_include_directories(test-no-repeat-ngram PRIVATE src)
 
+# Hermetic: core/env_gate.h — the shared value-parsed boolean env gate that
+# every CRISPEMBED_*_BENCH instrument routes through. Guards against the
+# presence-based inversion where `FOO=0` ENABLED the gate.
+add_executable(test-env-gate tests/test_env_gate.cpp)
+target_include_directories(test-env-gate PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 

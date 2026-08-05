@@ -1,0 +1,5 @@
+[cc-detect-bench] binarize: 0.233 ms
+[cc-detect-bench] close: 0.296 ms
+[cc-detect-bench] CC label: 0.345 ms
+[cc-detect-bench] filter: 0.003 ms
+[cc-detect-bench] total: 0.920 ms

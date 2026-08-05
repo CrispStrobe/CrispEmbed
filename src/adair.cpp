@@ -19,6 +19,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -951,7 +952,7 @@ adair_context * adair_init(const char * model_path, int n_threads) {
     load_fre(wl, "net.fre2", ctx->fre2);
     load_fre(wl, "net.fre3", ctx->fre3);
 
-    ctx->bench = (std::getenv("CRISPEMBED_ADAIR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_ADAIR_BENCH");
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
 
     // ggml conv path for ALL conv sites (MDTA/GDFN/cross-attn/FreModule + the

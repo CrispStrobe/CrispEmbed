@@ -75,7 +75,7 @@ jobs:
           cmake --build build --config Release -j4 \
             --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file test-render-provenance \
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
-                     test-imatrix-alias test-no-repeat-ngram
+                     test-imatrix-alias test-no-repeat-ngram test-env-gate
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
@@ -86,6 +86,8 @@ jobs:
           ./build/test-bpe-pretokenize
           ./build/test-bert-pretokenize
           ./build/test-imatrix-alias
+          ./build/test-no-repeat-ngram
+          ./build/test-env-gate
           python3 tests/test_vendored_kaggle_harness.py
 
       - name: Smoke test (Windows)

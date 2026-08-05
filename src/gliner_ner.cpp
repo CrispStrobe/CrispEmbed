@@ -22,6 +22,7 @@
 #include "core/bpe.h"
 #include "tokenizer.h"
 #include "crispembed_diff.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -1044,7 +1045,7 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
 
     auto * ctx = new gliner_context();
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_GLINER_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_GLINER_BENCH");
 
     // Init backend
     const char * force_cpu = std::getenv("CRISPEMBED_FORCE_CPU");

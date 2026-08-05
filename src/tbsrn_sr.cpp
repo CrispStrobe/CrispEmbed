@@ -20,6 +20,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -428,7 +429,7 @@ tbsrn_sr_context * tbsrn_sr_init(const char * model_path, int n_threads) {
 
     fprintf(stderr, "tbsrn_sr: srb_nums=%d, channels=%d, upscale=%dx, %d tensors\n", ctx->srb_nums, C,
             ctx->upscale_factor, (int)ctx->wl.tensors.size());
-    ctx->bench = (std::getenv("CRISPEMBED_TBSRN_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_TBSRN_SR_BENCH");
 
     // ── ggml conv path (opt out with TBSRN_SR_SCALAR=1) ───────────────────
     // Replace the six tbsrn_conv2d sites (block1, srb conv1/conv2 ×5,

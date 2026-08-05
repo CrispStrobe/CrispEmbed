@@ -17,6 +17,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -163,7 +164,7 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
 
     fprintf(stderr, "pan_sr: nf=%d unf=%d nb=%d scale=%dx, %d tensors\n", ctx->nf, ctx->unf, ctx->nb, ctx->scale,
             (int)ctx->wl.tensors.size());
-    ctx->bench = (std::getenv("CRISPEMBED_PAN_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_PAN_SR_BENCH");
 
     ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {

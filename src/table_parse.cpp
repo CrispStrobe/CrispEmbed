@@ -14,6 +14,7 @@
 #include "core/cpu_ops.h"
 #include "morph_fast.h"
 #include "tesseract_lstm.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -209,7 +210,7 @@ struct table_parse_context {
 table_parse_context * table_parse_init(const char * ocr_model_path, int n_threads) {
     auto * ctx = new table_parse_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 2;
-    ctx->bench = (std::getenv("CRISPEMBED_TABLE_PARSE_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_TABLE_PARSE_BENCH");
 
     if (ocr_model_path && *ocr_model_path) {
         ctx->tess = tesseract_lstm_init(ocr_model_path, ctx->n_threads);

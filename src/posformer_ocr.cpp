@@ -15,6 +15,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -342,7 +343,7 @@ posformer_ocr_context * posformer_ocr_init(const char * model_path, int n_thread
     }
     if (!map_tensors(ctx.get())) return nullptr;
 
-    ctx->bench = (std::getenv("CRISPEMBED_POSFORMER_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_POSFORMER_BENCH");
 
     ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {

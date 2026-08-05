@@ -14,6 +14,7 @@
 #include "cc_detect.h"
 #include "core/cpu_ops.h"
 #include "morph_fast.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -180,7 +181,7 @@ cc_text_region * cc_detect_lines_params(const uint8_t * gray, int width, int hei
     if (out_n) *out_n = 0;
     if (!gray || width <= 0 || height <= 0) return nullptr;
 
-    const bool bench = (std::getenv("CRISPEMBED_CC_DETECT_BENCH") != nullptr);
+    const bool bench = core_env::on("CRISPEMBED_CC_DETECT_BENCH");
     auto t_total = std::chrono::steady_clock::now();
 
     // 1. Binarize (Otsu + 1 so pixels AT the threshold are foreground)

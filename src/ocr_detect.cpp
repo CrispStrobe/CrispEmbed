@@ -23,6 +23,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -241,7 +242,7 @@ bool load(context ** out, const char * path, int n_threads) {
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 
     if (ocr_det_debug) fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
-    ctx->bench = (std::getenv("CRISPEMBED_OCR_DETECT_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_OCR_DETECT_BENCH");
     ctx->capture_intermediates = (std::getenv("OCR_DETECT_CAPTURE_TAPS") != nullptr);
     ctx->direct_conv = (std::getenv("OCR_DETECT_DIRECT_CONV") != nullptr);
     return true;

@@ -13,6 +13,7 @@
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -1107,7 +1108,7 @@ ppformulanet_ocr_context * ppformulanet_ocr_init(const char * model_path, int n_
             if (ctx->stages[si].blocks[bi].agg_squeeze.w) n_mapped++;
     fprintf(stderr, "ppfn: %d blocks mapped, %d dec layers\n", n_mapped, hp.dec_layers);
 
-    ctx->bench = (std::getenv("CRISPEMBED_PPFN_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_PPFN_BENCH");
 
     // ggml encoder backend + scheduler
     ctx->enc_backend = ggml_backend_cpu_init();

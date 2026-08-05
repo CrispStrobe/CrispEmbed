@@ -4,6 +4,7 @@
 #include "easyocr_postprocess.h"
 #include "ocr_crop.h"
 #include "ocr_detect.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -119,7 +120,7 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
     // recognizer width changes (which tear down and rebuild the graph) and the
     // recognize call itself, and counts how many width rebuilds the page
     // actually triggered -- the number EASYOCR_WIDTH_SORT exists to reduce.
-    const bool stage_bench = std::getenv("CRISPEMBED_EASYOCR_STAGE_BENCH") != nullptr;
+    const bool stage_bench = core_env::on("CRISPEMBED_EASYOCR_STAGE_BENCH");
     double crop_ms = 0.0, width_ms = 0.0, recognize_ms = 0.0;
     long width_calls = 0, width_changes = 0;
     int last_width = -1;
@@ -217,7 +218,7 @@ std::vector<result> run_regions(context * ctx, const std::vector<easyocr_layout:
 std::vector<result> run_raw(context * ctx, const uint8_t * pixels, int width, int height, int channels) {
     if (!ctx || !ctx->detector || !ctx->recognizer || !pixels || width <= 0 || height <= 0 || channels <= 0) return {};
     std::lock_guard<std::mutex> lock(ctx->mutex);
-    const bool stage_bench = std::getenv("CRISPEMBED_EASYOCR_STAGE_BENCH") != nullptr;
+    const bool stage_bench = core_env::on("CRISPEMBED_EASYOCR_STAGE_BENCH");
     const auto detect_t0 = std::chrono::steady_clock::now();
     const auto detected =
         ocr_detect::detect_rgb_ex(ctx->detector, pixels, width, height, channels, ocr_detect::rapid_defaults());

@@ -33,6 +33,7 @@
 #include <vector>
 
 #include "face_align.h"
+#include "core/env_gate.h"
 
 namespace cnn_embed {
 
@@ -79,7 +80,7 @@ bool load(context ** out, const char * path, int n_threads) {
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_CNN_EMBED_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_CNN_EMBED_BENCH");
 
     // Read metadata
     gguf_context * g = core_gguf::open_metadata(path);

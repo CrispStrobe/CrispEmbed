@@ -14,6 +14,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -388,7 +389,7 @@ swinir_sr_context * swinir_sr_init(const char * model_path, int n_threads) {
 
     fprintf(stderr, "swinir_sr: dim=%d, rstb=%d, blocks=%d, heads=%d, ws=%d, scale=%dx, %d tensors\n", ctx->embed_dim,
             ctx->n_rstb, ctx->n_blocks, ctx->n_heads, ctx->window_size, ctx->upscale, (int)ctx->wl.tensors.size());
-    ctx->bench = (std::getenv("CRISPEMBED_SWINIR_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_SWINIR_SR_BENCH");
 
     // ── ggml conv path (opt out with SWINIR_SR_SCALAR=1) ──────────────────
     // Replace the seven nested-loop sir_conv2d sites (conv_first, 4× RSTB conv,

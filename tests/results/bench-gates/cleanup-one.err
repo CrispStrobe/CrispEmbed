@@ -1,0 +1,7 @@
+[scan_cleanup-bench] despeckle: 9.0 ms
+[scan_cleanup-bench] blackfilter: 1.0 ms
+[scan_cleanup-bench] deskew: 6.4 ms
+[scan_cleanup-bench] crop: 0.2 ms
+[scan_cleanup-bench] whiten: 4.6 ms
+[scan_cleanup-bench] total: 21.4 ms
+cleaned: 520x260 -> 520x260

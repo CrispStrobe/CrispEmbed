@@ -6,6 +6,7 @@
 #include "kie_pipeline.h"
 #include "gliner_ner.h"
 #include "lilt_kie.h"
+#include "core/env_gate.h"
 
 #include <chrono>
 #include <cstdio>
@@ -28,7 +29,7 @@ bool load(context ** out, const config & cfg, int n_threads) {
 
     auto * ctx = new context;
     ctx->threshold = cfg.threshold > 0.0f ? cfg.threshold : 0.5f;
-    ctx->bench = (std::getenv("CRISPEMBED_KIE_PIPELINE_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_KIE_PIPELINE_BENCH");
 
     // Load OCR pipeline.
     if (!ocr_orchestrator::load(&ctx->ocr_ctx, cfg.ocr, n_threads)) {

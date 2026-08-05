@@ -24,6 +24,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -468,7 +469,7 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
             "ffn=%.2f, refine=%d, %d tensors\n",
             ctx->dim, ctx->num_blocks[0], ctx->num_blocks[1], ctx->num_blocks[2], ctx->num_blocks[3], ctx->heads[0],
             ctx->heads[1], ctx->heads[2], ctx->heads[3], ctx->ffn_factor, ctx->n_refine, (int)ctx->wl.tensors.size());
-    ctx->bench = (std::getenv("CRISPEMBED_RESTORMER_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_RESTORMER_BENCH");
 
     ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {

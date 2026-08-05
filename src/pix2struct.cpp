@@ -19,6 +19,7 @@
 #include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -250,7 +251,7 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, max_nodes, false, false);
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_PIX2STRUCT_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_PIX2STRUCT_BENCH");
     return ctx;
 }
 

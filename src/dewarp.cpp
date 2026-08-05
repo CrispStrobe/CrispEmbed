@@ -14,6 +14,7 @@
 #include "core/cpu_ops.h"
 #include "morph_fast.h"
 #include "cc_detect.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -229,7 +230,7 @@ int dewarp_page_params(const uint8_t * gray, int w, int h, dewarp_params params,
         return 1;
     }
 
-    const bool bench = (std::getenv("CRISPEMBED_DEWARP_BENCH") != nullptr);
+    const bool bench = core_env::on("CRISPEMBED_DEWARP_BENCH");
     auto t_total = std::chrono::steady_clock::now();
 
     // 1. Find textline regions using CC detection

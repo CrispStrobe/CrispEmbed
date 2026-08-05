@@ -6,6 +6,7 @@
 // 3. Normalize to (x-127.5)/127.5 for ArcFace/SFace input
 
 #include "face_align.h"
+#include "core/env_gate.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -98,7 +99,7 @@ void estimate_affine(const float * src, const float * dst, float matrix[6]) {
 
 std::vector<float> align(const unsigned char * image, int img_w, int img_h, const float * landmarks, int out_w,
                          int out_h) {
-    const bool bench = (std::getenv("CRISPEMBED_FACE_ALIGN_BENCH") != nullptr);
+    const bool bench = core_env::on("CRISPEMBED_FACE_ALIGN_BENCH");
     auto t_total = std::chrono::steady_clock::now();
 
     // Compute affine transform: landmarks → reference points

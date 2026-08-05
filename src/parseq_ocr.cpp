@@ -20,6 +20,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "core/gguf_loader.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -376,7 +377,7 @@ parseq_ocr_context * parseq_ocr_init(const char * model_path, int n_threads) {
     ctx->head_w = T("head.weight");
     ctx->head_b = T("head.bias");
 
-    ctx->bench = (std::getenv("CRISPEMBED_PARSEQ_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_PARSEQ_BENCH");
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
 

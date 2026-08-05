@@ -19,6 +19,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -203,7 +204,7 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
     net->gguf_buf = wl.buf;
     net->num_fiducial = num_fiducial;
     net->fc_dim = fc_dim;
-    net->bench = (std::getenv("CRISPEMBED_TPS_LOCNET_BENCH") != nullptr);
+    net->bench = core_env::on("CRISPEMBED_TPS_LOCNET_BENCH");
 
     // Bind tensors
     for (int i = 0; i < 4; i++) {

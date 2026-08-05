@@ -13,6 +13,7 @@
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -1072,7 +1073,7 @@ ppformulanet_l_ocr_context * ppformulanet_l_ocr_init(const char * model_path, in
         ctx->rp_w_per_layer[li] = get_rel_pos(aH, aH, rw.data(), rel_L, head_dim);
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_PPFN_L_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_PPFN_L_BENCH");
 
     return ctx.release();
 }

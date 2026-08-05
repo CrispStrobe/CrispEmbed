@@ -14,6 +14,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <array>
@@ -2826,7 +2827,7 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
     }
     init_ms("stack_moe_experts");
 
-    ctx.bench = (std::getenv("CRISPEMBED_UNLIMITED_OCR_BENCH") != nullptr);
+    ctx.bench = core_env::on("CRISPEMBED_UNLIMITED_OCR_BENCH");
 
     if (ctx.verbosity >= 1) {
         auto & s = ctx.m.shp;

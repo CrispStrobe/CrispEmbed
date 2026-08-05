@@ -26,6 +26,7 @@
 #include "core/metal_pipeline_cache_policy.h" // G4: cap the Metal pipeline-archive open
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -268,7 +269,7 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
         b.ccm.conv2_b = k("ccm.ccm.2.bias");
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_SAFMN_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_SAFMN_SR_BENCH");
 
     // Compute on the backend where the weights live (GPU), with a CPU backend as
     // fallback for any op lacking a GPU kernel — the sched copies across as needed.
