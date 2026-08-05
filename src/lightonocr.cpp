@@ -11,6 +11,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/env_gate.h"
+#include "core/gpu_backend_pref.h"
 
 // stbi_load/stbi_image_free are provided with C linkage by image_preprocess.cpp's
 // STB_IMAGE_IMPLEMENTATION. Forward-declare them here (matching ocr_orchestrator.cpp)
@@ -116,6 +117,9 @@ struct kv_cache_state {
 struct context {
     model m;
     ggml_backend_t backend = nullptr;
+    // CPU fallback backend when `backend` is a GPU (the sched requires its
+    // last backend to be CPU); nullptr when `backend` is already CPU.
+    ggml_backend_t backend_cpu = nullptr;
     core_gguf::WeightLoad wl;
     ggml_backend_sched_t sched = nullptr;
     // Decode-step graph cache (LOCR_DECODE_CACHE=1): dedicated gallocr reserved
@@ -137,6 +141,14 @@ struct context {
     // Per-token confidence
     std::vector<float> char_confidences;
 };
+
+// ggml_backend_cpu_set_n_threads asserts a CPU backend, so under
+// CRISPEMBED_LIGHTONOCR_GPU=1 the thread count applies to the sched's CPU
+// fallback instead of the main backend.
+static void locr_set_threads(context & ctx) {
+    if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+    if (ctx.backend_cpu) ggml_backend_cpu_set_n_threads(ctx.backend_cpu, ctx.n_threads);
+}
 
 // ---------------------------------------------------------------------------
 // KV cache management
@@ -235,8 +247,20 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
     fprintf(stderr, "lightonocr: vis=%dL/%dd, lm=%dL/%dd, vocab=%d\n", m.vis_layers, m.vis_dim, m.lm_layers, m.lm_dim,
             m.vocab_size);
 
-    // Pass 2: weights
-    ctx.backend = ggml_backend_cpu_init();
+    // Pass 2: weights.
+    //
+    // R4 (residency backlog): the compute default is CPU — unchanged, and
+    // deliberately so until a measured A/B says otherwise. What was missing is
+    // any way to ASK the question: this was the only VLM engine with a
+    // hardcoded ggml_backend_cpu_init() and no env escape, so GPU-vs-CPU could
+    // not be measured without a code change. CRISPEMBED_LIGHTONOCR_GPU=1 opts
+    // into the process GPU backend (crispasr_init_gpu_backend honours
+    // --gpu-backend); CRISPEMBED_LIGHTONOCR_FORCE_CPU=1 overrides it, matching
+    // the *_FORCE_CPU convention of every sibling engine.
+    const bool locr_force_cpu = core_env::on("CRISPEMBED_LIGHTONOCR_FORCE_CPU");
+    const bool locr_use_gpu = !locr_force_cpu && core_env::on("CRISPEMBED_LIGHTONOCR_GPU");
+    ctx.backend = locr_use_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    if (!ctx.backend) ctx.backend = ggml_backend_cpu_init(); // GPU init failed -> CPU
     if (!core_gguf::load_weights(gguf_path, ctx.backend, "lightonocr", ctx.wl)) {
         fprintf(stderr, "lightonocr: failed to load weights\n");
         ggml_backend_free(ctx.backend);
@@ -298,9 +322,15 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
         return false;
     }
 
-    // Scheduler
+    // Scheduler. ggml_backend_sched_new asserts the LAST backend is CPU, so a
+    // GPU main backend gets a CPU fallback appended (got_ocr pattern).
     ctx.compute_meta.resize(ggml_tensor_overhead() * 16384 + ggml_graph_overhead_custom(16384, false));
-    ctx.sched = ggml_backend_sched_new(&ctx.backend, nullptr, 1, 16384, false, false);
+    ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
+    {
+        ggml_backend_t backends[2] = { ctx.backend, ctx.backend_cpu };
+        const int n_backends = ctx.backend_cpu ? 2 : 1;
+        ctx.sched = ggml_backend_sched_new(backends, nullptr, n_backends, 16384, false, false);
+    }
 
     ctx.bench = core_env::on("CRISPEMBED_LIGHTONOCR_BENCH");
 
@@ -312,6 +342,7 @@ void free_(context & ctx) {
     if (ctx.decode_galloc) ggml_gallocr_free(ctx.decode_galloc);
     if (ctx.sched) ggml_backend_sched_free(ctx.sched);
     core_gguf::free_weights(ctx.wl);
+    if (ctx.backend_cpu) ggml_backend_free(ctx.backend_cpu);
     if (ctx.backend) ggml_backend_free(ctx.backend);
 }
 
@@ -510,7 +541,7 @@ static std::vector<float> apply_patch_conv(context & ctx, const std::vector<floa
 
     ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "im2col"), im2col.data(), 0, T * patch_len * sizeof(float));
 
-    ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+    locr_set_threads(ctx);
     ggml_backend_sched_graph_compute(ctx.sched, gf);
 
     std::vector<float> result(T * D);
@@ -675,7 +706,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
     ggml_tensor * t_sin = ggml_graph_get_tensor(gf, "sin_in");
     ggml_backend_tensor_set(t_sin, rope_sin.data(), 0, HD * n_patches * sizeof(float));
 
-    ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+    locr_set_threads(ctx);
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "lightonocr: vision graph compute failed\n");
         ggml_free(g);
@@ -795,7 +826,7 @@ static bool run_projection(context & ctx, const std::vector<float> & vis_out, in
     ggml_tensor * t_in = ggml_graph_get_tensor(gf, "merge_in");
     ggml_backend_tensor_set(t_in, merged.data(), 0, merged.size() * sizeof(float));
 
-    ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+    locr_set_threads(ctx);
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
         ggml_free(g);
         return false;
@@ -1077,7 +1108,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     ggml_tensor * t_pos = ggml_graph_get_tensor(gf, "pos_ids");
     ggml_backend_tensor_set(t_pos, pos_data.data(), 0, n_prompt * sizeof(int32_t));
 
-    ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+    locr_set_threads(ctx);
     if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "lightonocr: decoder prefill compute failed\n");
         ggml_free(g);
@@ -1297,7 +1328,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         int32_t pos_val = n_past;
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf2, "pos_ids"), &pos_val, 0, sizeof(int32_t));
 
-        ggml_backend_cpu_set_n_threads(ctx.backend, ctx.n_threads);
+        locr_set_threads(ctx);
         ggml_status st = ctx.decode_galloc ? ggml_backend_graph_compute(ctx.backend, gf2)
                                            : ggml_backend_sched_graph_compute(ctx.sched, gf2);
         if (st != GGML_STATUS_SUCCESS) {
