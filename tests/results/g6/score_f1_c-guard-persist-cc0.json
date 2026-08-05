@@ -1,0 +1,135 @@
+{
+  "version": 1,
+  "images": "tests/regression/images/cc0",
+  "repeats": 1,
+  "reference_engine": "",
+  "skipped": {},
+  "fixtures": [
+    {
+      "fixture": "commons_example_receipt.png",
+      "truth_chars": 407,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "**Jackson-Washington**  \n6640 Ortiz Cove, Markmouth, PW 69940  \n\nTransaction ID: 8F88C299  \nDate: 2025-02-16 11:25:12  \n\n| Item    | Qty  | Price  |\n|---|---|---|\n| Strategy Accessory    | 1    | $43.31 | $    |\n| Conference Product    | 1    | $48.40 | $    |\n| Scientist Item    | 3    | $48.07 | $    |\n| Situation Item    | 3    | $23.87 | $    |\n| Life Accessory    | 4    | $48.04 | $    |\n| Music Accessory    | 1    | $24.45 | $    |\n\nSubtotal: $524.14  \nGST (5%): $26.21  \nPST (7%): $36.69  \n\n**Total:** $587.04  \n\nPayment: Gift Card (****3486)  \nHave a great day!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.22113,
+          "wer": 0.61429,
+          "ref_chars": 407,
+          "wer_unordered": 0.75714,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "commons_test_ocr_document.jpg",
+      "truth_chars": 2981,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "# Lorem Ipsum\n\nAlice was beginning to get very tired of sitting by her sister in the caf\u00e9, and of having nothing to do: once or twice she had peeped into the book her sister was reading, but it had no pictures or conversations in it, \u201cand what is the use of a book,\u201d thought Alice, \u201cwithout pictures or conversations?\u201d\n\nSo she was considering in her own mind, (as well as she could, for the hot day made her feel very sleepy and stupid,) whether the pleasure of making a daisy-chain would be worth the trouble of getting up and picking the daisies, when suddenly a white rabbit with pink ears ran close by her.\n\nThere was nothing so very remarkable in that; nor did Alice think it so very much out of the way to her character just to itself, \u201cOh dear! Oh dear! I shall be too late!\u201d (when she thought it over afterwards, it occurred to her that she ought to have wondered at this, but at the time it all seemed quite naturally; but when the Rabbit actually got nearer and nearer to us, and looked at it, and then hurried on, Alice started to her feet, for it flashed across her mind that she had never before seen a rabbit with either was it a cat, to be seen at all, and, burning with curiosity, she ran across the field after it, and was just in time to see it pop down a large rabbit-hole under the hedge.\n\nIn another moment down went Alice after it, never once considering how in the world she was to get out again.\n\nThe rabbit-hole went straight on like a tunnel for some way, and then dipped suddenly down, so suddenly that Alice had not a moment to think about stopping herself by feeling her way to the door, and to wonder what was going to happen next. First, she tried to look down and make out what she was coming to, but it was too dark to see anything; then she looked at the sides of the well, and noticed that they were filled with cupboards and book-shelves; here and there she saw maps and pictures hung upon pegs. She took down a jar from one of the shelves as she passed; it was labelled \u201cORANGE MARMALADE,\u201d but to her great disappointment it was empty: she did not like to drop the jar for fear of killing somebody underneath, so managed to put it into one of the cupboard as she fell past it.\n\n\u201cJ\u2019aquate que le fait d\u2019avoir \u00e9t\u00e9, durant plus de deux ans, le directeur de l\u2019h\u00f4pital du camp et d\u2019avoir, pendant toute la dur\u00e9e de mon internement, donn\u00e9 r\u00e9guli\u00e8rement des cours de fran\u00e7ais, d\u2019histoire de la litt\u00e9rature fran\u00e7aise et d\u2019histoire de la philosophie, m\u2019a permis d\u2019avoir des relations suivies et intimides avec presque tous mes compagnons de l\u2019aventure. Ces relations et cette intimit\u00e9 m\u2019ont permis de les conna\u00eetre, un par un, de voir non seulement leur corps, mais aussi leur \u00e2me \u00e0 qui aux heures de confidences.\n\nTHE END",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.10399,
+          "wer": 0.13309,
+          "ref_chars": 2981,
+          "wer_unordered": 0.15468,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "german_official_print.jpg",
+      "truth_chars": 1009,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Reichs-Gesetzblatt.\n\nNo. 1.\n\nAnhalt. Verordnungen, betreffend das Auftaktvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden vom 1. Dezember 1898.  \nS. 1. \u2014 Verordnungen, betreffend die Abkommenung der Bezirkshauptinstehungen.  \nBez. 2.\n\n(Ver. 2642.) Verordnungen, betreffend das Aufstartvertreten der Milit\u00e4rstaffelgerichtsbeh\u00f6rden vom 1. Dezember 1889.  \nS. 1. \u2014 Verordnungen, betreffend das Aufstartvertreten der Milit\u00e4rstaffel gerichtsbeh\u00f6rden vom 1. Dezember 1898.\n\nReichs-Gesetzblatt.\n\nNo. 1.\n\nReichs-Gesetzblatt.\n\nReichs-Gesetzblatt.\n\nReichs-Gesetzblatt.\n\nReichsl\u00e4nderblatt.\n\nReichs-Gesetzblatt.\n\nReichs-Gesetzblatt.\n\nReiche.",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.59068,
+          "wer": 0.79104,
+          "ref_chars": 1009,
+          "wer_unordered": 0.76119,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "receipt_historical.png",
+      "truth_chars": 768,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "# FLEXHANDLER'S HANOVER ST.\n# THE \"SUPER\" MARKET\n# 11-18-12:21PM STORE 16\n# CUST 94 REG 8 OPR 1.71\n\n## GROCERY\nHARDY HOODSIE CUP 1.99  \nHOOD HOODSIE CUP 1.99  \nHF ORANGE JC 642 1.29  \nBC WHITE CAKE 18 0.73  \nBC WHITE CAKE 18 0.73  \nSLICE D'MAN OR2L 0.89  \nS/K NAPKINS 140 0.63  \nSLICE CHR COLA2L 1.39  \n6 0 6.89  \n\n## LOOSE BULKY RLS\nTUNA SALHO SAND 1.99*TX  \nWHITE HT. BREED 0.99  \nFLEX STRIPS 0.89*  \nSWTHR PLATES?*48 1.63*  \nFRT WRINKLS LEMON 1.79  \nBEEF PATTIES 75% 2.21  \nSNK FRT'S CHRYSL 1.89  \n36 LB 0 1.59  \n\n## CARTWELLS\nEULONS 14CT 1.25*  \nLGE BRIN 8PK 0.65  \n\n## KLEENEX POCKET\nMBM 15FREE 1.89 1.99  \n1 0 2-1.00  \n\n## DOPINO CONFECT\n1 0 2-1.00  \n\n## DOPINO CONFECT\n1 1 0 2-1.00  \n\n## KELR T-HOUSE168BN\nBAKERY 4.99  \n\n## CHEER 962PP499\nTOTAL $39.99  \nCASH TEND 48.00  \n\n## SUBTOTAL\nTHX FRI 0.14  \n\n## 01 CHANGE\n\n# STE F IN SHOES NOW OPEN!",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.20443,
+          "wer": 0.52778,
+          "ref_chars": 768,
+          "wer_unordered": 0.61111,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    },
+    {
+      "fixture": "simple_form.png",
+      "truth_chars": 247,
+      "engines": {
+        "native": {
+          "kind": "external",
+          "text": "Input  \nText  \nNumber  \nDate  \nPassword  \n\na label  \nANOTHER LABEL  \nYet another label  \n\ncombo suggestion  \nFrance  \n@_checkbox2  \n@_checkbox3  \n\nCodebleble  \ncode.lib  \ncode  \n\nButton  \nRechercher  \nD\u00e9tective h\u00f4te  \n\nTEXTAREA  \nText  \nDrag and drop frames  \nRadio  \n\nRadio  \n\u2610 Drag and drop frames  \n\u2610 Fixe frames",
+          "proc_ms": null,
+          "engine_ms": null,
+          "remote_timing": true,
+          "attempts": null,
+          "final_temperature": null,
+          "deterministic": null,
+          "cer": 0.2753,
+          "wer": 0.52778,
+          "ref_chars": 247,
+          "wer_unordered": 0.58333,
+          "exact": false,
+          "alt_scores": {}
+        }
+      }
+    }
+  ],
+  "gold_dir": "/Users/christianstrobele/code/CrispEmbed/tests/results/f1/c-guard-persist-cc0",
+  "gold_manifest": {},
+  "missing_transcripts": [],
+  "summary": {
+    "native": {
+      "kind": "external",
+      "n": 5,
+      "failures": 0,
+      "mean_cer": 0.27911,
+      "mean_wer": 0.5188,
+      "mean_wer_unordered": 0.57349,
+      "mean_cer_vs_reference": null,
+      "median_proc_ms": null,
+      "median_engine_ms": null
+    }
+  }
+}

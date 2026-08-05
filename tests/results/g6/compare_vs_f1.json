@@ -1,0 +1,74 @@
+{
+  "m-kvf16-cc0": {
+    "baseline": "m-guard-persist-cc0",
+    "files_arm": 5,
+    "files_baseline": 5,
+    "only_in_arm": [],
+    "only_in_baseline": [],
+    "identical": 4,
+    "differing": [
+      "german_official_print.txt"
+    ],
+    "ok_arm": "5/5",
+    "ok_baseline": "5/5",
+    "kv_field_arm": [
+      "f16"
+    ],
+    "decode_median_ms_arm": 18628.9,
+    "decode_median_ms_baseline": 40511.4
+  },
+  "m-kvf16-synth": {
+    "baseline": "m-guard-persist-synth",
+    "files_arm": 20,
+    "files_baseline": 20,
+    "only_in_arm": [],
+    "only_in_baseline": [],
+    "identical": 20,
+    "differing": [],
+    "ok_arm": "20/20",
+    "ok_baseline": "20/20",
+    "kv_field_arm": [
+      "f16"
+    ],
+    "decode_median_ms_arm": 1291.8,
+    "decode_median_ms_baseline": 1546.4
+  },
+  "c-kvf16-cc0": {
+    "baseline": "c-guard-persist-cc0",
+    "files_arm": 5,
+    "files_baseline": 5,
+    "only_in_arm": [],
+    "only_in_baseline": [],
+    "identical": 0,
+    "differing": [
+      "commons_example_receipt.txt",
+      "commons_test_ocr_document.txt",
+      "german_official_print.txt",
+      "receipt_historical.txt",
+      "simple_form.txt"
+    ],
+    "ok_arm": "5/5",
+    "ok_baseline": "5/5",
+    "kv_field_arm": [
+      "f16"
+    ],
+    "decode_median_ms_arm": 6015.1,
+    "decode_median_ms_baseline": 7589.0
+  },
+  "c-kvf16-synth": {
+    "baseline": "c-guard-persist-synth",
+    "files_arm": 5,
+    "files_baseline": 5,
+    "only_in_arm": [],
+    "only_in_baseline": [],
+    "identical": 5,
+    "differing": [],
+    "ok_arm": "5/5",
+    "ok_baseline": "5/5",
+    "kv_field_arm": [
+      "f16"
+    ],
+    "decode_median_ms_arm": 516.4,
+    "decode_median_ms_baseline": 726.9
+  }
+}

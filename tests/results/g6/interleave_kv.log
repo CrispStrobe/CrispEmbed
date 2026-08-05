@@ -1,0 +1,77 @@
+pair 0 kv_f32 ok=True decode=19210.4 prefill=338.7 total=22946.1 kv=f32 chars=835 load1=1.97
+pair 0 kv_f16 ok=True decode=18988.8 prefill=328.9 total=22692.8 kv=f16 chars=835 load1=1.97
+pair 1 kv_f32 ok=True decode=19142.9 prefill=339.5 total=22874.6 kv=f32 chars=835 load1=1.98
+pair 1 kv_f16 ok=True decode=19140.5 prefill=326.5 total=22878.5 kv=f16 chars=835 load1=1.98
+pair 2 kv_f32 ok=True decode=19405.3 prefill=340.8 total=23162.0 kv=f32 chars=835 load1=1.82
+pair 2 kv_f16 ok=True decode=19048.5 prefill=330.0 total=22769.9 kv=f16 chars=835 load1=1.82
+pair 3 kv_f32 ok=True decode=19218.5 prefill=337.0 total=22967.2 kv=f32 chars=835 load1=1.67
+pair 3 kv_f16 ok=True decode=19159.8 prefill=326.0 total=22902.0 kv=f16 chars=835 load1=1.67
+pair 4 kv_f32 ok=True decode=19359.3 prefill=344.2 total=23124.9 kv=f32 chars=835 load1=1.67
+pair 4 kv_f16 ok=True decode=19076.6 prefill=330.0 total=22837.7 kv=f16 chars=835 load1=1.67
+{
+  "kv_f32": {
+    "decode_ms": {
+      "n": 4,
+      "median": 19288.9,
+      "min": 19142.9,
+      "max": 19405.3,
+      "spread_frac": 0.014
+    },
+    "prefill_ms": {
+      "n": 4,
+      "median": 340.1,
+      "min": 337.0,
+      "max": 344.2,
+      "spread_frac": 0.021
+    },
+    "total_ms": {
+      "n": 4,
+      "median": 23046.1,
+      "min": 22874.6,
+      "max": 23162.0,
+      "spread_frac": 0.012
+    },
+    "wall_ms": {
+      "n": 4,
+      "median": 23716.1,
+      "min": 23535.8,
+      "max": 23805.7,
+      "spread_frac": 0.011
+    },
+    "distinct_texts": 1
+  },
+  "kv_f16": {
+    "decode_ms": {
+      "n": 4,
+      "median": 19108.5,
+      "min": 19048.5,
+      "max": 19159.8,
+      "spread_frac": 0.006
+    },
+    "prefill_ms": {
+      "n": 4,
+      "median": 328.2,
+      "min": 326.0,
+      "max": 330.0,
+      "spread_frac": 0.012
+    },
+    "total_ms": {
+      "n": 4,
+      "median": 22858.1,
+      "min": 22769.9,
+      "max": 22902.0,
+      "spread_frac": 0.006
+    },
+    "wall_ms": {
+      "n": 4,
+      "median": 23665.7,
+      "min": 23424.7,
+      "max": 23784.9,
+      "spread_frac": 0.015
+    },
+    "distinct_texts": 1
+  }
+}
+per-pair f16/f32 decode ratios (load-gated): [0.9999, 0.9816, 0.9969, 0.9854]
+dropped for load: []
+text identical across arms: True
