@@ -21,6 +21,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/metal_pipeline_cache_policy.h" // G4: cap the Metal pipeline-archive open
 
 #include <algorithm>
 #include <chrono>
@@ -390,6 +391,10 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     // the tiny, overhead-bound SAFMN where Metal lost). NAFNET_CPU forces CPU.
     // Weights are parked on enc_backend by nafnet_resident, so a GPU enc_backend
     // keeps them GPU-resident and the CPU-fallback backend handles any uncovered op.
+    // G4: cap the Metal pipeline-archive open before init_best can construct
+    // the Metal device (idempotent; usually already applied by the
+    // crispasr_init_gpu_backend() call above, but NAFNET_FORCE_CPU=1 skips it).
+    if (!getenv("NAFNET_CPU")) core_metal_cache::apply();
     ctx->enc_backend = getenv("NAFNET_CPU") ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!ctx->enc_backend) ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {

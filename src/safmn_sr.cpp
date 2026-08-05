@@ -23,6 +23,7 @@
 #include "safmn_sr.h"
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
+#include "core/metal_pipeline_cache_policy.h" // G4: cap the Metal pipeline-archive open
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 
@@ -213,6 +214,9 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
     // GPU path is kept opt-in (SAFMN_SR_METAL) — it works (the fused graph is a
     // single graph, unlike the old per-conv path that aborted on GPU) and may pay
     // off on the larger SR/restoration siblings.
+    // G4: this opt-in Metal path bypasses crispasr_init_gpu_backend(), so cap
+    // the MTLBinaryArchive open here too (idempotent, no-op on CPU default).
+    if (std::getenv("SAFMN_SR_METAL")) core_metal_cache::apply();
     ggml_backend_t backend = std::getenv("SAFMN_SR_METAL") ? ggml_backend_init_best() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
 
