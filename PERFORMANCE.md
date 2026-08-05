@@ -2850,3 +2850,29 @@ per-tile vision is compute-bound, exactly the shape that wins on GPU,
 while the 135M-LLM per-token decode is the shape recorded as CPU-favored
 (see the persistent-decode LEARNINGS entry) — split residency, don't move
 the decode blindly.
+
+## SmolDocling vision split residency (G1/F4, 2026-08-05, M1, Metal)
+
+The split-residency port landed: `vis.*` weights go to the GPU backend via
+`core_gguf::load_weights_split`, the SigLIP graphs run there, and the
+connector + 135M decode + LM head + KV stay CPU. `SMOLDOCLING_FORCE_CPU=1`
+/ `--gpu-backend cpu` restore all-CPU. Same-binary interleaved (metal,cpu)
+pairs, loadavg-gated, pair 0 discarded, median of 3
+(`tests/results/g1/SUMMARY.md` has the full gates):
+
+| fixture | stage | metal | cpu | speedup |
+|---|---|--:|--:|--:|
+| fox.png (5 tiles) | vision+connector | 1,241 ms | 3,562 ms | 2.9x |
+| fox.png | total | 1,876 ms | 4,216 ms | 2.25x |
+| scan_page_pd (13 tiles) | vision+connector | 3,163 ms | 14,500 ms | 4.6x |
+| scan_page_pd | total | 11,021 ms | 22,681 ms | 2.06x |
+
+Decode step time is unchanged (~12-19 ms both arms — decode never moved).
+NOTE the 31.7 s fox vision row above came from a DIFFERENT (CPU-only,
+2026-08-04) build; the same-binary CPU baseline today is 3.6 s, so the only
+apples-to-apples claim is this table's interleaved pairs. Decoded output:
+CPU arm byte-identical to the T15 recorded outputs 5/5; Metal arm
+matches/beats the reference implementation on every GT-labelled page, with
+one documented CPU-vs-Metal trajectory divergence (receipt_historical,
+stripped CER 0.238 CPU vs 0.372 Metal, both better than the reference's
+0.493 — Metal F16 activation rounding, same class as deepseek T14/G2).

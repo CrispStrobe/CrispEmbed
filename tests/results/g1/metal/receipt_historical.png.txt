@@ -1,0 +1,27 @@
+ <doctag><text><loc_100><loc_15><loc_286><loc_25>ALEXANDER'S HANNOVER ST.</text>
+<text><loc_100><loc_26><loc_286><loc_35>THE "SUPER" MARKET</text>
+<text><loc_100><loc_37><loc_286><loc_46>11/18 12:2LPM STORE</text>
+<text><loc_100><loc_48><loc_286><loc_58>CUST 94 REG 8 OPR 171</text>
+<text><loc_64><loc_69><loc_286><loc_124>GROCERY 66 H000 HOODSTE CUP 1.99 H000 H000STE CUP 1.99 HF ORANGE JC 642 1.29 1.73 1.73</text>
+<text><loc_64><loc_125><loc_286><loc_135>BC WHITE CARKE 16</text>
+<text><loc_64><loc_136><loc_286><loc_146>SLICE D/MPR OR2L</text>
+<text><loc_64><loc_147><loc_286><loc_157>5K NAPKINS 146</text>
+<text><loc_64><loc_158><loc_286><loc_168>SUICE CHR COHEL 1.39</text>
+<text><loc_64><loc_170><loc_286><loc_180>6 @ 6.89</text>
+<text><loc_64><loc_181><loc_286><loc_191>LOOSE BULKY RLS</text>
+<text><loc_64><loc_192><loc_286><loc_202>TUNA SHALD SAND 1.99*TX</text>
+<text><loc_64><loc_203><loc_286><loc_213>WHITE MIT. BREH 99</text>
+<text><loc_64><loc_214><loc_286><loc_224>FLEX STRAWS 89*</text>
+<text><loc_64><loc_225><loc_286><loc_235>SUTHR PLATES 48 1.63*</text>
+<text><loc_64><loc_236><loc_286><loc_246>FRT WRKLLS LEMON 1.79</text>
+<text><loc_64><loc_247><loc_286><loc_257>BELT PATTLES 35 2.21</text>
+<text><loc_64><loc_258><loc_286><loc_268>SNK FRT/S CHR 89</text>
+<text><loc_64><loc_269><loc_286><loc_279>30 LB 8 1.59</text>
+<text><loc_64><loc_280><loc_286><loc_290>CARTHEELS 18 1.18</text>
+<text><loc_64><loc_291><loc_286><loc_299>BRLONNS 14CT 1.25*</text>
+<text><loc_64><loc_299><loc_286><loc_309>LGE EBRWN SPK 65</text>
+<text><loc_64><loc_310><loc_286><loc_320>KLEENEX POCKET 1.29*</text>
+<text><loc_64><loc_321><loc_286><loc_331>MAM 153FREE 1884 1.99</text>
+<text><loc_64><loc_332><loc_286><loc_342>DUMINU CUNFECT 1.50</text>
+<text><loc_64><loc_343><loc_286><loc_353>1 @ 2/1.00</text>
+<

@@ -1,0 +1,13 @@
+crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised
+smoldocling: vis=12L x 768d (1024 patches -> 64 after shuffle), llm=30L x 576d (heads=9/3, ffn=1536), vocab=49280, 471 tensors
+smoldocling: running vision encoder on 9 sub-image(s) (4x2 grid)...
+smoldocling: vision+connector done, 576 tokens (64 per sub-image)
+[smoldocling-bench] vision_encoder+connector: 12199ms
+smoldocling: prompt has 614 tokens (576 image + 38 text)
+  smoldocling KV cache: 30 layers, max_seq=1642, 36.1 MB
+smoldocling: starting prefill of 614 tokens (ggml batched)...
+[smoldocling-bench] prefill: 803ms
+[smoldocling-bench] decode_step[0]: 11ms
+[smoldocling-bench] decode_step[1]: 11ms
+[smoldocling-bench] decode (781 steps): 9793.1 ms
+[smoldocling-bench] total: 23050.7 ms

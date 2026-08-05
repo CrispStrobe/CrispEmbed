@@ -1,0 +1,2 @@
+ <doctag><picture><loc_2><loc_1><loc_499><loc_499><screenshot></picture>
+</doctag>

@@ -9,11 +9,15 @@
 //   6. Token embedding + vision splicing (masked_scatter at image_token_id)
 //   7. Autoregressive LLM decode (SmolLM2-135M, 30 layers, GQA 9/3, KV cache)
 //
-// Follows the same CPU-scalar pattern as granite_vision_ocr.cpp.
+// Residency (G1/F4): the SigLIP vision graphs run on the GPU backend when one
+// is available (vis.* weights GPU-resident via core_gguf::load_weights_split);
+// the connector, LLM decode and LM head stay CPU-resident.
+// SMOLDOCLING_FORCE_CPU=1 restores the historical all-CPU engine.
 
 #include "smoldocling_ocr.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h"
 #include "core/vlm_attention.h"
 #include "ggml-cpu.h"
 
@@ -207,8 +211,13 @@ struct smoldocling_context {
     core_gguf::WeightLoad wl;
     core_cpu::DequantCache dcache; // caches dequantized weights (replaces wbufs)
 
-    // ggml backend (shared: vis encoder + LLM decoder)
+    // ggml backends — split residency (G1/F4): `backend` is always the CPU
+    // backend and owns the LLM weights, KV cache and decode graphs (the 135M
+    // per-token decode is CPU-shaped). `gpu_backend` is non-null only when a
+    // GPU device is available and not disabled; it owns the vis.* weights and
+    // runs the SigLIP vision graphs (compute-bound, GPU-shaped).
     ggml_backend_t backend = nullptr;
+    ggml_backend_t gpu_backend = nullptr;
 
     // LLM decoder: reusable scheduler + pre-allocated metadata buffer
     ggml_backend_sched_t llm_sched = nullptr;
@@ -293,10 +302,35 @@ smoldocling_context * smoldocling_init(const char * model_path, int n_threads) {
 
     core_gguf::free_metadata(meta);
 
-    // Load weights — keep backend for ggml graph compute
+    // Load weights — split residency (G1/F4). SMOLDOCLING_FORCE_CPU=1 (value-
+    // parsed: =0 is off) restores the historical all-CPU engine; `--gpu-backend
+    // cpu` reaches the same state through the pref helper's CPU short-circuit.
     ctx->backend = ggml_backend_cpu_init();
-    if (!core_gguf::load_weights(model_path, ctx->backend, "smoldocling", ctx->wl)) {
+    const char * fc = std::getenv("SMOLDOCLING_FORCE_CPU");
+    const bool force_cpu = fc && atoi(fc) != 0;
+    if (!force_cpu) {
+        ggml_backend_t gpu = crispasr_init_gpu_backend();
+        if (gpu && !ggml_backend_is_cpu(gpu)) {
+            ctx->gpu_backend = gpu;
+        } else if (gpu) {
+            ggml_backend_free(gpu); // --gpu-backend cpu / no GPU device: all-CPU
+        }
+    } else {
+        fprintf(stderr, "smoldocling: SMOLDOCLING_FORCE_CPU=1 — CPU backend\n");
+    }
+
+    bool loaded;
+    if (ctx->gpu_backend) {
+        auto is_vis = [](const char * name, void *) { return strncmp(name, "vis.", 4) == 0; };
+        loaded = core_gguf::load_weights_split(model_path, ctx->gpu_backend, ctx->backend, is_vis, nullptr,
+                                               "smoldocling", ctx->wl);
+    } else {
+        loaded = core_gguf::load_weights(model_path, ctx->backend, "smoldocling", ctx->wl);
+    }
+    if (!loaded) {
         fprintf(stderr, "smoldocling: failed to load weights\n");
+        if (ctx->gpu_backend) ggml_backend_free(ctx->gpu_backend);
+        ctx->gpu_backend = nullptr;
         ggml_backend_free(ctx->backend);
         ctx->backend = nullptr;
         delete ctx;
@@ -336,6 +370,7 @@ void smoldocling_free(smoldocling_context * ctx) {
         if (ctx->kvc_ctx) ggml_free(ctx->kvc_ctx);
         if (ctx->llm_sched) ggml_backend_sched_free(ctx->llm_sched);
         core_gguf::free_weights(ctx->wl);
+        if (ctx->gpu_backend) ggml_backend_free(ctx->gpu_backend);
         if (ctx->backend) ggml_backend_free(ctx->backend);
         delete ctx;
     }
@@ -417,7 +452,11 @@ static void sd_vision_forward(smoldocling_context * ctx, const float * image, in
         ggml_set_output(out);
         ggml_cgraph * egf = ggml_new_graph(eg);
         ggml_build_forward_expand(egf, out);
-        ggml_backend_sched_t pe_sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, 16, false, false);
+        // Vision graphs follow the vis.* weight residency: GPU-first with the
+        // CPU backend as per-op fallback when split residency is active.
+        ggml_backend_t vis_be[2] = { ctx->gpu_backend ? ctx->gpu_backend : ctx->backend, ctx->backend };
+        const int n_vis_be = ctx->gpu_backend ? 2 : 1;
+        ggml_backend_sched_t pe_sched = ggml_backend_sched_new(vis_be, nullptr, n_vis_be, 16, false, false);
         ggml_backend_sched_reset(pe_sched);
         if (!ggml_backend_sched_alloc_graph(pe_sched, egf)) {
             fprintf(stderr, "smoldocling: patch_embed graph alloc failed\n");
@@ -560,8 +599,13 @@ static void sd_vision_forward(smoldocling_context * ctx, const float * image, in
     ggml_cgraph * gf = ggml_new_graph_custom(g_ctx, max_nodes, false);
     ggml_build_forward_expand(gf, x);
 
-    // Use backend scheduler with model weights buffer
-    ggml_backend_sched_t sched = ggml_backend_sched_new(&ctx->backend, nullptr, 1, max_nodes, false, false);
+    // Use backend scheduler with model weights buffer. With split residency
+    // the vis.* weights live on the GPU backend, so the transformer's matmuls
+    // and attention run there; the CPU backend covers any op the GPU backend
+    // does not support.
+    ggml_backend_t vis_be[2] = { ctx->gpu_backend ? ctx->gpu_backend : ctx->backend, ctx->backend };
+    const int n_vis_be = ctx->gpu_backend ? 2 : 1;
+    ggml_backend_sched_t sched = ggml_backend_sched_new(vis_be, nullptr, n_vis_be, max_nodes, false, false);
     ggml_backend_sched_reset(sched);
     ggml_backend_sched_alloc_graph(sched, gf);
 

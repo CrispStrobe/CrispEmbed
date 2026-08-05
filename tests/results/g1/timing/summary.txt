@@ -1,0 +1,17 @@
+fox.png-m0 arm=metal page=fox.png rc=0 loadavg=2.33 mtl0=yes vis_ms=1240 total_ms=1866.5
+fox.png-c0 arm=cpu page=fox.png rc=0 loadavg=2.33 mtl0=no vis_ms=3586 total_ms=4225.4
+fox.png-m1 arm=metal page=fox.png rc=0 loadavg=2.46 mtl0=yes vis_ms=1241 total_ms=1862.4
+fox.png-c1 arm=cpu page=fox.png rc=0 loadavg=2.46 mtl0=no vis_ms=3562 total_ms=4196.0
+fox.png-m2 arm=metal page=fox.png rc=0 loadavg=2.58 mtl0=yes vis_ms=1228 total_ms=1881.2
+fox.png-c2 arm=cpu page=fox.png rc=0 loadavg=2.46 mtl0=no vis_ms=3553 total_ms=4250.5
+fox.png-m3 arm=metal page=fox.png rc=0 loadavg=2.58 mtl0=yes vis_ms=1249 total_ms=1875.8
+fox.png-c3 arm=cpu page=fox.png rc=0 loadavg=2.58 mtl0=no vis_ms=3574 total_ms=4216.0
+scan_page_pd.png-m0 arm=metal page=scan_page_pd.png rc=0 loadavg=2.69 mtl0=yes vis_ms=3205 total_ms=9677.0
+scan_page_pd.png-c0 arm=cpu page=scan_page_pd.png rc=0 loadavg=2.52 mtl0=no vis_ms=10287 total_ms=17098.8
+scan_page_pd.png-m1 arm=metal page=scan_page_pd.png rc=0 loadavg=3.13 mtl0=yes vis_ms=3163 total_ms=10306.0
+scan_page_pd.png-c1 arm=cpu page=scan_page_pd.png rc=0 loadavg=3.28 mtl0=no vis_ms=11627 total_ms=18716.9
+scan_page_pd.png-m2 arm=metal page=scan_page_pd.png rc=0 loadavg=3.99 mtl0=yes vis_ms=3102 total_ms=11021.0
+scan_page_pd.png-c2 arm=cpu page=scan_page_pd.png rc=0 loadavg=4.48 mtl0=no vis_ms=14500 total_ms=22680.9
+scan_page_pd.png-m3 arm=metal page=scan_page_pd.png rc=0 loadavg=4.75 mtl0=yes vis_ms=3295 total_ms=13710.4
+scan_page_pd.png-c3 arm=cpu page=scan_page_pd.png rc=0 loadavg=5.05 mtl0=no vis_ms=16863 total_ms=26346.6
+TIMING_DONE

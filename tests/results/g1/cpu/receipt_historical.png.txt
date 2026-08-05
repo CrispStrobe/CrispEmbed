@@ -1,0 +1,13 @@
+ <doctag><text><loc_102><loc_15><loc_288><loc_25>ALEXANDER'S HANNOVER ST.</text>
+<text><loc_120><loc_27><loc_260><loc_35>THE "SUPER" MARKET</text>
+<text><loc_81><loc_38><loc_288><loc_58>11/18 12:2LPM STORE CUST 94 REG 8 OPR 171</text>
+<text><loc_64><loc_71><loc_260><loc_124>GROCERY 66 H000 HOODSTE CUP 1.99 H000 H000STE CUP 1.99 HF ORANGE JC 642 1.29 1.73</text>
+<text><loc_64><loc_125><loc_260><loc_169>BC WHITE CARKE 18 73 SLCICE D/MPR OR2L 69 NAPKINS 146 63 S.ICE CHR COHEL 1.39 6 @ 6.89</text>
+<text><loc_64><loc_177><loc_260><loc_252>LOOSE BULKY RL 89 TUNA SHALD SAND 1.99 WHITE MIT. BREHD 99 FLEX STRAWS 89 89 SHITH PLATESTP48 1.63* FRT WRKLLS LEMON 1.79 BELT PATTLES 75v 2.21 3.21 SNK FRT/S CHR 89 1.89</text>
+<text><loc_64><loc_260><loc_260><loc_279>30 LB 8 1.59 CARTHWEELS 18 1.89</text>
+<text><loc_64><loc_287><loc_260><loc_332>BRLUNS 14CT 1.25* LGE EBRWN SPK 65 KLEENEX POCKET 1.29* MAM 152FREE 184 1.99</text>
+<text><loc_64><loc_339><loc_260><loc_368>DUMINU CUNFECT 1 8 2/1.80 58 1 8 2/1.80 DOMINU CONFECT.</text>
+<text><loc_64><loc_375><loc_260><loc_429>KELR. T.HOUSEEL6BN 1.69 DKERRY 4.99 CHEEER 98ZPP499 4.29 TOTAL 39.99 CASH TEND 46.80</text>
+<text><loc_120><loc_437><loc_260><loc_466>SUBTUHAL 39.85 THX PFAID 14</text>
+<text><loc_120><loc_473><loc_196><loc_482>W1 CHANGE</text>
+</doctag>
