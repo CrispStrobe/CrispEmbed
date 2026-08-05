@@ -19,6 +19,12 @@ pub struct CrispembedHparams {
     pub n_intermediate: i32,
     pub n_output: i32,
     pub layer_norm_eps: f32,
+    // MoE fields, previously absent: 32 bytes here against the header's 40.
+    // crispembed_get_hparams returns a POINTER, so this never over-wrote
+    // anything — but the mirror was still a broken layout contract, and any
+    // by-value copy or array walk would have inherited the OCR bug.
+    pub n_experts: i32,         // 0 = dense FFN
+    pub n_experts_per_tok: i32, // MoE top-K routing
 }
 
 // ------------------------------------------------------------------
@@ -50,6 +56,16 @@ pub struct CrispembedOcrResult {
     pub text: *const c_char,
     pub text_len: c_int,
     pub orientation_corrected: c_int,
+    // These two were missing, which made this struct 40 bytes against the C
+    // header's 48. Nothing reads them, but a `#[repr(C)]` mirror is a
+    // *layout* contract, not a field list: consumers walk the array with
+    // `ptr.offset(i)`, so an 8-byte deficit slides every element after the
+    // first out of alignment until `text` is a garbage pointer and
+    // `CStr::from_ptr` faults. Symptom was a segfault *after* OCR had
+    // recognised every region successfully — the crash is in the read-back,
+    // not the recognition, which is what made it look like a model problem.
+    pub orientation_angle: c_int,
+    pub orientation_confidence: c_float,
 }
 
 /// Flat config for the OCR pipeline orchestrator (slice A: DBNet+TrOCR).
@@ -85,16 +101,30 @@ pub struct CrispembedOcrStage {
     pub engine: c_int,      // 0..13 existing engines, 14=unified metadata-dispatched GGUF
     pub model_a: *const c_char,
     pub model_b: *const c_char,
+    // model_c was missing entirely, and it sits at field 5 — so EVERY field
+    // after it was at the wrong offset. Rust built a 14-field value and handed
+    // `*const` to C, which reads 22: C took `cleanup_enabled`'s bytes as the
+    // model_c pointer, and the per-element stride diverged from the first
+    // element on. Same defect class as the OCR-result mirror, on the input
+    // side, and strictly worse because C dereferences what it finds.
+    pub model_c: *const c_char,
     pub cleanup_enabled: c_int,
     pub denoise: c_int,
     pub cleanup: ScanCleanupParams,
     pub det_prob_threshold: c_float,
     pub det_box_threshold: c_float,
     pub det_target_short: c_int,
+    pub det_max_side: c_int,             // 0 = default 2000
+    pub det_min_height: c_int,           // 0 = default 30
+    pub det_width_height_ratio: c_float, // 0 = default 8; negative disables
+    pub det_max_candidates: c_int,       // 0 = default 1000; negative disables
+    pub det_dilation: c_int,             // 0 = default 1; negative disables
+    pub det_score_mode: c_int,           // 0 = fast, 1 = accurate
     pub vlm_max_tokens: c_int,
     pub vlm_prompt: *const c_char,
     pub min_chars: c_int,
     pub min_confidence: c_float,
+    pub page_segmentation: c_int, // tesseract: 0 = DBNet, 1 = classical
 }
 
 /// Opaque handle to a standalone ViT image embedding context (SigLIP, CLIP).
