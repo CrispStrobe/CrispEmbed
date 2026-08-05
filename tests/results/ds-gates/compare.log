@@ -1,0 +1,53 @@
+OK   DS_DBG=1 stdout == base
+OK   DS_DBG=0 stdout == base
+OK   no dbg lines when absent
+OK   no dbg lines at DS_DBG=0
+OK   DS_MMAP=0 parses off
+OK   DS_MMAP=1 parses on
+OK   DS_MMAP=0 stdout == base
+OK   DS_MOE_CPU=0 parses off
+OK   DS_MOE_CPU=1 parses on
+OK   DS_MOE_CPU=0 stdout == base
+OK   DS_SAM_CONV_CPU=0 parses off
+OK   DS_SAM_CONV_CPU=1 parses on
+OK   DS_SAM_CONV_CPU=0 stdout == base
+OK   DS_QWEN2_ENC_FLASH=0 parses off
+OK   DS_QWEN2_ENC_FLASH=1 parses on
+OK   DS_QWEN2_ENC_FLASH=0 stdout == base
+OK   DS_QWEN2_SCALAR=0 parses off
+OK   DS_QWEN2_SCALAR=1 parses on
+OK   DS_QWEN2_SCALAR=0 stdout == base
+OK   DS_NO_KV=0 parses off
+OK   DS_NO_KV=1 parses on
+OK   DS_NO_KV=0 stdout == base
+OK   DS_LMHEAD_CPU=0 parses off
+OK   DS_LMHEAD_CPU=1 parses on
+OK   DS_LMHEAD_CPU=0 stdout == base
+OK   DS2_FORCE_CPU=0 parses off
+OK   DS2_FORCE_CPU=1 parses on
+OK   DS2_FORCE_CPU=0 stdout == base
+OK   DS_PROFILE=0 parses off
+OK   DS_PROFILE=1 parses on
+OK   DS_PROFILE=0 stdout == base
+OK   DS_LLM_FLASH=0 parses off
+OK   DS_LLM_FLASH=1 parses on
+OK   DS_LLM_FLASH=0 stdout == kvf16 base
+OK   MOE_CPU=1 blocks persistent decode
+OK   NO_KV=1 blocks persistent decode
+OK   FORCE_CPU=1 announces CPU backend
+OK   PROFILE=1 prints profile
+OK   LLM_FLASH=1 decode-path says flash
+OK   LLM_FLASH=0 decode-path no flash
+OK   MMAP=1 stdout == base
+OK   default receipt == recorded g2b default arm
+NOTE DS_MOE_CPU-1 stdout == base
+NOTE DS_SAM_CONV_CPU-1 stdout == base
+NOTE DS_QWEN2_ENC_FLASH-1 stdout == base
+NOTE DS_QWEN2_SCALAR-1 stdout == base
+NOTE DS_NO_KV-1 stdout == base
+NOTE DS_LMHEAD_CPU-1 stdout == base
+NOTE DS2_FORCE_CPU-1 stdout == base
+NOTE DS_PROFILE-1 stdout == base
+NOTE kvf16-base stdout == base
+NOTE DS_LLM_FLASH-1 stdout == base
+GATES_DONE fail=0

@@ -30,6 +30,15 @@
 #include <unordered_set>
 #include <vector>
 
+// Value-parsed opt-in env gate: set and not "0" => on. A presence-based
+// getenv() check inverts X=0 into "enabled" (audit class 73beea9f/8c210291);
+// boolean DS_*/DS2_* gates go through this helper (default-ON gates like
+// DS2_CROP_MODE keep their own inline parse — different absent semantics).
+static bool ds_env_on(const char * name) {
+    const char * e = getenv(name);
+    return e && *e && strcmp(e, "0") != 0;
+}
+
 // ---------------------------------------------------------------------------
 // Hyperparameters
 // ---------------------------------------------------------------------------
@@ -583,7 +592,7 @@ static bool load_tensors(ds_ocr2_ctx & ctx, const char * path) {
     // wired on first use, so it's a memory win more than a first-load-time win;
     // default stays the proven copy path. Falls back automatically if
     // unsupported. Validated equal by tests/test_gguf_loader_mmap.
-    bool try_mmap = getenv("DS_MMAP") != nullptr;
+    bool try_mmap = ds_env_on("DS_MMAP");
     if (!core_gguf::load_weights(path, ctx.backend, "deepseek_ocr2", ctx.model_wl, try_mmap)) return false;
 
     ctx.model_ctx = ctx.model_wl.ctx;
@@ -721,7 +730,7 @@ static bool load_tensors(ds_ocr2_ctx & ctx, const char * path) {
                 // ->buffer is null, so set it to the parent's: ggml_backend_tensor_get
                 // (used by to_f32) reads via view_src->buffer, but to_f32's fast path gates
                 // on ->buffer and would otherwise deref a raw device pointer (Metal segfault).
-                if (getenv("DS_MOE_CPU")) {
+                if (ds_env_on("DS_MOE_CPU")) {
                     if (!ctx.moe_view_ctx) {
                         ggml_init_params vp = {
                             (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
@@ -1002,7 +1011,7 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
     if (crop_grid) ensure_crop_rpe_tables(ctx, nP);
     auto _sam_t = std::chrono::steady_clock::now();
     auto sam_mark = [&](const char * w) {
-        if (!getenv("DS_DBG")) return;
+        if (!ds_env_on("DS_DBG")) return;
         auto now = std::chrono::steady_clock::now();
         fprintf(stderr, "  [time] sam.%s %lldms\n", w,
                 (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _sam_t).count());
@@ -1020,7 +1029,7 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    if (!getenv("DS_SAM_CONV_CPU")) {
+    if (!ds_env_on("DS_SAM_CONV_CPU")) {
         // Patch embed on Metal (conv 3->C, PS×PS stride PS) + position embed.
         size_t meta_sz = 8 * 1024 * 1024;
         std::vector<uint8_t> mb(meta_sz);
@@ -1118,13 +1127,13 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
         // windowed layers' tables (aH == ws) are grid-invariant.
         const auto & rp_h_src = (crop_grid && is_global) ? ctx.rp_h_crop[li] : ctx.rp_h_per_layer[li];
         const auto & rp_w_src = (crop_grid && is_global) ? ctx.rp_w_crop[li] : ctx.rp_w_per_layer[li];
-        if (getenv("DS_DBG"))
+        if (ds_env_on("DS_DBG"))
             fprintf(stderr, "  [dbg] sam li=%d is_global=%d aH=%d nW=%d T=%d rp_h.sz=%zu\n", li, is_global, aH, nW, T,
                     rp_h_src.size());
         std::vector<float> rp_h_ggml(aH * aH * hd), rp_w_ggml(aW * aW * hd);
         reformat_rp_table(rp_h_src.data(), rp_h_ggml.data(), aH, hd);
         reformat_rp_table(rp_w_src.data(), rp_w_ggml.data(), aW, hd);
-        if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] sam li=%d reformat ok, building graph\n", li);
+        if (ds_env_on("DS_DBG")) fprintf(stderr, "  [dbg] sam li=%d reformat ok, building graph\n", li);
 
         size_t meta_sz = 8 * 1024 * 1024;
         std::vector<uint8_t> mb(meta_sz);
@@ -1160,7 +1169,7 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
 
         if (ctx.verbosity >= 2)
             fprintf(stderr, "deepseek_ocr2: sam_layer_%d done (%s, T=%d)\n", li, is_global ? "global" : "window", T);
-        if (getenv("DS_DBG"))
+        if (ds_env_on("DS_DBG"))
             fprintf(stderr, "  [time] sam_li=%d (%s T=%d) %lldms\n", li, is_global ? "global" : "window", T,
                     (long long)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() -
                                                                                      _slt)
@@ -1197,7 +1206,7 @@ static bool encode_sam(ds_ocr2_ctx & ctx, const float * pixels, std::vector<floa
     int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
     out_features.resize((size_t)n_vis * vis_D);
 
-    if (!getenv("DS_SAM_CONV_CPU")) {
+    if (!ds_env_on("DS_SAM_CONV_CPU")) {
         // Neck + downsample on Metal (ggml_conv_2d), ~20-40x vs the CPU convs and
         // no thread-scheduling variance. Conv kernels fed as F32 (GGUF stores them
         // Q8_0; can't reshape a quantized tensor to [1,1,IC,OC]). DS_SAM_CONV_CPU=1
@@ -1338,7 +1347,7 @@ static ggml_cgraph * build_qwen2_enc_layer_graph(ggml_context * g, ds_ocr2_ctx *
     // Jun-20 perf-sweep regression). A/B-verify the flash path's decoded output
     // equals the manual path before making it the default (per the dev-guide rule).
     ggml_tensor * attn;
-    if (getenv("DS_QWEN2_ENC_FLASH")) {
+    if (ds_env_on("DS_QWEN2_ENC_FLASH")) {
         Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));                // [hd, T, nh]
         ggml_tensor * Kp = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // [hd, T, nkv]
         ggml_tensor * Vp = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3)); // [hd, T, nkv]
@@ -1422,7 +1431,7 @@ static bool encode_qwen2(ds_ocr2_ctx & ctx, const float * vis_features, int n_vi
 
     // Run the 24 bidirectional transformer layers. Default: ggml graph on
     // ctx.sched (Metal). DS_QWEN2_SCALAR=1 forces the CPU-scalar reference path.
-    if (!getenv("DS_QWEN2_SCALAR")) {
+    if (!ds_env_on("DS_QWEN2_SCALAR")) {
         std::vector<int32_t> pos(T);
         for (int t = 0; t < T; t++) pos[t] = t;
         // Bidirectional-vis + causal-query mask, shared across layers. Layout
@@ -1824,7 +1833,7 @@ static llm_attn_graph build_llm_layer_attn(ds_ocr2_ctx & ctx, int li, int T, int
     // uses ggml_flash_attn_ext (output already [hd,nh,T] → reshape straight, NO
     // trailing permute). A/B-verify decoded output before flipping the default.
     ggml_tensor * attn;
-    if (getenv("DS_LLM_FLASH")) {
+    if (ds_env_on("DS_LLM_FLASH")) {
         attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
         attn = ggml_reshape_2d(g, attn, D, T);
     } else {
@@ -2143,7 +2152,7 @@ static const char * ds_persistent_decode_blocker(const ds_ocr2_ctx & ctx) {
     // made decode 2.42x SLOWER than legacy.
     // DS_NO_KV reprocesses the whole growing sequence every step; there is no
     // single-token step graph to make persistent.
-    if (getenv("DS_NO_KV")) return "DS_NO_KV=1";
+    if (ds_env_on("DS_NO_KV")) return "DS_NO_KV=1";
     // The CPU MoE fallback runs host code BETWEEN layers, so the layers cannot
     // live in one graph.
     if (!ctx.moe_metal) return "CPU MoE (DS_MOE_CPU=1 or expert stacking failed)";
@@ -2161,7 +2170,7 @@ static ggml_cgraph * build_ds_decode_step_graph(ds_ocr2_ctx & ctx, ggml_context 
     const float eps = lhp.rms_eps;
     const float attn_scale = 1.0f / sqrtf((float)hd);
     const bool kv_f16 = (ctx.kvc.k->type == GGML_TYPE_F16);
-    const bool use_flash = kv_f16 && getenv("DS_LLM_FLASH");
+    const bool use_flash = kv_f16 && ds_env_on("DS_LLM_FLASH");
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, 16384, false);
 
@@ -2366,14 +2375,14 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
     // LM head: default runs as a Metal quantized mul_mat (DS_LMHEAD_CPU=1 forces
     // the scalar path). Only dequant the 662 MB head weight for the CPU path.
     ggml_tensor * lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
-    bool lmhead_cpu = getenv("DS_LMHEAD_CPU") != nullptr;
+    bool lmhead_cpu = ds_env_on("DS_LMHEAD_CPU");
     std::vector<float> head_w;
     if (lmhead_cpu) head_w = to_f32(lm_w);
 
     // Diagnostic: DS_NO_KV disables the KV cache and re-runs the entire growing
     // sequence each step (n_past always 0). Slow but a ground-truth reference to
     // isolate cache bugs from prefill bugs.
-    bool no_kv = getenv("DS_NO_KV") != nullptr;
+    bool no_kv = ds_env_on("DS_NO_KV");
     std::vector<float> full_emb(prompt_embeds, prompt_embeds + (size_t)n_prompt * D);
 
     // T14: persistent single-graph decode for the T==1 steps. Prefill keeps the
@@ -2388,7 +2397,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
         if (use_persistent)
             fprintf(stderr, "deepseek_ocr2: decode path = persistent step graph (kv=%s%s)\n",
                     ctx.kvc.k->type == GGML_TYPE_F16 ? "f16" : "f32",
-                    (ctx.kvc.k->type == GGML_TYPE_F16 && getenv("DS_LLM_FLASH")) ? ", flash" : "");
+                    (ctx.kvc.k->type == GGML_TYPE_F16 && ds_env_on("DS_LLM_FLASH")) ? ", flash" : "");
         else
             fprintf(stderr, "deepseek_ocr2: decode path = legacy per-layer (%s)\n", persist_blocker);
     }
@@ -2467,7 +2476,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             n_past += 1;
         } else {
             int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
-            if (getenv("DS_DBG"))
+            if (ds_env_on("DS_DBG"))
                 fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d\n", n_generated, n_past, T);
 
             // Build input embeddings
@@ -2538,7 +2547,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
                     moe_ffn_cpu(ctx, li, hidden.data(), T);
                 }
                 auto _t3 = std::chrono::steady_clock::now();
-                if (getenv("DS_DBG"))
+                if (ds_env_on("DS_DBG"))
                     fprintf(stderr, "  [dbg] llm li=%d attn=%lldms moe=%lldms (n_threads=%d)\n", li,
                             (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t1 - _t0).count(),
                             (long long)std::chrono::duration_cast<std::chrono::milliseconds>(_t3 - _t2).count(),
@@ -2630,7 +2639,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
         }
         g_ds_n_generated = n_generated;
 
-        if (getenv("DS_DBG")) {
+        if (ds_env_on("DS_DBG")) {
             const char * pc = (next >= 0 && next < ctx.tok_vocab_size) ? ctx.id_to_piece[next].c_str() : "?";
             fprintf(stderr, "  [gen %d] id=%d piece=%s\n", n_generated - 1, next, pc);
         }
@@ -2646,7 +2655,7 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
         }
     }
 
-    if (getenv("DS_PROFILE"))
+    if (ds_env_on("DS_PROFILE"))
         fprintf(stderr,
                 "[ds-profile] decode: %d tokens, graph-build+alloc=%lldms, compute=%lldms "
                 "(build is %.0f%% of build+compute)\n",
@@ -2711,7 +2720,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     // and silently returns Metal. That gap is T18's to fix globally; this is the
     // engine-local lever the T14 gate needs to A/B both decode paths on both
     // backends, and it follows the CRISPEMBED_TESSERACT_FORCE_CPU precedent.
-    if (getenv("DS2_FORCE_CPU")) {
+    if (ds_env_on("DS2_FORCE_CPU")) {
         ctx.backend = ggml_backend_cpu_init();
         if (ctx.backend) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
         fprintf(stderr, "deepseek_ocr2: DS2_FORCE_CPU=1 — CPU backend\n");
@@ -2738,7 +2747,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
 
     auto _it = std::chrono::steady_clock::now();
     auto init_ms = [&](const char * w) {
-        if (!getenv("DS_DBG")) return;
+        if (!ds_env_on("DS_DBG")) return;
         auto now = std::chrono::steady_clock::now();
         fprintf(stderr, "  [time] init.%s %lldms\n", w,
                 (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _it).count());
@@ -2758,7 +2767,7 @@ deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_thread
     // reference path / fallback for platforms where mul_mat_id misbehaves).
     // A prestacked GGUF (converter #4) already loaded gate_exps/up_exps/down_exps
     // directly, so skip the runtime copy — the graph path is ready as-is.
-    if (!getenv("DS_MOE_CPU")) {
+    if (!ds_env_on("DS_MOE_CPU")) {
         if (ctx.moe_prestacked) {
             ctx.moe_metal = true;
             fprintf(stderr, "deepseek_ocr2: using prestacked MoE experts (no runtime stacking)\n");
@@ -3011,14 +3020,26 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
                                 (v01 - s.image_mean[c]) / s.image_std[c];
                         }
             }
-        if (getenv("DS_DBG"))
+        if (ds_env_on("DS_DBG"))
             fprintf(stderr, "  [dbg] crop_mode: %dx%d source -> %dx%d grid (%zu tiles)\n", w, h, crop_gw, crop_gh,
                     crop_px.size());
     }
 
     const auto _b_prep = std::chrono::steady_clock::now();
 
-    bool dbg_t = getenv("DS_DBG") != nullptr;
+    bool dbg_t = ds_env_on("DS_DBG");
+    // Gate-resolution proof line: what each boolean gate parsed to, in this
+    // run's own stderr. Several gates select paths with no other observable
+    // marker, which is exactly how the presence-based =0 inversion went
+    // unnoticed until the G6/G2b audits.
+    if (dbg_t)
+        fprintf(stderr,
+                "  [dbg] gates: mmap=%d moe_cpu=%d sam_conv_cpu=%d qwen2_enc_flash=%d qwen2_scalar=%d "
+                "llm_flash=%d no_kv=%d lmhead_cpu=%d force_cpu=%d profile=%d\n",
+                (int)ds_env_on("DS_MMAP"), (int)ds_env_on("DS_MOE_CPU"), (int)ds_env_on("DS_SAM_CONV_CPU"),
+                (int)ds_env_on("DS_QWEN2_ENC_FLASH"), (int)ds_env_on("DS_QWEN2_SCALAR"), (int)ds_env_on("DS_LLM_FLASH"),
+                (int)ds_env_on("DS_NO_KV"), (int)ds_env_on("DS_LMHEAD_CPU"), (int)ds_env_on("DS2_FORCE_CPU"),
+                (int)ds_env_on("DS_PROFILE"));
     auto _ts = std::chrono::steady_clock::now();
     auto stage_ms = [&](const char * name) {
         if (!dbg_t) return;
@@ -3076,7 +3097,8 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         }
         crops_proj.insert(crops_proj.end(), c_proj.begin(), c_proj.end());
         n_crop_tokens += c_n_enc;
-        if (getenv("DS_DBG")) fprintf(stderr, "  [dbg] crop tile %zu: sam=%d qwen2=%d tokens\n", t, c_n_sam, c_n_enc);
+        if (ds_env_on("DS_DBG"))
+            fprintf(stderr, "  [dbg] crop tile %zu: sam=%d qwen2=%d tokens\n", t, c_n_sam, c_n_enc);
     }
     if (!crop_px.empty()) stage_ms("crops");
     const auto _b_proj = std::chrono::steady_clock::now();
@@ -3137,7 +3159,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
     row++;
     for (int32_t id : instr_ids) put_tok(id);
 
-    if (getenv("DS_DBG")) {
+    if (ds_env_on("DS_DBG")) {
         fprintf(stderr,
                 "  [dbg] prompt: bos + %d crop + %d img + sep + %zu instr = %d tokens; instr_ids:", n_crop_tokens,
                 n_img_tokens, instr_ids.size(), n_prompt);
@@ -3156,7 +3178,7 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         return "";
     }
 
-    if (getenv("DS_DBG")) {
+    if (ds_env_on("DS_DBG")) {
         fprintf(stderr, "  [dbg] gen_ids (%zu):", gen_ids.size());
         for (int id : gen_ids) fprintf(stderr, " %d", id);
         fprintf(stderr, "\n");
