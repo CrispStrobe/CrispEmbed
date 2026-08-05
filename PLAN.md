@@ -13,6 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-08-05 | *(landed on `main`, docs only — no code touched)* | **OCR runtime residency survey DONE** — code-verified sweep at `9f731fb5` of every OCR-lane engine's backend selection + `ggml_backend_sched` composition. Full tables in `PERFORMANCE.md` ("OCR runtime residency survey", top of file); ranked backlog as **R1-R8** in "OPEN TASKS — OCR runtime residency and optimization backlog" below. **Key correction: the loading backend is not the computing backend** — bttr/hmer/posformer/mixtex/flova/ppformulanet build ggml encoder graphs but run them on a CPU-only `enc_sched` (their "prefer GPU backend" comments are stale), and `lightonocr` is hardcoded CPU with no `*_FORCE_CPU` gate despite the VLM maturity table claiming "GPU: Yes". Also closed: the P3 "`--gpu-backend` ignored" gap (`crispembed.cpp:101` routes through the helper). **No engine defaults changed** | **DONE** |
 | 2026-08-05 | *(landed, round-7 coordinator)* | **v0.17.6 RELEASED** (`23a5d5e0` bump + tag on green-CI tip `902a6e1b`; release run `31016913759` SUCCESS, **16/16 assets verified** — same complete set as v0.17.5): /rerank server abort fix, mxbai/ms-marco -g7c re-ships, erf pooler default, DS_/BENCH/UOCR_* `=0` gate audits (incl. the `UOCR_PD=0` segfault), reranker -f7 imatrix re-pins + new bge-v2-m3-q4k alias, `CRISPEMBED_QUANT_IMATRIX_QKV` selector, Windows `test_env_gate` MSVC fix (**Windows CI had been red since `d04f3572`** — now green). Published notes dropped from the tree (`5f756ab5`, tag retains its copy) | **DONE** |
 | 2026-08-05 | *(landed `f34bf0b5`, round-7 coordinator's own work)* | **Reranker sub-Q8 re-pin DONE**: local Metal+CPU cross-check reproduced the Kaggle rerank-f7 A/B (f16 raw scores to ~3dp, f7 dscore to 4dp; tau band ±0.009-0.013 = 2-3 near-tie flips, q8_0 itself swings 0.009 across backends). jina `-q4k` alias re-pinned to `-f7` (dscore −25% both backends, tau in-band); **bge-reranker-v2-m3 got its FIRST sub-Q8 alias** `bge-reranker-v2-m3-q4k` → `-q4_k-imatrix-f7` (tau .920→.942 CPU / .947 Metal, dscore −29/−33%; beats iq4_xs-f7 on tau both backends). q8_0 stays default both families; jina iq4_xs-f7 best-tau finding recorded, no alias added. Both aliases fresh-download SHA-verified on the rebuilt binary (MTL0 proven, HF-scale scores, correct ordering). Evidence `tests/results/repin-f7/SUMMARY.md` | **DONE** |
 | 2026-08-05 | *(landed `f7d34896`+`cb2489bb`; delegated + coordinator-verified: diff read line-by-line — default path structurally identical to shipped behavior; `test-imatrix-alias` 59/59 re-run; the key artifact claim re-verified independently with my own gguf read — 24 direct q/k keys bit-identical, cos vs merged L0 = 0.215)* | **mxbai q/k imatrix provenance A/B MERGED** — finding REAL: DeBERTa-v2 applies q/k a second time to rel-position embeddings (`crispembed.cpp:1166/:1195`), so the collector files direct `blk.N.attn_{q,k}` entries carrying rel-pos statistics (bit-identical across all layers, zero q-vs-k info) that shadow the correct merged-alias vector. **But NOT a quality defect**: 6-cell A/B (q4_k/iq4_xs/q3_k × both models, 192 scores/cell vs official ONNX) — `direct` pooled best (.2677 vs merged .2927), and wins BOTH models at q3_k where importance matters most. **Coordinator decision: default stays `direct`**; new opt-in selector `CRISPEMBED_QUANT_IMATRIX_QKV=direct\|merged\|sum` (default reproduces the shipped xsmall q4_k-imatrix-g7c BIT-FOR-BIT). **Premise correction (imatrix-row claim from `87e11a4e`): the Kaggle "mxbai regressing tail arm" was measured on the pre-g7c ContextPooler-less base (`quant_src` header) — on the corrected -g7c base imatrix HELPS (xsmall q4_k τ .9067→.9333); no re-pin/re-ship warranted.** Evidence `tests/results/mxbai-qk-imatrix/SUMMARY.md` | **DONE** |
@@ -58,6 +59,18 @@ had been red since `d04f3572` under cancelled/superseded runs).
 
 ### Remaining work, in value order (orchestrator Fable; per-task tiers noted)
 
+- **OCR runtime residency backlog R1-R8** (new, unowned; see "OPEN TASKS — OCR
+  runtime residency and optimization backlog" below and the `PERFORMANCE.md`
+  survey it derives from). Highest-evidence item is **R1, Tesseract recognizer
+  batching** — recognition is `38.34 s` of the `38.69 s` Fraktur page stage vs
+  official's `9.34 s`, and the existing `…_REUSE_SCRATCH` prototype is
+  unreadable because its run-to-run variance exceeds its effect (fix the
+  measurement protocol first). **R3** (promote the six CPU-sched formula
+  encoders to a GPU sched) is the cheapest work-to-payoff but must be one
+  engine per A/B — conv-heavy graphs demonstrably lose on Metal, which is why
+  DBNet and PP-OCRv6-det are CPU by default. **R5** (decode-step graph cache)
+  is the one to be skeptical of: profile build+alloc as a fraction of decode
+  before porting, because T14 did the work and won nothing.
 - **Non-BENCH presence-gate sweep, remainder** (successor; Opus-capable with
   the ds/uocr-gates methodology, conversion-set + merge decisions
   coordinator's). UOCR_* is done; ~227 presence-based sites over ~139 vars
@@ -3670,6 +3683,125 @@ and decoded page output are compared with the original engine.
 > Completed milestones live in `HISTORY.md`; technical deep-dives in
 > `LEARNINGS.md`. This file tracks the current architecture and what is
 > still **pending**.
+
+## OPEN TASKS — OCR runtime residency and optimization backlog (2026-08-05)
+
+Derived from the code-verified residency sweep at `9f731fb5`. Full per-engine
+tables (which engine computes on CPU vs GPU, why, and what it already has) are
+in `PERFORMANCE.md`, section "OCR runtime residency survey" at the top of that
+file. Read that section before picking any item here.
+
+The governing finding: **the backend an engine loads weights on is not the
+backend it computes on.** Three patterns coexist — a real GPU sched, a
+GPU-load/CPU-compute split where the GPU handle is freed after load, and
+deliberate all-CPU. Grepping for `crispasr_init_gpu_backend()` misclassifies
+the second group entirely.
+
+Every item below keeps the standing A/B rule: interleaved paired runs, report
+every pair and the spread, and a new path ships opt-in behind an env gate until
+it demonstrably beats the default on quality *and* time.
+
+### R1 — Tesseract recognizer batching + weight/graph reuse [highest evidence]
+
+The only gap with hard numbers on both ends. Recognition is `260-354 ms` of a
+~310 ms stage on `scan_strip`, and **`38.34 s` of `38.69 s`** on the German
+Fraktur page against official Tesseract's `9.34 s` — already recorded as an
+explicit speed *and* quality blocker. Detection is `102 ms` and crop `250 ms`
+on that page; the detector is not the bottleneck.
+
+`CRISPEMBED_TESSERACT_REUSE_SCRATCH` exists but its measured variance
+(`279.1` vs `282.3 ms` in one pair, `329-338` vs ~`300 ms` in others) is too
+wide to claim anything. **Fix the measurement protocol first** (warm runs,
+interleaved pairs, per-stage timing) — otherwise R1's own result will be
+unreadable too. Then: batch line crops into one recognizer pass, and reuse
+weights/scratch across lines. `CRISPEMBED_TESSERACT_WORKERS` already gives
+1 -> 690 ms, 4 -> 300 ms, 8 -> 292 ms, i.e. thread-level parallelism has
+saturated; the remaining win is per-line work, not more workers.
+
+### R2 — `layout_detect` deformable cross-attention
+
+Still a 6-nested-loop CPU bilinear grid-sample (`layout_detect.cpp:1430`,
+`bilinear_sample` at `:844`), instrumented as the dominant Phase-2 decoder cost
+via `_deform_ms`. The last surviving P0 from the June audit. The engine's
+backbone/FPN/AIFI already run on a GPU sched, so this is the one scalar island
+in an otherwise accelerated graph.
+
+### R3 — Promote the CPU-sched formula encoders to a GPU sched
+
+`bttr`, `hmer`, `posformer`, `mixtex`, `flova`, `ppformulanet`, `pix2struct`
+all build ggml encoder graphs and then run them on `enc_sched` over a single
+`ggml_backend_cpu_init()`. The expensive half of the port (scalar -> graph) is
+already done; these are one `sched_new` argument from GPU dispatch.
+
+**Do not batch this.** The DBNet and PP-OCRv6-det verdicts are that conv-heavy
+graphs can *lose* on Metal, which is exactly why those two are CPU by default.
+One engine, one A/B, one gate at a time. Also fix the stale "prefer GPU
+backend" comments above their load sites while touching them.
+
+### R4 — `lightonocr` has no backend gate at all
+
+`lightonocr.cpp:239` hardcodes `ggml_backend_cpu_init()`. The engine has
+flash-attn and a monolithic vision graph and spends `31.6 s` cold on M1 — all
+on CPU. Unlike every sibling it has no `*_FORCE_CPU`-style env var, so it
+cannot even be A/B'd without a code change. Minimum deliverable: add the gate
+so the question becomes measurable; the default flip is a separate decision.
+
+### R5 — Decode-step graph caching — measure the overhead fraction FIRST
+
+Still the nominal #1 unrealized lever, and still unproven. When it was actually
+built (T14, deepseek) it **won nothing**, because per-step build+alloc was only
+1-6% of decode; the result shipped opt-in as `DS2_FAST_DECODE=1`. Remaining
+candidates are qwen2vl/granite/smoldocling, which have device-resident KV but
+rebuild the decode graph each step.
+
+Required first step: profile build+alloc as a fraction of decode on each
+candidate. If it is single-digit percent, close the item for that engine
+instead of porting. Also blocked on WebGPU (traps `unreachable`), so any landed
+path needs per-backend gating. Note the premise "0 runtimes reuse the built
+cgraph" is now false — math_ocr (persistent decode graph), easyocr
+(static-shape init-time graph) and ppocrv6 rec (shape-keyed cache) all do.
+
+### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread
+
+`core/cpu_ops.h:577` (patch buffer at `:609`) gathers one patch into a
+`thread_local` buffer and runs a SIMD dot per output channel — the
+"`:345-400`" reference in the 2026-07-11 re-verification is a stale line
+number, the code is unchanged in kind. Batching all output channels into a GEMM
+and multithreading the patch loop is the shared floor under every CPU-resident
+conv engine: the whole SR/denoise family, DBNet, PP-OCRv6 det, the DenseNet
+encoders. Highest-leverage single change in `core/`, and it lifts R3's
+CPU-baseline arm at the same time (which makes R3's A/B harder to win — do R6
+first or accept the moving baseline explicitly).
+
+### R7 — `scunet_denoise` — the missing `DequantCache`
+
+Still the only SR engine without one: `grep DequantCache src/scunet_denoise.cpp`
+is empty while 18 other `.cpp` files have it. Localized win.
+
+Correction to the older audit row: its Swin blocks are still scalar but no
+longer *serial* — WMSA is window-parallel across `n_threads`
+(`scunet_denoise.cpp:37,269,538`, default now follows `-t`). Re-measure before
+assuming the scalar half is still the dominant cost.
+
+### R8 — ggml-metal ICB (indirect command buffer) replay
+
+Metal decode is per-op-dispatch bound; CUDA-graph capture already solves the
+CUDA side. Highest ceiling of anything on this list and the highest cost —
+upstream-shaped work in the pinned `ggml` submodule, not an engine change.
+Listed so it is not rediscovered as a cheap idea.
+
+### Explicitly NOT on this list
+
+- **SR-on-GPU as a family.** Already reprioritized down and it stays down:
+  `dat/hat/swinir` use `init_best` only to load, then copy dequantized weights
+  into a CPU context. There is no GPU sibling to match — this is unsolved
+  research (Metal `ggml_conv_2d` + a GPU-resident weight/graph path), not a
+  residency toggle.
+- **Flipping DBNet or PP-OCRv6 det to GPU.** Both are CPU *by measurement*.
+  Re-run the A/B if the conv kernels change (R6), not before.
+- **`UOCR_PD=1` gen=2 segfault.** Real and pre-existing, but it is a
+  correctness bug on an opt-in path, tracked in the round-7 board row — not a
+  performance item.
 
 ## OCR pipeline workstream — actionable items
 
