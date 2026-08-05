@@ -30,6 +30,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/no_repeat_ngram.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -1563,40 +1564,9 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
 // document text degenerates into loops ("...Two co Two co Two co..."); banning
 // any token that would complete an already-seen n-gram of size `ngram` breaks
 // those loops deterministically without needing sampling. ngram <= 1 disables.
-static int argmax_no_repeat_ngram(const float * logits, int V, const std::vector<int> & hist, int ngram) {
-    std::unordered_set<int> banned;
-    const int k = ngram - 1;
-    const int n = (int)hist.size();
-    if (ngram > 1 && n >= k && k > 0) {
-        for (int i = 0; i + k < n; i++) { // hist[i..i+k-1] is a k-gram, hist[i+k] follows it
-            bool match = true;
-            for (int j = 0; j < k; j++) {
-                if (hist[i + j] != hist[n - k + j]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) banned.insert(hist[i + k]);
-        }
-    }
-    int best_id = -1;
-    float best = -INFINITY;
-    for (int v = 0; v < V; v++) {
-        if (!banned.empty() && banned.count(v)) continue;
-        if (logits[v] > best) {
-            best = logits[v];
-            best_id = v;
-        }
-    }
-    if (best_id < 0) { // everything banned (pathological) — fall back to plain argmax
-        for (int v = 0; v < V; v++)
-            if (logits[v] > best) {
-                best = logits[v];
-                best_id = v;
-            }
-    }
-    return best_id;
-}
+// Shared implementation: core/no_repeat_ngram.h (hermetically tested; also
+// used by qwen2vl_ocr.cpp and deepseek_ocr2.cpp).
+using core_decode::argmax_no_repeat_ngram;
 
 bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim,
               const int32_t * prompt_token_ids, int n_prompt_tokens, int max_new_tokens, generate_result & out) {

@@ -664,6 +664,11 @@ target_include_directories(test-bert-pretokenize PRIVATE src)
 add_executable(test-imatrix-alias tests/test_imatrix_alias.cpp)
 target_include_directories(test-imatrix-alias PRIVATE src)
 
+# Hermetic: core/no_repeat_ngram.h — the shared greedy no-repeat-ngram guard
+# (deepseek-ocr2 contract ngram=20; qwen2vl/internvl2 ngram=3).
+add_executable(test-no-repeat-ngram tests/test_no_repeat_ngram.cpp)
+target_include_directories(test-no-repeat-ngram PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 

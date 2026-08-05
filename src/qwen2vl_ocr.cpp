@@ -31,6 +31,7 @@
 #include "ggml-cpu.h"
 #include "ggml.h"
 #include "core/gpu_backend_pref.h"
+#include "core/no_repeat_ngram.h"
 #include "gguf.h"
 
 #include <algorithm>
@@ -2460,40 +2461,9 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
 // repetitive document text; banning any token that would complete an already-
 // seen n-gram of size `ngram` breaks those loops deterministically. ngram<=1
 // disables. Mirrors the helper in internvl2_ocr.cpp.
-static int argmax_no_repeat_ngram(const float * logits, int V, const std::vector<int> & hist, int ngram) {
-    std::unordered_set<int> banned;
-    const int k = ngram - 1;
-    const int n = (int)hist.size();
-    if (ngram > 1 && n >= k && k > 0) {
-        for (int i = 0; i + k < n; i++) {
-            bool match = true;
-            for (int j = 0; j < k; j++) {
-                if (hist[i + j] != hist[n - k + j]) {
-                    match = false;
-                    break;
-                }
-            }
-            if (match) banned.insert(hist[i + k]);
-        }
-    }
-    int best_id = -1;
-    float best = -INFINITY;
-    for (int v = 0; v < V; v++) {
-        if (!banned.empty() && banned.count(v)) continue;
-        if (logits[v] > best) {
-            best = logits[v];
-            best_id = v;
-        }
-    }
-    if (best_id < 0) {
-        for (int v = 0; v < V; v++)
-            if (logits[v] > best) {
-                best = logits[v];
-                best_id = v;
-            }
-    }
-    return best_id;
-}
+// Shared greedy no-repeat-ngram argmax (core/no_repeat_ngram.h, hermetically
+// tested; also used by internvl2_ocr.cpp and deepseek_ocr2.cpp).
+using core_decode::argmax_no_repeat_ngram;
 
 bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim,
               const int32_t * grid_thw, // actual image grid (t,h,w) for mRoPE
