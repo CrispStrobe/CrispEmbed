@@ -32,7 +32,98 @@ races). Remove the row when the branch lands.
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
-## HANDOVER — round 5 (written 2026-08-05, after the round-4 session)
+## HANDOVER — round 6 (written 2026-08-05, after the round-5 session)
+
+Round 5 is COMPLETE (evidence in the board rows above — do not re-derive):
+**v0.17.5 was cut by a parallel session** (`51e7d729` bump + tag; my merges
+landed post-tag), **DS_ value-parse audit** (`91ebb55d`: every presence-based
+boolean gate in deepseek_ocr2.cpp value-parsed via `ds_env_on()`, incl. two
+finds beyond the brief — `DS2_FORCE_CPU`, `DS_PROFILE`; new `DS_DBG=1`
+gate-resolution stderr line; 42/42 three-spelling checks,
+`tests/results/ds-gates/`), and **G7c expanded** (`63997e2c`: shipped
+ms-marco rerankers had NO BertPooler stage — scores ±0.2 instead of ±11,
+tail reordered; converter-only fold to the 2-layer tanh head, f16 ≤0.0009 vs
+the ONNX reference, 10 `*-g7c.gguf` artifacts uploaded + 4 pins re-pointed,
+`tests/results/g7c/SUMMARY.md`). **G7b DECIDED closed** (no ST-pooler parity
+path; G7a precedent). LEARNINGS' 2026-07-03 ms-marco RANK-head claim
+corrected in place.
+
+### Remaining work, in value order (model-tier notes: the orchestrator
+should be Fable; per-task tiers noted)
+
+- **G8 = F10, CrispASR twins** (other repo, coordinate; Opus-capable with a
+  strict brief, Fable preferred for the decisions). Recon 2026-08-05: their
+  `gpu_backend_pref.h` still lacks the T18 `--gpu-backend cpu` short-circuit;
+  PLAN #88 (pipeline-cache write path) unclaimed. HAZARDS unchanged: backups
+  disk ~1.8 GB free, several concurrent agents, load spikes, CI perpetually
+  cancelled (not a signal). Push a CLAIMED block to their main BEFORE
+  starting; sync logic not bytes (pcs.cpp rule).
+- **mxbai erf-vs-tanh GELU A/B** (new rider from G7c; small, Opus-level with
+  strict gates). The DeBERTa ContextPooler in `crispembed_apply_classifier`
+  uses tanh-approx GELU where HF `gelu` is erf-exact (same class as the
+  granite projector finding). One variable; judge by decoded rerank scores vs
+  an ONNX reference (NOT local torch — see discipline below); mxbai pair only.
+- **Reranker imatrix re-collection** (F7b leftover; Opus-level — established
+  t19 Kaggle pipeline). All published reranker `.imatrix` files are pre-F7
+  (no attn q/k/v coverage). Note the ms-marco ones must be re-collected on
+  the `-g7c` artifacts.
+- **`CRISPEMBED_*_BENCH` presence-gate audit** (new, small, mechanical —
+  Opus-level or delegable). 8+ engines use `getenv(...BENCH) != nullptr`;
+  same `=0`-inverts defect class as the DS_ audit. One pattern, many files;
+  compile+smoke per engine (bench gates are diagnostic-only).
+- **T16 (TableFormer port), T17 (Fraktur bisect)** — dedicated sessions,
+  briefs in OPEN TASKS. Both are graph/decoder-semantics work: **Fable-level,
+  never delegate the math** (dev-guide rule). T16 still needs the A5
+  document-structure gold.
+- **N3 (OCR perf H2/H4/H5/H6)** — Opus-level with the standing timing
+  discipline; brief in the round-2 archive. **N4 (esrgan/scunet q8 publish —
+  NEVER ship esrgan q4_k)** and **N7 (OCR/VL quantize-and-run sweep)** —
+  mechanical with clear gates, Opus-level; briefs in the round-2 archive.
+- No release this round: v0.17.5 is fresh; accumulated post-tag main (DS_
+  audit + G7c) is not yet a v0.17.6.
+
+### Discipline deltas learned THIS round (additive)
+
+- **The shell cwd resets to the MAIN tree after any command that `cd`s
+  elsewhere** — a bare `./build/crispembed` then runs the main tree's stale
+  binary (this round rebuilt and "verified" the wrong build before catching
+  it). Run worktree binaries by ABSOLUTE path, or re-`cd` in every command.
+- **Local miniconda torch mis-executes BERT-class forwards** (all-NaN padded
+  batches, bus errors in tiny Linears, garbage orderings; fresh re-download
+  did not help). Parity references on this box come from ONNX Runtime
+  (`Xenova/<model>` exports are faithful; onnxruntime 1.25.1 in miniconda) or
+  a remote box. A broken reference nearly mis-attributed G7c.
+- **Conversion mode must match the published `.imatrix` names**: a `--crisp`
+  re-conversion of an ollama-mode artifact gets `0 with imatrix` (silently
+  no-importance quants). Always read the quantizer's `N with imatrix` line.
+- **Replacing HF artifacts in place breaks released binaries' SHA pins** —
+  ship fixes under task-suffixed names (`-g7c`, G3's `-f7` precedent), keep
+  the old files, re-point registry + `model_hashes.h`.
+- **macOS ships bash 3.2**: no `declare -A` in test runner scripts (a
+  comparison block died on it; the runs survived, the comparisons re-ran
+  standalone).
+- **"Verified vs upstream" claims can be code-level only** — G7c's defect
+  hid behind a LEARNINGS claim that never inspected the shipped GGUF's
+  tensor list. Verify artifact-level: read the tensor names.
+
+### Environment as left (2026-08-05, post-round-5)
+
+- Main volume ~26 GB free. `/tmp/crispembed-regression` intact (~8.4 GB,
+  ephemeral). `~/.cache/crispembed-local/` unchanged. Session scratchpad
+  cleaned (GGUFs/ONNX deleted).
+- v0.17.5 is the latest tag. Round-5 worktrees/branches removed; the three
+  pre-existing IN PROGRESS board rows (feat/ocr-engine-parity,
+  feat/easyocr-ggml, feat/ppocr-next-20260731) + older .codex worktrees
+  remain — check the board before touching.
+- New HF artifacts: `cstr/ms-marco-MiniLM-L-{6,12}-v2-GGUF` `*-g7c.gguf`
+  (f16 + 4 quants each), READMEs note the fix; old files retained for old
+  releases' pins. All 4 new pins fresh-download SHA-verified.
+- HF: account cstr, token `../.env`, always `HF_HOME=~/.cache/hf-<task>` (or
+  scratchpad). Kaggle chr1s4, one kernel at a time. Python
+  `/Users/christianstrobele/miniconda3/bin/python` (but NOT for torch parity
+  references — see discipline).
+
+## HANDOVER — round 5 (ARCHIVED 2026-08-05; DS_ audit + G7b/c consumed — see round 6 above)
 
 Round 4 is COMPLETE (both items coordinator's own work, evidence in the board
 rows above — do not re-derive): **G1** (SmolDocling vision split residency
