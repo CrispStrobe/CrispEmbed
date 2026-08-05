@@ -463,6 +463,28 @@ Utility libraries (not model backends) follow a lighter pattern.
   `.github/workflows/lint.yml` pins clang-format 18.1.8 and fails the build on
   drift. (It runs on macOS because 18.1.8 wraps some files differently there
   than on Linux, so a Linux-formatted tree can still fail.)
+- **Every new `tests/*.cpp` must route `main()` through `core_util::clean_exit`.**
+  Copy this shape — `tools/check_test_clean_exit.sh` fails the `Static guards`
+  CI job otherwise, and it has now blocked four separate pushes:
+
+  ```cpp
+  #include "core/clean_exit.h"
+
+  static int crispembed_test_main() {
+      // ... the test body that used to be in main() ...
+      return failures == 0 ? 0 : 1;
+  }
+
+  int main() { core_util::clean_exit(crispembed_test_main()); }
+  ```
+
+  Why: ggml tears down its process-global GPU device in a static destructor at
+  exit, which aborts on Metal and faults on CUDA — *after* the test has printed
+  its result. A passing test then reports a corrupted exit code. It applies even
+  to tests that touch no GPU today, because they link `crispembed-core` and are
+  one dependency away from it. Long-lived hosts (the server, the bindings) are
+  deliberately excluded: they free their contexts on shutdown instead.
+
 - **Model-free tests run on every push** and need no weights or network:
   ```bash
   cmake --build build --target test-image-provenance test-provenance-marking test-msac-tiling \

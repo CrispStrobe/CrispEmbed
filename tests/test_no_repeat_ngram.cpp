@@ -10,6 +10,7 @@
 // "FinlandFinland..." into the 1024-token cap; the reference contract
 // generates with no_repeat_ngram_size=20).
 #include "core/no_repeat_ngram.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <vector>
@@ -31,7 +32,7 @@ static std::vector<float> favor(int V, int top) {
     return l;
 }
 
-int main() {
+static int crispembed_test_main() {
     using core_decode::argmax_no_repeat_ngram;
     const int V = 8;
 
@@ -129,4 +130,10 @@ int main() {
 
     printf("no-repeat-ngram: %d checks, %d failure(s)\n", g_checks, g_failures);
     return g_failures ? 1 : 0;
+}
+
+// tools/check_test_clean_exit.sh: a one-shot binary must not run ggml's
+// static GPU-device destructor at exit (it aborts on Metal / faults on CUDA).
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
