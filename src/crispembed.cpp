@@ -854,6 +854,15 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             if (!L.q_w || !L.k_w || !L.v_w) continue;
             if (L.q_w->type != GGML_TYPE_F32) continue; // skip quantized
             L.qkv_w = ggml_new_tensor_2d(ctx->qkv_ctx, GGML_TYPE_F32, H, 3 * H);
+            // Name the merged tensor so the imatrix collector files its matmul
+            // statistics under a stable per-layer key instead of ggml's auto
+            // "leaf_N" (which matches nothing at quantize time). The name must
+            // not collide with any real GGUF tensor name — loaders read
+            // "attn.qkv.weight" / "attn_qkv.weight", never "qkv_merged".
+            // The matmul input width equals the shared QKV input (n_embd), so
+            // the collected vector applies verbatim to attn.{q,k,v}.weight;
+            // tools/quantize.cpp resolves that alias.
+            ggml_format_name(L.qkv_w, "enc.%d.attn.qkv_merged.weight", i);
             if (L.q_b && L.k_b && L.v_b) L.qkv_b = ggml_new_tensor_1d(ctx->qkv_ctx, GGML_TYPE_F32, 3 * H);
         }
 
