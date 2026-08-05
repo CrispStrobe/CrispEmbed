@@ -23,7 +23,7 @@ if str(_CRISPASR_DIR / "tools" / "kaggle") not in sys.path:
     sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh
 kh.init_progress()
-hf_token = kh.resolve_hf_token()
+hf_token = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (F9b)
 kh.step("harness_ready", hf_token_ok=bool(hf_token))
 
 # %% [code]

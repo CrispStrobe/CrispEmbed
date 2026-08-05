@@ -142,7 +142,7 @@ def resolve_tokens() -> dict:
     tokens = {}
 
     # HF: env → Kaggle Secret (3 retries) → dataset file
-    hf = kh.resolve_hf_token()
+    hf = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (F9b)
     if hf:
         tokens["hf"] = True
 

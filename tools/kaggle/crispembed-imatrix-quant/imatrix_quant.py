@@ -845,7 +845,7 @@ def process(name, cli, quant, api, calib, eval_):
 def main():
     global CORPUS_DIR
     kh.init_progress()
-    token = kh.resolve_hf_token()
+    token = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (F9b)
     kh.step("harness_ready", n_models=len(RUN), hf_token_ok=bool(token))
 
     # build crispembed-cli + crispembed-quantize (CPU; GPU attached only for internet)

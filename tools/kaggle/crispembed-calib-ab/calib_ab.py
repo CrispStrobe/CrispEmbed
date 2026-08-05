@@ -25,7 +25,7 @@ if not CRISPASR.exists():
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import kaggle_harness as kh
 kh.init_progress()
-token = kh.resolve_hf_token()
+token = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (F9b)
 kh.step("harness_ready", hf_token_ok=bool(token))
 
 # ── corpora: EN-only vs (EN + DE); eval split by language ────────────────────

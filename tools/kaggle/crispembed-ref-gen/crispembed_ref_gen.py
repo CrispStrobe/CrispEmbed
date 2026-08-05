@@ -45,7 +45,7 @@ if not (WORK / "CrispASR" / "tools" / "kaggle" / "kaggle_harness.py").exists():
 import kaggle_harness as kh
 
 kh.init_progress()
-tok = kh.resolve_hf_token()
+tok = kh.resolve_hf_token(require=True)  # upload-bearing: fail fast before any compute (F9b)
 if tok:
     os.environ["HF_TOKEN"] = tok
     os.environ.setdefault("HUGGING_FACE_HUB_TOKEN", tok)
