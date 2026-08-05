@@ -1,7 +1,19 @@
 # crispembed-imatrix-t19 (Kaggle, chr1s4)
 
-imatrix quants for the T19 German-retrieval targets: `arctic-embed-m-v2` and the
-F2LLM-v2 family (80m / 160m / 330m / 0.6b).
+Current configuration = the **F7b re-run**: F7 (`68033e8d` on main) fixed the
+BERT QKV pre-merge naming (`enc.<N>.attn.qkv_merged.weight` + quantizer alias),
+so every imatrix artifact published before it collected q/k/v statistics under
+`leaf_N` and quantized them with no importance. This run re-collects/re-quants:
+
+- `arctic-embed-m-v2` — the BERT-family model with published (defective)
+  imatrix artifacts; pinned SHAs → uploads under `-f7` names
+- `f2llm-v2-80m` — decoder-path no-change control (must reproduce T19-E3);
+  pinned SHAs → `-f7` names
+- `granite-embedding-{97m,311m}-multilingual-r2` — ModernBERT pre-merge path,
+  first imatrix ever → canonical names (nothing to collide with)
+
+The original T19-E3 run (arctic + full F2LLM-v2 family off `feat/imatrix-quants`)
+is described in `PLAN.md` → T19-E3.
 
 A **thin driver**: all the logic lives in
 `../crispembed-imatrix-quant/imatrix_quant.py` and is executed FROM THE CLONE,
@@ -39,10 +51,13 @@ only because Kaggle CPU workers get no internet (#3); the build is CPU-only.
 
 ## Naming
 
-New artifacts use the canonical `-q4_k-imatrix.gguf` / `-iq4_xs.gguf` names.
-`f2llm-v2-0.6b` is the exception: it already ships those two files and their
-SHA256 is **pinned in `examples/cli/model_hashes.h`**, so overwriting them would
-break the pin for existing users. Its re-calibration publishes under `-c2`
-names and its `.imatrix` / A/B summary under a `-c2` meta prefix.
+NEVER overwrite a file whose SHA256 is pinned in `examples/cli/model_hashes.h`.
+T19-E3 established the precedent with `-c2` names for `f2llm-v2-0.6b`'s
+re-calibration; the F7b run extends it with `-f7` names for
+`arctic-embed-m-v2` and `f2llm-v2-80m` (both now pinned):
+`<prefix>-q4_k-imatrix-f7.gguf`, `<prefix>-iq4_xs-f7.gguf`,
+`<prefix>-f7.imatrix`, `<prefix>-f7-imatrix-ab.txt`. Models with no prior
+imatrix artifacts (granite r2) use the canonical names.
 
-Results and the verdict live in `PLAN.md` → **T19-E3 status**.
+Results and the verdict live in `PLAN.md` → **T19-E3 status** (original run)
+and the F7b row.
