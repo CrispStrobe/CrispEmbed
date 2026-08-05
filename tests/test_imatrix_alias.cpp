@@ -11,6 +11,7 @@
 // every BERT-family attn.{q,k,v}.weight — the exact shipped defect T19-E3
 // found (arctic: 36 of 73 tensors covered, quantizer prints no error).
 #include "core/imatrix_alias.h"
+#include "core/clean_exit.h"
 
 #include <cstdio>
 #include <string>
@@ -25,7 +26,7 @@ static void expect(const std::string & got, const std::string & want, const char
     }
 }
 
-int main() {
+static int crispembed_test_main() {
     using core_imatrix::qkv_merged_alias;
     using core_imatrix::qkv_merged_name;
 
@@ -72,4 +73,10 @@ int main() {
 
     printf("imatrix-alias: %d checks, %d failure(s)\n", g_checks, g_failures);
     return g_failures ? 1 : 0;
+}
+
+// tools/check_test_clean_exit.sh: a one-shot binary must not run ggml's
+// static GPU-device destructor at exit (it aborts on Metal / faults on CUDA).
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
