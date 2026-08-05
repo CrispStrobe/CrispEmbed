@@ -40,6 +40,34 @@ static bool g_ppocrv6_q8_head = false;
 // which uses it to minimise activation-weighted error for k-quants / IQ-quants.
 static std::map<std::string, std::vector<float>> g_imatrix;
 
+// BERT-family runtimes pre-merge the per-layer attn q/k/v weights into one F32
+// tensor at load time, so the imatrix collector records that matmul's input
+// statistics under the merged name "enc.<N>.attn.qkv_merged.weight" (set in
+// src/crispembed.cpp) — there is no per-weight entry for attn.{q,k,v}.weight.
+// The merged matmul's input IS the shared QKV input (width n_embd), so its
+// importance vector applies verbatim to all three weights. Map a q/k/v weight
+// name (either GGUF naming scheme) to the merged collector name; returns ""
+// when the name is not a per-layer attention q/k/v weight.
+static std::string imatrix_qkv_merged_alias(const std::string & sname) {
+    static const char * tails[] = {
+        ".attn.q.weight", ".attn.k.weight", ".attn.v.weight", // CrispEmbed: enc.<N>.*
+        ".attn_q.weight", ".attn_k.weight", ".attn_v.weight", // community:  blk.<N>.*
+    };
+    for (const char * tail : tails) {
+        const size_t tl = strlen(tail);
+        if (sname.size() <= tl || sname.compare(sname.size() - tl, tl, tail) != 0) continue;
+        const std::string head = sname.substr(0, sname.size() - tl); // "enc.<N>" / "blk.<N>"
+        const size_t dot = head.find('.');
+        if (dot == std::string::npos) return "";
+        const std::string base = head.substr(0, dot);
+        if (base != "enc" && base != "blk") return "";
+        const std::string idx = head.substr(dot + 1);
+        if (idx.empty() || idx.find_first_not_of("0123456789") != std::string::npos) return "";
+        return "enc." + idx + ".attn.qkv_merged.weight";
+    }
+    return "";
+}
+
 static bool load_imatrix(const std::string & path) {
     struct ggml_context * ctx = nullptr;
     struct gguf_init_params p = { /*no_alloc*/ false, /*ctx*/ &ctx };
@@ -712,6 +740,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             const float * imatrix = nullptr;
             if (!g_imatrix.empty()) {
                 auto it = g_imatrix.find(sname);
+                if (it == g_imatrix.end()) {
+                    // No direct entry: BERT-family attn q/k/v statistics live
+                    // under the runtime's merged-QKV name (same input width).
+                    // A direct entry, if one ever exists, stays preferred.
+                    const std::string alias = imatrix_qkv_merged_alias(sname);
+                    if (!alias.empty()) it = g_imatrix.find(alias);
+                }
                 if (it != g_imatrix.end()) {
                     if ((int64_t)it->second.size() == t->ne[0]) {
                         imatrix = it->second.data();
