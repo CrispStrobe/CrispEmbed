@@ -1,0 +1,225 @@
+== xsmall-f16-new | q0 | env=unset ==
+[0] 3.230715 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 1.870530 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -1.456042 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[1] -2.681391 Paris is the capital and most populous city of France.
+[4] -3.493470 New York City has a population of over 8 million residents.
+[3] -4.127103 Cats are small carnivorous mammals commonly kept as household pets.
+== xsmall-f16-new | q0 | env=0 ==
+[0] 3.230715 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 1.870530 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -1.456042 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[1] -2.681391 Paris is the capital and most populous city of France.
+[4] -3.493470 New York City has a population of over 8 million residents.
+[3] -4.127103 Cats are small carnivorous mammals commonly kept as household pets.
+== xsmall-f16-new | q0 | env=1 ==
+[0] 3.230585 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 1.870445 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -1.455894 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[1] -2.681201 Paris is the capital and most populous city of France.
+[4] -3.493267 New York City has a population of over 8 million residents.
+[3] -4.126961 Cats are small carnivorous mammals commonly kept as household pets.
+== xsmall-shipped-q8_0 | q0 | env=unset ==
+[5] -0.084805 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -0.172246 New York City has a population of over 8 million residents.
+[3] -0.221491 Cats are small carnivorous mammals commonly kept as household pets.
+[0] -0.223458 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[1] -0.261587 Paris is the capital and most populous city of France.
+[2] -0.280562 Berlin's metropolitan area is home to around 6 million inhabitants.
+== xsmall-shipped-q8_0 | q0 | env=1 ==
+[5] -0.084805 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -0.172246 New York City has a population of over 8 million residents.
+[3] -0.221491 Cats are small carnivorous mammals commonly kept as household pets.
+[0] -0.223458 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[1] -0.261587 Paris is the capital and most populous city of France.
+[2] -0.280562 Berlin's metropolitan area is home to around 6 million inhabitants.
+== xsmall-q8_0-new | q0 | env=unset ==
+[0] 3.212360 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 1.847228 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -1.493810 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[1] -2.706580 Paris is the capital and most populous city of France.
+[4] -3.475560 New York City has a population of over 8 million residents.
+[3] -4.115468 Cats are small carnivorous mammals commonly kept as household pets.
+== xsmall-q8_0-new | q0 | env=0 ==
+[0] 3.212360 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 1.847228 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -1.493810 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[1] -2.706580 Paris is the capital and most populous city of France.
+[4] -3.475560 New York City has a population of over 8 million residents.
+[3] -4.115468 Cats are small carnivorous mammals commonly kept as household pets.
+== xsmall-q8_0-new | q0 | env=1 ==
+[0] 3.212231 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 1.847144 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -1.493662 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[1] -2.706387 Paris is the capital and most populous city of France.
+[4] -3.475356 New York City has a population of over 8 million residents.
+[3] -4.115325 Cats are small carnivorous mammals commonly kept as household pets.
+== xsmall-f16-new | q1 | env=unset ==
+[1] 0.228544 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] 0.008668 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[3] -1.798355 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.773028 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -3.845664 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.616384 A sourdough starter needs regular feeding with flour and water to stay active.
+== xsmall-f16-new | q1 | env=0 ==
+[1] 0.228544 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] 0.008668 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[3] -1.798355 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.773028 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -3.845664 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.616384 A sourdough starter needs regular feeding with flour and water to stay active.
+== xsmall-f16-new | q1 | env=1 ==
+[1] 0.228576 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] 0.008718 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[3] -1.798171 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.772836 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -3.845472 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.616234 A sourdough starter needs regular feeding with flour and water to stay active.
+== xsmall-shipped-q8_0 | q1 | env=unset ==
+[2] -0.043493 A sourdough starter needs regular feeding with flour and water to stay active.
+[4] -0.054945 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -0.100218 Kubernetes schedules containers across a cluster of worker nodes.
+[3] -0.143946 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[1] -0.196485 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] -0.205370 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+== xsmall-shipped-q8_0 | q1 | env=1 ==
+[2] -0.043493 A sourdough starter needs regular feeding with flour and water to stay active.
+[4] -0.054945 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -0.100218 Kubernetes schedules containers across a cluster of worker nodes.
+[3] -0.143946 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[1] -0.196485 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] -0.205370 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+== xsmall-q8_0-new | q1 | env=unset ==
+[1] 0.238917 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] 0.005582 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[3] -1.699674 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.727308 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -3.826527 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.622831 A sourdough starter needs regular feeding with flour and water to stay active.
+== xsmall-q8_0-new | q1 | env=0 ==
+[1] 0.238917 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] 0.005582 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[3] -1.699674 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.727308 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -3.826527 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.622831 A sourdough starter needs regular feeding with flour and water to stay active.
+== xsmall-q8_0-new | q1 | env=1 ==
+[1] 0.238947 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[0] 0.005631 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[3] -1.699496 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.727114 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -3.826335 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.622683 A sourdough starter needs regular feeding with flour and water to stay active.
+== base-f16-new | q0 | env=unset ==
+[0] 5.279489 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 2.598695 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -2.023241 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -4.887854 New York City has a population of over 8 million residents.
+[1] -5.453701 Paris is the capital and most populous city of France.
+[3] -6.591081 Cats are small carnivorous mammals commonly kept as household pets.
+== base-f16-new | q0 | env=0 ==
+[0] 5.279489 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 2.598695 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -2.023241 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -4.887854 New York City has a population of over 8 million residents.
+[1] -5.453701 Paris is the capital and most populous city of France.
+[3] -6.591081 Cats are small carnivorous mammals commonly kept as household pets.
+== base-f16-new | q0 | env=1 ==
+[0] 5.279531 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 2.598629 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -2.023114 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -4.887806 New York City has a population of over 8 million residents.
+[1] -5.453662 Paris is the capital and most populous city of France.
+[3] -6.591040 Cats are small carnivorous mammals commonly kept as household pets.
+== base-shipped-q8_0 | q0 | env=unset ==
+[0] 0.502297 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] -0.051996 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -0.272398 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -0.471465 New York City has a population of over 8 million residents.
+[1] -0.561336 Paris is the capital and most populous city of France.
+[3] -0.744471 Cats are small carnivorous mammals commonly kept as household pets.
+== base-shipped-q8_0 | q0 | env=1 ==
+[0] 0.502297 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] -0.051996 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -0.272398 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -0.471465 New York City has a population of over 8 million residents.
+[1] -0.561336 Paris is the capital and most populous city of France.
+[3] -0.744471 Cats are small carnivorous mammals commonly kept as household pets.
+== base-q8_0-new | q0 | env=unset ==
+[0] 5.241723 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 2.532352 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -2.039942 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -4.889683 New York City has a population of over 8 million residents.
+[1] -5.492435 Paris is the capital and most populous city of France.
+[3] -6.580409 Cats are small carnivorous mammals commonly kept as household pets.
+== base-q8_0-new | q0 | env=0 ==
+[0] 5.241723 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 2.532352 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -2.039942 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -4.889683 New York City has a population of over 8 million residents.
+[1] -5.492435 Paris is the capital and most populous city of France.
+[3] -6.580409 Cats are small carnivorous mammals commonly kept as household pets.
+== base-q8_0-new | q0 | env=1 ==
+[0] 5.241767 Berlin has a population of about 3.85 million people, making it the most populous city in the European Union.
+[2] 2.532287 Berlin's metropolitan area is home to around 6 million inhabitants.
+[5] -2.039815 The Berlin Wall fell in 1989, reuniting East and West Berlin.
+[4] -4.889640 New York City has a population of over 8 million residents.
+[1] -5.492395 Paris is the capital and most populous city of France.
+[3] -6.580378 Cats are small carnivorous mammals commonly kept as household pets.
+== base-f16-new | q1 | env=unset ==
+[0] 4.553392 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 3.654253 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[3] 0.364651 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.969941 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -4.587734 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.685108 A sourdough starter needs regular feeding with flour and water to stay active.
+== base-f16-new | q1 | env=0 ==
+[0] 4.553392 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 3.654253 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[3] 0.364651 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.969941 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -4.587734 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.685108 A sourdough starter needs regular feeding with flour and water to stay active.
+== base-f16-new | q1 | env=1 ==
+[0] 4.553368 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 3.654159 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[3] 0.364678 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.969845 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -4.587677 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.685050 A sourdough starter needs regular feeding with flour and water to stay active.
+== base-shipped-q8_0 | q1 | env=unset ==
+[0] 0.190847 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 0.075704 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[4] -0.445484 Photosynthesis converts light energy into chemical energy inside plant cells.
+[2] -0.457125 A sourdough starter needs regular feeding with flour and water to stay active.
+[3] -0.516956 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[5] -0.551927 Kubernetes schedules containers across a cluster of worker nodes.
+== base-shipped-q8_0 | q1 | env=1 ==
+[0] 0.190847 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 0.075704 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[4] -0.445484 Photosynthesis converts light energy into chemical energy inside plant cells.
+[2] -0.457125 A sourdough starter needs regular feeding with flour and water to stay active.
+[3] -0.516956 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[5] -0.551927 Kubernetes schedules containers across a cluster of worker nodes.
+== base-q8_0-new | q1 | env=unset ==
+[0] 4.500113 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 3.643832 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[3] 0.409485 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.866297 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -4.566758 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.609994 A sourdough starter needs regular feeding with flour and water to stay active.
+== base-q8_0-new | q1 | env=0 ==
+[0] 4.500113 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 3.643832 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[3] 0.409485 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.866297 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -4.566758 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.609994 A sourdough starter needs regular feeding with flour and water to stay active.
+== base-q8_0-new | q1 | env=1 ==
+[0] 4.500092 Gradient descent updates model weights by moving them in the direction that reduces the loss function.
+[1] 3.643736 Backpropagation computes the gradients of the loss with respect to each weight in a neural network.
+[3] 0.409509 The Adam optimizer combines momentum with adaptive per-parameter learning rates.
+[4] -3.866194 Photosynthesis converts light energy into chemical energy inside plant cells.
+[5] -4.566700 Kubernetes schedules containers across a cluster of worker nodes.
+[2] -4.609941 A sourdough starter needs regular feeding with flour and water to stay active.
+done
