@@ -52,6 +52,17 @@ option(GGML_BLAS        "Enable BLAS acceleration (OpenBLAS/MKL)" OFF)
 option(GGML_CUDA        "Enable CUDA GPU acceleration" OFF)
 option(GGML_VULKAN      "Enable Vulkan GPU acceleration" OFF)
 option(GGML_METAL       "Enable Metal GPU acceleration (macOS)" OFF)
+# ggml declares option(GGML_METAL_EMBED_LIBRARY ... ${GGML_METAL}): its default
+# follows GGML_METAL only at the FIRST configure of a build dir. A dir first
+# configured without Metal caches EMBED_LIBRARY=OFF, and a later
+# -DGGML_METAL=ON never revisits it — the metallib is then emitted to
+# build/bin/ while ggml_metal_library_init probes next to argv[0], so Metal
+# init fails and every run silently falls back to CPU behind a cache that
+# still says GGML_METAL:BOOL=ON. Pin the embed to follow GGML_METAL on every
+# configure so a stale cache cannot produce that state.
+if (GGML_METAL)
+    set(GGML_METAL_EMBED_LIBRARY ON CACHE BOOL "ggml: embed Metal library" FORCE)
+endif()
 option(GGML_LLAMAFILE   "Enable llamafile optimized SGEMM" ON)
 option(GGML_OPENMP      "Enable OpenMP threading in ggml (OFF uses lighter pthreads pool)" OFF)
 option(CRISPEMBED_BUILD_SHARED "Build shared library for Python" ON)
