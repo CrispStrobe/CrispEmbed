@@ -17,10 +17,9 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-04/05 | *(engine-portfolio round — ALL LANDED)* | T13 olmocr, T14 deepseek decode (`82ce1024`), T15 smoldocling (`7de85cb7`), T18 one-shot init (`c178308f`), granite-r2 (`110dd082`), tokenize_simple audit (`357dee53`), imatrix quants (`38c708b2`+`926df0ae` — 330m follow-up MERGED), metallib CMake pin (`9288d3b5`). Detail lives in the dated status blocks below and in `tests/results/*_2026-08-04.json`; do not re-derive | **DONE** |
-| 2026-08-05 | `feat/f1-ds2-no-repeat-ngram` / `.claude/worktrees/feat-f1-ds2-no-repeat-ngram` | **Picked (coordinator's own work): F1** — port `argmax_no_repeat_ngram` into the deepseek-ocr2 decode (single shared argmax site covers BOTH persistent and `DS2_LEGACY_DECODE` arms), default matching the contract's `no_repeat_ngram_size=20`, env-gated restore of the old plain argmax. Gates per the F1 brief: synth 20/20 unchanged, cc0 spiral pages terminate, CPU+Metal, arms byte-identical per arm; coordinator re-runs the gold gate before merge | **IN PROGRESS** |
-| 2026-08-05 | `feat/f7-imatrix-qkv-naming` / `.claude/worktrees/feat-f7-imatrix-qkv-naming` | **Picked (delegated, coordinator-verified): F7** — name the pre-merged BERT `L.qkv_w` tensor + quantizer alias so imatrix covers `attn.{q,k,v}.weight` (T19-E3 defect 2). Local hermetic verification only; the Kaggle t19 re-run happens after merge, serialized | **IN PROGRESS** |
+| 2026-08-05 | `feat/f1-ds2-no-repeat-ngram` / `.claude/worktrees/feat-f1-ds2-no-repeat-ngram` | **Picked (coordinator's own work): F1** — port `argmax_no_repeat_ngram` into the deepseek-ocr2 decode (single shared argmax site covers BOTH persistent and `DS2_LEGACY_DECODE` arms), default matching the contract's `no_repeat_ngram_size=20`, env-gated restore of the old plain argmax. Guard implemented + pushed (`19782cfc`); spiral page `simple_form` terminates at 52 (Metal) / 90 (CPU) tokens vs the 1024 cap. Acceptance matrix (11 sweeps: Metal synth+cc0 × guard/legacy/baseline, CPU cc0 both arms + synth subset) running now; gold re-gate before merge | **IN PROGRESS** |
 | 2026-08-05 | *(audit only, no branch yet)* | **Picked (delegated, coordinator-verified): F8** — LaBSE-class >100k-WordPiece audit: token-id parity vs HF on the standard battery; fix via tokenizer.json `model.type` only if wrong (absent-key = historical behavior) | **IN PROGRESS** |
-| 2026-08-05 | *(CrispASR repo)* `feat/f9-kaggle-token-glob` | **Picked (delegated, coordinator-verified): F9** — hoist the t19 kernel's long-mount-path `resolve_hf_token()` glob + gotcha-#26 vendoring note into CrispASR `kaggle_harness.py` | **IN PROGRESS** |
+| 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
 ## HANDOVER — follow-up round (written 2026-08-05, for the next orchestrator session)
@@ -144,6 +143,32 @@ run). The t19 kernel carries the local fix; hoist it into CrispASR's
 `kaggle_harness.py` so every future kernel gets it. Also carried there:
 kaggle_usage.md gotcha #26 (script kernels ship only code_file — vendor
 data in the repo clone).
+
+### F7b — re-collect + re-quantize the published BERT-family imatrix artifacts (post-F7, Kaggle)
+
+F7 (`68033e8d`) fixed the coverage defect, so **every published BERT-family
+`.imatrix` on HF (e5, arctic, bge, …) still carries the `leaf_N` defect and
+every published `*-q4_k-imatrix.gguf` was built with no q/k/v importance.**
+Re-run the t19 pipeline (`tools/kaggle/crispembed-imatrix-t19/`, corpus
+committed) with an F7-fixed binary; expect q4_k+imatrix to separate (local
+e5-small evidence: cos_min 0.9847→0.9889, mean 0.9889→0.9913). The e5-small
+f32 + shipped imatrix are cached under `~/.cache/hf-f7` for this. One kernel
+at a time; promotion decisions stay with the coordinator (IQ4_XS note in
+T19-E3 applies).
+
+### F9b — CrispEmbed's vendored kaggle_harness.py copies are stale (the ACTUAL t19 culprit)
+
+F9's verification corrected the brief: CrispASR's canonical harness has
+globbed both mount depths since `81826457` (2026-06-20); what lost the t19
+uploads is the stale vendored copy in
+`tools/kaggle/crispembed-imatrix-quant/` (hard-coded owner + name-filtered
+scan; several other `tools/kaggle/*/kaggle_harness.py` copies exist with
+~300-line drift vs canonical). CrispEmbed kernels clone CrispEmbed, so the
+canonical fix never reaches them. **Do:** re-sync each vendored copy from
+CrispASR canonical (now also carrying F9's `resolve_hf_token(require=True)`
+fail-fast — uploading kernels should call it first), checking each kernel
+dir for deliberate local drift before overwriting. Sync logic, not bytes,
+where a copy has real local changes (pcs.cpp rule).
 
 ### F10 — CrispASR twins (other repo, coordinate before touching)
 
