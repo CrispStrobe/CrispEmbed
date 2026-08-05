@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | `feat/ds2-crop-default` / `.claude/worktrees/feat-ds2-crop-default` | **Claimed (G2b, round-4 coordinator's own work):** deepseek crop-mode follow-up. Diagnosis DONE from recorded g2 arms (no compute): receipt_historical Metal 0.138→0.305 is pure formatting drift — one bold-vs-plain near-tie flip at char 82 then markdown-list self-conditioning; alnum-content CER flat (0.125→0.129, and Metal-crop reads OPR correctly where CPU reads QPR); synth_01_noise 0.015→0.045 is 4 inserted colons, content byte-equal. DECISION: flip `DS2_CROP_MODE` default ON (contract runs crop_mode=True; cc0 mean Metal 0.657→0.236, CPU 0.279→0.185 beats ref). In flight: default flip + gold gate both manifest entries + byte-identity re-runs vs g2 arms | **IN PROGRESS** |
+| 2026-08-05 | *(landed, round-4 coordinator's own work)* | **G2b MERGED** (`8c210291`): `DS2_CROP_MODE` now defaults ON (`=0` restores single-view). Diagnosis from the recorded g2 arms: BOTH regressions are formatting-only trajectory drift — receipt_historical is one bold-vs-plain near-tie at char 82 then markdown-list self-conditioning (alnum-content CER flat 0.125→0.129 Metal, IMPROVES 0.152→0.110 CPU; Metal-crop reads OPR correctly where CPU reads QPR, GT=OPR); synth_01_noise is 4 inserted colons, content byte-equal. Gates (`tests/results/g2b/`): gold gate cer=0.000 BOTH manifest entries with crops engaging on fox, run on the final binary; byte-identity 12/12 default-ON == g2 crop arms (Metal+CPU cc0) + `=0` == g2 base arms + synth spot 2/2 (all modulo the g2 runner's trailing-newline strip). Also value-parsed `DS2_LEGACY_DECODE` (was presence-based, `=0` forced legacy; verified all three spellings). **Follow-up (small, unowned): value-parse audit of the remaining presence-based `DS_*` gates** (`DS_MMAP`, `DS_MOE_CPU`, `DS_DBG`, `DS_SAM_CONV_CPU`, `DS_QWEN2_ENC_FLASH`, `DS_QWEN2_SCALAR`, `DS_LLM_FLASH`, `DS_NO_KV`, `DS_LMHEAD_CPU`) — one A/B each, not batched | **DONE** |
 | 2026-08-05 | *(landed, round-4 coordinator's own work)* | **G1/F4 MERGED** (`703161b1`): SmolDocling vision split residency — `vis.*` weights on the GPU backend via new `core_gguf::load_weights_split` (ported from CrispASR #69a), SigLIP graphs on Metal, connector+decode+LM-head+KV stay CPU. GPU is the DEFAULT (matches every other VLM lane; deepseek precedent); `SMOLDOCLING_FORCE_CPU=1` (value-parsed, both spellings verified) + `--gpu-backend cpu` restore all-CPU. Gates in `tests/results/g1/SUMMARY.md`: CPU arm byte-identical to T15 recorded outputs 5/5; Metal matches/beats the REFERENCE on every GT page; one documented divergence (receipt_historical 0.238→0.372 stripped CER vs GT, reference 0.493 — Metal F16 rounding, T14/G2 class); interleaved timing fox vision 3562→1241 ms (2.9×), scan 14500→3163 ms (4.6×), totals 2.1-2.25×; MTL0 per-run. NOTE the old "31.7 s fox vision" was a different CPU-only build — same-binary CPU is 3.6 s. G8 NOT claimed (CrispASR active today; recon: their gpu_backend_pref.h still lacks the T18 cpu short-circuit, their box disk-full — deferred) | **DONE** |
 | 2026-08-05 | *(landed, coordinator's own work)* | **G2/F5 MERGED** (`d5788a88` port + `e81c827e` acceptance): DeepSeek-OCR2 dynamic-crop, opt-in `DS2_CROP_MODE=1`, blueprint line-by-line at pinned `aaa02f38`. Full gates in `tests/results/g2/SUMMARY.md`: crop-off byte-identical to f1 baselines 10/10 both backends; cc0 raw CER mean Metal 0.657→**0.236**, CPU 0.279→**0.185 (beats the A4 reference 0.187)**; commons_test 0.0074 both backends; **F1's Metal german 1024-cap FIXED** (366 tok, CER 2.14→0.195); gold gate cer=0.000 both manifest entries. Stays opt-in per A/B rule: Metal `receipt_historical` regresses 0.138→0.305 with crops (CPU improves — Metal-specific) + synth_01_noise 0.015→0.045. **Follow-up G2b:** diagnose that Metal crop regression, then decide the default flip (reference contract runs crop_mode=True). `~/.cache/hf-regression` restored by the gold-gate re-download | **DONE** |
 | 2026-08-05 | *(landed round-3 wave 2)* | **G6 MERGED** (`510f35d0` results + `73beea9f` gate fix, coordinator-verified: byte-identity claims re-checked with my own cmp both directions, diff scope confirmed results-only, gate fix spot-run in both spellings). Verdict: `DS2_KV_F16` **stays opt-in** — memory feature (KV 165→82.5 MB, −84 MB footprint), timing parity (~1% within noise, 4 interleaved pairs), NOT quality-neutral on CPU (all 5 cc0 pages perturb, aggregate +0.008 CER; Metal 24/25 identical, its one "win" is a cap-adjacent greedy lottery). Agent found the gate was presence-based (`DS2_KV_F16=0` ENABLED f16) — now value-parsed. Full tables `tests/results/g6/SUMMARY.md`. **G5 DONE + MERGED** (`5fcd7006`, coordinator's own A/B + decision): embed one-shot defaults to `min(4, cores)` threads (−t1 lost 2-3× on every model tested: e5 0.84→0.40 s, arctic 3.05→1.01, f2llm-330m 2.95→1.01; embeddings md5-identical across thread counts); Metal stays default backend (model-dependent vs CPU-t4), `CRISPEMBED_ONESHOT_CPU` stays OFF | **DONE** |
@@ -30,7 +30,55 @@ races). Remove the row when the branch lands.
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
-## HANDOVER — round 4 (written 2026-08-05 late, for the next orchestrator session)
+## HANDOVER — round 5 (written 2026-08-05, after the round-4 session)
+
+Round 4 is COMPLETE (both items coordinator's own work, evidence in the board
+rows above — do not re-derive): **G1** (SmolDocling vision split residency
+`703161b1`+`ad28b77e`, GPU default, vision 2.9-4.6× on Metal,
+`tests/results/g1/SUMMARY.md`) and **G2b** (`8c210291`, `DS2_CROP_MODE`
+default ON after the regressions were proven formatting-only,
+`tests/results/g2b/SUMMARY.md`). New shared infra: `core_gguf::
+load_weights_split` (CrispASR #69a logic) is now available to every engine.
+
+### Remaining work, in value order
+
+- **G7b/c** (LaBSE ST-pooler parity product decision; `bert.pooler_act`
+  gelu-vs-tanh A/B) — unchanged, briefs in the round-3/round-2 archives.
+  **G7a decided this round: NOT publishing a LaBSE GGUF** (no demand signal
+  two rounds running; the fixed converter on main regenerates everything, so
+  the `hf-f8` leftovers were deleted per the regenerate-don't-trust rule).
+- **G8 = F10, CrispASR twins** — recon done 2026-08-05: their
+  `gpu_backend_pref.h` still lacks the T18 cpu short-circuit and PLAN #88 is
+  unclaimed on their board, BUT their box is hazardous (backups disk ~1.8 GB
+  free, several concurrent agents, load spikes 100+). Claim with a CLAIMED
+  block pushed to their main first; verify locally per their conventions
+  (their CI is perpetually cancelled — not a signal).
+- **DS_* value-parse audit** (new, small, unowned) — see the G2b board row.
+- **T16 (TableFormer), T17 (Fraktur bisect)** — dedicated sessions, briefs in
+  OPEN TASKS. **N3 (OCR perf H2/H4/H5/H6), N4 (esrgan/scunet q8 publish —
+  NEVER ship esrgan q4_k), N7 (OCR/VL quantize-and-run sweep)** — unowned,
+  briefs in the round-2 archive sections.
+- A release: accumulated main (G1-G7d, crop default, cache cap, arctic
+  re-pin, thread default) is a strong v0.17.5 — CrispASR-style process
+  (RELEASE_NOTES + scripts/bump-version.sh), still uncut.
+
+### Environment as left (2026-08-05, post-round-4)
+
+- Main volume ~28 GB free. `~/.cache/hf-f7` and `~/.cache/hf-f8` DELETED
+  (G3 done / G7a decided). `/tmp/crispembed-regression` (~8.4 GB, both
+  deepseek gold GGUFs) intact — reboot-ephemeral. `~/.cache/crispembed-local/`
+  unchanged, all registry-pinned.
+- Round-4 worktrees/branches removed. The three pre-existing IN PROGRESS
+  board rows + older .codex worktrees remain — check the board before
+  touching. No tag cut this round.
+- Discipline deltas THIS round (additive): (1) result-dir `.txt` framing —
+  the g2 corpus runner strips the CLI's trailing newline, so raw-CLI captures
+  cmp as DIFF against recorded arms; normalize trailing newlines before
+  byte-comparing. (2) run_one.py needs miniconda python (system python3
+  lacks huggingface_hub). (3) The T15 "31.7 s fox vision" number was a
+  different CPU-only build — same-binary baselines only (G1 re-learned it).
+
+## HANDOVER — round 4 (ARCHIVED 2026-08-05; G1/G2b consumed — see round 5 above)
 
 Round 3 is COMPLETE — every G-item except G1/G8 consumed, all
 coordinator-verified before merge: **G2** (deepseek dynamic-crop port
