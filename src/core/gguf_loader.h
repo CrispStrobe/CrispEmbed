@@ -124,6 +124,13 @@ using tensor_map = std::unordered_map<std::string, ggml_tensor *>;
 struct WeightLoad {
     ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
+    // Optional second backend buffer for tensors routed off-GPU. Non-null only
+    // when load_weights_split() was used (CrispASR PLAN #69a pattern).
+    ggml_backend_buffer_t buf_cpu = nullptr;
+    // Overflow chunks from load_weights_split()'s chunked allocation (per-
+    // allocation caps on some drivers); the first GPU/CPU buffer stays in
+    // buf/buf_cpu, extra chunks live here for lifetime management only.
+    std::vector<ggml_backend_buffer_t> split_bufs;
     tensor_map tensors;
     // Set only on the no-copy mmap path: the file stays mapped for the buffer's
     // lifetime (the buffer points directly at these pages). free_weights() unmaps.
@@ -147,6 +154,18 @@ struct WeightLoad {
 // otherwise identical (validated by tests/test_gguf_loader_mmap).
 bool load_weights(const char * path, ggml_backend_t backend, const char * model_tag, WeightLoad & out,
                   bool try_mmap = false);
+
+// Split-residency weight loader (logic synced from CrispASR PLAN #69a).
+// Tensors for which `is_gpu(tensor_name, user) == true` are allocated on
+// gpu_backend; the rest on cpu_backend. Compute graphs then follow weight
+// residency. Uses the alloc+copy path (no persistent mmap — the split
+// partition can't satisfy the contiguous-region requirement of the no-copy
+// path). Caller owns out.ctx / out.buf (gpu partition) / out.buf_cpu (cpu
+// partition) / out.split_bufs; free via free_weights(). Returns false on any
+// allocation or read failure with partial state freed.
+using IsGpuTensor = bool (*)(const char * tensor_name, void * user);
+bool load_weights_split(const char * path, ggml_backend_t gpu_backend, ggml_backend_t cpu_backend, IsGpuTensor is_gpu,
+                        void * user, const char * model_tag, WeightLoad & out);
 
 // Free a WeightLoad's resources. Call when the model is being destroyed
 // and the buffer/context are not held elsewhere.

@@ -1,0 +1,47 @@
+[
+ {
+  "page": "fox.png",
+  "raw_identical_cpu_vs_metal": false,
+  "cpu_matches_t15_ours": true,
+  "payload_identical_cpu_vs_metal": true,
+  "payload_cer_metal_vs_ref": 0.0,
+  "payload_cer_cpu_vs_ref": 0.0,
+  "t15_ours_vs_ref_payload_cer": 0.0
+ },
+ {
+  "page": "scan_page_pd.png",
+  "raw_identical_cpu_vs_metal": true,
+  "cpu_matches_t15_ours": true,
+  "payload_identical_cpu_vs_metal": true,
+  "payload_cer_metal_vs_ref": 0.5207,
+  "payload_cer_cpu_vs_ref": 0.5207,
+  "t15_ours_vs_ref_payload_cer": 0.52069
+ },
+ {
+  "page": "commons_test_ocr_document.jpg",
+  "raw_identical_cpu_vs_metal": false,
+  "cpu_matches_t15_ours": true,
+  "payload_identical_cpu_vs_metal": false,
+  "payload_cer_metal_vs_ref": 0.0892,
+  "payload_cer_cpu_vs_ref": 0.0888,
+  "t15_ours_vs_ref_payload_cer": 0.08883
+ },
+ {
+  "page": "simple_form.png",
+  "raw_identical_cpu_vs_metal": true,
+  "cpu_matches_t15_ours": true,
+  "payload_identical_cpu_vs_metal": true,
+  "payload_cer_metal_vs_ref": 1.0,
+  "payload_cer_cpu_vs_ref": 1.0,
+  "t15_ours_vs_ref_payload_cer": 1.0
+ },
+ {
+  "page": "receipt_historical.png",
+  "raw_identical_cpu_vs_metal": false,
+  "cpu_matches_t15_ours": true,
+  "payload_identical_cpu_vs_metal": false,
+  "payload_cer_metal_vs_ref": 0.4161,
+  "payload_cer_cpu_vs_ref": 0.758,
+  "t15_ours_vs_ref_payload_cer": 0.75796
+ }
+]

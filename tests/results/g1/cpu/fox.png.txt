@@ -1,0 +1,2 @@
+ <doctag><text><loc_18><loc_33><loc_318><loc_130>The quick brown fox jumps over the lazy dog. 12345</text>
+</doctag>
