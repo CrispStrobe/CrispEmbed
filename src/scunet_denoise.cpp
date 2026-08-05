@@ -38,8 +38,22 @@ static int g_wmsa_threads = 1;
 
 // ── Helpers ────────────────────────────────────────────────────────
 
+// Profiling accumulator for the bench line: total nanoseconds spent
+// re-dequantizing/copying weights in to_f32 (atomic — block forwards can run
+// from WMSA worker threads).
+static std::atomic<int64_t> g_dequant_ns{ 0 };
+
 static const float * to_f32(const ggml_tensor * t, std::vector<float> & buf) {
     if (!t) return nullptr;
+    auto _t0 = std::chrono::steady_clock::now();
+    struct Acc {
+        std::chrono::steady_clock::time_point t0;
+        ~Acc() {
+            g_dequant_ns.fetch_add(
+                std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count(),
+                std::memory_order_relaxed);
+        }
+    } _acc{ _t0 };
     int64_t n = ggml_nelements(t);
     buf.resize(n);
     if (t->type == GGML_TYPE_F32) {
@@ -868,7 +882,8 @@ int scunet_process_float(scunet_context * ctx, const float * input_chw, int widt
 
     if (bench) {
         auto t_end = std::chrono::steady_clock::now();
-        fprintf(stderr, "[scunet-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
+        fprintf(stderr, "[scunet-bench] total: %.1f ms (weight to_f32 copies so far: %.1f ms)\n",
+                ms_f(t_end - t_total).count(), g_dequant_ns.load(std::memory_order_relaxed) / 1e6);
     }
     return 0;
 }
