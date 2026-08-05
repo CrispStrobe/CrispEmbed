@@ -23,8 +23,11 @@
 #include <algorithm>
 #include <cmath>
 #include <cstring>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+
+#include "env_gate.h"
 
 #ifdef __AVX2__
 #include <immintrin.h>
@@ -574,6 +577,122 @@ static inline void conv2d_depthwise_cpu(const float * in, float * out, const flo
     }
 }
 
+// im2col-tile variant of the generic path below (R6). Two changes, both
+// output-preserving:
+//
+// 1. Loop interchange over a tile of output positions. The generic path
+//    computes every output channel for one position before moving on, which
+//    streams the ENTIRE weight matrix [ch_per_group_out, K] once per output
+//    pixel -- for a 256ch 3x3 conv that is 2.3 MB re-read thousands of times,
+//    so on any core whose L2 doesn't hold the weights the kernel is
+//    memory-bound on weight traffic. Here a tile of output positions is
+//    gathered into a [tile, K] column buffer sized to stay cache-resident,
+//    and the oc loop runs OUTSIDE the position loop: each weight row is
+//    loaded once per tile instead of once per pixel.
+//
+// 2. Fork-join multithreading over tiles. Threads own disjoint position
+//    ranges (and their own column buffers), so every output element is still
+//    computed exactly once by exactly the same arithmetic.
+//
+// Each output element remains `bias + dot_product(patch, w_row, K)` on a
+// patch gathered in the same [ic, ky, kx] order as the generic path, so the
+// result is BITWISE IDENTICAL to it at any thread count -- deliberately: a
+// register-blocked GEMM micro-kernel would change the accumulation order and
+// turn every engine A/B into a quality argument instead of a byte compare.
+// That further step stays open until this one's win is banked.
+//
+// Callers reach this through conv2d_cpu's CRISPEMBED_CONV2D_GEMM gate
+// (threads via CRISPEMBED_CONV2D_THREADS); exposed separately so tests can
+// compare both paths in one process (the gates are read-once statics).
+static inline void conv2d_im2col_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
+                                     int out_ch, int H, int W, int kh, int kw, int stride, int pad, int groups = 1,
+                                     int n_threads = 1) {
+    const int out_H = (H + 2 * pad - kh) / stride + 1;
+    const int out_W = (W + 2 * pad - kw) / stride + 1;
+    if (out_H <= 0 || out_W <= 0) return;
+    const int ch_per_group_in = in_ch / groups;
+    const int ch_per_group_out = out_ch / groups;
+    const int K = ch_per_group_in * kh * kw;
+    const size_t n_pos = (size_t)out_H * out_W;
+
+    // Tile length: keep the [tile, K] column buffer around 512 KB so it stays
+    // L2-resident while the oc loop streams over it (M1 shares 12 MB of L2;
+    // x86 boxes have 0.5-1 MB private L2 + a large L3 behind it).
+    const int tile =
+        (int)std::clamp((size_t)(512 * 1024 / sizeof(float)) / (size_t)std::max(K, 1), (size_t)16, (size_t)256);
+    const size_t n_tiles = (n_pos + tile - 1) / tile;
+
+    auto run_tiles = [&](int g, size_t t0, size_t t1, float * col) {
+        const int ic_off = g * ch_per_group_in;
+        const int oc_off = g * ch_per_group_out;
+        const float * w_g = weight + (size_t)oc_off * K;
+        for (size_t t = t0; t < t1; t++) {
+            const size_t p0 = t * (size_t)tile;
+            const int len = (int)std::min((size_t)tile, n_pos - p0);
+
+            // Gather: same per-position patch layout and boundary handling as
+            // the generic path, written into the column buffer instead of a
+            // single reused patch.
+            for (int i = 0; i < len; i++) {
+                const size_t p = p0 + (size_t)i;
+                const int oy = (int)(p / out_W);
+                const int ox = (int)(p % out_W);
+                const int top = oy * stride - pad;
+                const int left = ox * stride - pad;
+                float * dst = col + (size_t)i * K;
+                const bool full = (top >= 0 && top + kh <= H && left >= 0 && left + kw <= W);
+                if (full) {
+                    int k = 0;
+                    for (int ic = 0; ic < ch_per_group_in; ic++) {
+                        const float * src = in + ((size_t)(ic_off + ic) * H + top) * W + left;
+                        for (int ky = 0; ky < kh; ky++, k += kw)
+                            memcpy(dst + k, src + (size_t)ky * W, kw * sizeof(float));
+                    }
+                } else {
+                    int k = 0;
+                    for (int ic = 0; ic < ch_per_group_in; ic++) {
+                        for (int ky = 0; ky < kh; ky++) {
+                            for (int kx = 0; kx < kw; kx++) {
+                                const int iy = top + ky, ix = left + kx;
+                                dst[k++] = (iy >= 0 && iy < H && ix >= 0 && ix < W)
+                                               ? in[((size_t)(ic_off + ic) * H + iy) * W + ix]
+                                               : 0.0f;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Consume: oc outside the position loop -- each weight row is
+            // read once per tile and the streamed operand is the L2-resident
+            // column buffer.
+            for (int oc = 0; oc < ch_per_group_out; oc++) {
+                const float b = bias ? bias[oc_off + oc] : 0.0f;
+                const float * wrow = w_g + (size_t)oc * K;
+                float * orow = out + (size_t)(oc_off + oc) * n_pos + p0;
+                for (int i = 0; i < len; i++) orow[i] = b + dot_product(col + (size_t)i * K, wrow, K);
+            }
+        }
+    };
+
+    const int nt = (int)std::min((size_t)std::max(n_threads, 1), n_tiles);
+    for (int g = 0; g < groups; g++) {
+        if (nt <= 1) {
+            std::vector<float> col((size_t)tile * K);
+            run_tiles(g, 0, n_tiles, col.data());
+            continue;
+        }
+        std::vector<std::thread> pool;
+        std::vector<std::vector<float>> cols(nt, std::vector<float>((size_t)tile * K));
+        const size_t chunk = (n_tiles + nt - 1) / nt;
+        for (int th = 0; th < nt; th++) {
+            const size_t t0 = (size_t)th * chunk, t1 = std::min(n_tiles, t0 + chunk);
+            if (t0 < t1) pool.emplace_back(run_tiles, g, t0, t1, cols[th].data());
+        }
+        for (auto & thr : pool) thr.join();
+    }
+}
+
 static inline void conv2d_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
                               int out_ch, int H, int W, int kh, int kw, int stride, int pad, int groups = 1) {
     int out_H = (H + 2 * pad - kh) / stride + 1;
@@ -602,6 +721,24 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
         static const bool fast_dw = std::getenv("CRISPEMBED_CONVDW_FAST") != nullptr;
         if (fast_dw) {
             conv2d_depthwise_cpu(in, out, weight, bias, in_ch, H, W, kh, kw, stride, pad);
+            return;
+        }
+    }
+
+    // R6: opt-in im2col-tile path, bitwise-identical to the loop below (see
+    // conv2d_im2col_cpu). CRISPEMBED_CONV2D_GEMM=1 enables it;
+    // CRISPEMBED_CONV2D_THREADS=N (default 1) adds fork-join threading so the
+    // two levers can be A/B'd separately. Ordered after the shape-specific
+    // gates above so their opt-ins keep precedence.
+    {
+        static const bool im2col = core_env::on("CRISPEMBED_CONV2D_GEMM");
+        if (im2col) {
+            static const int nt = [] {
+                const char * e = std::getenv("CRISPEMBED_CONV2D_THREADS");
+                const int v = e ? atoi(e) : 1;
+                return v < 1 ? 1 : v;
+            }();
+            conv2d_im2col_cpu(in, out, weight, bias, in_ch, out_ch, H, W, kh, kw, stride, pad, groups, nt);
             return;
         }
     }

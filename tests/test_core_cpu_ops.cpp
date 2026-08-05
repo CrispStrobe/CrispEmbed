@@ -486,6 +486,86 @@ static void test_conv2d_depthwise_equivalence() {
 }
 
 // ---------------------------------------------------------------------------
+// conv2d_im2col_cpu — must be BITWISE identical to the generic conv2d_cpu path
+// ---------------------------------------------------------------------------
+// Unlike the 1x1 and depthwise guards above, this is an EXACT comparison, not
+// a tolerance: the im2col path's contract (see its comment in cpu_ops.h) is
+// that it gathers the same patch in the same [ic, ky, kx] order and computes
+// every output element through the same dot_product call, so the last ulp may
+// not differ — at any thread count. A tolerance here would silently license a
+// future edit that changes the accumulation order, which is exactly the edit
+// the contract forbids without a per-engine decoded-output A/B.
+//
+// Shapes target the machinery the tolerance tests don't have: the position
+// tiling (a plane larger than one 256-position tile, and one that ends in a
+// short tail), the tile-length clamp (K > 8192 floats forces the 16-position
+// floor), the fork-join split (n_threads > n_tiles, and a thread-count that
+// does not divide the tile count), grouped layouts, boundary gathers under
+// stride and padding, and a kernel wider than the padded input.
+static void test_conv2d_im2col_equivalence() {
+    printf("test_conv2d_im2col_equivalence...\n");
+
+    struct shape {
+        int in_ch, out_ch, H, W, kh, kw, stride, pad, groups;
+        bool bias;
+        const char * name;
+    };
+    const shape shapes[] = {
+        { 8, 8, 8, 8, 3, 3, 1, 1, 1, true, "3x3 pad 1, single tile" },
+        { 8, 6, 40, 40, 3, 3, 1, 1, 1, true, "1600 positions, 7 tiles with tail" },
+        { 4, 5, 33, 31, 3, 3, 2, 1, 1, true, "stride 2, odd plane" },
+        { 12, 9, 16, 16, 3, 3, 1, 1, 3, true, "grouped, 3 groups" },
+        { 6, 6, 20, 20, 5, 5, 1, 2, 1, true, "5x5 pad 2 boundary gathers" },
+        { 2, 3, 4, 4, 5, 5, 1, 0, 1, false, "kernel wider than input, null bias" },
+        { 3, 4, 1, 1, 1, 1, 1, 0, 1, true, "single position" },
+        { 1030, 3, 6, 6, 3, 3, 1, 1, 1, true, "K=9270 forces 16-position tile floor" },
+        { 7, 11, 30, 30, 1, 1, 1, 0, 1, true, "1x1 through the generic entry" },
+    };
+
+    uint32_t seed = 0xd06f00du;
+    auto next = [&seed]() {
+        seed = seed * 1664525u + 1013904223u;
+        return ((float)(seed >> 8) / (float)(1u << 24)) * 2.0f - 1.0f;
+    };
+
+    for (const shape & s : shapes) {
+        const int out_H = (s.H + 2 * s.pad - s.kh) / s.stride + 1;
+        const int out_W = (s.W + 2 * s.pad - s.kw) / s.stride + 1;
+        if (out_H <= 0 || out_W <= 0) continue;
+        const int cin = s.in_ch / s.groups;
+
+        std::vector<float> in((size_t)s.in_ch * s.H * s.W);
+        std::vector<float> w((size_t)s.out_ch * cin * s.kh * s.kw);
+        std::vector<float> b(s.out_ch);
+        for (float & v : in) v = next();
+        for (float & v : w) v = next();
+        for (float & v : b) v = next();
+        const float * bias = s.bias ? b.data() : nullptr;
+
+        const size_t n_out = (size_t)s.out_ch * out_H * out_W;
+        std::vector<float> ref(n_out, 0.0f), one(n_out, 0.0f), four(n_out, 0.0f);
+
+        conv2d_cpu(in.data(), ref.data(), w.data(), bias, s.in_ch, s.out_ch, s.H, s.W, s.kh, s.kw, s.stride, s.pad,
+                   s.groups);
+        conv2d_im2col_cpu(in.data(), one.data(), w.data(), bias, s.in_ch, s.out_ch, s.H, s.W, s.kh, s.kw, s.stride,
+                          s.pad, s.groups, 1);
+        conv2d_im2col_cpu(in.data(), four.data(), w.data(), bias, s.in_ch, s.out_ch, s.H, s.W, s.kh, s.kw, s.stride,
+                          s.pad, s.groups, 4);
+
+        const bool eq1 = memcmp(ref.data(), one.data(), n_out * sizeof(float)) == 0;
+        const bool eq4 = memcmp(ref.data(), four.data(), n_out * sizeof(float)) == 0;
+        if (!eq1 || !eq4) {
+            size_t first = 0;
+            const float * bad = !eq1 ? one.data() : four.data();
+            while (first < n_out && ref[first] == bad[first]) first++;
+            fprintf(stderr, "  %s: first mismatch (%s) at %zu: ref=%.9g got=%.9g\n", s.name, !eq1 ? "nt=1" : "nt=4",
+                    first, first < n_out ? ref[first] : 0.0f, first < n_out ? bad[first] : 0.0f);
+        }
+        CHECK(eq1 && eq4, s.name);
+    }
+}
+
+// ---------------------------------------------------------------------------
 // dot_product_wide — four accumulators instead of two
 // ---------------------------------------------------------------------------
 // Both forms are equally valid summations of the same products; neither is the
@@ -825,6 +905,7 @@ static int crispembed_test_main() {
     test_conv2d_cpu();
     test_conv2d_1x1_equivalence();
     test_conv2d_depthwise_equivalence();
+    test_conv2d_im2col_equivalence();
     test_dot_product_wide();
     test_gelu();
     test_gelu_erf();

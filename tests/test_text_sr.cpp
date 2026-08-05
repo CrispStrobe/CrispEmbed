@@ -102,6 +102,13 @@ static void test_with_model(const char * model_path, const uint8_t * pixels, int
         var /= n;
         printf("  output variance (R channel): %.1f\n", var);
         CHECK(var > 1.0, "output has spatial variance (not flat)");
+
+        // FNV-1a digest of the raw output pixels, so two runs (e.g. the two
+        // arms of a conv-path A/B) can be compared for BYTE identity from the
+        // printed output alone — mean/variance above are too coarse for that.
+        uint32_t digest = 2166136261u;
+        for (int i = 0; i < ow * oh * 3; i++) digest = (digest ^ output[i]) * 16777619u;
+        printf("  output digest (FNV-1a): %08x\n", digest);
     }
 
     if (output) text_sr_free_image(output);
