@@ -26,6 +26,7 @@
 #include <map>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -1923,11 +1924,70 @@ static const char * g_ds_kv_dtype = "f32";
 //   DS_LLM_FLASH=1       (existing) flash_attn_ext. On this path it is only
 //                        honoured together with DS2_KV_F16=1, since
 //                        flash_attn_ext wants an F16 K/V.
+//   DS2_NO_REPEAT_NGRAM=<n>  ngram size for the no-repeat decode guard
+//                        (default 20 = the reference contract's
+//                        no_repeat_ngram_size; 0 restores the historical
+//                        unguarded argmax). Applied at the single argmax site
+//                        both decode arms share, so the arms stay comparable.
 
 // The KV cache dtype is read once per process: prefill and decode share the
 // cache, so they must agree on it.
 static ggml_type ds_kv_type() {
     return getenv("DS2_KV_F16") ? GGML_TYPE_F16 : GGML_TYPE_F32;
+}
+
+// No-repeat-ngram size for the greedy decode. The reference contract
+// (tests/regression/gold/deepseek-ocr2/contract.json) generates with
+// no_repeat_ngram_size=20; without the guard 2 of the 5 cc0 gold pages spiral
+// into the max_new cap repeating one phrase. DS2_NO_REPEAT_NGRAM=0 restores
+// the historical plain argmax.
+static int ds_no_repeat_ngram() {
+    if (const char * e = getenv("DS2_NO_REPEAT_NGRAM")) {
+        int v = atoi(e);
+        return v > 0 ? v : 0;
+    }
+    return 20;
+}
+
+// Greedy argmax with HF-style no-repeat-ngram banning: a candidate is banned
+// when the last (ngram-1) generated tokens plus the candidate would repeat an
+// ngram already present in the generated history. HF bans over prompt +
+// generation; here the history is generation-only (the prompt reaches the
+// decoder as embeddings), which for ngram=20 over a 4-token text prompt
+// cannot differ. Same helper as qwen2vl_ocr.cpp / internvl2_ocr.cpp.
+static int argmax_no_repeat_ngram(const float * logits, int V, const std::vector<int32_t> & hist, int ngram) {
+    std::unordered_set<int> banned;
+    const int k = ngram - 1;
+    const int n = (int)hist.size();
+    if (ngram > 1 && n >= k && k > 0) {
+        for (int i = 0; i + k < n; i++) {
+            bool match = true;
+            for (int j = 0; j < k; j++) {
+                if (hist[i + j] != hist[n - k + j]) {
+                    match = false;
+                    break;
+                }
+            }
+            if (match) banned.insert((int)hist[i + k]);
+        }
+    }
+    int best_id = -1;
+    float best = -INFINITY;
+    for (int v = 0; v < V; v++) {
+        if (!banned.empty() && banned.count(v)) continue;
+        if (logits[v] > best) {
+            best = logits[v];
+            best_id = v;
+        }
+    }
+    if (best_id < 0) {
+        for (int v = 0; v < V; v++)
+            if (logits[v] > best) {
+                best = logits[v];
+                best_id = v;
+            }
+    }
+    return best_id;
 }
 
 // Depth of the KV read view used by the persistent decode graph.
@@ -2439,14 +2499,20 @@ static bool run_llm_decoder(ds_ocr2_ctx & ctx, const float * prompt_embeds, int 
             }
         }
 
-        // Argmax
-        int next = (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        // Argmax, with the contract's no-repeat-ngram guard (both decode arms
+        // reach this same site, so they stay comparable per arm).
+        const int nrn = ds_no_repeat_ngram();
+        int next = (nrn > 0) ? argmax_no_repeat_ngram(logits.data(), V, out_ids, nrn)
+                             : (int)(std::max_element(logits.begin(), logits.end()) - logits.begin());
 
-        // Confidence
-        float max_l = logits[next];
+        // Confidence: softmax mass of the emitted token, stabilised on the
+        // global max so a guard-redirected pick cannot overflow the
+        // exponentials. When the guard does not fire, logits[next] IS the
+        // global max and this reduces bit-for-bit to the historical 1/sum_e.
+        float max_l = *std::max_element(logits.begin(), logits.end());
         float sum_e = 0;
         for (int v = 0; v < V; v++) sum_e += expf(logits[v] - max_l);
-        out_confs.push_back(1.0f / sum_e);
+        out_confs.push_back(expf(logits[next] - max_l) / sum_e);
 
         out_ids.push_back(next);
         n_generated++;
