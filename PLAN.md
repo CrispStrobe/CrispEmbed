@@ -23,7 +23,147 @@ races). Remove the row when the branch lands.
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
-## HANDOVER — follow-up round (written 2026-08-05, for the next orchestrator session)
+## HANDOVER — round 3 (written 2026-08-05 evening, for the next orchestrator session)
+
+Read this section, the "Active work in flight" table above, and the status
+blocks it references BEFORE doing anything. The 2026-08-05 follow-up round is
+COMPLETE: **F1** (deepseek no-repeat-ngram guard, `e9f84f16`, full status
+block below), **F7+F7b** (imatrix QKV coverage fix `68033e8d` + Kaggle
+re-run — arctic q4_k+imatrix .9614→.9937 mean, `-f7` artifacts on HF, pins
+untouched), **F8** (LaBSE-class WordPiece conversion path was broken 0/20 —
+three-layer fix `f31c6531`), **F9+F9b** (CrispASR harness fail-fast
+`342c5f7f` + all 15 stale vendored copies re-synced `3ade993a`), and
+hermetic CI guards around every fix (`fcc60afd` + `test-no-repeat-ngram`,
+each verified to FAIL on the defect it guards). All coordinator-verified
+before merge; evidence in the status blocks and `tests/results/f1/`. Do not
+re-derive any of it.
+
+**Session shape that worked twice now, recommended again:** one heavy item
+as the orchestrator's own work, the rest delegated with acceptance-gated
+briefs the coordinator re-verifies BEFORE merging (re-run hermetic tests
+yourself, regenerate goldens independently, spot-run artifacts). Agent
+output is plausible-until-verified — this round two agent briefs were
+CORRECTED by verification (F9: the stale resolver was CrispEmbed's vendored
+copy, not CrispASR canonical). Default flips, promotions, pin changes, and
+ground-truth edits are never delegated.
+
+### Remaining work, in value order (briefs live in the archived handover below unless restated)
+
+**G1 = F4 — SmolDocling vision backend port (OWN WORK, do not delegate).**
+Brief unchanged below. Needs a QUIET box (it is graph/residency A/B work) —
+do not run it alongside delegated model-running agents. Remember the
+worktree Metal trap in the discipline deltas below.
+
+**G2 = F5 — DeepSeek-OCR2 dynamic-crop port (session-sized; value ROSE
+with F1's data).** Brief unchanged below, plus new evidence from the F1
+matrix (`tests/results/f1/`): the remaining cc0 gap is now clearly
+crop-mode + a METAL-SPECIFIC trajectory problem — CPU reads the cc0 set at
+mean CER 0.25-0.28 vs Metal 0.66, and `german_official_print` loops-with-
+varying-tokenization ONLY on Metal (still caps at 1024 even guarded; exact
+ngram bans cannot break a loop that re-tokenizes itself). Port the
+reference's crop logic (blueprint line-by-line), gate it separately from
+the F1 guard, re-run the F1 matrix arms + gold gate. If the Metal german
+cap survives crop mode, it becomes its own Metal-numerics item.
+
+**G3 — arctic imatrix re-pin decision (coordinator, small; measurement
+delegable).** §F7b outcome above: the shipped pinned
+`arctic-embed-m-v2-q4_k-imatrix.gguf` measures far below the `-f7` re-quant
+(.9614 vs .9937 mean, Kaggle x86 CPU). Do the local-Metal cross-check
+(e5-f32 + imatrix artifacts cached in `~/.cache/hf-f7`; T19-E3 saw ~0.002
+backend delta), then re-pin the registry alias to the `-f7` artifact and
+update `model_hashes.h`. q8_0 stays default regardless. Also decide whether
+granite-r2's new canonical-name imatrix artifacts get registry aliases.
+
+**G4 = F2 — Metal pipeline-cache cap adoption across the other Metal lanes
+(delegable).** Brief unchanged below. The 683 MB archive at
+`~/Library/Caches/ggml-metal/` is STILL on disk; delete it once the cap is
+adopted everywhere.
+
+**G5 = F3 — embed-CLI `-t 1` default (coordinator decision, small).**
+Brief unchanged below (T18 data).
+
+**G6 = F6 — quantify DS2_KV_F16 (delegable, small).** Brief unchanged
+below. Note it now composes with F1: run it guard-on (the default), both
+arms, and use `tests/results/f1/` as the comparison baseline — the T14-era
+numbers no longer reproduce post-tokenfix (see the F1 status block).
+
+**G7 = F8b — LaBSE/WordPiece follow-ups (delegable, small).** §F8 outcome
+above: (a) optionally publish a LaBSE GGUF (convert with `--crisp`, battery,
+upload, pin — the fixed converter is on main; agent's fixed f16 lives in
+the session scratchpad but REGENERATE, don't trust a leftover); (b) ST
+`2_Dense`==BertPooler parity gap (cos ≈ −0.05 vs full ST stack) — decide
+whether CLS+pooler-tanh parity is wanted; (c) `bert.pooler_act` gelu-vs-tanh
+default (rerank-only today); (d) flip `unlimited-ocr-convert` /
+`crispembed-splade-fix` / `deepseek-ocr2-convert` drivers to
+`resolve_hf_token(require=True)` (they bootstrap kh from the CrispASR clone
+so they already have the resolver, not the fail-fast).
+
+**G8 = F10 — CrispASR twins (other repo, coordinate before touching).**
+Brief unchanged below. Note CrispASR main is active (another session pushed
+`f0f9f242` today) — fetch + check its PLAN before claiming.
+
+**T16 (TableFormer) and T17 (Fraktur bisect)** — unchanged, dedicated
+sessions; briefs in OPEN TASKS below. **N3 OCR perf H-items, N4 esrgan/scunet
+q8 publish, N7 OCR/VL quantize-and-run sweep** — still unowned, briefs in
+the archived handover's board sections below.
+
+### Discipline deltas learned THIS round (additive to the archived ones)
+
+- **A fresh worktree's cmake configures GGML_METAL=OFF on this box** (bit
+  T19-E4 and now F1). Always `-DGGML_METAL=ON` explicitly, then verify
+  `GGML_METAL:BOOL=ON` in CMakeCache AND MTL0 in the run's stderr. The
+  metallib EMBED pin (`9288d3b5`) works once Metal is actually ON.
+- **The backend device name prints ONLY with an explicit `--gpu-backend`
+  flag** — the default `ggml_backend_init_best()` path is silent, so "no
+  MTL0 in stderr" on a default run proves nothing in either direction. Pass
+  `--gpu-backend metal` / `cpu` explicitly on EVERY A/B arm so each run's
+  own stderr carries backend proof. (This is how F1 caught its own
+  CPU-mislabelled-as-Metal smoke runs — timings nearly identical across
+  "backends" is the tell.)
+- **When a per-arm identity gate fails, run the baseline (feature-OFF) arms
+  before concluding.** F1's CPU cc0 "failure" was fully pre-existing —
+  guard-off arms diverged at the SAME first byte. Attribution turned a
+  blocked gate into an accepted, explained one in ~20 min of compute.
+- **Exact-ngram repetition bans cannot break loops that vary their
+  tokenization** ("Aufraktvert ren"/"Aufraktvertre ten"). Record such pages
+  as decode-trajectory problems, not guard failures.
+- **Two-dot `git diff origin/main` on a pre-rebase branch shows phantom
+  reversions** of everything main gained since the branch point (misread
+  twice this round, F8 and F7b). Use three-dot `origin/main...HEAD` (or
+  `git show --stat` per commit) to see a branch's real change set.
+- **`git worktree remove` fails on worktrees containing submodules** —
+  use `--force`, or `rm -rf` + `git worktree prune`.
+- **Agent briefs must forbid box-wide process kills.** One agent ran
+  `pkill -f ninja` to retarget its own build and could have killed a
+  parallel session's build. Put "never pkill/killall anything you did not
+  start" in every brief on this shared box.
+- **`format.sh` runs as a pre-commit hook here** — if you formatted after
+  testing, the committed bytes are the formatted ones; rebuild+rerun the
+  cheap hermetic targets post-format (non-semantic, but proves the
+  committed state is the tested state).
+
+### Environment as left (2026-08-05 evening)
+
+- Main volume ~24 GB free (was 42 — session caches below account for it).
+  `~/.cache/hf-f8` (3.5 GB, LaBSE f16s + HF snapshot) is DELETABLE once G7a
+  is decided; `~/.cache/hf-f7` (455 MB, e5 f32 + shipped imatrix) KEEP for
+  G3's cross-check; `~/.cache/hf-regression` (~4.5 GB, both pinned deepseek
+  q4_k GGUFs) KEEP — it makes future gold-gate runs download-free.
+- `~/.cache/crispembed-local/` unchanged from the last handover (all
+  registry-pinned). New HF artifacts: `cstr/{arctic-embed-m-v2,f2llm-v2-80m}-GGUF`
+  `-f7` imatrix quants + ab files; `cstr/granite-embedding-{97m,311m}-multilingual-r2-GGUF`
+  first-time imatrix artifacts (canonical names). All pinned SHAs verified
+  untouched.
+- The 683 MB Metal shader archive is still at `~/Library/Caches/ggml-metal/`
+  (G4 deletes it). v0.17.4 remains the latest tag; the round shipped no tag.
+- All this session's worktrees and branches are removed. Remaining
+  worktrees belong to other sessions — check the board table before
+  touching. CrispASR main = `f0f9f242` (active today; F9 landed there as
+  `342c5f7f`).
+- Kaggle: `chr1s4/crispembed-imatrix-t19` v3 is the latest good run; one
+  kernel at a time; the t19 driver now hard-fails without an HF token.
+
+## HANDOVER — follow-up round (ARCHIVED 2026-08-05 evening; F1/F7/F8/F9 + b-items consumed — see round 3 above; the F2/F3/F4/F5/F6/F10 briefs below are still the canonical briefs)
 
 Read this section, the "Active work in flight" table above, and the dated
 status blocks it points to BEFORE doing anything. The 2026-08-04/05
