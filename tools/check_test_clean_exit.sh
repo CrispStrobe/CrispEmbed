@@ -25,7 +25,7 @@ check_file() {
     grep -qE "$has_main" "$f" || return 0
     checked=$((checked + 1))
     if ! grep -q 'clean_exit' "$f"; then
-        echo "::error file=$f::main() does not route through core_util::clean_exit (see src/core/clean_exit.h)"
+        echo "::error file=$f::main() does not route through core_util::clean_exit. Fix: rename the body to \`static int crispembed_test_main()\`, add #include \"core/clean_exit.h\", and add \`int main() { core_util::clean_exit(crispembed_test_main()); }\`. See src/core/clean_exit.h"
         fail=1
     fi
 }
