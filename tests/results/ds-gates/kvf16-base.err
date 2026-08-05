@@ -1,0 +1,381 @@
+crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+  [time] init.load_tensors 722ms
+deepseek_ocr2: using prestacked MoE experts (no runtime stacking)
+  [time] init.stack_moe_experts 1ms
+deepseek_ocr2: loaded /tmp/crispembed-regression/deepseek-ocr2-q4_k-stacked.gguf
+  sam: 12L 768d 12H patch=16 img=1024 ws=14
+  qwen2_enc: 24L 896d 14H/2KV inter=4864
+  llm: 12L 1280d 10H/10KV vocab=129280 n_exp=64 top_6
+  tokenizer: 128000 tokens
+  [dbg] crop_mode: 800x200 source -> 4x1 grid (4 tiles)
+  [dbg] gates: mmap=0 moe_cpu=0 sam_conv_cpu=0 qwen2_enc_flash=0 qwen2_scalar=0 llm_flash=0 no_kv=0 lmhead_cpu=0 force_cpu=0 profile=0
+  [time] sam.patch_embed 127ms
+  [dbg] sam li=0 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=0 reformat ok, building graph
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x100eb5960 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f16_f32', name = 'kernel_cpy_f16_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_cpy_f16_f32                            0x100eb6160 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0      0x100eb6b20 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f32', name = 'kernel_cpy_f32_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f32                            0x100eb7320 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=300_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=300_ne13=1_r2=1_r3=1      0x100eb77e0 | th_max =  832 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=10_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=10_cnt=0            0x100eb7ae0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=14_ne13=300_r2=1_r3=300'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=14_ne13=300_r2=1_r3=300      0x100eb7de0 | th_max =  832 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=1'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=1      0x100eb80e0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=0_cb=0      0x79e30c000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_soft_max_f32_4', name = 'kernel_soft_max_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_soft_max_f32_4                         0x79e30c300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=300_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=300_ne13=1_r2=1_r3=1      0x79e30c600 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_norm_mul_add_f32_4', name = 'kernel_norm_mul_add_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_norm_mul_add_f32_4                     0x79e30c900 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=103_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=103_cnt=0           0x79e30cc00 | th_max = 1024 | th_width =   32
+  [time] sam_li=0 (window T=4900) 231ms
+  [dbg] sam li=1 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=1 reformat ok, building graph
+  [time] sam_li=1 (window T=4900) 145ms
+  [dbg] sam li=2 is_global=1 aH=64 nW=1 T=4096 rp_h.sz=262144
+  [dbg] sam li=2 reformat ok, building graph
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0      0x79e30cf00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x79e30d200 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=12_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=12_ne13=1_r2=1_r3=1      0x79e30d500 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=64_ne13=12_r2=1_r3=12'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=64_ne13=12_r2=1_r3=12      0x79e30d800 | th_max =  896 | th_width =   32
+  [time] sam_li=2 (global T=4096) 378ms
+  [dbg] sam li=3 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=3 reformat ok, building graph
+  [time] sam_li=3 (window T=4900) 145ms
+  [dbg] sam li=4 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=4 reformat ok, building graph
+  [time] sam_li=4 (window T=4900) 145ms
+  [dbg] sam li=5 is_global=1 aH=64 nW=1 T=4096 rp_h.sz=262144
+  [dbg] sam li=5 reformat ok, building graph
+  [time] sam_li=5 (global T=4096) 300ms
+  [dbg] sam li=6 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=6 reformat ok, building graph
+  [time] sam_li=6 (window T=4900) 150ms
+  [dbg] sam li=7 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=7 reformat ok, building graph
+  [time] sam_li=7 (window T=4900) 152ms
+  [dbg] sam li=8 is_global=1 aH=64 nW=1 T=4096 rp_h.sz=262144
+  [dbg] sam li=8 reformat ok, building graph
+  [time] sam_li=8 (global T=4096) 310ms
+  [dbg] sam li=9 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=9 reformat ok, building graph
+  [time] sam_li=9 (window T=4900) 158ms
+  [dbg] sam li=10 is_global=0 aH=14 nW=25 T=4900 rp_h.sz=12544
+  [dbg] sam li=10 reformat ok, building graph
+  [time] sam_li=10 (window T=4900) 162ms
+  [dbg] sam li=11 is_global=1 aH=64 nW=1 T=4096 rp_h.sz=262144
+  [dbg] sam li=11 reformat ok, building graph
+  [time] sam_li=11 (global T=4096) 330ms
+  [time] sam.layers 2611ms
+  [time] sam.neck_downsample 327ms
+  [time] sam 3066ms
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rope_neox_f32', name = 'kernel_rope_neox_f32_imrope=0_is_back=0'
+ggml_metal_library_compile_pipeline: loaded kernel_rope_neox_f32_imrope=0_is_back=0       0x79e30db00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_repeat_f32', name = 'kernel_repeat_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_repeat_f32                             0x79e30de00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=14_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=14_ne13=1_r2=1_r3=1      0x79e30e100 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_soft_max_f16_4', name = 'kernel_soft_max_f16_4'
+ggml_metal_library_compile_pipeline: loaded kernel_soft_max_f16_4                         0x79e30e400 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_mul_f32_4', name = 'kernel_rms_norm_mul_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_mul_f32_4                     0x79e30e700 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=0           0x79e30ea00 | th_max = 1024 | th_width =   32
+  [time] qwen2_enc 497ms
+  [time] projector 502ms
+  [time] sam.patch_embed 124ms
+  [dbg] sam li=0 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=0 reformat ok, building graph
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=192_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=192_ne13=1_r2=1_r3=1      0x79e30ed00 | th_max =  832 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=14_ne13=192_r2=1_r3=192'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=14_ne13=192_r2=1_r3=192      0x79e30f000 | th_max =  832 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=192_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=192_ne13=1_r2=1_r3=1      0x79e30f300 | th_max =  896 | th_width =   32
+  [time] sam_li=0 (window T=3136) 115ms
+  [dbg] sam li=1 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=1 reformat ok, building graph
+  [time] sam_li=1 (window T=3136) 111ms
+  [dbg] sam li=2 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=2 reformat ok, building graph
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=48_ne13=12_r2=1_r3=12'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=48_ne13=12_r2=1_r3=12      0x79e30f600 | th_max =  832 | th_width =   32
+  [time] sam_li=2 (global T=2304) 140ms
+  [dbg] sam li=3 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=3 reformat ok, building graph
+  [time] sam_li=3 (window T=3136) 113ms
+  [dbg] sam li=4 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=4 reformat ok, building graph
+  [time] sam_li=4 (window T=3136) 115ms
+  [dbg] sam li=5 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=5 reformat ok, building graph
+  [time] sam_li=5 (global T=2304) 145ms
+  [dbg] sam li=6 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=6 reformat ok, building graph
+  [time] sam_li=6 (window T=3136) 118ms
+  [dbg] sam li=7 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=7 reformat ok, building graph
+  [time] sam_li=7 (window T=3136) 120ms
+  [dbg] sam li=8 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=8 reformat ok, building graph
+  [time] sam_li=8 (global T=2304) 153ms
+  [dbg] sam li=9 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=9 reformat ok, building graph
+  [time] sam_li=9 (window T=3136) 126ms
+  [dbg] sam li=10 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=10 reformat ok, building graph
+  [time] sam_li=10 (window T=3136) 130ms
+  [dbg] sam li=11 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=11 reformat ok, building graph
+  [time] sam_li=11 (global T=2304) 165ms
+  [time] sam.layers 1559ms
+  [time] sam.neck_downsample 167ms
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0x79e30f900 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=14_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=14_ne13=1_r2=1_r3=1      0x79e30fc00 | th_max =  832 | th_width =   32
+  [dbg] crop tile 0: sam=144 qwen2=144 tokens
+  [time] sam.patch_embed 76ms
+  [dbg] sam li=0 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=0 reformat ok, building graph
+  [time] sam_li=0 (window T=3136) 133ms
+  [dbg] sam li=1 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=1 reformat ok, building graph
+  [time] sam_li=1 (window T=3136) 132ms
+  [dbg] sam li=2 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=2 reformat ok, building graph
+  [time] sam_li=2 (global T=2304) 165ms
+  [dbg] sam li=3 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=3 reformat ok, building graph
+  [time] sam_li=3 (window T=3136) 135ms
+  [dbg] sam li=4 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=4 reformat ok, building graph
+  [time] sam_li=4 (window T=3136) 139ms
+  [dbg] sam li=5 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=5 reformat ok, building graph
+  [time] sam_li=5 (global T=2304) 171ms
+  [dbg] sam li=6 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=6 reformat ok, building graph
+  [time] sam_li=6 (window T=3136) 141ms
+  [dbg] sam li=7 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=7 reformat ok, building graph
+  [time] sam_li=7 (window T=3136) 141ms
+  [dbg] sam li=8 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=8 reformat ok, building graph
+  [time] sam_li=8 (global T=2304) 176ms
+  [dbg] sam li=9 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=9 reformat ok, building graph
+  [time] sam_li=9 (window T=3136) 144ms
+  [dbg] sam li=10 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=10 reformat ok, building graph
+  [time] sam_li=10 (window T=3136) 144ms
+  [dbg] sam li=11 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=11 reformat ok, building graph
+  [time] sam_li=11 (global T=2304) 181ms
+  [time] sam.layers 1809ms
+  [time] sam.neck_downsample 140ms
+  [dbg] crop tile 1: sam=144 qwen2=144 tokens
+  [time] sam.patch_embed 73ms
+  [dbg] sam li=0 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=0 reformat ok, building graph
+  [time] sam_li=0 (window T=3136) 137ms
+  [dbg] sam li=1 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=1 reformat ok, building graph
+  [time] sam_li=1 (window T=3136) 131ms
+  [dbg] sam li=2 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=2 reformat ok, building graph
+  [time] sam_li=2 (global T=2304) 164ms
+  [dbg] sam li=3 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=3 reformat ok, building graph
+  [time] sam_li=3 (window T=3136) 130ms
+  [dbg] sam li=4 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=4 reformat ok, building graph
+  [time] sam_li=4 (window T=3136) 131ms
+  [dbg] sam li=5 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=5 reformat ok, building graph
+  [time] sam_li=5 (global T=2304) 162ms
+  [dbg] sam li=6 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=6 reformat ok, building graph
+  [time] sam_li=6 (window T=3136) 131ms
+  [dbg] sam li=7 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=7 reformat ok, building graph
+  [time] sam_li=7 (window T=3136) 131ms
+  [dbg] sam li=8 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=8 reformat ok, building graph
+  [time] sam_li=8 (global T=2304) 163ms
+  [dbg] sam li=9 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=9 reformat ok, building graph
+  [time] sam_li=9 (window T=3136) 131ms
+  [dbg] sam li=10 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=10 reformat ok, building graph
+  [time] sam_li=10 (window T=3136) 134ms
+  [dbg] sam li=11 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=11 reformat ok, building graph
+  [time] sam_li=11 (global T=2304) 167ms
+  [time] sam.layers 1718ms
+  [time] sam.neck_downsample 144ms
+  [dbg] crop tile 2: sam=144 qwen2=144 tokens
+  [time] sam.patch_embed 82ms
+  [dbg] sam li=0 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=0 reformat ok, building graph
+  [time] sam_li=0 (window T=3136) 126ms
+  [dbg] sam li=1 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=1 reformat ok, building graph
+  [time] sam_li=1 (window T=3136) 121ms
+  [dbg] sam li=2 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=2 reformat ok, building graph
+  [time] sam_li=2 (global T=2304) 149ms
+  [dbg] sam li=3 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=3 reformat ok, building graph
+  [time] sam_li=3 (window T=3136) 123ms
+  [dbg] sam li=4 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=4 reformat ok, building graph
+  [time] sam_li=4 (window T=3136) 123ms
+  [dbg] sam li=5 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=5 reformat ok, building graph
+  [time] sam_li=5 (global T=2304) 154ms
+  [dbg] sam li=6 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=6 reformat ok, building graph
+  [time] sam_li=6 (window T=3136) 123ms
+  [dbg] sam li=7 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=7 reformat ok, building graph
+  [time] sam_li=7 (window T=3136) 125ms
+  [dbg] sam li=8 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=8 reformat ok, building graph
+  [time] sam_li=8 (global T=2304) 156ms
+  [dbg] sam li=9 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=9 reformat ok, building graph
+  [time] sam_li=9 (window T=3136) 127ms
+  [dbg] sam li=10 is_global=0 aH=14 nW=16 T=3136 rp_h.sz=12544
+  [dbg] sam li=10 reformat ok, building graph
+  [time] sam_li=10 (window T=3136) 128ms
+  [dbg] sam li=11 is_global=1 aH=48 nW=1 T=2304 rp_h.sz=147456
+  [dbg] sam li=11 reformat ok, building graph
+  [time] sam_li=11 (global T=2304) 161ms
+  [time] sam.layers 1622ms
+  [time] sam.neck_downsample 143ms
+  [dbg] crop tile 3: sam=144 qwen2=144 tokens
+  [time] crops 9903ms
+deepseek_ocr2: stages done — sam=256/896 qwen2=256/896 proj=256 image tokens (+576 crop tokens)
+  [dbg] prompt: bos + 576 crop + 256 img + sep + 4 instr = 838 tokens; instr_ids: 201 21431 126041 16
+deepseek_ocr2: KV cache: 12 layers, max_seq=1984, kv_dim=1280, f16, 116.2 MB
+deepseek_ocr2: decode path = persistent step graph (kv=f16)
+  [dbg] decode step gen=0 n_past=0 T=838
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_f32_4', name = 'kernel_rms_norm_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_f32_4                         0x79e36c000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q4_K_f32', name = 'kernel_mul_mm_q4_K_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q4_K_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x79e36c300 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f16', name = 'kernel_cpy_f32_f16'
+ggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f16                            0x79e36c600 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f16_f16', name = 'kernel_cpy_f16_f16'
+ggml_metal_library_compile_pipeline: loaded kernel_cpy_f16_f16                            0x79e36c900 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f16_f32', name = 'kernel_mul_mm_f16_f32_bci=0_bco=1_ne12=10_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f16_f32_bci=0_bco=1_ne12=10_ne13=1_r2=1_r3=1      0x79e36cc00 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_soft_max_f16', name = 'kernel_soft_max_f16'
+ggml_metal_library_compile_pipeline: loaded kernel_soft_max_f16                           0x79e36cf00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f16_f32', name = 'kernel_mul_mm_f16_f32_bci=1_bco=1_ne12=10_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f16_f32_bci=1_bco=1_ne12=10_ne13=1_r2=1_r3=1      0x79e36d200 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q4_0_f32', name = 'kernel_mul_mm_q4_0_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q4_0_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x79e36d500 | th_max =  832 | th_width =   32
+  [dbg] llm li=0 attn=98ms moe=0ms (n_threads=1)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_argsort_f32_i32_desc', name = 'kernel_argsort_f32_i32_desc'
+ggml_metal_library_compile_pipeline: loaded kernel_argsort_f32_i32_desc                   0x79e36d800 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_argsort_merge_f32_i32_desc', name = 'kernel_argsort_merge_f32_i32_desc'
+ggml_metal_library_compile_pipeline: loaded kernel_argsort_merge_f32_i32_desc             0x79e36db00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_f32', name = 'kernel_get_rows_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_get_rows_f32                           0x79e36de00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_id_map0_ne20_6', name = 'kernel_mul_mm_id_map0_ne20_6_ne02=64'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_id_map0_ne20_6_ne02=64          0x79e36e100 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_id_q4_K_f32', name = 'kernel_mul_mm_id_q4_K_f32_bci=0'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_id_q4_K_f32_bci=0               0x79e36e400 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32', name = 'kernel_unary_f32_f32_op=10_cnt=1'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_op=10_cnt=1              0x79e36e700 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_id_q4_0_f32', name = 'kernel_mul_mm_id_q4_0_f32_bci=0'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_id_q4_0_f32_bci=0               0x79e36ea00 | th_max =  896 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=838_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=838_r2=1_r3=1      0x79e36ed00 | th_max = 1024 | th_width =   32
+  [dbg] llm li=1 attn=127ms moe=0ms (n_threads=1)
+  [dbg] llm li=2 attn=126ms moe=0ms (n_threads=1)
+  [dbg] llm li=3 attn=128ms moe=0ms (n_threads=1)
+  [dbg] llm li=4 attn=128ms moe=0ms (n_threads=1)
+  [dbg] llm li=5 attn=132ms moe=0ms (n_threads=1)
+  [dbg] llm li=6 attn=133ms moe=0ms (n_threads=1)
+  [dbg] llm li=7 attn=135ms moe=0ms (n_threads=1)
+  [dbg] llm li=8 attn=137ms moe=0ms (n_threads=1)
+  [dbg] llm li=9 attn=139ms moe=0ms (n_threads=1)
+  [dbg] llm li=10 attn=141ms moe=0ms (n_threads=1)
+  [dbg] llm li=11 attn=144ms moe=0ms (n_threads=1)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q8_0_f32', name = 'kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1      0x79e36f000 | th_max = 1024 | th_width =   32
+  [gen 0] id=671 piece=The
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_q8_0', name = 'kernel_get_rows_q8_0'
+ggml_metal_library_compile_pipeline: loaded kernel_get_rows_q8_0                          0x79e36f300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q4_K_f32', name = 'kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1      0x79e36f600 | th_max =  768 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f16_f32_4', name = 'kernel_mul_mv_f16_f32_4_nsg=1_ne12=10_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f16_f32_4_nsg=1_ne12=10_r2=1_r3=1      0x79e36f900 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f16_f32_4', name = 'kernel_mul_mv_f16_f32_4_nsg=4_ne12=10_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f16_f32_4_nsg=4_ne12=10_r2=1_r3=1      0x79e36fc00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0x79e3b8000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0x79e3b8300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q4_0_f32', name = 'kernel_mul_mv_q4_0_f32_nsg=2_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q4_0_f32_nsg=2_ne12=1_r2=1_r3=1      0x79e3b8600 | th_max =  640 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_id_q4_K_f32', name = 'kernel_mul_mv_id_q4_K_f32_nsg=2'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_id_q4_K_f32_nsg=2               0x79e3b8900 | th_max =  768 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_id_q4_0_f32', name = 'kernel_mul_mv_id_q4_0_f32_nsg=2'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_id_q4_0_f32_nsg=2               0x79e3b8c00 | th_max =  832 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=1_r2=1_r3=1      0x79e3b8f00 | th_max = 1024 | th_width =   32
+  [gen 1] id=4787 piece=Ġquick
+  [gen 2] id=13769 piece=Ġbrown
+  [gen 3] id=46012 piece=Ġfox
+  [gen 4] id=54994 piece=Ġjumps
+  [gen 5] id=1060 piece=Ġover
+  [gen 6] id=270 piece=Ġthe
+  [gen 7] id=41638 piece=Ġlazy
+  [gen 8] id=6397 piece=Ġdog
+  [gen 9] id=16 piece=.
+  [gen 10] id=223 piece=Ġ
+  [gen 11] id=6895 piece=123
+  [gen 12] id=1883 piece=45
+  [gen 13] id=1 piece=<｜end▁of▁sentence｜>
+  [dbg] gen_ids (14): 671 4787 13769 46012 54994 1060 270 41638 6397 16 223 6895 1883 1
+ggml_metal_free: deallocating
