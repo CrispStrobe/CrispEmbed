@@ -127,6 +127,11 @@ struct decoder_layer {
     // Self-attention
     ggml_tensor *self_qkv_w = nullptr, *self_qkv_b = nullptr;
     ggml_tensor *self_out_w = nullptr, *self_out_b = nullptr;
+    // Lazily-filled caches of the self-attn weights, dequantized + transposed
+    // into the layout the per-layer ggml graph uploads. Immutable after first
+    // fill; before this cache the block re-read and re-transposed ~0.85 MB of
+    // weights per layer on EVERY detect call.
+    std::vector<float> sa_qkv_w_t, sa_qkv_b_v, sa_out_w_t, sa_out_b_v;
     ggml_tensor *norm1_w = nullptr, *norm1_b = nullptr;
     // Deformable cross-attention (value proj + offset/weight projections + output)
     ggml_tensor *cross_value_w = nullptr, *cross_value_b = nullptr;
@@ -465,8 +470,32 @@ static bool layout_conv_direct() {
     if (v < 0) v = (getenv("LAYOUT_CONV_DIRECT") != nullptr) ? 1 : 0;
     return v == 1;
 }
+// LAYOUT_CONV_F16=1 (opt-in): run the conv GEMMs in F16. The fork's
+// ggml_conv_2d forces an F32 im2col whenever the activation is F32 (a CPU
+// vec_dot compatibility patch), and Metal's im2col kernel only reads an F32
+// source — so the F16 shape has to be composed manually: F32 activation into
+// ggml_im2col with an F16 DESTINATION type (the standard upstream path,
+// supported on Metal), then an F16xF16 mul_mat, which halves im2col bytes and
+// lands on Metal's F16 simdgroup mul_mm. mul_mat output is F32 either way, so
+// only the conv-internal precision changes. Quality is gated on region output
+// before any default talk — see PERFORMANCE.md.
+static bool layout_conv_f16() {
+    static int v = -1;
+    if (v < 0) v = core_env::on("LAYOUT_CONV_F16") ? 1 : 0;
+    return v == 1;
+}
 static ggml_tensor * conv2d_dispatch(ggml_context * g, ggml_tensor * w, ggml_tensor * x, int stride, int pad) {
     if (layout_conv_direct()) return ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (layout_conv_f16()) {
+        ggml_tensor * w16 = w->type == GGML_TYPE_F16 ? w : ggml_cast(g, w, GGML_TYPE_F16);
+        // [N, OH, OW, IC*KH*KW] in F16, from the F32 activation directly.
+        ggml_tensor * im = ggml_im2col(g, w16, x, stride, stride, pad, pad, 1, 1, true, GGML_TYPE_F16);
+        ggml_tensor * r = ggml_mul_mat(g, ggml_reshape_2d(g, im, im->ne[0], im->ne[3] * im->ne[2] * im->ne[1]),
+                                       ggml_reshape_2d(g, w16, w16->ne[0] * w16->ne[1] * w16->ne[2], w16->ne[3]));
+        // Same output layout as ggml_conv_2d: [OW, OH, OC, N].
+        r = ggml_reshape_4d(g, r, im->ne[1], im->ne[2], im->ne[3], w16->ne[3]);
+        return ggml_cont(g, ggml_permute(g, r, 0, 1, 3, 2));
+    }
     return ggml_conv_2d(g, w, x, stride, stride, pad, pad, 1, 1);
 }
 
@@ -948,6 +977,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     LDBG("layout_detect: computing backbone + encoder...\n");
     auto t_phase1 = std::chrono::steady_clock::now();
     ggml_backend_graph_compute(ctx->backend, gf);
+    const double _p1_compute_ms =
+        std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase1).count();
 
     // Per-block backbone comparison (diagnostic only — the tensor read-backs are
     // pure debug work, so gate the whole block, not just the range prints).
@@ -1057,7 +1088,10 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     ggml_free(g);
     if (bench) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase1).count();
-        fprintf(stderr, "[layout_detect-bench] Phase 1 backbone+encoder: %.1f ms\n", ms);
+        fprintf(
+            stderr,
+            "[layout_detect-bench] Phase 1 backbone+encoder: %.1f ms (graph compute: %.1f, feat readback+misc: %.1f)\n",
+            ms, _p1_compute_ms, ms - _p1_compute_ms);
     }
 
     // --- Phase 2: Decoder (CPU-side) ---
@@ -1563,17 +1597,27 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             // Transpose weight data from ggml [768, 256] to [256, 768] layout.
             // Original: flat_old[o + i*768] for o ∈ [0,768), i ∈ [0,256)
             // Target:   flat_new[i + o*256] = flat_old[o + i*768]
-            auto qkv_w_raw = tensor_to_f32(layer.self_qkv_w);
-            std::vector<float> qkv_w_t(D * 3 * D);
-            for (int i = 0; i < D; i++)
-                for (int o = 0; o < 3 * D; o++) qkv_w_t[i + o * D] = qkv_w_raw[o + i * 3 * D];
-            auto qkv_b_data = tensor_to_f32(layer.self_qkv_b);
-            // out_proj: ggml [256, 256] → same shape, but data needs transposing
-            auto out_w_raw = tensor_to_f32(layer.self_out_w);
-            std::vector<float> out_w_t(D * D);
-            for (int i = 0; i < D; i++)
-                for (int o = 0; o < D; o++) out_w_t[i + o * D] = out_w_raw[o + i * D];
-            auto out_b_data = tensor_to_f32(layer.self_out_b);
+            // Cached in the layer after the first call — the weights are
+            // immutable, so re-reading and re-transposing them per call was
+            // pure repeated work (same bytes, byte-identical result).
+            auto & lc = ctx->decoder.layers[li];
+            if (lc.sa_qkv_w_t.empty()) {
+                auto qkv_w_raw = tensor_to_f32(layer.self_qkv_w);
+                lc.sa_qkv_w_t.resize((size_t)D * 3 * D);
+                for (int i = 0; i < D; i++)
+                    for (int o = 0; o < 3 * D; o++) lc.sa_qkv_w_t[i + o * D] = qkv_w_raw[o + i * 3 * D];
+                lc.sa_qkv_b_v = tensor_to_f32(layer.self_qkv_b);
+                // out_proj: ggml [256, 256] → same shape, but data needs transposing
+                auto out_w_raw = tensor_to_f32(layer.self_out_w);
+                lc.sa_out_w_t.resize((size_t)D * D);
+                for (int i = 0; i < D; i++)
+                    for (int o = 0; o < D; o++) lc.sa_out_w_t[i + o * D] = out_w_raw[o + i * D];
+                lc.sa_out_b_v = tensor_to_f32(layer.self_out_b);
+            }
+            const auto & qkv_w_t = lc.sa_qkv_w_t;
+            const auto & qkv_b_data = lc.sa_qkv_b_v;
+            const auto & out_w_t = lc.sa_out_w_t;
+            const auto & out_b_data = lc.sa_out_b_v;
 
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_qkv_w"), qkv_w_t.data(), 0,
                                     D * 3 * D * sizeof(float));

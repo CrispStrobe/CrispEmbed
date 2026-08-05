@@ -1610,8 +1610,15 @@ static int cli_main(int argc, char ** argv) {
             return 1;
         }
         int n_regions = 0;
-        const crispembed_layout_region * regions =
-            crispembed_layout_detect(lctx, layout_path.c_str(), conf_threshold, &n_regions);
+        // Diagnostic: CRISPEMBED_LAYOUT_REPEAT=N runs the detect N times in one
+        // process so warm-call timing (Metal pipelines built, buffers resident)
+        // can be separated from the cold first call in the bench output. The
+        // printed regions always come from the LAST call.
+        int layout_repeat = 1;
+        if (const char * lr = getenv("CRISPEMBED_LAYOUT_REPEAT")) layout_repeat = std::max(1, atoi(lr));
+        const crispembed_layout_region * regions = nullptr;
+        for (int rep = 0; rep < layout_repeat; rep++)
+            regions = crispembed_layout_detect(lctx, layout_path.c_str(), conf_threshold, &n_regions);
         if (json_output) {
             printf("{\"regions\": [");
             for (int i = 0; i < n_regions; i++) {
