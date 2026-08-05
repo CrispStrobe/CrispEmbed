@@ -427,7 +427,7 @@ jobs:
       # `cuGetErrorString'" and the whole leg fails at the very end of a ~1 h
       # build. v0.17.3 shipped with NO Linux CUDA archive for this reason.
       # Fail loudly here if the stub is missing rather than an hour later.
-      - name: Locate the CUDA driver stub
+      - name: Stage the CUDA driver stub
         run: |
           set -euo pipefail
           stub=$(find "${CUDA_PATH:-/usr/local/cuda}" -name 'libcuda.so*' -path '*stubs*' 2>/dev/null | head -1)
@@ -435,8 +435,19 @@ jobs:
               echo "No libcuda stub under ${CUDA_PATH:-/usr/local/cuda}; ggml 0.17 cannot link the CUDA driver API." >&2
               exit 1
           fi
-          echo "CUDA_STUB_DIR=$(dirname "$stub")" >> "$GITHUB_ENV"
-          echo "driver stub: $stub"
+          # The shipped stub is named libcuda.so, but its SONAME — and so the
+          # DT_NEEDED that lands in libggml-cuda.so — is libcuda.so.1. When ld
+          # then links the executables it looks for a FILE called libcuda.so.1
+          # and does not find one, giving
+          #   "libcuda.so.1 ... not found (try using -rpath or -rpath-link)"
+          # followed by undefined references to cuMemCreate/cuMemAddressReserve.
+          # Stage a private copy with both names so the SONAME resolves.
+          stubdir="${RUNNER_TEMP:-/tmp}/cuda-stubs"
+          mkdir -p "$stubdir"
+          cp -f "$stub" "$stubdir/libcuda.so"
+          ln -sf libcuda.so "$stubdir/libcuda.so.1"
+          echo "CUDA_STUB_DIR=$stubdir" >> "$GITHUB_ENV"
+          echo "driver stub: $stub -> $stubdir (libcuda.so + libcuda.so.1)"
 
       - name: Configure
         run: >
@@ -447,6 +458,8 @@ jobs:
           -DGGML_CUDA=ON
           -DGGML_BLAS=OFF
           -DCMAKE_LIBRARY_PATH="$CUDA_STUB_DIR"
+          -DCMAKE_EXE_LINKER_FLAGS="-Wl,-rpath-link,$CUDA_STUB_DIR"
+          -DCMAKE_SHARED_LINKER_FLAGS="-Wl,-rpath-link,$CUDA_STUB_DIR"
           -DCMAKE_C_COMPILER_LAUNCHER=ccache
           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache
