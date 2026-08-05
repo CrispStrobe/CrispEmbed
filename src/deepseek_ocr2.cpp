@@ -2060,9 +2060,12 @@ static const char * g_ds_kv_dtype = "f32";
 //                        both decode arms share, so the arms stay comparable.
 
 // The KV cache dtype is read once per process: prefill and decode share the
-// cache, so they must agree on it.
+// cache, so they must agree on it. Value-parsed (G6 finding): the old
+// presence-based check made DS2_KV_F16=0 ENABLE f16, inverting the repo's
+// gate convention.
 static ggml_type ds_kv_type() {
-    return getenv("DS2_KV_F16") ? GGML_TYPE_F16 : GGML_TYPE_F32;
+    const char * e = getenv("DS2_KV_F16");
+    return (e && *e && strcmp(e, "0") != 0) ? GGML_TYPE_F16 : GGML_TYPE_F32;
 }
 
 // No-repeat-ngram size for the greedy decode. The reference contract
