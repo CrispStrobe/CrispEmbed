@@ -2841,6 +2841,16 @@ train_swa`) — a clean reference if we ever add it.
   rerankers (jina-v2, bge, ms-marco) use `tanh` (crispembed.cpp ~2926); the DeBERTa
   ContextPooler (mxbai) uses GELU-tanh (~2915). No ModernBERT reranker is in the
   roster (would need GELU), so no fix needed — the RANK heads are correct vs upstream.
+  **⚠ CORRECTED (2026-08-05, G7c):** the ms-marco half of that claim was code-level
+  only and did NOT hold for the shipped artifacts — their GGUFs carried a 1-layer
+  head with NO pooler (the converter never emitted `bert.pooler.dense.*`), so
+  native scored `dot(CLS,w)+b` instead of HF's `classifier(tanh(pooler(CLS)))`:
+  calibration off by ~50x, tail ranking reordered. Fixed in the converter (fold
+  pooler→`classifier.dense` + tanh, `63997e2c`) and re-shipped as `*-g7c.gguf`
+  with re-pinned hashes; evidence in `tests/results/g7c/SUMMARY.md`. Two riders:
+  (a) the DeBERTa gelu here is tanh-APPROX where HF `gelu` is erf — unmeasured,
+  mxbai-only; (b) the local miniconda torch mis-executes BERT-class forwards
+  (NaN/bus errors) — parity references on this box must come from ONNX Runtime.
 - Qwen3-Embedding is trained **causal** (last-token/EOS pooling) — llama.cpp runs
   it causal and is *correct*. EmbeddingGemma and the LFM2.5 retrievers are
   bidirectional. Don't assume "decoder embedder ⇒ force non-causal".
