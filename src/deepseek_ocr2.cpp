@@ -2125,7 +2125,9 @@ static int ds_kv_view_len(int n_kv, int max_seq) {
 // else a human-readable reason (reported once, so a silent fallback can never
 // be mistaken for a measured result).
 static const char * ds_persistent_decode_blocker(const ds_ocr2_ctx & ctx) {
-    if (getenv("DS2_LEGACY_DECODE")) return "DS2_LEGACY_DECODE=1";
+    // Value-parsed (G2b, same audit class as the DS2_KV_F16 fix 73beea9f):
+    // DS2_LEGACY_DECODE=0 must NOT select the legacy path.
+    if (const char * e = getenv("DS2_LEGACY_DECODE"); e && strcmp(e, "0") != 0) return "DS2_LEGACY_DECODE=1";
     // DEFAULT IS THE PERSISTENT PATH, on measured evidence (Metal, M1,
     // 2026-08-05, interleaved + load-gated, 9 scored pairs on a 217-token
     // page): decode median 11474 ms -> 8192 ms (1.40x) and total 15815 ms ->
@@ -2937,16 +2939,22 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
         }
     }
 
-    // G2 (F5): dynamic-crop mode, opt-in via DS2_CROP_MODE=1. Mirrors the
-    // reference infer() with crop_mode=True: an image over 768 px in either
-    // dimension additionally yields N=2..6 local 768² tiles (dynamic_preprocess:
-    // closest-aspect grid (gw,gh) with 2<=gw*gh<=6, whole image resized to
-    // (768*gw, 768*gh), split in raster order). The 1024² padded global view
-    // above is unchanged in both modes.
+    // G2 (F5): dynamic-crop mode, DEFAULT ON since G2b (DS2_CROP_MODE=0
+    // restores the single-view path). Mirrors the reference infer() with
+    // crop_mode=True — the contract's own configuration: an image over 768 px
+    // in either dimension additionally yields N=2..6 local 768² tiles
+    // (dynamic_preprocess: closest-aspect grid (gw,gh) with 2<=gw*gh<=6, whole
+    // image resized to (768*gw, 768*gh), split in raster order). The 1024²
+    // padded global view above is unchanged in both modes. G2b flip evidence
+    // (tests/results/g2b/): cc0 raw CER mean Metal 0.657→0.236, CPU
+    // 0.279→0.185 (beats the A4 reference's 0.187); the two G2-recorded
+    // regressions are formatting-only drift (receipt_historical: one
+    // bold-vs-plain near-tie at char 82 then markdown-list self-conditioning,
+    // alnum-content CER flat; synth_01_noise: four inserted colons).
     const int tileS = 768;
     const bool crop_mode = [] {
         const char * e = getenv("DS2_CROP_MODE");
-        return e && strcmp(e, "0") != 0;
+        return !e || strcmp(e, "0") != 0;
     }();
     int crop_gw = 1, crop_gh = 1;
     std::vector<std::vector<float>> crop_px; // per tile: 3*768*768, normalized

@@ -1,0 +1,14 @@
+g2 arm files strip the trailing newline the raw CLI emits; comparison is modulo that framing.
+default-ON metal commons_example_receipt: IDENTICAL
+default-ON metal commons_test_ocr_document: IDENTICAL
+default-ON metal german_official_print: IDENTICAL
+default-ON metal receipt_historical: IDENTICAL
+default-ON metal simple_form: IDENTICAL
+default-ON cpu   commons_example_receipt: IDENTICAL
+default-ON cpu   commons_test_ocr_document: IDENTICAL
+default-ON cpu   german_official_print: IDENTICAL
+default-ON cpu   receipt_historical: IDENTICAL
+default-ON cpu   simple_form: IDENTICAL
+CROP_MODE=0 metal receipt_historical: IDENTICAL
+CROP_MODE=0 metal german_official_print: IDENTICAL
+FAILURES: 0

@@ -1,0 +1,31 @@
+Input  
+Text  
+Number  
+Date  
+Password  
+
+a label  
+ANOTHER LABEL  
+Yet another label  
+
+combo suggestion  
+France  
+@_checkbox2  
+@_checkbox3  
+
+Codebleble  
+code.lib  
+code  
+
+Button  
+Rechercher  
+Détective hôte  
+
+TEXTAREA  
+Text  
+Drag and drop frames  
+Radio  
+
+Radio  
+☐ Drag and drop frames  
+☐ Fixe frames
