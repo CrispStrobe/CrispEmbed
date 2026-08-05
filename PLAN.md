@@ -17,7 +17,7 @@ races). Remove the row when the branch lands.
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-04/05 | *(engine-portfolio round — ALL LANDED)* | T13 olmocr, T14 deepseek decode (`82ce1024`), T15 smoldocling (`7de85cb7`), T18 one-shot init (`c178308f`), granite-r2 (`110dd082`), tokenize_simple audit (`357dee53`), imatrix quants (`38c708b2`+`926df0ae` — 330m follow-up MERGED), metallib CMake pin (`9288d3b5`). Detail lives in the dated status blocks below and in `tests/results/*_2026-08-04.json`; do not re-derive | **DONE** |
-| 2026-08-05 | `feat/f1-ds2-no-repeat-ngram` / `.claude/worktrees/feat-f1-ds2-no-repeat-ngram` | **Picked (coordinator's own work): F1** — port `argmax_no_repeat_ngram` into the deepseek-ocr2 decode (single shared argmax site covers BOTH persistent and `DS2_LEGACY_DECODE` arms), default matching the contract's `no_repeat_ngram_size=20`, env-gated restore of the old plain argmax. Guard implemented + pushed (`19782cfc`); spiral page `simple_form` terminates at 52 (Metal) / 90 (CPU) tokens vs the 1024 cap. Acceptance matrix (11 sweeps: Metal synth+cc0 × guard/legacy/baseline, CPU cc0 both arms + synth subset) running now; gold re-gate before merge | **IN PROGRESS** |
+| 2026-08-05 | *(landed, coordinator's own work)* | **F1 MERGED** (`e9f84f16`): deepseek-ocr2 no-repeat-ngram guard, default 20 per the contract, `DS2_NO_REPEAT_NGRAM=0` restores; helper hoisted to `src/core/no_repeat_ngram.h` shared by qwen2vl/internvl2/deepseek + hermetic `test-no-repeat-ngram` (13 checks, model-free CI). Full acceptance evidence in the commit message and `tests/results/f1/`; F1 status block below | **DONE** |
 | 2026-08-05 | *(landed same day, wave 2)* | **F8 MERGED** (`f31c6531`, coordinator-verified: hermetic 24+15 checks re-run 0 failures, LaBSE battery 20/20 vs an independently REGENERATED HF golden, 0/20 on the unfixed binary, 4 shipped models token-id-IDENTICAL old-vs-new under my own runs). Verdict: nothing LaBSE-class was shipped; the CONVERSION PATH was broken 0/20 (converter >100k heuristic + runtime routing + per-byte pre-tokenizer) — all three layers fixed, absent-key = historical behavior. See §F8 outcome below. **F9b MERGED** (`3ade993a`, coordinator-verified: 15/15 copies hash-identical to CrispASR canonical `342c5f7f`, 13-test gate re-run per copy = 15×13/13, 8 upload-bearing drivers flipped to `resolve_hf_token(require=True)`) | **DONE** |
 | 2026-08-05 | *(landed same day, wave 3)* | **F7b DONE** (kernel `chr1s4/crispembed-imatrix-t19` v3 complete; driver config merged `045102a0`; coordinator verified the `-f7` uploads exist on HF and the 4 pinned artifact SHAs still match `model_hashes.h` exactly). Headline: with real q/k/v importance, arctic q4_k+imatrix goes **.9480/.9614 → .9910/.9937 min/mean** (plain q4_k reproduced to 4dp; f2llm-80m control unchanged — comparability proven), and **q4_k+imatrix now BEATS iq4_xs+imatrix on the BERT side** (inverts T19-E3's IQ4_XS headline there; decoder side keeps the old ordering). Granite-r2 pair got first-time imatrix artifacts under canonical names. Decision items in §F7b below. **Test guards merged** (`fcc60afd`): `test-imatrix-alias` (59 checks, fails 44 on name drift; both naming sites now share `src/core/imatrix_alias.h`) + `tests/test_vendored_kaggle_harness.py` (106 checks × 15 copies, fails 5 on the pre-F9b copy), both in model-free CI | **DONE** |
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
@@ -57,6 +57,49 @@ be a no-op), cc0 CER moves materially toward the reference's 0.187 raw /
 0.111 stripped, spiral pages terminate before the cap, CPU and Metal, both
 decode paths byte-identical to each other per arm. This CHANGES OUTPUT — the
 coordinator re-runs the gold gate before merge.
+
+#### F1 status [DONE 2026-08-05, merged `e9f84f16`, coordinator-verified]
+
+**Shipped:** `argmax_no_repeat_ngram` at the single argmax site both decode
+arms share, default ngram=20 (the contract's `no_repeat_ngram_size`);
+`DS2_NO_REPEAT_NGRAM=0` restores the plain argmax. Confidence is now
+stabilised on the global max (bit-identical to the old `1/sum_e` when the
+guard does not fire). Helper hoisted to `src/core/no_repeat_ngram.h` and
+shared by all three carriers (qwen2vl/internvl2 swap is verbatim code,
+compile-checked + unit-tested; no local fixture exists for those two —
+their guard is the hermetic test).
+
+**Acceptance (13-sweep matrix, `tests/results/f1/`, decoded text only; box
+carried load, no timing claims):**
+- **Arm identity (guard on):** Metal 25/25 + CPU synth 5/5 byte-identical.
+  CPU cc0 4/5 differ between arms — **pre-existing, proven**: guard-OFF
+  baseline arms diverge on the same pages at the SAME first byte (german
+  char 67, simple_form char 165); T14's legacy host-side reduction-order
+  near-tie mechanism. The guard introduces no arm divergence.
+- **No-op where nothing spirals:** synth 25/25 byte-identical guard-vs-base;
+  synth CER unchanged (0.00228 raw).
+- **Termination:** CPU all 5 cc0 pages terminate (german 1024-cap→228 tok,
+  simple_form→90). Metal commons_test_ocr_document 1024→720 tok
+  (CER 0.83→0.33). ⚠ **Metal `german_official_print` still caps**: its loop
+  varies tokenization ("Aufraktvert ren"/"Aufraktvertre ten") so no exact
+  20-gram ever repeats — exact-ngram bans cannot break it. Baseline also
+  caps (CER 2.08 vs 2.14 guarded); it is the Metal-vs-CPU trajectory gap
+  (CPU reads the same page at 0.59), F5's lane, not a guard regression.
+- **cc0 CER vs the A4 reference (0.187 raw / 0.111 stripped):** Metal mean
+  0.744→0.657 raw; CPU 0.254 (legacy) / 0.279 (persistent). Post-tokenfix
+  note: the T14-era numbers no longer reproduce — `simple_form` no longer
+  spirals on Metal even unguarded (52 tok, CER 0.45 vs T14's 2.69), so the
+  tokenize_simple fix already moved this lane; the owed post-merge re-gate
+  is hereby recorded in these tables.
+- **Gold gate:** fox.png `cer=0.000` + garbage-guard PASS on BOTH manifest
+  entries (per-expert and stacked), run with the final merged binary.
+
+**Found, not fixed:** (1) the Metal german cap above (F5/crop-mode is the
+likely fix — more image tokens, better-conditioned decode); (2) CPU cc0
+Metal-vs-CPU quality gap is large on loop-prone pages (CPU 0.25 vs Metal
+0.66 mean) — worth a look when F5 lands; (3) the CPU arm near-tie
+divergence is inherent to the legacy arm's host-side norm/LM-head and was
+accepted with attribution (T14 precedent).
 
 ### F2 — Metal pipeline-cache cap adoption across the other Metal lanes (delegable)
 
