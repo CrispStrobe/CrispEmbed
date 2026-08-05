@@ -17,6 +17,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <atomic>
@@ -604,7 +605,7 @@ scunet_context * scunet_init(const char * model_path, int n_threads) {
         }
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_SCUNET_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_SCUNET_BENCH");
 
     // ── ggml conv path (opt out with SCUNET_SCALAR=1) ────────────────────
     // Build persistent CPU-resident F32 conv/deconv kernels. SCUNet's GGUF

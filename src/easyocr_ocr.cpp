@@ -9,6 +9,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -419,7 +420,7 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     c->last_timing.graph_ms = std::chrono::duration<double, std::milli>(graph_end - graph_start).count();
     c->last_timing.decode_ms = std::chrono::duration<double, std::milli>(total_end - graph_end).count();
     c->last_timing.total_ms = std::chrono::duration<double, std::milli>(total_end - total_start).count();
-    if (std::getenv("EASYOCR_BENCH")) {
+    if (core_env::on("EASYOCR_BENCH")) {
         fprintf(stderr, "[easyocr-bench] preprocess=%.3f graph=%.3f decode=%.3f total=%.3f ms width=%d\n",
                 c->last_timing.preprocess_ms, c->last_timing.graph_ms, c->last_timing.decode_ms,
                 c->last_timing.total_ms, c->width);

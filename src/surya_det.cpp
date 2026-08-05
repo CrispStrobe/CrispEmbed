@@ -11,6 +11,7 @@
 #include "core/cpu_ops.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <chrono>
 #include <cmath>
@@ -190,7 +191,7 @@ surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     auto * ctx = new surya_det_context{};
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
     ctx->dump = (getenv("SURYA_DET_DUMP") != nullptr);
-    ctx->bench = (std::getenv("CRISPEMBED_SURYA_DET_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_SURYA_DET_BENCH");
 
     // Pass 1: metadata
     gguf_context * gctx = core_gguf::open_metadata(model_path);

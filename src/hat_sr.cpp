@@ -26,6 +26,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -539,7 +540,7 @@ hat_sr_context * hat_sr_init(const char * model_path, int n_threads) {
 
     fprintf(stderr, "hat_sr: embed=%d, ws=%d, upscale=%dx, layers=%d, %d tensors\n", ctx->embed_dim, ctx->window_size,
             ctx->upscale, ctx->n_layers, (int)ctx->wl.tensors.size());
-    ctx->bench = (std::getenv("CRISPEMBED_HAT_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_HAT_SR_BENCH");
 
     // ggml conv path for the top-level convs (conv_first, per-layer .conv,
     // conv_after_body, conv_before_upsample, upsample, conv_last); default ON,

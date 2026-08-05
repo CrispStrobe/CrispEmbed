@@ -20,6 +20,7 @@
 #include "core/gpu_backend_pref.h"
 #include "core/vlm_attention.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -348,7 +349,7 @@ smoldocling_context * smoldocling_init(const char * model_path, int n_threads) {
             ctx->vis_layers, ctx->vis_dim, n_patches, connector_out, ctx->llm_layers, ctx->llm_dim, ctx->llm_heads,
             ctx->llm_kv_heads, ctx->llm_ffn_dim, ctx->vocab_size, (int)ctx->wl.tensors.size());
 
-    ctx->bench = (std::getenv("CRISPEMBED_SMOLDOCLING_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_SMOLDOCLING_BENCH");
 
     // LLM scheduler: reuse the same CPU backend (weights already in CPU memory)
     {

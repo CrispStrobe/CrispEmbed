@@ -8,6 +8,7 @@
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -1090,7 +1091,7 @@ void free(context * c) {
 
 std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int channels, float threshold) {
     if (!c || !px) return {};
-    const bool bench = std::getenv("CRISPEMBED_PPOCRV6_DET_BENCH") != nullptr;
+    const bool bench = core_env::on("CRISPEMBED_PPOCRV6_DET_BENCH");
     const detprof::report prof_report;
     const auto started = std::chrono::steady_clock::now();
     static constexpr float mean[3] = { 0.485f, 0.456f, 0.406f };

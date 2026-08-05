@@ -15,6 +15,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -341,7 +342,7 @@ bttr_ocr_context * bttr_ocr_init(const char * model_path, int n_threads) {
     }
     if (!map_tensors(ctx.get())) return nullptr;
 
-    ctx->bench = (std::getenv("CRISPEMBED_BTTR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_BTTR_BENCH");
 
     // Set up ggml backend + scheduler for encoder graph
     ctx->enc_backend = ggml_backend_cpu_init();

@@ -12,6 +12,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -467,7 +468,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity) {
     if (ctx.backend_cpu) backends.push_back(ctx.backend_cpu);
     ctx.sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), 16384, false, false);
 
-    ctx.bench = (std::getenv("CRISPEMBED_GLM_OCR_BENCH") != nullptr);
+    ctx.bench = core_env::on("CRISPEMBED_GLM_OCR_BENCH");
 
     if (verbosity >= 1) {
         const char * bname = ggml_backend_is_cpu(ctx.backend) ? "CPU" : "GPU";

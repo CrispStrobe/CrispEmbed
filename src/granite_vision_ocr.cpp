@@ -24,6 +24,7 @@
 #include "core/ggml_metal_guard.h"
 #include "ggml-cpu.h"
 #include "ggml-backend.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -362,7 +363,7 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
             ctx->embedding_multiplier, ctx->residual_multiplier, ctx->logits_scaling, ctx->attention_multiplier,
             ctx->have_tokenizer ? "embedded" : "MISSING", ctx->have_tokenizer ? (int)ctx->tokenizer.vocab.size() : 0);
 
-    ctx->bench = (std::getenv("CRISPEMBED_GRANITE_OCR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_GRANITE_OCR_BENCH");
 
     return ctx;
 }

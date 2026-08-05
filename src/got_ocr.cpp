@@ -12,6 +12,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -397,7 +398,7 @@ bool got_ocr::load(context & ctx, const char * gguf_path, int n_threads, int ver
 
     precompute_rpe_tables(ctx);
 
-    ctx.bench = (std::getenv("CRISPEMBED_GOT_OCR_BENCH") != nullptr);
+    ctx.bench = core_env::on("CRISPEMBED_GOT_OCR_BENCH");
 
     if (verbosity >= 1) {
         auto & v = ctx.m.vhp;

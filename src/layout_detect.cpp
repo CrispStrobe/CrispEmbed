@@ -18,6 +18,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 // stb_image declarations
 extern "C" {
@@ -191,7 +192,7 @@ bool load(context ** out, const char * path, int n_threads) {
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_LAYOUT_DETECT_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_LAYOUT_DETECT_BENCH");
 
     LDBG("layout_detect: loading %s\n", path);
 

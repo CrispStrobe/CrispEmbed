@@ -11,6 +11,7 @@
 #include "core/cpu_ops.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -152,7 +153,7 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
         }
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_ESRGAN_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_ESRGAN_BENCH");
 
     // ggml encoder backend
     ctx->enc_backend = ggml_backend_cpu_init();

@@ -25,6 +25,7 @@
 #include "crispembed_diff.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <atomic>
 #include <chrono>
@@ -440,7 +441,7 @@ mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     ctx->lm_ln_b = find(m, "dec.lm_head.ln.bias");
     ctx->lm_bias = find(m, "dec.lm_head.bias");
 
-    ctx->bench = (std::getenv("CRISPEMBED_MIXTEX_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_MIXTEX_BENCH");
 
     // ggml encoder batched-matmul infrastructure
     ctx->enc_backend = ggml_backend_cpu_init();

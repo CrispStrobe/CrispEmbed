@@ -18,6 +18,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -1394,7 +1395,7 @@ dat_sr_context * dat_sr_init(const char * model_path, int n_threads) {
             "split=[%d,%d], upscale=%dx, %s+%s\n",
             ctx->embed_dim, ctx->num_heads, total_blocks, ctx->split_size[0], ctx->split_size[1], ctx->upscale,
             ctx->resi_connection.c_str(), ctx->upsampler.c_str());
-    ctx->bench = (std::getenv("CRISPEMBED_DAT_SR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_DAT_SR_BENCH");
 
     // ggml conv path: conv_first, RG/body 3×3 convs, upsample, and the AIM/SGFN
     // depthwise convs run on a CPU sched (ggml_conv_2d / _dw); the dual attention

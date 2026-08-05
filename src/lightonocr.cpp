@@ -10,6 +10,7 @@
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 // stbi_load/stbi_image_free are provided with C linkage by image_preprocess.cpp's
 // STB_IMAGE_IMPLEMENTATION. Forward-declare them here (matching ocr_orchestrator.cpp)
@@ -301,7 +302,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
     ctx.compute_meta.resize(ggml_tensor_overhead() * 16384 + ggml_graph_overhead_custom(16384, false));
     ctx.sched = ggml_backend_sched_new(&ctx.backend, nullptr, 1, 16384, false, false);
 
-    ctx.bench = (std::getenv("CRISPEMBED_LIGHTONOCR_BENCH") != nullptr);
+    ctx.bench = core_env::on("CRISPEMBED_LIGHTONOCR_BENCH");
 
     return true;
 }

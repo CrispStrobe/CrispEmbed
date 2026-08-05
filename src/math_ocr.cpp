@@ -12,6 +12,7 @@
 #include "core/gguf_loader.h"
 #include "core/cpu_ops.h"
 #include "crispembed_diff.h" // per-stage parity harness (env-gated: MATH_OCR_DIFF_REF)
+#include "core/env_gate.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -1496,7 +1497,7 @@ math_ocr_context * math_ocr_init(const char * model_path, int n_threads) {
         return nullptr;
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_MATH_OCR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_MATH_OCR_BENCH");
 
     fprintf(stderr, "math_ocr: init complete, returning context\n");
     return ctx.release();

@@ -19,6 +19,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -564,7 +565,7 @@ instructir_context * instructir_init(const char * model_path, int n_threads) {
         load_nafblock(wl, pfx, ctx->middle[i]);
     }
 
-    ctx->bench = (std::getenv("CRISPEMBED_INSTRUCTIR_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_INSTRUCTIR_BENCH");
 
     // ggml conv infrastructure: schedule over the weight backend so resident
     // weights can run conv ops directly. ggml_backend_sched requires a CPU

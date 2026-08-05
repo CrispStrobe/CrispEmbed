@@ -20,6 +20,8 @@
 //     crispembed init-bench: load_model/gguf_meta            123.4 ms
 //     crispembed init-bench: load_model TOTAL                456.7 ms
 
+#include "env_gate.h"
+
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -29,10 +31,8 @@
 namespace core_initbench {
 
 inline bool enabled() {
-    static const bool on = [] {
-        const char * e = std::getenv("CRISPEMBED_INIT_BENCH");
-        return e && e[0] && std::strcmp(e, "0") != 0;
-    }();
+    // Shared value-parsed semantics (set and not "0" => on); see core/env_gate.h.
+    static const bool on = core_env::on("CRISPEMBED_INIT_BENCH");
     return on;
 }
 

@@ -8,6 +8,7 @@
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h"
 #include "crispembed_diff.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -1097,7 +1098,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
 static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float> & input, std::vector<float> & output,
                                int & h, int & w, int batch) {
     if (!pp_graph_build(c, w, batch)) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH"))
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_BENCH"))
             fprintf(stderr, "[ppocrv6-graph-bench] graph unavailable large_stem=%d backend=%s\n", c->large_stem ? 1 : 0,
                     c->backend ? ggml_backend_name(c->backend) : "none");
         return false;
@@ -1214,7 +1215,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
     }
     w = (int)c->graph.output->ne[0];
     h = (int)c->graph.output->ne[1] / std::max(1, batch);
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_BENCH")) {
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_BENCH")) {
         const double ms = std::chrono::duration<double, std::milli>(finished - started).count();
         fprintf(stderr, "[ppocrv6-graph-bench] backend=%s graph_ms=%.3f output=%dx%d\n",
                 ggml_backend_name(c->graph.backend), ms, w, h);
@@ -1840,7 +1841,7 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
                                      c->graph_accept_override != 0;
     const bool batch_backend_ok =
         c->backend && (ggml_backend_is_cpu(c->backend) || !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY"));
-    if (batch_graph_enabled && !batch_backend_ok && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+    if (batch_graph_enabled && !batch_backend_ok && core_env::on("CRISPEMBED_PPOCRV6_BENCH"))
         fprintf(stderr, "[ppocrv6-batch-graph] backend=%s action=scalar-fallback reason=cpu-only-gate\n",
                 c->backend ? ggml_backend_name(c->backend) : "none");
     int max_batch = 8;
@@ -1880,7 +1881,7 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
                 fused = pp_graph_run_batch(c, fused_input, fused_output, tokens, classes, group_count);
                 fused =
                     fused && tokens > 0 && classes > 0 && fused_output.size() >= (size_t)tokens * classes * group_count;
-                if (std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+                if (core_env::on("CRISPEMBED_PPOCRV6_BENCH"))
                     fprintf(stderr,
                             "[ppocrv6-batch-graph] backend=%s width=%d batch=%d action=%s tokens=%d classes=%d\n",
                             c->backend ? ggml_backend_name(c->backend) : "none", width, group_count,

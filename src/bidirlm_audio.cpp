@@ -16,6 +16,7 @@
 
 #ifdef CRISPEMBED_HAS_CRISP_AUDIO
 #include "crisp_audio.h"
+#include "core/env_gate.h"
 #include <chrono>
 #include <cmath>
 #include <cstdio>
@@ -54,7 +55,7 @@ context * open(const char * gguf_path, int n_threads, bool use_gpu) {
     auto * ctx = new context();
     ctx->ca = ca;
     ctx->output_dim = crisp_audio_output_dim(ca);
-    ctx->bench = (std::getenv("CRISPEMBED_BIDIRLM_AUDIO_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_BIDIRLM_AUDIO_BENCH");
     return ctx;
 }
 

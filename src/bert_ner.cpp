@@ -5,6 +5,7 @@
 #include "core/gguf_loader.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -38,7 +39,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
     if (!out || !model_path) return false;
 
     auto * ctx = new context;
-    ctx->bench = (std::getenv("CRISPEMBED_BERT_NER_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_BERT_NER_BENCH");
 
     // Load encoder via existing CrispEmbed API.
     ctx->enc = crispembed_init(model_path, n_threads);

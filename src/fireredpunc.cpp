@@ -17,6 +17,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -34,12 +35,8 @@
 // ===========================================================================
 
 static bool fireredpunc_bench_enabled() {
-    static int v = -1;
-    if (v < 0) {
-        const char * e = std::getenv("FIREREDPUNC_BENCH");
-        v = (e && *e && *e != '0') ? 1 : 0;
-    }
-    return v != 0;
+    static const bool v = core_env::on("FIREREDPUNC_BENCH");
+    return v;
 }
 
 struct fireredpunc_bench_stage {

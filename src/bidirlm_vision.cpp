@@ -32,6 +32,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <chrono>
@@ -499,7 +500,7 @@ graph_outputs build_graph(context & ctx, int n_patches, bool include_deepstack) 
 bool load(context & ctx, const char * gguf_path, ggml_backend_t shared_backend, int n_threads, int verbosity) {
     ctx.n_threads = n_threads > 0 ? n_threads : 1;
     ctx.verbosity = verbosity;
-    ctx.bench = (std::getenv("CRISPEMBED_BIDIRLM_VISION_BENCH") != nullptr);
+    ctx.bench = core_env::on("CRISPEMBED_BIDIRLM_VISION_BENCH");
 
     if (!load_hparams(ctx, gguf_path)) return false;
 

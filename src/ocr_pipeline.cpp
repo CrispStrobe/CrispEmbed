@@ -11,6 +11,7 @@
 #include "ocr_detect.h"
 #include "math_ocr.h"
 #include "classical_preproc.h"
+#include "core/env_gate.h"
 
 // stb_image declarations (implementation lives in image_preprocess.cpp)
 extern "C" {
@@ -64,7 +65,7 @@ bool load(context ** out, const char * det_path, const char * rec_path, int n_th
     auto * ctx = new context();
     *out = ctx;
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_OCR_PIPELINE_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_OCR_PIPELINE_BENCH");
 
     // Load detection model
     if (!ocr_detect::load(&ctx->det, det_path, n_threads)) {

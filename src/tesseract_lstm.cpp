@@ -20,6 +20,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <array>
@@ -1118,7 +1119,7 @@ tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_thre
         delete ctx;
         return nullptr;
     }
-    ctx->bench = (std::getenv("CRISPEMBED_TESSERACT_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_TESSERACT_BENCH");
     ctx->cache_int = (std::getenv("CRISPEMBED_TESSERACT_DISABLE_INT_CACHE") == nullptr);
     ctx->reuse_scratch = (std::getenv("CRISPEMBED_TESSERACT_REUSE_SCRATCH") != nullptr);
     return ctx;

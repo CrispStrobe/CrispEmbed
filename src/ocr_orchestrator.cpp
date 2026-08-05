@@ -59,6 +59,7 @@
 #include "../ggml/examples/stb_image_write.h"
 
 #include "core/temp_file.h"
+#include "core/env_gate.h"
 
 #include <atomic>
 #include <algorithm>
@@ -567,7 +568,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // recognizer with the repo's DBNet detector, which is what
         // easyocr_pipeline already validates against the Python reference.
         // `model_a` is therefore the DBNet GGUF, not a CRAFT one.
-        const bool easy_bench = std::getenv("CRISPEMBED_EASYOCR_BENCH") != nullptr;
+        const bool easy_bench = core_env::on("CRISPEMBED_EASYOCR_BENCH");
         const auto easy_started = std::chrono::steady_clock::now();
         if (st.model_a.empty() || st.model_b.empty()) {
             fprintf(stderr, "ocr_orchestrator: easyocr stage missing models (model_a=det, model_b=rec)\n");
@@ -609,7 +610,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         return results;
     }
     case engine::ppocrv6: {
-        const bool ppocr_bench = std::getenv("CRISPEMBED_PPOCRV6_BENCH") != nullptr;
+        const bool ppocr_bench = core_env::on("CRISPEMBED_PPOCRV6_BENCH");
         const auto ppocr_started = std::chrono::steady_clock::now();
         if (st.model_a.empty() || st.model_b.empty()) {
             fprintf(stderr, "ocr_orchestrator: ppocrv6 stage missing models (model_a=det, model_b=rec)\n");
@@ -663,7 +664,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             // full page. Keep direct/small-crop diagnostics available while
             // falling back to the accepted CPU recognizer for large pages.
             ppocrv6_ocr_set_graph_accept(ctx->pprec, (int)boxes.size() <= max_graph_regions ? 1 : 0);
-            if ((int)boxes.size() > max_graph_regions && std::getenv("CRISPEMBED_PPOCRV6_BENCH"))
+            if ((int)boxes.size() > max_graph_regions && core_env::on("CRISPEMBED_PPOCRV6_BENCH"))
                 fprintf(stderr, "[ppocrv6-graph-budget] regions=%zu max=%d action=cpu-fallback\n", boxes.size(),
                         max_graph_regions);
         } else {
@@ -1015,7 +1016,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             ctx->tess_resolved_model = tess_model;
         }
         const auto tess_bench_start = std::chrono::steady_clock::now();
-        if (std::getenv("CRISPEMBED_TESSERACT_BENCH") || ctx->bench) {
+        if (core_env::on("CRISPEMBED_TESSERACT_BENCH") || ctx->bench) {
             const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
             fprintf(stderr, "[tesseract-load-bench] detector=%.1f ms recognizer=%.1f ms total=%.1f ms\n",
                     ms(tess_load_start, tess_det_loaded), ms(tess_det_loaded, tess_bench_start),
@@ -1798,7 +1799,7 @@ bool load(context ** out, const config & cfg, int n_threads) {
     auto * ctx = new context();
     ctx->cfg = cfg;
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_OCR_ORCH_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_OCR_ORCH_BENCH");
 #if CRISPEMBED_HAS_LID
     if (!cfg.lid_model.empty()) {
         ctx->lid = text_lid_init_from_file(cfg.lid_model.c_str(), n_threads);

@@ -33,6 +33,7 @@
 #include "core/gpu_backend_pref.h"
 #include "core/no_repeat_ngram.h"
 #include "gguf.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cctype>
@@ -1062,7 +1063,7 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
                 ctx.m.vhp.is_qwen2_vl ? "Qwen2-VL" : "Qwen2.5-VL");
     }
 
-    ctx.bench = (std::getenv("CRISPEMBED_QWEN2VL_BENCH") != nullptr);
+    ctx.bench = core_env::on("CRISPEMBED_QWEN2VL_BENCH");
 
     if (verbosity >= 1) {
         fprintf(stderr, "qwen2vl_ocr: loaded successfully\n");

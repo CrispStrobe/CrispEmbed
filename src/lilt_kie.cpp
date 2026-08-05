@@ -7,6 +7,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cassert>
@@ -101,7 +102,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
 
     auto * ctx = new context;
     ctx->n_threads = n_threads;
-    ctx->bench = (std::getenv("CRISPEMBED_LILT_KIE_BENCH") != nullptr);
+    ctx->bench = core_env::on("CRISPEMBED_LILT_KIE_BENCH");
 
     // Init backend — prefer GPU when available
     bool force_cpu = (getenv("LILT_KIE_FORCE_CPU") && atoi(getenv("LILT_KIE_FORCE_CPU")));
