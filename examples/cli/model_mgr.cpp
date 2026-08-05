@@ -845,6 +845,13 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q8_0.gguf",
       "XLM-R reranker multilingual 568M (Q8_0)", "613 MB", "apache-2.0",
       "https://huggingface.co/BAAI/bge-reranker-v2-m3" },
+    // First sub-Q8 alias for this family, added with the -f7 imatrix re-pin
+    // (F7b, 87e11a4e): tau vs f16 .920→.942 (CPU) / .920→.947 (Metal) and
+    // |Δscore| −29/−33% over the leaf_N-defect imatrix quant; q8_0 stays default.
+    { "bge-reranker-v2-m3-q4k", "bge-reranker-v2-m3-q4_k-imatrix-f7.gguf",
+      "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q4_k-imatrix-f7.gguf",
+      "XLM-R reranker multilingual 568M (Q4_K+imatrix, smaller)", "462 MB", "apache-2.0",
+      "https://huggingface.co/BAAI/bge-reranker-v2-m3" },
 
     { "bge-reranker-base", "bge-reranker-base-q8_0.gguf",
       "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base-q8_0.gguf",
@@ -874,11 +881,14 @@ static const ModelEntry k_registry[] = {
     { "jina-reranker-v2-base-multilingual", "jina-reranker-v2-base-multilingual-q8_0.gguf",
       "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/"
       "jina-reranker-v2-base-multilingual-q8_0.gguf",
-      "XLM-R reranker multilingual 278M (Q8_0 — exact ranking; q4_k+im τ=0.925)", "302 MB", "cc-by-nc-4.0",
+      "XLM-R reranker multilingual 278M (Q8_0 — exact ranking; q4_k+im τ≈0.93)", "302 MB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
-    { "jina-reranker-v2-base-multilingual-q4k", "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
+    // -f7 imatrix (F7b re-collection, 87e11a4e): attn q/k/v now covered; local
+    // Metal+CPU cross-check reproduced the Kaggle dscore to 4dp — |Δscore| vs
+    // f16 drops ~25% on both backends, tau within the backend near-tie band.
+    { "jina-reranker-v2-base-multilingual-q4k", "jina-reranker-v2-base-multilingual-q4_k-imatrix-f7.gguf",
       "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/"
-      "jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
+      "jina-reranker-v2-base-multilingual-q4_k-imatrix-f7.gguf",
       "XLM-R reranker multilingual 278M (Q4_K+imatrix, smaller)", "261 MB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
 

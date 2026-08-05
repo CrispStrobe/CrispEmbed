@@ -236,6 +236,10 @@ static const ModelHash k_model_hashes[] = {
       "777b9a12bd606063d0af16decb6857681871a7ec4a8126fab6cec7ed4fc426a8" },
     { "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q8_0.gguf",
       "63e5a900e1605e3be3a96d94b6ac63f0f9f4efe66b2bef07890587b6412c443e" },
+    // -f7 re-collected imatrix (F7b, 87e11a4e): first sub-Q8 alias for this
+    // family, pinned after the local Metal+CPU cross-check (round 7).
+    { "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q4_k-imatrix-f7.gguf",
+      "21eadb97798caf5bc35cab8da5bd40e28220bc5d80d1eace29b65d61143af5ad" },
     { "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base-q8_0.gguf",
       "b22089c8746f887414ec2e8896bfe4bc6fbaf4bea9b20c8a501b659fd1ca6ed0" },
     { "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf",
@@ -250,6 +254,10 @@ static const ModelHash k_model_hashes[] = {
       "424b590a8e353133b06d5f4bf44d0b8f1a2f6595b6c6ff97bb3cef198746a03f" },
     { "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
       "c04e38c8aff02b7d93967f7efd67ff6112483fd4dc25ba66873a67595720af5f" },
+    // -f7 re-collected imatrix (F7b, 87e11a4e): attn q/k/v covered; re-pinned
+    // after the local Metal+CPU cross-check (round 7).
+    { "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-q4_k-imatrix-f7.gguf",
+      "7fe1439b668eb13a1ad10e6f72a77781b84240a608bb1a346beb4d6834a5f4b7" },
     { "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0.gguf",
       "901aa5f99210dd3ed0d6e9d8bd1e5511d587c5df43591f51a88458e1a02d53c3" },
     { "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0.gguf",
