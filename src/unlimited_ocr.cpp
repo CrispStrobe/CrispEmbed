@@ -494,7 +494,7 @@ static bool load_hparams(uocr_ctx & ctx, const char * path) {
 }
 
 static bool load_tensors(uocr_ctx & ctx, const char * path) {
-    bool try_mmap = getenv("UOCR_MMAP") != nullptr;
+    bool try_mmap = core_env::on("UOCR_MMAP");
     if (!core_gguf::load_weights(path, ctx.backend, "unlimited_ocr", ctx.model_wl, try_mmap)) return false;
 
     ctx.model_ctx = ctx.model_wl.ctx;
@@ -637,7 +637,7 @@ static bool load_tensors(uocr_ctx & ctx, const char * path) {
                 // parent's: to_f32's fast path gates on ->buffer (null on a fresh view) and would
                 // otherwise deref a raw device pointer (Metal segfault); ggml_backend_tensor_get
                 // then reads via view_src->buffer.
-                if (getenv("UOCR_MOE_CPU")) {
+                if (core_env::on("UOCR_MOE_CPU")) {
                     if (!ctx.moe_view_ctx) {
                         ggml_init_params vp = {
                             (size_t)lhp.n_layers * 3 * lhp.n_experts * ggml_tensor_overhead() + 4096, nullptr, true
@@ -909,7 +909,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     int N = nP * nP, hd = s.head_dim, ws = s.window_size;
     auto _sam_t = std::chrono::steady_clock::now();
     auto sam_mark = [&](const char * w) {
-        if (!getenv("UOCR_DBG")) return;
+        if (!core_env::on("UOCR_DBG")) return;
         auto now = std::chrono::steady_clock::now();
         fprintf(stderr, "  [time] sam.%s %lldms\n", w,
                 (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _sam_t).count());
@@ -931,7 +931,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
-    if (!getenv("UOCR_SAM_CONV_CPU")) {
+    if (!core_env::on("UOCR_SAM_CONV_CPU")) {
         size_t meta_sz = 8 * 1024 * 1024;
         std::vector<uint8_t> mb(meta_sz);
         ggml_init_params ip = { meta_sz, mb.data(), true };
@@ -960,13 +960,13 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
                                 patch[c * PS * PS + ky * PS + kx] =
                                     pixels[c * s.image_size * s.image_size + (py * PS + ky) * s.image_size +
                                            (px * PS + kx)];
-                    if (tok == 1000 && getenv("UOCR_DBG")) {
+                    if (tok == 1000 && core_env::on("UOCR_DBG")) {
                         fprintf(stderr, "  [dbg] tok1000 patch[0..3]: %.6f %.6f %.6f %.6f\n", patch[0], patch[1],
                                 patch[2], patch[3]);
                         fprintf(stderr, "  [dbg] tok1000 pixel[240,640]: %.6f\n",
                                 pixels[0 * s.image_size * s.image_size + 240 * s.image_size + 640]);
                     }
-                    if (tok == 0 && getenv("UOCR_DBG")) {
+                    if (tok == 0 && core_env::on("UOCR_DBG")) {
                         fprintf(stderr, "  [dbg] tok0 patch[0..3]: %.6f %.6f %.6f %.6f\n", patch[0], patch[1], patch[2],
                                 patch[3]);
                     }
@@ -1002,7 +1002,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
                     r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
-    if (getenv("UOCR_DBG")) {
+    if (core_env::on("UOCR_DBG")) {
         fprintf(stderr, "  [dbg] sam_patch_embed[0..7]:");
         for (int i = 0; i < std::min(8, N * C); i++) fprintf(stderr, " %.4f", hidden[i]);
         fprintf(stderr, "\n");
@@ -1044,7 +1044,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
         }
 
         // UOCR_OPT_GRAPH_LN: do LN inside the ggml graph (no CPU LN + separate residual)
-        bool graph_ln = getenv("UOCR_OPT_GRAPH_LN") != nullptr;
+        bool graph_ln = core_env::on("UOCR_OPT_GRAPH_LN");
         bool skip_ln1 = !is_global && !graph_ln;
         std::vector<float> ln1_hidden;
         if (skip_ln1) {
@@ -1068,7 +1068,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
             window_partition(hidden.data(), graph_input.data(), nP, ws, C);
         }
 
-        if (getenv("UOCR_DBG"))
+        if (core_env::on("UOCR_DBG"))
             fprintf(stderr, "  [dbg] sam li=%d is_global=%d aH=%d nW=%d T=%d rp_h.sz=%zu\n", li, is_global, aH, nW, T,
                     ctx.rp_h_per_layer[li].size());
         // RPE tables: use precomputed if sizes match, else recompute for reduced resolution
@@ -1164,7 +1164,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
     out_features.resize((size_t)n_vis * vis_D);
 
-    if (!getenv("UOCR_SAM_CONV_CPU")) {
+    if (!core_env::on("UOCR_SAM_CONV_CPU")) {
         auto nc1 = to_f32(ctx.m.neck_conv1_w), nc2 = to_f32(ctx.m.neck_conv2_w);
         auto n2 = to_f32(ctx.m.net_2_w), n3 = to_f32(ctx.m.net_3_w);
         auto l1w = to_f32(ctx.m.neck_ln1_w), l1b = to_f32(ctx.m.neck_ln1_b);
@@ -1256,7 +1256,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
         }
         out_features = std::move(upsampled);
         n_vis = dst_n;
-        if (getenv("UOCR_DBG"))
+        if (core_env::on("UOCR_DBG"))
             fprintf(stderr, "  [opt] SAM reduced res: upsampled %dx%d → %dx%d (%d tokens)\n", src_h, src_w, dst_h,
                     dst_w, dst_n);
     }
@@ -1292,7 +1292,7 @@ static ggml_cgraph * build_clip_enc_full_graph(ggml_context * g, uocr_ctx * ctx,
     int hd = D / nh;
     int n_layers = chp.depth;
 
-    bool clip_debug = (getenv("UOCR_CLIP_DBG") != nullptr);
+    bool clip_debug = core_env::on("UOCR_CLIP_DBG");
     ggml_cgraph * gf = ggml_new_graph_custom(g, clip_debug ? 8192 : 4096, false);
 
     // Input: [D, T] — CLS prepended + pos embed + pre_layernorm already done by caller?
@@ -1394,7 +1394,7 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
             for (int d = 0; d < D; d++) input[(1 + t) * D + d] = (d < sam_dim) ? sam_features[t * sam_dim + d] : 0.0f;
     }
 
-    if (getenv("UOCR_CLIP_DBG")) {
+    if (core_env::on("UOCR_CLIP_DBG")) {
         fprintf(stderr, "  [dbg] clip input (before pos) tok0[0:4]: %.6f %.6f %.6f %.6f\n", input[0], input[1],
                 input[2], input[3]);
         fprintf(stderr, "  [dbg] clip input (before pos) tok1[0:4]: %.6f %.6f %.6f %.6f\n", input[D], input[D + 1],
@@ -1426,7 +1426,7 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
                             (size_t)T * D * sizeof(float));
 
     // Pre-LN output check
-    if (getenv("UOCR_CLIP_DBG")) {
+    if (core_env::on("UOCR_CLIP_DBG")) {
         ggml_tensor * pln = ggml_graph_get_tensor(gf, "clip_pre_ln_out");
         if (pln) {
             std::vector<float> pln_data(T * D);
@@ -1439,7 +1439,7 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
     }
 
     // Per-layer CLIP diff (when UOCR_CLIP_DBG=1)
-    if (getenv("UOCR_CLIP_DBG") && !ctx.diff_ref_path.empty()) {
+    if (core_env::on("UOCR_CLIP_DBG") && !ctx.diff_ref_path.empty()) {
         // Print C++ layer 0 first values for manual comparison
         {
             ggml_tensor * l0 = ggml_graph_get_tensor(gf, "clip_layer_0");
@@ -1712,7 +1712,7 @@ static PdGraph build_persistent_decode_graph(uocr_ctx & ctx, int max_kv) {
         snprintf(von, sizeof(von), "pd_vn%d", li);
 
         // Use F32 for PD KV cache when UOCR_OPT_PD_F32=1 to avoid F16 precision issues
-        ggml_type kv_type = getenv("UOCR_OPT_PD_F32") ? GGML_TYPE_F32 : GGML_TYPE_F16;
+        ggml_type kv_type = core_env::on("UOCR_OPT_PD_F32") ? GGML_TYPE_F32 : GGML_TYPE_F16;
         pd.t_k_cache[li] = ggml_new_tensor_2d(g, kv_type, kv_dim, max_kv_in);
         ggml_set_name(pd.t_k_cache[li], kn);
         ggml_set_input(pd.t_k_cache[li]);
@@ -1793,7 +1793,7 @@ static PdGraph build_persistent_decode_graph(uocr_ctx & ctx, int max_kv) {
         }
 
         // Debug: mark per-layer output for comparison
-        if (getenv("UOCR_PD_DBG")) {
+        if (core_env::on("UOCR_PD_DBG")) {
             char ln[16];
             snprintf(ln, sizeof(ln), "pd_l%d", li);
             ggml_tensor * xd = ggml_cont(g, x);
@@ -1900,7 +1900,7 @@ static llm_attn_graph build_llm_layer_attn(uocr_ctx & ctx, int li, int T, int n_
 
     float attn_scale = 1.0f / sqrtf((float)hd);
     ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, mask, attn_scale, 0.0f, 0.0f);
-    if (getenv("UOCR_FA_F32")) ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32); // debug
+    if (core_env::on("UOCR_FA_F32")) ggml_flash_attn_ext_set_prec(attn, GGML_PREC_F32); // debug
     // flash_attn_ext output is [hd, nh, T]; reshape directly to [D, T] (llama.cpp
     // pattern). An intervening permute(0,2,1,3) scrambles head/token data whenever
     // T>1 (it is only a no-op for the T=1 decode step), corrupting the prefill.
@@ -2257,12 +2257,12 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
 
     auto norm_w = to_f32(ctx.m.output_norm_w);
     ggml_tensor * lm_w = ctx.m.lm_head_w ? ctx.m.lm_head_w : ctx.m.embed_tokens;
-    bool lmhead_cpu = getenv("UOCR_LMHEAD_CPU") != nullptr;
+    bool lmhead_cpu = core_env::on("UOCR_LMHEAD_CPU");
     std::vector<float> head_w;
     if (lmhead_cpu) head_w = to_f32(lm_w);
 
-    bool no_kv = getenv("UOCR_NO_KV") != nullptr;
-    bool fused_decode = getenv("UOCR_OPT_FUSED_DECODE") != nullptr;
+    bool no_kv = core_env::on("UOCR_NO_KV");
+    bool fused_decode = core_env::on("UOCR_OPT_FUSED_DECODE");
     std::vector<float> full_emb(prompt_embeds, prompt_embeds + (size_t)n_prompt * D);
 
     int n_generated = 0;
@@ -2276,7 +2276,8 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
     // Metal flash_attn numerics issue with the zero-padded KV layout). The rebuild
     // path is verified correct (byte-identical to the CPU-MoE reference), so it is
     // the default. Opt into PD with UOCR_PD=1 once the divergence is fixed.
-    bool use_pd = getenv("UOCR_PD") && !getenv("UOCR_DECODE_REBUILD") && ctx.moe_metal && !no_kv && !lmhead_cpu;
+    bool use_pd =
+        core_env::on("UOCR_PD") && !core_env::on("UOCR_DECODE_REBUILD") && ctx.moe_metal && !no_kv && !lmhead_cpu;
     int pd_max_kv = use_pd ? std::min(n_prompt + std::min(max_new, PD_GEN_CAP), lhp.max_position_embeddings) : 0;
     PdGraph pd;
     std::vector<ggml_fp16_t> pd_mask;
@@ -2294,7 +2295,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
     int _decode_gen_steps = 0;
     while (n_generated < max_new) {
         int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
-        if (getenv("UOCR_DBG"))
+        if (core_env::on("UOCR_DBG"))
             fprintf(stderr, "  [dbg] decode step gen=%d n_past=%d T=%d pd=%d\n", n_generated, n_past, T, (int)use_pd);
 
         bool did_pd = false;
@@ -2303,7 +2304,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
         // === Persistent decode path for T=1 generation steps ===
         if (use_pd && n_past > 0) {
             if (n_past >= pd_max_kv) {
-                if (getenv("UOCR_DBG"))
+                if (core_env::on("UOCR_DBG"))
                     fprintf(stderr, "  [pd] KV full (n_past=%d >= max_kv=%d), fall back\n", n_past, pd_max_kv);
                 use_pd = false;
             }
@@ -2390,7 +2391,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
                 ggml_backend_sched_graph_compute(ctx.sched, pd.gf);
 
                 // Dump per-layer hidden state for divergence debugging
-                if (getenv("UOCR_PD_DBG") && n_generated >= 2 && n_generated <= 3) {
+                if (core_env::on("UOCR_PD_DBG") && n_generated >= 2 && n_generated <= 3) {
                     for (size_t i = 0; i < pd.t_layer_out.size(); i++) {
                         float buf[4];
                         ggml_backend_tensor_get(pd.t_layer_out[i], buf, 0, 4 * sizeof(float));
@@ -2581,7 +2582,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
                                         T * D * sizeof(float));
 
                 // Dump per-layer hidden state for divergence debugging
-                if (getenv("UOCR_PD_DBG") && n_generated >= 2 && n_generated <= 3) {
+                if (core_env::on("UOCR_PD_DBG") && n_generated >= 2 && n_generated <= 3) {
                     fprintf(stderr, "  [rb_dbg] gen=%d layer=%d: %.7f %.7f %.7f %.7f\n", n_generated, li, hidden[0],
                             hidden[1], hidden[2], hidden[3]);
                 }
@@ -2620,7 +2621,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
                 }
             }
 
-            if (getenv("UOCR_DECODE_TIMING") && n_generated <= 2) {
+            if (core_env::on("UOCR_DECODE_TIMING") && n_generated <= 2) {
                 fprintf(stderr, "  [rb_timing] gen=%d T=%d build=%lldms compute=%lldms\n", n_generated, T, _rb_build_ms,
                         _rb_compute_ms);
             }
@@ -2710,7 +2711,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
         out_ids.push_back(next);
         n_generated++;
 
-        if (getenv("UOCR_DBG")) {
+        if (core_env::on("UOCR_DBG")) {
             const char * pc = (next >= 0 && next < ctx.tok_vocab_size) ? ctx.id_to_piece[next].c_str() : "?";
             fprintf(stderr, "  [gen %d] id=%d piece=%s\n", n_generated - 1, next, pc);
         }
@@ -2726,11 +2727,11 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
         }
     }
 
-    if (getenv("UOCR_DBG")) {
+    if (core_env::on("UOCR_DBG")) {
         auto _decode_t1 = std::chrono::steady_clock::now();
         long long _decode_ms = std::chrono::duration_cast<std::chrono::milliseconds>(_decode_t1 - _decode_t0).count();
         fprintf(stderr, "  [decode] total=%lldms steps=%d prefill+gen use_pd=%d\n", _decode_ms, _decode_gen_steps,
-                (int)(n_past > 0 && !getenv("UOCR_DECODE_REBUILD")));
+                (int)(n_past > 0 && !core_env::on("UOCR_DECODE_REBUILD")));
     }
     if (pd.gctx) ggml_free(pd.gctx);
     return true;
@@ -2799,7 +2800,7 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
 
     auto _it = std::chrono::steady_clock::now();
     auto init_ms = [&](const char * w) {
-        if (!getenv("UOCR_DBG")) return;
+        if (!core_env::on("UOCR_DBG")) return;
         auto now = std::chrono::steady_clock::now();
         fprintf(stderr, "  [time] init.%s %lldms\n", w,
                 (long long)std::chrono::duration_cast<std::chrono::milliseconds>(now - _it).count());
@@ -2816,7 +2817,7 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
 
     // A prestacked GGUF (converter) already loaded gate_exps/up_exps/down_exps directly,
     // so skip the runtime copy — the graph path is ready as-is.
-    if (!getenv("UOCR_MOE_CPU")) {
+    if (!core_env::on("UOCR_MOE_CPU")) {
         if (ctx.moe_prestacked) {
             ctx.moe_metal = true;
             fprintf(stderr, "unlimited_ocr: using prestacked MoE experts (no runtime stacking)\n");
@@ -2867,7 +2868,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         return "";
     }
 
-    if (getenv("UOCR_DBG")) fprintf(stderr, "unlimited_ocr: recognize_raw input: %dx%d ch=%d\n", w, h, ch);
+    if (core_env::on("UOCR_DBG")) fprintf(stderr, "unlimited_ocr: recognize_raw input: %dx%d ch=%d\n", w, h, ch);
 
     // Isolation test: UOCR_TEXT_TEST runs the LLM decoder as a pure language model
     if (const char * tt = getenv("UOCR_TEXT_TEST")) {
@@ -2906,7 +2907,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         int res = atoi(sr);
         if (res > 0 && res % s.patch_size == 0 && res < s.image_size) {
             imgS = res;
-            if (getenv("UOCR_DBG")) fprintf(stderr, "  [opt] SAM reduced res: %d → %d\n", s.image_size, imgS);
+            if (core_env::on("UOCR_DBG")) fprintf(stderr, "  [opt] SAM reduced res: %d → %d\n", s.image_size, imgS);
         }
     }
 
@@ -2968,7 +2969,25 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
 
     const bool bench = ctx->inner.bench;
     auto t_total = std::chrono::steady_clock::now();
-    bool dbg_t = getenv("UOCR_DBG") != nullptr;
+    bool dbg_t = core_env::on("UOCR_DBG");
+    // Gate-resolution proof line: what each boolean UOCR_* gate parsed to, in
+    // this run's own stderr. Several gates select paths with no other
+    // observable marker, which is exactly how presence-based `=0` inversions
+    // (`getenv(X) != nullptr` treats "0" as ON) survive unnoticed. Mirrors the
+    // DS_* audit's `[dbg] gates:` line.
+    if (dbg_t)
+        fprintf(stderr,
+                "  [dbg] gates: mmap=%d moe_cpu=%d sam_conv_cpu=%d opt_graph_ln=%d clip_dbg=%d opt_pd_f32=%d "
+                "pd_dbg=%d fa_f32=%d lmhead_cpu=%d no_kv=%d opt_fused_decode=%d pd=%d decode_rebuild=%d "
+                "decode_timing=%d inject_vis=%d inject_ref=%d dbg=1\n",
+                (int)core_env::on("UOCR_MMAP"), (int)core_env::on("UOCR_MOE_CPU"),
+                (int)core_env::on("UOCR_SAM_CONV_CPU"), (int)core_env::on("UOCR_OPT_GRAPH_LN"),
+                (int)core_env::on("UOCR_CLIP_DBG"), (int)core_env::on("UOCR_OPT_PD_F32"),
+                (int)core_env::on("UOCR_PD_DBG"), (int)core_env::on("UOCR_FA_F32"),
+                (int)core_env::on("UOCR_LMHEAD_CPU"), (int)core_env::on("UOCR_NO_KV"),
+                (int)core_env::on("UOCR_OPT_FUSED_DECODE"), (int)core_env::on("UOCR_PD"),
+                (int)core_env::on("UOCR_DECODE_REBUILD"), (int)core_env::on("UOCR_DECODE_TIMING"),
+                (int)core_env::on("UOCR_INJECT_VIS"), (int)core_env::on("UOCR_INJECT_REF"));
     auto _ts = std::chrono::steady_clock::now();
     auto stage_ms = [&](const char * name) {
         if (!dbg_t) return;
@@ -2987,7 +3006,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     // the reference's assembled vision_features directly. Isolates the decoder
     // (perfect, HF-equal vision input) AND avoids the vision Metal buffers so
     // f16/q8_0 fit in memory. Used to prove decode bugs are not "quantization".
-    if (getenv("UOCR_INJECT_VIS") && !ctx->inner.diff_ref_path.empty()) {
+    if (core_env::on("UOCR_INJECT_VIS") && !ctx->inner.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
         if (ref.load(ctx->inner.diff_ref_path.c_str())) {
             auto [vd, vn] = ref.get_f32("vision_features");
@@ -3021,7 +3040,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
 
         // UOCR_INJECT_REF: replace C++ SAM output with Python reference SAM output
         // to isolate CLIP encoder bugs from SAM quantization noise.
-        if (getenv("UOCR_INJECT_REF") && !ctx->inner.diff_ref_path.empty()) {
+        if (core_env::on("UOCR_INJECT_REF") && !ctx->inner.diff_ref_path.empty()) {
             crispembed_diff::Ref ref;
             if (ref.load(ctx->inner.diff_ref_path.c_str())) {
                 auto [ref_data, ref_n] = ref.get_f32("sam_output");
@@ -3141,7 +3160,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         prompt_ids.push_back(id);
     }
 
-    if (getenv("UOCR_DBG")) {
+    if (core_env::on("UOCR_DBG")) {
         fprintf(stderr, "  [dbg] prompt: bos + %d vis + %zu instr = %d tokens; instr_ids:", n_vis_total,
                 instr_ids.size(), n_prompt);
         for (int32_t id : instr_ids) fprintf(stderr, " %d", id);
@@ -3168,7 +3187,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         fprintf(stderr, "[unlimited_ocr-bench] total: %lldms\n", (long long)total_ms);
     }
 
-    if (getenv("UOCR_DBG")) {
+    if (core_env::on("UOCR_DBG")) {
         fprintf(stderr, "  [dbg] gen_ids (%zu):", gen_ids.size());
         for (int id : gen_ids) fprintf(stderr, " %d", id);
         fprintf(stderr, "\n");
