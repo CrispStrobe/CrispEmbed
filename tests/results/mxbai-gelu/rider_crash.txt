@@ -1,0 +1,25 @@
+== BEFORE (commit 7dea4d39, duplicate raw-read block present) ==
+server -m mxbai-xsmall-q8_0-new.gguf (pooler.weight = Q8_0), POST /rerank
+
+ggml/src/ggml-backend.cpp:349: GGML_ASSERT(offset + size <= ggml_nbytes(tensor) && "tensor read out of bounds") failed
+WARNING: Using native backtrace. Set GGML_BACKTRACE_LLDB for more info.
+WARNING: GGML_BACKTRACE_LLDB may cause native MacOS Terminal.app to crash.
+See: https://github.com/ggml-org/llama.cpp/pull/17869
+0   libggml-base.0.17.0.dylib           0x00000001031d5380 ggml_print_backtrace + 276
+1   libggml-base.0.17.0.dylib           0x00000001031d556c ggml_abort + 156
+2   libggml-base.0.17.0.dylib           0x00000001031f1514 ggml_backend_tensor_set_2d_async + 0
+3   crispembed-server                   0x0000000102aff124 crispembed_rerank_batch + 584
+4   crispembed-server                   0x0000000102acee14 _ZNSt3__110__function6__funcIZ4mainE4$_11NS_9allocatorIS2_EEFvRKN7httplib7RequestERNS5_8ResponseEEEclES8_SA_ + 1504
+5   crispembed-server                   0x0000000102a88308 _ZN7httplib6Server7routingERNS_7RequestERNS_8ResponseERNS_6StreamE + 2404
+6   crispembed-server                   0x0000000102a86114 _ZN7httplib6Server15process_requestERNS_6StreamERKNSt3__112basic_stringIcNS3_11char_traitsIcEENS3_9allocatorIcEEEEiSB_ibRbRKNS3_8functionIFvRNS_7RequestEEEE + 2524
+7   crispembed-server                   0x0000000102a84cfc _ZZN7httplib6detail21process_server_socketIZNS_6Server24process_and_close_socketEiEUlRNS_6StreamEbRbE_EEbRKNSt3__16atomicIiEEimlllllT_ENKUlbS5_E_clEbS5_ + 208
+8   crispembed-server                   0x0000000102a837f0 _ZN7httplib6Server24process_and_close_socketEi + 372
+9   crispembed-server                   0x0000000102a84398 _ZN7httplib10ThreadPool6workerclEv + 428
+10  crispembed-server                   0x0000000102a84124 _ZNSt3__114__thread_proxyB8ne200100INS_5tupleIJNS_10unique_ptrINS_15__thread_structENS_14default_deleteIS3_EEEEN7httplib10ThreadPool6workerEEEEEEPvSB_ + 52
+11  libsystem_pthread.dylib             0x0000000184b39c08 _pthread_start + 136
+12  libsystem_pthread.dylib             0x0000000184b34ba8 thread_start + 8
+
+== AFTER (commit e60b7775) ==
+
+  POST /rerank          — {"query": "...", "documents": [...], "top_n": 10}
+crispembed-server: /rerank 6 docs in 297.3 ms
