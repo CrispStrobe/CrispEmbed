@@ -853,21 +853,21 @@ static const ModelEntry k_registry[] = {
     // Reranker defaults are Q8_0: 4-bit keeps top-1 but reorders the tail (Kendall-τ
     // 0.92–0.96 vs f16 on a 16×6 corpus; imatrix doesn't help — the score head is
     // argmax-sensitive). The old iq4_xs/q4_k "τ=1.0" was a coarse-corpus artifact.
-    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2-q8_0.gguf",
-      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-q8_0.gguf",
-      "BERT reranker English fast 22M (Q8_0 — exact ranking; iq4_xs τ=0.958)", "24 MB", "apache-2.0",
+    { "ms-marco-MiniLM-L-6-v2", "ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf",
+      "BERT reranker English fast 22M (Q8_0; g7c: HF-exact tanh-pooler head)", "24 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2" },
-    { "ms-marco-MiniLM-L-6-v2-iq4xs", "ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
-      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-iq4_xs.gguf",
+    { "ms-marco-MiniLM-L-6-v2-iq4xs", "ms-marco-MiniLM-L-6-v2-iq4_xs-g7c.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-6-v2-GGUF/resolve/main/ms-marco-MiniLM-L-6-v2-iq4_xs-g7c.gguf",
       "BERT reranker English fast 22M (IQ4_XS+imatrix, smaller)", "19 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2" },
 
-    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2-q8_0.gguf",
-      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-q8_0.gguf",
-      "BERT reranker English 33M (Q8_0 — exact ranking)", "36 MB", "apache-2.0",
+    { "ms-marco-MiniLM-L-12-v2", "ms-marco-MiniLM-L-12-v2-q8_0-g7c.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-q8_0-g7c.gguf",
+      "BERT reranker English 33M (Q8_0; g7c: HF-exact tanh-pooler head)", "36 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2" },
-    { "ms-marco-MiniLM-L-12-v2-iq4xs", "ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
-      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-iq4_xs.gguf",
+    { "ms-marco-MiniLM-L-12-v2-iq4xs", "ms-marco-MiniLM-L-12-v2-iq4_xs-g7c.gguf",
+      "https://huggingface.co/cstr/ms-marco-MiniLM-L-12-v2-GGUF/resolve/main/ms-marco-MiniLM-L-12-v2-iq4_xs-g7c.gguf",
       "BERT reranker English 33M (IQ4_XS+imatrix, smaller)", "25 MB", "apache-2.0",
       "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-12-v2" },
 

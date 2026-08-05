@@ -1060,12 +1060,30 @@ def main():
         print(f"  {LP}.{i}: ok")
 
     # Pooler (optional).
-    # Always save for rerankers (ContextPooler is required for correct scoring).
-    # Skip in Ollama mode for non-reranker models (not used in embedding pipelines).
-    if "pooler.dense.weight" in sd and (has_classifier or not ollama_mode):
+    # HF uses the checkpoint pooler for scoring in exactly two head shapes:
+    #   (a) BertForSequenceClassification: 1-layer classifier over
+    #       tanh(BertPooler(CLS)) — folded below into the runtime's 2-layer
+    #       head (classifier.dense = pooler.dense, tanh, classifier.out_proj =
+    #       classifier), which is HF-exact. The shipped ms-marco GGUFs
+    #       predated this and scored raw dot(CLS, w) — see PLAN G7c.
+    #   (b) DeBERTa ContextPooler (act = config.pooler_hidden_act, gelu):
+    #       emitted as pooler.weight/bias; the runtime applies gelu.
+    # A 2-layer RobertaClassificationHead reads CLS directly — HF never runs
+    # the backbone pooler there, so emitting it would make the runtime apply
+    # a pooler HF does not: suppress. Non-reranker embedding models keep the
+    # historical emit (unused by the embed paths, which pool pre-pooler CLS).
+    _is_deberta = str(getattr(config, "model_type", "")).startswith("deberta")
+    _bert_pooler_folded = (has_classifier_1layer and not _is_deberta
+                           and "pooler.dense.weight" in sd
+                           and "pooler.dense.bias" in sd)
+    if ("pooler.dense.weight" in sd and (has_classifier or not ollama_mode)
+            and not _bert_pooler_folded and not has_classifier_2layer):
         writer.add_tensor("pooler.weight", f32(sd["pooler.dense.weight"]))
         writer.add_tensor("pooler.bias", f32(sd["pooler.dense.bias"]))
-        pooler_act = getattr(config, "pooler_hidden_act", "gelu")
+        # BertPooler hardcodes nn.Tanh; only DeBERTa's ContextPooler reads
+        # pooler_hidden_act from config (gelu). The old unconditional
+        # getattr(..., "gelu") recorded the wrong act for BERT-family.
+        pooler_act = getattr(config, "pooler_hidden_act", "gelu") if _is_deberta else "tanh"
         writer.add_string("bert.pooler_act", pooler_act)
         print(f"  pooler: ok (act={pooler_act})")
 
@@ -1101,10 +1119,21 @@ def main():
                 writer.add_tensor("classifier.out_proj.bias", f32(sd["classifier.out_proj.bias"]))
             print("  classifier (2-layer): ok")
         elif has_classifier_1layer:
-            writer.add_tensor("classifier.weight", f32(sd["classifier.weight"]))
-            if "classifier.bias" in sd:
-                writer.add_tensor("classifier.bias", f32(sd["classifier.bias"]))
-            print("  classifier (1-layer): ok")
+            if _bert_pooler_folded:
+                # BertForSequenceClassification scores
+                # classifier(tanh(pooler(CLS))): structurally the runtime's
+                # 2-layer head (dense -> tanh -> out_proj). Emit it as such.
+                writer.add_tensor("classifier.dense.weight", f32(sd["pooler.dense.weight"]))
+                writer.add_tensor("classifier.dense.bias", f32(sd["pooler.dense.bias"]))
+                writer.add_tensor("classifier.out_proj.weight", f32(sd["classifier.weight"]))
+                if "classifier.bias" in sd:
+                    writer.add_tensor("classifier.out_proj.bias", f32(sd["classifier.bias"]))
+                print("  classifier (1-layer + BertPooler tanh, folded to 2-layer): ok")
+            else:
+                writer.add_tensor("classifier.weight", f32(sd["classifier.weight"]))
+                if "classifier.bias" in sd:
+                    writer.add_tensor("classifier.bias", f32(sd["classifier.bias"]))
+                print("  classifier (1-layer): ok")
 
         # NER token classification head
         if has_ner_classifier:
