@@ -16,13 +16,182 @@ races). Remove the row when the branch lands.
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
-| 2026-08-04 | `feat/olmocr-lane` **MERGED to main** | **T13 DONE** — olmOCR lane live: engine id 18 / CLI `olmocr` / registry `olmocr-2-7b` (q4_k pinned). Contract byte-exact vs toolkit (A3-confirmed). Acceptance vs 25-page gold: synth-class + clean pages at parity (0.006-0.017), receipt_historical 0.093, german 0.105-0.149 (band edge), receipt-class table pages CHAOTICALLY format-sensitive in lane AND reference alike (our backend-to-backend spread 0.314 ≈ reference stack-to-stack 0.372) — recorded limitation, not a lane defect. Mitigations queued: strict-front-matter retry, env-gated plain-table prompt. q8 is CPU-only on 16 GB (Metal OOM) | **DONE** |
-| 2026-08-04 | `feat/t14-deepseek2-decode-graph` **MERGED to main `82ce1024`** | **T14 DONE** — persistent decode graph DEFAULT (decode median 11.47→8.19 s = 1.40x, total 1.24x, Metal M1, 9 load-gated interleaved pairs; byte-identical 25/25 gold on Metal, coordinator re-verified post-rebase with the corrected prompt on 2 fixtures). Premise correction on record: per-step graph build was 1% of decode — the win is 13 dispatches + 24 host↔device transfers per token collapsing to 1; copying qwen2vl's full-max_seq KV read verbatim was 2.42x SLOWER, fixed by `DS2_KV_BUCKET` (default 256). Stage-bench line landed first (T12 gap closed). REPO-WIDE find: stale `GGML_METAL_EMBED_LIBRARY=OFF` cache survives `-DGGML_METAL=ON` reconfigure → metallib in build/bin/, ggml probes argv[0] dir → silent CPU behind a Metal-claiming CMakeCache (LEARNINGS entry on the branch). Follow-ups filed: no-repetition-guard (2/5 cc0 pages spiral — gold contract wants no_repeat_ngram_size=20, port `argmax_no_repeat_ngram` from qwen2vl), single-view-vs-dynamic-crop contract gap, F16 KV implemented-unquantified, metallib CMake fix unowned | **DONE** |
-| 2026-08-04 | `feat/granite-r2-tokenizers` **MERGED to main `110dd082`** | **granite-r2 DONE** — 97m/311m shipped (cstr, f16+q8_0, pins) + verified by coordinator (85-check o200k hermetic suite re-run, fresh registry download, German retrieval top-1 correct both models). Token ids 20/20 vs HF, f16 cos 1.000000 with norm ratio 1.000000. Bonus pre-existing fixes: merges-with-newline GGUF representation (`tokenizer.merges_nul`), 14 silently-unpinned models incl. shipped granite-r1 (adjacent-string-literal URLs invisible to the pin tool). See T19-E4 status | **DONE** |
-| 2026-08-04 | `feat/imatrix-quants` **MERGED to main `38c708b2`** | **imatrix quants DONE** — verified by coordinator (registry diff aliases-only, claims cross-checked against the uploaded `arctic-embed-m-v2-imatrix-ab.txt` on HF — exact match, shipped `iq4_xs` spot-run on German retrieval: same ranking as q8_0, 0.680 vs 0.672 top-1). Three infra findings recorded in T19-E3 status (corpus never shipped / QKV pre-merge leaves 36 of 73 arctic tensors uncalibrated — `leaf_N` naming, filed / imatrix no-op for q8_0). **No default flipped; IQ4_XS+imatrix is the sub-Q8 pick.** Trailing follow-up **now done**: kernel run 2 is COMPLETE, all 5 models' artifacts are on HF, and `feat/imatrix-quants` `55b4b962` adds the 330m `-q4k`/`-iq4xs` aliases + pins (259 pinned / 0 unpinned) — **pushed, awaiting a second merge**. 330m gains most from calibration (q4_k min/mean .8840/.9230 → .9179/.9501; iq4_xs .9443/.9619). **Caveat that landed with it: the 0.6b INVERTS the IQ4_XS rule** (iq4_xs .6936/.7889 vs q4_k+imat .7654/.8115) — both unusable, so it keeps no sub-Q8 alias, but IQ4_XS must be measured per model, not assumed | **DONE** (330m follow-up awaiting merge) |
-| 2026-08-04 | `feat/tokenize-simple-audit` **MERGED to main `357dee53`** | **tokenize_simple audit DONE** — all 4 remaining callers converted to declared-regex pre-tokenizers (lfm2 cos 0.9857→0.9997; deepseek prompt "\nFree OCR." was LOSING its newline — now byte-exact vs contract); two deeper pre-existing bugs fixed (fake \p{L} for bytes ≥0x80 broke German punctuation on every Qwen-family embedder; bpe_one merge-heap had no (rank,pos) tie-break). Coordinator verified: 246+39 hermetic checks re-run, HF goldens independently regenerated (content-identical), unicode tables reconciled at merge into single `unicode_categ.h` (370 checks pass). OPEN follow-up: deepseek-ocr2 decode CER gate vs gold with the corrected prompt — runs after T14 lands | **DONE** |
-| 2026-08-04 | `feat/t18-embed-oneshot-init` **MERGED to main `c178308f`** (coordinator re-verified: interleaved 0.18 vs 0.87 s, byte-identical + deterministic, `--gpu-backend cpu` 0.14 s with zero Metal init, hermetic battery green) | **T18 DONE** — one-shot **895 → 186 ms (4.81x)** on multilingual-e5-small q8_0 and **911 → 202 ms (4.51x)** on arctic-embed-m-v2, **still on Metal**, output **byte-identical** (64 texts/model, worst cos 1.000000000, norm ratio 1.000000000); warm batch-512 5977→5451 ms and batch-64 1672→908 ms = no regression. **The cause was not what the ticket assumed:** 683 of 820 ms was ggml-metal opening its persistent MTLBinaryArchive pipeline cache, grown append-only to **683 MB** at ~1 ms/MB — which buys nothing measurable AND can never be written back by a one-shot binary (serialised from a static dtor; `clean_exit`/`_exit()` skips it, proven against an empty cache dir). **The 250k-vocab SPM build suspect is refuted: 12.0 ms.** Levers: archive size cap (default 64 MB, −654 ms), `--gpu-backend cpu` no longer falls through to Metal (0.86→0.14 s on that flag; note `ggml_backend_dev_by_type(CPU)` still inits Metal — must use `ggml_backend_cpu_init()`), duplicate GGUF parse removed (−29 ms), `CRISPEMBED_ONESHOT_CPU` gated **off** (worth only ~40 ms post-fix, and it inverts on arctic at `-t 1` — default flip is the coordinator's, data in the T18 status block). **Repo-wide follow-ups filed:** every Metal lane pays the same archive cost (one-line adoption of `core_metal_cache::apply()`); the pipeline cache is arguably broken for all `_exit()`ing binaries (CrispASR PLAN #88's call); `-t 1` embed-CLI default looks like the larger untaken win | **DONE** |
-| 2026-08-04 | `feat/t15-smoldocling-doctags` **MERGED to main `7de85cb7`** | **T15 DONE** — three stacked contract defects (dropped added-token vocab, squashed-input preprocessing, silent 128-token cap) fixed; fox payload CER 0.86→0.0; native q8_0 matches or beats the transformers reference on 4/5 pages (see T15 status block + `tests/results/ocr_parity_smoldocling_2026-08-04.json`); all three GGUF quants re-converted + re-shipped on cstr, q8_0 SHA re-pinned, fresh-download verified; backend port deferred with stage data (vision 31.7 s of 37.3 s) | **DONE** |
+| 2026-08-04/05 | *(engine-portfolio round — ALL LANDED)* | T13 olmocr, T14 deepseek decode (`82ce1024`), T15 smoldocling (`7de85cb7`), T18 one-shot init (`c178308f`), granite-r2 (`110dd082`), tokenize_simple audit (`357dee53`), imatrix quants (`38c708b2`+`926df0ae` — 330m follow-up MERGED), metallib CMake pin (`9288d3b5`). Detail lives in the dated status blocks below and in `tests/results/*_2026-08-04.json`; do not re-derive | **DONE** |
+
+
+## HANDOVER — follow-up round (written 2026-08-05, for the next orchestrator session)
+
+Read this section, the "Active work in flight" table above, and the dated
+status blocks it points to BEFORE doing anything. The 2026-08-04/05
+engine-portfolio round is COMPLETE: all six lanes (T13/T14/T15/T18,
+granite-r2, tokenize_simple audit, imatrix quants) are merged to main,
+coordinator-verified, with results artifacts under `tests/results/` and
+shipped models re-pinned. v0.17.4 is tagged. What remains is the follow-up
+backlog below, in value order, each self-contained.
+
+**Session shape that worked and is recommended again:** one heavy item as the
+orchestrator's own work, the rest delegated to agents with acceptance-gated
+briefs the coordinator verifies BEFORE merging (re-run their hermetic tests
+yourself, regenerate any goldens independently, spot-run one shipped artifact,
+fresh-download registry entries). Agent output is plausible-until-verified.
+Default flips, promotions, and ground-truth edits are never delegated.
+
+### F1 — DeepSeek-OCR2 repetition guard (HIGHEST VALUE, delegable with strict gates)
+
+The lane implements NO repetition guard while the reference contract
+(`tests/regression/gold/deepseek-ocr2/contract.json`) specifies
+`no_repeat_ngram_size=20`. 2 of 5 cc0 pages spiral into the 1024-token cap
+(commons_test_ocr_document loops "and that they were filled with rubbish",
+simple_form loops a box list) — that alone drives cc0 CER to ~1.06 while
+`receipt_historical` already BEATS the reference when decode terminates
+(0.1198 vs 0.3633). **Do:** port `argmax_no_repeat_ngram` from
+`qwen2vl_ocr.cpp` / `internvl2_ocr.cpp` into the deepseek decode (BOTH the
+persistent default and `DS2_LEGACY_DECODE` paths — they must stay comparable),
+env-gated with the old behavior restorable. **Acceptance:** decoded text
+judged, not cosine — synth 20/20 CER unchanged (no spiral there = guard must
+be a no-op), cc0 CER moves materially toward the reference's 0.187 raw /
+0.111 stripped, spiral pages terminate before the cap, CPU and Metal, both
+decode paths byte-identical to each other per arm. This CHANGES OUTPUT — the
+coordinator re-runs the gold gate before merge.
+
+### F2 — Metal pipeline-cache cap adoption across the other Metal lanes (delegable)
+
+T18 capped the MTLBinaryArchive read for the EMBED path only
+(`src/core/metal_pipeline_cache_policy.h`, default 64 MB cap via
+`CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB`). Every other Metal lane
+(`crispasr_init_gpu_backend()` callers: all OCR/VLM/SR engines) still pays
+~1 ms/MB of archive size at init. Adoption is one line per lane
+(`core_metal_cache::apply()`), but verification is per-lane: init-time
+before/after (the `CRISPEMBED_INIT_BENCH=1` instrument exists) + decoded
+output unchanged on one fixture per lane. The 683 MB archive at
+`~/Library/Caches/ggml-metal/` is still on disk; deleting it is safe and
+worth doing once the cap is everywhere. NOTE the cache's deeper problem
+(no `_exit()`ing binary can ever WRITE it — the clean_exit class) belongs to
+CrispASR PLAN #88, not this repo.
+
+### F3 — Embed-CLI `-t 1` default (coordinator decision, small)
+
+T18's data (its PLAN status block): post-fix one-shot batch-64 with init
+included — e5-small: Metal 0.77 s / CPU -t1 0.76 s / CPU -t4 0.35 s;
+arctic-m-v2: Metal 0.91 s / CPU -t1 2.77 s / CPU -t4 0.91 s. The backend is
+no longer the knob; the shipped `-t 1` is. A blanket small-embedder→CPU rule
+is right on one model and wrong on the other. Decide a size/thread rule
+(e.g. default -t to min(4, cores) for embed CLI, keep Metal default), A/B it
+on both models + one more size class, and only then touch
+`CRISPEMBED_ONESHOT_CPU` (ships OFF today).
+
+### F4 — SmolDocling vision backend port (OWN WORK — graph/residency, do not delegate)
+
+Post-T15 stage split (PERFORMANCE.md): vision+connector 31.7 s of 37.3 s on
+fox (5 sub-images; ~6.3 s per 512² SigLIP forward, CPU); full pages 72-103 s
+with 13 sub-images. The engine hardcodes `ggml_backend_cpu_init()`. Per-tile
+SigLIP is compute-bound = GPU-shaped; the 135M per-token decode is the
+CPU-favored shape (persistent-decode LEARNINGS) — SPLIT residency, do not
+move decode blindly. Also batch the N+1 tiles through one graph if memory
+allows. Gates: payload byte-identical CPU vs Metal on the 5-page T15 set
+(artifact `tests/results/ocr_parity_smoldocling_2026-08-04.json` has the raw
+paired outputs), same-window interleaved timing, `SMOLDOCLING_FORCE_CPU`-style
+gate, MTL0-in-stderr verification (the metallib trap is FIXED by the CMake
+pin `9288d3b5`, but verify the stderr anyway — that habit caught it).
+
+### F5 — DeepSeek-OCR2 dynamic-crop contract gap (session-sized)
+
+Native feeds a single 1024² view (257 image tokens); the reference uses
+dynamic cropping up to 1121 tokens (crop threshold 768 for v2 — A4 status
+block). This is the main native-vs-reference cc0 quality gap once F1 lands,
+shared identically by both decode arms. Port the reference's crop logic
+(read its processor code — blueprint line-by-line), gate it, and re-run the
+gold CER gate. Combines naturally with F1 in one session but keep the two
+changes SEPARATELY gated (never two variables in one A/B).
+
+### F6 — Quantify DS2_KV_F16 (delegable, small)
+
+Implemented in T14, deliberately unquantified (precision change kept out of
+the byte-identity gate). Measure: decoded text vs F32 KV on the 25-fixture
+gold (CER delta), memory, and decode time, both backends. Keep opt-in unless
+it wins quality-neutral.
+
+### F7 — imatrix QKV coverage fix (delegable, well-scoped)
+
+`src/crispembed.cpp:799-832` pre-merges q/k/v into one F32 tensor at load and
+never `ggml_set_name`s it → the imatrix collector files its statistics under
+ggml's auto `leaf_N` and the quantizer matches nothing — every BERT-family
+`attn.{q,k,v}.weight` quantizes with NO importance (arctic: only 36/73
+tensors covered). The collected leaf_N vector (width 768 = QKV input) is
+already the correct importance for all three — fix is naming + a quantizer
+alias, not new infrastructure. Then re-run the arctic imatrix pipeline
+(kernel `tools/kaggle/crispembed-imatrix-t19/`, corpus committed) and expect
+q4_k+imatrix to finally separate from plain q4_k (today 0.948/0.961 vs
+0.947/0.958 — barely). Continuous metrics, never thresholded-only.
+
+### F8 — LaBSE-class WordPiece audit (delegable, small)
+
+WordPiece vocabs >100k still take the old detection heuristic (deliberate
+blast-radius decision in granite-r2). Audit the shipped LaBSE-class GGUF:
+token-id parity vs HF on the standard battery; fix via the tokenizer.json
+`model.type` path if wrong, with the absent-key=historical-behavior rule.
+
+### F9 — Kaggle harness token-glob fix (CrispASR repo, delegable)
+
+`resolve_hf_token()` misses the LONG dataset mount path
+(`/kaggle/input/datasets/<acct>/<slug>/`) — a kernel on such a worker
+completes and then loses every upload to 401 (cost one full 21-min imatrix
+run). The t19 kernel carries the local fix; hoist it into CrispASR's
+`kaggle_harness.py` so every future kernel gets it. Also carried there:
+kaggle_usage.md gotcha #26 (script kernels ship only code_file — vendor
+data in the repo clone).
+
+### F10 — CrispASR twins (other repo, coordinate before touching)
+
+(a) CrispASR's copy of `gpu_backend_pref.h` has the same `--gpu-backend cpu`
+falls-through-to-Metal bug T18 fixed here (the copies had already diverged;
+sync LOGIC not bytes, per the pcs.cpp rule). (b) The Metal pipeline-cache
+write path is broken for every `_exit()`ing binary (PLAN #88's call:
+flush-per-run, scope per engine, or retire).
+
+### T16 (TableFormer port) and T17 (Fraktur bisect) — unchanged, dedicated sessions
+
+Their briefs stand in the OPEN TASKS section below. T16 needs the A5
+document-structure gold (also still open). T17's reference-first bisect notes
+are in the Tesseract sections.
+
+### Discipline deltas learned this round (additive to the standing rules)
+
+- **Worktrees: use a real ggml submodule checkout** (`git submodule update
+  --init ggml`), NOT the symlink dance — it builds AND rebases; a leftover
+  symlink makes every rebase fail with "expected submodule path not to be a
+  symbolic link" (fix: rm + mkdir + submodule update).
+- **NEVER `git add -A` in a worktree** — it stages the ggml gitlink and
+  reverts main's pin (this exact mistake shipped and had to be repaired at
+  `78b7137e`). Stage files by name.
+- **Metal claims need MTL0 in the run's own stderr** — the CMakeCache proves
+  nothing in either direction. The stale-EMBED_LIBRARY trap is fixed by the
+  CMake pin, but the cheap tripwire that caught it (watch a stage neither A/B
+  arm touches) stays mandatory for timing work.
+- **No window-encoded regexes in ugrep** (`[^x]{0,120}(alt)[^x]{0,160}`
+  builds a diverging DFA, 5.5 GB RSS, machine-killing); use `-C 2` for
+  context.
+- **Timing on this box:** ambient user load is real; interleaved pairs with a
+  loadavg gate (discard >8), median + spread reported un-trimmed, and the
+  floor-vs-excursion argument (a load excursion can only inflate) is how a
+  noisy verdict gets decided.
+- **Weights storage:** big GGUFs live on the backup SSD under
+  `ai/crispembed-ggufs/` with symlinks back into `~/.cache/crispembed-local/`
+  (the CLI cache dir); keep the main volume ≥10 GB free; delete f16s once
+  quants are verified; one heavy (>1 GB) process at a time.
+
+### Environment as left (2026-08-05)
+
+- Main volume ~42 GB free; backup SSD ~3 GB free (olmocr q4_k moved there).
+- `~/.cache/crispembed-local/`: e5-small q8, arctic-m-v2 q8 + iq4_xs,
+  f2llm f16s+q8s, deepseek-ocr2 q4_k (2.2 GB), smoldocling q8 (FIXED vocab),
+  granite-r2 pair, olmocr q4_k (symlink to SSD). All registry-pinned.
+- HF: account cstr, token in `../.env` (HF_TOKEN); ALWAYS `HF_HOME=~/.cache/hf-<task>`
+  (default cache symlinks to the full backup volume; uploads also need it or
+  they die read-only). Kaggle: chr1s4 works, one kernel at a time,
+  machine_shape "NvidiaTeslaT4", stage under /tmp, delete before re-push.
+- All 2026-08-04/05 worktrees and branches removed; only the three
+  pre-existing IN PROGRESS rows above remain claimed by other sessions.
 
 ### Next actions — scoped for a fresh session
 
