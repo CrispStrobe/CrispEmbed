@@ -14,7 +14,8 @@
 // Empty or null = auto (same as ggml_backend_init_best).
 
 #include "ggml-backend.h"
-#include "ggml-cpu.h" // ggml_backend_cpu_init() for the `--gpu-backend cpu` short-circuit
+#include "ggml-cpu.h"                    // ggml_backend_cpu_init() for the `--gpu-backend cpu` short-circuit
+#include "metal_pipeline_cache_policy.h" // T18 cap on the ggml-metal MTLBinaryArchive open cost
 
 #include <cctype>
 #include <cstdio>
@@ -68,6 +69,21 @@ inline bool ci_starts_with(const char * haystack, const char * needle) {
 // the preferred backend isn't found.
 inline ggml_backend_t crispasr_init_gpu_backend() {
     std::string pref = crispasr_get_gpu_backend_pref();
+
+    // G4 (extends T18): bound the ggml-metal MTLBinaryArchive open cost for
+    // EVERY lane that reaches a GPU device through this helper — OCR, VLM, SR,
+    // NER, denoise — not just the embed CLI. The archive open costs ~1 ms/MB
+    // (683 MB observed = ~680 ms of fixed init) and a one-shot CLI never
+    // writes an entry back (clean_exit skips the serialising destructor).
+    // Same guard as the embed path: skipped when the preference is "cpu",
+    // because then no GPU device is created and the diagnostic would fire
+    // spuriously. apply() is idempotent, so the embed path's own earlier call
+    // is unaffected. CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB=0 restores the
+    // pre-T18 behaviour for every lane at once.
+    {
+        const bool pref_is_cpu = !pref.empty() && pref.size() <= 3 && ci_starts_with("cpu", pref.c_str());
+        if (!pref_is_cpu) core_metal_cache::apply();
+    }
 
     // T18: `--gpu-backend cpu` used to fall THROUGH to the GPU. The loops below
     // only ever consider GPU/iGPU devices, so "cpu" matched nothing, printed the
