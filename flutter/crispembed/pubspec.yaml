@@ -3,7 +3,7 @@ description: >
   Lightweight embedding + math OCR inference via ggml.
   Dense, sparse, ColBERT, cross-encoder reranking, and
   DeiT+TrOCR on-device math equation recognition.
-version: 0.17.5
+version: 0.17.6
 homepage: https://github.com/CrispStrobe/CrispEmbed
 repository: https://github.com/CrispStrobe/CrispEmbed/tree/main/flutter/crispembed
 
