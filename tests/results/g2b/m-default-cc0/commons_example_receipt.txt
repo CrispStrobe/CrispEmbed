@@ -1,0 +1,23 @@
+**Jackson-Washington**  
+6640 Ortiz Cove, Markmouth, PW 69940  
+
+Transaction ID: 8F88C299  
+Date: 2025-02-16 11:25:12  
+
+| Item    | Qty  | Price  |
+|---|---|---|
+| Strategy Accessory    | 1    | $43.31 | $    |
+| Conference Product    | 1    | $48.40 | $    |
+| Scientist Item    | 3    | $48.07 | $    |
+| Situation Item    | 3    | $23.87 | $    |
+| Life Accessory    | 4    | $48.04 | $    |
+| Music Accessory    | 1    | $24.45 | $    |
+
+Subtotal: $524.14  
+GST (5%): $26.21  
+PST (7%): $36.69  
+
+**Total:** $587.04  
+
+Payment: Gift Card (****3486)  
+Have a great day!
