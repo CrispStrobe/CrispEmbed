@@ -2588,6 +2588,9 @@ impl CrispOcrPipeline {
                 engine: s.engine,
                 model_a: a_ptr,
                 model_b: b_ptr,
+                // Not surfaced by OcrStageSpec yet; NULL = "no orientation model",
+                // which is what the pipeline did before the field existed here.
+                model_c: std::ptr::null(),
                 cleanup_enabled: s.cleanup.enabled as std::os::raw::c_int,
                 denoise: s.cleanup.denoise as std::os::raw::c_int,
                 cleanup: crispembed_sys::ScanCleanupParams {
@@ -2609,10 +2612,20 @@ impl CrispOcrPipeline {
                 det_prob_threshold: s.det_prob_threshold,
                 det_box_threshold: s.det_box_threshold,
                 det_target_short: s.det_target_short,
+                // The header documents 0 as "use the library default" for every
+                // one of these, so zeroing them reproduces the behaviour this
+                // binding had while the fields were missing.
+                det_max_side: 0,
+                det_min_height: 0,
+                det_width_height_ratio: 0.0,
+                det_max_candidates: 0,
+                det_dilation: 0,
+                det_score_mode: 0,
                 vlm_max_tokens: s.vlm_max_tokens,
                 vlm_prompt: p_ptr,
                 min_chars: s.min_chars,
                 min_confidence: s.min_confidence,
+                page_segmentation: 0, // 0 = DBNet, as before this field existed here
             });
         }
         let ctx = unsafe {
@@ -3036,6 +3049,13 @@ pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str)
             text: texts[i].as_ptr(),
             text_len: texts[i].as_bytes().len() as i32,
             orientation_corrected: if r.orientation_corrected { 1 } else { 0 },
+            // `OcrResult` does not carry the angle/confidence pair, so the
+            // renderer gets "no rotation measured". They still have to be
+            // written: this array is read by C at the header's 48-byte
+            // stride, and omitting them made it 40 — the same layout skew
+            // that crashed the read-back path, in the opposite direction.
+            orientation_angle: 0,
+            orientation_confidence: 0.0,
         })
         .collect();
     let ptr = unsafe {
