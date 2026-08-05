@@ -882,13 +882,13 @@ static const ModelEntry k_registry[] = {
       "XLM-R reranker multilingual 278M (Q4_K+imatrix, smaller)", "261 MB", "cc-by-nc-4.0",
       "https://huggingface.co/jinaai/jina-reranker-v2-base-multilingual" },
 
-    { "mxbai-rerank-xsmall-v1", "mxbai-rerank-xsmall-v1-q8_0.gguf",
-      "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0.gguf",
+    { "mxbai-rerank-xsmall-v1", "mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
+      "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
       "DeBERTa-v2 reranker English fast 33M (Q8_0)", "78 MB", "apache-2.0",
       "https://huggingface.co/mixedbread-ai/mxbai-rerank-xsmall-v1" },
 
-    { "mxbai-rerank-base-v1", "mxbai-rerank-base-v1-q8_0.gguf",
-      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0.gguf",
+    { "mxbai-rerank-base-v1", "mxbai-rerank-base-v1-q8_0-g7c.gguf",
+      "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0-g7c.gguf",
       "DeBERTa-v2 reranker English 86M (Q8_0)", "199 MB", "apache-2.0",
       "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1" },
 
