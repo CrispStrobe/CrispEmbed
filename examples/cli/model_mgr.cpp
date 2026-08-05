@@ -359,12 +359,16 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q8_0.gguf",
       "GTE-v1.5 768d CLS multilingual (Q8_0)", "315 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
-    { "arctic-embed-m-v2-q4k", "arctic-embed-m-v2-q4_k-imatrix.gguf",
-      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q4_k-imatrix.gguf",
+    // G3 (post-F7b): both sub-Q8 aliases re-pinned to the -f7 re-quants built
+    // with real q/k/v importance. Kaggle x86 A/B + local Metal/CPU cross-check
+    // (2026-08-05): q4_k+imatrix mean .9614→.9937, iq4_xs .9757→.9867 vs
+    // full-precision gold; backend delta ≤0.002. Old artifacts remain on HF.
+    { "arctic-embed-m-v2-q4k", "arctic-embed-m-v2-q4_k-imatrix-f7.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-q4_k-imatrix-f7.gguf",
       "GTE-v1.5 768d CLS multilingual (Q4_K+imatrix)", "261 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
-    { "arctic-embed-m-v2-iq4xs", "arctic-embed-m-v2-iq4_xs.gguf",
-      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-iq4_xs.gguf",
+    { "arctic-embed-m-v2-iq4xs", "arctic-embed-m-v2-iq4_xs-f7.gguf",
+      "https://huggingface.co/cstr/arctic-embed-m-v2-GGUF/resolve/main/arctic-embed-m-v2-iq4_xs-f7.gguf",
       "GTE-v1.5 768d CLS multilingual (IQ4_XS+imatrix)", "258 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-m-v2.0" },
 
