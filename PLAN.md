@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | `perf/conv2d-gemm` (`.claude/worktrees/perf-conv2d-gemm`) | **R6 — `conv2d_cpu` im2col-tile + loop-interchange GEMM path** (env-gated `CRISPEMBED_CONV2D_GEMM`, opt-in until A/B'd; goal: cut per-pixel weight re-streaming, add gated multithreading; bitwise-identical output is the acceptance gate) + **R4 rider — add the missing `lightonocr` backend gate** (default stays CPU). Claimed per the residency backlog; do-R6-before-R3 ordering | IN PROGRESS |
+| 2026-08-05 | *(landed via `perf/conv2d-gemm`)* | **R6 built + M1-measured, R4 DONE** — `core_cpu::conv2d_im2col_cpu` (im2col tiles + oc-outer interchange + fork-join threads), **bitwise-identical by construction** (exact-equality unit guard, 9 shapes, nt=1+4; 180/180). Gated `CRISPEMBED_CONV2D_GEMM=1`/`CRISPEMBED_CONV2D_THREADS=N`, default OFF. M1 A/B (PP-OCRv6 medium scalar det, 5 interleaved pairs): **nt=4 wall 2.04x, won every pair; nt=1 4-7% SLOWER** (12 MB shared L2 already holds the weights — threading is the M1 win, interchange needs the small-L2 x86/Kaggle arm, TODO). R4: `CRISPEMBED_LIGHTONOCR_GPU=1`/`_FORCE_CPU=1` gate landed (got_ocr sched pattern); default verified byte-identical + 0 Metal markers; Metal arm proven live, decoded text identical, no wall win on the small fixture → CPU stays default. Evidence: `PERFORMANCE.md` "R6 conv2d_cpu im2col-tile A/B" | **DONE** |
 | 2026-08-05 | *(landed on `main`, docs only — no code touched)* | **OCR runtime residency survey DONE** — code-verified sweep at `9f731fb5` of every OCR-lane engine's backend selection + `ggml_backend_sched` composition. Full tables in `PERFORMANCE.md` ("OCR runtime residency survey", top of file); ranked backlog as **R1-R8** in "OPEN TASKS — OCR runtime residency and optimization backlog" below. **Key correction: the loading backend is not the computing backend** — bttr/hmer/posformer/mixtex/flova/ppformulanet build ggml encoder graphs but run them on a CPU-only `enc_sched` (their "prefer GPU backend" comments are stale), and `lightonocr` is hardcoded CPU with no `*_FORCE_CPU` gate despite the VLM maturity table claiming "GPU: Yes". Also closed: the P3 "`--gpu-backend` ignored" gap (`crispembed.cpp:101` routes through the helper). **No engine defaults changed** | **DONE** |
 | 2026-08-05 | *(landed, round-7 coordinator)* | **v0.17.6 RELEASED** (`23a5d5e0` bump + tag on green-CI tip `902a6e1b`; release run `31016913759` SUCCESS, **16/16 assets verified** — same complete set as v0.17.5): /rerank server abort fix, mxbai/ms-marco -g7c re-ships, erf pooler default, DS_/BENCH/UOCR_* `=0` gate audits (incl. the `UOCR_PD=0` segfault), reranker -f7 imatrix re-pins + new bge-v2-m3-q4k alias, `CRISPEMBED_QUANT_IMATRIX_QKV` selector, Windows `test_env_gate` MSVC fix (**Windows CI had been red since `d04f3572`** — now green). Published notes dropped from the tree (`5f756ab5`, tag retains its copy) | **DONE** |
 | 2026-08-05 | *(landed `f34bf0b5`, round-7 coordinator's own work)* | **Reranker sub-Q8 re-pin DONE**: local Metal+CPU cross-check reproduced the Kaggle rerank-f7 A/B (f16 raw scores to ~3dp, f7 dscore to 4dp; tau band ±0.009-0.013 = 2-3 near-tie flips, q8_0 itself swings 0.009 across backends). jina `-q4k` alias re-pinned to `-f7` (dscore −25% both backends, tau in-band); **bge-reranker-v2-m3 got its FIRST sub-Q8 alias** `bge-reranker-v2-m3-q4k` → `-q4_k-imatrix-f7` (tau .920→.942 CPU / .947 Metal, dscore −29/−33%; beats iq4_xs-f7 on tau both backends). q8_0 stays default both families; jina iq4_xs-f7 best-tau finding recorded, no alias added. Both aliases fresh-download SHA-verified on the rebuilt binary (MTL0 proven, HF-scale scores, correct ordering). Evidence `tests/results/repin-f7/SUMMARY.md` | **DONE** |
@@ -3739,13 +3739,22 @@ graphs can *lose* on Metal, which is exactly why those two are CPU by default.
 One engine, one A/B, one gate at a time. Also fix the stale "prefer GPU
 backend" comments above their load sites while touching them.
 
-### R4 — `lightonocr` has no backend gate at all
+### R4 — `lightonocr` has no backend gate at all — **DONE 2026-08-05**
 
-`lightonocr.cpp:239` hardcodes `ggml_backend_cpu_init()`. The engine has
-flash-attn and a monolithic vision graph and spends `31.6 s` cold on M1 — all
-on CPU. Unlike every sibling it has no `*_FORCE_CPU`-style env var, so it
-cannot even be A/B'd without a code change. Minimum deliverable: add the gate
-so the question becomes measurable; the default flip is a separate decision.
+**Landed on `perf/conv2d-gemm`** (rider on the R6 branch). The gate exists:
+`CRISPEMBED_LIGHTONOCR_GPU=1` opts into `crispasr_init_gpu_backend()` (got_ocr
+sched pattern: CPU fallback appended, `ggml_backend_cpu_set_n_threads` sites
+guarded behind `ggml_backend_is_cpu`), `CRISPEMBED_LIGHTONOCR_FORCE_CPU=1`
+overrides. **Default unchanged and verified**: 0 Metal markers in the default
+arm, output byte-identical to the pre-change binary. Metal arm proven live
+(`ggml_metal` init in stderr), decoded text IDENTICAL to CPU on
+`scan_strip.png` q4_k. First probe (loaded M1, single pair): Metal 7.2 s wall
+/ 1.4 s user vs CPU `-t 4` 5.4 s wall / 20.4 s user — **no wall win on the
+small fixture, CPU stays the default**; the flip decision now just needs
+per-fixture/per-backend pairs. Full numbers in `PERFORMANCE.md` ("R6
+conv2d_cpu im2col-tile A/B", rider paragraph). Note: the survey's "31.6 s
+cold" did not reproduce on this fixture (~5.4 s CPU warm) — re-measure before
+citing it.
 
 ### R5 — Decode-step graph caching — measure the overhead fraction FIRST
 
@@ -3762,17 +3771,32 @@ path needs per-backend gating. Note the premise "0 runtimes reuse the built
 cgraph" is now false — math_ocr (persistent decode graph), easyocr
 (static-shape init-time graph) and ppocrv6 rec (shape-keyed cache) all do.
 
-### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread
+### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread — **BUILT + M1-MEASURED 2026-08-05, x86 arm open**
 
-`core/cpu_ops.h:577` (patch buffer at `:609`) gathers one patch into a
-`thread_local` buffer and runs a SIMD dot per output channel — the
-"`:345-400`" reference in the 2026-07-11 re-verification is a stale line
-number, the code is unchanged in kind. Batching all output channels into a GEMM
-and multithreading the patch loop is the shared floor under every CPU-resident
-conv engine: the whole SR/denoise family, DBNet, PP-OCRv6 det, the DenseNet
-encoders. Highest-leverage single change in `core/`, and it lifts R3's
-CPU-baseline arm at the same time (which makes R3's A/B harder to win — do R6
-first or accept the moving baseline explicitly).
+**Landed on `perf/conv2d-gemm`**: `core_cpu::conv2d_im2col_cpu` — im2col
+position tiles + oc-outer loop interchange + fork-join threading, **bitwise
+identical to the generic path by construction** (same patch order, same
+`dot_product` per element; exact-equality unit guard over 9 shapes at nt=1
+and nt=4). Gates `CRISPEMBED_CONV2D_GEMM=1` / `CRISPEMBED_CONV2D_THREADS=N`,
+**default OFF per the A/B rule**. M1 verdict (PP-OCRv6 medium scalar det,
+interleaved pairs, full table in `PERFORMANCE.md`): **nt=4 wall 2.04x, won
+all 5 pairs**; **nt=1 is 4-7% SLOWER** — the M1's 12 MB shared L2 already
+holds these weight matrices, so the interchange alone doesn't pay here; the
+win available today is threading. Remaining, in order:
+
+1. **Kaggle AVX2 A/B of the same three arms** (small private L2 is where the
+   interchange hypothesis should win; also the honest CPU baseline for any
+   CUDA/discrete-GPU residency decision). Per the offload directive, not on
+   this Mac.
+2. Per-engine opt-ins where latency matters (the SR family, DBNet, scalar
+   det fallback) — the gate is process-wide today, engines can pass their
+   own `n_threads` via `conv2d_im2col_cpu` directly.
+3. Register-blocked GEMM micro-kernel — changes accumulation order, so it
+   forfeits byte-equality and needs decoded-output A/Bs per engine; only
+   worth opening if the x86 arm shows the memory-side win is real.
+4. Fold the two private threaded copies (`deepseek_ocr2.cpp:287`,
+   `unlimited_ocr.cpp:267`) onto the shared kernel once its default story
+   settles.
 
 ### R7 — `scunet_denoise` — the missing `DequantCache`
 

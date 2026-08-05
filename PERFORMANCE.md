@@ -126,6 +126,67 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## R6 conv2d_cpu im2col-tile A/B: threading is the win (2.04x wall at nt=4), the interchange alone is not — on M1 (2026-08-05)
+
+`core_cpu::conv2d_im2col_cpu` (branch `perf/conv2d-gemm`) gathers a tile of
+output positions into an L2-sized column buffer and runs the output-channel
+loop OUTSIDE the position loop, so each weight row is read once per tile
+instead of once per output pixel; a fork-join pool threads over tiles. Every
+output element is still `bias + dot_product(patch, w_row, K)` on a patch
+gathered in the same order, so the result is **bitwise identical to the
+generic path at any thread count** — enforced by an exact-equality unit guard
+(`test_conv2d_im2col_equivalence`, 9 shapes covering tile tails, the
+16-position tile floor, groups, boundary gathers, nt=1 and nt=4). Gates:
+`CRISPEMBED_CONV2D_GEMM=1` (+ `CRISPEMBED_CONV2D_THREADS=N`, default 1),
+default OFF.
+
+**Protocol.** PP-OCRv6 medium detector, scalar path
+(`CRISPEMBED_PPOCRV6_DET_SCALAR=1`, the canonical `conv2d_cpu` workload),
+`scan_page_pd.png` 606x1000, detector-only (`PPOCRV6_DIRECT_MAX_REGIONS=0`),
+same binary, arms selected by env gate, interleaved pairs, one process per
+run, M1 16 GB with an interactive user (1-min loadavg 6.7-9.8). All 5 nt=4
+pairs and the smoke pair reported, nothing trimmed. All arms returned
+detector_regions=38.
+
+| pair | legacy elapsed_ms | gemm nt=4 elapsed_ms | ratio |
+|---|--:|--:|--:|
+| 1 | 31871 | 15643 | 0.491 |
+| 2 | 48401 (load spike) | 15307 | 0.316 |
+| 3 | 31910 | 15598 | 0.489 |
+| 4 | 31730 | 15530 | 0.489 |
+| 5 | 31581 | 15567 | 0.493 |
+
+Median ratio **0.489 = 2.04x wall**, nt=4 arm spread 2% (15307-15643 ms)
+while the legacy arm ate the load spike. Total user CPU rises 31.6 -> ~45.2 s
+(E-core spillover + interchange overhead), so this is a latency win, not an
+energy win.
+
+**nt=1 is a small REGRESSION on this box**: +6.6% user CPU in the smoke pair
+(31.74 -> 33.84 s) and +4.4% in a back-to-back pair under heavy load (19.37
+-> 20.22 s). Reading: the M1's 12 MB shared L2 already holds these weight
+matrices, so the legacy path's per-pixel weight re-streaming was largely
+cache-served and the column buffer's write+read traffic is pure overhead.
+Caveat observed while measuring: absolute user CPU for the IDENTICAL legacy
+arm swung 19.4 vs 31.6 s between quiet-ish and loaded batches (macOS
+QoS/core-type placement), so only within-pair ratios are quoted.
+
+**Verdict: opt-in, default unchanged** (per the standing A/B rule). The win
+to bank now is threading for engines that want it; the interchange hypothesis
+still needs the small-L2 x86 arm — **TODO: Kaggle AVX2 A/B of the same three
+arms** (also the relevant CPU baseline for any CUDA-box residency decision).
+A register-blocked GEMM micro-kernel (changes accumulation order, forfeits
+byte-equality) stays open until this path's x86 verdict is in.
+
+Rider (R4, same branch): `lightonocr` gained the missing backend gate —
+`CRISPEMBED_LIGHTONOCR_GPU=1` (got_ocr sched pattern, CPU fallback,
+`set_n_threads` guarded), `CRISPEMBED_LIGHTONOCR_FORCE_CPU=1` override.
+Default arm verified 0 Metal markers + byte-identical output to the
+pre-change binary; Metal arm proven live (`ggml_metal` init in stderr) with
+**decoded text identical to CPU** on `scan_strip.png` q4_k. First probe:
+Metal 7.2 s wall / 1.4 s user vs CPU(-t 4) 5.4 s wall / 20.4 s user — no
+wall win on this small fixture, CPU stays the default; the question is now
+askable per backend/fixture without a code change.
+
 ## Embedder one-shot CLI init: 4.8x, and it was a 683 MB shader-cache file (Apple M1 Metal, 2026-08-05)
 
 A one-shot `crispembed -m model.gguf --json "text"` paid ~0.9 s of fixed init
