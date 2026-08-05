@@ -18,8 +18,7 @@ races). Remove the row when the branch lands.
 | 2026-08-02 | `feat/ppocr-next-20260731` | **Picked:** rework the tiny fused graph around an explicit per-item branch/sequence dimension that survives pooling, permutation, and CTC flattening on Metal; add a two-crop gold-logit cosine contract before considering any Metal batch execution. Keep `CRISPEMBED_PPOCRV6_BATCH_GRAPH` CPU-only until that contract passes | **IN PROGRESS** |
 | 2026-08-04/05 | *(engine-portfolio round — ALL LANDED)* | T13 olmocr, T14 deepseek decode (`82ce1024`), T15 smoldocling (`7de85cb7`), T18 one-shot init (`c178308f`), granite-r2 (`110dd082`), tokenize_simple audit (`357dee53`), imatrix quants (`38c708b2`+`926df0ae` — 330m follow-up MERGED), metallib CMake pin (`9288d3b5`). Detail lives in the dated status blocks below and in `tests/results/*_2026-08-04.json`; do not re-derive | **DONE** |
 | 2026-08-05 | `feat/f1-ds2-no-repeat-ngram` / `.claude/worktrees/feat-f1-ds2-no-repeat-ngram` | **Picked (coordinator's own work): F1** — port `argmax_no_repeat_ngram` into the deepseek-ocr2 decode (single shared argmax site covers BOTH persistent and `DS2_LEGACY_DECODE` arms), default matching the contract's `no_repeat_ngram_size=20`, env-gated restore of the old plain argmax. Guard implemented + pushed (`19782cfc`); spiral page `simple_form` terminates at 52 (Metal) / 90 (CPU) tokens vs the 1024 cap. Acceptance matrix (11 sweeps: Metal synth+cc0 × guard/legacy/baseline, CPU cc0 both arms + synth subset) running now; gold re-gate before merge | **IN PROGRESS** |
-| 2026-08-05 | *(audit only, no branch yet)* | **Picked (delegated, coordinator-verified): F8** — LaBSE-class >100k-WordPiece audit: token-id parity vs HF on the standard battery; fix via tokenizer.json `model.type` only if wrong (absent-key = historical behavior) | **IN PROGRESS** |
-| 2026-08-05 | `feat/f9b-vendored-harness-sync` | **Picked (delegated, coordinator-verified): F9b** — re-sync every `tools/kaggle/*/kaggle_harness.py` vendored copy from CrispASR canonical (`342c5f7f`), per-copy drift classification, gated by CrispASR's 13 hermetic token tests run per copy via `KH_PATH` | **IN PROGRESS** |
+| 2026-08-05 | *(landed same day, wave 2)* | **F8 MERGED** (`f31c6531`, coordinator-verified: hermetic 24+15 checks re-run 0 failures, LaBSE battery 20/20 vs an independently REGENERATED HF golden, 0/20 on the unfixed binary, 4 shipped models token-id-IDENTICAL old-vs-new under my own runs). Verdict: nothing LaBSE-class was shipped; the CONVERSION PATH was broken 0/20 (converter >100k heuristic + runtime routing + per-byte pre-tokenizer) — all three layers fixed, absent-key = historical behavior. See §F8 outcome below. **F9b MERGED** (`3ade993a`, coordinator-verified: 15/15 copies hash-identical to CrispASR canonical `342c5f7f`, 13-test gate re-run per copy = 15×13/13, 8 upload-bearing drivers flipped to `resolve_hf_token(require=True)`) | **DONE** |
 | 2026-08-05 | `feat/f7b-imatrix-rerun` (kernel work) | **Picked (delegated, coordinator-verified): F7b** — Kaggle t19 re-run with F7-fixed main (arctic re-collect/re-quant + f2llm-80m no-change control), new artifact names only, no pin/registry/default touches; A/B table vs T19-E3's numbers comes back for the coordinator | **IN PROGRESS** |
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
@@ -135,6 +134,32 @@ WordPiece vocabs >100k still take the old detection heuristic (deliberate
 blast-radius decision in granite-r2). Audit the shipped LaBSE-class GGUF:
 token-id parity vs HF on the standard battery; fix via the tokenizer.json
 `model.type` path if wrong, with the absent-key=historical-behavior rule.
+
+#### F8 outcome (2026-08-05, `f31c6531`) — audit found the conversion path broken, fixed 3 layers
+
+Nothing LaBSE-class was shipped (no registry entry, no cstr GGUF). Converting
+`sentence-transformers/LaBSE` (501k WordPiece) exposed three stacked defects:
+converter `is_sentencepiece` >100k heuristic, runtime `n>100000 → SPM`
+routing, and the historical per-byte ASCII pre-tokenizer (can never match HF
+on CJK/unicode-punct/NBSP). Fixed: converter honours tokenizer.json
+`model.type == "WordPiece"` + writes `tokenizer.ggml.pre = "bert"` when
+declared; routing hoisted to pure `resolve_tokenizer_family()`
+(src/tokenizer.h, explicit numeric type is FINAL; community `model="bert"`
++ >100k corner deliberately frozen); HF-faithful BertPreTokenizer in
+`src/core/bert_pretok.h` gated on `pre="bert"` (absent key = historical
+byte path, shipped GGUFs byte-identical — verified on 4 models). Hermetic
+`tests/test_bert_pretokenize.cpp` in model-free CI. E2E: fixed LaBSE f16 vs
+HF f32 CLS = cos 1.000000 (10 texts).
+
+**F8b (open, small):** (a) publishing a LaBSE GGUF is now possible if wanted
+(convert + battery + upload + pin). (b) LaBSE's ST `2_Dense` is bit-equal to
+the BertModel pooler (tanh); CrispEmbed matches pre-pooler CLS, not the full
+ST stack (cos vs pooled ≈ −0.05) — full ST parity needs pooler-tanh at CLS
+pooling. (c) `bert.pooler_act` defaults to `"gelu"` where BERT's pooler is
+tanh (currently rerank-only, harmless). (d) Three upload-bearing kernels
+without a vendored harness (`unlimited-ocr-convert`, `crispembed-splade-fix`,
+`deepseek-ocr2-convert`) bootstrap `kh` from the CrispASR clone so they get
+F9's resolver but not fail-fast — flipping them to `require=True` is cheap.
 
 ### F9 — Kaggle harness token-glob fix (CrispASR repo, delegable)
 
