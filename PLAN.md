@@ -19,7 +19,7 @@ races). Remove the row when the branch lands.
 | 2026-08-04/05 | *(engine-portfolio round — ALL LANDED)* | T13 olmocr, T14 deepseek decode (`82ce1024`), T15 smoldocling (`7de85cb7`), T18 one-shot init (`c178308f`), granite-r2 (`110dd082`), tokenize_simple audit (`357dee53`), imatrix quants (`38c708b2`+`926df0ae` — 330m follow-up MERGED), metallib CMake pin (`9288d3b5`). Detail lives in the dated status blocks below and in `tests/results/*_2026-08-04.json`; do not re-derive | **DONE** |
 | 2026-08-05 | `feat/f1-ds2-no-repeat-ngram` / `.claude/worktrees/feat-f1-ds2-no-repeat-ngram` | **Picked (coordinator's own work): F1** — port `argmax_no_repeat_ngram` into the deepseek-ocr2 decode (single shared argmax site covers BOTH persistent and `DS2_LEGACY_DECODE` arms), default matching the contract's `no_repeat_ngram_size=20`, env-gated restore of the old plain argmax. Guard implemented + pushed (`19782cfc`); spiral page `simple_form` terminates at 52 (Metal) / 90 (CPU) tokens vs the 1024 cap. Acceptance matrix (11 sweeps: Metal synth+cc0 × guard/legacy/baseline, CPU cc0 both arms + synth subset) running now; gold re-gate before merge | **IN PROGRESS** |
 | 2026-08-05 | *(landed same day, wave 2)* | **F8 MERGED** (`f31c6531`, coordinator-verified: hermetic 24+15 checks re-run 0 failures, LaBSE battery 20/20 vs an independently REGENERATED HF golden, 0/20 on the unfixed binary, 4 shipped models token-id-IDENTICAL old-vs-new under my own runs). Verdict: nothing LaBSE-class was shipped; the CONVERSION PATH was broken 0/20 (converter >100k heuristic + runtime routing + per-byte pre-tokenizer) — all three layers fixed, absent-key = historical behavior. See §F8 outcome below. **F9b MERGED** (`3ade993a`, coordinator-verified: 15/15 copies hash-identical to CrispASR canonical `342c5f7f`, 13-test gate re-run per copy = 15×13/13, 8 upload-bearing drivers flipped to `resolve_hf_token(require=True)`) | **DONE** |
-| 2026-08-05 | `feat/f7b-imatrix-rerun` (kernel work) | **Picked (delegated, coordinator-verified): F7b** — Kaggle t19 re-run with F7-fixed main (arctic re-collect/re-quant + f2llm-80m no-change control), new artifact names only, no pin/registry/default touches; A/B table vs T19-E3's numbers comes back for the coordinator | **IN PROGRESS** |
+| 2026-08-05 | *(landed same day, wave 3)* | **F7b DONE** (kernel `chr1s4/crispembed-imatrix-t19` v3 complete; driver config merged `045102a0`; coordinator verified the `-f7` uploads exist on HF and the 4 pinned artifact SHAs still match `model_hashes.h` exactly). Headline: with real q/k/v importance, arctic q4_k+imatrix goes **.9480/.9614 → .9910/.9937 min/mean** (plain q4_k reproduced to 4dp; f2llm-80m control unchanged — comparability proven), and **q4_k+imatrix now BEATS iq4_xs+imatrix on the BERT side** (inverts T19-E3's IQ4_XS headline there; decoder side keeps the old ordering). Granite-r2 pair got first-time imatrix artifacts under canonical names. Decision items in §F7b below. **Test guards merged** (`fcc60afd`): `test-imatrix-alias` (59 checks, fails 44 on name drift; both naming sites now share `src/core/imatrix_alias.h`) + `tests/test_vendored_kaggle_harness.py` (106 checks × 15 copies, fails 5 on the pre-F9b copy), both in model-free CI | **DONE** |
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
@@ -182,6 +182,25 @@ e5-small evidence: cos_min 0.9847→0.9889, mean 0.9889→0.9913). The e5-small
 f32 + shipped imatrix are cached under `~/.cache/hf-f7` for this. One kernel
 at a time; promotion decisions stay with the coordinator (IQ4_XS note in
 T19-E3 applies).
+
+#### F7b outcome (2026-08-05, kernel v3) — coordinator decision items
+
+Numbers in the wave-3 row above; full A/B in
+`cstr/*-GGUF/*-f7-imatrix-ab.txt` (and granite's canonical-name ab files).
+Left OPEN deliberately:
+1. **Re-point the registry's arctic q4_k-imatrix alias at the `-f7` artifact?**
+   The shipped pinned `arctic-embed-m-v2-q4_k-imatrix.gguf` (301cae98…) was
+   built with NO q/k/v importance and measures far below the `-f7` re-quant
+   (.9614 vs .9937 mean). The A/B ran on Kaggle x86 CPU only — do the
+   local-Metal cross-check first (T19-E3 saw ~0.002 backend FP delta), then
+   re-pin. q8_0 stays the default regardless (q4_k+imat .9937 < q8 .9996).
+2. **IQ4_XS guidance narrowed:** T19-E3's "IQ4_XS+imatrix is the best sub-Q8"
+   held only under the coverage defect for BERT-family models; post-F7 arctic
+   q4_k+imatrix wins all three tails. Decoder-family (f2llm) keeps the IQ4_XS
+   ordering. Re-measure per family; never generalise across the pre-merge
+   boundary.
+3. granite-311m iq4_xs quantizes some `ffn.fc2` tensors as iq4_nl fallback
+   (dimension constraint) — benign, note when reading its size numbers.
 
 ### F9b — CrispEmbed's vendored kaggle_harness.py copies are stale (the ACTUAL t19 culprit)
 
