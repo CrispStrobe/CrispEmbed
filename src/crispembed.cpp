@@ -3345,15 +3345,31 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
         ctx->rerank_cache_valid = true;
     }
 
-    // Apply ContextPooler if present (DeBERTa-v2 reranker)
+    // Apply ContextPooler if present (DeBERTa-v2 reranker).
+    //
+    // HF's ContextPooler applies ACT2FN[config.pooler_hidden_act]; for the
+    // mxbai-rerank DeBERTa pair that is "gelu", which in HF/PyTorch is the
+    // *erf-exact* GELU, not the tanh approximation used here historically
+    // (same class as the granite projector finding). The exact form is
+    // opt-in behind CRISPEMBED_RERANK_POOLER_GELU_ERF until the A/B in
+    // tests/results/mxbai-gelu/ justifies a default flip; absent (or "0")
+    // the shipped tanh-approx behaviour is bit-for-bit unchanged.
     std::vector<float> pooled_buf;
     if (ctx->rerank_has_pooler) {
+        static const bool pooler_gelu_erf = [] {
+            const char * v = std::getenv("CRISPEMBED_RERANK_POOLER_GELU_ERF");
+            return v && v[0] && std::strcmp(v, "0") != 0;
+        }();
         pooled_buf.resize(H);
         for (int i = 0; i < H; i++) {
             float acc = ctx->rerank_pb[i];
             for (int j = 0; j < H; j++) acc += cls_vec[j] * ctx->rerank_pw[i * H + j];
             const float x = acc;
-            pooled_buf[i] = 0.5f * x * (1.0f + std::tanh(0.7978845608f * (x + 0.044715f * x * x * x)));
+            if (pooler_gelu_erf) {
+                pooled_buf[i] = 0.5f * x * (1.0f + std::erf(x * 0.70710678118654752f));
+            } else {
+                pooled_buf[i] = 0.5f * x * (1.0f + std::tanh(0.7978845608f * (x + 0.044715f * x * x * x)));
+            }
         }
         cls_vec = pooled_buf.data();
     }
