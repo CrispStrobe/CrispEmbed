@@ -15,7 +15,7 @@ races). Remove the row when the branch lands.
 |-------|-------------------|------|--------|
 | 2026-08-05 | *(landed in CrispASR, round-6 coordinator's own work)* | **G8=F10 DONE** (CrispASR `fd3c0e5e`): (1) T18 `--gpu-backend cpu` short-circuit synced into their `gpu_backend_pref.h` (+ cli.cpp now propagates the cpu pref; miotts's direct init_best bypass routed through the helper; `CRISPASR_GPU_PREF_CPU_LEGACY=1` value-parsed restore). (2) **Found+fixed a pre-existing crash on their main**: the vendored whisper wrapper's #214 pref filter was desynced from `make_buft_list` (weights on a device the sched doesn't carry → `sched_backend_id_from_cur` abort) AND lacked the metal→mtl alias — BOTH `--gpu-backend cpu` and `--gpu-backend metal` crashed any `-l auto` LID run; shared `whisper_dev_matches_gpu_pref()` now filters both sites. (3) **PLAN #88 write-path DECIDED** (their HISTORY §60o addendum): keep flush-at-device-free, reject flush-per-run + per-engine scoping, adopt the T18/G4 open-time cap as their `core/metal_pipeline_cache_policy.h` (`CRISPASR_METAL_PIPELINE_CACHE_MAX_MB` default 64; capping skips the open AND no-ops the flush, so oversized archives stop growing — their normal-exiting CLIs were the growth source; CrispEmbed one-shots deliberately never write). Verified: 1441/1441 units (6 new incl. red-gate legacy arm + both cap spellings), 4 live paraformer+LID arms RC=0 byte-identical transcripts with per-arm backend stderr proof, format+check scripts green. Shared-ggml-fork patch itself unchanged | **DONE** |
 | 2026-08-05 | *(landed `0a72e267`; delegated + coordinator-verified, flip decision + summary coordinator's own)* | **mxbai GELU A/B MERGED** — 3 findings. (1) erf-vs-tanh REAL but tiny: erf collapses the f16 residual vs the official-repo ONNX reference 12-96× (max Δ 2e-4 → 3e-6), tau 1.000 both arms, q8 quant error dominates 200-1000×; **default FLIPPED to erf-exact** (coordinator decision — no shipped artifact carries a pooler, so the flip perturbs nothing shipped; `CRISPEMBED_RERANK_POOLER_GELU_ERF=0` restores tanh, three spellings verified on the final binary). (2) **UNASSIGNED FIND: shipped mxbai-rerank q8_0 artifacts have NO pooler stage at all** (G7c one architecture over; coordinator re-read the tensor lists + SHA-matched the pins): calibration ±0.3 vs ±6, xsmall ranking near-INVERTED (tau −0.2/−0.733) with wrong top-1 both queries; fresh main-converter f16 matches ONNX to 1e-4 → stale artifacts, re-ship claimed below. (3) **Rider CONFIRMED+FIXED: server `POST /rerank` aborted the whole process** on any quantized 2-layer/pooler reranker (raw H×H tensor_get of Q8_0 weights — the known overrun class; live for jina-reranker-v2!); duplicate cache block deleted, apply_classifier's dequant-safe path serves both surfaces; coordinator re-ran server spot (HF-scale scores, server stays up). Evidence `tests/results/mxbai-gelu/SUMMARY.md` | **DONE** |
-| 2026-08-05 | *(round-6 coordinator's own work)* | **Claimed: mxbai artifact re-ship** (G7c playbook): regenerate f16 ollama-mode via main converter, quantize, decoded-score gate vs the committed ONNX refs, upload `*-g7c.gguf` to the two cstr repos (old files kept), re-point registry + `model_hashes.h`, fresh-download SHA-verified spot-run | **IN PROGRESS** |
+| 2026-08-05 | *(landed `da0272e8`, round-6 coordinator's own work)* | **mxbai artifact re-ship DONE** (G7c playbook): both models regenerated from fresh mixedbread-ai checkpoints with the UNCHANGED main converter (ollama mode, `pooler: ok (act=gelu)` both), f16 + 4 quants each (imatrix quants on the fresh `-f7` imatrices, "72 with imatrix" both), decoded-score-gated vs the committed ONNX refs BEFORE upload (f16 max Δ ≤9e-6 orderings identical; q8_0 0.04-0.10; 4-bit 0.14-0.71 with two documented near-tie swaps — q8_0 stays the pinned tier), 10 `*-g7c.gguf` uploaded (old files kept), READMEs note the defect, 2 registry aliases re-pointed + 2 new `model_hashes.h` pins, fresh-download SHA-verified spot-runs both aliases (HF-scale, correct top-1). Re-ship addendum in `tests/results/mxbai-gelu/SUMMARY.md` | **DONE** |
 | 2026-08-05 | *(landed; delegated + coordinator-verified: env-gate/imatrix-alias/no-repeat-ngram re-run, own three-spelling e5 re-run — =0 silent, stdout md5-stable, MTL0 proof; conversion sites spot-read)* | **`CRISPEMBED_*_BENCH` presence-gate audit MERGED** — not "8+ engines" but **68 presence-based sites across 60 files**, all now routed through one hoisted helper `src/core/env_gate.h` / `core_env::on()` (set, non-empty, not `"0"` => on; deepseek's `ds_env_on` semantics verbatim, its internals untouched). `grep getenv src/ \| grep BENCH` is now empty: the two already-value-parsed sites (`CRISPEMBED_INIT_BENCH`, `FIREREDPUNC_BENCH`) were folded in too, and deepseek's BENCH gate — which the DS_ audit deliberately left presence-based pending this sweep — now uses the shared helper. **Every one of the 69 is diagnostic-only** (read per site: each sets a `ctx->bench` consumed solely by `if (bench) fprintf(stderr,…)`, or guards an fprintf; the 5 that look load-bearing are documented in the evidence). Evidence `tests/results/bench-gates/SUMMARY.md`: 24/24 checks, 4 gates × 3 spellings serialized with `--gpu-backend metal`, stdout byte-identical in every arm; **pre-fix control on the parent-commit binary shows `=0` printing the bench lines** and pre/post stdout identical (no-op vs main). New hermetic `test-env-gate` (10 checks, wired into the CI model-free tier — which also picked up the missing `./build/test-no-repeat-ngram` run); red-gate proven by temporarily reverting the helper to `return e != nullptr`. **Recorded, NOT touched: 267 presence-based sites over 156 distinct non-BENCH vars**, and unlike BENCH many are output-affecting — biggest cluster is `unlimited_ocr.cpp`'s ~40 `UOCR_*` gates, the exact mirror of the fixed `DS_*` set; that conversion needs a per-gate output A/B | **DONE** |
 | 2026-08-05 | *(landed `87e11a4e`; delegated + coordinator-verified: driver diff reviewed, HF uploads listed, coverage lines read)* | **Reranker imatrix re-collection MERGED** (F7b leftover): 6/7 published reranker imatrices carried the `leaf_N` defect (control: bge-reranker-base was clean — F16 q/k/v skips the pre-merge, `crispembed.cpp:861`). Kernel `chr1s4/crispembed-imatrix-rerank-f7` v1: 7/7 re-collected on the CORRECT bases (`base_file` override pins ms-marco to the `-g7c` artifacts — `pick_base_gguf` preferred the superseded pre-pooler file), all new imatrices `leaf_N=0`, coverage e.g. L-6 18→36 / jina 36→72 / bge-m3 72→144 "with imatrix". **Pipeline hardened**: an `-imatrix` arm reading `0 with imatrix` now RAISES instead of silently shipping no-importance quants; per-run coverage digest + raw rerank logits in every A/B. 29 files uploaded (`*-f7.imatrix`, `*-{q4_k-imatrix,iq4_xs}-f7.gguf`, ms-marco composed as `-g7c-f7`), no published file replaced, no pin touched. A/B (Kaggle x86): clear wins bge-v2-m3 (tau .9244→.9556, dscore −26%) + jina (−23% dscore); ms-marco tau up on both; **mxbai soft (new finding, recorded not fixed: DeBERTa q/k imatrix provenance wrong — collected over rel-position inputs because quantize.cpp prefers direct name match over the merged alias; needs own A/B)**. **OPEN coordinator decisions (next round): re-pin jina `-q4_k-imatrix` (SHA-pinned, `model_hashes.h:251`) and bge-v2-m3 sub-Q8 aliases to the `-f7` artifacts — local-Metal cross-check first per G3 precedent** | **DONE** |
 | 2026-08-05 | *(landed, round-5 coordinator's own work)* | **G7c MERGED** (`63997e2c`, expanded far beyond the archived brief): shipped ms-marco rerankers were converted WITHOUT the BertPooler stage — native scored `dot(CLS,w)+b` where HF scores `classifier(tanh(pooler(CLS)))`; calibration destroyed (±0.2 vs ±11), tail ranking reordered (τ 0.733). Converter-only fix: fold BERT pooler+classifier into the verified 2-layer tanh head; suppress the stray pooler emit for Roberta-head rerankers; truthful `bert.pooler_act`. f16 matches the ONNX reference to ≤0.0009 (local miniconda torch DISQUALIFIED as parity reference — NaN/bus-error/garbage on BERT forwards); 10 `*-g7c.gguf` artifacts uploaded (old files kept so released binaries' pins keep working), 4 `model_hashes.h` pins + registry aliases re-pointed, fresh-download SHA-verified spot-runs on both pinned alias types. Evidence `tests/results/g7c/SUMMARY.md`. Recorded, not fixed: mxbai gelu is tanh-approx vs HF erf (own A/B needed); reranker imatrix files still pre-F7. **G7b DECIDED (closes it): no ST-pooler-tanh parity path** — pre-pooler CLS stays the embedding output (feature-extraction convention; the fixed LaBSE converter already matches HF CLS at cos 1.000000); no demand signal two rounds running (G7a precedent); the converter now records `bert.pooler_act=tanh` truthfully, so a future opt-in ST-parity path has the metadata it needs | **DONE** |
@@ -37,7 +37,103 @@ races). Remove the row when the branch lands.
 | 2026-08-05 | *(landed same day)* | **F7 MERGED** (`68033e8d`, coordinator-verified: coverage 36→72-with-imatrix re-run independently, fresh collector imatrix has 12 per-layer `qkv_merged` entries and 0 `leaf_N`, hermetic battery re-run green, q4_k+imatrix now separates from plain q4_k — e5-small cos_min 0.9847→0.9889). Kaggle t19 re-collection/re-quant of every published BERT-family imatrix artifact is the follow-up (F7b below). **F9 MERGED in CrispASR** (`342c5f7f`, 13 hermetic tests re-run green). ⚠ F9 correction: canonical CrispASR harness already globbed both mount depths; the resolver that lost the t19 uploads is **CrispEmbed's stale VENDORED copy** — see F9b below | **DONE** |
 
 
-## HANDOVER — round 6 (written 2026-08-05, after the round-5 session)
+## HANDOVER — round 7 (written 2026-08-05, after the round-6 session)
+
+Round 6 is COMPLETE (evidence in the board rows above — do not re-derive):
+**G8=F10** (CrispASR `fd3c0e5e`: T18 cpu short-circuit synced, a pre-existing
+`--gpu-backend cpu`/`metal` LID crash found+fixed in their vendored whisper
+wrapper, PLAN #88 write-path DECIDED with the cache cap adopted there),
+**mxbai GELU A/B** (`0a72e267`: erf-exact now the pooler default, server
+`/rerank` process-abort on quantized 2-layer rerankers fixed — was live for
+jina-reranker-v2), **mxbai artifact re-ship** (`da0272e8`: the shipped pair
+had NO ContextPooler — near-inverted xsmall rankings; 10 `*-g7c.gguf`
+uploaded, 2 pins re-pointed, fresh-download verified), **`*_BENCH`
+presence-gate audit** (`d04f3572`: 68 sites → `core_env::on()` in
+`src/core/env_gate.h`, hermetic `test-env-gate` in model-free CI), and
+**reranker imatrix re-collection** (`87e11a4e`: 6/7 published reranker
+imatrices had the `leaf_N` defect; 7/7 re-collected on correct bases, 29
+files uploaded, pipeline now RAISES on `0 with imatrix`).
+
+### Remaining work, in value order (orchestrator Fable; per-task tiers noted)
+
+- **Reranker sub-Q8 re-pin decisions** (coordinator, small; measurement
+  delegable). The imatrix row records the numbers: jina
+  `-q4_k-imatrix` (SHA-pinned, `examples/cli/model_hashes.h:251`) and
+  bge-reranker-v2-m3 sub-Q8 aliases are the clear `-f7` candidates
+  (tau +.031 / dscore −26% for bge-m3). Local-Metal cross-check FIRST
+  (G3 precedent; Kaggle A/B was x86-CPU-only).
+- **mxbai DeBERTa q/k imatrix provenance A/B** (small, Opus-tier with
+  gates). Recorded in the imatrix row: `quantize.cpp` prefers the direct
+  `blk.N.attn_{q,k}` match over the merged alias, and DeBERTa-v2 applies
+  q/k a second time to rel-position embeddings — so mxbai q/k importance
+  was collected over the WRONG inputs. Options: prefer the merged alias for
+  DeBERTa, or accumulate both. Judge by decoded rerank scores.
+- **Output-affecting presence-gate sweep** (successor to the BENCH audit;
+  session-sized, NOT mechanical). 267 presence-based sites over 156
+  non-BENCH vars remain; many select compute paths (`=0` changes OUTPUT).
+  Priority cluster: `src/unlimited_ocr.cpp`'s ~40 `UOCR_*` gates — the
+  exact mirror of the fixed `DS_*` set. Needs a per-gate output A/B, the
+  ds-gates methodology (`tests/results/ds-gates/run_gates.sh` is the
+  template).
+- **T16 (TableFormer port), T17 (Fraktur bisect)** — dedicated sessions,
+  briefs in OPEN TASKS; Fable-tier, never delegate the math. T16 still
+  needs the A5 document-structure gold.
+- **N3 (OCR perf H2/H4/H5/H6), N4 (esrgan/scunet q8 publish — NEVER ship
+  esrgan q4_k), N7 (OCR/VL quantize-and-run sweep)** — unowned, briefs in
+  the round-2 archive.
+- **A release is now credible**: post-v0.17.5 main carries the DS_ audit,
+  G7c, the mxbai rerank fixes (crash + calibration), the BENCH audit, and
+  the imatrix tooling — a reasonable v0.17.6 for a session that wants one
+  (CrispASR-style process: RELEASE_NOTES + scripts/bump-version.sh).
+
+### Discipline deltas learned THIS round (additive)
+
+- **A device-pref filter must be applied at BOTH backend-init AND
+  weight-buffer planning.** CrispASR's whisper wrapper filtered devices in
+  `whisper_backend_init_gpu` but not `make_buft_list` → weights on a device
+  the sched doesn't carry → `sched_backend_id_from_cur` abort. Any future
+  per-device filter: grep for every place that enumerates devices.
+- **Don't assume the cwd reset — verify with `pwd`.** The reset-to-main-tree
+  behavior is real but not universal; this round a format+build "in the main
+  tree" had actually persisted in a worktree (harmless here, but the inverse
+  mistake runs stale main-tree binaries). Absolute paths remain the rule.
+- **`cmake --build build --target <cli>` can report "Built target" without
+  recompiling a changed source** when the object belongs to a sibling
+  library target (make-based dirs). Judge by the `Building CXX object` line
+  for the file you changed, and re-run the behavioral check after ANY
+  rebuild that shows no compile line.
+- **New boolean env gates use `core_env::on()`** (`src/core/env_gate.h`,
+  guarded by `test-env-gate` in model-free CI). Never write
+  `getenv(X) != nullptr` again.
+- **Duplicated lazy-init blocks are a crash surface** — the `/rerank` abort
+  came from a second copy of the classifier-cache population that had not
+  received the single-doc path's dequant fix. Populate caches in exactly
+  one place.
+
+### Environment as left (2026-08-05, post-round-6)
+
+- Main volume ~25 GB free. Session scratchpad GGUF/HF caches deleted.
+  `/tmp/crispembed-regression` untouched. `~/.cache/crispembed-local/`
+  unchanged, all registry-pinned.
+- v0.17.5 latest tag; main = `da0272e8`+ (this handover lands after it).
+  Round-6 worktrees/branches all removed; the three pre-existing IN
+  PROGRESS rows (feat/ocr-engine-parity, feat/easyocr-ggml,
+  feat/ppocr-next-20260731) + older .codex worktrees remain — check the
+  board before touching.
+- New HF artifacts this round: `cstr/mxbai-rerank-{xsmall,base}-v1-GGUF`
+  `*-g7c.gguf` (f16 + 4 quants each, READMEs note the defect, old files
+  kept for old pins) and 29 reranker `-f7` imatrix/quant files across 7
+  repos (ms-marco composed as `-g7c-f7`). All new mxbai q8_0 pins
+  fresh-download SHA-verified.
+- CrispASR main `057ce9f3`+ (G8 landed there as `fd3c0e5e`; their box
+  stays hazardous — check their PLAN before claiming anything).
+- HF account cstr, token `../.env`; always `HF_HOME=~/.cache/hf-<task>` or
+  the session scratchpad. Kaggle chr1s4 (new kernel
+  `chr1s4/crispembed-imatrix-rerank-f7` v1 good), one kernel at a time.
+  Python `/Users/christianstrobele/miniconda3/bin/python` — NOT for torch
+  parity on BERT-class forwards (ONNX Runtime instead).
+
+## HANDOVER — round 6 (ARCHIVED 2026-08-05; all five lanes consumed — see round 7 above)
 
 Round 5 is COMPLETE (evidence in the board rows above — do not re-derive):
 **v0.17.5 was cut by a parallel session** (`51e7d729` bump + tag; my merges
