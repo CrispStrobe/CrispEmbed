@@ -53,10 +53,19 @@
 #include <cstring>
 #include <string>
 
+// Everything below the includes is Apple-only: the archive lives at
+// ~/Library/Caches/ggml-metal and the scan uses POSIX dirent/stat, neither of
+// which MSVC has. Only `apply()`'s body was guarded before, so a Windows build
+// died on `Cannot open include file: 'dirent.h'`. Guard the whole apparatus and
+// leave `apply()` a no-op elsewhere — the policy is meaningless without Metal.
+#if defined(__APPLE__)
 #include <dirent.h>
 #include <sys/stat.h>
+#endif
 
 namespace core_metal_cache {
+
+#if defined(__APPLE__)
 
 inline long long cap_bytes() {
     const char * e = std::getenv("CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB");
@@ -98,6 +107,8 @@ inline long long largest_archive_bytes(std::string * out_path = nullptr) {
     closedir(d);
     return best;
 }
+
+#endif // __APPLE__
 
 // Apply the policy. Idempotent, safe to call from every backend init.
 // Returns true when it disabled the cache on this call.
