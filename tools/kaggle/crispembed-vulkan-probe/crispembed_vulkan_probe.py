@@ -1,17 +1,19 @@
-"""O10: Vulkan bring-up probe on the Kaggle GPU image.
+"""O10: Vulkan bring-up probe on the Kaggle GPU image — v2.
 
-Answers ONE question — does Vulkan compute work at all here — with a yes/no
-and evidence. No optimization claims. Three stages, each reported even when
-a later one fails:
+v1 postmortem (honesty first): every stage-2/3 "success" was rc-laundering
+through `... 2>&1 | tail`, the HARD-RULE-8 trap — the apt install had
+actually failed (`vulkaninfo: not found`) and cmake's FindVulkan errored.
+v2 captures every rc directly, reports the package-install outcome
+verbatim, tries a glslc fallback (shaderc prebuilt), probes/repairs the
+NVIDIA ICD json, and — regardless of the Vulkan outcome — exports a proper
+single-file ccache.tar so the (currently useless: wrong layout, 23 MB,
+2026-06-21) chr1s4/crispembed-ccache dataset can finally be refreshed.
 
-  1. loader+ICD: apt vulkan-tools/libvulkan and `vulkaninfo --summary`
-     (the NVIDIA driver must expose an ICD inside the container — the
-     unknown this probe exists to resolve);
-  2. build: the ggml fork with -DGGML_VULKAN=ON (needs glslc; apt
-     glslc/shaderc) plus its test binaries;
-  3. compute: ggml's own test-backend-ops on a few core ops, which
-     cross-checks every result against the CPU backend — that IS the
-     "one tiny graph computed and verified".
+Stages, each reported even when a later one fails:
+  1. loader+ICD: apt vulkan packages, vulkaninfo, nvidia_icd.json repair;
+  2. build: ggml fork with -DGGML_VULKAN=ON + test-backend-ops;
+  3. compute: test-backend-ops (CPU cross-checked) on a few core ops;
+  4. ccache export: kh.export_ccache_tar() -> /kaggle/working/ccache.tar.
 
 Everything lands in /kaggle/working/vkprobe.log.
 """
@@ -72,57 +74,90 @@ def note(row):
     print("RESULT| " + row, flush=True)
 
 
-def sh_cap(cmd, timeout=600):
+def run(cmd, timeout=600):
+    """Direct rc, no pipes — v1's `| tail` laundered every failure to rc=0."""
     p = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=timeout)
     return p
 
 
-gpu = sh_cap("nvidia-smi --query-gpu=name,driver_version --format=csv,noheader")
+def show(p, n=6):
+    lines = ((p.stdout or "") + (p.stderr or "")).strip().splitlines()
+    for ln in lines[-n:]:
+        print("  | " + ln, flush=True)
+
+
+gpu = run("nvidia-smi --query-gpu=name,driver_version --format=csv,noheader")
 print(f"GPU: {gpu.stdout.strip() or 'none'}", flush=True)
 
 # --- stage 1: loader + ICD ---
 kh.step("vulkan.loader")
-sh_cap("apt-get update -qq", timeout=300)
-inst = sh_cap("apt-get install -y -qq vulkan-tools libvulkan-dev glslc 2>&1 | tail -2", timeout=600)
-print(inst.stdout, flush=True)
-if "glslc" in (inst.stdout + inst.stderr) and sh_cap("which glslc").returncode != 0:
-    sh_cap("apt-get install -y -qq shaderc || pip install -q shaderc", timeout=600)
-icd = sh_cap("ls /usr/share/vulkan/icd.d/ /etc/vulkan/icd.d/ 2>/dev/null; ls /usr/lib/x86_64-linux-gnu/libvulkan* 2>/dev/null")
-print(f"ICD/loader files:\n{icd.stdout}", flush=True)
-vki = sh_cap("vulkaninfo --summary 2>&1 | head -40")
-print(vki.stdout, flush=True)
-has_device = "deviceName" in vki.stdout or "GPU id" in vki.stdout
-note(f"stage1 loader+ICD: vulkaninfo_rc={vki.returncode} device_visible={has_device}")
+apt = run("apt-get update -q && apt-get install -y --no-install-recommends "
+          "vulkan-tools libvulkan-dev libvulkan1 glslc glslang-tools", timeout=900)
+note(f"stage1 apt: rc={apt.returncode}")
+show(apt, 8)
+icd_dirs = run("ls /usr/share/vulkan/icd.d/ /etc/vulkan/icd.d/ 2>/dev/null")
+print(f"ICD dirs:\n{icd_dirs.stdout or '  (none)'}", flush=True)
+if "nvidia" not in icd_dirs.stdout.lower():
+    # Containers frequently ship the driver libs without the ICD manifest;
+    # write the standard one and let vulkaninfo judge it.
+    lib = run("ls /usr/lib/x86_64-linux-gnu/libGLX_nvidia.so.0 2>/dev/null")
+    Path("/usr/share/vulkan/icd.d").mkdir(parents=True, exist_ok=True)
+    Path("/usr/share/vulkan/icd.d/nvidia_icd.json").write_text(
+        '{"file_format_version":"1.0.0","ICD":{"library_path":"libGLX_nvidia.so.0",'
+        '"api_version":"1.3.194"}}\n')
+    note(f"stage1 icd-repair: wrote nvidia_icd.json (driver lib present={lib.returncode == 0})")
+vki = run("vulkaninfo --summary", timeout=120)
+show(vki, 14)
+has_device = "deviceName" in (vki.stdout or "")
+note(f"stage1 vulkaninfo: rc={vki.returncode} device_visible={has_device}")
+
+# --- glslc fallback ---
+if run("which glslc").returncode != 0:
+    fb = run("curl -sL https://storage.googleapis.com/shaderc/artifacts/prod/"
+             "graphics_shader_compiler/shaderc/linux/continuous_clang_release/"
+             "latest/install.tgz -o /tmp/shaderc.tgz && "
+             "tar -xzf /tmp/shaderc.tgz -C /tmp && "
+             "cp /tmp/install/bin/glslc /usr/local/bin/glslc", timeout=600)
+    note(f"stage1 glslc-fallback: rc={fb.returncode} which={run('which glslc').stdout.strip() or 'MISSING'}")
+else:
+    note(f"stage1 glslc: {run('which glslc').stdout.strip()}")
 
 # --- stage 2: build ggml with Vulkan ---
 kh.step("clone+build")
 if not EMBED_DIR.exists():
     kh.sh(f"git clone --depth 1 --recursive -b {BRANCH} {REPO_URL} {EMBED_DIR}")
 kh.install_build_toolchain()
-glslc = sh_cap("which glslc")
-note(f"stage2 glslc: {glslc.stdout.strip() or 'MISSING'}")
 BUILD_DIR.mkdir(exist_ok=True)
-cfg = sh_cap(f"cd {BUILD_DIR} && cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON "
-             f"-DGGML_BUILD_TESTS=ON .. 2>&1 | tail -5", timeout=600)
-print(cfg.stdout, flush=True)
+cfg = run(f"cd {BUILD_DIR} && cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DGGML_VULKAN=ON "
+          "-DGGML_BUILD_TESTS=ON " + " ".join(kh.cache_and_link_flags()) + " ..", timeout=600)
+note(f"stage2 configure: rc={cfg.returncode}")
+show(cfg, 6)
 built = False
 if cfg.returncode == 0:
     with kh.build_heartbeat("ninja-vk", 30):
-        b = sh_cap(f"cd {BUILD_DIR} && ninja -j4 test-backend-ops 2>&1 | tail -5", timeout=2400)
-    print(b.stdout, flush=True)
+        b = run(f"cd {BUILD_DIR} && ninja -j4 test-backend-ops", timeout=3600)
+    note(f"stage2 ninja: rc={b.returncode}")
+    show(b, 6)
     built = b.returncode == 0
-note(f"stage2 build: configure_rc={cfg.returncode} test-backend-ops_built={built}")
 
 # --- stage 3: compute with CPU cross-check ---
 kh.step("compute")
 if built:
-    for op in ("MUL_MAT", "IM2COL", "SOFT_MAX", "NORM"):
-        t = sh_cap(f"cd {BUILD_DIR} && ./bin/test-backend-ops test -b Vulkan0 -o {op} 2>&1 | tail -3",
-                   timeout=1200)
-        tail = " / ".join(t.stdout.strip().splitlines()[-2:])
-        note(f"stage3 {op}: rc={t.returncode} {tail}")
+    binq = run(f"find {BUILD_DIR} -name test-backend-ops -type f")
+    tb = binq.stdout.strip().splitlines()
+    note(f"stage3 binary: {tb[0] if tb else 'NOT FOUND'}")
+    if tb:
+        for op in ("MUL_MAT", "IM2COL", "SOFT_MAX", "NORM"):
+            t = run(f"{tb[0]} test -o {op}", timeout=1800)
+            tail = " / ".join((t.stdout or "").strip().splitlines()[-2:])
+            note(f"stage3 {op}: rc={t.returncode} {tail[:160]}")
 else:
     note("stage3 compute: SKIPPED (no build)")
+
+# --- stage 4: ccache export for the dataset refresh ---
+kh.step("ccache.export")
+tar = kh.export_ccache_tar()
+note(f"stage4 ccache export: {tar or 'nothing to export'}")
 
 print("\n" + "=" * 72)
 print("SUMMARY")
