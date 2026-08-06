@@ -1502,6 +1502,87 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     // breakdown on the current build first.
     double _deform_ms = 0;
     double _sattn_ms = 0, _valproj_ms = 0, _ffn_ms = 0;
+    // O2b (2026-08-06): all six value projections consume the SAME input —
+    // `memory` is the encoder output and never changes across decoder layers —
+    // so compute all six in ONE single-backend GPU graph (one upload of
+    // memory, six mul_mats, one readback) instead of six threaded CPU GEMMs.
+    // Measure-first: on current main value-proj was 178-211 ms of a
+    // 545-588 ms Phase 2 at -t 4 (the #1 stage) and the AXPY+threaded
+    // cpu_linear is already at its memory-bound ceiling, so the CPU lane has
+    // no headroom left. The weights already live on ctx->backend (that is
+    // where load_weights put them).
+    //
+    // OPT-IN (CRISPEMBED_LAYOUT_VALPROJ_GPU=1), NOT default: measured 3.5x on
+    // the stage (178-211 -> 55 ms, Phase 2 -35%) but the GPU contraction
+    // order is not byte-identical — on the 6-fixture sweep 3 pages were
+    // byte-identical and the rest showed +-0.001 score / +-0.1 px jitter,
+    // EXCEPT commons_test where a borderline region at score exactly 0.500
+    // crossed the confidence threshold (13 -> 14 regions). Same drift class
+    // that keeps LAYOUT_CONV_F16 gated. Candidate for CUDA boxes and for a
+    // threshold-hysteresis follow-up; flip only with a region-level quality
+    // gate across the full fixture set.
+    std::vector<std::vector<float>> valproj_pre(6);
+    bool valproj_gpu = false;
+    {
+        const char * vp_env = std::getenv("CRISPEMBED_LAYOUT_VALPROJ_GPU");
+        const bool vp_enabled = vp_env && vp_env[0] && vp_env[0] != '0';
+        if (vp_enabled && !ggml_backend_is_cpu(ctx->backend)) {
+            auto _t_vp0 = std::chrono::steady_clock::now();
+            const size_t gb = ggml_tensor_overhead() * 128 + ggml_graph_overhead_custom(128, false);
+            std::vector<uint8_t> gbuf(gb);
+            ggml_init_params gip = { gb, gbuf.data(), true };
+            ggml_context * gc = ggml_init(gip);
+            ggml_tensor * outs[6] = {};
+            ggml_cgraph * gf = gc ? ggml_new_graph_custom(gc, 128, false) : nullptr;
+            ggml_tensor * mem_in = nullptr;
+            bool built = gf != nullptr;
+            if (built) {
+                // memory host layout is [D rows][N contiguous] = ggml [N, D].
+                mem_in = ggml_new_tensor_2d(gc, GGML_TYPE_F32, total_tokens, D);
+                ggml_set_input(mem_in);
+                ggml_tensor * memT = ggml_cont(gc, ggml_transpose(gc, mem_in)); // [D, N]
+                for (int li = 0; li < 6; li++) {
+                    const auto & L = ctx->decoder.layers[li];
+                    if (!L.cross_value_w || !L.cross_value_b) {
+                        built = false;
+                        break;
+                    }
+                    // cpu_linear's square-weight convention: flat[o + i*D] =
+                    // W[o,i], i.e. the ggml fast axis indexes o. mul_mat
+                    // contracts over ne0 of both operands, so transpose+cont
+                    // the weight to put i on the fast axis.
+                    ggml_tensor * wT = ggml_cont(gc, ggml_transpose(gc, L.cross_value_w));
+                    ggml_tensor * y = ggml_mul_mat(gc, wT, memT); // [D_out, N]
+                    y = ggml_add(gc, y, L.cross_value_b);         // bias broadcast over N
+                    // Host wants values[o*N + n] (n fastest) = ggml [N, D_out].
+                    y = ggml_cont(gc, ggml_transpose(gc, y));
+                    ggml_set_output(y);
+                    ggml_build_forward_expand(gf, y);
+                    outs[li] = y;
+                }
+            }
+            ggml_gallocr_t ga = nullptr;
+            if (built) {
+                ga = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+                built = ga && ggml_gallocr_alloc_graph(ga, gf);
+            }
+            if (built) {
+                ggml_backend_tensor_set(mem_in, memory.data(), 0, (size_t)D * total_tokens * sizeof(float));
+                built = ggml_backend_graph_compute(ctx->backend, gf) == GGML_STATUS_SUCCESS;
+            }
+            if (built) {
+                for (int li = 0; li < 6; li++) {
+                    valproj_pre[li].resize((size_t)D * total_tokens);
+                    ggml_backend_tensor_get(outs[li], valproj_pre[li].data(), 0,
+                                            valproj_pre[li].size() * sizeof(float));
+                }
+                valproj_gpu = true;
+            }
+            if (ga) ggml_gallocr_free(ga);
+            if (gc) ggml_free(gc);
+            _valproj_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_vp0).count();
+        }
+    }
     for (int li = 0; li < 6; li++) {
         // Recompute pos_enc from current reference points each layer (matches HF)
         compute_pos_enc(ref_points.data(), pos_enc.data());
@@ -1648,10 +1729,16 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         // --- Deformable cross-attention ---
         residual = queries;
 
-        // Value projection: [D, N_total] → [D, N_total]
+        // Value projection: [D, N_total] → [D, N_total] — precomputed for all
+        // six layers in one GPU graph above when valproj_gpu is set.
         auto _t_vp = std::chrono::steady_clock::now();
-        std::vector<float> values(D * total_tokens);
-        cpu_linear(memory.data(), values.data(), D, D, total_tokens, layer.cross_value_w, layer.cross_value_b);
+        std::vector<float> values;
+        if (valproj_gpu) {
+            values = std::move(valproj_pre[li]);
+        } else {
+            values.resize((size_t)D * total_tokens);
+            cpu_linear(memory.data(), values.data(), D, D, total_tokens, layer.cross_value_w, layer.cross_value_b);
+        }
         _valproj_ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t_vp).count();
         if (li == 0 && layout_debug()) {
             float vmin = 1e9, vmax = -1e9;

@@ -1,5 +1,32 @@
 # CrispEmbed Performance
 
+## layout O2b: six value projections share one input — batched GPU graph is 3.5x on the stage, ships OPT-IN on a 0.500-score threshold flip (Apple M1, 2026-08-06)
+
+Fable-task 6. Re-profiled Phase 2 on current main FIRST (flat-im2col moved
+every layout number): Phase 1 is now 561-701 ms (was ~1.4 s), Phase 2
+545-588 ms with **value-proj 178-211 ms as the new #1 stage (~35%)** —
+larger in share than the O2-era ~101 ms estimate. The CPU lane has no
+headroom: `cpu_linear` is already AXPY-vectorized + threaded and runs at its
+memory-bound ceiling at `-t 4`.
+
+Structural fact the estimate missed: `memory` (the encoder output) is
+CONSTANT across the six decoder layers — all six value projections consume
+the same input, so one single-backend gallocr graph computes them together
+(one 11-MB upload, one shared transpose-cont, six mul_mats + bias, one
+readback per layer). Measured: value-proj **178-211 -> 54-55 ms (3.5x)**,
+Phase 2 545-588 -> **366-385 ms (~35%)**, page call ~1.21 -> ~1.14 s.
+
+**Ships opt-in (`CRISPEMBED_LAYOUT_VALPROJ_GPU=1`), default OFF:** the GPU
+contraction order is not byte-identical. 6-fixture sweep: 3 pages
+byte-identical; german_official / receipt_example show +-0.001 score /
++-0.1 px jitter; **commons_test flips a borderline region at score exactly
+0.500 across the confidence threshold (13 -> 14 regions)** — the
+LAYOUT_CONV_F16 drift class, so the default stays CPU per the A/B rule
+(default arm verified byte-identical to baseline). Follow-ups that could
+earn the flip: region-level quality gate across the full fixture set, score
+hysteresis at the threshold, and the CUDA arm (different contraction there
+anyway; det/rec already flipped on CUDA).
+
 ## CUDA-rec 0-results: quantized graph residents uploaded F32 bytes as q8_0 blocks — fixed, byte-exact on P100; det flips to GPU-by-default on CUDA (O11) (2026-08-06)
 
 Fable-task 1. The conv-ab v2 capture's two suspects (logits readback layout,
