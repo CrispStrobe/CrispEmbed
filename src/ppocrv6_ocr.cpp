@@ -841,6 +841,26 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             }
         }
     }
+    // Profiling-only truncation at finer backbone granularity (decode is
+    // garbage on these arms, same contract as GRAPH_STOP=backbone below):
+    // CRISPEMBED_PPOCRV6_GRAPH_STOP=stem|stage1|stage2|stage3|stage4.
+    auto stage_stop = [&](const char * name, ggml_tensor * value) -> bool {
+        const char * stop = std::getenv("CRISPEMBED_PPOCRV6_GRAPH_STOP");
+        if (!stop || std::strcmp(stop, name) != 0) return false;
+        c->graph.output = value;
+        ggml_set_name(value, "ppocrv6_graph_output");
+        ggml_set_output(value);
+        ggml_build_forward_expand(c->graph.graph, value);
+        ggml_backend_sched_reset(c->graph.sched);
+        if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
+        c->graph.allocated = c->graph.ready = true;
+        c->graph.width = width;
+        c->graph.batch = batch;
+        c->graph.logits_output = true; // keep the batch caller's lane; output is NOT logits
+        fprintf(stderr, "ppocrv6: STAGE-STOP graph at %s (%s)\n", name, ggml_backend_name(c->graph.backend));
+        return true;
+    };
+    if (stage_stop("stem", x)) return true;
     for (size_t stage_idx = 0; stage_idx < c->stages.size(); ++stage_idx) {
         const auto & stage = c->stages[stage_idx];
         for (const pp_block & b : stage) {
@@ -850,11 +870,14 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
                 return false;
             }
         }
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        {
             static const char * names[] = { "stage1", "stage2", "stage3", "stage4" };
             if (stage_idx < sizeof(names) / sizeof(names[0])) {
-                c->graph.debug_taps.push_back({ names[stage_idx], x });
-                ggml_set_output(x);
+                if (stage_stop(names[stage_idx], x)) return true;
+                if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+                    c->graph.debug_taps.push_back({ names[stage_idx], x });
+                    ggml_set_output(x);
+                }
             }
         }
     }
@@ -1122,8 +1145,10 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
                     (long long)ggml_nelements(c->graph.input));
         return false;
     }
+    const auto t_stage0 = std::chrono::steady_clock::now();
     std::vector<float> graph_input = input;
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
+    const auto t_stage1 = std::chrono::steady_clock::now();
     if (c->diff && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         std::vector<float> staged(graph_input.size());
         ggml_backend_tensor_get(c->graph.input, staged.data(), 0, staged.size() * sizeof(float));
@@ -1141,6 +1166,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
     // completed execution (especially when a width-keyed graph is invoked
     // repeatedly). Re-plan Metal buffers per invocation; CPU safely reuses
     // its static allocation.
+    const auto t_alloc0 = std::chrono::steady_clock::now();
     if (!c->graph.allocated || !ggml_backend_is_cpu(c->graph.backend)) {
         ggml_backend_sched_reset(c->graph.sched);
         if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) return false;
@@ -1156,6 +1182,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
         ggml_backend_tensor_get(c->graph.svtr_skip, c->graph.svtr_skip_host.data(), 0,
                                 c->graph.svtr_skip_host.size() * sizeof(float));
     }
+    const auto t_readback1 = std::chrono::steady_clock::now();
     if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         for (const auto & tap : c->graph.debug_taps) {
             std::vector<float> values(ggml_nelements(tap.second));
@@ -1219,9 +1246,18 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
     w = (int)c->graph.output->ne[0];
     h = (int)c->graph.output->ne[1] / std::max(1, batch);
     if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_BENCH")) {
-        const double ms = std::chrono::duration<double, std::milli>(finished - started).count();
-        fprintf(stderr, "[ppocrv6-graph-bench] backend=%s graph_ms=%.3f output=%dx%d\n",
-                ggml_backend_name(c->graph.backend), ms, w, h);
+        // Full attribution of a batch call: input staging (host->device copy),
+        // sched re-alloc (Metal re-plans per invocation), graph compute, and
+        // the logits + skip readback (device->host, synchronous). The old line
+        // timed ONLY compute — readback of the 18,710-class logits was
+        // invisible.
+        const auto ms = [](auto a, auto b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+        fprintf(stderr,
+                "[ppocrv6-graph-bench] backend=%s graph_ms=%.3f stage_ms=%.3f alloc_ms=%.3f readback_ms=%.3f "
+                "readback_mb=%.1f output=%dx%d\n",
+                ggml_backend_name(c->graph.backend), ms(started, finished), ms(t_stage0, t_stage1),
+                ms(t_alloc0, started), ms(finished, t_readback1),
+                (double)(output.size() + c->graph.svtr_skip_host.size()) * sizeof(float) / (1024.0 * 1024.0), w, h);
     }
     return true;
 }

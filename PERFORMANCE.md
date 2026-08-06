@@ -126,6 +126,76 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## PP-OCR rec Metal batch profile: im2col was 70% of the graph — flat-dispatch kernel 2.3x recognize, 1.6x layout_detect, byte-identical (Apple M1, 2026-08-06)
+
+Fable-task 2 of the OCR-optimization handover. Fixture: `scan_page_pd.png`
+606x1000 → 38 boxes, medium det + medium rec f16, Metal, `-t 4`, branch
+`perf/ppocr-rec-profile`. New permanent instrumentation this session: the
+`[ppocrv6-graph-bench]` line now splits `graph_ms` / `stage_ms` (input
+staging) / `alloc_ms` / `readback_ms` / `readback_mb`, and
+`CRISPEMBED_PPOCRV6_GRAPH_STOP` gained `stem|stage1|stage2|stage3` stops
+beside the existing `backbone|decoder` (profiling-only; decode is garbage on
+stop arms).
+
+**Every O13b follow-up candidate was falsified by measurement:**
+
+- **Readback is ~1%**, not a lever: the 60-69 MB logits of a batch-8 width
+  group read back in 25-30 ms of a 2.6-3.1 s graph. On-device top-k/argmax
+  is pointless on M1 (unified memory).
+- **The 18,710-class head is ~1-2%**: `GRAPH_STOP=decoder` (everything but
+  the head linear) ≈ the full graph within noise (2574/2765/1526 vs
+  2624/2814/1540 ms). "The CTC head dominates" was an inference from the
+  output shape, not a measurement.
+- **Batch-size tuning wins nothing**: a single width-960 crop's prefix graph
+  is ~334 ms; the batch-8 group is ~3104 ms — perfectly linear, no batching
+  economy to tune.
+- **`CRISPEMBED_PPOCRV6_CONV_DIRECT=1`** (native Metal `ggml_conv_2d_direct`,
+  previously unmeasured): recognize 12.5-16 s → **85-88 s, a 6-7x
+  REGRESSION**, 3/3 interleaved pairs, output byte-identical. Stays gated.
+
+**Stage attribution** (stop-arm deltas, width-896 batch-8 group): stem ~97 ms,
+stage1 ~90, **stage2 ~625, stage3 ~1530, stage4 ~550**, SVTR decoder + head ~0
+within noise — the PPLCNetV4 backbone convs own ~95%.
+
+**Per-op attribution** (fork per-op profiler `CRISPASR_METAL_PROFILE=2`,
+serialized, batch-8 width-896 graph, 737 nodes): **IM2COL 70-71%**
+(1.8-2.0 s, 62 nodes, ~30 ms avg), MUL_MAT 17.5%, CONT 8%. The heavy nodes
+are the `ggml_conv_2d_dw` lowerings (IC==1, N=C*batch=4096): the standard
+Metal im2col kernel loops each thread N/ntg0 times with per-plane strides on
+both src and dst — ~0.4 GB/s on a ~50 MB F16 materialization. The 1x1 convs'
+im2cols (8-thread threadgroups) were individually cheap.
+
+**Fix (ggml fork `89a2039d`, branch `sync/upstream-v0.17`):**
+`kernel_im2col_flat` — one thread per dst element from a
+`(ceil(OW*CHW/256), OH, N)` grid; contiguous dst writes, 2D-local dw reads,
+32-bit row-local index math only. Two failed cuts recorded honestly: a fully
+flat int64-divmod index was SLOWER than legacy (int64 division is emulated on
+Apple GPUs and cost more than the copy); extending naively without the grid
+change regressed 25%. Selection predicate (`N*KH*KW < 128 || IC == 1`) is
+shared between pipeline getter and encoder; **`CRISPASR_METAL_IM2COL_FLAT=0`
+restores the legacy kernel** (bisection lever). This re-derives the pre-v0.17
+`CRISPASR_METAL_IM2COL_OCC` variant that the sync dropped, as its drop note
+prescribed.
+
+**Verdict (interleaved same-binary pairs, 3x, all outputs byte-identical):**
+
+| arm | recognize (3 pairs) | page total |
+|---|---|---|
+| legacy | 14022 / 13431 / 13685 ms | 16.3-16.8 s |
+| flat | **5843 / 5994 / 6201 ms (2.3x)** | **8.6-9.3 s (1.8x)** |
+
+Fused batch-8 width-group graphs: 2.6-3.1 s → 0.7-1.2 s (~2.6x). Side win —
+**layout_detect** (RT-DETR, N=1 convs also hit the tiny-threadgroup class):
+1556/1624 ms → **951/991 ms (1.6x)**, regions byte-identical, which revises
+O1's "Phase 1 is steady-state Metal compute" wall downward. Quality gates:
+18-fixture ppocr-lane sweep (fox, scan_page, scan_strip + 15 CC0) byte-identical
+flat-vs-legacy, 13/13 model-free CI checks, `test-backend-smoke` correct=1.
+Timing caveat: box shared with parallel sessions (load 4-6 during pairs);
+interleaving carries the verdict, and the effect (2.3x) dwarfs the noise.
+Open on other backends: the flat predicate is Metal-only; CUDA/Vulkan im2col
+untouched. The `crispstrobe-ops` branch (old v0.10 lineage, recently active)
+does NOT carry this kernel — port it there if that lineage ships Metal.
+
 ## Kaggle conv A/B (O8+O9): the im2col interchange WINS on x86, PP-OCR det flips to GPU on CUDA (18x), LAYOUT_CONV_F16 stays gated (P100 + Xeon, 2026-08-06)
 
 **v2 addendum (same kernel, second P100 run — v1 verdicts REPLICATE):** o8
