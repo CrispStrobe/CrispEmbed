@@ -220,6 +220,11 @@ struct granite_vision_context {
     int max_tokens;
     int n_threads;
     bool bench = false;
+    // O5 accumulators: per-decode-step (T==1) graph build+alloc vs compute
+    // time inside gv_run_llm_body, reported on the decode bench line so the
+    // "persistent decode graph" question is answerable from a run's stderr.
+    double o5_build_ms = 0.0, o5_compute_ms = 0.0;
+    int o5_steps = 0;
 
     // Weight storage
     core_gguf::WeightLoad wl;
@@ -725,6 +730,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx, const float * embeds, 
     const float res_mul = ctx->residual_multiplier;
     const float attn_mul = ctx->attention_multiplier;
 
+    const auto o5_t0 = std::chrono::steady_clock::now();
     ggml_init_params ip{ ctx->vis_compute_meta.size(), ctx->vis_compute_meta.data(), true };
     ggml_context * g = ggml_init(ip);
     ggml_cgraph * gf = ggml_new_graph_custom(g, kLlmGraphCap, false);
@@ -907,6 +913,7 @@ static bool gv_run_llm_body(granite_vision_context * ctx, const float * embeds, 
         ggml_free(g);
         return false;
     }
+    const auto o5_t_alloc = std::chrono::steady_clock::now();
 
     ggml_backend_tensor_set(x_in, embeds, 0, (size_t)T * D * sizeof(float));
 
@@ -924,10 +931,17 @@ static bool gv_run_llm_body(granite_vision_context * ctx, const float * embeds, 
         for (int k = 0; k < Lk; k++) mask_data[(size_t)q * Lk + k] = (k <= n_past + q) ? h0 : hni;
     ggml_backend_tensor_set(mask, mask_data.data(), 0, mask_data.size() * sizeof(ggml_fp16_t));
 
+    const auto o5_t_pre = std::chrono::steady_clock::now();
     if (ggml_backend_sched_graph_compute(ctx->vis_sched, gf) != GGML_STATUS_SUCCESS) {
         fprintf(stderr, "granite_vision: LLM graph compute failed\n");
         ggml_free(g);
         return false;
+    }
+    if (T == 1) {
+        ctx->o5_build_ms += std::chrono::duration<double, std::milli>(o5_t_alloc - o5_t0).count();
+        ctx->o5_compute_ms +=
+            std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - o5_t_pre).count();
+        ctx->o5_steps++;
     }
 
     // Read back last token's hidden state (offset = (T-1)*D floats)
@@ -1455,6 +1469,8 @@ const char * granite_vision_recognize(granite_vision_context * ctx, const uint8_
 
     long long decode_total_ms = 0;
     int decode_steps = 0;
+    ctx->o5_build_ms = ctx->o5_compute_ms = 0.0;
+    ctx->o5_steps = 0;
     for (int step = 0; step < ctx->max_tokens; step++) {
         auto t_step = std::chrono::steady_clock::now();
         int best_id = 0;
@@ -1505,8 +1521,12 @@ const char * granite_vision_recognize(granite_vision_context * ctx, const uint8_
         }
     }
     if (bench) {
-        fprintf(stderr, "[granite_ocr-bench] decode: %lldms (%d steps, %.1f ms/tok)\n", decode_total_ms, decode_steps,
-                decode_steps ? (float)decode_total_ms / decode_steps : 0.0f);
+        fprintf(stderr,
+                "[granite_ocr-bench] decode: %lldms (%d steps, %.1f ms/tok; graph build+alloc %.1f ms = %.1f%%, "
+                "compute %.1f ms over %d graph steps)\n",
+                decode_total_ms, decode_steps, decode_steps ? (float)decode_total_ms / decode_steps : 0.0f,
+                ctx->o5_build_ms, decode_total_ms > 0 ? 100.0 * ctx->o5_build_ms / (double)decode_total_ms : 0.0,
+                ctx->o5_compute_ms, ctx->o5_steps);
         auto total_ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_total).count();
         fprintf(stderr, "[granite_ocr-bench] total: %lldms\n", (long long)total_ms);
