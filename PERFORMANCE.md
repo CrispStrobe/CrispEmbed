@@ -126,6 +126,28 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## VLM decode-graph overhead (O5): R5 closed — 2.2% qwen2vl, 9.2% granite, and smoldocling never had a graph (Apple M1, 2026-08-06)
+
+The R5 backlog item's own rule was "profile build+alloc as a fraction of
+decode; single-digit percent closes the item." Branch
+`perf/o5-decode-overhead`, `scan_strip.png`, `-t 4`:
+
+| engine | decode | build+alloc | fraction | steps | source |
+|---|--:|--:|--:|--:|---|
+| qwen2.5-vl-3b q4_k | 20708 ms | 446 ms | **2.2%** | 125 | existing `QWEN_DBG=1` per-step build/upload/compute/read timers (measured under heavy interactive load — CPU-side build share is inflated if anything; correct OCR text) |
+| granite-vision-2b q4_k | 11660 ms (64.8 ms/tok) | 1075 ms | **9.2%** | 180 | NEW permanent split on the `[granite_ocr-bench] decode:` line |
+| smoldocling q8_0 | — | — | **0 by construction** | — | `sd_llm_decode_step` is a hand-written CPU loop (`core_cpu` + `sd_linear`) with a host `std::vector` KV cache — there is no decode graph to cache |
+
+Verdict: **no persistent-decode-graph port is justified for any of the three**
+— the deepseek T14 result (built it, won nothing, 1-6% overhead) generalizes.
+granite's 9.2% is the borderline case: a port would buy at most ~1 s of a
+21.7 s end-to-end run; the number is on its bench line for whoever revisits.
+
+Survey corrections bagged along the way: smoldocling's KV is HOST memory (not
+"F16 device-resident"), and granite's DEFAULT decode is the per-step ggml
+graph (`gv_run_llm_body` T=1, Metal-resident F16 KV) with the scalar loop as
+fallback — the R5 text had both backwards in parts.
+
 ## PP-OCRv6 medium-tier page profile (O13b): recognize is 71-74%, det ignored -t, and the CPU-only story is 4-6x off (Apple M1, 2026-08-06)
 
 Measure-first profile on the production surface
