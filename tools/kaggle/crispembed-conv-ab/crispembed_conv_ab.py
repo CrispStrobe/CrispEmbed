@@ -255,6 +255,43 @@ if layout_m:
                     note(f"o9.layout first diff line {i}: f32='{x}' f16='{y}'")
                     break
 
+
+# ── O9d (v2): DBNet det CPU vs CUDA — the Fraktur-lane 3.8 s owner ──
+kh.step("o9d.dbnet-cuda")
+dbnet_m = get("cstr/dbnet-ic15-GGUF", "dbnet-ic15-q8_0.gguf")
+trocr_m = get("cstr/trocr-small-printed-GGUF", "trocr-small-printed-q8_0.gguf")
+dtexts = {}
+if dbnet_m and trocr_m:
+    import time as _t
+    for name, env in (("cpu", {}), ("cuda", {"OCR_DETECT_USE_GPU": "1"})):
+        e = dict(env)
+        e["OCR_DETECT_THREADS"] = "4"
+        t0 = _t.monotonic()
+        p = run(f"o9d dbnet {name}",
+                [binp("crispembed"), "-m", trocr_m, "--ocr", IMG_PAGE,
+                 "--ocr-det", dbnet_m, "--ocr-rec", trocr_m, "-t", "4"], env=e)
+        wall = _t.monotonic() - t0
+        if p:
+            dtexts[name] = p.stdout
+            note(f"o9d.dbnet.{name}: wall={wall:.1f}s rc={p.returncode} stdout={len(p.stdout)}B")
+    if len(dtexts) == 2:
+        note(f"o9d.dbnet text identical: {dtexts['cpu'] == dtexts['cuda']}")
+
+# ── O9b-debug (v2): why does PP-OCR rec on CUDA emit 0 results? ──
+kh.step("o9b.rec-debug")
+if det_m and rec_m:
+    e = {"CRISPEMBED_PPOCRV6_GRAPH_BENCH": "1", "CRISPEMBED_PPOCRV6_GRAPH_DEBUG": "1",
+         "CRISPEMBED_PPOCRV6_BENCH": "1"}
+    p = run("o9b rec-debug full-stderr",
+            [binp("crispembed"), "-m", rec_m, "--ocr", IMG_STRIP,
+             "--ocr-engine", "ppocrv6", "--ocr-det", det_m, "--ocr-rec", rec_m,
+             "-t", "4"], env=e)
+    if p:
+        note(f"o9b.rec-debug: rc={p.returncode} stdout={len(p.stdout)}B")
+        print("---- o9b FULL stderr tail (rec diagnosis) ----")
+        for line in p.stderr.splitlines()[-120:]:
+            print("  D| " + line)
+
 print("\n" + "=" * 72)
 print("SUMMARY")
 print("=" * 72)
