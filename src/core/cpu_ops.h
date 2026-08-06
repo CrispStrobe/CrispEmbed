@@ -819,6 +819,33 @@ static inline void conv2d_im2col_cpu(const float * in, float * out, const float 
     }
 }
 
+// O7 per-engine conv2d defaults. An engine with A/B evidence (byte-identical
+// output + a CPU-time win on the R6 im2col/mk path) installs a scope around
+// its conv-heavy stage; the shared dispatcher reads it when the user has not
+// set the CRISPEMBED_CONV2D_* env vars. thread_local: prefs apply to convs
+// issued on the installing thread only — an engine that fans conv work out to
+// its own worker threads must install the scope inside each worker.
+struct conv2d_engine_prefs_t {
+    bool im2col = false;
+    bool mk = false;
+    int threads = 1;
+};
+
+inline conv2d_engine_prefs_t & conv2d_engine_prefs() {
+    static thread_local conv2d_engine_prefs_t prefs;
+    return prefs;
+}
+
+struct conv2d_prefs_scope {
+    conv2d_engine_prefs_t saved;
+    conv2d_prefs_scope(bool mk, int threads) : saved(conv2d_engine_prefs()) {
+        conv2d_engine_prefs() = { true, mk, threads < 1 ? 1 : threads };
+    }
+    ~conv2d_prefs_scope() { conv2d_engine_prefs() = saved; }
+    conv2d_prefs_scope(const conv2d_prefs_scope &) = delete;
+    conv2d_prefs_scope & operator=(const conv2d_prefs_scope &) = delete;
+};
+
 static inline void conv2d_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
                               int out_ch, int H, int W, int kh, int kw, int stride, int pad, int groups = 1) {
     int out_H = (H + 2 * pad - kh) / stride + 1;
@@ -851,23 +878,30 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
         }
     }
 
-    // R6: opt-in im2col-tile path, bitwise-identical to the loop below (see
+    // R6: im2col-tile path, bitwise-identical to the loop below (see
     // conv2d_im2col_cpu). CRISPEMBED_CONV2D_GEMM=1 enables it;
     // CRISPEMBED_CONV2D_THREADS=N (default 1) adds fork-join threading so the
     // two levers can be A/B'd separately. Ordered after the shape-specific
     // gates above so their opt-ins keep precedence.
+    //
+    // O7 adoption: an engine with per-engine A/B evidence installs a
+    // conv2d_prefs_scope around its conv-heavy stage (carrying its own
+    // n_threads). The env vars keep ABSOLUTE precedence in both directions —
+    // set means the user decided, including =0 to force the reference loop
+    // on an engine whose default has flipped.
     {
         // CRISPEMBED_CONV2D_MK=1 selects the register-blocked micro-kernel
         // consume (task 3 / R6 follow-on; NOT bitwise vs the reference — its
         // acceptance is per-engine decoded output) and implies the GEMM path.
-        static const bool mk = core_env::on("CRISPEMBED_CONV2D_MK");
-        static const bool im2col = mk || core_env::on("CRISPEMBED_CONV2D_GEMM");
+        static const char * mk_env = std::getenv("CRISPEMBED_CONV2D_MK");
+        static const char * gemm_env = std::getenv("CRISPEMBED_CONV2D_GEMM");
+        static const char * nt_env = std::getenv("CRISPEMBED_CONV2D_THREADS");
+        const conv2d_engine_prefs_t & prefs = conv2d_engine_prefs();
+        const bool mk = mk_env ? (*mk_env && std::strcmp(mk_env, "0") != 0) : prefs.mk;
+        const bool im2col = mk || (gemm_env ? (*gemm_env && std::strcmp(gemm_env, "0") != 0) : prefs.im2col);
         if (im2col) {
-            static const int nt = [] {
-                const char * e = std::getenv("CRISPEMBED_CONV2D_THREADS");
-                const int v = e ? atoi(e) : 1;
-                return v < 1 ? 1 : v;
-            }();
+            int nt = nt_env ? atoi(nt_env) : prefs.threads;
+            if (nt < 1) nt = 1;
             conv2d_im2col_cpu(in, out, weight, bias, in_ch, out_ch, H, W, kh, kw, stride, pad, groups, nt, mk);
             return;
         }

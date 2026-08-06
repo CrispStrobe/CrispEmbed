@@ -1198,6 +1198,11 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
         fprintf(stderr, "ppocrv6-det: graph probability map is diagnostic-only; using CPU reference\n");
         graph_done = false;
     }
+    // O7: everything below runs the scalar reference convs on this thread —
+    // adopt the R6 im2col+mk consume with the engine's thread count (measured
+    // −34% M1 / −40% x86 process CPU on exactly this path; env vars override
+    // in both directions, so CRISPEMBED_CONV2D_MK=0 restores the reference).
+    core_cpu::conv2d_prefs_scope conv_prefs(/*mk=*/true, c->n_threads);
     if (!graph_done && !run_stem(c, input, h, w, x, H, W)) return {};
     std::vector<std::vector<float>> stages;
     std::vector<int> hs, ws;
