@@ -1,0 +1,17 @@
+{
+  "id": "chr1s4/crispembed-conv-ab",
+  "title": "CrispEmbed conv A/B (O8 x86 im2col + O9 CUDA residency)",
+  "code_file": "crispembed_conv_ab.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token",
+    "chr1s4/crispembed-ccache"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
