@@ -1,5 +1,66 @@
 # CrispEmbed Performance
 
+## Pageseg quality round 3: band-clustered rows + rise-gated faint-line widening — classical Fraktur CER 0.271 → 0.218 (beats the 0.235 dbnet-parity target), zero regressions on the 24-image arms gate, default ON (Apple M1, 2026-08-06)
+
+Fable task 1 of the round-N+1 handover. Round 2's scoping held up on
+current main (row map re-measured before coding: `threshold=82 blobs=1071
+median_h=6 max_row_gap=4`), but the crop-dump diagnosis REFRAMED the
+defect: the "vanished Inhalt line" was two problems, and only one of them
+was row grouping.
+
+**Defect 1 — fragment-chained rows** (`segment_gray_components_legacy`):
+the greedy y0-sorted chain assigns 6 px ink fragments by adjacency to the
+MOST RECENT row only; one tall span merges lines while a late-sorting
+line orphans into a <2-blob row and is filtered. Fix: rows from the
+blob-mass vertical profile — pass-1 bands already matched the true line
+map almost exactly; the entire difficulty was the SPLIT policy. Two
+falsified cuts recorded: (a) count-driven splitting (band height /
+typical height) is wrong in BOTH directions — the 172 px display masthead
+is ONE line (shallow interior valleys) while two tightly-set small-print
+lines fit under two typical heights with a near-zero interline valley;
+(b) a global-argmin valley finder lands in a band's sparse descender tail
+(measured: cut=1054 flank 1.4 while the real valley sat unexamined) — the
+shipped cut is score-based over running left/right maxima with depth
+`mass <= 0.30 × min(flanks)`, recursion re-examining halves, and min-part
+capped by the blob scale so a single merged band (skewed page) still
+splits (uncapped, base_height degenerates to the multi-line height and
+recursion cannot reach the second valley — the v5 skew collapse).
+
+**Defect 2 — clipped faint lines**: most fragments of the faded
+small-print Inhalt lines fall below the blob area/height floor, so
+blob-extreme crops kept only the surviving middle ("ffend die
+Uebertraquna…"). Crops now extend over raster ink columns, per-side
+acceptance by a MEASURED discriminator: column counts are inseparable
+(faint 8 qualifying over 292 px vs noise 7 over 194), but faded ink's
+active-column density RISES under a more permissive threshold
+(+20→+60: 0.17→0.39, 0.11→0.33) while salt-and-pepper stays FLAT
+(0.04→0.04, including a dense 0.40 patch that defeats any absolute
+floor); dark text accepts via near-floor density ≥ 0.5 (noise's flat
+maximum was 0.40).
+
+| | legacy (opt-out) | band (default) |
+|---|--:|--:|
+| Fraktur page CER (vs official 5.5.2) | 0.2713 | **0.2184** |
+| Fraktur WER | 0.5248 | **0.4681** |
+| stage total (3 interleaved pairs) | 467-474 ms | 471-478 ms |
+| synth-20 mean CER | 0.0169 | **0.0044** |
+
+Gates: 24-image arms A/B (synth 20 + 4 CC0) — band wins or ties EVERY
+fixture (skew 0.0164/0.0224/0.0073→0.0000, clean 0.0149→0.0000, blur
+0.0292→0.0146 and 0.0263→0.0000, commons_test 0.944→0.730, all noise
+fixtures identical); truth-less CC0 spot checks recover whole lines
+(receipt payment/product lines, Kurrent Bürger-Brief structure vs 7 junk
+fragments); model-free orchestrator suite 77/77; opt-out arm
+byte-identical to pre-change main; dbnet route untouched by construction.
+Also fixed: the ROW_DEBUG `out=` label (was index-based vs the filtered
+list; now tracks actual emission and prints true x spans).
+
+**Residuals to below ~0.21**: the ornament/crest rows still decode ~60
+junk chars ('„AM I|.', 'SEEEGENSMWEENa1…' — needs the
+recognition-confidence signal); the Auditoriats line is recovered but
+decodes poorly (very faded — recognizer-side); `--recode-beam`/
+`--dawg-score` remain unmeasured post-int8-cache.
+
 ## O10 Vulkan bring-up probe: NO — Kaggle GPU containers mount no NVIDIA Vulkan userspace (kernel `chr1s4/crispembed-vulkan-probe` v2, P100, 2026-08-06)
 
 Yes/no deliverable, answered NO with evidence, no optimization claims:
