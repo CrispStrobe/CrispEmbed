@@ -22,7 +22,15 @@ on:
     #
     # Deliberately not applied to `pull_request`: a required check that does
     # not run can block a merge, and PR runs do not feed the badge anyway.
+    #
+    # Both markdown globs on purpose. GitHub matches these against the full
+    # path from the repo root, where `*` does not cross `/` and `**` does, so
+    # `'**.md'` should already cover root-level PLAN.md — "should" being a
+    # reading of the pattern spec, not something observed. `'*.md'` matches
+    # root-level markdown unambiguously, so listing both makes the filter
+    # correct either way instead of resting on the subtlety.
     paths-ignore:
+      - '*.md'
       - '**.md'
       - 'docs/**'
   pull_request:
