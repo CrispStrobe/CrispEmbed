@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-06 | `perf/r1-tesseract` (`.claude/worktrees/perf-r1-tesseract`) | **O4/R1 — Tesseract recognizer investigation**: re-verify the 38.7s-vs-9.3s Fraktur stage split on current main (hygiene rule), per-line/per-stage instrumentation of the LSTM recognizer, then ONE gated per-line batching/reuse lever with warm interleaved pairs + CER gate. Kaggle conv-ab (O8+O9) running in parallel, results pending | IN PROGRESS |
+| 2026-08-06 | *(measurement-only, docs on `main`)* | **O4/R1 PREMISE DEAD — recognition is 0.4 s, not 38.3 s** (Fraktur page, 3 repeats): already fixed by the default-ON int8 recurrent cache (`379434b1`/`e49d390d`, verified 7.5x by disable-arm) + Metal-init skip + scratch reuse; survey's "gated" label was wrong (opt-out). Official also re-measured: **1.8 s not 9.3 s**; CER improved 0.528→**0.235**. The gap is now ALL dbnet detection (3.8 s = 88% of the 4.3 s stage); the classical-pageseg route is **faster than official (1.2 s vs 1.8 s)** at CER 0.412. Successors: dbnet CUDA arm (add to conv-ab v2), pageseg quality lane; recognizer batching is dead. Full table in the rewritten R1 section + `PERFORMANCE.md` | **DONE** |
 | 2026-08-06 | *(kernel `chr1s4/crispembed-conv-ab`, `tools/kaggle/crispembed-conv-ab`)* | **O8+O9 IN FLIGHT — Kaggle conv A/B**: (O8) x86/AVX2 three-arm scalar-det A/B (legacy/GEMM-nt1/GEMM-nt4, 3 interleaved rounds) + bitwise unit gate on AVX2; (O9) ppocrv6 det CPU-vs-CUDA graph with decoded-text identity + `LAYOUT_CONV_F16` f32-vs-f16 CUDA arms. Results to be read back into PLAN/PERFORMANCE | IN FLIGHT |
 | 2026-08-06 | *(landed via `perf/o5-decode-overhead`)* | **O5 DONE — R5 decode-graph caching CLOSED for all 3 candidates**: qwen2vl build+alloc **2.2%** of decode (446/20708 ms, 125 steps, existing QWEN_DBG timers); granite **9.2%** (1075/11660 ms, 180 steps, NEW permanent build/compute split on its decode bench line) — single-digit both, persistent-graph port not worth it (deepseek T14 repeats); **smoldocling: premise structurally wrong** — its decode is a hand-written CPU loop with a HOST vector KV, no graph exists to cache (and granite's DEFAULT is the per-step ggml graph, scalar is fallback — survey wording corrected) | **DONE** |
 | 2026-08-06 | *(landed via `perf/ppocr-profile`)* | **O13b DONE — PP-OCR medium-tier profile named the hotspots + 2 fixes landed**: recognize = **71-74%** of the page (Metal fused batch graphs, 2-4 s per width group, 18,710-class CTC head — the #1 PP-OCR lever), detect = 25%. **Bug fixed: `ppocrv6_det::init` declared but NEVER APPLIED its n_threads param** (every `-t` silently ran ggml default; now honored, text byte-identical, det graph saturates at 4 threads = memory-bound). Width-bench diagnostic fixed (printed pre-bucket widths: "27 unique" vs the real 8 graph shapes). Backend truth: rec Metal 17-19 s vs CPU-graph 69 s vs CPU-scalar 107 s — Metal default correct; **CPU-only platforms are 4-6x off on medium rec** (the portability gap). Unowned: ONESHOT_CPU_MAX_REGIONS env doesn't take effect in-process; pre-existing det-diff fox-ref FAIL (cos 0.25, identical pre/post). Evidence in `PERFORMANCE.md` | **DONE** |
@@ -3709,22 +3709,46 @@ Every item below keeps the standing A/B rule: interleaved paired runs, report
 every pair and the spread, and a new path ships opt-in behind an env gate until
 it demonstrably beats the default on quality *and* time.
 
-### R1 — Tesseract recognizer batching + weight/graph reuse [highest evidence]
+### R1 — Tesseract recognizer batching + weight/graph reuse — **PREMISE DEAD 2026-08-06: recognition is 0.4 s, not 38.3 s; the gap is ALL detection now**
 
-The only gap with hard numbers on both ends. Recognition is `260-354 ms` of a
-~310 ms stage on `scan_strip`, and **`38.34 s` of `38.69 s`** on the German
-Fraktur page against official Tesseract's `9.34 s` — already recorded as an
-explicit speed *and* quality blocker. Detection is `102 ms` and crop `250 ms`
-on that page; the detector is not the bottleneck.
+Re-measured on current main (`perf/r1-tesseract` investigation, same fixture
+`german_official_print.jpg` 1920x2518, same comparator, 3 repeats, `frk`
+q8-seeded artifact, workers 4). **Every number in the old item was stale**:
 
-`CRISPEMBED_TESSERACT_REUSE_SCRATCH` exists but its measured variance
-(`279.1` vs `282.3 ms` in one pair, `329-338` vs ~`300 ms` in others) is too
-wide to claim anything. **Fix the measurement protocol first** (warm runs,
-interleaved pairs, per-stage timing) — otherwise R1's own result will be
-unreadable too. Then: batch line crops into one recognizer pass, and reuse
-weights/scratch across lines. `CRISPEMBED_TESSERACT_WORKERS` already gives
-1 -> 690 ms, 4 -> 300 ms, 8 -> 292 ms, i.e. thread-level parallelism has
-saturated; the remaining win is per-line work, not more workers.
+| | old record (2026-08-02) | current main (2026-08-06) |
+|---|--:|--:|
+| native recognize | 38,338 ms | **382-423 ms** |
+| native detect (dbnet) | 102 ms | 3,804-3,822 ms |
+| native stage total | 38,690 ms | 4,314-4,368 ms |
+| official tesseract 5.5.2 | 9,340 ms | 1,803-1,833 ms |
+| native CER vs official | 0.5279 | **0.2351** |
+
+The recognizer was already fixed by landed work nobody re-measured against:
+the **int8 recurrent-weight cache** (`379434b1` + `e49d390d`, 2026-08-01/02 —
+**default-ON**, opt-out `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1`; verified
+by disable-arm: recognize 4,346 ms off vs 581 ms on = 7.5x), plus the
+Metal-init load skip (`25ceb9db`) and LSTM scratch reuse (`31f71239`). The
+residency survey's "gated int8 recurrent-kernel cache" wording was wrong — it
+is opt-out, not opt-in. Per-line batching is now a LOW-value item (~0.4 s
+total at stake).
+
+**The real Fraktur-lane frontier today** (same runs):
+
+- dbnet route: stage 4.31-4.37 s, CER **0.2351** — 88% of it is the dbnet
+  CPU graph at `det_target_short=736` (consistent with its documented
+  ~10 s/1472x736 CPU cost; Metal measured 139 s = no help; **the CUDA arm is
+  the open lever**, and dbnet still needs adding to the conv-ab kernel's O9
+  phase — v1 only covers ppocrv6 det + layout).
+- classical-pageseg route: stage 1.15-1.24 s (**faster than official's
+  1.81 s**), detect 40 ms, but CER 0.4123 (23 lines) — the H9 column-count
+  router already arbitrates between the two routes; pageseg QUALITY is the
+  remaining item (the existing quality lane: crop geometry, recoder/decoder
+  semantics).
+
+Successor items: (a) dbnet det cost on big pages — CUDA re-A/B (add to
+conv-ab v2) and the R6-x86 verdict; (b) pageseg quality to make the fast
+route's CER competitive; (c) the recognizer itself is no longer the
+bottleneck and needs no batching work.
 
 ### R2 — `layout_detect` deformable cross-attention — **PREMISE STALE; real hotspot found + FIXED 2026-08-05**
 
