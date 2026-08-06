@@ -1,5 +1,38 @@
 # CrispEmbed Performance
 
+## sched alloc-once/compute-many FIXED in the fork — the O6 replay crash was a restore-on-success design assumption, not a Metal bug (2026-08-06)
+
+Fable-task 5. The `UOCR_PD=1 UOCR_PD_REPLAY=1` gen=2 SIGSEGV was localized
+with a new fork diagnostic (`CRISPASR_METAL_PROFILE=3`: per-op profile plus
+a pre-encode node/src-buffer trace): the second compute of the stored splits
+executed a Metal node whose src still pointed at the CPU split's output —
+`ggml_metal_buffer_get_id` then dereferences a CPU buffer's context as a
+Metal buffer (poisoned AGXBuffer). Root cause in the fork's sched: split
+rewires user-graph srcs to its input copies and RESTORES them on every exit
+of compute_splits — correct for the universal reset-per-step pattern,
+fatal for alloc-once/compute-many (the replay ran with original
+cross-backend srcs).
+
+Fork fix `890278a8` (`sync/upstream-v0.17`): the mutation log records the
+rewired src, compute_splits re-applies at entry, and disposal is
+state-flagged. Two wrong intermediate cuts recorded honestly, each caught
+by a regression the other case demanded: restore-at-reset writes into
+recycled graph memory when engines rebuild graphs (vision CPY asserted with
+a foreign src), while a pure clear leaves a build-then-run engine's graph
+mutated across its alloc-to-first-compute reset (ppocr decoded 0 regions).
+The flag distinguishes applied vs restored logs; only applied logs are
+written back at disposal.
+
+Verified (M1): the replay repro runs end-to-end (was SIGSEGV at gen=2,
+4/4); ppocr medium page byte-identical (`a3a5f938`), layout_detect
+byte-identical (`afde4fd4`), unlimited-ocr default unchanged, 4/4
+model-free spot checks. Honest PD verdict UNCHANGED: replay ≈ re-init
+(181 vs 166 ms/step, single noisy samples) and the PD decode still
+diverges — PD stays opt-in research; what this fix buys is a SAFE sched
+contract for every future persistent-graph engine (deepseek-style
+reset-per-step no longer the only crash-free pattern) and it unblocks the
+R8 ICB-replay lane, which needs exactly alloc-once/compute-many.
+
 ## layout O2b: six value projections share one input — batched GPU graph is 3.5x on the stage, ships OPT-IN on a 0.500-score threshold flip (Apple M1, 2026-08-06)
 
 Fable-task 6. Re-profiled Phase 2 on current main FIRST (flat-im2col moved
