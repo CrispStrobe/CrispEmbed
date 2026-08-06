@@ -5,6 +5,7 @@
 #include "crispembed_diff.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
+#include "core/no_repeat_ngram.h"
 
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -1382,13 +1383,19 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
 
     out.token_confidences.clear();
 
-    int best_id = 0;
-    float best_score = -INFINITY;
-    for (int v = 0; v < V; v++)
-        if (logits[v] > best_score) {
-            best_score = logits[v];
-            best_id = v;
-        }
+    // No-repeat-ngram greedy guard (shared core/no_repeat_ngram.h, hermetic
+    // test in CI; same helper as qwen2vl/internvl2/deepseek/got/unlimited —
+    // glm was the ONE VLM engine decoding with a bare argmax, and real-user
+    // output showed exactly the textbook failure: repeated words/characters
+    // on Japanese subtitle OCR (SubtitleEdit PR 13238 feedback, 2026-08-06).
+    // GLM_OCR_NO_REPEAT_NGRAM=N overrides (0 disables, default 3 = the
+    // qwen2vl setting).
+    const int no_repeat_ngram = [] {
+        if (const char * e = std::getenv("GLM_OCR_NO_REPEAT_NGRAM")) return atoi(e);
+        return 3;
+    }();
+    int best_id = core_decode::argmax_no_repeat_ngram(logits.data(), V, out.token_ids, no_repeat_ngram);
+    float best_score = logits[best_id];
 
     // Confidence: numerically-stable softmax for winning token
     {
@@ -1423,13 +1430,8 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             fprintf(stderr, "[glm_ocr-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
         }
 
-        best_id = 0;
-        best_score = -INFINITY;
-        for (int v = 0; v < V; v++)
-            if (logits[v] > best_score) {
-                best_score = logits[v];
-                best_id = v;
-            }
+        best_id = core_decode::argmax_no_repeat_ngram(logits.data(), V, out.token_ids, no_repeat_ngram);
+        best_score = logits[best_id];
 
         {
             float max_l = best_score;
