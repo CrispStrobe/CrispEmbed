@@ -959,11 +959,36 @@ context * init(const char * path, int n_threads) {
     // while user+sys stayed stable. An earlier cross-run wall comparison
     // reported the opposite result.)
     const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
-    // The detector graph defaults to the CPU backend: Metal ran the same graph
-    // 9x slower (1693 ms vs 187 ms on synth_00_clean) — conv at these spatial
-    // sizes does not pay for the dispatch. DET_GPU_LOAD is the explicit GPU
-    // opt-in; DET_GRAPH no longer implies it.
-    const bool want_gpu = !force_cpu && std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr;
+    // The detector graph defaults to the CPU backend ON METAL: Metal ran the
+    // same graph 9x slower (1693 ms vs 187 ms on synth_00_clean) — conv at
+    // these spatial sizes does not pay for the Metal dispatch. DET_GPU_LOAD is
+    // the explicit GPU opt-in; DET_GRAPH no longer implies it.
+    //
+    // O11 (2026-08-06): the Metal verdict is NOT the CUDA verdict — the same
+    // graph on a P100 is 18x FASTER than CPU (596-614 ms vs 11.0 s medium det,
+    // boxes 38=38; kernel chr1s4/crispembed-conv-ab v1+v2). So the default is
+    // per-backend-kind: a CUDA device present => det computes on the GPU;
+    // Metal/CPU-only boxes keep the CPU default. The probe only enumerates
+    // registered device NAMES (~29 ms worst case — it constructs the Metal
+    // device object but never initialises a backend; the gpu_backend_pref.h
+    // note documents the cost). CRISPEMBED_PPOCRV6_DET_GPU=0 forces CPU,
+    // =1 forces the GPU graph (either kind); unset = the per-kind default.
+    auto cuda_device_present = [] {
+        for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
+            ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+            if (ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_GPU) continue;
+            const char * n = ggml_backend_dev_name(dev);
+            if (n && (n[0] == 'C' || n[0] == 'c') && (n[1] == 'U' || n[1] == 'u')) return true; // "CUDA0"
+        }
+        return false;
+    };
+    bool want_gpu = std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr;
+    if (const char * det_gpu = std::getenv("CRISPEMBED_PPOCRV6_DET_GPU"); det_gpu && det_gpu[0]) {
+        want_gpu = det_gpu[0] != '0';
+    } else if (!want_gpu) {
+        want_gpu = cuda_device_present();
+    }
+    want_gpu = want_gpu && !force_cpu;
     c->backend = want_gpu ? crispasr_init_gpu_backend_shared() : ggml_backend_cpu_init();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     // O13b (2026-08-05): the n_threads parameter was declared but never
