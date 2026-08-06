@@ -303,10 +303,12 @@ static bool build_graph(easyocr_ocr_context * c) {
 }
 
 easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
-    (void)n_threads;
     auto * c = new easyocr_ocr_context();
     const bool force_cpu = std::getenv("EASYOCR_FORCE_CPU") != nullptr;
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
+    // Ignored-n_threads bug class (O13b family): was discarded with (void).
+    if (c->backend && ggml_backend_is_cpu(c->backend))
+        ggml_backend_cpu_set_n_threads(c->backend, std::max(1, n_threads));
     if (!c->backend || !core_gguf::load_weights(model_path, c->backend, "easyocr", c->wl)) {
         easyocr_ocr_free(c);
         return nullptr;
