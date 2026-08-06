@@ -126,6 +126,58 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## Kaggle conv A/B (O8+O9): the im2col interchange WINS on x86, PP-OCR det flips to GPU on CUDA (18x), LAYOUT_CONV_F16 stays gated (P100 + Xeon, 2026-08-06)
+
+Kernel `chr1s4/crispembed-conv-ab` v1 (Tesla P100-PCIE-16GB sm_60, Intel Xeon
+2.00 GHz), full log `convab.log` in the kernel output; every arm's stdout was
+captured and cross-compared per the proof-of-work rule.
+
+**O8 — R6 conv2d arms on x86** (PP-OCRv6 medium SCALAR detector,
+`scan_page_pd`, detector-only, 3 interleaved rounds, 38 regions in every arm;
+bitwise unit gate 180/180 with the GEMM gate on AND off — byte-equality holds
+on AVX2 lanes):
+
+| arm | round times (ms) | vs legacy |
+|---|---|--:|
+| legacy | 35934 / 37226 / 34689 | — |
+| gemm nt=1 | 30820 / 31508 / 31489 | **~0.87x (13% win)** |
+| gemm nt=4 | 20438 / 20352 / 20336 | **0.57x (1.76x)** |
+
+**The M1 verdict was L2-size-dependent, exactly as hypothesized**: on M1's
+12 MB shared L2 the interchange alone lost 4-7%; on this small-private-L2
+Xeon it wins ~13% before threading. Disposition unchanged for now (gate
+stays opt-in) — but a per-arch default (interchange on x86, legacy on
+Apple-Silicon) is now evidence-backed if an engine wants it.
+
+**O9a — PP-OCRv6 det residency on CUDA**: the "CPU by measurement" default is
+a **Metal-only verdict — it FLIPS on CUDA**:
+
+| arm | det graph_ms | boxes |
+|---|--:|--:|
+| det CPU graph (Xeon) | 11008 | 38 |
+| det CUDA graph (`CRISPEMBED_PPOCRV6_DET_GPU_LOAD=1`) | **596-614** | 38 |
+
+18x, identical box count. This is the first hard datapoint for the
+per-backend-kind residency defaults (O11): a CUDA/A1000 build should default
+PP-OCR det to the GPU graph while M1 keeps CPU.
+
+**O9b — new bug found: PP-OCR REC on CUDA emits 0 results** in BOTH arms
+(boxes=38, recognize runs 3.6-3.7 s, stdout ~19 bytes — the "decoded text
+identical" check between arms is therefore VACUOUS, and the det verdict above
+rests on box counts + det-bench, not text). Unowned; smells like the known
+CUDA contiguity/get_rows class — needs the cuda-diag treatment before any
+CUDA rec default exists.
+
+**O9c — `LAYOUT_CONV_F16` on P100**: no speed change (warm Phase 1 66.6 ms
+f32 vs 65.9 ms f16 — sm_60 has no tensor cores) and a quality drift (20 -> 19
+regions, first-line diff). Stays gated off everywhere measured so far; the
+tensor-core question needs a T4 assignment (Kaggle randomizes) — v2. Also
+notable: layout Phase 1 on CUDA is **60-110 ms vs M1 Metal's ~1.4 s** — the
+M1 cost is Metal-specific, not inherent to the graph.
+
+v2 TODO for the kernel: add the DBNet CUDA arm (the Fraktur-lane detect cost)
+and retry until a T4 assignment for the f16 tensor-core arm.
+
 ## Tesseract Fraktur page re-measured (O4/R1): recognition is 0.4 s not 38.3 s, official is 1.8 s not 9.3 s, and detection owns the gap (Apple M1, 2026-08-06)
 
 Measure-first pass on the R1 backlog item — the "highest evidence" item's

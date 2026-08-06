@@ -15,7 +15,7 @@ races). Remove the row when the branch lands.
 |-------|-------------------|------|--------|
 | 2026-08-06 | `fix/uocr-pd-segfault` (`.claude/worktrees/fix-uocr-pd`) | **O6 — UOCR_PD=1 persistent-decode gen=2 segfault** (pre-existing, opt-in path; reproduce, diagnose — KV-view/cont class suspected — fix, verify decoded text vs default path). Kaggle conv-ab still RUNNING | IN PROGRESS |
 | 2026-08-06 | *(measurement-only, docs on `main`)* | **O4/R1 PREMISE DEAD — recognition is 0.4 s, not 38.3 s** (Fraktur page, 3 repeats): already fixed by the default-ON int8 recurrent cache (`379434b1`/`e49d390d`, verified 7.5x by disable-arm) + Metal-init skip + scratch reuse; survey's "gated" label was wrong (opt-out). Official also re-measured: **1.8 s not 9.3 s**; CER improved 0.528→**0.235**. The gap is now ALL dbnet detection (3.8 s = 88% of the 4.3 s stage); the classical-pageseg route is **faster than official (1.2 s vs 1.8 s)** at CER 0.412. Successors: dbnet CUDA arm (add to conv-ab v2), pageseg quality lane; recognizer batching is dead. Full table in the rewritten R1 section + `PERFORMANCE.md` | **DONE** |
-| 2026-08-06 | *(kernel `chr1s4/crispembed-conv-ab`, `tools/kaggle/crispembed-conv-ab`)* | **O8+O9 IN FLIGHT — Kaggle conv A/B**: (O8) x86/AVX2 three-arm scalar-det A/B (legacy/GEMM-nt1/GEMM-nt4, 3 interleaved rounds) + bitwise unit gate on AVX2; (O9) ppocrv6 det CPU-vs-CUDA graph with decoded-text identity + `LAYOUT_CONV_F16` f32-vs-f16 CUDA arms. Results to be read back into PLAN/PERFORMANCE | IN FLIGHT |
+| 2026-08-06 | *(kernel `chr1s4/crispembed-conv-ab` v1 COMPLETE — P100 + 2 GHz Xeon)* | **O8+O9 verdicts in.** O8 (x86): unit gate **180/180 on AVX2 both arms** (bitwise holds); 3 interleaved rounds, 38 regions all arms: legacy 34.7-37.2 s, **gemm nt=1 30.8-31.5 s (interchange alone WINS ~13% on small-L2 x86 — the M1 −5% verdict was L2-size-dependent, hypothesis confirmed)**, gemm nt=4 20.3-20.4 s (**1.76x**). O9: **PP-OCR det verdict FLIPS on CUDA — graph 596-614 ms GPU vs 11.0 s CPU (18x), boxes 38=38**; `LAYOUT_CONV_F16` on P100 (no tensor cores): no speed change (66→66 ms warm) and **regions drift 20→19** — stays gated everywhere measured; layout Phase 1 on CUDA is 60-110 ms (M1 Metal's 1.4 s is Metal-specific). **New bug found: PP-OCR REC on CUDA emits 0 results in both arms** (boxes=38, rec runs 3.6 s, empty output — det verdict unaffected; needs the cuda-diag treatment, unowned). v2 TODO: dbnet CUDA arm + a T4 rerun for the tensor-core f16 question | **DONE** |
 | 2026-08-06 | *(landed via `perf/o5-decode-overhead`)* | **O5 DONE — R5 decode-graph caching CLOSED for all 3 candidates**: qwen2vl build+alloc **2.2%** of decode (446/20708 ms, 125 steps, existing QWEN_DBG timers); granite **9.2%** (1075/11660 ms, 180 steps, NEW permanent build/compute split on its decode bench line) — single-digit both, persistent-graph port not worth it (deepseek T14 repeats); **smoldocling: premise structurally wrong** — its decode is a hand-written CPU loop with a HOST vector KV, no graph exists to cache (and granite's DEFAULT is the per-step ggml graph, scalar is fallback — survey wording corrected) | **DONE** |
 | 2026-08-06 | *(landed via `perf/ppocr-profile`)* | **O13b DONE — PP-OCR medium-tier profile named the hotspots + 2 fixes landed**: recognize = **71-74%** of the page (Metal fused batch graphs, 2-4 s per width group, 18,710-class CTC head — the #1 PP-OCR lever), detect = 25%. **Bug fixed: `ppocrv6_det::init` declared but NEVER APPLIED its n_threads param** (every `-t` silently ran ggml default; now honored, text byte-identical, det graph saturates at 4 threads = memory-bound). Width-bench diagnostic fixed (printed pre-bucket widths: "27 unique" vs the real 8 graph shapes). Backend truth: rec Metal 17-19 s vs CPU-graph 69 s vs CPU-scalar 107 s — Metal default correct; **CPU-only platforms are 4-6x off on medium rec** (the portability gap). Unowned: ONESHOT_CPU_MAX_REGIONS env doesn't take effect in-process; pre-existing det-diff fox-ref FAIL (cos 0.25, identical pre/post). Evidence in `PERFORMANCE.md` | **DONE** |
 | 2026-08-05 | *(landed via `perf/layout-phase1`)* | **O1 answered + O2a landed** — Phase 1 (~1.4 s) is **steady-state Metal compute, not warmup** (new `CRISPEMBED_LAYOUT_REPEAT=N` CLI diagnostic: warm==cold; new compute/readback bench split: readback ~5-8 ms). New opt-in `LAYOUT_CONV_F16=1` (F16-dst im2col + F16 mul_mm) **measured SLOWER on M1 Metal (2.2 s vs 1.4 s)**, quality fine (±0.002 score) — kept gated for CUDA/A1000 where it should win. O2a: per-call self-attn weight re-read/re-transpose (~5 MB/call) cached in the layer, **regions byte-identical**; saving below the loaded box's noise floor, claimed as removed work only. Next Phase-2 candidate recorded: value-proj on GPU (est. 101→~30 ms) | **DONE** |
@@ -3828,7 +3828,16 @@ Correction retained from before: math_ocr, easyocr and ppocrv6 rec already
 reuse built cgraphs. The WebGPU `unreachable` trap note stays relevant only
 if anyone reopens this with a per-backend gate.
 
-### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread — **BUILT + M1-MEASURED 2026-08-05, x86 arm open**
+### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread — **BUILT + MEASURED BOTH ARCHES (x86 arm CLOSED 2026-08-06)**
+
+**x86 verdict (conv-ab kernel, Xeon 2.0 GHz, 3 interleaved rounds, unit gate
+180/180 on AVX2): the interchange alone WINS ~13% (nt=1 31.3 s vs legacy
+35.9 s median) and nt=4 is 1.76x (20.4 s)** — the M1 −5% verdict was
+L2-size-dependent as hypothesized (12 MB shared L2 vs small private Xeon L2).
+A per-arch default (interchange on x86, legacy on Apple Silicon) is now
+evidence-backed whenever an engine adopts the path; the register-blocked
+micro-kernel (item 3 below) is now justified to open, since the memory-side
+win is real on x86. Original M1 record follows.
 
 **Landed on `perf/conv2d-gemm`**: `core_cpu::conv2d_im2col_cpu` — im2col
 position tiles + oc-outer loop interchange + fork-join threading, **bitwise
@@ -3960,17 +3969,21 @@ Kaggle batch (O8+O9) interleaved as the discrete-GPU unlock.
 
 ### Lane B — offloaded (Kaggle), unblocks the discrete-GPU story
 
-- **O8. R6 x86/AVX2 three-arm A/B** (legacy / im2col nt=1 / im2col nt=4).
-  Decides the interchange's fate where L2 is small; also the honest CPU
-  baseline for any CUDA residency decision. Expected outcome: threading wins
-  again; interchange-alone somewhere between neutral and +30% (genuinely
-  uncertain — that is the point of the run).
-- **O9. CUDA residency re-A/Bs** — DBNet + PP-OCRv6-det conv graphs on a real
-  CUDA box, decoded-output roundtrips included (CUDA's stricter contiguity
-  asserts make Metal/CPU passes non-transferable). Expected outcome:
-  moderately confident the Metal "CPU by measurement" verdicts flip on CUDA,
-  which would make them Metal-only defaults and justify O11. **This is the
-  single most PP-OCR-relevant open item for discrete-GPU users.**
+- **O8. R6 x86/AVX2 three-arm A/B — DONE 2026-08-06** (conv-ab kernel, Xeon):
+  **interchange alone +13%, nt=4 1.76x, bitwise gate 180/180 on AVX2** —
+  the M1 −5% was L2-size-dependent as hypothesized. Full table in
+  `PERFORMANCE.md`; R6 section updated.
+- **O9. CUDA residency re-A/Bs — PARTIAL DONE 2026-08-06** (P100):
+  **PP-OCR det FLIPS on CUDA — 596 ms GPU vs 11.0 s CPU (18x), 38=38
+  boxes** — the Metal "CPU by measurement" default is confirmed
+  Metal-only, O11 justified. `LAYOUT_CONV_F16` on P100: no win (sm_60,
+  no tensor cores) + a 20→19 region drift — stays gated. **New unowned
+  bug: PP-OCR REC on CUDA emits 0 results in both arms** (the decoded-text
+  identity check was vacuous; det verdict rests on box counts) — the known
+  CUDA contiguity class is the suspect; needs cuda-diag treatment before
+  any CUDA rec default. **v2 remaining: DBNet CUDA arm** (now doubly
+  motivated — it owns the Fraktur-lane 3.8 s, see R1) **+ a T4 rerun for
+  the tensor-core f16 arm.**
 - **O10. Vulkan bring-up decision** — try Vulkan compute on a Kaggle GPU
   image, or wait for a local discrete-GPU box. Expected outcome: uncertain
   (headless ICDs may not work); the deliverable is knowing where Vulkan can
