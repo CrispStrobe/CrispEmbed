@@ -1,0 +1,16 @@
+{
+  "id": "chr1s4/crispembed-ccache-seed",
+  "title": "CrispEmbed ccache Seed",
+  "code_file": "crispembed_ccache_seed.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
