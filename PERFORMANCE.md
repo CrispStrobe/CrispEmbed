@@ -1,5 +1,27 @@
 # CrispEmbed Performance
 
+## O10 Vulkan bring-up probe: NO — Kaggle GPU containers mount no NVIDIA Vulkan userspace (kernel `chr1s4/crispembed-vulkan-probe` v2, P100, 2026-08-06)
+
+Yes/no deliverable, answered NO with evidence, no optimization claims:
+
+- **The fatal wall is the container runtime, not packaging**: no
+  `/usr/share/vulkan/icd.d/` manifests and no `libGLX_nvidia.so.0` (driver
+  580.159.04 mounts only the CUDA/compute userspace — the NVIDIA container
+  runtime's compute+utility capabilities, never graphics/Vulkan). Writing a
+  standard `nvidia_icd.json` cannot help when the library it points at does
+  not exist. Not fixable from inside a kernel.
+- Secondary (moot but recorded for if the wall ever falls): `glslc` is not
+  apt-installable on the jammy base (`E: Unable to locate package glslc`
+  aborts the whole vulkan-tools transaction; use the shaderc prebuilt), and
+  ggml's `-DGGML_VULKAN=ON` configure correctly refuses without it.
+- v1 of this probe reported spurious stage-2/3 successes — every rc was
+  laundered through `... 2>&1 | tail` (HARD RULE 8's exact trap, in the
+  probe's own harness). v2 captures rcs directly; only v2 is evidence.
+- Consequence for the R1-R8/O-series Vulkan lane: **CPU lavapipe remains
+  the only Kaggle-viable Vulkan validation** (as the v0.17 sync notes
+  already recorded); real-GPU Vulkan verdicts need non-Kaggle hardware
+  (the MoltenVK-on-M1 route, or a cloud box with graphics capabilities).
+
 ## Pageseg quality round 1: separator rejection takes the classical Fraktur CER 0.412 → 0.271 and makes the route faster — the garbage was RULES, not recognition (Apple M1, 2026-08-06)
 
 Fable-task 4, first landing. Per-line diagnosis (`--per-line` /
