@@ -5,6 +5,7 @@
 #include "crispembed_diff.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
+#include "core/ram_guard.h"
 #include "core/no_repeat_ngram.h"
 
 #include "ggml.h"
@@ -1562,6 +1563,8 @@ struct glm_ocr_context {
 };
 
 glm_ocr_context * glm_ocr_init(const char * model_path, int n_threads) {
+    // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).
+    if (!core_ram::preflight("glm_ocr", model_path)) return nullptr;
     auto * c = new glm_ocr_context();
     if (!glm_ocr::load(c->ctx, model_path, n_threads, 1)) {
         delete c;
