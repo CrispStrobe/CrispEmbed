@@ -149,7 +149,6 @@ static ggml_tensor * cast_f32(ggml_context * g, ggml_tensor * t) {
 // ── Init ──
 
 pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
-    (void)n_threads;
     if (!model_path) return nullptr;
 
     gguf_context * meta = core_gguf::open_metadata(model_path);
@@ -175,8 +174,12 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     ctx->rms_eps = 1e-6f;
     core_gguf::free_metadata(meta);
 
-    // Keep backend alive for ggml graph compute
+    // Keep backend alive for ggml graph compute.
+    // Ignored-n_threads bug class (O13b family): this engine is CPU-only —
+    // its whole encoder graph runs here — yet the thread count was discarded
+    // with (void)n_threads, so every caller's -t silently ran ggml's default.
     ctx->backend = ggml_backend_cpu_init();
+    if (ctx->backend) ggml_backend_cpu_set_n_threads(ctx->backend, std::max(1, n_threads));
     if (!ctx->backend) {
         delete ctx;
         return nullptr;

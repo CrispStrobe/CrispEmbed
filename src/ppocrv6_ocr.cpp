@@ -90,6 +90,7 @@ struct pp_graph_state {
 struct ppocrv6_ocr_context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
+    int n_threads = 1;
     std::vector<std::string> vocab;
     std::string result;
     std::vector<float> scratch;
@@ -759,6 +760,8 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     } else {
         c->graph.cpu_backend = ggml_backend_cpu_init();
+        // Mirror the init-time thread fix on the sched's CPU fallback.
+        ggml_backend_cpu_set_n_threads(c->graph.cpu_backend, std::max(1, c->n_threads));
         ggml_backend_t backends[] = { c->graph.backend, c->graph.cpu_backend };
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
     }
@@ -1706,11 +1709,19 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     return c->result.c_str();
 }
 
-extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int) {
+extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int n_threads) {
     auto * c = new ppocrv6_ocr_context();
+    // Same ignored-parameter bug class as the O13b ppocrv6_det find: the
+    // signature declared its thread count anonymously, so every CPU mode of
+    // the recognizer (FORCE_CPU scalar, the one-shot CPU pick, the sched's
+    // CPU fallback) ran at ggml's default no matter what -t the caller
+    // passed. Threading partitions rows without changing any element's
+    // reduction order, so output is unchanged.
+    c->n_threads = std::max(1, n_threads);
     const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
+    if (c->backend && ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, c->n_threads);
     gguf_context * meta = core_gguf::open_metadata(path);
     if (!meta) {
         delete c;

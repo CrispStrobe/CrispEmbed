@@ -50,6 +50,7 @@ struct context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
     ggml_backend_t cpu_backend = nullptr;
+    int n_threads = 1;
     ggml_backend_sched_t graph_sched = nullptr;
     conv stem, head;
     bn stem_bn;
@@ -321,6 +322,7 @@ static bool build_graph(context * c) {
         c->graph_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     } else {
         c->cpu_backend = ggml_backend_cpu_init();
+        ggml_backend_cpu_set_n_threads(c->cpu_backend, std::max(1, c->n_threads));
         ggml_backend_t backends[] = { c->backend, c->cpu_backend };
         c->graph_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
     }
@@ -329,12 +331,16 @@ static bool build_graph(context * c) {
     return ggml_backend_sched_alloc_graph(c->graph_sched, c->graph);
 }
 
-context * init(const char * path, int) {
+context * init(const char * path, int n_threads) {
     auto * c = new context();
+    c->n_threads = std::max(1, n_threads);
     c->use_graph = std::getenv("PPLCNET_ORIENTATION_GRAPH") != nullptr &&
                    std::getenv("PPLCNET_ORIENTATION_GRAPH_PIPELINE") != nullptr;
     const bool graph_cpu = std::getenv("PPLCNET_ORIENTATION_GRAPH_CPU") != nullptr;
     c->backend = c->use_graph && !graph_cpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    // Same ignored-n_threads bug class as ppocrv6_det/_ocr (O13b): the thread
+    // parameter was declared anonymously and never applied.
+    if (c->backend && ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, c->n_threads);
     if (!core_gguf::load_weights(path, c->backend, "pplcnet_orientation", c->wl)) {
         free(c);
         return nullptr;
