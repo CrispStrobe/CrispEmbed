@@ -60,6 +60,7 @@ struct medium_ic {
 struct context {
     core_gguf::WeightLoad wl;
     ggml_backend_t backend = nullptr;
+    int n_threads = 1;
     std::string variant;
     int neck = 0;
     int stage_channels[4] = {};
@@ -527,6 +528,9 @@ static bool graph_build(context * c, int h, int w) {
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     } else {
         c->graph.cpu_backend = ggml_backend_cpu_init();
+        // Mirror the init-time thread fix: the sched's CPU fallback should run
+        // at the caller's thread count too.
+        ggml_backend_cpu_set_n_threads(c->graph.cpu_backend, std::max(1, c->n_threads));
         ggml_backend_t backends[] = { c->graph.backend, c->graph.cpu_backend };
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
     }
@@ -930,8 +934,9 @@ static void append_component(const std::vector<float> & prob, int h, int w, floa
         }
 }
 
-context * init(const char * path, int) {
+context * init(const char * path, int n_threads) {
     auto * c = new context();
+    c->n_threads = std::max(1, n_threads);
     // The production detector path runs its graph on the CPU backend (default
     // since 2026-08-04; CRISPEMBED_PPOCRV6_DET_SCALAR restores scalar and
     // CRISPEMBED_PPOCRV6_DET_GPU_LOAD is the explicit GPU opt-in), so this
@@ -961,6 +966,14 @@ context * init(const char * path, int) {
     const bool want_gpu = !force_cpu && std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr;
     c->backend = want_gpu ? crispasr_init_gpu_backend_shared() : ggml_backend_cpu_init();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
+    // O13b (2026-08-05): the n_threads parameter was declared but never
+    // APPLIED — the signature read `init(const char * path, int)` — so the
+    // detector graph always ran at ggml's default thread count no matter what
+    // -t the caller passed (measured: medium det graph 7.4 s at -t 1 vs 6.5 s
+    // at -t 8 — flat). Honor it. Threading a ggml CPU graph partitions rows
+    // per thread without changing any element's reduction order, so detector
+    // output is unchanged.
+    if (ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, std::max(1, n_threads));
     auto * meta = core_gguf::open_metadata(path);
     if (!meta) {
         delete c;

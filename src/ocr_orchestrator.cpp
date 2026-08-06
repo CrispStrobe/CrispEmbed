@@ -697,7 +697,19 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             crop_ms +=
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - crop_started).count();
             if (crop.empty()) continue;
-            const int model_width = std::max(320, int(48.0f * std::max(320.0f / 48.0f, cw / float(std::max(1, ch)))));
+            int model_width = std::max(320, int(48.0f * std::max(320.0f / 48.0f, cw / float(std::max(1, ch)))));
+            // Mirror the recognizer's default width bucketing (resize_normalize
+            // in ppocrv6_ocr.cpp is the source of truth) so this diagnostic
+            // reports the widths the graphs actually run at. Before this the
+            // line printed the PRE-bucket estimate — "27 unique widths" on a
+            // page whose real graph-shape count was ~8, which misled the O13b
+            // profile until read against the recognizer code.
+            {
+                int bucket_step = 64;
+                if (const char * be = std::getenv("CRISPEMBED_PPOCRV6_WIDTH_BUCKET")) bucket_step = std::atoi(be);
+                if (!std::getenv("CRISPEMBED_PPOCRV6_FIXED_WIDTH") && bucket_step >= 8)
+                    model_width = (model_width + bucket_step - 1) / bucket_step * bucket_step;
+            }
             if (std::find(model_widths.begin(), model_widths.end(), model_width) == model_widths.end())
                 model_widths.push_back(model_width);
             const auto orientation_started = std::chrono::steady_clock::now();
