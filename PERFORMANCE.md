@@ -126,6 +126,48 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## Tesseract Fraktur page re-measured (O4/R1): recognition is 0.4 s not 38.3 s, official is 1.8 s not 9.3 s, and detection owns the gap (Apple M1, 2026-08-06)
+
+Measure-first pass on the R1 backlog item — the "highest evidence" item's
+evidence was two-generations stale. Same fixture
+(`german_official_print.jpg` 1920x2518), same comparator
+(`tools/benchmark_tesseract_page.py`, `test-ocr-orchestrator`, workers 4,
+`frk` q8-seeded), 3 repeats, all reported:
+
+| | old record (2026-08-02) | current main |
+|---|--:|--:|
+| native recognize | 38,338 ms | **382-423 ms** |
+| native detect (dbnet, short-side 736) | 102 ms | 3,804-3,822 ms |
+| native stage total | 38,690 ms | 4,314-4,368 ms |
+| official tesseract 5.5.2 (end-to-end) | 9,340 ms | 1,803-1,833 ms |
+| CER vs official text | 0.5279 | **0.2351** (stable across repeats) |
+
+Attribution, verified by disable-arm: the **int8 recurrent-weight cache**
+(`379434b1` + `e49d390d`, landed 2026-08-01/02, **default-ON** — the survey's
+"gated int8 recurrent-kernel cache" wording was wrong, the env is the opt-out
+`CRISPEMBED_TESSERACT_DISABLE_INT_CACHE=1`) gives recognize 4,346 ms -> 581 ms
+(7.5x) on its own; the Metal-init load skip (`25ceb9db`, 5.9 s -> 0.47 s per
+recognizer load — the old "recognize" span also swallowed worker loads) and
+LSTM scratch reuse (`31f71239`) cover the rest of the 38 s. Detector artifact
+is not a factor (q8 vs f16 dbnet both ~3.85 s).
+
+**The Fraktur-lane frontier now** (same runs):
+
+| route | stage | detect | recognize | CER |
+|---|--:|--:|--:|--:|
+| dbnet + int8 rec | 4.31-4.37 s | 3.80-3.82 s | 0.38-0.42 s | **0.2351** |
+| classical pageseg + int8 rec | **1.15-1.24 s** | 0.04 s | 1.07-1.16 s | 0.4123 |
+| official 5.5.2 | 1.80-1.83 s | — | — | (reference) |
+
+Neither native route dominates: the pageseg route is FASTER THAN OFFICIAL but
+loses ~0.18 CER; the dbnet route wins quality but pays 3.8 s of CPU conv
+graph (consistent with dbnet's documented ~10 s/1472x736 CPU cost; Metal
+measured 139 s — no help there; CUDA untested, and dbnet is NOT yet in the
+conv-ab kernel's O9 phase — add in v2). The H9 column-count router already
+arbitrates the two routes. Remaining items: dbnet-on-CUDA, pageseg quality
+(the existing crop-geometry/decoder-semantics lane). **Recognizer per-line
+batching — R1's prescribed fix — is dead: ~0.4 s total at stake.**
+
 ## VLM decode-graph overhead (O5): R5 closed — 2.2% qwen2vl, 9.2% granite, and smoldocling never had a graph (Apple M1, 2026-08-06)
 
 The R5 backlog item's own rule was "profile build+alloc as a fraction of
