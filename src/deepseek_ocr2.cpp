@@ -7,6 +7,7 @@
 #include "deepseek_ocr2.h"
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
+#include "core/ram_guard.h"
 #include "core/bpe.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -2699,6 +2700,10 @@ struct deepseek_ocr2_context {
 };
 
 deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_threads) {
+    // The engine that froze a 4 GB host 3/3 (SubtitleEdit PR-13238) — refuse
+    // before the load rather than swap-thrash the machine (core/ram_guard.h;
+    // CRISPEMBED_RAM_GUARD=0|warn overrides).
+    if (!core_ram::preflight("deepseek_ocr2", model_path)) return nullptr;
     auto * c = new deepseek_ocr2_context;
     auto & ctx = c->inner;
     ctx.n_threads = n_threads;

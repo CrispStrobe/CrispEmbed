@@ -8,6 +8,7 @@
 #include "unlimited_ocr.h"
 #include "crispembed_diff.h"
 #include "core/gguf_loader.h"
+#include "core/ram_guard.h"
 #include "core/bpe.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
@@ -2787,6 +2788,8 @@ struct unlimited_ocr_context {
 };
 
 unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_threads) {
+    // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).
+    if (!core_ram::preflight("unlimited_ocr", model_path)) return nullptr;
     auto * c = new unlimited_ocr_context;
     auto & ctx = c->inner;
     ctx.n_threads = n_threads;
