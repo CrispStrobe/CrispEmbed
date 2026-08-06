@@ -1,5 +1,44 @@
 # CrispEmbed Performance
 
+## CUDA-rec 0-results: quantized graph residents uploaded F32 bytes as q8_0 blocks — fixed, byte-exact on P100; det flips to GPU-by-default on CUDA (O11) (2026-08-06)
+
+Fable-task 1. The conv-ab v2 capture's two suspects (logits readback layout,
+CTC decode) were both wrong — and the bug was never CUDA-specific.
+`pp_graph_resident`'s native-quant path (keep a quantized head weight in its
+native type on GPU backends, `pp_graph_linear`) fell into the F32 upload
+branch: it dequantized the source to floats and copied those raw bit
+patterns into a q8_0-typed resident. The f16 scale field decoded from float
+mantissa bytes lands on Inf/NaN, all 18,710 logits go NaN, and
+`max_element`'s NaN-poisoned compare returns index 0 — the CTC blank — so
+every crop decodes to the empty string: `boxes=38 results=0`, rc=0,
+activations sane through stage4 (the exact capture signature).
+
+**Reproduced on M1 Metal** with the q8-head artifact (`results=0`): Metal
+had only ever been validated on the f16 artifact, which is why the bug wore
+a CUDA costume. Fix: same-type residents copy the raw source bytes (staged
+through the host — the source may sit in a backend buffer); cross-type keeps
+the F16/F32 conversion paths, asserted exhaustive.
+
+**Proof (kernel `chr1s4/crispembed-cuda-rec-fix` v1, Tesla P100):** q8-head
+CUDA fused graph vs `NO_GRAPH` scalar CPU reference — strip 12=12 regions,
+page 38=38, decoded text **byte-identical** (similarity 1.0000) on both
+fixtures; f16 control healthy. M1 gates: q8 strip 0→12 results conf 0.94,
+q8 graph == scalar reference byte-for-byte, f16 page byte-identical to
+baseline (`a3a5f938`), 12/12 model-free CI checks.
+
+**O11 (unblocked, same branch):** det residency is per-backend-kind — a
+~29 ms device-NAME probe (no backend init) defaults the det graph to GPU
+only when a CUDA device is present (18x measured: 596-614 ms vs 11.0 s
+medium det, conv-ab v1+v2); Metal keeps the CPU default (9x slower there).
+`CRISPEMBED_PPOCRV6_DET_GPU=0|1` overrides; `FORCE_CPU`/`DET_GPU_LOAD`
+retain their meanings. M1: default still CPU, page output byte-identical;
+`=1` runs the det graph on MTL0, output STILL byte-identical
+(backend-portable graph). **CUDA auto-engagement proven (kernel v2, P100):**
+page detect 9516 ms (v1, CPU det) → **595 ms (16x)**, strip 2315 → 385 ms,
+boxes unchanged (38/12), decoded text still byte-equal to the scalar
+reference in every arm; page total 12.7 → 3.8 s. Both rec-fix proofs PASS
+identically with O11 active.
+
 ## OCR runtime residency survey — which engine computes where, and why (2026-08-05)
 
 Code-verified sweep at `9f731fb5` of every OCR-lane engine's backend selection
