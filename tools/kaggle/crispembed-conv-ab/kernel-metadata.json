@@ -1,6 +1,6 @@
 {
   "id": "chr1s4/crispembed-conv-ab",
-  "title": "CrispEmbed conv A/B (O8 x86 im2col + O9 CUDA residency)",
+  "title": "CrispEmbed Conv AB",
   "code_file": "crispembed_conv_ab.py",
   "language": "python",
   "kernel_type": "script",
