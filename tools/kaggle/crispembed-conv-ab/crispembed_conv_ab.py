@@ -25,6 +25,10 @@ import hashlib
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
+# Gotcha #22: keep /kaggle/working to only the artifacts we must retrieve
+# (the 500-file output page cap) — clone/build under the ephemeral layer.
+TEMP = Path("/kaggle/temp")
+TEMP.mkdir(parents=True, exist_ok=True)
 DL = Path("/tmp/crispembed-convab")
 DL.mkdir(parents=True, exist_ok=True)
 
@@ -51,10 +55,10 @@ sys.stderr = _Tee(sys.__stderr__, _LOG)
 REPO_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
 BRANCH = os.environ.get("CRISPEMBED_BRANCH", "main")
-EMBED_DIR = WORK / "CrispEmbed"
+EMBED_DIR = TEMP / "CrispEmbed"
 BUILD_DIR = EMBED_DIR / "build"
 
-_CRISPASR = WORK / "CrispASR"
+_CRISPASR = TEMP / "CrispASR"
 if not _CRISPASR.exists():
     try:
         subprocess.check_call(["git", "clone", "--depth", "1", CRISPASR_URL, str(_CRISPASR)])
@@ -110,8 +114,9 @@ kh.sh(f"cd {BUILD_DIR} && cmake -G Ninja -DCMAKE_BUILD_TYPE=Release "
       + " ".join(kh.cuda_build_flags(arch) + kh.cache_and_link_flags())
       + " ..", check=True)
 kh.step("build")
-kh.sh(f"cd {BUILD_DIR} && ninja -j{kh.safe_build_jobs(gpu=True)} "
-      "crispembed-cli test-core-cpu-ops test-ppocrv6-direct", check=True)
+with kh.build_heartbeat("ninja", 30):
+    kh.sh(f"cd {BUILD_DIR} && ninja -j{kh.safe_build_jobs(gpu=True)} "
+          "crispembed-cli test-core-cpu-ops test-ppocrv6-direct", check=True)
 
 
 def binp(name):
@@ -142,7 +147,8 @@ def run(label, argv, env=None, timeout=900):
     if env:
         e.update({k: str(v) for k, v in env.items()})
     try:
-        p = subprocess.run(argv, env=e, capture_output=True, text=True, timeout=timeout)
+        with kh.build_heartbeat(label[:40], 60):
+            p = subprocess.run(argv, env=e, capture_output=True, text=True, timeout=timeout)
         for line in p.stderr.splitlines():
             if any(k in line for k in ("bench", "elapsed", "regions", "Phase", "ggml_cuda",
                                        "CUDA", "backend", "error", "FAIL", "Results")):
