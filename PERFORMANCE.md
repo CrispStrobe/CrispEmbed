@@ -1,5 +1,36 @@
 # CrispEmbed Performance
 
+## O7 first adoption: per-engine conv2d prefs + R6 mk default on the ppocrv6-det scalar path — −26% process CPU, byte-identical (Apple M1, 2026-08-07)
+
+Round N+1 task 5, first increment. `conv2d_cpu` now reads a thread_local
+per-engine prefs hook (`core_cpu::conv2d_prefs_scope`) when the
+`CRISPEMBED_CONV2D_*` env vars are unset; env keeps absolute precedence in
+BOTH directions (`=0` forces the reference loop on a flipped engine — the
+old presence-cached statics could not express that). The scope carries the
+engine's own `n_threads` into `conv2d_im2col_cpu`, closing the O13b-class
+gap for this helper.
+
+**ppocrv6-det scalar path flipped** (the `DET_SCALAR=1` / graph-failure
+fallback — the exact path the R6 kernels were measured on). Medium det,
+`german_official_print` (1920x2518), nt1-vs-nt1, 3 interleaved same-binary
+pairs, process CPU time:
+
+| arm | pair 1 | pair 2 | pair 3 |
+|---|--:|--:|--:|
+| reference loop (`CRISPEMBED_CONV2D_MK=0`) | 51.9 s | 52.4 s | 52.4 s |
+| mk default | **38.5 s** | **39.4 s** | **38.3 s** |
+
+Detector regions 24=24 in every arm; full stdout byte-identical modulo
+the timing line; the default GRAPH path (unaffected by construction) is
+also identical between arms in all pairs. Unit gate 196/196; model-free
+orchestrator suite 77/77.
+
+Not flipped, recorded honestly: `text_sr` (no distributable model exists
+to run the decoded-output gate — flip is drafted as a comment at the
+scope site); `nafnet` (its default is the ggml conv path, not this
+helper). Remaining O7 candidates need their engines' scalar paths
+exercised with real models one A/B at a time.
+
 ## Pageseg quality round 3: band-clustered rows + rise-gated faint-line widening — classical Fraktur CER 0.271 → 0.218 (beats the 0.235 dbnet-parity target), zero regressions on the 24-image arms gate, default ON (Apple M1, 2026-08-06)
 
 Fable task 1 of the round-N+1 handover. Round 2's scoping held up on
