@@ -1,5 +1,48 @@
 # CrispEmbed Performance
 
+## Pageseg quality round 1: separator rejection takes the classical Fraktur CER 0.412 → 0.271 and makes the route faster — the garbage was RULES, not recognition (Apple M1, 2026-08-06)
+
+Fable-task 4, first landing. Per-line diagnosis (`--per-line` /
+`--crop-dump-dir` on `compare_tesseract_page_metrics.py`) showed the
+classical route's CER deficit was dominated by NON-TEXT crops: the
+Reichsgesetzblatt masthead's two horizontal rules (1365x21 / 1473x22 px,
+aspect 65-67) each fed the LSTM and flooded 60-300 garbage characters
+(`"---=zzz…`, `eeeezee…`) — native emitted 1110 chars vs official's 881.
+The three gated experimental segmentation policies are all far WORSE
+(projection CER 4.14, component 0.98, baseline 1.59 — they over-split into
+48-67 rows); legacy-fallback's 23 rows was already the best geometry.
+
+**Fix: classical separator rejection** (`reject_separator_rows` in
+`tesseract_pageseg.cpp`, applied by both the projection and component-legacy
+segmenters; `CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES=1` restores). The
+discriminator was chosen from MEASURED crop statistics, and the first cut
+failed honestly: max-scanline-ink >= 80% missed both rules (dashed/faded
+1899 print — max scanline only 33-35%). The measured separation is **column
+coverage** (fraction of box columns with any ink): rules 0.99-1.00 even
+when dashed, every text row <= 0.76 (dense blackletter masthead worst).
+Final test: coverage >= 0.90 AND height <= 0.6x median row height AND
+aspect >= 8.
+
+| | before | after |
+|---|--:|--:|
+| Fraktur page CER (vs official 5.5.2) | 0.4123 | **0.2713** |
+| native chars (official: 881) | 1110 | **890** |
+| stage total | 1307 ms | **1115 ms** |
+
+Gates: synthetic 20-fixture corpus mean CER identical between arms
+(0.02210 — the filter is a no-op where no rules exist); 4 CC0 fixtures
+byte-identical between arms; orchestrator tests + model-free spot checks
+green. dbnet route untouched by construction.
+
+**Residuals to 0.235 (the dbnet route's CER), documented for round 2:**
+ornament/crest fragments (~60 junk chars; col-coverage 0.19-0.36 —
+geometrically text-like, needs a recognition-confidence or rule-adjacency
+signal), one right-truncated row (crop-04 loses its tail mid-word — the
+split-band x-tightening's column_ink>=4 threshold is suspect), and genuine
+Fraktur recognition errors (decoder/recoder semantics — the
+`--recode-beam`/`--dawg-score` levers exist and are unmeasured on this
+page since the int8-cache landing).
+
 ## R6 register-blocked GEMM micro-kernel: −34% process CPU on M1, ~−40% on the x86 det stage, decoded output byte-identical on both — ships opt-in (2026-08-06)
 
 Fable-task 3, the "further step" the R6 tile contract left open. The

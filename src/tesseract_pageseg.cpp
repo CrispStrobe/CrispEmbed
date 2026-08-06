@@ -150,6 +150,65 @@ static std::vector<ocr_detect::text_box> segment_components(const uint8_t * gray
     return out;
 }
 
+// Separator rejection (pageseg quality lane, 2026-08-06). The classical row
+// bands include horizontal RULES and rule-bearing ornaments, and the LSTM
+// turns each into a flood of garbage characters — on the Fraktur
+// Reichsgesetzblatt page the two masthead rules alone emitted ~350 junk
+// characters (+26% over official's char total) and were the bulk of the
+// classical route's CER 0.412 vs the dbnet route's 0.235. Real Tesseract's
+// layout analysis classifies and drops separators before recognition; the
+// equivalent classical test, chosen from MEASURED crop statistics on that
+// page (a first cut used max-scanline ink >= 80% and missed both rules —
+// they are dashed/faded on the 1899 scan, max scanline only 33-35%): a
+// rule's COLUMN COVERAGE (fraction of box columns with any ink) is
+// 0.99-1.00 even when dashed, while every text row measured <= 0.76 (the
+// dense blackletter masthead is the worst case). Guards: box height under
+// 0.6x the median row height (rules 21-22 px vs median ~44; the smallest
+// real text row was 29) and aspect >= 8, so a short wide dense-justified
+// line cannot trip it. Applied by BOTH the projection and the
+// component-legacy segmenters. CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES=1
+// restores the unfiltered rows (regression lever).
+static void reject_separator_rows(std::vector<ocr_detect::text_box> & out, const uint8_t * gray, int width, int height,
+                                  int threshold) {
+    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES")) return;
+    if (out.size() < 3) return;
+    std::vector<float> heights;
+    heights.reserve(out.size());
+    for (const auto & b : out) heights.push_back(b.h);
+    std::sort(heights.begin(), heights.end());
+    const float median_h = heights[heights.size() / 2];
+    std::vector<ocr_detect::text_box> kept;
+    kept.reserve(out.size());
+    for (const auto & b : out) {
+        const int bx0 = std::max(0, (int)b.x), by0 = std::max(0, (int)b.y);
+        const int bx1 = std::min(width - 1, bx0 + (int)b.w - 1);
+        const int by1 = std::min(height - 1, by0 + (int)b.h - 1);
+        const int bw = bx1 - bx0 + 1;
+        const int bh = by1 - by0 + 1;
+        bool separator = false;
+        if (bw >= 32 && bh > 0 && (float)bh <= 0.6f * median_h && bw >= 8 * bh) {
+            int covered = 0;
+            for (int x = bx0; x <= bx1; ++x) {
+                for (int y = by0; y <= by1; ++y) {
+                    if (gray[y * width + x] < threshold) {
+                        ++covered;
+                        break;
+                    }
+                }
+            }
+            separator = covered >= (bw * 9) / 10;
+        }
+        if (separator) {
+            if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
+                std::fprintf(stderr, "tesseract_pageseg: separator dropped x=%d..%d y=%d..%d (%dx%d)\n", bx0, bx1, by0,
+                             by1, bw, bh);
+            continue;
+        }
+        kept.push_back(b);
+    }
+    out = std::move(kept);
+}
+
 std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, int height) {
     std::vector<ocr_detect::text_box> out;
     if (!gray || width <= 0 || height <= 0) return out;
@@ -300,6 +359,8 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
         }
         out = std::move(split);
     }
+
+    reject_separator_rows(out, gray, width, height, threshold);
     return out;
 }
 
@@ -412,8 +473,16 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
     const bool baseline_override = std::getenv("CRISPEMBED_TESSERACT_COMPONENT_BASELINE") != nullptr;
     const bool use_fallback = !baseline_override;
     if (use_fallback) {
-        const auto legacy = segment_gray_components_legacy(gray, width, height);
-        if (legacy.size() >= 2) return legacy;
+        auto legacy = segment_gray_components_legacy(gray, width, height);
+        if (legacy.size() >= 2) {
+            // Same dark-ink threshold convention as segment_gray; the
+            // legacy segmenter's own threshold is function-local.
+            uint64_t s = 0;
+            for (int i = 0; i < width * height; ++i) s += gray[i];
+            const int sep_threshold = std::clamp((int)(s / (uint64_t)(width * height)) - 90, 30, 120);
+            reject_separator_rows(legacy, gray, width, height, sep_threshold);
+            if (legacy.size() >= 2) return legacy;
+        }
         // Keep the measured legacy grouping as the default, but do not turn a
         // difficult page into an empty or single-row classical result. The
         // baseline matcher below is still experimental; use it only when the
