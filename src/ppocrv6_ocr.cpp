@@ -492,7 +492,6 @@ static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tenso
     if (!src || !c->graph.backend) return nullptr;
     auto it = c->graph.resident.find(src);
     if (it != c->graph.resident.end()) return it->second;
-    std::vector<float> data = to_f32(src);
     ggml_init_params ip = { ggml_tensor_overhead() + 64, nullptr, true };
     ggml_context * wc = ggml_init(ip);
     if (!wc) return nullptr;
@@ -503,11 +502,28 @@ static ggml_tensor * pp_graph_resident(ppocrv6_ocr_context * c, const ggml_tenso
         ggml_free(wc);
         return nullptr;
     }
-    if (type == GGML_TYPE_F16) {
+    if (type == src->type && ggml_nelements(src) == ggml_nelements(dst)) {
+        // Same-type resident (the native-quant head path and any F16->F16
+        // copy): the source bytes ARE the destination bytes — copy them raw,
+        // staged through the host (the source may sit in a backend buffer).
+        // The old code fell into the F32 branch below for quantized types,
+        // uploading raw float bit patterns as q8_0 blocks: the f16 scale
+        // field decoded from float mantissa bytes lands on Inf/NaN, every
+        // logit goes NaN, max_element's NaN-poisoned compare returns index 0
+        // = the CTC blank, and every crop decoded to the empty string
+        // (CUDA-rec "boxes=38 results=0" — Metal only dodged it because it
+        // was always validated on the f16 artifact).
+        std::vector<uint8_t> raw(ggml_nbytes(src));
+        ggml_backend_tensor_get(src, raw.data(), 0, raw.size());
+        ggml_backend_tensor_set(dst, raw.data(), 0, ggml_nbytes(dst));
+    } else if (type == GGML_TYPE_F16) {
+        std::vector<float> data = to_f32(src);
         std::vector<ggml_fp16_t> half(data.size());
         ggml_fp32_to_fp16_row(data.data(), half.data(), (int64_t)half.size());
         ggml_backend_tensor_set(dst, half.data(), 0, ggml_nbytes(dst));
     } else {
+        GGML_ASSERT(type == GGML_TYPE_F32 && "pp_graph_resident: cross-type copy only converts to F16/F32");
+        std::vector<float> data = to_f32(src);
         ggml_backend_tensor_set(dst, data.data(), 0, ggml_nbytes(dst));
     }
     c->graph.resident[src] = dst;
