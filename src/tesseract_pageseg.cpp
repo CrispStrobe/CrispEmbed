@@ -431,20 +431,271 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
         int y0 = 0, y1 = 0;
     };
     std::vector<row> rows;
-    for (const auto & b : blobs) {
-        if (!rows.empty() && b.y0 <= rows.back().y1 + max_row_gap) {
-            rows.back().blobs.push_back(b);
-            rows.back().y1 = std::max(rows.back().y1, b.y1);
-        } else {
-            rows.push_back({ { b }, b.y0, b.y1 });
+    // Default ON (round 3, 2026-08-06): wins or ties every fixture of the
+    // 24-image arms gate (synthetic 20 + CC0) at equal stage time and takes
+    // the Fraktur page CER 0.271 -> 0.218; =0 restores the greedy chain.
+    const char * band_env = std::getenv("CRISPEMBED_TESSERACT_LEGACY_BAND_ROWS");
+    if (!band_env || band_env[0] != '0') {
+        // Round 3 (2026-08-06): at the legacy threshold the connected
+        // components are ink FRAGMENTS (median height 6 px on the Fraktur
+        // page), and the greedy y0-chain below assigns them by adjacency to
+        // the MOST RECENT row only — one tall fragment span merges several
+        // printed lines while a line whose fragments sort late is orphaned
+        // into a <2-blob row and filtered (the round-2 "vanished Inhalt
+        // line"). Text lines are instead recovered from the blob-mass
+        // vertical profile: each blob spreads its area over its y-span,
+        // bands are maximal positive runs of the smoothed profile (split at
+        // interior valleys when a run covers several line pitches, same
+        // policy as the projection splitter), and every fragment joins the
+        // band it overlaps most — a global assignment with no dependence on
+        // fragment sort order or fragment-scaled gaps.
+        std::vector<float> profile((size_t)height, 0.0f);
+        for (const auto & b : blobs) {
+            const float per_line = (float)b.area / (float)(b.y1 - b.y0 + 1);
+            for (int y = b.y0; y <= b.y1; ++y) profile[(size_t)y] += per_line;
+        }
+        const int radius = std::max(2, median_h / 2);
+        std::vector<double> prefix((size_t)height + 1, 0.0);
+        for (int y = 0; y < height; ++y) prefix[(size_t)y + 1] = prefix[(size_t)y] + profile[(size_t)y];
+        std::vector<float> smooth((size_t)height, 0.0f);
+        for (int y = 0; y < height; ++y) {
+            const int lo = std::max(0, y - radius);
+            const int hi = std::min(height - 1, y + radius);
+            smooth[(size_t)y] = (float)((prefix[(size_t)hi + 1] - prefix[(size_t)lo]) / (hi - lo + 1));
+        }
+        struct band {
+            int y0, y1;
+        };
+        std::vector<band> bands;
+        int start = -1, gap = 0;
+        for (int y = 0; y < height; ++y) {
+            if (smooth[(size_t)y] > 0.0f) {
+                if (start < 0) start = y;
+                gap = 0;
+            } else if (start >= 0 && ++gap > 1) {
+                bands.push_back({ start, y - gap });
+                start = -1;
+                gap = 0;
+            }
+        }
+        if (start >= 0) bands.push_back({ start, height - 1 - gap });
+        const bool band_debug = std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG") != nullptr;
+        if (band_debug) {
+            for (const auto & bd : bands)
+                std::fprintf(stderr, "  band-pass1 y=%d..%d h=%d\n", bd.y0, bd.y1, bd.y1 - bd.y0 + 1);
+        }
+        if (!bands.empty()) {
+            std::vector<float> band_heights;
+            band_heights.reserve(bands.size());
+            for (const auto & bd : bands) band_heights.push_back((float)(bd.y1 - bd.y0 + 1));
+            std::sort(band_heights.begin(), band_heights.end());
+            const float base_height = std::max(8.0f, band_heights[(band_heights.size() - 1) / 4]);
+            if (band_debug) std::fprintf(stderr, "  band-base-height %.1f\n", base_height);
+            // Split merged bands at DEEP interior valleys only — where the
+            // smoothed mass falls below a fraction of BOTH flanking maxima.
+            // A count-driven split (band height / typical height) is wrong on
+            // this material in both directions: display-type mastheads are
+            // several typical heights tall yet are ONE line (interior valleys
+            // are shallow — the letters are continuous ink), while two
+            // tightly-set small-print lines fit in under two typical heights
+            // yet have a near-zero interline valley. Valley depth separates
+            // the two cases; a fixed part count cannot.
+            const float valley_frac = 0.30f;
+            // base_height degenerates to a MULTI-line height when pass 1
+            // yields only merged bands (a skewed or short page can produce a
+            // single band covering everything) — cap the minimum part size by
+            // the blob-derived scale so recursion can still reach the second
+            // valley inside a merged half.
+            const int min_part = std::max(6, (int)std::lround(std::min(base_height * 0.35f, (float)median_h * 2.0f)));
+            std::vector<band> split;
+            split.reserve(bands.size());
+            std::vector<band> pending;
+            for (size_t bi = bands.size(); bi-- > 0;) pending.push_back(bands[bi]);
+            while (!pending.empty()) {
+                const band bd = pending.back();
+                pending.pop_back();
+                const int h = bd.y1 - bd.y0 + 1;
+                int cut = -1;
+                if (h >= 2 * min_part) {
+                    // Score every interior position by how deep a valley it is
+                    // relative to the peaks on BOTH sides (running left/right
+                    // maxima). A single global argmin is wrong here: it lands
+                    // in a band's sparse descender tail, whose trivial flank
+                    // then vetoes the split while the real interline valley
+                    // was never examined.
+                    std::vector<float> left_run((size_t)h), right_run((size_t)h);
+                    float acc = 0.0f;
+                    for (int i = 0; i < h; ++i) {
+                        acc = std::max(acc, smooth[(size_t)(bd.y0 + i)]);
+                        left_run[(size_t)i] = acc;
+                    }
+                    acc = 0.0f;
+                    for (int i = h; i-- > 0;) {
+                        acc = std::max(acc, smooth[(size_t)(bd.y0 + i)]);
+                        right_run[(size_t)i] = acc;
+                    }
+                    float best_flank = 0.0f, cut_mass = 0.0f;
+                    for (int yy = bd.y0 + min_part; yy <= bd.y1 - min_part; ++yy) {
+                        const float mass = smooth[(size_t)yy];
+                        const float flank = std::min(left_run[(size_t)(yy - bd.y0)], right_run[(size_t)(yy - bd.y0)]);
+                        // Deepest valley = the one whose smaller flank exceeds
+                        // its mass by the largest margin at the required ratio.
+                        if (mass <= valley_frac * flank && flank > best_flank) {
+                            best_flank = flank;
+                            cut = yy;
+                            cut_mass = mass;
+                        }
+                    }
+                    if (band_debug && h >= 2 * min_part) {
+                        std::fprintf(stderr, "  band-split? y=%d..%d h=%d -> %s (cut=%d mass=%.1f flank=%.1f)\n", bd.y0,
+                                     bd.y1, h, cut >= 0 ? "cut" : "keep", cut, cut_mass, best_flank);
+                        if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_BAND_PROFILE")) {
+                            std::fprintf(stderr, "  band-profile y=%d:", bd.y0);
+                            for (int yy = bd.y0; yy <= bd.y1; ++yy)
+                                std::fprintf(stderr, " %d", (int)std::lround(smooth[(size_t)yy]));
+                            std::fprintf(stderr, "\n");
+                        }
+                    }
+                }
+                if (cut < 0) {
+                    split.push_back(bd);
+                } else {
+                    // Deeper halves may hide further lines; re-examine both.
+                    pending.push_back({ cut + 1, bd.y1 });
+                    pending.push_back({ bd.y0, cut });
+                }
+            }
+            std::sort(split.begin(), split.end(), [](const band & a, const band & b) { return a.y0 < b.y0; });
+            bands = std::move(split);
+        }
+        if (!bands.empty()) {
+            rows.resize(bands.size());
+            for (size_t i = 0; i < bands.size(); ++i) {
+                rows[i].y0 = -1;
+                rows[i].y1 = -1;
+            }
+            for (const auto & b : blobs) {
+                int best = -1, best_overlap = 0;
+                int nearest = -1;
+                float nearest_distance = 0.0f;
+                const float center = 0.5f * (float)(b.y0 + b.y1);
+                for (int i = 0; i < (int)bands.size(); ++i) {
+                    const int overlap = std::min(b.y1, bands[(size_t)i].y1) - std::max(b.y0, bands[(size_t)i].y0) + 1;
+                    if (overlap > best_overlap) {
+                        best_overlap = overlap;
+                        best = i;
+                    }
+                    const float band_center = 0.5f * (float)(bands[(size_t)i].y0 + bands[(size_t)i].y1);
+                    const float distance = std::fabs(band_center - center);
+                    if (nearest < 0 || distance < nearest_distance) {
+                        nearest_distance = distance;
+                        nearest = i;
+                    }
+                }
+                const int target = best >= 0 ? best : nearest;
+                row & r = rows[(size_t)target];
+                if (r.blobs.empty()) {
+                    r.y0 = b.y0;
+                    r.y1 = b.y1;
+                } else {
+                    r.y0 = std::min(r.y0, b.y0);
+                    r.y1 = std::max(r.y1, b.y1);
+                }
+                r.blobs.push_back(b);
+            }
+            rows.erase(std::remove_if(rows.begin(), rows.end(), [](const row & r) { return r.blobs.empty(); }),
+                       rows.end());
         }
     }
-    for (const auto & r : rows) {
+    if (rows.empty()) {
+        for (const auto & b : blobs) {
+            if (!rows.empty() && b.y0 <= rows.back().y1 + max_row_gap) {
+                rows.back().blobs.push_back(b);
+                rows.back().y1 = std::max(rows.back().y1, b.y1);
+            } else {
+                rows.push_back({ { b }, b.y0, b.y1 });
+            }
+        }
+    }
+    std::vector<char> emitted(rows.size(), 0);
+    for (size_t i = 0; i < rows.size(); ++i) {
+        const auto & r = rows[i];
         if (r.blobs.size() < 2) continue;
         int x0 = width, x1 = -1;
         for (const auto & b : r.blobs) {
             x0 = std::min(x0, b.x0);
             x1 = std::max(x1, b.x1);
+        }
+        if (!band_env || band_env[0] != '0') {
+            // Blob extremes under-reach on faint small print: most of its
+            // fragments fall below the blob area/height floor, so the row is
+            // located by a handful of survivors and the crop loses the line's
+            // head and tail (the round-2 "clipped Inhalt line" was this, not
+            // mis-grouping). Take the crop x-extent from the raster ink of
+            // the row band instead; two dark pixels per column is the same
+            // floor the projection splitter uses.
+            // The floor scales with row height so margin noise cannot
+            // qualify (a glyph column in a 40 px row crosses ink 5+ times,
+            // salt-and-pepper stays at 1-2; ~20 px faint small print keeps
+            // the floor at 2). The walk extends only to WORDISH columns —
+            // a qualifying column with at least two more qualifying columns
+            // in its 7-column neighborhood. Letters are laterally continuous
+            // even in faded print, so word columns cluster; an isolated
+            // speck beyond the line end stays a single qualifying column
+            // and cannot anchor the crop into the margin. That shape test is
+            // what allows a generous inter-word gap.
+            // The floor stays at 2: the rise-gated acceptance below is the
+            // noise defense, and a height-scaled floor starves tall FAINT
+            // rows of extension candidates before that test can even run.
+            const int ink_floor = 2;
+            std::vector<char> qualifying((size_t)width, 0);
+            for (int x = 0; x < width; ++x) {
+                int ink = 0;
+                for (int y = r.y0; y <= r.y1; ++y) ink += gray[(size_t)y * width + x] < threshold;
+                qualifying[(size_t)x] = ink >= ink_floor;
+            }
+            int global_x0 = width, global_x1 = -1;
+            for (int x = 0; x < width; ++x) {
+                if (qualifying[(size_t)x]) {
+                    global_x0 = std::min(global_x0, x);
+                    global_x1 = std::max(global_x1, x);
+                }
+            }
+            // Column counts cannot separate a FAINT line continuation from
+            // margin noise (measured: faint 8 qualifying over 292 px vs
+            // noise 7 over 194). What separates them is the response to a
+            // more permissive threshold: faded ink has sub-threshold gray
+            // structure, so its active-column density RISES (0.17->0.39,
+            // 0.11->0.33 at +20->+60 on the Reichsgesetzblatt Inhalt
+            // lines), while salt-and-pepper specks are already black and
+            // stay FLAT (0.04->0.04, and a dense patch 0.40->0.40 that
+            // defeats any absolute floor). Accept a side's extension only
+            // on a rising response.
+            auto extension_density = [&](int lo, int hi, int t) {
+                int active = 0;
+                for (int x = lo; x <= hi; ++x) {
+                    int ink = 0;
+                    for (int y = r.y0; y <= r.y1; ++y) ink += gray[(size_t)y * width + x] < t;
+                    active += ink >= 2;
+                }
+                return (float)active / (float)(hi - lo + 1);
+            };
+            auto extension_ok = [&](int lo, int hi) {
+                if (hi < lo) return false;
+                if (hi - lo + 1 < 8) return true; // a few pad columns, not a claim
+                const float near_floor = extension_density(lo, hi, std::min(255, threshold + 20));
+                const float permissive = extension_density(lo, hi, std::min(255, threshold + 60));
+                // Dark real text is dense already at the near floor (a noise
+                // patch measured at most 0.40 flat), so it cannot rise; take
+                // either signature.
+                const bool ok = permissive >= 0.20f && (permissive >= 1.5f * near_floor || near_floor >= 0.5f);
+                if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG"))
+                    std::fprintf(stderr, "  widen? row y=%d..%d x=%d..%d d20=%.2f d60=%.2f -> %s\n", r.y0, r.y1, lo, hi,
+                                 near_floor, permissive, ok ? "accept" : "reject");
+                return ok;
+            };
+            if (global_x0 < x0 && extension_ok(global_x0, x0 - 1)) x0 = global_x0;
+            if (global_x1 > x1 && extension_ok(x1 + 1, global_x1)) x1 = global_x1;
         }
         if (x1 < x0) continue;
         ocr_detect::text_box box{};
@@ -454,14 +705,20 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
         box.h = (float)std::min(height - (int)box.y, r.y1 - r.y0 + 2 * box_pad + 1);
         box.score = 1.0f;
         out.push_back(box);
+        emitted[i] = 1;
     }
     if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG")) {
         std::fprintf(stderr, "legacy pageseg: threshold=%d blobs=%zu median_h=%d max_row_gap=%d rows=%zu\n", threshold,
                      blobs.size(), median_h, max_row_gap, rows.size());
         for (size_t i = 0; i < rows.size(); ++i) {
             const auto & r = rows[i];
-            std::fprintf(stderr, "  row=%zu blobs=%zu y=%d..%d x=%d..%d out=%s\n", i, r.blobs.size(), r.y0, r.y1,
-                         r.blobs.front().x0, r.blobs.back().x1, i < out.size() ? "yes" : "filtered");
+            int rx0 = width, rx1 = -1;
+            for (const auto & b : r.blobs) {
+                rx0 = std::min(rx0, b.x0);
+                rx1 = std::max(rx1, b.x1);
+            }
+            std::fprintf(stderr, "  row=%zu blobs=%zu y=%d..%d x=%d..%d out=%s\n", i, r.blobs.size(), r.y0, r.y1, rx0,
+                         rx1, emitted[i] ? "yes" : "filtered");
         }
     }
     std::sort(out.begin(), out.end(),
