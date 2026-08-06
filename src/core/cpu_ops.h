@@ -601,12 +601,78 @@ static inline void conv2d_depthwise_cpu(const float * in, float * out, const flo
 // turn every engine A/B into a quality argument instead of a byte compare.
 // That further step stays open until this one's win is banked.
 //
+// R6 register-blocked GEMM micro-kernel (the "further step" the tile
+// contract left open). Consumes a PACKED weight block and a PACKED column
+// block with an outer-product update — per k one weight vector and one
+// position vector feed 4 (NEON) / 4 (AVX2) fused multiply-adds, i.e. 16/32
+// MACs per 2 loads, where the dot-product consume above does 4-8 MACs per
+// 2 loads. This CHANGES the per-element accumulation order (one k-serial
+// chain per element instead of dot_product's multi-accumulator reduction),
+// so the micro-kernel arm is NOT bitwise-comparable to the reference paths:
+// its gate is per-engine decoded-output A/Bs, and the bitwise tile path
+// stays the reference arm (its exact-equality guard is untouched).
+//
+// Packing: wpack holds each 4-row (8 on AVX2) weight block interleaved as
+// [k][r] (packed once per call); xpack holds each 4-position column block
+// interleaved as [k][c] (packed once per tile from the L2-resident col
+// buffer). oc / position remainders fall back to the dot-product consume.
+#if defined(__aarch64__)
+static inline void conv2d_mk_block(const float * wp, const float * xp, int K, float acc[4][4]) {
+    float32x4_t c0 = vdupq_n_f32(0.0f), c1 = vdupq_n_f32(0.0f);
+    float32x4_t c2 = vdupq_n_f32(0.0f), c3 = vdupq_n_f32(0.0f);
+    for (int k = 0; k < K; k++) {
+        const float32x4_t wv = vld1q_f32(wp + 4 * (size_t)k);
+        const float32x4_t xv = vld1q_f32(xp + 4 * (size_t)k);
+        c0 = vfmaq_laneq_f32(c0, wv, xv, 0);
+        c1 = vfmaq_laneq_f32(c1, wv, xv, 1);
+        c2 = vfmaq_laneq_f32(c2, wv, xv, 2);
+        c3 = vfmaq_laneq_f32(c3, wv, xv, 3);
+    }
+    vst1q_f32(acc[0], c0); // acc[c][r] = sum_k w[r,k] * x[c,k]
+    vst1q_f32(acc[1], c1);
+    vst1q_f32(acc[2], c2);
+    vst1q_f32(acc[3], c3);
+}
+constexpr int CONV2D_MK_OCB = 4;
+#elif defined(__AVX2__) && defined(__FMA__)
+static inline void conv2d_mk_block8(const float * wp, const float * xp, int K, float acc[4][8]) {
+    __m256 c0 = _mm256_setzero_ps(), c1 = _mm256_setzero_ps();
+    __m256 c2 = _mm256_setzero_ps(), c3 = _mm256_setzero_ps();
+    for (int k = 0; k < K; k++) {
+        const __m256 wv = _mm256_loadu_ps(wp + 8 * (size_t)k);
+        c0 = _mm256_fmadd_ps(wv, _mm256_broadcast_ss(xp + 4 * (size_t)k + 0), c0);
+        c1 = _mm256_fmadd_ps(wv, _mm256_broadcast_ss(xp + 4 * (size_t)k + 1), c1);
+        c2 = _mm256_fmadd_ps(wv, _mm256_broadcast_ss(xp + 4 * (size_t)k + 2), c2);
+        c3 = _mm256_fmadd_ps(wv, _mm256_broadcast_ss(xp + 4 * (size_t)k + 3), c3);
+    }
+    _mm256_storeu_ps(acc[0], c0); // acc[c][r] = sum_k w[r,k] * x[c,k]
+    _mm256_storeu_ps(acc[1], c1);
+    _mm256_storeu_ps(acc[2], c2);
+    _mm256_storeu_ps(acc[3], c3);
+}
+constexpr int CONV2D_MK_OCB = 8;
+#else
+static inline void conv2d_mk_block(const float * wp, const float * xp, int K, float acc[4][4]) {
+    for (int c = 0; c < 4; c++)
+        for (int r = 0; r < 4; r++) acc[c][r] = 0.0f;
+    for (int k = 0; k < K; k++) {
+        const float * wv = wp + 4 * (size_t)k;
+        const float * xv = xp + 4 * (size_t)k;
+        for (int c = 0; c < 4; c++)
+            for (int r = 0; r < 4; r++) acc[c][r] += wv[r] * xv[c];
+    }
+}
+constexpr int CONV2D_MK_OCB = 4;
+#endif
+
 // Callers reach this through conv2d_cpu's CRISPEMBED_CONV2D_GEMM gate
 // (threads via CRISPEMBED_CONV2D_THREADS); exposed separately so tests can
 // compare both paths in one process (the gates are read-once statics).
+// micro_kernel selects the register-blocked consume above
+// (CRISPEMBED_CONV2D_MK=1 via the dispatcher; implies the GEMM path).
 static inline void conv2d_im2col_cpu(const float * in, float * out, const float * weight, const float * bias, int in_ch,
                                      int out_ch, int H, int W, int kh, int kw, int stride, int pad, int groups = 1,
-                                     int n_threads = 1) {
+                                     int n_threads = 1, bool micro_kernel = false) {
     const int out_H = (H + 2 * pad - kh) / stride + 1;
     const int out_W = (W + 2 * pad - kw) / stride + 1;
     if (out_H <= 0 || out_W <= 0) return;
@@ -622,7 +688,26 @@ static inline void conv2d_im2col_cpu(const float * in, float * out, const float 
         (int)std::clamp((size_t)(512 * 1024 / sizeof(float)) / (size_t)std::max(K, 1), (size_t)16, (size_t)256);
     const size_t n_tiles = (n_pos + tile - 1) / tile;
 
-    auto run_tiles = [&](int g, size_t t0, size_t t1, float * col) {
+    // Micro-kernel weight packing: each CONV2D_MK_OCB-row block interleaved
+    // as [k][r], packed once per call and shared read-only by every thread.
+    std::vector<float> wpack;
+    const int ocb = CONV2D_MK_OCB;
+    if (micro_kernel && ch_per_group_out >= ocb) {
+        const int n_blk = ch_per_group_out / ocb;
+        wpack.resize((size_t)groups * n_blk * ocb * K);
+        for (int g = 0; g < groups; g++) {
+            const float * w_g = weight + (size_t)g * ch_per_group_out * K;
+            for (int blk = 0; blk < n_blk; blk++) {
+                float * wp = wpack.data() + ((size_t)g * n_blk + blk) * ocb * K;
+                for (int r = 0; r < ocb; r++) {
+                    const float * wrow = w_g + (size_t)(blk * ocb + r) * K;
+                    for (int k = 0; k < K; k++) wp[(size_t)k * ocb + r] = wrow[k];
+                }
+            }
+        }
+    }
+
+    auto run_tiles = [&](int g, size_t t0, size_t t1, float * col, float * xpack) {
         const int ic_off = g * ch_per_group_in;
         const int oc_off = g * ch_per_group_out;
         const float * w_g = weight + (size_t)oc_off * K;
@@ -666,7 +751,47 @@ static inline void conv2d_im2col_cpu(const float * in, float * out, const float 
             // Consume: oc outside the position loop -- each weight row is
             // read once per tile and the streamed operand is the L2-resident
             // column buffer.
-            for (int oc = 0; oc < ch_per_group_out; oc++) {
+            const int n_blk = (micro_kernel && !wpack.empty()) ? ch_per_group_out / ocb : 0;
+            if (n_blk > 0) {
+                // Pack this tile's full 4-position blocks as [k][c].
+                const int n_pb = len / 4;
+                for (int pb = 0; pb < n_pb; pb++) {
+                    float * xp = xpack + (size_t)pb * 4 * K;
+                    for (int c = 0; c < 4; c++) {
+                        const float * src = col + (size_t)(pb * 4 + c) * K;
+                        for (int k = 0; k < K; k++) xp[(size_t)k * 4 + c] = src[k];
+                    }
+                }
+                for (int blk = 0; blk < n_blk; blk++) {
+                    const float * wp = wpack.data() + ((size_t)g * (ch_per_group_out / ocb) + blk) * (size_t)ocb * K;
+                    for (int pb = 0; pb < n_pb; pb++) {
+#if !defined(__aarch64__) && defined(__AVX2__) && defined(__FMA__)
+                        float acc[4][8];
+                        conv2d_mk_block8(wp, xpack + (size_t)pb * 4 * K, K, acc);
+#else
+                        float acc[4][4];
+                        conv2d_mk_block(wp, xpack + (size_t)pb * 4 * K, K, acc);
+#endif
+                        for (int r = 0; r < ocb; r++) {
+                            const int oc = blk * ocb + r;
+                            const float b = bias ? bias[oc_off + oc] : 0.0f;
+                            float * orow = out + (size_t)(oc_off + oc) * n_pos + p0 + (size_t)pb * 4;
+                            for (int c = 0; c < 4; c++) orow[c] = b + acc[c][r];
+                        }
+                    }
+                    // Position tail of this tile for the block's rows.
+                    for (int r = 0; r < ocb; r++) {
+                        const int oc = blk * ocb + r;
+                        const float b = bias ? bias[oc_off + oc] : 0.0f;
+                        const float * wrow = w_g + (size_t)oc * K;
+                        float * orow = out + (size_t)(oc_off + oc) * n_pos + p0;
+                        for (int i = n_pb * 4; i < len; i++) orow[i] = b + dot_product(col + (size_t)i * K, wrow, K);
+                    }
+                }
+            }
+            // oc remainder (or the whole group when the micro-kernel is off
+            // or the group is narrower than one block): dot-product consume.
+            for (int oc = n_blk * ocb; oc < ch_per_group_out; oc++) {
                 const float b = bias ? bias[oc_off + oc] : 0.0f;
                 const float * wrow = w_g + (size_t)oc * K;
                 float * orow = out + (size_t)(oc_off + oc) * n_pos + p0;
@@ -675,19 +800,20 @@ static inline void conv2d_im2col_cpu(const float * in, float * out, const float 
         }
     };
 
+    const size_t xpack_len = (micro_kernel && !wpack.empty()) ? (size_t)tile * K : 0;
     const int nt = (int)std::min((size_t)std::max(n_threads, 1), n_tiles);
     for (int g = 0; g < groups; g++) {
         if (nt <= 1) {
-            std::vector<float> col((size_t)tile * K);
-            run_tiles(g, 0, n_tiles, col.data());
+            std::vector<float> col((size_t)tile * K + xpack_len);
+            run_tiles(g, 0, n_tiles, col.data(), col.data() + (size_t)tile * K);
             continue;
         }
         std::vector<std::thread> pool;
-        std::vector<std::vector<float>> cols(nt, std::vector<float>((size_t)tile * K));
+        std::vector<std::vector<float>> cols(nt, std::vector<float>((size_t)tile * K + xpack_len));
         const size_t chunk = (n_tiles + nt - 1) / nt;
         for (int th = 0; th < nt; th++) {
             const size_t t0 = (size_t)th * chunk, t1 = std::min(n_tiles, t0 + chunk);
-            if (t0 < t1) pool.emplace_back(run_tiles, g, t0, t1, cols[th].data());
+            if (t0 < t1) pool.emplace_back(run_tiles, g, t0, t1, cols[th].data(), cols[th].data() + (size_t)tile * K);
         }
         for (auto & thr : pool) thr.join();
     }
@@ -731,14 +857,18 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
     // two levers can be A/B'd separately. Ordered after the shape-specific
     // gates above so their opt-ins keep precedence.
     {
-        static const bool im2col = core_env::on("CRISPEMBED_CONV2D_GEMM");
+        // CRISPEMBED_CONV2D_MK=1 selects the register-blocked micro-kernel
+        // consume (task 3 / R6 follow-on; NOT bitwise vs the reference — its
+        // acceptance is per-engine decoded output) and implies the GEMM path.
+        static const bool mk = core_env::on("CRISPEMBED_CONV2D_MK");
+        static const bool im2col = mk || core_env::on("CRISPEMBED_CONV2D_GEMM");
         if (im2col) {
             static const int nt = [] {
                 const char * e = std::getenv("CRISPEMBED_CONV2D_THREADS");
                 const int v = e ? atoi(e) : 1;
                 return v < 1 ? 1 : v;
             }();
-            conv2d_im2col_cpu(in, out, weight, bias, in_ch, out_ch, H, W, kh, kw, stride, pad, groups, nt);
+            conv2d_im2col_cpu(in, out, weight, bias, in_ch, out_ch, H, W, kh, kw, stride, pad, groups, nt, mk);
             return;
         }
     }

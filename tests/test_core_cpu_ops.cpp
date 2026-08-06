@@ -562,6 +562,30 @@ static void test_conv2d_im2col_equivalence() {
                     first, first < n_out ? ref[first] : 0.0f, first < n_out ? bad[first] : 0.0f);
         }
         CHECK(eq1 && eq4, s.name);
+
+        // Micro-kernel arm (R6 follow-on): a different, equally valid
+        // summation order of the same products — compared within a
+        // magnitude-scaled tolerance, NOT bitwise (its contract; the two
+        // arms above stay exact). Both thread counts, so the fork-join
+        // split of the packed consume is covered too.
+        for (int nt : { 1, 4 }) {
+            std::vector<float> mk(n_out, 0.0f);
+            conv2d_im2col_cpu(in.data(), mk.data(), w.data(), bias, s.in_ch, s.out_ch, s.H, s.W, s.kh, s.kw, s.stride,
+                              s.pad, s.groups, nt, /*micro_kernel=*/true);
+            double max_rel = 0.0;
+            size_t worst = 0;
+            for (size_t i = 0; i < n_out; i++) {
+                const double rel = std::fabs((double)mk[i] - ref[i]) / std::max(1.0, (double)std::fabs(ref[i]));
+                if (rel > max_rel) {
+                    max_rel = rel;
+                    worst = i;
+                }
+            }
+            if (max_rel > 1e-4)
+                fprintf(stderr, "  %s: mk nt=%d max_rel=%.3g at %zu ref=%.9g mk=%.9g\n", s.name, nt, max_rel, worst,
+                        ref[worst], mk[worst]);
+            CHECK(max_rel <= 1e-4, s.name);
+        }
     }
 }
 
