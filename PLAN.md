@@ -4,6 +4,107 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## HANDOVER — OCR/infra round N+1 (written 2026-08-06, after the all-queue session)
+
+**Read before doing anything:** this section; the board rows below (this
+round's ~15 DONE rows carry the evidence — archive them to HISTORY as your
+first hygiene act); the top ~10 dated sections of `PERFORMANCE.md`;
+`../crispasr-crispembed-dev.md` **including the "Addenda 2026-08-06"
+section at the end** (fork/sched/Kaggle lessons from this round);
+`../kaggle_usage.md` (tokens live there, NEVER in this repo).
+
+### Prime directive (unchanged, twice-proven this round)
+
+**Re-measure any item's named bottleneck on current `main` before
+implementing its prescribed fix.** This round it killed all three candidates
+of the previous brief's task 2 AND three of our own freshly-theorized GLM
+levers within the same day. Never claim a timing without decoded output
+(proof-of-work), never judge kernels by wall clock on this shared box
+(process CPU time, nt1-vs-nt1), and never let an rc pass through `| tail`.
+
+### State snapshot (all on `main`, both repos)
+
+- **The entire previous Fable queue (tasks 1-6) is DONE** — see the board
+  rows: CUDA-rec fixed byte-exact + O11 det auto-CUDA 16x; flat-im2col fork
+  kernel (rec 2.3x, layout 1.6x, melotts 1.85x); R6 MK GEMM kernel (−34%
+  M1 / −40% x86 det stage, byte-identical, opt-in); pageseg round 1
+  (Fraktur CER 0.412→0.271) + round 2 scoped (fragment-grouping fragility,
+  NOT an x-bounds bug); sched alloc-once/compute-many made safe in the fork;
+  layout O2b batched value-proj (3.5x, opt-in on a 0.500-score flip).
+- **Fork `sync/upstream-v0.17` tip = `890278a8`; BOTH repos pin it.**
+  ⚠ `crispstrobe-ops` is a divergent old lineage still receiving pushes —
+  `git branch -r --contains <pin>` before pushing fork work.
+- **SubtitleEdit PR-13238 field report triaged**: glm no-repeat-ngram guard
+  landed (red-green); `core/ram_guard.h` RAM preflight in
+  deepseek/glm/unlimited (refuse-not-thrash, `CRISPEMBED_RAM_GUARD=0|warn`);
+  GLM ViT-on-CPU = genuinely compute-bound (threads/grid/quant all
+  falsified — do NOT re-derive, the numbers are in the board row).
+- **Kaggle infra**: `chr1s4/crispembed-ccache` re-seeded with a
+  correctly-rooted `ccache.tar` (kernel `crispembed-ccache-seed`) — but the
+  warm path is **NOT yet verified live**. Vulkan on Kaggle: definitively NO
+  (no graphics capabilities in the container). New reusable kernels:
+  `crispembed-cuda-rec-fix` (3-arm decoded-text proof pattern),
+  `crispembed-mk-ab` (unit-gate-first multi-ISA pattern),
+  `crispembed-ccache-seed`.
+
+### Task queue — FABLE-tier
+
+1. **Pageseg round 3: baseline-clustered line assignment.** The legacy
+   segmenter chains 6 px-median ink FRAGMENTS with a 4 px gap — an entire
+   Inhalt line vanishes and its neighbor is clipped (round-2 scoping row has
+   the row map; the ROW_DEBUG `out=` label is index-bogus, fix it first).
+   Target: Fraktur CER 0.271 → ≤0.235 (dbnet parity) while keeping ~1.2 s.
+   Then the ornament-confidence signal (~60 junk chars, col-coverage
+   0.19-0.36 = text-like) and the UNMEASURED `--recode-beam`/`--dawg-score`
+   decoder levers (post-int8-cache numbers do not exist).
+2. **R8 ICB replay — now unblocked**: the sched contract fix (`890278a8`)
+   makes alloc-once/compute-many safe, which is exactly what an
+   MTLIndirectCommandBuffer replay needs. Metal decode is per-op-dispatch
+   bound; CUDA already has graph capture.
+3. **VLM thin-strip hallucination**: glm invents continuation sentences on
+   wide-short inputs (`scan_strip` repro in the 2026-08-06 rows). Quality
+   lane; probably wants a stop-criterion/attention-sink investigation.
+4. **GLM ViT deep levers — only if explicitly funded**: CPU flash-attn arm
+   A/B, kernel-level q8 matmul, earlier spatial merge. Three cheap levers
+   are already dead; expected payoff uncertain.
+
+### Task queue — OPUS-tier
+
+5. **O7/MK adoption**: per-engine defaults for `CRISPEMBED_CONV2D_GEMM/_MK`
+   on default-CPU conv paths (SR family, det scalar fallback first). MK is
+   byte-identical on BOTH ISAs on everything measured — flips are low-risk,
+   one engine per A/B, engine `n_threads` must reach the call.
+6. **O3, one engine at a time**: formula-encoder `enc_sched` → `{gpu,cpu}`
+   behind per-engine gates; start pix2struct (attention-shaped, model
+   cached), record win/loss either way.
+7. **FIRST KERNEL OF THE ROUND: verify the ccache seed fires.** The log
+   must show `ccache: warmed from …`; `ccache: cold build` means the seed
+   regressed again (see dev-guide addenda for the failure cycle). Also add
+   `kh.export_ccache_tar()` to long-build kernels so the seed stays fresh.
+8. **Upstream PR prep (mechanical only)**: re-draft `tools/upstream-prs/23`
+   from `kernel_im2col_flat` (`89a2039d`) — patch + numbers are ready; the
+   PROSE MUST BE HUMAN-AUTHORED (llama.cpp AI policy; ggml-org/ggml is the
+   venue, standing exists via #1477).
+9. **Hygiene**: archive this round's DONE rows to HISTORY; add rows 22-24
+   to `tools/upstream-prs/README.md`'s status table; fix the pageseg
+   ROW_DEBUG label.
+
+### Non-negotiable protocols
+
+Unchanged from the previous handover (worktree per change with
+`git submodule update --init --recursive` + Metal ON flags; claim a board
+row BEFORE starting and push it; measure-first; interleaved same-binary
+env-gated pairs; new paths opt-in until they win speed AND quality; never
+delete a gated path; `tools/format.sh --fix` before merge; ff-merge from
+the MAIN TREE — an in-worktree merge silently no-ops; no Claude co-author
+trailer in THIS repo; one heavy model at a time on the 16 GB box; kernels
+under chr1s4; no tokens in repo Markdown) **plus this round's additions**:
+judge kernels by process CPU time nt1-vs-nt1 on the shared box; never
+merge multi-ISA intrinsics before the other ISA compiles (unit-gate-first
+kernel); run the failing platform's exact artifact on a working platform
+before believing a platform-specific bug; check input dimensions before
+theorizing about preprocessing.
+
 ## HANDOVER — OCR runtime optimization, next round (written 2026-08-06)
 
 **Mission (unchanged, user-set):** make the OCR runtimes as fast as possible
