@@ -3,6 +3,28 @@ name: Build
 on:
   push:
     branches: [main]
+    # Documentation-only pushes must not start a build. Together with the
+    # cancel-in-progress group below, they did more than waste runners: a
+    # docs commit landing while a real build was in flight KILLED that build,
+    # and because GitHub's workflow badge reports the newest *completed* run
+    # and renders anything that is not `success` as "failing", a run of
+    # PLAN/HISTORY edits left the repo showing a red "Build failing" badge
+    # with nothing broken. (2026-08-06: six docs pushes in 30 minutes, three
+    # cancellations, while the last build that actually finished was green on
+    # all nine platform jobs.)
+    #
+    # An ignore-list, not an allow-list: this is the full cross-platform
+    # build and it must run for any code change, so listing what is safe to
+    # skip is the side that fails closed. Verified before adding: no .md is
+    # an input to the build or to the model-free tests below — the
+    # provenance tests assert that a string the CODE emits mentions
+    # POLICY.md, they never read the file.
+    #
+    # Deliberately not applied to `pull_request`: a required check that does
+    # not run can block a merge, and PR runs do not feed the badge anyway.
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [main]
 
