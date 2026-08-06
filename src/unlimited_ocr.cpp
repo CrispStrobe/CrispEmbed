@@ -2293,6 +2293,7 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
 
     auto _decode_t0 = std::chrono::steady_clock::now();
     int _decode_gen_steps = 0;
+    bool _any_pd_step = false;
     while (n_generated < max_new) {
         int T = no_kv ? (int)(full_emb.size() / D) : ((n_past == 0) ? n_prompt : (int)cur_tokens.size());
         if (core_env::on("UOCR_DBG"))
@@ -2415,6 +2416,22 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
                 }
                 n_past++;
                 did_pd = true;
+                _any_pd_step = true;
+                // O6 (2026-08-06): replaying the sched-allocated PD graph
+                // WITHOUT re-alloc crashes at its second compute (gen=2) —
+                // SIGSEGV/SIGABRT inside ggml-metal's op encode, reproduced
+                // 4/4 on the Metal build and NOT avoided by
+                // GGML_METAL_DEBUG=1. Forcing the full reset+alloc+KV-upload
+                // init on every step runs clean (1024/1024 steps), so the
+                // fork's sched does not support alloc-once/compute-many for
+                // this graph. The safe re-init is therefore the DEFAULT for
+                // UOCR_PD=1; the old replay stays reachable via
+                // UOCR_PD_REPLAY=1 for whoever debugs the sched/Metal side.
+                // Measured cost of safety: ~183 ms/step vs the rebuild
+                // path's ~90 ms/step on fox.png — i.e. PD currently has no
+                // winning mode (and its decode still diverges, see the gate
+                // comment above); it remains an opt-in research path.
+                if (!core_env::on("UOCR_PD_REPLAY")) pd_ready = false;
             }
         }
 
@@ -2730,8 +2747,11 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
     if (core_env::on("UOCR_DBG")) {
         auto _decode_t1 = std::chrono::steady_clock::now();
         long long _decode_ms = std::chrono::duration_cast<std::chrono::milliseconds>(_decode_t1 - _decode_t0).count();
+        // Report whether a PD step ACTUALLY ran — the old expression here
+        // re-derived "KV path without the rebuild-force env" and printed
+        // use_pd=1 on plain rebuild-path runs, which misled the O6 triage.
         fprintf(stderr, "  [decode] total=%lldms steps=%d prefill+gen use_pd=%d\n", _decode_ms, _decode_gen_steps,
-                (int)(n_past > 0 && !core_env::on("UOCR_DECODE_REBUILD")));
+                (int)_any_pd_step);
     }
     if (pd.gctx) ggml_free(pd.gctx);
     return true;
