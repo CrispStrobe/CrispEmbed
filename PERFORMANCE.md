@@ -1,5 +1,39 @@
 # CrispEmbed Performance
 
+## R6 register-blocked GEMM micro-kernel: −34% process CPU on M1, ~−40% on the x86 det stage, decoded output byte-identical on both — ships opt-in (2026-08-06)
+
+Fable-task 3, the "further step" the R6 tile contract left open. The
+im2col-tile consume computed one `dot_product` per output element (2 loads
+per 4-8 MACs); the micro-kernel consumes packed weight blocks ([k][r],
+packed once per call) against packed column blocks ([k][c], packed per tile
+from the L2-resident col buffer) with an outer-product update — NEON 4x4
+via `vfmaq_laneq` (2 loads per 16 MACs), AVX2 8x4 via broadcast-FMA (2
+loads + 4 broadcasts per 32 MACs), scalar fallback; oc/position remainders
+keep the dot consume. Opt-in `CRISPEMBED_CONV2D_MK=1` (implies the GEMM
+path); the bitwise tile path is untouched and remains the exact-equality
+reference arm; the mk arm is tolerance-gated (≤1e-4 magnitude-scaled,
+196/196 unit checks, 9 shapes × nt=1,4) because it reorders per-element
+accumulation.
+
+**M1** (medium scalar det page, 3 interleaved pairs): wall useless (2.3x
+same-arm spread under parallel-session load); CPU time decisive — process
+user 25.8-27.0 s (GEMM nt=4) → **17.7-18.0 s (−34%)** with det the only
+changed stage; decoded text byte-identical (`a3a5f938`). A win where the
+plain interchange had LOST (M1's shared 12 MB L2 already held the weights —
+the mk win is FLOP-side, not cache-side, so it survives).
+
+**x86** (kernel `chr1s4/crispembed-mk-ab` v1, 2.2 GHz Xeon AVX2, 3 rounds,
+CPU-time via rusage): AVX2 unit gate 196/196 on its first x86 run; process
+CPU legacy 252.8-254.5 s / gemm-nt1 251.3-252.9 / **mk-nt1 238.7-241.7
+(−14 s ≈ −40% of the ~35 s det-stage share)** / mk-nt4 245.8-247.9
+(threading costs CPU seconds, buys wall); decoded output byte-identical
+across ALL five arms. The mk stacks on the interchange win exactly as the
+small-L2 story predicted.
+
+Stays opt-in with the rest of the `conv2d_cpu` family (per-engine adoption
+is the O7 item); the decoded-output identity on both architectures makes
+future flips a formality for the engines measured here.
+
 ## sched alloc-once/compute-many FIXED in the fork — the O6 replay crash was a restore-on-success design assumption, not a Metal bug (2026-08-06)
 
 Fable-task 5. The `UOCR_PD=1 UOCR_PD_REPLAY=1` gen=2 SIGSEGV was localized
