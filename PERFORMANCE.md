@@ -128,6 +128,26 @@ two-backend scheds and will use the GPU.
 
 ## Kaggle conv A/B (O8+O9): the im2col interchange WINS on x86, PP-OCR det flips to GPU on CUDA (18x), LAYOUT_CONV_F16 stays gated (P100 + Xeon, 2026-08-06)
 
+**v2 addendum (same kernel, second P100 run — v1 verdicts REPLICATE):** o8
+gemm4 17.5-20.4 s across both runs, det-CUDA 550-614 ms vs det-CPU
+9.5-11.0 s, f16-layout region drift again. Two v2-specific findings:
+
+- **dbnet CPU-vs-CUDA arm: INCONCLUSIVE as designed.** Whole-pipeline wall
+  (114.3 s CPU-det vs 111.7 s CUDA-det) is dominated by the TrOCR
+  recognition of 38 regions, so the det fraction is invisible — and the two
+  arms' decoded TEXT DIFFERS, meaning the det backend changes boxes or the
+  probability map. A v3 needs a det-only dbnet harness (bench print + box
+  compare), not a wall clock. No dbnet-CUDA claim is made.
+- **CUDA-rec 0-results diagnosis capture**: with
+  `CRISPEMBED_PPOCRV6_GRAPH_DEBUG=1` on CUDA0, the fused rec graph's tap
+  activations are numerically sane through `stage4`, the 18,710-wide logits
+  graph builds and computes — yet results=0 (rc=0, boxes=38/12). The fault
+  is therefore DOWNSTREAM of graph compute: the logits readback layout or
+  the CTC decode consuming it (a scrambled readback argmaxes onto the blank
+  class and CTC-collapses every crop to empty, which reproduces the exact
+  symptom). This is the starting point for the Fable-queue CUDA-rec item;
+  the full stderr is archived in the kernel output.
+
 Kernel `chr1s4/crispembed-conv-ab` v1 (Tesla P100-PCIE-16GB sm_60, Intel Xeon
 2.00 GHz), full log `convab.log` in the kernel output; every arm's stdout was
 captured and cross-compared per the proof-of-work rule.

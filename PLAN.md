@@ -59,20 +59,28 @@ mid-investigation can run a stale main-tree binary — pin one absolute
   re-init is the PD default; PD has no winning mode, stays research).
 - **Ignored-`n_threads` audit: 5 engines fixed** (ppocrv6_det, ppocrv6_ocr,
   pplcnet_orientation, pix2struct, easyocr_ocr).
-- **IN FLIGHT: Kaggle kernel `crispembed-conv-ab` v2 RUNNING** (chr1s4;
-  dbnet det CPU-vs-CUDA arm + full-stderr capture of the CUDA-rec bug).
-  Collect: `kaggle kernels status/output chr1s4/crispembed-conv-ab` under
-  the chr1s4 token (see `../kaggle_usage.md`); results go into the O9/R1
-  sections + `PERFORMANCE.md`. If it errored, diagnose from `convab.log`,
-  fix, `kaggle kernels delete` then re-push ONCE (gotcha #25 — never stack
-  pushes on a running kernel).
+- **Kaggle kernel `crispembed-conv-ab` v2 COMPLETE** (P100 again). v1
+  verdicts replicate. **O9d dbnet arm: inconclusive as designed** —
+  whole-pipeline wall is TrOCR-rec-dominated (114.3 vs 111.7 s) so det is
+  not isolated, and the two arms' decoded text DIFFERS (det backend changes
+  boxes; v3 needs a det-only harness + box-level compare). **O9b rec-debug
+  capture (the CUDA-rec diagnosis starting point): activations sane through
+  stage4, logits graph builds, results=0 → fault is AFTER the graph —
+  suspect logits readback layout or the CTC decode consuming it** (blank
+  argmax → CTC collapse would produce exactly this). Full stderr in the
+  kernel output; board row has details. Remaining kernel wants: T4 draw for
+  the tensor-core f16 arm; a v3 det-only dbnet harness.
 
 ### Task queue — FABLE-tier (graph/decoder semantics, hand-kernel math, subtle numerics; per the standing rule, never delegate the math)
 
 1. **CUDA-rec 0-results bug** (blocks everything CUDA-rec-shaped, including
    the O11 ppocr flip). PP-OCRv6 rec on CUDA runs its fused batch graphs
-   (3.6 s) yet emits ZERO results in both det arms; the v2 kernel captures
-   `CRISPEMBED_PPOCRV6_GRAPH_DEBUG/BENCH` stderr for it. Suspect class: CUDA
+   (3.6 s) yet emits ZERO results in both det arms. **v2 capture narrows
+   it**: graph-tap activations are numerically sane through stage4 and the
+   18710-wide logits graph builds on CUDA0 — so the fault is downstream of
+   compute: the logits READBACK layout, or the CTC decode consuming it (a
+   scrambled readback argmaxes onto blank → every crop collapses to empty,
+   matching results=0 with rc=0). Start there. Older suspect class: CUDA
    contiguity/`get_rows` asserts or a silently-empty CTC decode. Method:
    read the v2 capture → localize (graph vs decode-side) → fix → prove with
    decoded text on CUDA (LEARNING 35: a CUDA default needs a CUDA decoded
@@ -149,7 +157,7 @@ races). Remove the row when the branch lands.
 |-------|-------------------|------|--------|
 | 2026-08-06 | `perf/ppocr-rec-profile` / `.claude/worktrees/perf-ppocr-rec-profile` | **Claimed (Fable task 2): PP-OCR rec Metal batch profile** — staged attribution of the 2-4 s fused width-batch graphs (backbone convs vs SVTR decoder vs 18,710-class CTC head vs readback) behind `CRISPEMBED_PPOCRV6_GRAPH_BENCH`, then ONE gated optimization chosen from the evidence (candidates: head matmul F16, on-device top-k before readback, batch-size tuning), A/B per protocol + CER gate on the fixture set | IN PROGRESS |
 | 2026-08-06 | *(landed via `fix/nthreads-plumbing`)* | **Ignored-n_threads audit (O13b bug class) — 3 more engines fixed**: `ppocrv6_ocr` (the RECOGNIZER — all its CPU modes ran at ggml default regardless of `-t`), `pplcnet_orientation`, `pix2struct` (CPU-ONLY engine with `(void)n_threads`!), `easyocr_ocr`. All now apply the caller thread count to CPU backend + sched fallback. Live check: pix2struct `-t 4` 1.46x vs `-t 1`, output byte-identical. With ppocrv6_det (O13b) that is **5 engines** that silently dropped `-t` | **DONE** |
-| 2026-08-06 | *(kernel `chr1s4/crispembed-conv-ab` v2 RUNNING)* | **conv-ab v2 in flight**: dbnet det CPU-vs-CUDA arm (the Fraktur-lane 3.8 s owner, R1 successor) + full-stderr capture for the **CUDA rec 0-results bug**; GPU assignment random (T4 would also answer the tensor-core `LAYOUT_CONV_F16` question) | IN FLIGHT |
+| 2026-08-06 | *(kernel `chr1s4/crispembed-conv-ab` v2 COMPLETE — P100 again, no T4 draw)* | **v2 results**: v1's O8/O9a/O9c verdicts REPLICATE (gemm4 17.5-20.4 s, det-CUDA 550-614 ms vs CPU 9.5-11.0 s, f16-layout region drift again). **O9d dbnet arm INCONCLUSIVE as designed** — whole-pipeline wall (114.3 s CPU-det vs 111.7 s CUDA-det) is TrOCR-rec-dominated so det isn't isolated, and the two arms' decoded text DIFFERS (det backend changes boxes/probmap — needs a det-only harness + box-level compare in v3, not a wall clock). **O9b rec-debug capture is the diagnosis**: on CUDA the fused batch graph computes NUMERICALLY SANE activations through stage4 and builds the 18710-wide logits graph, yet results=0 — the fault is AFTER the graph: suspect the logits READBACK layout or the CTC decode consuming it (a scrambled readback argmaxes onto blank → CTC collapses every crop to empty, matching 0 results with rc=0). Full stderr archived in the kernel output. This is Fable-queue item 1's starting point | **DONE** |
 | 2026-08-06 | *(landed via `fix/uocr-pd-segfault`)* | **O6 DONE — UOCR_PD=1 no longer crashes.** Trigger isolated (4/4 reproducible, Metal build): **replaying the sched-allocated PD graph without re-alloc** dies at gen=2 inside ggml-metal op encode; forcing full reset+alloc+KV-reupload per step runs 1024/1024 clean. That safe re-init is now the PD default; the crashing replay is `UOCR_PD_REPLAY=1` (sched/Metal debugging only). Honest verdict: PD-with-reinit ~183 ms/step vs rebuild ~90 ms/step AND still divergent — **PD has no winning mode**, stays opt-in research. Rider: `[decode]` summary printed use_pd=1 on rebuild runs (re-derived, not reported) — fixed. Default output byte-identical. NOTE for the ggml lane: the fork's sched does not support alloc-once/compute-many on this MoE graph — one earlier "concurrency" theory was RETRACTED (built on wrong-build-dir CPU runs) | **DONE** |
 | 2026-08-06 | *(measurement-only, docs on `main`)* | **O4/R1 PREMISE DEAD — recognition is 0.4 s, not 38.3 s** (Fraktur page, 3 repeats): already fixed by the default-ON int8 recurrent cache (`379434b1`/`e49d390d`, verified 7.5x by disable-arm) + Metal-init skip + scratch reuse; survey's "gated" label was wrong (opt-out). Official also re-measured: **1.8 s not 9.3 s**; CER improved 0.528→**0.235**. The gap is now ALL dbnet detection (3.8 s = 88% of the 4.3 s stage); the classical-pageseg route is **faster than official (1.2 s vs 1.8 s)** at CER 0.412. Successors: dbnet CUDA arm (add to conv-ab v2), pageseg quality lane; recognizer batching is dead. Full table in the rewritten R1 section + `PERFORMANCE.md` | **DONE** |
 | 2026-08-06 | *(kernel `chr1s4/crispembed-conv-ab` v1 COMPLETE — P100 + 2 GHz Xeon)* | **O8+O9 verdicts in.** O8 (x86): unit gate **180/180 on AVX2 both arms** (bitwise holds); 3 interleaved rounds, 38 regions all arms: legacy 34.7-37.2 s, **gemm nt=1 30.8-31.5 s (interchange alone WINS ~13% on small-L2 x86 — the M1 −5% verdict was L2-size-dependent, hypothesis confirmed)**, gemm nt=4 20.3-20.4 s (**1.76x**). O9: **PP-OCR det verdict FLIPS on CUDA — graph 596-614 ms GPU vs 11.0 s CPU (18x), boxes 38=38**; `LAYOUT_CONV_F16` on P100 (no tensor cores): no speed change (66→66 ms warm) and **regions drift 20→19** — stays gated everywhere measured; layout Phase 1 on CUDA is 60-110 ms (M1 Metal's 1.4 s is Metal-specific). **New bug found: PP-OCR REC on CUDA emits 0 results in both arms** (boxes=38, rec runs 3.6 s, empty output — det verdict unaffected; needs the cuda-diag treatment, unowned). v2 TODO: dbnet CUDA arm + a T4 rerun for the tensor-core f16 question | **DONE** |
