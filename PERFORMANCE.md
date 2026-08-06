@@ -126,6 +126,59 @@ two-backend scheds and will use the GPU.
    per-op-dispatch bound; CUDA already has graph capture. Highest ceiling,
    highest cost, upstream-shaped work.
 
+## PP-OCRv6 medium-tier page profile (O13b): recognize is 71-74%, det ignored -t, and the CPU-only story is 4-6x off (Apple M1, 2026-08-06)
+
+Measure-first profile on the production surface
+(`crispembed -m rec --ocr page --ocr-engine ppocrv6 --ocr-det det`), medium
+det + medium rec f16, `scan_page_pd.png` 606x1000 → 38 boxes, Metal build,
+branch `perf/ppocr-profile`. Text output identical across every arm below.
+
+Stage split (`CRISPEMBED_PPOCRV6_BENCH=1`), `-t 4`, three runs:
+
+| stage | ms |
+|---|--:|
+| detect (CPU ggml graph) | 5992-6502 |
+| crop | 2.7-3.4 |
+| orientation | 1.2-1.4 |
+| recognize (Metal fused batch graphs) | 16720-19131 |
+| model loads (separate line) | ~1232 |
+
+**Recognize is 71-74% of the page.** Per-graph attribution
+(`CRISPEMBED_PPOCRV6_GRAPH_BENCH=1`): the fused width-group graphs cost
+2-4 s each on MTL0 (e.g. 3931 ms for an `18710x120` logits output) — the
+18,710-class CTC head dominates the output side. This, not anything on the
+R1-R8 list, is the #1 PP-OCR lever; next step is a per-batch Metal profile
+(conv vs SVTR decoder vs head vs readback).
+
+**Detector bug found and fixed: `ppocrv6_det::init(const char*, int)`
+declared its thread parameter anonymously and never applied it** — every
+caller's `-t` silently ran at ggml's default. With the fix, `-t` is honored:
+graph_ms 9.1-9.3 s at a TRUE `-t 1` vs 6.0-6.4 s at `-t 4` vs 6.4-7.9 s at
+`-t 8` — saturating at 4 threads (memory-bound). OCR text byte-identical
+across t=1 / t=4 / pre-fix binaries (threading partitions rows; no element's
+reduction order changes).
+
+**Rec backend truth** (same fixture, `-t 4`): Metal graph **17-19 s**;
+CPU scalar (`CRISPEMBED_PPOCRV6_FORCE_CPU=1`) **107.5 s**; CPU graph
+(`FORCE_CPU=1 BATCH_GRAPH=1` — FORCE_CPU alone deliberately means the scalar
+reference) **69.4 s** (measured under load; det in that run inflated to
+18 s, so treat 69 s as an upper bound). The one-shot Metal default is right
+on this box. The portability finding: **a GPU-less platform runs medium-tier
+rec 4-6x slower than Metal** — the concrete PP-OCR stake in the R6-x86 /
+CUDA lane, and a reason to consider promoting the CPU-graph combo where no
+GPU exists.
+
+**Diagnostic fix:** the orchestrator's `[ppocrv6-width-bench]` line printed
+PRE-bucket width estimates — "27 unique widths" on a page whose real graph
+shapes number 8 (the recognizer buckets to 64 by default). It now mirrors
+the bucketing; the old line materially misled this very profile.
+
+Unowned follow-ups: `CRISPEMBED_PPOCRV6_ONESHOT_CPU_MAX_REGIONS` observed
+not taking effect in-process (the backend stayed MTL0 at 999); pre-existing
+`test-ppocrv6-det-diff` FAIL vs `PP-OCRv6_medium_det-fox-ref-final.gguf`
+(prob-map cos 0.25, empty intermediate taps, byte-identical with and without
+the threads fix — stale-ref suspicion).
+
 ## layout_detect Phase 1 (O1): steady-state Metal compute, no warmup story; F16 conv path measured SLOWER on M1 and stays gated (2026-08-05)
 
 Follow-up to the Phase-2 fix below, branch `perf/layout-phase1`,

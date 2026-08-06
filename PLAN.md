@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-05 | `perf/ppocr-profile` (`.claude/worktrees/perf-ppocr-profile`) | **O13b — PP-OCRv6 end-to-end measure-first profile** (det/crop/rec/orientation split on the medium tier, Metal build, existing bench gates; goal: name the CURRENT hotspot before prescribing anything) | IN PROGRESS |
+| 2026-08-06 | *(landed via `perf/ppocr-profile`)* | **O13b DONE — PP-OCR medium-tier profile named the hotspots + 2 fixes landed**: recognize = **71-74%** of the page (Metal fused batch graphs, 2-4 s per width group, 18,710-class CTC head — the #1 PP-OCR lever), detect = 25%. **Bug fixed: `ppocrv6_det::init` declared but NEVER APPLIED its n_threads param** (every `-t` silently ran ggml default; now honored, text byte-identical, det graph saturates at 4 threads = memory-bound). Width-bench diagnostic fixed (printed pre-bucket widths: "27 unique" vs the real 8 graph shapes). Backend truth: rec Metal 17-19 s vs CPU-graph 69 s vs CPU-scalar 107 s — Metal default correct; **CPU-only platforms are 4-6x off on medium rec** (the portability gap). Unowned: ONESHOT_CPU_MAX_REGIONS env doesn't take effect in-process; pre-existing det-diff fox-ref FAIL (cos 0.25, identical pre/post). Evidence in `PERFORMANCE.md` | **DONE** |
 | 2026-08-05 | *(landed via `perf/layout-phase1`)* | **O1 answered + O2a landed** — Phase 1 (~1.4 s) is **steady-state Metal compute, not warmup** (new `CRISPEMBED_LAYOUT_REPEAT=N` CLI diagnostic: warm==cold; new compute/readback bench split: readback ~5-8 ms). New opt-in `LAYOUT_CONV_F16=1` (F16-dst im2col + F16 mul_mm) **measured SLOWER on M1 Metal (2.2 s vs 1.4 s)**, quality fine (±0.002 score) — kept gated for CUDA/A1000 where it should win. O2a: per-call self-attn weight re-read/re-transpose (~5 MB/call) cached in the layer, **regions byte-identical**; saving below the loaded box's noise floor, claimed as removed work only. Next Phase-2 candidate recorded: value-proj on GPU (est. 101→~30 ms) | **DONE** |
 | 2026-08-05 | *(landed via `perf/r7-scunet`)* | **R7 measured and CLOSED — no DequantCache warranted**: new permanent `to_f32` timing on the `CRISPEMBED_SCUNET_BENCH` line shows ALL weight dequant copies are **~4-5 ms of a ~4.3 s tile pass (~0.1%)** on the f32 artifact (f16 bound: ~1%). The item argued from grep-presence, not cost — third stale backlog premise caught by measure-first this session. Output byte-identical with the instrumentation; scunet's real cost is Swin/conv compute (deprioritized SR-on-GPU research) | **DONE** |
 | 2026-08-05 | *(landed via `perf/r2-deform`)* | **R2 premise STALE — real hotspot found + fixed, 2.66x Phase 2** — measured FIRST (new permanent per-stage timers behind `CRISPEMBED_LAYOUT_DETECT_BENCH`): the deform loop is **16 ms of 856 ms Phase 2 (~2%)** on current main — the survey's "dominant cost" claim predates `2a43e4f4`. Actual hotspot: decoder **level input projection** (scalar strided nest, single-threaded) at **549 ms = 64% of Phase 2**; rewritten AXPY+threaded (byte-identical accumulation), level-proj ~15x at `-t 4`, **Phase 2 846→318 ms**, layout call 2332→~1700 ms, **CLI regions byte-identical** both thread counts. Deform loop deliberately untouched. New top costs recorded in the R2 backlog note: Phase 1 Metal backbone ~1.4 s (~80% of call), then value-proj + self-attn weight re-upload | **DONE** |
@@ -3947,14 +3947,27 @@ Kaggle batch (O8+O9) interleaved as the discrete-GPU unlock.
   ceiling, weeks not days; CUDA already has graph capture so this is
   Metal-only leverage.
 - **O13. Backlog hygiene** — (a) re-measure the remaining R-items' premises
-  before investing (R1's stage split, R5's per-engine numbers); (b)
-  **PP-OCR-specific measure-first profile (O13b)**: det is already ggml-graph
-  (6.9 -> 1.0 s medium tier) and rec has the batch-fused shape-keyed graph,
-  so the next PP-OCR win is NOT on the old list — profile the current
-  det+rec+orientation pipeline end-to-end on the medium tier to find the
-  current hotspot (crop/resize? rec width buckets? orientation? det
-  postprocess?) before prescribing anything. Expected outcome per this
-  session's base rate: the profile will name something the backlog does not.
+  before investing (R1's stage split, R5's per-engine numbers); (b) **O13b
+  DONE 2026-08-06** (`perf/ppocr-profile`) — and the base-rate forecast held:
+  the profile named things the backlog did not. Findings, medium tier on
+  `scan_page_pd` (38 boxes, M1, production CLI): **recognize is 71-74%**
+  (Metal fused batch graphs, 2-4 s per width group, 18,710-class CTC head),
+  detect 25% (CPU graph, memory-bound, saturates at 4 threads), everything
+  else negligible. Two fixes landed: `ppocrv6_det::init` **ignored its
+  n_threads parameter** (anonymous `int`; every `-t` silently got ggml's
+  default — now honored, OCR text byte-identical), and the width-bench line
+  printed pre-bucket widths (27 "unique" vs the real 8 graph shapes — now
+  mirrors the recognizer's bucketing). Backend truth for rec: **Metal 17-19 s
+  vs CPU-graph (FORCE_CPU+BATCH_GRAPH) 69 s vs CPU-scalar 107 s** — the
+  Metal default is right on M1, and **CPU-only platforms run medium rec
+  4-6x off** (the concrete portability gap; promote the CPU-graph combo
+  and/or wait on the R6 x86 arm). Follow-ups, unowned: (i) per-batch Metal
+  profile of the 2-4 s rec groups (conv vs SVTR decoder vs 18.7k-class head
+  vs readback) — the #1 PP-OCR lever; (ii) `ONESHOT_CPU_MAX_REGIONS` env
+  observed not taking effect in-process; (iii) pre-existing
+  `test-ppocrv6-det-diff` fox-ref FAIL (prob-map cos 0.25, empty
+  intermediate taps, identical pre/post the threads fix — stale-ref
+  suspicion).
 
 ## OCR pipeline workstream — actionable items
 
