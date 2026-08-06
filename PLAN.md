@@ -13,7 +13,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-06 | `perf/o5-decode-overhead` (`.claude/worktrees/perf-o5-decode`) | **O5 — decode-graph build+alloc fraction on qwen2vl / granite_vision / smoldocling** (measure-first per R5: per-step timers behind bench gates; single-digit %% closes the item per engine, deepseek precedent) | IN PROGRESS |
+| 2026-08-06 | *(landed via `perf/o5-decode-overhead`)* | **O5 DONE — R5 decode-graph caching CLOSED for all 3 candidates**: qwen2vl build+alloc **2.2%** of decode (446/20708 ms, 125 steps, existing QWEN_DBG timers); granite **9.2%** (1075/11660 ms, 180 steps, NEW permanent build/compute split on its decode bench line) — single-digit both, persistent-graph port not worth it (deepseek T14 repeats); **smoldocling: premise structurally wrong** — its decode is a hand-written CPU loop with a HOST vector KV, no graph exists to cache (and granite's DEFAULT is the per-step ggml graph, scalar is fallback — survey wording corrected) | **DONE** |
 | 2026-08-06 | *(landed via `perf/ppocr-profile`)* | **O13b DONE — PP-OCR medium-tier profile named the hotspots + 2 fixes landed**: recognize = **71-74%** of the page (Metal fused batch graphs, 2-4 s per width group, 18,710-class CTC head — the #1 PP-OCR lever), detect = 25%. **Bug fixed: `ppocrv6_det::init` declared but NEVER APPLIED its n_threads param** (every `-t` silently ran ggml default; now honored, text byte-identical, det graph saturates at 4 threads = memory-bound). Width-bench diagnostic fixed (printed pre-bucket widths: "27 unique" vs the real 8 graph shapes). Backend truth: rec Metal 17-19 s vs CPU-graph 69 s vs CPU-scalar 107 s — Metal default correct; **CPU-only platforms are 4-6x off on medium rec** (the portability gap). Unowned: ONESHOT_CPU_MAX_REGIONS env doesn't take effect in-process; pre-existing det-diff fox-ref FAIL (cos 0.25, identical pre/post). Evidence in `PERFORMANCE.md` | **DONE** |
 | 2026-08-05 | *(landed via `perf/layout-phase1`)* | **O1 answered + O2a landed** — Phase 1 (~1.4 s) is **steady-state Metal compute, not warmup** (new `CRISPEMBED_LAYOUT_REPEAT=N` CLI diagnostic: warm==cold; new compute/readback bench split: readback ~5-8 ms). New opt-in `LAYOUT_CONV_F16=1` (F16-dst im2col + F16 mul_mm) **measured SLOWER on M1 Metal (2.2 s vs 1.4 s)**, quality fine (±0.002 score) — kept gated for CUDA/A1000 where it should win. O2a: per-call self-attn weight re-read/re-transpose (~5 MB/call) cached in the layer, **regions byte-identical**; saving below the loaded box's noise floor, claimed as removed work only. Next Phase-2 candidate recorded: value-proj on GPU (est. 101→~30 ms) | **DONE** |
 | 2026-08-05 | *(landed via `perf/r7-scunet`)* | **R7 measured and CLOSED — no DequantCache warranted**: new permanent `to_f32` timing on the `CRISPEMBED_SCUNET_BENCH` line shows ALL weight dequant copies are **~4-5 ms of a ~4.3 s tile pass (~0.1%)** on the f32 artifact (f16 bound: ~1%). The item argued from grep-presence, not cost — third stale backlog premise caught by measure-first this session. Output byte-identical with the instrumentation; scunet's real cost is Swin/conv compute (deprioritized SR-on-GPU research) | **DONE** |
@@ -3775,20 +3775,31 @@ conv2d_cpu im2col-tile A/B", rider paragraph). Note: the survey's "31.6 s
 cold" did not reproduce on this fixture (~5.4 s CPU warm) — re-measure before
 citing it.
 
-### R5 — Decode-step graph caching — measure the overhead fraction FIRST
+### R5 — Decode-step graph caching — **CLOSED 2026-08-06 for all three candidates (O5)**
 
-Still the nominal #1 unrealized lever, and still unproven. When it was actually
-built (T14, deepseek) it **won nothing**, because per-step build+alloc was only
-1-6% of decode; the result shipped opt-in as `DS2_FAST_DECODE=1`. Remaining
-candidates are qwen2vl/granite/smoldocling, which have device-resident KV but
-rebuild the decode graph each step.
+The required first step was done (`perf/o5-decode-overhead`) and it closes the
+item, exactly as the deepseek T14 precedent predicted:
 
-Required first step: profile build+alloc as a fraction of decode on each
-candidate. If it is single-digit percent, close the item for that engine
-instead of porting. Also blocked on WebGPU (traps `unreachable`), so any landed
-path needs per-backend gating. Note the premise "0 runtimes reuse the built
-cgraph" is now false — math_ocr (persistent decode graph), easyocr
-(static-shape init-time graph) and ppocrv6 rec (shape-keyed cache) all do.
+- **qwen2vl**: build+alloc **2.2%** of decode (446 of 20708 ms over 125
+  steps, existing `QWEN_DBG=1` per-step timers; measured under heavy box load,
+  which inflates the CPU-side build share if anything — the quiet number is
+  lower). Correct OCR text. A persistent decode graph cannot win more than
+  ~2% here.
+- **granite_vision**: build+alloc **9.2%** (1075 of 11660 ms over 180 steps
+  at 64.8 ms/tok; NEW permanent build/compute split on the
+  `[granite_ocr-bench] decode:` line). Single-digit but borderline — worth at
+  most ~1 s of a 21.7 s end-to-end run; recorded for whoever revisits.
+- **smoldocling**: the premise was structurally WRONG — its decode step
+  (`sd_llm_decode_step`) is a hand-written CPU loop (`core_cpu`/`sd_linear`)
+  with a **host `std::vector` KV cache**; there is no decode graph to cache
+  and never was. The old wording "device-resident KV but rebuild the decode
+  graph each step" was also wrong about granite in the other direction: its
+  DEFAULT decode is the per-step ggml graph (`gv_run_llm_body` T=1, Metal
+  F16 KV); the scalar loop is the fallback.
+
+Correction retained from before: math_ocr, easyocr and ppocrv6 rec already
+reuse built cgraphs. The WebGPU `unreachable` trap note stays relevant only
+if anyone reopens this with a per-backend gate.
 
 ### R6 — `conv2d_cpu`: per-patch gather -> true im2col+GEMM, and multithread — **BUILT + M1-MEASURED 2026-08-05, x86 arm open**
 
@@ -3906,12 +3917,12 @@ Kaggle batch (O8+O9) interleaved as the discrete-GPU unlock.
   predictable; 1.5-3x plausible from batching, full parity probably also
   needs the decoder-semantics quality lane. Multi-session, Fable-tier, never
   delegate the math.
-- **O5. R5 measure-first** — profile decode-graph build+alloc as a fraction
-  of decode on qwen2vl / granite / smoldocling before porting anything.
-  Expected outcome: most likely CLOSES the item for 2-3 engines (deepseek
-  precedent: 1-6%); small chance one engine shows a deepseek-like 1.4x where
-  the real cost is host<->device bounces rather than build time. Cheap
-  (an afternoon), information-dense.
+- **O5. R5 measure-first — DONE 2026-08-06, R5 CLOSED for all three** (the
+  forecast held): qwen2vl build+alloc **2.2%** of decode, granite **9.2%**
+  (borderline single-digit, recorded), smoldocling has **no decode graph at
+  all** (hand-written CPU loop, host KV — premise structurally wrong). No
+  persistent-graph port is justified anywhere; details in the R5 section
+  above and `PERFORMANCE.md`.
 - **O6. `UOCR_PD=1` gen=2 segfault** — correctness, opt-in path, already
   reproduced 7/44. Expected outcome: findable memory-lifetime bug (KV-view /
   `ggml_cont` class is the usual suspect); one session.
