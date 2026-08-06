@@ -326,6 +326,12 @@ int text_sr_upscale_factor(const text_sr_context * ctx) {
 // Input:  [3, th, tw] float [0,1]
 // Output: [3, th*r, tw*r] float [0,1]
 static void sr_forward_tile(text_sr_context * ctx, const float * tile_in, int tw, int th, float * tile_out) {
+    // O7 candidate: these tiles are all default-CPU convs on this thread, but
+    // the engine has no distributable model to run the decoded-output gate
+    // against (custom-trained GGUF required), so the R6 im2col+mk flip stays
+    // un-adopted here. When a model exists: install
+    // `core_cpu::conv2d_prefs_scope conv_prefs(true, ctx->n_threads);` and
+    // A/B per the protocol.
     int W = ctx->width;
     int ns = ctx->n_stages;
     int r = ctx->upscale_factor;
