@@ -4,6 +4,140 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## HANDOVER — OCR runtime optimization, next round (written 2026-08-06)
+
+**Mission (unchanged, user-set):** make the OCR runtimes as fast as possible
+on ALL backends — Apple Silicon Metal, CPU (ARM + x86), discrete CUDA GPUs
+(A1000-class), and eventually Vulkan — prioritizing the best runtimes:
+PP-OCRv6, layout_detect, Tesseract lane, production VLMs.
+
+**Read before doing anything:** this section; the "OCR optimization roadmap
+after the R2/R4/R6/R7 session" section (items O1-O13 with their current
+DONE/OPEN states); the top ~8 dated sections of `PERFORMANCE.md` (every claim
+below carries its evidence there); the R1-R8 backlog sections (now heavily
+annotated with closures/corrections); `../crispasr-crispembed-dev.md` (hard
+rules, A/B protocol); `../kaggle_usage.md` (accounts/tokens/gotchas — tokens
+live there, NEVER in this repo).
+
+### The prime directive this round inherits
+
+The 2026-08-05/06 session tested the backlog's premises and **seven of them
+failed measurement** (R1's entire evidence table, R2's "deform loop
+dominates", R4's cold-time, R7's cache-by-analogy, R5's smoldocling/granite
+wording, O13b's width diagnostic, the "gated" int8-cache label). Therefore:
+**re-measure any item's named bottleneck on current `main` before
+implementing its prescribed fix**, and never claim a timing without its
+matching decoded output (proof-of-work). Two traps that fabricated false
+verdicts, both now in the auto-memory: a fresh worktree builds with
+`GGML_METAL=OFF` unless you pass `-DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON`
+(only `MTL0` in the run's own stderr proves Metal), and shell cwd drift
+mid-investigation can run a stale main-tree binary — pin one absolute
+`BIN=` path per investigation.
+
+### State snapshot (all on `main`, CI green through the OCR-regression tier)
+
+- **R6 conv2d im2col path**: bitwise-identical by construction, gated
+  `CRISPEMBED_CONV2D_GEMM=1` + `_THREADS=N`, default OFF. Measured BOTH
+  arches: M1 nt=4 2.04x / nt=1 −5%; **x86 nt=1 +13% / nt=4 1.76x** (the
+  interchange verdict is L2-size-dependent). Unit gate 180/180 on ARM + AVX2.
+- **PP-OCRv6**: det thread-plumbing bug fixed (`-t` was ignored); rec is
+  71-74% of a medium page on Metal (2-4 s per fused width-batch,
+  18,710-class CTC head) = the #1 PP-OCR lever; **det FLIPS to GPU on CUDA
+  (596 ms vs 11.0 s, 18x, 38=38 boxes)**; CPU-only platforms run medium rec
+  4-6x off (scalar 107 s / CPU-graph 69 s / Metal 17 s).
+- **layout_detect**: Phase-2 level-proj fixed (2.66x, byte-identical);
+  Phase 1 (~1.4 s) is steady-state Metal compute — on CUDA the same graph is
+  60-110 ms; `LAYOUT_CONV_F16` gate exists, LOSES on M1 Metal AND on P100
+  (region drift 20→19) — only the T4 tensor-core arm remains untested.
+- **Tesseract lane**: recognition is **0.4 s** (int8 recurrent cache,
+  default-ON, verified 7.5x by disable-arm), CER 0.235, official is 1.8 s;
+  the gap is 100% dbnet detection (3.8 s CPU); the classical-pageseg route is
+  FASTER than official (1.2 s) at CER 0.412; H9 router arbitrates.
+- **R5/decode-graph caching: CLOSED** for qwen2vl (2.2%), granite (9.2%),
+  smoldocling (no graph exists). **R7: closed** (dequant 0.1%). **O6:
+  UOCR_PD no longer crashes** (sched-graph replay was the trigger; safe
+  re-init is the PD default; PD has no winning mode, stays research).
+- **Ignored-`n_threads` audit: 5 engines fixed** (ppocrv6_det, ppocrv6_ocr,
+  pplcnet_orientation, pix2struct, easyocr_ocr).
+- **IN FLIGHT: Kaggle kernel `crispembed-conv-ab` v2 RUNNING** (chr1s4;
+  dbnet det CPU-vs-CUDA arm + full-stderr capture of the CUDA-rec bug).
+  Collect: `kaggle kernels status/output chr1s4/crispembed-conv-ab` under
+  the chr1s4 token (see `../kaggle_usage.md`); results go into the O9/R1
+  sections + `PERFORMANCE.md`. If it errored, diagnose from `convab.log`,
+  fix, `kaggle kernels delete` then re-push ONCE (gotcha #25 — never stack
+  pushes on a running kernel).
+
+### Task queue — FABLE-tier (graph/decoder semantics, hand-kernel math, subtle numerics; per the standing rule, never delegate the math)
+
+1. **CUDA-rec 0-results bug** (blocks everything CUDA-rec-shaped, including
+   the O11 ppocr flip). PP-OCRv6 rec on CUDA runs its fused batch graphs
+   (3.6 s) yet emits ZERO results in both det arms; the v2 kernel captures
+   `CRISPEMBED_PPOCRV6_GRAPH_DEBUG/BENCH` stderr for it. Suspect class: CUDA
+   contiguity/`get_rows` asserts or a silently-empty CTC decode. Method:
+   read the v2 capture → localize (graph vs decode-side) → fix → prove with
+   decoded text on CUDA (LEARNING 35: a CUDA default needs a CUDA decoded
+   roundtrip). Only after this: **O11** — per-backend-kind residency default
+   for ppocr det (CUDA→GPU-graph, Metal→CPU stays), which is then mechanical.
+2. **PP-OCR rec Metal batch profile** — the #1 PP-OCR lever (71-74% of the
+   page). Attribute the 2-4 s per width-batch between backbone convs, SVTR
+   decoder, the 18,710-class head matmul, and readback (per-node or staged
+   timers behind `CRISPEMBED_PPOCRV6_GRAPH_BENCH`). Then ONE gated
+   optimization chosen from evidence — candidates: head matmul in F16,
+   logits top-k on-device before readback, batch-size tuning. A/B per the
+   protocol, CER gate on the 25-fixture set.
+3. **R6 register-blocked GEMM micro-kernel** — now justified (x86 interchange
+   win proves the memory-side story). Changes accumulation order → forfeits
+   byte-equality → needs per-engine decoded-output A/Bs; keep the
+   bitwise-identical tile path as the reference arm. Hand-written kernel
+   work in `core/cpu_ops.h`.
+4. **Pageseg quality lane (Tesseract)** — make the 1.2 s route's CER
+   competitive with the dbnet route's 0.235: crop geometry vs official
+   PSM crops, recoder/decoder semantics, the existing quality-gate fixtures.
+   Already marked Fable-tier in the archived briefs. This, plus dbnet-CUDA
+   (v2 kernel), is what beats official Tesseract on BOTH speed and quality.
+5. **ggml-fork: sched alloc-once/compute-many replay crash** (O6 root cause,
+   reproducible via `UOCR_PD=1 UOCR_PD_REPLAY=1` on Metal) and, later, R8
+   ICB replay. Upstream-shaped Metal debugging; touch the pinned submodule
+   only with the re-apply markers discipline.
+6. **layout O2b — value projection on GPU** (est. 101→~30 ms at `-t 4`) and
+   any further Phase-2 graph consolidation: graph math stays hand-written.
+
+### Task queue — OPUS-tier (well-scoped, established patterns, protocol does the heavy lifting)
+
+7. **Collect conv-ab v2** (if the Fable agent hasn't already): read
+   `convab.log`, apply the proof-of-work rules, write verdicts into O9/R1 +
+   `PERFORMANCE.md`, update the board row. If P100 was assigned again, the
+   T4 `LAYOUT_CONV_F16` question stays open — re-push as v3 for a T4 draw
+   when quota allows (delete-then-push).
+8. **O3, one engine at a time**: flip a formula-encoder `enc_sched` to
+   `{gpu, cpu}` behind a per-engine gate (mirror got_ocr/R4 pattern —
+   backend + cpu fallback + guarded `set_n_threads`), A/B on Metal with
+   decoded output + timing pairs, record win/loss either way, fix the stale
+   "prefer GPU backend" comments. Start with pix2struct (attention-shaped,
+   most likely to win; model cached) then bttr/hmer/posformer (likely lose
+   on Metal — record and keep gated; they become CUDA candidates).
+9. **O7 R6 adoption**: pass engine `n_threads` into `conv2d_im2col_cpu` on
+   latency-sensitive default-CPU conv paths (SR family, det scalar
+   fallback); interleaved pairs + byte-identity per engine.
+10. **O10 Vulkan bring-up probe**: one Kaggle kernel that checks whether
+    Vulkan compute works at all on the GPU images (vulkaninfo + a ggml
+    Vulkan build + one tiny graph). Deliverable is a yes/no + writeup; no
+    optimization claims.
+11. **Board/docs hygiene**: keep the active-work table pushed at every
+    checkpoint; every finding lands in PLAN + `PERFORMANCE.md` with
+    per-pair numbers, spreads, and decoded-output identity stated.
+
+### Non-negotiable protocols (full text in the dev guide)
+
+Worktree per change (`git submodule update --init --recursive`, Metal ON
+flags); claim a board row BEFORE starting and push it; measure-first;
+interleaved same-binary env-gated pairs; new paths ship opt-in until they win
+speed AND quality; never delete a gated path; `tools/format.sh --fix` before
+merge; ff-merge to `main`, delete the branch; **no Claude co-author trailer**;
+never run two heavy models at once on the 16 GB box; multi-GB/CUDA work goes
+to Kaggle (chr1s4 for CrispEmbed kernels; verify the account before every
+push); no tokens or machine-specific absolute paths in repo Markdown.
+
 ## 🚧 Active work in flight (update + push to `main` at EVERY checkpoint)
 
 Multiple sessions/worktrees run in parallel and push to `main` concurrently.
