@@ -1,5 +1,30 @@
 # CrispEmbed Performance
 
+## O7 increment 4: posformer measured FLAT — the BTTR verdict again; ppformulanet-l DEFERRED (box contended, arms unmeasurable) (Apple M1, 2026-08-07)
+
+Round-N+3 task 5, one engine per A/B. **posformer is NOT flipped**, by the
+same two rules the HMER increment earned:
+
+- **Where `conv2d_cpu` actually runs**: the DenseNet encoder is a ggml graph
+  by default (2450 ms vs scalar-fallback 3457 ms, `POSFORMER_SCALAR_ENCODER`
+  arm) — its convs are unreachable by the mk kernel. The reachable convs are
+  the ARM's 5×5+1×1 per-decode-step pair, inside a decode stage that is only
+  ~12% of the run (323 of 2773 ms) — the inverse of HMER's shape, where
+  decode was 75%.
+- **True-default A/B, 3 interleaved nt1 pairs, process CPU**
+  (formula_quadratic, q4_k): default 1.22-1.24 s user vs `CRISPEMBED_CONV2D_MK=1`
+  1.23-1.24 s — dead flat, decoder ms ranges overlap (278-324 vs 315-382),
+  outputs byte-identical. Recorded, not flipped, no scope installed
+  (matching BTTR's 0.58 s-flat verdict).
+
+**ppformulanet-l: measurement ABORTED, no verdict.** Its 4 `conv2d_cpu` calls
+(neck + projection, per-image) are a real candidate, but mid-measurement the
+box went to load 31-35 (a parallel session's rustc at ~500%) and same-arm
+process-CPU spread hit 2x (7.6-14.3 s) — overlapping arms are not evidence
+in either direction. Re-run on a quiet box; outputs were byte-identical
+between arms in every pair, so only the timing question is open. got/deepseek
+preprocessing convs also remain.
+
 ## Post-axis-fix parity re-read: PASSes stand, contrasts stand — and the one open FAIL was a STALE REFERENCE, not the port (ppocr det arbitrated cos 0.25 → 0.9999 PASS) (Apple M1, 2026-08-07)
 
 Round-N+3 task 8: every pre-`0923def7` `cos_min` figure was computed over the
