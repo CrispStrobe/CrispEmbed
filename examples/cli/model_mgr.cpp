@@ -1443,6 +1443,15 @@ static const ModelEntry k_registry[] = {
       "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "467 MB", "apache-2.0",
       "https://huggingface.co/cstr/pix2struct-GGUF" },
 
+    // The base checkpoint is pretraining-only (screenshot pseudo-HTML) and
+    // babbles on natural documents (HF-verified); textcaps is the promptless
+    // finetuned variant that produces real text (the docvqa variants need a
+    // question rendered into the image, which the engine does not do yet).
+    { "pix2struct-textcaps", "pix2struct-textcaps-q8_0.gguf",
+      "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-textcaps-q8_0.gguf",
+      "Pix2Struct TextCaps captioning (finetuned, promptless; ViT + T5 decoder, 282M)", "354 MB", "apache-2.0",
+      "https://huggingface.co/cstr/pix2struct-GGUF" },
+
     // Stacked MoE experts (converter #4): ~1.3 GB lower resident footprint than the
     // per-expert layout; the loader falls back to per-expert for older GGUFs. Distinct
     // cache filename so an existing per-expert cache re-downloads the stacked file.
