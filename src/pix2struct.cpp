@@ -881,10 +881,18 @@ static std::vector<float> image_to_patches(const uint8_t * rgb, int W, int H, in
             int pi = r * n_cols + col;
             patches[pi * feat_dim + 0] = (float)(r + 1);
             patches[pi * feat_dim + 1] = (float)(col + 1);
-            for (int c = 0; c < C; c++)
-                for (int py = 0; py < pH; py++)
-                    for (int px = 0; px < pW; px++)
-                        patches[pi * feat_dim + 2 + c * pH * pW + py * pW + px] =
+            // HF flattens each patch HWC (torch_extract_patches permutes to
+            // (ph, pw, channels) before reshape) and enc_emb.patch_proj was
+            // trained on that order. This loop packed CHW — a within-patch
+            // PERMUTATION that is invisible on constant background patches
+            // (cos 1.0, which is how it survived) and decorrelates every
+            // structured patch (text patches measured cos 0.16 vs HF; the
+            // encoder then smeared the damage everywhere). The caption drift
+            // ('mummies over the lazy day') was this.
+            for (int py = 0; py < pH; py++)
+                for (int px = 0; px < pW; px++)
+                    for (int c = 0; c < C; c++)
+                        patches[pi * feat_dim + 2 + (py * pW + px) * C + c] =
                             resized[c * rH * rW + (r * pH + py) * rW + (col * pW + px)];
         }
     if (out_n_patches) *out_n_patches = n_patches;
@@ -904,6 +912,16 @@ const char * pix2struct_generate(pix2struct_context * ctx, const uint8_t * image
     int n_patches = 0;
     auto patches = image_to_patches(image, width, height, ctx->max_patches, ctx->patch_size, &n_patches);
     if (n_patches <= 0) return nullptr;
+    // Parity tracing: dump the packed patch tensor ([max_patches, 2+patch_flat])
+    if (const char * dp = std::getenv("PIX2STRUCT_DUMP_PATCHES")) {
+        FILE * f = fopen(dp, "wb");
+        if (f) {
+            fwrite(patches.data(), sizeof(float), patches.size(), f);
+            fclose(f);
+            fprintf(stderr, "[p2s-dump] patches %d x %d -> %s\n", n_patches, ctx->patch_size * ctx->patch_size * 3 + 2,
+                    dp);
+        }
+    }
     if (bench)
         fprintf(stderr, "[pix2struct-bench] preprocess: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
@@ -911,6 +929,15 @@ const char * pix2struct_generate(pix2struct_context * ctx, const uint8_t * image
     t0 = std::chrono::steady_clock::now();
     int out_dim = 0;
     pix2struct_encode_patches(ctx, patches.data(), n_patches, &out_dim);
+    // Parity tracing: dump the encoder output cache ([n_enc, hidden])
+    if (const char * de = std::getenv("PIX2STRUCT_DUMP_ENC")) {
+        FILE * f = fopen(de, "wb");
+        if (f) {
+            fwrite(ctx->enc_cache.data(), sizeof(float), (size_t)ctx->enc_cache_n * ctx->hidden, f);
+            fclose(f);
+            fprintf(stderr, "[p2s-dump] enc %d x %d -> %s\n", ctx->enc_cache_n, ctx->hidden, de);
+        }
+    }
     if (bench)
         fprintf(stderr, "[pix2struct-bench] encoder: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
