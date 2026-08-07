@@ -103,8 +103,15 @@ computed over the WRONG AXIS for every engine until `0923def7`.
 
 ### Task queue — OPUS-tier
 
-5. **O7 continuation, one engine per A/B**: posformer, ppformulanet-l,
-   got/deepseek preprocessing convs. **Two rules the HMER increment
+5. **O7 continuation, one engine per A/B** — **posformer DONE 2026-08-07:
+   measured FLAT, not flipped** (encoder is a ggml graph, 2450 vs scalar
+   3457 ms; the mk-reachable ARM convs sit in a decode that is only 12% of
+   the run; default vs MK=1 dead flat at 1.22-1.24 s user, outputs
+   byte-identical — the BTTR verdict; PERFORMANCE.md top).
+   **ppformulanet-l ABORTED box-contended** (parallel rustc, load 31-35,
+   same-arm spread 2x — re-run on a quiet box; its 4 neck/proj `conv2d_cpu`
+   calls are a real candidate; outputs byte-identical between arms).
+   got/deepseek preprocessing convs remain. **Two rules the HMER increment
    earned:** profile WHERE `conv2d_cpu` actually runs before assuming it is
    the encoder (HMER's was the per-token coverage attention, and its
    encoder is a ggml graph), and always measure the TRUE DEFAULT arm —
