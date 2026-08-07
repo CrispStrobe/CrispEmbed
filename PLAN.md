@@ -64,10 +64,10 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
    board row + PERFORMANCE.md top): CUDA decoded-text roundtrip passed —
    recognized text identical, only 1px/conf digits move; O11-pattern
    default landed in `src/ocr_detect.cpp`.**
-3. **O7 remainder on a QUIET box**: ppformulanet-l (nt1 pairs, process
-   CPU), then got/deepseek preprocessing convs. Check `uptime` FIRST.
-   (2026-08-07 evening: deferred AGAIN — load 11.5-19.2 all session,
-   recorded honestly; never got a quiet window.)
+3. **O7 remainder on a QUIET box**: ~~ppformulanet-l~~ **DONE 2026-08-07
+   late (merged `5d0be2ee`): mk scope landed, −31% on the neck/proj convs,
+   byte-identical; whole-run −1.9% (decoder-bound, recorded).** Remaining:
+   got/deepseek preprocessing convs. Check `uptime` FIRST.
 4. **LAYOUT_CONV_F16 T4 re-draw** (different day): delete-then-push
    `chr1s4/crispembed-conv-ab`; the kernel prints `T4-DRAW:` on line 2.
    (2026-08-07: not re-drawn — same-day pool stayed P100-sticky; both
@@ -75,10 +75,12 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
 5. **GLM ViT deep levers — only if explicitly funded** (carried).
 6. ~~**Hygiene**~~ **DONE 2026-08-07**: N+3 handover + 4 DONE rows archived
    to HISTORY (`9423dcd5`).
-7. **NEW (from this round's data): pix2struct ggml-decode-on-CPU default** —
-   1.65x vs scalar on Kaggle x86 (3 reps, text identical); needs only a
-   quiet-box M1 A/B to flip the CPU default too. And the O3 encoder-on-GPU
-   question is now measured FLAT on CUDA (±4%) — record-only, stays closed.
+7. ~~**pix2struct ggml-decode-on-CPU default**~~ **CLOSED NO-FLIP
+   2026-08-07 late (PERFORMANCE.md top): the Kaggle 1.65x was a threading
+   wall win, not a kernel win — nt1 on M1 the ggml graph loses (+11-45%),
+   `-t 4` buys −25/−34% wall with MORE total CPU. CPU default stays scalar;
+   the gate remains the wall-latency opt-in. O3 encoder-on-GPU measured
+   FLAT on CUDA (±4%) — stays closed.**
 
 ### Non-negotiable protocols
 
@@ -268,7 +270,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-07 | `perf/o7-ppfnl` / `.claude/worktrees/perf-o7-ppfnl` (measure-first; binary at `c003b0d9`) | **Claimed (round N+4 queue #3 + new #7):** (a) O7 ppformulanet-l — profile the 4 neck/proj `conv2d_cpu` calls (one-shot post-ViT, NOT per-token) via `CRISPEMBED_PPFN_L_BENCH=1`, then true-default vs `CRISPEMBED_CONV2D_MK=1` interleaved nt1 pairs, process CPU, byte-identity; (b) pix2struct ggml-decode-on-CPU M1 A/B (scalar vs `GGML_DECODE=1`, CPU backend) now the box is quiet (load 2.8-3.5 at claim). Abort + record if load spikes | **IN PROGRESS** |
+| 2026-08-07 | *(landed via `perf/o7-ppfnl`, merged `5d0be2ee`)* | **Round N+4 queue #3 (ppformulanet-l half) + item #7 DONE — one flip, one honest no-flip.** (a) ppformulanet-l mk scope LANDED: neck/proj convs 453-467 → 311-320 ms (−31%, byte-identical sha `302819ecbd41`, quiet-M1 nt1 pairs); whole-run −1.9% process CPU (decoder-bound — recorded); TRUE default verified on mk, `=0` restores reference. New `[ppfn_l-bench] neck+proj convs` attribution line. (b) pix2struct ggml-decode-on-CPU: **NO M1 FLIP** — nt1 the ggml graph LOSES (+11-45% dec); `-t 4` wins wall (−25/−34%) only by spending more total CPU (threading, the Kaggle x86 1.65x explained); CPU default stays scalar, gate stays opt-in. O7 remainder: got/deepseek preprocessing convs. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(landed via `perf/pix2struct-cuda-decode`, merged ff to `69e39a62`)* | **Round N+4 queue #1 DONE — pix2struct ggml decode graph LANDED with the per-kind CUDA default.** Decoder 3640-3746 → 369-460 ms (~9x q8_0; 12.8x f16; 10.6x scan_strip) on P100, decoded text byte-identical across ALL arms × fixtures × quants in BOTH kernel versions; v2 proved the TRUE default arm (no env ⇒ `path=ggml`, matches forced-CUDA; `=0` still forces scalar). Local gates: byte-identical CPU + Metal (MTL0 proven), f16 + q8_0; Metal/CPU default unchanged (`path=scalar`). Implementation: device-resident self/cross KV (got_ocr pattern), in-graph KV cpy, gallocr reserved once, T5 rel-bias as per-step input. CPU-ggml-decode measured 1.65x on Kaggle x86 but stays opt-in pending a quiet-box M1 verdict. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(kernel `chr1s4/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |

@@ -1,5 +1,47 @@
 # CrispEmbed Performance
 
+## O7 ppformulanet-l: mk scope LANDED (−31% on the neck/proj convs, byte-identical); pix2struct ggml-decode-on-CPU: M1 verdict is NO FLIP (quiet M1, 2026-08-07 evening)
+
+**ppformulanet-l (merged `5d0be2ee`).** Quiet-M1 (load 2.6-3.2) nt1 A/B, 3
+interleaved pairs, formula_quadratic q4_k, `/usr/bin/time` process CPU,
+outputs byte-identical (sha `302819ecbd41` in all arms and reps):
+
+| arm (nt1) | neck+proj convs ms | whole-run user s |
+|---|--:|--:|
+| true default (pre-install) | 452.6 / 455.7 / 466.7 | 5.13 / 5.15 / 5.15 |
+| `CRISPEMBED_CONV2D_MK=1` | 310.7 / 312.2 / 319.6 | 5.02 / 5.05 / 5.06 |
+
+Stage −31% non-overlapping; whole-run process CPU only **−1.9%** because the
+engine is decoder-bound (dec ~3.5 s of ~6.4 s wall) — recorded honestly. The
+HMER rule held again: the convs are ONE-SHOT post-ViT neck/proj (new
+`[ppfn_l-bench] neck+proj convs` attribution line), not per-token. Scope
+installed with the engine's `n_threads`; post-install verification: the TRUE
+default runs mk (308-310 ms), `CRISPEMBED_CONV2D_MK=0` restores the
+reference loop (464-474 ms), outputs unchanged. O7 remainder: got/deepseek
+preprocessing convs.
+
+**pix2struct ggml-decode-on-CPU (M1): the Kaggle x86 1.65x does NOT
+justify an M1 CPU flip — it was a threading win, not a kernel win.** fox,
+textcaps f16 + q8_0, interleaved pairs, decoder-stage ms + process CPU,
+all outputs byte-identical (sha `198c26a926b7`), `path=` line proves each
+arm:
+
+| config | scalar dec ms | ggml dec ms | scalar user s | ggml user s |
+|---|--:|--:|--:|--:|
+| f16 `-t 1` | 4383-4438 | 4892-5277 (**+11-20%**) | 26.2-26.5 | 27.0-27.6 |
+| f16 `-t 4` | 2122-2278 | **1594-1652 (−25%)** | 28.2-29.4 | 29.8-31.5 |
+| q8_0 `-t 1` | 1472-1722 | 2113-2151 (**+25-45%**) | 6.7-6.8 | 7.4-7.5 |
+| q8_0 `-t 4` | 1217-1260 | **800-835 (−34%)** | 8.7-9.1 | 10.2-10.5 |
+
+Kernel-vs-kernel (nt1) the ggml CPU graph LOSES to the scalar loop on M1;
+at `-t 4` it buys 25-34% decoder wall by spending MORE total CPU (the
+threaded-arms-cost-cpu-seconds rule). By the repo's process-CPU criterion
+the CPU default stays scalar; `CRISPEMBED_PIX2STRUCT_GGML_DECODE=1` remains
+the opt-in for wall-latency-focused CPU use. The CUDA default from the P100
+A/B is unaffected. (Load note: t4/q8 rounds ran at 1-min load 3.8-4.7 —
+above the strict bar, but every contrast is 5-20x the observed same-arm
+spread.)
+
 ## dbnet auto-CUDA default LANDED: the CUDA decoded-text roundtrip passed — ±1px crops do not move the recognizer (kernel `chr1s4/crispembed-dbnet-rt` v1, merged `7713c6ad`, 2026-08-07)
 
 Round-N+4 queue #2, the last gate after conv-ab v3/v4's det-only ~6x
