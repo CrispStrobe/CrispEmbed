@@ -979,6 +979,29 @@ static void ensure_dec_scratch(hmer_ocr_context * ctx) {
 // ---------------------------------------------------------------------------
 
 static std::string greedy_decode(hmer_ocr_context * ctx) {
+    // O7 per-engine conv2d adoption. HMER's conv-heavy path is NOT the encoder
+    // -- that runs as a ggml graph by default (measured: 1187 ms of a 4738 ms
+    // page, with the scalar run_encoder only a fallback). It is the COVERAGE
+    // ATTENTION, whose two convs in decoder_step run once per decoded token and
+    // sit inside the 3548 ms decode. One scope for the whole loop rather than
+    // one per step, carrying the engine's own thread count (the O13b gap).
+    //
+    // A/B on this box, nt1-vs-nt1, process CPU, 3 interleaved runs per arm,
+    // against the TRUE default (not just against the forced-legacy arm --
+    // measuring only GEMM=0 vs MK=1 would not have shown whether the default
+    // was already the gemm path):
+    //
+    //   formula_photo   default 3.36-3.76 s  legacy 3.36-3.38 s  mk 2.54-2.57 s
+    //   arabic_handwrit default   —          legacy 1.47-1.48 s  mk 1.31-1.34 s
+    //   mixtex_pow      default   —          legacy 1.38-1.65 s  mk 1.13-1.21 s
+    //
+    // -24% process CPU on the page fixture, output BYTE-IDENTICAL in every arm
+    // and every fixture (sha 920ddb5113 / 3d6b0df7cb / 6cfa1965bf). The
+    // interchange ALONE is flat-to-worse (3.43-3.46 s), matching the R6 M1
+    // finding that the win is the register-blocked micro-kernel, not the loop
+    // interchange. Env vars keep absolute precedence both ways, so
+    // CRISPEMBED_CONV2D_MK=0 restores the reference loop here.
+    core_cpu::conv2d_prefs_scope conv_prefs(/*mk=*/true, ctx->n_threads);
     ctx->char_confidences.clear();
     const auto & hp = ctx->hparams;
     const int H = hp.hidden_size;
@@ -1096,7 +1119,9 @@ const char * hmer_ocr_recognize(hmer_ocr_context * ctx, const float * pixels, in
 
     // Run encoder (ggml graph path, fallback to scalar if scheduler not set up or env override)
     t0 = std::chrono::steady_clock::now();
-    bool use_scalar = std::getenv("HMER_OCR_SCALAR_ENCODER") != nullptr;
+    // Value-parsed: HMER_OCR_SCALAR_ENCODER=0 must mean "no", not "yes". The
+    // presence test this replaces turned the documented off-switch on.
+    bool use_scalar = core_env::on("HMER_OCR_SCALAR_ENCODER");
     if (ctx->enc_sched && !use_scalar) {
         run_encoder_ggml(ctx, input, w, h);
     } else {
