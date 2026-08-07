@@ -41,13 +41,24 @@ def linear(x, weight, bias=None):
         out += bias
     return out
 
-def apply_rotary(x, cos, sin):
-    half = x.shape[-1] // 2
-    x1, x2 = x[..., :half], x[..., half:]
-    return np.concatenate([
-        x1 * cos[..., :half] - x2 * sin[..., :half],
-        x2 * cos[..., half:] + x1 * sin[..., half:],
-    ], axis=-1)
+def apply_rotary_glm(x, cos_j, sin_j):
+    """GLM text-attention rotary (transformers rotate_half_llm): INTERLEAVED
+    pairs (2j, 2j+1) rotated by theta_j — NOT the NEOX split-half pairing.
+
+    The original split-half apply here silently matched the port's old
+    mis-paired rotation, so port-vs-script "parity" validated nothing (the
+    2026-08-07 glm_ocr rope fix, commit 097978cd). This convention is now
+    proven against the REAL HF forward: with it, the fixed port matches HF
+    per-layer to ~1e-4 on a text-only prompt.
+
+    cos_j/sin_j carry ONE value per frequency index j: shape (..., head_dim/2).
+    """
+    x1 = x[..., 0::2]
+    x2 = x[..., 1::2]
+    out = np.empty_like(x)
+    out[..., 0::2] = x1 * cos_j - x2 * sin_j
+    out[..., 1::2] = x2 * cos_j + x1 * sin_j
+    return out
 
 
 class RefWriter:
@@ -368,11 +379,9 @@ def main():
         half = llm_head_dim // 2
         inv_freq = 1.0 / (llm_rope_theta ** (np.arange(0, half, dtype=np.float32) * 2.0 / llm_head_dim))
         positions = np.arange(T, dtype=np.float32)
-        freqs = np.outer(positions, inv_freq)
-        cos_full = np.concatenate([np.cos(freqs), np.cos(freqs)], axis=-1)
-        sin_full = np.concatenate([np.sin(freqs), np.sin(freqs)], axis=-1)
-        cos_b = cos_full[np.newaxis, :, :]
-        sin_b = sin_full[np.newaxis, :, :]
+        freqs = np.outer(positions, inv_freq)  # (T, half): one theta per pair
+        cos_b = np.cos(freqs)[np.newaxis, :, :]
+        sin_b = np.sin(freqs)[np.newaxis, :, :]
 
         mask = np.full((T, T), -np.inf, dtype=np.float32)
         mask = np.triu(mask, k=1)
@@ -410,8 +419,8 @@ def main():
             K = K.reshape(T, llm_kv_heads, llm_head_dim).transpose(1, 0, 2)
             V = V.reshape(T, llm_kv_heads, llm_head_dim).transpose(1, 0, 2)
 
-            Q = apply_rotary(Q, cos_b, sin_b)
-            K = apply_rotary(K, cos_b, sin_b)
+            Q = apply_rotary_glm(Q, cos_b, sin_b)
+            K = apply_rotary_glm(K, cos_b, sin_b)
 
             kv_repeat = llm_heads // llm_kv_heads
             K_exp = np.repeat(K, kv_repeat, axis=0)
