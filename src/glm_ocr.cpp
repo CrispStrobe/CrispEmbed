@@ -171,6 +171,47 @@ bool load_tensors(context & ctx, const char * path) {
     m.output_norm_w = get("l.output_norm.weight");
     m.lm_head_w = get("l.lm_head.weight");
 
+    // GLM-4V's text attention rotates INTERLEAVED dim pairs
+    // (transformers rotate_half_llm: x1 = x[..., 0::2], x2 = x[..., 1::2],
+    // cos/sin repeat_interleave(2)), while ggml's GGML_ROPE_TYPE_MROPE
+    // rotates NEOX split-half pairs (j, j+hd/2) — and the converter exports
+    // q/k verbatim. Running NEOX rotation on interleaved-trained weights
+    // mis-pairs every rotated dim: measured against the HF reference on a
+    // text-only prompt, position-0 tokens match to 1e-5 while every rotated
+    // position diverges from LAYER 0 (cos 0.99 -> 0.93 by layer 15, logits
+    // mean|delta| 0.86), and on wide-grid images the drift flips decode at
+    // the first image-precision-critical token (the scan_strip derailment;
+    // near-square grids survive on redundancy). Fix at load: permute each
+    // head's q/k OUTPUT rows from interleaved to NEOX order — the ggml
+    // rotation then computes exactly HF's semantics, Q.K dot products are
+    // invariant to the shared row permutation, and every existing GGUF
+    // artifact works unchanged. GLM_OCR_NO_ROPE_PERMUTE=1 restores the old
+    // (mis-paired) behavior for A/B.
+    if (!core_env::on("GLM_OCR_NO_ROPE_PERMUTE")) {
+        const int hd = (int)m.lhp.head_dim;
+        auto permute_rope_rows = [&](ggml_tensor * t) {
+            if (!t || hd <= 0 || (t->ne[1] % hd) != 0) return;
+            const size_t row_bytes = t->nb[1];
+            const int64_t n_rows = t->ne[1];
+            std::vector<uint8_t> src((size_t)n_rows * row_bytes), dst((size_t)n_rows * row_bytes);
+            ggml_backend_tensor_get(t, src.data(), 0, src.size());
+            const int half = hd / 2;
+            for (int64_t r = 0; r < n_rows; ++r) {
+                const int64_t head = r / hd;
+                const int64_t j = r % hd;
+                // NEOX row j takes interleaved row 2j (first half) / 2(j-hd/2)+1.
+                const int64_t src_j = j < half ? 2 * j : 2 * (j - half) + 1;
+                std::memcpy(dst.data() + (size_t)r * row_bytes, src.data() + (size_t)(head * hd + src_j) * row_bytes,
+                            row_bytes);
+            }
+            ggml_backend_tensor_set(t, dst.data(), 0, dst.size());
+        };
+        for (auto & ly : m.llm_layers) {
+            permute_rope_rows(ly.q_w);
+            permute_rope_rows(ly.k_w);
+        }
+    }
+
     return true;
 }
 
@@ -1323,10 +1364,39 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
         ggml_backend_sched_graph_compute(ctx.sched, lg.gf);
     }
 
+    // Divergence tracing: dump every layer's prefill hidden states (T x D).
+    if (n_past == 0) {
+        if (const char * dump_dir = std::getenv("GLM_OCR_DUMP_LLM_LAYERS")) {
+            const int Dh = (int)ctx.m.lhp.hidden_size;
+            std::vector<float> buf((size_t)T * Dh);
+            for (size_t li = 0; li < lg.layer_outputs.size(); ++li) {
+                ggml_backend_tensor_get(lg.layer_outputs[li], buf.data(), 0, buf.size() * sizeof(float));
+                char path[512];
+                snprintf(path, sizeof(path), "%s/cpp_llm_layer_%02zu.bin", dump_dir, li);
+                FILE * f = fopen(path, "wb");
+                if (f) {
+                    fwrite(buf.data(), sizeof(float), buf.size(), f);
+                    fclose(f);
+                }
+            }
+            fprintf(stderr, "[llm-layers] dumped %zu layers (T=%d D=%d) to %s\n", lg.layer_outputs.size(), T, Dh,
+                    dump_dir);
+        }
+    }
+
     if (lg.logits_out) {
         last_logits_out.resize(V);
         ggml_backend_tensor_get(lg.logits_out, last_logits_out.data(), (size_t)(T - 1) * V * sizeof(float),
                                 V * sizeof(float));
+        // Divergence tracing: append each step's last-token logits row.
+        static const char * dump_logits = std::getenv("GLM_OCR_DUMP_LOGITS");
+        if (dump_logits) {
+            FILE * f = fopen(dump_logits, "ab");
+            if (f) {
+                fwrite(last_logits_out.data(), sizeof(float), V, f);
+                fclose(f);
+            }
+        }
     }
 
     ggml_free(lg.gctx);
@@ -1512,6 +1582,22 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
     out.hidden_dim = D;
     out.hidden = (float *)malloc(T * D * sizeof(float));
     ggml_backend_tensor_get(lg.output, out.hidden, 0, T * D * sizeof(float));
+
+    // Divergence tracing: dump every layer's hidden states (T x D each).
+    if (const char * dump_dir = std::getenv("GLM_OCR_DUMP_LLM_LAYERS")) {
+        std::vector<float> buf((size_t)T * D);
+        for (size_t li = 0; li < lg.layer_outputs.size(); ++li) {
+            ggml_backend_tensor_get(lg.layer_outputs[li], buf.data(), 0, buf.size() * sizeof(float));
+            char path[512];
+            snprintf(path, sizeof(path), "%s/cpp_llm_layer_%02zu.bin", dump_dir, li);
+            FILE * f = fopen(path, "wb");
+            if (f) {
+                fwrite(buf.data(), sizeof(float), buf.size(), f);
+                fclose(f);
+            }
+        }
+        fprintf(stderr, "[llm-layers] dumped %zu layers (T=%d D=%d) to %s\n", lg.layer_outputs.size(), T, D, dump_dir);
+    }
     if (lg.logits_out) {
         out.vocab_size = V_sz;
         out.logits = (float *)malloc(T * V_sz * sizeof(float));
