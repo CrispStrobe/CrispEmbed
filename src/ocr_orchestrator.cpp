@@ -1189,6 +1189,15 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         const auto line_regions =
             classical_pageseg ? detected_regions : easyocr_layout::group_dbnet_lines(detected_regions);
         const bool pageseg_debug = classical_pageseg && std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG");
+        // Opt-in recognition-confidence floor (pageseg round 5): ornament,
+        // seal, and noise-band crops decode as garbage at mean char
+        // confidence 0.23-0.47 while real lines sit >= 0.70 on the Fraktur
+        // fixture. Reject regions the recognizer itself disbelieves. Only
+        // applies when the model exposes a real per-char confidence buffer;
+        // unset or <= 0 disables (default).
+        float min_rec_conf = 0.0f;
+        if (const char * env = std::getenv("CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE"))
+            min_rec_conf = strtof(env, nullptr);
         if (pageseg_debug) {
             fprintf(stderr, "ocr_orchestrator: pageseg candidates=%zu\n", line_regions.size());
             for (size_t i = 0; i < line_regions.size(); ++i) {
@@ -1354,6 +1363,18 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 }
                 r.confidence = mean;
                 r.rec_confidence = mean;
+                if (pageseg_debug) {
+                    float min_conf = 1.0f;
+                    for (const float c : r.char_conf) min_conf = std::min(min_conf, c);
+                    fprintf(stderr, "  candidate_conf=%zu mean=%.4f min=%.4f word=%.4f n=%d\n", i, mean,
+                            r.char_conf.empty() ? -1.0f : min_conf, tesseract_lstm_word_confidence(tess),
+                            (int)r.char_conf.size());
+                }
+                if (min_rec_conf > 0.0f && !r.char_conf.empty() && mean < min_rec_conf) {
+                    if (pageseg_debug)
+                        fprintf(stderr, "  candidate_rejected=%zu mean=%.4f floor=%.4f\n", i, mean, min_rec_conf);
+                    continue;
+                }
                 r.text = std::string(t, len);
                 valid[i] = !r.text.empty();
             }

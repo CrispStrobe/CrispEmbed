@@ -1,5 +1,79 @@
 # CrispEmbed Performance
 
+## Pageseg round 5: the decoder levers measured — recode-beam/DAWG LOSE on CER at 3-52x the cost; a recognition-confidence floor is what actually reaches ≤0.18 (Fraktur 0.196 → 0.149, opt-in) (Apple M1, 2026-08-07)
+
+Round-N+3 task 2. The brief said `--recode-beam`/`--dawg-score` were "the only
+remaining paths to ≤0.18". Both halves of that sentence are now measured, and
+both are wrong: the decoder levers lose outright, and a lever the residuals
+list already named (recognition-confidence junk rejection) gets under the
+target by itself.
+
+**Decoder levers: monotonically worse, and expensive.** Fraktur page
+(`german_official_print.jpg`, frk q8-seeded, CER vs official 5.5.2, decoded
+text deterministic per arm):
+
+| arm | CER | WER | stage |
+|---|--:|--:|--:|
+| greedy (default) | **0.1959** | 0.3972 | 3.1 s |
+| `--recode-beam 2` | 0.2057 | 0.4326 | 10.4 s |
+| `--recode-beam 4` | 0.2125 | 0.4468 | 18.8 s |
+| `--recode-beam 8` | 0.2194 | 0.4752 | 37.7 s |
+| `--recode-beam 2 --dawg-score` | 0.2037 | 0.4255 | 161.6 s |
+| `--recode-beam 4 --dawg-score` | 0.2116 | 0.4397 | 365.9 s |
+| `--recode-beam 4 --dawg-score --dawg-prefix-score` | 0.2106 | 0.4397 | 364.4 s |
+
+DAWG scoring needed an artifact first: no shipped tesseract GGUF carries the
+`dawg_names`/u8 channel the scorer reads (`kv_u8_array` REQUIRES subtype
+UINT8 — a plain python-list embed writes INT32 and the runtime silently loads
+0 graphs). Built `tesseract-frk-q8_0-seeded-dawg.gguf` by metadata surgery
+from frk.traineddata (all 16 tensors byte-identical to the q8-seeded source,
+verified; greedy arm byte-identical, sha `66ddee936331`; loader prints
+`loaded 3 optional DAWG graph(s)`). The dictionary bonus does recover a
+little of the beam's loss (0.2057 → 0.2037 at width 2) but never reaches
+greedy, and the scorer calls `word_bonus` inside the beam's sort comparator —
+composing the whole prefix per comparison — for a 15x cost on top of the
+beam's 3x. Not worth optimizing a losing lever: **beam+DAWG is closed as a
+CER path at current scoring weights.** (The floor below is inert under beam
+decode — `char_confs` stays empty there — so the two levers stay independent.)
+
+**The winner: reject regions the recognizer itself disbelieves.** Per-region
+mean char confidence separates the Fraktur page's junk decodes cleanly —
+garbage sits at 0.23-0.47 (the faded-cursive sliver, the seal line, the
+footer-with-noise-band crop, a mostly-empty giant box) while every real line
+is ≥ 0.70 (worst good: the decorative "№r 1." at 0.7009). New opt-in
+value-parsed gate `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` (unset/≤0 = off,
+default; only applies when the model exposes a real per-char confidence
+buffer; `candidate_conf=`/`candidate_rejected=` lines under
+`CRISPEMBED_TESSERACT_PAGESEG_DEBUG`; `--min-rec-confidence` on
+`tools/compare_tesseract_page_metrics.py`):
+
+| floor | Fraktur CER | WER | regions |
+|---|--:|--:|--:|
+| off | 0.1959 | 0.3972 | 22 |
+| 0.45 | 0.1538 | — | 19 |
+| 0.50-0.65 (identical output) | **0.1489** | **0.3333** | 18 |
+
+**≤0.18 reached: 0.1489**, purely by not emitting text the recognizer scored
+as noise. Off-arm byte-identical to untouched main (sha `66ddee936331`);
+recognition itself still runs on every crop, so stage time is unchanged.
+
+**Why opt-in and not default: the harm side is real on agreement-scored
+scans.** 24-fixture arms A/B (synth-20 truthed + 4 CC0 vs official), floor
+0.55: all 20 synth fixtures byte-identical (the floor never fires on clean
+renders); `receipt_historical` improves hugely (6.33 → 3.71 — it was mostly
+junk); but three noisy scans measure worse vs official
+(`commons_test` +0.005, `commons_example_receipt` +0.030, `german_kurrent`
++0.062) — deleting our low-confidence regions removes text that partially
+agreed with official's own reading of those areas (on kurrent, junk agreeing
+with junk; on the receipt, faint-but-real text). Floor 0.45 shrinks both the
+wins and the losses (kurrent +0.043, receipt_historical only 4.68). The
+trade is input-dependent — historical print wins, faint modern scans can
+lose — so the gate ships **opt-in, recommended ~0.55 for historical/print
+pages**, same policy as round 4's gutter-balance fix.
+
+Gates: orchestrator suite 77/77 with the change; 17/17 page-geometry tests;
+default arm byte-identical (Fraktur sha + synth 20/20 identical).
+
 ## GLM-OCR vision on Metal: CPU is reference-exact, Metal diverges by AMPLIFICATION — decoded output moves only on the hardest fixture (Apple M1, 2026-08-07)
 
 Round-N+2 task 8, concluded. The earlier entry below established WHERE the

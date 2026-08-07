@@ -210,8 +210,11 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "CRISPEMBED_TESSERACT_COMPONENT_PAGESEG",
         "CRISPEMBED_TESSERACT_COMPONENT_BASELINE",
         "CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS",
+        "CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE",
     ):
         env.pop(key, None)
+    if args.min_rec_confidence:
+        env["CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE"] = str(args.min_rec_confidence)
     if args.workers:
         env["CRISPEMBED_TESSERACT_WORKERS"] = str(args.workers)
     if args.beam:
@@ -272,6 +275,7 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "stage_ms": float(stage_ms),
         "pageseg_policy": selected_pageseg_policy(args),
         "row_blob_bounds": args.row_blob_bounds,
+        "min_rec_confidence": args.min_rec_confidence,
         "detector_route_requested": selected_detector_route(args),
         "detector_route_observed": observed_detector_route(proc.stdout + proc.stderr),
         "text": " ".join(text_match.group("text").split()) if text_match else "",
@@ -315,6 +319,8 @@ def main() -> int:
                         help="enable opt-in embedded DAWG beam scoring")
     parser.add_argument("--dawg-prefix-score", action="store_true",
                         help="enable the opt-in DAWG prefix bonus experiment")
+    parser.add_argument("--min-rec-confidence", type=float, default=0.0,
+                        help="opt-in recognition-confidence floor for region rejection")
     parser.add_argument("--compose", action="store_true",
                         help="enable opt-in composed-recoder decoding")
     parser.add_argument("--benchmark", action="store_true", help="include native detect/group/crop/recognize timings")
