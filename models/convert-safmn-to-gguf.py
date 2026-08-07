@@ -57,7 +57,11 @@ def main():
         if ".bias" in name or "norm" in name:
             writer.add_tensor(name, arr, raw_dtype=gguf.GGMLQuantizationType.F32)
         else:
-            writer.add_tensor(name, arr, raw_dtype=dtype)
+            # raw_dtype LABELS bytes, it never converts them — an f32 array
+            # with an F16 label desyncs every following tensor offset (the
+            # convert-pix2struct --fp16 bug, fixed 2026-08-07). Cast to match.
+            data = arr.astype(np.float16) if dtype == gguf.GGMLQuantizationType.F16 else arr
+            writer.add_tensor(name, data, raw_dtype=dtype)
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
