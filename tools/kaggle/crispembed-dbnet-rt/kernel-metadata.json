@@ -1,0 +1,17 @@
+{
+  "id": "chr1s4/crispembed-dbnet-rt",
+  "title": "crispembed-dbnet-rt",
+  "code_file": "crispembed_dbnet_rt.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token",
+    "chr1s4/crispembed-ccache"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
