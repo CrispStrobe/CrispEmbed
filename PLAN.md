@@ -120,10 +120,14 @@ computed over the WRONG AXIS for every engine until `0923def7`.
 6. **dbnet det-only v3 kernel** (carried): T4 draw for the
    `LAYOUT_CONV_F16` tensor-core arm + a det-only dbnet harness with
    box-level compare (the v2 whole-pipeline wall was TrOCR-dominated).
-7. **Upstream PR 23** (carried, mechanical prep only): re-draft
-   `tools/upstream-prs/23` from `kernel_im2col_flat` (`89a2039d`) — patch +
-   numbers ready; **the PROSE MUST BE HUMAN-AUTHORED** (llama.cpp AI
-   policy; ggml-org/ggml venue, standing via #1477).
+7. ~~**Upstream PR 23** (carried, mechanical prep only)~~ **PREP DONE
+   2026-08-07** (CrispASR `f600c352`): `tools/upstream-prs/23-*.{md,patch}`
+   re-drafted from `kernel_im2col_flat` — the .patch is now the real
+   `89a2039d` format-patch (235 lines; 3 fork-env references to strip on
+   submission, noted), the .md is a fact sheet (mechanism, int64-divmod
+   review-preempt, measured table, test-backend-ops ask). **The PR text
+   itself remains HUMAN-AUTHORED** (llama.cpp AI policy) — ready for the
+   user to compose and submit.
 8. ~~**Re-read the parity numbers invalidated by the `cos_min` axis fix**~~
    **DONE 2026-08-07** (PERFORMANCE.md top): PASSes safe by construction,
    cross-arm contrasts shared the wrong grouping on both sides (verdicts
