@@ -4,6 +4,124 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
+## HANDOVER — OCR round N+2 (written 2026-08-07, after the parity-and-routing session)
+
+**Read before doing anything:** this section; this round's ~12 DONE board
+rows below (they carry the evidence — archive them to HISTORY as your first
+hygiene act); the top ~8 dated sections of `PERFORMANCE.md`;
+`../crispasr-crispembed-dev.md` **including BOTH the 2026-08-06 and
+2026-08-07 addenda** (rope conventions, per-engine conv2d adoption,
+ref-dump discipline, fork/sched/Kaggle lessons); `../kaggle_usage.md`
+(tokens live there, NEVER in this repo).
+
+### Prime directive (extended by this round, four bugs deep)
+
+**Re-measure any item's named bottleneck on current `main` before
+implementing its prescribed fix** — and for QUALITY bugs, **run the real HF
+reference on the same input+prompt FIRST** (it instantly splits port-defect
+from model-behavior; this round it overturned a one-day-old "model
+behavior" verdict). Parity only counts against the REAL HF forward — a
+numpy dumper sharing the port's convention validated nothing for months.
+Constant-content inputs MASK permutation bugs (background patches at
+cos 1.0 hid a within-patch CHW/HWC swap); compare STOPPING behavior, not
+just content class, when judging degeneration. Check output BYTES before
+believing any timing (six empty rc=0 runs measured nothing this round).
+
+### State snapshot (all on `main`, CI green through every workflow)
+
+- **Tesseract lane: the H9 segmentation router is now the production
+  default** — Fraktur CER 0.237 → **0.1959** at 2.3× the speed
+  (`CRISPEMBED_TESSERACT_SEG_ROUTER=0` restores dbnet-first; value-parsed).
+  Classical pageseg (round 3: band rows + rise-gated faint-line widening,
+  default ON) wins/ties every truthed single-column fixture; multi-column
+  falls back on `columns > 1`. ⚠ The router path BEATS the forced-classical
+  arm (0.196 vs 0.218) — the stage params differ and nobody knows exactly
+  which one helps; understanding + unifying that is a round-4 item.
+- **GLM-OCR is HF-exact**: the LM mrope rotated NEOX pairs on
+  interleaved-trained weights; fixed by a load-time q/k row permute — all
+  published artifacts work unchanged, strip transcription text-identical to
+  HF, and the SubtitleEdit '-ich' runaway was the same bug (gone with the
+  guard off). `GLM_OCR_NO_ROPE_PERMUTE=1` = old behavior.
+- **pix2struct is end-to-end HF-faithful**: three stacked bugs fixed
+  (missing detokenizer — the GGUFs always carried the vocab; T5 rel-bias
+  sign → every history token in bucket 0; within-patch CHW vs HF's HWC).
+  Captions now CHARACTER-EXACT vs HF on fox. `pix2struct-textcaps` f16+q8
+  published (cstr/pix2struct-GGUF) and registered; base is
+  pretraining-only babble (annotated). lm_head threaded (−11%,
+  bitwise-identical); decode profile: ~80 ms/tok spread over 12 layers of
+  small single-threaded matvecs.
+- **O7**: `core_cpu::conv2d_prefs_scope` per-engine hook landed; det-scalar
+  flipped (−26% CPU, byte-identical); pplcnet measured flat and honestly
+  NOT flipped; text_sr blocked on a distributable model.
+- **O3**: pix2struct enc GPU gate ships opt-in — Metal no-win recorded;
+  positioned for the CUDA arm.
+- **Converters**: the `--fp16` labels-not-converts trap fixed in 4
+  (pix2struct + instructir/safmn/tps-loc); 5 verified safe. GLM ref dumper
+  is now HF-anchored (`glm-ocr-ref-2026-08-07.gguf` published; its
+  vis_merger tap still mismatches at cos 0.34 — script-side staleness,
+  port vision is HF-validated).
+- **uocr rope audit CLEAN** (active class = stock Llama apply = ggml NEOX);
+  benign ring-window divergence documented at the rope site (>128 decoded
+  tokens unvalidated).
+- **Kaggle**: ccache seed verified live (98.88% hits, ~21 s vs ~19 min)
+  and the seed kernel now warms-from + re-exports-to the dataset each run.
+
+### Task queue — FABLE-tier
+
+1. **R8 ICB replay** (carried; now the top Metal-speed item): the sched
+   contract fix (`890278a8`) makes alloc-once/compute-many safe, which is
+   what an MTLIndirectCommandBuffer replay needs. Metal decode is
+   per-op-dispatch bound; CUDA already has graph capture. Fork work —
+   re-apply markers, and ⚠ `git branch -r --contains <pin>` before pushing
+   (two-lineage trap).
+2. **Pageseg round 4 / router unification**: find WHY the router path beats
+   forced-classical (0.196 vs 0.218 — stage-param diff, crops the faint
+   Inhalt lines better), unify so both paths get the better geometry; then
+   the round-3 residuals (~60 ornament junk chars need a
+   recognition-confidence signal; `--recode-beam`/`--dawg-score` still
+   unmeasured post-int8-cache). Target: ≤0.18 on the Fraktur page.
+3. **pix2struct decode graph — CUDA-first, only with the profile in hand**:
+   ~80 ms/tok across 12 layers of small matvecs; batching or a ggml graph
+   is the lever, Metal per-op dispatch says CUDA is where it pays (R5
+   lesson: the profile exists now, don't re-derive).
+4. **GLM ViT deep levers — only if explicitly funded** (unchanged): CPU
+   flash-attn arm A/B, kernel-level q8 matmul, earlier spatial merge.
+
+### Task queue — OPUS-tier
+
+5. **O7 continuation, one engine per A/B**: remaining `conv2d_cpu` engines
+   with real FLOPs on default-CPU paths and models on disk (bttr, hmer,
+   posformer, ppformulanet-l, got/deepseek preprocessing convs); the
+   pplcnet no-win shows small engines aren't worth it — pick conv-heavy
+   ones. `linear_cpu_mt` is also available for other vocab-sized heads.
+6. **dbnet det-only v3 kernel** (carried): T4 draw for the
+   `LAYOUT_CONV_F16` tensor-core arm + a det-only dbnet harness with
+   box-level compare (the v2 whole-pipeline wall was TrOCR-dominated).
+7. **Upstream PR 23** (carried, mechanical prep only): re-draft
+   `tools/upstream-prs/23` from `kernel_im2col_flat` (`89a2039d`) — patch +
+   numbers ready; **the PROSE MUST BE HUMAN-AUTHORED** (llama.cpp AI
+   policy; ggml-org/ggml venue, standing via #1477).
+8. **GLM ref dumper vision taps**: fix the `vis_merger_output` staleness
+   (cos 0.34 vs the HF-validated port) so the vision sections gate again.
+9. **Hygiene**: archive this round's DONE rows to HISTORY; trim the
+   round-N+1 handover section (superseded by this one).
+
+### Non-negotiable protocols
+
+Unchanged from round N+1 (worktree per change + `git submodule update
+--init --recursive` + Metal ON flags — TWO configure failures this round
+came from skipping the submodule init; claim a board row BEFORE starting
+and push it; measure-first; interleaved same-binary env-gated pairs; new
+paths opt-in until they win speed AND quality; never delete a gated path;
+`tools/format.sh --fix` before merge; ff-merge from the MAIN TREE; no
+Claude co-author trailer in THIS repo; one heavy model at a time on the
+16 GB box; kernels under chr1s4; no tokens in repo Markdown; process CPU
+time nt1-vs-nt1 on the shared box) **plus this round's additions**: HF
+reference first on quality bugs; parity only vs the real HF forward;
+constant-content masks permutations; compare stopping behavior; output
+bytes before timings; value-parse every new gate; rebuild the MAIN-tree
+binary before using it after worktree merges (stale-binary trap bit once).
+
 ## HANDOVER — OCR/infra round N+1 (written 2026-08-06, after the all-queue session)
 
 **Read before doing anything:** this section; the board rows below (this
