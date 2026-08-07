@@ -1052,7 +1052,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // does not work as a proxy (a dense receipt collapsing to 2 boxes and a
         // clean page legitimately having 2 boxes look identical by count, and
         // completely different by coverage).
-        const bool seg_router = std::getenv("CRISPEMBED_TESSERACT_SEG_ROUTER") != nullptr;
+        // Default ON since 2026-08-07 (post pageseg round 3): the classical
+        // route now wins or ties the dbnet route on every truthed
+        // single-column fixture measured (5/6 synth, Fraktur 0.218 vs 0.235,
+        // simple_form by inspection; dbnet's only truthed win is lowdpi by
+        // +0.008) at ~3.5x less stage time, and multi-column pages still
+        // fall back to the detector structurally (columns > 1).
+        // CRISPEMBED_TESSERACT_SEG_ROUTER=0 restores the dbnet-first
+        // default; =1 keeps forcing the router where a caller sets
+        // page_segmentation explicitly. Value-parsed (the UOCR =0 lesson).
+        const char * router_env = std::getenv("CRISPEMBED_TESSERACT_SEG_ROUTER");
+        const bool seg_router = router_env ? (*router_env && std::strcmp(router_env, "0") != 0) : true;
         if (seg_router) classical_pageseg = true;
         bool router_fell_back = false;
         double router_coverage = -1.0;
