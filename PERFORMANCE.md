@@ -1,5 +1,62 @@
 # CrispEmbed Performance
 
+## GLM-OCR vision is a METAL MISCOMPUTE — arbitrated against the real HF forward; CPU is exact, Metal ships a degraded vision tower to every Mac user (Apple M1, 2026-08-07)
+
+Round-N+2 task 8, concluded. The earlier entry below established WHERE the
+divergence is (a layer-13 cliff, not the "stale merger tap" the handover
+recorded) but could not say WHICH side was wrong. Running the real HF forward
+settles it, and the answer is the opposite of the standing assumption that "the
+port vision is HF-validated".
+
+**The reference is correct.** The real `transformers` `GlmOcrVisionModel`
+(5.15.0.dev0, `GlmOcrForConditionalGeneration`) on the identical synthetic
+gradient image reproduces the published `glm-ocr-ref-2026-08-07.gguf` at
+**cos 1.000000** on both `vis_post_norm` and `vis_merger_output`, with
+`|HF| == |ref|` at every one of the 24 layers.
+
+**The port is wrong, and only on Metal.** Same f16 artifact, same reference,
+backend the only variable:
+
+| backend | vis_post_norm cos_glob | vis_merger_output cos_glob | |
+|---|--:|--:|:--|
+| **CPU** | **1.000000** | **1.000000** | PASS |
+| **Metal** | 0.958 | 0.940 | FAIL |
+
+So this is a user-visible quality bug — every Mac user of the GLM-OCR engine has
+been running a degraded vision tower — not a harness artifact.
+
+**⚠ Patch order is the trap that nearly inverted the verdict.** HF derives its
+vision position ids assuming the image processor's merge-**block** patch order.
+Fed plain raster order, the real model disagrees with the *correct* reference
+from layer 0 (`max_abs` 0.0704 at L0, `vis_merger_output` cos 0.774) — which
+reads exactly like a model bug and is not one. In block order the same run gives
+cos 1.000000. Any future dumper or parity work on this family must get patch
+ordering right before believing a divergence. Tool vendored as
+`tools/hf_glm_vision_parity.py`, with both arms kept so the trap stays visible.
+
+**Localization so far — measured, do not re-derive:**
+- NOT the reference and NOT the numpy dumper (HF agrees with both).
+- NOT matmul precision. The CPU arm passes with f16 matmuls
+  (`GLM_OCR_VISION_F16MM=1`) *as well as* the default f32-cast path, and
+  `ggml_mul_mat_set_prec(GGML_PREC_F32)` on both attention matmuls moves Metal
+  by nothing (cos_glob 0.958 before and after — tried, measured, reverted).
+- NOT a per-layer structural error. Layer 0 is cos 1.000000 on Metal too; drift
+  enters at layer 10 and cliffs at 13 (|mine| 1016.7 vs 855.4) — the point where
+  activations first grow large. This ViT reaches |x| ~86000 by layer 23, past
+  F16's 65504 ceiling.
+
+**Next step**: bisect the Metal graph on the GENUINE truncated output, never on
+per-intermediate `set_output` snapshots — those are documented to read cos ~1.0
+while the real Metal forward is wrong. `GGML_SCHED_DEBUG=2` +
+`CRISPASR_METAL_PROFILE=3`. Suspect ops are the ones carrying the outliers:
+`rms_norm` and `soft_max_ext` at |x| ~1e5, and the `ggml_cast(f16→f32)` applied
+to every weight.
+
+Environment note: this required upgrading the conda `transformers` 4.57.6 →
+5.15.0.dev0 (plus `huggingface_hub` 0.36.2 → 1.26.1 and `safetensors` 0.5.3 →
+0.8.0). `optimum-onnx` pins `transformers<4.58` and now conflicts; roll back with
+`pip install "transformers==4.57.6" "huggingface_hub==0.36.2"` if that matters.
+
 ## O7 increment 3: HMER adopts the conv2d mk kernel — −25.7% process CPU, byte-identical; the conv-heavy stage was the COVERAGE ATTENTION, not the encoder (Apple M1, 2026-08-07)
 
 Round-N+2 task 5. Candidate selection was by measurement, not by architecture
