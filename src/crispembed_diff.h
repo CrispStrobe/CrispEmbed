@@ -414,13 +414,31 @@ inline Report Ref::compare(const std::string & name, const float * data, size_t 
     r.mine_norm = (float)std::sqrt(mine_sq);
     r.ref_norm = (float)std::sqrt(ref_sq);
 
-    // Per-row cosine similarity
-    // Determine row size from shape or row_dim
+    // Per-row cosine similarity.
+    //
+    // A "row" must be one CONTIGUOUS vector — a token's hidden state, a
+    // position's logits — because that is the unit cos_min exists to isolate
+    // ("a single mishandled token position still fails loudly"). `shape` holds
+    // GGUF dims in ne order, so the contiguous fastest axis is ne[0] =
+    // shape.front(). The dumpers write numpy `(n_tokens, D)` row-major, which
+    // gguf stores as ne = [D, n_tokens]: D is at the FRONT.
+    //
+    // ⚠ This defaulted to shape.back() until 2026-08-07 — i.e. n_tokens, the
+    // SLOW axis. Rows were then arbitrary slices straddling token boundaries
+    // (GLM-OCR vision: 576-float slices of 1024-float tokens, 0.5625 tokens
+    // each) and cos_min was computed over groupings that correspond to nothing.
+    // It went unnoticed because identical data gives cos 1.0 under ANY
+    // grouping, so every at-reference-precision stage still read 1.000000; the
+    // number only becomes nonsense once there IS a difference to measure —
+    // exactly when it is being relied on. test_dbnet_diff.cpp was already
+    // passing row_dim=0 explicitly, which is the same conclusion reached once.
+    //
+    // An explicit row_dim still wins, for a dump whose layout differs.
     size_t D = 1;
     if (row_dim >= 0 && row_dim < (int)r.shape.size()) {
         D = (size_t)r.shape[row_dim];
     } else if (!r.shape.empty()) {
-        D = (size_t)r.shape.back(); // last dim
+        D = (size_t)r.shape.front(); // ne[0] — the contiguous axis
     }
     if (D == 0) D = 1;
 

@@ -694,7 +694,9 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
                 if (!lref.has(nm)) continue;
                 ggml_backend_tensor_get(vg.layer_outputs[li], lbuf.data(), 0, vis_D * n_patches * sizeof(float));
                 auto r = lref.compare(nm, lbuf.data(), (size_t)vis_D * n_patches);
-                printf("  %s: cos=%.6f max_abs=%.6f %s\n", nm, r.cos_min, r.max_abs, r.is_pass() ? "PASS" : "FAIL");
+                printf("  %s: cos=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f cos_glob=%.6f cos_mean=%.6f %s\n", nm,
+                       r.cos_min, r.max_abs, r.mine_norm, r.ref_norm, r.cos_global, r.cos_mean,
+                       r.is_pass() ? "PASS" : "FAIL");
             }
         }
     }
@@ -955,19 +957,24 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
             // Patch embed
             {
                 auto r = ref.compare("vis_patch_embed", patch_embed_data.data(), patch_embed_data.size());
-                printf("  vis_patch_embed: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
-                       r.is_pass() ? "PASS" : "FAIL");
+                printf(
+                    "  vis_patch_embed: cos=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f cos_glob=%.6f cos_mean=%.6f %s\n",
+                    r.cos_min, r.max_abs, r.mine_norm, r.ref_norm, r.cos_global, r.cos_mean,
+                    r.is_pass() ? "PASS" : "FAIL");
             }
             // Post-norm (final vision output after all 24 layers + LN)
             if (ref.has("vis_post_norm")) {
                 auto r = ref.compare("vis_post_norm", layer_data.data(), layer_data.size());
-                printf("  vis_post_norm: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                printf("  vis_post_norm: cos=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f cos_glob=%.6f cos_mean=%.6f %s\n",
+                       r.cos_min, r.max_abs, r.mine_norm, r.ref_norm, r.cos_global, r.cos_mean,
                        r.is_pass() ? "PASS" : "FAIL");
             }
             // Merger
             if (ref.has("vis_merger_output")) {
                 auto r = ref.compare("vis_merger_output", merger_out.data(), merger_out.size());
-                printf("  vis_merger_output: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                printf("  vis_merger_output: cos=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f cos_glob=%.6f cos_mean=%.6f "
+                       "%s\n",
+                       r.cos_min, r.max_abs, r.mine_norm, r.ref_norm, r.cos_global, r.cos_mean,
                        r.is_pass() ? "PASS" : "FAIL");
             }
             // Per-layer comparisons already printed in per-layer loop above
@@ -1614,7 +1621,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                     float * buf = (float *)malloc(T * D * sizeof(float));
                     ggml_backend_tensor_get(emb, buf, 0, T * D * sizeof(float));
                     auto r = ref.compare("llm_embed", buf, T * D);
-                    printf("  llm_embed: cos=%.6f max_abs=%.6f %s\n", r.cos_min, r.max_abs,
+                    printf("  llm_embed: cos=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f cos_glob=%.6f cos_mean=%.6f %s\n",
+                           r.cos_min, r.max_abs, r.mine_norm, r.ref_norm, r.cos_global, r.cos_mean,
                            r.is_pass() ? "PASS" : "FAIL");
                     free(buf);
                 }
@@ -1626,7 +1634,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                     float * buf = (float *)malloc(T * D * sizeof(float));
                     ggml_backend_tensor_get(lg.layer_outputs[li], buf, 0, T * D * sizeof(float));
                     auto r = ref.compare(name, buf, T * D);
-                    printf("  %s: cos=%.6f max_abs=%.6f %s\n", name, r.cos_min, r.max_abs,
+                    printf("  %s: cos=%.6f max_abs=%.6f |mine|=%.4f |ref|=%.4f cos_glob=%.6f cos_mean=%.6f %s\n", name,
+                           r.cos_min, r.max_abs, r.mine_norm, r.ref_norm, r.cos_global, r.cos_mean,
                            r.is_pass() ? "PASS" : "FAIL");
                     free(buf);
                 }
