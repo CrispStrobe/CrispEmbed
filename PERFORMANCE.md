@@ -1,5 +1,49 @@
 # CrispEmbed Performance
 
+## O7 increment 3: HMER adopts the conv2d mk kernel — −25.7% process CPU, byte-identical; the conv-heavy stage was the COVERAGE ATTENTION, not the encoder (Apple M1, 2026-08-07)
+
+Round-N+2 task 5. Candidate selection was by measurement, not by architecture
+label: of the engines with models on disk, BTTR on the small formula fixture is
+0.58 s total in BOTH arms (too small to matter, the pplcnet verdict again),
+while HMER costs 3.4 s and moves.
+
+**Where the convs actually are.** HMER is a "DenseNet-121 encoder + GRU
+attention decoder", so the encoder looks like the conv-heavy stage — and it is
+not. `CRISPEMBED_HMER_BENCH=1` shows the encoder runs as a **ggml graph** by
+default (1187 ms of a 4738 ms page), with the scalar `run_encoder` only a
+fallback behind `HMER_OCR_SCALAR_ENCODER`. The `conv2d_cpu` calls that matter
+are the two **coverage-attention** convs in `decoder_step`, executed once per
+decoded token inside the 3548 ms decode. The scope goes around `greedy_decode`
+— one construction for the whole loop — carrying `ctx->n_threads`.
+
+| fixture | opt-out (`MK=0`) | new default | Δ | output |
+|---|--:|--:|--:|:--|
+| public_domain_formula_photo | 3.42 s | **2.54 s** | −25.7% | `920ddb5113` both |
+| mixtex_pow | 1.37 s | **1.12 s** | −18.2% | `6cfa1965bf` both |
+| arabic_handwriting | 1.48–1.51 s | **1.29–1.31 s** | −13.2% | `3d6b0df7cb` both |
+
+3 interleaved runs per arm per fixture, nt1-vs-nt1, process CPU (user+sys), and
+byte-identical output in every arm — the numbers above are the full observed
+ranges, which do not overlap.
+
+**The control that nearly got skipped.** The first pass measured
+`CRISPEMBED_CONV2D_GEMM=0` against `CRISPEMBED_CONV2D_MK=1` and read the gap as
+the win. That comparison cannot tell you whether the *default* was already on
+the gemm path — the forced-legacy arm is not the shipped one. Measuring the true
+default (no conv env var at all) was necessary and confirmed it sits with legacy
+(3.36–3.76 s vs 3.36–3.38 s), so the −24% is against what users actually run.
+
+The interchange ALONE is flat-to-worse here (`CRISPEMBED_CONV2D_GEMM=1`:
+3.43–3.46 s vs the 3.36–3.40 s default), reproducing the R6 M1 result that the
+win is the register-blocked micro-kernel rather than the loop interchange.
+
+Also fixed in passing: `HMER_OCR_SCALAR_ENCODER` was a presence test, so the
+documented off-switch `=0` turned the scalar encoder ON. Now `core_env::on`.
+
+Gates: 196/196 core-cpu-ops, 77/77 orchestrator, 12/12 CI model-free binaries,
+full build clean. `CRISPEMBED_CONV2D_MK=0` restores the reference loop
+(verified byte-identical, above).
+
 ## GLM vision parity: the "stale merger tap" is a layer-13 cliff, and cos_min itself was measured over the WRONG axis for every engine (Apple M1, 2026-08-07)
 
 Round-N+2 task 8. The brief was "fix the `vis_merger_output` staleness (cos
