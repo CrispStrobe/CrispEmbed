@@ -1,5 +1,43 @@
 # CrispEmbed Performance
 
+## conv-ab v3 (P100): det-only DBNet is ~6x on CUDA with box-equivalent output; LAYOUT_CONV_F16 still lacks its T4 draw (kernel `chr1s4/crispembed-conv-ab` v3, 2026-08-07)
+
+Round-N+3 task 6. The v2 wall was TrOCR-dominated and its arms' decoded text
+differed, so v3 isolates detection (`test-ocr-detect`) and compares at the
+box level (greedy center-match: count / per-box coordinate delta / score
+delta / prob-map stats).
+
+**O9d verdict — DBNet det flips to GPU on CUDA, now proven at the box level:**
+
+| fixture | CPU wall (3 reps) | CUDA wall (3 reps) | boxes | box compare (cpu ref vs cuda) |
+|---|--:|--:|--:|:--|
+| scan_page_pd | 3.12 / 2.63 / 2.64 s | **0.53 / 0.44 / 0.45 s** | 295 = 295 | max coord Δ **1.0 px**, max score Δ 0.007, 0 unmatched |
+| fox | 0.87-0.89 s | **0.30-0.31 s** | 10 = 10 | max coord Δ **0.0 px**, max score Δ 0.001, 0 unmatched |
+
+Walls include model load + CUDA init, so the det-stage ratio is even larger
+than the ~6x/~2.9x shown. Both arms fully deterministic across reps
+(intra-arm box lists identical); prob-map above-threshold pixel counts differ
+by 1 in 94k on the page. This is the dbnet sibling of the ppocr O11 verdict:
+**candidate default = GPU-graph det under CUDA-kind backends** (mirror
+`gpu_backend_pref.h`); before making it a DEFAULT, run the one remaining
+gate — a CUDA decoded-text roundtrip through a full dbnet pipeline
+(LEARNING 35), since ±1 px crops can move a recognizer's text.
+
+**LAYOUT_CONV_F16: the draw came up P100 again — the T4 question stays
+open.** On P100 the arm reproduces v2: warm Phase 1 65.5 ms (f32) vs 65.1 ms
+(f16) — time-neutral — with the known region drift 20→19 (a quality loss, so
+f16 stays gated on P100-class hardware). Re-push for a T4 draw when quota
+allows (delete-then-push).
+
+**Infra notes:** the ccache seed is HEALTHY — the harness warmed 829 files
+from `chr1s4/crispembed-ccache` (bare `.ccache` tree; Kaggle auto-extracts
+the seed's tar) and the CUDA build finished in ~2.3 min. v3's local
+"ccache: cold build" line was a false alarm (it only knew the tar layout;
+fixed). ⚠ The default `~/.kaggle/access_token` has ROTATED and resolves to
+chr1str — a bare push landed on the wrong account with the chr1s4 datasets
+silently dropped (kernel deleted; always export `KAGGLE_API_TOKEN`
+explicitly; `kaggle_usage.md` corrected).
+
 ## O7 increment 4: posformer measured FLAT — the BTTR verdict again; ppformulanet-l DEFERRED (box contended, arms unmeasurable) (Apple M1, 2026-08-07)
 
 Round-N+3 task 5, one engine per A/B. **posformer is NOT flipped**, by the
