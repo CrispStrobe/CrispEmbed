@@ -950,7 +950,48 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     out.hidden = (float *)malloc(out_D * n_merged * sizeof(float));
     std::memcpy(out.hidden, merger_out.data(), out_D * n_merged * sizeof(float));
 
-    // ── GLM vision parity status (2026-08-07, round-N+2 task 8) ──────────
+    // ── GLM vision parity: a METAL MISCOMPUTE (2026-08-07, round-N+2 t8) ─
+    //
+    // ARBITRATED against the real HF forward. The reference is CORRECT and the
+    // port is wrong on Metal only:
+    //
+    //                        vis_post_norm      vis_merger_output
+    //   CPU backend          cos_glob 1.000000  cos_glob 1.000000   PASS
+    //   Metal backend        cos_glob 0.958     cos_glob 0.940      FAIL
+    //
+    // Same f16 artifact, same reference, backend the only variable. So every
+    // Mac user of this engine has been running a degraded vision tower --
+    // a user-visible quality bug, not a harness artifact.
+    //
+    // The reference was cleared by running the REAL transformers
+    // GlmOcrVisionModel (5.15.0.dev0) on the identical synthetic input:
+    // fed in the image processor's merge-BLOCK patch order it reproduces the
+    // published ref GGUF at cos 1.000000 on vis_post_norm and
+    // vis_merger_output, with |HF| == |ref| at every layer. (Feeding raster
+    // order instead makes HF disagree from layer 0 -- the position ids are
+    // derived assuming block order, so patch ORDER is the thing to get right
+    // in any future dumper work. Tool: tools/hf_glm_vision_parity.py.)
+    //
+    // Localization so far, all measured, so do not re-derive:
+    //   - NOT the reference and NOT the dumper (HF agrees with both).
+    //   - NOT matmul precision: the CPU arm PASSES with f16 matmuls
+    //     (GLM_OCR_VISION_F16MM=1) as well as the default f32 cast, and
+    //     GGML_PREC_F32 on both attention matmuls changes Metal by nothing
+    //     (cos_glob 0.958 before and after -- tried and reverted).
+    //   - NOT a per-layer structural error: layer 0 is cos 1.000000 on Metal
+    //     too; the drift enters at layer 10 and cliffs at 13 (|mine| 1016.7
+    //     vs 855.4), which is where the activations first grow large. This
+    //     ViT reaches |x| ~86000 by layer 23.
+    //
+    // Next step for whoever picks this up: bisect the Metal graph on the
+    // GENUINE truncated output, not per-intermediate set_output snapshots --
+    // those are documented to read cos ~1.0 while the real forward is wrong on
+    // the Metal sched. GGML_SCHED_DEBUG=2 plus CRISPASR_METAL_PROFILE=3 are
+    // the tools. Suspect ops carrying the outliers: rms_norm and soft_max_ext
+    // at |x| ~1e5, and the ggml_cast(f16->f32) of every weight.
+    //
+    // The pre-arbitration notes below are kept because their measurements
+    // stand; only the "which side is wrong" question is now settled.
     //
     // The vision taps do NOT gate, and the handover's framing of that ("the
     // vis_merger tap is stale at cos 0.34") is wrong twice over: the merger is
