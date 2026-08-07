@@ -1,0 +1,17 @@
+{
+  "id": "chr1str/crispembed-t4-draw",
+  "title": "crispembed-t4-draw",
+  "code_file": "crispembed_t4_draw.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "chr1str/crispasr-hf-token",
+    "chr1str/crispembed-ccache"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
