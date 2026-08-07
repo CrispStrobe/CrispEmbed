@@ -75,12 +75,15 @@ computed over the WRONG AXIS for every engine until `0923def7`.
 
 ### Task queue — FABLE-tier
 
-1. **R8 ICB replay** (carried, untouched — still the top Metal-speed item):
-   the sched contract fix (`890278a8`) makes alloc-once/compute-many safe,
-   which is exactly what an MTLIndirectCommandBuffer replay needs. Metal
-   decode is per-op-dispatch bound; CUDA already has graph capture. Fork
-   work — ⚠ `git branch -r --contains <pin>` before pushing (two-lineage
-   trap).
+1. ~~**R8 ICB replay**~~ **CLOSED premise-failed 2026-08-07** (board row +
+   PERFORMANCE.md top): "Metal decode is per-op-dispatch bound" is false on
+   current main — the fork's own §210 probe (`CRISPASR_METAL_PROFILE=1`)
+   measures host-encode at **2.2%** (glm-ocr, 612-node steps) and **5.1%**
+   (got-ocr2, 916-node steps) of step total, confirming the recorded
+   2026-07-13 "82-89% GPU-execute" caveat this brief contradicted. ICB
+   collapses only the encode slice → ceiling 2-5%, below its complexity
+   budget. Joins R1/R2/R7 as premise-failed. Do not re-derive without a NEW
+   engine measuring encode-bound.
 2. ~~**Pageseg round 5 — the decoder levers, finally.**~~ **DONE 2026-08-07
    (`6a636a06`, board row below): the levers LOSE (beam/DAWG monotonically
    worse at 3-118x cost, closed), and the confidence signal alone reached
@@ -302,7 +305,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-07 | *(measure-only, main-tree binary at `6f69131e`)* | **Claimed (round N+3 task 1, premise check): R8 ICB replay carries a contradiction — the handover says "Metal decode is per-op-dispatch bound" but the recorded 2026-07-13 numbers say warm decode is 82-89% GPU-execute (ICB capped at the ~18% host slice, "NOT justified"). Re-measuring encode-vs-execute on got_ocr + glm_ocr decode with `CRISPASR_METAL_PROFILE` on current main before any fork work; outcome is either R8 closed premise-failed or a scoped implementation target | **IN PROGRESS** |
+| 2026-08-07 | *(measure-only, main-tree binary at `6f69131e`)* | **Round N+3 task 1 CLOSED premise-failed — R8 ICB replay is dead: Metal decode host-encode is 2-5%, not "per-op-dispatch bound".** The handover's premise contradicted the repo's own 2026-07-13 measurement ("82-89% GPU-execute, ICB caps at ~18%, NOT justified") and the fork already carries the purpose-built probe. `CRISPASR_METAL_PROFILE=1` on current main, decoded output verified both runs: glm-ocr q8_0 decode 612-node steps × 18 → encode **2.2%** (0.9 ms of 40.9 ms); got-ocr2 q4_k 916-node steps × 16 → encode **5.1%** (1.1 ms of 22.3 ms); vision/prefill graphs 0.9-1.4%. ICB collapses only the encode slice → ceiling 2-5% before its own plumbing costs. Joins R1/R2/R7. The Metal decode lever stays per-op kernel time; dispatch-bound belongs to CUDA where graph capture exists. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(landed via `perf/pageseg-round5`, merged `6a636a06`)* | **Round N+3 task 2 DONE — pageseg round 5: the decoder levers LOSE and are closed; a recognition-confidence floor reaches the ≤0.18 target at 0.1489.** recode-beam is monotonically worse than greedy (Fraktur CER 0.196→0.206/0.213/0.219 at widths 2/4/8, 3-12x stage time); +DAWG scoring recovers ~nothing (0.2037 w2, 0.2116 w4, prefix-bonus 0.2106) at 52-118x — `word_bonus` recomposes the whole prefix inside the beam-sort comparator. DAWG arms needed an artifact first: NO shipped tesseract GGUF carries the scorer's `dawg_names`+u8 channel, and `kv_u8_array` REQUIRES subtype UINT8 (python-list embed → INT32 → silent 0-graph load) — `tools/embed_tesseract_dawgs.py` does metadata surgery on an existing GGUF (tensors byte-identical, verified; `tesseract-frk-q8_0-seeded-dawg.gguf` in live-cache, greedy arm byte-identical). The winner was the residuals' other idea: junk regions (seal, faded-cursive sliver, footer+noise-band) decode at mean char conf 0.23-0.47 vs ≥0.70 for every real line → opt-in value-parsed `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` (~0.55; threshold-insensitive 0.50-0.65) takes Fraktur **0.1959→0.1489** / WER 0.397→0.333. OPT-IN because the harm side is real: 24-fixture arms show synth 20/20 byte-identical + receipt_historical 6.33→3.71, but 3 noisy CC0 scans measure worse vs official (+0.005..+0.062; kurrent junk-agreeing-with-junk, commons_example_receipt faint-but-real). Greedy-path only (beam fills no char_confs). Off-arm byte-identical to untouched main (sha `66ddee936331`), reproduced on the final rebuilt binary; 77/77 + 17/17 gates. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
@@ -4140,12 +4143,14 @@ session (after R2's deform loop and R4's "31.6 s cold").
 Prior correction retained: WMSA is window-parallel across `n_threads`
 (default follows `-t`).
 
-### R8 — ggml-metal ICB (indirect command buffer) replay
+### R8 — ggml-metal ICB (indirect command buffer) replay — **CLOSED premise-failed 2026-08-07**
 
-Metal decode is per-op-dispatch bound; CUDA-graph capture already solves the
-CUDA side. Highest ceiling of anything on this list and the highest cost —
-upstream-shaped work in the pinned `ggml` submodule, not an engine change.
-Listed so it is not rediscovered as a cheap idea.
+~~Metal decode is per-op-dispatch bound~~ — it is not, and the repo already
+knew (the 2026-07-13 "82-89% GPU-execute" note below survived this brief).
+Re-measured on current main with the fork's §210 probe: host-encode is 2.2%
+(glm-ocr) / 5.1% (got-ocr2) of a decode step, so an ICB replay's ceiling is
+2-5%. See the 2026-08-07 PERFORMANCE.md entry. Do not re-derive without a
+new engine that actually measures encode-bound.
 
 ### Explicitly NOT on this list
 
@@ -4254,9 +4259,10 @@ Kaggle batch (O8+O9) interleaved as the discrete-GPU unlock.
   default = f(engine, backend kind), so an A1000/CUDA user gets GPU conv
   engines while M1 keeps its measured CPU defaults. Mechanical once O8/O9
   supply verdicts.
-- **O12. R8 ggml-metal ICB replay** — upstream-shaped, highest Metal-decode
-  ceiling, weeks not days; CUDA already has graph capture so this is
-  Metal-only leverage.
+- ~~**O12. R8 ggml-metal ICB replay**~~ — **CLOSED premise-failed 2026-08-07**:
+  host-encode measured 2.2-5.1% of Metal decode steps on current main (§210
+  probe, glm-ocr + got-ocr2) — the "highest Metal-decode ceiling" was 2-5%.
+  See PERFORMANCE.md top.
 - **O13. Backlog hygiene** — (a) re-measure the remaining R-items' premises
   before investing (R1's stage split, R5's per-engine numbers); (b) **O13b
   DONE 2026-08-06** (`perf/ppocr-profile`) — and the base-rate forecast held:

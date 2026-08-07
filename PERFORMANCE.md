@@ -1,5 +1,31 @@
 # CrispEmbed Performance
 
+## R8 ICB replay CLOSED premise-failed: Metal decode host-encode is 2-5%, not "per-op-dispatch bound" (Apple M1, 2026-08-07)
+
+Round-N+3 task 1 carried "R8 ICB replay — still the top Metal-speed item:
+Metal decode is per-op-dispatch bound." The repo already contained the
+opposite, measured (2026-07-13, "82-89% GPU-execute … ICB caps at ~18% and is
+NOT justified"), and the fork already carries the purpose-built probe
+(`CRISPASR_METAL_PROFILE=1`, the §210 ICB-feasibility split: encode+commit =
+what an ICB replay collapses, GPU execute+sync = what it cannot touch).
+Re-measured on current `main` (`6f69131e`, fork pin `890278a8`), decoded
+output verified correct in both runs:
+
+| engine (fox.png, 64-token cap) | per-step graph | steps | mean encode | mean total | **encode share** |
+|---|--:|--:|--:|--:|--:|
+| glm-ocr q8_0 decode | 612 nodes | 18 | 0.9 ms | 40.9 ms | **2.2%** |
+| got-ocr2 q4_k decode | 916 nodes | 16 | 1.1 ms | 22.3 ms | **5.1%** |
+| glm vision/prefill graphs | 614-1679 nodes | — | — | — | 0.9-1.4% |
+
+An MTLIndirectCommandBuffer replay collapses only the encode column →
+**ceiling 2-5% on the heaviest Metal decoders**, before its own costs
+(ICB-compatible kernel plumbing, alloc-once contract on every replayed
+graph). Host-side contention inflates encode, so the true share is if
+anything lower. The handover's premise is dead on both engines; the queue
+item is closed, joining R1/R2/R7 as premise-failed-on-measurement. The real
+Metal decode lever remains per-op kernel time (the R6/flat-im2col family);
+the dispatch-bound story belongs to CUDA, where graph capture already exists.
+
 ## Pageseg round 5: the decoder levers measured — recode-beam/DAWG LOSE on CER at 3-52x the cost; a recognition-confidence floor is what actually reaches ≤0.18 (Fraktur 0.196 → 0.149, opt-in) (Apple M1, 2026-08-07)
 
 Round-N+3 task 2. The brief said `--recode-beam`/`--dawg-score` were "the only
