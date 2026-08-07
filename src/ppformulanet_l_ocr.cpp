@@ -663,6 +663,19 @@ static void run_encoder_graph(ppformulanet_l_ocr_context * ctx, const float * rg
     // ---------------------------------------------------------------
     // Step 3: Neck + Projector (on CPU -- small ops)
     // ---------------------------------------------------------------
+    // O7 attribution timer: the 4 conv2d_cpu calls below (neck1 1x1,
+    // neck2 3x3, proj1/proj2 3x3 stride-2) are the mk-reachable candidates;
+    // this print separates them from the ViT graph and the dequant/reorder
+    // work so the A/B reads conv share directly.
+    //
+    // O7 adoption (quiet-M1 nt1 A/B, 3 interleaved pairs, formula_quadratic
+    // q4_k, outputs byte-identical sha 302819ecbd41 both arms): the mk
+    // micro-kernel takes this block 453-467 -> 311-320 ms (-31%); whole-run
+    // process CPU only -1.9% (5.14 -> 5.04 s user) because the engine is
+    // decoder-bound — recorded honestly. Env keeps absolute precedence
+    // (CRISPEMBED_CONV2D_MK=0 restores the reference loop here).
+    core_cpu::conv2d_prefs_scope conv_prefs(/*mk=*/true, ctx->n_threads);
+    auto t_neck = std::chrono::steady_clock::now();
     int nC = hp.output_channels;
     std::vector<float> nchw(C * nP * nP);
     for (int y = 0; y < nP; y++)
@@ -695,6 +708,10 @@ static void run_encoder_graph(ppformulanet_l_ocr_context * ctx, const float * rg
     auto pc2_w = to_f32(ctx->proj_conv2_w);
     std::vector<float> pc2(out_ch * h2 * w2);
     conv2d_cpu(pc1.data(), pc2.data(), pc2_w.data(), nullptr, mid_ch, out_ch, h1, w1, 3, 3, 2, 1, 1);
+
+    if (ctx->bench)
+        fprintf(stderr, "[ppfn_l-bench] neck+proj convs: %.1f ms\n",
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_neck).count());
 
     int n_tokens = h2 * w2;
     std::vector<float> flat(n_tokens * out_ch);
