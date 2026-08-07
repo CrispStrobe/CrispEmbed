@@ -1,5 +1,5 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/crispembed-p2s-decode-ab",
+  "id": "${KAGGLE_ACCOUNT}/crispembed-pix2struct-decode-ab",
   "title": "CrispEmbed Pix2Struct Decode AB",
   "code_file": "crispembed_p2s_decode_ab.py",
   "language": "python",
