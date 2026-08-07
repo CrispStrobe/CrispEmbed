@@ -1,6 +1,6 @@
 # CrispEmbed Performance
 
-## GLM-OCR vision is a METAL MISCOMPUTE — arbitrated against the real HF forward; CPU is exact, Metal ships a degraded vision tower to every Mac user (Apple M1, 2026-08-07)
+## GLM-OCR vision on Metal: CPU is reference-exact, Metal diverges by AMPLIFICATION — decoded output moves only on the hardest fixture (Apple M1, 2026-08-07)
 
 Round-N+2 task 8, concluded. The earlier entry below established WHERE the
 divergence is (a layer-13 cliff, not the "stale merger tap" the handover
@@ -22,8 +22,20 @@ backend the only variable:
 | **CPU** | **1.000000** | **1.000000** | PASS |
 | **Metal** | 0.958 | 0.940 | FAIL |
 
-So this is a user-visible quality bug — every Mac user of the GLM-OCR engine has
-been running a degraded vision tower — not a harness artifact.
+**⚠ Severity, corrected by measurement.** An earlier revision of this entry said
+"every Mac user runs a degraded vision tower". That was too strong — it read a
+per-stage cosine on a *synthetic gradient probe* (which maximises the
+ill-conditioning) as if it were an output claim. The decoded-output test,
+Metal vs CPU on the q8 artifact:
+
+| fixture | Metal | CPU | |
+|---|--:|--:|:--|
+| fox | 51 B | 51 B | **identical** |
+| scan_strip | 555 B | 555 B | **identical** |
+| german_kurrent_handwriting | 357 B | 361 B | **differs** (hyphen/spacing) |
+
+Clean inputs are byte-identical; only the hardest fixture moves. Real and worth
+fixing, but not a catastrophe.
 
 **⚠ Patch order is the trap that nearly inverted the verdict.** HF derives its
 vision position ids assuming the image processor's merge-**block** patch order.
@@ -45,12 +57,34 @@ ordering right before believing a divergence. Tool vendored as
   activations first grow large. This ViT reaches |x| ~86000 by layer 23, past
   F16's 65504 ceiling.
 
-**Next step**: bisect the Metal graph on the GENUINE truncated output, never on
-per-intermediate `set_output` snapshots — those are documented to read cos ~1.0
-while the real Metal forward is wrong. `GGML_SCHED_DEBUG=2` +
-`CRISPASR_METAL_PROFILE=3`. Suspect ops are the ones carrying the outliers:
-`rms_norm` and `soft_max_ext` at |x| ~1e5, and the `ggml_cast(f16→f32)` applied
-to every weight.
+**Bisection done, on genuine truncated output.** Two permanent diagnostics were
+added for it — `GLM_OCR_VISION_MAX_LAYERS=N` (runs N blocks and returns the real
+graph output, post-norm skipped) and `GLM_OCR_DUMP_VIS_OUTPUT=<path>` — because
+`set_output` snapshots are documented to read cos ~1.0 on the Metal sched while
+the real forward is wrong. Metal vs CPU at the same depth:
+
+| depth | cos(metal,cpu) | max_abs | rel |
+|---|--:|--:|--:|
+| N=1 | 0.99999987 | 0.0031 | ~5.7e-6 |
+| N=2 | 0.99999969 | 0.0060 | ~7e-6 |
+
+So the divergence **starts at ordinary f32 reduction-order magnitude** and is
+then amplified: the error grows ~1.7×/layer while the signal grows only
+~1.24×, compounding to cos_glob 0.956 by post_norm. That is the signature of an
+ill-conditioned stack (|x| reaches ~86000), not of one broken kernel — which is
+why no single op accounts for it, and why the CPU arm, sharing BLAS-style
+reduction order with the numpy reference, tracks it to cos 1.000000.
+
+**Clean negative worth recording** (do not redo): the sched *did* place the
+graph's first weight-less `RMS_NORM` and its leaf input on CPU — exactly the
+dev-guide gotcha — with `GGML_SCHED_DEBUG=2` showing `SPLIT #1: CPU` and both
+`node_2` and `vis_embed_in` crossing the boundary. `GLM_OCR_VISION_PIN_INPUT=1`
+removes that split entirely (single MTL0 split, no copies) and the divergence is
+**unchanged**. The guide predicted this ("pinning the input … do NOT fix it").
+The gate ships opt-in since it wins nothing measured.
+
+**Mitigation available today**: `GLM_OCR_FORCE_CPU=1` for reference-faithful
+vision where that matters more than speed.
 
 Environment note: this required upgrading the conda `transformers` 4.57.6 →
 5.15.0.dev0 (plus `huggingface_hub` 0.36.2 → 1.26.1 and `safetensors` 0.5.3 →
