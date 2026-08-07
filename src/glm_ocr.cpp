@@ -950,6 +950,60 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     out.hidden = (float *)malloc(out_D * n_merged * sizeof(float));
     std::memcpy(out.hidden, merger_out.data(), out_D * n_merged * sizeof(float));
 
+    // ── GLM vision parity status (2026-08-07, round-N+2 task 8) ──────────
+    //
+    // The vision taps do NOT gate, and the handover's framing of that ("the
+    // vis_merger tap is stale at cos 0.34") is wrong twice over: the merger is
+    // not the first divergence, and nothing about it is known to be stale.
+    // With correct row splitting and the magnitude columns (both fixed in the
+    // same commit as this note), the picture against
+    // glm-ocr-ref-2026-08-07.gguf on the synthetic gradient image is:
+    //
+    //   layers 0-9    cos_min >= 0.9996, cos_glob ~1.000000    clean
+    //   layers 10-12  cos_min 0.998 -> 0.981, cos_glob 0.9986  drift
+    //   layer 13      cos_min 0.369, cos_glob 0.888            CLIFF
+    //                 |mine| 1016.7 vs |ref| 855.4  (+18.8%)
+    //   layer 15      cos_min -0.111, cos_glob 0.688, |x| ~11.8k
+    //   layer 23      |x| ~86k on both sides
+    //
+    // Layer 13 takes an input matching to 0.19% and produces an output 18.8%
+    // larger, while the reference's SHRINKS 0.5%. cos_mean stays 0.91-0.99
+    // while cos_glob craters, so the disagreement lives in a few
+    // very-high-magnitude dimensions -- this stack has massive activations,
+    // and the L14->L15 step alone has a gain of ~9x on both sides.
+    //
+    // Ruled OUT by measurement:
+    //   - weight quantization: the q8_0 artifact reproduces the same cliff
+    //     (|mine| 1014.2 vs f16's 1016.7 against |ref| 855.4), so 4x coarser
+    //     weights move the port 0.25% against an 18.8% gap;
+    //   - a broken f16 conversion: no inf/nan anywhere in the vision weights,
+    //     and max|w| a uniform 1.6-3.1 across all 24 blocks;
+    //   - a per-LAYER structural difference: HF GlmOcrVisionModel.forward
+    //     (transformers 5.0.1dev0, GlmOcrForConditionalGeneration) applies an
+    //     IDENTICAL block to every layer, so nothing can be special about 13.
+    //
+    // NOT ruled out, and the leading hypothesis: arithmetic amplification.
+    // q8-vs-f16 varies only weight PRECISION and shares this graph's op order
+    // and f32 accumulation, so it cannot speak to op-order differences against
+    // a numpy f32 reference -- and with ~9x per-layer gain, a small input
+    // difference in an amplifying direction suffices.
+    //
+    // Which side is wrong CANNOT be settled from here: it needs the real HF
+    // forward on the same input (the standing rule -- and this dumper has been
+    // wrong once already, the 097978cd rope pairing). The LLM taps read
+    // cos 1.000000 at all 16 layers because that fix HF-anchored them; the
+    // VISION sections were never re-anchored, which fits the split exactly.
+    //
+    // Concrete lead for whoever picks this up, UNVERIFIED: HF merges 2x2 with
+    //   hidden_states.view(-1, merge, merge, C).permute(0, 3, 1, 2)
+    // i.e. over four CONSECUTIVE sequence positions, which is a spatial 2x2
+    // only because the image processor pre-orders patches into merge blocks.
+    // This diff path feeds raw raster-ordered pixels straight to
+    // encode_vision(), bypassing that reordering, while both the port and the
+    // dumper take a genuine 2D window of the 24x24 grid. On the synthetic
+    // input those two groupings differ, which would hit vis_merger_output on
+    // top of whatever it inherits from layer 13. Check the processor ordering
+    // before acting on it.
     // Diff comparison
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;

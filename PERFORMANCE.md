@@ -1,5 +1,83 @@
 # CrispEmbed Performance
 
+## GLM vision parity: the "stale merger tap" is a layer-13 cliff, and cos_min itself was measured over the WRONG axis for every engine (Apple M1, 2026-08-07)
+
+Round-N+2 task 8. The brief was "fix the `vis_merger_output` staleness (cos
+0.34) so the vision sections gate again". Re-measuring first (prime directive)
+overturned both halves of that: the merger is not the first divergence, and
+nothing about it is known to be stale.
+
+**Harness bug first — `cos_min` was computed over the SLOW axis.**
+`crispembed_diff::Ref::compare()` defaulted its row size to `shape.back()`.
+`shape` is GGUF dims in ne order and the dumpers write numpy `(n_tokens, D)`
+row-major, which gguf stores as `ne = [D, n_tokens]` — so `back()` is
+`n_tokens`. Rows were arbitrary slices straddling token boundaries (GLM vision:
+576-float slices of 1024-float tokens, **0.5625 tokens each**), and `cos_min` —
+whose whole purpose is to isolate "a single mishandled token position" — was
+computed over groupings corresponding to nothing. It survived because identical
+data gives cos 1.0 under *any* grouping, so every at-reference-precision stage
+still read 1.000000; the number only turns to nonsense once there is a
+difference to measure, i.e. exactly when it is relied on. `test_dbnet_diff.cpp`
+was already passing `row_dim=0` explicitly — the right conclusion, reached once
+and never generalised. **This changes reported `cos_min` for every engine**
+(GLM `vis_layer_0` 0.999998 → 1.000000, `vis_merger_output` 0.3398 → 0.4437).
+
+**Then the actual picture** — visible only after adding `|mine|`/`|ref|` and the
+aggregate cosines, which were already on the `Report` and simply never printed
+(HARD RULE #2b, again):
+
+| stage | cos_min | cos_glob | cos_mean | \|mine\| | \|ref\| |
+|---|--:|--:|--:|--:|--:|
+| vis_layer_9 | 0.9996 | 0.99998 | 0.99998 | 1045.0 | 1045.0 |
+| vis_layer_12 | 0.9809 | 0.9986 | 0.9988 | 861.1 | 859.5 |
+| **vis_layer_13** | **0.3687** | **0.8883** | 0.9899 | **1016.7** | **855.4** |
+| vis_layer_15 | −0.1115 | 0.6882 | 0.9721 | 11566 | 11832 |
+| vis_layer_23 | −0.0149 | 0.8264 | 0.9621 | 86223 | 86006 |
+| vis_post_norm | −0.0315 | 0.9581 | 0.9608 | 677.9 | 678.9 |
+| vis_merger_output | 0.4437 | 0.9404 | 0.9406 | 22.24 | 22.36 |
+| llm_layer_0..15 | 1.000000 | 1.000000 | 1.000000 | — | — |
+
+Layer 13 takes an input matching to 0.19% and emits one **18.8% larger**, while
+the reference's *shrinks* 0.5%. `cos_mean` stays 0.91–0.99 while `cos_glob`
+craters, so the disagreement lives in a few very-high-magnitude dimensions: this
+stack has massive activations (|x| 861 → 86000 over ten layers, with a ~9× gain
+in the L14→L15 step alone).
+
+**Ruled out by measurement:** weight quantization — the q8_0 artifact reproduces
+the same cliff (|mine| 1014.2 vs f16's 1016.7 against |ref| 855.4), so 4× coarser
+weights move the port 0.25% against an 18.8% gap; a broken f16 conversion — no
+inf/nan anywhere in the vision weights and max|w| a uniform 1.6–3.1 across all 24
+blocks; and a per-*layer* structural difference — HF `GlmOcrVisionModel.forward`
+(transformers 5.0.1dev0, `GlmOcrForConditionalGeneration`, fetched and read)
+applies an identical block to every layer, so nothing can be special about 13.
+
+**Not ruled out, and the leading hypothesis: arithmetic amplification.** q8-vs-f16
+varies only weight *precision* and shares the port's op order and f32
+accumulation, so it says nothing about op-order differences against a numpy f32
+reference — and at ~9× per-layer gain a small input difference in an amplifying
+direction is enough. (An earlier reading of that q8 result as proof of a
+structural cause was too strong and is corrected here.)
+
+**Which side is wrong is NOT settled, by design.** It needs the real HF forward
+on the same input — the standing rule, and this dumper has already been wrong
+once (the `097978cd` rope pairing). The GLM-OCR weights are not in the local
+cache and the designated volume is at 100%, so no port or dumper math was
+touched. Supporting evidence for the dumper being the suspect: the LLM taps read
+cos 1.000000 at all 16 layers because the rope fix HF-anchored them, while the
+vision sections were never re-anchored.
+
+**Concrete lead recorded at the code site, UNVERIFIED**: HF merges 2×2 with
+`hidden_states.view(-1, merge, merge, C).permute(0, 3, 1, 2)` — four
+*consecutive sequence positions*, which is a spatial 2×2 only because the image
+processor pre-orders patches into merge blocks. The diff path feeds raw
+raster-ordered pixels straight to `encode_vision()`, bypassing that reordering,
+while both the port and the dumper take a genuine 2D window of the 24×24 grid.
+On the synthetic input those groupings differ, which would hit
+`vis_merger_output` on top of what it inherits from layer 13.
+
+Gates: orchestrator suite 77/77; `test-env-gate` / `test-no-repeat-ngram` /
+`test-imatrix-alias` green; full build clean.
+
 ## Pageseg round 4: the H9 router never had better segmentation params — it had CLEANUP; the coupling is unbundled and the explicit-classical contract restored (Apple M1, 2026-08-07)
 
 Round-N+2 task 2. The handover recorded "the router path BEATS the forced-classical
