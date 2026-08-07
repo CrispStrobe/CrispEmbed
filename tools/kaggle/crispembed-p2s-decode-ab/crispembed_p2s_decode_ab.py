@@ -187,10 +187,14 @@ def run(label, model, img, env=None, timeout=1200):
     return (p.stdout, stages, ok) if ok else None
 
 
+# v2 (after the v1 verdict flipped the per-kind default): the TRUE DEFAULT
+# arm must be measured directly (HMER lesson — forced arms cannot tell you
+# what the default does). "default" carries no env; on this CUDA box it must
+# match "cuda" (path=ggml, ~9x decoder) and "base" must still force scalar.
 ARMS = (
-    ("base", {}),
-    ("encgpu", {"CRISPEMBED_PIX2STRUCT_ENC_GPU": "1"}),
-    ("ggmlcpu", {"CRISPEMBED_PIX2STRUCT_GGML_DECODE": "1"}),
+    ("default", {}),
+    ("base", {"CRISPEMBED_PIX2STRUCT_ENC_GPU": "0", "CRISPEMBED_PIX2STRUCT_GGML_DECODE": "0"}),
+    ("ggmlcpu", {"CRISPEMBED_PIX2STRUCT_ENC_GPU": "0", "CRISPEMBED_PIX2STRUCT_GGML_DECODE": "1"}),
     ("cuda", {"CRISPEMBED_PIX2STRUCT_ENC_GPU": "1", "CRISPEMBED_PIX2STRUCT_GGML_DECODE": "1"}),
 )
 
@@ -238,8 +242,7 @@ kh.step("p2s.f16.fox")
 f16 = get("cstr/pix2struct-GGUF", "pix2struct-textcaps-f16.gguf")
 if f16:
     ftexts = {}
-    for name in ("base", "cuda"):
-        env = dict(ARMS[0][1] if name == "base" else ARMS[3][1])
+    for name, env in (("base", dict(ARMS[1][1])), ("cuda", dict(ARMS[3][1]))):
         r = run(f"f16.fox.{name}", f16, IMG_FOX, env)
         if r:
             ftexts[name] = r[0]
