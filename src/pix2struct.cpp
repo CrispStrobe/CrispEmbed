@@ -82,8 +82,9 @@ struct pix2struct_context {
     // Weight storage
     core_gguf::WeightLoad wl;
 
-    // ggml backend (CPU by default; CRISPEMBED_PIX2STRUCT_ENC_GPU=1 makes it
-    // the best GPU backend with backend_cpu as the sched fallback — O3)
+    // ggml backend (CPU by default on Metal/CPU-only boxes; auto-GPU when a
+    // CUDA device is present, or CRISPEMBED_PIX2STRUCT_ENC_GPU=1 forces the
+    // best GPU backend with backend_cpu as the sched fallback — O3 + N+4)
     ggml_backend_t backend;
     ggml_backend_t backend_cpu;
 
@@ -142,7 +143,8 @@ struct pix2struct_context {
     // Per-token confidence (softmax probability of greedy-selected token)
     std::vector<float> char_confidences;
 
-    // Phase 4 (opt-in, CRISPEMBED_PIX2STRUCT_GGML_DECODE): decode step as a
+    // Phase 4 (CRISPEMBED_PIX2STRUCT_GGML_DECODE; default ON when the weights
+    // sit on a CUDA backend, opt-in elsewhere): decode step as a
     // single-backend ggml graph with device-resident self/cross KV.
     struct dec_ggml_state {
         ggml_context * kv_ctx = nullptr;
@@ -203,10 +205,32 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     // its whole encoder graph runs here — yet the thread count was discarded
     // with (void)n_threads, so every caller's -t silently ran ggml's default.
     //
-    // O3 (opt-in): CRISPEMBED_PIX2STRUCT_ENC_GPU=1 puts the encoder sched on
+    // O3: CRISPEMBED_PIX2STRUCT_ENC_GPU puts the weights + encoder sched on
     // the best GPU backend (got_ocr/R4 pattern: GPU + CPU fallback, guarded
-    // set_n_threads). Default stays CPU until the A/B wins speed AND quality.
-    const bool enc_gpu = core_env::on("CRISPEMBED_PIX2STRUCT_ENC_GPU");
+    // set_n_threads).
+    //
+    // Round N+4 per-backend-kind default (O11 pattern): a CUDA device present
+    // => weights load on the GPU so the ggml decode graph runs there — the
+    // P100 A/B (chr1s4/crispembed-pix2struct-decode-ab v1) measured decoder
+    // 3640-3700 -> 376-431 ms (~9x, q8_0) / 4606 -> 360 ms (f16), decoded
+    // text byte-identical in all arms, encoder within noise. Metal/CPU-only
+    // boxes keep the CPU default (Metal enc measured no win; O3). =0 forces
+    // CPU, =1 forces GPU (either kind), unset = the per-kind default.
+    auto cuda_device_present = [] {
+        for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
+            ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+            if (ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_GPU) continue;
+            const char * n = ggml_backend_dev_name(dev);
+            if (n && (n[0] == 'C' || n[0] == 'c') && (n[1] == 'U' || n[1] == 'u')) return true; // "CUDA0"
+        }
+        return false;
+    };
+    bool enc_gpu;
+    if (const char * eg = getenv("CRISPEMBED_PIX2STRUCT_ENC_GPU"); eg && eg[0]) {
+        enc_gpu = eg[0] != '0';
+    } else {
+        enc_gpu = cuda_device_present();
+    }
     ctx->backend = enc_gpu ? crispasr_init_gpu_backend() : nullptr;
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) {
@@ -991,9 +1015,20 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
     // Pre-compute cross-attn K/V (once per encoder call)
     precompute_cross_kv(ctx);
 
-    // Phase 4 opt-in: ggml decode-step graph with device-resident KV.
-    static const bool ggml_decode_env = core_env::on("CRISPEMBED_PIX2STRUCT_GGML_DECODE");
-    const bool use_ggml = ggml_decode_env && dec_ggml_prepare(ctx, max_tokens + 1);
+    // Phase 4: ggml decode-step graph with device-resident KV. Per-backend-
+    // kind default (P100 A/B: decoder ~9x q8_0 / ~12.8x f16, decoded text
+    // byte-identical): weights on a CUDA backend => ggml decode; elsewhere
+    // the scalar loop stays the default. =0 forces scalar, =1 forces the
+    // ggml graph on whatever backend holds the weights (CPU/Metal proven
+    // byte-identical locally), unset = the per-kind default.
+    bool want_ggml;
+    if (const char * ge = getenv("CRISPEMBED_PIX2STRUCT_GGML_DECODE"); ge && ge[0]) {
+        want_ggml = ge[0] != '0';
+    } else {
+        const char * bn = ggml_backend_name(ctx->backend);
+        want_ggml = bn && (bn[0] == 'C' || bn[0] == 'c') && (bn[1] == 'U' || bn[1] == 'u'); // "CUDA0"
+    }
+    const bool use_ggml = want_ggml && dec_ggml_prepare(ctx, max_tokens + 1);
     if (ctx->bench) fprintf(stderr, "[pix2struct-bench] decode path: %s\n", use_ggml ? "ggml" : "scalar");
 
     if (!use_ggml) {
