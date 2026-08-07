@@ -381,6 +381,36 @@ static inline void linear_cpu(const float * in, float * out, int in_dim, int out
     }
 }
 
+// Row-parallel linear: splits out_dim across nt fork-join threads. Each
+// output element keeps the exact single-thread dot order, so the result is
+// BITWISE-IDENTICAL to linear_cpu at any nt. The out_dim floor keeps the
+// fork-join overhead away from small projections — this exists for
+// vocab-sized heads and other wide single-token matvecs on the handwritten
+// decoder paths (first user: pix2struct's 768x50244 lm_head).
+static inline void linear_cpu_mt(const float * in, float * out, int in_dim, int out_dim, const float * w,
+                                 const float * b, int nt) {
+    if (nt <= 1 || out_dim < 4096) {
+        linear_cpu(in, out, in_dim, out_dim, w, b);
+        return;
+    }
+    if (nt > out_dim) nt = out_dim;
+    std::vector<std::thread> pool;
+    pool.reserve((size_t)nt - 1);
+    const int chunk = (out_dim + nt - 1) / nt;
+    auto run = [&](int o0, int o1) {
+        for (int o = o0; o < o1; o++) {
+            float s = dot_product(in, w + (size_t)o * in_dim, in_dim);
+            out[o] = s + (b ? b[o] : 0.0f);
+        }
+    };
+    for (int t = 1; t < nt; t++) {
+        const int o0 = t * chunk, o1 = std::min(out_dim, o0 + chunk);
+        if (o0 < o1) pool.emplace_back(run, o0, o1);
+    }
+    run(0, std::min(out_dim, chunk));
+    for (auto & th : pool) th.join();
+}
+
 // ---------------------------------------------------------------------------
 // Linear batched (matrix-matrix multiply): N tokens at once
 // ---------------------------------------------------------------------------

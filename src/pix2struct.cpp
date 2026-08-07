@@ -92,6 +92,9 @@ struct pix2struct_context {
 
     int enc_layers, dec_layers, hidden, n_heads, d_kv, d_ff;
     int vocab_size, patch_size, max_patches;
+    int n_threads = 1;
+    // T5 sentencepiece pieces from tokenizer.tokens (empty on old GGUFs).
+    std::vector<std::string> vocab;
     int rel_buckets, rel_max_dist;
     float rms_eps;
 
@@ -174,6 +177,7 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     ctx->rel_buckets = (int)core_gguf::kv_u32(meta, "pix2struct.rel_attn_buckets", 32);
     ctx->rel_max_dist = (int)core_gguf::kv_u32(meta, "pix2struct.rel_attn_max_dist", 128);
     ctx->eos_id = (int)core_gguf::kv_u32(meta, "tokenizer.eos_token_id", 1);
+    ctx->vocab = core_gguf::kv_str_array(meta, "tokenizer.tokens");
     ctx->pad_id = (int)core_gguf::kv_u32(meta, "tokenizer.pad_token_id", 0);
     ctx->rms_eps = 1e-6f;
     core_gguf::free_metadata(meta);
@@ -194,6 +198,7 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
         return nullptr;
     }
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, std::max(1, n_threads));
+    ctx->n_threads = std::max(1, n_threads);
     if (!core_gguf::load_weights(model_path, ctx->backend, "pix2struct", ctx->wl)) {
         ggml_backend_free(ctx->backend);
         delete ctx;
@@ -690,7 +695,10 @@ static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id, 
 
     // Final norm + LM head
     rms_norm(ds.x.data(), H, ctx->dc.get(ctx->final_norm), ctx->rms_eps, ds.final_h.data());
-    core_cpu::linear_cpu(ds.final_h.data(), logits, H, ctx->vocab_size, ctx->dc.get(ctx->lm_head), nullptr);
+    // The 768x50244 lm_head is the single largest per-step matvec — row-split
+    // it across the engine's threads (bitwise-identical to the 1t path).
+    core_cpu::linear_cpu_mt(ds.final_h.data(), logits, H, ctx->vocab_size, ctx->dc.get(ctx->lm_head), nullptr,
+                            ctx->n_threads);
 }
 
 // ── Public decode API for parity testing ──
@@ -774,8 +782,36 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
         ctx->char_confidences.push_back(1.0f / se);
     }
 
-    // Token ids as comma-separated string (same as original — no tokenizer yet)
+    // Detokenize via the T5 sentencepiece pieces the converter has always
+    // written to tokenizer.tokens — the engine just never read them (output
+    // was raw comma-separated ids). '\xE2\x96\x81' (U+2581) marks a word
+    // start -> space; <0xNN> byte-fallback pieces decode to their raw byte;
+    // other <...> specials are skipped. PIX2STRUCT_RAW_IDS=1 (or an old GGUF
+    // without tokenizer.tokens) restores the id output.
     std::string result;
+    const bool raw_ids = core_env::on("PIX2STRUCT_RAW_IDS") || ctx->vocab.empty();
+    if (!raw_ids) {
+        for (size_t i = 1; i < generated.size(); i++) {
+            const int id = generated[i];
+            if (id < 0 || id >= (int)ctx->vocab.size()) continue;
+            const std::string & piece = ctx->vocab[id];
+            if (piece.size() >= 2 && piece.front() == '<' && piece.back() == '>') {
+                if (piece.size() == 6 && piece.compare(0, 3, "<0x") == 0) {
+                    result += (char)strtol(piece.c_str() + 3, nullptr, 16);
+                }
+                continue; // <pad>, </s>, <unk>, extra_id specials
+            }
+            std::string p = piece;
+            size_t pos = 0;
+            while ((pos = p.find("\xE2\x96\x81", pos)) != std::string::npos) {
+                p.replace(pos, 3, " ");
+                pos += 1;
+            }
+            result += p;
+        }
+        if (!result.empty() && result.front() == ' ') result.erase(0, 1);
+        return result;
+    }
     for (size_t i = 1; i < generated.size(); i++) {
         if (i > 1) result += ",";
         result += std::to_string(generated[i]);
