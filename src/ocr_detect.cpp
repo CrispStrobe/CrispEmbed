@@ -182,8 +182,31 @@ bool load(context ** out, const char * path, int n_threads) {
     // get_rows, which Metal supports — see dequant_rows_f32) and can be opted
     // into with OCR_DETECT_USE_GPU=1, e.g. for benchmarking or a future faster
     // conv-transpose kernel. OCR_DETECT_FORCE_CPU=1 forces CPU and overrides it.
+    //
+    // Round N+4 (mirrors the ppocrv6_det O11 flip): the Metal verdict is NOT
+    // the CUDA verdict — det-only DBNet on CUDA is ~6x with box-equivalent
+    // output (Δ≤1.0px, 0 unmatched, deterministic; conv-ab v3+v4) and the
+    // dbnet+TrOCR decoded-text roundtrip passed on CUDA (dbnet-rt kernel).
+    // So the default is per-backend-kind: a CUDA device present => det
+    // computes on the GPU; Metal/CPU-only boxes keep the CPU default above.
+    // OCR_DETECT_USE_GPU=0 forces CPU, =1 forces the GPU path (either kind);
+    // unset = the per-kind default.
     bool force_cpu = (getenv("OCR_DETECT_FORCE_CPU") && atoi(getenv("OCR_DETECT_FORCE_CPU")));
-    bool use_gpu = (getenv("OCR_DETECT_USE_GPU") && atoi(getenv("OCR_DETECT_USE_GPU")));
+    auto cuda_device_present = [] {
+        for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
+            ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+            if (ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_GPU) continue;
+            const char * n = ggml_backend_dev_name(dev);
+            if (n && (n[0] == 'C' || n[0] == 'c') && (n[1] == 'U' || n[1] == 'u')) return true; // "CUDA0"
+        }
+        return false;
+    };
+    bool use_gpu;
+    if (const char * eg = getenv("OCR_DETECT_USE_GPU"); eg && eg[0]) {
+        use_gpu = atoi(eg) != 0;
+    } else {
+        use_gpu = cuda_device_present();
+    }
     ctx->backend = (use_gpu && !force_cpu) ? crispasr_init_gpu_backend_shared() : ggml_backend_cpu_init();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
