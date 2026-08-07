@@ -4,7 +4,90 @@ Lightweight, dependency-free text/image/audio embedding inference via ggml.
 Same philosophy as CrispASR: pure C/C++, GGUF models, quantisation,
 GPU-ready via ggml backends (CUDA/Metal/Vulkan), no Python at runtime.
 
-## HANDOVER — OCR round N+3 (written 2026-08-07, after the parity-arbitration session)
+## HANDOVER — OCR round N+4 (written 2026-08-07, after the round-N+3-consumption session)
+
+**Read before doing anything:** this section; the ~7 DONE board rows below
+(archive them + the round-N+3 handover to HISTORY as your first hygiene act);
+the top ~5 dated `PERFORMANCE.md` sections; `../crispasr-crispembed-dev.md`
+incl. both 2026-08-06/07 addenda; `../kaggle_usage.md` (tokens there, NEVER
+here — and it gained a wrong-account-push warning this round: ALWAYS export
+`KAGGLE_API_TOKEN` explicitly, the default `access_token` rotated to chr1str).
+
+### Prime directive (it won five times this round)
+
+**Re-measure the named bottleneck / re-run the real reference BEFORE
+implementing the prescribed fix.** This round: (1) the pageseg brief's
+decoder levers LOSE (beam/DAWG monotonically worse at 3-118x — the
+confidence floor the residuals named reached ≤0.18 instead); (2) R8 ICB was
+premise-dead by the fork's own 20-minute probe; (3) the "det-diff FAIL"
+was a stale reference — the ports were always right; (4) posformer's
+conv-heavy stage was NOT mk-reachable (encoder is a ggml graph); (5) a
+"cold build" line was the kernel's own false alarm. Also: **never record a
+timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
+2x same-arm spread — deferred, not guessed).
+
+### State snapshot (all on `main`, tip `abccbb57`+, CI green through `6f69131e`-tier gates)
+
+- **Tesseract lane CER 0.1489** (from 0.196; ≤0.18 target REACHED) via
+  opt-in `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE≈0.55` — junk decodes at
+  mean conf 0.23-0.47 vs ≥0.70 real; opt-in because 3 noisy CC0 scans lose
+  agreement-CER. Beam/DAWG closed (needs new scoring weights to reopen);
+  `tools/embed_tesseract_dawgs.py` + `tesseract-frk-q8_0-seeded-dawg.gguf`
+  exist for that day (⚠ dawg payloads MUST be GGUF subtype UINT8).
+- **R8 ICB replay CLOSED premise-failed**: Metal decode host-encode is 2.2%
+  (glm) / 5.1% (got) by the §210 probe. Metal decode lever = per-op kernel
+  time, not dispatch. Do not re-derive without an encode-bound engine.
+- **ppocr det ports vindicated**: the fox-ref FAIL was stale references all
+  the way down; fresh dated refs
+  `PP-OCRv6_{medium,small}_det-fox-ref-20260807.gguf` in live-cache; every
+  pre-`0923def7` recorded verdict re-read and confirmed standing.
+- **DBNet det on CUDA: ~6x det-only, box-equivalent (Δ≤1.0px, 0 unmatched,
+  deterministic), replicated across two kernel runs.** The dbnet
+  auto-CUDA default (O11 pattern, `gpu_backend_pref.h`) needs ONE more
+  gate: a CUDA decoded-text roundtrip through the full dbnet+TrOCR
+  pipeline. **LAYOUT_CONV_F16 T4 draw still open** — two draws both P100
+  (pool seems sticky per-day; try another day).
+- **O7**: posformer FLAT (recorded, not flipped); ppformulanet-l
+  measurement aborted box-contended (4 neck/proj `conv2d_cpu` calls, real
+  candidate, outputs already proven byte-identical between arms);
+  got/deepseek preprocessing convs untouched.
+- **PR-23 prep done** (CrispASR `f600c352`): real `89a2039d` format-patch +
+  fact sheet; **the PR prose must be HUMAN-AUTHORED** (llama.cpp policy).
+
+### Task queue
+
+1. **pix2struct decode graph — CUDA-first** (carried, untouched, now the
+   top item): ~80 ms/tok over 12 layers of small matvecs; the profile
+   exists (R5 lesson — do not re-derive); Metal per-op dispatch says CUDA
+   is where it pays.
+2. **dbnet auto-CUDA default**: run the decoded-text roundtrip on CUDA
+   (kernel arm through dbnet+TrOCR), then the `gpu_backend_pref.h`
+   per-backend-kind default is mechanical (mirror ppocr O11).
+3. **O7 remainder on a QUIET box**: ppformulanet-l (nt1 pairs, process
+   CPU), then got/deepseek preprocessing convs. Check `uptime` FIRST.
+4. **LAYOUT_CONV_F16 T4 re-draw** (different day): delete-then-push
+   `chr1s4/crispembed-conv-ab`; the kernel prints `T4-DRAW:` on line 2.
+5. **GLM ViT deep levers — only if explicitly funded** (carried).
+6. **Hygiene**: archive this round's DONE rows + the N+3 handover to
+   HISTORY.
+
+### Non-negotiable protocols
+
+Unchanged from round N+3 (worktree per change + submodule init + Metal ON
+flags; claim a board row BEFORE starting and push it; measure-first;
+interleaved same-binary env-gated pairs; opt-in until it wins speed AND
+quality; never delete a gated path; `tools/format.sh --fix`; ff-merge from
+the MAIN TREE; no Claude co-author trailer; one heavy model at a time;
+kernels under chr1s4 — with the explicit `KAGGLE_API_TOKEN` export; no
+tokens in repo Markdown; process CPU nt1-vs-nt1; decoded-output before
+cosine severity; a brief is a hypothesis) **plus this round's additions**:
+check `uptime` before ANY timing arm and abort if the box is loaded (record
+the abort honestly); when a kernel/tooling line contradicts the harness's
+own line, trust the one closer to the artifact (the 829-file warm was real,
+the "cold build" print was not); verify the push-output URL names the
+account you intended.
+
+## HANDOVER — OCR round N+3 (superseded 2026-08-07 by round N+4 above; annotations inline)
 
 **Read before doing anything:** this section; the ~6 DONE board rows below
 (they carry the evidence — archive them to HISTORY as your first hygiene
