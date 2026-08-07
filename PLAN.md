@@ -121,9 +121,11 @@ computed over the WRONG AXIS for every engine until `0923def7`.
    PERFORMANCE.md top): det-only DBNet ~6x on CUDA, box-equivalent
    (295=295, Δ≤1.0px), deterministic both arms → the dbnet O11-style
    auto-CUDA default is evidenced; its remaining gate is one CUDA
-   decoded-text roundtrip. **T4 draw still open** for `LAYOUT_CONV_F16`
-   (drew P100 again: time-neutral + the 20→19 drift) — delete-then-push
-   re-draw when quota allows.
+   decoded-text roundtrip. **T4 draw still open** for `LAYOUT_CONV_F16`:
+   v3 AND a v4 re-draw both came up P100 (2026-08-07; v4 replicated every
+   v3 det verdict — walls, box deltas, determinism — a free replication
+   pass). The chr1s4 pool looks P100-sticky today; try the re-draw on a
+   different day/session rather than burning more same-day pushes.
 7. ~~**Upstream PR 23** (carried, mechanical prep only)~~ **PREP DONE
    2026-08-07** (CrispASR `f600c352`): `tools/upstream-prs/23-*.{md,patch}`
    re-drafted from `kernel_im2col_flat` — the .patch is now the real
