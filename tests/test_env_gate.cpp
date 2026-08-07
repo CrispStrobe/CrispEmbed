@@ -74,6 +74,29 @@ static int crispembed_test_main() {
     // A variable that was never in the environment at all.
     expect(core_env::on("CRISPEMBED_TEST_ENV_GATE_NEVER_SET"), false, "unset name => off");
 
+    // ── explicitly_off(): the opt-OUT half of a tri-state gate ────────────
+    // The law that matters is that it is NOT the negation of on(): both must
+    // be false for "unset", so a default-ON knob can tell "operator said no"
+    // apart from "operator said nothing". A gate written as !on() would treat
+    // every unset variable as an explicit opt-out and disable the default.
+    set_var(nullptr);
+    expect(core_env::explicitly_off(V), false, "unset => NOT explicitly off (the default is not a choice)");
+    expect(core_env::on(V), false, "unset => not on either (both false: the tri-state)");
+    set_var("0");
+    expect(core_env::explicitly_off(V), true, "\"0\" => explicitly off");
+    set_var("1");
+    expect(core_env::explicitly_off(V), false, "\"1\" => not off");
+    set_var("00");
+    expect(core_env::explicitly_off(V), false, "\"00\" => not off (only exactly \"0\", same as on())");
+    set_var("0 ");
+    expect(core_env::explicitly_off(V), false, "\"0 \" => not off (only exactly \"0\")");
+#ifndef _WIN32
+    set_var("");
+    expect(core_env::explicitly_off(V), false, "\"\" => not off (blank is no value, not a no)");
+#endif
+    expect(core_env::explicitly_off(nullptr), false, "nullptr name => not off");
+    expect(core_env::explicitly_off("CRISPEMBED_TEST_ENV_GATE_NEVER_SET"), false, "unset name => not off");
+
     set_var(nullptr);
 
     printf("env-gate: %d checks, %d failure(s)\n", g_checks, g_failures);

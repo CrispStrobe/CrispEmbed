@@ -185,6 +185,57 @@ static double pageseg_ink_coverage(const uint8_t * gray, int w, int h,
 // gutter has text to its LEFT and RIGHT on the same rows. Requiring that on a
 // majority of text-bearing rows is what separates a column break from
 // whitespace.
+// Second accept test for a candidate column gutter, on top of the "most text
+// rows have ink on both sides" one (pageseg_column_count below).
+//
+// That first test does not separate the cases at all -- MEASURED over the 24
+// arms fixtures: true two-column commons_test scores 0.60 while the two
+// FALSE positives score 0.62 and 0.82. It cannot: a single line of ragged
+// text with one vertically-aligned word gap has ink on both sides of that gap
+// on every row, exactly like two real columns do. The consequence was live --
+// synth_02_clean/synth_03_clean (three centred lines each) were read as
+// two-column and re-routed to DBNet, costing CER 0.0146/0.0439 against the
+// 0.0000 classical achieves on both.
+//
+// What actually separates them is INK BALANCE across the gutter, which is
+// what "two columns" MEANS rather than a fitted number: a page typeset in two
+// columns carries comparable ink mass on each side (commons_test: 129280 vs
+// 129555, balance 1.00), while a coincidental word gap at x~0.69w leaves most
+// of the page's ink on one side (0.28 and 0.25). The 0.5 bound sits with ~2x
+// margin on both sides of that gap.
+//
+// The width escape covers the known untested case: a genuine two-column page
+// whose second column is mostly empty (end of an article) would fail the
+// balance test, but its gutter is a real typeset gutter -- 0.055 of page width
+// on commons_test versus 0.011/0.012 for the coincidences, a 5x separation.
+//
+// ⚠ SHIPS OPT-IN (`CRISPEMBED_TESSERACT_SEG_GUTTER_BALANCE=1`), because a more
+// truthful column count did NOT translate into better output. Being an
+// ADDITIONAL condition it can only move a page from DBNet to classical, and
+// over the 20-render truthed corpus that is a WASH: synth_02_clean 0.0146 ->
+// 0.0000 and synth_02_skew 0.0219 -> 0.0000, but synth_01_noise 0.0299 ->
+// 0.0746 and synth_03_clean 0.0439 -> 0.0614 (mean 0.0189 -> 0.0202). The two
+// regressions are pages the FALSE positive was accidentally routing to DBNet,
+// which happens to win on them. So the column count is a proxy for "which
+// segmenter wins", and making the proxy honest does not by itself improve the
+// routing -- kept and gated per the standing rule rather than deleted, since
+// the mis-classification is real and a better router will want this.
+static bool pageseg_gutter_is_column_split(const uint8_t * gray, int w, int h, int thresh, int gl, int gr) {
+    if (!core_env::on("CRISPEMBED_TESSERACT_SEG_GUTTER_BALANCE")) return true;
+    if ((double)(gr - gl) >= 0.03 * (double)w) return true; // a real typeset gutter
+    size_t ink_left = 0, ink_right = 0;
+    for (int y = 0; y < h; ++y) {
+        const uint8_t * r = gray + (size_t)y * w;
+        for (int xx = 0; xx < gl; ++xx)
+            if (r[xx] <= thresh) ink_left++;
+        for (int xx = gr; xx < w; ++xx)
+            if (r[xx] <= thresh) ink_right++;
+    }
+    const size_t lo_ink = std::min(ink_left, ink_right), hi_ink = std::max(ink_left, ink_right);
+    if (hi_ink == 0) return false;
+    return (double)lo_ink / (double)hi_ink >= 0.5;
+}
+
 static int pageseg_column_count(const uint8_t * gray, int w, int h) {
     if (!gray || w <= 0 || h <= 0) return 1;
     const int thresh = pageseg_otsu(gray, (size_t)w * (size_t)h);
@@ -237,7 +288,7 @@ static int pageseg_column_count(const uint8_t * gray, int w, int h) {
                     if (r[xx] <= thresh) right = true;
                 if (left && right) both++;
             }
-            if (both * 2 > text_rows.size()) columns++;
+            if (both * 2 > text_rows.size() && pageseg_gutter_is_column_split(gray, w, h, thresh, gl, gr)) columns++;
         }
         run_start = -1;
     }
@@ -1035,8 +1086,17 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     ms(tess_load_start, tess_bench_start));
         }
         std::vector<ocr_detect::text_box> boxes;
-        bool classical_pageseg =
+        // An EXPLICIT caller request for classical segmentation (the
+        // page_segmentation param / CRISPEMBED_TESSERACT_PAGESEG) is separate
+        // from the router merely choosing classical, and the two must not be
+        // conflated: the router may override its own choice, never the
+        // caller's. Measured 2026-08-07 -- with the router defaulted ON,
+        // --tesseract-pageseg on the 2-column commons_test fixture still ended
+        // up on DBNet (`path=dbnet(fallback)`), so the flag had silently
+        // stopped forcing anything.
+        const bool explicit_classical =
             st.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+        bool classical_pageseg = explicit_classical;
         // PLAN.md H9 — segmentation router (CRISPEMBED_TESSERACT_SEG_ROUTER=1).
         //
         // Classical segmentation is ~4x faster than DBNet on this lane and
@@ -1059,11 +1119,16 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // +0.008) at ~3.5x less stage time, and multi-column pages still
         // fall back to the detector structurally (columns > 1).
         // CRISPEMBED_TESSERACT_SEG_ROUTER=0 restores the dbnet-first
-        // default; =1 keeps forcing the router where a caller sets
-        // page_segmentation explicitly. Value-parsed (the UOCR =0 lesson).
+        // default. Value-parsed (the UOCR =0 lesson).
         const char * router_env = std::getenv("CRISPEMBED_TESSERACT_SEG_ROUTER");
         const bool seg_router = router_env ? (*router_env && std::strcmp(router_env, "0") != 0) : true;
         if (seg_router) classical_pageseg = true;
+        // The router routes; it does not veto. When the caller asked for
+        // classical explicitly, the column fallback below is suppressed --
+        // otherwise the request is advisory, which is not what the flag says.
+        // The degenerate empty-boxes fallback is NOT suppressed: that is a
+        // failure guard, not a routing preference.
+        const bool router_may_reroute = seg_router && !explicit_classical;
         bool router_fell_back = false;
         double router_coverage = -1.0;
         int router_columns = -1;
@@ -1094,7 +1159,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     // structural property that actually distinguishes the cases --
                     // a horizontal row projection cannot separate side-by-side
                     // columns, so multi-column pages must go to the detector.
-                    if (boxes.empty() || router_columns > 1) {
+                    if (boxes.empty() || (router_may_reroute && router_columns > 1)) {
                         boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
                         classical_pageseg = false; // DBNet boxes need line grouping
                         router_fell_back = true;
@@ -2005,22 +2070,32 @@ result run_file(context * ctx, const char * image_path) {
         const bool raw_stage = s.eng == engine::dbnet_trocr || s.eng == engine::surya;
         cleanup_profile stage_cleanup = s.cleanup;
         if ((s.eng == engine::tesseract || s.eng == engine::tesseract_fraktur) &&
-            (s.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr) &&
-            std::getenv("CRISPEMBED_TESSERACT_PAGESEG_CLEANUP") == nullptr) {
-            // Tesseract's page-segmentation path measures row ink on the
-            // original page. Generic deskew/crop/whiten cleanup changes those
-            // coordinates and can merge unrelated rows before segmentation.
+            core_env::explicitly_off("CRISPEMBED_TESSERACT_PAGESEG_CLEANUP")) {
+            // UNBUNDLED 2026-08-07 (pageseg round 4). The skip used to be
+            // implied by the segmentation choice: setting page_segmentation /
+            // CRISPEMBED_TESSERACT_PAGESEG also turned cleanup off, on the
+            // theory that classical row-ink measurement wants the original
+            // page geometry. Two decisions, one flag.
             //
-            // That reasoning holds for clean rendered text and is measurably
-            // WRONG for real scans, where cleanup is what makes the row profile
-            // readable at all. Same fixture, same segmenter, cleanup the only
-            // difference: receipt_historical.png gives 2 boxes without it and 38
-            // with; commons_example_receipt 144 characters against 280. The
-            // segmentation choice and the cleanup choice are independent, and
-            // one flag was forcing them to move together.
-            // CRISPEMBED_TESSERACT_PAGESEG_CLEANUP=1 keeps cleanup on while
-            // still using classical segmentation. Default is unchanged.
-            if (verbose) fprintf(stderr, "ocr_orchestrator: Tesseract page segmentation skips cleanup\n");
+            // That coupling is what made the H9 router look like it had better
+            // stage parameters. It does not: the router simply never sets the
+            // PAGESEG flag, so it kept cleanup. Measured on the Fraktur page --
+            // forced-classical WITH cleanup is BYTE-IDENTICAL to the router
+            // (CER 0.1988, 22 regions, sha 832a55e89039) while forced-classical
+            // without it scores 0.2214/21 regions. Same segmenter both arms;
+            // the whole difference was preprocessing. Confirmed across 24
+            // fixtures: forced-classical+cleanup == router on 24/24.
+            //
+            // So cleanup is now its own knob and defaults to the stage profile
+            // for every tesseract stage, whichever segmenter runs.
+            // CRISPEMBED_TESSERACT_PAGESEG_CLEANUP=0 restores the historical
+            // skip -- worth having: on the CLEAN synthetic corpus the skip is
+            // still better (mean CER 0.0126 vs 0.0189 over 20 renders, 10 of
+            // them regressions), while every real scan measured prefers
+            // cleanup (receipt_historical 20 -> 776 chars, commons_example_
+            // receipt 264 -> 362, commons_test 1671 -> 2060, Fraktur
+            // 0.2214 -> 0.1988). Rendered-text callers should set it to 0.
+            if (verbose) fprintf(stderr, "ocr_orchestrator: Tesseract cleanup skipped (PAGESEG_CLEANUP=0)\n");
             stage_cleanup.enabled = false;
             stage_cleanup.denoise = false;
         }

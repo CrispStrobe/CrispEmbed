@@ -28,4 +28,18 @@ inline bool on(const char * name) {
     return e && *e && std::strcmp(e, "0") != 0;
 }
 
+// The other half of a tri-state gate: EXPLICITLY set to "0". `on()` cannot
+// express it, because `on()` folds unset and "0" together — fine for an
+// instrument that defaults off, wrong for a knob that defaults ON and needs an
+// opt-OUT. Use the pair when the default is on:
+//
+//     if (core_env::explicitly_off("CRISPEMBED_FOO_CLEANUP")) { /* legacy */ }
+//
+// Unset and empty are NOT off (they mean "default"); only a literal "0" is.
+inline bool explicitly_off(const char * name) {
+    if (!name) return false;
+    const char * e = std::getenv(name);
+    return e && *e && std::strcmp(e, "0") == 0;
+}
+
 } // namespace core_env
