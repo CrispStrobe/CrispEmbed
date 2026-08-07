@@ -1,32 +1,32 @@
-"""CrispEmbed conv A/B — O8 (R6 im2col on x86/AVX2) + O9 (CUDA residency).
+"""CrispEmbed conv A/B v3 — O9d det-only DBNet CPU-vs-CUDA (box-level compare)
++ the LAYOUT_CONV_F16 tensor-core arm (wants a T4 draw).
 
-The M1 verdicts these arms exist to test (PERFORMANCE.md 2026-08-05/06):
+Why v3 (PERFORMANCE.md 2026-08-06, board row): the v2 whole-pipeline DBNet
+wall was TrOCR-rec-dominated (114.3 vs 111.7 s), so det was never isolated —
+and the two arms' decoded TEXT differed because a det backend change moves
+boxes. This version runs detection ONLY (`test-ocr-detect`) and compares at
+the box level: count, per-box coordinate delta vs the CPU arm, score delta,
+prob-map stats. A timing row without its matching box list is a FAIL, never
+a win (proof-of-work rule).
 
-- O8: the R6 conv2d im2col-tile path is 4-7% SLOWER single-threaded on M1
-  because the 12 MB shared L2 already holds the weight matrices; nt=4 wall is
-  2.04x. On a small-private-L2 x86 box the interchange itself may win — this
-  kernel runs the same three arms (legacy / GEMM nt=1 / GEMM nt=4) on the
-  PP-OCRv6 medium SCALAR detector plus the bitwise unit gate on AVX2 lanes.
-- O9: "DBNet / PP-OCRv6 det are CPU by measurement" is a *Metal* verdict.
-  CUDA has strong conv/im2col kernels, so the defaults may flip there:
-  det CPU-graph vs GPU-graph arms with decoded-output comparison, and the
-  LAYOUT_CONV_F16 gate (loses on M1 Metal, 2.2 s vs 1.4 s) as a one-env
-  CUDA candidate.
+The LAYOUT_CONV_F16 arm re-runs from v2 unchanged: it LOSES on M1 Metal
+(2.2 vs 1.4 s) AND on P100 (region drift 20->19); the only open question is
+tensor-core hardware. GPU IS A DRAW — if this log says P100 again, the T4
+question stays open (delete-then-push for a re-draw when quota allows).
 
-Everything lands in /kaggle/working/convab.log. Models stage under /tmp
-(never /kaggle/working — the ENOSPC gotcha). Every arm's decoded output is
-captured and cross-compared; a timing row without matching output is a FAIL,
-never a win (proof-of-work rule).
+Everything lands in /kaggle/working/convab.log. Models stage under /tmp.
+The ccache line MUST read "ccache warmed from" — a cold-build line means the
+chr1s4/crispembed-ccache seed regressed again (re-run crispembed-ccache-seed).
 """
 import os
 import sys
+import re
 import subprocess
 import hashlib
+import time
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
-# Gotcha #22: keep /kaggle/working to only the artifacts we must retrieve
-# (the 500-file output page cap) — clone/build under the ephemeral layer.
 TEMP = Path("/kaggle/temp")
 TEMP.mkdir(parents=True, exist_ok=True)
 DL = Path("/tmp/crispembed-convab")
@@ -79,10 +79,10 @@ BUILD_DIR.mkdir(exist_ok=True)
 
 gpu = subprocess.run("nvidia-smi --query-gpu=name,compute_cap --format=csv,noheader",
                      shell=True, capture_output=True, text=True)
-print(f"GPU: {gpu.stdout.strip() or 'none'}", flush=True)
-cpu = subprocess.run("lscpu | grep -E 'Model name|L2|L3|Core'", shell=True,
-                     capture_output=True, text=True)
-print(f"CPU:\n{cpu.stdout}", flush=True)
+GPU_NAME = gpu.stdout.strip() or "none"
+print(f"GPU: {GPU_NAME}", flush=True)
+print(f"T4-DRAW: {'YES - tensor-core arm is decisive' if 'T4' in GPU_NAME else 'NO - P100/other, LAYOUT_CONV_F16 stays open'}",
+      flush=True)
 kh.sh("pip install -q huggingface_hub hf_transfer || true", check=False)
 kh.install_build_toolchain()
 
@@ -116,7 +116,8 @@ kh.sh(f"cd {BUILD_DIR} && cmake -G Ninja -DCMAKE_BUILD_TYPE=Release "
 kh.step("build")
 with kh.build_heartbeat("ninja", 30):
     kh.sh(f"cd {BUILD_DIR} && ninja -j{kh.safe_build_jobs(gpu=True)} "
-          "crispembed-cli test-core-cpu-ops test-ppocrv6-direct", check=True)
+          "crispembed-cli test-ocr-detect", check=True)
+kh.sh("ccache -s | grep -iE 'hit|miss' | head -4 || true", check=False)
 
 
 def binp(name):
@@ -150,8 +151,8 @@ def run(label, argv, env=None, timeout=900):
         with kh.build_heartbeat(label[:40], 60):
             p = subprocess.run(argv, env=e, capture_output=True, text=True, timeout=timeout)
         for line in p.stderr.splitlines():
-            if any(k in line for k in ("bench", "elapsed", "regions", "Phase", "ggml_cuda",
-                                       "CUDA", "backend", "error", "FAIL", "Results")):
+            if any(k in line for k in ("bench", "elapsed", "Phase", "ggml_cuda", "CUDA",
+                                       "backend", "error", "FAIL")):
                 print("  E| " + line, flush=True)
         print(f"  rc={p.returncode} stdout_bytes={len(p.stdout)} "
               f"stdout_sha={hashlib.sha256(p.stdout.encode()).hexdigest()[:12]}", flush=True)
@@ -165,12 +166,7 @@ def run(label, argv, env=None, timeout=900):
 
 
 IMG_PAGE = str(EMBED_DIR / "tests/regression/images/scan_page_pd.png")
-IMG_STRIP = str(EMBED_DIR / "tests/regression/images/scan_strip.png")
-
-det_m = get("cstr/PP-OCRv6-medium-det-GGUF", "PP-OCRv6_medium_det-f16.gguf")
-rec_t = get("cstr/PP-OCRv6_tiny_rec-GGUF", "PP-OCRv6_tiny_rec-q8-head.gguf")
-rec_m = get("cstr/PP-OCRv6_medium_rec-GGUF", "PP-OCRv6_medium_rec-q8-head.gguf")
-layout_m = get("cstr/layout-heron-gguf", "layout-heron-f32.gguf")
+IMG_FOX = str(EMBED_DIR / "tests/regression/images/fox.png")
 
 results = []
 
@@ -180,120 +176,113 @@ def note(row):
     print("RESULT| " + row, flush=True)
 
 
-# ── O8: unit gate — the bitwise-equality guard on AVX2 lanes ──
-kh.step("o8.unitgate")
-for env in (None, {"CRISPEMBED_CONV2D_GEMM": "1", "CRISPEMBED_CONV2D_THREADS": "4"}):
-    p = run(f"test-core-cpu-ops env={env}", [binp("test-core-cpu-ops")], env=env)
-    if p:
-        tail = [l for l in p.stdout.splitlines() if "Results:" in l]
-        note(f"o8.unit env={env}: {tail[-1] if tail else 'NO RESULT LINE'} rc={p.returncode}")
+BOX_RE = re.compile(r"\[(\d+)\] \(([-\d.]+), ([-\d.]+)\)-\(([-\d.]+), ([-\d.]+)\) score=([\d.]+)")
+COUNT_RE = re.compile(r"Detected (\d+) text regions")
+PROB_RE = re.compile(r"Prob map: (\d+)x(\d+), range \[([-\d.]+), ([-\d.]+)\], (\d+) pixels")
 
-# ── O8: three-arm scalar-det A/B, interleaved x3 pairs ──
-kh.step("o8.det-scalar-arms")
-if det_m and rec_t:
-    arms = [
-        ("legacy", {"CRISPEMBED_PPOCRV6_DET_SCALAR": "1"}),
-        ("gemm1", {"CRISPEMBED_PPOCRV6_DET_SCALAR": "1", "CRISPEMBED_CONV2D_GEMM": "1"}),
-        ("gemm4", {"CRISPEMBED_PPOCRV6_DET_SCALAR": "1", "CRISPEMBED_CONV2D_GEMM": "1",
-                   "CRISPEMBED_CONV2D_THREADS": "4"}),
-    ]
-    for rep in range(3):
-        for name, env in arms:
-            e = dict(env)
-            e["PPOCRV6_DIRECT_MAX_REGIONS"] = "0"
-            p = run(f"o8 det-scalar {name} rep{rep}",
-                    [binp("test-ppocrv6-direct"), det_m, rec_t, IMG_PAGE], env=e)
-            if p:
-                el = [l for l in p.stdout.splitlines() if "elapsed_ms=" in l]
-                rg = [l for l in p.stdout.splitlines() if "detector_regions=" in l]
-                note(f"o8.{name} rep{rep}: {el[-1].split('elapsed_ms=')[-1] if el else '?'} ms "
-                     f"{rg[-1].split('detector_regions=')[-1].split(' ')[0] if rg else '?'} regions")
 
-# ── O9: PP-OCRv6 det CPU-graph vs CUDA-graph, full-pipeline text identity ──
-kh.step("o9.ppocr-det-cuda")
-texts = {}
-if det_m and rec_m:
-    for name, env in (("det-cpu", {}), ("det-cuda", {"CRISPEMBED_PPOCRV6_DET_GPU_LOAD": "1"})):
-        e = dict(env)
-        e["CRISPEMBED_PPOCRV6_DET_BENCH"] = "1"
-        e["CRISPEMBED_PPOCRV6_BENCH"] = "1"
-        p = run(f"o9 ppocr {name}",
-                [binp("crispembed"), "-m", rec_m, "--ocr", IMG_PAGE,
-                 "--ocr-engine", "ppocrv6", "--ocr-det", det_m, "--ocr-rec", rec_m,
-                 "-t", "4"], env=e)
-        if p:
-            texts[name] = p.stdout
-            det = [l for l in p.stderr.splitlines() if "det-bench" in l]
-            st = [l for l in p.stderr.splitlines() if "stage-bench" in l]
-            note(f"o9.ppocr.{name}: {det[-1] if det else 'no det-bench'} | "
-                 f"{st[-1] if st else 'no stage-bench'}")
-    if "det-cpu" in texts and "det-cuda" in texts:
-        note(f"o9.ppocr text identical: {texts['det-cpu'] == texts['det-cuda']} "
-             f"(cpu {len(texts['det-cpu'])}B, cuda {len(texts['det-cuda'])}B)")
+def parse_boxes(stdout):
+    boxes = [tuple(float(g) for g in m.groups()[1:]) for m in BOX_RE.finditer(stdout)]
+    count = COUNT_RE.search(stdout)
+    prob = PROB_RE.search(stdout)
+    return (int(count.group(1)) if count else -1), boxes, (prob.groups() if prob else None)
 
-# ── O9: layout f32 vs LAYOUT_CONV_F16 on CUDA ──
-kh.step("o9.layout-conv-f16")
+
+def compare_boxes(ref, cand):
+    """Box-level compare vs the CPU reference arm: greedy nearest match by
+    center distance; report count delta, max coordinate delta over matched
+    pairs, and unmatched counts. A det backend that moves geometry shows up
+    here directly instead of through a recognizer's text."""
+    if len(ref) == 0 and len(cand) == 0:
+        return "both-empty"
+    used = set()
+    max_d = 0.0
+    max_s = 0.0
+    unmatched = 0
+    for r in ref:
+        rcx, rcy = (r[0] + r[2]) / 2, (r[1] + r[3]) / 2
+        best, bd = None, 1e18
+        for j, c in enumerate(cand):
+            if j in used:
+                continue
+            ccx, ccy = (c[0] + c[2]) / 2, (c[1] + c[3]) / 2
+            d = (rcx - ccx) ** 2 + (rcy - ccy) ** 2
+            if d < bd:
+                bd, best = d, j
+        if best is None:
+            unmatched += 1
+            continue
+        used.add(best)
+        c = cand[best]
+        max_d = max(max_d, max(abs(r[k] - c[k]) for k in range(4)))
+        max_s = max(max_s, abs(r[4] - c[4]))
+    return (f"count {len(ref)}->{len(cand)} max_coord_delta={max_d:.1f}px "
+            f"max_score_delta={max_s:.3f} unmatched_ref={unmatched} "
+            f"extra_cand={len(cand) - len(used)}")
+
+
+# ── O9d v3: det-only DBNet CPU vs CUDA, 3 interleaved reps, box-level ──
+kh.step("o9d3.dbnet-det-only")
+dbnet_m = get("cstr/dbnet-ic15-GGUF", "dbnet-ic15-q8_0.gguf")
+if dbnet_m:
+    for img_name, img in (("scan_page", IMG_PAGE), ("fox", IMG_FOX)):
+        arm_out = {}
+        for rep in range(3):
+            for name, env in (("cpu", {"OCR_DETECT_FORCE_CPU": "1"}),
+                              ("cuda", {"OCR_DETECT_USE_GPU": "1"})):
+                e = dict(env)
+                e["CRISPEMBED_OCR_DETECT_BENCH"] = "1"
+                t0 = time.monotonic()
+                p = run(f"o9d3 {img_name} {name} rep{rep}",
+                        [binp("test-ocr-detect"), dbnet_m, img], env=e)
+                wall = time.monotonic() - t0
+                if p and p.returncode == 0:
+                    count, boxes, prob = parse_boxes(p.stdout)
+                    if count < 0 or (count > 0 and not boxes):
+                        note(f"o9d3.{img_name}.{name} rep{rep}: PARSE-FAIL (no box lines) — not evidence")
+                        continue
+                    arm_out.setdefault(name, []).append((wall, count, boxes, prob))
+                    note(f"o9d3.{img_name}.{name} rep{rep}: wall={wall:.2f}s boxes={count} "
+                         f"prob={prob}")
+                else:
+                    note(f"o9d3.{img_name}.{name} rep{rep}: rc={p.returncode if p else 'none'} FAIL")
+        if "cpu" in arm_out and "cuda" in arm_out:
+            cw = [r[0] for r in arm_out["cpu"]]
+            gw = [r[0] for r in arm_out["cuda"]]
+            note(f"o9d3.{img_name} walls: cpu={['%.2f' % w for w in cw]} "
+                 f"cuda={['%.2f' % w for w in gw]}")
+            note(f"o9d3.{img_name} box-compare (cpu ref vs cuda): "
+                 + compare_boxes(arm_out["cpu"][0][2], arm_out["cuda"][0][2]))
+            cpu_stable = all(r[2] == arm_out["cpu"][0][2] for r in arm_out["cpu"])
+            cuda_stable = all(r[2] == arm_out["cuda"][0][2] for r in arm_out["cuda"])
+            note(f"o9d3.{img_name} intra-arm determinism: cpu={cpu_stable} cuda={cuda_stable}")
+
+# ── LAYOUT_CONV_F16 tensor-core arm (decisive only on T4) ──
+kh.step("layout-conv-f16")
+layout_m = get("cstr/layout-heron-gguf", "layout-heron-f32.gguf")
 ltexts = {}
 if layout_m:
     for name, env in (("f32", {}), ("f16", {"LAYOUT_CONV_F16": "1"})):
         e = dict(env)
         e["CRISPEMBED_LAYOUT_DETECT_BENCH"] = "1"
         e["CRISPEMBED_LAYOUT_REPEAT"] = "2"
-        p = run(f"o9 layout {name}",
+        p = run(f"layout {name}",
                 [binp("crispembed"), "-m", layout_m, "--layout", IMG_PAGE, "-t", "4"], env=e)
         if p:
             ltexts[name] = p.stdout
-            ph = [l for l in p.stderr.splitlines() if "Phase 1" in l]
-            for l in ph:
-                note(f"o9.layout.{name}: {l.strip()}")
+            for l in (x for x in p.stderr.splitlines() if "Phase 1" in x):
+                note(f"layout.{name} [{GPU_NAME}]: {l.strip()}")
     if "f32" in ltexts and "f16" in ltexts:
-        note(f"o9.layout regions identical: {ltexts['f32'] == ltexts['f16']}")
+        note(f"layout regions identical on {GPU_NAME}: {ltexts['f32'] == ltexts['f16']}")
         if ltexts["f32"] != ltexts["f16"]:
             a, b = ltexts["f32"].splitlines(), ltexts["f16"].splitlines()
             for i, (x, y) in enumerate(zip(a, b)):
                 if x != y:
-                    note(f"o9.layout first diff line {i}: f32='{x}' f16='{y}'")
+                    note(f"layout first diff line {i}: f32='{x}' f16='{y}'")
                     break
 
-
-# ── O9d (v2): DBNet det CPU vs CUDA — the Fraktur-lane 3.8 s owner ──
-kh.step("o9d.dbnet-cuda")
-dbnet_m = get("cstr/dbnet-ic15-GGUF", "dbnet-ic15-q8_0.gguf")
-trocr_m = get("cstr/trocr-small-printed-GGUF", "trocr-small-printed-q8_0.gguf")
-dtexts = {}
-if dbnet_m and trocr_m:
-    import time as _t
-    for name, env in (("cpu", {}), ("cuda", {"OCR_DETECT_USE_GPU": "1"})):
-        e = dict(env)
-        e["OCR_DETECT_THREADS"] = "4"
-        t0 = _t.monotonic()
-        p = run(f"o9d dbnet {name}",
-                [binp("crispembed"), "-m", trocr_m, "--ocr", IMG_PAGE,
-                 "--ocr-det", dbnet_m, "--ocr-rec", trocr_m, "-t", "4"], env=e)
-        wall = _t.monotonic() - t0
-        if p:
-            dtexts[name] = p.stdout
-            note(f"o9d.dbnet.{name}: wall={wall:.1f}s rc={p.returncode} stdout={len(p.stdout)}B")
-    if len(dtexts) == 2:
-        note(f"o9d.dbnet text identical: {dtexts['cpu'] == dtexts['cuda']}")
-
-# ── O9b-debug (v2): why does PP-OCR rec on CUDA emit 0 results? ──
-kh.step("o9b.rec-debug")
-if det_m and rec_m:
-    e = {"CRISPEMBED_PPOCRV6_GRAPH_BENCH": "1", "CRISPEMBED_PPOCRV6_GRAPH_DEBUG": "1",
-         "CRISPEMBED_PPOCRV6_BENCH": "1"}
-    p = run("o9b rec-debug full-stderr",
-            [binp("crispembed"), "-m", rec_m, "--ocr", IMG_STRIP,
-             "--ocr-engine", "ppocrv6", "--ocr-det", det_m, "--ocr-rec", rec_m,
-             "-t", "4"], env=e)
-    if p:
-        note(f"o9b.rec-debug: rc={p.returncode} stdout={len(p.stdout)}B")
-        print("---- o9b FULL stderr tail (rec diagnosis) ----")
-        for line in p.stderr.splitlines()[-120:]:
-            print("  D| " + line)
-
 print("\n" + "=" * 72)
-print("SUMMARY")
+print(f"SUMMARY (GPU: {GPU_NAME})")
 print("=" * 72)
 for r in results:
     print(r)
