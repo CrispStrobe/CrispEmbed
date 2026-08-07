@@ -74,12 +74,15 @@ believing any timing (six empty rc=0 runs measured nothing this round).
    per-op-dispatch bound; CUDA already has graph capture. Fork work —
    re-apply markers, and ⚠ `git branch -r --contains <pin>` before pushing
    (two-lineage trap).
-2. **Pageseg round 4 / router unification**: find WHY the router path beats
-   forced-classical (0.196 vs 0.218 — stage-param diff, crops the faint
-   Inhalt lines better), unify so both paths get the better geometry; then
-   the round-3 residuals (~60 ornament junk chars need a
-   recognition-confidence signal; `--recode-beam`/`--dawg-score` still
-   unmeasured post-int8-cache). Target: ≤0.18 on the Fraktur page.
+2. **Pageseg round 4** [PARTLY DONE 2026-08-07, `perf/pageseg-round4`]: the
+   "stage-param diff" premise was WRONG — no segmentation parameter differed;
+   the router simply never sets the PAGESEG flag that suppressed cleanup, and
+   forced-classical+cleanup is byte-identical to the router (24/24). Unified,
+   plus the explicit-classical contract restored and the column detector's
+   false positives root-caused (ships opt-in — a wash on decoded output).
+   **Still open, and still the path to ≤0.18**: the ~60 ornament junk chars
+   need a recognition-confidence signal, and `--recode-beam`/`--dawg-score`
+   remain unmeasured post-int8-cache.
 3. **pix2struct decode graph — CUDA-first, only with the profile in hand**:
    ~80 ms/tok across 12 layers of small matvecs; batching or a ggml graph
    is the lever, Metal per-op dispatch says CUDA is where it pays (R5
@@ -281,7 +284,7 @@ races). Remove the row when the branch lands.
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
 | 2026-08-07 | `chore/round-n2-hygiene` / `.claude/worktrees/chore-round-n2-hygiene` | **Round N+2 task 9 hygiene**: 11 round-N+2 DONE rows archived to `HISTORY.md` ("August 7, 2026 — parity-and-routing session"); the round-N+1 handover (101 lines) moved verbatim to `HISTORY.md` and replaced by a 5-line ARCHIVED pointer in `PLAN.md` | **DONE** |
-| 2026-08-07 | `perf/pageseg-round4` / `.claude/worktrees/perf-pageseg-round4` | **Claimed (round N+2 task 2):** pageseg round 4 — find WHY the H9 router path beats forced-classical (0.196 vs 0.218), unify the stage geometry so both paths get the better crops; then the round-3 residuals (ornament confidence signal, `--recode-beam`/`--dawg-score` unmeasured). Target ≤0.18 on the Fraktur page | **IN PROGRESS** |
+| 2026-08-07 | *(landed via `perf/pageseg-round4`)* | **Round N+2 task 2 DONE — the router's advantage was CLEANUP, not stage params; coupling unbundled + explicit-classical contract restored.** No segmentation parameter differs: the cleanup skip was keyed on the PAGESEG flag, which the router never sets, so forced-classical ran on an uncleaned image. Forced-classical+cleanup is **BYTE-IDENTICAL to the router** — Fraktur 0.1988 / 22 regions / sha `832a55e89039` both arms (legacy skip 0.2214, dbnet 0.2360), and **24/24** on the arms corpus. Second defect found and fixed: with the router defaulted ON, `--tesseract-pageseg` had stopped forcing anything (2-column commons_test still went `path=dbnet(fallback)`) — the router now routes but does not veto an explicit request (verified byte-identical to `SEG_ROUTER=0` classical on all 5 divergent fixtures). Cleanup default is input-dependent and recorded honestly (legacy skip better on clean renders 0.0110 vs 0.0202; every real scan prefers cleanup) with `CRISPEMBED_TESSERACT_PAGESEG_CLEANUP=0` restoring it. **Column-detector false positives root-caused** (the both-sides accept test cannot separate: true 2-col 0.60 vs false positives 0.62/0.82; **ink balance** does: 1.00 vs 0.28/0.25) — fix ships **OPT-IN** (`..._SEG_GUTTER_BALANCE=1`) because decoded output is a WASH (2 better, 2 worse, mean 0.0189→0.0202: the false positive was accidentally routing 2 noisy pages to the arm that wins on them). Production default byte-identical 24/24; 77/77 + 12 CI binaries + 17 geometry tests; comparator `detector_route` split into requested/observed. **Target ≤0.18 NOT reached** — residuals unchanged. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |

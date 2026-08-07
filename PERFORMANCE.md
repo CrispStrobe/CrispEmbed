@@ -1,5 +1,90 @@
 # CrispEmbed Performance
 
+## Pageseg round 4: the H9 router never had better segmentation params — it had CLEANUP; the coupling is unbundled and the explicit-classical contract restored (Apple M1, 2026-08-07)
+
+Round-N+2 task 2. The handover recorded "the router path BEATS the forced-classical
+arm (0.196 vs 0.218) — the stage params differ and nobody knows exactly which one
+helps". Measured: **no stage parameter differs at all.**
+
+**The whole gap was preprocessing.** `ocr_orchestrator.cpp` skipped the generic
+deskew/crop/whiten cleanup whenever `page_segmentation` / `CRISPEMBED_TESSERACT_PAGESEG`
+was set — but the router never sets that flag, so the router's classical route kept
+cleanup and the explicitly-flagged one did not. Same segmenter, different image.
+Forced-classical WITH cleanup reproduces the router **byte-for-byte**:
+
+| arm (Fraktur page, `german_official_print.jpg`, frk) | CER | WER | regions | chars | text sha |
+|---|--:|--:|--:|--:|:--|
+| router default (classical + cleanup) | **0.1988** | 0.4113 | 22 | 1111 | `832a55e89039` |
+| forced-classical, unified (this change) | **0.1988** | 0.4113 | 22 | 1111 | `832a55e89039` |
+| forced-classical + `PAGESEG_CLEANUP=0` (legacy skip) | 0.2214 | 0.4681 | 21 | 962 | `2fecf437abd7` |
+| `SEG_ROUTER=0` (dbnet-first opt-out) | 0.2360 | 0.4043 | 21 | 1014 | `fd0fed3180ad` |
+
+Confirmed across the 24-fixture arms corpus (20 truthed synthetic renders + 4 CC0):
+forced-classical+cleanup == router on **24/24**. The cleanup skip is now its own
+value-parsed gate rather than a rider on the segmentation flag — the unbundling
+`PERFORMANCE.md` itself recommended in the H9 section ("the cleanup coupling should
+be unbundled from the segmentation choice, since they are independent decisions
+that the single `PAGESEG` flag currently forces to move together").
+
+**Second defect, found on the way: the router was overriding explicit callers.**
+`--tesseract-pageseg` on the two-column `commons_test_ocr_document` still ended on
+DBNet (`path=dbnet(fallback)`) — with the router defaulted ON, the flag had silently
+stopped forcing anything, and the H9 commit's claim that it "still forces classical
+unconditionally" was false. The router now routes but does not veto: the column
+fallback is suppressed for an explicit request (the degenerate empty-boxes fallback
+is kept — that is a failure guard, not a preference). Verified on all five fixtures
+where the two used to diverge: `--tesseract-pageseg` output is now byte-identical to
+`SEG_ROUTER=0 --tesseract-pageseg`, i.e. unambiguously classical.
+
+**Which cleanup default is right is input-dependent — recorded, not hidden.** Over
+the 20 truthed synthetic renders the legacy skip is still better (mean CER 0.0110 vs
+0.0202); every real scan measured prefers cleanup (Fraktur 0.2214 → 0.1988,
+`receipt_historical` 20 → 776 chars, `commons_example_receipt` 264 → 362,
+`commons_test` 1671 → 2060). The unified default follows the production router, and
+rendered-text callers set `CRISPEMBED_TESSERACT_PAGESEG_CLEANUP=0`.
+
+**Column-detector false positives are REAL but fixing them does not pay — ships
+opt-in.** `pageseg_column_count`'s accept test ("most text rows have ink on both
+sides of the gutter") cannot separate the cases and does not: true two-column
+commons_test scores 0.60, the two false positives 0.62 and 0.82. A single ragged
+line with one vertically-aligned word gap looks exactly like two columns to it. What
+does separate them is **ink balance across the gutter** — which is what "two
+columns" means rather than a fitted number:
+
+| fixture | gutter w | w/page | ink L/R | balance | old accept test |
+|---|--:|--:|--:|--:|--:|
+| commons_test (**true 2-col**) | 106 px | 0.055 | 129280/129555 | **1.00** | 0.60 |
+| synth_02_clean (false pos) | 8 px | 0.011 | 6998/1946 | **0.28** | 0.62 |
+| synth_03_clean (false pos) | 8 px | 0.012 | 3682/910 | **0.25** | 0.82 |
+
+Added as an ADDITIONAL accept condition (so it can only move a page DBNet →
+classical, never the reverse) with a width escape at 0.03·w for a genuine gutter
+whose second column is mostly empty. Red-green: commons_test stays `columns=2`, both
+false positives become `columns=1`, `..._GUTTER_BALANCE=0` restores the old accept.
+**But the decoded output is a WASH** — synth_02_clean 0.0146 → 0.0000 and
+synth_02_skew 0.0219 → 0.0000 against synth_01_noise 0.0299 → 0.0746 and
+synth_03_clean 0.0439 → 0.0614, mean 0.0189 → 0.0202. The two regressions are pages
+the false positive was accidentally routing to DBNet, which wins on them. So the
+column count is a *proxy* for "which segmenter wins" and making the proxy honest does
+not by itself improve routing. Per the standing rule it ships **opt-in**
+(`CRISPEMBED_TESSERACT_SEG_GUTTER_BALANCE=1`), kept rather than deleted — the
+mis-classification is real and a better router will want it.
+
+Gates: production default **byte-identical on 24/24** arms fixtures (router arm
+sha-for-sha vs pre-change); Fraktur unchanged at 0.1988; model-free orchestrator
+suite 77/77; the 12 CI model-free binaries 0 failures; `test-env-gate` 19 checks;
+`test_tesseract_page_geometry` 17 tests. Also fixed: the comparator's
+`detector_route` field reported the *requested* route as if observed (it read
+"dbnet" for runs the router sent to classical, and "native-tesseract-pageseg" for
+runs the router had re-routed away) — now `detector_route_requested` plus a
+`detector_route_observed` parsed from the run's own router line, with an absent line
+reported as `None` rather than guessed. Same class as the round-3 ROW_DEBUG label bug.
+
+**Residual toward the ≤0.18 target**: unchanged and still the two known items —
+the ornament/crest rows' ~60 junk chars need a recognition-confidence signal, and
+`--recode-beam`/`--dawg-score` remain unmeasured post-int8-cache. This round bought
+correctness and coherence, not the 0.02 CER.
+
 ## GLM-OCR mrope pairing fixed — the "thin-strip hallucination" AND the SubtitleEdit '-ich' runaway were one LM rope bug; port now text-identical to the HF reference (Apple M1, 2026-08-07)
 
 Round-N+1 task 3. The queue framed it as a stop-criterion/attention-sink

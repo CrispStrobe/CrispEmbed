@@ -149,7 +149,41 @@ def selected_pageseg_policy(args: argparse.Namespace) -> str:
 
 
 def selected_detector_route(args: argparse.Namespace) -> str:
+    """What this invocation REQUESTED. Not what ran — see observed_detector_route.
+
+    Reported as ``detector_route_requested``. It used to be reported as
+    ``detector_route``, which read as an observation and was wrong in both
+    directions once the H9 router shipped: without the flag the router picks
+    classical on single-column pages (so "dbnet" was a lie), and before the
+    round-4 fix the router's column fallback could override the flag (so
+    "native-tesseract-pageseg" was a lie too). Naming the request a request and
+    parsing the route the run actually reports is the fix.
+    """
     return "native-tesseract-pageseg" if args.native_pageseg else "dbnet"
+
+
+ROUTER_RE = re.compile(r"\[tesseract-seg-router\] columns=(?P<columns>-?\d+) "
+                       r"ink_coverage=(?P<coverage>[0-9.-]+) boxes=(?P<boxes>\d+) path=(?P<path>\S+)")
+
+
+def observed_detector_route(output: str) -> dict | None:
+    """The route the run actually took, parsed from its own router line.
+
+    None when the line is absent (the router is disabled, or the stage never
+    reached segmentation) — an absent observation must read as absent, never as
+    a default guess.
+    """
+    match = None
+    for match in ROUTER_RE.finditer(output):
+        pass
+    if match is None:
+        return None
+    return {
+        "path": "classical" if match.group("path") == "classical" else "dbnet",
+        "columns": int(match.group("columns")),
+        "ink_coverage": float(match.group("coverage")),
+        "boxes": int(match.group("boxes")),
+    }
 
 
 def native_metrics(args: argparse.Namespace, image: Path) -> dict:
@@ -238,7 +272,8 @@ def native_metrics(args: argparse.Namespace, image: Path) -> dict:
         "stage_ms": float(stage_ms),
         "pageseg_policy": selected_pageseg_policy(args),
         "row_blob_bounds": args.row_blob_bounds,
-        "detector_route": selected_detector_route(args),
+        "detector_route_requested": selected_detector_route(args),
+        "detector_route_observed": observed_detector_route(proc.stdout + proc.stderr),
         "text": " ".join(text_match.group("text").split()) if text_match else "",
         "line_texts": native_line_texts,
         "stderr": proc.stderr[-500:],

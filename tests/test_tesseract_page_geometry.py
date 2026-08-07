@@ -15,6 +15,7 @@ from compare_tesseract_page_geometry import compare, reading_order_is_monotonic 
 from compare_tesseract_crop_geometry import compare as compare_crop_geometry  # noqa: E402
 from compare_tesseract_crop_geometry import compare_geometry  # noqa: E402
 from compare_tesseract_page_metrics import acceptance_checks  # noqa: E402
+from compare_tesseract_page_metrics import observed_detector_route  # noqa: E402
 from compare_tesseract_page_metrics import selected_detector_route  # noqa: E402
 from compare_tesseract_page_metrics import selected_pageseg_policy  # noqa: E402
 from benchmark_tesseract_page import summarize  # noqa: E402
@@ -86,6 +87,31 @@ class TesseractPageGeometryTest(unittest.TestCase):
         self.assertEqual(selected_detector_route(args), "native-tesseract-pageseg")
         args.native_pageseg = False
         self.assertEqual(selected_detector_route(args), "dbnet")
+
+    def test_observed_route_comes_from_the_run_not_the_request(self) -> None:
+        # The law: a REQUEST is not an OBSERVATION. Both directions of the H9
+        # router made the old single `detector_route` field lie, so the report
+        # now carries the route the run itself printed.
+        classical = ("noise\n[tesseract-seg-router] columns=1 ink_coverage=0.8877 "
+                     "boxes=22 path=classical\nmore noise\n")
+        self.assertEqual(observed_detector_route(classical),
+                         {"path": "classical", "columns": 1, "ink_coverage": 0.8877, "boxes": 22})
+        fallback = ("[tesseract-seg-router] columns=2 ink_coverage=1.0000 "
+                    "boxes=289 path=dbnet(fallback)\n")
+        self.assertEqual(observed_detector_route(fallback)["path"], "dbnet")
+        self.assertEqual(observed_detector_route(fallback)["columns"], 2)
+
+    def test_observed_route_is_none_when_unobserved(self) -> None:
+        # Absent must read as absent. Defaulting to "dbnet" here is exactly the
+        # guess that made the old label wrong.
+        self.assertIsNone(observed_detector_route("no router line here\n"))
+
+    def test_observed_route_takes_the_last_line(self) -> None:
+        # A multi-stage chain prints one line per tesseract stage; the report is
+        # about the stage that produced the metrics, i.e. the last one.
+        two = ("[tesseract-seg-router] columns=1 ink_coverage=1.0000 boxes=3 path=classical\n"
+               "[tesseract-seg-router] columns=2 ink_coverage=1.0000 boxes=289 path=dbnet(fallback)\n")
+        self.assertEqual(observed_detector_route(two)["boxes"], 289)
 
     def test_benchmark_wrapper_exposes_native_route_flag(self) -> None:
         wrapper = (ROOT / "tools" / "benchmark_tesseract_page.py").read_text()
