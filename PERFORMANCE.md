@@ -1,5 +1,54 @@
 # CrispEmbed Performance
 
+## GLM-OCR mrope pairing fixed — the "thin-strip hallucination" AND the SubtitleEdit '-ich' runaway were one LM rope bug; port now text-identical to the HF reference (Apple M1, 2026-08-07)
+
+Round-N+1 task 3. The queue framed it as a stop-criterion/attention-sink
+investigation on wide-short inputs; the bisection went elsewhere entirely.
+
+**Root cause**: GLM-4V's text attention rotates INTERLEAVED dim pairs
+(`rotate_half_llm`: `x[0::2]/x[1::2]`, cos `repeat_interleave(2)`), while
+ggml's `GGML_ROPE_TYPE_MROPE` rotates NEOX split-half pairs `(j, j+hd/2)`
+— and the converter exported q/k verbatim. Every ROTATED position was
+mis-paired; position 0 was exact. Text survived on redundancy (fluent
+output, argmax intact for ~64 steps), and the failure only surfaced where
+decoding needs precise retrieval — wide image grids (scan_strip derailed
+into LM paraphrase at the first image-critical token) and repetitive
+structure (the Kurrent '-ich' runaway a real user hit in
+SubtitleEdit-13238 was the SAME bug — with the rope fixed the runaway is
+gone even with the ngram guard disabled, 360 B vs 2051 B).
+
+**Bisection (every step measured, three hypotheses falsified)**: HF
+transcribes the strip perfectly → port defect. Learned-pos-embed theory
+falsified against the checkpoint (GLM-OCR `del self.embeddings`).
+Injecting HF's merged vision embeds still derails → LM-side. mrope
+position ids, prompt ids, sections [16,24,24] all match HF. f16 derails
+identically → not quant. Text-only forward vs HF: **position-0 token cos
+1.00000 at every layer, rotated positions diverge from layer 0**
+(logits mean|Δ| 0.86) → the rotation itself. (The old "parity" refs
+compared the port against a numpy script sharing the same pairing — a
+self-consistent reference validates nothing about the convention.)
+
+**Fix**: load-time permutation of each head's q/k output rows from
+interleaved to NEOX order — ggml's rotation then equals HF's exactly,
+Q·K dot products are invariant to the shared permutation, and **all
+existing GGUF artifacts work unchanged** (no re-publish; SubtitleEdit
+users get it with the next release). `GLM_OCR_NO_ROPE_PERMUTE=1` = old
+behavior.
+
+| | before | after |
+|---|---|---|
+| text-only logits mean\|Δ\| vs HF | 0.86 | **0.0012** (f16 noise) |
+| per-layer hidden cos (rotated tokens) | 0.99→0.93 | **1.000000** (through L14) |
+| scan_strip | derails at token ~65 | **text-identical to HF** (f16 AND published q8) |
+| german_kurrent, guard OFF | 2051 B '-ich' runaway | 360 B, no runaway |
+| fox / tiny | baseline / `$$\mathrm{Hi}$$` | byte-stable / `H i` |
+
+Gates: 77/77 model-free suite; fox stable; strip probes (2x, square-pad)
+all clean now. Sibling audit: qwen2vl (MROPE, NEOX-trained ✓), qwen3vl
+(IMROPE ✓); **unlimited_ocr rope-pairing audit vs its HF reference is an
+open follow-up** (plain NEOX 1-D rope, GLM-family model). New permanent
+diagnostics: `GLM_OCR_DUMP_LOGITS`, `GLM_OCR_DUMP_LLM_LAYERS`.
+
 ## O7 first adoption: per-engine conv2d prefs + R6 mk default on the ppocrv6-det scalar path — −26% process CPU, byte-identical (Apple M1, 2026-08-07)
 
 Round N+1 task 5, first increment. `conv2d_cpu` now reads a thread_local
