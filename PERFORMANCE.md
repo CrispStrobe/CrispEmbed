@@ -55,14 +55,16 @@ quants. The encoder is FLAT on CUDA (within ~±4% of CPU) — the win is
 entirely the decode graph; the O3 "encoder on GPU" question stays closed
 separately.
 
-**Default flipped per-backend-kind (O11 pattern, commit on the branch):**
-CUDA device present ⇒ weights load on the GPU and decode runs the ggml
-graph; Metal/CPU-only boxes keep the scalar CPU default (verified locally
-byte-identical and still `path=scalar`). `=0`/`=1` keep absolute precedence
-for both `CRISPEMBED_PIX2STRUCT_ENC_GPU` and
-`CRISPEMBED_PIX2STRUCT_GGML_DECODE`. Kernel v2 (running) measures the TRUE
-default arm on CUDA (HMER lesson: forced arms cannot show what the default
-does).
+**Default flipped per-backend-kind (O11 pattern) and MERGED to `main`
+(`69e39a62` tip):** CUDA device present ⇒ weights load on the GPU and decode
+runs the ggml graph; Metal/CPU-only boxes keep the scalar CPU default
+(verified locally byte-identical and still `path=scalar`). `=0`/`=1` keep
+absolute precedence for both `CRISPEMBED_PIX2STRUCT_ENC_GPU` and
+`CRISPEMBED_PIX2STRUCT_GGML_DECODE`. **Kernel v2 proved the TRUE default
+arm** (HMER lesson): default-no-env on P100 runs `path=ggml` at
+371-460 ms — indistinguishable from the forced-CUDA arm (369-385 ms) —
+while `=0`/`=0` still forces `path=scalar` (3654-3746 ms); decoded text
+identical across all arms, both fixtures, q8_0 + f16, in v2 as in v1.
 
 TODO carried: ggml-decode-on-CPU measured 1.65x on the Kaggle x86 CPU but
 is unverdicted on M1 (contended-box runs suggestive ~1.1x only) — a quiet-box

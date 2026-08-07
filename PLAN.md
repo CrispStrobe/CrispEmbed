@@ -56,20 +56,29 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
 
 ### Task queue
 
-1. **pix2struct decode graph — CUDA-first** (carried, untouched, now the
-   top item): ~80 ms/tok over 12 layers of small matvecs; the profile
-   exists (R5 lesson — do not re-derive); Metal per-op dispatch says CUDA
-   is where it pays.
-2. **dbnet auto-CUDA default**: run the decoded-text roundtrip on CUDA
-   (kernel arm through dbnet+TrOCR), then the `gpu_backend_pref.h`
-   per-backend-kind default is mechanical (mirror ppocr O11).
+1. ~~**pix2struct decode graph — CUDA-first**~~ **DONE 2026-08-07 (merged
+   `69e39a62`, board row + PERFORMANCE.md top): ggml decode graph ~9x on
+   P100, text byte-identical everywhere, per-kind CUDA default landed; v2
+   kernel proved the true default arm.**
+2. ~~**dbnet auto-CUDA default**~~ **DONE 2026-08-07 (merged `7713c6ad`,
+   board row + PERFORMANCE.md top): CUDA decoded-text roundtrip passed —
+   recognized text identical, only 1px/conf digits move; O11-pattern
+   default landed in `src/ocr_detect.cpp`.**
 3. **O7 remainder on a QUIET box**: ppformulanet-l (nt1 pairs, process
    CPU), then got/deepseek preprocessing convs. Check `uptime` FIRST.
+   (2026-08-07 evening: deferred AGAIN — load 11.5-19.2 all session,
+   recorded honestly; never got a quiet window.)
 4. **LAYOUT_CONV_F16 T4 re-draw** (different day): delete-then-push
    `chr1s4/crispembed-conv-ab`; the kernel prints `T4-DRAW:` on line 2.
+   (2026-08-07: not re-drawn — same-day pool stayed P100-sticky; both
+   new kernels drew P100 too.)
 5. **GLM ViT deep levers — only if explicitly funded** (carried).
-6. **Hygiene**: archive this round's DONE rows + the N+3 handover to
-   HISTORY.
+6. ~~**Hygiene**~~ **DONE 2026-08-07**: N+3 handover + 4 DONE rows archived
+   to HISTORY (`9423dcd5`).
+7. **NEW (from this round's data): pix2struct ggml-decode-on-CPU default** —
+   1.65x vs scalar on Kaggle x86 (3 reps, text identical); needs only a
+   quiet-box M1 A/B to flip the CPU default too. And the O3 encoder-on-GPU
+   question is now measured FLAT on CUDA (±4%) — record-only, stays closed.
 
 ### Non-negotiable protocols
 
@@ -259,7 +268,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-07 | `perf/pix2struct-cuda-decode` / `.claude/worktrees/perf-pix2struct-cuda-decode` (tip `8f767fa1`) | **Round N+4 queue #1 — P100 verdict IN (PERFORMANCE.md top): decoder 3640-3700 → 376-431 ms (~9x q8_0, 12.8x f16, 10.6x scan_strip), decoded text byte-identical across ALL four arms × two fixtures × two quants.** Local gates passed first (byte-identical CPU + Metal, f16 + q8_0; no local timing — box contended). Per-backend-kind default flipped on the branch (CUDA ⇒ GPU weights + ggml decode; Metal/CPU unchanged, verified byte-identical `path=scalar`). Kernel v2 RUNNING to prove the TRUE default arm on CUDA; merge after it confirms | **VERDICT IN — v2 default-arm proof running** |
+| 2026-08-07 | *(landed via `perf/pix2struct-cuda-decode`, merged ff to `69e39a62`)* | **Round N+4 queue #1 DONE — pix2struct ggml decode graph LANDED with the per-kind CUDA default.** Decoder 3640-3746 → 369-460 ms (~9x q8_0; 12.8x f16; 10.6x scan_strip) on P100, decoded text byte-identical across ALL arms × fixtures × quants in BOTH kernel versions; v2 proved the TRUE default arm (no env ⇒ `path=ggml`, matches forced-CUDA; `=0` still forces scalar). Local gates: byte-identical CPU + Metal (MTL0 proven), f16 + q8_0; Metal/CPU default unchanged (`path=scalar`). Implementation: device-resident self/cross KV (got_ocr pattern), in-graph KV cpy, gallocr reserved once, T5 rel-bias as per-step input. CPU-ggml-decode measured 1.65x on Kaggle x86 but stays opt-in pending a quiet-box M1 verdict. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(kernel `chr1s4/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
