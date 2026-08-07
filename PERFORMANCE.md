@@ -1,5 +1,49 @@
 # CrispEmbed Performance
 
+## pix2struct ggml decode graph: decoder ~9x on P100, decoded text byte-identical in every arm (kernel `chr1s4/crispembed-pix2struct-decode-ab` v1, 2026-08-07)
+
+Round-N+4 queue #1. `CRISPEMBED_PIX2STRUCT_GGML_DECODE` replaces the
+per-token CPU scalar loop with a single-backend ggml step graph:
+device-resident self/cross KV (got_ocr `alloc_kv_cache` pattern), new K/V
+written in-graph via `cpy` into a position view, a dedicated gallocr
+reserved once at max KV length (sched-free compute), and the T5 relative
+bias entering as a per-step input tensor from the same `t5_relative_bucket`
+as the scalar path. Branch `perf/pix2struct-cuda-decode`.
+
+**Local identity gates (Apple M1, contended box — identity only, no timing
+verdict):** decoded output byte-identical to the scalar path on fox +
+scan_strip × textcaps f16 + q8_0 × CPU backend + Metal (`MTL0` proven in the
+run's own stderr).
+
+**P100 A/B (quiet CUDA box, 3 interleaved reps × 4 arms, one lever each,
+proof-of-work stdout sha on every row; ccache warm 829 files):**
+
+| arm (q8_0, fox) | decoder ms (3 reps) | encoder ms | decoded text |
+|---|--:|--:|:--|
+| base (scalar, CPU) | 3640 / 3682 / 3700 | 4806-5127 | ref sha `198c26a926b7` |
+| ENC_GPU only (scalar on GPU weights) | 2982-3059 | 5080-5168 | identical |
+| GGML_DECODE only (ggml on CPU) | 2220-2248 | 4850-4911 | identical |
+| ENC_GPU + GGML_DECODE (**CUDA decode**) | **376 / 409 / 431** | 5005-5125 | identical |
+
+scan_strip q8_0: 4483 → **423 ms** (10.6x). f16 fox: 4606 → **360 ms**
+(12.8x). Decoded text identical across ALL arms on both fixtures and both
+quants. The encoder is FLAT on CUDA (within ~±4% of CPU) — the win is
+entirely the decode graph; the O3 "encoder on GPU" question stays closed
+separately.
+
+**Default flipped per-backend-kind (O11 pattern, commit on the branch):**
+CUDA device present ⇒ weights load on the GPU and decode runs the ggml
+graph; Metal/CPU-only boxes keep the scalar CPU default (verified locally
+byte-identical and still `path=scalar`). `=0`/`=1` keep absolute precedence
+for both `CRISPEMBED_PIX2STRUCT_ENC_GPU` and
+`CRISPEMBED_PIX2STRUCT_GGML_DECODE`. Kernel v2 (running) measures the TRUE
+default arm on CUDA (HMER lesson: forced arms cannot show what the default
+does).
+
+TODO carried: ggml-decode-on-CPU measured 1.65x on the Kaggle x86 CPU but
+is unverdicted on M1 (contended-box runs suggestive ~1.1x only) — a quiet-box
+M1 A/B could justify flipping the CPU default too. Until then scalar stays.
+
 ## conv-ab v3 (P100): det-only DBNet is ~6x on CUDA with box-equivalent output; LAYOUT_CONV_F16 still lacks its T4 draw (kernel `chr1s4/crispembed-conv-ab` v3, 2026-08-07)
 
 Round-N+3 task 6. The v2 wall was TrOCR-dominated and its arms' decoded text
