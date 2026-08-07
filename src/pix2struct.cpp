@@ -20,6 +20,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/env_gate.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <chrono>
@@ -81,8 +82,10 @@ struct pix2struct_context {
     // Weight storage
     core_gguf::WeightLoad wl;
 
-    // ggml backend (CPU, kept alive for graph compute)
+    // ggml backend (CPU by default; CRISPEMBED_PIX2STRUCT_ENC_GPU=1 makes it
+    // the best GPU backend with backend_cpu as the sched fallback — O3)
     ggml_backend_t backend;
+    ggml_backend_t backend_cpu;
 
     // Encoder scheduler (reusable)
     ggml_backend_sched_t enc_sched;
@@ -157,6 +160,7 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     auto * ctx = new pix2struct_context;
     ctx->backend = nullptr;
     ctx->enc_sched = nullptr;
+    ctx->backend_cpu = nullptr;
 
     ctx->enc_layers = (int)core_gguf::kv_u32(meta, "pix2struct.enc_layers", 12);
     ctx->dec_layers = (int)core_gguf::kv_u32(meta, "pix2struct.dec_layers", 12);
@@ -178,12 +182,18 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     // Ignored-n_threads bug class (O13b family): this engine is CPU-only —
     // its whole encoder graph runs here — yet the thread count was discarded
     // with (void)n_threads, so every caller's -t silently ran ggml's default.
-    ctx->backend = ggml_backend_cpu_init();
-    if (ctx->backend) ggml_backend_cpu_set_n_threads(ctx->backend, std::max(1, n_threads));
+    //
+    // O3 (opt-in): CRISPEMBED_PIX2STRUCT_ENC_GPU=1 puts the encoder sched on
+    // the best GPU backend (got_ocr/R4 pattern: GPU + CPU fallback, guarded
+    // set_n_threads). Default stays CPU until the A/B wins speed AND quality.
+    const bool enc_gpu = core_env::on("CRISPEMBED_PIX2STRUCT_ENC_GPU");
+    ctx->backend = enc_gpu ? crispasr_init_gpu_backend() : nullptr;
+    if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (!ctx->backend) {
         delete ctx;
         return nullptr;
     }
+    if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, std::max(1, n_threads));
     if (!core_gguf::load_weights(model_path, ctx->backend, "pix2struct", ctx->wl)) {
         ggml_backend_free(ctx->backend);
         delete ctx;
@@ -247,11 +257,15 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
     ctx->enc_cache_n = 0;
     ctx->sa_cache_len = 0;
 
-    // Create encoder scheduler (reusable across calls)
+    // Create encoder scheduler (reusable across calls). sched_new asserts the
+    // LAST backend is CPU, so a GPU primary gets a CPU fallback appended.
     {
         int max_nodes = ctx->enc_layers * 40 + 64;
-        ggml_backend_t backends[1] = { ctx->backend };
-        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, max_nodes, false, false);
+        ctx->backend_cpu = ggml_backend_is_cpu(ctx->backend) ? nullptr : ggml_backend_cpu_init();
+        if (ctx->backend_cpu) ggml_backend_cpu_set_n_threads(ctx->backend_cpu, std::max(1, n_threads));
+        ggml_backend_t backends[2] = { ctx->backend, ctx->backend_cpu };
+        const int n_backends = ctx->backend_cpu ? 2 : 1;
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, n_backends, max_nodes, false, false);
     }
 
     ctx->bench = core_env::on("CRISPEMBED_PIX2STRUCT_BENCH");
@@ -263,6 +277,7 @@ void pix2struct_free(pix2struct_context * ctx) {
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
+    if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
     delete ctx;
 }
 
