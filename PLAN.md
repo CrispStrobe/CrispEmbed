@@ -87,166 +87,13 @@ own line, trust the one closer to the artifact (the 829-file warm was real,
 the "cold build" print was not); verify the push-output URL names the
 account you intended.
 
-## HANDOVER — OCR round N+3 (superseded 2026-08-07 by round N+4 above; annotations inline)
+## HANDOVER — OCR round N+3 (ARCHIVED 2026-08-07 — superseded by round N+4 above)
 
-**Read before doing anything:** this section; the ~6 DONE board rows below
-(they carry the evidence — archive them to HISTORY as your first hygiene
-act); the top ~6 dated sections of `PERFORMANCE.md`;
-`../crispasr-crispembed-dev.md` **including BOTH the 2026-08-06 and
-2026-08-07 addenda**; `../kaggle_usage.md` (tokens live there, NEVER in
-this repo).
-
-### Prime directive (sharpened — two of the last brief's items were WRONG)
-
-**Re-measure any item's named bottleneck before implementing its fix**, and
-for quality bugs **run the real HF reference first**. Both halves earned
-their keep again: round N+2's task-2 brief asserted a "stage-param diff"
-that does not exist (the entire gap was a cleanup flag), and its task-8
-brief asserted a "stale merger tap" that was neither stale nor the first
-divergence. **A brief is a hypothesis, not a finding.**
-
-New this round, and the mistake that cost the most: **a cosine is not a
-severity.** A per-stage cosine measured on a SYNTHETIC probe can read
-catastrophic while the decoded output is byte-identical on every real
-fixture but one. Run the decoded-output test BEFORE assigning severity or
-writing it into a commit message — this brief's author did not, and had to
-correct `main` afterwards.
-
-And: **check the harness before believing the harness.** `cos_min` was
-computed over the WRONG AXIS for every engine until `0923def7`.
-
-### State snapshot (all on `main`, CI green through `fb626a5a`)
-
-- **⚠ EVERY pre-`0923def7` per-engine `cos_min` figure is SUSPECT.**
-  `crispembed_diff::compare()` defaulted its row size to `shape.back()` =
-  the SLOW axis, so "rows" straddled token boundaries (GLM vision:
-  576-float slices of 1024-float tokens, 0.5625 tokens each). Identical
-  data gives cos 1.0 under any grouping, which is why it survived — it only
-  lies once there IS a difference to measure. Anything recorded as PASS is
-  still fine; any recorded FAIL/degradation NUMBER may need re-reading.
-  `test_dbnet_diff.cpp` was always correct (explicit `row_dim=0`).
-- **Tesseract lane**: the H9 router's advantage over the forced-classical
-  arm was CLEANUP, not stage params — the cleanup skip was keyed on the
-  `PAGESEG` flag that the router never sets. Now unbundled;
-  forced-classical is byte-identical to the router (24/24 fixtures).
-  `--tesseract-pageseg` forces classical again (the router had silently
-  stopped honouring an explicit request). Column-detector false positives
-  root-caused; the fix ships OPT-IN because it is a wash on decoded output.
-  **Fraktur CER is unchanged at ~0.196 — round 4 bought correctness, not CER.**
-- **GLM-OCR vision CLOSED — no kernel fix to make.** CPU is reference-exact
-  (cos 1.000000 vs the real HF forward AND the numpy dumper); Metal
-  diverges by AMPLIFICATION — ordinary f32 reduction-order at layer 1
-  (rel ~5.7e-6) compounded ~1.7x/layer against ~1.24x signal growth, with
-  |x| reaching 86000. Decoded output differs ONLY on german_kurrent
-  (357 vs 361 B); fox and scan_strip are byte-identical.
-  `GLM_OCR_FORCE_CPU=1` is the faithfulness mitigation. ⚠ The sched DID
-  place the first weight-less RMS_NORM on CPU (the dev-guide gotcha) and
-  removing that split changes NOTHING — do not re-derive.
-- **O7 increment 3**: HMER flipped, −25.7% process CPU, byte-identical —
-  and its conv-heavy stage was the per-token COVERAGE ATTENTION, not the
-  DenseNet encoder (which is a ggml graph by default). BTTR measured flat
-  and was honestly not flipped.
-- **New permanent diagnostics**: `GLM_OCR_VISION_MAX_LAYERS=N`,
-  `GLM_OCR_DUMP_VIS_OUTPUT`, `GLM_OCR_VISION_PIN_INPUT`,
-  `core_env::explicitly_off()`, `tools/hf_glm_vision_parity.py`, and
-  `|mine|`/`|ref|`/`cos_glob`/`cos_mean` on every GLM diff line.
-- **Env**: conda `transformers` is now **5.15.0.dev0** (required for
-  `GlmOcrForConditionalGeneration`); `optimum-onnx` pins `<4.58` and now
-  conflicts. GLM-OCR weights cached at
-  `/Volumes/backups/ai/huggingface/hub/models--zai-org--GLM-OCR` — set
-  `HF_HOME=/Volumes/backups/ai/huggingface`, no re-download needed.
-
-### Task queue — FABLE-tier
-
-1. ~~**R8 ICB replay**~~ **CLOSED premise-failed 2026-08-07** (board row +
-   PERFORMANCE.md top): "Metal decode is per-op-dispatch bound" is false on
-   current main — the fork's own §210 probe (`CRISPASR_METAL_PROFILE=1`)
-   measures host-encode at **2.2%** (glm-ocr, 612-node steps) and **5.1%**
-   (got-ocr2, 916-node steps) of step total, confirming the recorded
-   2026-07-13 "82-89% GPU-execute" caveat this brief contradicted. ICB
-   collapses only the encode slice → ceiling 2-5%, below its complexity
-   budget. Joins R1/R2/R7 as premise-failed. Do not re-derive without a NEW
-   engine measuring encode-bound.
-2. ~~**Pageseg round 5 — the decoder levers, finally.**~~ **DONE 2026-08-07
-   (`6a636a06`, board row below): the levers LOSE (beam/DAWG monotonically
-   worse at 3-118x cost, closed), and the confidence signal alone reached
-   ≤0.18 — Fraktur CER 0.1959 → 0.1489 via opt-in
-   `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE=0.55`.** Remaining residuals to
-   ~0.10: the №r-1 decorative crop (conf 0.70, decodes „M |.), spacing/
-   grouping WER, and recovering (not deleting) the footer-with-noise-band
-   crop — all recognizer/crop-side; segmentation stays closed.
-3. **pix2struct decode graph — CUDA-first** (carried, untouched): ~80 ms/tok
-   spread over 12 layers of small matvecs; the profile already exists (R5
-   lesson — do not re-derive it). Metal per-op dispatch says CUDA is where
-   it pays.
-4. **GLM ViT deep levers — only if explicitly funded** (carried): CPU
-   flash-attn arm A/B, kernel-level q8 matmul, earlier spatial merge. Note
-   the vision lane is now numerically characterised, so any graph rewrite
-   must be checked against the CPU arm, not the Metal one.
-
-### Task queue — OPUS-tier
-
-5. **O7 continuation, one engine per A/B** — **posformer DONE 2026-08-07:
-   measured FLAT, not flipped** (encoder is a ggml graph, 2450 vs scalar
-   3457 ms; the mk-reachable ARM convs sit in a decode that is only 12% of
-   the run; default vs MK=1 dead flat at 1.22-1.24 s user, outputs
-   byte-identical — the BTTR verdict; PERFORMANCE.md top).
-   **ppformulanet-l ABORTED box-contended** (parallel rustc, load 31-35,
-   same-arm spread 2x — re-run on a quiet box; its 4 neck/proj `conv2d_cpu`
-   calls are a real candidate; outputs byte-identical between arms).
-   got/deepseek preprocessing convs remain. **Two rules the HMER increment
-   earned:** profile WHERE `conv2d_cpu` actually runs before assuming it is
-   the encoder (HMER's was the per-token coverage attention, and its
-   encoder is a ggml graph), and always measure the TRUE DEFAULT arm —
-   forced-legacy vs forced-mk cannot tell you whether the default was
-   already on the gemm path.
-6. **dbnet det-only v3 kernel** — **P100 half DONE 2026-08-07** (board row +
-   PERFORMANCE.md top): det-only DBNet ~6x on CUDA, box-equivalent
-   (295=295, Δ≤1.0px), deterministic both arms → the dbnet O11-style
-   auto-CUDA default is evidenced; its remaining gate is one CUDA
-   decoded-text roundtrip. **T4 draw still open** for `LAYOUT_CONV_F16`:
-   v3 AND a v4 re-draw both came up P100 (2026-08-07; v4 replicated every
-   v3 det verdict — walls, box deltas, determinism — a free replication
-   pass). The chr1s4 pool looks P100-sticky today; try the re-draw on a
-   different day/session rather than burning more same-day pushes.
-7. ~~**Upstream PR 23** (carried, mechanical prep only)~~ **PREP DONE
-   2026-08-07** (CrispASR `f600c352`): `tools/upstream-prs/23-*.{md,patch}`
-   re-drafted from `kernel_im2col_flat` — the .patch is now the real
-   `89a2039d` format-patch (235 lines; 3 fork-env references to strip on
-   submission, noted), the .md is a fact sheet (mechanism, int64-divmod
-   review-preempt, measured table, test-backend-ops ask). **The PR text
-   itself remains HUMAN-AUTHORED** (llama.cpp AI policy) — ready for the
-   user to compose and submit.
-8. ~~**Re-read the parity numbers invalidated by the `cos_min` axis fix**~~
-   **DONE 2026-08-07** (PERFORMANCE.md top): PASSes safe by construction,
-   cross-arm contrasts shared the wrong grouping on both sides (verdicts
-   stand), h2ovl decisions were keyed on cos_glob+decode. The one live
-   single-arm FAIL (ppocr det-diff fox-ref cos 0.25) was never an axis
-   casualty — arbitrated against a FRESH paddle reference: medium
-   **0.999980 PASS**, small **0.999883 PASS**. The ports were always
-   correct; every cached fox-ref generation is stale/incomplete. Dated
-   replacements `PP-OCRv6_{medium,small}_det-fox-ref-20260807.gguf` in
-   live-cache.
-9. **Hygiene**: archive this round's DONE rows to HISTORY; trim the
-   round-N+2 handover (superseded by this one).
-
-### Non-negotiable protocols
-
-Unchanged (worktree per change + `git submodule update --init --recursive`
-+ Metal ON flags; claim a board row BEFORE starting and push it;
-measure-first; interleaved same-binary env-gated pairs; new paths opt-in
-until they win speed AND quality; never delete a gated path;
-`tools/format.sh --fix` before merge; ff-merge from the MAIN TREE; no
-Claude co-author trailer in THIS repo; one heavy model at a time on the
-16 GB box; kernels under chr1s4; no tokens in repo Markdown; process CPU
-time nt1-vs-nt1 on the shared box) **plus this round's additions**:
-decoded-output test BEFORE assigning severity to a cosine; verify the
-harness's own row/axis semantics before trusting a divergence; HF vision
-parity needs the processor's merge-BLOCK patch order (raster order makes a
-CORRECT reference look broken from layer 0); a brief is a hypothesis, not a
-finding — two were wrong this round; and BUILD THE CLI IN THE WORKTREE
-before A/B-ing it, because an unbuilt binary reads as "identical output".
-
+Full text moved to `HISTORY.md` ("August 7, 2026 — round N+3 handover,
+archived"). Everything it left open is carried into the round-N+4 queue; the
+evidence for its DONE items is in the archived board rows + `PERFORMANCE.md`.
+⚠ Its own prime-directive additions (decoded-output before cosine severity,
+harness axis semantics, build-the-CLI-in-the-worktree) are restated in N+4.
 ## HANDOVER — OCR round N+2 (ARCHIVED 2026-08-07 — superseded by round N+3 above)
 
 Full text moved to `HISTORY.md` ("August 7, 2026 — round N+2 handover,
@@ -412,10 +259,8 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-07 | *(kernel `chr1s4/crispembed-conv-ab` v3; script `d3d53d4a` + warmer fix)* | **Round N+3 task 6 DONE (P100 half) — det-only DBNet is ~6x on CUDA with box-equivalent output (295=295 boxes, max Δ1.0px/0.007 score, both arms deterministic); the dbnet sibling of the ppocr O11 flip is now evidenced at the box level. Remaining gate before a default: a CUDA decoded-text roundtrip (±1px crops can move a recognizer). LAYOUT_CONV_F16 drew P100 AGAIN — time-neutral (65.5 vs 65.1 ms) with the known 20→19 region drift; T4 question stays open (delete-then-push re-draw when quota allows). ccache seed HEALTHY (829 files, 2.3 min CUDA build; v3's "cold build" line was the local warmer's false alarm — fixed). ⚠ Wrong-account push trap recorded (`kaggle_usage.md`). Evidence PERFORMANCE.md top | **DONE** |
-| 2026-08-07 | *(measure-only, main-tree binary at `6f69131e`)* | **Round N+3 task 8 DONE — post-axis-fix parity re-read: all recorded verdicts survive; the one open FAIL (ppocr det-diff fox-ref 0.25) was a STALE REFERENCE — fresh paddle refs dumped, medium 0.999980 / small 0.999883 PASS, ports vindicated; dated refs in live-cache.** Evidence PERFORMANCE.md top | **DONE** |
-| 2026-08-07 | *(measure-only, main-tree binary at `6f69131e`)* | **Round N+3 task 1 CLOSED premise-failed — R8 ICB replay is dead: Metal decode host-encode is 2-5%, not "per-op-dispatch bound".** The handover's premise contradicted the repo's own 2026-07-13 measurement ("82-89% GPU-execute, ICB caps at ~18%, NOT justified") and the fork already carries the purpose-built probe. `CRISPASR_METAL_PROFILE=1` on current main, decoded output verified both runs: glm-ocr q8_0 decode 612-node steps × 18 → encode **2.2%** (0.9 ms of 40.9 ms); got-ocr2 q4_k 916-node steps × 16 → encode **5.1%** (1.1 ms of 22.3 ms); vision/prefill graphs 0.9-1.4%. ICB collapses only the encode slice → ceiling 2-5% before its own plumbing costs. Joins R1/R2/R7. The Metal decode lever stays per-op kernel time; dispatch-bound belongs to CUDA where graph capture exists. Evidence PERFORMANCE.md top | **DONE** |
-| 2026-08-07 | *(landed via `perf/pageseg-round5`, merged `6a636a06`)* | **Round N+3 task 2 DONE — pageseg round 5: the decoder levers LOSE and are closed; a recognition-confidence floor reaches the ≤0.18 target at 0.1489.** recode-beam is monotonically worse than greedy (Fraktur CER 0.196→0.206/0.213/0.219 at widths 2/4/8, 3-12x stage time); +DAWG scoring recovers ~nothing (0.2037 w2, 0.2116 w4, prefix-bonus 0.2106) at 52-118x — `word_bonus` recomposes the whole prefix inside the beam-sort comparator. DAWG arms needed an artifact first: NO shipped tesseract GGUF carries the scorer's `dawg_names`+u8 channel, and `kv_u8_array` REQUIRES subtype UINT8 (python-list embed → INT32 → silent 0-graph load) — `tools/embed_tesseract_dawgs.py` does metadata surgery on an existing GGUF (tensors byte-identical, verified; `tesseract-frk-q8_0-seeded-dawg.gguf` in live-cache, greedy arm byte-identical). The winner was the residuals' other idea: junk regions (seal, faded-cursive sliver, footer+noise-band) decode at mean char conf 0.23-0.47 vs ≥0.70 for every real line → opt-in value-parsed `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` (~0.55; threshold-insensitive 0.50-0.65) takes Fraktur **0.1959→0.1489** / WER 0.397→0.333. OPT-IN because the harm side is real: 24-fixture arms show synth 20/20 byte-identical + receipt_historical 6.33→3.71, but 3 noisy CC0 scans measure worse vs official (+0.005..+0.062; kurrent junk-agreeing-with-junk, commons_example_receipt faint-but-real). Greedy-path only (beam fills no char_confs). Off-arm byte-identical to untouched main (sha `66ddee936331`), reproduced on the final rebuilt binary; 77/77 + 17/17 gates. Evidence PERFORMANCE.md top | **DONE** |
+| 2026-08-07 | `perf/pix2struct-cuda-decode` / `.claude/worktrees/perf-pix2struct-cuda-decode` | **Claimed (round N+4 queue #1):** pix2struct decode graph, CUDA-first — persistent/device-KV decode step for the ~80 ms/tok 12-layer small-matvec decode (profile exists in PERFORMANCE.md, not re-derived). Gate: opt-in env, decoded-output identity on CPU+Metal locally, then Kaggle CUDA A/B (chr1s4) with decoded-text roundtrip before any default talk | **IN PROGRESS** |
+| 2026-08-07 | *(kernel `chr1s4/crispembed-conv-ab` v5 — det-only harness + dbnet+TrOCR decoded-text arm)* | **Claimed (round N+4 queue #2):** dbnet auto-CUDA remaining gate — CUDA decoded-text roundtrip through the full dbnet+TrOCR pipeline; if text-equivalent, the `gpu_backend_pref.h` per-backend-kind default (CUDA→GPU, Metal/CPU unchanged) is mechanical per the ppocr O11 pattern | **IN PROGRESS** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
