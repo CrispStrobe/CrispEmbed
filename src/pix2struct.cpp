@@ -557,7 +557,15 @@ static void t5_self_attn_1q(const float * q_proj,  // [qkv_dim]
         for (int ki = 0; ki < n_kv; ki++) {
             scores_buf[ki] = core_cpu::dot_product(q_proj + off, k_cache + ki * D + off, hd);
             if (rel_bias) {
-                int bucket = t5_relative_bucket(q_pos - ki, false, n_buckets, max_dist);
+                // t5_relative_bucket expects HF's raw relative_position =
+                // memory_position - query_position (its body does
+                // n = -rel_pos). This call passed q_pos - ki (query - memory),
+                // so n = ki - q_pos <= 0 clamped to 0: EVERY history token
+                // landed in bucket 0 and the decoder had no positional
+                // discrimination at all — the repetition degeneration that
+                // base-model babble had masked (textcaps + the HF reference
+                // exposed it: HF captions fox correctly, the port looped).
+                int bucket = t5_relative_bucket(ki - q_pos, false, n_buckets, max_dist);
                 scores_buf[ki] += rel_bias[bucket * n_heads + h];
             }
             if (ki > q_pos) scores_buf[ki] = -1e30f;

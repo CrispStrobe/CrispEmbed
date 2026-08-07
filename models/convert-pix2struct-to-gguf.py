@@ -90,7 +90,12 @@ def main():
         if "layer_norm" in k or "ln" in name or "bias" in k or "embed" in k.lower() or "lm_head" in k or arr.size < 256:
             writer.add_tensor(name, arr, raw_dtype=gguf.GGMLQuantizationType.F32)
         else:
-            writer.add_tensor(name, arr, raw_dtype=dtype)
+            # raw_dtype LABELS the bytes, it never converts them (the
+            # add_tensor(raw_dtype=) trap): passing the f32 array with an F16
+            # label desyncs every following tensor offset by half this
+            # tensor's size — --fp16 had never produced a loadable GGUF.
+            data = arr.astype(np.float16) if args.fp16 else arr
+            writer.add_tensor(name, data, raw_dtype=dtype)
 
     writer.write_header_to_file()
     writer.write_kv_data_to_file()
