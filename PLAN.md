@@ -117,9 +117,16 @@ computed over the WRONG AXIS for every engine until `0923def7`.
    `tools/upstream-prs/23` from `kernel_im2col_flat` (`89a2039d`) — patch +
    numbers ready; **the PROSE MUST BE HUMAN-AUTHORED** (llama.cpp AI
    policy; ggml-org/ggml venue, standing via #1477).
-8. **Re-read the parity numbers invalidated by the `cos_min` axis fix**:
-   sweep engines with recorded diff figures and re-run the ones whose
-   numbers justified a decision. Cheap now that the harness is trustworthy.
+8. ~~**Re-read the parity numbers invalidated by the `cos_min` axis fix**~~
+   **DONE 2026-08-07** (PERFORMANCE.md top): PASSes safe by construction,
+   cross-arm contrasts shared the wrong grouping on both sides (verdicts
+   stand), h2ovl decisions were keyed on cos_glob+decode. The one live
+   single-arm FAIL (ppocr det-diff fox-ref cos 0.25) was never an axis
+   casualty — arbitrated against a FRESH paddle reference: medium
+   **0.999980 PASS**, small **0.999883 PASS**. The ports were always
+   correct; every cached fox-ref generation is stale/incomplete. Dated
+   replacements `PP-OCRv6_{medium,small}_det-fox-ref-20260807.gguf` in
+   live-cache.
 9. **Hygiene**: archive this round's DONE rows to HISTORY; trim the
    round-N+2 handover (superseded by this one).
 
@@ -305,6 +312,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-08-07 | *(measure-only, main-tree binary at `6f69131e`)* | **Round N+3 task 8 DONE — post-axis-fix parity re-read: all recorded verdicts survive; the one open FAIL (ppocr det-diff fox-ref 0.25) was a STALE REFERENCE — fresh paddle refs dumped, medium 0.999980 / small 0.999883 PASS, ports vindicated; dated refs in live-cache.** Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(measure-only, main-tree binary at `6f69131e`)* | **Round N+3 task 1 CLOSED premise-failed — R8 ICB replay is dead: Metal decode host-encode is 2-5%, not "per-op-dispatch bound".** The handover's premise contradicted the repo's own 2026-07-13 measurement ("82-89% GPU-execute, ICB caps at ~18%, NOT justified") and the fork already carries the purpose-built probe. `CRISPASR_METAL_PROFILE=1` on current main, decoded output verified both runs: glm-ocr q8_0 decode 612-node steps × 18 → encode **2.2%** (0.9 ms of 40.9 ms); got-ocr2 q4_k 916-node steps × 16 → encode **5.1%** (1.1 ms of 22.3 ms); vision/prefill graphs 0.9-1.4%. ICB collapses only the encode slice → ceiling 2-5% before its own plumbing costs. Joins R1/R2/R7. The Metal decode lever stays per-op kernel time; dispatch-bound belongs to CUDA where graph capture exists. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(landed via `perf/pageseg-round5`, merged `6a636a06`)* | **Round N+3 task 2 DONE — pageseg round 5: the decoder levers LOSE and are closed; a recognition-confidence floor reaches the ≤0.18 target at 0.1489.** recode-beam is monotonically worse than greedy (Fraktur CER 0.196→0.206/0.213/0.219 at widths 2/4/8, 3-12x stage time); +DAWG scoring recovers ~nothing (0.2037 w2, 0.2116 w4, prefix-bonus 0.2106) at 52-118x — `word_bonus` recomposes the whole prefix inside the beam-sort comparator. DAWG arms needed an artifact first: NO shipped tesseract GGUF carries the scorer's `dawg_names`+u8 channel, and `kv_u8_array` REQUIRES subtype UINT8 (python-list embed → INT32 → silent 0-graph load) — `tools/embed_tesseract_dawgs.py` does metadata surgery on an existing GGUF (tensors byte-identical, verified; `tesseract-frk-q8_0-seeded-dawg.gguf` in live-cache, greedy arm byte-identical). The winner was the residuals' other idea: junk regions (seal, faded-cursive sliver, footer+noise-band) decode at mean char conf 0.23-0.47 vs ≥0.70 for every real line → opt-in value-parsed `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` (~0.55; threshold-insensitive 0.50-0.65) takes Fraktur **0.1959→0.1489** / WER 0.397→0.333. OPT-IN because the harm side is real: 24-fixture arms show synth 20/20 byte-identical + receipt_historical 6.33→3.71, but 3 noisy CC0 scans measure worse vs official (+0.005..+0.062; kurrent junk-agreeing-with-junk, commons_example_receipt faint-but-real). Greedy-path only (beam fills no char_confs). Off-arm byte-identical to untouched main (sha `66ddee936331`), reproduced on the final rebuilt binary; 77/77 + 17/17 gates. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
