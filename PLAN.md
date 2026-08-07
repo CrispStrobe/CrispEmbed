@@ -81,12 +81,14 @@ computed over the WRONG AXIS for every engine until `0923def7`.
    decode is per-op-dispatch bound; CUDA already has graph capture. Fork
    work — ⚠ `git branch -r --contains <pin>` before pushing (two-lineage
    trap).
-2. **Pageseg round 5 — the decoder levers, finally.** `--recode-beam` and
-   `--dawg-score` are STILL unmeasured post-int8-cache, and the ~60
-   ornament junk chars still need a recognition-confidence signal. These
-   are the only remaining paths to ≤0.18: segmentation is spent (rounds
-   1–4 took 0.412 → 0.196, and round 4 moved CER not at all). Do NOT
-   re-open segmentation geometry without new evidence.
+2. ~~**Pageseg round 5 — the decoder levers, finally.**~~ **DONE 2026-08-07
+   (`6a636a06`, board row below): the levers LOSE (beam/DAWG monotonically
+   worse at 3-118x cost, closed), and the confidence signal alone reached
+   ≤0.18 — Fraktur CER 0.1959 → 0.1489 via opt-in
+   `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE=0.55`.** Remaining residuals to
+   ~0.10: the №r-1 decorative crop (conf 0.70, decodes „M |.), spacing/
+   grouping WER, and recovering (not deleting) the footer-with-noise-band
+   crop — all recognizer/crop-side; segmentation stays closed.
 3. **pix2struct decode graph — CUDA-first** (carried, untouched): ~80 ms/tok
    spread over 12 layers of small matvecs; the profile already exists (R5
    lesson — do not re-derive it). Metal per-op dispatch says CUDA is where
@@ -300,7 +302,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
-| 2026-08-07 | `perf/pageseg-round5` / `.claude/worktrees/perf-pageseg-round5` | **Round N+3 task 2 (pageseg round 5) — measured, near landing.** Decoder levers LOSE: recode-beam CER 0.196→0.206/0.213/0.219 (widths 2/4/8) at 3-12x stage time; +DAWG scoring (new `tesseract-frk-q8_0-seeded-dawg.gguf`, metadata surgery, tensors byte-identical, 3 graphs load) recovers ~nothing (0.2037/0.2116) at 52-118x. The residuals' confidence signal WINS: junk regions decode at mean conf 0.23-0.47 vs real lines ≥0.70 → opt-in `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE=0.55` takes Fraktur **0.196→0.1489** (≤0.18 target REACHED); 24-fixture arms: synth 20/20 identical, receipt_historical 6.33→3.71, but 3 noisy CC0 scans measure worse vs official (+0.005..+0.062) → ships opt-in. dawg4p arm + final rebuild pending | **IN PROGRESS** |
+| 2026-08-07 | *(landed via `perf/pageseg-round5`, merged `6a636a06`)* | **Round N+3 task 2 DONE — pageseg round 5: the decoder levers LOSE and are closed; a recognition-confidence floor reaches the ≤0.18 target at 0.1489.** recode-beam is monotonically worse than greedy (Fraktur CER 0.196→0.206/0.213/0.219 at widths 2/4/8, 3-12x stage time); +DAWG scoring recovers ~nothing (0.2037 w2, 0.2116 w4, prefix-bonus 0.2106) at 52-118x — `word_bonus` recomposes the whole prefix inside the beam-sort comparator. DAWG arms needed an artifact first: NO shipped tesseract GGUF carries the scorer's `dawg_names`+u8 channel, and `kv_u8_array` REQUIRES subtype UINT8 (python-list embed → INT32 → silent 0-graph load) — `tools/embed_tesseract_dawgs.py` does metadata surgery on an existing GGUF (tensors byte-identical, verified; `tesseract-frk-q8_0-seeded-dawg.gguf` in live-cache, greedy arm byte-identical). The winner was the residuals' other idea: junk regions (seal, faded-cursive sliver, footer+noise-band) decode at mean char conf 0.23-0.47 vs ≥0.70 for every real line → opt-in value-parsed `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` (~0.55; threshold-insensitive 0.50-0.65) takes Fraktur **0.1959→0.1489** / WER 0.397→0.333. OPT-IN because the harm side is real: 24-fixture arms show synth 20/20 byte-identical + receipt_historical 6.33→3.71, but 3 noisy CC0 scans measure worse vs official (+0.005..+0.062; kurrent junk-agreeing-with-junk, commons_example_receipt faint-but-real). Greedy-path only (beam fills no char_confs). Off-arm byte-identical to untouched main (sha `66ddee936331`), reproduced on the final rebuilt binary; 77/77 + 17/17 gates. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
