@@ -1,6 +1,38 @@
 # CrispEmbed Performance
 
-## R8 ICB replay CLOSED premise-failed: Metal decode host-encode is 2-5%, not "per-op-dispatch bound" (Apple M1, 2026-08-07)
+## Post-axis-fix parity re-read: PASSes stand, contrasts stand — and the one open FAIL was a STALE REFERENCE, not the port (ppocr det arbitrated cos 0.25 → 0.9999 PASS) (Apple M1, 2026-08-07)
+
+Round-N+3 task 8: every pre-`0923def7` `cos_min` figure was computed over the
+wrong axis, so re-read anything whose NUMBER carried a verdict.
+
+**Sweep result — the recorded decisions survive.** Recorded PASSes are safe by
+construction (identical data gives cos 1.0 under any grouping). Cross-arm
+contrasts (lfm2_colbert CUDA 0.57-vs-0.998, bidirlm text-tower 0.047,
+deepseek L26 0.844→0.958) shared the same wrong grouping on both sides, so
+their verdicts stand. The h2ovl quant-ladder decisions were keyed on
+`cos_glob` + decoded output, not `cos_min` — unaffected.
+
+**The one live single-arm FAIL arbitrated.** The unowned
+`test-ppocrv6-det-diff` FAIL vs `PP-OCRv6_medium_det-fox-ref-final.gguf`
+(prob-map cos 0.25, "stale-ref suspicion") re-reads to the SAME number under
+the fixed harness — it is a whole-map global cosine (one row), never an axis
+casualty. Arbitrated per the standing rule by running the real reference:
+`tools/dump_ppocrv6_detector_reference.py` on the safetensors teachers
+(`/Volumes/backups/ai/crispembed-gguf/source/PP-OCRv6_{medium,small}_det_safetensors`,
+PaddleX checkout `/Volumes/backups/code/PaddleX`):
+
+| arm (fox.png, 800x192 prob map) | vs cached fox-ref | vs FRESH paddle ref |
+|---|--:|--:|
+| medium det f16 | 0.2501 FAIL | **0.999980 PASS** (\|mine\| 119.07 vs 119.01) |
+| small det f16 | 0.2422 FAIL | **0.999883 PASS** |
+
+**The ports were always correct.** Every cached fox-ref generation is stale
+or incomplete: `medium -ref`/`-ref2` carry an EMPTY prob map (\|ref\|=0),
+`-ref-final` a mismatched one, and all generations have empty intermediate
+taps. Fresh dated refs installed:
+`PP-OCRv6_{medium,small}_det-fox-ref-20260807.gguf` (live-cache); the old
+generations should be treated as dead. (The 2026-08-06 "pre-existing
+det-diff FAIL" note below is hereby resolved.)
 
 Round-N+3 task 1 carried "R8 ICB replay — still the top Metal-speed item:
 Metal decode is per-op-dispatch bound." The repo already contained the
