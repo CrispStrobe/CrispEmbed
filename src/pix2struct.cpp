@@ -142,6 +142,22 @@ struct pix2struct_context {
     // Per-token confidence (softmax probability of greedy-selected token)
     std::vector<float> char_confidences;
 
+    // Phase 4 (opt-in, CRISPEMBED_PIX2STRUCT_GGML_DECODE): decode step as a
+    // single-backend ggml graph with device-resident self/cross KV.
+    struct dec_ggml_state {
+        ggml_context * kv_ctx = nullptr;
+        ggml_backend_buffer_t kv_buf = nullptr;
+        ggml_tensor * k = nullptr;  // F32 [qkv_dim, max_seq, n_layers]
+        ggml_tensor * v = nullptr;  // F32 [qkv_dim, max_seq, n_layers]
+        ggml_tensor * ck = nullptr; // F32 [qkv_dim, n_enc, n_layers]
+        ggml_tensor * cv = nullptr; // F32 [qkv_dim, n_enc, n_layers]
+        ggml_gallocr_t galloc = nullptr;
+        std::vector<uint8_t> meta;
+        std::vector<float> bias_host; // [n_kv * n_heads] staged per step
+        int max_seq = 0, n_enc = 0;
+        bool ready = false;
+    } dg;
+
     bool bench;
 };
 
@@ -279,6 +295,9 @@ pix2struct_context * pix2struct_init(const char * model_path, int n_threads) {
 
 void pix2struct_free(pix2struct_context * ctx) {
     if (!ctx) return;
+    if (ctx->dg.galloc) ggml_gallocr_free(ctx->dg.galloc);
+    if (ctx->dg.kv_buf) ggml_backend_buffer_free(ctx->dg.kv_buf);
+    if (ctx->dg.kv_ctx) ggml_free(ctx->dg.kv_ctx);
     if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
     core_gguf::free_weights(ctx->wl);
     if (ctx->backend) ggml_backend_free(ctx->backend);
@@ -709,6 +728,229 @@ static void decoder_step_cached(pix2struct_context * ctx, int step, int tok_id, 
                             ctx->n_threads);
 }
 
+// ── Phase 4: decode step as a ggml graph (opt-in) ──
+//
+// CRISPEMBED_PIX2STRUCT_GGML_DECODE=1 replaces the per-token CPU scalar loop
+// with a single-backend ggml step graph: self/cross KV live device-resident
+// in a persistent buffer (got_ocr alloc_kv_cache pattern), K/V for the new
+// position are written in-graph via ggml_cpy into a position view, and a
+// dedicated gallocr is reserved once at max KV length so every step's alloc
+// takes the no-realloc fast path (GOT_OCR_DECODE_CACHE pattern; the graph is
+// single-backend by construction — weights, KV, and compute all sit on
+// ctx->backend — so no sched and no split_graph per token).
+//
+// The T5 relative-position bias depends on the step, so it enters as a
+// per-step input tensor [n_kv, 1, n_heads] filled host-side from the same
+// t5_relative_bucket the scalar path uses. n_kv == step+1 exactly (the KV
+// read view never exposes future slots), so no causal mask is needed.
+// T5 attention is unscaled (scale = 1.0) in both attentions, matching the
+// scalar path.
+//
+// Default stays the scalar loop until the A/B wins speed AND quality
+// (decoded-output identity gate). GPU decode additionally requires the
+// weights on the GPU backend, i.e. CRISPEMBED_PIX2STRUCT_ENC_GPU=1.
+
+struct dec_step_graph {
+    ggml_cgraph * gf = nullptr;
+    ggml_context * gctx = nullptr;
+    ggml_tensor * tok_in = nullptr;  // I32 [1]
+    ggml_tensor * bias_in = nullptr; // F32 [n_kv, 1, n_heads]
+    ggml_tensor * logits = nullptr;  // F32 [vocab]
+};
+
+static dec_step_graph build_dec_step_graph(pix2struct_context * ctx, int step) {
+    const int H = ctx->hidden;
+    const int nh = ctx->n_heads;
+    const int hd = ctx->d_kv;
+    const int qkv_dim = nh * hd;
+    const int n_kv = step + 1;
+    const int n_enc = ctx->dg.n_enc;
+    const float eps = ctx->rms_eps;
+    auto & dg = ctx->dg;
+
+    // Views/permutes/conts/casts all count as graph nodes: each attention is
+    // ~15 nodes and a layer carries two of them plus QKV/O matmuls, KV cpys,
+    // norms, and the FFN — ~80 nodes/layer measured; 128 leaves slack.
+    const int max_nodes = ctx->dec_layers * 128 + 64;
+    size_t meta_sz = ggml_tensor_overhead() * (max_nodes + 64) + ggml_graph_overhead_custom(max_nodes, false);
+    if (dg.meta.size() < meta_sz) dg.meta.resize(meta_sz);
+
+    dec_step_graph sg;
+    ggml_init_params ip = { meta_sz, dg.meta.data(), true };
+    sg.gctx = ggml_init(ip);
+    auto * g = sg.gctx;
+    sg.gf = ggml_new_graph_custom(g, max_nodes, false);
+
+    sg.tok_in = ggml_new_tensor_1d(g, GGML_TYPE_I32, 1);
+    ggml_set_name(sg.tok_in, "tok");
+    ggml_set_input(sg.tok_in);
+
+    sg.bias_in = ggml_new_tensor_3d(g, GGML_TYPE_F32, n_kv, 1, nh);
+    ggml_set_name(sg.bias_in, "sa_bias");
+    ggml_set_input(sg.bias_in);
+
+    // Token embedding (get_rows dequantizes the selected row to F32)
+    ggml_tensor * x = ggml_get_rows(g, ctx->tok_emb, sg.tok_in); // [H, 1]
+
+    auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) {
+        return ggml_mul(g, ggml_rms_norm(g, t, eps), cast_f32(g, w));
+    };
+    // Single-query attention over a [qkv_dim, n_kv_len] K/V view.
+    // q2d: [qkv_dim, 1]. bias: nullptr or [n_kv_len, 1, nh]. Returns [qkv_dim, 1].
+    auto attn_1q = [&](ggml_tensor * q2d, ggml_tensor * Kv, ggml_tensor * Vv, int n_kv_len, ggml_tensor * bias) {
+        ggml_tensor * Q = ggml_permute(g, ggml_reshape_3d(g, q2d, hd, nh, 1), 0, 2, 1, 3); // [hd, 1, nh]
+        ggml_tensor * K = ggml_permute(g, ggml_reshape_3d(g, Kv, hd, nh, n_kv_len), 0, 2, 1, 3);
+        ggml_tensor * scores = ggml_mul_mat(g, ggml_cont(g, K), ggml_cont(g, Q)); // [n_kv_len, 1, nh]
+        if (bias) scores = ggml_add(g, scores, bias);
+        ggml_tensor * probs = ggml_soft_max(g, scores); // T5: unscaled
+        // V^T layout [n_kv_len, hd, nh] so mul_mat gives [hd, 1, nh]
+        ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, ggml_reshape_3d(g, Vv, hd, nh, n_kv_len), 1, 2, 0, 3));
+        ggml_tensor * out = ggml_mul_mat(g, Vt, probs);       // [hd, 1, nh]
+        out = ggml_cont(g, ggml_permute(g, out, 0, 2, 1, 3)); // [hd, nh, 1]
+        return ggml_reshape_2d(g, out, qkv_dim, 1);
+    };
+
+    for (int li = 0; li < ctx->dec_layers; li++) {
+        const auto & L = ctx->dec[li];
+
+        // ── Self-attention (incremental KV, written in-graph) ──
+        ggml_tensor * normed = rmsnorm(x, L.sa_norm);
+        ggml_tensor * q = ggml_mul_mat(g, L.sa_q, normed);
+        ggml_tensor * k_new = ggml_mul_mat(g, L.sa_k, normed);
+        ggml_tensor * v_new = ggml_mul_mat(g, L.sa_v, normed);
+
+        const size_t k_off = (size_t)li * dg.k->nb[2] + (size_t)step * dg.k->nb[1];
+        const size_t v_off = (size_t)li * dg.v->nb[2] + (size_t)step * dg.v->nb[1];
+        ggml_tensor * k_dst = ggml_view_1d(g, dg.k, qkv_dim, k_off);
+        ggml_tensor * v_dst = ggml_view_1d(g, dg.v, qkv_dim, v_off);
+        ggml_build_forward_expand(sg.gf, ggml_cpy(g, ggml_reshape_1d(g, k_new, qkv_dim), k_dst));
+        ggml_build_forward_expand(sg.gf, ggml_cpy(g, ggml_reshape_1d(g, v_new, qkv_dim), v_dst));
+
+        ggml_tensor * Kv = ggml_view_2d(g, dg.k, qkv_dim, n_kv, dg.k->nb[1], (size_t)li * dg.k->nb[2]);
+        ggml_tensor * Vv = ggml_view_2d(g, dg.v, qkv_dim, n_kv, dg.v->nb[1], (size_t)li * dg.v->nb[2]);
+        ggml_tensor * attn = attn_1q(q, Kv, Vv, n_kv, sg.bias_in);
+        x = ggml_add(g, x, ggml_mul_mat(g, L.sa_o, attn));
+
+        // ── Cross-attention (pre-computed device K/V) ──
+        normed = rmsnorm(x, L.ca_norm);
+        q = ggml_mul_mat(g, L.ca_q, normed);
+        ggml_tensor * CKv = ggml_view_2d(g, dg.ck, qkv_dim, n_enc, dg.ck->nb[1], (size_t)li * dg.ck->nb[2]);
+        ggml_tensor * CVv = ggml_view_2d(g, dg.cv, qkv_dim, n_enc, dg.cv->nb[1], (size_t)li * dg.cv->nb[2]);
+        attn = attn_1q(q, CKv, CVv, n_enc, nullptr);
+        x = ggml_add(g, x, ggml_mul_mat(g, L.ca_o, attn));
+
+        // ── GeGLU FFN (ggml_gelu is the tanh approximation, matching the
+        //    scalar path's formula) ──
+        normed = rmsnorm(x, L.ffn_norm);
+        ggml_tensor * gate = ggml_gelu(g, ggml_mul_mat(g, L.wi_0, normed));
+        ggml_tensor * up = ggml_mul_mat(g, L.wi_1, normed);
+        x = ggml_add(g, x, ggml_mul_mat(g, L.wo, ggml_mul(g, gate, up)));
+    }
+
+    // Final norm + LM head
+    x = rmsnorm(x, ctx->final_norm);
+    sg.logits = ggml_mul_mat(g, ctx->lm_head, x); // [vocab, 1]
+    ggml_set_name(sg.logits, "logits");
+    ggml_set_output(sg.logits);
+    ggml_build_forward_expand(sg.gf, sg.logits);
+    return sg;
+}
+
+// Allocate device KV, upload cross K/V (after precompute_cross_kv), reserve
+// the gallocr at max shapes. Returns false on any failure (caller falls back
+// to the scalar path).
+static bool dec_ggml_prepare(pix2struct_context * ctx, int max_seq) {
+    auto & dg = ctx->dg;
+    const int qkv_dim = ctx->n_heads * ctx->d_kv;
+    const int nl = ctx->dec_layers;
+    const int n_enc = ctx->enc_cache_n;
+
+    if (dg.kv_buf && (dg.max_seq < max_seq || dg.n_enc != n_enc)) {
+        if (dg.galloc) ggml_gallocr_free(dg.galloc);
+        ggml_backend_buffer_free(dg.kv_buf);
+        ggml_free(dg.kv_ctx);
+        dg.galloc = nullptr;
+        dg.kv_buf = nullptr;
+        dg.kv_ctx = nullptr;
+        dg.ready = false;
+    }
+
+    if (!dg.kv_buf) {
+        size_t ctx_size = 4 * ggml_tensor_overhead() + 1024;
+        ggml_init_params ip = { ctx_size, nullptr, true };
+        dg.kv_ctx = ggml_init(ip);
+        dg.k = ggml_new_tensor_3d(dg.kv_ctx, GGML_TYPE_F32, qkv_dim, max_seq, nl);
+        dg.v = ggml_new_tensor_3d(dg.kv_ctx, GGML_TYPE_F32, qkv_dim, max_seq, nl);
+        dg.ck = ggml_new_tensor_3d(dg.kv_ctx, GGML_TYPE_F32, qkv_dim, n_enc, nl);
+        dg.cv = ggml_new_tensor_3d(dg.kv_ctx, GGML_TYPE_F32, qkv_dim, n_enc, nl);
+        dg.kv_buf = ggml_backend_alloc_ctx_tensors(dg.kv_ctx, ctx->backend);
+        if (!dg.kv_buf) {
+            ggml_free(dg.kv_ctx);
+            dg.kv_ctx = nullptr;
+            return false;
+        }
+        dg.max_seq = max_seq;
+        dg.n_enc = n_enc;
+    }
+    ggml_backend_buffer_clear(dg.kv_buf, 0);
+
+    // Upload the host cross K/V (already [n_enc, qkv_dim] row-major = the
+    // [qkv_dim, n_enc] ggml layout of one layer slice).
+    const size_t layer_bytes = (size_t)n_enc * qkv_dim * sizeof(float);
+    for (int li = 0; li < nl; li++) {
+        ggml_backend_tensor_set(dg.ck, ctx->cross_k_cache[li].data(), (size_t)li * dg.ck->nb[2], layer_bytes);
+        ggml_backend_tensor_set(dg.cv, ctx->cross_v_cache[li].data(), (size_t)li * dg.cv->nb[2], layer_bytes);
+    }
+
+    if (!dg.galloc) {
+        dg.galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
+        dec_step_graph rg = build_dec_step_graph(ctx, max_seq - 1);
+        const bool reserved = ggml_gallocr_reserve(dg.galloc, rg.gf);
+        ggml_free(rg.gctx);
+        if (!reserved) {
+            fprintf(stderr, "pix2struct: decode gallocr reserve failed; falling back to scalar decode\n");
+            ggml_gallocr_free(dg.galloc);
+            dg.galloc = nullptr;
+            return false;
+        }
+    }
+    dg.ready = true;
+    return true;
+}
+
+static bool decoder_step_ggml(pix2struct_context * ctx, int step, int tok_id, float * logits) {
+    auto & dg = ctx->dg;
+    const int nh = ctx->n_heads;
+    const int n_kv = step + 1;
+
+    dec_step_graph sg = build_dec_step_graph(ctx, step);
+    if (!ggml_gallocr_alloc_graph(dg.galloc, sg.gf)) {
+        ggml_free(sg.gctx);
+        return false;
+    }
+
+    const int32_t tok = tok_id;
+    ggml_backend_tensor_set(sg.tok_in, &tok, 0, sizeof(int32_t));
+
+    // T5 relative bias for this step: bias[h][ki] over the [n_kv, 1, nh]
+    // input; same bucket call as the scalar path (rel_pos = ki - q_pos <= 0).
+    const float * rel_bias_w = ctx->dc.get(ctx->dec[0].sa_rel_bias);
+    dg.bias_host.resize((size_t)n_kv * nh);
+    for (int ki = 0; ki < n_kv; ki++) {
+        const int bucket = t5_relative_bucket(ki - step, false, ctx->rel_buckets, ctx->rel_max_dist);
+        for (int h = 0; h < nh; h++) dg.bias_host[(size_t)h * n_kv + ki] = rel_bias_w[bucket * nh + h];
+    }
+    ggml_backend_tensor_set(sg.bias_in, dg.bias_host.data(), 0, (size_t)n_kv * nh * sizeof(float));
+
+    if (ggml_backend_graph_compute(ctx->backend, sg.gf) != GGML_STATUS_SUCCESS) {
+        ggml_free(sg.gctx);
+        return false;
+    }
+    ggml_backend_tensor_get(sg.logits, logits, 0, (size_t)ctx->vocab_size * sizeof(float));
+    ggml_free(sg.gctx);
+    return true;
+}
+
 // ── Public decode API for parity testing ──
 
 int pix2struct_decode_step0(pix2struct_context * ctx, float * out_logits) {
@@ -749,18 +991,25 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
     // Pre-compute cross-attn K/V (once per encoder call)
     precompute_cross_kv(ctx);
 
-    // Allocate self-attn KV cache
-    ctx->sa_k_cache.resize(ctx->dec_layers);
-    ctx->sa_v_cache.resize(ctx->dec_layers);
-    for (int li = 0; li < ctx->dec_layers; li++) {
-        ctx->sa_k_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
-        ctx->sa_v_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
-    }
-    ctx->sa_cache_len = 0;
+    // Phase 4 opt-in: ggml decode-step graph with device-resident KV.
+    static const bool ggml_decode_env = core_env::on("CRISPEMBED_PIX2STRUCT_GGML_DECODE");
+    const bool use_ggml = ggml_decode_env && dec_ggml_prepare(ctx, max_tokens + 1);
+    if (ctx->bench) fprintf(stderr, "[pix2struct-bench] decode path: %s\n", use_ggml ? "ggml" : "scalar");
 
-    // Pre-allocate decoder scratch buffers
-    ctx->ds.allocated = false;
-    ensure_dec_scratch(ctx, max_tokens + 1);
+    if (!use_ggml) {
+        // Allocate self-attn KV cache
+        ctx->sa_k_cache.resize(ctx->dec_layers);
+        ctx->sa_v_cache.resize(ctx->dec_layers);
+        for (int li = 0; li < ctx->dec_layers; li++) {
+            ctx->sa_k_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
+            ctx->sa_v_cache[li].resize((max_tokens + 1) * qkv_dim, 0.0f);
+        }
+        ctx->sa_cache_len = 0;
+
+        // Pre-allocate decoder scratch buffers
+        ctx->ds.allocated = false;
+        ensure_dec_scratch(ctx, max_tokens + 1);
+    }
 
     std::vector<int32_t> generated = { 0 }; // start with decoder_start_token_id = 0
     std::vector<float> logits(ctx->vocab_size);
@@ -768,7 +1017,14 @@ static std::string greedy_decode(pix2struct_context * ctx, int max_tokens) {
 
     for (int step = 0; step < max_tokens; step++) {
         int tok_id = generated.back();
-        decoder_step_cached(ctx, step, tok_id, logits.data());
+        if (use_ggml) {
+            if (!decoder_step_ggml(ctx, step, tok_id, logits.data())) {
+                fprintf(stderr, "pix2struct: ggml decode step %d failed; output truncated\n", step);
+                break;
+            }
+        } else {
+            decoder_step_cached(ctx, step, tok_id, logits.data());
+        }
         ctx->sa_cache_len = step + 1;
 
         // Argmax
