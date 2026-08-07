@@ -1,5 +1,29 @@
 # CrispEmbed Performance
 
+## dbnet auto-CUDA default LANDED: the CUDA decoded-text roundtrip passed — ±1px crops do not move the recognizer (kernel `chr1s4/crispembed-dbnet-rt` v1, merged `7713c6ad`, 2026-08-07)
+
+Round-N+4 queue #2, the last gate after conv-ab v3/v4's det-only ~6x
+box-equivalent verdict. Full dbnet+TrOCR pipeline on P100, det CPU vs CUDA,
+2 interleaved reps/arm:
+
+- **fox**: output byte-identical between arms (sha `a3b2317b4ab0` all four
+  runs), both arms deterministic.
+- **scan_page_pd**: 295=295 regions, both arms deterministic; exactly 4 of
+  295 lines differ and every one carries an IDENTICAL recognized string
+  ("DRESSING" / "WELCOMING" / "AN" / "AT") — the deltas are one 1px box
+  x-coordinate (387→386) and three ±0.01 confidence digits, i.e. the
+  already-proven Δ≤1.0px det movement surfacing in printed metadata.
+  Arm-vs-arm CER 0.0004 is entirely those digits.
+
+Flip shipped (O11 pattern, `src/ocr_detect.cpp`): CUDA device present ⇒
+dbnet det computes on the GPU; Metal/CPU-only boxes keep the CPU default
+(verified byte-identical to the pre-flip binary on the no-CUDA M1).
+`OCR_DETECT_USE_GPU=0` forces CPU, `=1` forces GPU, unset = per-kind;
+`OCR_DETECT_FORCE_CPU` keeps absolute precedence. Caveat recorded honestly:
+the fox "CER vs ground truth 7.7" rows in the kernel log compare full stdout
+(incl. box lines) against the bare pangram — meaningless as an absolute,
+equal across arms, which is all it was for.
+
 ## pix2struct ggml decode graph: decoder ~9x on P100, decoded text byte-identical in every arm (kernel `chr1s4/crispembed-pix2struct-decode-ab` v1, 2026-08-07)
 
 Round-N+4 queue #1. `CRISPEMBED_PIX2STRUCT_GGML_DECODE` replaces the
