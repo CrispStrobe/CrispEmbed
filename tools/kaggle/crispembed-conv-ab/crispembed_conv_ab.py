@@ -102,7 +102,14 @@ def _warm_ccache():
                 return
             except Exception as e:
                 print(f"  ccache warm failed: {e}", flush=True)
-    print("  ccache: cold build", flush=True)
+        # Kaggle auto-extracts a dataset's ccache.tar into a bare .ccache/
+        # tree, which the harness warmer (install_build_toolchain) already
+        # consumed — v3's local "ccache: cold build" line here was a FALSE
+        # alarm over exactly that (829 files warm, 2.3 min build).
+        if (base / ".ccache").exists():
+            print(f"  ccache: bare tree at {base / '.ccache'} (harness warmer handles it)", flush=True)
+            return
+    print("  ccache: cold build (no tar, no tree — reseed via crispembed-ccache-seed)", flush=True)
 
 
 _warm_ccache()
