@@ -1,0 +1,17 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-p2s-decode-ab",
+  "title": "CrispEmbed Pix2Struct Decode AB",
+  "code_file": "crispembed_p2s_decode_ab.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "${KAGGLE_ACCOUNT}/crispasr-hf-token",
+    "${KAGGLE_ACCOUNT}/crispembed-ccache"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
