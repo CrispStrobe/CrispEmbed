@@ -375,7 +375,23 @@ static vision_graph build_vision_graph(context & ctx, int n_patches) {
         return ggml_add(g, ggml_mul(g, t, cos_in), ggml_mul(g, rot, sin_in));
     };
 
-    for (int i = 0; i < n_layers; i++) {
+    // GLM_OCR_VISION_MAX_LAYERS=N — run only the first N blocks and return the
+    // residual stream as the GENUINE graph output (post_layernorm skipped).
+    //
+    // This exists because per-intermediate `ggml_set_output` snapshots are
+    // documented to read cos ~1.0 on the Metal sched while the real forward is
+    // wrong: marking outputs perturbs buffer elision, so a bisection built on
+    // them can exonerate the very layer that is broken. Truncating the graph
+    // and reading its true output is the only trustworthy axis. Compare
+    // CPU vs Metal at each N (see GLM_OCR_DUMP_VIS_OUTPUT).
+    int max_layers = n_layers;
+    if (const char * e = std::getenv("GLM_OCR_VISION_MAX_LAYERS")) {
+        const int v = atoi(e);
+        if (v > 0 && v < n_layers) max_layers = v;
+    }
+    const bool truncated = max_layers < n_layers;
+
+    for (int i = 0; i < max_layers; i++) {
         auto & blk = ctx.m.vis_blocks[i];
 
         ggml_tensor * h = rmsnorm(x, blk.norm1_w);
@@ -457,8 +473,8 @@ static vision_graph build_vision_graph(context & ctx, int n_patches) {
         }
     }
 
-    // Post-layernorm
-    if (ctx.m.post_layernorm_w) {
+    // Post-layernorm (skipped when truncating, so the output IS vis_layer_N-1)
+    if (ctx.m.post_layernorm_w && !truncated) {
         x = rmsnorm(x, ctx.m.post_layernorm_w);
     }
 
@@ -634,6 +650,30 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     vision_graph vg = build_vision_graph(ctx, n_patches);
 
     ggml_backend_sched_reset(ctx.sched);
+    // The vision graph's FIRST op is a weight-less RMS_NORM on vis_embed_in, so
+    // ggml_backend_sched has nothing anchoring it to the GPU and places it —
+    // and its leaf input — on CPU. GGML_SCHED_DEBUG=2 on the 2-layer truncation:
+    //
+    //   ## SPLIT #1: CPU # 0 inputs
+    //   node #  2 (RMS_NORM): node_2 [CPU] use=1,c=1: vis_embed_in [CPU]
+    //   ## SPLIT #2: MTL0 # 4 inputs: [node_2] [vis_cos_in] [vis_sin_in] [vis_embed_in]
+    //
+    // so BOTH the norm output and the residual stream itself cross the backend
+    // boundary at layer 0. Pinning the input gives the sched a GPU anchor and
+    // removes the split entirely (verified: the vision graph becomes a single
+    // MTL0 split with no cross-backend copies).
+    //
+    // ⚠ SHIPS OPT-IN, because it is NOT the cause of the Metal divergence —
+    // exactly as the dev guide predicts for this gotcha ("pinning the input /
+    // op_offload=true do NOT fix it"). With the split gone, Metal still reads
+    // cos_glob 0.956 / 0.940 against the reference, unchanged to 3 decimals.
+    // Kept and gated rather than deleted: it removes real cross-backend copies
+    // and is the right shape if the placement ever does matter, but it wins
+    // nothing measured, so the default stays as-is per the A/B rule.
+    // GLM_OCR_VISION_PIN_INPUT=1 enables.
+    if (core_env::on("GLM_OCR_VISION_PIN_INPUT") && !ggml_backend_is_cpu(ctx.backend)) {
+        ggml_backend_sched_set_tensor_backend(ctx.sched, vg.embed_in, ctx.backend);
+    }
     if (!ggml_backend_sched_alloc_graph(ctx.sched, vg.gf)) {
         fprintf(stderr, "glm_ocr: vision graph alloc failed\n");
         ggml_free(vg.gctx);
@@ -717,6 +757,17 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
         auto ms =
             std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t_vis).count();
         fprintf(stderr, "[glm_ocr-bench] vision_encoder: %lldms\n", (long long)ms);
+    }
+
+    // GLM_OCR_DUMP_VIS_OUTPUT=<path> — raw f32 dump of the genuine vision graph
+    // output (honours GLM_OCR_VISION_MAX_LAYERS). The bisection axis: run the
+    // same N on CPU and on Metal and diff the two files.
+    if (const char * dump_path = std::getenv("GLM_OCR_DUMP_VIS_OUTPUT")) {
+        if (FILE * f = fopen(dump_path, "wb")) {
+            fwrite(layer_data.data(), sizeof(float), layer_data.size(), f);
+            fclose(f);
+            fprintf(stderr, "[glm-vis-dump] wrote %zu floats to %s\n", layer_data.size(), dump_path);
+        }
     }
 
     // Vision encoder output is now in layer_data (vis_D × n_patches)
@@ -959,9 +1010,18 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     //   CPU backend          cos_glob 1.000000  cos_glob 1.000000   PASS
     //   Metal backend        cos_glob 0.958     cos_glob 0.940      FAIL
     //
-    // Same f16 artifact, same reference, backend the only variable. So every
-    // Mac user of this engine has been running a degraded vision tower --
-    // a user-visible quality bug, not a harness artifact.
+    // Same f16 artifact, same reference, backend the only variable.
+    //
+    // ⚠ SEVERITY, measured rather than assumed (an earlier revision of this
+    // note said "every Mac user runs a degraded vision tower" -- too strong).
+    // Decoded output, Metal vs CPU, q8 artifact:
+    //     fox                          51 B  vs  51 B   IDENTICAL
+    //     scan_strip                  555 B  vs 555 B   IDENTICAL
+    //     german_kurrent_handwriting  357 B  vs 361 B   DIFFERS
+    // So clean inputs are byte-identical and only the hardest fixture moves.
+    // Real, worth fixing, and NOT the catastrophe the per-stage cosine
+    // suggests -- the cosine is measured on a synthetic gradient probe that
+    // maximises the ill-conditioning.
     //
     // The reference was cleared by running the REAL transformers
     // GlmOcrVisionModel (5.15.0.dev0) on the identical synthetic input:
@@ -983,12 +1043,28 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     //     vs 855.4), which is where the activations first grow large. This
     //     ViT reaches |x| ~86000 by layer 23.
     //
-    // Next step for whoever picks this up: bisect the Metal graph on the
-    // GENUINE truncated output, not per-intermediate set_output snapshots --
-    // those are documented to read cos ~1.0 while the real forward is wrong on
-    // the Metal sched. GGML_SCHED_DEBUG=2 plus CRISPASR_METAL_PROFILE=3 are
-    // the tools. Suspect ops carrying the outliers: rms_norm and soft_max_ext
-    // at |x| ~1e5, and the ggml_cast(f16->f32) of every weight.
+    // Bisection done on GENUINE truncated output (GLM_OCR_VISION_MAX_LAYERS=N
+    // + GLM_OCR_DUMP_VIS_OUTPUT, both added for this), never on set_output
+    // snapshots. Metal vs CPU at the same N:
+    //     N=1  cos 0.99999987  max_abs 0.0031   (rel ~5.7e-6)
+    //     N=2  cos 0.99999969  max_abs 0.0060
+    // i.e. the divergence starts at ordinary f32 reduction-order magnitude in
+    // layer 1 and is then AMPLIFIED: the error grows ~1.7x per layer while the
+    // signal grows only ~1.24x, so relative error compounds to cos_glob 0.956
+    // by post_norm. That is the signature of an ill-conditioned stack (this
+    // ViT reaches |x| ~86000), not of one broken kernel -- which is why no
+    // single op has been found and why the CPU arm, sharing BLAS-style
+    // reduction order with the numpy reference, tracks it to cos 1.000000.
+    //
+    // ALSO RULED OUT (clean negative, do not redo): the sched DID place the
+    // graph's first weight-less RMS_NORM and its leaf input on CPU
+    // (GGML_SCHED_DEBUG=2 showed `SPLIT #1: CPU` with node_2 and vis_embed_in
+    // crossing the boundary). GLM_OCR_VISION_PIN_INPUT=1 removes that split
+    // entirely and the divergence is UNCHANGED -- so the documented
+    // weight-less-first-op gotcha is present here but is not the cause.
+    //
+    // If reference-faithful vision matters more than speed on a given box,
+    // GLM_OCR_FORCE_CPU=1 is the working mitigation today.
     //
     // The pre-arbitration notes below are kept because their measurements
     // stand; only the "which side is wrong" question is now settled.
