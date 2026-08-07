@@ -1867,6 +1867,17 @@ static llm_attn_graph build_llm_layer_attn(uocr_ctx & ctx, int li, int T, int n_
     K = ggml_reshape_3d(g, K, hd, nkv, T);
     V = ggml_reshape_3d(g, V, hd, nkv, T);
 
+    // Rope-pairing audit 2026-08-07 (after the glm_ocr mis-pairing fix): the
+    // checkpoint's ACTIVE attention class (use_mla=false -> "mha_eager" ->
+    // SlidingWindowLlamaAttention) applies the stock transformers Llama
+    // rotary (split-half pairing) — exactly what GGML_ROPE_TYPE_NEOX
+    // computes, so NO weight permute is needed here. The DeepSeek-V2
+    // reordering apply_rotary_pos_emb (view(d/2,2).transpose) exists in the
+    // reference file but is only called by the INACTIVE MLA classes. Known
+    // benign divergence instead: the reference rings decoded-token KV after
+    // 128 generated tokens (config._ring_window; prefill stays full) while
+    // this port keeps full attention — identical semantics for outputs up to
+    // 128 new tokens, unvalidated beyond.
     Q = ggml_rope_ext(g, Q, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
     K = ggml_rope_ext(g, K, pos_ids, nullptr, hd, GGML_ROPE_TYPE_NEOX, 0, lhp.rope_theta, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f);
 
