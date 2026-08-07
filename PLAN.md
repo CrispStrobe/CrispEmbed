@@ -64,10 +64,15 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
    board row + PERFORMANCE.md top): CUDA decoded-text roundtrip passed —
    recognized text identical, only 1px/conf digits move; O11-pattern
    default landed in `src/ocr_detect.cpp`.**
-3. **O7 remainder on a QUIET box**: ~~ppformulanet-l~~ **DONE 2026-08-07
-   late (merged `5d0be2ee`): mk scope landed, −31% on the neck/proj convs,
-   byte-identical; whole-run −1.9% (decoder-bound, recorded).** Remaining:
-   got/deepseek preprocessing convs. Check `uptime` FIRST.
+3. **O7 remainder**: ~~ppformulanet-l~~ **DONE 2026-08-07 late (merged
+   `5d0be2ee`): mk scope landed, −31% on the neck/proj convs,
+   byte-identical; whole-run −1.9% (decoder-bound, recorded).**
+   ~~got~~ **CLOSED N/A 2026-08-07 late: the default neck+projector is a
+   single ggml graph — `conv2d_cpu` runs only under
+   `CRISPEMBED_GOT_OCR_SCALAR_NECK` (posformer verdict repeats).**
+   deepseek: NEEDS A REFACTOR FIRST — local static threaded `conv2d_cpu`
+   in `deepseek_ocr2.cpp`, unreachable by the mk scope until swapped to
+   the core dispatcher; separate claim (multi-GB model, RAM guard).
 4. **LAYOUT_CONV_F16 T4 re-draw** (different day): delete-then-push
    `chr1s4/crispembed-conv-ab`; the kernel prints `T4-DRAW:` on line 2.
    (2026-08-07: not re-drawn — same-day pool stayed P100-sticky; both
@@ -270,6 +275,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-08-07 | *(kernel `chr1str/crispembed-t4-draw` v1; ccache cloned to `chr1str/crispembed-ccache`; script merged `add066a7`)* | **Round N+4 queue #4 attempt — T4 re-draw on the chr1str pool RUNNING** (four chr1s4 draws served P100 today; chr1str quota is separate). Layout-only arm; if line 2 prints P100 again the T4 question stays open, recorded honestly. **Also closed by inspection this checkpoint:** O7-got is N/A — the default neck+projector is a single ggml graph, `conv2d_cpu` only runs under `CRISPEMBED_GOT_OCR_SCALAR_NECK` (the posformer verdict repeats); O7-deepseek needs a refactor first — `deepseek_ocr2.cpp` carries a LOCAL static threaded `conv2d_cpu`, unreachable by the mk scope until swapped to the core dispatcher (separate claim, multi-GB model + RAM guard) | **IN PROGRESS — awaiting draw** |
 | 2026-08-07 | *(landed via `perf/o7-ppfnl`, merged `5d0be2ee`)* | **Round N+4 queue #3 (ppformulanet-l half) + item #7 DONE — one flip, one honest no-flip.** (a) ppformulanet-l mk scope LANDED: neck/proj convs 453-467 → 311-320 ms (−31%, byte-identical sha `302819ecbd41`, quiet-M1 nt1 pairs); whole-run −1.9% process CPU (decoder-bound — recorded); TRUE default verified on mk, `=0` restores reference. New `[ppfn_l-bench] neck+proj convs` attribution line. (b) pix2struct ggml-decode-on-CPU: **NO M1 FLIP** — nt1 the ggml graph LOSES (+11-45% dec); `-t 4` wins wall (−25/−34%) only by spending more total CPU (threading, the Kaggle x86 1.65x explained); CPU default stays scalar, gate stays opt-in. O7 remainder: got/deepseek preprocessing convs. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(landed via `perf/pix2struct-cuda-decode`, merged ff to `69e39a62`)* | **Round N+4 queue #1 DONE — pix2struct ggml decode graph LANDED with the per-kind CUDA default.** Decoder 3640-3746 → 369-460 ms (~9x q8_0; 12.8x f16; 10.6x scan_strip) on P100, decoded text byte-identical across ALL arms × fixtures × quants in BOTH kernel versions; v2 proved the TRUE default arm (no env ⇒ `path=ggml`, matches forced-CUDA; `=0` still forces scalar). Local gates: byte-identical CPU + Metal (MTL0 proven), f16 + q8_0; Metal/CPU default unchanged (`path=scalar`). Implementation: device-resident self/cross KV (got_ocr pattern), in-graph KV cpy, gallocr reserved once, T5 rel-bias as per-step input. CPU-ggml-decode measured 1.65x on Kaggle x86 but stays opt-in pending a quiet-box M1 verdict. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(kernel `chr1s4/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
