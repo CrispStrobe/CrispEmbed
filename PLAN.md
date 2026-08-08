@@ -266,6 +266,31 @@ mid-investigation can run a stale main-tree binary — pin one absolute
     checkpoint; every finding lands in PLAN + `PERFORMANCE.md` with
     per-pair numbers, spreads, and decoded-output identity stated.
 
+### Recorded, unowned — embedding lane (found 2026-08-08 answering issue #44)
+
+- **Embedder language coverage was never tested until now.** `docs/LANGUAGES.md`
+  covered OCR lanes only; the registry's embedder language strings are upstream
+  model-card claims. Japanese is now VERIFIED for 8 multilingual embedders
+  (table + method in that doc; harness `tests/embed_language_eval.py`).
+  Same harness extends to any language via a five-line `TEXTS` edit — no other
+  language is verified yet.
+- **WordPiece CJK path is not HF-faithful (low impact, real).** On
+  `all-MiniLM-L6-v2` / `all-mpnet-base-v2` (30k uncased WordPiece), two
+  DIFFERENT Japanese sentences produce **bit-identical** embeddings, while the
+  HF reference tokenizer produces different token sequences for them
+  (`[UNK],[UNK],上,て,[UNK],っ,##て,##い,##る,。` vs
+  `[UNK],[UNK],か,[UNK],て,##い,##ま,##す,。` — HF splits words at CJK
+  ideographs and strips dakuten under NFD, so kana runs still decompose into
+  subwords). Ours collapses both to one sequence. Impact is confined to
+  English-only vocabularies fed CJK (garbage either way, but SILENT garbage —
+  see the warning in `docs/LANGUAGES.md`); every multilingual embedder we ship
+  is SentencePiece/XLM-R and unaffected, verified. Fix would be Opus-tier
+  tokenizer-parity work: diff our WordPiece pretokenizer + subword loop against
+  HF `BasicTokenizer` (CJK word-splitting, NFD accent strip) on a CJK corpus.
+  A guard belongs in `tests/test_bert_pretokenize.cpp`, which today asserts the
+  kana-run-stays-whole behaviour without checking what WordPiece then does
+  with it.
+
 ### Non-negotiable protocols (full text in the dev guide)
 
 Worktree per change (`git submodule update --init --recursive`, Metal ON
