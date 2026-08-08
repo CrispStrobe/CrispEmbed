@@ -8,6 +8,7 @@
 
 #include "crispembed.h"
 #include "core/clean_exit.h"
+#include "core/gguf_loader.h"
 #include "core/json.h"
 #include "core/image_out.h"
 #include "core/provenance.h"
@@ -1897,6 +1898,38 @@ static int cli_main(int argc, char ** argv) {
 
     // Unified math OCR (auto-detect architecture from GGUF metadata)
     if (!ocr_path.empty()) {
+        // Misroute guard. `-m rec.gguf --ocr page.png` dispatches by GGUF arch
+        // into this single-model, rec-only mode, which squashes the WHOLE page
+        // into one ~48-px line strip and returns one garbled line. For a line
+        // recognizer that is a silent wrong answer, not an error, and it cost
+        // two false diagnoses on 2026-08-08 (a ppocrv6 "port gap" and a
+        // tesseract-jpn "garbage" verdict) before the cause was found.
+        //
+        // Warn only when the geometry says the input is a page rather than a
+        // line crop — recognizing a single line this way is a legitimate and
+        // actively used flow (it is how the CJK line-level decode is
+        // validated), so it must stay silent.
+        {
+            auto * meta = core_gguf::open_metadata(model_path.c_str());
+            if (meta) {
+                const std::string arch = core_gguf::kv_str(meta, "general.architecture", "");
+                const bool line_recognizer =
+                    arch == "tesseract_lstm" ||
+                    (arch == "ppocrv6" && core_gguf::kv_str(meta, "ppocrv6.kind", "") == "rec");
+                core_gguf::free_metadata(meta);
+                int iw = 0, ih = 0, ic = 0;
+                if (line_recognizer && ocr_rec_path.empty() && stbi_info(ocr_path.c_str(), &iw, &ih, &ic) && ih > 100) {
+                    fprintf(stderr,
+                            "warning: '%s' is a LINE recognizer and -m/--ocr runs single-line mode, so this "
+                            "%dx%d image is squashed into one line strip. For a full page pass it as the "
+                            "recognizer of a detection pipeline instead:\n"
+                            "  crispembed -m %s --ocr %s --ocr-det <detector.gguf> --ocr-rec %s\n"
+                            "(PP-OCRv6 detectors supply line-level boxes; see docs/LANGUAGES.md.) Ignore this "
+                            "if the image really is a single cropped line.\n",
+                            model_path.c_str(), iw, ih, model_path.c_str(), ocr_path.c_str(), model_path.c_str());
+                }
+            }
+        }
         void * octx = crispembed_ocr_model_init(model_path.c_str(), n_threads);
         if (!octx) {
             fprintf(stderr, "error: failed to load OCR model\n");
