@@ -154,6 +154,10 @@ struct tesseract_lstm_context {
     // Reverse recoder: output_class → unichar_id (-1 if unmapped)
     std::vector<int> output_to_unichar;
     std::vector<std::vector<int>> recoder_codes;
+    // True when any unichar recodes to a MULTI-code sequence (CJK traineddata:
+    // kanji as 2-3-code radical-stroke sequences). Latin models are all
+    // single-code, so this stays false and nothing about them changes.
+    bool recoder_multi_code = false;
 
     // Optional parsed language models. Loading is diagnostic-only until
     // dictionary scoring has passed official-output parity.
@@ -315,9 +319,13 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
             const int end = recoder_offsets[i + 1];
             if (begin >= 0 && end >= begin && end <= (int)recoder_flat.size()) {
                 ctx->recoder_codes.emplace_back(recoder_flat.begin() + begin, recoder_flat.begin() + end);
+                if (end - begin > 1) ctx->recoder_multi_code = true;
             }
         }
     }
+    if (ctx->recoder_multi_code)
+        fprintf(stderr, "tesseract_lstm: multi-code recoder detected (CJK-style traineddata) — "
+                        "composed recoding defaults ON for this model\n");
 
     // DAWG payloads are opt-in. Existing GGUFs do not contain them, and
     // loading them must not alter the default recognition path.
@@ -1041,8 +1049,16 @@ static void forward(tesseract_lstm_context * ctx,
         }
     }
 
+    // Tri-state gate (2026-08-08, PLAN "Tesseract CJK lane" item 1): unset =
+    // AUTO — compose exactly when the model's recoder is multi-code (a CJK
+    // model without compose emits `<class>` per kanji; a Latin model keeps
+    // its measured single-code default, byte-identical). "0" forces the
+    // single-code path even on CJK; any other value forces compose (the old
+    // opt-in, preserved for Latin A/Bs). The old presence test treated
+    // ...COMPOSE=0 as ON — value-parse instead.
+    const char * compose_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE");
     const bool compose_recoder =
-        !ctx->recoder_codes.empty() && std::getenv("CRISPEMBED_TESSERACT_RECODE_COMPOSE") != nullptr;
+        !ctx->recoder_codes.empty() && (compose_env ? compose_env[0] != '0' : ctx->recoder_multi_code);
     std::vector<int> composed_uids, composed_starts;
     bool composed = compose_recoder &&
                     recode_classes_to_unichars(collapsed_labels, ctx->recoder_codes, composed_uids, composed_starts);
