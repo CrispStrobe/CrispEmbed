@@ -266,30 +266,103 @@ mid-investigation can run a stale main-tree binary — pin one absolute
     checkpoint; every finding lands in PLAN + `PERFORMANCE.md` with
     per-pair numbers, spreads, and decoded-output identity stated.
 
-### Recorded, unowned — embedding lane (found 2026-08-08 answering issue #44)
+**Scope note for the OCR round:** the embedding-lane items **E1-E7** in the
+section immediately below are a SEPARATE workstream (opened by issue #44,
+2026-08-08). They are recorded there so they are not lost — they are NOT part
+of this OCR optimization round and should not crowd out the queues above. All
+are Opus-tier.
 
-- **Embedder language coverage was never tested until now.** `docs/LANGUAGES.md`
-  covered OCR lanes only; the registry's embedder language strings are upstream
-  model-card claims. Japanese is now VERIFIED for 8 multilingual embedders
-  (table + method in that doc; harness `tests/embed_language_eval.py`).
-  Same harness extends to any language via a five-line `TEXTS` edit — no other
-  language is verified yet.
-- **WordPiece CJK path is not HF-faithful (low impact, real).** On
-  `all-MiniLM-L6-v2` / `all-mpnet-base-v2` (30k uncased WordPiece), two
-  DIFFERENT Japanese sentences produce **bit-identical** embeddings, while the
-  HF reference tokenizer produces different token sequences for them
-  (`[UNK],[UNK],上,て,[UNK],っ,##て,##い,##る,。` vs
-  `[UNK],[UNK],か,[UNK],て,##い,##ま,##す,。` — HF splits words at CJK
-  ideographs and strips dakuten under NFD, so kana runs still decompose into
-  subwords). Ours collapses both to one sequence. Impact is confined to
-  English-only vocabularies fed CJK (garbage either way, but SILENT garbage —
-  see the warning in `docs/LANGUAGES.md`); every multilingual embedder we ship
-  is SentencePiece/XLM-R and unaffected, verified. Fix would be Opus-tier
-  tokenizer-parity work: diff our WordPiece pretokenizer + subword loop against
-  HF `BasicTokenizer` (CJK word-splitting, NFD accent strip) on a CJK corpus.
-  A guard belongs in `tests/test_bert_pretokenize.cpp`, which today asserts the
-  kana-run-stays-whole behaviour without checking what WordPiece then does
-  with it.
+### OPEN — embedding-lane language coverage (opened 2026-08-08 answering issue #44)
+
+**How this opened:** issue #44 ("which model is best for Japanese?") was first
+answered for the OCR lanes; the asker may have meant the EMBEDDING models. That
+exposed a whole untested axis — `docs/LANGUAGES.md` covered OCR only, every
+embedder parity test uses English-only text (`test_all_parity.py` `TEXTS`), and
+the registry's embedder language strings ("XLM-R 768d 100+ languages") are
+upstream model-card claims we had never checked. Japanese is now verified for 8
+embedders (`99f39f64`, `157f5e08`); everything below is what that left open.
+
+**DONE so far:** harness `tests/embed_language_eval.py` (3 checks: monolingual
+paraphrase, cross-lingual alignment, **non-degeneracy**; English-only models
+kept in as a permanent negative control). Verified JA: granite-embedding-107m
+(0.966/0.940, best), bge-m3, jina-v5-small/nano, Qwen3-Embedding-0.6B,
+LFM2.5-Embedding-350M, nomic-embed-text-v2-moe, arctic-embed-m-v2. Table +
+method in `docs/LANGUAGES.md`.
+
+#### E1. Finish the JA embedder matrix — 7 shipped multilingual aliases untested [Opus]
+
+Untested, all claiming multilingual: `multilingual-e5-small` / `-base` /
+`-large`, `paraphrase-multilingual-MiniLM-L12-v2`, `granite-embedding-278m`,
+`granite-embedding-97m-r2`, `granite-embedding-311m-r2` (+ the GTE-v1.5
+multilingual entries). None were cached locally, which is the only reason they
+are missing. Mechanical: download, add to `MODELS` in the harness, run, extend
+the doc table. **Watch the e5 family's prefix contract** — e5 wants
+`query: ` / `passage: `; the harness currently runs prefix-free, which is fair
+for relative comparisons but should be stated per row (`--prefix` exists).
+
+#### E2. Rerankers on Japanese — an entire untested lane [Opus]
+
+`bge-reranker-v2-m3` and `jina-reranker-v2-base-multilingual` ship with
+multilingual claims and have **never** been run on non-English text. Reranking
+is a first-class Japanese RAG use case, and a reranker that silently collapses
+JA would be as damaging as the embedder case. Needs its OWN harness (the embed
+eval does not apply): query + relevant doc + irrelevant doc in JA, assert the
+relevant doc outranks and the score gap is real; include an English-only
+reranker as the negative control, per the same discipline.
+
+#### E3. Languages beyond Japanese [Opus]
+
+The matrix is JA-only. The harness extends via a five-line `TEXTS` edit, so the
+cost is per-language fixture authoring, not code. Priority order should follow
+what the OCR lane already ships (deu/fra/spa/ita/por/nld/rus/ara/jpn/kor/chi)
+so both halves of the matrix line up. **Arabic and Korean are the
+highest-signal next picks**: different scripts, different tokenizer failure
+modes than kana, and Arabic adds RTL/normalization questions kana does not.
+
+#### E4. A defensible quality ranking needs MTEB, not this harness [Opus, offload]
+
+The eval separates "works" from "degenerate"; it is NOT a ranking — do not let
+0.966 be quoted as a benchmark score (the issue reply says so explicitly).
+For a real ranking use MTEB-JA / JMTEB via `kaggle_mteb.py` on Kaggle per the
+offload directive, not this 16 GB Mac.
+
+#### E5. WordPiece CJK path is not HF-faithful (low impact, real) [Opus]
+
+On `all-MiniLM-L6-v2` / `all-mpnet-base-v2` (30k uncased WordPiece), two
+DIFFERENT Japanese sentences produce **bit-identical** embeddings, while the HF
+reference tokenizer produces different token sequences for them
+(`[UNK],[UNK],上,て,[UNK],っ,##て,##い,##る,。` vs
+`[UNK],[UNK],か,[UNK],て,##い,##ま,##す,。` — HF splits words at CJK ideographs
+and strips dakuten under NFD, so kana runs still decompose into subwords). Ours
+collapses both to one sequence. Impact is confined to English-only vocabularies
+fed CJK (garbage either way, but SILENT garbage); every multilingual embedder
+we ship is SentencePiece/XLM-R and unaffected — verified, not assumed. Fix:
+diff our WordPiece pretokenizer + subword loop against HF `BasicTokenizer`
+(CJK word-splitting, NFD accent strip) on a CJK corpus. **A guard belongs in
+`tests/test_bert_pretokenize.cpp`**, which today asserts the
+kana-run-stays-whole behaviour without checking what WordPiece then does with
+it — the test encodes half the law.
+
+#### E6. Make the silent failure LOUD — runtime out-of-vocabulary warning [Opus]
+
+The most user-valuable item here. Today a user can point an English-only
+embedder at Japanese and get confident, arbitrary retrieval with no signal at
+all. The runtime knows enough to warn: compute the `[UNK]`/unknown-token ratio
+at tokenization and emit a one-shot stderr warning past a threshold (e.g.
+">50% of input tokens are [UNK] — this model's vocabulary does not cover this
+script; see docs/LANGUAGES.md"). Cheap, no hot-path cost (once per input), and
+it converts the whole class of "wrong model for the language" bugs from silent
+to obvious. Gate it so it can be silenced.
+
+#### E7. Give embedders the "Scripts" treatment the OCR lane already has [Opus]
+
+`tools/scan_model_languages.py` scans an OCR model's dictionary and its output
+IS the registry `Scripts` column. The analogous embedder scan (script coverage
+of the tokenizer vocabulary) would replace upstream language claims with a
+measured field in `--list-models`. Same caveat as the OCR side, and it must be
+stated: vocabulary coverage is NECESSARY, not SUFFICIENT — only the zero
+direction is conclusive (a 30k WordPiece vocab scanning near-zero for kana is
+exactly the E5 case).
 
 ### Non-negotiable protocols (full text in the dev guide)
 
