@@ -333,7 +333,7 @@ embedder "wrong model" trap does NOT apply to any shipped reranker.
 
 Harness: `tests/reranker_language_eval.py`.
 
-#### E3. Languages beyond Japanese [Opus]
+#### E3. Languages beyond Japanese [Opus] — DEFERRED (box overloaded 2026-08-08)
 
 The matrix is JA-only. The harness extends via a five-line `TEXTS` edit, so the
 cost is per-language fixture authoring, not code. Priority order should follow
@@ -341,6 +341,11 @@ what the OCR lane already ships (deu/fra/spa/ita/por/nld/rus/ara/jpn/kor/chi)
 so both halves of the matrix line up. **Arabic and Korean are the
 highest-signal next picks**: different scripts, different tokenizer failure
 modes than kana, and Arabic adds RTL/normalization questions kana does not.
+
+Deferred from the 2026-08-08 VPS session: box was at load 12+ with 1.2 GB
+available and unstable git object store. The work is mechanical (fixture
+authoring + harness run) and can be picked up by any agent with the models
+cached.
 
 #### E4. A defensible quality ranking needs MTEB, not this harness [Opus, offload]
 
@@ -455,7 +460,7 @@ races). Remove the row when the branch lands.
 | 2026-08-07 | *(landed via `perf/o7-ppfnl`, merged `5d0be2ee`)* | **Round N+4 queue #3 (ppformulanet-l half) + item #7 DONE — one flip, one honest no-flip.** (a) ppformulanet-l mk scope LANDED: neck/proj convs 453-467 → 311-320 ms (−31%, byte-identical sha `302819ecbd41`, quiet-M1 nt1 pairs); whole-run −1.9% process CPU (decoder-bound — recorded); TRUE default verified on mk, `=0` restores reference. New `[ppfn_l-bench] neck+proj convs` attribution line. (b) pix2struct ggml-decode-on-CPU: **NO M1 FLIP** — nt1 the ggml graph LOSES (+11-45% dec); `-t 4` wins wall (−25/−34%) only by spending more total CPU (threading, the Kaggle x86 1.65x explained); CPU default stays scalar, gate stays opt-in. O7 remainder: got/deepseek preprocessing convs. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(landed via `perf/pix2struct-cuda-decode`, merged ff to `69e39a62`)* | **Round N+4 queue #1 DONE — pix2struct ggml decode graph LANDED with the per-kind CUDA default.** Decoder 3640-3746 → 369-460 ms (~9x q8_0; 12.8x f16; 10.6x scan_strip) on P100, decoded text byte-identical across ALL arms × fixtures × quants in BOTH kernel versions; v2 proved the TRUE default arm (no env ⇒ `path=ggml`, matches forced-CUDA; `=0` still forces scalar). Local gates: byte-identical CPU + Metal (MTL0 proven), f16 + q8_0; Metal/CPU default unchanged (`path=scalar`). Implementation: device-resident self/cross KV (got_ocr pattern), in-graph KV cpy, gallocr reserved once, T5 rel-bias as per-step input. CPU-ggml-decode measured 1.65x on Kaggle x86 but stays opt-in pending a quiet-box M1 verdict. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(kernel `chr1s4/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
-| 2026-08-08 | `feat/embed-language-matrix` / `.claude/worktrees/embed-lang` | **E5+E6+E1+E2 ALL DONE.** E5: WordPiece CJK parity + European accent divergence (café→caf+[UNK], real parity bug). E6: UNK-ratio warning shipped. E1: 5 new embedders verified JA (para-multi-MiniLM best separation). E2: all 3 rerankers pass JA (no EN-only reranker exists — all use 250k SPM). European NFD accent-strip finding is the biggest deliverable. | **DONE — merging** |
+| 2026-08-08 | *(landed on `main` via `feat/embed-language-matrix`, `e78d4b63`)* | **E5+E6+E1+E2 ALL DONE.** E5: WordPiece CJK+European accent parity measured+guarded (`9648dfac`). E6: UNK-ratio warning shipped (`1b5870da`). E1: 5/7 new embedders verified JA, all pass (`44936954`). E2: 3/3 rerankers pass JA, no EN-only control exists (`87be0626`). European NFD accent-strip divergence documented user-facing (`e78d4b63`). E3 (Arabic/Korean) deferred — box overloaded. | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
