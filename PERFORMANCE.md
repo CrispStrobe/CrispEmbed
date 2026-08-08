@@ -108,9 +108,10 @@ arm** (HMER lesson): default-no-env on P100 runs `path=ggml` at
 while `=0`/`=0` still forces `path=scalar` (3654-3746 ms); decoded text
 identical across all arms, both fixtures, q8_0 + f16, in v2 as in v1.
 
-TODO carried: ggml-decode-on-CPU measured 1.65x on the Kaggle x86 CPU but
-is unverdicted on M1 (contended-box runs suggestive ~1.1x only) — a quiet-box
-M1 A/B could justify flipping the CPU default too. Until then scalar stays.
+~~TODO carried: ggml-decode-on-CPU unverdicted on M1~~ RESOLVED the same
+night (see the "O7 ppformulanet-l / pix2struct CPU" section above): the M1
+quiet-box A/B closed it NO-FLIP — the x86 1.65x was threading wall, not
+kernel quality; nt1 the ggml graph loses on M1. CPU default stays scalar.
 
 ## conv-ab v3 (P100): det-only DBNet is ~6x on CUDA with box-equivalent output; LAYOUT_CONV_F16 still lacks its T4 draw (kernel `chr1s4/crispembed-conv-ab` v3, 2026-08-07)
 
