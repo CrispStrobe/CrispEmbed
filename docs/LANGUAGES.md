@@ -158,9 +158,12 @@ the 30k WordPiece one. Reference HF tokenization of the same two sentences
 Japanese input - recorded as a follow-up in `PLAN.md`; it changes nothing for
 the models anyone should use on Japanese.
 
-**Recommendation for Japanese retrieval:** `granite-embedding-107m-multilingual`
+**Recommendation for Japanese retrieval:** `granite-embedding-107m`
 (best measured, 107M) or `bge-m3` (strong, 8k context, also does sparse and
-ColBERT retrieval).
+ColBERT retrieval). Both are registry aliases — `crispembed -m
+granite-embedding-107m --json "テキスト"` auto-downloads and runs. The alias
+default quant (`iq4_xs`) was re-verified end-to-end and reproduces the
+`q4_k_m` row above to 3 decimals (0.966/0.430 paraphrase, 0.940 cross-lingual).
 
 ### Re-running this
 
