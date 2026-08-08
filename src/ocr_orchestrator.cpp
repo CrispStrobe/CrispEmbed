@@ -333,19 +333,20 @@ struct context {
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
-    got_ocr_context * got = nullptr;          // GOT-OCR2 (single-shot VLM)
-    glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
-    qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
-    qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
-    internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
-    deepseek_ocr2_context * dsocr2 = nullptr; // DeepSeek-OCR-2 (MoE VLM)
-    pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
-    granite_vision_context * gv = nullptr;    // Granite Vision (LLaVA-Next)
-    lightonocr_context * locr = nullptr;      // LightOnOCR (Pixtral ViT + Qwen3)
-    unlimited_ocr_context * uocr = nullptr;   // Unlimited-OCR (SAM + CLIP + MoE)
-    void * unified = nullptr;                 // metadata-dispatched OCR model
-    ocr_detect::context * tess_det = nullptr; // DBNet detection for the tesseract engine
-    tesseract_lstm_context * tess = nullptr;  // Tesseract-LSTM line recognizer
+    got_ocr_context * got = nullptr;             // GOT-OCR2 (single-shot VLM)
+    glm_ocr_context * glm = nullptr;             // GLM-OCR (single-shot VLM)
+    qwen2vl_ocr_context * qwen = nullptr;        // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context * qwen3 = nullptr;       // Qwen3-VL (DeepStack + IMROPE)
+    internvl2_ocr_context * intern = nullptr;    // InternVL2 (single-shot VLM)
+    deepseek_ocr2_context * dsocr2 = nullptr;    // DeepSeek-OCR-2 (MoE VLM)
+    pix2struct_context * p2s = nullptr;          // Pix2Struct (doc/chart understanding)
+    granite_vision_context * gv = nullptr;       // Granite Vision (LLaVA-Next)
+    lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
+    unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
+    void * unified = nullptr;                    // metadata-dispatched OCR model
+    ocr_detect::context * tess_det = nullptr;    // DBNet detection for the tesseract engine
+    ppocrv6_det::context * tess_ppdet = nullptr; // PP-OCRv6 detection for the tesseract engine (CJK line boxes)
+    tesseract_lstm_context * tess = nullptr;     // Tesseract-LSTM line recognizer
     std::vector<tesseract_lstm_context *> tess_workers;
     ocr_detect::context * parseq_det = nullptr; // DBNet detection for the parseq engine
     parseq_ocr_context * parseq = nullptr;      // PARSeq scene-text recognizer (per-char conf)
@@ -1033,13 +1034,29 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // i.e. 90% of what the user waits for. The stage bench starts after
         // both loads and therefore cannot see it.
         const auto tess_load_start = std::chrono::steady_clock::now();
-        if (!ctx->tess_det) {
+        if (!ctx->tess_det && !ctx->tess_ppdet) {
             if (st.model_a.empty() || st.model_b.empty()) {
                 fprintf(stderr, "ocr_orchestrator: tesseract stage missing models "
                                 "(model_a=det, model_b=tesseract)\n");
                 return {};
             }
-            if (!ocr_detect::load(&ctx->tess_det, st.model_a.c_str(), ctx->n_threads)) {
+            // model_a dispatches on GGUF metadata: a PP-OCRv6 detector hosts
+            // the detection stage with line-level boxes. The IC15 DBNet
+            // artifact fragments CJK pages into word-level boxes and the
+            // classical segmenter fails on them independently, so this is the
+            // page-level path for tesseract-jpn/kor/chi. A ppocrv6 det can
+            // only arrive here by an explicit --ocr-det choice (the engine
+            // default stays dbnet-det), so no existing invocation changes.
+            auto * meta = core_gguf::open_metadata(st.model_a.c_str());
+            const bool a_is_ppdet = meta && core_gguf::kv_str(meta, "ppocrv6.kind", "") == "det";
+            if (meta) core_gguf::free_metadata(meta);
+            if (a_is_ppdet) {
+                ctx->tess_ppdet = ppocrv6_det::init(st.model_a.c_str(), ctx->n_threads);
+                if (!ctx->tess_ppdet) {
+                    fprintf(stderr, "ocr_orchestrator: tesseract ppocrv6 detection load failed\n");
+                    return {};
+                }
+            } else if (!ocr_detect::load(&ctx->tess_det, st.model_a.c_str(), ctx->n_threads)) {
                 fprintf(stderr, "ocr_orchestrator: tesseract detection load failed\n");
                 ctx->tess_det = nullptr;
                 return {};
@@ -1132,7 +1149,33 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         bool router_fell_back = false;
         double router_coverage = -1.0;
         int router_columns = -1;
-        if (classical_pageseg) {
+        bool ppdet_line_boxes = false;
+        if (ctx->tess_ppdet) {
+            // PP-OCRv6 detection replaces both the classical segmenter and
+            // DBNet: the caller chose this detector explicitly, so the
+            // segmentation router does not reroute it. Its boxes are already
+            // line-level, so the DBNet fragment grouping is skipped too.
+            // Threshold mirrors the ppocrv6 stage (min with 0.2).
+            const auto ppboxes =
+                ppocrv6_det::detect_file(ctx->tess_ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
+            boxes.reserve(ppboxes.size());
+            for (const auto & b : ppboxes) {
+                ocr_detect::text_box tb{};
+                tb.x = b.x;
+                tb.y = b.y;
+                tb.w = b.w;
+                tb.h = b.h;
+                tb.score = b.score;
+                for (int corner = 0; corner < 4; ++corner) {
+                    tb.qx[corner] = b.qx[corner];
+                    tb.qy[corner] = b.qy[corner];
+                }
+                boxes.push_back(tb);
+            }
+            classical_pageseg = false;
+            ppdet_line_boxes = true;
+            fprintf(stderr, "[tesseract-det] path=ppocrv6 boxes=%zu\n", boxes.size());
+        } else if (classical_pageseg) {
             std::vector<uint8_t> seg_gray;
             int sw = 0, sh = 0;
             if (load_gray_exact(path, seg_gray, &sw, &sh)) {
@@ -1186,8 +1229,9 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         std::vector<easyocr_layout::region> detected_regions;
         detected_regions.reserve(boxes.size());
         for (const auto & box : boxes) detected_regions.push_back({ box.x, box.y, box.w, box.h, box.score });
-        const auto line_regions =
-            classical_pageseg ? detected_regions : easyocr_layout::group_dbnet_lines(detected_regions);
+        const auto line_regions = (classical_pageseg || ppdet_line_boxes)
+                                      ? detected_regions
+                                      : easyocr_layout::group_dbnet_lines(detected_regions);
         const bool pageseg_debug = classical_pageseg && std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG");
         // Opt-in recognition-confidence floor (pageseg round 5): ornament,
         // seal, and noise-band crops decode as garbage at mean char
@@ -2274,6 +2318,7 @@ void free(context * ctx) {
     if (!ctx) return;
     if (ctx->dbnet) ocr_pipeline::free(ctx->dbnet);
     if (ctx->ppdet) ppocrv6_det::free(ctx->ppdet);
+    if (ctx->tess_ppdet) ppocrv6_det::free(ctx->tess_ppdet);
     if (ctx->pprec) ppocrv6_ocr_free(ctx->pprec);
     if (ctx->ppori) pplcnet_orientation::free(ctx->ppori);
     if (ctx->easy) easyocr_pipeline::free(ctx->easy);
