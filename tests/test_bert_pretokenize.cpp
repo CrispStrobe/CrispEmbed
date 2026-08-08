@@ -127,6 +127,88 @@ static const std::vector<RouteCase> k_routes = {
     { "model=gpt2, 180k -> BPE (string authoritative)", false, 0, "gpt2", 180000, 1 },
 };
 
+// ---------- E5 guard: full WordPiece pipeline on CJK -------------------------
+//
+// The pretokenize cases above verify that core_bert::pretokenize splits CJK
+// ideographs and isolates Unicode punctuation. But the E5 defect is that the
+// HISTORICAL per-byte path (used by shipped all-MiniLM-L6-v2 GGUFs, which
+// lack `tokenizer.ggml.pre = "bert"`) collapses entire Japanese strings into
+// a single word → a single [UNK]. Both Japanese fixture sentences produce
+// bit-identical embeddings because they produce bit-identical token sequences:
+//    [CLS] [UNK] [SEP]
+//
+// HF's BasicTokenizer with do_lower_case=True produces DIFFERENT sequences:
+//    ja_cat_a: [UNK],[UNK],上,て,[UNK],っ,##て,##い,##る,。  (10 tokens)
+//    ja_cat_b: [UNK],[UNK],か,[UNK],て,##い,##ま,##す,。     ( 9 tokens)
+//
+// The difference: HF applies NFD + accent stripping (strips dakuten from kana:
+// が→か, で→て) THEN CJK ideograph splitting, so kana runs decompose further
+// and each kanji becomes its own word.
+//
+// This test pins both behaviors:
+//   1. Historical per-byte split_words: both JA sentences → 1 word each
+//   2. core_bert::pretokenize on the same JA text: ideographs split,
+//      kana glued, Unicode punct isolated — different from HF (no NFD strip)
+//      but the two sentences DO produce different pre-token lists
+//
+// The full WordPiece guard (with a real vocab) is exercised via the C++ API
+// by tests/wordpiece_cjk_parity.py's documentation; the hermetic C++ cases
+// here test only the pretokenizer/splitter, which is the root cause.
+
+struct HistSplitCase {
+    const char * text;
+    std::vector<std::string> words;
+};
+
+// Historical per-byte split (simulate: ASCII isspace/ispunct only, lowercased)
+static std::vector<std::string> historical_split(const std::string & text) {
+    std::vector<std::string> words;
+    std::string current;
+    for (size_t i = 0; i < text.size(); i++) {
+        unsigned char c = text[i];
+        if (std::isspace(c)) {
+            if (!current.empty()) {
+                words.push_back(current);
+                current.clear();
+            }
+        } else if (std::ispunct(c)) {
+            if (!current.empty()) {
+                words.push_back(current);
+                current.clear();
+            }
+            words.push_back(std::string(1, (char)c));
+        } else {
+            current += (char)std::tolower(c);
+        }
+    }
+    if (!current.empty()) words.push_back(current);
+    return words;
+}
+
+// The E5 fixture sentences
+static const char * JA_CAT_A = "猫がソファの上で眠っている。";
+static const char * JA_CAT_B = "ソファーで猫が寝ています。";
+static const char * JA_WEATHER = "明日の東京の天気は雨でしょう。";
+
+// E5 guard cases: core_bert::pretokenize on the JA fixture
+static const std::vector<Case> k_e5_pretok_cases = {
+    // CJK ideographs split per-char, kana stays glued, Unicode punct isolated
+    { "猫がソファの上で眠っている。", { "猫", "がソファの", "上", "で", "眠", "っている", "。" } },
+    { "ソファーで猫が寝ています。", { "ソファーで", "猫", "が", "寝", "ています", "。" } },
+    { "明日の東京の天気は雨でしょう。",
+      { "明", "日", "の", "東", "京", "の", "天", "気", "は", "雨", "でしょう", "。" } },
+};
+
+// E5 guard cases: historical per-byte split on the same JA text
+// The entire UTF-8 string is one word (no byte matches ASCII space/punct,
+// since 。 is U+3002 = 0xE3 0x80 0x82, none of which are ASCII punctuation)
+static const std::vector<HistSplitCase> k_e5_hist_cases = {
+    // lowercased bytes, but Japanese bytes are all >0x7F so tolower is identity
+    { "猫がソファの上で眠っている。", { "猫がソファの上で眠っている。" } },
+    { "ソファーで猫が寝ています。", { "ソファーで猫が寝ています。" } },
+    { "明日の東京の天気は雨でしょう。", { "明日の東京の天気は雨でしょう。" } },
+};
+
 static std::string join(const std::vector<std::string> & v) {
     std::string s;
     for (size_t i = 0; i < v.size(); i++) {
@@ -155,8 +237,46 @@ static int crispembed_test_main() {
         }
     }
 
-    printf("bert-pretokenize: %zu split cases + %zu routing cases, %d failure(s)\n", k_cases.size(), k_routes.size(),
-           fails);
+    // E5: core_bert::pretokenize on JA fixture (CJK split, kana glued, no NFD)
+    for (const auto & c : k_e5_pretok_cases) {
+        const std::vector<std::string> got = core_bert::pretokenize(c.text);
+        if (got != c.words) {
+            fails++;
+            printf("FAIL E5-pretok %-40.40s\n  want %s\n  got  %s\n", c.text, join(c.words).c_str(), join(got).c_str());
+        }
+    }
+
+    // E5: historical per-byte split on the same JA text — pins the degenerate
+    // behavior (entire string is one word, leading to single-[UNK] collapse)
+    for (const auto & c : k_e5_hist_cases) {
+        const std::vector<std::string> got = historical_split(c.text);
+        if (got != c.words) {
+            fails++;
+            printf("FAIL E5-hist   %-40.40s\n  want %s\n  got  %s\n", c.text, join(c.words).c_str(), join(got).c_str());
+        }
+    }
+
+    // E5: the two JA cat sentences produce DIFFERENT pretokenize results
+    // (the historical path produces the SAME single-word result — that is
+    // what causes the bit-identical embeddings)
+    {
+        auto a = core_bert::pretokenize(JA_CAT_A);
+        auto b = core_bert::pretokenize(JA_CAT_B);
+        if (a == b) {
+            fails++;
+            printf("FAIL E5-diff   pretokenize(ja_cat_a) == pretokenize(ja_cat_b) — should differ\n");
+        }
+        auto ha = historical_split(JA_CAT_A);
+        auto hb = historical_split(JA_CAT_B);
+        // Historical path: both are single words (but different content)
+        if (ha.size() != 1 || hb.size() != 1) {
+            fails++;
+            printf("FAIL E5-hist-1word  historical split should produce 1 word per JA sentence\n");
+        }
+    }
+
+    printf("bert-pretokenize: %zu split + %zu route + %zu E5-pretok + %zu E5-hist cases, %d failure(s)\n",
+           k_cases.size(), k_routes.size(), k_e5_pretok_cases.size(), k_e5_hist_cases.size(), fails);
     return fails ? 1 : 0;
 }
 
