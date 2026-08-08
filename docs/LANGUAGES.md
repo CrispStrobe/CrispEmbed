@@ -208,6 +208,38 @@ vectors. English-only models stay in the model list on purpose as a negative
 control: a language test that every model passes is measuring nothing.
 Extending it to another language is a five-line edit of `TEXTS`.
 
+## Reranker models — Japanese (verified 2026-08-08)
+
+Rerankers had never been tested on non-English text. All three shipped
+rerankers now verified on Japanese (2 fixture queries, scored against a
+relevant vs irrelevant JA document):
+
+| Model (quant) | JA cats query | JA cooking query | EN control | Tokenizer |
+|---|--:|--:|--:|---|
+| `bge-reranker-v2-m3` (q4_k) | +17.13 | +10.07 | +10.62 | SentencePiece 250k |
+| `jina-reranker-v2-base-multilingual` (q4_k) | +4.57 | +2.14 | +4.09 | SentencePiece 250k |
+| `bge-reranker-base` (q4_k) | +14.75 | +14.84 | +13.65 | SentencePiece 250k |
+
+Columns show the score gap (relevant minus irrelevant document score); positive
+= correct ranking. All three pass.
+
+**Key finding:** unlike the embedding lane, there are NO English-only rerankers
+in the registry. `bge-reranker-base` — intended as a negative control — turns
+out to use a 250k SentencePiece/XLM-R vocabulary, not a 30k English WordPiece.
+All shipped rerankers have multilingual tokenization. This means the "wrong
+model for the language" trap that affects English-only embedders
+(all-MiniLM-L6-v2, all-mpnet-base-v2) does NOT apply to any shipped reranker.
+
+The `CRISPEMBED_WARN_UNK` warning would not fire on any reranker fed Japanese,
+because the SentencePiece tokenizer does not produce `[UNK]` tokens for Japanese
+(it has byte-fallback). This is correct behaviour — the warning is only useful
+when the tokenizer is genuinely out-of-vocabulary.
+
+Fixture: `tests/reranker_language_eval.py`. Reproduce:
+```bash
+python tests/reranker_language_eval.py ./build/crispembed <models-dir> out.json
+```
+
 ## How to verify a dict yourself
 
 The recipe below now ships as a tool, and its output IS the registry field:
