@@ -15,9 +15,12 @@
 
 ## Tesseract-LSTM findings
 
-- The production default is the existing greedy/single-code path. Composed
-  recoding, wider recode beams, page-segmentation prototypes, scratch reuse,
-  projection segmentation, and DAWG scoring are opt-in gates.
+- The production default is the greedy/single-code path for single-code
+  (Latin) models; since 2026-08-08 composed recoding AUTO-enables when the
+  loaded recoder is multi-code (CJK traineddata) — `b61f22ae`, value-parsed
+  tri-state, `=0`/`=1` keep absolute precedence. Wider recode beams,
+  page-segmentation prototypes, scratch reuse, projection segmentation, and
+  DAWG scoring remain opt-in gates.
 - The relevant gates include `CRISPEMBED_TESSERACT_RECODE_COMPOSE`,
   `CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH`,
   `CRISPEMBED_TESSERACT_DAWG_LOAD`,
