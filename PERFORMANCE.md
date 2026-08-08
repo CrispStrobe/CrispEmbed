@@ -23,13 +23,17 @@ spread):** vision_encoder base 4118/5076 ms vs F16MM 2879/3114 ms (−30-39%);
 whole-run user 20.4-25.4 s vs 16.0-17.5 s. This bounds the per-image cost of
 the default's in-graph cast-everything-to-F32 policy.
 
-**Remaining implementation levers (handover):** (1) bake F32 weight copies
-ONCE at load — numerically identical to today's default, removes the
-per-image cast, costs ~4x weight RAM for the tower (gate it; a 16 GB box may
-prefer default-off); recovers the cast share of the 30-39%. (2) The
-earlier-spatial-merge lever is untouched (changes the computation; needs full
-decoded-output gates). Timing pairs should be re-taken on a properly quiet
-box before recording final numbers.
+**Lever 2 SHIPPED gated-off (`87d32dbd`): `GLM_OCR_VISION_BAKE_F32`** —
+one-time F32 bake of the 120 vision-block matmul weights (1.6 GB).
+Byte-identical decoded output on all 3 fixtures (the first attempt baked
+the merger/downsample weights too and FLIPPED kurrent — that stage keeps
+F16 at F16 by design; the identity gate caught it). **Measured LOSING on
+the loaded 16 GB M1** (vision 7.1-7.7 -> 8.6-9.7 s both pairs; +1.6 GB
+residency = memory-pressure plausible) — kept opt-in per the
+plausible-but-not-winning rule; re-verdict on a big-RAM/server box or a
+truly quiet M1. Remaining lever: earlier-spatial-merge (changes the
+computation; needs full decoded-output gates). All timing this round is
+indicative (1-min load 4.6-7.4) — quiet-box re-take before any flip talk.
 
 ## O7 ppformulanet-l: mk scope LANDED (−31% on the neck/proj convs, byte-identical); pix2struct ggml-decode-on-CPU: M1 verdict is NO FLIP (quiet M1, 2026-08-07 evening)
 
