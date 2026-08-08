@@ -22,7 +22,16 @@ def main() -> int:
     for row in rows:
         assert len(row) == 4, f"malformed backend matrix row: {row!r}"
         assert all(row), f"blank backend matrix field: {row!r}"
-        assert row[2] in {"No", "Partial", "Yes, when backend enabled"}, f"unsupported capability value: {row[2]}"
+        # "Yes on CUDA" is the per-backend-kind default the pix2struct decode
+        # graph landed (2026-08-08, merged 69e39a62): CUDA gets the graph, Metal
+        # and CPU keep the scalar path. The guard rejected it, so this test has
+        # been red on main since that row was written.
+        assert row[2] in {
+            "No",
+            "Partial",
+            "Yes on CUDA",
+            "Yes, when backend enabled",
+        }, f"unsupported capability value: {row[2]}"
     required = (
         "PP-OCRv6 detector/recognizer", "PP-LCNet orientation", "DBNet + TrOCR",
         "Tesseract-LSTM", "PARSeq", "Surya", "GOT/GLM/Qwen/InternVL/DeepSeek VLMs",

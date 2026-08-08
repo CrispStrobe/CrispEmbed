@@ -4829,13 +4829,22 @@ extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_pa
     auto * meta = core_gguf::open_metadata(det_path);
     const bool pp = meta && core_gguf::kv_str(meta, "ppocrv6.kind", "") == "det";
     if (meta) core_gguf::free_metadata(meta);
-    if (pp) {
+    // The rec slot dispatches on metadata too: a Tesseract-LSTM GGUF routes
+    // to the orchestrator's tesseract stage (per-crop line recognition).
+    // Before this it fell through to the flat pipeline's math_ocr loader,
+    // which mis-dispatches the arch (vocab=1200) and crashes on region 1
+    // (the T11 finding). Combined with the ppocrv6-capable det slot this is
+    // the page-level CJK path: ppocrv6 det line boxes + tesseract-jpn crops.
+    auto * rmeta = core_gguf::open_metadata(rec_path);
+    const bool rec_is_tesseract = rmeta && core_gguf::kv_str(rmeta, "general.architecture", "") == "tesseract_lstm";
+    if (rmeta) core_gguf::free_metadata(rmeta);
+    if (pp || rec_is_tesseract) {
         ocr_orchestrator::config cfg;
         cfg.router = false;
         ocr_orchestrator::chain ch;
         ch.type = ocr_orchestrator::source_type::auto_detect;
         ocr_orchestrator::stage st;
-        st.eng = ocr_orchestrator::engine::ppocrv6;
+        st.eng = rec_is_tesseract ? ocr_orchestrator::engine::tesseract : ocr_orchestrator::engine::ppocrv6;
         st.cleanup.enabled = false;
         st.model_a = det_path;
         st.model_b = rec_path;
