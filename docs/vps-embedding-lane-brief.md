@@ -8,7 +8,12 @@ run elsewhere.
 
 Read first: `PLAN.md` → "OPEN — embedding-lane language coverage" (items
 E1–E7 with full rationale), `docs/LANGUAGES.md` → "Embedding / retrieval
-models", and `../crispasr-crispembed-dev.md` (hard rules, A/B protocol).
+models", and **`/mnt/volume1/crispasr-crispembed-dev.md`** (the hard rules and the
+A/B protocol — read it in full and FOLLOW it; it governs everything you do here).
+
+⚠ Use that ABSOLUTE path. The guide sits next to the repo, so `../crispasr-crispembed-dev.md`
+resolves only from the repo root — from your worktree (four levels deeper) it silently does
+not exist, which is exactly how an earlier agent ended up never reading it.
 
 ## Ground rules on this box
 
