@@ -131,6 +131,11 @@ struct context {
     model m;
     ggml_context * model_ctx = nullptr;
     ggml_backend_buffer_t model_buf = nullptr;
+    // GLM_OCR_VISION_BAKE_F32=1: one-time F32 copies of the vision/merger
+    // matmul weights (numerically identical to the default's in-graph
+    // ggml_cast, minus the per-image cast cost; costs ~4x tower weight RAM).
+    ggml_context * bake_ctx = nullptr;
+    ggml_backend_buffer_t bake_buf = nullptr;
     ggml_backend_t backend = nullptr;
     ggml_backend_t backend_cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
