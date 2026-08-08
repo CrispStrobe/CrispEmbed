@@ -294,16 +294,28 @@ are written up as a ready-to-run brief for the 8 GB VPS in
 [`docs/vps-embedding-lane-brief.md`](vps-embedding-lane-brief.md) (paths, disk
 rules, worktree requirement, acceptance). E4 is Kaggle. E7 is partly done.
 
-#### E1. Finish the JA embedder matrix — 7 shipped multilingual aliases untested [Opus]
+#### E1. Finish the JA embedder matrix — 7 shipped multilingual aliases untested [Opus] — DONE 2026-08-08
 
-Untested, all claiming multilingual: `multilingual-e5-small` / `-base` /
-`-large`, `paraphrase-multilingual-MiniLM-L12-v2`, `granite-embedding-278m`,
-`granite-embedding-97m-r2`, `granite-embedding-311m-r2` (+ the GTE-v1.5
-multilingual entries). None were cached locally, which is the only reason they
-are missing. Mechanical: download, add to `MODELS` in the harness, run, extend
-the doc table. **Watch the e5 family's prefix contract** — e5 wants
-`query: ` / `passage: `; the harness currently runs prefix-free, which is fair
-for relative comparisons but should be stated per row (`--prefix` exists).
+**5 of 7 tested** (VPS CPU-only run, q8_0 quants, `1b5870da`+). All 5 pass
+all 3 checks. 2 skipped (granite-r2 97m/311m not cached, BPE/o200k models).
+
+| Model | C1 margin | C2 xl margin | C3 unrel | Note |
+|---|--:|--:|--:|---|
+| paraphrase-multilingual-MiniLM-L12-v2 | +1.036 | +1.042 | -0.055 | **best separation** |
+| multilingual-e5-large (no prefix) | +0.180 | +0.166 | 0.805 | narrow margin |
+| multilingual-e5-base (no prefix) | +0.162 | +0.178 | 0.815 | narrow margin |
+| multilingual-e5-small (no prefix) | +0.178 | +0.168 | 0.791 | narrow margin |
+| granite-embedding-278m-multilingual | +0.565 | +0.514 | 0.392 | strong |
+| granite-embedding-278m (non-multi) | +0.565 | +0.514 | 0.392 | = multilingual |
+
+The e5 family has narrow margins likely due to missing `query: `/`passage: `
+prefix (stated per row). `paraphrase-multilingual-MiniLM-L12-v2` is the
+surprise winner — strongest JA separation of ANY model tested.
+`granite-embedding-278m` non-multilingual = multilingual (identical scores,
+likely same weights).
+
+Remaining: `granite-embedding-97m-r2`, `granite-embedding-311m-r2` (not cached,
+BPE/o200k). Also GTE-v1.5 multilingual entries (not cached).
 
 #### E2. Rerankers on Japanese — an entire untested lane [Opus]
 
@@ -331,33 +343,58 @@ The eval separates "works" from "degenerate"; it is NOT a ranking — do not let
 For a real ranking use MTEB-JA / JMTEB via `kaggle_mteb.py` on Kaggle per the
 offload directive, not this 16 GB Mac.
 
-#### E5. WordPiece CJK path is not HF-faithful (low impact, real) [Opus]
+#### E5. WordPiece CJK path is not HF-faithful (low impact, real) [Opus] — DONE 2026-08-08
 
-On `all-MiniLM-L6-v2` / `all-mpnet-base-v2` (30k uncased WordPiece), two
-DIFFERENT Japanese sentences produce **bit-identical** embeddings, while the HF
-reference tokenizer produces different token sequences for them
-(`[UNK],[UNK],上,て,[UNK],っ,##て,##い,##る,。` vs
-`[UNK],[UNK],か,[UNK],て,##い,##ま,##す,。` — HF splits words at CJK ideographs
-and strips dakuten under NFD, so kana runs still decompose into subwords). Ours
-collapses both to one sequence. Impact is confined to English-only vocabularies
-fed CJK (garbage either way, but SILENT garbage); every multilingual embedder
-we ship is SentencePiece/XLM-R and unaffected — verified, not assumed. Fix:
-diff our WordPiece pretokenizer + subword loop against HF `BasicTokenizer`
-(CJK word-splitting, NFD accent strip) on a CJK corpus. **A guard belongs in
-`tests/test_bert_pretokenize.cpp`**, which today asserts the
-kana-run-stays-whole behaviour without checking what WordPiece then does with
-it — the test encodes half the law.
+**Measured and guarded** (`9648dfac`). Three-way comparison documented in
+`tests/wordpiece_cjk_parity.py`:
 
-#### E6. Make the silent failure LOUD — runtime out-of-vocabulary warning [Opus]
+1. **Historical per-byte path** (shipped): entire JA string → 1 word → [UNK].
+   Both JA sentences → [CLS] [UNK] [SEP] — bit-identical.
+2. **core_bert::pretokenize** (opt-in via `pre=bert`): CJK ideographs split,
+   kana stays glued, Unicode punct isolated. Different sequences for the two JA
+   sentences, but differs from HF (no NFD accent strip).
+3. **HF reference**: NFD + accent strip + CJK split → 10 vs 9 tokens.
 
-The most user-valuable item here. Today a user can point an English-only
-embedder at Japanese and get confident, arbitrary retrieval with no signal at
-all. The runtime knows enough to warn: compute the `[UNK]`/unknown-token ratio
-at tokenization and emit a one-shot stderr warning past a threshold (e.g.
-">50% of input tokens are [UNK] — this model's vocabulary does not cover this
-script; see docs/LANGUAGES.md"). Cheap, no hot-path cost (once per input), and
-it converts the whole class of "wrong model for the language" bugs from silent
-to obvious. Gate it so it can be silenced.
+Test guard added to `test_bert_pretokenize.cpp`: 3 E5-pretok cases, 3 E5-hist
+cases, differential assertion (pretokenize produces different results for the
+two JA sentences; historical produces 1 word each).
+
+**NEW FINDING (bigger than CJK): European accent-stripping divergence.** HF's
+`BasicTokenizer` with `do_lower_case=True` applies NFD + Mn-strip (café→cafe,
+Müller→muller, über→uber) before WordPiece. Our per-byte path does not strip
+accents. Every accented European word diverges: HF gets a clean whole-word
+vocab hit while ours produces partial+[UNK] splits. Measured side-by-side:
+
+| Input | HF tokens | Our tokens |
+|---|---|---|
+| café | `cafe` | `caf` + `[UNK]` |
+| Müller | `muller` | `m` + `[UNK]` |
+| résumé | `resume` | `r` + `[UNK]` |
+| über | `uber` | `[UNK]` |
+
+**Impact:** German/French/Spanish/Portuguese embeddings from every uncased
+WordPiece model we ship diverge from HF on accented text — in-domain text,
+unlike the JA case. **Fix constraints:** must NOT apply to LaBSE (cased,
+`strip_accents=False`); must be conditioned on model metadata
+(`strip_accents` not in GGUF today — the converter does not record it); any
+fix ships env-gated default-OFF per house rules; English parity check
+required before flipping.
+
+#### E6. Make the silent failure LOUD — runtime out-of-vocabulary warning [Opus] — DONE 2026-08-08
+
+**Shipped** (`1b5870da`). One-shot stderr warning when ≥50% of content tokens
+(CLS/SEP/PAD excluded) are `[UNK]`:
+
+```
+crispembed: warning: 100% of input tokens are [UNK] — this model's vocabulary
+may not cover this script; see docs/LANGUAGES.md for models that do
+(silence with CRISPEMBED_WARN_UNK=0)
+```
+
+Silenced by `CRISPEMBED_WARN_UNK=0`. Fires in both single-encode and
+batch-encode paths. No hot-path cost (integer count over already-materialized
+token array, one-shot per context). Tested: triggers on JA text with
+all-MiniLM-L6-v2, silent on English text, silent with `=0`.
 
 #### E7. Embedder vocabulary script-scan — PARTLY DONE, and it needs a health warning [Opus]
 
@@ -412,7 +449,7 @@ races). Remove the row when the branch lands.
 | 2026-08-07 | *(landed via `perf/o7-ppfnl`, merged `5d0be2ee`)* | **Round N+4 queue #3 (ppformulanet-l half) + item #7 DONE — one flip, one honest no-flip.** (a) ppformulanet-l mk scope LANDED: neck/proj convs 453-467 → 311-320 ms (−31%, byte-identical sha `302819ecbd41`, quiet-M1 nt1 pairs); whole-run −1.9% process CPU (decoder-bound — recorded); TRUE default verified on mk, `=0` restores reference. New `[ppfn_l-bench] neck+proj convs` attribution line. (b) pix2struct ggml-decode-on-CPU: **NO M1 FLIP** — nt1 the ggml graph LOSES (+11-45% dec); `-t 4` wins wall (−25/−34%) only by spending more total CPU (threading, the Kaggle x86 1.65x explained); CPU default stays scalar, gate stays opt-in. O7 remainder: got/deepseek preprocessing convs. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(landed via `perf/pix2struct-cuda-decode`, merged ff to `69e39a62`)* | **Round N+4 queue #1 DONE — pix2struct ggml decode graph LANDED with the per-kind CUDA default.** Decoder 3640-3746 → 369-460 ms (~9x q8_0; 12.8x f16; 10.6x scan_strip) on P100, decoded text byte-identical across ALL arms × fixtures × quants in BOTH kernel versions; v2 proved the TRUE default arm (no env ⇒ `path=ggml`, matches forced-CUDA; `=0` still forces scalar). Local gates: byte-identical CPU + Metal (MTL0 proven), f16 + q8_0; Metal/CPU default unchanged (`path=scalar`). Implementation: device-resident self/cross KV (got_ocr pattern), in-graph KV cpy, gallocr reserved once, T5 rel-bias as per-step input. CPU-ggml-decode measured 1.65x on Kaggle x86 but stays opt-in pending a quiet-box M1 verdict. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-07 | *(kernel `chr1s4/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
-| 2026-08-08 | `feat/embed-language-matrix` / `.claude/worktrees/embed-lang` | **E5 DONE** (test guard: 3 pretok + 3 hist + diff assertion; parity script documents CJK + European accent divergence — café→caf+[UNK] vs HF's cafe, every accented EU word diverges). **E6 DONE** (one-shot UNK-ratio warning, CRISPEMBED_WARN_UNK=0 opt-out, single+batch paths). **NEW FINDING: European NFD accent-strip divergence** is a real parity bug for DE/FR/ES/PT on all uncased WordPiece models — measured, not just kana. Fix needs model metadata conditioning (strip_accents not in GGUF). **Starting E1.** | **IN PROGRESS — E1 model runs** |
+| 2026-08-08 | `feat/embed-language-matrix` / `.claude/worktrees/embed-lang` | **E5 DONE** (WordPiece CJK parity + European accent divergence finding). **E6 DONE** (UNK-ratio warning). **E1 DONE** (5/7 models tested, all pass; paraphrase-multilingual-MiniLM-L12-v2 best JA separation; e5 narrow margins without prefix; granite-278m=278m-multilingual; granite-r2 97m/311m not cached=SKIP). Results in docs/LANGUAGES.md + PLAN.md. | **DONE — merging** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |

@@ -121,16 +121,22 @@ embedder here. It has now, on this fixture set:
 
 | Model (quant tested) | Tokenizer | JA paraphrase | JA-EN cross-lingual | Verdict |
 |---|---|--:|--:|---|
-| `granite-embedding-107m-multilingual` (q4_k_m) | SentencePiece 250k | 0.966 vs 0.423 | 0.943 vs 0.458 | **best of the set** |
+| `granite-embedding-107m-multilingual` (q4_k) | SentencePiece 250k | 0.967 vs 0.436 | 0.940 vs 0.470 | **best of the set** |
+| `paraphrase-multilingual-MiniLM-L12-v2` (q8_0) | SentencePiece 250k | 0.981 vs -0.055 | 0.987 vs -0.054 | **strongest separation** |
+| `multilingual-e5-large` (q8_0, no prefix) | SentencePiece 250k | 0.986 vs 0.805 | 0.913 vs 0.747 | strong (narrow margin) |
+| `multilingual-e5-base` (q8_0, no prefix) | SentencePiece 250k | 0.977 vs 0.815 | 0.908 vs 0.730 | strong (narrow margin) |
+| `multilingual-e5-small` (q8_0, no prefix) | SentencePiece 250k | 0.968 vs 0.791 | 0.903 vs 0.735 | pass (narrowest margin) |
+| `granite-embedding-278m-multilingual` (q8_0) | SentencePiece 250k | 0.957 vs 0.392 | 0.938 vs 0.424 | **strong** |
 | `bge-m3` (iq4_xs) | SentencePiece 250k | 0.945 vs 0.406 | 0.892 vs 0.440 | **strong** |
-| `jina-v5-small` (q4_k) | SentencePiece | 0.947 vs 0.065 | 0.919 vs 0.081 | **strong, sharpest separation** |
+| `jina-v5-small` (q4_k) | SentencePiece | 0.947 vs 0.069 | 0.920 vs 0.082 | **strong, sharpest separation** |
 | `LFM2.5-Embedding-350M` (q8_0) | - | 0.882 vs 0.066 | 0.842 vs 0.062 | strong |
 | `Qwen3-Embedding-0.6B` (q8_0) | - | 0.885 vs 0.196 | 0.801 vs 0.247 | strong |
 | `nomic-embed-text-v2-moe` (q4_k_m) | - | 0.885 vs 0.161 | 0.789 vs 0.183 | works |
 | `arctic-embed-m-v2` (q4_k-imatrix) | - | 0.711 vs 0.169 | 0.701 vs 0.173 | works, weaker |
-| `jina-v5-nano` (q4_k) | SentencePiece | 0.671 vs 0.217 | 0.600 vs 0.279 | works, weakest |
-| `all-MiniLM-L6-v2` (q4_k_m) | **WordPiece 30k EN** | 1.0000 vs 0.286 | -0.007 vs 0.140 | **DO NOT USE for JA** |
-| `all-mpnet-base-v2` (q8_0) | **WordPiece 30k EN** | 1.0000 vs 0.129 | -0.085 vs 0.078 | **DO NOT USE for JA** |
+| `jina-v5-nano` (q4_k) | SentencePiece | 0.954 vs 0.075 | 0.934 vs 0.096 | works |
+| `granite-embedding-278m` (q8_0, non-multi) | SentencePiece 250k | 0.957 vs 0.392 | 0.938 vs 0.424 | = multilingual variant |
+| `all-MiniLM-L6-v2` (q4_k) | **WordPiece 30k EN** | 1.0000 vs 0.330 | 0.019 vs 0.170 | **DO NOT USE for JA** |
+| `all-mpnet-base-v2` (q8_0) | **WordPiece 30k EN** | 1.0000 vs 0.355 | -0.076 vs 0.093 | **DO NOT USE for JA** |
 
 Columns are cosine similarities: *paraphrase* = two Japanese sentences meaning
 the same thing vs. an unrelated Japanese sentence; *cross-lingual* = a Japanese
@@ -157,6 +163,30 @@ the 30k WordPiece one. Reference HF tokenization of the same two sentences
 *does* differ, so our WordPiece CJK path is not byte-faithful to HF on
 Japanese input - recorded as a follow-up in `PLAN.md`; it changes nothing for
 the models anyone should use on Japanese.
+
+**E1 additions (2026-08-08, VPS run):** 5 new models verified. Notable
+findings:
+
+- **`paraphrase-multilingual-MiniLM-L12-v2`** has the strongest JA separation
+  of ANY model tested (margin >1.0 on both checks, unrelated cosine goes
+  NEGATIVE), despite being only 12 layers / 384d. Only 125 MB at q8_0.
+- The **e5 family** (`multilingual-e5-{small,base,large}`) all pass but with
+  notably narrower margins (0.16–0.18) than the granite/bge/jina models. This
+  may be because e5 expects `query: ` / `passage: ` prefixes, which were NOT
+  used here — these are prefix-free runs, fair for relative comparison but
+  potentially undervaluing e5. The `--prefix` flag exists for users who want to
+  test with the contract.
+- **`granite-embedding-278m`** (non-multilingual) produces identical scores to
+  `granite-embedding-278m-multilingual`. They may share the same weights /
+  differ only in metadata.
+- `granite-embedding-97m-r2` and `granite-embedding-311m-r2` were not cached on
+  the VPS; recorded as SKIP (not FAIL). They are BPE/o200k models, a different
+  tokenizer family from the XLM-R ones tested here.
+
+**Runtime warning:** since `1b5870da`, CrispEmbed emits a one-shot stderr
+warning when ≥50% of content tokens are `[UNK]`, signalling a vocabulary
+mismatch. This catches the English-model-on-Japanese case automatically.
+Silenced by `CRISPEMBED_WARN_UNK=0`.
 
 **Recommendation for Japanese retrieval:** `granite-embedding-107m`
 (best measured, 107M) or `bge-m3` (strong, 8k context, also does sparse and

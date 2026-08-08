@@ -37,16 +37,25 @@ KEYS = list(TEXTS)
 
 MODELS = [
     # (file, label, claimed_multilingual)
+    # --- previously verified JA (99f39f64) ---
     ("bge-m3-iq4_xs.gguf", "bge-m3 (XLM-R, iq4_xs)", True),
-    ("granite-embedding-107m-multilingual-Q4_K_M.gguf", "granite-embedding-107m-multilingual (q4_k_m)", True),
+    ("granite-embedding-107m-multilingual-q4_k.gguf", "granite-embedding-107m-multilingual (q4_k)", True),
     ("jina-v5-nano-q4_k.gguf", "jina-v5-nano (q4_k)", True),
     ("jina-v5-small-q4_k.gguf", "jina-v5-small (q4_k)", True),
     ("Qwen3-Embedding-0.6B-Q8_0.gguf", "Qwen3-Embedding-0.6B (q8_0)", True),
     ("LFM2.5-Embedding-350M-Q8_0.gguf", "LFM2.5-Embedding-350M (q8_0)", True),
     ("nomic-embed-text-v2-moe.Q4_K_M.gguf", "nomic-embed-text-v2-moe (q4_k_m)", True),
     ("arctic-embed-m-v2-q4_k-imatrix.gguf", "arctic-embed-m-v2 (q4_k-imatrix)", True),
+    # --- E1: untested multilingual aliases (smallest → largest) ---
+    ("paraphrase-multilingual-MiniLM-L12-v2-q8_0.gguf", "paraphrase-multilingual-MiniLM-L12-v2 (q8_0)", True),
+    ("multilingual-e5-small-q8_0.gguf", "multilingual-e5-small (q8_0, no prefix)", True),
+    ("granite-embedding-278m-multilingual-q8_0.gguf", "granite-embedding-278m-multilingual (q8_0)", True),
+    ("multilingual-e5-base-q8_0.gguf", "multilingual-e5-base (q8_0, no prefix)", True),
+    ("multilingual-e5-large-q8_0.gguf", "multilingual-e5-large (q8_0, no prefix)", True),
+    # E1: non-multilingual granite-278m as additional data point
+    ("granite-embedding-278m-q8_0.gguf", "granite-embedding-278m (q8_0, non-multilingual)", True),
     # negative controls -- English-only training
-    ("all-MiniLM-L6-v2-Q4_K_M.gguf", "all-MiniLM-L6-v2 (q4_k_m) [EN-only control]", False),
+    ("all-MiniLM-L6-v2-q4_k.gguf", "all-MiniLM-L6-v2 (q4_k) [EN-only control]", False),
     ("all-mpnet-base-v2-q8_0.gguf", "all-mpnet-base-v2 (q8_0) [EN-only control]", False),
 ]
 
