@@ -148,6 +148,69 @@ bool load_tensors(context & ctx, const char * path) {
     m.merger.norm_w = get("v.merger.norm.weight");
     m.merger.norm_b = get("v.merger.norm.bias");
 
+    // GLM_OCR_VISION_BAKE_F32 (opt-in, PLAN "GLM ViT deep levers"): the
+    // vision default casts every non-F32 matmul weight to F32 INSIDE the
+    // graph, once per image (the F16MM A/B bounded that whole policy at
+    // 30-39% of the tower; F16MM itself is a proven quality loss so the cast
+    // stays). Bake the F32 copies ONCE at load instead and repoint the
+    // members: identical bytes reach every matmul (ggml_cast F16→F32 is
+    // exact, q8_0 dequant is deterministic), the per-image cast nodes become
+    // no-ops, and the price is ~4x tower-weight RAM — hence opt-in.
+    if (const char * be = std::getenv("GLM_OCR_VISION_BAKE_F32"); be && be[0] && be[0] != '0') {
+        // ONLY the vision-block matmul weights: those are what the vision
+        // graph's mm lambda casts to F32 unconditionally. The patch-embed /
+        // downsample / merger stage has a DIFFERENT cast policy (F16 stays
+        // F16 there) — baking those to F32 changes its numerics and flipped
+        // german_kurrent to the reduced-precision output during bring-up.
+        std::vector<ggml_tensor **> targets;
+        for (auto & b : m.vis_blocks) {
+            targets.push_back(&b.qkv_w);
+            targets.push_back(&b.proj_w);
+            targets.push_back(&b.ffn_gate_w);
+            targets.push_back(&b.ffn_up_w);
+            targets.push_back(&b.ffn_down_w);
+        }
+        std::vector<ggml_tensor **> to_bake;
+        for (auto ** t : targets)
+            if (*t && (*t)->type != GGML_TYPE_F32) to_bake.push_back(t);
+        if (!to_bake.empty()) {
+            ggml_init_params bip = { to_bake.size() * ggml_tensor_overhead() + 1024, nullptr, true };
+            ctx.bake_ctx = ggml_init(bip);
+            std::vector<ggml_tensor *> baked;
+            baked.reserve(to_bake.size());
+            for (auto ** t : to_bake) {
+                ggml_tensor * nt = ggml_new_tensor(ctx.bake_ctx, GGML_TYPE_F32, ggml_n_dims(*t), (*t)->ne);
+                ggml_set_name(nt, (std::string((*t)->name) + ".baked_f32").c_str());
+                baked.push_back(nt);
+            }
+            ctx.bake_buf = ggml_backend_alloc_ctx_tensors(ctx.bake_ctx, ctx.backend);
+            if (ctx.bake_buf) {
+                std::vector<uint8_t> staging;
+                std::vector<float> f32;
+                size_t total = 0;
+                for (size_t i = 0; i < to_bake.size(); i++) {
+                    ggml_tensor * src = *to_bake[i];
+                    const size_t nbytes = ggml_nbytes(src);
+                    const int64_t nelem = ggml_nelements(src);
+                    staging.resize(nbytes);
+                    f32.resize(nelem);
+                    ggml_backend_tensor_get(src, staging.data(), 0, nbytes);
+                    const auto * tt = ggml_get_type_traits(src->type);
+                    tt->to_float(staging.data(), f32.data(), nelem);
+                    ggml_backend_tensor_set(baked[i], f32.data(), 0, nelem * sizeof(float));
+                    *to_bake[i] = baked[i];
+                    total += nelem * sizeof(float);
+                }
+                fprintf(stderr, "glm_ocr: baked %zu vision weights to F32 at load (%.0f MB)\n", to_bake.size(),
+                        total / 1e6);
+            } else {
+                fprintf(stderr, "glm_ocr: F32 bake alloc failed — keeping in-graph casts\n");
+                ggml_free(ctx.bake_ctx);
+                ctx.bake_ctx = nullptr;
+            }
+        }
+    }
+
     // LLM
     m.embed_tokens = get("l.embed_tokens.weight");
 
@@ -547,6 +610,14 @@ void free_(context & ctx) {
     if (ctx.sched) {
         ggml_backend_sched_free(ctx.sched);
         ctx.sched = nullptr;
+    }
+    if (ctx.bake_buf) {
+        ggml_backend_buffer_free(ctx.bake_buf);
+        ctx.bake_buf = nullptr;
+    }
+    if (ctx.bake_ctx) {
+        ggml_free(ctx.bake_ctx);
+        ctx.bake_ctx = nullptr;
     }
     if (ctx.model_buf) {
         ggml_backend_buffer_free(ctx.model_buf);
