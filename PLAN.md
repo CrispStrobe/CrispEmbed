@@ -64,15 +64,18 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
    board row + PERFORMANCE.md top): CUDA decoded-text roundtrip passed —
    recognized text identical, only 1px/conf digits move; O11-pattern
    default landed in `src/ocr_detect.cpp`.**
-3. **O7 remainder**: ~~ppformulanet-l~~ **DONE 2026-08-07 late (merged
-   `5d0be2ee`): mk scope landed, −31% on the neck/proj convs,
-   byte-identical; whole-run −1.9% (decoder-bound, recorded).**
-   ~~got~~ **CLOSED N/A 2026-08-07 late: the default neck+projector is a
-   single ggml graph — `conv2d_cpu` runs only under
-   `CRISPEMBED_GOT_OCR_SCALAR_NECK` (posformer verdict repeats).**
-   deepseek: NEEDS A REFACTOR FIRST — local static threaded `conv2d_cpu`
-   in `deepseek_ocr2.cpp`, unreachable by the mk scope until swapped to
-   the core dispatcher; separate claim (multi-GB model, RAM guard).
+3. ~~**O7 remainder**~~ **O7 SWEEP COMPLETE 2026-08-08.**
+   ~~ppformulanet-l~~ DONE (merged `5d0be2ee`: mk scope, −31% stage,
+   byte-identical; whole-run −1.9%, decoder-bound).
+   ~~got~~ CLOSED N/A (default neck is a ggml graph; convs only under
+   `CRISPEMBED_GOT_OCR_SCALAR_NECK`).
+   ~~deepseek~~ **CLOSED N/A 2026-08-08 — the 08-07 "needs refactor"
+   note was WRONG in premise**: `if (!ds_env_on("DS_SAM_CONV_CPU"))`
+   makes the sched graph the default on EVERY backend; the local static
+   conv chain is an explicit opt-out debug path, so a dispatcher
+   refactor would accelerate nothing that ships. Every O7 engine is now
+   either flipped (ppocrv6-det, HMER, ppformulanet-l) or graph-default
+   (posformer, got, deepseek).
 4. **LAYOUT_CONV_F16 T4 re-draw** (different day): now a one-push retry
    on EITHER account — `chr1s4/crispembed-conv-ab` (delete-then-push) or
    the trimmed `chr1str/crispembed-t4-draw` (chr1str ccache seeded +
