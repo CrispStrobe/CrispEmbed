@@ -2339,12 +2339,20 @@ crops (evidence in `docs/LANGUAGES.md` and the 2026-08-08 board rows):
    Gates: byte-identity on the Latin/Fraktur fixture corpus; Japanese line
    crops decode exact; no timing regression on the Latin arm (compose must
    be a true no-op when the recoder is single-code).
-2. **CJK page segmentation (OPEN, independent).** Even with compose, the
-   full 3-line Japanese page yields `ククッ` — the Latin/Fraktur-tuned
-   segmentation hands the recognizer garbage crops. Line crops decode
-   near-perfectly, so this is 100% crop-side. Diagnose the router's actual
-   crops on the fixture (which route fires, crop count/geometry vs the 3
-   true lines) before prescribing anything (a brief is a hypothesis).
+2. **CJK page segmentation (OPEN — diagnosed 2026-08-08, real scope).**
+   Three measured facts: (a) the single-model route (`-m tesseract-jpn
+   --ocr page`) never reaches any router — it recs the WHOLE page as one
+   line strip (`ククッ`; same class as the ppocr `-m` misroute, item 3);
+   (b) dbnet-ic15 det fragments the 3-line CJK page into 10 word-level
+   boxes (scene-text training); (c) the generic `--ocr-det/--ocr-rec`
+   pipeline hardwires `math_ocr_init` for rec and CANNOT host a
+   tesseract recognizer (fails at load). So there is currently NO
+   working page-level path for tesseract CJK. Cheapest viable fix:
+   ppocrv6 det (proven 3/3 line boxes on this fixture) feeding
+   tesseract-jpn per-crop — needs a small pipeline/orchestrator stage
+   that pairs them; alternatively extend the tesseract lane's own
+   pageseg for CJK line banding. Line-level jpn works TODAY via crops +
+   auto-compose (`b61f22ae`).
 3. **CLI misroute guard.** `-m rec.gguf --ocr img` silently dispatches by
    GGUF arch into rec-only single-line mode (page squashed to one 48-px
    strip -> one garbled line; cost a false "port gap" diagnosis this round).
