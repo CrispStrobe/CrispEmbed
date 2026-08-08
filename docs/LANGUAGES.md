@@ -1,4 +1,4 @@
-# Language support matrix (OCR lanes)
+# Language support matrix (OCR lanes + embedding models)
 
 Evidence-based per-lane language coverage. Three evidence tiers, stated per
 row — never conflate them:
@@ -111,6 +111,69 @@ PP-OCRv6 pipeline above is verified and far cheaper.
 - DBNet, PP-OCRv6 det, Surya det (91-language training set): script-agnostic
   region detectors — language support is decided by the recognizer.
 - LID: CLD3 (109 langs) / GlotLID (2102 ISO 639-3) for text language ID.
+
+## Embedding / retrieval models — Japanese (verified 2026-08-08)
+
+Prior to this the whole matrix was OCR-only, and the registry's language
+strings for embedders (`"XLM-R 768d 100+ languages"`) were **upstream claim**
+inherited from the model card — no Japanese had ever been run through an
+embedder here. It has now, on this fixture set:
+
+| Model (quant tested) | Tokenizer | JA paraphrase | JA-EN cross-lingual | Verdict |
+|---|---|--:|--:|---|
+| `granite-embedding-107m-multilingual` (q4_k_m) | SentencePiece 250k | 0.966 vs 0.423 | 0.943 vs 0.458 | **best of the set** |
+| `bge-m3` (iq4_xs) | SentencePiece 250k | 0.945 vs 0.406 | 0.892 vs 0.440 | **strong** |
+| `jina-v5-small` (q4_k) | SentencePiece | 0.947 vs 0.065 | 0.919 vs 0.081 | **strong, sharpest separation** |
+| `LFM2.5-Embedding-350M` (q8_0) | - | 0.882 vs 0.066 | 0.842 vs 0.062 | strong |
+| `Qwen3-Embedding-0.6B` (q8_0) | - | 0.885 vs 0.196 | 0.801 vs 0.247 | strong |
+| `nomic-embed-text-v2-moe` (q4_k_m) | - | 0.885 vs 0.161 | 0.789 vs 0.183 | works |
+| `arctic-embed-m-v2` (q4_k-imatrix) | - | 0.711 vs 0.169 | 0.701 vs 0.173 | works, weaker |
+| `jina-v5-nano` (q4_k) | SentencePiece | 0.671 vs 0.217 | 0.600 vs 0.279 | works, weakest |
+| `all-MiniLM-L6-v2` (q4_k_m) | **WordPiece 30k EN** | 1.0000 vs 0.286 | -0.007 vs 0.140 | **DO NOT USE for JA** |
+| `all-mpnet-base-v2` (q8_0) | **WordPiece 30k EN** | 1.0000 vs 0.129 | -0.085 vs 0.078 | **DO NOT USE for JA** |
+
+Columns are cosine similarities: *paraphrase* = two Japanese sentences meaning
+the same thing vs. an unrelated Japanese sentence; *cross-lingual* = a Japanese
+sentence vs. its English translation vs. an unrelated English sentence. Higher
+first number and a bigger gap is better. Every multilingual model separates
+both pairs cleanly - **Japanese works**.
+
+WARNING: **the English-only models fail in a way that LOOKS like success.**
+Read the `1.0000`: `all-MiniLM-L6-v2` and `all-mpnet-base-v2` return
+**bit-identical embedding vectors for two different Japanese sentences**
+(verified by direct vector comparison, not just rounding). A naive paraphrase
+test therefore "passes" them with a huge margin while the model is emitting a
+constant. The tells are the cross-lingual column going *negative* and the
+tokenizer column: a 30k uncased WordPiece vocab has no meaningful Japanese
+coverage, so distinct inputs collapse onto the same tokens. Consequence for
+users: picking an English-only embedder for Japanese does not give you
+"somewhat worse" retrieval - it gives you **silently arbitrary** retrieval at
+high confidence.
+
+This collapse is out-of-domain behaviour of an English model, not a regression
+in the multilingual lanes: every multilingual embedder in the registry uses a
+SentencePiece/XLM-R-class vocabulary (250k), a different tokenizer path from
+the 30k WordPiece one. Reference HF tokenization of the same two sentences
+*does* differ, so our WordPiece CJK path is not byte-faithful to HF on
+Japanese input - recorded as a follow-up in `PLAN.md`; it changes nothing for
+the models anyone should use on Japanese.
+
+**Recommendation for Japanese retrieval:** `granite-embedding-107m-multilingual`
+(best measured, 107M) or `bge-m3` (strong, 8k context, also does sparse and
+ColBERT retrieval).
+
+### Re-running this
+
+```bash
+python tests/embed_language_eval.py ./build/crispembed ~/models out.json
+```
+
+The harness is deliberately built around three checks, because the first alone
+is not a test: (1) monolingual paraphrase > unrelated, (2) cross-lingual
+alignment, (3) **non-degeneracy** - distinct inputs must not produce identical
+vectors. English-only models stay in the model list on purpose as a negative
+control: a language test that every model passes is measuring nothing.
+Extending it to another language is a five-line edit of `TEXTS`.
 
 ## How to verify a dict yourself
 
