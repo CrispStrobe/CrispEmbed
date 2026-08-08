@@ -37,6 +37,13 @@ const char * model_license(int i);  // SPDX-style tag, e.g. "apache-2.0",
                                     // "mit", "cc-by-nc-4.0", "gemma", "lfm1.0"
 const char * model_card_url(int i); // upstream HuggingFace model card
 
+// Scripts the model's recognition dictionary can emit ("latin+cjk+kana"),
+// scanned from the shipped GGUF by tools/scan_model_languages.py. Returns
+// nullptr or "" when the model was not scanned — which means UNKNOWN, not
+// "no coverage". Only OCR recognizers carry it. Coverage is necessary but
+// not sufficient for quality; see docs/LANGUAGES.md.
+const char * model_languages(int i);
+
 // Returns true if the given SPDX tag designates a restricted license that
 // the user must explicitly accept before redistribution / download.
 // Currently: anything matching "cc-by-nc*", "gemma", "llama*", "lfm1.0", "other".

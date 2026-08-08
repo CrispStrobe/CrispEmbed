@@ -191,6 +191,16 @@ struct ModelEntry {
                                  // card (NOT from the cstr/* re-host).
                                  // Verified by tests/check_registry_licenses.py.
     const char * model_card_url; // upstream HuggingFace model card
+    // Scripts the model's recognition dictionary can actually emit, scanned
+    // from the shipped GGUF by tools/scan_model_languages.py. Empty means
+    // "not scanned", never "no coverage" — only OCR recognizers carry it.
+    //
+    // Coverage is NECESSARY BUT NOT SUFFICIENT for quality: kana in the dict
+    // says the model CAN emit kana, not that it reads Japanese well. Zero
+    // coverage is the sufficient direction, and that is what this field is
+    // for: ppocrv6-tiny-rec has no kana at all and used to fail silently on
+    // Japanese (issue #44). Evidence tiers live in docs/LANGUAGES.md.
+    const char * languages;
 };
 
 // Prompt prefixes for models that need them for optimal retrieval.
@@ -1220,15 +1230,15 @@ static const ModelEntry k_registry[] = {
     { "ppocrv6-tiny-rec", "PP-OCRv6_tiny_rec-q8-head.gguf",
       "https://huggingface.co/cstr/PP-OCRv6_tiny_rec-GGUF/resolve/main/PP-OCRv6_tiny_rec-q8-head.gguf",
       "PP-OCRv6 tiny CTC recognizer (F32 backbone, head-only Q8)", "5 MB", "apache-2.0",
-      "https://huggingface.co/cstr/PP-OCRv6_tiny_rec-GGUF" },
+      "https://huggingface.co/cstr/PP-OCRv6_tiny_rec-GGUF", "latin+cjk+greek" },
     { "ppocrv6-small-rec", "PP-OCRv6_small_rec-q8-head.gguf",
       "https://huggingface.co/cstr/PP-OCRv6_small_rec-GGUF/resolve/main/PP-OCRv6_small_rec-q8-head.gguf",
       "PP-OCRv6 small CTC recognizer (F32 backbone, head-only Q8)", "20 MB", "apache-2.0",
-      "https://huggingface.co/cstr/PP-OCRv6_small_rec-GGUF" },
+      "https://huggingface.co/cstr/PP-OCRv6_small_rec-GGUF", "latin+cjk+kana+greek" },
     { "ppocrv6-medium-rec", "PP-OCRv6_medium_rec-q8-head.gguf",
       "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF/resolve/main/PP-OCRv6_medium_rec-q8-head.gguf",
       "PP-OCRv6 medium CTC recognizer (F32 backbone, head-only Q8)", "63 MB", "apache-2.0",
-      "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF" },
+      "https://huggingface.co/cstr/PP-OCRv6_medium_rec-GGUF", "latin+cjk+kana+greek" },
 
     // EasyOCR CRNN recognizers and the PP-LCNet line-orientation classifier are
     // produced locally by models/convert-easyocr-to-gguf.py and
@@ -1611,62 +1621,62 @@ static const ModelEntry k_registry[] = {
     { "tesseract-eng", "tesseract-eng-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-eng-q8_0.gguf",
       "Tesseract LSTM English line OCR (1.5M, CTC, 126-lang family)", "1.5 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-deu", "tesseract-deu-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-deu-q8_0.gguf",
       "Tesseract LSTM German line OCR (940K, CTC)", "976 KB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-fra", "tesseract-fra-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-fra-q8_0.gguf",
       "Tesseract LSTM French line OCR (391K, CTC)", "435 KB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-spa", "tesseract-spa-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-spa-q8_0.gguf",
       "Tesseract LSTM Spanish line OCR (1.5M, CTC)", "1.5 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-ita", "tesseract-ita-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ita-q8_0.gguf",
       "Tesseract LSTM Italian line OCR (822K, CTC)", "860 KB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-por", "tesseract-por-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-por-q8_0.gguf",
       "Tesseract LSTM Portuguese line OCR (822K, CTC)", "860 KB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-nld", "tesseract-nld-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-nld-q8_0.gguf",
       "Tesseract LSTM Dutch line OCR (408K, CTC)", "449 KB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin" },
 
     { "tesseract-rus", "tesseract-rus-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-rus-q8_0.gguf",
       "Tesseract LSTM Russian line OCR (1.5M, CTC, Cyrillic)", "1.5 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin+cyrillic" },
 
     { "tesseract-ara", "tesseract-ara-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-ara-q8_0.gguf",
       "Tesseract LSTM Arabic line OCR (1.4M, CTC, RTL)", "1.5 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin+arabic" },
 
     { "tesseract-chi-sim", "tesseract-chi_sim-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-chi_sim-q8_0.gguf",
       "Tesseract LSTM Chinese Simplified line OCR (1.5M, CTC, CJK)", "1.6 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin+cjk" },
 
     { "tesseract-jpn", "tesseract-jpn-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-jpn-q8_0.gguf",
       "Tesseract LSTM Japanese line OCR (1.6M, CTC, CJK+Kana)", "1.7 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin+cjk+kana" },
 
     { "tesseract-kor", "tesseract-kor-q8_0.gguf",
       "https://huggingface.co/cstr/tesseract-lstm-GGUF/resolve/main/tesseract-kor-q8_0.gguf",
       "Tesseract LSTM Korean line OCR (1.5M, CTC, Hangul)", "1.5 MB", "apache-2.0",
-      "https://huggingface.co/cstr/tesseract-lstm-GGUF" },
+      "https://huggingface.co/cstr/tesseract-lstm-GGUF", "latin+hangul" },
 
     // Punctuation restoration models
     { "fireredpunc", "fireredpunc-q4_k-imatrix.gguf",
@@ -2149,17 +2159,25 @@ std::string resolve_model(const std::string & arg, bool auto_download, const std
 
 void list_models() {
     fprintf(stderr, "Available models:\n");
-    fprintf(stderr, "  %-40s %-14s %-9s %s\n", "Name", "License", "Size", "Description");
-    fprintf(stderr, "  %-40s %-14s %-9s %s\n", "----", "-------", "----", "-----------");
+    fprintf(stderr, "  %-40s %-14s %-9s %-22s %s\n", "Name", "License", "Size", "Scripts", "Description");
+    fprintf(stderr, "  %-40s %-14s %-9s %-22s %s\n", "----", "-------", "----", "-------", "-----------");
     for (const ModelEntry * e = k_registry; e->name; e++) {
         std::string cached = cache_dir() + "/" + e->filename;
         const char * status = file_exists(cached) ? " [cached]" : "";
         const char * license = e->license ? e->license : "?";
         const char * marker = license_requires_acceptance(e->license) ? "*" : " ";
-        fprintf(stderr, " %s%-40s %-14s %-9s %s%s\n", marker, e->name, license, e->approx_size, e->desc, status);
+        // Blank for every non-OCR-recognizer row: the column states scanned
+        // dictionary coverage, and an unscanned model must not read as one
+        // with no coverage.
+        const char * scripts = (e->languages && *e->languages) ? e->languages : "";
+        fprintf(stderr, " %s%-40s %-14s %-9s %-22s %s%s\n", marker, e->name, license, e->approx_size, scripts, e->desc,
+                status);
     }
     fprintf(stderr, "\n  * = restricted license (non-commercial or vendor terms); "
                     "requires --accept-license <spdx> or interactive consent.\n");
+    fprintf(stderr, "  Scripts = characters the recognizer's dictionary can emit, scanned from the shipped\n"
+                    "  GGUF (tools/scan_model_languages.py). Coverage is necessary, NOT sufficient, for\n"
+                    "  quality; a blank means not scanned, not \"none\". See docs/LANGUAGES.md.\n");
 }
 
 int n_models() {
@@ -2207,6 +2225,13 @@ const char * model_card_url(int i) {
     int n = 0;
     for (const ModelEntry * e = k_registry; e->name; e++, n++)
         if (n == i) return e->model_card_url;
+    return nullptr;
+}
+
+const char * model_languages(int i) {
+    int n = 0;
+    for (const ModelEntry * e = k_registry; e->name; e++, n++)
+        if (n == i) return e->languages;
     return nullptr;
 }
 

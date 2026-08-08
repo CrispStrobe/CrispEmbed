@@ -42,13 +42,28 @@ of the shipped GGUFs (2026-08-08):
 pipeline reads `--ocr-rec`/`--ocr-det`. Passing the recognizer only as
 `-m rec.gguf --ocr img` dispatches by GGUF arch into **single-model rec-only
 mode** — the whole page is squashed to one 48-px line strip and the output is
-one garbled line. Always pass `--ocr-rec` for pipeline use.
+one garbled line. Always pass `--ocr-rec` for pipeline use. Since 2026-08-08
+the CLI prints a warning naming the correct command when a line recognizer is
+handed a page-shaped image (a single cropped line stays silent — that flow is
+legitimate).
 
 ## Tesseract-LSTM lane (`-m tesseract-<lang>`)
 
 Registry ships 12 converted models: `eng deu fra spa ita por nld rus ara jpn
 kor chi_sim` (HF `cstr/tesseract-lstm-GGUF`). Latin-script + Fraktur languages
 are the tuned, benchmarked path (CER work in `PERFORMANCE.md`).
+
+All 12 dict-scanned 2026-08-08 (`tools/scan_model_languages.py`, unicharset
+classes; the registry `languages` field and `--list-models` carry these):
+
+| model | classes | scripts | note |
+|---|--:|---|---|
+| `tesseract-{eng,deu,fra,spa,ita,por,nld}` | 109–151 | latin | |
+| `tesseract-rus` | 125 | latin+cyrillic | |
+| `tesseract-ara` | 85 | latin+arabic | |
+| `tesseract-chi-sim` | 4 022 | latin+cjk | 3 899 ideographs, **no kana** |
+| `tesseract-jpn` | 2 693 | latin+cjk+kana | 2 380 ideographs + 171 kana |
+| `tesseract-kor` | 1 158 | latin+hangul | 1 089 hangul, **zero CJK ideographs** — mixed hanja Korean is out of dict |
 **`tesseract-jpn` root-caused 2026-08-08 — two stacked defects:**
 (1) the production default decode is the single-code greedy path, but CJK
 traineddata encodes kanji as MULTI-CODE (radical-stroke) sequences — every
@@ -56,11 +71,24 @@ kanji decodes as `<class>` while kana pass through. The opt-in
 `CRISPEMBED_TESSERACT_RECODE_COMPOSE=1` fixes recognition COMPLETELY on
 clean line crops (`日本語のテキスト認識テスト` exact). (2) the lane's
 page segmentation fails on the Japanese page independently (garbage crops;
-output unchanged by compose). So: line-level Japanese works with the compose
-gate; page-level needs segmentation work. Obvious follow-up in PLAN.md:
-auto-enable compose when the loaded model's recoder is multi-code (no-op for
-Latin models, correctness win for jpn/kor/chi_sim). Until then use PP-OCRv6
-for Japanese.
+output unchanged by compose).
+
+**Both are FIXED as of 2026-08-08.** (1) Composed recoding auto-enables when
+the loaded recoder is multi-code (`b61f22ae`); Latin models keep the greedy
+default byte-identically. (2) The tesseract stage now accepts a **PP-OCRv6
+detector** in the `--ocr-det` slot, which supplies line-level CJK boxes where
+DBNet-IC15 fragmented the page into word boxes. Full-page Japanese decodes
+**byte-exactly** (3/3 lines, page CER 0.0000) against
+`tests/regression/images/japanese_print.gt.txt`:
+
+```
+crispembed -m tesseract-jpn --ocr japanese_print.png \
+    --ocr-det ppocrv6-medium-det --ocr-rec tesseract-jpn
+```
+
+The Latin lane is unaffected — with a DBNet detector the historical path runs
+unchanged (byte-identical on fox, scan_strip, simple_form, receipt_example,
+german_official_print).
 
 ## VLM document engines (upstream claims unless noted)
 
@@ -86,6 +114,16 @@ PP-OCRv6 pipeline above is verified and far cheaper.
 
 ## How to verify a dict yourself
 
+The recipe below now ships as a tool, and its output IS the registry field:
+
+```bash
+python tools/scan_model_languages.py model.gguf     # per-script class counts
+crispembed --list-models                            # the "Scripts" column
+```
+
+Both PP-OCRv6 and Tesseract GGUFs expose `tokenizer.tokens` (for Tesseract
+that is the unicharset), so one scanner covers both. The bare recipe:
+
 ```python
 from gguf import GGUFReader
 r = GGUFReader("model.gguf")
@@ -95,5 +133,13 @@ kana = sum(1 for t in toks if len(t)==1 and 0x3040 <= ord(t) <= 0x30FF)
 ```
 
 Scan the Unicode block of the script you need; zero coverage = the model
-cannot emit that script, whatever the marketing says. A registry `languages`
-field derived from these scans is a planned follow-up (see PLAN.md).
+cannot emit that script, whatever the marketing says.
+
+⚠ **Read the direction of the implication.** Coverage is NECESSARY but NOT
+SUFFICIENT: kana in the dict says the model *can* emit kana, never that it
+reads Japanese well. Only the zero direction is conclusive. A blank `Scripts`
+column means *not scanned* — not "no coverage".
+
+`tests/test_registry_languages.py` guards the field against typo'd labels and
+against drift on the measured facts (tiny-rec has no kana; `tesseract-kor` has
+no CJK ideographs).
