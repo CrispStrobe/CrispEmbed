@@ -76,13 +76,16 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
    refactor would accelerate nothing that ships. Every O7 engine is now
    either flipped (ppocrv6-det, HMER, ppformulanet-l) or graph-default
    (posformer, got, deepseek).
-4. **LAYOUT_CONV_F16 T4 re-draw** (different day): now a one-push retry
-   on EITHER account — `chr1s4/crispembed-conv-ab` (delete-then-push) or
-   the trimmed `chr1str/crispembed-t4-draw` (chr1str ccache seeded +
-   verified 2026-08-07). The kernel prints `T4-DRAW:` on line 2.
-   (2026-08-07: SIX P100 draws across both accounts — the pool is sticky
-   across accounts per-day, not per-account; third P100 replication of
-   the known verdict recorded on the board row.)
+4. **LAYOUT_CONV_F16 T4 draw — the "different day" hypothesis is now
+   ALSO dead**: 2026-08-08 chr1str v2 drew P100 again = SEVEN P100s
+   across two accounts and two days. The Kaggle free pool is simply not
+   serving T4 to these accounts right now. Retry stays a one-push
+   no-op-cost option (`chr1str/crispembed-t4-draw` v3+ or chr1s4
+   conv-ab), but the realistic route to a tensor-core verdict is a
+   DIFFERENT PLATFORM — Colab free tier serves T4; a Colab notebook
+   port of the trimmed layout kernel is the concrete next step if the
+   question stays funded. Every P100 re-draw keeps replicating the
+   known verdict (time-neutral warm, 20→19 drift) for free.
 5. **GLM ViT deep levers — only if explicitly funded** (carried).
 6. ~~**Hygiene**~~ **DONE 2026-08-07**: N+3 handover + 4 DONE rows archived
    to HISTORY (`9423dcd5`).
