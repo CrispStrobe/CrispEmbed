@@ -1,5 +1,35 @@
 # Agent handoff notes
 
+## READ FIRST — the dev guide governs everything here
+
+Before any work in this repo, read **`crispasr-crispembed-dev.md`** in full and follow
+it. It holds the HARD RULES (read the Python blueprint line by line, use the diff harness
+at every boundary, decoded-output roundtrip is the only acceptance test), the mandatory
+A/B protocol, the env-gating convention, and the new-backend checklist. It outranks
+convenience and it outranks your own judgement about what is "obviously fine".
+
+It sits NEXT TO this repo, not inside it:
+
+| box | path |
+|---|---|
+| Mac dev box | `/Users/christianstrobele/code/crispasr-crispembed-dev.md` |
+| VPS | `/mnt/volume1/crispasr-crispembed-dev.md` |
+
+⚠ **`../crispasr-crispembed-dev.md` only resolves from the REPO ROOT.** If you are in a
+worktree (`.claude/worktrees/<name>/`, which is where you should be) it is four levels
+deeper and that relative path silently does not exist — no error, just a missing file and
+an agent that never read the rules. This has already happened. Use the absolute path.
+
+Two rules from it that are violated most often, repeated here so there is no excuse:
+
+- **Env-gate every new path**, and use the shared helpers — `core_env::on()` for
+  default-off gates, `core_env::explicitly_off()` for default-on ones. A bare
+  `getenv(X) != nullptr` makes `X=0` mean ON; that defect class has already required a
+  repo-wide audit once.
+- **A/B against ground truth before flipping any default**, judge by decoded output and
+  measured numbers rather than pass/fail, keep both paths behind a gate, and never delete
+  a working path.
+
 ## Working location and repository policy
 
 - Work in the isolated backup worktree, not the original checkout that was
