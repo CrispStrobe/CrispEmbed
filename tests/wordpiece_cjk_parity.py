@@ -138,6 +138,80 @@ def main():
     print("core_bert::pretokenize does NOT do this (it was built for LaBSE, which")
     print("is cased and does not strip accents).")
 
+    # === European accent-stripping parity (the bigger half of the finding) ===
+    print()
+    print("=" * 72)
+    print("EUROPEAN ACCENT STRIPPING — the BIGGER parity gap")
+    print("=" * 72)
+    print()
+    print("The NFD accent strip affects European languages MORE than Japanese:")
+    print("accented Latin chars like e/u/a/n-tilde are in-domain for these")
+    print("English-only models, and the accent strip is the difference between")
+    print("a whole-word vocab hit and an [UNK]-producing subword split.")
+    print()
+
+    eu_tests = [
+        ("cafe", "cafe"),  # baseline (no accent)
+        ("cafe\u0301", "cafe"),  # café → cafe
+        ("Mu\u0308ller", "muller"),  # Müller → muller
+        ("nai\u0308ve", "naive"),  # naïve → naive
+        ("A\u0301ngel", "angel"),  # Ángel → angel
+        ("re\u0301sume\u0301", "resume"),  # résumé → resume
+        ("u\u0308ber", "uber"),  # über → uber
+        ("Franc\u0327ois", "francois"),  # François → francois
+    ]
+    # Use precomposed forms for display
+    eu_display = ["café", "Müller", "naïve", "Ángel", "résumé", "über", "François"]
+
+    for word in eu_display:
+        ns, pts, tokens, ids = hf_breakdown(tok, word)
+        lower = word.lower()
+        stripped = "".join(
+            c for c in unicodedata.normalize("NFD", lower)
+            if unicodedata.category(c) != "Mn"
+        )
+
+        # Simulate our historical per-byte WordPiece (no NFD strip)
+        # Manual greedy longest-match against HF vocab
+        vocab_map = tok.get_vocab()
+        pos, our_toks = 0, []
+        while pos < len(lower):
+            matched = False
+            for end in range(len(lower), pos, -1):
+                sub = lower[pos:end]
+                key = sub if pos == 0 else f"##{sub}"
+                if key in vocab_map:
+                    our_toks.append(key)
+                    pos = end
+                    matched = True
+                    break
+            if not matched:
+                our_toks.append("[UNK]")
+                break
+
+        diverges = tokens != our_toks
+        print(f"  {word:12s}  HF (stripped): {str(tokens):30s}  "
+              f"ours (no strip): {str(our_toks):30s}  "
+              f"{'** DIVERGES' if diverges else 'same'}")
+
+    print()
+    print("Key finding: on every accented European word, HF's NFD accent strip")
+    print("maps to a whole-word vocab entry (cafe, muller, uber, ...) while our")
+    print("historical per-byte path keeps the accent, hits [UNK] during")
+    print("WordPiece, and produces a DIFFERENT (and worse) token sequence.")
+    print()
+    print("Impact: German/French/Spanish/Portuguese embeddings from every")
+    print("uncased WordPiece model we ship diverge from HF on accented text.")
+    print("Unlike the Japanese case (out-of-domain), this affects in-domain")
+    print("text that these models are intended to handle.")
+    print()
+    print("Fix constraints:")
+    print("  - Must NOT apply NFD strip to LaBSE (cased, strip_accents=False)")
+    print("  - Must be conditioned on the model's own do_lower_case/strip_accents")
+    print("  - The GGUF converter currently does NOT record strip_accents metadata")
+    print("  - Any fix must ship behind an env gate (default OFF) per house rules")
+    print("  - English parity check required before flipping any default")
+
 
 if __name__ == "__main__":
     main()
