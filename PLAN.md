@@ -2324,7 +2324,10 @@ Four facts that should stop you re-deriving them:
 Root causes proven on `tests/regression/images/japanese_print.png` + line
 crops (evidence in `docs/LANGUAGES.md` and the 2026-08-08 board rows):
 
-1. **Multi-code recoder vs single-code default decode (FIX IN FLIGHT).**
+1. ~~**Multi-code recoder vs single-code default decode**~~ **FIXED
+   2026-08-08 (`b61f22ae`)** — auto-compose on multi-code recoders; all
+   gates passed (jpn lines exact by default, `=0` restores, Latin
+   byte-identical old-vs-new in default AND forced-compose arms).**
    CJK traineddata encodes kanji as 2-3-code radical-stroke sequences; the
    production greedy single-code path emits `<class>` per un-composed kanji
    while kana pass. `CRISPEMBED_TESSERACT_RECODE_COMPOSE=1` decodes the
