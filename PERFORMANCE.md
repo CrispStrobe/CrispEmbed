@@ -1,5 +1,36 @@
 # CrispEmbed Performance
 
+## GLM ViT deep levers, round 1 (user-funded): flash + F16MM lose QUALITY vs the HF reference; the F32-cast policy costs ~30-39% of the vision tower (M1 CPU, 2026-08-08)
+
+All three brief levers turned out to already exist as gates — no new code was
+needed to measure them. Branch `perf/glm-vit-levers` (measure-only so far).
+
+**Quality (decoded output, q8_0, `GLM_OCR_FORCE_CPU=1`):** fox + scan_strip
+are byte-identical across base / `GLM_OCR_VISION_FLASH=1` /
+`GLM_OCR_VISION_F16MM=1` / both. german_kurrent discriminates: flash and
+F16MM each produce the SAME 357-byte variant (the byte count Metal produces —
+the 357/361 split is precision-class, not platform), flash+F16MM together
+CANCEL back to the 361-byte base output. Arbitrated against the REAL HF
+GLM-OCR greedy decode on the same image (CPU f32, 367 B): **base is 2x
+closer** — char-CER 0.0193 / 4 word edits vs 0.0386 / 12 for the reduced-
+precision arms. **Verdict: flash and F16MM are quality losses; both stay
+gated.** (The vision-code comment's "F16 collapses" claim and the 08-07
+arbitration's "CPU passes with f16 matmuls" are BOTH partially right: output
+moves only on the hardest fixture, and away from HF.)
+
+**Timing (indicative — 1-min load 4.6-5.4, recorded honestly; contrast >>
+spread):** vision_encoder base 4118/5076 ms vs F16MM 2879/3114 ms (−30-39%);
+whole-run user 20.4-25.4 s vs 16.0-17.5 s. This bounds the per-image cost of
+the default's in-graph cast-everything-to-F32 policy.
+
+**Remaining implementation levers (handover):** (1) bake F32 weight copies
+ONCE at load — numerically identical to today's default, removes the
+per-image cast, costs ~4x weight RAM for the tower (gate it; a 16 GB box may
+prefer default-off); recovers the cast share of the 30-39%. (2) The
+earlier-spatial-merge lever is untouched (changes the computation; needs full
+decoded-output gates). Timing pairs should be re-taken on a properly quiet
+box before recording final numbers.
+
 ## O7 ppformulanet-l: mk scope LANDED (−31% on the neck/proj convs, byte-identical); pix2struct ggml-decode-on-CPU: M1 verdict is NO FLIP (quiet M1, 2026-08-07 evening)
 
 **ppformulanet-l (merged `5d0be2ee`).** Quiet-M1 (load 2.6-3.2) nt1 A/B, 3
