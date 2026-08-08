@@ -2319,6 +2319,38 @@ Four facts that should stop you re-deriving them:
 
 ---
 
+## OPEN TASKS — Tesseract CJK lane (opened 2026-08-08, from the issue-#44 investigation)
+
+Root causes proven on `tests/regression/images/japanese_print.png` + line
+crops (evidence in `docs/LANGUAGES.md` and the 2026-08-08 board rows):
+
+1. **Multi-code recoder vs single-code default decode (FIX IN FLIGHT).**
+   CJK traineddata encodes kanji as 2-3-code radical-stroke sequences; the
+   production greedy single-code path emits `<class>` per un-composed kanji
+   while kana pass. `CRISPEMBED_TESSERACT_RECODE_COMPOSE=1` decodes the
+   clean line crop CHARACTER-EXACT (`日本語のテキスト認識テスト`).
+   Fix: auto-enable compose at model load when the recoder contains any
+   multi-code entry — no-op for single-code (Latin) models, preserving the
+   measured Latin default; env keeps absolute precedence (`=0` forces the
+   single-code path even on CJK, `=1` forces compose on Latin).
+   Gates: byte-identity on the Latin/Fraktur fixture corpus; Japanese line
+   crops decode exact; no timing regression on the Latin arm (compose must
+   be a true no-op when the recoder is single-code).
+2. **CJK page segmentation (OPEN, independent).** Even with compose, the
+   full 3-line Japanese page yields `ククッ` — the Latin/Fraktur-tuned
+   segmentation hands the recognizer garbage crops. Line crops decode
+   near-perfectly, so this is 100% crop-side. Diagnose the router's actual
+   crops on the fixture (which route fires, crop count/geometry vs the 3
+   true lines) before prescribing anything (a brief is a hypothesis).
+3. **CLI misroute guard.** `-m rec.gguf --ocr img` silently dispatches by
+   GGUF arch into rec-only single-line mode (page squashed to one 48-px
+   strip -> one garbled line; cost a false "port gap" diagnosis this round).
+   For pipeline-shaped engines, either use `-m` as the recognizer when
+   `--ocr-rec` is absent or print a loud one-line warning naming both modes.
+4. **Registry `languages` field.** Derive per-model language/script coverage
+   from dict scans (the `docs/LANGUAGES.md` recipe) and surface it in
+   `--list-models`; keeps issue-#44-class questions self-serve.
+
 ## OPEN TASKS — engine-portfolio round (2026-08-04): match/beat the reference implementation of every open-licensed lane
 
 Scope decision: the portfolio targets are **Tesseract, DeepSeek-OCR, olmOCR,
