@@ -2693,8 +2693,7 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
             if (tokens.ids[i] == ctx->unk_id) n_unk++;
         }
         if (n_content > 0 && n_unk * 100 / n_content >= 50) {
-            const char * env = std::getenv("CRISPEMBED_WARN_UNK");
-            if (!env || std::strcmp(env, "0") != 0) {
+            if (!core_env::explicitly_off("CRISPEMBED_WARN_UNK")) {
                 fprintf(stderr,
                         "crispembed: warning: %d%% of input tokens are [UNK] — this model's vocabulary "
                         "may not cover this script; see docs/LANGUAGES.md for models that do "
