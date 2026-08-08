@@ -289,6 +289,11 @@ kept in as a permanent negative control). Verified JA: granite-embedding-107m
 LFM2.5-Embedding-350M, nomic-embed-text-v2-moe, arctic-embed-m-v2. Table +
 method in `docs/LANGUAGES.md`.
 
+**VPS work package:** E1/E2/E3/E5/E6 are all CPU-only and need no GPU — they
+are written up as a ready-to-run brief for the 8 GB VPS in
+[`docs/vps-embedding-lane-brief.md`](vps-embedding-lane-brief.md) (paths, disk
+rules, worktree requirement, acceptance). E4 is Kaggle. E7 is partly done.
+
 #### E1. Finish the JA embedder matrix — 7 shipped multilingual aliases untested [Opus]
 
 Untested, all claiming multilingual: `multilingual-e5-small` / `-base` /
