@@ -82,9 +82,11 @@ timing verdict from a contended box** (ppformulanet-l aborted at load 31+,
    serving T4 to these accounts right now. Retry stays a one-push
    no-op-cost option (`chr1str/crispembed-t4-draw` v3+ or chr1s4
    conv-ab), but the realistic route to a tensor-core verdict is a
-   DIFFERENT PLATFORM — Colab free tier serves T4; a Colab notebook
-   port of the trimmed layout kernel is the concrete next step if the
-   question stays funded. Every P100 re-draw keeps replicating the
+   DIFFERENT PLATFORM — Colab free tier serves T4; the notebook port
+   SHIPPED 2026-08-08 (`tools/colab/crispembed-t4-draw.ipynb`, merged
+   `603d260e`) — open it in Colab on a T4 runtime, Run all (~15 min cold
+   build), paste the SUMMARY block back. Colab execution is
+   browser-side, so the run itself is the user's one click. Every P100 re-draw keeps replicating the
    known verdict (time-neutral warm, 20→19 drift) for free.
 5. **GLM ViT deep levers — only if explicitly funded** (carried).
 6. ~~**Hygiene**~~ **DONE 2026-08-07**: N+3 handover + 4 DONE rows archived
