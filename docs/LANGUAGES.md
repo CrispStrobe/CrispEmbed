@@ -188,6 +188,45 @@ warning when ≥50% of content tokens are `[UNK]`, signalling a vocabulary
 mismatch. This catches the English-model-on-Japanese case automatically.
 Silenced by `CRISPEMBED_WARN_UNK=0`.
 
+### Accented-Latin tokenizer divergence on uncased WordPiece models
+
+The English-only models (`all-MiniLM-L6-v2`, `all-mpnet-base-v2`) have a
+tokenizer parity gap that affects **European languages**, not just Japanese.
+HuggingFace's `BasicTokenizer` with `do_lower_case=True` applies NFD
+normalization and accent stripping before WordPiece lookup (`café` → `cafe`,
+`Müller` → `muller`, `über` → `uber`). CrispEmbed's shipped per-byte
+lowercase path does **not** strip accents. Measured side-by-side on
+`all-MiniLM-L6-v2`:
+
+| Input | HF tokens | CrispEmbed tokens |
+|---|---|---|
+| café | `cafe` (1 token, in-vocab) | `caf` + `[UNK]` |
+| Müller | `muller` (1 token, in-vocab) | `m` + `[UNK]` |
+| naïve | `naive` (1 token, in-vocab) | `na` + `[UNK]` |
+| résumé | `resume` (1 token, in-vocab) | `r` + `[UNK]` |
+| über | `uber` (1 token, in-vocab) | `[UNK]` |
+| Ángel | `angel` (1 token, in-vocab) | `[UNK]` |
+| François | `francois` (1 token, in-vocab) | `fran` + `[UNK]` |
+
+**Impact:** German, French, Spanish, and Portuguese embeddings from these
+models diverge from HF on ordinary accented text — text that IS in-vocabulary
+after accent stripping. Unlike the Japanese case (out-of-domain for these
+models), this affects text these models are designed to handle.
+
+**Who is affected:** only the two 30k uncased WordPiece models above. Every
+multilingual model in this table uses a SentencePiece/XLM-R tokenizer (250k
+vocab) which handles accented text natively without NFD stripping — they are
+**not affected**. If you embed German/French/Spanish/Portuguese text, use any
+of the multilingual models instead.
+
+**Why no fix yet:** a global accent-strip fix would break `LaBSE`, which is a
+cased WordPiece model that does NOT strip accents (correctly). The fix must be
+conditioned on the model's own `do_lower_case` / `strip_accents` metadata, and
+the GGUF converter does not currently record `strip_accents`. This is tracked
+in `PLAN.md` (E5).
+
+Full comparison: `tests/wordpiece_cjk_parity.py`.
+
 **Recommendation for Japanese retrieval:** `granite-embedding-107m`
 (best measured, 107M) or `bge-m3` (strong, 8k context, also does sparse and
 ColBERT retrieval). Both are registry aliases — `crispembed -m
@@ -223,12 +262,20 @@ relevant vs irrelevant JA document):
 Columns show the score gap (relevant minus irrelevant document score); positive
 = correct ranking. All three pass.
 
-**Key finding:** unlike the embedding lane, there are NO English-only rerankers
-in the registry. `bge-reranker-base` — intended as a negative control — turns
-out to use a 250k SentencePiece/XLM-R vocabulary, not a 30k English WordPiece.
-All shipped rerankers have multilingual tokenization. This means the "wrong
-model for the language" trap that affects English-only embedders
-(all-MiniLM-L6-v2, all-mpnet-base-v2) does NOT apply to any shipped reranker.
+**Evidence caveat:** unlike the embedder table above, these results have **no
+negative control**. The embedder table includes English-only models that
+demonstrably fail on Japanese (bit-identical vectors, cross-lingual FAIL),
+proving the test can distinguish working from broken. Here, all three
+rerankers use a 250k SentencePiece/XLM-R vocabulary — there is no
+English-only 30k-WordPiece reranker in the registry to serve as a control.
+`bge-reranker-base` was intended as one, but turned out to be multilingual at
+the tokenizer level. This means we know Japanese reranking produces correct
+orderings, but we cannot demonstrate what a failure looks like on the same
+harness. The embedder table carries stronger evidence.
+
+The absence of an English-only reranker also means the "wrong model for the
+language" trap that affects English-only embedders does NOT apply to any
+shipped reranker — all have multilingual tokenization.
 
 The `CRISPEMBED_WARN_UNK` warning would not fire on any reranker fed Japanese,
 because the SentencePiece tokenizer does not produce `[UNK]` tokens for Japanese
