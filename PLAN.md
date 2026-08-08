@@ -354,7 +354,23 @@ script; see docs/LANGUAGES.md"). Cheap, no hot-path cost (once per input), and
 it converts the whole class of "wrong model for the language" bugs from silent
 to obvious. Gate it so it can be silenced.
 
-#### E7. Give embedders the "Scripts" treatment the OCR lane already has [Opus]
+#### E7. Embedder vocabulary script-scan — PARTLY DONE, and it needs a health warning [Opus]
+
+`tools/scan_model_languages.py` now reads `tokenizer.ggml.tokens` too, so one
+scanner covers OCR recognizers AND embedding/reranker GGUFs (2026-08-08).
+**But the first scan produced a counter-example that changes what this field
+may claim**: `all-MiniLM-L6-v2` scans `kana=188 cjk=488` — and we PROVED it
+returns bit-identical vectors for two different Japanese sentences. So for
+embedders, vocabulary coverage is a far weaker signal than for a recognizer
+(where the dictionary genuinely gates emittable characters): only the ZERO
+direction is conclusive. The tool now prints that caveat automatically on
+embedding GGUFs. **Do NOT surface this as a `Scripts`/language column in
+`--list-models` for embedders without that warning attached** — it would label
+all-MiniLM-L6-v2 "kana-capable", which is exactly the trap this whole thread
+was about. Remaining work: decide whether a caveated column is better than no
+column at all (arguably not), and wire it if so.
+
+#### E7b. (superseded framing) Give embedders the "Scripts" treatment [Opus]
 
 `tools/scan_model_languages.py` scans an OCR model's dictionary and its output
 IS the registry `Scripts` column. The analogous embedder scan (script coverage

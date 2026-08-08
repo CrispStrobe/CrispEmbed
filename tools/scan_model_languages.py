@@ -40,10 +40,34 @@ def read_tokens(path):
     from gguf import GGUFReader
 
     reader = GGUFReader(path)
-    field = reader.fields.get("tokenizer.tokens")
+    # OCR recognizers expose `tokenizer.tokens` (for Tesseract that is the
+    # unicharset); embedding/reranker GGUFs use the llama.cpp-style
+    # `tokenizer.ggml.tokens`. One scanner covers both lanes -- the script
+    # question ("can this vocabulary even represent kana?") is identical.
+    field = None
+    embedding_lane = False
+    for key in ("tokenizer.tokens", "tokenizer.ggml.tokens"):
+        field = reader.fields.get(key)
+        if field is not None:
+            embedding_lane = key.endswith("ggml.tokens")
+            break
+    read_tokens.embedding_lane = embedding_lane
     if field is None:
-        raise SystemExit(f"{path}: no tokenizer.tokens field (not a recognizer GGUF?)")
+        raise SystemExit(
+            f"{path}: no tokenizer.tokens / tokenizer.ggml.tokens field "
+            f"(not a recognizer or embedding GGUF?)")
     return [bytes(field.parts[i].tobytes()).decode("utf-8", "replace") for i in field.data]
+
+
+EMBED_CAVEAT = (
+    "  NOTE (embedding/reranker GGUF): for these models script coverage is a MUCH\n"
+    "  weaker signal than for an OCR recognizer, where the dictionary genuinely\n"
+    "  gates which characters can be emitted. Counter-example measured 2026-08-08:\n"
+    "  all-MiniLM-L6-v2 scans kana=188 yet returns BIT-IDENTICAL embeddings for two\n"
+    "  different Japanese sentences. A non-zero count here does NOT mean the model\n"
+    "  works in that script -- only a zero count is conclusive (it cannot). Verify\n"
+    "  with tests/embed_language_eval.py; see docs/LANGUAGES.md."
+)
 
 
 def scan(tokens):
@@ -82,6 +106,8 @@ def main(argv):
         else:
             detail = "  ".join(f"{k}={v}" for k, v in counts.items() if v)
             print(f"{name}\n  classes={len(tokens)}  {detail}\n  languages = {summary(counts)!r}")
+            if getattr(read_tokens, "embedding_lane", False):
+                print(EMBED_CAVEAT)
     return 0
 
 
