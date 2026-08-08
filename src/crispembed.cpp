@@ -261,7 +261,9 @@ struct crispembed_context {
     int matryoshka_dim = 0;         // 0 = use model default
     int image_deskew = 0;           // optional scan deskew on the file/RGB image paths
     float image_deskew_max_angle = 15.0f;
-    std::string prefix; // prepended to text before tokenization (e.g. "query: ")
+    int unk_id = -1;         // unknown-token id (for E6 UNK-ratio warning); -1 = not set
+    bool unk_warned = false; // one-shot: suppress after first warning
+    std::string prefix;      // prepended to text before tokenization (e.g. "query: ")
     // ColBERT self-describing metadata (read from GGUF, empty = not set)
     std::string colbert_query_prefix;
     std::string colbert_doc_prefix;
@@ -580,6 +582,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             int unk_id = u32("tokenizer.ggml.unknown_token_id", 3);
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
             ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
+            ctx->unk_id = unk_id;
             ctx->sp_tokenizer.set_add_flags(tok_add_bos, tok_add_eos);
             ctx->use_sentencepiece = true;
             fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n", n, scores.size());
@@ -637,6 +640,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
                 }
             }
             ctx->wp_tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens, do_lower_case);
+            ctx->unk_id = unk_id;
             // `tokenizer.ggml.pre = "bert"` selects the HF BertNormalizer +
             // BertPreTokenizer path (core/bert_pretok.h) — written by the
             // converter when tokenizer.json itself declares it (LaBSE class).
@@ -2670,6 +2674,37 @@ extern "C" const float * crispembed_encode(crispembed_context * ctx, const char 
         fprintf(stderr, "\n");
     }
 
+    // E6: one-shot warning when ≥50% of content tokens are [UNK] — signals a
+    // script/vocabulary mismatch (e.g. Japanese text on an English-only model).
+    // Silenced by CRISPEMBED_WARN_UNK=0.
+    if (ctx->unk_id >= 0 && !ctx->unk_warned) {
+        // Count content tokens: skip first (CLS/BOS) and last active (SEP/EOS)
+        int last_active = -1;
+        for (int i = (int)tokens.attn_mask.size() - 1; i >= 0; i--) {
+            if (tokens.attn_mask[i]) {
+                last_active = i;
+                break;
+            }
+        }
+        int n_content = 0, n_unk = 0;
+        for (int i = 1; i < last_active; i++) { // skip pos 0 (CLS/BOS) and last_active (SEP/EOS)
+            if (!tokens.attn_mask[i]) continue;
+            n_content++;
+            if (tokens.ids[i] == ctx->unk_id) n_unk++;
+        }
+        if (n_content > 0 && n_unk * 100 / n_content >= 50) {
+            const char * env = std::getenv("CRISPEMBED_WARN_UNK");
+            if (!env || std::strcmp(env, "0") != 0) {
+                fprintf(stderr,
+                        "crispembed: warning: %d%% of input tokens are [UNK] — this model's vocabulary "
+                        "may not cover this script; see docs/LANGUAGES.md for models that do "
+                        "(silence with CRISPEMBED_WARN_UNK=0)\n",
+                        n_unk * 100 / n_content);
+                ctx->unk_warned = true;
+            }
+        }
+    }
+
     if (ctx->is_decoder && ctx->dec) {
         if (ctx->prefix_cache_enabled < 0) {
             const char * e = std::getenv("CRISPEMBED_DECODER_PREFIX_CACHE");
@@ -2831,6 +2866,34 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
             fprintf(stderr, "crispembed: token_ids[%d] (n=%zu):", i, t.ids.size());
             for (int32_t id : t.ids) fprintf(stderr, " %d", id);
             fprintf(stderr, "\n");
+        }
+
+        // E6: one-shot UNK-ratio warning (same logic as single-encode path)
+        if (ctx->unk_id >= 0 && !ctx->unk_warned) {
+            int last_active = -1;
+            for (int j = (int)t.attn_mask.size() - 1; j >= 0; j--) {
+                if (t.attn_mask[j]) {
+                    last_active = j;
+                    break;
+                }
+            }
+            int n_content = 0, n_unk = 0;
+            for (int j = 1; j < last_active; j++) {
+                if (!t.attn_mask[j]) continue;
+                n_content++;
+                if (t.ids[j] == ctx->unk_id) n_unk++;
+            }
+            if (n_content > 0 && n_unk * 100 / n_content >= 50) {
+                const char * env = std::getenv("CRISPEMBED_WARN_UNK");
+                if (!env || std::strcmp(env, "0") != 0) {
+                    fprintf(stderr,
+                            "crispembed: warning: %d%% of input tokens are [UNK] — this model's vocabulary "
+                            "may not cover this script; see docs/LANGUAGES.md for models that do "
+                            "(silence with CRISPEMBED_WARN_UNK=0)\n",
+                            n_unk * 100 / n_content);
+                    ctx->unk_warned = true;
+                }
+            }
         }
     }
 
