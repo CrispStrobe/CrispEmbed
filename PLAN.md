@@ -286,6 +286,7 @@ races). Remove the row when the branch lands.
 
 | Since | Branch / worktree | Task | Status |
 |-------|-------------------|------|--------|
+| 2026-08-08 | `feat/tesseract-cjk-page` / `.claude/worktrees/feat-tesseract-cjk-page` | **Tesseract CJK lane items 2+3+4 ALL DONE — the lane's three open follow-ups close together.** (2) **Page-level CJK path SHIPPED**: the tesseract stage dispatches `model_a` on GGUF metadata, so a PP-OCRv6 detector supplies line-level boxes (DBNet fragment grouping + seg router bypassed on that arm; `[tesseract-det] path=ppocrv6` line). `crispembed_ocr_init` dispatches the rec slot too, so a `tesseract_lstm` GGUF reaches the orchestrator instead of the flat math_ocr loader. **`japanese_print.png` decodes BYTE-EXACT — 3/3 lines, page CER 0.0000** vs the gt, in BOTH the `--ocr-det/--ocr-rec` and `--ocr-pipeline --ocr-engine tesseract` forms (baseline: `(no text detected)` and `regions=0` respectively). Latin default lane BYTE-IDENTICAL base-vs-new, 5/5 sha-compared (fox, scan_strip, simple_form, receipt_example, german_official_print). (3) **CLI misroute guard**: geometry-gated warning naming the exact pipeline command when a line recognizer gets a page (page warns / 517x45 line crop stays silent and still decodes exactly / det models never warn). (4) **Registry `languages` field** + `tools/scan_model_languages.py` + `--list-models` "Scripts" column, all 15 recognizers scanned from shipped GGUFs; guard test verified failing-first. **Two stale claims corrected by measurement:** the T11 "flat pipeline SEGFAULTs on a tesseract rec" note is stale (it refuses loudly at rc=1 today), and `tests/test_ocr_backend_matrix.py` was RED on main since `69e39a62` (rejected the pix2struct row's own "Yes on CUDA") — fixed here. **New fact:** `tesseract-kor` has 1089 hangul and ZERO CJK ideographs, so mixed hanja Korean is out of dict | **DONE — merging** |
 | 2026-08-08 | *(landed via `docs/language-matrix`, merged `6b89a79d`)* | **Issue #44 (Japanese) answered with evidence + docs/LANGUAGES.md shipped.** Dict scans: ppocrv6 tiny rec has ZERO kana; small/medium 180 kana + 15565 CJK. Japanese VERIFIED: new fixture `tests/regression/images/japanese_print.png` decodes 3/3 lines EXACTLY via medium det+rec (conf 0.97-0.98, boxes ±1px of official paddle, same models). tesseract-jpn ships but near-garbage on the fixture (Latin-tuned seg) — recorded. **New trap documented + follow-up:** `-m rec.gguf --ocr img` silently routes to rec-only single-line mode (page squashed to one 48px strip → garble); pipeline needs explicit `--ocr-rec`. TODO: CLI guard (warn or use -m as rec for pipeline engines); registry `languages` field from dict scans | **DONE (reply POSTED 2026-08-08, issue #44 comment 5224840359)** |
 | 2026-08-08 | `perf/glm-vit-levers` / `.claude/worktrees/perf-glm-vit` (measure-only; PERFORMANCE.md top) | **GLM ViT levers round 1 DONE (user-funded): flash + F16MM measured as QUALITY LOSSES vs the real HF decode (kurrent CER 0.039 vs base 0.019; fox/strip byte-identical; flash+F16MM cancel back to base) — both stay gated. The F32-cast policy costs 30-39% of the vision tower (indicative timing, loaded box). Lever 2 bake-F32-at-load SHIPPED gated-off `87d32dbd` (byte-identical 3/3 fixtures; measured LOSING on the loaded 16GB box — memory pressure; re-verdict on big-RAM/quiet). REMAINING: earlier-spatial-merge (full quality gates), quiet-box timing re-take** | **ROUND 1+2 DONE — merge lever open** |
 | 2026-08-07 | *(kernel `chr1str/crispembed-t4-draw` v1; `chr1str/crispembed-ccache` seeded and VERIFIED warm — 829 files)* | **Round N+4 queue #4 attempted TWICE (08-07 + 08-08) — chr1str drew P100 on BOTH days; seven P100s total across two accounts/two days, T4 stays open (Colab-T4 port is the realistic route, see queue #4).** Free third replication of the P100 verdict: warm Phase 1 time-neutral (f32 72.2 vs f16 71.6 ms) with the known 20→19 region drift. chr1str kernel infra is now ready (ccache clone + hf-token dataset wired), so a future re-draw is a one-push retry on EITHER account, different day. **Also closed this checkpoint:** O7-got N/A (ggml-graph default neck); O7-deepseek needs the dispatcher refactor (separate claim) | **DONE (draw failed honestly; T4 open)** |
@@ -2339,28 +2340,44 @@ crops (evidence in `docs/LANGUAGES.md` and the 2026-08-08 board rows):
    Gates: byte-identity on the Latin/Fraktur fixture corpus; Japanese line
    crops decode exact; no timing regression on the Latin arm (compose must
    be a true no-op when the recoder is single-code).
-2. **CJK page segmentation (OPEN — diagnosed 2026-08-08, real scope).**
-   Three measured facts: (a) the single-model route (`-m tesseract-jpn
-   --ocr page`) never reaches any router — it recs the WHOLE page as one
-   line strip (`ククッ`; same class as the ppocr `-m` misroute, item 3);
-   (b) dbnet-ic15 det fragments the 3-line CJK page into 10 word-level
-   boxes (scene-text training); (c) the generic `--ocr-det/--ocr-rec`
-   pipeline hardwires `math_ocr_init` for rec and CANNOT host a
-   tesseract recognizer (fails at load). So there is currently NO
-   working page-level path for tesseract CJK. Cheapest viable fix:
-   ppocrv6 det (proven 3/3 line boxes on this fixture) feeding
-   tesseract-jpn per-crop — needs a small pipeline/orchestrator stage
-   that pairs them; alternatively extend the tesseract lane's own
-   pageseg for CJK line banding. Line-level jpn works TODAY via crops +
-   auto-compose (`b61f22ae`).
-3. **CLI misroute guard.** `-m rec.gguf --ocr img` silently dispatches by
-   GGUF arch into rec-only single-line mode (page squashed to one 48-px
-   strip -> one garbled line; cost a false "port gap" diagnosis this round).
-   For pipeline-shaped engines, either use `-m` as the recognizer when
-   `--ocr-rec` is absent or print a loud one-line warning naming both modes.
-4. **Registry `languages` field.** Derive per-model language/script coverage
-   from dict scans (the `docs/LANGUAGES.md` recipe) and surface it in
-   `--list-models`; keeps issue-#44-class questions self-serve.
+2. ~~**CJK page segmentation**~~ **FIXED 2026-08-08 (`feat/tesseract-cjk-page`).**
+   The diagnosis held on all three counts, and the cheapest fix was the right
+   one: the tesseract stage now dispatches `model_a` on GGUF metadata, so a
+   **PP-OCRv6 detector** hosts detection and supplies line-level boxes. Because
+   those boxes are already lines, the DBNet fragment grouping AND the
+   segmentation router are bypassed on that arm (a DBNet det keeps the
+   unchanged historical path). `crispembed_ocr_init` dispatches the REC slot on
+   metadata too, so a `tesseract_lstm` GGUF reaches the orchestrator instead of
+   the flat `math_ocr_init` loader — that was fact (c).
+   **Gates: `japanese_print.png` decodes BYTE-EXACT (3/3 lines, page CER
+   0.0000)** in both the `--ocr-det/--ocr-rec` and the `--ocr-pipeline
+   --ocr-engine tesseract` forms; baseline produced `(no text detected)` and
+   `regions=0`. Latin default lane byte-identical base-vs-new on 5 fixtures.
+   Prints `[tesseract-det] path=ppocrv6 boxes=N`.
+3. ~~**CLI misroute guard**~~ **DONE 2026-08-08.** The CLI reads
+   `general.architecture` (+ `ppocrv6.kind`) from `-m` and, for a line
+   recognizer used without `--ocr-rec`, prints the cause plus the exact
+   pipeline command to run instead. Deliberately NOT auto-rerouting: chose the
+   warning because recognizing a single cropped line that way is a legitimate,
+   actively-used flow (it is how the CJK line-level decode is validated), so
+   the warning is **geometry-gated** (fires only above 100 px image height).
+   Verified page-warns / line-crop-silent / detector-silent.
+4. ~~**Registry `languages` field**~~ **DONE 2026-08-08.**
+   `tools/scan_model_languages.py` makes the `docs/LANGUAGES.md` recipe
+   executable; its output IS the registry field, shown as the `--list-models`
+   "Scripts" column. All 15 recognizers scanned from their shipped GGUFs (the
+   10 uncached tesseract models were fetched for it). `ppocrv6-tiny-rec` now
+   visibly reads `latin+cjk+greek` next to small/medium's `+kana`.
+   `tests/test_registry_languages.py` guards labels + measured facts and was
+   verified to FAIL first on an injected issue-#44 regression. Coverage is
+   documented as necessary-not-sufficient; a blank column means NOT SCANNED.
+   **New fact:** `tesseract-kor` = 1089 hangul, ZERO CJK ideographs — mixed
+   hanja Korean is out of dict.
+
+**Unrelated defect found while building, recorded not fixed:**
+`crispembed_ocr_model_recognize_gray` (`src/crispembed.cpp:4467`) has no
+`OCR_MODEL_UNLIMITED_OCR` case and silently returns `nullptr` for that engine
+(live `-Wswitch` warning). Needs a gray→RGB adapter; unowned, untested.
 
 ## OPEN TASKS — engine-portfolio round (2026-08-04): match/beat the reference implementation of every open-licensed lane
 
