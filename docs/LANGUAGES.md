@@ -49,10 +49,18 @@ one garbled line. Always pass `--ocr-rec` for pipeline use.
 Registry ships 12 converted models: `eng deu fra spa ita por nld rus ara jpn
 kor chi_sim` (HF `cstr/tesseract-lstm-GGUF`). Latin-script + Fraktur languages
 are the tuned, benchmarked path (CER work in `PERFORMANCE.md`).
-**`tesseract-jpn` verified poor 2026-08-08** on the same printed fixture
-(near-garbage output via both the router and dbnet det) — the lane's
-segmentation/recognition tuning is Latin-centric today; treat jpn/kor/chi_sim
-as shipped-but-unvalidated. Use PP-OCRv6 for Japanese instead.
+**`tesseract-jpn` root-caused 2026-08-08 — two stacked defects:**
+(1) the production default decode is the single-code greedy path, but CJK
+traineddata encodes kanji as MULTI-CODE (radical-stroke) sequences — every
+kanji decodes as `<class>` while kana pass through. The opt-in
+`CRISPEMBED_TESSERACT_RECODE_COMPOSE=1` fixes recognition COMPLETELY on
+clean line crops (`日本語のテキスト認識テスト` exact). (2) the lane's
+page segmentation fails on the Japanese page independently (garbage crops;
+output unchanged by compose). So: line-level Japanese works with the compose
+gate; page-level needs segmentation work. Obvious follow-up in PLAN.md:
+auto-enable compose when the loaded model's recoder is multi-code (no-op for
+Latin models, correctness win for jpn/kor/chi_sim). Until then use PP-OCRv6
+for Japanese.
 
 ## VLM document engines (upstream claims unless noted)
 
