@@ -57,6 +57,11 @@ typedef struct crispembed_hparams {
 
 // Initialize: load GGUF model, allocate ggml backends.
 // n_threads: CPU threads for matmul (0 = auto).
+// The n_threads contract holds for EVERY *_init in this header: a value
+// <= 0 selects the auto default, min(4, hardware cores) — 1 on WASM builds
+// without pthreads — and a positive value is used as given. (Until issue
+// #45 the "0 = auto" promise was unimplemented and 0 clamped to a single
+// thread; bindings that pass 0 now get the documented behavior.)
 // Returns NULL on failure.
 CRISPEMBED_API crispembed_context * crispembed_init(const char * model_path, int n_threads);
 
