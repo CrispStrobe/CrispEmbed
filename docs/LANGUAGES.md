@@ -293,11 +293,69 @@ of that guarantee differs per fix, and it is worth being exact about which:
   from the thing users actually run. It also does not apply `Final_Sigma`:
   `ΟΔΟΣ` → `οδοσ` under the fast tokenizer, `οδος` under the slow one.
 
-**Who was affected:** defect 1 hit only the 30k **uncased** WordPiece models.
+### OPEN: the multilingual SentencePiece models have their own divergence
+
+**Status: measured, not fixed.** The paragraph below used to say the
+multilingual models were "not affected". That was an argument about *accent
+stripping* and it is still true for accents — but their token ids were never
+actually compared against HF. They now have been, and they diverge.
+
+Every multilingual embedder here is an XLM-R-family **Unigram** model whose
+`tokenizer.json` declares a `Precompiled` normalizer (an `nmt_nfkc`
+precompiled charsmap). CrispEmbed's SentencePiece path implements **no
+normalizer at all** — `grep precompiled_charsmap` finds nothing in the
+runtime, the converter, or any GGUF. Measured on `multilingual-e5-small`
+(`tests/embed_tokenizer_parity.py`, real GGUF through the public C API):
+
+| section | exact vs HF |
+|---|---|
+| ascii | 2/2 |
+| accented | 4/4 |
+| cjk | 3/3 |
+| unicode punctuation | 1/2 |
+
+The failure: `…` (U+2026) must normalize to `...`, one in-vocab token. We emit
+three `<unk>`.
+
+**Scope — 4837 codepoints**, and they are not exotic:
+
+| input | HF | CrispEmbed |
+|---|---|---|
+| `…` `‥` | `...` `..` | `<unk>` ×3 |
+| `Ａ` `ａ` `１` (fullwidth) | `A` `a` `1` | unnormalized |
+| U+3000 ideographic space | plain space | unnormalized |
+| `ﬁ` `ﬂ` | `fi` `fl` | unnormalized |
+| `①` `Ⅳ` `㎏` `㈱` | `1` `IV` `kg` `(株)` | unnormalized |
+
+Typographic quotes and dashes are *not* touched by this charsmap, which is why
+Latin text scores 4/4 above. **Fullwidth forms and U+3000 are routine in
+Japanese and Chinese text**, so this matters most for exactly the retrieval
+case this document recommends these models for.
+
+**Why it is not fixed here.** The charsmap is byte-identical (sha256
+`ce10d747…`) across all six shipped multilingual embedders — e5-small/base,
+bge-m3, granite-107m/278m-multilingual, arctic-embed-m-v2 — and they agree on
+all 65536 BMP codepoints, so **one generated table would serve every one of
+them with no re-conversion**, exactly like the WordPiece fix. But
+`SentencePieceTokenizer` is also used by `gliner_ner` (DeBERTa) and
+`clip_text_embed` (SigLIP), whose models declare *different* normalizers.
+Applying `nmt_nfkc` to every SPM model would therefore be wrong. Unlike the
+accent case — where the old "blocked on converter metadata" claim turned out to
+be false — this one genuinely needs the converter to record which normalizer a
+model declares. That is the next piece of work, not a drive-by.
+
+Harness: `tests/embed_tokenizer_parity.py` + `tests/dump_token_ids.cpp` (dumps
+the ids the shipping runtime produces for any tokenizer family; SPM/BPE parity
+cannot be checked from a vocab file the way WordPiece can, because merges,
+charsmap and pre-tokenizer selection live in the GGUF).
+
+**Who was affected by the WordPiece defects:** defect 1 hit only the 30k
+**uncased** WordPiece models.
 Defects 2 and 3 hit **every** WordPiece model, cased included — LaBSE was at
-25/35 against HF before this work purely from the split stage. Every
-multilingual model in this table uses a SentencePiece/XLM-R tokenizer (250k
-vocab) and is a different code path, unaffected throughout.
+25/35 against HF before this work purely from the split stage. The
+multilingual models use a SentencePiece/XLM-R tokenizer (250k vocab), a
+different code path, so none of the three WordPiece defects reached them —
+but see the open SentencePiece divergence above, which does.
 
 `LaBSE` declares `lowercase: false`, so it correctly does not strip accents;
 the accent fix is conditioned on the same `do_lower_case` the runtime already
