@@ -153,8 +153,49 @@ static int crispembed_test_main() {
         }
     }
 
-    printf("spm-norm: %zu goldens + 95 ascii-inv + 9 ascii-ctl + %zu idempot + table, %d failure(s)\n",
-           k_goldens.size(), k_goldens.size(), fails);
+    // ---- 6. SigLIP's canonicalization on top of the charsmap -----------
+    // Goldens from the tokenizer that ACTUALLY RUNS: there is no fast SigLIP
+    // tokenizer (`use_fast=True` still returns the slow SiglipTokenizer), so
+    // `canonicalize_text` — lower, translate away ALL of string.punctuation,
+    // collapse whitespace, strip — is the authority. tokenizer.json's Replace
+    // regex keeps `/ < >` and is NOT what executes; trusting it cost a wrong
+    // implementation that scored 16/17 instead of 17/17 against HF.
+    // clang-format off
+    static const std::vector<Case> k_siglip = {
+        { "A photo of a CAT.",
+          "a photo of a cat" },
+        { "Hello, World! How are you?",
+          "hello world how are you" },
+        { "caf\xc3""\xa9"" M\xc3""\xbc""ller",
+          "caf\xc3""\xa9"" m\xc3""\xbc""ller" },   // lowercases, does NOT strip accents
+        { "a dog & a cat (running) - fast!",
+          "a dog a cat running fast" },
+        { "the a/b test with <tags> and >arrows<",
+          "the ab test with tags and arrows" },    // / < > ARE stripped
+        { "under_score and hyphen-ated",
+          "underscore and hyphenated" },
+        { "  leading and trailing  ",
+          "leading and trailing" },
+        { "multiple    inner     spaces",
+          "multiple inner spaces" },
+        { "\xe6""\x97""\xa5""\xe6""\x9c""\xac""\xe8""\xaa""\x9e""\xe3""\x81""\xae""\xe3""\x83""\x86""\xe3""\x82""\xad""\xe3""\x82""\xb9""\xe3""\x83""\x88""",
+          "\xe6""\x97""\xa5""\xe6""\x9c""\xac""\xe8""\xaa""\x9e""\xe3""\x81""\xae""\xe3""\x83""\x86""\xe3""\x82""\xad""\xe3""\x82""\xb9""\xe3""\x83""\x88""" },
+        { "MiXeD CaSe WoRdS",
+          "mixed case words" },
+        { "", "" },
+        { "!!!", "" },
+    };
+    // clang-format on
+    for (const auto & c : k_siglip) {
+        const std::string got = core_spm::siglip_normalize(c.in);
+        if (got != c.want) {
+            fails++;
+            printf("FAIL siglip    in=%s\n               got=%s\n              want=%s\n", c.in, got.c_str(), c.want);
+        }
+    }
+
+    printf("spm-norm: %zu goldens + 95 ascii-inv + 9 ascii-ctl + %zu idempot + table + %zu siglip, %d failure(s)\n",
+           k_goldens.size(), k_goldens.size(), k_siglip.size(), fails);
     return fails ? 1 : 0;
 }
 

@@ -37,6 +37,7 @@
 #pragma once
 
 #include "unicode_categ.h"
+#include "unicode_lower.h"
 #include "unicode_spm_norm.h"
 
 #include <string>
@@ -107,6 +108,109 @@ inline std::string normalize(const std::string & text) {
     size_t i = 0;
     while (i < n) {
         normalize_cp(core_unicode::utf8_next(text.data(), n, i), out);
+    }
+    return out;
+}
+
+// ---------------------------------------------------------------------------
+// SigLIP text normalizer
+// ---------------------------------------------------------------------------
+//
+// SigLIP canonicalizes text before SentencePiece, and CrispEmbed implemented
+// none of it. `transformers.models.siglip.tokenization_siglip`:
+//
+//     if self.do_lower_case: text = text.lower()
+//     text = self.remove_punctuation(text)      # str.translate over
+//                                               # string.punctuation
+//     text = re.sub(r"\s+", " ", text)
+//     text = text.strip()
+//
+// then SentencePiece applies its own nmt_nfkc charsmap.
+//
+// ⚠ WHICH IMPLEMENTATION IS THE AUTHORITY. tokenizer.json ALSO declares a
+// normalizer Sequence, and its Replace regex keeps `/`, `<` and `>` — but
+// **there is no fast SigLIP tokenizer**: `AutoTokenizer.from_pretrained(...,
+// use_fast=True)` still returns the slow `SiglipTokenizer` (`is_fast=False`).
+// So the Python path is what runs, and it strips ALL of `string.punctuation`,
+// `/ < >` included. Reading the JSON regex instead of measuring the tokenizer
+// produced exactly that wrong answer here (16/17 with `/ < >` kept). This is
+// the mirror image of core/bert_norm.h, where the Rust side IS the authority
+// because those models really do run the fast tokenizer — the lesson is to
+// check which one executes, not to prefer one by habit.
+//
+// It LOWERCASES but does NOT strip accents — `café Müller` -> `café müller` —
+// which is why this uses core/unicode_lower.h and not core/bert_norm.h.
+//
+// Measured on the real engine via crispembed-diff (tests/test_clip_text_diff.cpp
+// vs an HF AutoModel reference): "A photo of a CAT, running fast!" scored
+// cos 0.8110 without this and 0.9995 with it. The stock fixture
+// "a photo of a fox" is all-lowercase and punctuation-free, which is exactly
+// why the existing regression never saw the bug.
+inline bool is_siglip_stripped_punct(uint32_t cp) {
+    // Python's string.punctuation, verbatim: !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
+    return (cp >= '!' && cp <= '/') || (cp >= ':' && cp <= '@') || (cp >= '[' && cp <= '`') || (cp >= '{' && cp <= '~');
+}
+
+inline void lower_cp(uint32_t cp, std::string & out) {
+    using namespace core_unicode_lower;
+    if (cp < 0x80) {
+        out += (char)((cp >= 'A' && cp <= 'Z') ? cp - 'A' + 'a' : cp);
+        return;
+    }
+    int lo = 0, hi = N_ROWS - 1;
+    while (lo <= hi) {
+        const int mid = lo + (hi - lo) / 2;
+        if (ROWS[mid].cp == cp) {
+            const uint32_t payload = ROWS[mid].payload;
+            if (payload & 0x80000000u) {
+                const uint32_t * p = &MULTI[payload & 0x7FFFFFFFu];
+                for (uint32_t k = 1; k <= p[0]; k++) append_utf8_cp(out, p[k]);
+            } else {
+                append_utf8_cp(out, payload);
+            }
+            return;
+        }
+        if (ROWS[mid].cp < cp) {
+            lo = mid + 1;
+        } else {
+            hi = mid - 1;
+        }
+    }
+    append_utf8_cp(out, cp);
+}
+
+inline std::string siglip_normalize(const std::string & text) {
+    // [0] Lowercase, [1] drop the punctuation class, [2] collapse whitespace.
+    std::string s;
+    s.reserve(text.size());
+    {
+        const size_t n = text.size();
+        size_t i = 0;
+        bool pending_space = false;
+        bool any = false;
+        while (i < n) {
+            const uint32_t cp = core_unicode::utf8_next(text.data(), n, i);
+            if (core_unicode::category(cp) == core_unicode::CAT_WS) {
+                pending_space = true;
+                continue;
+            }
+            if (is_siglip_stripped_punct(cp)) continue; // deleted outright
+            if (pending_space && any) s += ' ';         // [3] also strips the leading run
+            pending_space = false;
+            any = true;
+            lower_cp(cp, s);
+        }
+        // A trailing whitespace run is dropped, which is [3]'s right strip.
+    }
+
+    // [4] the charsmap, then [5] collapse any doubled spaces it introduced
+    // (U+3000 -> ' ' can sit next to an existing space).
+    const std::string mapped = normalize(s);
+    std::string out;
+    out.reserve(mapped.size());
+    for (size_t i = 0; i < mapped.size(); i++) {
+        if (mapped[i] == ' ' && !out.empty() && out.back() == ' ') continue;
+        out += mapped[i];
     }
     return out;
 }

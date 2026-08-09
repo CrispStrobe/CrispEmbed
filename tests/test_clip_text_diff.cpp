@@ -28,11 +28,18 @@ static void check(const char * n, bool c) {
 
 static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
-        fprintf(stderr, "Usage: %s clip-text.gguf ref.gguf\n", argv[0]);
+        fprintf(stderr, "Usage: %s clip-text.gguf ref.gguf [text]\n", argv[0]);
         return 1;
     }
-    // MUST match tools/dump_clip_text_reference.py --text default.
-    const char * text = "a photo of a fox";
+    // MUST match the --text the reference was dumped with. The default is the
+    // regression fixture; pass argv[3] (with a matching
+    // `dump_clip_text_reference.py --text`) to probe a different one.
+    //
+    // The default is all-lowercase and punctuation-free, which is precisely
+    // why it could not see the missing SigLIP normalizer (Lowercase + ASCII
+    // punctuation strip). Use a text with capitals and punctuation to exercise
+    // that stage.
+    const char * text = (argc > 3) ? argv[3] : "a photo of a fox";
 
     printf("CLIP/SigLIP text encoder — parity test\n");
     printf("  Model: %s\n  Ref:   %s\n  Text:  \"%s\"\n\n", argv[1], argv[2], text);

@@ -162,6 +162,14 @@ public:
     // do not implement, so flipping it there needs its own A/B first.
     void set_hf_normalize(bool on) { hf_normalize_ = on; }
 
+    // SigLIP wraps the same charsmap in Lowercase + punctuation-strip +
+    // whitespace-collapse + Strip (see core/spm_norm.h). Selecting it here
+    // rather than inferring it keeps the embedder path on the plain charsmap.
+    void set_siglip_normalize(bool on) {
+        hf_normalize_ = on;
+        siglip_normalize_ = on;
+    }
+
 private:
     // Applies the charsmap when enabled; identity otherwise.
     std::string hf_normalize_text(const std::string & text) const;
@@ -191,10 +199,11 @@ private:
     bool add_bos_ = true; // wrap encode() with <s> (default = historical behavior)
     bool add_eos_ = true; // wrap encode() with </s>
     int max_length_ = 512;
-    int max_token_len_ = 64;       // max byte length of any vocab token
-    bool bpe_merge_ = false;       // SentencePiece-BPE bigram merge (Gemma/Llama)
-    bool add_space_prefix_ = true; // prepend leading ▁ dummy prefix (XLM-R)
-    bool hf_normalize_ = false;    // HF Precompiled/nmt_nfkc charsmap (opt-in per consumer)
+    int max_token_len_ = 64;        // max byte length of any vocab token
+    bool bpe_merge_ = false;        // SentencePiece-BPE bigram merge (Gemma/Llama)
+    bool add_space_prefix_ = true;  // prepend leading ▁ dummy prefix (XLM-R)
+    bool hf_normalize_ = false;     // HF Precompiled/nmt_nfkc charsmap (opt-in per consumer)
+    bool siglip_normalize_ = false; // ...wrapped in SigLIP's Lowercase/Strip sequence
 
     std::vector<int> tokenize_text(const std::string & text) const; // Unigram / Viterbi
     std::vector<int> tokenize_bpe(const std::string & text) const;  // SentencePiece-BPE merge
