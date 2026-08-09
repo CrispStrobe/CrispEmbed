@@ -246,6 +246,8 @@ int main(int argc, char ** argv) {
     std::string ocr_model_path;       // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
     std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
     std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
+    std::string ocr_engine_name;      // --ocr-engine: explicit orchestrator engine (CLI parity)
+    std::string ocr_cls_model_path;   // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
     std::string layout_model_path;    // layout detection model (RT-DETRv2)
     std::string table_model_path;     // table cell OCR model (Tesseract-LSTM GGUF)
     std::string formula_model_path;   // formula OCR model (PP-FormulaNet GGUF)
@@ -328,6 +330,10 @@ int main(int argc, char ** argv) {
             lid_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-pipeline") == 0)
             enable_ocr_orch = true;
+        else if (strcmp(argv[i], "--ocr-engine") == 0 && i + 1 < argc)
+            ocr_engine_name = argv[++i];
+        else if (strcmp(argv[i], "--ocr-cls") == 0 && i + 1 < argc)
+            ocr_cls_model_path = argv[++i];
         else if (strcmp(argv[i], "--vlm-model") == 0 && i + 1 < argc)
             vlm_model_path = argv[++i];
         else if (strcmp(argv[i], "--vlm-engine") == 0 && i + 1 < argc)
@@ -365,11 +371,11 @@ int main(int argc, char ** argv) {
     // with the usage text before, forcing an unrelated -m just to start the
     // OCR endpoint — noticed while smoke-testing the issue-#45 thread fix).
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && ocr_model_path.empty() &&
-        ocr_det_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() &&
-        pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() &&
-        esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() &&
-        restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() &&
-        adair_model_path.empty()) {
+        ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() && ner_model_path.empty() &&
+        sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() &&
+        safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
+        tbsrn_model_path.empty() && restormer_model_path.empty() && scunet_model_path.empty() &&
+        instructir_model_path.empty() && adair_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -402,8 +408,11 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --lid MODEL       text LID model GGUF (CLD3 or GlotLID)\n");
         fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
-        fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline)\n");
-        fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline)\n");
+        fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
+        fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
+        fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, ...);\n");
+        fprintf(stderr, "                    engine names and model defaults match the CLI's --ocr-engine\n");
+        fprintf(stderr, "  --ocr-cls MODEL   optional PP-LCNet 0/180 line-orientation classifier\n");
         fprintf(stderr, "  --table MODEL     Tesseract-LSTM table-cell model (optional)\n");
         fprintf(stderr, "  --formula MODEL   PP-FormulaNet model (optional)\n");
         fprintf(stderr, "  --tables          route layout tables to --table\n");
@@ -990,7 +999,114 @@ int main(int argc, char ** argv) {
     void * ocr_orch_ctx = nullptr;
     std::mutex ocr_orch_mutex;
 
-    if (enable_ocr_orch && !ocr_det_model_path.empty()) {
+    if (enable_ocr_orch && !ocr_engine_name.empty()) {
+        // Explicit primary engine → single-stage pipeline via the stages
+        // builder, mirroring the CLI's --ocr-engine lane (issue #45 follow-up:
+        // the flat params path below hard-codes the DBNet det loader, so e.g.
+        // a ppocrv6 det GGUF failed with "missing stem conv" and the ppocrv6
+        // pipeline was unreachable from the server). Engine ids and per-engine
+        // model defaults are the CLI's (examples/cli/main.cpp eng_id) — keep
+        // the two maps in sync.
+        auto eng_id = [](const std::string & n) -> int {
+            if (n == "surya") return 1;
+            if (n == "got") return 2;
+            if (n == "glm") return 3;
+            if (n == "qwen2vl") return 4;
+            if (n == "internvl2") return 5;
+            if (n == "tesseract") return 6;
+            if (n == "parseq") return 7;
+            if (n == "deepseek-ocr2" || n == "deepseek_ocr2") return 8;
+            if (n == "pix2struct") return 9;
+            if (n == "granite-vision" || n == "granite_vision") return 10;
+            if (n == "lightonocr") return 11;
+            if (n == "qwen3vl") return 12;
+            if (n == "unlimited_ocr") return 13;
+            if (n == "unified") return 14;
+            if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
+            if (n == "ppocrv6") return 16;
+            if (n == "easyocr") return 17;
+            if (n == "olmocr") return 18;
+            return 0; // dbnet_trocr
+        };
+        const int eid = eng_id(ocr_engine_name);
+        const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18;
+        if ((eid == 14 || eid == 15) && ocr_rec_model_path.empty()) {
+            fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
+            return 1;
+        }
+        auto resolve = [](const std::string & name) {
+            std::string r = crispembed_mgr::resolve_model(name, true);
+            return r.empty() ? name : r;
+        };
+        // Keep model strings alive until the init call returns (it copies them).
+        std::string ma, mb, mc;
+        if (is_vlm) {
+            const char * dflt = (eid == 2)    ? "got-ocr2"
+                                : (eid == 3)  ? "glm-ocr"
+                                : (eid == 5)  ? "internvl2-ocr"
+                                : (eid == 8)  ? "deepseek-ocr2"
+                                : (eid == 9)  ? "pix2struct-base"
+                                : (eid == 10) ? "granite-vision"
+                                : (eid == 11) ? "lightonocr"
+                                : (eid == 12) ? "qwen3vl-2b"
+                                : (eid == 13) ? "unlimited-ocr"
+                                : (eid == 18) ? "olmocr-2-7b"
+                                              : "qwen2vl-ocr";
+            ma = resolve(!ocr_rec_model_path.empty() ? ocr_rec_model_path : dflt);
+        } else {
+            // PP-OCRv6 pairs its own detector with its own CTC recognizer
+            // (same reasoning as the CLI: a DBNet fallback would silently
+            // serve a different pipeline under the ppocrv6 name).
+            const char * ddflt = (eid == 16) ? "ppocrv6-small-det" : "dbnet-det";
+            ma = resolve(ocr_det_model_path.empty() ? ddflt : ocr_det_model_path);
+            const char * rdflt = (eid == 6)    ? "tesseract-eng"
+                                 : (eid == 7)  ? "parseq"
+                                 : (eid == 16) ? "ppocrv6-small-rec"
+                                 : (eid == 17) ? "easyocr-english-g2"
+                                               : "qwen2vl-ocr";
+            mb = resolve(ocr_rec_model_path.empty() ? rdflt : ocr_rec_model_path);
+            if (!ocr_cls_model_path.empty()) mc = resolve(ocr_cls_model_path);
+            // Unlike the CLI, do NOT declare CRISPEMBED_PPOCRV6_ONESHOT: a
+            // warm server amortises the recognizer's Metal init across
+            // requests, which is exactly the case the one-shot heuristic
+            // exists to avoid (see the CLI's T5 note).
+        }
+        crispembed_ocr_stage st;
+        std::memset(&st, 0, sizeof(st));
+        st.source_type = 0; // auto
+        st.engine = eid;
+        st.model_a = ma.c_str();
+        st.model_b = mb.empty() ? nullptr : mb.c_str();
+        st.model_c = mc.empty() ? nullptr : mc.c_str();
+        // VLM engines ingest the original image and do their own resize;
+        // scan-cleanup only for the detection+recognition path (CLI parity).
+        st.cleanup_enabled = is_vlm ? 0 : 1;
+        st.denoise = 0;
+        st.cleanup = crispembed_scan_cleanup_defaults();
+        st.det_prob_threshold = 0.3f;
+        st.det_box_threshold = 0.5f;
+        st.det_target_short = 736;
+        st.vlm_max_tokens = 0;
+        st.vlm_prompt = nullptr;
+        st.page_segmentation = 0;
+        st.min_chars = 8;
+        st.min_confidence = 0.5f;
+        if (!punct_model_path.empty()) {
+            std::string punct_r = crispembed_mgr::resolve_model(punct_model_path, true);
+            if (!punct_r.empty()) punct_model_path = punct_r;
+        }
+        if (!lid_model_path.empty()) {
+            std::string lid_r = crispembed_mgr::resolve_model(lid_model_path, true);
+            if (!lid_r.empty()) lid_model_path = lid_r;
+        }
+        ocr_orch_ctx = crispembed_ocr_pipeline_init_stages(
+            /*router=*/0, /*nafnet_model=*/nullptr, sr_model_path.empty() ? nullptr : sr_model_path.c_str(),
+            punct_model_path.empty() ? nullptr : punct_model_path.c_str(),
+            lid_model_path.empty() ? nullptr : lid_model_path.c_str(), /*truecase_model=*/nullptr,
+            /*tess_model_dir=*/nullptr, &st, 1, n_threads);
+        if (!ocr_orch_ctx)
+            fprintf(stderr, "Warning: failed to init OCR orchestrator (engine=%s)\n", ocr_engine_name.c_str());
+    } else if (enable_ocr_orch && !ocr_det_model_path.empty()) {
         crispembed_ocr_pipeline_params pp = crispembed_ocr_pipeline_defaults();
         std::string det_r = crispembed_mgr::resolve_model(ocr_det_model_path, true);
         if (!det_r.empty()) ocr_det_model_path = det_r;
