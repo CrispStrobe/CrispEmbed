@@ -19,10 +19,22 @@ static int crispembed_test_main(int argc, char ** argv) {
         fprintf(stderr, "error: load failed\n");
         return 1;
     }
+    // FIREREDPUNC_DUMP_IDS=1 prints the token ids instead of the punctuated
+    // text, so tests/firered_tokenizer_parity.py can compare them against
+    // HuggingFace's BertTokenizer on the same vocab.
+    const bool dump_ids = std::getenv("FIREREDPUNC_DUMP_IDS") != nullptr;
+
     std::ifstream f(argv[2]);
     std::string line;
     while (std::getline(f, line)) {
         if (!line.empty() && line.back() == '\r') line.pop_back();
+        if (dump_ids) {
+            int n = 0;
+            const int * ids = fireredpunc_debug_token_ids(ctx, line.c_str(), &n);
+            for (int i = 0; i < n; i++) printf("%s%d", i ? " " : "", ids[i]);
+            printf("\n");
+            continue;
+        }
         char * out = fireredpunc_process(ctx, line.c_str());
         printf("%s\n", out ? out : "(null)");
         if (out) free(out);
