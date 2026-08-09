@@ -1,5 +1,30 @@
 # CrispEmbed Performance
 
+## Issue #45 follow-up: the "0 = auto" n_threads contract implemented API-wide; server default fixed (M1, 2026-08-09)
+
+Auditing the non-CLI surfaces for the issue-#45 defect class found a second,
+older bug: `crispembed.h` documents `n_threads = 0` as auto, but every init
+clamped 0 to ONE thread — so any binding passing 0 in good faith ran its CPU
+paths single-threaded (Flutter defaults `nThreads = 0` across ~20 classes;
+the Rust -sys docs advertise 0 = auto-detect; Python defaults 4 and was never
+affected). Fixed with one `ce_resolve_threads()` (<=0 -> min(4, cores), 1 on
+a no-pthread WASM build) applied at all 36 extern-C init boundaries, so every
+surface resolves identically and engines receive an already-positive count.
+
+The server carried the CLI's old blanket `-t 1`; now 0 (= API auto).
+Measured (warm /ocr call, medium det+rec f16, 1920x200 two-liner, box
+partially loaded — ordering is the signal): default 2960/3792 ms vs `-t 1`
+4569/8684 ms, recognized text identical. CLI `-t 0` now behaves like `-t 4`
+with byte-identical output vs every prior arm sha.
+
+Also fixed while smoke-testing: the server startup gate did not count
+`--ocr-det` as a model, so a det+rec-only OCR server printed usage and
+exited. Recorded, NOT built: the server cannot select the ppocrv6 pipeline
+engine at all (no `--ocr-engine`; its flat det slot hard-codes the DBNet
+loader -> `missing stem conv` on a ppocrv6 det GGUF). The CLI's engine
+selection goes through `crispembed_ocr_pipeline_init_stages`, which the
+server never plumbed — separate feature claim in PLAN.
+
 ## Issue #45: v0.17.7 PP-OCRv6 Metal/CPU regression root-caused (thread default), fixed + rec mk adoption beats v0.17.6 by ~35% (M1, 2026-08-09)
 
 Reporter (Subtitle Edit, M4/Metal): PP-OCRv6 medium det+rec f16 pipeline
