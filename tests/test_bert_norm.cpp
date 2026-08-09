@@ -42,6 +42,7 @@
 #include "core/clean_exit.h"
 #include "tokenizer.h"
 
+#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <string>
