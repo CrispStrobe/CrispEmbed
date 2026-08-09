@@ -14,6 +14,8 @@
 #include "tokenizer.h"
 
 #include <cstdio>
+#include "core/clean_exit.h"
+
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
@@ -21,7 +23,7 @@
 #include <unordered_map>
 #include <vector>
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     if (argc < 3) {
         fprintf(stderr, "usage: %s <vocab.txt> <corpus.txt> [cls sep unk pad]\n", argv[0]);
         return 2;
@@ -90,4 +92,8 @@ int main(int argc, char ** argv) {
         printf("\n");
     }
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
