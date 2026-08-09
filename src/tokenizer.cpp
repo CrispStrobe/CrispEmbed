@@ -89,10 +89,37 @@ void WordPieceTokenizer::build_trie() {
     trie_built_ = true;
 }
 
+// HF's WordPiece emits ONE [UNK] for a word it cannot fully segment and
+// DISCARDS the sub-tokens it already matched (`is_bad` in
+// WordpieceTokenizer.tokenize; `catソファ` -> `[UNK]`, not `cat` + `[UNK]`).
+// Ours kept the matched prefix, which produced a different token sequence for
+// every word containing an out-of-vocabulary character. Verified against the
+// model itself, not from memory of the algorithm.
+//
+// It also caps a word at `max_input_chars_per_word` CODEPOINTS — 100, the
+// value every BERT-family tokenizer.json in the wild declares — and emits a
+// bare [UNK] beyond it.
+//
+// `CRISPEMBED_WORDPIECE_HF_UNK=0` restores the historical prefix-then-[UNK].
+// Pure-ASCII text is unaffected in practice because a 30k WordPiece vocab
+// contains every printable ASCII character as its own token, so no ASCII word
+// is ever unsegmentable — asserted empirically by the ASCII gate in
+// tests/wordpiece_hf_parity.py rather than assumed.
+static constexpr size_t k_max_input_chars_per_word = 100;
+
 std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
+    static const bool hf_unk_off = core_env::explicitly_off("CRISPEMBED_WORDPIECE_HF_UNK");
+    const bool hf_unk = !hf_unk_off;
+
     std::vector<int> ids;
     int start = 0;
     int len = (int)word.size();
+
+    if (hf_unk) {
+        size_t n_chars = 0;
+        for (unsigned char c : word) n_chars += ((c & 0xC0) != 0x80); // UTF-8 lead bytes
+        if (n_chars > k_max_input_chars_per_word) return { unk_id_ };
+    }
 
     if (!trie_built_) {
         // Fallback to original O(n²) if trie not built
@@ -111,6 +138,7 @@ std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
                 end--;
             }
             if (!found) {
+                if (hf_unk) return { unk_id_ }; // whole word, matched prefix discarded
                 ids.push_back(unk_id_);
                 break;
             }
@@ -140,6 +168,7 @@ std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
             ids.push_back(best_id);
             start = best_end;
         } else {
+            if (hf_unk) return { unk_id_ }; // whole word, matched prefix discarded
             ids.push_back(unk_id_);
             break;
         }
@@ -167,8 +196,30 @@ std::vector<std::string> WordPieceTokenizer::split_words(const std::string & tex
     const std::string normalized = hf_norm ? core_bert::lower_strip_accents(text) : std::string();
     const std::string & src = hf_norm ? normalized : text;
 
-    if (bert_pretok_) {
-        // HF BertNormalizer + BertPreTokenizer (tokenizer.ggml.pre = "bert").
+    // The SPLIT stage. Every BERT-family WordPiece model — checked across
+    // all-MiniLM, all-mpnet, LaBSE, bert-base-{uncased,cased},
+    // bert-base-multilingual-uncased, bge, e5 — declares `BertPreTokenizer`
+    // in its tokenizer.json, so core_bert::pretokenize is the correct
+    // splitter for ALL of them, not only the LaBSE class that first needed
+    // it. The historical per-byte isspace/ispunct loop is an approximation
+    // that is only right for ASCII: it glues every CJK run into one word
+    // (`日本語...` -> one [UNK] instead of HF's per-ideograph tokens) and
+    // swallows Unicode punctuation into the adjacent word (`“hello”` ->
+    // `“` + `##hell` + `##o` + `##”` instead of `“` `hello` `”`).
+    //
+    // Default ON. Against the historical loop it is IDENTICAL for all
+    // printable ASCII plus space/\t/\n/\v/\f/\r — `isspace` matches CAT_WS
+    // and `ispunct` matches CAT_P over that whole range, asserted per
+    // codepoint in tests/test_bert_norm.cpp. It differs on exactly one ASCII
+    // class: raw C0 control bytes and DEL, which HF's clean_text DROPS and
+    // the historical loop glued into the surrounding word (turning it into
+    // [UNK]). That divergence is a fix, and it is pinned by its own test.
+    //
+    // `CRISPEMBED_WORDPIECE_HF_PRETOK=0` restores the historical splitter.
+    // `tokenizer.ggml.pre = "bert"` still forces it on regardless.
+    static const bool hf_pretok_off = core_env::explicitly_off("CRISPEMBED_WORDPIECE_HF_PRETOK");
+    if (bert_pretok_ || !hf_pretok_off) {
+        // HF BertNormalizer + BertPreTokenizer.
         std::vector<std::string> words = core_bert::pretokenize(src);
         if (do_lower_case_ && !hf_norm) {
             for (auto & w : words)
@@ -177,8 +228,8 @@ std::vector<std::string> WordPieceTokenizer::split_words(const std::string & tex
         return words;
     }
     // Historical per-byte preprocessing: lowercase + split on ASCII
-    // whitespace/punctuation. FROZEN — every shipped WordPiece GGUF
-    // tokenizes through this exact loop.
+    // whitespace/punctuation. Reachable via the gate above; kept as the
+    // bit-exact comparison arm for every GGUF shipped before this change.
     std::vector<std::string> words;
     std::string current;
     for (size_t i = 0; i < src.size(); i++) {
