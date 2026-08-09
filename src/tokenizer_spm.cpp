@@ -66,7 +66,7 @@ bool SentencePieceTokenizer::load(const std::vector<std::string> & vocab, const 
 std::string SentencePieceTokenizer::hf_normalize_text(const std::string & text) const {
     static const bool env_off = core_env::explicitly_off("CRISPEMBED_SPM_HF_NORM");
     if (!hf_normalize_ || env_off) return text;
-    return core_spm::normalize(text);
+    return siglip_normalize_ ? core_spm::siglip_normalize(text) : core_spm::normalize(text);
 }
 
 // Viterbi dynamic programming: find optimal segmentation of text

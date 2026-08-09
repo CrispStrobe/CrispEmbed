@@ -187,6 +187,16 @@ bool load(context ** out, const char * path, int n_threads) {
     // Initialize tokenizer
     if (ctx->use_sp && !vocab.empty()) {
         ctx->sp_tokenizer.load(vocab, scores, -1, ctx->eos_id, 2, 0, ctx->max_pos);
+        // SigLIP's tokenizer.json declares
+        //   Lowercase + Replace(punct->"") + Replace(\s+->" ") + Strip
+        //   + Precompiled(nmt_nfkc) + Replace("  +"->" ")
+        // and none of it was implemented. Measured at the crispembed-diff
+        // boundary against an HF AutoModel reference: "A photo of a CAT,
+        // running fast!" scored cos 0.8110 without it, 0.9991 with it. The
+        // stock fixture "a photo of a fox" is lowercase and punctuation-free,
+        // which is why the existing regression never saw this.
+        // CRISPEMBED_SPM_HF_NORM=0 restores the historical path.
+        ctx->sp_tokenizer.set_siglip_normalize(true);
         fprintf(stderr, "clip_text: SentencePiece tokenizer loaded (%zu vocab)\n", vocab.size());
     } else if (!vocab.empty() && !merges.empty()) {
         ctx->bpe_tokenizer.load(vocab, merges, ctx->eos_id, ctx->eos_id, -1, ctx->bos_id, false, ctx->max_pos,
@@ -505,6 +515,22 @@ std::vector<float> encode(context * ctx, const char * text) {
 
 int dim(const context * ctx) {
     return ctx ? ctx->proj_dim : 0;
+}
+
+// Tokenize without running the transformer. Exists so a parity harness can
+// compare ids against HuggingFace directly (tests/clip_text_tokenizer_parity.py):
+// SigLIP's tokenizer lives behind this engine's own SentencePiece path, which
+// the generic dump-token-ids driver cannot reach.
+std::vector<int32_t> tokenize_only(context * ctx, const char * text) {
+    if (!ctx || !text) return {};
+    embed_tokens toks = ctx->use_sp ? ctx->sp_tokenizer.encode(text) : ctx->bpe_tokenizer.encode(text);
+    if (ctx->use_sp && !toks.ids.empty() && toks.ids[0] < 0) toks.ids.erase(toks.ids.begin());
+    std::vector<int32_t> out;
+    for (size_t i = 0; i < toks.ids.size(); i++) {
+        if (i < toks.attn_mask.size() && toks.attn_mask[i] == 0) break;
+        out.push_back(toks.ids[i]);
+    }
+    return out;
 }
 
 void free(context * ctx) {

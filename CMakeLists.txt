@@ -772,6 +772,13 @@ target_link_libraries(test-glm-ocr-image PRIVATE crispembed)
 add_executable(test-got-ocr-diff tests/test_got_ocr_diff.cpp)
 target_link_libraries(test-got-ocr-diff PRIVATE crispembed)
 
+# Live (needs a GGUF): dump clip_text/SigLIP token ids for the HF parity
+# harness. clip_text is a standalone engine, so the generic dump-token-ids
+# driver cannot load its GGUFs.
+add_executable(clip-text-dump-ids tests/clip_text_dump_ids.cpp)
+target_include_directories(clip-text-dump-ids PRIVATE src)
+target_link_libraries(clip-text-dump-ids PRIVATE crispembed)
+
 add_executable(test-clip-text-diff tests/test_clip_text_diff.cpp)
 target_link_libraries(test-clip-text-diff PRIVATE crispembed)
 
