@@ -1495,6 +1495,14 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
 
 static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<float> & input, int * out_len,
                                    int input_w) {
+    // O7 adoption (issue #45): the medium/large recognizer has no GGML graph
+    // (`graph unavailable large_stem=1`), so every crop runs these scalar
+    // reference convs — adopt the R6 im2col+mk consume like ppocrv6_det did.
+    // Measured on the issue-#45 subtitle corpus (M1, interleaved, 3 reps):
+    // pipeline wall 3.86 s -> 3.45 s on a 1920x200 two-liner with decoded
+    // output byte-identical. Env vars keep absolute precedence in both
+    // directions (CRISPEMBED_CONV2D_MK=0 restores the reference loop here).
+    core_cpu::conv2d_prefs_scope conv_prefs(/*mk=*/true, c->n_threads);
     std::vector<float> x = input, y;
     int h = 48, w = input_w;
     std::vector<float> graph_out;

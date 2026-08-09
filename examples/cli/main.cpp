@@ -560,6 +560,23 @@ static int cli_main(int argc, char ** argv) {
         }
     }
 
+    // Default thread count when -t is not given: min(4, cores), for EVERY
+    // lane. The blanket `n_threads = 1` default silently regressed the
+    // PP-OCRv6 pipeline in v0.17.7 (issue #45, +18% wall on an idle M4):
+    // until the O13b audit the det/rec/orientation engines DROPPED their
+    // thread parameter, so their CPU ggml graphs ran at ggml's own default
+    // of 4 threads — honoring the parameter then pinned them to the CLI's 1.
+    // min(4, hardware_concurrency) restores exactly the pre-audit effective
+    // behavior on >=4-core machines and matches the G5 embed-lane default
+    // (measured there 2026-08-05: byte-identical output, CPU one-shots up to
+    // 3x faster). ggml threading partitions rows without changing any
+    // element's reduction order, so decoded output is unchanged; an explicit
+    // -t always wins, including -t 1.
+    if (!threads_set) {
+        unsigned hc = std::thread::hardware_concurrency();
+        n_threads = (int)std::min(4u, hc ? hc : 1u);
+    }
+
     // Standalone preprocessing commands (no model needed)
     if (!pdf_dpi_path.empty()) {
         int n_pages = 0;
@@ -2159,17 +2176,10 @@ static int cli_main(int argc, char ** argv) {
         }
     }
 
-    // G5 (F3): the EMBED one-shot's CPU path was crippled by the blanket -t 1
-    // default — measured 2026-08-05 (batch-64 incl. init, interleaved, quiet
-    // box): CPU -t1 vs -t4 = e5-small 0.84→0.40 s, arctic-m-v2 3.05→1.01 s,
-    // f2llm-330m 2.95→1.01 s; embeddings byte-identical across thread counts.
-    // Metal stays the default backend (it wins arctic, loses e5/f2llm — model-
-    // dependent, so no blanket backend flip; CRISPEMBED_ONESHOT_CPU ships OFF).
-    // Applies to the embed path only; an explicit -t always wins.
-    if (!threads_set) {
-        unsigned hc = std::thread::hardware_concurrency();
-        n_threads = (int)std::min(4u, hc ? hc : 1u);
-    }
+    // G5 (F3): the EMBED one-shot's CPU -t1 vs -t4 numbers (e5-small
+    // 0.84→0.40 s, arctic-m-v2 3.05→1.01 s, f2llm-330m 2.95→1.01 s,
+    // byte-identical embeddings) motivated the min(4, cores) default; it is
+    // now applied for every lane right after argument parsing (issue #45).
 
     // Init model
     crispembed_context * ctx = crispembed_init(model_path.c_str(), n_threads);
