@@ -188,44 +188,92 @@ warning when ≥50% of content tokens are `[UNK]`, signalling a vocabulary
 mismatch. This catches the English-model-on-Japanese case automatically.
 Silenced by `CRISPEMBED_WARN_UNK=0`.
 
-### Accented-Latin tokenizer divergence on uncased WordPiece models
+### Accented-Latin tokenizer divergence on uncased WordPiece models — FIXED
 
-The English-only models (`all-MiniLM-L6-v2`, `all-mpnet-base-v2`) have a
-tokenizer parity gap that affects **European languages**, not just Japanese.
-HuggingFace's `BasicTokenizer` with `do_lower_case=True` applies NFD
-normalization and accent stripping before WordPiece lookup (`café` → `cafe`,
-`Müller` → `muller`, `über` → `uber`). CrispEmbed's shipped per-byte
-lowercase path does **not** strip accents. Measured side-by-side on
+**Status: fixed.** The runtime now applies HuggingFace's `BertNormalizer`
+strip-accents + lowercase stage before WordPiece lookup for uncased WordPiece
+models. Historical behavior is still reachable with
+`CRISPEMBED_WORDPIECE_HF_NORM=0`.
+
+The bug: HF's normalizer, for a model whose `tokenizer.json` says
+`lowercase: true, strip_accents: null`, runs NFD and drops combining marks
+before the vocabulary lookup, so `café` is the single in-vocab token `cafe`.
+CrispEmbed lowercased with a per-**byte** `std::tolower`, which does nothing to
+a multi-byte UTF-8 sequence and strips no accents at all. Measured on
 `all-MiniLM-L6-v2`:
 
-| Input | HF tokens | CrispEmbed tokens |
+| Input | HF tokens | CrispEmbed before | CrispEmbed now |
+|---|---|---|---|
+| café | `cafe` (1 token, in-vocab) | `caf` + `[UNK]` | `cafe` |
+| Müller | `muller` (1 token, in-vocab) | `m` + `[UNK]` | `muller` |
+| naïve | `naive` (1 token, in-vocab) | `na` + `[UNK]` | `naive` |
+| résumé | `resume` (1 token, in-vocab) | `r` + `[UNK]` | `resume` |
+| über | `uber` (1 token, in-vocab) | `[UNK]` | `uber` |
+| Ángel | `angel` (1 token, in-vocab) | `[UNK]` | `angel` |
+| François | `francois` (1 token, in-vocab) | `fran` + `[UNK]` | `francois` |
+
+**Token-id parity vs HF**, 24 sentences across 6 sections
+(`tests/wordpiece_hf_parity.py`, driving the shipping C++ tokenizer against
+HF's fast tokenizer on the real vocab):
+
+| model | exact-match before | exact-match now | `[UNK]` before → now |
+|---|---|---|---|
+| `all-MiniLM-L6-v2` | 4/24 | **24/24** | 80 → **0** |
+| `all-mpnet-base-v2` | 4/24 | **24/24** | 80 → **0** |
+
+The 4 that already matched are the ASCII section — which is the point below.
+
+**End-to-end embeddings** (`tests/embed_accent_parity.py`, real CLI + real
+`all-MiniLM-L6-v2` f32 GGUF, reference = the model's own ONNX export under ONNX
+Runtime, mean-pooled and L2-normalized). Token-id parity is not the acceptance
+test; this is:
+
+| section | cos vs reference before | after |
 |---|---|---|
-| café | `cafe` (1 token, in-vocab) | `caf` + `[UNK]` |
-| Müller | `muller` (1 token, in-vocab) | `m` + `[UNK]` |
-| naïve | `naive` (1 token, in-vocab) | `na` + `[UNK]` |
-| résumé | `resume` (1 token, in-vocab) | `r` + `[UNK]` |
-| über | `uber` (1 token, in-vocab) | `[UNK]` |
-| Ángel | `angel` (1 token, in-vocab) | `[UNK]` |
-| François | `francois` (1 token, in-vocab) | `fran` + `[UNK]` |
+| ASCII (3 sentences) | 1.000000 | 1.000000, **bit-identical to before** |
+| accented (5 sentences) | 0.646574 mean | **1.000000** |
 
-**Impact:** German, French, Spanish, and Portuguese embeddings from these
-models diverge from HF on ordinary accented text — text that IS in-vocabulary
-after accent stripping. Unlike the Japanese case (out-of-domain for these
-models), this affects text these models are designed to handle.
+Per sentence the old path ran 0.487 (French), 0.566 (Spanish), 0.574
+(Portuguese), 0.731 (German), 0.875 (Norwegian) — a French sentence embedded at
+cosine 0.487 to its own reference is, for retrieval purposes, a different
+vector. All five are now exact.
 
-**Who is affected:** only the two 30k uncased WordPiece models above. Every
+**Why this was safe to turn on by default.** The normalization is exactly
+`std::tolower` over the whole of ASCII, so no pure-ASCII input can tokenize
+differently than it did before and no shipped English embedding moves. That is
+not a claim, it is asserted three times: at table-generation time
+(`tools/gen_unicode_bert_norm.py` refuses to emit a table where ASCII maps to
+anything but plain `A-Z` lowering), over all 128 ASCII codepoints in
+`tests/test_bert_norm.cpp`, and as a gate in the parity harness above.
+
+**Why the table is generated, not hand-written.** Two traps, both silent:
+
+- `Ø`, `Ł`, `Đ`, `ß`, `ı`, `ﬁ` have **no canonical decomposition**, so HF
+  keeps them exactly as they are. `Łódź` → `łodz`, *not* `lodz`. A
+  "strip the diacritic" table gets every one of these wrong.
+- The **Rust** normalizer is the authority — every affected model ships a
+  `tokenizer.json`, so `BertTokenizerFast` runs it — and it disagrees with
+  Python's `unicodedata` on **441** late-Unicode combining marks (NKO, Arabic,
+  Bengali, Gujarati) which Python drops and Rust keeps. Generating the table
+  from `unicodedata`, the obvious approach, would have shipped 441 divergences
+  from the thing users actually run. It also does not apply `Final_Sigma`:
+  `ΟΔΟΣ` → `οδοσ` under the fast tokenizer, `οδος` under the slow one.
+
+**Who was affected:** only the 30k uncased WordPiece models. Every
 multilingual model in this table uses a SentencePiece/XLM-R tokenizer (250k
-vocab) which handles accented text natively without NFD stripping — they are
-**not affected**. If you embed German/French/Spanish/Portuguese text, use any
-of the multilingual models instead.
+vocab) which handles accented text natively — those were never affected.
+`LaBSE` is a **cased** WordPiece model whose `tokenizer.json` declares
+`lowercase: false`, so it correctly does not strip accents; the fix is
+conditioned on the same `do_lower_case` the runtime already infers from the
+vocabulary, so LaBSE is untouched.
 
-**Why no fix yet:** a global accent-strip fix would break `LaBSE`, which is a
-cased WordPiece model that does NOT strip accents (correctly). The fix must be
-conditioned on the model's own `do_lower_case` / `strip_accents` metadata, and
-the GGUF converter does not currently record `strip_accents`. This is tracked
-in `PLAN.md` (E5).
+An earlier note here said a fix was blocked on the converter recording
+`strip_accents`. That was wrong: HF resolves it as
+`strip_accents.unwrap_or(lowercase)`, so `do_lower_case` alone determines it
+and no metadata change or GGUF re-conversion is needed.
 
-Full comparison: `tests/wordpiece_cjk_parity.py`.
+Full comparison: `tests/wordpiece_hf_parity.py` (Latin/parity),
+`tests/wordpiece_cjk_parity.py` (CJK).
 
 **Recommendation for Japanese retrieval:** `granite-embedding-107m`
 (best measured, 107M) or `bge-m3` (strong, 8k context, also does sparse and
