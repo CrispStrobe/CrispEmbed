@@ -105,7 +105,7 @@ jobs:
           cmake --build build --config Release -j4 \
             --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file test-render-provenance \
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
-                     test-bert-norm test-imatrix-alias test-no-repeat-ngram test-env-gate
+                     test-bert-norm test-spm-norm test-imatrix-alias test-no-repeat-ngram test-env-gate
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
@@ -116,6 +116,7 @@ jobs:
           ./build/test-bpe-pretokenize
           ./build/test-bert-pretokenize
           ./build/test-bert-norm
+          ./build/test-spm-norm
           ./build/test-imatrix-alias
           ./build/test-no-repeat-ngram
           ./build/test-env-gate

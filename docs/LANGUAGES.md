@@ -293,12 +293,12 @@ of that guarantee differs per fix, and it is worth being exact about which:
   from the thing users actually run. It also does not apply `Final_Sigma`:
   `ΟΔΟΣ` → `οδοσ` under the fast tokenizer, `οδος` under the slow one.
 
-### OPEN: the multilingual SentencePiece models have their own divergence
+### The multilingual SentencePiece models had their own divergence — FIXED
 
-**Status: measured, not fixed.** The paragraph below used to say the
-multilingual models were "not affected". That was an argument about *accent
-stripping* and it is still true for accents — but their token ids were never
-actually compared against HF. They now have been, and they diverge.
+**Status: fixed.** This section used to say the multilingual models were "not
+affected". That was an argument about *accent stripping* and it is still true
+for accents — but their token ids had never been compared against HF. They
+were, and they diverged.
 
 Every multilingual embedder here is an XLM-R-family **Unigram** model whose
 `tokenizer.json` declares a `Precompiled` normalizer (an `nmt_nfkc`
@@ -332,17 +332,48 @@ Latin text scores 4/4 above. **Fullwidth forms and U+3000 are routine in
 Japanese and Chinese text**, so this matters most for exactly the retrieval
 case this document recommends these models for.
 
-**Why it is not fixed here.** The charsmap is byte-identical (sha256
-`ce10d747…`) across all six shipped multilingual embedders — e5-small/base,
-bge-m3, granite-107m/278m-multilingual, arctic-embed-m-v2 — and they agree on
-all 65536 BMP codepoints, so **one generated table would serve every one of
-them with no re-conversion**, exactly like the WordPiece fix. But
-`SentencePieceTokenizer` is also used by `gliner_ner` (DeBERTa) and
-`clip_text_embed` (SigLIP), whose models declare *different* normalizers.
-Applying `nmt_nfkc` to every SPM model would therefore be wrong. Unlike the
-accent case — where the old "blocked on converter metadata" claim turned out to
-be false — this one genuinely needs the converter to record which normalizer a
-model declares. That is the next piece of work, not a drive-by.
+**The fix.** `core/spm_norm.h` + a table generated from HF's own `Precompiled`
+component (`tools/gen_unicode_spm_norm.py`, 4837 rows), applied before
+segmentation — HF's order is `Precompiled` *then* `Replace(" " → "▁")`, and it
+matters, because the charsmap turns U+3000 into a plain space that must then
+become a word boundary like any other. Gated `CRISPEMBED_SPM_HF_NORM`
+(default on for the embedding path; `=0` restores the historical path).
+
+Token-id parity, two arms × two models
+(`tests/embed_tokenizer_parity.py`, 16 sentences):
+
+| model | historical | hf-norm |
+|---|---|---|
+| `multilingual-e5-small` | 10/16 | **16/16** |
+| `arctic-embed-m-v2` | 10/16 | **16/16** |
+
+with the `charsmap` section going **0/5 → 5/5** and ASCII byte-identical
+between arms.
+
+End-to-end embeddings vs e5's own ONNX export (`tests/embed_accent_parity.py`
+with `PARITY_GATES=CRISPEMBED_SPM_HF_NORM`):
+
+| section | before | after |
+|---|---|---|
+| ASCII | 0.975390 | 0.975390, **bit-identical** |
+| accented | 0.988305 | 0.988305 (unchanged — accents are not in this charsmap) |
+| CJK + unicode punctuation | 0.975832 | **0.982032** |
+| charsmap material | 0.907015 | **0.987556** |
+
+These cosines top out around 0.98 rather than 1.0 because the GGUF is `q8_0`
+and the reference is `f32` — that is the quantization floor, not a tokenizer
+gap. What matters is that the charsmap section sat at **0.907, far below the
+floor**, and now sits at it. Token-id parity is the exact gate; this is the
+magnitude.
+
+**Scoped deliberately.** `set_hf_normalize()` is enabled only on the embedding
+path, which is the one measured. `clip_text_embed` (SigLIP) carries the *same*
+charsmap but wraps it in `Lowercase + Strip` steps we do not implement, so
+flipping it there needs its own A/B first; `gliner`'s shipped GGUF is an LFM2
+**BPE** model with no normalizer and never reaches this code. An earlier note
+here claimed those two "declare different normalizers" and that the converter
+would have to record each model's choice — that was an inference, and checking
+it showed the charsmap is in fact shared.
 
 Harness: `tests/embed_tokenizer_parity.py` + `tests/dump_token_ids.cpp` (dumps
 the ids the shipping runtime produces for any tokenizer family; SPM/BPE parity

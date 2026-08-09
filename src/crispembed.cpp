@@ -584,6 +584,15 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
             ctx->unk_id = unk_id;
             ctx->sp_tokenizer.set_add_flags(tok_add_bos, tok_add_eos);
+            // HF's `Precompiled` (nmt_nfkc charsmap) normalizer, which every
+            // XLM-R-family Unigram embedder declares and which we implemented
+            // nowhere: `…` tokenized to three <unk> instead of `...`, and
+            // every fullwidth form / U+3000 went through unnormalized. The
+            // charsmap is byte-identical across all six shipped multilingual
+            // embedders, so one table serves them and no GGUF needs
+            // re-converting. Measured in tests/embed_tokenizer_parity.py;
+            // CRISPEMBED_SPM_HF_NORM=0 restores the historical path.
+            ctx->sp_tokenizer.set_hf_normalize(true);
             ctx->use_sentencepiece = true;
             fprintf(stderr, "crispembed: using SentencePiece tokenizer (%d tokens, %zu scores)\n", n, scores.size());
         } else if (tokenizer_type == 1) {

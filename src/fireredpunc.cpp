@@ -9,6 +9,8 @@
 
 #include "fireredpunc.h"
 
+#include "core/bert_norm.h"
+#include "core/bert_pretok.h"
 #include "core/gguf_loader.h"
 #include "imatrix.h"
 
@@ -193,27 +195,70 @@ struct WordPieceTokenizer {
         return ids;
     }
 
-    // Basic BERT tokenization: lowercase, split on whitespace, WordPiece
+    // BERT tokenization for chinese-bert-wwm-ext (uncased, 21128).
+    //
+    // This used to split on ASCII whitespace ONLY and lowercase ASCII A-Z
+    // only, which is catastrophic for the CHINESE vocab it serves: Chinese
+    // text has no spaces, so a whole sentence became ONE word and every
+    // character after the first was looked up as a `##` continuation.
+    // Measured against hfl/chinese-bert-wwm-ext:
+    //
+    //   今天天气很好...  HF:   今  天  天  气  ...
+    //                    ours: 今 ##天 ##天 ##气 ...
+    //
+    // i.e. a different token id for essentially every character of every
+    // Chinese sentence — on the model's primary input language. Latin was
+    // wrong too (`café` -> `ca` `##f` `[UNK]` vs HF's `cafe`). Only pure
+    // ASCII English agreed: 2/7 fixtures exact.
+    //
+    // The HF-correct stack (core/bert_norm.h + core/bert_pretok.h, measured
+    // HF-exact for the embedders) is wired up behind
+    // CRISPEMBED_FIREREDPUNC_HF_TOK — but it is **OFF BY DEFAULT**, because
+    // turning it on makes the DECODED OUTPUT WORSE:
+    //
+    //   in:   café Müller ist hier und arbeitet gut
+    //   off:  Café Müller ist hier und arbeitet gut.     <- correct
+    //   on:   Café Müller ist hier und arbeitet. Gut     <- period misplaced
+    //   in:   他说“这个项目”需要更多时间
+    //   off:  他说“这个项目”需要更多时间。                 <- correct
+    //   on:   他说“这个项目”需要更多时间                   <- final 。 lost
+    //
+    // The reason is NOT this function. `fireredpunc_process` re-derives the
+    // subtoken COUNT per word further down ("Must match the tokenizer's
+    // splitting exactly") to map per-token label predictions back onto words.
+    // That is a SECOND copy of the WordPiece loop with its own word list, so
+    // changing the splitting here alone desynchronises the alignment and the
+    // labels land on the wrong positions.
+    //
+    // Fixing this properly means unifying the two loops so the alignment path
+    // consumes the same words, and validating the result against the FireRedPunc
+    // reference — which this repo does not yet have set up. Until then the
+    // measured-better tokenizer stays opt-in and the shipped default is
+    // bit-identical to what it always was. See PLAN.md.
     std::vector<int> tokenize(const std::string & text) const {
         if (is_sentencepiece) return tokenize_sp(text);
+        static const bool hf_tok = core_env::on("CRISPEMBED_FIREREDPUNC_HF_TOK");
         std::vector<int> ids;
 
-        // Split on whitespace
         std::vector<std::string> words;
-        std::string cur;
-        for (char c : text) {
-            if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
-                if (!cur.empty()) {
-                    words.push_back(cur);
-                    cur.clear();
+        if (hf_tok) {
+            words = core_bert::pretokenize(core_bert::lower_strip_accents(text));
+        } else {
+            // Historical: split on ASCII whitespace, lowercase ASCII only.
+            std::string cur;
+            for (char c : text) {
+                if (c == ' ' || c == '\t' || c == '\n' || c == '\r') {
+                    if (!cur.empty()) {
+                        words.push_back(cur);
+                        cur.clear();
+                    }
+                } else {
+                    if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
+                    cur += c;
                 }
-            } else {
-                // Lowercase ASCII
-                if (c >= 'A' && c <= 'Z') c = c - 'A' + 'a';
-                cur += c;
             }
+            if (!cur.empty()) words.push_back(cur);
         }
-        if (!cur.empty()) words.push_back(cur);
 
         // WordPiece each word
         for (const auto & word : words) {
@@ -224,7 +269,13 @@ struct WordPieceTokenizer {
                 continue;
             }
 
-            // WordPiece: greedily match longest subword
+            // WordPiece: greedily match longest subword. HF emits ONE [UNK]
+            // for a word it cannot fully segment and DISCARDS the pieces it
+            // already matched (`is_bad` in WordpieceTokenizer.tokenize); the
+            // historical loop kept the prefix. Collect into a scratch vector
+            // so the whole word can be dropped.
+            std::vector<int> sub_ids;
+            bool is_bad = false;
             size_t start = 0;
             while (start < word.size()) {
                 size_t end = word.size();
@@ -241,18 +292,19 @@ struct WordPieceTokenizer {
                     while (end > start && (word[end] & 0xC0) == 0x80) end--;
                 }
                 if (best_id < 0) {
-                    // Character not in vocab — use [UNK]
-                    ids.push_back(unk_id);
+                    is_bad = true;
                     break;
                 }
-                ids.push_back(best_id);
-                start = (start == 0) ? (end > start ? end : end) : start + (end - start);
-                // Recalculate start for ##-prefixed case
-                if (start == 0)
-                    start = end;
-                else {
-                    // Already handled above
-                }
+                sub_ids.push_back(best_id);
+                start = end;
+            }
+            if (is_bad && hf_tok) {
+                ids.push_back(unk_id);
+            } else if (is_bad) {
+                ids.insert(ids.end(), sub_ids.begin(), sub_ids.end());
+                ids.push_back(unk_id);
+            } else {
+                ids.insert(ids.end(), sub_ids.begin(), sub_ids.end());
             }
         }
 

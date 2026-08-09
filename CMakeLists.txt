@@ -666,6 +666,20 @@ target_include_directories(test-bert-pretokenize PRIVATE src)
 add_executable(test-bert-norm tests/test_bert_norm.cpp src/tokenizer.cpp)
 target_include_directories(test-bert-norm PRIVATE src)
 
+# Hermetic: core/spm_norm.h — the SentencePiece Precompiled (nmt_nfkc
+# charsmap) normalizer for XLM-R-family Unigram models. Goldens from HF's own
+# Precompiled component; pins the printable-ASCII invariant and the \t/control
+# handling that "ASCII is untouched" would misstate.
+add_executable(test-spm-norm tests/test_spm_norm.cpp)
+target_include_directories(test-spm-norm PRIVATE src)
+
+# Live (needs a GGUF): decoded-output A/B for the fireredpunc tokenizer fix.
+# Punctuates each input line; the arm is chosen by
+# CRISPEMBED_FIREREDPUNC_HF_TOK, so one binary produces both.
+add_executable(firered-punct-ab tests/firered_punct_ab.cpp)
+target_include_directories(firered-punct-ab PRIVATE src)
+target_link_libraries(firered-punct-ab PRIVATE crispembed)
+
 # Live (needs a GGUF): dump the token ids the shipping runtime produces, for
 # ANY tokenizer family. SentencePiece/BPE parity cannot be checked from a
 # vocab file the way WordPiece can — merges, charsmap and pre-tokenizer
