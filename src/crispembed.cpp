@@ -73,8 +73,27 @@ static std::vector<float> compute_rel_pos_bias(ggml_tensor * rel_attn_bias, int 
 #include <map>
 #include <memory>
 #include <string>
+#include <thread>
 #include <unordered_map>
 #include <vector>
+
+// n_threads <= 0 selects the documented auto default: min(4, cores) — the
+// same resolution the CLI applies when -t is absent. Issue #45 follow-up:
+// crispembed.h promised "0 = auto" but every init clamped 0 to a single
+// thread, so bindings that pass 0 (Flutter defaults it across ~20 classes,
+// the Rust docs advertise it) ran their CPU paths single-threaded. Applied
+// at every extern "C" init boundary so all surfaces resolve identically;
+// engines called from here receive an already-positive count. A
+// single-thread WASM build has no pthreads, so auto stays 1 there.
+static int ce_resolve_threads(int n_threads) {
+    if (n_threads > 0) return n_threads;
+#if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
+    return 1;
+#else
+    unsigned hc = std::thread::hardware_concurrency();
+    return (int)std::min(4u, hc ? hc : 1u);
+#endif
+}
 
 static ggml_backend_t crispembed_init_backend(int n_threads) {
     const char * force_cpu = std::getenv("CRISPEMBED_FORCE_CPU");
@@ -2351,6 +2370,7 @@ static std::vector<float> run_encoder_raw(crispembed_context * ctx, const embed_
 // ---------------------------------------------------------------------------
 
 extern "C" crispembed_context * crispembed_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     core_initbench::timer ib_init("crispembed_init");
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
@@ -3943,6 +3963,7 @@ struct crispembed_vit_context {
 };
 
 extern "C" crispembed_vit_context * crispembed_vit_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!model_path) return nullptr;
     auto * ctx = new crispembed_vit_context();
     if (!vit_embed::load(&ctx->vit, model_path, n_threads)) {
@@ -3994,6 +4015,7 @@ struct crispembed_clip_text_context {
 };
 
 extern "C" crispembed_clip_text_context * crispembed_clip_text_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!model_path) return nullptr;
     auto * ctx = new crispembed_clip_text_context();
     if (!clip_text::load(&ctx->ct, model_path, n_threads)) {
@@ -4056,6 +4078,7 @@ static bool biometric_use_acknowledged() {
 }
 
 extern "C" crispembed_face_context * crispembed_face_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!model_path) return nullptr;
     auto * ctx = new crispembed_face_context();
     if (!cnn_embed::load(&ctx->cnn, model_path, n_threads)) {
@@ -4306,6 +4329,7 @@ static ocr_model_type detect_arch(const char * path) {
 }
 
 extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (ocr_pipeline::is_dangerous_q4_recognizer_path(path) && !ocr_pipeline::dangerous_q4_override_enabled()) {
         fprintf(stderr,
                 "crispembed_ocr_model: refusing TrOCR Q4_K model '%s'; use Q8_0 or explicitly set "
@@ -4709,6 +4733,7 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
 // above are canonical; these thin forwarders preserve ABI compatibility for
 // existing callers and will be removed in a future major release.
 extern "C" void * crispembed_math_ocr_init(const char * path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return crispembed_ocr_model_init(path, n_threads);
 }
 extern "C" void crispembed_math_ocr_free(void * ctx) {
@@ -4729,7 +4754,7 @@ extern "C" float crispembed_math_ocr_mean_confidence(const void * ctx) {
 
 // Also expose individual APIs for direct use
 extern "C" void * crispembed_hmer_ocr_init(const char * p, int t) {
-    return hmer_ocr_init(p, t);
+    return hmer_ocr_init(p, ce_resolve_threads(t));
 }
 extern "C" void crispembed_hmer_ocr_free(void * c) {
     hmer_ocr_free((hmer_ocr_context *)c);
@@ -4742,7 +4767,7 @@ extern "C" const char * crispembed_hmer_ocr_recognize_gray(void * c, const float
 }
 
 extern "C" void * crispembed_bttr_ocr_init(const char * p, int t) {
-    return bttr_ocr_init(p, t);
+    return bttr_ocr_init(p, ce_resolve_threads(t));
 }
 extern "C" void crispembed_bttr_ocr_free(void * c) {
     bttr_ocr_free((bttr_ocr_context *)c);
@@ -4759,6 +4784,7 @@ extern "C" const char * crispembed_bttr_ocr_recognize_gray(void * c, const float
 // ---------------------------------------------------------------------------
 
 extern "C" crispembed_pix2struct_context * crispembed_pix2struct_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return (crispembed_pix2struct_context *)pix2struct_init(model_path, n_threads);
 }
 
@@ -4800,6 +4826,7 @@ extern "C" const float * crispembed_pix2struct_encode_patches(crispembed_pix2str
 // ---------------------------------------------------------------------------
 
 extern "C" crispembed_granite_vision_context * crispembed_granite_vision_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return (crispembed_granite_vision_context *)granite_vision_init(model_path, n_threads);
 }
 
@@ -4819,6 +4846,7 @@ extern "C" const char * crispembed_granite_vision_recognize(crispembed_granite_v
 // ---------------------------------------------------------------------------
 
 extern "C" crispembed_lightonocr_context * crispembed_lightonocr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return (crispembed_lightonocr_context *)lightonocr_init(model_path, n_threads);
 }
 
@@ -4896,6 +4924,7 @@ struct ocr_pipeline_wrapper {
 };
 
 extern "C" void * crispembed_ocr_init(const char * det_path, const char * rec_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     auto * w = new ocr_pipeline_wrapper();
     auto * meta = core_gguf::open_metadata(det_path);
     const bool pp = meta && core_gguf::kv_str(meta, "ppocrv6.kind", "") == "det";
@@ -5055,6 +5084,7 @@ extern "C" crispembed_ocr_pipeline_params crispembed_ocr_pipeline_defaults(void)
 }
 
 extern "C" void * crispembed_ocr_pipeline_init(const crispembed_ocr_pipeline_params * params, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!params) return nullptr;
     ocr_orchestrator::config cfg = ocr_orchestrator::default_config();
     cfg.router = params->router != 0;
@@ -5291,6 +5321,7 @@ extern "C" void * crispembed_ocr_pipeline_init_stages(int router, const char * n
                                                       const char * truecase_model, const char * tess_model_dir,
                                                       const crispembed_ocr_stage * stages, int n_stages,
                                                       int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!stages || n_stages <= 0) return nullptr;
     ocr_orchestrator::config cfg;
     cfg.router = router != 0;
@@ -5422,6 +5453,7 @@ extern "C" void crispembed_ocr_pipeline_free(void * ctx) {
 #endif
 
 extern "C" void * crispembed_lid_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
 #if HAS_LID
     return text_lid_init_from_file(model_path, n_threads);
 #else
@@ -5489,6 +5521,7 @@ struct layout_wrapper {
 };
 
 extern "C" void * crispembed_layout_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     auto * w = new layout_wrapper();
     if (!layout_detect::load(&w->ctx, model_path, n_threads)) {
         delete w;
@@ -5538,6 +5571,7 @@ struct surya_det_wrapper {
 };
 
 extern "C" void * crispembed_text_det_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     auto * w = new surya_det_wrapper();
     w->ctx = surya_det_init(model_path, n_threads);
     if (!w->ctx) {
@@ -5609,6 +5643,7 @@ struct ner_dispatch {
 };
 
 extern "C" void * crispembed_ner_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!model_path) return nullptr;
 
     // Peek at GGUF metadata to decide backend.
@@ -5703,6 +5738,7 @@ struct crispembed_lilt_ctx {
 };
 
 extern "C" void * crispembed_lilt_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!model_path) return nullptr;
     auto * ctx = new crispembed_lilt_ctx;
     if (!lilt_kie::load(&ctx->pipe, model_path, n_threads)) {
@@ -5771,6 +5807,7 @@ struct crispembed_kie_ctx {
 
 extern "C" void * crispembed_kie_init(const char * ocr_det_model, const char * ocr_rec_model, const char * ner_model,
                                       int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!ocr_det_model || !ocr_rec_model || !ner_model) return nullptr;
 
     kie_pipeline::config cfg;
@@ -5801,6 +5838,7 @@ extern "C" void * crispembed_kie_init(const char * ocr_det_model, const char * o
 // empty when relying on LiLT alone.
 extern "C" void * crispembed_kie_init_lilt(const char * ocr_det_model, const char * ocr_rec_model,
                                            const char * ner_model, const char * lilt_model, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     if (!ocr_det_model || !ocr_rec_model) return nullptr;
 
     kie_pipeline::config cfg;
@@ -5903,6 +5941,7 @@ extern "C" int crispembed_scan_cleanup_content_bbox(const uint8_t * pixels, int 
 }
 
 extern "C" void * crispembed_scan_cleanup_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return scan_cleanup_init(model_path, n_threads);
 }
 
@@ -5942,6 +5981,7 @@ extern "C" int crispembed_scan_cleanup_process_simple(void * ctx, const uint8_t 
 #include "text_sr.h"
 
 extern "C" void * crispembed_text_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return text_sr_init(model_path, n_threads);
 }
 
@@ -5970,6 +6010,7 @@ extern "C" void crispembed_text_sr_free_image(uint8_t * pixels) {
 #include "tbsrn_sr.h"
 
 extern "C" void * crispembed_tbsrn_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return tbsrn_sr_init(model_path, n_threads);
 }
 
@@ -5993,6 +6034,7 @@ extern "C" void crispembed_tbsrn_sr_free_image(uint8_t * pixels) {
 #include "pan_sr.h"
 
 extern "C" void * crispembed_pan_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return pan_sr_init(model_path, n_threads);
 }
 extern "C" void crispembed_pan_sr_free(void * ctx) {
@@ -6017,6 +6059,7 @@ extern "C" void crispembed_pan_sr_free_image(uint8_t * pixels) {
 #include "dat_sr.h"
 
 extern "C" void * crispembed_dat_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return dat_sr_init(model_path, n_threads);
 }
 extern "C" void crispembed_dat_sr_free(void * ctx) {
@@ -6038,6 +6081,7 @@ extern "C" void crispembed_dat_sr_free_image(uint8_t * pixels) {
 #include "safmn_sr.h"
 
 extern "C" void * crispembed_safmn_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return safmn_init(model_path, n_threads);
 }
 extern "C" void crispembed_safmn_sr_free(void * ctx) {
@@ -6075,6 +6119,7 @@ extern "C" void crispembed_safmn_sr_free_image(uint8_t * pixels) {
 #include "swinir_sr.h"
 
 extern "C" void * crispembed_swinir_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return swinir_sr_init(model_path, n_threads);
 }
 extern "C" void crispembed_swinir_sr_free(void * ctx) {
@@ -6100,6 +6145,7 @@ extern "C" void crispembed_swinir_sr_free_image(uint8_t * pixels) {
 #include "esrgan_sr.h"
 
 extern "C" void * crispembed_esrgan_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return esrgan_init(model_path, n_threads);
 }
 extern "C" void crispembed_esrgan_sr_free(void * ctx) {
@@ -6137,6 +6183,7 @@ extern "C" void crispembed_esrgan_sr_free_image(uint8_t * pixels) {
 #include "restormer.h"
 
 extern "C" void * crispembed_restormer_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return restormer_init(model_path, n_threads);
 }
 extern "C" void crispembed_restormer_free(void * ctx) {
@@ -6157,6 +6204,7 @@ extern "C" void crispembed_restormer_free_image(uint8_t * pixels) {
 #include "scunet_denoise.h"
 
 extern "C" void * crispembed_scunet_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return scunet_init(model_path, n_threads);
 }
 extern "C" void crispembed_scunet_free(void * ctx) {
@@ -6185,6 +6233,7 @@ extern "C" void crispembed_scunet_free_image(uint8_t * pixels) {
 #include "instructir.h"
 
 extern "C" void * crispembed_instructir_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return instructir_init(model_path, n_threads);
 }
 extern "C" void crispembed_instructir_free(void * ctx) {
@@ -6216,6 +6265,7 @@ extern "C" void crispembed_instructir_free_image(uint8_t * pixels) {
 #include "adair.h"
 
 extern "C" void * crispembed_adair_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return adair_init(model_path, n_threads);
 }
 extern "C" void crispembed_adair_free(void * ctx) {
@@ -6253,6 +6303,7 @@ struct punct_wrapper {
 };
 
 extern "C" void * crispembed_punct_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     (void)n_threads;
     if (!model_path) return nullptr;
 
@@ -6462,6 +6513,7 @@ extern "C" void crispembed_despeckle(const uint8_t * gray, int w, int h, int max
 #include "table_parse.h"
 
 extern "C" void * crispembed_table_parse_init(const char * ocr_model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return table_parse_init(ocr_model_path, n_threads);
 }
 
@@ -6489,6 +6541,7 @@ extern "C" int crispembed_table_parse_detect_grid(const uint8_t * gray, int widt
 #include "hat_sr.h"
 
 extern "C" void * crispembed_hat_sr_init(const char * model_path, int n_threads) {
+    n_threads = ce_resolve_threads(n_threads);
     return hat_sr_init(model_path, n_threads);
 }
 extern "C" void crispembed_hat_sr_free(void * ctx) {

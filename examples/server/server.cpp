@@ -272,7 +272,10 @@ int main(int argc, char ** argv) {
     std::string adair_model_path;      // AdaIR restoration model (--adair-model)
     std::string pix2struct_model_path; // Pix2Struct document understanding model (--pix2struct)
     int port = 8080;
-    int n_threads = 1;
+    // 0 = the C API's documented auto default, min(4, cores) — the server had
+    // the same blanket single-thread default the CLI shipped in v0.17.7
+    // (issue #45); an explicit -t still wins, including -t 1.
+    int n_threads = 0;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "-m") == 0 && i + 1 < argc)
@@ -357,11 +360,16 @@ int main(int argc, char ** argv) {
             adair_model_path = argv[++i];
     }
 
+    // ocr_det_model_path counts as a model: `--ocr-pipeline --ocr-det D
+    // --ocr-rec R` is a complete standalone configuration (it was rejected
+    // with the usage text before, forcing an unrelated -m just to start the
+    // OCR endpoint — noticed while smoke-testing the issue-#45 thread fix).
     if (model_path.empty() && det_model_path.empty() && vit_model_path.empty() && ocr_model_path.empty() &&
-        layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() &&
-        hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() &&
-        swinir_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() &&
-        scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty()) {
+        ocr_det_model_path.empty() && layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() &&
+        pan_model_path.empty() && hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() &&
+        esrgan_model_path.empty() && swinir_model_path.empty() && tbsrn_model_path.empty() &&
+        restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() &&
+        adair_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
