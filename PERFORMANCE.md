@@ -1,5 +1,41 @@
 # CrispEmbed Performance
 
+## Issue #45: v0.17.7 PP-OCRv6 Metal/CPU regression root-caused (thread default), fixed + rec mk adoption beats v0.17.6 by ~35% (M1, 2026-08-09)
+
+Reporter (Subtitle Edit, M4/Metal): PP-OCRv6 medium det+rec f16 pipeline
++18% wall vs v0.17.6, output byte-identical, `CRISPEMBED_CONV2D_MK=1`
+recovering ~69%. Reproduced on M1 with subtitle-style strips (1920x64 one
+region / 1920x200 two regions), fresh process per invocation (their usage),
+interleaved 3-rep arms, all decoded JSON byte-identical in every table below.
+
+**Root cause is the O13b n_threads audit x the CLI's blanket `-t 1`
+default.** Until v0.17.7 the det/rec/orientation engines DROPPED their
+thread parameter, so the detector's CPU ggml graph (the production det path
+on non-CUDA boxes) ran at ggml's own default of 4 threads; honoring the
+parameter pinned it to 1. The ggml pin bump and the sched replay change are
+exonerated: `-t 4` on the unmodified v0.17.7 binary fully restores v0.17.6
+timing (two-liner: v0.17.6 3.88-4.02 s; v0.17.7 default 4.40-4.58 s; v0.17.7
+`-t 4` 3.86-3.93 s). CPU-time mirrors it (v0.17.7 default: LESS cpu, more
+wall — the signature of lost parallelism, not of a slower kernel).
+
+**Why MK=1 recovered ~2/3 for the reporter:** the medium/large recognizer
+has NO GGML graph (`[ppocrv6-graph-bench] graph unavailable large_stem=1
+backend=CPU`) — every crop runs the scalar reference convs, which never got
+the O7 conv2d_prefs_scope adoption (only det + ppformulanet-l had it). The
+mk micro-kernel is a genuine, thread-independent win there (lower cpu AND
+wall), orthogonal to the thread regression it partially masked.
+
+**Shipped (`24c3e3ec`):** (1) the G5 `min(4, cores)` -t default now applies
+to every CLI lane (explicit `-t` wins, incl. `-t 1`); (2) O7 mk scope in
+`recognize_nchw` (covers single + batch scalar lanes). Result vs v0.17.6
+(quiet M1, 3 reps): two-liner **3.98 -> 2.47-2.52 s (-38%)**, 64px strip
+**1.97 -> 1.21-1.43 s (-35%)**. Attribution arms: `CRISPEMBED_CONV2D_THREADS=1`
+3.49-3.57 s (mk alone), `CRISPEMBED_CONV2D_MK=0` 2.70-2.73 s (GEMM+threads,
+no mk) — threading and mk each contribute, both env vars keep precedence.
+Decoded-output identity gate old-vs-new also run on FR/JA/ZH/RU strips: all
+IDENTICAL (RU decodes to blanks on BOTH builds — medium rec dict has no
+Cyrillic, pre-existing, recorded in LANGUAGES.md terms, not a regression).
+
 ## GLM ViT deep levers, round 1 (user-funded): flash + F16MM lose QUALITY vs the HF reference; the F32-cast policy costs ~30-39% of the vision tower (M1 CPU, 2026-08-08)
 
 All three brief levers turned out to already exist as gates — no new code was
