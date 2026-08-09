@@ -13,9 +13,16 @@ is what the sentence-transformers module stack does for this model.
 
 Measured 2026-08-09 (Apple M1, f32 GGUF from cstr/all-MiniLM-L6-v2-GGUF):
 
-    ASCII     old==new bit-identical, cos vs reference 1.000000 in both arms
-    ACCENTED  mean cos vs reference 0.646574 -> 1.000000
-              (fr 0.487 / es 0.566 / pt 0.574 / de 0.731 / no 0.875 -> 1.000000)
+    ASCII      old==new BIT-IDENTICAL, cos vs reference 1.000000 in both arms
+    ACCENTED   mean cos vs reference 0.646574 -> 1.000000
+               (fr 0.487 / es 0.566 / pt 0.574 / de 0.731 / no 0.875)
+    NON_LATIN  mean cos vs reference 0.590807 -> 1.000000
+               (ja 0.461-0.709 / “quotes”+em-dash 0.430 / mixed 0.763)
+
+The 0.430 row is the one to notice: `He said "hello" - then left...` with
+TYPOGRAPHIC punctuation is ordinary English, and the pre-fix tokenizer put it
+at cosine 0.43 to its own reference. This was never only a European-language
+problem.
 """
 import json
 import os
@@ -41,6 +48,14 @@ ACCENTED = [
     "A informação está disponível na página três",
     "Øystein bor i Tromsø og går på fjellet",
 ]
+# The split-stage sections: CJK and Unicode punctuation, which the accent fix
+# alone does not reach.
+NON_LATIN = [
+    "日本語のテキストを埋め込みます",
+    "猫がソファの上で眠っている。",
+    "He said “hello” — then left…",
+    "Tokyo東京 is 100€ per night",
+]
 
 
 def ref_embed(sess, tok, texts):
@@ -57,7 +72,12 @@ def ref_embed(sess, tok, texts):
 
 
 def crisp_embed(binary, gguf, texts, gate):
-    env = dict(os.environ, CRISPEMBED_WORDPIECE_HF_NORM=gate)
+    # All three WordPiece parity gates move together here: "0" is the fully
+    # pre-fix tokenizer, "1" is the shipped default.
+    env = dict(os.environ,
+               CRISPEMBED_WORDPIECE_HF_NORM=gate,
+               CRISPEMBED_WORDPIECE_HF_PRETOK=gate,
+               CRISPEMBED_WORDPIECE_HF_UNK=gate)
     out = []
     for t in texts:
         r = subprocess.run([binary, "-m", gguf, "--json", t],
@@ -78,7 +98,7 @@ def main():
                                 providers=["CPUExecutionProvider"])
 
     fails = 0
-    for name, texts in (("ASCII", ASCII), ("ACCENTED", ACCENTED)):
+    for name, texts in (("ASCII", ASCII), ("ACCENTED", ACCENTED), ("NON_LATIN", NON_LATIN)):
         ref = ref_embed(sess, tok, texts)
         old = crisp_embed(binary, gguf, texts, "0")
         new = crisp_embed(binary, gguf, texts, "1")
@@ -101,9 +121,9 @@ def main():
                 print("  GATE FAIL: the fix moved an ASCII embedding")
                 fails += 1
         else:
-            print(f"  ACCENTED gate: mean cos vs reference {m_old:.6f} -> {m_new:.6f}")
+            print(f"  {name} gate: mean cos vs reference {m_old:.6f} -> {m_new:.6f}")
             if m_new <= m_old:
-                print("  GATE FAIL: hf-norm is not closer to the reference")
+                print(f"  GATE FAIL: {name} is not closer to the reference")
                 fails += 1
     return fails
 

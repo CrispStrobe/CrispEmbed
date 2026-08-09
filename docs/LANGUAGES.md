@@ -188,12 +188,24 @@ warning when ≥50% of content tokens are `[UNK]`, signalling a vocabulary
 mismatch. This catches the English-model-on-Japanese case automatically.
 Silenced by `CRISPEMBED_WARN_UNK=0`.
 
-### Accented-Latin tokenizer divergence on uncased WordPiece models — FIXED
+### WordPiece tokenizer divergence from HuggingFace — FIXED
 
-**Status: fixed.** The runtime now applies HuggingFace's `BertNormalizer`
-strip-accents + lowercase stage before WordPiece lookup for uncased WordPiece
-models. Historical behavior is still reachable with
-`CRISPEMBED_WORDPIECE_HF_NORM=0`.
+**Status: fixed, and it was three separate defects, not one.** Chasing the
+accented-Latin report surfaced two more, each independently capable of
+producing a different token sequence than HF:
+
+| # | defect | gate (default on) | what it broke |
+|---|---|---|---|
+| 1 | per-**byte** `tolower`, so `BertNormalizer`'s NFD accent strip never ran | `CRISPEMBED_WORDPIECE_HF_NORM` | `café` → `caf`+`[UNK]` |
+| 2 | per-**byte** `isspace`/`ispunct` split instead of HF's `BertPreTokenizer` | `CRISPEMBED_WORDPIECE_HF_PRETOK` | CJK glued into one `[UNK]`; `“hello”` → `“`+`##hell`+`##o`+`##”` |
+| 3 | unsegmentable words kept their matched prefix instead of collapsing to one `[UNK]` | `CRISPEMBED_WORDPIECE_HF_UNK` | `catソファ` → `cat`+`[UNK]` where HF gives `[UNK]` |
+
+Setting any gate to `0` restores that stage's historical behavior; all three
+to `0` is bit-exact with what shipped before.
+
+**This was never only a European-language problem.** Defect 2 mangles ordinary
+English with typographic punctuation — `He said “hello” — then left…` embedded
+at cosine **0.430** to its own reference.
 
 The bug: HF's normalizer, for a model whose `tokenizer.json` says
 `lowercase: true, strip_accents: null`, runs NFD and drops combining marks
@@ -212,16 +224,21 @@ a multi-byte UTF-8 sequence and strips no accents at all. Measured on
 | Ángel | `angel` (1 token, in-vocab) | `[UNK]` | `angel` |
 | François | `francois` (1 token, in-vocab) | `fran` + `[UNK]` | `francois` |
 
-**Token-id parity vs HF**, 24 sentences across 6 sections
+**Token-id parity vs HF**, 35 sentences across 9 sections
 (`tests/wordpiece_hf_parity.py`, driving the shipping C++ tokenizer against
-HF's fast tokenizer on the real vocab):
+HF's fast tokenizer on the real vocab). One fix per arm, so every column is
+attributable to a single change:
 
-| model | exact-match before | exact-match now | `[UNK]` before → now |
-|---|---|---|---|
-| `all-MiniLM-L6-v2` | 4/24 | **24/24** | 80 → **0** |
-| `all-mpnet-base-v2` | 4/24 | **24/24** | 80 → **0** |
+| model | historical | +accents | +split | +wholeUNK |
+|---|---|---|---|---|
+| `all-MiniLM-L6-v2` | 4/35 | 25/35 | 34/35 | **35/35** |
+| `all-mpnet-base-v2` | 4/35 | 25/35 | 34/35 | **35/35** |
+| `LaBSE` (cased control) | 25/35 | 25/35 | 35/35 | **35/35** |
 
-The 4 that already matched are the ASCII section — which is the point below.
+`[UNK]` count on the two uncased models went 80 → 0 on the Latin sections.
+LaBSE is the control that matters: it declares `lowercase: false`, so the
+accent arm leaves it **completely unchanged** (25 → 25) — the exact breakage
+the old note in this file predicted a fix would cause.
 
 **End-to-end embeddings** (`tests/embed_accent_parity.py`, real CLI + real
 `all-MiniLM-L6-v2` f32 GGUF, reference = the model's own ONNX export under ONNX
@@ -232,19 +249,36 @@ test; this is:
 |---|---|---|
 | ASCII (3 sentences) | 1.000000 | 1.000000, **bit-identical to before** |
 | accented (5 sentences) | 0.646574 mean | **1.000000** |
+| CJK + Unicode punctuation (4) | 0.590807 mean | **1.000000** |
 
 Per sentence the old path ran 0.487 (French), 0.566 (Spanish), 0.574
-(Portuguese), 0.731 (German), 0.875 (Norwegian) — a French sentence embedded at
-cosine 0.487 to its own reference is, for retrieval purposes, a different
-vector. All five are now exact.
+(Portuguese), 0.731 (German), 0.875 (Norwegian), 0.461 (Japanese) and 0.430
+(English with typographic quotes and an em-dash). A sentence embedded at cosine
+0.43–0.49 to its own reference is, for retrieval purposes, a different vector.
+All are now exact.
 
-**Why this was safe to turn on by default.** The normalization is exactly
-`std::tolower` over the whole of ASCII, so no pure-ASCII input can tokenize
-differently than it did before and no shipped English embedding moves. That is
-not a claim, it is asserted three times: at table-generation time
-(`tools/gen_unicode_bert_norm.py` refuses to emit a table where ASCII maps to
-anything but plain `A-Z` lowering), over all 128 ASCII codepoints in
-`tests/test_bert_norm.cpp`, and as a gate in the parity harness above.
+**Why this was safe to turn on by default.** All three fixes are no-ops on
+printable ASCII, so no shipped English-on-ASCII embedding moves. The strength
+of that guarantee differs per fix, and it is worth being exact about which:
+
+- **Fix 1 is a hard invariant.** The normalization is *exactly* `std::tolower`
+  over the whole of ASCII, asserted at table-generation time
+  (`tools/gen_unicode_bert_norm.py` refuses to emit a table where ASCII maps to
+  anything but plain `A-Z` lowering) and over all 128 ASCII codepoints in
+  `tests/test_bert_norm.cpp`.
+- **Fix 2 is a hard invariant with one deliberate exception.** `isspace`
+  matches `CAT_WS` and `ispunct` matches `CAT_P` across `0x20`–`0x7E`, asserted
+  per codepoint, plus a direct comparison of the two splitters on ASCII strings
+  built to hit punctuation runs, leading/trailing separators and empty input.
+  The exception: raw **C0 control bytes and DEL**, which HF's `clean_text`
+  drops and the historical loop glued into the surrounding word (making that
+  word `[UNK]`). That divergence is itself a fix and has its own test.
+- **Fix 3 is empirical, not an invariant.** A word only changes if it is
+  unsegmentable, and a 30k WordPiece vocab contains every printable ASCII
+  character as its own token, so no ASCII word ever is. That holds for every
+  vocab tested rather than being guaranteed by construction, which is why the
+  ASCII gate in the parity harness checks it against real vocabularies instead
+  of assuming it.
 
 **Why the table is generated, not hand-written.** Two traps, both silent:
 
@@ -259,13 +293,16 @@ anything but plain `A-Z` lowering), over all 128 ASCII codepoints in
   from the thing users actually run. It also does not apply `Final_Sigma`:
   `ΟΔΟΣ` → `οδοσ` under the fast tokenizer, `οδος` under the slow one.
 
-**Who was affected:** only the 30k uncased WordPiece models. Every
+**Who was affected:** defect 1 hit only the 30k **uncased** WordPiece models.
+Defects 2 and 3 hit **every** WordPiece model, cased included — LaBSE was at
+25/35 against HF before this work purely from the split stage. Every
 multilingual model in this table uses a SentencePiece/XLM-R tokenizer (250k
-vocab) which handles accented text natively — those were never affected.
-`LaBSE` is a **cased** WordPiece model whose `tokenizer.json` declares
-`lowercase: false`, so it correctly does not strip accents; the fix is
-conditioned on the same `do_lower_case` the runtime already infers from the
-vocabulary, so LaBSE is untouched.
+vocab) and is a different code path, unaffected throughout.
+
+`LaBSE` declares `lowercase: false`, so it correctly does not strip accents;
+the accent fix is conditioned on the same `do_lower_case` the runtime already
+infers from the vocabulary, and the parity table above confirms that arm leaves
+LaBSE byte-identical.
 
 An earlier note here said a fix was blocked on the converter recording
 `strip_accents`. That was wrong: HF resolves it as

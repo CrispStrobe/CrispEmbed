@@ -39,6 +39,7 @@
 // behaviour match.
 
 #include "core/bert_norm.h"
+#include "core/bert_pretok.h"
 #include "core/clean_exit.h"
 #include "tokenizer.h"
 
@@ -203,6 +204,111 @@ static int crispembed_test_main() {
         }
     }
 
+    // ---- 4b. THE ASCII SPLIT INVARIANT ---------------------------------
+    // Routing every WordPiece model through core_bert::pretokenize (HF's
+    // BertPreTokenizer, which every BERT-family tokenizer.json declares)
+    // replaces the historical per-byte isspace/ispunct loop. The two agree
+    // over ASCII, which is what makes THAT default safe too — but only
+    // exactly, and only where they really do agree, so assert the character
+    // classes per codepoint rather than trusting a corpus to cover them.
+    for (int cp = 0x20; cp < 0x7F; cp++) {
+        const bool hist_space = std::isspace(cp) != 0;
+        const bool hist_punct = std::ispunct(cp) != 0;
+        const bool bert_space = core_unicode::category(cp) == core_unicode::CAT_WS;
+        const bool bert_punct = core_bert::is_bert_punct(cp);
+        if (hist_space != bert_space || hist_punct != bert_punct) {
+            fails++;
+            printf("FAIL ascii-split U+%04X '%c' isspace %d/%d ispunct %d/%d (hist/bert)\n", cp,
+                   cp >= 0x20 ? (char)cp : '?', hist_space, bert_space, hist_punct, bert_punct);
+        }
+    }
+    for (int cp : { 0x09, 0x0A, 0x0B, 0x0C, 0x0D }) { // the ASCII whitespace controls
+        if (!std::isspace(cp) || core_unicode::category(cp) != core_unicode::CAT_WS) {
+            fails++;
+            printf("FAIL ascii-split U+%04X should be whitespace on both paths\n", cp);
+        }
+    }
+    // Class-level agreement does not prove the two LOOPS agree — they could
+    // still differ on runs of punctuation, leading/trailing separators or
+    // empty words. Compare the splitters directly on printable-ASCII strings
+    // chosen to hit those shapes.
+    {
+        // The historical loop, reproduced verbatim from the pre-change
+        // src/tokenizer.cpp so the comparison is against what actually shipped.
+        auto historical_split = [](const std::string & text) {
+            std::vector<std::string> words;
+            std::string current;
+            for (size_t i = 0; i < text.size(); i++) {
+                const unsigned char c = text[i];
+                if (std::isspace(c)) {
+                    if (!current.empty()) {
+                        words.push_back(current);
+                        current.clear();
+                    }
+                } else if (std::ispunct(c)) {
+                    if (!current.empty()) {
+                        words.push_back(current);
+                        current.clear();
+                    }
+                    words.push_back(std::string(1, (char)c));
+                } else {
+                    current += (char)c;
+                }
+            }
+            if (!current.empty()) words.push_back(current);
+            return words;
+        };
+        const std::vector<std::string> k_ascii_shapes = {
+            "The quick brown fox jumps over the lazy dog",
+            "  leading and trailing spaces  ",
+            "punct!!!runs???here...",
+            "hyphen-separated and under_scored and dot.separated",
+            "e-mail: user@example.com, url https://x.io/a?b=1&c=2#f",
+            "(nested [brackets] {and} <braces>)",
+            "quotes 'single' \"double\" `back`",
+            "math 1+2=3 5<6 7>4 100% ~approx~ |pipe| ^caret^ $money$",
+            "tabs\tand\nnewlines\r\nmixed\v\fhere",
+            "trailing punctuation.",
+            ".leading punctuation",
+            "!",
+            "   ",
+            "",
+            "a",
+            "ALL CAPS 12345",
+        };
+        for (const auto & s : k_ascii_shapes) {
+            const auto a = historical_split(s);
+            const auto b = core_bert::pretokenize(s);
+            if (a != b) {
+                fails++;
+                printf("FAIL ascii-split-corpus %s\n   hist(%zu):", s.c_str(), a.size());
+                for (const auto & w : a) printf(" [%s]", w.c_str());
+                printf("\n   bert(%zu):", b.size());
+                for (const auto & w : b) printf(" [%s]", w.c_str());
+                printf("\n");
+            }
+        }
+    }
+
+    // The ONE ASCII class where they deliberately differ: raw C0 controls and
+    // DEL. HF's clean_text drops them; the historical loop glued them into the
+    // word, which made the word [UNK]. Pinned so the divergence stays known
+    // and intentional rather than becoming a surprise.
+    {
+        const std::string with_ctrl = std::string("ab") + '\x01' + "cd";
+        const auto words = core_bert::pretokenize(with_ctrl);
+        if (words.size() != 1 || words[0] != "abcd") {
+            fails++;
+            printf("FAIL ctrl-drop pretokenize(\"ab\\x01cd\") should be [\"abcd\"], got %zu word(s)\n", words.size());
+        }
+        for (int cp : { 0x00, 0x01, 0x08, 0x1F, 0x7F }) {
+            if (core_unicode::category(cp) != core_unicode::CAT_C) {
+                fails++;
+                printf("FAIL ctrl-cat U+%04X is not CAT_C\n", cp);
+            }
+        }
+    }
+
     // ---- 5. End-to-end: the [UNK] explosion is gone --------------------
     // A synthetic uncased vocab holding only the STRIPPED forms, exactly as a
     // real uncased WordPiece vocab does. Before the fix every accented word
@@ -282,7 +388,8 @@ static int crispembed_test_main() {
         }
     }
 
-    printf("bert-norm: %zu goldens + 128 ascii-inv + %zu idempot + table + %zu e2e cases, %d failure(s)\n",
+    printf("bert-norm: %zu goldens + 128 ascii-inv + %zu idempot + table + 95 ascii-split + 16 split-corpus"
+           " + ctrl-drop + %zu e2e cases, %d failure(s)\n",
            k_goldens.size(), k_goldens.size(), k_e2e.size(), fails);
     return fails ? 1 : 0;
 }
