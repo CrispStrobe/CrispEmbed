@@ -666,6 +666,14 @@ target_include_directories(test-bert-pretokenize PRIVATE src)
 add_executable(test-bert-norm tests/test_bert_norm.cpp src/tokenizer.cpp)
 target_include_directories(test-bert-norm PRIVATE src)
 
+# Live (needs a GGUF): dump the token ids the shipping runtime produces, for
+# ANY tokenizer family. SentencePiece/BPE parity cannot be checked from a
+# vocab file the way WordPiece can — merges, charsmap and pre-tokenizer
+# selection live in the GGUF. Driven by tests/embed_tokenizer_parity.py.
+add_executable(dump-token-ids tests/dump_token_ids.cpp)
+target_include_directories(dump-token-ids PRIVATE src)
+target_link_libraries(dump-token-ids PRIVATE crispembed)
+
 # Hermetic: core/imatrix_alias.h — the F7 naming contract between the
 # runtime's pre-merged QKV tensor and the quantizer's imatrix alias lookup.
 add_executable(test-imatrix-alias tests/test_imatrix_alias.cpp)
