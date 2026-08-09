@@ -6,6 +6,9 @@
 
 #include "tokenizer.h"
 
+#include "core/env_gate.h"
+#include "core/spm_norm.h"
+
 #include <algorithm>
 #include <cassert>
 #include <cfloat>
@@ -49,6 +52,21 @@ bool SentencePieceTokenizer::load(const std::vector<std::string> & vocab, const 
     pad_id_ = pad_id;
     max_length_ = max_length;
     return !vocab.empty();
+}
+
+// HF's normalizer sequence for these models is `Precompiled + Replace`, in
+// that order: the charsmap runs BEFORE " " -> "▁". Order matters — the
+// charsmap maps U+3000 (ideographic space) to a plain space, which must then
+// become a ▁ word boundary like any other space. Applying it after the
+// replacement would leave U+3000 glued inside a word.
+//
+// Enabled per consumer via set_hf_normalize() (only the embedding path is
+// measured); CRISPEMBED_SPM_HF_NORM=0 forces it off for a bit-exact
+// comparison against pre-fix output.
+std::string SentencePieceTokenizer::hf_normalize_text(const std::string & text) const {
+    static const bool env_off = core_env::explicitly_off("CRISPEMBED_SPM_HF_NORM");
+    if (!hf_normalize_ || env_off) return text;
+    return core_spm::normalize(text);
 }
 
 // Viterbi dynamic programming: find optimal segmentation of text
@@ -211,11 +229,12 @@ std::vector<int> SentencePieceTokenizer::tokenize_bpe(const std::string & text) 
 }
 
 embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
+    const std::string src = hf_normalize_text(text);
     // SentencePiece: optionally prepend a dummy leading space (XLM-R / Llama
     // add_space_prefix=true), then replace all spaces with ▁ (U+2581). Gemma
     // sets add_space_prefix=false → no leading ▁ (its first word matches the
     // bare vocab token, e.g. "hello" not "▁hello").
-    std::string processed = add_space_prefix_ ? (" " + text) : text;
+    std::string processed = add_space_prefix_ ? (" " + src) : src;
     std::string with_marker;
     for (char c : processed) {
         if (c == ' ') {
@@ -257,7 +276,9 @@ embed_tokens SentencePieceTokenizer::encode(const std::string & text) const {
 
 embed_tokens SentencePieceTokenizer::encode_pair(const std::string & text_a, const std::string & text_b) const {
     // XLM-R pair encoding: <s> a </s> b </s>  (type_ids all 0 — XLM-R doesn't use them)
-    auto to_marked = [](const std::string & text) -> std::string {
+    // The rerankers take this path, so they get the charsmap too.
+    auto to_marked = [this](const std::string & raw) -> std::string {
+        const std::string text = hf_normalize_text(raw);
         std::string out;
         for (char c : (" " + text)) {
             if (c == ' ')

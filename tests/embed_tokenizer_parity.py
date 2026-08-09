@@ -40,6 +40,16 @@ CORPUS = {
         "He said “hello” — then left…",
         "The range is 10–20 items · see § 4",
     ],
+    # The characters the nmt_nfkc charsmap actually targets. Fullwidth forms
+    # and U+3000 are routine in Japanese and Chinese text, which is what makes
+    # this more than an ellipsis edge case.
+    "charsmap": [
+        "ＡＢＣ　１２３ のテスト",          # fullwidth Latin/digits + U+3000
+        "価格は￥１２３４です",              # fullwidth yen + digits
+        "ﬁle ﬂow and the ① item",
+        "重さ㎏と㈱の表記",
+        "続き‥そして…終わり",
+    ],
 }
 
 
@@ -78,35 +88,52 @@ def main():
         if not os.path.exists(gguf):
             print("  SKIP: gguf not present")
             continue
-        r = subprocess.run([dump_bin, gguf, corpus_path], capture_output=True, text=True)
-        if r.returncode != 0:
-            print(f"  SKIP: dumper rc={r.returncode}\n{r.stderr[-600:]}")
+        arms, kind = {}, "?"
+        for arm, val in (("historical", "0"), ("hf-norm", "1")):
+            r = subprocess.run([dump_bin, gguf, corpus_path], capture_output=True, text=True,
+                               env=dict(os.environ, CRISPEMBED_SPM_HF_NORM=val))
+            if r.returncode != 0:
+                print(f"  SKIP: dumper rc={r.returncode}\n{r.stderr[-600:]}")
+                arms = {}
+                break
+            kind = next((ln.split("=")[1] for ln in r.stderr.splitlines()
+                         if ln.startswith("tokenizer_kind=")), "?")
+            arms[arm] = [[int(x) for x in ln.split()] if ln.strip() else []
+                         for ln in r.stdout.splitlines()]
+        if not arms:
             continue
-        kind = next((ln.split("=")[1] for ln in r.stderr.splitlines()
-                     if ln.startswith("tokenizer_kind=")), "?")
-        ours = [[int(x) for x in ln.split()] if ln.strip() else [] for ln in r.stdout.splitlines()]
 
         tok = AutoTokenizer.from_pretrained(repo)
         ref = [tok(s)["input_ids"] for s in lines]
-        if len(ours) != len(ref):
-            print(f"  SKIP: dumper returned {len(ours)} lines for {len(ref)} inputs")
+        if any(len(a) != len(ref) for a in arms.values()):
+            print(f"  SKIP: dumper line count does not match {len(ref)} inputs")
             continue
 
+        names = list(arms)
         print(f"  tokenizer_kind={kind}  (1=WordPiece 2=SentencePiece 3=BPE)")
-        print(f"  {'section':<12} {'exact':>8}  {'len match':>10}")
+        print(f"  {'section':<12} " + "  ".join(f"{a:>14}" for a in names))
         for sec in sections:
             idx = [i for i, o in enumerate(owner) if o == sec]
-            ex = sum(1 for i in idx if ours[i] == ref[i])
-            lm = sum(1 for i in idx if len(ours[i]) == len(ref[i]))
-            print(f"  {sec:<12} {ex:>4}/{len(idx):<3} {lm:>7}/{len(idx):<3}")
-        tot = sum(1 for i in range(len(lines)) if ours[i] == ref[i])
-        print(f"  {'TOTAL':<12} {tot:>4}/{len(lines):<3}")
-        if tot != len(lines):
+            cells = [f"{sum(1 for i in idx if arms[a][i] == ref[i]):>3}/{len(idx):<3}" for a in names]
+            print(f"  {sec:<12} " + "  ".join(f"{c:>14}" for c in cells))
+        tot = {a: sum(1 for i in range(len(lines)) if arms[a][i] == ref[i]) for a in names}
+        print(f"  {'TOTAL':<12} " + "  ".join(f"{str(tot[a]) + '/' + str(len(lines)):>14}" for a in names))
+
+        # Gate: printable-ASCII must be identical across arms and HF-exact.
+        ascii_idx = [i for i, o in enumerate(owner) if o == "ascii"]
+        if any(arms["historical"][i] != arms["hf-norm"][i] for i in ascii_idx):
+            print("  GATE FAIL: the normalizer changed ASCII tokenization")
+            fails += 1
+        if tot["hf-norm"] < tot["historical"]:
+            print("  GATE FAIL: hf-norm agrees with HF on fewer sentences")
+            fails += 1
+        if tot["hf-norm"] != len(lines):
             for i in range(len(lines)):
-                if ours[i] != ref[i]:
+                if arms["hf-norm"][i] != ref[i]:
                     print(f"    DIFF [{owner[i]}] {lines[i][:44]!r}")
                     print(f"      HF   ({len(ref[i])}): {tok.convert_ids_to_tokens(ref[i])[:14]}")
-                    print(f"      ours ({len(ours[i])}): {tok.convert_ids_to_tokens(ours[i])[:14]}")
+                    print(f"      ours ({len(arms['hf-norm'][i])}): "
+                          f"{tok.convert_ids_to_tokens(arms['hf-norm'][i])[:14]}")
                     break
             fails += 1
     return fails

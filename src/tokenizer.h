@@ -150,6 +150,23 @@ public:
         add_space_prefix_ = add_space_prefix;
     }
 
+    // Apply the SentencePiece `Precompiled` (nmt_nfkc charsmap) normalizer
+    // before segmentation — see core/spm_norm.h. Every XLM-R-family Unigram
+    // model declares it and we implemented none of it, so `…` tokenized to
+    // three <unk> instead of the single `...`, and every fullwidth form and
+    // U+3000 went through unnormalized.
+    //
+    // OFF by default at this layer and enabled per consumer, because only the
+    // embedding path has been measured against HF. The clip_text (SigLIP)
+    // path carries the SAME charsmap but wraps it in Lowercase/Strip steps we
+    // do not implement, so flipping it there needs its own A/B first.
+    void set_hf_normalize(bool on) { hf_normalize_ = on; }
+
+private:
+    // Applies the charsmap when enabled; identity otherwise.
+    std::string hf_normalize_text(const std::string & text) const;
+
+public:
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
     // Look up the surface form of a token by id. Returns an empty string
@@ -177,6 +194,7 @@ private:
     int max_token_len_ = 64;       // max byte length of any vocab token
     bool bpe_merge_ = false;       // SentencePiece-BPE bigram merge (Gemma/Llama)
     bool add_space_prefix_ = true; // prepend leading ▁ dummy prefix (XLM-R)
+    bool hf_normalize_ = false;    // HF Precompiled/nmt_nfkc charsmap (opt-in per consumer)
 
     std::vector<int> tokenize_text(const std::string & text) const; // Unigram / Viterbi
     std::vector<int> tokenize_bpe(const std::string & text) const;  // SentencePiece-BPE merge

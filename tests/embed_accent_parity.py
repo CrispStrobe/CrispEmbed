@@ -34,7 +34,8 @@ import onnxruntime as ort
 from huggingface_hub import hf_hub_download
 from transformers import AutoTokenizer
 
-MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+MODEL = os.environ.get("PARITY_HF_REPO", "sentence-transformers/all-MiniLM-L6-v2")
+GATES = os.environ.get("PARITY_GATES", "CRISPEMBED_WORDPIECE_HF_NORM,CRISPEMBED_WORDPIECE_HF_PRETOK,CRISPEMBED_WORDPIECE_HF_UNK").split(",")
 
 ASCII = [
     "The quick brown fox jumps over the lazy dog",
@@ -56,13 +57,29 @@ NON_LATIN = [
     "He said “hello” — then left…",
     "Tokyo東京 is 100€ per night",
 ]
+# The SentencePiece nmt_nfkc charsmap material (fullwidth forms, U+3000,
+# ligatures, squared units, ellipsis). Only meaningful for an SPM model.
+CHARSMAP = [
+    "ＡＢＣ　１２３ のテスト",
+    "価格は￥１２３４です",
+    "ﬁle ﬂow and the ① item",
+    "重さ㎏と㈱の表記",
+    "続き‥そして…終わり",
+]
 
 
 def ref_embed(sess, tok, texts):
     out = []
     for t in texts:
         enc = tok(t, return_tensors="np")
-        feed = {i.name: enc[i.name].astype(np.int64) for i in sess.get_inputs() if i.name in enc}
+        # Some exports declare token_type_ids even for XLM-R, which does not
+        # use them; feed zeros rather than dropping the input.
+        feed = {}
+        for i in sess.get_inputs():
+            if i.name in enc:
+                feed[i.name] = enc[i.name].astype(np.int64)
+            else:
+                feed[i.name] = np.zeros_like(enc["input_ids"], dtype=np.int64)
         hidden = sess.run(None, feed)[0]  # (1, T, H)
         mask = enc["attention_mask"].astype(np.float32)[..., None]
         v = (hidden * mask).sum(1) / np.maximum(mask.sum(1), 1e-9)
@@ -72,12 +89,10 @@ def ref_embed(sess, tok, texts):
 
 
 def crisp_embed(binary, gguf, texts, gate):
-    # All three WordPiece parity gates move together here: "0" is the fully
-    # pre-fix tokenizer, "1" is the shipped default.
-    env = dict(os.environ,
-               CRISPEMBED_WORDPIECE_HF_NORM=gate,
-               CRISPEMBED_WORDPIECE_HF_PRETOK=gate,
-               CRISPEMBED_WORDPIECE_HF_UNK=gate)
+    # Every gate in GATES moves together: "0" is the fully pre-fix tokenizer,
+    # "1" is the shipped default. Defaults to the three WordPiece gates; set
+    # PARITY_GATES=CRISPEMBED_SPM_HF_NORM for a SentencePiece model.
+    env = dict(os.environ, **{g: gate for g in GATES})
     out = []
     for t in texts:
         r = subprocess.run([binary, "-m", gguf, "--json", t],
@@ -98,7 +113,10 @@ def main():
                                 providers=["CPUExecutionProvider"])
 
     fails = 0
-    for name, texts in (("ASCII", ASCII), ("ACCENTED", ACCENTED), ("NON_LATIN", NON_LATIN)):
+    SECTIONS = [("ASCII", ASCII), ("ACCENTED", ACCENTED), ("NON_LATIN", NON_LATIN)]
+    if os.environ.get("PARITY_CHARSMAP"):
+        SECTIONS.append(("CHARSMAP", CHARSMAP))
+    for name, texts in SECTIONS:
         ref = ref_embed(sess, tok, texts)
         old = crisp_embed(binary, gguf, texts, "0")
         new = crisp_embed(binary, gguf, texts, "1")
@@ -121,9 +139,13 @@ def main():
                 print("  GATE FAIL: the fix moved an ASCII embedding")
                 fails += 1
         else:
-            print(f"  {name} gate: mean cos vs reference {m_old:.6f} -> {m_new:.6f}")
-            if m_new <= m_old:
-                print(f"  GATE FAIL: {name} is not closer to the reference")
+            # Fail on a REGRESSION, not on equality. A section the fix does not
+            # target should come out unchanged, and demanding strict
+            # improvement there turns a correct no-op into a red gate.
+            verdict = "unchanged" if m_new == m_old else ("closer" if m_new > m_old else "WORSE")
+            print(f"  {name} gate: mean cos vs reference {m_old:.6f} -> {m_new:.6f}  ({verdict})")
+            if m_new < m_old - 1e-9:
+                print(f"  GATE FAIL: {name} moved AWAY from the reference")
                 fails += 1
     return fails
 
