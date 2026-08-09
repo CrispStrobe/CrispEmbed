@@ -2,7 +2,9 @@
 
 #include "tokenizer.h"
 
+#include "core/bert_norm.h"
 #include "core/bert_pretok.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
 #include <cctype>
@@ -146,10 +148,29 @@ std::vector<int> WordPieceTokenizer::wordpiece(const std::string & word) const {
 }
 
 std::vector<std::string> WordPieceTokenizer::split_words(const std::string & text) const {
+    // HF's BertNormalizer runs strip_accents + lowercase BEFORE the
+    // pre-tokenizer splits, and for an uncased model (`lowercase: true`,
+    // `strip_accents: null`) stripping is ON — `strip_accents.unwrap_or(
+    // lowercase)`. The old per-BYTE std::tolower did neither to a multi-byte
+    // sequence, so `café`/`Müller`/`über` became `caf`+[UNK] / `m`+[UNK] /
+    // [UNK] instead of the single in-vocab tokens `cafe`/`muller`/`uber`
+    // (docs/LANGUAGES.md). See core/bert_norm.h.
+    //
+    // Default ON, because the change is provably confined to non-ASCII input:
+    // core_bert::lower_strip_accents is exactly std::tolower over all of
+    // ASCII (asserted at table-generation time and in tests/test_bert_norm.cpp),
+    // so no pure-ASCII text tokenizes differently than it did before.
+    // `CRISPEMBED_WORDPIECE_HF_NORM=0` restores the historical per-byte
+    // lowercase for bit-exact comparison against pre-fix output.
+    static const bool hf_norm_off = core_env::explicitly_off("CRISPEMBED_WORDPIECE_HF_NORM");
+    const bool hf_norm = do_lower_case_ && !hf_norm_off;
+    const std::string normalized = hf_norm ? core_bert::lower_strip_accents(text) : std::string();
+    const std::string & src = hf_norm ? normalized : text;
+
     if (bert_pretok_) {
         // HF BertNormalizer + BertPreTokenizer (tokenizer.ggml.pre = "bert").
-        std::vector<std::string> words = core_bert::pretokenize(text);
-        if (do_lower_case_) {
+        std::vector<std::string> words = core_bert::pretokenize(src);
+        if (do_lower_case_ && !hf_norm) {
             for (auto & w : words)
                 for (auto & c : w) c = (char)std::tolower((unsigned char)c);
         }
@@ -160,8 +181,8 @@ std::vector<std::string> WordPieceTokenizer::split_words(const std::string & tex
     // tokenizes through this exact loop.
     std::vector<std::string> words;
     std::string current;
-    for (size_t i = 0; i < text.size(); i++) {
-        unsigned char c = text[i];
+    for (size_t i = 0; i < src.size(); i++) {
+        unsigned char c = src[i];
         if (std::isspace(c)) {
             if (!current.empty()) {
                 words.push_back(current);
@@ -174,7 +195,9 @@ std::vector<std::string> WordPieceTokenizer::split_words(const std::string & tex
             }
             words.push_back(std::string(1, (char)c));
         } else {
-            current += do_lower_case_ ? (char)std::tolower(c) : (char)c;
+            // hf_norm already lowercased (Unicode-aware); the byte tolower is
+            // only the legacy path's own casing step.
+            current += (do_lower_case_ && !hf_norm) ? (char)std::tolower(c) : (char)c;
         }
     }
     if (!current.empty()) words.push_back(current);

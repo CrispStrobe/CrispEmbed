@@ -659,6 +659,13 @@ target_include_directories(test-bpe-pretokenize PRIVATE src)
 add_executable(test-bert-pretokenize tests/test_bert_pretokenize.cpp)
 target_include_directories(test-bert-pretokenize PRIVATE src)
 
+# Hermetic: core/bert_norm.h — HF BertNormalizer's strip_accents+lowercase for
+# uncased WordPiece models (the accented-Latin [UNK] fix). Goldens captured
+# from HF's own Rust normalizer; also pins the ASCII invariant that makes the
+# default safe. Links tokenizer.cpp for the end-to-end WordPiece cases.
+add_executable(test-bert-norm tests/test_bert_norm.cpp src/tokenizer.cpp)
+target_include_directories(test-bert-norm PRIVATE src)
+
 # Hermetic: core/imatrix_alias.h — the F7 naming contract between the
 # runtime's pre-merged QKV tensor and the quantizer's imatrix alias lookup.
 add_executable(test-imatrix-alias tests/test_imatrix_alias.cpp)
