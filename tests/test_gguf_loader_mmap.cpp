@@ -2,7 +2,8 @@
 // Builds a small GGUF, loads it both ways on the CPU backend (which advertises
 // buffer_from_host_ptr), and asserts the tensors are byte-identical and match
 // the values written. Validates the no-copy path is actually taken and that
-// free_weights() cleans up (incl. the mmap) without crashing.
+// free_weights() releases the mapping — asked of the kernel, not inferred from
+// the call returning.
 
 #include "core/gguf_loader.h"
 #include "core/clean_exit.h"
@@ -13,11 +14,68 @@
 
 #include <cmath>
 #include <cstdio>
+#include <climits>
 #include <cstring>
 #include <string>
 #include <vector>
 
+#if defined(__APPLE__)
+#include <libproc.h>
+#include <sys/proc_info.h>
+#include <unistd.h>
+#elif defined(__linux__)
+#include <fstream>
+#endif
+
 static const char * kPath = "/tmp/crispembed_test_loader_mmap.gguf";
+
+// The kernel names a region by its resolved path, so the comparison has to be
+// made against the same. On macOS /tmp is a symlink to /private/tmp, which is
+// enough on its own to make every region look like a stranger's.
+static std::string resolved_path(const char * path) {
+#if defined(_WIN32)
+    return std::string(path);
+#else
+    char buf[PATH_MAX];
+    return realpath(path, buf) ? std::string(buf) : std::string(path);
+#endif
+}
+
+// How many regions of this process are backed by `path`. The no-copy path keeps
+// the weight file mapped for the buffer's lifetime, so this is the exact way to
+// ask whether the mapping went away — no footprint threshold, nothing to settle.
+// Returns (size_t)-1 where the platform offers no region enumeration, which the
+// caller treats as "cannot assert here".
+static size_t count_regions_backed_by(const std::string & path) {
+#if defined(__APPLE__)
+    // PROC_PIDREGIONPATHINFO returns the region and its backing path in one
+    // record. proc_regionfilename() alone is not usable: asked about the base of
+    // an anonymous region it answers with the file of the next region above,
+    // counting an unrelated neighbour as a mapping of this file.
+    size_t n = 0;
+    uint64_t addr = 0;
+    for (;;) {
+        struct proc_regionwithpathinfo rpi;
+        if (proc_pidinfo(getpid(), PROC_PIDREGIONPATHINFO, addr, &rpi, sizeof(rpi)) != (int)sizeof(rpi)) break;
+        if (rpi.prp_vip.vip_path[0] != '\0' && path == rpi.prp_vip.vip_path) n++;
+        const uint64_t next = rpi.prp_prinfo.pri_address + rpi.prp_prinfo.pri_size;
+        if (next <= addr) break; // no forward progress; stop rather than spin
+        addr = next;
+    }
+    return n;
+#elif defined(__linux__)
+    size_t n = 0;
+    const size_t len = path.size();
+    std::ifstream maps("/proc/self/maps");
+    std::string line;
+    while (std::getline(maps, line))
+        if (line.size() > len && line.compare(line.size() - len, len, path) == 0) n++;
+    return n;
+#else
+    (void)path;
+    return (size_t)-1;
+#endif
+}
 
 static float expected(int i) {
     return sinf((float)i * 0.013f) + 0.5f;
@@ -101,8 +159,31 @@ static int crispembed_test_main() {
         if (!ok) fails++;
     }
 
+    // The mapping is keyed to the backend buffer, so free_weights reaches it
+    // through release_weight_buffer rather than through mw.mmap_addr. Check the
+    // kernel, not the field: a desync between where the region is registered
+    // and where it is taken would leave the file mapped and clear the field
+    // anyway.
+    const std::string kAbs = resolved_path(kPath);
+    const size_t mapped_before = count_regions_backed_by(kAbs);
     core_gguf::free_weights(cw);
-    core_gguf::free_weights(mw); // also unmaps
+    core_gguf::free_weights(mw);
+    if (mapped_before == (size_t)-1) {
+        printf("region enumeration unavailable on this platform — mapping release not asserted\n");
+    } else if (mapped_before < 1) {
+        // Positive control. Without it the zero below would also be satisfied
+        // by a load that never mapped the file in the first place.
+        fprintf(stderr, "FAIL: no-copy load left no mapping to release (found %zu regions)\n", mapped_before);
+        fails++;
+    } else {
+        const size_t mapped_after = count_regions_backed_by(kAbs);
+        printf("  weight file regions: %zu while loaded, %zu after free_weights\n", mapped_before, mapped_after);
+        if (mapped_after != 0) {
+            fprintf(stderr, "FAIL: free_weights left %zu mapping(s) of %s\n", mapped_after, kPath);
+            fails++;
+        }
+    }
+
     ggml_backend_free(backend);
     remove(kPath);
 
