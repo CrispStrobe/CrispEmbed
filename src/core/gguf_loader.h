@@ -167,8 +167,37 @@ using IsGpuTensor = bool (*)(const char * tensor_name, void * user);
 bool load_weights_split(const char * path, ggml_backend_t gpu_backend, ggml_backend_t cpu_backend, IsGpuTensor is_gpu,
                         void * user, const char * model_tag, WeightLoad & out);
 
+// Free a backend buffer that came from one of this loader's weight-loading
+// entry points, releasing the host mmap behind it when there is one.
+//
+// USE THIS INSTEAD OF ggml_backend_buffer_free() FOR ANY BUFFER OBTAINED FROM
+// load_weights() / load_weights_split(), including after the buffer has been
+// moved into a model struct. On the no-copy path
+// (`load_weights(..., try_mmap=true)` on a device advertising
+// buffer_from_host_ptr) the backend buffer is a view onto a host mapping the
+// backend does not own — buffer_from_host_ptr has no deallocator parameter —
+// so freeing the buffer alone leaves the weight file mapped for the life of
+// the process. free_weights() reaches the same mapping through WeightLoad, but
+// only for a caller that still holds the whole struct; a caller that moved
+// `buf` into its model has this entry point and nothing else.
+//
+// Semantics:
+//   * A null handle is a no-op, and the caller's handle is nulled on return,
+//     so a second call cannot double-free or double-unmap.
+//   * A buffer with no recorded mapping is the ordinary case — the copy path
+//     maps nothing that outlives the load — and is released like any other
+//     backend buffer.
+//   * The backend buffer is freed before the region is unmapped, so a
+//     device-side view of the pages never outlives them.
+//
+// This is also the entry point CrispASR's shared `crisp_audio` source calls,
+// so the name and behaviour have to hold in both repos — see the cross-repo
+// contract note above.
+void release_weight_buffer(ggml_backend_buffer_t & buf);
+
 // Free a WeightLoad's resources. Call when the model is being destroyed
-// and the buffer/context are not held elsewhere.
+// and the buffer/context are not held elsewhere. Releases every buffer
+// through release_weight_buffer().
 void free_weights(WeightLoad & wl);
 
 // ---------------------------------------------------------------------------
