@@ -7,6 +7,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <map>
+#include <mutex>
 
 #if defined(_WIN32)
 #include <io.h>
@@ -201,8 +203,9 @@ std::vector<uint8_t> kv_u8_array(gguf_context * gctx, const char * key) {
 
 namespace {
 
-// Platform unmap, shared by MappedFile's destructor and free_weights() (the
-// no-copy path transfers the mapping into WeightLoad, which unmaps on free).
+// Platform unmap, shared by MappedFile's destructor and release_weight_buffer()
+// (the no-copy path transfers the mapping to the backend buffer, which unmaps
+// when that buffer is released).
 void core_unmap(void * base, size_t size) {
     if (!base) return;
 #if defined(__EMSCRIPTEN__)
@@ -213,6 +216,44 @@ void core_unmap(void * base, size_t size) {
 #else
     ::munmap(base, size);
 #endif
+}
+
+// Which host mapping belongs to which backend buffer.
+//
+// On the no-copy path the backend buffer is a view onto pages the backend does
+// not own: ggml_backend_dev_buffer_from_host_ptr has no deallocator parameter,
+// so freeing the buffer releases the view and nothing else. WeightLoad carries
+// mmap_addr/mmap_len for the caller that keeps the whole struct, but a caller
+// that moves `buf` into its model and lets the WeightLoad die drops the only
+// record of the mapping — and eleven of the models in src/ tear down that way.
+// Keying the region to the buffer instead means the mapping is released by
+// whoever releases the buffer, whichever of the two shapes the caller uses.
+struct mmap_region {
+    void * base = nullptr;
+    size_t size = 0;
+};
+
+std::mutex g_buf_mmap_mu;
+std::map<ggml_backend_buffer_t, mmap_region> g_buf_mmap;
+
+void register_buf_mmap(ggml_backend_buffer_t buf, void * base, size_t size) {
+    std::lock_guard<std::mutex> lk(g_buf_mmap_mu);
+    g_buf_mmap[buf] = { base, size };
+}
+
+// Look the region up and remove the entry in one critical section. A lookup
+// followed by a separate erase would let a second release of the same buffer
+// read the entry before the first erased it and unmap twice; it would also
+// race a concurrent load whose fresh buffer landed on the same address after
+// the free. A default-constructed region means no entry, which is the ordinary
+// case — the copy path maps nothing that outlives the load.
+mmap_region take_buf_mmap(ggml_backend_buffer_t buf) {
+    std::lock_guard<std::mutex> lk(g_buf_mmap_mu);
+    auto it = g_buf_mmap.find(buf);
+    if (it == g_buf_mmap.end()) return mmap_region{};
+    const mmap_region r = it->second;
+    g_buf_mmap.erase(it);
+    return r;
 }
 
 // Read a file slice into a backend tensor. Uses mmap on POSIX; falls back
@@ -350,7 +391,10 @@ bool load_weights(const char * path, ggml_backend_t backend, const char * model_
                     out.mmap_addr = mf.base;
                     out.mmap_len = mf.size;
                     out.used_mmap = true;
-                    mf.release(); // WeightLoad now owns the mapping
+                    // The buffer owns the mapping from here; the WeightLoad
+                    // fields above are a record of it, not a second owner.
+                    register_buf_mmap(buf, mf.base, mf.size);
+                    mf.release();
                     gguf_free(gctx);
                     return true;
                 }
@@ -630,23 +674,30 @@ bool load_weights_split(const char * path, ggml_backend_t gpu_backend, ggml_back
     return true;
 }
 
+void release_weight_buffer(ggml_backend_buffer_t & buf) {
+    if (!buf) return;
+    // Take the entry before the free, not after: between a free and a later
+    // erase, a concurrent load could receive a new buffer at the same address
+    // and register it, and the erase would then drop a live mapping's record.
+    const mmap_region r = take_buf_mmap(buf);
+    // Free the buffer first. On the no-copy path it is a view onto these pages,
+    // so unmapping them while it is alive would leave the device addressing
+    // unmapped memory.
+    ggml_backend_buffer_free(buf);
+    buf = nullptr;
+    core_unmap(r.base, r.size);
+}
+
 void free_weights(WeightLoad & wl) {
-    if (wl.buf) {
-        ggml_backend_buffer_free(wl.buf); // no-copy buffer doesn't own the pages
-        wl.buf = nullptr;
-    }
-    if (wl.buf_cpu) {
-        ggml_backend_buffer_free(wl.buf_cpu);
-        wl.buf_cpu = nullptr;
-    }
-    for (auto * b : wl.split_bufs) ggml_backend_buffer_free(b);
+    release_weight_buffer(wl.buf);
+    release_weight_buffer(wl.buf_cpu);
+    for (auto * b : wl.split_bufs) release_weight_buffer(b);
     wl.split_bufs.clear();
-    if (wl.mmap_addr) { // unmap after the buffer is freed
-        core_unmap(wl.mmap_addr, wl.mmap_len);
-        wl.mmap_addr = nullptr;
-        wl.mmap_len = 0;
-        wl.used_mmap = false;
-    }
+    // The mapping was released with its buffer above; these fields are the
+    // caller-visible record of the load, so clear them without unmapping again.
+    wl.mmap_addr = nullptr;
+    wl.mmap_len = 0;
+    wl.used_mmap = false;
     if (wl.ctx) {
         ggml_free(wl.ctx);
         wl.ctx = nullptr;
