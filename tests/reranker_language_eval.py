@@ -1,15 +1,11 @@
 #!/usr/bin/env python
-"""E2 — Japanese reranker eval for CrispEmbed cross-encoder rerankers.
+"""E2+E3 — Multilingual reranker eval for CrispEmbed cross-encoder rerankers.
 
-Shape: Japanese query + relevant Japanese doc + irrelevant Japanese doc.
+Shape per language: native query + relevant native doc + irrelevant native doc.
 Assert the relevant doc outranks, report the score gap (not just ordering).
 Include an English-only reranker as negative control.
 
-The three checks:
-  1. JA query + JA relevant doc scores HIGHER than JA irrelevant doc
-  2. Score gap is meaningful (not noise-level)
-  3. Negative control: English-only reranker may fail or produce
-     degenerate rankings on Japanese
+Languages: Japanese (E2, 2026-08-08), Arabic + Korean (E3, 2026-08-17).
 
 Usage:
     python tests/reranker_language_eval.py ./build/crispembed <models-dir> out.json
@@ -22,21 +18,51 @@ from pathlib import Path
 BIN = sys.argv[1]
 CACHE = Path(sys.argv[2]).expanduser()
 
-# Japanese fixture: query + relevant doc + irrelevant doc
-JA_CASES = [
-    {
-        "name": "cats-weather",
-        "query": "猫がソファで寝ている",  # cat sleeping on sofa
-        "relevant": "ソファーの上で猫が眠っています。家の中はとても静かです。",  # cat sleeping on sofa, house quiet
-        "irrelevant": "明日の東京の天気は雨の予報です。傘を持っていきましょう。",  # Tokyo weather forecast
-    },
-    {
-        "name": "cooking-sports",
-        "query": "日本料理の作り方",  # how to make Japanese food
-        "relevant": "味噌汁は大豆を発酵させた味噌と出汁で作る日本の伝統的なスープです。",  # miso soup recipe
-        "irrelevant": "サッカーの試合は午後三時から始まります。チケットはまだ買えます。",  # soccer match info
-    },
-]
+# Per-language fixtures: query + relevant doc + irrelevant doc
+LANG_CASES = {
+    "ja": [
+        {
+            "name": "ja-cats-weather",
+            "query": "猫がソファで寝ている",  # cat sleeping on sofa
+            "relevant": "ソファーの上で猫が眠っています。家の中はとても静かです。",  # cat sleeping on sofa, house quiet
+            "irrelevant": "明日の東京の天気は雨の予報です。傘を持っていきましょう。",  # Tokyo weather forecast
+        },
+        {
+            "name": "ja-cooking-sports",
+            "query": "日本料理の作り方",  # how to make Japanese food
+            "relevant": "味噌汁は大豆を発酵させた味噌と出汁で作る日本の伝統的なスープです。",  # miso soup recipe
+            "irrelevant": "サッカーの試合は午後三時から始まります。チケットはまだ買えます。",  # soccer match info
+        },
+    ],
+    "ar": [
+        {
+            "name": "ar-cats-weather",
+            "query": "قطة نائمة على الأريكة",  # cat sleeping on sofa
+            "relevant": "القطة تنام فوق الكنبة في غرفة الجلوس. البيت هادئ جداً.",  # cat sleeping on sofa, house quiet
+            "irrelevant": "توقعات الطقس تشير إلى أمطار غزيرة في طوكيو غداً.",  # Tokyo weather forecast
+        },
+        {
+            "name": "ar-cooking-sports",
+            "query": "طريقة طبخ الأرز العربي",  # how to cook Arabic rice
+            "relevant": "الكبسة هي طبق أرز سعودي تقليدي يُطهى مع اللحم والبهارات والطماطم.",  # kabsa recipe
+            "irrelevant": "مباراة كرة القدم تبدأ في الساعة الثالثة بعد الظهر. التذاكر متوفرة.",  # soccer match info
+        },
+    ],
+    "ko": [
+        {
+            "name": "ko-cats-weather",
+            "query": "고양이가 소파에서 자고 있다",  # cat sleeping on sofa
+            "relevant": "고양이가 거실 소파 위에서 잠들어 있습니다. 집 안이 매우 조용합니다.",  # cat sleeping on sofa, house quiet
+            "irrelevant": "내일 도쿄의 날씨는 비가 올 것으로 예상됩니다. 우산을 챙기세요.",  # Tokyo weather forecast
+        },
+        {
+            "name": "ko-cooking-sports",
+            "query": "한국 음식 만드는 방법",  # how to make Korean food
+            "relevant": "김치찌개는 김치와 돼지고기를 넣고 끓이는 한국의 전통 찌개입니다.",  # kimchi jjigae recipe
+            "irrelevant": "축구 경기는 오후 세 시에 시작합니다. 아직 티켓을 구할 수 있습니다.",  # soccer match info
+        },
+    ],
+}
 
 # English control case (should work on all rerankers)
 EN_CASE = {
@@ -82,8 +108,9 @@ for fname, label, multi in MODELS:
 
     model_results = {"label": label, "multi": multi, "cases": []}
 
-    # Run Japanese cases
-    for case in JA_CASES:
+    # Run all language cases
+    all_cases = [(lang, c) for lang, cases in LANG_CASES.items() for c in cases]
+    for lang, case in all_cases:
         docs = [case["relevant"], case["irrelevant"]]
         rows, err = rerank(path, case["query"], docs)
         if rows is None:
@@ -94,24 +121,12 @@ for fname, label, multi in MODELS:
         score_rel = None
         score_irr = None
         for r in rows:
-            if r.get("index") == 0 or r.get("document_index") == 0:
-                score_rel = r.get("score", r.get("relevance_score"))
-            elif r.get("index") == 1 or r.get("document_index") == 1:
-                score_irr = r.get("score", r.get("relevance_score"))
-
-        if score_rel is None or score_irr is None:
-            # Try positional: first row = highest, sorted by score
-            if len(rows) >= 2:
-                scores = [r.get("score", r.get("relevance_score", 0)) for r in rows]
-                # We need to figure out which score belongs to which doc
-                # The output is sorted by score desc, with index or document_index
-                for r in rows:
-                    idx = r.get("index", r.get("document_index", -1))
-                    s = r.get("score", r.get("relevance_score"))
-                    if idx == 0:
-                        score_rel = s
-                    elif idx == 1:
-                        score_irr = s
+            idx = r.get("index", r.get("document_index", -1))
+            s = r.get("score", r.get("relevance_score"))
+            if idx == 0:
+                score_rel = s
+            elif idx == 1:
+                score_irr = s
 
         if score_rel is None or score_irr is None:
             print(f"FAIL (parse): {label} / {case['name']}: could not extract scores from {rows}", flush=True)
@@ -122,6 +137,7 @@ for fname, label, multi in MODELS:
         correct = score_rel > score_irr
         cr = {
             "name": case["name"],
+            "lang": lang,
             "score_relevant": score_rel,
             "score_irrelevant": score_irr,
             "gap": gap,
