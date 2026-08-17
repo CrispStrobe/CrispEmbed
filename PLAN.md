@@ -333,19 +333,32 @@ embedder "wrong model" trap does NOT apply to any shipped reranker.
 
 Harness: `tests/reranker_language_eval.py`.
 
-#### E3. Languages beyond Japanese [Opus] — DEFERRED (box overloaded 2026-08-08)
+#### E3. Languages beyond Japanese [Opus] — DONE 2026-08-17
 
-The matrix is JA-only. The harness extends via a five-line `TEXTS` edit, so the
-cost is per-language fixture authoring, not code. Priority order should follow
-what the OCR lane already ships (deu/fra/spa/ita/por/nld/rus/ara/jpn/kor/chi)
-so both halves of the matrix line up. **Arabic and Korean are the
-highest-signal next picks**: different scripts, different tokenizer failure
-modes than kana, and Arabic adds RTL/normalization questions kana does not.
+Arabic and Korean added to both embedding and reranker harnesses. All cached
+multilingual models (10 embedders, 3 rerankers) evaluated on both new
+languages. Results in `docs/LANGUAGES.md`.
 
-Deferred from the 2026-08-08 VPS session: box was at load 12+ with 1.2 GB
-available and unstable git object store. The work is mechanical (fixture
-authoring + harness run) and can be picked up by any agent with the models
-cached.
+**Embedding findings:**
+- All multilingual models pass all 3 checks for both AR and KO.
+- **Arabic margins are narrower than JA across the board** (granite-107m:
+  AR +0.12 vs JA +0.53). This is a real signal, not a test artifact — the
+  negative controls confirm the test discriminates (EN-only models show
+  near-chance cross-lingual and tiny paraphrase margins on AR).
+- **Korean tracks close to Japanese.** EN-only models are even MORE degenerate
+  on KO than JA (unrelated cosine 0.99 vs 0.33), confirming total tokenizer
+  collapse.
+- `paraphrase-multilingual-MiniLM-L12-v2` has the best AR cross-lingual
+  score (+1.04 margin) despite weak AR paraphrase (+0.76).
+
+**Reranker findings:**
+- All 3 rerankers pass all AR and KO cases. Gaps slightly narrower than JA
+  (jina AR cooking +1.32 is the smallest gap but still clearly positive).
+- Same "no EN-only reranker control" caveat as E2.
+
+**Models not tested (SKIP, not FAIL):** bge-m3 (iq4_xs), Qwen3-Embedding,
+LFM2.5, nomic-embed, arctic-embed — not cached on VPS. These are multilingual
+models with 250k SentencePiece tokenizers; no reason to expect failure.
 
 #### E4. A defensible quality ranking needs MTEB, not this harness [Opus, offload]
 
