@@ -1,21 +1,23 @@
 #!/usr/bin/env python
-"""Japanese sanity eval for CrispEmbed embedding models.
+"""Multilingual sanity eval for CrispEmbed embedding models.
 
-Three checks per model, all relative (no ground-truth vectors needed):
+Three checks per (model, language) pair, all relative (no ground-truth
+vectors needed):
 
-  1. JA paraphrase   cos(ja_cat_a, ja_cat_b) > cos(ja_cat_a, ja_weather)
-     -- monolingual Japanese semantics are represented at all.
-  2. Cross-lingual   cos(ja_cat_a, en_cat)   > cos(ja_cat_a, en_weather)
-     -- JA<->EN alignment (what a "multilingual" claim is FOR).
-  3. Non-degenerate  cos(ja_cat_a, ja_weather) < 0.95
+  1. Paraphrase       cos(X_cat_a, X_cat_b) > cos(X_cat_a, X_weather)
+     -- monolingual semantics are represented at all.
+  2. Cross-lingual    cos(X_cat_a, en_cat)  > cos(X_cat_a, en_weather)
+     -- language<->EN alignment (what a "multilingual" claim is FOR).
+  3. Non-degenerate   cos(X_cat_a, X_weather) < 0.95
      -- the UNK-collapse failure mode: a model whose tokenizer maps all
-        Japanese to the same handful of tokens produces near-identical
-        vectors for UNRELATED Japanese, which would fake a pass on (1)
-        if only the positive pair were measured.
+        non-English text to the same handful of tokens produces near-
+        identical vectors for UNRELATED sentences, faking a pass on (1).
 
 Margins are reported, not just pass/fail: a 0.001 margin is not a pass.
 English-only models are included as a NEGATIVE CONTROL -- if they also
 "pass", the test is not measuring what it claims to.
+
+Languages: Japanese (E1, 2026-08-08), Arabic + Korean (E3, 2026-08-17).
 """
 import json
 import subprocess
@@ -27,13 +29,30 @@ BIN = sys.argv[1]
 CACHE = Path(sys.argv[2]).expanduser()
 
 TEXTS = {
+    # English anchors (shared across all language checks)
+    "en_cat": "A cat is sleeping on the sofa.",
+    "en_weather": "It will rain in Tokyo tomorrow.",
+    # Japanese (E1, 2026-08-08)
     "ja_cat_a": "猫がソファの上で眠っている。",
     "ja_cat_b": "ソファーで猫が寝ています。",
     "ja_weather": "明日の東京の天気は雨でしょう。",
-    "en_cat": "A cat is sleeping on the sofa.",
-    "en_weather": "It will rain in Tokyo tomorrow.",
+    # Arabic (E3, 2026-08-17) — RTL script, different normalization
+    "ar_cat_a": "القطة نائمة على الأريكة.",
+    "ar_cat_b": "تنام القطة فوق الكنبة.",
+    "ar_weather": "سيكون الطقس ممطراً في طوكيو غداً.",
+    # Korean (E3, 2026-08-17) — Hangul, agglutinative morphology
+    "ko_cat_a": "고양이가 소파 위에서 자고 있다.",
+    "ko_cat_b": "소파에서 고양이가 잠을 자고 있습니다.",
+    "ko_weather": "내일 도쿄의 날씨는 비가 올 것입니다.",
 }
 KEYS = list(TEXTS)
+
+# Per-language check definitions: (lang_code, cat_a_key, cat_b_key, weather_key)
+LANG_CHECKS = [
+    ("ja", "ja_cat_a", "ja_cat_b", "ja_weather"),
+    ("ar", "ar_cat_a", "ar_cat_b", "ar_weather"),
+    ("ko", "ko_cat_a", "ko_cat_b", "ko_weather"),
+]
 
 MODELS = [
     # (file, label, claimed_multilingual)
@@ -92,28 +111,42 @@ for fname, label, multi in MODELS:
         print(f"FAIL (run): {label}: {err}", flush=True)
         results.append({"label": label, "multi": multi, "error": err})
         continue
-    para = cos(emb["ja_cat_a"], emb["ja_cat_b"])
-    ja_unrel = cos(emb["ja_cat_a"], emb["ja_weather"])
-    xl_pos = cos(emb["ja_cat_a"], emb["en_cat"])
-    xl_neg = cos(emb["ja_cat_a"], emb["en_weather"])
-    r = {
-        "label": label, "multi": multi,
-        "ja_para": para, "ja_unrel": ja_unrel, "ja_margin": para - ja_unrel,
-        "xl_pos": xl_pos, "xl_neg": xl_neg, "xl_margin": xl_pos - xl_neg,
-        "c1_ja_semantics": para > ja_unrel,
-        "c2_crosslingual": xl_pos > xl_neg,
-        "c3_nondegenerate": ja_unrel < 0.95,
-    }
+
+    r = {"label": label, "multi": multi, "langs": {}}
+    print(f"\n{label}", flush=True)
+
+    for lang, cat_a, cat_b, weather in LANG_CHECKS:
+        para = cos(emb[cat_a], emb[cat_b])
+        unrel = cos(emb[cat_a], emb[weather])
+        xl_pos = cos(emb[cat_a], emb["en_cat"])
+        xl_neg = cos(emb[cat_a], emb["en_weather"])
+        lr = {
+            f"{lang}_para": para, f"{lang}_unrel": unrel,
+            f"{lang}_margin": para - unrel,
+            f"{lang}_xl_pos": xl_pos, f"{lang}_xl_neg": xl_neg,
+            f"{lang}_xl_margin": xl_pos - xl_neg,
+            f"c1_{lang}_semantics": para > unrel,
+            f"c2_{lang}_crosslingual": xl_pos > xl_neg,
+            f"c3_{lang}_nondegenerate": unrel < 0.95,
+        }
+        r["langs"][lang] = lr
+        # Also copy to top level for backward compat with JA-only consumers
+        r.update(lr)
+        LANG_UPPER = lang.upper()
+        print(
+            f"    C1 {LANG_UPPER} paraphrase   "
+            f"{'PASS' if lr[f'c1_{lang}_semantics'] else 'FAIL'}  "
+            f"para={para:.4f} unrel={unrel:.4f} margin={para - unrel:+.4f}\n"
+            f"    C2 {LANG_UPPER} cross-lingual "
+            f"{'PASS' if lr[f'c2_{lang}_crosslingual'] else 'FAIL'}  "
+            f"{lang}~en_same={xl_pos:.4f} {lang}~en_other={xl_neg:.4f} "
+            f"margin={xl_pos - xl_neg:+.4f}\n"
+            f"    C3 {LANG_UPPER} non-degenerate "
+            f"{'PASS' if lr[f'c3_{lang}_nondegenerate'] else 'FAIL'}  "
+            f"unrelated-{LANG_UPPER} cos={unrel:.4f}",
+            flush=True)
+
     results.append(r)
-    print(
-        f"{label}\n"
-        f"    C1 JA paraphrase   {'PASS' if r['c1_ja_semantics'] else 'FAIL'}  "
-        f"para={para:.4f} unrel={ja_unrel:.4f} margin={r['ja_margin']:+.4f}\n"
-        f"    C2 cross-lingual   {'PASS' if r['c2_crosslingual'] else 'FAIL'}  "
-        f"ja~en_same={xl_pos:.4f} ja~en_other={xl_neg:.4f} margin={r['xl_margin']:+.4f}\n"
-        f"    C3 non-degenerate  {'PASS' if r['c3_nondegenerate'] else 'FAIL'}  "
-        f"unrelated-JA cos={ja_unrel:.4f}",
-        flush=True)
 
 out = Path(sys.argv[3])
 out.write_text(json.dumps(results, indent=2, ensure_ascii=False))

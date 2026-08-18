@@ -421,45 +421,138 @@ vectors. English-only models stay in the model list on purpose as a negative
 control: a language test that every model passes is measuring nothing.
 Extending it to another language is a five-line edit of `TEXTS`.
 
-## Reranker models — Japanese (verified 2026-08-08)
+## Embedding models — Arabic + Korean (E3, verified 2026-08-17)
 
-Rerankers had never been tested on non-English text. All three shipped
-rerankers now verified on Japanese (2 fixture queries, scored against a
-relevant vs irrelevant JA document):
+Extended the JA matrix to Arabic (RTL script, different normalization) and
+Korean (Hangul, agglutinative morphology). Same three-check structure, same
+negative controls.
 
-| Model (quant) | JA cats query | JA cooking query | EN control | Tokenizer |
-|---|--:|--:|--:|---|
-| `bge-reranker-v2-m3` (q4_k) | +17.13 | +10.07 | +10.62 | SentencePiece 250k |
-| `jina-reranker-v2-base-multilingual` (q4_k) | +4.57 | +2.14 | +4.09 | SentencePiece 250k |
-| `bge-reranker-base` (q4_k) | +14.75 | +14.84 | +13.65 | SentencePiece 250k |
+### Arabic
+
+| Model (quant tested) | AR paraphrase | AR cross-lingual | Verdict |
+|---|--:|--:|---|
+| `granite-embedding-107m-multilingual` (q4_k) | 0.812 vs 0.690 | 0.676 vs 0.621 | pass, narrow margins |
+| `paraphrase-multilingual-MiniLM-L12-v2` (q8_0) | 0.730 vs -0.026 | 0.984 vs -0.060 | **best cross-lingual** |
+| `multilingual-e5-large` (q8_0, no prefix) | 0.976 vs 0.861 | 0.875 vs 0.759 | strong (narrow margin) |
+| `multilingual-e5-base` (q8_0, no prefix) | 0.961 vs 0.807 | 0.894 vs 0.737 | strong (narrow margin) |
+| `multilingual-e5-small` (q8_0, no prefix) | 0.953 vs 0.862 | 0.880 vs 0.790 | pass (narrowest) |
+| `granite-embedding-278m-multilingual` (q8_0) | 0.807 vs 0.659 | 0.658 vs 0.595 | pass, narrow |
+| `jina-v5-small` (q4_k) | 0.715 vs 0.098 | 0.776 vs 0.095 | **strong** |
+| `jina-v5-nano` (q4_k) | 0.707 vs 0.052 | 0.774 vs 0.070 | strong |
+| `all-MiniLM-L6-v2` (q4_k) | 0.774 vs 0.728 | 0.027 vs 0.154 | **DO NOT USE for AR** |
+| `all-mpnet-base-v2` (q8_0) | 0.850 vs 0.801 | -0.031 vs 0.044 | **DO NOT USE for AR** |
+
+**Key finding — Arabic margins are narrower than Japanese across the board.**
+The granite-107m AR margin is +0.12 (vs JA +0.53), and several models cluster
+in the 0.09–0.15 range. This does not mean Arabic is broken — all multilingual
+models pass all three checks — but the separation is thinner, so a retrieval
+system on Arabic may need a stronger model (e5-large or paraphrase-multi) than
+it would for Japanese.
+
+**Negative controls work:** both EN-only models show near-chance cross-lingual
+scores (negative margins) and AR paraphrase margins under 0.05.
+
+### Korean
+
+| Model (quant tested) | KO paraphrase | KO cross-lingual | Verdict |
+|---|--:|--:|---|
+| `granite-embedding-107m-multilingual` (q4_k) | 0.890 vs 0.526 | 0.801 vs 0.510 | **strong** |
+| `paraphrase-multilingual-MiniLM-L12-v2` (q8_0) | 0.941 vs -0.050 | 0.748 vs -0.044 | **strongest separation** |
+| `multilingual-e5-large` (q8_0, no prefix) | 0.988 vs 0.822 | 0.883 vs 0.740 | strong (narrow margin) |
+| `multilingual-e5-base` (q8_0, no prefix) | 0.973 vs 0.791 | 0.882 vs 0.720 | strong (narrow margin) |
+| `multilingual-e5-small` (q8_0, no prefix) | 0.967 vs 0.803 | 0.840 vs 0.726 | pass |
+| `granite-embedding-278m-multilingual` (q8_0) | 0.890 vs 0.465 | 0.799 vs 0.458 | **strong** |
+| `jina-v5-small` (q4_k) | 0.938 vs 0.042 | 0.830 vs 0.039 | **strong, sharp** |
+| `jina-v5-nano` (q4_k) | 0.946 vs 0.037 | 0.853 vs 0.046 | **strong, sharp** |
+| `all-MiniLM-L6-v2` (q4_k) | 1.000 vs 0.990 | 0.049 vs 0.167 | **DO NOT USE for KO** |
+| `all-mpnet-base-v2` (q8_0) | 1.000 vs 0.992 | -0.015 vs 0.141 | **DO NOT USE for KO** |
+
+**Key finding — Korean tracks close to Japanese** for most models, with strong
+margins. The jina models show particularly sharp separation (0.04 unrelated
+cosine). However, the EN-only controls are **even more degenerate on Korean
+than Japanese**: unrelated-KO cosine is 0.99 (vs JA 0.33), meaning the
+30k WordPiece tokenizer collapses ALL Korean input to near-identical vectors.
+The `CRISPEMBED_WARN_UNK` warning fires on these models for Korean input.
+
+**Cross-language comparison (margin on monolingual paraphrase check):**
+
+| Model | JA margin | AR margin | KO margin |
+|---|--:|--:|--:|
+| granite-107m-multi | +0.53 | +0.12 | +0.36 |
+| paraphrase-multi-MiniLM | +1.04 | +0.76 | +0.99 |
+| e5-large (no prefix) | +0.18 | +0.12 | +0.17 |
+| jina-v5-small | +0.88 | +0.62 | +0.90 |
+
+Arabic is consistently the weakest language; Korean is close to Japanese.
+
+## Reranker models — JA + AR + KO (verified 2026-08-08, extended 2026-08-17)
+
+All three shipped rerankers verified on Japanese (E2, 2026-08-08) and extended
+to Arabic + Korean (E3, 2026-08-17). Each language has 2 fixture queries,
+scored against a relevant vs irrelevant document in that language.
+
+| Model (quant) | JA cats | JA cooking | AR cats | AR cooking | KO cats | KO cooking | EN ctrl | Tokenizer |
+|---|--:|--:|--:|--:|--:|--:|--:|---|
+| `bge-reranker-v2-m3` (q4_k) | +17.13 | +10.07 | +10.90 | +9.64 | +16.17 | +9.04 | +10.62 | SentencePiece 250k |
+| `jina-reranker-v2-base-multilingual` (q4_k) | +4.57 | +2.14 | +3.56 | +1.32 | +3.56 | +1.76 | +4.09 | SentencePiece 250k |
+| `bge-reranker-base` (q4_k) | +14.75 | +14.84 | +11.84 | +7.93 | +11.52 | +7.92 | +13.65 | SentencePiece 250k |
 
 Columns show the score gap (relevant minus irrelevant document score); positive
-= correct ranking. All three pass.
+= correct ranking. All three rerankers pass all three languages.
 
-**Evidence caveat:** unlike the embedder table above, these results have **no
-negative control**. The embedder table includes English-only models that
-demonstrably fail on Japanese (bit-identical vectors, cross-lingual FAIL),
-proving the test can distinguish working from broken. Here, all three
-rerankers use a 250k SentencePiece/XLM-R vocabulary — there is no
-English-only 30k-WordPiece reranker in the registry to serve as a control.
-`bge-reranker-base` was intended as one, but turned out to be multilingual at
-the tokenizer level. This means we know Japanese reranking produces correct
-orderings, but we cannot demonstrate what a failure looks like on the same
-harness. The embedder table carries stronger evidence.
+**AR/KO findings:** Arabic and Korean gaps are slightly narrower than Japanese
+on `bge-reranker-v2-m3` (AR cats +10.9 vs JA +17.1) but still large. The
+jina reranker shows a narrower Arabic cooking gap (+1.32) — the smallest gap
+in the table, but still clearly positive. Korean tracks close to Arabic.
 
-The absence of an English-only reranker also means the "wrong model for the
-language" trap that affects English-only embedders does NOT apply to any
-shipped reranker — all have multilingual tokenization.
+**Evidence caveat (unchanged):** all three rerankers use 250k SentencePiece/
+XLM-R vocabularies. There is no English-only 30k-WordPiece reranker in the
+registry to serve as a negative control. `bge-reranker-base` was intended as
+one but turned out to be multilingual at the tokenizer level. The embedder
+table carries stronger evidence because it includes genuine EN-only controls.
 
-The `CRISPEMBED_WARN_UNK` warning would not fire on any reranker fed Japanese,
-because the SentencePiece tokenizer does not produce `[UNK]` tokens for Japanese
-(it has byte-fallback). This is correct behaviour — the warning is only useful
-when the tokenizer is genuinely out-of-vocabulary.
+The `CRISPEMBED_WARN_UNK` warning would not fire on any reranker, for any
+language — SentencePiece has byte-fallback, so no `[UNK]` tokens are produced.
+This is correct behaviour.
 
 Fixture: `tests/reranker_language_eval.py`. Reproduce:
 ```bash
 python tests/reranker_language_eval.py ./build/crispembed <models-dir> out.json
 ```
+
+## Vocabulary scanner vs measured eval — cross-reference (E7, 2026-08-17)
+
+`tools/scan_model_languages.py` counts script-range code points in a GGUF's
+tokenizer vocabulary. For **OCR recognizers** this is reliable (the dictionary
+gates emittable characters). For **embedders** it is not — the E3 results
+prove it is unreliable in **both directions**:
+
+| Model | Tokenizer | kana | hangul | arabic | JA eval | KO eval | AR eval |
+|---|---|---:|---:|---:|---|---|---|
+| granite-107m-multi | SP 250k | 9729 | 9917 | 61802 | PASS strong | PASS strong | PASS narrow |
+| paraphrase-multi | SP 250k | 9729 | 9917 | 61802 | PASS best | PASS strong | PASS best XL |
+| e5-small | SP 250k | 9729 | 9917 | 61802 | PASS | PASS | PASS |
+| jina-v5-small | BPE 152k | **0** | **0** | **0** | PASS strong | PASS strong | PASS strong |
+| jina-v5-nano | BPE 128k | **0** | **0** | **0** | PASS strong | PASS strong | PASS strong |
+| all-MiniLM-L6-v2 | WP 30k | 188 | 70 | 91 | BROKEN | BROKEN | BROKEN |
+| all-mpnet-base-v2 | WP 30k | 188 | 70 | 91 | BROKEN | BROKEN | BROKEN |
+
+**False positive (non-zero but broken):** all-MiniLM-L6-v2 has kana=188,
+hangul=70, arabic=91 in its vocabulary, yet produces degenerate embeddings
+for all three scripts (bit-identical JA vectors, KO unrelated cos=0.99).
+
+**False negative (zero but works):** jina-v5-small/nano scan as latin-only
+(kana=0, hangul=0, arabic=0), yet pass all three language checks with strong
+margins (JA paraphrase +0.88, KO +0.90, AR +0.62). Root cause: BPE
+tokenizers encode non-Latin scripts as byte sequences — the script characters
+don't appear as code points in the token strings, but the model handles them
+via byte-level encoding.
+
+**E7 decision: do NOT surface scanner output as a `--list-models` column for
+embedders or rerankers.** The scanner remains valid and useful for OCR
+recognizers (where the dictionary genuinely gates output characters). For
+embedders, use `tests/embed_language_eval.py` — the measured eval tables
+above are authoritative.
 
 ## How to verify a dict yourself
 
