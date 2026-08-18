@@ -1,15 +1,18 @@
 #!/usr/bin/env python
-"""Scan a recognizer GGUF's dictionary and report the scripts it can emit.
+"""Scan a GGUF's tokenizer vocabulary and report script-range coverage.
 
-This is the executable form of the "How to verify a dict yourself" recipe in
-docs/LANGUAGES.md, and the source of the registry's `languages` field
-(examples/cli/model_mgr.cpp, shown by --list-models).
+For OCR recognizers this IS the registry's `languages` field — the dictionary
+genuinely gates which characters the model can emit. Zero coverage is
+conclusive: PP-OCRv6's tiny recognizer has ZERO kana and silently fails on
+Japanese.
 
-Coverage is NECESSARY BUT NOT SUFFICIENT for quality: a dict containing kana
-says the model *can* emit kana, never that it does so well. Zero coverage is
-the sufficient direction — a model with no kana cannot read Japanese at all,
-whatever the marketing says. That asymmetry is the whole point of the field:
-PP-OCRv6's tiny recognizer has ZERO kana and used to fail silently.
+For embedding/reranker models the scan is UNRELIABLE IN BOTH DIRECTIONS and
+MUST NOT be surfaced as a --list-models column (E7 decision, 2026-08-17):
+  - False positive: all-MiniLM-L6-v2 scans kana=188 yet bit-identical JA
+  - False negative: jina-v5 scans kana=0 yet passes JA/AR/KO strongly
+Root cause: BPE tokenizers encode non-Latin text as byte sequences (no
+script code points in the tokens), while 30k WordPiece vocabs carry script
+tokens the model can't functionally use. Use embed_language_eval.py instead.
 
 Usage:
     python tools/scan_model_languages.py MODEL.gguf [MODEL.gguf ...]
@@ -60,13 +63,16 @@ def read_tokens(path):
 
 
 EMBED_CAVEAT = (
-    "  NOTE (embedding/reranker GGUF): for these models script coverage is a MUCH\n"
-    "  weaker signal than for an OCR recognizer, where the dictionary genuinely\n"
-    "  gates which characters can be emitted. Counter-example measured 2026-08-08:\n"
-    "  all-MiniLM-L6-v2 scans kana=188 yet returns BIT-IDENTICAL embeddings for two\n"
-    "  different Japanese sentences. A non-zero count here does NOT mean the model\n"
-    "  works in that script -- only a zero count is conclusive (it cannot). Verify\n"
-    "  with tests/embed_language_eval.py; see docs/LANGUAGES.md."
+    "  NOTE (embedding/reranker GGUF): for these models script coverage is\n"
+    "  UNRELIABLE IN BOTH DIRECTIONS — do not use it to judge language support.\n"
+    "  False positive: all-MiniLM-L6-v2 scans kana=188 yet returns BIT-IDENTICAL\n"
+    "  embeddings for two different Japanese sentences (E1, 2026-08-08).\n"
+    "  False negative: jina-v5-small scans kana=0 hangul=0 arabic=0 yet PASSES\n"
+    "  all three language checks for JA/AR/KO with strong margins (E3, 2026-08-17).\n"
+    "  Root cause: BPE tokenizers encode non-Latin scripts as byte sequences that\n"
+    "  don't contain script-range code points, while 30k WordPiece vocabs contain\n"
+    "  script tokens they can't use. Use tests/embed_language_eval.py instead;\n"
+    "  see docs/LANGUAGES.md."
 )
 
 

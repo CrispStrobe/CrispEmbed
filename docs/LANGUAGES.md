@@ -346,6 +346,40 @@ Fixture: `tests/reranker_language_eval.py`. Reproduce:
 python tests/reranker_language_eval.py ./build/crispembed <models-dir> out.json
 ```
 
+## Vocabulary scanner vs measured eval — cross-reference (E7, 2026-08-17)
+
+`tools/scan_model_languages.py` counts script-range code points in a GGUF's
+tokenizer vocabulary. For **OCR recognizers** this is reliable (the dictionary
+gates emittable characters). For **embedders** it is not — the E3 results
+prove it is unreliable in **both directions**:
+
+| Model | Tokenizer | kana | hangul | arabic | JA eval | KO eval | AR eval |
+|---|---|---:|---:|---:|---|---|---|
+| granite-107m-multi | SP 250k | 9729 | 9917 | 61802 | PASS strong | PASS strong | PASS narrow |
+| paraphrase-multi | SP 250k | 9729 | 9917 | 61802 | PASS best | PASS strong | PASS best XL |
+| e5-small | SP 250k | 9729 | 9917 | 61802 | PASS | PASS | PASS |
+| jina-v5-small | BPE 152k | **0** | **0** | **0** | PASS strong | PASS strong | PASS strong |
+| jina-v5-nano | BPE 128k | **0** | **0** | **0** | PASS strong | PASS strong | PASS strong |
+| all-MiniLM-L6-v2 | WP 30k | 188 | 70 | 91 | BROKEN | BROKEN | BROKEN |
+| all-mpnet-base-v2 | WP 30k | 188 | 70 | 91 | BROKEN | BROKEN | BROKEN |
+
+**False positive (non-zero but broken):** all-MiniLM-L6-v2 has kana=188,
+hangul=70, arabic=91 in its vocabulary, yet produces degenerate embeddings
+for all three scripts (bit-identical JA vectors, KO unrelated cos=0.99).
+
+**False negative (zero but works):** jina-v5-small/nano scan as latin-only
+(kana=0, hangul=0, arabic=0), yet pass all three language checks with strong
+margins (JA paraphrase +0.88, KO +0.90, AR +0.62). Root cause: BPE
+tokenizers encode non-Latin scripts as byte sequences — the script characters
+don't appear as code points in the token strings, but the model handles them
+via byte-level encoding.
+
+**E7 decision: do NOT surface scanner output as a `--list-models` column for
+embedders or rerankers.** The scanner remains valid and useful for OCR
+recognizers (where the dictionary genuinely gates output characters). For
+embedders, use `tests/embed_language_eval.py` — the measured eval tables
+above are authoritative.
+
 ## How to verify a dict yourself
 
 The recipe below now ships as a tool, and its output IS the registry field:

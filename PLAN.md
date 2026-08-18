@@ -420,31 +420,30 @@ batch-encode paths. No hot-path cost (integer count over already-materialized
 token array, one-shot per context). Tested: triggers on JA text with
 all-MiniLM-L6-v2, silent on English text, silent with `=0`.
 
-#### E7. Embedder vocabulary script-scan — PARTLY DONE, and it needs a health warning [Opus]
+#### E7. Embedder vocabulary script-scan — DONE 2026-08-17 (decision: do NOT surface)
 
-`tools/scan_model_languages.py` now reads `tokenizer.ggml.tokens` too, so one
-scanner covers OCR recognizers AND embedding/reranker GGUFs (2026-08-08).
-**But the first scan produced a counter-example that changes what this field
-may claim**: `all-MiniLM-L6-v2` scans `kana=188 cjk=488` — and we PROVED it
-returns bit-identical vectors for two different Japanese sentences. So for
-embedders, vocabulary coverage is a far weaker signal than for a recognizer
-(where the dictionary genuinely gates emittable characters): only the ZERO
-direction is conclusive. The tool now prints that caveat automatically on
-embedding GGUFs. **Do NOT surface this as a `Scripts`/language column in
-`--list-models` for embedders without that warning attached** — it would label
-all-MiniLM-L6-v2 "kana-capable", which is exactly the trap this whole thread
-was about. Remaining work: decide whether a caveated column is better than no
-column at all (arguably not), and wire it if so.
+**Decision: do NOT wire scanner output as a `--list-models` column for
+embedders/rerankers.** The E3 cross-reference proved the scanner is unreliable
+in BOTH directions for embedding models:
 
-#### E7b. (superseded framing) Give embedders the "Scripts" treatment [Opus]
+- **False positive**: all-MiniLM-L6-v2 scans kana=188 but JA is broken
+- **False negative**: jina-v5-small scans kana=0 but JA passes strongly
 
-`tools/scan_model_languages.py` scans an OCR model's dictionary and its output
-IS the registry `Scripts` column. The analogous embedder scan (script coverage
-of the tokenizer vocabulary) would replace upstream language claims with a
-measured field in `--list-models`. Same caveat as the OCR side, and it must be
-stated: vocabulary coverage is NECESSARY, not SUFFICIENT — only the zero
-direction is conclusive (a 30k WordPiece vocab scanning near-zero for kana is
-exactly the E5 case).
+Root cause: BPE tokenizers (jina, Qwen-style) encode non-Latin scripts as
+byte sequences — no script code points in the token strings. 30k WordPiece
+vocabs carry script tokens the model can't functionally use.
+
+The scanner remains valid for OCR recognizers (where the dictionary genuinely
+gates emittable characters — the PP-OCRv6 zero-kana finding that started this
+thread). Cross-reference table in `docs/LANGUAGES.md`. Scanner caveat updated
+in `tools/scan_model_languages.py`.
+
+#### E7b. (superseded) Give embedders the "Scripts" treatment [Opus] — CLOSED by E7 decision
+
+Superseded by E7 decision above: the scanner is unreliable in both directions
+for embedders (BPE false negatives + WordPiece false positives), so a `Scripts`
+column would be actively misleading. The measured eval tables in LANGUAGES.md
+are the authoritative source for embedder language support.
 
 ### Non-negotiable protocols (full text in the dev guide)
 
@@ -475,6 +474,7 @@ races). Remove the row when the branch lands.
 | 2026-08-07 | *(kernel `chr1s4/crispembed-dbnet-rt` v1; flip merged `7713c6ad`)* | **Round N+4 queue #2 DONE — dbnet auto-CUDA default LANDED.** The CUDA decoded-text roundtrip passed: fox byte-identical between det arms; scan_page 295=295 regions, both arms deterministic, 4/295 lines differ with IDENTICAL recognized strings (only a 1px coord + ±0.01 conf digits — the proven Δ≤1px surfacing in metadata; arm-vs-arm CER 0.0004 is entirely those digits). Flip in `src/ocr_detect.cpp` (O11 pattern): CUDA ⇒ GPU det, Metal/CPU default unchanged (byte-identical pre/post-flip on the no-CUDA M1); `OCR_DETECT_USE_GPU=0/1` + `FORCE_CPU` keep precedence. Evidence PERFORMANCE.md top | **DONE** |
 | 2026-08-08 | *(landed on `main` via `feat/embed-language-matrix`, `e78d4b63`)* | **E5+E6+E1+E2 ALL DONE.** E5: WordPiece CJK+European accent parity measured+guarded (`9648dfac`). E6: UNK-ratio warning shipped (`1b5870da`). E1: 5/7 new embedders verified JA, all pass (`44936954`). E2: 3/3 rerankers pass JA, no EN-only control exists (`87be0626`). European NFD accent-strip divergence documented user-facing (`e78d4b63`). | **DONE** |
 | 2026-08-17 | *(on `feat/embed-language-matrix`, `e5b04e79`)* | **E3 DONE.** Arabic + Korean added to embedding + reranker harnesses. All multilingual models pass all checks for both languages. Arabic margins narrower than JA/KO across the board (key finding). EN-only controls confirm test validity (KO cosine 0.99 = total collapse). Also fixed batch-encode `CRISPEMBED_WARN_UNK` gate to use `core_env::explicitly_off` (`febd2e46`). | **DONE** |
+| 2026-08-18 | *(on `feat/embed-language-matrix`)* | **E7 DONE.** Scanner cross-referenced against E1/E3 measured results: unreliable in BOTH directions for embedders (BPE false negatives: jina kana=0 but passes; WP false positives: MiniLM kana=188 but broken). Decision: do NOT surface as `--list-models` column for embedders. Scanner caveat updated. E7b closed. | **DONE** |
 | 2026-08-05 | *(queued — launches after G4's model-verify finishes; one heavy model consumer at a time on this box)* | **Claimed (G6=F6):** quantify `DS2_KV_F16` vs F32 KV — decoded CER, memory, decode time, both backends, guard-on (default), both decode arms, against the `tests/results/f1/` baseline (T14-era numbers no longer reproduce post-tokenfix) | **QUEUED** |
 | 2026-08-01 | `feat/ocr-engine-parity` / `.claude/worktrees/feat-ocr-engine-parity` | **Picked:** end-to-end head-to-head parity (CER/WER **and** latency) of the CrispEmbed OCR lanes against system Tesseract 5.5.2, Python EasyOCR 1.7.2, and Python PaddleOCR 2.10.0. See "OCR external head-to-head" below for the harness, the reachability fixes, and the first measured gaps. Touches `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp`, `src/crispembed.{h,cpp}` engine-id mapping, `src/ocr_orchestrator.{h,cpp}` (new `engine::easyocr` case only), and new `tests/` scripts — **no OCR graph/runtime math** | **IN PROGRESS** |
 | 2026-07-31 | `feat/easyocr-ggml` / `.codex/worktrees/feat-easyocr-ggml` | **Picked:** unify CRAFT/DBNet/Tesseract-style segmentation with EasyOCR lines and LayoutLM/Tesseract words; then validate downstream OCR handoffs. Latest checkpoint: fresh Latin Gen1/Gen2 and English fixed-width references pass; only English’s actual width-128 scan retains the documented dynamic-width row-wise logits residual | **IN PROGRESS** |
