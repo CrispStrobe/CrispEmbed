@@ -2392,8 +2392,8 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
             int64_t ki = gguf_find_key(g, "general.architecture");
             if (ki >= 0) {
                 std::string arch = gguf_get_val_str(g, ki);
-                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "gemma-embedding" || arch == "llama" ||
-                          arch == "qwen2" || arch == "mistral" || arch == "phi3");
+                is_dec = (arch == "qwen3" || arch == "gemma3" || arch == "gemma-embedding" || arch == "ministral3" ||
+                          arch == "llama" || arch == "qwen2" || arch == "mistral" || arch == "phi3");
                 is_lfm2 = (arch == "lfm2");
             }
         }
@@ -2473,6 +2473,13 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
         const bool own_g2 = !gg.g || (reparse2 && reparse2[0] && std::strcmp(reparse2, "0") != 0);
         gguf_context * g2 = own_g2 ? gguf_init_from_file(model_path, gp2) : gg.g;
         if (g2) {
+            auto strg = [&](const char * key) -> std::string {
+                const int64_t k = gguf_find_key(g2, key);
+                return k >= 0 ? gguf_get_val_str(g2, k) : "";
+            };
+            ctx->colbert_query_prefix = strg("colbert.query_prefix");
+            ctx->colbert_doc_prefix = strg("colbert.document_prefix");
+            ctx->colbert_similarity_fn = strg("colbert.similarity_fn_name");
             const int64_t ki2 = gguf_find_key(g2, "tokenizer.ggml.tokens");
             const int64_t mi2 = gguf_find_key(g2, "tokenizer.ggml.merges");
             if (ki2 >= 0) {
@@ -2551,6 +2558,14 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
                 } else {
                     ctx->bpe_tokenizer.load(vocab, merges, eos_id, pad_id, suffix_id, bos_id, is_spm_bpe,
                                             ctx->dec->n_max_pos);
+                    const std::string tok_pre = core_gguf::kv_str(g2, "tokenizer.ggml.pre", "");
+                    if (tok_pre == "ministral3" || tok_pre == "tekken") {
+                        ctx->bpe_tokenizer.set_ministral_regex_pretok(true);
+                    } else if (tok_pre == "o200k") {
+                        ctx->bpe_tokenizer.set_o200k_regex_pretok(true, false);
+                    } else if (tok_pre == "modern-bert" || tok_pre == "gpt2") {
+                        ctx->bpe_tokenizer.set_gpt2_regex_pretok(true);
+                    }
                     ctx->use_bpe = true;
                     fprintf(stderr, "crispembed: %s BPE tokenizer (%d tokens, %zu merges)\n",
                             is_spm_bpe ? "SentencePiece" : "GPT-2", nv, merges.size());

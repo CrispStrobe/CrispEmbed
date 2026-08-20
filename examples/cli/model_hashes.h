@@ -112,6 +112,10 @@ static const ModelHash k_model_hashes[] = {
       "8eafc1b41558e31ea547dd2a9ee908fc136bd8fa8b29aa3ec0061e64429f8de7" },
     { "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-iq4_xs.gguf",
       "d2b2888b15abf7a406c424758f7d94ad66857901c57c48a988f18a62e0252a63" },
+    { "https://huggingface.co/cstr/most-embed-de-GGUF/resolve/main/most-embed-de-q4_k-attn-q8.gguf",
+      "d290a8d6bcdb509ad5aa84fbb95417bc94b5681772e810ad8c39668ed66f78f0" },
+    { "https://huggingface.co/cstr/most-embed-de-GGUF/resolve/main/most-embed-de-q8_0.gguf",
+      "5e9b8bce8b54e5468db07c876a39e58fd0fde9e06be5c127b750bc96045aba32" },
     { "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-q4_k-imatrix.gguf",
       "80ad52e03880532a0afa753dca70cbf3435093822a435321e9be7bfb175f53ec" },
     { "https://huggingface.co/cstr/jina-v5-nano-GGUF/resolve/main/jina-v5-nano-iq4_xs.gguf",
@@ -236,8 +240,6 @@ static const ModelHash k_model_hashes[] = {
       "777b9a12bd606063d0af16decb6857681871a7ec4a8126fab6cec7ed4fc426a8" },
     { "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q8_0.gguf",
       "63e5a900e1605e3be3a96d94b6ac63f0f9f4efe66b2bef07890587b6412c443e" },
-    // -f7 re-collected imatrix (F7b, 87e11a4e): first sub-Q8 alias for this
-    // family, pinned after the local Metal+CPU cross-check (round 7).
     { "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q4_k-imatrix-f7.gguf",
       "21eadb97798caf5bc35cab8da5bd40e28220bc5d80d1eace29b65d61143af5ad" },
     { "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base-q8_0.gguf",
@@ -252,18 +254,8 @@ static const ModelHash k_model_hashes[] = {
       "3621123dc851f1bbb44f3daff21abe03a84ef2e84625fcc173d86c46ad17ac23" },
     { "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-q8_0.gguf",
       "424b590a8e353133b06d5f4bf44d0b8f1a2f6595b6c6ff97bb3cef198746a03f" },
-    { "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-q4_k-imatrix.gguf",
-      "c04e38c8aff02b7d93967f7efd67ff6112483fd4dc25ba66873a67595720af5f" },
-    // -f7 re-collected imatrix (F7b, 87e11a4e): attn q/k/v covered; re-pinned
-    // after the local Metal+CPU cross-check (round 7).
     { "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-q4_k-imatrix-f7.gguf",
       "7fe1439b668eb13a1ad10e6f72a77781b84240a608bb1a346beb4d6834a5f4b7" },
-    { "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0.gguf",
-      "901aa5f99210dd3ed0d6e9d8bd1e5511d587c5df43591f51a88458e1a02d53c3" },
-    { "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0.gguf",
-      "12ad024e86cb22d285e73adf1d510840826357e73a95a7460399a8e25f9b7b2d" },
-    // -g7c re-conversions (2026-08-05): the original artifacts were missing the
-    // DeBERTa ContextPooler stage — see tests/results/mxbai-gelu/SUMMARY.md.
     { "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
       "4dbf6645891bb8816e922025e634b1640b7e010ae2ab96d900d2c06d796a76b8" },
     { "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0-g7c.gguf",
@@ -466,6 +458,8 @@ static const ModelHash k_model_hashes[] = {
       "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613" },
     { "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
       "26e79849b1527426b9e56260c411b3ad39501a0075943e456d9790f1c25f7d2c" },
+    { "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-textcaps-q8_0.gguf",
+      "a22a344dacbf2426b62de8cb6ecc96d0094fe45eb40419c872faa17ea3f780d3" },
     { "https://huggingface.co/cstr/deepseek-ocr2-crispembed-GGUF/resolve/main/deepseek-ocr2-q4_k-stacked.gguf",
       "d1363c88a90d43bc912a041e53534c36e55ebc0591079070e5560534631db911" },
     { "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k-stacked.gguf",

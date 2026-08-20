@@ -363,6 +363,11 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
         if (suffix_id_ >= 0) {
             ids.push_back(suffix_id_);
         }
+    } else if (ministral_regex_pretok_) {
+        ids = core_bpe::tokenize_ministral(token_to_id_, merge_rank_, text);
+
+        if (bos_id_ >= 0) ids.insert(ids.begin(), bos_id_);
+        if (suffix_id_ >= 0) ids.push_back(suffix_id_);
     } else if (o200k_regex_pretok_) {
         // o200k_base ByteLevel (granite-embedding-97m-multilingual-r2). Same
         // shape as the GPT-2 branch below, but with the o200k split (case-aware

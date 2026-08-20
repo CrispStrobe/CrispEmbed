@@ -19,9 +19,42 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
+
+struct dec_rope_args {
+    int n_ctx_orig;
+    float freq_scale;
+    float ext_factor;
+    float attn_factor;
+    float beta_fast;
+    float beta_slow;
+};
+
+static dec_rope_args decoder_rope_args(const dec_model & m) {
+    if (m.rope_scaling_type != 1 || m.rope_scaling_factor <= 1.0f) {
+        return { 0, 1.0f, 0.0f, 1.0f, 0.0f, 0.0f };
+    }
+    const float ggml_mscale = 1.0f + 0.1f * std::log(m.rope_scaling_factor);
+    return { m.rope_original_context,
+             1.0f / m.rope_scaling_factor,
+             1.0f,
+             m.rope_attention_factor / ggml_mscale,
+             m.rope_beta_fast,
+             m.rope_beta_slow };
+}
+
+static std::vector<float> decoder_query_scales(const dec_model & m, const std::vector<int32_t> & positions) {
+    std::vector<float> scales(positions.size(), 1.0f);
+    if (m.llama4_attn_beta == 0.0f || m.llama4_original_context <= 0) return scales;
+    for (size_t i = 0; i < positions.size(); ++i) {
+        const int block = positions[i] / m.llama4_original_context;
+        scales[i] = 1.0f + m.llama4_attn_beta * std::log(1.0f + (float)block);
+    }
+    return scales;
+}
 
 bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * path, ggml_backend_t backend) {
     gguf_init_params gp = { true, nullptr };
@@ -61,7 +94,9 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * 
         int64_t ki = gguf_find_key(g, "general.architecture");
         if (ki >= 0) {
             std::string arch = gguf_get_val_str(g, ki);
-            if (arch == "gemma3" || arch == "gemma-embedding" || arch == "qwen3" || arch == "llama") arch_pfx = arch;
+            if (arch == "gemma3" || arch == "gemma-embedding" || arch == "qwen3" || arch == "ministral3" ||
+                arch == "llama")
+                arch_pfx = arch;
         }
     }
     auto a_u32 = [&](const char * suffix, int def) -> int {
@@ -90,6 +125,14 @@ bool load_decoder_model(dec_model & m, core_gguf::WeightLoad & wl, const char * 
     m.n_max_pos = a_u32("max_position_embeddings", a_u32("context_length", 8192));
     m.rms_norm_eps = a_f32("rms_norm_eps", a_f32("attention.layer_norm_rms_epsilon", 1e-6f));
     m.rope_theta = a_f32("rope_theta", a_f32("rope.freq_base", 10000.0f));
+    m.rope_scaling_type = a_u32("rope_scaling_type", a_u32("rope.scaling_type", 0));
+    m.rope_scaling_factor = a_f32("rope_scaling_factor", a_f32("rope.scaling_factor", 1.0f));
+    m.rope_original_context = a_u32("rope_original_context", a_u32("rope.original_context_length", 0));
+    m.rope_beta_fast = a_f32("rope_beta_fast", a_f32("rope.beta_fast", 32.0f));
+    m.rope_beta_slow = a_f32("rope_beta_slow", a_f32("rope.beta_slow", 1.0f));
+    m.rope_attention_factor = a_f32("rope_attention_factor", a_f32("rope.attention_factor", 1.0f));
+    m.llama4_attn_beta = a_f32("llama4_attn_beta", a_f32("attention.llama4_scaling_beta", 0.0f));
+    m.llama4_original_context = a_u32("llama4_original_context", a_u32("attention.llama4_original_context", 0));
     // Sliding-window alternating rope_theta (Gemma3-style): local layers use a shorter theta.
     // Stored as decoder.rope_theta_local (crisp) or {arch}.rope.freq_base_local (Ollama).
     m.rope_theta_local = a_f32("rope_theta_local", a_f32("rope.freq_base_local", 0.0f));
@@ -582,6 +625,12 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
         cur = ggml_scale(gctx, cur, m.embed_scale);
     }
 
+    const bool dump_layers = std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr;
+    if (dump_layers) {
+        ggml_set_name(cur, "post_embed");
+        ggml_set_output(cur);
+    }
+
     // Image-embed splice: replace token-embed rows at every image_token_id
     // position with the corresponding `image_embeds` row. We do this with a
     // host-prepared (1, T) keep-mask (0 at image positions, 1 elsewhere) and
@@ -648,6 +697,13 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
     ggml_set_name(pos, "pos_ids");
     ggml_set_input(pos);
 
+    ggml_tensor * query_scale = nullptr;
+    if (m.llama4_attn_beta != 0.0f && m.llama4_original_context > 0) {
+        query_scale = ggml_new_tensor_3d(gctx, GGML_TYPE_F32, 1, 1, T);
+        ggml_set_name(query_scale, "query_pos_scale");
+        ggml_set_input(query_scale);
+    }
+
     // Causal mask for flash_attn_ext: shared across all layers; bidirectional
     // models pass nullptr (full attention).  Shape (T, T) F16; 0.0 for positions
     // k ≤ q (attend), -INF for k > q (block).
@@ -686,6 +742,7 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
             layer_rope_theta = is_global ? m.rope_theta : m.rope_theta_local;
         }
 
+        const dec_rope_args ra = decoder_rope_args(m);
         if (use_mrope) {
             int sections[GGML_MROPE_SECTIONS] = {
                 m.mrope_section[0],
@@ -694,17 +751,18 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
                 0,
             };
             const int rope_mode = GGML_ROPE_TYPE_IMROPE;
-            Q = ggml_rope_multi(gctx, Q, pos, nullptr, head_dim, sections, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f,
-                                1.0f, 0.0f, 0.0f);
-            K = ggml_rope_multi(gctx, K, pos, nullptr, head_dim, sections, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f,
-                                1.0f, 0.0f, 0.0f);
+            Q = ggml_rope_multi(gctx, Q, pos, nullptr, head_dim, sections, rope_mode, ra.n_ctx_orig, layer_rope_theta,
+                                ra.freq_scale, ra.ext_factor, ra.attn_factor, ra.beta_fast, ra.beta_slow);
+            K = ggml_rope_multi(gctx, K, pos, nullptr, head_dim, sections, rope_mode, ra.n_ctx_orig, layer_rope_theta,
+                                ra.freq_scale, ra.ext_factor, ra.attn_factor, ra.beta_fast, ra.beta_slow);
         } else {
             int rope_mode = 2;
-            Q = ggml_rope_ext(gctx, Q, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
-                              0.0f);
-            K = ggml_rope_ext(gctx, K, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
-                              0.0f);
+            Q = ggml_rope_ext(gctx, Q, pos, nullptr, head_dim, rope_mode, ra.n_ctx_orig, layer_rope_theta,
+                              ra.freq_scale, ra.ext_factor, ra.attn_factor, ra.beta_fast, ra.beta_slow);
+            K = ggml_rope_ext(gctx, K, pos, nullptr, head_dim, rope_mode, ra.n_ctx_orig, layer_rope_theta,
+                              ra.freq_scale, ra.ext_factor, ra.attn_factor, ra.beta_fast, ra.beta_slow);
         }
+        if (query_scale) Q = ggml_mul(gctx, Q, query_scale);
 
         // Attention: flash_attn_ext (fused QKV, lower memory)
         Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
@@ -751,9 +809,25 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
         if (il < n_ds && ds_patches[il]) {
             cur = ggml_add(gctx, cur, ds_patches[il]);
         }
+
+        if (dump_layers) {
+            char layer_name[32];
+            std::snprintf(layer_name, sizeof(layer_name), "layer_%d", il);
+            ggml_set_name(cur, layer_name);
+            ggml_set_output(cur);
+        }
     }
 
-    if (m.output_norm) cur = rms_norm(cur, m.output_norm);
+    if (m.output_norm) {
+        cur = rms_norm(cur, m.output_norm);
+        if (dump_layers) {
+            ggml_set_name(cur, "final_norm");
+            ggml_set_output(cur);
+            // Preserve the final_norm snapshot name while retaining the
+            // production output contract. This copy exists in dump mode only.
+            cur = ggml_dup(gctx, cur);
+        }
+    }
 
     ggml_set_name(cur, "decoder_out");
     ggml_set_output(cur);
@@ -773,6 +847,7 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
         pos_data.resize(T);
         for (int t = 0; t < T; t++) pos_data[t] = t;
     }
+    const std::vector<float> query_scale_data = decoder_query_scales(m, pos_data);
 
     std::vector<float> in_keep_data;
     std::vector<float> in_patch_data;
@@ -826,6 +901,10 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
 
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), pos_data.data(), 0,
                                 pos_data.size() * sizeof(int32_t));
+        if (query_scale) {
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "query_pos_scale"), query_scale_data.data(), 0,
+                                    query_scale_data.size() * sizeof(float));
+        }
 
         if (m.gemma_norm) {
             std::vector<float> ones(H, 1.0f);
@@ -879,6 +958,9 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
 
         int32_t * pd = (int32_t *)pos->data;
         std::memcpy(pd, pos_data.data(), pos_data.size() * sizeof(int32_t));
+        if (query_scale) {
+            std::memcpy(query_scale->data, query_scale_data.data(), query_scale_data.size() * sizeof(float));
+        }
 
         if (ones_h) {
             float * d = (float *)ones_h->data;
@@ -917,6 +999,45 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
                 fprintf(stderr, "[decoder_embed-bench] compute: %.3f ms\n",
                         std::chrono::duration<double, std::milli>(t_comp1 - t_comp0).count());
             }
+        }
+    }
+
+    // --- Optional full intermediate dump for crispembed-diff ---
+    if (dump_layers) {
+        const char * dump_path = std::getenv("CRISPEMBED_DUMP_LAYERS_GGUF");
+        if (dump_path && *dump_path) {
+            std::vector<std::string> names = { "post_embed" };
+            for (int il = 0; il < m.n_layer; ++il) names.push_back("layer_" + std::to_string(il));
+            names.push_back("final_norm");
+
+            const size_t dump_bytes = (size_t)(names.size() + 2) * ggml_tensor_overhead() +
+                                      (size_t)names.size() * H * T * sizeof(float) + 1024 * 1024;
+            ggml_init_params dip = { dump_bytes, nullptr, false };
+            ggml_context * dctx = ggml_init(dip);
+            gguf_context * dg = dctx ? gguf_init_empty() : nullptr;
+            if (dg) {
+                gguf_set_val_str(dg, "general.architecture", "decoder_embed_dump");
+                gguf_set_val_u32(dg, "dump.n_layer", (uint32_t)m.n_layer);
+                gguf_set_val_u32(dg, "dump.n_embd", (uint32_t)H);
+                for (const std::string & name : names) {
+                    ggml_tensor * src = ggml_graph_get_tensor(gf, name.c_str());
+                    if (!src) continue;
+                    const size_t n = (size_t)ggml_nelements(src);
+                    ggml_tensor * dst = ggml_new_tensor_2d(dctx, GGML_TYPE_F32, src->ne[0], src->ne[1]);
+                    ggml_set_name(dst, name.c_str());
+                    if (use_sched)
+                        ggml_backend_tensor_get(src, dst->data, 0, n * sizeof(float));
+                    else
+                        std::memcpy(dst->data, src->data, n * sizeof(float));
+                    gguf_add_tensor(dg, dst);
+                }
+                if (!gguf_write_to_file(dg, dump_path, false))
+                    fprintf(stderr, "decoder_embed: failed to write layer dump '%s'\n", dump_path);
+                else
+                    fprintf(stderr, "decoder_embed: wrote layer dump -> %s\n", dump_path);
+                gguf_free(dg);
+            }
+            if (dctx) ggml_free(dctx);
         }
     }
 
@@ -1385,6 +1506,13 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
     ggml_set_name(pos, "pos_ids");
     ggml_set_input(pos);
 
+    ggml_tensor * query_scale = nullptr;
+    if (m.llama4_attn_beta != 0.0f && m.llama4_original_context > 0) {
+        query_scale = ggml_new_tensor_3d(gctx, GGML_TYPE_F32, 1, 1, T_total);
+        ggml_set_name(query_scale, "query_pos_scale");
+        ggml_set_input(query_scale);
+    }
+
     // Attention mask: [T_total, T_total, 1, 1] passed as kq_mask (F16 = 2x less memory)
     ggml_tensor * attn_mask = ggml_new_tensor_2d(gctx, GGML_TYPE_F16, T_total, T_total);
     ggml_set_name(attn_mask, "attn_mask");
@@ -1417,11 +1545,13 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
             layer_rope_theta = is_global ? m.rope_theta : m.rope_theta_local;
         }
 
+        const dec_rope_args ra = decoder_rope_args(m);
         int rope_mode = 2; // NEOX
-        Q = ggml_rope_ext(gctx, Q, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
-                          0.0f);
-        K = ggml_rope_ext(gctx, K, pos, nullptr, head_dim, rope_mode, 0, layer_rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
-                          0.0f);
+        Q = ggml_rope_ext(gctx, Q, pos, nullptr, head_dim, rope_mode, ra.n_ctx_orig, layer_rope_theta, ra.freq_scale,
+                          ra.ext_factor, ra.attn_factor, ra.beta_fast, ra.beta_slow);
+        K = ggml_rope_ext(gctx, K, pos, nullptr, head_dim, rope_mode, ra.n_ctx_orig, layer_rope_theta, ra.freq_scale,
+                          ra.ext_factor, ra.attn_factor, ra.beta_fast, ra.beta_slow);
+        if (query_scale) Q = ggml_mul(gctx, Q, query_scale);
 
         // Flash attention with explicit mask
         Q = ggml_permute(gctx, Q, 0, 2, 1, 3);
@@ -1472,6 +1602,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
     ggml_build_forward_expand(gf, cur);
 
     // --- Set inputs and compute ---
+    const std::vector<float> query_scale_data = decoder_query_scales(m, pos_data);
     if (use_sched) {
         ggml_backend_sched_reset(sched);
         if (!ggml_backend_sched_alloc_graph(sched, gf)) {
@@ -1487,6 +1618,10 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
 
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "tok_ids"), tok_data.data(), 0, T_total * sizeof(int32_t));
         ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos_ids"), pos_data.data(), 0, T_total * sizeof(int32_t));
+        if (query_scale) {
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "query_pos_scale"), query_scale_data.data(), 0,
+                                    query_scale_data.size() * sizeof(float));
+        }
         // Convert F32 mask to F16 for upload
         size_t mask_n = (size_t)T_total * T_total;
         std::vector<ggml_fp16_t> mask_f16(mask_n);
@@ -1508,6 +1643,9 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
         // CPU fallback
         memcpy(ids_t->data, tok_data.data(), T_total * sizeof(int32_t));
         memcpy(pos->data, pos_data.data(), T_total * sizeof(int32_t));
+        if (query_scale) {
+            memcpy(query_scale->data, query_scale_data.data(), query_scale_data.size() * sizeof(float));
+        }
         {
             size_t mask_n = (size_t)T_total * T_total;
             ggml_fp16_t * dst = (ggml_fp16_t *)attn_mask->data;

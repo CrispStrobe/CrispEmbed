@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert decoder-style embedding models (Qwen3/Gemma3) to GGUF.
+"""Convert decoder-style embedding models (Qwen3/Gemma3/Ministral3) to GGUF.
 
 Supports: Qwen3-Embedding, Octen-Embedding, F2LLM-v2, Jina v5, Harrier.
 These models use causal transformer decoders with last-token pooling.
@@ -69,7 +69,17 @@ def main():
                              "peak RAM vs float32 — required for 8B+ models "
                              "on 16 GB hosts like Kaggle. Use float32 only "
                              "if the upstream model's saved weights are f32 "
-                             "and you want exact round-trip.")
+                        "and you want exact round-trip.")
+    parser.add_argument("--license", default=None,
+                        help="Primary model license tag embedded in general.license")
+    parser.add_argument("--source-url", default=None,
+                        help="Original fine-tune model-card URL")
+    parser.add_argument("--base-license", default=None,
+                        help="Additional/base model license tag")
+    parser.add_argument("--base-license-url", default=None,
+                        help="Additional/base model license URL")
+    parser.add_argument("--license-notice-file", default=None,
+                        help="Agreement/notice text to embed in the GGUF")
     fmt_group = parser.add_mutually_exclusive_group()
     fmt_group.add_argument("--ollama", action="store_true", default=True,
                            help="Ollama-compatible naming (default)")
@@ -98,6 +108,11 @@ def main():
                   "float16":  torch.float16,
                   "float32":  torch.float32}[args.load_dtype]
     config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+    if Path(args.model).is_dir():
+        raw_config = json.load(open(Path(args.model) / "config.json"))
+    else:
+        from huggingface_hub import hf_hub_download
+        raw_config = json.load(open(hf_hub_download(repo_id=args.model, filename="config.json")))
     # `low_cpu_mem_usage=True` initializes on meta-device then loads weights
     # directly into the target dtype — avoids the float32 double-allocation
     # that OOM-kills 8B+ models on small hosts (Kaggle, 16 GB Macs, etc.).
@@ -115,6 +130,9 @@ def main():
     # Checks for modules.json / 1_Pooling/config.json / {N}_Dense/model.safetensors.
     st_pool_mode = None      # "mean" | "last" | None (= use architecture default)
     st_dense_weights = []    # list of np.ndarray [out, in] for each Dense layer
+    st_query_prefix = ""
+    st_document_prefix = ""
+    st_similarity_fn = ""
     _model_dir = Path(args.model) if Path(args.model).is_dir() else None
     if _model_dir is None:
         # Resolve from transformers cache (name_or_path set after from_pretrained)
@@ -127,13 +145,19 @@ def main():
         for _mod in _modules:
             _mtype = _mod.get("type", "")
             _mpath = _model_dir / _mod.get("path", "")
-            if _mtype == "sentence_transformers.models.Pooling":
+            # SentenceTransformers 5.5 moved modules from
+            # sentence_transformers.models.* to
+            # sentence_transformers.sentence_transformer.modules.*.
+            if _mtype.rsplit(".", 1)[-1] == "Pooling":
                 _pcfg = _json.load(open(_mpath / "config.json"))
-                if _pcfg.get("pooling_mode_mean_tokens"):
+                # sentence-transformers <=5.4 used boolean pooling_mode_* keys;
+                # 5.5 writes the compact `pooling_mode: mean|lasttoken` schema.
+                _pmode = str(_pcfg.get("pooling_mode", "")).lower()
+                if _pcfg.get("pooling_mode_mean_tokens") or _pmode == "mean":
                     st_pool_mode = "mean"
-                elif _pcfg.get("pooling_mode_lasttoken"):
+                elif _pcfg.get("pooling_mode_lasttoken") or _pmode in ("last", "lasttoken"):
                     st_pool_mode = "last"
-            elif _mtype == "sentence_transformers.models.Dense":
+            elif _mtype.rsplit(".", 1)[-1] == "Dense":
                 try:
                     import safetensors.torch as _sft
                     _dw = _sft.load_file(str(_mpath / "model.safetensors"))
@@ -145,6 +169,15 @@ def main():
             print(f"  SentenceTransformer pooling: {st_pool_mode}")
         if st_dense_weights:
             print(f"  SentenceTransformer Dense layers: {len(st_dense_weights)}")
+        _st_cfg_path = _model_dir / "config_sentence_transformers.json"
+        if _st_cfg_path.exists():
+            _st_cfg = _json.load(open(_st_cfg_path))
+            _prompts = _st_cfg.get("prompts") or {}
+            st_query_prefix = str(_prompts.get("query", ""))
+            st_document_prefix = str(_prompts.get("document", ""))
+            st_similarity_fn = str(_st_cfg.get("similarity_fn_name", ""))
+            if st_query_prefix or st_document_prefix:
+                print(f"  prompts: query={st_query_prefix!r}, document={st_document_prefix!r}")
 
     # Detect and handle LoRA adapters (e.g. Jina v5 task-specific adapters)
     has_lora = any("lora_A" in k or "base_layer" in k for k in model.state_dict())
@@ -253,12 +286,14 @@ def main():
     print(f"Hidden: {config.hidden_size}, Layers: {config.num_hidden_layers}, "
           f"Heads: {config.num_attention_heads}, Vocab: {config.vocab_size}")
 
-    # Detect architecture: qwen3 vs gemma3
+    # Detect architecture family.
     is_gemma = "gemma" in config.model_type.lower()
+    is_ministral = config.model_type.lower() == "ministral3"
     n_kv_heads = getattr(config, "num_key_value_heads", config.num_attention_heads)
     head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
 
-    # Rope theta — check multiple locations
+    # Rope theta/scaling — check multiple locations.  Ministral3 embedding
+    # checkpoints use HF YaRN plus an additional query-position scale.
     rope_theta = getattr(config, "rope_theta", None)
     rope_theta_local = None  # For Gemma3-style sliding-window alternating rope
     global_attn_every_n = 0  # Period: every Nth layer is global attention (0 = not applicable)
@@ -291,6 +326,28 @@ def main():
         else:
             rope_theta = 10000.0
     print(f"  rope_theta: {rope_theta}")
+    rope_cfg = getattr(config, "rope_parameters", None) or getattr(config, "rope_scaling", None) or {}
+    rope_type = str(rope_cfg.get("rope_type", rope_cfg.get("type", "default"))).lower() if isinstance(rope_cfg, dict) else "default"
+    rope_factor = float(rope_cfg.get("factor", 1.0)) if isinstance(rope_cfg, dict) else 1.0
+    rope_original_ctx = int(rope_cfg.get("original_max_position_embeddings", 0)) if isinstance(rope_cfg, dict) else 0
+    rope_beta_fast = float(rope_cfg.get("beta_fast", 32.0)) if isinstance(rope_cfg, dict) else 32.0
+    rope_beta_slow = float(rope_cfg.get("beta_slow", 1.0)) if isinstance(rope_cfg, dict) else 1.0
+    rope_attention_factor = 1.0
+    if rope_type == "yarn":
+        _af = rope_cfg.get("attention_factor")
+        if _af is not None:
+            rope_attention_factor = float(_af)
+        elif rope_cfg.get("mscale") and rope_cfg.get("mscale_all_dim"):
+            def _mscale(scale, mult):
+                return 1.0 if scale <= 1.0 else 0.1 * float(mult) * np.log(scale) + 1.0
+            rope_attention_factor = float(_mscale(rope_factor, rope_cfg["mscale"]) /
+                                          _mscale(rope_factor, rope_cfg["mscale_all_dim"]))
+        else:
+            rope_attention_factor = float(1.0 if rope_factor <= 1.0 else 0.1 * np.log(rope_factor) + 1.0)
+        print(f"  rope_scaling: yarn factor={rope_factor:g}, original_ctx={rope_original_ctx}, "
+              f"attention_factor={rope_attention_factor:.6f}")
+    llama4_beta = float(rope_cfg.get("llama_4_scaling_beta", 0.0)) if isinstance(rope_cfg, dict) else 0.0
+    llama4_original_ctx = int(rope_cfg.get("original_max_position_embeddings", 0)) if isinstance(rope_cfg, dict) else 0
 
     # Hidden activation
     act = getattr(config, "hidden_act", getattr(config, "hidden_activation", "silu"))
@@ -323,12 +380,12 @@ def main():
     # body with the causal mask removed — see modeling_bidirlm_omni.py L793,
     # `self.is_causal = False`). Also detect models where the inner base
     # architecture is explicitly non-causal (is_decoder=False).
-    _inner_is_decoder = getattr(config, "is_decoder", True)  # True=causal, False=bidirectional
+    _explicit_noncausal = raw_config.get("is_causal") is False or raw_config.get("is_decoder") is False
     is_bidirectional = (
         "bert" in config.model_type.lower()
         or "encoder" in str(config.architectures).lower()
         or is_bidirlm_omni
-        or (_inner_is_decoder is False)  # explicit is_decoder=False → bidirectional
+        or _explicit_noncausal
         or getattr(config, "use_bidirectional_attention", False)  # Gemma3-based embedding models
     )
 
@@ -349,13 +406,34 @@ def main():
         pool_ollama_default = 3  # Ollama: 3=Last
 
     if ollama_mode:
-        # Ollama arch: "qwen3" or "gemma3"
-        arch = "gemma3" if is_gemma else "qwen3"
+        arch = "gemma3" if is_gemma else "ministral3" if is_ministral else "qwen3"
         pool_ollama = pool_ollama_default
     else:
         arch = ARCH
 
     writer = gguf.GGUFWriter(str(args.output), arch=arch)
+
+    if args.license:
+        writer.add_string("general.license", args.license)
+    if args.source_url:
+        writer.add_string("general.source.url", args.source_url)
+    if args.base_license:
+        writer.add_string("general.base_model.license", args.base_license)
+    if args.base_license_url:
+        writer.add_string("general.base_model.license_link", args.base_license_url)
+    if args.license_notice_file:
+        notice_path = Path(args.license_notice_file)
+        writer.add_string("general.license_text", notice_path.read_text(encoding="utf-8"))
+
+    # Keep retrieval semantics self-describing. The runtime reads the existing
+    # colbert.* keys for every embedding architecture, despite the historical
+    # key prefix; this also preserves compatibility with older GGUFs/tools.
+    if st_query_prefix:
+        writer.add_string("colbert.query_prefix", st_query_prefix)
+    if st_document_prefix:
+        writer.add_string("colbert.document_prefix", st_document_prefix)
+    if st_similarity_fn:
+        writer.add_string("colbert.similarity_fn_name", st_similarity_fn)
 
     def add_tensor(name, data):
         """Add tensor, handling Q8_0 quantized data."""
@@ -382,6 +460,14 @@ def main():
         writer.add_float32(f"{arch}.attention.layer_norm_rms_epsilon",
                            getattr(config, "rms_norm_eps", 1e-6))
         writer.add_float32(f"{arch}.rope.freq_base", float(rope_theta))
+        writer.add_uint32(f"{arch}.rope.scaling_type", 1 if rope_type == "yarn" else 0)
+        writer.add_float32(f"{arch}.rope.scaling_factor", rope_factor)
+        writer.add_uint32(f"{arch}.rope.original_context_length", rope_original_ctx)
+        writer.add_float32(f"{arch}.rope.beta_fast", rope_beta_fast)
+        writer.add_float32(f"{arch}.rope.beta_slow", rope_beta_slow)
+        writer.add_float32(f"{arch}.rope.attention_factor", rope_attention_factor)
+        writer.add_float32(f"{arch}.attention.llama4_scaling_beta", llama4_beta)
+        writer.add_uint32(f"{arch}.attention.llama4_original_context", llama4_original_ctx)
         if rope_theta_local is not None and rope_theta_local != rope_theta and global_attn_every_n > 0:
             # Extra keys for CrispEmbed (ignored by Ollama): per-layer rope_theta for sliding attention
             writer.add_float32(f"{arch}.rope.freq_base_local", float(rope_theta_local))
@@ -410,6 +496,14 @@ def main():
         writer.add_float32("decoder.rms_norm_eps",
                            getattr(config, "rms_norm_eps", 1e-6))
         writer.add_float32("decoder.rope_theta", float(rope_theta))
+        writer.add_uint32("decoder.rope_scaling_type", 1 if rope_type == "yarn" else 0)
+        writer.add_float32("decoder.rope_scaling_factor", rope_factor)
+        writer.add_uint32("decoder.rope_original_context", rope_original_ctx)
+        writer.add_float32("decoder.rope_beta_fast", rope_beta_fast)
+        writer.add_float32("decoder.rope_beta_slow", rope_beta_slow)
+        writer.add_float32("decoder.rope_attention_factor", rope_attention_factor)
+        writer.add_float32("decoder.llama4_attn_beta", llama4_beta)
+        writer.add_uint32("decoder.llama4_original_context", llama4_original_ctx)
         if rope_theta_local is not None and rope_theta_local != rope_theta and global_attn_every_n > 0:
             writer.add_float32("decoder.rope_theta_local", float(rope_theta_local))
             writer.add_uint32("decoder.global_attn_every_n_layers", int(global_attn_every_n))
@@ -537,6 +631,8 @@ def main():
     if spm_count > 1000:
         is_spm_bpe = True
     writer.add_uint32("tokenizer.ggml.is_spm_bpe", int(is_spm_bpe))
+    if getattr(config, "model_type", "") == "ministral3":
+        writer.add_string("tokenizer.ggml.pre", "ministral3")
     if is_spm_bpe:
         print(f"  tokenizer_style: SentencePiece BPE ({spm_count} ▁-prefixed tokens)")
         # Gemma3 SentencePiece needs scores for Ollama

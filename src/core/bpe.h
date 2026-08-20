@@ -741,7 +741,8 @@ inline size_t contraction_len(const std::string & s, const std::vector<size_t> &
 
 } // namespace o200k_detail
 
-inline std::vector<std::string> o200k_pretokenize(const std::string & s) {
+inline std::vector<std::string> case_aware_pretokenize(const std::string & s, size_t max_digit_run,
+                                                       bool contraction_suffixes) {
     std::vector<std::string> out;
     const size_t n = s.size();
     if (n == 0) return out;
@@ -809,22 +810,22 @@ inline std::vector<std::string> o200k_pretokenize(const std::string & s) {
             if (m != npos) {
                 size_t e = m;
                 while (in_l(e)) e++;
-                end = e + o200k_detail::contraction_len(s, off, e, ncp);
+                end = e + (contraction_suffixes ? o200k_detail::contraction_len(s, off, e, ncp) : 0);
                 break;
             }
             // Alt 2: `U+ L*`.
             if (u > st) {
                 size_t e = u;
                 while (in_l(e)) e++;
-                end = e + o200k_detail::contraction_len(s, off, e, ncp);
+                end = e + (contraction_suffixes ? o200k_detail::contraction_len(s, off, e, ncp) : 0);
                 break;
             }
         }
 
-        // Alt 3: `\p{N}{1,3}` — digits in groups of at most three.
+        // Alt 3: `\p{N}{1,N}` — N=3 for o200k and N=1 for Ministral3/Tekken.
         if (end == npos && is_num(k)) {
             size_t e = k;
-            while (e < ncp && e - k < 3 && is_num(e)) e++;
+            while (e < ncp && e - k < max_digit_run && is_num(e)) e++;
             end = e;
         }
 
@@ -866,6 +867,18 @@ inline std::vector<std::string> o200k_pretokenize(const std::string & s) {
     return out;
 }
 
+inline std::vector<std::string> o200k_pretokenize(const std::string & s) {
+    return case_aware_pretokenize(s, 3, true);
+}
+
+// Ministral3's TokenizersBackend/Tekken split is the o200k case-aware pattern
+// without contraction suffixes and with one digit per pre-token.  Keep this as
+// a named path: using Qwen's simpler letter classes silently changes German
+// umlaut/all-caps boundaries, while using o200k groups numeric identifiers.
+inline std::vector<std::string> ministral_pretokenize(const std::string & s) {
+    return case_aware_pretokenize(s, 1, false);
+}
+
 // o200k pre-tokenizer + BPE merge pass.
 //
 // `ignore_merges` mirrors the tokenizer.json flag of the same name (true for
@@ -890,6 +903,12 @@ inline std::vector<int32_t> tokenize_o200k(const std::unordered_map<std::string,
         bpe_one(token_to_id, merge_rank, encoded, result);
     }
     return result;
+}
+
+inline std::vector<int32_t> tokenize_ministral(const std::unordered_map<std::string, int32_t> & token_to_id,
+                                               const std::unordered_map<std::string, int32_t> & merge_rank,
+                                               const std::string & text) {
+    return tokenize_pretokenized(token_to_id, merge_rank, ministral_pretokenize(text));
 }
 
 inline std::vector<int32_t> tokenize_qwen(const std::unordered_map<std::string, int32_t> & token_to_id,
