@@ -1,3 +1,10 @@
+## 0.17.9
+
+- Add native MOST Embed DE support with exact Tekken tokenization, bidirectional
+  Ministral3/YaRN execution, retrieval prompts, and gated CC-BY-NC-4.0 downloads.
+- Fix mmap-backed GGUF weight ownership and batch tokenizer override precedence.
+- Expand measured embedding/reranker language coverage to Arabic and Korean.
+
 ## 0.16.1
 
 - Native libraries are now fetched from the CI release on install (no manual
