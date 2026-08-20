@@ -649,6 +649,9 @@ target_include_directories(test-qwen-pretokenize PRIVATE src)
 add_executable(test-o200k-pretokenize tests/test_o200k_pretokenize.cpp)
 target_include_directories(test-o200k-pretokenize PRIVATE src)
 
+add_executable(test-ministral-pretokenize tests/test_ministral_pretokenize.cpp)
+target_include_directories(test-ministral-pretokenize PRIVATE src)
+
 # Same, for the LFM2 and DeepSeek-OCR-2/Unlimited-OCR pre-tokenizers and the
 # bpe_one merge tie-break. Regenerate with tools/gen_bpe_pretokenize_test.py.
 add_executable(test-bpe-pretokenize tests/test_bpe_pretokenize.cpp)

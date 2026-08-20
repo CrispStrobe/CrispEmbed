@@ -11,6 +11,7 @@ Usage:
 import argparse
 import os
 import sys
+from pathlib import Path
 
 from huggingface_hub import HfApi, create_repo
 
@@ -682,6 +683,44 @@ MODELS = {
             "q4_k": 0.9662,
         },
     },
+    "most-embed-de": {
+        "base_model": "malteos/most-embed-de",
+        "arch": "Ministral3 bidirectional encoder",
+        "dim": 2048,
+        "layers": 16,
+        "params": "1.14B",
+        "pooling": "mean",
+        "tokenizer": "Tekken ByteLevel BPE",
+        "license": "cc-by-nc-4.0",
+        "langs": ["de", "en"],
+        "desc": ("MOST Embed DE — German customer-support retrieval model, "
+                 "with query: / passage: prompts and normalized 2048-d embeddings."),
+        "license_notice": (
+            "## License and provenance\n\n"
+            "The fine-tune is distributed under **CC-BY-NC-4.0**; commercial use is "
+            "not permitted without separate authorization from the fine-tune author. "
+            "It is derived from NVIDIA's "
+            "[Nemotron-3-Embed-1B-BF16](https://huggingface.co/nvidia/Nemotron-3-Embed-1B-BF16), "
+            "whose Model Materials are distributed under "
+            "[OpenMDW-1.1](https://openmdw.ai/license/1-1/). Redistribution must retain "
+            "the OpenMDW agreement plus all applicable copyright and origin notices. "
+            "Both sets of terms and the upstream model cards must be reviewed and preserved.\n"
+        ),
+        "license_files": ["models/licenses/OpenMDW-1.1.txt"],
+        "parity": {
+            "f16": 1.000000,
+            "q8_0": 0.999818,
+            "q4_k": 0.987191,
+        },
+        "verification": (
+            "Compared with the original Transformers implementation. F16 reaches cosine "
+            "1.000000 at every dumped transformer boundary and on the final embedding. "
+            "Q8_0 reaches final cosine 0.999818. The compact Q4_K artifact keeps token "
+            "embeddings and attention at Q8_0; over eight German query/document texts it "
+            "has minimum cosine 0.987191, preserves every top-1 retrieval result, and "
+            "reduces maximum similarity-score error to 0.02595."
+        ),
+    },
     "bge-reranker-v2-m3": {
         "base_model": "BAAI/bge-reranker-v2-m3",
         "arch": "XLM-RoBERTa",
@@ -979,6 +1018,11 @@ variant — it includes both the audio tower and the vision tower (ViT +
 DeepStack), enabling full omnimodal retrieval.
 """
 
+    license_notice = m.get("license_notice", "")
+    verification = m.get(
+        "verification",
+        "Verified against the original Hugging Face implementation (cosine similarity >= 0.999 on test texts).",
+    )
     readme = f"""---
 license: {m["license"]}
 language: [{langs}]
@@ -999,6 +1043,7 @@ GGUF format of [{m["base_model"]}](https://huggingface.co/{m["base_model"]}) for
 |------|-------------|------|
 {file_rows}
 {_parity_table(m)}
+{license_notice}
 
 ## Quick Start
 
@@ -1027,7 +1072,7 @@ huggingface-cli download {repo_name} {files_info[0][0]} --local-dir .
 
 ## Verification
 
-Verified bit-identical to HuggingFace sentence-transformers (cosine similarity >= 0.999 on test texts).
+{verification}
 
 ## Usage with CrispEmbed
 
@@ -1053,7 +1098,7 @@ curl -X POST http://localhost:8080/v1/embeddings \\
 
 - Original model: [{m["base_model"]}](https://huggingface.co/{m["base_model"]})
 - Inference engine: [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed) (ggml-based)
-- Conversion: `convert-{"decoder" if any(a in m["arch"] for a in ("Qwen3","Gemma3")) else "bert"}-embed-to-gguf.py`
+- Conversion: `convert-{"decoder" if any(a in m["arch"] for a in ("Qwen3","Gemma3","Ministral3")) else "bert"}-embed-to-gguf.py`
 """
     return readme
 
@@ -1161,6 +1206,16 @@ def upload_model(model_name, gguf_dir, dry_run=False, readme_only=False):
         commit_message=f"Add model card for {model_name} GGUF",
     )
     print(f"  README.md uploaded")
+
+    for license_file in MODELS[model_name].get("license_files", []):
+        license_path = Path(__file__).resolve().parent.parent / license_file
+        api.upload_file(
+            path_or_fileobj=str(license_path),
+            path_in_repo=license_path.name,
+            repo_id=repo_id,
+            commit_message=f"Add {license_path.name}",
+        )
+        print(f"  {license_path.name} uploaded")
 
     # Upload GGUFs
     for fname, size_mb, fpath in files:

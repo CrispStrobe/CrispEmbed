@@ -34,6 +34,7 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
 static bool g_decoder_f16 = false;
+static bool g_decoder_attn_q8 = false;
 static bool g_ppocrv6_q8_head = false;
 
 // Per-tensor importance vectors loaded from a CrispEmbed imatrix file
@@ -612,6 +613,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(lm-head→Q8_0) ");
         }
 
+        // Decoder embedding attention A/B policy. Some bidirectional
+        // retrieval encoders compound 4-bit attention error across layers;
+        // keeping only q/k/v/o at Q8_0 is substantially cheaper than
+        // --decoder-f16 and lets the per-stage diff decide if the extra bytes
+        // are warranted for a checkpoint.
+        const bool is_decoder_attn =
+            sname.rfind("dec.", 0) == 0 &&
+            (sname.find(".attn.q.weight") != std::string::npos || sname.find(".attn.k.weight") != std::string::npos ||
+             sname.find(".attn.v.weight") != std::string::npos || sname.find(".attn.o.weight") != std::string::npos);
+        if (quantize && g_decoder_attn_q8 && is_decoder_attn && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16) {
+            qtype_used = GGML_TYPE_Q8_0;
+            printf("(decoder-attn→Q8_0) ");
+        }
+
         // PP-OCRv6 CTC fc2 is the direct per-timestep logit projection.  It is
         // the OCR equivalent of an LM head: Q4_K error can flip adjacent
         // character ties and then CTC collapse turns that into visible text
@@ -848,6 +863,8 @@ int main(int argc, char ** argv) {
         std::string a = argv[i];
         if (a == "--decoder-f16")
             g_decoder_f16 = true;
+        else if (a == "--decoder-attn-q8")
+            g_decoder_attn_q8 = true;
         else if (a == "--ppocrv6-q8-head")
             g_ppocrv6_q8_head = true;
         else if (a == "--imatrix") {
@@ -860,16 +877,18 @@ int main(int argc, char ** argv) {
             pos.push_back(a);
     }
     if (pos.size() != 3) {
-        fprintf(
-            stderr,
-            "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--ppocrv6-q8-head] [--imatrix <file>]\n\n",
-            argv[0]);
+        fprintf(stderr,
+                "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--decoder-attn-q8] "
+                "[--ppocrv6-q8-head] [--imatrix <file>]\n\n",
+                argv[0]);
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
         fprintf(stderr, "                  Retained for diagnostic/comparison use; see #25)\n\n");
+        fprintf(stderr, "  --decoder-attn-q8  keep decoder-embedding q/k/v/o weights at Q8_0\n");
+        fprintf(stderr, "                       (measured A/B policy for attention-sensitive retrieval models)\n\n");
         fprintf(stderr, "  --ppocrv6-q8-head  for PP-OCRv6 Q8_0, keep the CNN/backbone F32 and\n");
         fprintf(stderr, "                     quantize only the final SVTR/CTC head\n\n");
         fprintf(stderr, "Supported types:\n");

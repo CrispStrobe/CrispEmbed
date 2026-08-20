@@ -224,6 +224,8 @@ static const char * query_prefix(const char * model) {
     if (strstr(model, "nomic-embed")) return "search_query: ";
     // Jina v5
     if (strstr(model, "jina-v5")) return "Query: ";
+    // MOST Embed DE (SentenceTransformers prompts.query)
+    if (strstr(model, "most-embed-de")) return "query: ";
     // F2LLM-v2 — instruction-style prompt, verbatim from the family's
     // config_sentence_transformers.json "query" prompt (the trailing newline
     // before "Query: " is load-bearing: it is a distinct token, and dropping
@@ -241,6 +243,8 @@ static const char * passage_prefix(const char * model) {
     if (!model) return nullptr;
     // E5 models
     if (strstr(model, "-e5-")) return "passage: ";
+    // MOST Embed DE (SentenceTransformers prompts.document)
+    if (strstr(model, "most-embed-de")) return "passage: ";
     // Nomic
     if (strstr(model, "nomic-embed")) return "search_document: ";
     // Jina v5
@@ -517,6 +521,23 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-0.6b-q8", "f2llm-v2-0.6b-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
       "Qwen3 1024d multilingual (Q8_0)", "639 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
+
+    // Ministral3 attention is especially quantization-sensitive here. The
+    // compact default keeps q/k/v/o projections at Q8_0 and quantizes the
+    // remaining eligible matrices to Q4_K; Q8_0 is available for maximum
+    // parity. Both variants inherit the fine-tune's non-commercial license.
+    { "most-embed-de", "most-embed-de-q4_k-attn-q8.gguf",
+      "https://huggingface.co/cstr/most-embed-de-GGUF/resolve/main/most-embed-de-q4_k-attn-q8.gguf",
+      "Ministral3 2048d German retrieval (Q4_K + Q8 attention)", "918 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/malteos/most-embed-de" },
+    { "most-embed-de-q4k", "most-embed-de-q4_k-attn-q8.gguf",
+      "https://huggingface.co/cstr/most-embed-de-GGUF/resolve/main/most-embed-de-q4_k-attn-q8.gguf",
+      "Ministral3 2048d German retrieval (Q4_K + Q8 attention)", "918 MB", "cc-by-nc-4.0",
+      "https://huggingface.co/malteos/most-embed-de" },
+    { "most-embed-de-q8", "most-embed-de-q8_0.gguf",
+      "https://huggingface.co/cstr/most-embed-de-GGUF/resolve/main/most-embed-de-q8_0.gguf",
+      "Ministral3 2048d German retrieval (Q8_0)", "1.22 GB", "cc-by-nc-4.0",
+      "https://huggingface.co/malteos/most-embed-de" },
 
     // Default = best flavor (Q4_K+imatrix, A/B winner). -q4k serves the imatrix
     // build (same size, strictly better); -iq4xs and -q8 select other flavors.

@@ -243,6 +243,10 @@ public:
         ignore_merges_ = ignore_merges;
     }
 
+    // Enable the case-aware Ministral3/Tekken ByteLevel split declared in
+    // tokenizer.json (single digits, no contraction suffix attachment).
+    void set_ministral_regex_pretok(bool v) { ministral_regex_pretok_ = v; }
+
     // SentencePiece-BPE mode (▁ space marker). load() takes it as a parameter
     // and therefore resets it; the encoder path reads it back here across its
     // post-weight-load merges reload.
@@ -260,14 +264,15 @@ private:
     std::vector<std::string> id_to_token_;
     int eos_id_ = 151645;
     int pad_id_ = 151643;
-    int suffix_id_ = 151643;          // token appended after text (model-specific)
-    int bos_id_ = -1;                 // BOS token (-1 = none)
-    bool spm_style_ = false;          // SentencePiece BPE mode
-    bool spm_dummy_prefix_ = false;   // SentencePiece add_dummy_prefix
-    bool clip_style_ = false;         // OpenAI CLIP text BPE (</w> end-of-word suffix)
-    bool gpt2_regex_pretok_ = false;  // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
-    bool o200k_regex_pretok_ = false; // o200k_base regex pre-tokenizer (granite-r2 97m)
-    bool ignore_merges_ = true;       // o200k: a whole-pre-token vocab hit skips the merges
+    int suffix_id_ = 151643;              // token appended after text (model-specific)
+    int bos_id_ = -1;                     // BOS token (-1 = none)
+    bool spm_style_ = false;              // SentencePiece BPE mode
+    bool spm_dummy_prefix_ = false;       // SentencePiece add_dummy_prefix
+    bool clip_style_ = false;             // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    bool gpt2_regex_pretok_ = false;      // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
+    bool o200k_regex_pretok_ = false;     // o200k_base regex pre-tokenizer (granite-r2 97m)
+    bool ministral_regex_pretok_ = false; // Ministral3/Tekken case-aware ByteLevel split
+    bool ignore_merges_ = true;           // o200k: a whole-pre-token vocab hit skips the merges
     int max_length_ = 8192;
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text

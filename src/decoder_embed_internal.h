@@ -58,6 +58,14 @@ struct dec_model {
     int n_max_pos = 8192;
     float rms_norm_eps = 1e-6f;
     float rope_theta = 10000.0f;
+    int rope_scaling_type = 0; // 0=none, 1=YaRN
+    float rope_scaling_factor = 1.0f;
+    int rope_original_context = 0;
+    float rope_beta_fast = 32.0f;
+    float rope_beta_slow = 1.0f;
+    float rope_attention_factor = 1.0f; // HF cos/sin magnitude after scaling
+    float llama4_attn_beta = 0.0f;      // Ministral3 query scale beyond original context
+    int llama4_original_context = 0;
     float rope_theta_local = 0.0f; // Gemma3: sliding-window layers use shorter theta (0 = same as rope_theta)
     int global_attn_every_n = 0;   // Gemma3: period between global attention layers (0 = all global)
     bool is_bidirectional = false; // true for EuroBERT-style encoder models
