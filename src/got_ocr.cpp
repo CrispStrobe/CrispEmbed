@@ -419,7 +419,7 @@ void got_ocr::free_(context & ctx) {
     if (ctx.kvc.ctx) ggml_free(ctx.kvc.ctx);
     if (ctx.decode_galloc) ggml_gallocr_free(ctx.decode_galloc);
     if (ctx.sched) ggml_backend_sched_free(ctx.sched);
-    if (ctx.model_buf) ggml_backend_buffer_free(ctx.model_buf);
+    core_gguf::release_weight_buffer(ctx.model_buf);
     if (ctx.model_ctx) ggml_free(ctx.model_ctx);
     if (ctx.backend) ggml_backend_free(ctx.backend);
     if (ctx.backend_cpu) ggml_backend_free(ctx.backend_cpu);

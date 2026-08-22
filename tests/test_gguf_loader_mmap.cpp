@@ -184,11 +184,90 @@ static int crispembed_test_main() {
         }
     }
 
+    // --- Test: release_weight_buffer on a non-mmap (copy-path) buffer ---
+    // The copy path maps nothing that outlives the load, so the side map has no
+    // entry for this buffer. release_weight_buffer must free it like any other
+    // backend buffer, without error.
+    {
+        core_gguf::WeightLoad copy_wl;
+        if (!core_gguf::load_weights(kPath, backend, "test", copy_wl, /*try_mmap=*/false)) {
+            fprintf(stderr, "FAIL: copy load for release_weight_buffer test\n");
+            fails++;
+        } else {
+            // Move the buffer out of the WeightLoad, as the 11 model sites do.
+            ggml_backend_buffer_t moved_buf = copy_wl.buf;
+            copy_wl.buf = nullptr;
+            core_gguf::release_weight_buffer(moved_buf);
+            if (moved_buf != nullptr) {
+                fprintf(stderr, "FAIL: release_weight_buffer did not null the handle (copy path)\n");
+                fails++;
+            } else {
+                printf("  release_weight_buffer(copy-path buf): OK (freed, handle nulled)\n");
+            }
+            // Clean up the rest of the WeightLoad (ctx, etc.)
+            core_gguf::free_weights(copy_wl);
+        }
+    }
+
+    // --- Test: double-call safety (null handle → no-op) ---
+    {
+        ggml_backend_buffer_t null_buf = nullptr;
+        core_gguf::release_weight_buffer(null_buf);
+        if (null_buf != nullptr) {
+            fprintf(stderr, "FAIL: release_weight_buffer(nullptr) changed the handle\n");
+            fails++;
+        } else {
+            printf("  release_weight_buffer(nullptr): OK (no-op)\n");
+        }
+    }
+
+    // --- Test: release_weight_buffer on an mmap buffer moved out of WeightLoad ---
+    // Simulates the pattern used by the 11 model sites: move wl.buf into a
+    // model struct, let the WeightLoad die, then free via release_weight_buffer.
+    {
+        core_gguf::WeightLoad mmap_wl;
+        if (!core_gguf::load_weights(kPath, backend, "test", mmap_wl, /*try_mmap=*/true)) {
+            fprintf(stderr, "FAIL: mmap load for moved-buffer test\n");
+            fails++;
+        } else if (!mmap_wl.used_mmap) {
+            fprintf(stderr, "FAIL: mmap path not taken for moved-buffer test\n");
+            fails++;
+        } else {
+            // Move the buffer out, as models do.
+            ggml_backend_buffer_t moved_buf = mmap_wl.buf;
+            mmap_wl.buf = nullptr;
+            // Clear the WeightLoad's mmap fields to simulate scope exit.
+            mmap_wl.mmap_addr = nullptr;
+            mmap_wl.mmap_len = 0;
+            mmap_wl.used_mmap = false;
+            core_gguf::free_weights(mmap_wl); // frees ctx only, buf already moved
+
+            // The mapping should still exist (owned by the buffer via the side map).
+            const size_t before = count_regions_backed_by(kAbs);
+            core_gguf::release_weight_buffer(moved_buf);
+            const size_t after = count_regions_backed_by(kAbs);
+            if (moved_buf != nullptr) {
+                fprintf(stderr, "FAIL: release_weight_buffer did not null the handle (mmap moved)\n");
+                fails++;
+            } else if (before == (size_t)-1) {
+                printf("  release_weight_buffer(mmap moved buf): OK (freed, region check unavailable)\n");
+            } else if (before < 1) {
+                fprintf(stderr, "FAIL: moved mmap buffer had no mapping to release (%zu regions)\n", before);
+                fails++;
+            } else if (after != 0) {
+                fprintf(stderr, "FAIL: release_weight_buffer(moved) left %zu mapping(s)\n", after);
+                fails++;
+            } else {
+                printf("  release_weight_buffer(mmap moved buf): OK (regions %zu→%zu)\n", before, after);
+            }
+        }
+    }
+
     ggml_backend_free(backend);
     remove(kPath);
 
     if (fails) {
-        fprintf(stderr, "FAILED (%d tensor(s))\n", fails);
+        fprintf(stderr, "FAILED (%d check(s))\n", fails);
         return 1;
     }
     printf("PASS: gguf_loader no-copy mmap == copy\n");

@@ -1118,7 +1118,7 @@ void gliner_ner_free(void * ptr) {
     // No-op unless collection was active; idempotent (guarded in imatrix.cpp).
     crispembed_imatrix_flush();
     if (ctx->imatrix_sched) ggml_backend_sched_free(ctx->imatrix_sched);
-    if (ctx->model.buf) ggml_backend_buffer_free(ctx->model.buf);
+    core_gguf::release_weight_buffer(ctx->model.buf);
     if (ctx->model.ctx) ggml_free(ctx->model.ctx);
     if (ctx->backend) ggml_backend_free(ctx->backend);
     if (ctx->backend_cpu) ggml_backend_free(ctx->backend_cpu);
