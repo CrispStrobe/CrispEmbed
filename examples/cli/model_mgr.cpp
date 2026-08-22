@@ -933,6 +933,15 @@ static const ModelEntry k_registry[] = {
       "DeBERTa-v2 reranker English 86M (Q8_0)", "199 MB", "apache-2.0",
       "https://huggingface.co/mixedbread-ai/mxbai-rerank-base-v1" },
 
+    { "ettin-reranker-150m", "ettin-reranker-150m-v1-q8_0.gguf",
+      "https://huggingface.co/cstr/ettin-reranker-150m-v1-GGUF/resolve/main/ettin-reranker-150m-v1-q8_0.gguf",
+      "ModernBERT reranker 150M (Q8_0)", "155 MB", "apache-2.0",
+      "https://huggingface.co/cross-encoder/ettin-reranker-150m-v1" },
+    { "ettin-reranker-150m-q4k", "ettin-reranker-150m-v1-q4_k.gguf",
+      "https://huggingface.co/cstr/ettin-reranker-150m-v1-GGUF/resolve/main/ettin-reranker-150m-v1-q4_k.gguf",
+      "ModernBERT reranker 150M (Q4_K, smaller)", "102 MB", "apache-2.0",
+      "https://huggingface.co/cross-encoder/ettin-reranker-150m-v1" },
+
     // --- MTEB top multilingual models ---
 
     { "multilingual-e5-base", "multilingual-e5-base-iq4_xs.gguf",
