@@ -190,10 +190,14 @@ struct embed_model {
     ggml_tensor * classifier_b = nullptr; // [1]
     // Reranker: 2-layer RobertaClassificationHead (bge-reranker-v2-m3)
     ggml_tensor * classifier_dense_w = nullptr; // [H, H]
-    ggml_tensor * classifier_dense_b = nullptr; // [H]
+    ggml_tensor * classifier_dense_b = nullptr; // [H], optional (CrossEncoder heads)
     ggml_tensor * classifier_out_w = nullptr;   // [1, H]
     ggml_tensor * classifier_out_b = nullptr;   // [1]
+    // Optional LayerNorm between dense and out_proj (CrossEncoder heads, e.g. Ettin)
+    ggml_tensor * classifier_ln_w = nullptr;    // [H]
+    ggml_tensor * classifier_ln_b = nullptr;    // [H]
     bool classifier_2layer = false;
+    bool classifier_dense_gelu = false; // false=tanh (Roberta), true=GELU (CrossEncoder)
 
     bool has_sparse = false;
     bool has_colbert = false;
@@ -318,6 +322,9 @@ struct crispembed_context {
     std::vector<float> rerank_ow; // out_w [H]
     float rerank_out_bias = 0.0f;
     bool rerank_out_has_bias = false;
+    std::vector<float> rerank_ln_w; // classifier LN weight [H]
+    std::vector<float> rerank_ln_b; // classifier LN bias [H]
+    bool rerank_has_ln = false;
     std::vector<float> rerank_pw; // pooler_w [H*H] (DeBERTa)
     std::vector<float> rerank_pb; // pooler_b [H]
     bool rerank_has_pooler = false;
@@ -511,6 +518,9 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             ctx->geglu_erf = false;
         }
     }
+
+    // Classifier head activation — read before gguf_free(g) destroys the KV store
+    const std::string classifier_act = strv("bert.classifier_act");
 
     hp.n_experts = opt_u32({ "bert.num_experts", ak("expert_count") }, 0);
     hp.n_experts_per_tok = opt_u32({ "bert.num_experts_per_tok", ak("expert_used_count") }, 0);
@@ -843,14 +853,18 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
     m.sparse_linear_b = get("sparse_linear.bias");
     m.colbert_linear_w = get("colbert_linear.weight");
     m.colbert_linear_b = get("colbert_linear.bias");
-    // Try 2-layer RobertaClassificationHead first (bge-reranker-v2-m3)
+    // Try 2-layer classifier head first (RobertaClassificationHead or CrossEncoder)
     m.classifier_dense_w = get("classifier.dense.weight");
-    m.classifier_dense_b = get("classifier.dense.bias");
+    m.classifier_dense_b = get("classifier.dense.bias"); // optional (CrossEncoder heads may omit)
     m.classifier_out_w = get("classifier.out_proj.weight");
     m.classifier_out_b = get("classifier.out_proj.bias");
+    m.classifier_ln_w = get("classifier.ln.weight");     // optional LN between dense+out_proj
+    m.classifier_ln_b = get("classifier.ln.bias");
     if (m.classifier_dense_w && m.classifier_out_w) {
         m.classifier_2layer = true;
         m.is_reranker = true;
+        // Activation: "gelu" for CrossEncoder heads (Ettin), default tanh (Roberta)
+        m.classifier_dense_gelu = (classifier_act == "gelu");
     } else {
         // Fall back to 1-layer head
         m.classifier_w = get("classifier.weight");
@@ -870,9 +884,13 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
     m.has_colbert = m.colbert_linear_w != nullptr;
     if (m.has_sparse) fprintf(stderr, "crispembed: sparse head loaded\n");
     if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
-    if (m.is_reranker)
-        fprintf(stderr, "crispembed: classifier head loaded (reranker=%s)\n",
-                m.classifier_2layer ? "2-layer" : "1-layer");
+    if (m.is_reranker) {
+        const char * desc = m.classifier_2layer
+            ? (m.classifier_ln_w ? "2-layer+LN" : "2-layer")
+            : "1-layer";
+        const char * act = m.classifier_dense_gelu ? "gelu" : "tanh";
+        fprintf(stderr, "crispembed: classifier head loaded (reranker=%s, act=%s)\n", desc, act);
+    }
     if (hp.n_experts > 0) {
         int moe_count = 0;
         for (int i = 0; i < hp.n_layer; i++)
@@ -3387,7 +3405,9 @@ extern "C" float crispembed_rerank(crispembed_context * ctx, const char * query,
     auto t_rerank_start = std::chrono::steady_clock::now();
 
     embed_tokens tokens;
-    if (ctx->use_sentencepiece)
+    if (ctx->use_bpe)
+        tokens = ctx->bpe_tokenizer.encode_pair(query, document);
+    else if (ctx->use_sentencepiece)
         tokens = ctx->sp_tokenizer.encode_pair(query, document);
     else
         tokens = ctx->wp_tokenizer.encode_pair(query, document);
@@ -3426,13 +3446,29 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
         // bounds"), which crashed reranking on every quantized GGUF (jina-reranker-v2
         // etc.). Biases stay F32.
         if (ctx->model.classifier_2layer) {
-            ctx->rerank_db.resize(H);
             ctx->rerank_dw = core_cpu::to_f32(ctx->model.classifier_dense_w); // [H,H]
-            ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H * sizeof(float));
+            if (ctx->model.classifier_dense_b) {
+                ctx->rerank_db.resize(H);
+                ggml_backend_tensor_get(ctx->model.classifier_dense_b, ctx->rerank_db.data(), 0, H * sizeof(float));
+            } else {
+                ctx->rerank_db.assign(H, 0.0f);
+            }
             ctx->rerank_ow = core_cpu::to_f32(ctx->model.classifier_out_w); // [H]
             ctx->rerank_out_has_bias = ctx->model.classifier_out_b != nullptr;
             if (ctx->rerank_out_has_bias) {
                 ggml_backend_tensor_get(ctx->model.classifier_out_b, &ctx->rerank_out_bias, 0, sizeof(float));
+            }
+            // Optional LayerNorm between dense and out_proj (CrossEncoder heads)
+            ctx->rerank_has_ln = ctx->model.classifier_ln_w != nullptr;
+            if (ctx->rerank_has_ln) {
+                ctx->rerank_ln_w.resize(H);
+                ctx->rerank_ln_b.resize(H);
+                ggml_backend_tensor_get(ctx->model.classifier_ln_w, ctx->rerank_ln_w.data(), 0, H * sizeof(float));
+                if (ctx->model.classifier_ln_b) {
+                    ggml_backend_tensor_get(ctx->model.classifier_ln_b, ctx->rerank_ln_b.data(), 0, H * sizeof(float));
+                } else {
+                    std::fill(ctx->rerank_ln_b.begin(), ctx->rerank_ln_b.end(), 0.0f);
+                }
             }
         } else if (ctx->model.classifier_w) {
             ctx->rerank_ow = core_cpu::to_f32(ctx->model.classifier_w); // [H] or [H,1]
@@ -3484,11 +3520,34 @@ static float crispembed_apply_classifier(crispembed_context * ctx, const float *
     float score = 0.0f;
     if (ctx->model.classifier_2layer) {
         std::vector<float> hidden(H);
+        // Dense layer: hidden = act(W @ cls + b)
         for (int i = 0; i < H; i++) {
             float acc = ctx->rerank_db[i];
             for (int j = 0; j < H; j++) acc += cls_vec[j] * ctx->rerank_dw[i * H + j];
-            hidden[i] = std::tanh(acc);
+            if (ctx->model.classifier_dense_gelu) {
+                hidden[i] = 0.5f * acc * (1.0f + std::erf(acc * 0.70710678118654752f));
+            } else {
+                hidden[i] = std::tanh(acc);
+            }
         }
+        // Optional LayerNorm (CrossEncoder heads, e.g. Ettin)
+        if (ctx->rerank_has_ln) {
+            const float ln_eps = ctx->model.hparams.layer_norm_eps;
+            float mean = 0.0f;
+            for (int i = 0; i < H; i++) mean += hidden[i];
+            mean /= H;
+            float var = 0.0f;
+            for (int i = 0; i < H; i++) {
+                float d = hidden[i] - mean;
+                var += d * d;
+            }
+            var /= H;
+            const float inv_std = 1.0f / std::sqrt(var + ln_eps);
+            for (int i = 0; i < H; i++) {
+                hidden[i] = (hidden[i] - mean) * inv_std * ctx->rerank_ln_w[i] + ctx->rerank_ln_b[i];
+            }
+        }
+        // Output projection: score = W_out @ hidden + b_out
         for (int i = 0; i < H; i++) score += hidden[i] * ctx->rerank_ow[i];
         if (ctx->rerank_out_has_bias) score += ctx->rerank_out_bias;
     } else {
@@ -3526,7 +3585,9 @@ extern "C" int crispembed_rerank_batch(crispembed_context * ctx, const char * qu
         }
 
         embed_tokens tokens;
-        if (ctx->use_sentencepiece)
+        if (ctx->use_bpe)
+            tokens = ctx->bpe_tokenizer.encode_pair(query, documents[d]);
+        else if (ctx->use_sentencepiece)
             tokens = ctx->sp_tokenizer.encode_pair(query, documents[d]);
         else
             tokens = ctx->wp_tokenizer.encode_pair(query, documents[d]);
