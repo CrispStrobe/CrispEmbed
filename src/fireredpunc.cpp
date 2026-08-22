@@ -1082,7 +1082,7 @@ void fireredpunc_free(fireredpunc_context * ctx) {
     // crispembed_free), and one-shot binaries exit past atexit handlers.
     crispembed_imatrix_flush();
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
-    if (ctx->buf) ggml_backend_buffer_free(ctx->buf);
+    core_gguf::release_weight_buffer(ctx->buf);
     if (ctx->w_ctx) ggml_free(ctx->w_ctx);
     if (ctx->backend_cpu && ctx->backend_cpu != ctx->backend) ggml_backend_free(ctx->backend_cpu);
     if (ctx->backend) ggml_backend_free(ctx->backend);

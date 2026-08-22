@@ -325,7 +325,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
     crispembed_imatrix_install(ctx->sched);
     if (!ctx->sched) {
         fprintf(stderr, "[lfm2_embed] failed to create backend scheduler\n");
-        ggml_backend_buffer_free(ctx->model.buf);
+        core_gguf::release_weight_buffer(ctx->model.buf);
         ggml_free(ctx->model.ctx);
         delete ctx;
         return nullptr;
@@ -342,7 +342,7 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 void lfm2_embed_free(lfm2_embed_ctx * ctx) {
     if (!ctx) return;
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);
-    if (ctx->model.buf) ggml_backend_buffer_free(ctx->model.buf);
+    core_gguf::release_weight_buffer(ctx->model.buf);
     if (ctx->model.ctx) ggml_free(ctx->model.ctx);
     // backend is owned by crispembed_context — do not free here; backend_cpu is
     // ours (the sched fallback we created), so free it.

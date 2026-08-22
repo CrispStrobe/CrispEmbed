@@ -556,10 +556,7 @@ void free_(context & ctx) {
         ggml_backend_sched_free(ctx.sched);
         ctx.sched = nullptr;
     }
-    if (ctx.model_buf) {
-        ggml_backend_buffer_free(ctx.model_buf);
-        ctx.model_buf = nullptr;
-    }
+    core_gguf::release_weight_buffer(ctx.model_buf);
     if (ctx.model_ctx) {
         ggml_free(ctx.model_ctx);
         ctx.model_ctx = nullptr;
