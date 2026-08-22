@@ -193,7 +193,13 @@ def main():
     else:
         model = _load(AutoModel)
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+    except ValueError:
+        # Newer models (e.g. Ettin/ModernBERT) use tokenizer_class="TokenizersBackend"
+        # which older transformers doesn't recognize — fall back to the fast tokenizer.
+        from transformers import PreTrainedTokenizerFast
+        tokenizer = PreTrainedTokenizerFast.from_pretrained(args.model, trust_remote_code=True)
     model.eval()
     sd = model.state_dict()
 
@@ -257,6 +263,84 @@ def main():
                         for k in f.keys():
                             sd[f"colbert_linear.{k}"] = f.get_tensor(k)
                     print(f"  loaded PyLATE ColBERTLinear from {_mod_path}/model.safetensors")
+
+    # Sentence Transformers CrossEncoder module structure (Ettin, etc.):
+    # modules.json lists Dense + LayerNorm + Dense modules that form the
+    # classifier head.  Load them into sd as classifier.* tensors so the
+    # existing head-detection logic picks them up.
+    _st_model_cfg = _load_st_config(args.model)
+    _is_cross_encoder = (_st_model_cfg.get("model_type") == "CrossEncoder"
+                         or (config.num_labels == 1
+                             and not has_real_classifier
+                             and _modules_json
+                             and any(m.get("type", "").endswith(".Dense") for m in _modules_json)))
+    _ce_classifier_act = "tanh"  # default matches RobertaClassificationHead
+    if _is_cross_encoder and _modules_json:
+        # Walk the modules looking for Dense (→ classifier.dense / classifier.out_proj)
+        # and LayerNorm (→ classifier.ln).
+        _dense_modules = []
+        _ln_module = None
+        for _mod in _modules_json:
+            _mtype = _mod.get("type", "")
+            if _mtype.endswith(".Dense"):
+                _dense_modules.append(_mod)
+            elif "LayerNorm" in _mtype or "layer_norm" in _mtype:
+                _ln_module = _mod
+
+        if len(_dense_modules) >= 2:
+            # First Dense = classifier.dense, last Dense = classifier.out_proj
+            _first_dense = _dense_modules[0]
+            _last_dense = _dense_modules[-1]
+
+            def _load_module_safetensors(mod):
+                _mp = mod.get("path", "")
+                _sf = _resolve_file(args.model, f"{_mp}/model.safetensors")
+                if _sf:
+                    from safetensors import safe_open
+                    tensors = {}
+                    with safe_open(_sf, framework="pt") as f:
+                        for k in f.keys():
+                            tensors[k] = f.get_tensor(k)
+                    return tensors
+                return None
+
+            # Load first Dense → classifier.dense
+            _d1 = _load_module_safetensors(_first_dense)
+            if _d1:
+                if "linear.weight" in _d1:
+                    sd["classifier.dense.weight"] = _d1["linear.weight"]
+                if "linear.bias" in _d1:
+                    sd["classifier.dense.bias"] = _d1["linear.bias"]
+                # Read activation from the module config
+                _d1_cfg_path = _resolve_file(args.model, f"{_first_dense.get('path', '')}/config.json")
+                if _d1_cfg_path:
+                    with open(_d1_cfg_path, encoding="utf-8") as f:
+                        _d1_cfg = json.load(f)
+                    _act = _d1_cfg.get("activation_function", "")
+                    if "GELU" in _act or "gelu" in _act:
+                        _ce_classifier_act = "gelu"
+                    elif "Tanh" in _act or "tanh" in _act:
+                        _ce_classifier_act = "tanh"
+                print(f"  loaded CrossEncoder Dense (classifier.dense) from {_first_dense.get('path', '')}")
+
+            # Load LayerNorm → classifier.ln
+            if _ln_module:
+                _ln = _load_module_safetensors(_ln_module)
+                if _ln:
+                    if "norm.weight" in _ln:
+                        sd["classifier.ln.weight"] = _ln["norm.weight"]
+                    if "norm.bias" in _ln:
+                        sd["classifier.ln.bias"] = _ln["norm.bias"]
+                    print(f"  loaded CrossEncoder LayerNorm (classifier.ln) from {_ln_module.get('path', '')}")
+
+            # Load last Dense → classifier.out_proj
+            _d2 = _load_module_safetensors(_last_dense)
+            if _d2:
+                if "linear.weight" in _d2:
+                    sd["classifier.out_proj.weight"] = _d2["linear.weight"]
+                if "linear.bias" in _d2:
+                    sd["classifier.out_proj.bias"] = _d2["linear.bias"]
+                print(f"  loaded CrossEncoder Dense (classifier.out_proj) from {_last_dense.get('path', '')}")
 
     # GPT2-based configs (NomicBERT) use n_embd/n_inner/n_layer/n_head;
     # standard BERT configs use hidden_size/intermediate_size/num_hidden_layers/num_attention_heads.
@@ -332,10 +416,13 @@ def main():
             raise FileNotFoundError("1_Pooling/config.json not found")
         with open(pool_path, encoding="utf-8") as f:
             pool_cfg = json.load(f)
-        if pool_cfg.get("pooling_mode_cls_token", False):
+        # Handle both old-style (pooling_mode_cls_token: true) and
+        # new-style (pooling_mode: "cls") Sentence Transformers configs.
+        _pm = pool_cfg.get("pooling_mode", "")
+        if pool_cfg.get("pooling_mode_cls_token", False) or _pm == "cls":
             pool_method_crisp = 1
             print(f"  pooling: CLS (from 1_Pooling/config.json)")
-        elif pool_cfg.get("pooling_mode_lasttoken", False):
+        elif pool_cfg.get("pooling_mode_lasttoken", False) or _pm == "lasttoken":
             pool_method_crisp = 2
             print(f"  pooling: last-token (from 1_Pooling/config.json)")
         else:
@@ -816,14 +903,22 @@ def main():
     if is_modernbert:
         # ModernBERT: pre-LN, RoPE, GeGLU, fused QKV, fused gate+up, no biases
         rope_cfg = getattr(config, "rope_scaling", {}) or {}
-        # Newer configs carry flat local_rope_theta / global_rope_theta; older ones
-        # nest under rope_scaling.{sliding,full}_attention. Prefer flat, then nested.
-        sliding_theta = getattr(config, "local_rope_theta", None)
-        if sliding_theta is None:
-            sliding_theta = rope_cfg.get("sliding_attention", {}).get("rope_theta", 10000.0)
-        global_theta = getattr(config, "global_rope_theta", None)
-        if global_theta is None:
-            global_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
+        # Also check rope_parameters (newer HF format, e.g. Ettin) — takes precedence
+        # over flat local_rope_theta / global_rope_theta, which AutoConfig may
+        # synthesize from defaults (e.g. 10000) even when the model uses 160000.
+        rope_params = getattr(config, "rope_parameters", {}) or {}
+        if rope_params.get("sliding_attention", {}).get("rope_theta") is not None:
+            sliding_theta = rope_params["sliding_attention"]["rope_theta"]
+        else:
+            sliding_theta = getattr(config, "local_rope_theta", None)
+            if sliding_theta is None:
+                sliding_theta = rope_cfg.get("sliding_attention", {}).get("rope_theta", 10000.0)
+        if rope_params.get("full_attention", {}).get("rope_theta") is not None:
+            global_theta = rope_params["full_attention"]["rope_theta"]
+        else:
+            global_theta = getattr(config, "global_rope_theta", None)
+            if global_theta is None:
+                global_theta = rope_cfg.get("full_attention", {}).get("rope_theta", 160000.0)
         global_every = getattr(config, "global_attn_every_n_layers", 3)
         # Sliding-window size for local layers (HF: local_attention, window radius = /2).
         local_attention = getattr(config, "local_attention", 128)
@@ -1113,11 +1208,22 @@ def main():
     if True:
         if has_classifier_2layer:
             writer.add_tensor("classifier.dense.weight",    f32(sd["classifier.dense.weight"]))
-            writer.add_tensor("classifier.dense.bias",      f32(sd["classifier.dense.bias"]))
+            if "classifier.dense.bias" in sd:
+                writer.add_tensor("classifier.dense.bias",      f32(sd["classifier.dense.bias"]))
             writer.add_tensor("classifier.out_proj.weight", f32(sd["classifier.out_proj.weight"]))
             if "classifier.out_proj.bias" in sd:
                 writer.add_tensor("classifier.out_proj.bias", f32(sd["classifier.out_proj.bias"]))
-            print("  classifier (2-layer): ok")
+            # Optional LayerNorm between dense and out_proj (CrossEncoder heads)
+            if "classifier.ln.weight" in sd:
+                writer.add_tensor("classifier.ln.weight", f32(sd["classifier.ln.weight"]))
+                if "classifier.ln.bias" in sd:
+                    writer.add_tensor("classifier.ln.bias", f32(sd["classifier.ln.bias"]))
+            # Activation: tanh (Roberta default) or gelu (CrossEncoder/Ettin)
+            if _ce_classifier_act != "tanh":
+                writer.add_string("bert.classifier_act", _ce_classifier_act)
+            _ln_str = "+LN" if "classifier.ln.weight" in sd else ""
+            _act_str = _ce_classifier_act
+            print(f"  classifier (2-layer{_ln_str}, act={_act_str}): ok")
         elif has_classifier_1layer:
             if _bert_pooler_folded:
                 # BertForSequenceClassification scores

@@ -226,6 +226,7 @@ public:
               bool clip_style = false);      // true for OpenAI CLIP text BPE (</w> end-of-word)
 
     embed_tokens encode(const std::string & text) const;
+    embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
 
     // Enable the GPT-2 ByteLevel regex pre-tokenizer for the GPT-2 byte-level
     // path (ModernBERT, tokenizer.ggml.pre = "modern-bert"). Off by default the
