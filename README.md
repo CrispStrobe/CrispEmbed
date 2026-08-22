@@ -263,10 +263,10 @@ score = reranker.rerank("query", "document")         # cross-encoder logit
 ranked = model.rerank_biencoder("query", ["d1","d2"], top_n=2)   # cosine
 ```
 
-LFM2.5-ColBERT (128-d per token) and all eight cross-encoder rerankers
-(including ModernBERT-based Ettin) are supported. Sparse/ColBERT heads are
-written into the GGUF by the converter and detected via `has_sparse` /
-`has_colbert`.
+LFM2.5-ColBERT (128-d per token) and thirteen cross-encoder rerankers are
+supported — including the full Ettin family (17M–1B, ModernBERT-based).
+Sparse/ColBERT heads are written into the GGUF by the converter and detected
+via `has_sparse` / `has_colbert`.
 
 **Byte-level BPE tokenizers transcribe the pre-tokenizer regex the checkpoint
 declares** (`src/core/bpe.h`), one per family — Qwen2/Qwen3, LFM2.5, and the
