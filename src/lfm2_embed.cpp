@@ -306,6 +306,15 @@ lfm2_embed_ctx * lfm2_embed_load(const char * path, ggml_backend_t backend) {
 
     // ColBERT projection head (optional — present in LFM2.5-ColBERT)
     ctx->model.colbert_proj_w = core_gguf::try_get(wl.tensors, "colbert.projection.weight");
+    if (!ctx->model.colbert_proj_w) {
+        // The official LiquidAI GGUFs (LFM2.5-ColBERT-350M-GGUF) name this tensor
+        // "dense_2.weight", following the sentence-transformers module numbering
+        // (Transformer=0, ..., Dense=2) rather than a semantic name. Without this
+        // fallback the head is silently absent: the model loads, has_colbert() returns
+        // false, and the caller gets single-vector behaviour from a late-interaction
+        // model — a wrong answer instead of an error.
+        ctx->model.colbert_proj_w = core_gguf::try_get(wl.tensors, "dense_2.weight");
+    }
     if (ctx->model.colbert_proj_w) {
         // Weight shape [colbert_dim, hidden] in PyTorch → ne[0]=hidden, ne[1]=colbert_dim in ggml
         ctx->model.colbert_dim = (int)ctx->model.colbert_proj_w->ne[1];
