@@ -1548,7 +1548,32 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             ggml_tensor * K_flat = ggml_reshape_2d(g, K_new, kv_dim, 1);
             ggml_tensor * V_flat = ggml_reshape_2d(g, V_new, kv_dim, 1);
 
-            // Write K/V to cache at position n_kv
+            // Read cached K/V for positions 0..n_kv-1, then concat new K/V.
+            // This avoids the ggml graph ordering issue where a view-read of
+            // the cache might execute before the cpy-write at position n_kv.
+            ggml_tensor * k_cached = ggml_view_2d(g, c.kvc.k, kv_dim, n_kv,
+                c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
+            ggml_tensor * v_cached = ggml_view_2d(g, c.kvc.v, kv_dim, n_kv,
+                c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
+
+            // Concat cached + new: [kv_dim, n_kv+1]
+            ggml_tensor * k_all = ggml_concat(g, k_cached, K_flat, 1);
+            ggml_tensor * v_all = ggml_concat(g, v_cached, V_flat, 1);
+
+            int n_kv_total = n_kv + 1;
+            ggml_tensor * K_full = ggml_reshape_3d(g, k_all, head_dim, n_kv_heads, n_kv_total);
+            ggml_tensor * V_full = ggml_reshape_3d(g, v_all, head_dim, n_kv_heads, n_kv_total);
+
+            Q      = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
+            K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3));
+            V_full = ggml_cont(g, ggml_permute(g, V_full, 0, 2, 1, 3));
+
+            // No mask needed: Q attends to all n_kv+1 valid positions
+            const float scale = 1.0f / sqrtf((float)head_dim);
+            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full,
+                                                         nullptr, scale, 0.0f, 0.0f);
+
+            // Write to cache AFTER attention (for next step)
             ggml_tensor * k_write = ggml_view_2d(g, c.kvc.k, kv_dim, 1,
                 c.kvc.k->nb[1],
                 (size_t)attn_idx * c.kvc.k->nb[2] + (size_t)n_kv * c.kvc.k->nb[1]);
@@ -1557,23 +1582,6 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
                 (size_t)attn_idx * c.kvc.v->nb[2] + (size_t)n_kv * c.kvc.v->nb[1]);
             ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
             ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
-
-            // Read full KV cache for this layer
-            ggml_tensor * k_layer = ggml_view_2d(g, c.kvc.k, kv_dim, max_seq,
-                c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
-            ggml_tensor * v_layer = ggml_view_2d(g, c.kvc.v, kv_dim, max_seq,
-                c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
-
-            ggml_tensor * K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, max_seq);
-            ggml_tensor * V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, max_seq);
-
-            Q      = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
-            K_full = ggml_permute(g, K_full, 0, 2, 1, 3);
-            V_full = ggml_permute(g, V_full, 0, 2, 1, 3);
-
-            const float scale = 1.0f / sqrtf((float)head_dim);
-            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full,
-                                                         kv_mask, scale, 0.0f, 0.0f);
             ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
