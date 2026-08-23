@@ -1595,18 +1595,7 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             // Bx = B * x
             ggml_tensor * Bx = ggml_mul(g, B, xi);
 
-            // Conv state: [D, conv_k] = [D, 3] (last 2 from cache + new)
-            // Passed as input tensor
-            ggml_tensor * conv_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, conv_k);
-            ggml_set_name(conv_in, ("conv_in_" + std::to_string(il)).c_str());
-            ggml_set_input(conv_in);
-
-            // The conv_in columns are [state_col0, state_col1, Bx_new].
-            // We need to overwrite column 2 with Bx. But since Bx is computed
-            // in the graph, we can't set it before graph compute. Instead,
-            // build the conv window from the state + Bx in-graph.
-
-            // State columns [D, 2] passed as input
+            // State columns [D, kernel_size-1] passed as input (conv cache)
             ggml_tensor * state_in = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, conv_k - 1);
             ggml_set_name(state_in, ("conv_state_" + std::to_string(il)).c_str());
             ggml_set_input(state_in);
