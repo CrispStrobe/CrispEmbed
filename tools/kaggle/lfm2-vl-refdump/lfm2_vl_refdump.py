@@ -81,8 +81,10 @@ else:
 # Install deps — LFM2.5-VL needs transformers>=5.0.0 (Lfm2VlForConditionalGeneration)
 log("Installing dependencies...")
 # LFM2.5-VL requires transformers >=5.0.0 for Lfm2VlForConditionalGeneration.
-# Do NOT reinstall torch — Kaggle's pre-installed CUDA torch is correct.
-subprocess.run("pip install -q --upgrade 'transformers>=5.0.0' accelerate gguf Pillow", shell=True)
+# Do NOT reinstall torch — Kaggle's pre-installed CUDA torch is matched to the
+# GPU (P100/sm_60 needs the pre-installed build; pip-upgraded torch drops sm_60).
+subprocess.run("pip install -q --no-deps 'transformers>=5.0.0'", shell=True)
+subprocess.run("pip install -q accelerate gguf Pillow", shell=True)
 log(f"transformers version: {subprocess.check_output('python -c \"import transformers; print(transformers.__version__)\"', shell=True).decode().strip()}")
 
 # ── Run the dumper ───────────────────────────────────────────────────
