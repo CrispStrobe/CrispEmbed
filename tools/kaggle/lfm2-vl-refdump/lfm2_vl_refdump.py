@@ -78,9 +78,12 @@ if tok:
 else:
     log("WARNING: no HF token — upload will fail")
 
-# Install deps
+# Install deps — LFM2.5-VL needs transformers>=5.0.0 (Lfm2VlForConditionalGeneration)
 log("Installing dependencies...")
-subprocess.run("pip install -q gguf transformers>=4.45 accelerate", shell=True)
+# LFM2.5-VL requires transformers >=5.0.0 for Lfm2VlForConditionalGeneration.
+# Do NOT reinstall torch — Kaggle's pre-installed CUDA torch is correct.
+subprocess.run("pip install -q --upgrade 'transformers>=5.0.0' accelerate gguf Pillow", shell=True)
+log(f"transformers version: {subprocess.check_output('python -c \"import transformers; print(transformers.__version__)\"', shell=True).decode().strip()}")
 
 # ── Run the dumper ───────────────────────────────────────────────────
 
