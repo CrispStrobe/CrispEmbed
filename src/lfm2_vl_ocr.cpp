@@ -27,6 +27,7 @@
 #include "core/gguf_loader.h"
 #include "core/env_gate.h"
 #include "core/gpu_backend_pref.h"
+#include "crispembed_diff.h"
 #include "core/no_repeat_ngram.h"
 #include "image_preprocess.h"
 #include "imatrix.h"
@@ -228,7 +229,24 @@ struct ctx {
 
     int n_threads = 4;
     int verbosity = 1;
+
+    // Diff harness: loaded when LFM2_VL_DIFF_REF is set
+    crispembed_diff::Ref diff_ref;
+    bool has_diff_ref = false;
 };
+
+// Compare a tensor against the diff reference and print the result.
+static void diff_stage(ctx & c, const char * name, const float * data, size_t n_elem) {
+    if (!c.has_diff_ref) return;
+    auto r = c.diff_ref.compare(name, data, n_elem);
+    if (!r.found) {
+        fprintf(stderr, "  DIFF %-25s (not in ref)\n", name);
+        return;
+    }
+    fprintf(stderr, "  DIFF %-25s cos_min=%.6f max_abs=%.2e |mine|=%.4f |ref|=%.4f  %s\n",
+            name, r.cos_min, r.max_abs, r.mine_norm, r.ref_norm,
+            r.is_pass() ? "PASS" : "FAIL");
+}
 
 // ============================================================================
 // KV cache management (attention layers only)
@@ -983,6 +1001,9 @@ static bool encode_vision(ctx & c, const image_patches & patches,
         fprintf(stderr, "  vision encoder: %d patches, %lld ms\n", n_patches, ms_since(t0));
     }
 
+    // Diff: compare vision output against reference
+    diff_stage(c, "vis_post_ln", vis_data.data(), vis_data.size());
+
     // ── Projector: pixel_unshuffle → Linear → GELU → Linear ──
     auto t1 = steady_clock::now();
 
@@ -1071,6 +1092,9 @@ static bool encode_vision(ctx & c, const image_patches & patches,
         fprintf(stderr, "  projector: %d tokens → %d dim, %lld ms\n",
                 n_proj, out_d, ms_since(t1));
     }
+
+    // Diff: compare projector output against reference
+    diff_stage(c, "projector_out", out_embeds.data(), out_embeds.size());
 
     return true;
 }
@@ -1920,6 +1944,17 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
         fprintf(stderr, "[lfm2_vl] loaded successfully, vocab=%u, tokenizer=%s\n",
                 c.m.lhp.vocab_size,
                 c.id_to_piece.empty() ? "none" : "ok");
+    }
+
+    // Diff reference (parity loop)
+    const char * diff_ref = getenv("LFM2_VL_DIFF_REF");
+    if (diff_ref && diff_ref[0]) {
+        if (c.diff_ref.load(diff_ref)) {
+            c.has_diff_ref = true;
+            fprintf(stderr, "[lfm2_vl] diff reference loaded: %s\n", diff_ref);
+        } else {
+            fprintf(stderr, "[lfm2_vl] WARNING: diff reference failed to load: %s\n", diff_ref);
+        }
     }
 
     return true;
