@@ -1965,11 +1965,14 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             if (gen == 1 && c.verbosity >= 1) {
                 fprintf(stderr, "[lfm2_vl] decode step 0: input token=%d, n_kv=%d, pos=%d\n",
                         best_id, n_kv, n_kv);
-                // Print first conv state values for diagnostic
+                // Print conv state diagnostics
                 if (!c.conv_state.empty() && c.conv_state[0].size() >= 5) {
                     fprintf(stderr, "[lfm2_vl] conv_state[0] first 5: ");
                     for (int i = 0; i < 5; i++) fprintf(stderr, "%.6f ", c.conv_state[0][i]);
-                    fprintf(stderr, "\n");
+                    // Also print norm and max
+                    double norm = 0; float mx = 0;
+                    for (float v : c.conv_state[0]) { norm += v*v; if (std::abs(v) > mx) mx = std::abs(v); }
+                    fprintf(stderr, " norm=%.4f max=%.6f\n", std::sqrt(norm), mx);
                 }
             }
             std::vector<float> tok_emb_data(D);
