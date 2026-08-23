@@ -114,14 +114,25 @@ def main():
     processor = AutoProcessor.from_pretrained(args.model)
 
     # ── Load model ───────────────────────────────────────────────────
-    # Use bf16 on GPU (f32 OOMs a T4 for 3B params), f32 on CPU.
+    # Use bf16 to keep memory manageable (f32 OOMs on a 16 GB GPU for 3B params).
+    # If CUDA is available but the installed PyTorch doesn't support the GPU's
+    # compute capability (e.g. P100/sm_60 + torch built for sm_70+), fall back
+    # to CPU rather than crashing on the first kernel launch.
+    if device == "cuda":
+        try:
+            torch.zeros(1, device="cuda")
+        except Exception as e:
+            print(f"CUDA probe failed ({e}), falling back to CPU")
+            device = "cpu"
     dtype = torch.bfloat16 if device == "cuda" else torch.float32
-    print(f"Loading model ({dtype})...")
+    print(f"Loading model ({dtype}, device={device})...")
     model = AutoModelForImageTextToText.from_pretrained(
         args.model,
         torch_dtype=dtype,
-        device_map=device,
+        device_map=device if device == "cuda" else None,
     )
+    if device == "cpu":
+        model = model.to(device)
     model.eval()
     print(f"  Model class: {type(model).__name__}")
 
@@ -170,18 +181,35 @@ def main():
                 return getattr(obj, name), name
         return None, None
 
+    # LFM2.5-VL wraps everything in model.model (Lfm2VlModel).
+    # Try model.model.vision_tower first, then model.vision_tower, etc.
+    inner_model = getattr(model, "model", model)
     vision_enc, vis_attr = find_attr(
-        model,
+        inner_model,
         "vision_tower", "vision_model", "visual_encoder", "encoder")
+    if vision_enc is None:
+        vision_enc, vis_attr = find_attr(
+            model,
+            "vision_tower", "vision_model", "visual_encoder", "encoder")
     projector, proj_attr = find_attr(
-        model,
+        inner_model,
         "multi_modal_projector", "projector", "vision_projector",
         "mm_projector", "connector")
+    if projector is None:
+        projector, proj_attr = find_attr(
+            model,
+            "multi_modal_projector", "projector", "vision_projector",
+            "mm_projector", "connector")
     llm, llm_attr = find_attr(
-        model,
+        inner_model,
         "language_model", "model", "decoder", "lm")
+    if llm is None:
+        llm, llm_attr = find_attr(
+            model,
+            "language_model", "model", "decoder", "lm")
 
-    print(f"\nModel structure:")
+    print(f"\nModel structure (inner_model={type(inner_model).__name__}):")
+    print(f"  Top-level attrs: {[a for a in dir(inner_model) if not a.startswith('_') and isinstance(getattr(inner_model, a, None), torch.nn.Module)][:20]}")
     print(f"  vision encoder: {vis_attr} ({type(vision_enc).__name__ if vision_enc else 'NOT FOUND'})")
     print(f"  projector:      {proj_attr} ({type(projector).__name__ if projector else 'NOT FOUND'})")
     print(f"  LLM:            {llm_attr} ({type(llm).__name__ if llm else 'NOT FOUND'})")
