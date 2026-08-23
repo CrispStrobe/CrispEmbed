@@ -542,6 +542,7 @@ static bool load_vision_tensors(ctx & c, const char * path) {
     m.v_pos_embed = get1("v.pos_embed");
     if (!m.v_pos_embed) m.v_pos_embed = get1("v.pos_embed.weight");
     if (!m.v_pos_embed) m.v_pos_embed = get1("v.position_embed.weight");
+    if (!m.v_pos_embed) m.v_pos_embed = get1("v.position_embd.weight");
     // Post-encoder layernorm
     m.v_post_ln_w = get2("v.post_layernorm.weight", "v.post_ln.weight");
     m.v_post_ln_b = get2("v.post_layernorm.bias", "v.post_ln.bias");
@@ -564,8 +565,8 @@ static bool load_vision_tensors(ctx & c, const char * path) {
         bl.k_b    = get2(p + "attn_k.bias", p + "attn.k.bias");
         bl.v_w    = get2(p + "attn_v.weight", p + "attn.v.weight");
         bl.v_b    = get2(p + "attn_v.bias", p + "attn.v.bias");
-        bl.proj_w = get2(p + "attn_proj.weight", p + "attn.proj.weight");
-        bl.proj_b = get2(p + "attn_proj.bias", p + "attn.proj.bias");
+        bl.proj_w = get2(p + "attn_out.weight", p + "attn_proj.weight");
+        bl.proj_b = get2(p + "attn_out.bias", p + "attn_proj.bias");
         // MLP
         bl.fc1_w  = get2(p + "ffn_fc1.weight", p + "ffn.fc1.weight");
         if (!bl.fc1_w) bl.fc1_w = get2(p + "ffn_up.weight", p + "ffn.up.weight");
@@ -578,8 +579,8 @@ static bool load_vision_tensors(ctx & c, const char * path) {
     }
 
     // Projector weights
-    m.proj_fc1_w = get2("projector.fc1.weight", "mm.0.weight");
-    m.proj_fc1_b = get2("projector.fc1.bias", "mm.0.bias");
+    m.proj_fc1_w = get2("projector.fc1.weight", "mm.1.weight");
+    m.proj_fc1_b = get2("projector.fc1.bias", "mm.1.bias");
     m.proj_fc2_w = get2("projector.fc2.weight", "mm.2.weight");
     m.proj_fc2_b = get2("projector.fc2.bias", "mm.2.bias");
 
