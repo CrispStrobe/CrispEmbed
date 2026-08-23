@@ -637,8 +637,8 @@ static std::string decode_tokens(const ctx & c, const std::vector<int32_t> & ids
             out += c.id_to_piece[id];
         }
     }
-    // GPT-2 byte-level BPE decode: convert \xNN byte tokens to raw bytes
-    return core_bpe::gpt2_bytes_to_unicode_decode(out);
+    // GPT-2 byte-level BPE decode: convert unicode pieces to raw bytes
+    return core_bpe::unicode_to_bytes(out);
 }
 
 // ============================================================================
