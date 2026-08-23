@@ -13,9 +13,11 @@ import json, os, subprocess, sys, shutil
 from pathlib import Path
 
 WORK = Path("/kaggle/working")
+SCRATCH = Path("/tmp/lfm2vl")  # work in /tmp to keep /kaggle/working small
+SCRATCH.mkdir(parents=True, exist_ok=True)
 REPO_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
-REPO = WORK / "CrispEmbed"
-REF_GGUF = WORK / "lfm2-vl-ref.gguf"
+REPO = SCRATCH / "CrispEmbed"
+REF_GGUF = WORK / "lfm2-vl-ref.gguf"  # only result files in /kaggle/working
 PROGRESS = WORK / "progress.txt"
 RESULTS = WORK / "lfm2_vl_refdump_results.json"
 
@@ -49,16 +51,16 @@ sys.path.insert(0, str(REPO / "ggml" / "scripts"))
 sys.path.insert(0, str(REPO / "tools" / "kaggle" / "crispembed-ref-gen"))
 try:
     # Try kaggle_harness from the repo clone
-    crispasr_harness = WORK / "CrispASR" / "tools" / "kaggle" / "kaggle_harness.py"
+    crispasr_harness = SCRATCH / "CrispASR" / "tools" / "kaggle" / "kaggle_harness.py"
     if not crispasr_harness.exists():
-        # Clone CrispASR for the harness
+        # Clone CrispASR for the harness (into /tmp, NOT /kaggle/working)
         crispasr_url = "https://github.com/CrispStrobe/CrispASR.git"
-        crispasr_dir = WORK / "CrispASR"
+        crispasr_dir = SCRATCH / "CrispASR"
         if not crispasr_dir.exists():
             subprocess.check_call([
                 "git", "clone", "--depth", "1", crispasr_url, str(crispasr_dir)
             ])
-    sys.path.insert(0, str(WORK / "CrispASR" / "tools" / "kaggle"))
+    sys.path.insert(0, str(SCRATCH / "CrispASR" / "tools" / "kaggle"))
     import kaggle_harness as kh
     kh.init_progress()
     tok = kh.resolve_hf_token(require=True)
@@ -83,8 +85,18 @@ log("Installing dependencies...")
 # LFM2.5-VL requires transformers >=5.0.0 for Lfm2VlForConditionalGeneration.
 # Do NOT reinstall torch — Kaggle's pre-installed CUDA torch is matched to the
 # GPU (P100/sm_60 needs the pre-installed build; pip-upgraded torch drops sm_60).
+# --no-deps prevents pulling a new torch that kills sm_60 support.
 subprocess.run("pip install -q --no-deps 'transformers>=5.0.0'", shell=True)
-subprocess.run("pip install -q accelerate gguf Pillow", shell=True)
+subprocess.run("pip install -q --no-deps accelerate", shell=True)
+subprocess.run("pip install -q gguf Pillow", shell=True)
+# Log torch/transformers versions for debugging
+import importlib
+for mod in ["torch", "transformers"]:
+    try:
+        m = importlib.import_module(mod)
+        log(f"  {mod} {m.__version__}")
+    except Exception:
+        log(f"  {mod}: not found")
 log(f"transformers version: {subprocess.check_output('python -c \"import transformers; print(transformers.__version__)\"', shell=True).decode().strip()}")
 
 # ── Run the dumper ───────────────────────────────────────────────────
