@@ -1556,8 +1556,12 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             ggml_tensor * v_cached = ggml_view_2d(g, c.kvc.v, kv_dim, n_kv,
                 c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
 
+            // Save originals for KV cache write (before potential type cast)
+            ggml_tensor * K_for_cache = K_flat;
+            ggml_tensor * V_for_cache = V_flat;
+
             // Concat cached + new: [kv_dim, n_kv+1]
-            // Cast K_flat/V_flat to match cache type if needed
+            // Cast K_flat/V_flat to match cache type if needed for concat
             if (k_cached->type != K_flat->type)
                 K_flat = ggml_cast(g, K_flat, k_cached->type);
             if (v_cached->type != V_flat->type)
@@ -1585,8 +1589,16 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             ggml_tensor * v_write = ggml_view_2d(g, c.kvc.v, kv_dim, 1,
                 c.kvc.v->nb[1],
                 (size_t)attn_idx * c.kvc.v->nb[2] + (size_t)n_kv * c.kvc.v->nb[1]);
-            ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
-            ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
+            // Write original (un-cast) K/V to cache for next step
+            // Cast to cache type if needed
+            ggml_tensor * K_wr = K_for_cache;
+            ggml_tensor * V_wr = V_for_cache;
+            if (k_write->type != K_wr->type)
+                K_wr = ggml_cast(g, K_wr, k_write->type);
+            if (v_write->type != V_wr->type)
+                V_wr = ggml_cast(g, V_wr, v_write->type);
+            ggml_build_forward_expand(gf, ggml_cpy(g, K_wr, k_write));
+            ggml_build_forward_expand(gf, ggml_cpy(g, V_wr, v_write));
             ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
