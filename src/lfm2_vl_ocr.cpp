@@ -1436,6 +1436,14 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
         h = lfm2_rms_norm(g, x, l.ffn_norm_w, eps);
         h = lfm2_swiglu(g, h, l.ff_w1, l.ff_w2, l.ff_w3);
         x = ggml_add(g, residual, h);
+
+        // Mark first 4 layer outputs for diff comparison
+        if (il < 4 && populate_kvc) {
+            char lname[64];
+            snprintf(lname, sizeof(lname), "llm_layer_%d", il);
+            ggml_set_name(x, lname);
+            ggml_set_output(x);
+        }
     }
 
     // Final norm
@@ -1766,6 +1774,18 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     }
     if (c.verbosity >= 1) {
         fprintf(stderr, "  prefill: %d tokens, %lld ms\n", n_prompt_tokens, ms_since(t_prefill));
+    }
+
+    // Read and diff per-layer intermediates
+    for (int il = 0; il < std::min(4, n_layers); il++) {
+        char lname[64];
+        snprintf(lname, sizeof(lname), "llm_layer_%d", il);
+        ggml_tensor * lt = ggml_graph_get_tensor(gf, lname);
+        if (lt) {
+            std::vector<float> layer_data((size_t)D * n_prompt_tokens);
+            ggml_backend_tensor_get(lt, layer_data.data(), 0, layer_data.size() * sizeof(float));
+            diff_stage(c, lname, layer_data.data(), layer_data.size());
+        }
     }
 
     // Read logits and take argmax
