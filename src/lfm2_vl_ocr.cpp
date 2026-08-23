@@ -2111,8 +2111,8 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     int32_t image_id    = (int32_t)lhp.image_token_id;  // 124907
     int32_t nl_id       = special_tok(c, "\n");
 
-    // If special tokens not found by name, try by known IDs
-    if (im_start_id < 0) im_start_id = 124895;  // LFM2.5 default
+    // LFM2.5-VL known special token IDs (from tokenizer.json added_tokens)
+    if (im_start_id < 0) im_start_id = 124899;
     if (im_end_id < 0)   im_end_id   = 124900;
     if (nl_id < 0) {
         // newline might be a regular token
@@ -2135,9 +2135,13 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     // user\n
     for (auto id : user_ids) ids.push_back(id);
     if (nl_id >= 0) ids.push_back(nl_id);
-    // <image> × n_image_tokens
+    // <|image_start|> <image>*N <|image_end|>  (use_image_special_tokens=true)
+    int32_t img_start_id = 125009;  // <|image_start|>
+    int32_t img_end_id   = 125010;  // <|image_end|>
+    ids.push_back(img_start_id);
     for (int i = 0; i < n_image_tokens; i++)
         ids.push_back(image_id);
+    ids.push_back(img_end_id);
     // prompt_text
     for (auto id : prompt_ids) ids.push_back(id);
     // <|im_end|>\n
