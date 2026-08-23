@@ -1,0 +1,17 @@
+{
+  "id": "chr1s4/lfm2-vl-refdump",
+  "title": "LFM2.5-VL-3B Reference Dump",
+  "code_file": "lfm2_vl_refdump.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
