@@ -282,8 +282,8 @@ static bool alloc_kv_cache(ctx & c, int max_seq) {
     c.kvc.ctx = ggml_init(ip);
     if (!c.kvc.ctx) return false;
 
-    c.kvc.k = ggml_new_tensor_3d(c.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_attn);
-    c.kvc.v = ggml_new_tensor_3d(c.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_attn);
+    c.kvc.k = ggml_new_tensor_3d(c.kvc.ctx, GGML_TYPE_F32, kv_dim, max_seq, n_attn);
+    c.kvc.v = ggml_new_tensor_3d(c.kvc.ctx, GGML_TYPE_F32, kv_dim, max_seq, n_attn);
     ggml_set_name(c.kvc.k, "lfm_kv_k");
     ggml_set_name(c.kvc.v, "lfm_kv_v");
 
