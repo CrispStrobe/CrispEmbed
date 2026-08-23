@@ -4337,6 +4337,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "smt_ocr.h"
 #include "tromr_ocr.h"
 #include "flova_ocr.h"
+#include "lfm2_vl_ocr.h"
 #include "transcoda_ocr.h"
 #include "ppocrv6_ocr.h"
 #include "core/gguf_loader.h"
@@ -4364,7 +4365,8 @@ enum ocr_model_type {
     OCR_MODEL_TROMR,
     OCR_MODEL_FLOVA,
     OCR_MODEL_TRANSCODA,
-    OCR_MODEL_PPOCRV6
+    OCR_MODEL_PPOCRV6,
+    OCR_MODEL_LFM2_VL
 };
 
 struct ocr_model {
@@ -4400,6 +4402,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "flova_ocr") return OCR_MODEL_FLOVA;
     if (arch == "transcoda_ocr") return OCR_MODEL_TRANSCODA;
     if (arch == "ppocrv6") return OCR_MODEL_PPOCRV6;
+    if (arch == "lfm2_vl") return OCR_MODEL_LFM2_VL;
     return OCR_MODEL_PIX2TEX;
 }
 
@@ -4484,6 +4487,9 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
     case OCR_MODEL_PPOCRV6:
         inner = ppocrv6_ocr_init(path, n_threads);
         break;
+    case OCR_MODEL_LFM2_VL:
+        inner = lfm2_vl_ocr_init(path, n_threads);
+        break;
     }
     if (!inner) return nullptr;
     auto * u = new ocr_model{ type, inner };
@@ -4563,6 +4569,9 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_PPOCRV6:
         ppocrv6_ocr_free((ppocrv6_ocr_context *)u->ctx);
         break;
+    case OCR_MODEL_LFM2_VL:
+        lfm2_vl_ocr_free((lfm2_vl_ocr_context *)u->ctx);
+        break;
     }
     delete u;
 }
@@ -4627,6 +4636,8 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return transcoda_ocr_recognize_raw((transcoda_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_PPOCRV6:
         return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_LFM2_VL:
+        return lfm2_vl_ocr_recognize_raw((lfm2_vl_ocr_context *)u->ctx, px, w, h, ch, ol);
     }
     return nullptr;
 }
@@ -4722,6 +4733,11 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)std::clamp(int(px[i] * 255.0f + 0.5f), 0, 255);
         return ppocrv6_ocr_recognize_raw((ppocrv6_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
     }
+    case OCR_MODEL_LFM2_VL: {
+        std::vector<uint8_t> gray(w * h);
+        for (int i = 0; i < w * h; i++) gray[i] = (uint8_t)std::clamp(int(px[i] * 255.0f + 0.5f), 0, 255);
+        return lfm2_vl_ocr_recognize_raw((lfm2_vl_ocr_context *)u->ctx, gray.data(), w, h, 1, ol);
+    }
     }
     return nullptr;
 }
@@ -4763,6 +4779,8 @@ extern "C" const float * crispembed_ocr_model_confidences(const void * ctx, int 
         return granite_vision_confidences((const granite_vision_context *)u->ctx, n_tokens);
     case OCR_MODEL_LIGHTONOCR:
         return lightonocr_confidences((const lightonocr_context *)u->ctx, n_tokens);
+    case OCR_MODEL_LFM2_VL:
+        return lfm2_vl_ocr_confidences((const lfm2_vl_ocr_context *)u->ctx, n_tokens);
     default:
         return nullptr;
     }
@@ -4796,6 +4814,9 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
         break;
     case OCR_MODEL_SMOLDOCLING:
         smoldocling_set_max_tokens((smoldocling_context *)u->ctx, max_tokens);
+        break;
+    case OCR_MODEL_LFM2_VL:
+        lfm2_vl_ocr_set_max_tokens((lfm2_vl_ocr_context *)u->ctx, max_tokens);
         break;
     default:
         break; // formula OCR engines: no-op
