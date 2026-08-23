@@ -1393,6 +1393,14 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             // Bx = B * x
             ggml_tensor * Bx = ggml_mul(g, B, xi);
 
+            // Mark Bx for conv state extraction (last 2 columns needed for decode)
+            if (populate_kvc) {
+                char bx_name[64];
+                snprintf(bx_name, sizeof(bx_name), "bx_%d", il);
+                ggml_set_name(Bx, bx_name);
+                ggml_set_output(Bx);
+            }
+
             // Causal depthwise conv1d: left-pad by (kernel-1)=2
             // Create padded input: [D, pad + n_tokens]
             ggml_tensor * pad_zeros = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, pad);
@@ -1767,28 +1775,34 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     // Diff: compare logits against reference
     diff_stage(c, "llm_logits_last", logits_data.data(), logits_data.size());
 
-    // Save conv state from prefill: we need to extract the last (kernel-1)
-    // columns of Bx for each conv layer. Since we ran the full prefill in a
-    // single ggml graph, the conv state is implicit in the graph output.
-    // For simplicity in the initial version, we don't extract conv state from
-    // the prefill graph. Instead, we'll recompute the conv state by running
-    // the prefill embedding through the conv layers on CPU.
-    // TODO: extract conv state from the ggml graph for efficiency.
-    // For now, decode without conv state caching (full recompute fallback
-    // for conv layers if needed, but we'll use the simplified decode graph
-    // that takes conv state as input).
-
-    // Actually, since the prefill conv layers process all tokens at once with
-    // left-padding, the "conv state" for decode is the last (kernel-1)=2
-    // values of Bx at each conv layer. We need to extract these.
-    // Since we can't easily extract intermediate tensors from the ggml graph,
-    // we'll use a CPU-side approach: after prefill, we know the input to each
-    // conv layer. But this requires saving per-layer intermediates.
-    //
-    // Pragmatic solution for initial version: just run decode without conv
-    // state (treat decode conv layers as having zero state initially, which
-    // means the first few decode tokens may have slightly wrong conv output).
-    // This is a known limitation noted in the header.
+    // Extract conv state from prefill: the last (kernel-1)=2 columns of Bx
+    // at each conv layer are the conv state for decode.
+    {
+        const int pad = (int)lhp.conv_kernel - 1;  // 2
+        int conv_idx = 0;
+        for (int il = 0; il < n_layers; il++) {
+            if (c.m.llm_layers[il].is_attention) continue;
+            char bx_name[64];
+            snprintf(bx_name, sizeof(bx_name), "bx_%d", il);
+            ggml_tensor * bx_t = ggml_graph_get_tensor(gf, bx_name);
+            if (bx_t && conv_idx < (int)c.conv_state.size()) {
+                // Bx is [D, n_tokens] in ggml col-major → element (d, t) at t*D+d
+                // We need the last `pad` columns: t = n_prompt_tokens - pad .. n_prompt_tokens - 1
+                std::vector<float> bx_data((size_t)D * n_prompt_tokens);
+                ggml_backend_tensor_get(bx_t, bx_data.data(), 0, bx_data.size() * sizeof(float));
+                for (int p = 0; p < pad; p++) {
+                    int src_t = n_prompt_tokens - pad + p;
+                    for (int d = 0; d < D; d++) {
+                        c.conv_state[conv_idx][(size_t)p * D + d] = bx_data[(size_t)src_t * D + d];
+                    }
+                }
+            }
+            conv_idx++;
+        }
+        if (c.verbosity >= 1) {
+            fprintf(stderr, "  conv state: extracted from %d layers\n", conv_idx);
+        }
+    }
 
     ggml_free(g);
 
