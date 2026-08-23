@@ -1667,23 +1667,23 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     auto embed_w = to_f32(c.m.embed_tokens_w);
     std::vector<float> spliced((size_t)D * n_prompt_tokens);
 
+    // Build spliced embeddings in ggml column-major layout: [D, n_tokens]
+    // Element (d, t) at flat offset d + t * D.
     int img_pos = 0;
     for (int t = 0; t < n_prompt_tokens; t++) {
         int32_t tok = prompt_ids[t];
         if (tok == (int32_t)lhp.image_token_id && image_embeds && img_pos < n_image_tokens) {
             // Copy from image embeddings (row-major: [n_image_tokens, D])
             for (int d = 0; d < D; d++) {
-                spliced[(size_t)d * n_prompt_tokens + t] =
+                spliced[(size_t)t * D + d] =
                     image_embeds[(size_t)img_pos * embed_dim + d];
             }
             img_pos++;
         } else {
-            // Token embedding: embed_w is [D, vocab] in ggml, so embed_w[d * V + tok]
-            // But to_f32 returns raw data in ggml layout: row-major with ne[0]=D
-            // Actually for ggml embed_tokens [D, V], element (d, tok) = data[tok * D + d]
+            // Token embedding: ggml embed_tokens [D, V], element (d, tok) = data[tok * D + d]
             if (tok >= 0 && tok < (int32_t)lhp.vocab_size) {
                 for (int d = 0; d < D; d++) {
-                    spliced[(size_t)d * n_prompt_tokens + t] =
+                    spliced[(size_t)t * D + d] =
                         embed_w[(size_t)tok * D + d];
                 }
             }
@@ -1720,7 +1720,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     ggml_tensor * emb_in = ggml_graph_get_tensor(gf, "emb_input");
     ggml_backend_tensor_set(emb_in, spliced.data(), 0, spliced.size() * sizeof(float));
 
-    // Diff: compare spliced embedding against reference
+    // Diff: spliced is now in ggml col-major layout [D, n_tokens] = flat[d + t*D]
     diff_stage(c, "llm_embed", spliced.data(), spliced.size());
     if (c.verbosity >= 1) {
         fprintf(stderr, "[lfm2_vl] prompt: %d tokens (%d text + %d image), img_pos used=%d\n",
