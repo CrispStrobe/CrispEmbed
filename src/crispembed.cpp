@@ -4402,7 +4402,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "flova_ocr") return OCR_MODEL_FLOVA;
     if (arch == "transcoda_ocr") return OCR_MODEL_TRANSCODA;
     if (arch == "ppocrv6") return OCR_MODEL_PPOCRV6;
-    if (arch == "lfm2_vl") return OCR_MODEL_LFM2_VL;
+    if (arch == "lfm2_vl" || arch == "lfm2") return OCR_MODEL_LFM2_VL;
     return OCR_MODEL_PIX2TEX;
 }
 
