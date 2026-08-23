@@ -2159,6 +2159,11 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
         for (int i = 0; i < std::min(10, (int)ids.size()); i++)
             fprintf(stderr, "%d ", ids[i]);
         fprintf(stderr, "...\n");
+        fprintf(stderr, "[lfm2_vl] user=%zu prompt=%zu assist=%zu nl=%d\n",
+                user_ids.size(), prompt_ids.size(), assist_ids.size(), nl_id);
+        fprintf(stderr, "[lfm2_vl] prompt ids: ");
+        for (auto id : prompt_ids) fprintf(stderr, "%d ", id);
+        fprintf(stderr, "\n");
     }
 
     return ids;
