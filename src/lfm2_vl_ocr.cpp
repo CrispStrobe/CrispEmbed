@@ -1968,6 +1968,10 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             }
 
             // Set tok_emb: look up the token embedding for best_id
+            if (gen == 1 && c.verbosity >= 1) {
+                fprintf(stderr, "[lfm2_vl] decode step 0: input token=%d, n_kv=%d, pos=%d\n",
+                        best_id, n_kv, n_kv);
+            }
             std::vector<float> tok_emb_data(D);
             for (int d = 0; d < D; d++)
                 tok_emb_data[d] = embed_w[(size_t)best_id * D + d];
@@ -2008,6 +2012,15 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             // Read logits
             ggml_tensor * lt3 = ggml_graph_get_tensor(gf3, "logits");
             ggml_backend_tensor_get(lt3, logits_data.data(), 0, V * sizeof(float));
+
+            if (gen == 1 && c.verbosity >= 1) {
+                // Print decode step 0 argmax and top-3
+                int am = 0; float amv = -INFINITY;
+                for (int v = 0; v < V; v++) if (logits_data[v] > amv) { amv = logits_data[v]; am = v; }
+                fprintf(stderr, "[lfm2_vl] decode step 0 argmax: %d (%.2f), expected 1870 ('son')\n", am, amv);
+                // Check value at expected token
+                fprintf(stderr, "[lfm2_vl] decode step 0 logit[1870]='son': %.2f\n", logits_data[1870]);
+            }
 
             // Update conv state from bx_out tensors
             conv_layer = 0;
