@@ -1557,6 +1557,11 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
                 c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
 
             // Concat cached + new: [kv_dim, n_kv+1]
+            // Cast K_flat/V_flat to match cache type if needed
+            if (k_cached->type != K_flat->type)
+                K_flat = ggml_cast(g, K_flat, k_cached->type);
+            if (v_cached->type != V_flat->type)
+                V_flat = ggml_cast(g, V_flat, v_cached->type);
             ggml_tensor * k_all = ggml_concat(g, k_cached, K_flat, 1);
             ggml_tensor * v_all = ggml_concat(g, v_cached, V_flat, 1);
 
