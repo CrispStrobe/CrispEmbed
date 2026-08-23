@@ -688,6 +688,10 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
     out.w_patches = pp.grid_thw[2];
     out.data      = std::move(pp.patches);
 
+    fprintf(stderr, "[lfm2_vl] preproc: n_patches=%d, patch_dim=%d, grid=%dx%d, resized=%dx%d\n",
+            out.n_patches, out.patch_dim, out.h_patches, out.w_patches,
+            pp.resized_h, pp.resized_w);
+
     return true;
 }
 
@@ -712,18 +716,51 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
     ggml_set_name(pixel_in, "pixel_in");
     ggml_set_input(pixel_in);
 
-    // Patch embedding: Linear(768 → 1152)
-    ggml_tensor * x = ggml_mul_mat(g, c.m.v_patch_embed_w, pixel_in);
+    // Patch embedding: Conv2d(3, 1152, 16, 16) → equivalent to Linear(768, 1152)
+    // Weight is 4D [16, 16, 3, 1152] in GGUF; reshape to 2D [768, 1152] for mul_mat.
+    ggml_tensor * pe_w = c.m.v_patch_embed_w;
+    if (!pe_w) {
+        fprintf(stderr, "[lfm2_vl] FATAL: v_patch_embed_w is null!\n");
+        return nullptr;
+    }
+    if (dbg()) {
+        fprintf(stderr, "[lfm2_vl] patch_embed_w: ndims=%d, ne=[%lld,%lld,%lld,%lld]\n",
+                ggml_n_dims(pe_w), (long long)pe_w->ne[0], (long long)pe_w->ne[1],
+                (long long)pe_w->ne[2], (long long)pe_w->ne[3]);
+    }
+    // Conv2d weight [16,16,3,1152] stored as 4D in GGUF. For mul_mat we need
+    // it as 2D [768, 1152]. The weight tensor lives on the backend buffer so
+    // we can't reshape it in-graph; instead we just override the shape in
+    // place — the flat memory is identical (16*16*3 = 768, contiguous).
+    if (ggml_n_dims(pe_w) > 2) {
+        pe_w->ne[0] = patch_dim;  // 768
+        pe_w->ne[1] = H;          // 1152
+        pe_w->ne[2] = 1;
+        pe_w->ne[3] = 1;
+        pe_w->nb[1] = pe_w->nb[0] * pe_w->ne[0];
+        pe_w->nb[2] = pe_w->nb[1] * pe_w->ne[1];
+        pe_w->nb[3] = pe_w->nb[2];
+        fprintf(stderr, "[lfm2_vl] after reshape: ne=[%lld,%lld,%lld,%lld], nb=[%lld,%lld,%lld,%lld], type=%d\n",
+                (long long)pe_w->ne[0], (long long)pe_w->ne[1],
+                (long long)pe_w->ne[2], (long long)pe_w->ne[3],
+                (long long)pe_w->nb[0], (long long)pe_w->nb[1],
+                (long long)pe_w->nb[2], (long long)pe_w->nb[3],
+                (int)pe_w->type);
+        fprintf(stderr, "[lfm2_vl] pixel_in: ne=[%lld,%lld], type=%d\n",
+                (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
+                (int)pixel_in->type);
+    }
+    ggml_tensor * x = ggml_mul_mat(g, pe_w, pixel_in);
     if (c.m.v_patch_embed_b) x = ggml_add(g, x, c.m.v_patch_embed_b);
 
-    // Learned position embeddings
-    if (c.m.v_pos_embed) {
-        ggml_tensor * pos_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_patches);
-        ggml_set_name(pos_ids, "v_pos_ids");
-        ggml_set_input(pos_ids);
-        ggml_tensor * pos_emb = ggml_get_rows(g, c.m.v_pos_embed, pos_ids);
-        x = ggml_add(g, x, pos_emb);
-    }
+    // Learned position embeddings — bilinear-interpolated on CPU.
+    // The GGUF stores a [1152, 256] table (16×16 grid). For images whose
+    // patch grid differs from 16×16, we interpolate to (h_patches, w_patches)
+    // and pass the result as a graph input tensor.
+    ggml_tensor * pos_emb_input = ggml_new_tensor_2d(g, GGML_TYPE_F32, H, n_patches);
+    ggml_set_name(pos_emb_input, "v_pos_emb");
+    ggml_set_input(pos_emb_input);
+    x = ggml_add(g, x, pos_emb_input);
 
     // LayerNorm helper
     auto layernorm = [&](ggml_tensor * t, ggml_tensor * w, ggml_tensor * b) -> ggml_tensor * {
@@ -738,6 +775,19 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
     // ViT blocks
     for (uint32_t il = 0; il < vhp.depth; il++) {
         const auto & bl = c.m.v_layers[il];
+        if (!bl.ln1_w) {
+            fprintf(stderr, "[lfm2_vl] FATAL: v_layers[%u].ln1_w is null!\n", il);
+            return nullptr;
+        }
+        if (!bl.q_w && !bl.qkv_w) {
+            fprintf(stderr, "[lfm2_vl] FATAL: v_layers[%u] has no Q weight!\n", il);
+            return nullptr;
+        }
+        if (il == 0 && dbg()) {
+            ggml_tensor * qw = bl.q_w ? bl.q_w : bl.qkv_w;
+            fprintf(stderr, "[lfm2_vl] v_layer[0] q_w: ne=[%lld,%lld], type=%d\n",
+                    (long long)qw->ne[0], (long long)qw->ne[1], (int)qw->type);
+        }
         ggml_tensor * residual = x;
 
         // Pre-attention LayerNorm
@@ -781,14 +831,20 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         if (core_env::on("LFM2_VL_FLASH_ATTN")) {
             attn_out = ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
         } else {
-            // Q: (head_dim, n_patches, n_heads)
-            // K^T: (n_patches, head_dim, n_heads)
-            ggml_tensor * KT = ggml_cont(g, ggml_permute(g, K, 1, 0, 2, 3));
-            ggml_tensor * scores = ggml_mul_mat(g, KT, Q);  // (n_patches, n_patches, n_heads)
+            // Q, K, V: (head_dim, n_patches, n_heads) after permute
+            // ggml_mul_mat(A, B) = B × A^T
+            // scores = Q × K^T → ggml_mul_mat(K, Q) → (n_patches, n_patches, n_heads)
+            ggml_tensor * scores = ggml_mul_mat(g, K, Q);
             scores = ggml_scale(g, scores, attn_scale);
             scores = ggml_soft_max(g, scores);
-            // scores @ V: (head_dim, n_patches, n_heads)
-            attn_out = ggml_mul_mat(g, V, scores);
+            // out = scores × V → need ggml_mul_mat with V permuted
+            // V: (head_dim, n_patches, n_heads)
+            // scores: (n_patches, n_patches, n_heads)
+            // Want: out[d,t,h] = sum_s scores[s,t,h] * V[d,s,h]
+            // = ggml_mul_mat(V, scores) → but V->ne[0]=head_dim ≠ scores->ne[0]=n_patches
+            // Need V transposed to (n_patches, head_dim, n_heads), then mul_mat
+            ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
+            attn_out = ggml_mul_mat(g, Vt, scores);
         }
 
         // Permute back: (head_dim, n_heads, n_patches)
@@ -844,29 +900,70 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     ggml_context * g = ggml_init(ip);
     if (!g) return false;
 
+    fprintf(stderr, "[lfm2_vl] vision: building graph for %d patches...\n", n_patches);
+
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_tensor * vis_out = build_vision_graph(c, g, gf, n_patches);
+    fprintf(stderr, "[lfm2_vl] vision: graph built, %d nodes\n", ggml_graph_n_nodes(gf));
 
     ggml_backend_sched_reset(c.sched);
+    fprintf(stderr, "[lfm2_vl] vision: allocating graph...\n");
     if (!ggml_backend_sched_alloc_graph(c.sched, gf)) {
         fprintf(stderr, "[lfm2_vl] vision graph alloc failed\n");
         ggml_free(g);
         return false;
     }
+    fprintf(stderr, "[lfm2_vl] vision: graph allocated, setting inputs...\n");
 
     // Set input: pixel patches
     ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_in");
+    if (!pixel_in) { fprintf(stderr, "[lfm2_vl] pixel_in tensor not found!\n"); ggml_free(g); return false; }
+    fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n",
+            (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
+            patches.data.size() * sizeof(float));
     ggml_backend_tensor_set(pixel_in, patches.data.data(), 0,
                             patches.data.size() * sizeof(float));
 
-    // Position IDs (sequential 0..n_patches-1)
-    if (c.m.v_pos_embed) {
-        ggml_tensor * pos_ids = ggml_graph_get_tensor(gf, "v_pos_ids");
-        if (pos_ids) {
-            std::vector<int32_t> pids(n_patches);
-            for (int i = 0; i < n_patches; i++) pids[i] = i;
-            ggml_backend_tensor_set(pos_ids, pids.data(), 0, n_patches * sizeof(int32_t));
+    // Position embeddings: bilinear-interpolate from learned 16×16 grid.
+    // v_pos_embed is [H, 256] in ggml (= [256, H] row-major = 16×16 grid of H-dim vectors).
+    {
+        ggml_tensor * pos_tensor = ggml_graph_get_tensor(gf, "v_pos_emb");
+        const int hp = patches.h_patches;
+        const int wp = patches.w_patches;
+        // Read the raw 16×16 position embeddings from the weight tensor
+        const int grid = 16;
+        std::vector<float> pos_table((size_t)grid * grid * H);
+        if (c.m.v_pos_embed) {
+            ggml_backend_tensor_get(c.m.v_pos_embed, pos_table.data(), 0,
+                                    pos_table.size() * sizeof(float));
         }
+        // Bilinear interpolation: map (hp, wp) grid → (grid, grid) source
+        std::vector<float> interp_pos((size_t)n_patches * H, 0.0f);
+        for (int r = 0; r < hp; r++) {
+            for (int col = 0; col < wp; col++) {
+                // Map target (r, col) to source coordinates
+                float sy = (grid > 1) ? (float)r * (grid - 1) / (hp - 1 + 1e-6f) : 0.0f;
+                float sx = (grid > 1) ? (float)col * (grid - 1) / (wp - 1 + 1e-6f) : 0.0f;
+                int y0 = (int)sy; int y1 = std::min(y0 + 1, grid - 1);
+                int x0 = (int)sx; int x1 = std::min(x0 + 1, grid - 1);
+                float fy = sy - y0; float fx = sx - x0;
+                float w00 = (1 - fy) * (1 - fx);
+                float w01 = (1 - fy) * fx;
+                float w10 = fy * (1 - fx);
+                float w11 = fy * fx;
+                int dst_idx = r * wp + col;
+                const float * s00 = &pos_table[((size_t)y0 * grid + x0) * H];
+                const float * s01 = &pos_table[((size_t)y0 * grid + x1) * H];
+                const float * s10 = &pos_table[((size_t)y1 * grid + x0) * H];
+                const float * s11 = &pos_table[((size_t)y1 * grid + x1) * H];
+                float * dst = &interp_pos[(size_t)dst_idx * H];
+                for (int d = 0; d < H; d++) {
+                    dst[d] = w00 * s00[d] + w01 * s01[d] + w10 * s10[d] + w11 * s11[d];
+                }
+            }
+        }
+        ggml_backend_tensor_set(pos_tensor, interp_pos.data(), 0,
+                                interp_pos.size() * sizeof(float));
     }
 
     // Compute
@@ -1981,7 +2078,44 @@ lfm2_vl_ocr_context * lfm2_vl_ocr_init_split(const char * model_path,
 }
 
 lfm2_vl_ocr_context * lfm2_vl_ocr_init(const char * model_path, int n_threads) {
-    return lfm2_vl_ocr_init_split(model_path, nullptr, n_threads);
+    if (!model_path) return nullptr;
+    // Try to auto-discover mmproj sibling file.
+    // Convention: mmproj-<BaseName>-F16.gguf or mmproj-<BaseName>-Q8_0.gguf
+    // in the same directory as the model.
+    std::string path(model_path);
+    std::string dir, base;
+    auto slash = path.find_last_of("/\\");
+    if (slash != std::string::npos) {
+        dir = path.substr(0, slash + 1);
+        base = path.substr(slash + 1);
+    } else {
+        dir = "";
+        base = path;
+    }
+    // Try common mmproj patterns
+    const char * mmproj_path = nullptr;
+    std::string mmproj;
+    for (const char * suffix : { "F16", "Q8_0", "BF16" }) {
+        // Pattern: mmproj-<ModelBaseName>-<suffix>.gguf where ModelBaseName
+        // is derived from the LLM filename (strip quant suffix)
+        // e.g. LFM2.5-VL-3B-Q4_K_M.gguf → mmproj-LFM2.5-VL-3B-F16.gguf
+        // Find the model base: strip from last dash-uppercase-quant pattern
+        std::string model_base = base;
+        auto dash = model_base.rfind('-');
+        if (dash != std::string::npos) {
+            model_base = model_base.substr(0, dash);
+        }
+        // Strip .gguf if present
+        auto dot = model_base.rfind(".gguf");
+        if (dot != std::string::npos) model_base = model_base.substr(0, dot);
+        mmproj = dir + "mmproj-" + model_base + "-" + suffix + ".gguf";
+        FILE * f = fopen(mmproj.c_str(), "rb");
+        if (f) { fclose(f); mmproj_path = mmproj.c_str(); break; }
+    }
+    if (mmproj_path) {
+        fprintf(stderr, "[lfm2_vl] auto-discovered mmproj: %s\n", mmproj_path);
+    }
+    return lfm2_vl_ocr_init_split(model_path, mmproj_path, n_threads);
 }
 
 void lfm2_vl_ocr_free(lfm2_vl_ocr_context * ctx) {
