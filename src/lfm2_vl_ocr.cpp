@@ -641,13 +641,8 @@ static bool load_tokenizer(ctx & c, const char * path) {
 }
 
 static std::vector<int32_t> tokenize(const ctx & c, const std::string & text) {
-    auto ids = core_bpe::tokenize_lfm2(c.token_to_id, c.merge_rank, text);
-    // Wrap with BOS
-    std::vector<int32_t> result;
-    result.reserve(ids.size() + 1);
-    result.push_back((int32_t)c.m.lhp.bos_id);
-    for (int32_t id : ids) result.push_back(id);
-    return result;
+    // Raw BPE tokenization — no BOS/EOS wrapping. Caller adds special tokens.
+    return core_bpe::tokenize_lfm2(c.token_to_id, c.merge_rank, text);
 }
 
 static std::string decode_tokens(const ctx & c, const std::vector<int32_t> & ids) {
@@ -1681,6 +1676,13 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     ggml_tensor * emb_in = ggml_graph_get_tensor(gf, "emb_input");
     ggml_backend_tensor_set(emb_in, spliced.data(), 0, spliced.size() * sizeof(float));
 
+    // Diff: compare spliced embedding against reference
+    diff_stage(c, "llm_embed", spliced.data(), spliced.size());
+    if (c.verbosity >= 1) {
+        fprintf(stderr, "[lfm2_vl] prompt: %d tokens (%d text + %d image), img_pos used=%d\n",
+                n_prompt_tokens, n_prompt_tokens - n_image_tokens, n_image_tokens, img_pos);
+    }
+
     // Position IDs
     ggml_tensor * pos_in = ggml_graph_get_tensor(gf, "positions");
     {
@@ -1717,6 +1719,9 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     // Read logits and take argmax
     std::vector<float> logits_data(V);
     ggml_backend_tensor_get(logits_t, logits_data.data(), 0, V * sizeof(float));
+
+    // Diff: compare logits against reference
+    diff_stage(c, "llm_logits_last", logits_data.data(), logits_data.size());
 
     // Save conv state from prefill: we need to extract the last (kernel-1)
     // columns of Bx for each conv layer. Since we ran the full prefill in a
@@ -2083,39 +2088,74 @@ struct lfm2_vl_ocr_context {
 
 // ── Build chat-format token IDs ──
 
+// Look up a special token by its string representation.
+static int32_t special_tok(const lfm2_vl::ctx & c, const std::string & s) {
+    auto it = c.token_to_id.find(s);
+    return it != c.token_to_id.end() ? it->second : -1;
+}
+
 static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_image_tokens) {
     // LFM2.5-VL chat template:
-    // <|startoftext|><|im_start|>user\n<image>...prompt...<|im_end|>\n
+    // <|startoftext|><|im_start|>user\n<image>...<image>PROMPT<|im_end|>\n
     // <|im_start|>assistant\n
-    // We tokenize the text parts and splice IMAGE tokens for the image.
-
+    //
+    // Special tokens (<|im_start|>, <|im_end|>, etc.) must be inserted as
+    // single token IDs, NOT passed through the BPE tokenizer which would
+    // split them character by character.
     auto & c = ctx->inner;
     const auto & lhp = c.m.lhp;
 
-    // Tokenize the prompt text
-    auto prompt_ids = lfm2_vl::tokenize(c, ctx->prompt);
+    int32_t bos_id      = (int32_t)lhp.bos_id;       // <|startoftext|> = 124894
+    int32_t im_start_id = special_tok(c, "<|im_start|>");
+    int32_t im_end_id   = special_tok(c, "<|im_end|>");
+    int32_t image_id    = (int32_t)lhp.image_token_id;  // 124907
+    int32_t nl_id       = special_tok(c, "\n");
 
-    // Build the full sequence:
-    // BOS is already in prompt_ids[0] from tokenize()
-    // We need: BOS + text_before_image + IMAGE_tokens + text_after_image
+    // If special tokens not found by name, try by known IDs
+    if (im_start_id < 0) im_start_id = 124895;  // LFM2.5 default
+    if (im_end_id < 0)   im_end_id   = 124900;
+    if (nl_id < 0) {
+        // newline might be a regular token
+        auto nl_ids = lfm2_vl::tokenize(c, "\n");
+        if (!nl_ids.empty()) nl_id = nl_ids[0];
+    }
 
-    // Simple approach: tokenize the full chat template with a placeholder,
-    // then splice. For the initial version, use a simple format:
-    // [BOS] [image_tokens] [prompt_tokens_without_bos] [EOS_assistant_prefix]
+    // Tokenize just the plain text portions
+    auto user_ids    = lfm2_vl::tokenize(c, "user");
+    auto prompt_ids  = lfm2_vl::tokenize(c, ctx->prompt);
+    auto assist_ids  = lfm2_vl::tokenize(c, "assistant");
 
     std::vector<int32_t> ids;
-    ids.reserve(n_image_tokens + prompt_ids.size() + 10);
+    ids.reserve(n_image_tokens + 30);
 
-    // BOS
-    ids.push_back((int32_t)lhp.bos_id);
-
-    // Image tokens
+    // <|startoftext|>
+    ids.push_back(bos_id);
+    // <|im_start|>
+    ids.push_back(im_start_id);
+    // user\n
+    for (auto id : user_ids) ids.push_back(id);
+    if (nl_id >= 0) ids.push_back(nl_id);
+    // <image> × n_image_tokens
     for (int i = 0; i < n_image_tokens; i++)
-        ids.push_back((int32_t)lhp.image_token_id);
+        ids.push_back(image_id);
+    // prompt_text
+    for (auto id : prompt_ids) ids.push_back(id);
+    // <|im_end|>\n
+    ids.push_back(im_end_id);
+    if (nl_id >= 0) ids.push_back(nl_id);
+    // <|im_start|>assistant\n
+    ids.push_back(im_start_id);
+    for (auto id : assist_ids) ids.push_back(id);
+    if (nl_id >= 0) ids.push_back(nl_id);
 
-    // Prompt text (skip BOS from tokenize output)
-    for (size_t i = 1; i < prompt_ids.size(); i++)
-        ids.push_back(prompt_ids[i]);
+    if (c.verbosity >= 1) {
+        fprintf(stderr, "[lfm2_vl] token_ids: %zu total (%d image + %zu text)\n",
+                ids.size(), n_image_tokens, ids.size() - n_image_tokens);
+        fprintf(stderr, "[lfm2_vl] first 10 ids: ");
+        for (int i = 0; i < std::min(10, (int)ids.size()); i++)
+            fprintf(stderr, "%d ", ids[i]);
+        fprintf(stderr, "...\n");
+    }
 
     return ids;
 }
