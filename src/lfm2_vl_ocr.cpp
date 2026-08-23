@@ -1504,10 +1504,7 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
     ggml_set_name(pos_t, "pos");
     ggml_set_input(pos_t);
 
-    // KV mask: [max_seq, 1] — 0 for attended, -inf for empty
-    ggml_tensor * kv_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, max_seq, 1);
-    ggml_set_name(kv_mask, "kv_mask");
-    ggml_set_input(kv_mask);
+    // KV mask removed: decode reads only n_kv+1 valid entries, no mask needed.
 
     ggml_tensor * x = tok_emb;
     int attn_idx = 0;
@@ -1951,8 +1948,6 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             ggml_free(g2);
         } else {
             // KV-cached decode step
-            kv_mask_data[n_kv] = ggml_fp32_to_fp16(0.0f);
-
             ggml_context * g3 = ggml_init(ip);
             ggml_cgraph * gf3 = build_decode_step_graph(c, g3, n_kv, n_kv, max_seq_kv);
 
@@ -1988,10 +1983,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             ggml_tensor * pi = ggml_graph_get_tensor(gf3, "pos");
             ggml_backend_tensor_set(pi, &pos_val, 0, sizeof(int32_t));
 
-            // KV mask
-            ggml_tensor * km = ggml_graph_get_tensor(gf3, "kv_mask");
-            ggml_backend_tensor_set(km, kv_mask_data.data(), 0,
-                                    (size_t)max_seq_kv * sizeof(ggml_fp16_t));
+            // KV mask removed: decode reads only n_kv+1 valid entries
 
             // Conv state inputs
             int conv_layer = 0;
