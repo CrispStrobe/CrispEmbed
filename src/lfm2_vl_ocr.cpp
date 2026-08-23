@@ -1366,13 +1366,24 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
                 ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_wr));
             }
 
-            // Causal attention
+            // Causal attention with causal mask (flash_attn_ext with mask=nullptr
+            // is FULL attention — the dev guide warns this is NOT causal).
             Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
             K = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3));
             V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
             const float scale = 1.0f / sqrtf((float)head_dim);
-            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, nullptr,
+
+            // Build causal mask: [n_tokens, n_tokens] F16 with -inf above diagonal
+            ggml_tensor * mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, n_tokens, n_tokens);
+            {
+                char mname[64];
+                snprintf(mname, sizeof(mname), "causal_mask_%d", il);
+                ggml_set_name(mask, mname);
+                ggml_set_input(mask);
+            }
+
+            ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask,
                                                          scale, 0.0f, 0.0f);
             ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
@@ -1762,6 +1773,22 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             snprintf(name, sizeof(name), "conv_pad_%d", il);
             ggml_tensor * pt = ggml_graph_get_tensor(gf, name);
             if (pt) ggml_backend_tensor_set(pt, zeros.data(), 0, zeros.size() * sizeof(float));
+        }
+    }
+
+    // Causal attention masks: -inf above diagonal, 0 on and below
+    {
+        std::vector<float> mask_data((size_t)n_prompt_tokens * n_prompt_tokens, 0.0f);
+        for (int r = 0; r < n_prompt_tokens; r++)
+            for (int c2 = r + 1; c2 < n_prompt_tokens; c2++)
+                mask_data[(size_t)r * n_prompt_tokens + c2] = -INFINITY;
+        for (int il = 0; il < n_layers; il++) {
+            if (!c.m.llm_layers[il].is_attention) continue;
+            char mname[64];
+            snprintf(mname, sizeof(mname), "causal_mask_%d", il);
+            ggml_tensor * mt = ggml_graph_get_tensor(gf, mname);
+            if (mt) ggml_backend_tensor_set(mt, mask_data.data(), 0,
+                                             mask_data.size() * sizeof(float));
         }
     }
 
