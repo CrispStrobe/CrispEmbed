@@ -637,11 +637,55 @@ static bool load_tokenizer(ctx & c, const char * path) {
     }
 
     core_gguf::free_metadata(g);
+
+    if (c.verbosity >= 1) {
+        fprintf(stderr, "[lfm2_vl] tokenizer: %zu vocab, %zu merges\n",
+                c.id_to_piece.size(), c.merge_rank.size());
+        // Check if expected tokens exist
+        auto chk = [&](const char * s, int expected) {
+            auto it = c.token_to_id.find(s);
+            if (it != c.token_to_id.end()) {
+                fprintf(stderr, "  '%s' → %d %s\n", s, it->second,
+                        (it->second == expected) ? "✓" : "✗ (WRONG)");
+            } else {
+                fprintf(stderr, "  '%s' → NOT FOUND (expected %d)\n", s, expected);
+            }
+        };
+        chk("O", 55);
+        chk("CR", 6193);
+        chk("Ġthis", 532);
+        // Check merges
+        auto mchk = [&](const char * m) {
+            auto it = c.merge_rank.find(m);
+            fprintf(stderr, "  merge '%s' → %s\n", m,
+                    it != c.merge_rank.end() ? std::to_string(it->second).c_str() : "NOT FOUND");
+        };
+        mchk("C R");
+        mchk("O CR");
+        mchk("Ġ t");
+        mchk("Ġt he");
+        // Test tokenize (can't call here — function not yet declared)
+        // Will test via build_token_ids debug output.
+    }
+
     return true;
 }
 
 static std::vector<int32_t> tokenize(const ctx & c, const std::string & text) {
-    // Raw BPE tokenization — no BOS/EOS wrapping. Caller adds special tokens.
+    // Debug: show pre-tokenized pieces
+    if (dbg()) {
+        auto pieces = core_bpe::lfm2_pretokenize(text);
+        fprintf(stderr, "[lfm2_vl] pretokenize('%s'): %zu pieces\n", text.c_str(), pieces.size());
+        for (auto & p : pieces) {
+            auto enc = core_bpe::bytes_to_unicode(p.data(), p.size());
+            // Tokenize this single piece
+            std::vector<int32_t> ids;
+            core_bpe::bpe_one(c.token_to_id, c.merge_rank, enc, ids);
+            fprintf(stderr, "  '%s' → ", enc.c_str());
+            for (auto id : ids) fprintf(stderr, "%d ", id);
+            fprintf(stderr, "\n");
+        }
+    }
     return core_bpe::tokenize_lfm2(c.token_to_id, c.merge_rank, text);
 }
 
@@ -2080,7 +2124,7 @@ static void free_model(ctx & c) {
 
 struct lfm2_vl_ocr_context {
     lfm2_vl::ctx inner;
-    std::string prompt = "Read all text in this image and output it exactly as it appears.";
+    std::string prompt = "OCR this image. Output the text content.";
     int max_tokens = 2048;
     std::string last_result;
     std::vector<float> char_confidences;
@@ -2164,6 +2208,11 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
         fprintf(stderr, "[lfm2_vl] prompt ids: ");
         for (auto id : prompt_ids) fprintf(stderr, "%d ", id);
         fprintf(stderr, "\n");
+        // Quick tokenize test
+        auto ocr_ids = lfm2_vl::tokenize(c, "OCR");
+        fprintf(stderr, "[lfm2_vl] tokenize('OCR'): ");
+        for (auto id : ocr_ids) fprintf(stderr, "%d ", id);
+        fprintf(stderr, "(%zu tokens, expected: 55 6193)\n", ocr_ids.size());
     }
 
     return ids;
