@@ -114,10 +114,12 @@ def main():
     processor = AutoProcessor.from_pretrained(args.model)
 
     # ── Load model ───────────────────────────────────────────────────
-    print("Loading model (torch.float32)...")
+    # Use bf16 on GPU (f32 OOMs a T4 for 3B params), f32 on CPU.
+    dtype = torch.bfloat16 if device == "cuda" else torch.float32
+    print(f"Loading model ({dtype})...")
     model = AutoModelForImageTextToText.from_pretrained(
         args.model,
-        torch_dtype=torch.float32,
+        torch_dtype=dtype,
         device_map=device,
     )
     model.eval()
