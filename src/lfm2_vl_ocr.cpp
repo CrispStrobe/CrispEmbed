@@ -1107,13 +1107,21 @@ static bool encode_vision(ctx & c, const image_patches & patches,
                     // dw comes from step3's C*f*f split.
                     int c_off = (dw * f + dh) * C_in;
                     for (int ch = 0; ch < C_in; ch++) {
+                        // vis_data is ggml col-major [H, n_patches]:
+                        // element (ch, patch) at flat offset patch * H + ch
                         us_data[(size_t)(c_off + ch) * n_proj + out_idx] =
-                            vis_data[(size_t)ch * n_patches + src_patch];
+                            vis_data[(size_t)src_patch * H + ch];
                     }
                 }
             }
         }
     }
+
+    // Debug: pixel_unshuffle token 0 first 5 values
+    fprintf(stderr, "[lfm2_vl] unshuffle token 0 first 5: ");
+    for (int i = 0; i < std::min(5, C_us); i++)
+        fprintf(stderr, "%.6f ", us_data[(size_t)i * n_proj + 0]);  // column 0
+    fprintf(stderr, "\n");
 
     // Diff: compare pixel_unshuffle output (before MLP)
     diff_stage(c, "projector_unshuffle", us_data.data(), us_data.size());
