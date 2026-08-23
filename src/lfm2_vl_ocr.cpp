@@ -1824,9 +1824,12 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     // Diff: compare logits against reference
     diff_stage(c, "llm_logits_last", logits_data.data(), logits_data.size());
 
+    // Optionally skip conv state extraction (for debugging decode issues)
+    bool skip_conv_state = core_env::on("LFM2_VL_ZERO_CONV_STATE");
+
     // Extract conv state from prefill: the last (kernel-1)=2 columns of Bx
     // at each conv layer are the conv state for decode.
-    {
+    if (!skip_conv_state) {
         const int pad = (int)lhp.conv_kernel - 1;  // 2
         int conv_idx = 0;
         for (int il = 0; il < n_layers; il++) {
@@ -1851,6 +1854,8 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
         if (c.verbosity >= 1) {
             fprintf(stderr, "  conv state: extracted from %d layers\n", conv_idx);
         }
+    } else {
+        fprintf(stderr, "  conv state: ZEROED (LFM2_VL_ZERO_CONV_STATE=1)\n");
     }
 
     ggml_free(g);
@@ -1971,6 +1976,12 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             if (gen == 1 && c.verbosity >= 1) {
                 fprintf(stderr, "[lfm2_vl] decode step 0: input token=%d, n_kv=%d, pos=%d\n",
                         best_id, n_kv, n_kv);
+                // Print first conv state values for diagnostic
+                if (!c.conv_state.empty() && c.conv_state[0].size() >= 5) {
+                    fprintf(stderr, "[lfm2_vl] conv_state[0] first 5: ");
+                    for (int i = 0; i < 5; i++) fprintf(stderr, "%.6f ", c.conv_state[0][i]);
+                    fprintf(stderr, "\n");
+                }
             }
             std::vector<float> tok_emb_data(D);
             for (int d = 0; d < D; d++)
