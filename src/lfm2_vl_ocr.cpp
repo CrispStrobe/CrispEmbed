@@ -979,6 +979,11 @@ static bool encode_vision(ctx & c, const image_patches & patches,
             patches.data.size() * sizeof(float));
     ggml_backend_tensor_set(pixel_in, patches.data.data(), 0,
                             patches.data.size() * sizeof(float));
+    // Debug: print first few patch values for parity
+    fprintf(stderr, "[lfm2_vl] input patch 0 first 5: ");
+    for (int i = 0; i < std::min(5, (int)patches.patch_dim); i++)
+        fprintf(stderr, "%.6f ", patches.data[i]);
+    fprintf(stderr, "\n");
 
     // Position embeddings: bilinear-interpolate from learned 16×16 grid.
     // v_pos_embed is [H, 256] in ggml (= [256, H] row-major = 16×16 grid of H-dim vectors).
@@ -1033,9 +1038,20 @@ static bool encode_vision(ctx & c, const image_patches & patches,
         return false;
     }
 
-    // Read vision output: [H, n_patches]
+    // Read vision output: [H, n_patches] — ggml col-major, ne[0]=H
     std::vector<float> vis_data((size_t)H * n_patches);
     ggml_backend_tensor_get(vis_out, vis_data.data(), 0, vis_data.size() * sizeof(float));
+
+    // Debug: print first few values and norm for parity checking
+    {
+        fprintf(stderr, "[lfm2_vl] vision output first 5 (patch 0): ");
+        for (int i = 0; i < std::min(5, H); i++)
+            fprintf(stderr, "%.6f ", vis_data[i]);  // vis_data[dim + patch*H]
+        fprintf(stderr, "\n");
+        double norm = 0;
+        for (size_t i = 0; i < vis_data.size(); i++) norm += vis_data[i] * vis_data[i];
+        fprintf(stderr, "[lfm2_vl] vision output full norm: %.4f\n", std::sqrt(norm));
+    }
 
     ggml_free(g);
 
