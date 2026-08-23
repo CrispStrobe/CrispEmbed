@@ -78,7 +78,8 @@ struct vision_hparams {
     uint32_t num_heads     = 16;
     uint32_t head_dim      = 72;   // 1152 / 16
     uint32_t patch_size    = 16;
-    uint32_t image_size    = 512;  // single tile target
+    uint32_t image_size    = 256;  // SigLIP2 base grid (16×16 patches)
+    uint32_t tile_size     = 512;  // VL tile target for NaFlex resize
     float    norm_eps      = 1e-6f;
     float    image_mean[3] = { 0.5f, 0.5f, 0.5f };
     float    image_std[3]  = { 0.5f, 0.5f, 0.5f };
@@ -674,21 +675,27 @@ struct image_patches {
 
 static bool preprocess_image(const uint8_t * rgb, int height, int width, int channels,
                              const vision_hparams & vhp, image_patches & out) {
-    const int target = (int)vhp.image_size;  // 512
-    const int P      = (int)vhp.patch_size;  // 16
-    const int gH     = target / P;           // 32
-    const int gW     = target / P;           // 32
-    const int n_patches = gH * gW;           // 1024
+    const int P      = (int)vhp.patch_size;   // 16
+    const int target = (int)vhp.tile_size;   // 512 (VL tile target)
     const int patch_dim = 3 * P * P;         // 768
 
-    // Step 1: bilinear resize to target×target (match HF processor default)
-    std::vector<float> resized((size_t)target * target * 3);
-    for (int y = 0; y < target; y++) {
-        float sy = (float)y * (height - 1) / (target - 1);
+    // HF NaFlex processor: aspect-preserving resize to target² total pixels,
+    // with H and W rounded to multiples of P (=16).
+    int rH, rW;
+    image_preproc::smart_resize(height, width, P, target * target, target * target, &rH, &rW);
+
+    const int gH = rH / P;
+    const int gW = rW / P;
+    const int n_patches = gH * gW;
+
+    // Step 1: bilinear resize to rW × rH
+    std::vector<float> resized((size_t)rH * rW * 3);
+    for (int y = 0; y < rH; y++) {
+        float sy = (float)y * (height - 1) / std::max(rH - 1, 1);
         int y0 = (int)sy, y1 = std::min(y0 + 1, height - 1);
         float fy = sy - y0;
-        for (int x = 0; x < target; x++) {
-            float sx = (float)x * (width - 1) / (target - 1);
+        for (int x = 0; x < rW; x++) {
+            float sx = (float)x * (width - 1) / std::max(rW - 1, 1);
             int x0 = (int)sx, x1 = std::min(x0 + 1, width - 1);
             float fx = sx - x0;
             for (int c = 0; c < 3; c++) {
@@ -699,16 +706,14 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
                 float v11 = rgb[((size_t)y1 * width + x1) * channels + ch];
                 float v = (1 - fy) * ((1 - fx) * v00 + fx * v01) +
                           fy       * ((1 - fx) * v10 + fx * v11);
-                // Normalize: (v / 255 - mean) / std → [-1, 1] for mean=0.5, std=0.5
-                resized[((size_t)c * target + y) * target + x] =
+                // Normalize: (v / 255 - mean) / std → [-1, 1]
+                resized[((size_t)c * rH + y) * rW + x] =
                     (v / 255.0f - vhp.image_mean[c]) / vhp.image_std[c];
             }
         }
     }
 
-    // Step 2: patchify — extract P×P patches in [C, H, W] order per patch
-    // Each patch is a flat vector of [C=3, P, P] = 768 floats.
-    // Patches in row-major grid order (row0-col0, row0-col1, ...).
+    // Step 2: patchify [C, H, W] → [n_patches, patch_dim]
     out.data.resize((size_t)n_patches * patch_dim);
     for (int gy = 0; gy < gH; gy++) {
         for (int gx = 0; gx < gW; gx++) {
@@ -719,7 +724,7 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
                     for (int px = 0; px < P; px++) {
                         int iy = gy * P + py;
                         int ix = gx * P + px;
-                        dst[k++] = resized[((size_t)c * target + iy) * target + ix];
+                        dst[k++] = resized[((size_t)c * rH + iy) * rW + ix];
                     }
                 }
             }
@@ -732,7 +737,7 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
     out.w_patches = gW;
 
     fprintf(stderr, "[lfm2_vl] preproc: %dx%d → %dx%d, %d patches (%dx%d grid)\n",
-            width, height, target, target, n_patches, gW, gH);
+            width, height, rW, rH, n_patches, gW, gH);
     return true;
 }
 
