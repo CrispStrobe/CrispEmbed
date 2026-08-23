@@ -1174,6 +1174,12 @@ static bool encode_vision(ctx & c, const image_patches & patches,
                 n_proj, out_d, ms_since(t1));
     }
 
+    // Debug: first 5 values of projector output (token 0)
+    fprintf(stderr, "[lfm2_vl] projector first token first 5: ");
+    for (int i = 0; i < std::min(5, out_d); i++)
+        fprintf(stderr, "%.6f ", out_embeds[i]);  // [p=0, d=0..4]
+    fprintf(stderr, "\n");
+
     // Diff: compare projector output against reference
     diff_stage(c, "projector_out", out_embeds.data(), out_embeds.size());
 
