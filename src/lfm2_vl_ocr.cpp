@@ -997,9 +997,13 @@ static bool encode_vision(ctx & c, const image_patches & patches,
         std::vector<float> interp_pos((size_t)n_patches * H, 0.0f);
         for (int r = 0; r < hp; r++) {
             for (int col = 0; col < wp; col++) {
-                // Map target (r, col) to source coordinates
-                float sy = (grid > 1) ? (float)r * (grid - 1) / (hp - 1 + 1e-6f) : 0.0f;
-                float sx = (grid > 1) ? (float)col * (grid - 1) / (wp - 1 + 1e-6f) : 0.0f;
+                // Map target (r, col) to source coordinates.
+                // Use align_corners=False (PyTorch default for F.interpolate):
+                // src = (dst + 0.5) * src_size / dst_size - 0.5
+                float sy = ((float)r + 0.5f) * grid / hp - 0.5f;
+                float sx = ((float)col + 0.5f) * grid / wp - 0.5f;
+                sy = std::max(0.0f, std::min(sy, (float)(grid - 1)));
+                sx = std::max(0.0f, std::min(sx, (float)(grid - 1)));
                 int y0 = (int)sy; int y1 = std::min(y0 + 1, grid - 1);
                 int x0 = (int)sx; int x1 = std::min(x0 + 1, grid - 1);
                 float fy = sy - y0; float fx = sx - x0;
