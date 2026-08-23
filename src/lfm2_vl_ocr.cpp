@@ -713,18 +713,28 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
         }
     }
 
-    // Step 2: patchify [C, H, W] → [n_patches, patch_dim]
+    // Step 2: patchify to match the Conv2d patch embedding weight layout.
+    //
+    // The GGUF stores the Conv2d weight as [kW, kH, in_C, out_C] (ggml
+    // column-major ne[0..3]). After reshape to 2D [patch_dim, hidden],
+    // ne[0] = patch_dim with elements in (kW, kH, in_C) order — that is,
+    // pixel-x varies fastest, then pixel-y, then channel.
+    //
+    // We must patchify into the SAME order so that ggml_mul_mat(weight, patches)
+    // computes the correct dot product.
     out.data.resize((size_t)n_patches * patch_dim);
     for (int gy = 0; gy < gH; gy++) {
         for (int gx = 0; gx < gW; gx++) {
             float * dst = &out.data[(size_t)(gy * gW + gx) * patch_dim];
-            int k = 0;
+            // Fill in (px, py, c) order = x varies fastest
             for (int c = 0; c < 3; c++) {
                 for (int py = 0; py < P; py++) {
                     for (int px = 0; px < P; px++) {
                         int iy = gy * P + py;
                         int ix = gx * P + px;
-                        dst[k++] = resized[((size_t)c * rH + iy) * rW + ix];
+                        // Flat index in (kW, kH, in_C) order:
+                        int flat = px + py * P + c * P * P;
+                        dst[flat] = resized[((size_t)c * rH + iy) * rW + ix];
                     }
                 }
             }
@@ -1036,34 +1046,57 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     auto t1 = steady_clock::now();
 
     const int factor = (int)c.m.php.unshuffle_factor;  // 2
-    const int h_out  = patches.h_patches / factor;
-    const int w_out  = patches.w_patches / factor;
-    const int n_proj = h_out * w_out;
+    // Python output layout: [W//f, H//f] where W=h_patches, H=w_patches
+    const int w_out  = patches.h_patches / factor;   // W//f = 36/2 = 18
+    const int h_out  = patches.w_patches / factor;   // H//f = 28/2 = 14
+    const int n_proj = w_out * h_out;
     const int C_in   = H;                              // 1152
     const int C_us   = C_in * factor * factor;         // 4608
 
-    // pixel_unshuffle on CPU: rearrange [H, h_patches, w_patches] →
-    // [H*factor^2, h_out, w_out] → flatten to [C_us, n_proj]
-    // Input layout: vis_data is [H, n_patches] where patches are in
-    // row-major (h_patches, w_patches) order.
+    // pixel_unshuffle on CPU — matches HF Lfm2VlMultiModalProjector exactly.
+    //
+    // Python (from transformers/models/lfm2_vl/modeling_lfm2_vl.py):
+    //   input:  [B, W=h_patches, H=w_patches, C]     (channels-last)
+    //   step1:  reshape(B, W, H//f, C*f)
+    //   step2:  permute(0, 2, 1, 3)                   → [B, H//f, W, C*f]
+    //   step3:  reshape(B, H//f, W//f, C*f*f)
+    //   step4:  permute(0, 2, 1, 3)                   → [B, W//f, H//f, C*f²]
+    //
+    // Input: vis_data [C_in, n_patches] col-major, patches in row-major
+    //        [h_patches, w_patches] order.
+    // Output: us_data [C_us, n_proj] col-major, projected patches in
+    //         row-major [w_out, h_out] order (matching Python's [W//f, H//f]).
+    //
+    // The key: Python's W dim = h_patches, H dim = w_patches (it reshapes
+    // the flat sequence as [h_patches, w_patches] but calls them W, H).
+    const int pW = patches.h_patches;  // 36 = h_patches (Python's W dim)
+    const int pH = patches.w_patches;  // 28 = w_patches (Python's H dim)
+    const int f = factor;              // 2
+
     std::vector<float> us_data((size_t)C_us * n_proj, 0.0f);
-    for (int hy = 0; hy < h_out; hy++) {
-        for (int wx = 0; wx < w_out; wx++) {
-            int out_idx = hy * w_out + wx;
-            for (int dy = 0; dy < factor; dy++) {
-                for (int dx = 0; dx < factor; dx++) {
-                    int src_y = hy * factor + dy;
-                    int src_x = wx * factor + dx;
-                    int src_patch = src_y * patches.w_patches + src_x;
-                    int c_offset = (dy * factor + dx) * C_in;
+    // Iterate over the output layout [W//f, H//f] = [w_out=18, h_out=14]
+    for (int ow = 0; ow < pW / f; ow++) {        // W//f = 18
+        for (int oh = 0; oh < pH / f; oh++) {     // H//f = 14
+            int out_idx = ow * (pH / f) + oh;     // row-major [W//f, H//f]
+            for (int dw = 0; dw < f; dw++) {
+                for (int dh = 0; dh < f; dh++) {
+                    int src_w = ow * f + dw;  // index in W = h_patches
+                    int src_h = oh * f + dh;  // index in H = w_patches
+                    int src_patch = src_w * patches.w_patches + src_h;
+                    // Channel offset: dh comes from step1's C*f split,
+                    // dw comes from step3's C*f*f split.
+                    int c_off = (dw * f + dh) * C_in;
                     for (int ch = 0; ch < C_in; ch++) {
-                        us_data[(size_t)(c_offset + ch) * n_proj + out_idx] =
+                        us_data[(size_t)(c_off + ch) * n_proj + out_idx] =
                             vis_data[(size_t)ch * n_patches + src_patch];
                     }
                 }
             }
         }
     }
+
+    // Diff: compare pixel_unshuffle output (before MLP)
+    diff_stage(c, "projector_unshuffle", us_data.data(), us_data.size());
 
     // Project through MLP: Linear(4608→2048) → GELU → Linear(2048→2048)
     const int mid_dim = (int)c.m.php.mid_dim;

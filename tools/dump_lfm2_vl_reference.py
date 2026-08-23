@@ -182,15 +182,31 @@ def main():
         return None, None
 
     # LFM2.5-VL wraps everything in model.model (Lfm2VlModel).
-    # Try model.model.vision_tower first, then model.vision_tower, etc.
     inner_model = getattr(model, "model", model)
+
+    # Debug: print all Module children to find the correct attribute names
+    print(f"\n  inner_model named_children:")
+    for name, child in inner_model.named_children():
+        print(f"    {name}: {type(child).__name__}")
+
     vision_enc, vis_attr = find_attr(
         inner_model,
-        "vision_tower", "vision_model", "visual_encoder", "encoder")
+        "vision_tower", "vision_model", "visual_encoder", "encoder",
+        "image_embedder", "vision_embedder")
     if vision_enc is None:
         vision_enc, vis_attr = find_attr(
             model,
-            "vision_tower", "vision_model", "visual_encoder", "encoder")
+            "vision_tower", "vision_model", "visual_encoder", "encoder",
+            "image_embedder", "vision_embedder")
+    # If still not found, try going deeper: some models nest the vision
+    # encoder inside a wrapper.
+    if vision_enc is None:
+        for name, child in inner_model.named_children():
+            if "vision" in name.lower() or "image" in name.lower() or "visual" in name.lower():
+                if "projector" not in name.lower():
+                    vision_enc = child
+                    vis_attr = name
+                    break
     projector, proj_attr = find_attr(
         inner_model,
         "multi_modal_projector", "projector", "vision_projector",
