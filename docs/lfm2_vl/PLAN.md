@@ -419,6 +419,31 @@ a ggml tensor with `ne0 = C_us` wants `chan + tok * C_us`. The matmul consumed
 a transposed input at exactly the right shape and produced fluent nonsense.
 Only the A/B caught it — a speed number alone would have shipped it.
 
+### CPU is FLOP-bound, and no configuration fixes it
+
+Worth stating plainly, because multi-tile is now the default and this is the
+cost of that decision on a CPU-only box.
+
+The vision tower is **955 GFLOP per 1024-patch image** — 27 layers x 35.4
+(20.0 MLP + 15.4 attention). A 7-image page is **6.7 TFLOP**. This VPS measures
+60 s per image, i.e. ~16 GFLOP/s across 4 cores, ~4 per core.
+
+That is not a misconfiguration, which was worth checking rather than assuming:
+`GGML_NATIVE=ON` and the binary carries 8707 AVX512/FMA instructions, threads
+are already at 4 of 4 cores, and `GGML_BLAS=OFF` is irrelevant because the
+vision weights are F16 and ggml does not route those through BLAS anyway. ~4
+GFLOP/s/core is roughly what AVX512 F16 gemm sustains here.
+
+So a split page is **~7 minutes on this VPS** and there is no flag that changes
+it. The levers are algorithmic (a lower `max_tiles`, deviating from
+`processor_config.json`), or `LFM2_VL_MULTI_TILE=0`, or a GPU. The engine now
+prints a one-line notice at `-v` when it is about to encode N images on a CPU
+backend, so it reads as expected cost rather than a hang.
+
+Batching the tiles into one graph with a block-diagonal mask would help a GPU
+(bigger matmuls, fewer launches) but not a CPU, which is FLOP-bound rather than
+launch-bound — so it is not the answer to this particular problem.
+
 ### Cost, and why the acceptance run is on Kaggle
 
 The vision encoder is ~250 s per 1024-patch image on this VPS, and a split A4
