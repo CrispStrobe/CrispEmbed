@@ -23,7 +23,7 @@
 // License: LFM-1.0 (revenue-capped; requires CRISPEMBED_ACCEPT_LFM_LICENSE=1)
 
 #include "lfm2_vl_ocr.h"
-#include "lfm2_naflex.h"
+#include "lfm2_vl_tiling.h"
 #include "lfm2_shortconv.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
@@ -996,35 +996,28 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
 // tokens_per_tile = (tile_size / P / ds)^2 = 256 tokens; the thumbnail
 // contributes whatever its own grid gives.
 struct image_tiles {
-    std::vector<image_patches> tiles; // grid tiles row-major, thumbnail last
+    std::vector<image_patches> tiles; // grid tiles in reading order, thumbnail last
     int grid_rows = 1;
     int grid_cols = 1;
     bool has_thumbnail = false;
+    lfm2_vl_tiling::layout layout;
 };
 
-// The tiling math itself lives in src/lfm2_naflex.h so tests/test_lfm2_naflex.cpp
+// The tiling math itself lives in src/lfm2_vl_tiling.h so tests/test_lfm2_tiling.cpp
 // can pin it against tools/lfm2_vl_tiling_oracle.py without loading a model.
 // Nothing here may re-derive it locally: a second copy is a second thing to get
 // wrong, and none of it is visible to a float diff.
-static lfm2_naflex::params naflex_params(const vision_hparams & vhp) {
-    lfm2_naflex::params p;
-    p.encoder_patch_size = (int)vhp.patch_size;
-    p.downsample_factor = (int)vhp.downsample_factor;
-    p.tile_size = (int)vhp.tile_size;
-    p.min_tiles = (int)vhp.min_tiles;
-    p.max_tiles = (int)vhp.max_tiles;
-    p.min_image_tokens = (int)vhp.min_image_tokens;
-    p.max_image_tokens = (int)vhp.max_image_tokens;
-    p.max_pixels_tolerance = vhp.max_pixels_tolerance;
-    return p;
-}
-
-static bool preprocess_image_tiles(const uint8_t * rgb, int height, int width, int channels, const vision_hparams & vhp,
-                                   image_tiles & out) {
-    out.tiles.clear();
-    out.grid_rows = out.grid_cols = 1;
-    out.has_thumbnail = false;
-
+static lfm2_vl_tiling::config tiling_config(const vision_hparams & vhp) {
+    lfm2_vl_tiling::config cfg;
+    cfg.patch_size = (int)vhp.patch_size;
+    cfg.downsample_factor = (int)vhp.downsample_factor;
+    cfg.tile_size = (int)vhp.tile_size;
+    cfg.min_tiles = (int)vhp.min_tiles;
+    cfg.max_tiles = (int)vhp.max_tiles;
+    cfg.min_image_tokens = (int)vhp.min_image_tokens;
+    cfg.max_image_tokens = (int)vhp.max_image_tokens;
+    cfg.max_pixels_tolerance = vhp.max_pixels_tolerance;
+    cfg.use_thumbnail = vhp.use_thumbnail;
     // Default ON since the A/B (docs/lfm2_vl/PLAN.md §6). This is what the
     // blueprint does — do_image_splitting is true in the shipped config and the
     // reference prompt for a 1920x2485 page carries 1788 image tokens, not 252 —
@@ -1034,47 +1027,60 @@ static bool preprocess_image_tiles(const uint8_t * rgb, int height, int width, i
     // are unchanged to the character. It costs 2-3x wall clock on a page that
     // splits (7-9 vision encodes and a ~2000-token prefill instead of one and
     // 273), so LFM2_VL_MULTI_TILE=0 keeps the fast single-tile path.
-    const bool split_enabled =
-        vhp.do_image_splitting && vhp.max_tiles > 1 && !core_env::explicitly_off("LFM2_VL_MULTI_TILE");
-    if (!split_enabled || !lfm2_naflex::is_image_too_large(height, width, naflex_params(vhp))) {
+    cfg.do_image_splitting = vhp.do_image_splitting && !core_env::explicitly_off("LFM2_VL_MULTI_TILE");
+    // transformers <= 4.57.x transposed the <|img_row_R_col_C|> labels on a
+    // non-square grid; >= 5.0 is geometric, and that is what the shipped model
+    // is prompted with. LFM2_VL_LEGACY_TILE_LABELS=1 reproduces the old form.
+    cfg.legacy_label_swap = core_env::on("LFM2_VL_LEGACY_TILE_LABELS");
+    return cfg;
+}
+
+static bool preprocess_image_tiles(const uint8_t * rgb, int height, int width, int channels, const vision_hparams & vhp,
+                                   image_tiles & out) {
+    out.tiles.clear();
+    out.grid_rows = out.grid_cols = 1;
+    out.has_thumbnail = false;
+
+    const lfm2_vl_tiling::config cfg = tiling_config(vhp);
+    const lfm2_vl_tiling::layout L = lfm2_vl_tiling::compute_layout(width, height, cfg);
+    out.layout = L;
+
+    if (!L.split) {
         out.tiles.emplace_back();
         return preprocess_image(rgb, height, width, channels, vhp, out.tiles.back());
     }
 
-    int gw = 1, gh = 1;
-    lfm2_naflex::grid_layout(height, width, naflex_params(vhp), &gw, &gh);
-    const int tile = (int)vhp.tile_size;
-    const int tW = tile * gw;
-    const int tH = tile * gh;
+    const int tile = cfg.tile_size;
 
-    // One resize of the ORIGINAL page to the tile grid, then row-major crops —
-    // the blueprint resizes once and splits, it does not resize per tile.
+    // One resize of the ORIGINAL page to the tile grid, then crops in pixel
+    // reading order — the blueprint resizes once and splits, it does not resize
+    // per tile. This order must match build_image_markup's, because the i-th
+    // <image> placeholder is filled by the i-th row of the concatenated
+    // projector output.
     std::vector<float> hwc;
-    resize_rgb_hwc(rgb, height, width, channels, tH, tW, hwc);
-    for (int r = 0; r < gh; r++) {
-        for (int cix = 0; cix < gw; cix++) {
+    resize_rgb_hwc(rgb, height, width, channels, L.target_h, L.target_w, hwc);
+    for (int r = 0; r < L.grid_h; r++) {
+        for (int cix = 0; cix < L.grid_w; cix++) {
             out.tiles.emplace_back();
-            patchify_hwc(hwc, tH, tW, cix * tile, r * tile, tile, tile, vhp, out.tiles.back());
+            patchify_hwc(hwc, L.target_h, L.target_w, cix * tile, r * tile, tile, tile, vhp, out.tiles.back());
         }
     }
-    out.grid_rows = gh;
-    out.grid_cols = gw;
+    out.grid_rows = L.rows;
+    out.grid_cols = L.cols;
 
     // Thumbnail: the whole page again, at smart_resize dimensions — resized
     // from the ORIGINAL, not from the tile-grid image.
-    if (vhp.use_thumbnail && gw * gh != 1) {
-        int rH, rW;
-        lfm2_smart_resize(height, width, vhp, &rH, &rW);
+    if (L.has_thumb) {
         std::vector<float> thumb;
-        resize_rgb_hwc(rgb, height, width, channels, rH, rW, thumb);
+        resize_rgb_hwc(rgb, height, width, channels, L.resized_h, L.resized_w, thumb);
         out.tiles.emplace_back();
-        patchify_hwc(thumb, rH, rW, 0, 0, rW, rH, vhp, out.tiles.back());
+        patchify_hwc(thumb, L.resized_h, L.resized_w, 0, 0, L.resized_w, L.resized_h, vhp, out.tiles.back());
         out.has_thumbnail = true;
     }
 
     if (dbg())
-        fprintf(stderr, "[lfm2_vl] tiling: %dx%d → grid %dx%d (%zu images, thumb=%d)\n", width, height, gw, gh,
-                out.tiles.size(), (int)out.has_thumbnail);
+        fprintf(stderr, "[lfm2_vl] tiling: %dx%d -> grid %dx%d, labels %dx%d (%zu images, thumb=%d)\n", width, height,
+                L.grid_w, L.grid_h, L.rows, L.cols, out.tiles.size(), (int)out.has_thumbnail);
     return true;
 }
 
@@ -1331,38 +1337,18 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
         if (c.m.v_pos_embed) {
             ggml_backend_tensor_get(c.m.v_pos_embed, pos_table.data(), 0, pos_table.size() * sizeof(float));
         }
-        // Bilinear interpolation: map (hp, wp) grid → (grid, grid) source
+        // Resize the learned 16x16 position table to this image's patch grid,
+        // matching Siglip2VisionEmbeddings.resize_positional_embeddings:
+        // F.interpolate(mode="bilinear", align_corners=False, antialias=True).
+        //
+        // The antialias term only bites on DOWNSCALE, i.e. when a patch grid
+        // falls below 16 in a dimension (a 150x200 image gives 14x20). Every
+        // shape the tiler currently produces upscales, and there this is the
+        // same arithmetic as the plain bilinear it replaces — verified against
+        // torch.nn.functional.interpolate to 4.4e-16.
         std::vector<float> interp_pos((size_t)n_patches * H, 0.0f);
-        for (int r = 0; r < hp; r++) {
-            for (int col = 0; col < wp; col++) {
-                // Map target (r, col) to source coordinates.
-                // Use align_corners=False (PyTorch default for F.interpolate):
-                // src = (dst + 0.5) * src_size / dst_size - 0.5
-                float sy = ((float)r + 0.5f) * grid / hp - 0.5f;
-                float sx = ((float)col + 0.5f) * grid / wp - 0.5f;
-                sy = std::max(0.0f, std::min(sy, (float)(grid - 1)));
-                sx = std::max(0.0f, std::min(sx, (float)(grid - 1)));
-                int y0 = (int)sy;
-                int y1 = std::min(y0 + 1, grid - 1);
-                int x0 = (int)sx;
-                int x1 = std::min(x0 + 1, grid - 1);
-                float fy = sy - y0;
-                float fx = sx - x0;
-                float w00 = (1 - fy) * (1 - fx);
-                float w01 = (1 - fy) * fx;
-                float w10 = fy * (1 - fx);
-                float w11 = fy * fx;
-                int dst_idx = r * wp + col;
-                const float * s00 = &pos_table[((size_t)y0 * grid + x0) * H];
-                const float * s01 = &pos_table[((size_t)y0 * grid + x1) * H];
-                const float * s10 = &pos_table[((size_t)y1 * grid + x0) * H];
-                const float * s11 = &pos_table[((size_t)y1 * grid + x1) * H];
-                float * dst = &interp_pos[(size_t)dst_idx * H];
-                for (int d = 0; d < H; d++) {
-                    dst[d] = w00 * s00[d] + w01 * s01[d] + w10 * s10[d] + w11 * s11[d];
-                }
-            }
-        }
+        lfm2_vl_tiling::resize_bilinear_aa(pos_table.data(), grid, grid, H, interp_pos.data(), hp, wp);
+
         ggml_backend_tensor_set(pos_tensor, interp_pos.data(), 0, interp_pos.size() * sizeof(float));
     }
 
@@ -1481,7 +1467,9 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
     // weights on EVERY image; it measured 6.6 s of a 21.5 s pipeline on M1.
     // The graph path is the same arithmetic on the sched backend.
     // LFM2_VL_PROJ_GGML=0 restores the scalar path.
-    const bool proj_ggml = !core_env::explicitly_off("LFM2_VL_PROJ_GGML");
+    // Two spellings because two sessions found this independently and shipped
+    // different gate names; both are honoured so either set of notes works.
+    const bool proj_ggml = !core_env::explicitly_off("LFM2_VL_PROJ_GGML") && !core_env::on("LFM2_VL_CPU_PROJECTOR");
 
     out_embeds.resize((size_t)n_proj * out_d);
 
@@ -1640,6 +1628,10 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 
     c.declared_inputs.clear();
 
+    // See the causal-mask comment in the attention branch below.
+    const bool per_layer_mask = core_env::on("LFM2_VL_PER_LAYER_MASK");
+    ggml_tensor * shared_causal_mask = nullptr;
+
     // Inputs
     ggml_tensor * tok_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens);
     declare_input(c, tok_ids, "tok_ids");
@@ -1734,11 +1726,29 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 
             // Causal mask for flash_attn_ext: [n_kv, n_q] F16
             // n_kv = n_tokens (full sequence), n_q = n_tokens (all queries)
-            ggml_tensor * mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
-            {
+            // ONE tensor shared by every attention layer. All 8 masks hold the
+            // same lower-triangular pattern and were allocated separately, which
+            // is 7 redundant copies of an n_tokens^2 F16 buffer: 1.2 MB at the
+            // 273-token single-tile prompt, but 113 MB at a 2837-token
+            // multi-tile one — and multi-tile is now the default. Output-neutral
+            // by construction: identical values, every layer reading one tensor
+            // instead of its own copy.
+            //
+            // LFM2_VL_PER_LAYER_MASK=1 restores one tensor per layer, which is
+            // the A/B counterpart and the fallback if a backend ever objects to
+            // an input feeding several ops.
+            ggml_tensor * mask = nullptr;
+            if (per_layer_mask) {
+                mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
                 char mname[64];
                 snprintf(mname, sizeof(mname), "causal_mask_%d", il);
                 declare_input(c, mask, mname);
+            } else {
+                if (!shared_causal_mask) {
+                    shared_causal_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
+                    declare_input(c, shared_causal_mask, "causal_mask");
+                }
+                mask = shared_causal_mask;
             }
 
             ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
@@ -2041,6 +2051,15 @@ static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf
         for (int col = r + 1; col < n_tokens; col++) mask_data[(size_t)r * n_tokens + col] = f16_neg_inf;
     }
 
+    // The shared mask, when that is the path in use. Written unconditionally
+    // rather than only when found, because a graph input nobody writes reads
+    // back as allocator leftovers — precisely the §2 bug this codebase already
+    // shipped once, in this same function.
+    if (ggml_tensor * sm = ggml_graph_get_tensor(gf, "causal_mask")) {
+        ggml_backend_tensor_set(sm, mask_data.data(), 0, mask_data.size() * sizeof(uint16_t));
+        written.push_back("causal_mask");
+    }
+
     char name[64];
     for (int il = 0; il < n_layers; il++) {
         if (c.m.llm_layers[il].is_attention) {
@@ -2076,6 +2095,15 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
     const int n_layers = (int)lhp.n_layers;
 
     auto t_gen = steady_clock::now();
+
+    // Per-phase decode profile. LFM2_VL_DECODE_PROFILE=1 prints where a decode
+    // step actually goes — graph construction, scheduler allocation, input
+    // upload, GPU compute, and the read-back that maintains the ShortConv state
+    // — because "decode is slow" is not a finding, and the four are fixed by
+    // completely different changes.
+    const bool decode_profile = core_env::on("LFM2_VL_DECODE_PROFILE");
+    long long prof_build = 0, prof_alloc = 0, prof_in = 0, prof_compute = 0, prof_out = 0;
+    int prof_steps = 0;
 
     // ── Step 1: Build spliced embeddings on CPU ──
     // Look up token embeddings, replace IMAGE tokens with projected image embeddings
@@ -2354,8 +2382,13 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
             ggml_free(g2);
         } else {
             // KV-cached decode step
+            auto t_p = steady_clock::now();
             ggml_context * g3 = ggml_init(ip);
             ggml_cgraph * gf3 = build_decode_step_graph(c, g3, n_kv, n_kv, max_seq_kv);
+            if (decode_profile) {
+                prof_build += ms_since(t_p);
+                t_p = steady_clock::now();
+            }
 
             ggml_backend_sched_reset(c.sched);
             if (!ggml_backend_sched_alloc_graph(c.sched, gf3)) {
@@ -2381,6 +2414,11 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
                     fprintf(stderr, " norm=%.4f max=%.6f\n", std::sqrt(norm), mx);
                 }
             }
+            if (decode_profile) {
+                prof_alloc += ms_since(t_p);
+                t_p = steady_clock::now();
+            }
+
             std::vector<float> tok_emb_data(D);
             embed_w.row(best_id, tok_emb_data.data());
             ggml_tensor * te = ggml_graph_get_tensor(gf3, "tok_emb");
@@ -2408,10 +2446,19 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
             }
 
             // Compute
+            if (decode_profile) {
+                prof_in += ms_since(t_p);
+                t_p = steady_clock::now();
+            }
             if (ggml_backend_sched_graph_compute(c.sched, gf3) != GGML_STATUS_SUCCESS) {
                 fprintf(stderr, "[lfm2_vl] decode step compute failed\n");
                 ggml_free(g3);
                 return false;
+            }
+
+            if (decode_profile) {
+                prof_compute += ms_since(t_p);
+                t_p = steady_clock::now();
             }
 
             // Read logits
@@ -2456,6 +2503,10 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
 
             n_kv++;
             ggml_free(g3);
+            if (decode_profile) {
+                prof_out += ms_since(t_p);
+                prof_steps++;
+            }
         }
 
         // Greedy argmax with no-repeat-ngram
@@ -2478,6 +2529,14 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
 
     if (c.verbosity >= 1) {
         fprintf(stderr, "  generate: %zu tokens, %lld ms total\n", out.token_ids.size(), ms_since(t_gen));
+    }
+    if (decode_profile && prof_steps > 0) {
+        const double n = (double)prof_steps;
+        fprintf(stderr,
+                "  decode profile over %d steps (ms/token): build %.2f  sched_alloc %.2f  "
+                "inputs %.2f  compute %.2f  readback %.2f  sum %.2f\n",
+                prof_steps, prof_build / n, prof_alloc / n, prof_in / n, prof_compute / n, prof_out / n,
+                (prof_build + prof_alloc + prof_in + prof_compute + prof_out) / n);
     }
 
     return true;
@@ -2638,10 +2697,8 @@ static int32_t special_tok(const lfm2_vl::ctx & c, const std::string & s) {
 // How the image tokens were produced, so the prompt can carry the per-tile
 // markup HF's Lfm2VlProcessor._build_image_tokens emits.
 struct image_token_layout {
-    int grid_rows = 1;
-    int grid_cols = 1;
-    bool has_thumbnail = false;
-    std::vector<int> tokens_per_image; // grid tiles row-major, thumbnail last
+    lfm2_vl_tiling::layout tiling;
+    std::vector<int> tokens_per_image; // grid tiles in reading order, thumbnail last
 };
 
 static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, const image_token_layout & layout) {
@@ -2688,31 +2745,16 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, const ima
     for (auto id : user_ids) ids.push_back(id);
     if (nl_id >= 0) ids.push_back(nl_id);
     // <|image_start|> <image>*N <|image_end|>  (use_image_special_tokens=true)
-    int32_t img_start_id = 125009; // <|image_start|>
-    int32_t img_end_id = 125010;   // <|image_end|>
-    ids.push_back(img_start_id);
-    const bool multi = layout.grid_rows > 1 || layout.grid_cols > 1;
-    if (multi) {
-        // <|img_row_R_col_C|> ids are contiguous at 124908 + (R-1)*10 + (C-1)
-        // and <|img_thumbnail|> at 125008 — verified against the shipped vocab
-        // (all 100 markers, 0 mismatches), so no converter work is involved.
-        size_t img = 0;
-        for (int r = 0; r < layout.grid_rows; r++) {
-            for (int cc = 0; cc < layout.grid_cols; cc++) {
-                ids.push_back(124908 + r * 10 + cc);
-                const int n = img < layout.tokens_per_image.size() ? layout.tokens_per_image[img] : 0;
-                for (int i = 0; i < n; i++) ids.push_back(image_id);
-                img++;
-            }
-        }
-        if (layout.has_thumbnail && img < layout.tokens_per_image.size()) {
-            ids.push_back(125008); // <|img_thumbnail|>
-            for (int i = 0; i < layout.tokens_per_image[img]; i++) ids.push_back(image_id);
-        }
-    } else {
-        for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_id);
+    // The per-tile markup comes from lfm2_vl_tiling::build_image_markup so the
+    // placeholder order and the tile ENCODE order have one definition between
+    // them: the i-th <image> is filled by the i-th row of the concatenated
+    // projector output, and a transposed row/col label is invisible to every
+    // float diff (HARD RULE 3b).
+    {
+        std::vector<int32_t> markup;
+        lfm2_vl_tiling::build_image_markup(layout.tiling, lfm2_vl_tiling::token_ids{}, markup);
+        for (int32_t id : markup) ids.push_back(id);
     }
-    ids.push_back(img_end_id);
     // prompt_text
     for (auto id : prompt_ids) ids.push_back(id);
     // <|im_end|>\n
@@ -2769,9 +2811,7 @@ static const char * run_pipeline(lfm2_vl_ocr_context * ctx, const uint8_t * rgb,
     std::vector<float> image_embeds;
     int n_image_tokens = 0, embed_dim = 0;
     image_token_layout layout;
-    layout.grid_rows = tiles.grid_rows;
-    layout.grid_cols = tiles.grid_cols;
-    layout.has_thumbnail = tiles.has_thumbnail;
+    layout.tiling = tiles.layout;
     for (size_t i = 0; i < tiles.tiles.size(); i++) {
         c.diff_img_index = tiles.tiles.size() > 1 ? (int)i : -1;
         std::vector<float> emb;

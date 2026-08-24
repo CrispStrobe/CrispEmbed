@@ -26,7 +26,11 @@ Branch `perf/lfm2vl-mac`. Nothing in flight.
   receipt transcript is byte-identical to llama.cpp's.
 - **DONE** — §11 the resampler is now bit-exact with Pillow (0 differing
   pixels on four page resizes), which closes the open item §9 left.
-- **NEXT** — §10: decode graph reuse, the ShortConv state round-trip, prefill,
+- **DONE** — §12 merged the parallel `feat/lfm2vl-multitile` session: shared
+  tiling header + its 21311-check guard, the antialiased position-embedding
+  resample, one shared causal mask, orchestrator/CLI wiring, and the
+  blueprint-vs-port results over 8 documents.
+- **NEXT** — §13: decode graph reuse, the ShortConv state round-trip, prefill,
   and an uncontended timing run. Nothing here is an absolute number. Also the
   PIL between-pass rounding experiment from §9.
 
@@ -126,6 +130,10 @@ A/Bs in §7 and §8. No absolute millisecond here is quotable.
 | `LFM2_VL_MULTI_TILE` | **on** | multi-tile NaFlex; `=0` forces the fast single-tile path |
 | `LFM2_VL_BILINEAR_RESIZE` | off | pre-§4 bilinear point sampler |
 | `LFM2_VL_TV_RESIZE` | off | torchvision-shaped bicubic instead of the PIL-exact one (§11) |
+| `LFM2_VL_PER_LAYER_MASK` | off | one causal mask per attention layer instead of one shared (§12) |
+| `LFM2_VL_LEGACY_TILE_LABELS` | off | transformers <= 4.57.x transposed `<\|img_row_R_col_C\|>` labels (§12) |
+| `LFM2_VL_CPU_PROJECTOR` | off | alias for `LFM2_VL_PROJ_GGML=0` |
+| `LFM2_VL_DECODE_PROFILE` | off | per-phase decode timing (build / alloc / inputs / compute / readback) |
 | `LFM2_VL_PROJ_GGML` | **on** | projector on the sched backend; `=0` restores the scalar loop |
 | `LFM2_VL_PROJ_GELU_TANH` | off | tanh GELU in the projector instead of erf |
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-§3 NaFlex resize params (factor=P, min=max=tile²) |
@@ -568,34 +576,160 @@ is 247 characters of "medium"-confidence ground truth on a 452x317 UI
 screenshot where both engines miss the bottom half of the form. Recorded and
 left alone rather than tuned toward.
 
-## §10 — where the time goes now, and what is next
+## §12 — merged from the parallel session (`feat/lfm2vl-multitile`)
 
-M1 Metal, Q4_K, after §4–§8:
+A second session worked this backend at the same time, from the same
+`ebc8bc95` base, on a Linux VPS and a Kaggle P100. Neither branch contained the
+other. Where we overlapped the conclusions agreed — multi-tile on by default,
+the projector as a ggml graph, bicubic resample, the `crispembed_diff.h` I32
+bug, `cos_global` beside `cos_min`, an oracle-pinned tiling guard, the
+prompt-token-id gate, and `no_repeat_ngram = 0`. Two independent
+investigations, different hardware, different oracles, same answers; that is
+worth more than either alone.
 
-| stage | receipt (1 tile, n_kv 290) | doc page (7 tiles, n_kv 1816) |
+What came across from that branch, all of it kept:
+
+**The tiling math itself.** `src/lfm2_vl_tiling.h` replaces the header this
+session wrote: it is a superset (`compute_layout`, `build_image_markup`,
+`find_closest_aspect_ratio`, the antialiased resample) and its guard
+`tests/test_lfm2_tiling.cpp` runs 21311 checks against the oracle, including 21
+pinned markup sequences. Rewiring this engine onto it left
+`prompt_token_ids` at 1816/1816 exact and every per-stage `cos_global`
+unchanged or better, which is the proof the swap was safe.
+
+**The row/col label swap — a defect neither cosine nor CER can see.**
+`crop_image_to_patches` always returns `(images, grid_width, grid_height)`, but
+`resize_and_split` unpacked it as `num_rows, num_cols` in transformers <= 4.57.x
+and as `num_cols, num_rows` in >= 5.0. The old form transposed every
+`<|img_row_R_col_C|>` label on a non-square grid — a portrait A4 cut into 3 rows
+of 2 was labelled 2 rows of 3. That branch first reproduced 4.57.x, because
+4.57.6 was what happened to be installed, and the prompt-token check caught it
+against a 5.x-dumped reference: 4 of 1816 ids differed, first at index 519.
+Geometric is the default; `LFM2_VL_LEGACY_TILE_LABELS=1` reproduces the old
+form. (This session's independent implementation happened to be geometric
+already, which is why its token gate passed from the start — luck, not care.)
+
+**Antialiased position-embedding resample.**
+`Siglip2VisionEmbeddings.resize_positional_embeddings` uses
+`F.interpolate(bilinear, align_corners=False, antialias=True)`; we did plain
+bilinear. antialias is a no-op on upscale, so it matched every shape the tiler
+currently produces and silently would not for a patch grid below 16 in a
+dimension (a 150x200 image gives 14x20). The replacement is a verbatim
+transcription of ATen's `_compute_weights_aa`, verified against
+`F.interpolate` to 4.4e-16 and pinned by six golden resamples in the tiling
+guard (worst max_abs 1.19e-07). Watched to fail: forcing support=1 reds exactly
+the three downscale cases and leaves the three upscale ones exact.
+
+**One causal mask instead of eight.** `build_prefill_graph` allocated an
+`n_tokens^2` F16 mask per attention layer, all eight holding the same
+lower-triangular pattern: 1.2 MB at a 273-token prompt but **113 MB at a
+2837-token multi-tile one**, and multi-tile is now the default. A/B'd here:
+byte-identical output, `audit_graph_inputs()` clean in both arms.
+`LFM2_VL_PER_LAYER_MASK=1` restores per-layer masks.
+
+**Orchestrator and CLI wiring.** `docs/contributing.md` point 5 was missing
+entirely — lfm2_vl was reachable via `--ocr` (arch auto-detect) but absent from
+`ocr_orchestrator::engine`, so `--ocr-pipeline --ocr-engine lfm2-vl` could not
+select it. Added as engine 19 across `map_engine`, `run_engine`, `engine_name`,
+`is_vlm_engine`, the free path, and both CLI help strings. That work also found
+the multi-surface trap the dev guide calls the #1 recurring bug: there are TWO
+hand-maintained VLM lists over the same set (`is_vlm_engine()` and `is_vlm` in
+`main.cpp`), and being in one but not the other resolved `model_a` down the
+DETECTOR branch — the engine was handed a DBNet path and failed inside the
+vision graph rather than at load. Both sites now name each other.
+
+**Tooling**: the blueprint-vs-port Kaggle harness, the multi-tile acceptance
+kernel, the expanded oracle, the HF cross-check, and a reference dumper that
+emits per-image vision stages and pre-weight pixel values.
+
+### Port vs the Python blueprint, across 8 real documents
+
+From that branch, and the most valuable number in this document: every other
+check compares us to a hand transcription, which conflates *is the port
+faithful* with *is the model any good at this page*. Running
+`Lfm2VlForConditionalGeneration.generate()` itself — greedy, same prompt, same
+budget — isolates the first. Blueprint on CPU float32, ours Q4_K on CUDA:
+
+| fixture | ours vs blueprint | ours vs GT | blueprint vs GT |
+|---|--:|--:|--:|
+| commons_test_ocr_document.jpg | **0.0000** | 0.0007 | 0.0007 |
+| receipt_historical.png | 0.0065 | 0.0130 | 0.0117 |
+| german_official_print.jpg (Fraktur) | 0.0201 | 0.0476 | 0.0387 |
+| german_kurrent_handwriting.jpg | 0.0255 | — | — |
+| german_official_document.jpg | 0.0457 | — | — |
+| public_domain_formula_photo.jpg | 0.3320 | — | — |
+| arabic_handwriting.jpg | 0.4679 | — | — |
+
+**Prompt token counts match the blueprint on all 8**, up to a 3x3 grid plus
+thumbnail at 2591 tokens. Where ground truth exists we track the blueprint
+closely, i.e. most of the residual Fraktur error is the MODEL's, not the port's.
+
+⚠ That branch's own correction, kept because it is the more useful half of the
+result: `handwritten_letter.jpg` scored CER 0.0000, but BOTH sides emit the
+single character `"A"`. That is agreement on a degenerate output, not a
+transcription, and it was quoted twice as "byte-identical on a 10-image page"
+before the text was read. What it legitimately proves is its 2591-token prompt.
+
+⚠ **Its CER numbers are not directly comparable to the tables above.** That
+harness normalises with `re.sub(r"\s+", " ", s.strip())`, which collapses
+NEWLINES; the tables in this document keep line structure and only collapse
+runs of spaces. On a two-column book page the model's line breaks differ from
+the ground truth's while the words do not, which is the whole of the gap
+between its 0.0007 and this document's 0.024 on the same fixture — and note
+that this document's **WER** on it is 0.002, i.e. the two agree once the metric
+does. Neither normalisation is wrong; quoting one against the other is.
+
+### And what that branch does not have
+
+Everything in §7, §8 and §11 is Metal-only or PIL-only and could not surface on
+a VPS or a P100:
+
+- it still stamps `GGML_PREC_F32` on the LLM attention, so on Metal all eight
+  attention layers run on the CPU with the KV cache copied both ways per token
+  (§7). CUDA and CPU ignore the flag; only this fork's Metal backend refuses
+  the op, which is exactly why a CUDA/CPU investigation cannot see it;
+- it still `ggml_cont`s the whole KV cache per layer per token (§7b);
+- its `LFM2_VL_FLASH_ATTN` vision path still carries the spurious permute (§8) —
+  default off, so latent, but it is a landmine;
+- its resample comment calls `image_preproc::resize_bicubic_u8_hwc`
+  "PIL-matching"; measured, it is not (§11);
+- it still materialises the whole 128000x2048 Q6_K embedding table per image.
+
+## §13 — where the time goes now, and what is next
+
+**The decode step, profiled** (`LFM2_VL_DECODE_PROFILE=1`), M1 Metal, Q4_K,
+63 steps, ms/token:
+
+| | receipt, n_kv ~290 | doc page, n_kv 1830 |
 |---|--:|--:|
-| preprocess | ~20 ms | ~230 ms |
-| vision encoder | ~1750 ms | ~1750 ms × 7 |
-| projector | ~8 ms | ~8 ms × 7 |
-| prefill | ~1300 ms | ~8000 ms |
-| decode | ~62 ms/token | ~55 ms/token |
+| graph build | 0.46 | 0.11 |
+| `sched_reset` + `sched_alloc_graph` | 3.11 | 2.76 |
+| input upload | 0.02 | 0.03 |
+| **GPU compute** | **100.13** | **105.49** |
+| readback + ShortConv state | 0.65 | 0.54 |
+
+That retires two items this document previously listed as the next targets.
+Graph reuse and moving the ShortConv state into a backend buffer are together
+worth **at most ~3.5 ms of 105**; `GGML_SCHED_DEBUG=2` shows the decode graph is
+a single split entirely on MTL0, with no CPU fallback left after §7. And the
+cost barely moves with context (100 vs 105 ms at n_kv 290 vs 1830), so it is
+fixed per-token weight traffic and kernel-dispatch overhead, not attention.
+
+For scale: the model is 1.67 GB, so one pass over the weights at M1's ~68 GB/s
+is ~24 ms — we are ~4x off that, and `llama-mtmd-cli` on the same file measures
+in the same range or slower (§9). Closing it means fusing ops beyond what
+llama.cpp does, which is a project, not a patch.
 
 Still open:
 
-- **Graph reuse in decode.** The graph is rebuilt, `sched_reset` and
-  `sched_alloc_graph` run, and ~600 Metal dispatches are re-encoded every
-  token. Building once against the full `max_seq` KV with a mask input would
-  remove all of it.
-- **ShortConv state round-trip.** 22 layers × (one read + one write) of CPU↔GPU
-  state per token. It could live in a backend buffer with the shift in-graph.
-- **Prefill.** ~8 s for 1816 tokens is the other half of a multi-tile page.
-- **Bicubic rounding.** Ours resamples in float and rounds once at the end; PIL
-  rounds to uint8 between the horizontal and vertical passes. Worth ≤1/255 and
-  currently unmeasured — it needs a fixture where it changes the decode.
-- **`to_f32(token_embd)` was 1.05 GB per image** — the whole 128000×2048 Q6_K
-  table dequantized on every `generate()` to read the ~2 k rows a page uses.
-  Replaced by a row-at-a-time `embed_lookup`; `llm_embed` is bit-identical.
-- **A quiet-box timing run.** Nothing in this document is an absolute number:
-  every measurement here was taken beside another agent's Rust build and a busy
-  Firefox. The interleaved medians are trustworthy as ratios; the milliseconds
-  are not.
+- **Prefill.** ~11–27 s for a 1800–2300-token multi-tile prompt is the other
+  half of a split page, and it has not been profiled at all.
+- **`--ocr-max-tokens` is ignored by `--ocr-pipeline`** — it affects all eight
+  VLM engines, not just this one. Inherited from the parallel session's open
+  list; not fixed here.
+- **simple_form.png**, the one fixture where we sit behind llama.cpp (§9, §11).
+- **F16 arm.** Everything here is Q4_K. The vision half is effectively at
+  reference precision (F16 mmproj, `vis_post_ln` cos_global 0.999996); the LLM
+  half has no F16 measurement on this box.
+- **A quiet-box timing run.** No absolute millisecond in this document is
+  quotable; the interleaved medians in §7, §8 and §11 are.

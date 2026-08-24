@@ -1,0 +1,18 @@
+{
+  "id": "chr1s4/lfm2-5-vl-blueprint-ab",
+  "title": "lfm2 5 vl blueprint ab",
+  "code_file": "lfm2_vl_blueprint_ab.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_tpu": "false",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [
+    "chr1s4/crispasr-hf-token",
+    "chr1s4/crispasr-ccache"
+  ],
+  "kernel_sources": [],
+  "model_sources": []
+}
