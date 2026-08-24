@@ -201,6 +201,25 @@ struct ModelEntry {
     // for: ppocrv6-tiny-rec has no kana at all and used to fail silently on
     // Japanese (issue #44). Evidence tiers live in docs/LANGUAGES.md.
     const char * languages;
+
+    // Optional second file installed into the SAME cache directory as
+    // `filename`. Vision-language backends keep the vision tower in an
+    // `mmproj-*.gguf` sibling and find it by scanning the model's own
+    // directory, so registering the LLM alone would install something that
+    // cannot load. Both files are pinned: tools/fetch_model_hashes.py scans
+    // every resolve-URL in this array, so a companion URL is covered without
+    // any change to the generator.
+    //
+    // Names and order mirror CrispASR's `src/crispasr_model_registry.cpp`,
+    // which has carried the same three fields for moonshine's tokenizer.bin,
+    // kokoro's voice GGUF and the TTS codec companions — same concept, so the
+    // two registries should read the same.
+    //
+    // Trailing fields, so the ~600 existing entries — which stop at `license`
+    // or `model_card_url` — value-initialise these to nullptr and need no edit.
+    const char * companion_file;
+    const char * companion_url;
+    const char * companion_size;  // NULL falls back to approx_size
 };
 
 // Prompt prefixes for models that need them for optimal retrieval.
@@ -1518,6 +1537,23 @@ static const ModelEntry k_registry[] = {
       "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "445 MB", "apache-2.0",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
 
+    // LFM2.5-VL-3B — LiquidAI's own GGUF export, used directly rather than
+    // re-hosted: our loader reads it unchanged, so a cstr/* mirror would add a
+    // copy to keep in sync for nothing. Two files — the LLM and the SigLIP2
+    // vision tower — and lfm2_vl_ocr_init() finds the tower by scanning the
+    // model's directory for mmproj-<base>-{F16,Q8_0,BF16}.gguf, hence the
+    // companion fields. LFM-1.0 is revenue-capped, so this is a restricted
+    // entry: --accept-license lfm1.0 (or CRISPEMBED_ACCEPT_LICENSE) gates the
+    // download, and the engine separately requires CRISPEMBED_ACCEPT_LFM_LICENSE=1
+    // to load.
+    { "lfm2-vl", "LFM2.5-VL-3B-Q4_K_M.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/LFM2.5-VL-3B-Q4_K_M.gguf",
+      "LFM2.5-VL document OCR (SigLIP2 NaFlex + LFM2 hybrid conv/attn, 3.4B, Q4_K_M)", "1.67 GB", "lfm1.0",
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B", nullptr,
+      "mmproj-LFM2.5-VL-3B-F16.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/mmproj-LFM2.5-VL-3B-F16.gguf",
+      "854 MB" },
+
     { "pix2struct-base", "pix2struct-base-q8_0.gguf",
       "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
       "Pix2Struct document understanding (ViT + T5 decoder, 282M, image-to-text)", "467 MB", "apache-2.0",
@@ -2113,6 +2149,35 @@ static bool license_accepted(const char * spdx, const std::string & accepted_arg
     return false;
 }
 
+// Install an entry's companion file (an mmproj vision tower, say) next to the
+// main GGUF. The engine finds it by scanning the model's own directory, so the
+// two must land in the same place. Returns false only when the companion was
+// wanted and could not be installed; the caller warns rather than failing the
+// main resolve, so the engine reports the specific missing piece.
+static bool ensure_companion(const ModelEntry * entry, const std::string & dir) {
+    if (!entry->companion_url || !entry->companion_file) return true;
+
+    const std::string path = dir + "/" + entry->companion_file;
+    if (file_exists(path)) return true;
+
+    if (!download_supported()) {
+        fprintf(stderr, "Model '%s' needs companion file %s, and auto-download is unavailable.\n", entry->name,
+                entry->companion_file);
+        return false;
+    }
+
+    // No second license prompt: the companion ships under the same terms as
+    // the model it belongs to, and the main file's gate has already run.
+    fprintf(stderr, "Downloading companion %s (%s)...\n", entry->companion_file,
+            entry->companion_size ? entry->companion_size : entry->approx_size);
+    if (!download_file(entry->companion_url, path)) {
+        fprintf(stderr, "Companion download failed (%s).\n", entry->companion_file);
+        return false;
+    }
+    fprintf(stderr, "Downloaded to %s\n", path.c_str());
+    return true;
+}
+
 std::string resolve_model(const std::string & arg, bool auto_download, const std::string & accepted_license) {
     // If it's already a file path, use it directly
     if (file_exists(arg)) return arg;
@@ -2147,6 +2212,9 @@ std::string resolve_model(const std::string & arg, bool auto_download, const std
     std::string cached = dir + "/" + entry->filename;
 
     if (file_exists(cached)) {
+        // The model is cached but a companion may not be — a cache populated
+        // before the companion was registered, or an interrupted install.
+        ensure_companion(entry, dir);
         return cached;
     }
 
@@ -2220,6 +2288,7 @@ std::string resolve_model(const std::string & arg, bool auto_download, const std
             entry->license ? entry->license : "?");
     if (download_file(entry->url, cached)) {
         fprintf(stderr, "Downloaded to %s\n", cached.c_str());
+        ensure_companion(entry, dir);
         return cached;
     } else {
         fprintf(stderr, "Download failed.\n");
