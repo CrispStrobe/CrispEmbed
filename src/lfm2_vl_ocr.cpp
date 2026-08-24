@@ -1351,7 +1351,27 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
         if (c.m.v_pos_embed) {
             ggml_backend_tensor_get(c.m.v_pos_embed, pos_table.data(), 0, pos_table.size() * sizeof(float));
         }
-        // Bilinear interpolation: map (hp, wp) grid → (grid, grid) source
+        // Bilinear interpolation: map (hp, wp) grid → (grid, grid) source.
+        //
+        // ⚠ KNOWN DEVIATION from the blueprint, bounded and reported rather
+        // than silent. Siglip2VisionEmbeddings.resize_positional_embeddings
+        // calls F.interpolate(..., mode="bilinear", align_corners=False,
+        // antialias=True). We match mode and align_corners but not antialias.
+        //
+        // antialias only affects DOWNSCALING, so it is an exact no-op whenever
+        // both target dimensions are >= the 16x16 source table — which is every
+        // shape this engine currently produces: a 512 tile gives 32x32, and
+        // smart_resize's token band keeps a page's grid well above 16. It bites
+        // only for a small image whose grid falls below 16 in a dimension, e.g.
+        // 150x200 -> 224x320 -> a 14x20 grid. Say so when that happens instead
+        // of quietly producing position embeddings the model was not trained on.
+        if (hp < grid || wp < grid) {
+            fprintf(stderr,
+                    "[lfm2_vl] WARNING: patch grid %dx%d is smaller than the %dx%d position table in at "
+                    "least one dimension, so the reference's antialias=True downscale is NOT reproduced "
+                    "here; position embeddings will differ from the blueprint for this image\n",
+                    wp, hp, grid, grid);
+        }
         std::vector<float> interp_pos((size_t)n_patches * H, 0.0f);
         for (int r = 0; r < hp; r++) {
             for (int col = 0; col < wp; col++) {

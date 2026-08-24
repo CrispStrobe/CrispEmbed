@@ -403,6 +403,15 @@ prefill. The gate needs four arms (off/on x Q4_K/F16, rule 4.2). Kernel:
 
 - **Multi-tile NaFlex** — implemented and gated off (§4). What remains is the
   acceptance run, not the code.
+- **Position-embedding antialias** — `Siglip2VisionEmbeddings.resize_positional_embeddings`
+  interpolates with `antialias=True`; we do not. An exact no-op while both patch
+  grid dimensions are >= the 16x16 source table, which every shape this engine
+  currently produces satisfies (a 512 tile gives 32x32). It bites only for a
+  small image whose grid falls under 16 in a dimension — 150x200 gives 14x20 —
+  and a runtime WARNING now fires in exactly that case rather than the port
+  quietly feeding the model position embeddings it was not trained on. Deferred
+  on purpose: it does not touch the multi-tile parity this branch is gated on,
+  and a correct antialiased resample is its own change with its own A/B.
 - **Shared causal mask** — `build_prefill_graph` allocates one `n_tokens²` F16
   mask PER attention layer, and all 8 are identical. At 273 tokens that is 1.2
   MB; at a 2837-token multi-tile prompt it is ~129 MB, ~113 MB of it redundant.
