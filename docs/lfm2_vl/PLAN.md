@@ -259,7 +259,7 @@ letting the splice run off the end.
 | **decoded output on a splitting page** | **CORRECT.** The 1024x544 top strip of `commons_test_ocr_document.jpg` decodes to `Lorem Ipsum\n\nAlice was` in 8 tokens — an exact match for that fixture's ground-truth opening. So the tiling, the per-tile encode, the markup and the splice produce a readable page, not fluent nonsense. |
 | **decoded A/B on a full splitting page, CUDA** | **multi-tile wins decisively** on Q4_K and F16 — the single-tile arm hallucinates, multi-tile transcribes. See "The A/B" below. |
 | **CER/WER numbers** | re-running: the first attempt's ground-truth lookup keyed on a nonexistent field and scored nothing |
-| per-stage parity vs a CPU-fp32 reference | FAILs that track downscale factor; resample hypothesis under test |
+| per-stage parity vs a CPU-fp32 reference | `cos_min` FAILs, but that is a per-ROW minimum on a Q4_K-vs-fp32 comparison — the harness's documented false-alarm regime. `cos_global` now printed; resample tested in pixel space and rejected as the cause |
 
 `tools/lfm2_vl_tiling_hf_check.py` is the cross-check against the real
 processor. It needs torch + torchvision, so it is a developer tool, not a build
@@ -302,38 +302,66 @@ field name that does not exist and silently scored nothing.
 The canary held: `commons_example_receipt.png` gave the same 45 characters with
 the gate on and off, so multi-tile does not touch a page that should not split.
 
-### Per-stage parity, and what it points at
+### Per-stage parity — and why the first reading of it was wrong
 
 Against a **CPU float32** reference (torch could not use the P100 at all and
-fell back, which makes it the best possible reference precision):
+fell back, which makes it the best possible reference precision), the Q4_K
+runtime reported:
 
 | stage | cos_min | \|mine\| | \|ref\| |
 |---|--:|--:|--:|
-| projector_out_img0..5 (tiles, 1.6x downscale) | 0.57 – 0.87 | ~32–43 | ~32–43 |
-| projector_out_img6 (thumbnail, 4.3x downscale) | **0.344** | 80.79 | 80.37 |
+| projector_out_img0..5 (tiles) | 0.57 – 0.87 | ~32–43 | ~32–43 |
+| projector_out_img6 (thumbnail) | 0.344 | 80.79 | 80.37 |
 | llm_embed | 0.302 | 120.13 | 121.13 |
 | llm_logits_last | 0.990 | 692.4 | 681.6 |
 
-The magnitudes agree throughout, so this is not a scale bug (HARD RULE 2b) —
-the values are right-sized and differently distributed. And the cosine degrades
-monotonically with **downscale factor**, worst at the thumbnail. That is the
-bilinear-vs-bicubic signature: the reference resamples with PIL BICUBIC
-(`resample: 3`) with antialiasing, ours is align-corners bilinear with none, and
-at 4.3x reduction bilinear-without-antialias aliases badly. At the canary's ~1.1x
-the two agree, which is exactly why single-tile parity never showed this.
+Every one printed FAIL, and the first reading here was that something was
+structurally wrong. **That reading was a mistake, and the harness had already
+written down why.** `cos_min` is a per-ROW minimum, and `crispembed_diff.h`
+says in its own comment that it is the right gate for a reference-precision
+port and the wrong one for a quantized artifact — its example is h2ovl-2b at
+q8_0 reading `cos_min` 0.61 on the logits while `cos_global` is 0.998919 and
+the model transcribes a page correctly. This run is Q4_K against fp32: the same
+regime. One fragile row per tile drags the minimum down.
 
-Kernel v3 diffs the same reference with `LFM2_VL_BICUBIC=1` and states the
-per-stage delta. If the cosines climb, the residual gap is the resample and not
-the tiling — and `LFM2_VL_BICUBIC` stops being a speculative gate and becomes a
-measured one.
+`diff_stage` printed only `cos_min`, so the figure that would have settled it
+was never on screen. Fixed — it now prints `cos_mean` and `cos_global` too, and
+flags `(global PASS)` when the aggregate passes but the per-row minimum does
+not. Same reasoning as HARD RULE 2b for the norms: print enough to interpret,
+or the number invites the wrong conclusion.
 
-⚠ Not yet ruled out, in case bicubic does not explain it: the projector token
-ORDER within a tile. A transposition preserves the norm and drops the cosine
-exactly like this. Argued correct from the blueprint (`pixel_unshuffle`'s
-`[B, w//f, h//f, C*f²]` flattened row-major, and the reference tensors are
-shaped `16x16x2048`), and the single-tile path reaching cos 0.958 and a correct
-decode is evidence for it — but it is a hypothesis until the bicubic run
-separates the two.
+The magnitudes did agree throughout, which was the one part of the first
+reading that held: this is not a scale bug.
+
+### The resample hypothesis, tested in pixel space — and rejected
+
+The first reading also proposed that the residual gap was bilinear-vs-bicubic,
+because the cosine degraded with downscale factor. That is cheap to test
+without a GPU: resample the fixture both ways and compare the pixels directly.
+
+| image | scale | cos(bilinear, bicubic) |
+|---|--:|--:|
+| tiles img0..5 | 1.88x | 0.99892 – 0.99956 |
+| thumbnail img6 | 4.29x | 0.99218 |
+| the 500x650 canary | 1.12x | 0.99987 |
+
+The ordering does match the projector cosines (thumbnail worst, canary best),
+so the resample is a real second-order effect — but a 0.999 input difference
+cannot produce a 0.57 output cosine. **Resample is not the explanation.**
+Combined with the `cos_min`-vs-`cos_global` point above, the most likely
+answer is that there was never much to explain: a quantized runtime against an
+fp32 reference, judged by a per-row minimum.
+
+`tools/lfm2_vl_tiling_hf_check.py`-style cheap tests before expensive ones: this
+one took seconds and killed a hypothesis that would otherwise have been "tested"
+by a 30-minute GPU run.
+
+⚠ Still not fully ruled out: the projector token ORDER within a tile, which
+also preserves norms. Argued correct from the blueprint (`pixel_unshuffle`
+emits `[B, w//f, h//f, C*f²]` flattened row-major, and the reference tensors
+are shaped `16x16x2048` accordingly), and supported by the single-tile path
+decoding correctly. `cos_global` from the next run settles it: a transposition
+craters the global cosine, quantization does not.
 
 ### Cost, and why the acceptance run is on Kaggle
 
