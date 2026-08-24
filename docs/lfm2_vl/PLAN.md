@@ -459,6 +459,63 @@ Batching the tiles into one graph with a block-diagonal mask would help a GPU
 (bigger matmuls, fewer launches) but not a CPU, which is FLOP-bound rather than
 launch-bound — so it is not the answer to this particular problem.
 
+### Port vs the Python blueprint, across 8 real documents
+
+Every earlier check compared us to a hand transcription, which conflates two
+things: whether the PORT is faithful and whether the MODEL is any good at the
+page. `tools/kaggle/lfm2-vl-blueprint-ab/` runs the blueprint itself —
+`Lfm2VlForConditionalGeneration.generate()`, greedy, same prompt, same budget —
+so `CER(ours, blueprint)` isolates port fidelity.
+
+Blueprint on CPU float32 (torch cannot use the P100), ours Q4_K on CUDA:
+
+| fixture | ours vs **blueprint** | ours vs GT | blueprint vs GT |
+|---|--:|--:|--:|
+| commons_test_ocr_document.jpg | **0.0000** | 0.0007 | 0.0007 |
+| handwritten_letter.jpg (10 images) | **0.0000** | — | — |
+| receipt_historical.png | 0.0065 | 0.0130 | 0.0117 |
+| german_official_print.jpg (Fraktur) | 0.0201 | 0.0476 | 0.0387 |
+| german_kurrent_handwriting.jpg | 0.0255 | — | — |
+| german_official_document.jpg | 0.0457 | — | — |
+| public_domain_formula_photo.jpg | 0.3320 | — | — |
+| arabic_handwriting.jpg | 0.4679 | — | — |
+
+**Prompt token counts match the blueprint on all 8** — the tiling, the grid, the
+per-tile markup and the `<image>` run lengths are exactly right across every
+document shape, up to and including a 3x3 grid plus thumbnail. Two documents
+are byte-identical to the blueprint, one of them the 10-image case.
+
+Where ground truth exists we track the blueprint closely (0.0007 vs 0.0007,
+0.0130 vs 0.0117, 0.0476 vs 0.0387), which is the point of running it: most of
+the residual error on Fraktur is the MODEL's, not the port's.
+
+### A decode-recipe divergence the blueprint comparison exposed
+
+Two outliers — a formula photograph and Arabic handwriting. Before reaching for
+"quantization near-ties", check the recipe (HARD RULE 13):
+
+| | `generation_config.json` | ours |
+|---|---|---|
+| `no_repeat_ngram_size` | **absent — no constraint** | **5** |
+| `repetition_penalty` | 1.0 (none) | none |
+
+We apply a constraint the blueprint does not. On content where the model
+legitimately repeats — table rows, a formula, handwriting it cannot read — our
+decoder is FORCED off its argmax, which guarantees divergence and may be
+producing worse text rather than merely different text. Both outliers are
+exactly that kind of content.
+
+Being measured, not argued: the kernel now runs our side twice, default and
+`LFM2_VL_NO_REPEAT_NGRAM=0`, scored against the blueprint AND ground truth. If
+the outliers collapse at 0, the constraint is the cause and the default needs
+revisiting; if they do not, it is quantization and the dev guide says to stop
+chasing exact greedy parity for a quantized AR decode.
+
+⚠ Also noted for whoever revisits it: the shipped `generation_config.json` says
+`do_sample: true, temperature: 0.2, top_k: 50`. Our engine is greedy, and the
+A/B forces greedy on both sides so the comparison means something — but greedy
+is our choice, not the config's default.
+
 ### Cost, and why the acceptance run is on Kaggle
 
 The vision encoder is ~250 s per 1024-patch image on this VPS, and a split A4
