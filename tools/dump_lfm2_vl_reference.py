@@ -143,7 +143,21 @@ def main():
         except Exception as e:
             print(f"CUDA probe failed ({e}), falling back to CPU")
             device = "cpu"
-    dtype = torch.bfloat16 if device == "cuda" else torch.float32
+    # Pick the reference dtype from what the GPU can actually do, not from what
+    # is fashionable. bfloat16 needs compute capability >= 8.0; on a P100
+    # (sm_60, which is what Kaggle hands out about half the time) bf16 is not
+    # natively supported and either errors or falls into very slow emulation.
+    # float16 is well supported there and is also the precision our mmproj
+    # ships in, so it is the better reference anyway.
+    if device == "cuda":
+        try:
+            major, minor = torch.cuda.get_device_capability()
+        except Exception:
+            major, minor = 0, 0
+        dtype = torch.bfloat16 if major >= 8 else torch.float16
+        print(f"  GPU compute capability {major}.{minor} → {dtype}")
+    else:
+        dtype = torch.float32
     print(f"Loading model ({dtype}, device={device})...")
     model = AutoModelForImageTextToText.from_pretrained(
         args.model,
@@ -452,6 +466,12 @@ def main():
     writer.add_string("lfm2vl.model_id", args.model)
     writer.add_string("lfm2vl.image_path", str(args.image))
     writer.add_string("lfm2vl.prompt", args.prompt)
+    # The reference precision. A deep pipeline reproduces an F16 reference
+    # exactly at step 0 and drifts by rounding thereafter; reading a per-stage
+    # cosine without knowing which dtype produced it invites calling that drift
+    # a bug (dev-guide HARD RULE 2).
+    writer.add_string("lfm2vl.ref_dtype", str(dtype).replace("torch.", ""))
+    writer.add_string("lfm2vl.ref_device", device)
     writer.add_string("lfm2vl.generated_text", generated_text)
     writer.add_uint32("lfm2vl.max_vis_layers", args.max_vis_layers)
     writer.add_uint32("lfm2vl.max_llm_layers", args.max_llm_layers)
