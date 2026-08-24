@@ -399,6 +399,23 @@ if REF_OK:
     # with LFM2_VL_BICUBIC=1: if the projector cosines climb, the residual gap
     # is the resample and not the tiling. This is the whole reason that gate
     # exists, and it costs one extra forward pass to answer.
+    # F16 as well as Q4_K. The dev guide is explicit: run the runtime at F16 to
+    # isolate STRUCTURE from quantization damage, then at the shipped quant.
+    # Note the vision tower is F16 in both arms (it comes from the mmproj), so
+    # any projector-stage gap is structural by construction and a Q4_K-only
+    # reading would have muddied that.
+    if F16:
+        log("=== per-stage diff at F16 (structure, not quant) ===")
+        runf = run_ocr(F16, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8)
+        diffsf = parse_diffs(runf["stderr"])
+        for name, dd in diffsf.items():
+            log(f"  {name}: {dd}")
+        results["stages"]["parity_f16"] = {
+            "rc": runf["rc"], "seconds": runf["seconds"], "diffs": diffsf,
+            "stderr_tail": runf["stderr"][-6000:],
+        }
+        save_results()
+
     log("=== per-stage diff, same reference, LFM2_VL_BICUBIC=0 (old bilinear) ===")
     runb = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8, bicubic=False)
     diffsb = parse_diffs(runb["stderr"])
