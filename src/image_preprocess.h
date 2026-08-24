@@ -151,4 +151,15 @@ bool preprocess_internvl_msac_rgb(const uint8_t * rgb, int height, int width, in
 // Reusable by any fixed-size preprocessor that needs HF-parity resizing.
 void resize_bicubic_u8_hwc(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w, int channels);
 
+// PIL-exact separable bicubic (Pillow Resample.c precompute_coeffs + the two
+// 8-bit passes). Use this when the reference is an HF SLOW image processor
+// (`resample: 3` going through PIL) rather than a torchvision fast one — the
+// two resamplers differ by up to 18/255 on real pages. Same signature as
+// resize_bicubic_u8_hwc; `dst` is HWC float32 holding integral [0, 255] values.
+//
+// Measured vs `Image.resize(..., BICUBIC)`: bit-exact on 452x317 -> 448x320,
+// and <= 1/255 on ~100 pixels of 750k on four other page resizes.
+void resize_bicubic_pil_u8_hwc(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w,
+                               int channels);
+
 } // namespace image_preproc

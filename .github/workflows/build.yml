@@ -106,7 +106,7 @@ jobs:
             --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file test-render-provenance \
                      test-qwen-pretokenize test-o200k-pretokenize test-bpe-pretokenize test-bert-pretokenize \
                      test-bert-norm test-spm-norm test-imatrix-alias test-no-repeat-ngram test-env-gate \
-                     test-lfm2-naflex
+                     test-lfm2-naflex test-pil-resize
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
@@ -122,6 +122,7 @@ jobs:
           ./build/test-no-repeat-ngram
           ./build/test-env-gate
           ./build/test-lfm2-naflex
+          ./build/test-pil-resize
           python3 tests/test_vendored_kaggle_harness.py
 
       - name: Smoke test (Windows)

@@ -723,6 +723,9 @@ target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 add_executable(test-lfm2-naflex tests/test_lfm2_naflex.cpp)
 target_link_libraries(test-lfm2-naflex PRIVATE crispembed)
 
+add_executable(test-pil-resize tests/test_pil_resize.cpp)
+target_link_libraries(test-pil-resize PRIVATE crispembed)
+
 add_executable(test-msac-tiling tests/test_msac_tiling.cpp)
 target_link_libraries(test-msac-tiling PRIVATE crispembed)
 

@@ -856,6 +856,14 @@ static void resize_rgb_hwc(const uint8_t * rgb, int height, int width, int chann
                            std::vector<float> & hwc) {
     hwc.assign((size_t)rH * rW * 3, 0.0f);
     if (!core_env::on("LFM2_VL_BILINEAR_RESIZE")) {
+        // PIL-exact by default: HF's Lfm2VlImageProcessor goes through PIL
+        // (`resample: 3`), and PIL is NOT torchvision. Against
+        // Image.resize(BICUBIC) the torchvision-shaped resampler differs by up
+        // to 18/255 on thousands of pixels; the PIL port is bit-exact on
+        // simple_form (452x317 -> 448x320, 0 of 430080 pixels differ) and off
+        // by at most 1/255 on ~100 pixels of 750k elsewhere.
+        // LFM2_VL_TV_RESIZE=1 selects the torchvision resampler for A/B.
+        const bool tv = core_env::on("LFM2_VL_TV_RESIZE");
         const uint8_t * src3 = rgb;
         std::vector<uint8_t> packed;
         if (channels != 3) {
@@ -864,7 +872,10 @@ static void resize_rgb_hwc(const uint8_t * rgb, int height, int width, int chann
                 for (int c = 0; c < 3; c++) packed[i * 3 + c] = rgb[i * channels + ((channels >= 3) ? c : 0)];
             src3 = packed.data();
         }
-        image_preproc::resize_bicubic_u8_hwc(src3, height, width, hwc.data(), rH, rW, 3);
+        if (tv)
+            image_preproc::resize_bicubic_u8_hwc(src3, height, width, hwc.data(), rH, rW, 3);
+        else
+            image_preproc::resize_bicubic_pil_u8_hwc(src3, height, width, hwc.data(), rH, rW, 3);
         return;
     }
     for (int y = 0; y < rH; y++) {

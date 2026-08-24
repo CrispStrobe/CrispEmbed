@@ -24,6 +24,8 @@ Branch `perf/lfm2vl-mac`. Nothing in flight.
 - **DONE** — §9 head-to-head vs `llama-mtmd-cli` on the same GGUF: speed is a
   wash, and the quality gap was our own no-repeat-ngram default, now off. The
   receipt transcript is byte-identical to llama.cpp's.
+- **DONE** — §11 the resampler is now bit-exact with Pillow (0 differing
+  pixels on four page resizes), which closes the open item §9 left.
 - **NEXT** — §10: decode graph reuse, the ShortConv state round-trip, prefill,
   and an uncontended timing run. Nothing here is an absolute number. Also the
   PIL between-pass rounding experiment from §9.
@@ -123,6 +125,7 @@ A/Bs in §7 and §8. No absolute millisecond here is quotable.
 | `LFM2_VL_KV_CACHE` | **on** | KV-cached per-token decode; `=0` restores full recompute |
 | `LFM2_VL_MULTI_TILE` | **on** | multi-tile NaFlex; `=0` forces the fast single-tile path |
 | `LFM2_VL_BILINEAR_RESIZE` | off | pre-§4 bilinear point sampler |
+| `LFM2_VL_TV_RESIZE` | off | torchvision-shaped bicubic instead of the PIL-exact one (§11) |
 | `LFM2_VL_PROJ_GGML` | **on** | projector on the sched backend; `=0` restores the scalar loop |
 | `LFM2_VL_PROJ_GELU_TANH` | off | tanh GELU in the projector instead of erf |
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-§3 NaFlex resize params (factor=P, min=max=tile²) |
@@ -496,6 +499,74 @@ is two fixtures:
 Neither is a structural difference. The obvious next experiment is emulating
 PIL's between-pass uint8 rounding in `resize_bicubic_u8_hwc` and re-running
 simple_form.
+
+## §11 — PIL is not torchvision, and now we are bit-exact with it
+
+§4 established that HF resizes bicubic-with-antialias and swapped in
+`image_preproc::resize_bicubic_u8_hwc`. That function is **torchvision**'s
+`interpolate(antialias=True)`. HF's slow image processors — the ones with
+`resample: 3`, which is what produced the reference — go through **PIL**, and
+the two are different resamplers. Measured against `Image.resize(BICUBIC)`:
+
+| resize | torchvision-shaped | + between-pass rounding | PIL-exact |
+|---|--:|--:|--:|
+| 452x317 → 448x320 (simple_form) | max 12/255, 15681 px differ | max 12/255, 11004 | **0 of 430080** |
+| 500x650 → 448x576 (receipt) | max 18/255, 21075 px | max 1/255, 9 px | **0 of 774144** |
+| 1920x2485 → 448x576 (doc thumb) | max 6/255, 49660 px | max 1/255, 96 px | **0 of 774144** |
+| 768x1552 → 352x704 (historical) | — | — | **0 of 743424** |
+
+Three things account for it, and all three are needed for the zero:
+
+1. **PIL rounds to uint8 between the horizontal and vertical passes.** Carrying
+   float through both is most of the 18/255.
+2. **The tap count varies per output pixel** (`xmax = (int)(center + support +
+   0.5) - xmin`), where the torchvision form uses one fixed `ceil(2*support)`
+   per axis. One extra near-zero tap shifts the whole kernel after
+   renormalisation.
+3. **At the borders PIL clamps the tap RANGE and renormalises over what
+   survives**; the torchvision form clamps the INDEX, i.e. replicates the edge
+   pixel. On a UI screenshot with content at the edge that is visible.
+
+And a fourth that only shows up once the first three are right: PIL's 8-bit
+path is **fixed point**, quantising each normalised kernel to 22-bit integers,
+and it evaluates the filter in **double**. Routing the port through the
+existing float32 `cubic_kernel` left ~25% of a small downscale off by 1/255.
+
+`image_preproc::resize_bicubic_pil_u8_hwc` is the new function;
+`resize_bicubic_u8_hwc` is untouched, so the Qwen2VL lane keeps its
+torchvision resampler. `LFM2_VL_TV_RESIZE=1` switches this engine back.
+
+Per-stage effect on the multi-tile reference:
+
+| stage (cos_global) | torchvision | PIL-exact |
+|---|--:|--:|
+| `vis_post_ln_img0` | 0.999994 | **0.999996** |
+| `projector_out_img0` | 0.999850 | **0.999890** |
+| `vis_post_ln_img6` (thumbnail) | 0.999988 | **0.999991** |
+| `llm_embed` | 0.999744 | **0.999818** |
+
+and the thumbnail's `|mine|` becomes 990.5215, which is the reference's value
+exactly. End to end it is worth simple_form fmt CER 0.409 → **0.397** and
+nothing anywhere else — no regression on any fixture, and preprocess got
+*faster* (integer math on a uint8 intermediate). Mean fmt CER 0.106 → **0.103**
+against llama.cpp's 0.095.
+
+`tests/test_pil_resize.cpp` pins it against four literal Pillow outputs on a
+deterministic 12x12 pattern plus two algebraic invariants (a constant image
+survives any resize exactly — partition of unity; a hard edge never leaves
+[0,255] — ringing is clipped). Watched to fail: dropping the between-pass
+rounding breaks three of the four goldens AND the constant-image invariant;
+using the float32 kernel breaks the 5x5 downscale on 19 of 75 elements.
+
+### simple_form is still the outlier, and the resize was not all of it
+
+0.397 against llama.cpp's 0.360. Our preprocessing is now bit-identical to
+Pillow, i.e. to what the HF reference feeds the model, and llama.cpp resamples
+with its own `clip.cpp` code that is not PIL — so on this fixture llama.cpp is
+*differently* wrong rather than more correct, and it lands better by luck. It
+is 247 characters of "medium"-confidence ground truth on a 452x317 UI
+screenshot where both engines miss the bottom half of the form. Recorded and
+left alone rather than tuned toward.
 
 ## §10 — where the time goes now, and what is next
 
