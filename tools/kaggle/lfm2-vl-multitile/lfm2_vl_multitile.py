@@ -119,7 +119,6 @@ log("HF token resolved")
 if not EMBED.exists():
     sh(f"git clone --depth 1 --recursive --shallow-submodules "
        f"-b {EMBED_BRANCH} {EMBED_URL} {EMBED}")
-head = sh("git rev-parse HEAD", capture=True, check=False)
 results["commit"] = sh(f"git -C {EMBED} rev-parse HEAD", capture=True).stdout.strip()
 log(f"CrispEmbed @ {results['commit']} ({EMBED_BRANCH})")
 
