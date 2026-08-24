@@ -350,6 +350,33 @@ than a broken tensor.
 Nothing else needed fixing. The tiling, the tile order, the per-tile encode,
 the projector unshuffle, the markup and the splice were all already right.
 
+**Confirmed clean on the final run (v6, commit `c567f3f9`):** every stage
+>0.99 `cos_global`, `pixel_values_img0..6` now 0.999983 – 0.999991 after the
+permutation fix, `prompt_token_ids` PASS, F16 `llm_logits_last` 0.999982, and
+**no stage below 0.99**.
+
+### The projector is bit-exact — verified offline, no GPU
+
+The mmproj GGUF ships only `mm.1` and `mm.2`; there is no projector LayerNorm
+tensor, while `Lfm2VlMultiModalProjector.forward` does
+`pixel_unshuffle -> layer_norm -> linear_1 -> act -> linear_2`. That looked like
+a missing operation.
+
+It is not. Replaying our projector in numpy from the reference's own
+`vis_post_ln_imgN` (its input) against `projector_out_imgN` (its output), using
+`mm.1`/`mm.2` straight out of the GGUF:
+
+| variant | cos_global | cos_min | \|mine\| | \|ref\| |
+|---|--:|--:|--:|--:|
+| **no layer_norm — what we do** | **1.000000** | **1.0000** | 35.44 | 35.44 |
+| LayerNorm(gamma=1, beta=0) first | 0.843391 | 0.3142 | 44.82 | 35.44 |
+
+So the released conversion has folded the LayerNorm away, and adding one back
+would BREAK parity. The same test simultaneously proves the `pixel_unshuffle`
+ordering and the tanh-GELU are exactly right — cosine 1.000000 leaves no room
+for either to be wrong. Cost: one 92 MB download and a few seconds of numpy,
+because the archive happens to contain both sides of that one stage.
+
 ⚠ **`pixel_values` needs permuting before it means anything.** HF flattens a
 patch row as `(py, px, c)`, channel fastest, because its `patch_embedding` is
 an `nn.Linear` over that layout. We flatten `(px, py, c)` to match how the GGUF
