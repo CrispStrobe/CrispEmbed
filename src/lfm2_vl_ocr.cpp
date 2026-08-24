@@ -1032,7 +1032,18 @@ static bool preprocess_image_tiled(const uint8_t * rgb, int height, int width, i
     std::vector<float> planar;
     resize_normalize_planar(rgb, height, width, channels, L.target_h, L.target_w, vhp, planar);
 
+    // patch_size is read from the GGUF while tile_size is a constant from the
+    // processor config, so nothing structurally guarantees they divide. For the
+    // shipped model they do (512 / 16 = 32). If a future checkpoint changes the
+    // patch size, the crop below would silently drop the remainder pixels of
+    // every tile — say so rather than transcribing 15/16 of the page.
     const int gt = tile / P; // 32 patches per tile side
+    if (tile % (P * ds) != 0) {
+        fprintf(stderr,
+                "[lfm2_vl] WARNING: tile_size %d is not a multiple of patch_size %d * downsample %d — %d pixels "
+                "per tile edge will be dropped\n",
+                tile, P, ds, tile - gt * P);
+    }
     warn_if_grid_odd(gt, gt, ds);
 
     out.images.reserve((size_t)L.n_images);
