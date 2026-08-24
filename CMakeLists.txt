@@ -720,6 +720,11 @@ target_link_libraries(test-core-vlm-attention PRIVATE crispembed)
 add_executable(test-lfm2-shortconv tests/test_lfm2_shortconv.cpp)
 target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
 
+# Weight-free: pure integer layout math, no ggml, no model. Runs in CI's
+# model-free tier alongside test-msac-tiling.
+add_executable(test-lfm2-tiling tests/test_lfm2_tiling.cpp)
+target_include_directories(test-lfm2-tiling PRIVATE src tests)
+
 add_executable(test-msac-tiling tests/test_msac_tiling.cpp)
 target_link_libraries(test-msac-tiling PRIVATE crispembed)
 
