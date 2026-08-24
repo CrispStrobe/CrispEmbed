@@ -1707,7 +1707,10 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     }
 
     // ── Step 2: Allocate KV cache ──
-    bool use_kv = !core_env::on("CRISPEMBED_NO_KV_CACHE");
+    // KV decode has a structural bug — per-token decode graph diverges from
+    // prefill. Use full recompute by default until the decode graph is fixed.
+    // Gate the KV path behind LFM2_VL_KV_CACHE=1 for debugging.
+    bool use_kv = core_env::on("LFM2_VL_KV_CACHE");
     bool kv_ok = use_kv && alloc_kv_cache(c, n_prompt_tokens + max_new_tokens);
 
     // Init conv state
