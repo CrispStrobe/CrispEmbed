@@ -482,8 +482,16 @@ Blueprint on CPU float32 (torch cannot use the P100), ours Q4_K on CUDA:
 
 **Prompt token counts match the blueprint on all 8** — the tiling, the grid, the
 per-tile markup and the `<image>` run lengths are exactly right across every
-document shape, up to and including a 3x3 grid plus thumbnail. Two documents
-are byte-identical to the blueprint, one of them the 10-image case.
+document shape, up to and including a 3x3 grid plus thumbnail (2591 prompt
+tokens, matched exactly).
+
+⚠ `handwritten_letter.jpg` shows `CER 0.0000`, but BOTH sides emit the single
+character `"A"`. That is agreement on a degenerate output, not a transcription,
+and it must not be quoted as "byte-identical on a 10-image page" — it was, here,
+twice, before the text was actually read. What that fixture legitimately proves
+is the 2591-token prompt matching; it says nothing about decode quality. The
+real byte-identical transcription result is `commons_test_ocr_document.jpg` at
+2989 characters.
 
 Where ground truth exists we track the blueprint closely (0.0007 vs 0.0007,
 0.0130 vs 0.0117, 0.0476 vs 0.0387), which is the point of running it: most of
@@ -505,11 +513,42 @@ decoder is FORCED off its argmax, which guarantees divergence and may be
 producing worse text rather than merely different text. Both outliers are
 exactly that kind of content.
 
-Being measured, not argued: the kernel now runs our side twice, default and
-`LFM2_VL_NO_REPEAT_NGRAM=0`, scored against the blueprint AND ground truth. If
-the outliers collapse at 0, the constraint is the cause and the default needs
-revisiting; if they do not, it is quantization and the dev guide says to stop
-chasing exact greedy parity for a quantized AR decode.
+Measured, both arms, scored against the blueprint AND ground truth:
+
+| fixture | vs BP n=5 | vs BP n=0 | **vs GT n=5** | **vs GT n=0** |
+|---|--:|--:|--:|--:|
+| commons_test_ocr_document | 0.0 | 0.0 | 0.0007 | 0.0007 |
+| german_official_print (Fraktur) | 0.0201 | **0.0030** | 0.0476 | **0.0357** |
+| receipt_historical | 0.0065 | **0.0039** | 0.0130 | 0.0130 |
+| german_official_document | 0.0457 | 0.0447 | — | — |
+| public_domain_formula_photo | 0.3320 | **0.2218** | — | — |
+| arabic_handwriting | 0.3809 | 0.4461 | — | — |
+| german_kurrent / handwritten_letter | equal | equal | — | — |
+| **mean vs blueprint** | 0.1013 | **0.0931** | | |
+
+**`no_repeat_ngram = 0` is better or equal against GROUND TRUTH on every
+fixture that has one**, and on Fraktur it reaches 0.0357 — better than the
+blueprint itself at 0.0387. Character counts also match the blueprint exactly
+on two more fixtures (1008 vs 1008, 774 vs 774).
+
+The failure mode the constraint exists to prevent did NOT appear: no degenerate
+repeat loops at n=0 across all 8 documents (longest immediately-repeated
+12-gram run = 1 everywhere).
+
+⚠ One caveat on the single regression. `arabic_handwriting` read 0.4679 in v1
+and 0.3809 in v2 at IDENTICAL settings — the only difference between the runs
+is the projector's accumulation order moving from scalar CPU to ggml. So that
+fixture is numerically unstable at the decode level, and its lone
+"n=0 is worse" datapoint sits inside that instability rather than above it. It
+is the kind of high-uncertainty input where the dev guide says a quantized
+greedy decode cannot be expected to track a float32 reference token for token.
+
+**Recommendation: flip the default to 0** — it matches `generation_config.json`,
+it is better or equal on every ground-truth measurement, and it introduces no
+loops on this corpus. NOT DONE YET: awaiting a decision, because the constraint
+guards a real greedy-decode failure mode that this 8-document corpus may simply
+not contain, and removing it trades a measured improvement here for an unmeasured
+risk elsewhere.
 
 ⚠ Also noted for whoever revisits it: the shipped `generation_config.json` says
 `do_sample: true, temperature: 0.2, top_k: 50`. Our engine is greedy, and the
