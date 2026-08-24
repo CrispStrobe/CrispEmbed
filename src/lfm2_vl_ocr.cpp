@@ -836,17 +836,26 @@ static lfm2_vl_tiling::config tiling_config(const vision_hparams & vhp) {
 
 // Resize to dst_h x dst_w and normalize into planar CHW float.
 //
-// The default resample is the align-corners bilinear this port has always
-// used, and which produced the validated 45-character fixture output. HF uses
-// resample=3 (PIL BICUBIC); image_preproc::resize_bicubic_u8_hwc is a
-// PIL-matching Catmull-Rom already in the tree, available behind
-// LFM2_VL_BICUBIC=1. It is a separate change needing its own A/B, so it stays
-// opt-in (dev-guide rule 3/3a) rather than riding in on the tiling work.
+// The resample is PIL-matching bicubic (Catmull-Rom a = -0.5, antialiased on
+// downscale), which is what `processor_config.json` specifies (`resample: 3`)
+// and what image_preproc::resize_bicubic_u8_hwc already implemented.
+//
+// It became the default on measurement, not on principle. Against a CPU-fp32
+// blueprint reference on a split page it is the DOMINANT term in the per-stage
+// gap — the thumbnail's projector cos_min goes 0.3446 -> 0.9847 and tile 0
+// 0.5910 -> 0.9772, the effect scaling with downscale factor. Decoded CER on
+// F16 improves 0.5129 -> 0.4968 (Q4_K unchanged), it costs ~1% wall clock, and
+// the 500x650 canary comes out BYTE-IDENTICAL either way, so the validated
+// 45-character result is untouched.
+//
+// LFM2_VL_BICUBIC=0 restores the align-corners bilinear this port shipped
+// with. Keep it: it is the A/B counterpart and the reason the above is a
+// measurement rather than an assertion.
 static void resize_normalize_planar(const uint8_t * rgb, int src_h, int src_w, int channels, int dst_h, int dst_w,
                                     const vision_hparams & vhp, std::vector<float> & out) {
     out.resize((size_t)3 * dst_h * dst_w);
 
-    if (core_env::on("LFM2_VL_BICUBIC")) {
+    if (!core_env::explicitly_off("LFM2_VL_BICUBIC")) {
         std::vector<float> hwc((size_t)dst_h * dst_w * channels);
         image_preproc::resize_bicubic_u8_hwc(rgb, src_h, src_w, hwc.data(), dst_h, dst_w, channels);
         for (int y = 0; y < dst_h; y++) {
