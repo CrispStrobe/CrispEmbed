@@ -129,6 +129,8 @@ dominant cost on this VPS and is the next real perf target.
 | `CRISPEMBED_ACCEPT_LFM_LICENSE` | off | required; LFM-1.0 is revenue-capped |
 | `LFM2_VL_KV_CACHE` | **on** | KV-cached per-token decode; `=0` restores full recompute |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
+| `LFM2_VL_FORCE_CPU` | off | ignore `crispasr_init_gpu_backend()` and run on CPU |
+| `LFM2_VL_FLASH_ATTN` | off | use `ggml_flash_attn_ext` in the VISION tower instead of manual attention. Off because the tower is bidirectional and passes `mask=nullptr`; per HARD RULE 5 that is full attention, not "masking handled", so the two are only equivalent while every patch is real. They are today — we never pad, unlike HF, which pads to `max_num_patches` and masks — but the gate must stay off if padding is ever introduced. Unmeasured. |
 | `LFM2_VL_MULTI_TILE` | **off** | split a large page into a tile grid + thumbnail (§4) |
 | `LFM2_VL_TILE_LABELS_LEGACY_SWAP` | off | reproduce transformers <= 4.57.x, which transposed the tile row/col labels; 5.x (the default) does not |
 | `LFM2_VL_BICUBIC` | **on** | PIL-matching Catmull-Rom resample, as `processor_config.json` specifies; `=0` restores the align-corners bilinear this port shipped with |
