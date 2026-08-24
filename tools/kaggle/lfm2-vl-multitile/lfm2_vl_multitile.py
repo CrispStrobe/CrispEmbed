@@ -273,9 +273,10 @@ BASE_ENV = {
 }
 
 
-def run_ocr(model, image, multi_tile, diff_ref=None, max_tokens=MAX_TOKENS, extra=None):
+def run_ocr(model, image, multi_tile, diff_ref=None, max_tokens=MAX_TOKENS, extra=None, bicubic=False):
     env = dict(BASE_ENV)
     env["LFM2_VL_MULTI_TILE"] = "1" if multi_tile else "0"
+    env["LFM2_VL_BICUBIC"] = "1" if bicubic else "0"
     if diff_ref:
         env["LFM2_VL_DIFF_REF"] = str(diff_ref)
     if extra:
@@ -345,9 +346,18 @@ def score(hyp, ref):
 gt = json.loads(Path(EMBED / "tests/regression/images/cc0/ground_truth.json").read_text())
 GROUND_TRUTH = ""
 for rec in gt.get("records", []):
-    if FIXTURE_STEM in str(rec.get("image", "")):
+    # The records key the fixture by "name"/"file"; there is no "image" key.
+    # Getting this wrong silently yields an empty ground truth, which then
+    # suppresses every CER/WER number without failing anything -- exactly the
+    # kind of quiet nothing rule 4a warns about. Assert it landed.
+    if FIXTURE_STEM in (str(rec.get("name", "")) + str(rec.get("file", ""))):
         GROUND_TRUTH = rec.get("text") or rec.get("ground_truth") or ""
         break
+if not GROUND_TRUTH:
+    log(f"FATAL: no ground truth for {FIXTURE_STEM} — the A/B could not be scored")
+    results["status"] = "FAIL_NO_GROUND_TRUTH"
+    save_results()
+    sys.exit(1)
 log(f"ground truth: {len(GROUND_TRUTH)} chars")
 results["ground_truth_chars"] = len(GROUND_TRUTH)
 
@@ -381,6 +391,32 @@ if REF_OK:
         "rc": run["rc"], "seconds": run["seconds"], "diffs": diffs,
         "stderr_tail": run["stderr"][-4000:],
     }
+    # The reference resamples with PIL BICUBIC (processor_config resample: 3);
+    # our default is align-corners bilinear with no antialiasing. At ~1x
+    # scaling the two agree, but a tile grid downscales 1.6x and the thumbnail
+    # 4.3x, where bilinear-without-antialias aliases badly. Run the SAME diff
+    # with LFM2_VL_BICUBIC=1: if the projector cosines climb, the residual gap
+    # is the resample and not the tiling. This is the whole reason that gate
+    # exists, and it costs one extra forward pass to answer.
+    log("=== per-stage diff, same reference, LFM2_VL_BICUBIC=1 ===")
+    runb = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8, bicubic=True)
+    diffsb = parse_diffs(runb["stderr"])
+    for name, dd in diffsb.items():
+        log(f"  {name}: {dd}")
+    results["stages"]["parity_q4k_bicubic"] = {
+        "rc": runb["rc"], "seconds": runb["seconds"], "diffs": diffsb,
+        "stderr_tail": runb["stderr"][-4000:],
+    }
+    # State the comparison rather than leaving two tables to eyeball.
+    delta = {}
+    for name, dd in diffsb.items():
+        base = diffs.get(name, {})
+        if "cos_min" in dd and "cos_min" in base:
+            delta[name] = {"bilinear": base["cos_min"], "bicubic": dd["cos_min"],
+                           "delta": round(dd["cos_min"] - base["cos_min"], 6)}
+    results["stages"]["resample_cos_delta"] = delta
+    log("=== resample effect on per-stage cosine ===")
+    log(json.dumps(delta, indent=2))
 else:
     log("=== per-stage diff SKIPPED (no reference) ===")
     results["stages"]["parity_q4k"] = {"skipped": "reference dump failed"}
@@ -391,12 +427,13 @@ log("=== decoded-output A/B on the splitting fixture ===")
 ab = {}
 arms = [("q4_k", Q4)] + ([("f16", F16)] if F16 else [])
 for quant, model in arms:
-    for arm, mt in (("off", False), ("on", True)):
+    for arm, mt, bic in (("off", False, False), ("on", True, False), ("on_bicubic", True, True)):
         key = f"{quant}_multitile_{arm}"
         log(f"  running {key} ...")
-        run = run_ocr(model, EMBED / FIXTURE, mt)
+        run = run_ocr(model, EMBED / FIXTURE, mt, bicubic=bic)
         txt = text_of(run)
-        entry = {"rc": run["rc"], "seconds": run["seconds"], "text": txt}
+        entry = {"rc": run["rc"], "seconds": run["seconds"], "text": txt,
+                 "chars": len(norm(txt))}
         if run["rc"] == 0 and txt and GROUND_TRUTH:
             entry.update(score(txt, GROUND_TRUTH))
         # Proof of work: a crash or an empty transcript must never be scored
@@ -408,10 +445,15 @@ for quant, model in arms:
         m = re.search(r"prompt: (\d+) tokens", run["stderr"])
         if m:
             entry["prompt_tokens"] = int(m.group(1))
+        entry["bicubic"] = bic
         ab[key] = entry
         log(f"    {key}: rc={run['rc']} {entry.get('chars', 0)} chars "
             f"CER={entry.get('cer')} WER={entry.get('wer')} "
             f"img_tok={entry.get('image_tokens')} {run['seconds']}s")
+        # Read the text (HARD RULE 3). A CER number cannot tell you that the
+        # single-tile arm hallucinated fluent Latin while the multi-tile arm
+        # transcribed the page -- and that is the whole finding.
+        log(f"      text: {txt[:200]!r}")
         results["stages"]["ab"] = ab
         save_results()
 
@@ -420,9 +462,11 @@ verdict = {}
 for quant, _ in arms:
     off = ab.get(f"{quant}_multitile_off", {})
     on = ab.get(f"{quant}_multitile_on", {})
+    onb = ab.get(f"{quant}_multitile_on_bicubic", {})
     if off.get("valid") and on.get("valid"):
         verdict[quant] = {
             "cer_off": off.get("cer"), "cer_on": on.get("cer"),
+            "cer_on_bicubic": onb.get("cer"), "wer_on_bicubic": onb.get("wer"),
             "wer_off": off.get("wer"), "wer_on": on.get("wer"),
             "cer_delta": (round(on["cer"] - off["cer"], 4)
                           if off.get("cer") is not None and on.get("cer") is not None else None),

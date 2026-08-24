@@ -103,6 +103,11 @@ public:
 
     bool load(const std::string & path);
 
+    // ggml type tags as they appear in a GGUF tensor-info record. Spelled out
+    // here because this header is standalone and does not include ggml.h.
+    static constexpr uint32_t kGGUF_TYPE_F32 = 0;
+    static constexpr uint32_t kGGUF_TYPE_I32 = 26;
+
     bool has(const std::string & name) const { return tensors_.count(name) > 0; }
 
     std::pair<const float *, size_t> get_f32(const std::string & name) const {
@@ -351,11 +356,19 @@ inline bool Ref::load(const std::string & path) {
         TensorData td;
         td.shape = ti.dims;
 
-        if (ti.type == 0) {
+        // ⚠ GGML_TYPE_I32 is 26. This used to read `ti.type == 5`, which is
+        // GGML_TYPE_Q5_0 — so every I32 tensor in every reference archive was
+        // silently dropped at load with a "not F32/I32" line, and any stage
+        // that compared against one reported "not found in archive". The
+        // comment said I32 while the constant said Q5_0; found when
+        // lfm2_vl's prompt-token parity check could not see a
+        // prompt_token_ids tensor the dumper had demonstrably written.
+
+        if (ti.type == kGGUF_TYPE_F32) {
             // F32
             td.data.resize(n_elem);
             fread(td.data.data(), sizeof(float), n_elem, f);
-        } else if (ti.type == 5) {
+        } else if (ti.type == kGGUF_TYPE_I32) {
             // I32 (token IDs) — convert to float for storage
             std::vector<int32_t> ibuf(n_elem);
             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
