@@ -74,7 +74,8 @@ HF_REF_REPO = "cstr/crispembed-regression-fixtures"
 HF_REF_PATH = f"lfm2_vl/{FIXTURE_STEM}/ref.gguf"
 
 PROMPT = "OCR this image. Output the text content."
-MAX_TOKENS = 900  # the fixture's ground truth is ~2981 chars
+MAX_TOKENS = 1600  # 900 truncated at ~2015 of the 2981 ground-truth chars,
+                   # which inflates CER for BOTH arms and muddies the absolute number
 
 results = {"status": "RUNNING", "stages": {}}
 
@@ -398,8 +399,8 @@ if REF_OK:
     # with LFM2_VL_BICUBIC=1: if the projector cosines climb, the residual gap
     # is the resample and not the tiling. This is the whole reason that gate
     # exists, and it costs one extra forward pass to answer.
-    log("=== per-stage diff, same reference, LFM2_VL_BICUBIC=1 ===")
-    runb = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8, bicubic=True)
+    log("=== per-stage diff, same reference, LFM2_VL_BICUBIC=0 (old bilinear) ===")
+    runb = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8, bicubic=False)
     diffsb = parse_diffs(runb["stderr"])
     for name, dd in diffsb.items():
         log(f"  {name}: {dd}")
@@ -412,8 +413,8 @@ if REF_OK:
     for name, dd in diffsb.items():
         base = diffs.get(name, {})
         if "cos_min" in dd and "cos_min" in base:
-            delta[name] = {"bilinear": base["cos_min"], "bicubic": dd["cos_min"],
-                           "delta": round(dd["cos_min"] - base["cos_min"], 6)}
+            delta[name] = {"bicubic_default": base["cos_min"], "bilinear_legacy": dd["cos_min"],
+                           "delta": round(base["cos_min"] - dd["cos_min"], 6)}
     results["stages"]["resample_cos_delta"] = delta
     log("=== resample effect on per-stage cosine ===")
     log(json.dumps(delta, indent=2))
@@ -427,7 +428,9 @@ log("=== decoded-output A/B on the splitting fixture ===")
 ab = {}
 arms = [("q4_k", Q4)] + ([("f16", F16)] if F16 else [])
 for quant, model in arms:
-    for arm, mt, bic in (("off", False, False), ("on", True, False), ("on_bicubic", True, True)):
+    # bicubic is the default since the last run measured it as the dominant
+    # per-stage term; the informative third arm is now the OLD bilinear path.
+    for arm, mt, bic in (("off", False, True), ("on", True, True), ("on_bilinear", True, False)):
         key = f"{quant}_multitile_{arm}"
         log(f"  running {key} ...")
         run = run_ocr(model, EMBED / FIXTURE, mt, bicubic=bic)
@@ -462,11 +465,11 @@ verdict = {}
 for quant, _ in arms:
     off = ab.get(f"{quant}_multitile_off", {})
     on = ab.get(f"{quant}_multitile_on", {})
-    onb = ab.get(f"{quant}_multitile_on_bicubic", {})
+    onb = ab.get(f"{quant}_multitile_on_bilinear", {})
     if off.get("valid") and on.get("valid"):
         verdict[quant] = {
             "cer_off": off.get("cer"), "cer_on": on.get("cer"),
-            "cer_on_bicubic": onb.get("cer"), "wer_on_bicubic": onb.get("wer"),
+            "cer_on_bilinear": onb.get("cer"), "wer_on_bilinear": onb.get("wer"),
             "wer_off": off.get("wer"), "wer_on": on.get("wer"),
             "cer_delta": (round(on["cer"] - off["cer"], 4)
                           if off.get("cer") is not None and on.get("cer") is not None else None),
