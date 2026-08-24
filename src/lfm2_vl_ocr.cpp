@@ -1818,6 +1818,16 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     // Optionally skip conv state extraction (for debugging decode issues)
     bool skip_conv_state = core_env::on("LFM2_VL_ZERO_CONV_STATE");
 
+    // Verify KV cache was populated during prefill
+    if (kv_ok) {
+        std::vector<float> kv_check(5);
+        ggml_backend_tensor_get(c.kvc.k, kv_check.data(), 0, 5 * sizeof(float));
+        float kv_sum = 0;
+        for (int i = 0; i < 5; i++) kv_sum += std::abs(kv_check[i]);
+        fprintf(stderr, "  KV cache check: k[0..4] sum=%.4f %s\n",
+                kv_sum, kv_sum > 0.01f ? "(populated)" : "(EMPTY!)");
+    }
+
     // Extract conv state from prefill: the last (kernel-1)=2 columns of Bx
     // at each conv layer are the conv state for decode.
     if (!skip_conv_state) {
