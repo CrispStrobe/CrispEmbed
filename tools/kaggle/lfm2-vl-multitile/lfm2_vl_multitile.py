@@ -274,10 +274,15 @@ BASE_ENV = {
 }
 
 
-def run_ocr(model, image, multi_tile, diff_ref=None, max_tokens=MAX_TOKENS, extra=None, bicubic=False):
+def run_ocr(model, image, multi_tile, diff_ref=None, max_tokens=MAX_TOKENS, extra=None, bicubic=None):
     env = dict(BASE_ENV)
     env["LFM2_VL_MULTI_TILE"] = "1" if multi_tile else "0"
-    env["LFM2_VL_BICUBIC"] = "1" if bicubic else "0"
+    # bicubic=None means "leave the engine default alone". Setting "0" here by
+    # default is what made both of v4's parity runs silently use the legacy
+    # bilinear path and report identical numbers for what were supposed to be
+    # two different arms — a gate that only ever tests one side of itself.
+    if bicubic is not None:
+        env["LFM2_VL_BICUBIC"] = "1" if bicubic else "0"
     if diff_ref:
         env["LFM2_VL_DIFF_REF"] = str(diff_ref)
     if extra:
@@ -304,13 +309,21 @@ def text_of(run):
 
 def parse_diffs(stderr):
     out = {}
+    # Tolerant of both the old (cos_min only) and new (cos_min/mean/global)
+    # prints — v4's results JSON came back with an EMPTY per-stage section
+    # because the regex still demanded the old shape, and the numbers were only
+    # recoverable from the raw stderr tail.
     for m in re.finditer(
-            r"DIFF\s+(\S+)\s+cos_min=([0-9.]+)\s+max_abs=(\S+)\s+"
-            r"\|mine\|=([0-9.]+)\s+\|ref\|=([0-9.]+)\s+(PASS|FAIL)", stderr):
+            r"DIFF\s+(\S+)\s+cos_min=([0-9.]+)"
+            r"(?:\s+cos_mean=([0-9.]+))?(?:\s+cos_global=([0-9.]+))?"
+            r"\s+max_abs=(\S+)\s+\|mine\|=([0-9.]+)\s+\|ref\|=([0-9.]+)\s+(PASS|FAIL)", stderr):
         out[m.group(1)] = {
-            "cos_min": float(m.group(2)), "max_abs": m.group(3),
-            "mine_norm": float(m.group(4)), "ref_norm": float(m.group(5)),
-            "verdict": m.group(6),
+            "cos_min": float(m.group(2)),
+            "cos_mean": float(m.group(3)) if m.group(3) else None,
+            "cos_global": float(m.group(4)) if m.group(4) else None,
+            "max_abs": m.group(5),
+            "mine_norm": float(m.group(6)), "ref_norm": float(m.group(7)),
+            "verdict": m.group(8),
         }
     m = re.search(r"DIFF\s+prompt_token_ids\s+(PASS|FAIL)([^\n]*)", stderr)
     if m:
@@ -417,7 +430,7 @@ if REF_OK:
         save_results()
 
     log("=== per-stage diff, same reference, LFM2_VL_BICUBIC=0 (old bilinear) ===")
-    runb = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8, bicubic=False)
+    runb = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8, bicubic=False)  # explicit legacy
     diffsb = parse_diffs(runb["stderr"])
     for name, dd in diffsb.items():
         log(f"  {name}: {dd}")
@@ -430,8 +443,11 @@ if REF_OK:
     for name, dd in diffsb.items():
         base = diffs.get(name, {})
         if "cos_min" in dd and "cos_min" in base:
-            delta[name] = {"bicubic_default": base["cos_min"], "bilinear_legacy": dd["cos_min"],
-                           "delta": round(base["cos_min"] - dd["cos_min"], 6)}
+            delta[name] = {
+                "bicubic_cos_min": base["cos_min"], "bilinear_cos_min": dd["cos_min"],
+                "bicubic_cos_global": base.get("cos_global"), "bilinear_cos_global": dd.get("cos_global"),
+                "delta_cos_min": round(base["cos_min"] - dd["cos_min"], 6),
+            }
     results["stages"]["resample_cos_delta"] = delta
     log("=== resample effect on per-stage cosine ===")
     log(json.dumps(delta, indent=2))
@@ -447,7 +463,7 @@ arms = [("q4_k", Q4)] + ([("f16", F16)] if F16 else [])
 for quant, model in arms:
     # bicubic is the default since the last run measured it as the dominant
     # per-stage term; the informative third arm is now the OLD bilinear path.
-    for arm, mt, bic in (("off", False, True), ("on", True, True), ("on_bilinear", True, False)):
+    for arm, mt, bic in (("off", False, None), ("on", True, None), ("on_bilinear", True, False)):
         key = f"{quant}_multitile_{arm}"
         log(f"  running {key} ...")
         run = run_ocr(model, EMBED / FIXTURE, mt, bicubic=bic)
