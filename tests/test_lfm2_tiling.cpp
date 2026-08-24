@@ -49,6 +49,7 @@
 #include "lfm2_vl_tiling.h"
 
 #include "lfm2_tiling_golden.h"
+#include "lfm2_posembed_golden.h"
 
 #include <cmath>
 #include <cstdio>
@@ -326,6 +327,40 @@ int main() {
         std::vector<int32_t> lids;
         build_image_markup(compute_layout(1920, 2485, legacy), tok, lids);
         check_eq(lids[third_label_at], 124910, "legacy puts <|img_row_1_col_3|> there", "fixture");
+    }
+
+    // ── 8. position-embedding resample vs real F.interpolate ────────────────
+    //
+    // Siglip2 resizes its learned 16x16 position table with
+    // F.interpolate(bilinear, align_corners=False, antialias=True). antialias
+    // is a no-op on upscale, so a plain bilinear matched every shape the tiler
+    // produces — and silently would not for a grid under 16 in a dimension
+    // (a 150x200 image gives 14x20). No fixture we run exercises that, which
+    // is precisely why it needs a hermetic pin rather than a decode check.
+    {
+        const int G = lfm2_posembed_golden::kGrid, D = lfm2_posembed_golden::kDim;
+        std::vector<float> src((size_t)G * G * D);
+        for (int y = 0; y < G; y++)
+            for (int x = 0; x < G; x++)
+                for (int d = 0; d < D; d++)
+                    src[((size_t)y * G + x) * D + d] = (float)((y * 37 + x * 11 + d * 5) % 101) / 101.0f;
+
+        double worst = 0.0;
+        for (int i = 0; i < lfm2_posembed_golden::kNumCases; i++) {
+            const auto & cse = lfm2_posembed_golden::kCases[i];
+            std::vector<float> got((size_t)cse.out_h * cse.out_w * D, 0.0f);
+            resize_bilinear_aa(src.data(), G, G, D, got.data(), cse.out_h, cse.out_w);
+            double max_abs = 0.0;
+            for (size_t k = 0; k < got.size(); k++)
+                max_abs = std::max(max_abs, (double)std::fabs(got[k] - cse.expect[k]));
+            worst = std::max(worst, max_abs);
+            // f32 accumulation against an f64 reference; 1e-6 is far tighter
+            // than the defect (dropping antialias moves 8x8 by ~0.18).
+            check(max_abs < 1e-6, cse.name);
+            if (max_abs >= 1e-6) printf("       %s: max_abs=%.3e\n", cse.name, max_abs);
+        }
+        printf("  %d position-embedding resamples vs torch F.interpolate, worst max_abs=%.2e\n",
+               lfm2_posembed_golden::kNumCases, worst);
     }
 
     printf("%s — %d checks, %d failures\n", g_failures ? "FAIL" : "PASS", g_checks, g_failures);

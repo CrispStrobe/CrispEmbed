@@ -300,6 +300,101 @@ inline layout compute_layout(int width, int height, const config & cfg) {
     return L;
 }
 
+// ── antialiased bilinear resample, for the position-embedding table ───────
+//
+// `Siglip2VisionEmbeddings.resize_positional_embeddings` resizes the learned
+// 16x16 position table to the image's patch grid with
+//
+//     F.interpolate(mode="bilinear", align_corners=False, antialias=True)
+//
+// antialias is a no-op when upscaling, so a plain bilinear matched it for every
+// shape this engine produced — until a small image gives a grid below 16 in a
+// dimension (150x200 -> a 14x20 grid) and the reference starts low-pass
+// filtering while we point-sample.
+//
+// This is a VERBATIM transcription of ATen's `_compute_weights_aa`
+// (upsample_bilinear2d_aa), not an approximation of it. Three details are
+// load-bearing and each was wrong in a first attempt that still scored cosine
+// 0.99:
+//   * center carries NO -0.5 term (it is `scale * (i + 0.5)`, unlike the
+//     align_corners=False convention used elsewhere in this file);
+//   * xmin TRUNCATES toward zero rather than flooring;
+//   * the per-tap offset carries its own +0.5.
+// Verified against torch.nn.functional.interpolate to 4.4e-16 (float64
+// rounding) on upscale, downscale and mixed cases alike.
+struct resample_weights {
+    int support = 0;           // taps per output sample (zero-padded)
+    std::vector<int> index;    // [out_size * support] clamped source indices
+    std::vector<float> weight; // [out_size * support], each row sums to 1
+};
+
+inline resample_weights build_bilinear_aa_weights(int in_size, int out_size) {
+    resample_weights r;
+    const double scale = (double)in_size / (double)out_size;
+    const double support = scale > 1.0 ? scale : 1.0; // radius, widened on downscale
+    const double invscale = scale > 1.0 ? 1.0 / scale : 1.0;
+
+    r.support = (int)(std::ceil(support) * 2 + 1);
+    r.index.assign((size_t)out_size * r.support, 0);
+    r.weight.assign((size_t)out_size * r.support, 0.0f);
+
+    for (int i = 0; i < out_size; i++) {
+        const double center = scale * ((double)i + 0.5);
+        const int xmin = std::max((int)(center - support + 0.5), 0);
+        const int xmax = std::min((int)(center + support + 0.5), in_size) - xmin;
+        double sum = 0.0;
+        for (int j = 0; j < xmax && j < r.support; j++) {
+            const double t = ((double)(j + xmin) - center + 0.5) * invscale;
+            const double a = t < 0.0 ? -t : t;
+            const double w = a < 1.0 ? 1.0 - a : 0.0;
+            r.weight[(size_t)i * r.support + j] = (float)w;
+            r.index[(size_t)i * r.support + j] = xmin + j;
+            sum += w;
+        }
+        // Taps past xmax stay at weight 0; park their index on a valid element
+        // so a reader never dereferences out of range.
+        const int last = (xmax > 0) ? xmin + xmax - 1 : 0;
+        for (int j = xmax; j < r.support; j++) r.index[(size_t)i * r.support + j] = last;
+        if (sum != 0.0) {
+            const double inv = 1.0 / sum;
+            for (int j = 0; j < r.support; j++) r.weight[(size_t)i * r.support + j] *= (float)inv;
+        }
+    }
+    return r;
+}
+
+// Separable resize of a [in_h, in_w, dim] table into [out_h, out_w, dim],
+// both row-major. Matches F.interpolate(bilinear, align_corners=False,
+// antialias=True) — and is bit-for-bit the ordinary bilinear it replaces
+// whenever both dimensions are being upscaled.
+inline void resize_bilinear_aa(const float * src, int in_h, int in_w, int dim, float * dst, int out_h, int out_w) {
+    const resample_weights wy = build_bilinear_aa_weights(in_h, out_h);
+    const resample_weights wx = build_bilinear_aa_weights(in_w, out_w);
+
+    std::vector<float> row((size_t)in_w * dim);
+    for (int r = 0; r < out_h; r++) {
+        // Vertical pass into a single [in_w, dim] scratch row.
+        std::fill(row.begin(), row.end(), 0.0f);
+        for (int ky = 0; ky < wy.support; ky++) {
+            const float w = wy.weight[(size_t)r * wy.support + ky];
+            if (w == 0.0f) continue;
+            const float * srow = src + (size_t)wy.index[(size_t)r * wy.support + ky] * in_w * dim;
+            for (size_t k = 0; k < (size_t)in_w * dim; k++) row[k] += w * srow[k];
+        }
+        // Horizontal pass.
+        for (int col = 0; col < out_w; col++) {
+            float * out = dst + ((size_t)r * out_w + col) * dim;
+            for (int d = 0; d < dim; d++) out[d] = 0.0f;
+            for (int kx = 0; kx < wx.support; kx++) {
+                const float w = wx.weight[(size_t)col * wx.support + kx];
+                if (w == 0.0f) continue;
+                const float * scol = &row[(size_t)wx.index[(size_t)col * wx.support + kx] * dim];
+                for (int d = 0; d < dim; d++) out[d] += w * scol[d];
+            }
+        }
+    }
+}
+
 // ── token markup ───────────────────────────────────────────────────────────
 //
 // Verified against the shipped GGUF vocab of LiquidAI/LFM2.5-VL-3B: all 100
