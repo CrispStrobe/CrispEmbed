@@ -594,6 +594,149 @@ bool preprocess_internvl_file(const char * path, const internvl_config & cfg, in
 // Public wrapper exposing the file-local separable bicubic resampler (see the
 // anonymous-namespace bicubic_resize_u8_to_f32 above) for reuse by other
 // fixed-size preprocessors (e.g. mixtex_ocr's 400x500 ViTImageProcessor path).
+// ── PIL-exact separable bicubic ──────────────────────────────────────────────
+//
+// The function above is TORCHVISION's `interpolate(antialias=True)`. HF's SLOW
+// image processors (`resample: 3`) go through **PIL**, and the two are not the
+// same resampler. Measured against `Image.resize(..., BICUBIC)` on the
+// LFM2.5-VL fixtures, our torchvision port differs by up to 18/255 on thousands
+// of pixels; the port below is bit-exact on one fixture and off by at most
+// 1/255 on ~100 pixels of 750k on the rest (that residue is PIL's fixed-point
+// integer coefficients against our double).
+//
+// Three things make the difference, and all three matter:
+//   1. PIL clip8()s the intermediate back to **uint8 between the horizontal and
+//      the vertical pass**. Carrying float through both passes is what produced
+//      most of the 18/255.
+//   2. PIL's tap count VARIES per output pixel — `xmax = (int)(center + support
+//      + 0.5) - xmin` — where the torchvision form uses one fixed
+//      `ceil(2*support)` for the whole axis. An extra near-zero tap changes the
+//      whole kernel after renormalisation.
+//   3. At the borders PIL CLAMPS the tap range to [0, in_size) and renormalises
+//      over what is left; the torchvision form clamps the INDEX instead, i.e.
+//      replicates the edge pixel. On a UI screenshot with content at the edge
+//      that is a visible difference.
+//
+// Verbatim source: Pillow `src/libImaging/Resample.c`, `precompute_coeffs` +
+// `ImagingResampleHorizontal_8bpc` / `ImagingResampleVertical_8bpc`.
+// Pillow's 8-bit path is FIXED POINT: it quantises each normalised kernel to
+// 22-bit integers and accumulates in ints. Reproducing that (rather than the
+// same kernel in double) is what makes this bit-exact rather than off-by-one —
+// verified 0 differing pixels against Image.resize(BICUBIC) on 430k-750k pixel
+// page resizes and on the synthetic fixtures in tests/test_pil_resize.cpp.
+static constexpr int kPilPrecisionBits = 32 - 8 - 2; // Pillow PRECISION_BITS
+
+// Pillow evaluates its filter in DOUBLE. cubic_kernel() above is float32, and
+// routing this path through it loses enough precision before the fixed-point
+// quantisation to move ~25% of a small downscale by 1/255. Same a = -0.5.
+static inline double pil_cubic_filter(double x) {
+    constexpr double a = -0.5;
+    if (x < 0.0) x = -x;
+    if (x < 1.0) return ((a + 2.0) * x - (a + 3.0)) * x * x + 1.0;
+    if (x < 2.0) return (((x - 5.0) * x + 8.0) * x - 4.0) * a;
+    return 0.0;
+}
+
+struct pil_coeffs {
+    int out_size = 0;
+    int kmax = 0;
+    std::vector<int> bmin;   // first source index per output sample
+    std::vector<int> bcount; // tap count per output sample (VARIES)
+    std::vector<int64_t> k;  // (out_size, kmax) fixed-point, row-major
+};
+
+static void pil_precompute_coeffs(int in_size, int out_size, pil_coeffs & c) {
+    const double scale = (double)in_size / (double)out_size;
+    const double filterscale = scale < 1.0 ? 1.0 : scale;
+    const double support = 2.0 * filterscale; // bicubic support is 2.0
+    const double ss = 1.0 / filterscale;
+    const double one = (double)(1 << kPilPrecisionBits);
+
+    c.out_size = out_size;
+    c.kmax = (int)std::ceil(support) * 2 + 1;
+    c.bmin.assign(out_size, 0);
+    c.bcount.assign(out_size, 0);
+    c.k.assign((size_t)out_size * c.kmax, 0);
+
+    std::vector<double> kd(c.kmax, 0.0);
+    for (int xx = 0; xx < out_size; xx++) {
+        const double center = ((double)xx + 0.5) * scale;
+        // Pillow clamps the tap RANGE to [0, in_size) and renormalises over
+        // what survives; it does not clamp the index and replicate the edge.
+        int xmin = (int)(center - support + 0.5);
+        if (xmin < 0) xmin = 0;
+        int xmax = (int)(center + support + 0.5);
+        if (xmax > in_size) xmax = in_size;
+        xmax -= xmin;
+        if (xmax < 0) xmax = 0;
+        if (xmax > c.kmax) xmax = c.kmax;
+
+        double ww = 0.0;
+        for (int x = 0; x < xmax; x++) {
+            const double w = pil_cubic_filter(((double)(x + xmin) - center + 0.5) * ss);
+            kd[x] = w;
+            ww += w;
+        }
+        int64_t * k = c.k.data() + (size_t)xx * c.kmax;
+        for (int x = 0; x < xmax; x++) {
+            const double v = (ww != 0.0) ? kd[x] / ww : kd[x];
+            // Pillow normalize_coeffs_8bpc: round away from zero.
+            k[x] = (int64_t)(v < 0.0 ? -0.5 + v * one : 0.5 + v * one);
+        }
+        c.bmin[xx] = xmin;
+        c.bcount[xx] = xmax;
+    }
+}
+
+static inline int pil_clip8(int64_t acc) {
+    const int64_t v = acc >> kPilPrecisionBits;
+    return v <= 0 ? 0 : (v >= 256 ? 255 : (int)v);
+}
+
+void resize_bicubic_pil_u8_hwc(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w,
+                               int channels) {
+    if (dst_h <= 0 || dst_w <= 0 || src_h <= 0 || src_w <= 0) return;
+    pil_coeffs cx, cy;
+    pil_precompute_coeffs(src_w, dst_w, cx);
+    pil_precompute_coeffs(src_h, dst_h, cy);
+
+    const int64_t half = (int64_t)1 << (kPilPrecisionBits - 1);
+
+    // Pass 1: horizontal, uint8 -> uint8. The intermediate really is 8-bit:
+    // carrying float through both passes is most of the 18/255 the
+    // torchvision-shaped resampler differs by.
+    std::vector<uint8_t> mid((size_t)src_h * dst_w * channels, 0);
+#pragma omp parallel for schedule(static) if (src_h > 32)
+    for (int y = 0; y < src_h; y++) {
+        for (int xo = 0; xo < dst_w; xo++) {
+            const int64_t * k = cx.k.data() + (size_t)xo * cx.kmax;
+            const int xmin = cx.bmin[xo], n = cx.bcount[xo];
+            uint8_t * out = mid.data() + ((size_t)y * dst_w + xo) * channels;
+            for (int c = 0; c < channels; c++) {
+                int64_t acc = half;
+                const uint8_t * row = src + (size_t)y * src_w * channels + c;
+                for (int x = 0; x < n; x++) acc += k[x] * (int64_t)row[(size_t)(xmin + x) * channels];
+                out[c] = (uint8_t)pil_clip8(acc);
+            }
+        }
+    }
+
+    // Pass 2: vertical, uint8 -> the caller's float (integral values).
+#pragma omp parallel for schedule(static) if (dst_h > 32)
+    for (int yo = 0; yo < dst_h; yo++) {
+        const int64_t * k = cy.k.data() + (size_t)yo * cy.kmax;
+        const int ymin = cy.bmin[yo], n = cy.bcount[yo];
+        for (int x = 0; x < dst_w; x++) {
+            float * out = dst + ((size_t)yo * dst_w + x) * channels;
+            for (int c = 0; c < channels; c++) {
+                int64_t acc = half;
+                for (int y = 0; y < n; y++) acc += k[y] * (int64_t)mid[((size_t)(ymin + y) * dst_w + x) * channels + c];
+                out[c] = (float)pil_clip8(acc);
+            }
+        }
+    }
+}
+
 void resize_bicubic_u8_hwc(const uint8_t * src, int src_h, int src_w, float * dst, int dst_h, int dst_w, int channels) {
     bicubic_resize_u8_to_f32(src, src_h, src_w, dst, dst_h, dst_w, channels);
 }
