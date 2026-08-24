@@ -194,8 +194,8 @@ struct embed_model {
     ggml_tensor * classifier_out_w = nullptr;   // [1, H]
     ggml_tensor * classifier_out_b = nullptr;   // [1]
     // Optional LayerNorm between dense and out_proj (CrossEncoder heads, e.g. Ettin)
-    ggml_tensor * classifier_ln_w = nullptr;    // [H]
-    ggml_tensor * classifier_ln_b = nullptr;    // [H]
+    ggml_tensor * classifier_ln_w = nullptr; // [H]
+    ggml_tensor * classifier_ln_b = nullptr; // [H]
     bool classifier_2layer = false;
     bool classifier_dense_gelu = false; // false=tanh (Roberta), true=GELU (CrossEncoder)
 
@@ -858,7 +858,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
     m.classifier_dense_b = get("classifier.dense.bias"); // optional (CrossEncoder heads may omit)
     m.classifier_out_w = get("classifier.out_proj.weight");
     m.classifier_out_b = get("classifier.out_proj.bias");
-    m.classifier_ln_w = get("classifier.ln.weight");     // optional LN between dense+out_proj
+    m.classifier_ln_w = get("classifier.ln.weight"); // optional LN between dense+out_proj
     m.classifier_ln_b = get("classifier.ln.bias");
     if (m.classifier_dense_w && m.classifier_out_w) {
         m.classifier_2layer = true;
@@ -885,9 +885,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
     if (m.has_sparse) fprintf(stderr, "crispembed: sparse head loaded\n");
     if (m.has_colbert) fprintf(stderr, "crispembed: colbert head loaded (dim=%d)\n", m.colbert_dim);
     if (m.is_reranker) {
-        const char * desc = m.classifier_2layer
-            ? (m.classifier_ln_w ? "2-layer+LN" : "2-layer")
-            : "1-layer";
+        const char * desc = m.classifier_2layer ? (m.classifier_ln_w ? "2-layer+LN" : "2-layer") : "1-layer";
         const char * act = m.classifier_dense_gelu ? "gelu" : "tanh";
         fprintf(stderr, "crispembed: classifier head loaded (reranker=%s, act=%s)\n", desc, act);
     }
@@ -5370,6 +5368,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::easyocr;
     case 18:
         return E::olmocr;
+    case 19:
+        return E::lfm2_vl;
     default:
         return E::dbnet_trocr;
     }
