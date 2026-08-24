@@ -347,11 +347,10 @@ or the number invites the wrong conclusion.
 The magnitudes did agree throughout, which was the one part of the first
 reading that held: this is not a scale bug.
 
-### The resample hypothesis, tested in pixel space — and rejected
+### The resample: rejected in pixel space, then measured — and it matters a lot
 
-The first reading also proposed that the residual gap was bilinear-vs-bicubic,
-because the cosine degraded with downscale factor. That is cheap to test
-without a GPU: resample the fixture both ways and compare the pixels directly.
+The first reading proposed bilinear-vs-bicubic as the residual gap. I tried to
+kill that cheaply by comparing the resampled pixels directly:
 
 | image | scale | cos(bilinear, bicubic) |
 |---|--:|--:|
@@ -359,23 +358,37 @@ without a GPU: resample the fixture both ways and compare the pixels directly.
 | thumbnail img6 | 4.29x | 0.99218 |
 | the 500x650 canary | 1.12x | 0.99987 |
 
-The ordering does match the projector cosines (thumbnail worst, canary best),
-so the resample is a real second-order effect — but a 0.999 input difference
-cannot produce a 0.57 output cosine. **Resample is not the explanation.**
-Combined with the `cos_min`-vs-`cos_global` point above, the most likely
-answer is that there was never much to explain: a quantized runtime against an
-fp32 reference, judged by a per-row minimum.
+and concluded a 0.999 input difference could not produce a 0.57 output cosine.
+**That was wrong, and wrong in an instructive way**: it compared a GLOBAL pixel
+cosine against a PER-ROW output minimum. Not the same quantity — the same
+cos_min/cos_global confusion in another guise.
 
-`tools/lfm2_vl_tiling_hf_check.py`-style cheap tests before expensive ones: this
-one took seconds and killed a hypothesis that would otherwise have been "tested"
-by a 30-minute GPU run.
+Running the actual diff with `LFM2_VL_BICUBIC=1` against the same reference
+settles it:
 
-⚠ Still not fully ruled out: the projector token ORDER within a tile, which
-also preserves norms. Argued correct from the blueprint (`pixel_unshuffle`
-emits `[B, w//f, h//f, C*f²]` flattened row-major, and the reference tensors
-are shaped `16x16x2048` accordingly), and supported by the single-tile path
-decoding correctly. `cos_global` from the next run settles it: a transposition
-craters the global cosine, quantization does not.
+| stage | bilinear | bicubic | delta |
+|---|--:|--:|--:|
+| projector_out_img6 (thumbnail, 4.29x) | 0.3446 | **0.9847** | +0.640 |
+| projector_out_img0 | 0.5910 | **0.9772** | +0.386 |
+| projector_out_img2 | 0.7124 | 0.9466 | +0.234 |
+| projector_out_img4 | 0.5688 | 0.8389 | +0.270 |
+| projector_out_img1/3 | 0.851 / 0.872 | 0.989 / 0.987 | +0.138 / +0.114 |
+| llm_logits_last | 0.9905 | 0.9934 | +0.003 |
+
+The resample is the dominant term in the per-stage gap, and the effect scales
+with downscale factor exactly as predicted — largest on the thumbnail. The
+lesson from the failed shortcut is the one the dev guide keeps making: measure
+the thing, and be sure the two numbers you are comparing are the same quantity.
+
+`llm_embed` is unmoved (0.301927 to six decimals both ways), which says its
+worst row is a TEXT token — untouched by any image change, and a reminder that
+a per-row minimum can be reporting on something other than what you are varying.
+
+**Decoded effect** (CER against the 2981-char ground truth): F16 improves
+0.5129 → 0.4968; Q4_K is unchanged at 0.5129. Cost ~1% wall clock (48.2 s vs
+47.5 s). So bicubic wins on blueprint fidelity, wins slightly or ties on
+decoded quality, and costs nothing — and it is what `processor_config.json`
+actually specifies (`resample: 3`).
 
 ### Cost, and why the acceptance run is on Kaggle
 
