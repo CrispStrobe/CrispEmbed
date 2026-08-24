@@ -1,5 +1,41 @@
 # CrispEmbed Performance
 
+## LFM2.5-VL multi-tile NaFlex + projector placement (2026-08-24)
+
+Kaggle P100, `commons_test_ocr_document.jpg` (1920x2485 → a 2x3 tile grid plus a
+thumbnail, 7 encoded images, 1788 image tokens), Q4_K LLM + F16 mmproj, CUDA.
+
+| stage | scalar CPU projector | ggml-graph projector | |
+|---|--:|--:|--:|
+| projector, per image | 4700 ms | **14 ms** | **336x** |
+| projector, whole page | 32.9 s | 0.10 s | |
+| vision encoder, per image | 244 ms | 249 ms | unchanged |
+| prefill, 1816 tokens | 1706 ms | 1698 ms | unchanged |
+| **end-to-end** | **38.59 s** | **5.79 s** | **6.66x** |
+
+The projector was **85% of the whole pipeline** and **19x the cost of the entire
+27-layer vision transformer it post-processes** — 7 GFLOP running at 1.48
+GFLOP/s on hardware that does ~9000 — because it was a hand-rolled scalar CPU
+loop that also re-dequantized 55 MB of weights per image. Moving it into the
+existing ggml graph is a placement change, not a numerical one: output
+byte-identical, all parity stages >0.99 `cos_global`, CER unchanged at 0.0007.
+`LFM2_VL_CPU_PROJECTOR=1` restores the scalar path.
+
+After the fix the GPU split is decode 57.9%, vision encoder 30.1%, prefill
+29.3%, projector 1.7% — the decode is the next target.
+
+**CPU (this VPS, 4 AVX512 cores) is a different regime and no flag fixes it.**
+The vision tower is 955 GFLOP per 1024-patch image, so a 7-image page is 6.7
+TFLOP; measured 60 s/image ≈ 16 GFLOP/s ≈ 4 per core, which is about what
+AVX512 F16 gemm sustains. `GGML_NATIVE=ON` with AVX512 in the binary, threads
+already 4/4, and `GGML_BLAS=OFF` is irrelevant for F16 weights. A split page is
+~7 minutes there; the only levers are `max_tiles`, `LFM2_VL_MULTI_TILE=0`, or a
+GPU.
+
+Quality, same fixture, 2981-character transcription: CER 0.0218 → **0.0007**
+(Q4_K) and 0.0127 → **0.0007** (F16) with multi-tile on.
+
+
 ## Issue #45 follow-up: the "0 = auto" n_threads contract implemented API-wide; server default fixed (M1, 2026-08-09)
 
 Auditing the non-CLI surfaces for the issue-#45 defect class found a second,
