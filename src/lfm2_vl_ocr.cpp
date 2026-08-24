@@ -1896,6 +1896,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             for (auto id : out.token_ids) all_tokens.push_back(id);
 
             // Re-splice embeddings
+            // Build spliced embeddings in ggml col-major [D, total] = flat[d + t*D]
             int total = (int)all_tokens.size();
             std::vector<float> full_emb((size_t)D * total);
             int ip2 = 0;
@@ -1903,11 +1904,11 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
                 int32_t tok = all_tokens[t];
                 if (tok == (int32_t)lhp.image_token_id && image_embeds && ip2 < n_image_tokens) {
                     for (int d = 0; d < D; d++)
-                        full_emb[(size_t)d * total + t] = image_embeds[(size_t)ip2 * embed_dim + d];
+                        full_emb[(size_t)t * D + d] = image_embeds[(size_t)ip2 * embed_dim + d];
                     ip2++;
                 } else if (tok >= 0 && tok < (int32_t)lhp.vocab_size) {
                     for (int d = 0; d < D; d++)
-                        full_emb[(size_t)d * total + t] = embed_w[(size_t)tok * D + d];
+                        full_emb[(size_t)t * D + d] = embed_w[(size_t)tok * D + d];
                 }
             }
 
