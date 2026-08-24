@@ -123,6 +123,7 @@ dominant cost on this VPS and is the next real perf target.
 | `LFM2_VL_KV_CACHE` | **on** | KV-cached per-token decode; `=0` restores full recompute |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
 | `LFM2_VL_FORCE_CPU` | off | ignore `crispasr_init_gpu_backend()` and run on CPU |
+| `LFM2_VL_CPU_PROJECTOR` | off | run the projector MLP as a scalar CPU loop instead of a ggml graph; the graph is 6.1x faster on CPU and far more on GPU, where the scalar path was 85% of the pipeline |
 | `LFM2_VL_PER_LAYER_MASK` | off | one causal-mask tensor per attention layer instead of one shared; all 8 are identical, so sharing saves ~113 MB at a 2837-token prompt |
 | `LFM2_VL_FLASH_ATTN` | off | use `ggml_flash_attn_ext` in the VISION tower instead of manual attention. Off because the tower is bidirectional and passes `mask=nullptr`; per HARD RULE 5 that is full attention, not "masking handled", so the two are only equivalent while every patch is real. They are today — we never pad, unlike HF, which pads to `max_num_patches` and masks — but the gate must stay off if padding is ever introduced. Unmeasured. |
 | `LFM2_VL_MULTI_TILE` | **on** | split a large page into a tile grid + thumbnail (§4); `=0` restores the single squashed tile |
@@ -388,6 +389,35 @@ which is the textbook signature of a permutation rather than a difference
 reference's layout before comparing. Left as it was, it is a permanent false
 FAIL sitting at the earliest stage in the archive — the worst possible place
 for one.
+
+### Perf — the projector was 85% of the pipeline
+
+Measured on a P100, per image, BEFORE the fix:
+
+| stage | time | share |
+|---|--:|--:|
+| vision encoder, 27 ViT layers, 1024 patches | 0.244 s | 4.4% |
+| **projector MLP** | **4.70 s** | **85.3%** |
+| prefill 1816 tokens | 1.71 s | 4.4% |
+| decode | 3.41 s | 8.8% |
+
+The projector cost **19x the entire vision transformer it post-processes** —
+7 GFLOP running at 1.48 GFLOP/s on hardware that does ~9000. Three causes, all
+in the same block: a hand-rolled scalar single-threaded BLAS-less matmul; a
+`to_f32()` that re-dequantized 55 MB of fc1/fc2 weights on EVERY image (7x per
+page); and a per-token heap allocation.
+
+It is now a ggml graph — `mul_mat -> GELU -> mul_mat`, the same arithmetic on
+whatever backend the engine is already using. **VPS (CPU): 5596 ms -> 921 ms,
+6.1x**, output byte-identical. The GPU win should be much larger since the
+matmuls move off the CPU entirely; that number is pending.
+
+⚠ **The first version of this was 15.6x faster and WRONG** — the receipt
+decoded as `(   )`. `us_data` is channel-major (`chan * n_proj + tok`), which is
+what the scalar loop indexes and what `projector_unshuffle` is diffed in, while
+a ggml tensor with `ne0 = C_us` wants `chan + tok * C_us`. The matmul consumed
+a transposed input at exactly the right shape and produced fluent nonsense.
+Only the A/B caught it — a speed number alone would have shipped it.
 
 ### Cost, and why the acceptance run is on Kaggle
 
