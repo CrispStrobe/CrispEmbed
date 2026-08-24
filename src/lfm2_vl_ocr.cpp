@@ -23,6 +23,7 @@
 // License: LFM-1.0 (revenue-capped; requires CRISPEMBED_ACCEPT_LFM_LICENSE=1)
 
 #include "lfm2_vl_ocr.h"
+#include "lfm2_naflex.h"
 #include "lfm2_shortconv.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
@@ -407,6 +408,55 @@ static std::vector<float> to_f32(const ggml_tensor * t) {
     }
     return out;
 }
+
+// One row of a (possibly quantized) embedding table, dequantized to F32.
+//
+// to_f32() on token_embd.weight materialises the WHOLE table: 128000 x 2048 is
+// 262 M floats = 1.05 GB, dequantized from Q6_K on every generate() call, to
+// read the ~2 k rows a page actually uses. Row-at-a-time is the same
+// arithmetic on 1/50th of the table and drops a 1 GB spike on a 16 GB box.
+// The row offset must be computed with ggml_row_size, not ne[0]*sizeof(float)
+// — the raw-read overrun that has already crashed five backends.
+struct embed_lookup {
+    const ggml_tensor * t = nullptr;
+    size_t row_bytes = 0;
+    int64_t dim = 0;
+    std::vector<uint8_t> raw;
+
+    explicit embed_lookup(const ggml_tensor * tensor) : t(tensor) {
+        if (!t) return;
+        dim = t->ne[0];
+        row_bytes = ggml_row_size(t->type, dim);
+        raw.resize(row_bytes);
+    }
+
+    // Writes `dim` floats to dst. Out-of-range ids write zeros.
+    void row(int64_t index, float * dst) {
+        if (!t || index < 0 || index >= t->ne[1]) {
+            std::memset(dst, 0, (size_t)dim * sizeof(float));
+            return;
+        }
+        const void * src;
+        if (t->buffer) {
+            ggml_backend_tensor_get(t, raw.data(), (size_t)index * row_bytes, row_bytes);
+            src = raw.data();
+        } else {
+            src = (const uint8_t *)t->data + (size_t)index * row_bytes;
+        }
+        if (t->type == GGML_TYPE_F32) {
+            std::memcpy(dst, src, (size_t)dim * sizeof(float));
+        } else if (t->type == GGML_TYPE_F16) {
+            const ggml_fp16_t * h = (const ggml_fp16_t *)src;
+            for (int64_t i = 0; i < dim; i++) dst[i] = ggml_fp16_to_fp32(h[i]);
+        } else {
+            const auto * traits = ggml_get_type_traits(t->type);
+            if (traits && traits->to_float)
+                traits->to_float(src, dst, (int)dim);
+            else
+                std::memset(dst, 0, (size_t)dim * sizeof(float));
+        }
+    }
+};
 
 // ============================================================================
 // Hparams loading
@@ -923,64 +973,21 @@ struct image_tiles {
     bool has_thumbnail = false;
 };
 
-// Python's round() is banker's rounding (half to EVEN); std::round is not.
-// round_by_factor is applied to raw pixel counts, so a .5 lands often enough
-// to matter — this is the single most likely silent divergence in the tiling
-// math (dev-guide note on tools/lfm2_vl_tiling_oracle.py).
-static int round_by_factor(int n, int factor) {
-    return (int)std::nearbyint((double)n / (double)factor) * factor;
-}
-
-static bool lfm2_is_image_too_large(int height, int width, const vision_hparams & vhp) {
-    const int P = (int)vhp.patch_size;
-    const int ds = (int)vhp.downsample_factor;
-    const int tf = P * ds;
-    const double h_bar = std::max(P, round_by_factor(height, tf));
-    const double w_bar = std::max(P, round_by_factor(width, tf));
-    return h_bar * w_bar > (double)vhp.max_image_tokens * P * P * ds * ds * vhp.max_pixels_tolerance;
-}
-
-// find_closest_aspect_ratio over target_ratios(min_tiles, max_tiles), verbatim
-// from the blueprint: strict `<` keeps the FIRST best in area order, and an
-// exact tie only moves when the image covers more than half the target area.
-static void lfm2_grid_layout(int height, int width, const vision_hparams & vhp, int * out_gw, int * out_gh) {
-    const int min_tiles = (int)vhp.min_tiles;
-    const int max_tiles = (int)vhp.max_tiles;
-    const int tile = (int)vhp.tile_size;
-    const double ar = (double)width / (double)height;
-    const double area = (double)width * (double)height;
-
-    std::vector<std::pair<int, int>> ratios;
-    for (int n = min_tiles; n <= max_tiles; n++)
-        for (int w = 1; w <= n; w++)
-            for (int h = 1; h <= n; h++)
-                if (w * h >= min_tiles && w * h <= max_tiles) ratios.push_back({ w, h });
-    std::sort(ratios.begin(), ratios.end(), [](const std::pair<int, int> & a, const std::pair<int, int> & b) {
-        if (a.first * a.second != b.first * b.second) return a.first * a.second < b.first * b.second;
-        if (a.first != b.first) return a.first < b.first;
-        return a.second < b.second;
-    });
-    ratios.erase(std::unique(ratios.begin(), ratios.end()), ratios.end());
-
-    double best_diff = std::numeric_limits<double>::infinity();
-    int bw = 1, bh = 1;
-    for (const auto & r : ratios) {
-        const double tar = (double)r.first / (double)r.second;
-        const double diff = std::fabs(ar - tar);
-        if (diff < best_diff) {
-            best_diff = diff;
-            bw = r.first;
-            bh = r.second;
-        } else if (diff == best_diff) {
-            const double target_area = (double)tile * tile * r.first * r.second;
-            if (area > 0.5 * target_area) {
-                bw = r.first;
-                bh = r.second;
-            }
-        }
-    }
-    *out_gw = bw;
-    *out_gh = bh;
+// The tiling math itself lives in src/lfm2_naflex.h so tests/test_lfm2_naflex.cpp
+// can pin it against tools/lfm2_vl_tiling_oracle.py without loading a model.
+// Nothing here may re-derive it locally: a second copy is a second thing to get
+// wrong, and none of it is visible to a float diff.
+static lfm2_naflex::params naflex_params(const vision_hparams & vhp) {
+    lfm2_naflex::params p;
+    p.encoder_patch_size = (int)vhp.patch_size;
+    p.downsample_factor = (int)vhp.downsample_factor;
+    p.tile_size = (int)vhp.tile_size;
+    p.min_tiles = (int)vhp.min_tiles;
+    p.max_tiles = (int)vhp.max_tiles;
+    p.min_image_tokens = (int)vhp.min_image_tokens;
+    p.max_image_tokens = (int)vhp.max_image_tokens;
+    p.max_pixels_tolerance = vhp.max_pixels_tolerance;
+    return p;
 }
 
 static bool preprocess_image_tiles(const uint8_t * rgb, int height, int width, int channels, const vision_hparams & vhp,
@@ -989,17 +996,24 @@ static bool preprocess_image_tiles(const uint8_t * rgb, int height, int width, i
     out.grid_rows = out.grid_cols = 1;
     out.has_thumbnail = false;
 
-    // Default OFF pending the A/B (dev-guide rule 3: a new path stays opt-in
-    // until it is proven equal-or-better on decoded output). LFM2_VL_MULTI_TILE=1
-    // enables it.
-    const bool split_enabled = vhp.do_image_splitting && vhp.max_tiles > 1 && core_env::on("LFM2_VL_MULTI_TILE");
-    if (!split_enabled || !lfm2_is_image_too_large(height, width, vhp)) {
+    // Default ON since the A/B (docs/lfm2_vl/PLAN.md §6). This is what the
+    // blueprint does — do_image_splitting is true in the shipped config and the
+    // reference prompt for a 1920x2485 page carries 1788 image tokens, not 252 —
+    // so single-tile on a page over the tolerance is the deviation, not this.
+    // Measured, Q4_K, 512 tokens: receipt_historical CER 0.108 -> 0.014,
+    // german_official_print 0.268 -> 0.052, and the two sub-tolerance fixtures
+    // are unchanged to the character. It costs 2-3x wall clock on a page that
+    // splits (7-9 vision encodes and a ~2000-token prefill instead of one and
+    // 273), so LFM2_VL_MULTI_TILE=0 keeps the fast single-tile path.
+    const bool split_enabled =
+        vhp.do_image_splitting && vhp.max_tiles > 1 && !core_env::explicitly_off("LFM2_VL_MULTI_TILE");
+    if (!split_enabled || !lfm2_naflex::is_image_too_large(height, width, naflex_params(vhp))) {
         out.tiles.emplace_back();
         return preprocess_image(rgb, height, width, channels, vhp, out.tiles.back());
     }
 
     int gw = 1, gh = 1;
-    lfm2_grid_layout(height, width, vhp, &gw, &gh);
+    lfm2_naflex::grid_layout(height, width, naflex_params(vhp), &gw, &gh);
     const int tile = (int)vhp.tile_size;
     const int tW = tile * gw;
     const int tH = tile * gh;
@@ -2005,7 +2019,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
 
     // ── Step 1: Build spliced embeddings on CPU ──
     // Look up token embeddings, replace IMAGE tokens with projected image embeddings
-    auto embed_w = to_f32(c.m.embed_tokens_w);
+    embed_lookup embed_w(c.m.embed_tokens_w);
     std::vector<float> spliced((size_t)D * n_prompt_tokens);
 
     // Build spliced embeddings in ggml column-major layout: [D, n_tokens]
@@ -2020,11 +2034,9 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
             }
             img_pos++;
         } else {
-            // Token embedding: ggml embed_tokens [D, V], element (d, tok) = data[tok * D + d]
+            // Token embedding: ggml embed_tokens [D, V], row `tok` is D floats
             if (tok >= 0 && tok < (int32_t)lhp.vocab_size) {
-                for (int d = 0; d < D; d++) {
-                    spliced[(size_t)t * D + d] = embed_w[(size_t)tok * D + d];
-                }
+                embed_w.row(tok, spliced.data() + (size_t)t * D);
             }
         }
     }
@@ -2226,7 +2238,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
                     for (int d = 0; d < D; d++) full_emb[(size_t)t * D + d] = image_embeds[(size_t)ip2 * embed_dim + d];
                     ip2++;
                 } else if (tok >= 0 && tok < (int32_t)lhp.vocab_size) {
-                    for (int d = 0; d < D; d++) full_emb[(size_t)t * D + d] = embed_w[(size_t)tok * D + d];
+                    embed_w.row(tok, full_emb.data() + (size_t)t * D);
                 }
             }
 
@@ -2298,7 +2310,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
                 }
             }
             std::vector<float> tok_emb_data(D);
-            for (int d = 0; d < D; d++) tok_emb_data[d] = embed_w[(size_t)best_id * D + d];
+            embed_w.row(best_id, tok_emb_data.data());
             ggml_tensor * te = ggml_graph_get_tensor(gf3, "tok_emb");
             ggml_backend_tensor_set(te, tok_emb_data.data(), 0, D * sizeof(float));
 
