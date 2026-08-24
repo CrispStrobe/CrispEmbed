@@ -248,10 +248,23 @@ for name in FIXTURES:
         entry["blueprint_error"] = str(e)[:400]
         hf_text = None
 
-    cmd = f"{CRISPEMBED} --ocr {path} -m {Q4} --ocr-max-tokens {MAX_TOKENS} -v"
-    t0 = time.time()
-    r = subprocess.run(cmd, shell=True, capture_output=True, text=True, env=BASE_ENV)
-    entry["ours_seconds"] = round(time.time() - t0, 1)
+    # Two arms of OUR decode. The blueprint's generation_config.json carries no
+    # no_repeat_ngram_size (so: no constraint) while we default to 5, which
+    # FORCES a different token wherever the model legitimately repeats — table
+    # rows, a formula, unreadable handwriting. That is a decode-recipe
+    # divergence, not a numerical one, and it has to be measured rather than
+    # argued about.
+    def run_ours(ngram):
+        env = dict(BASE_ENV)
+        if ngram is not None:
+            env["LFM2_VL_NO_REPEAT_NGRAM"] = str(ngram)
+        cmd = f"{CRISPEMBED} --ocr {path} -m {Q4} --ocr-max-tokens {MAX_TOKENS} -v"
+        t0 = time.time()
+        r = subprocess.run(cmd, shell=True, capture_output=True, text=True, env=env)
+        return r, round(time.time() - t0, 1)
+
+    r, secs = run_ours(None)
+    entry["ours_seconds"] = secs
     entry["ours_rc"] = r.returncode
     ours = r.stdout.strip()
     entry["ours_text"] = ours
@@ -259,9 +272,19 @@ for name in FIXTURES:
     if m:
         entry["ours_prompt_tokens"] = int(m.group(1))
 
+    r0, secs0 = run_ours(0)
+    ours_ng0 = r0.stdout.strip()
+    entry["ours_ngram0_text"] = ours_ng0
+    entry["ours_ngram0_seconds"] = secs0
+    entry["ours_ngram0_rc"] = r0.returncode
+
     gt = GT.get(name, "")
     if hf_text is not None and ours:
         entry["ours_vs_blueprint"] = score(ours, hf_text)
+    if hf_text is not None and ours_ng0:
+        entry["ours_ngram0_vs_blueprint"] = score(ours_ng0, hf_text)
+    if gt and ours_ng0:
+        entry["ours_ngram0_vs_gt"] = score(ours_ng0, gt)
     if gt:
         entry["ours_vs_gt"] = score(ours, gt)
         if hf_text is not None:
@@ -273,6 +296,8 @@ for name in FIXTURES:
     log(f"  prompt tokens: ours={entry.get('ours_prompt_tokens')} blueprint={entry.get('blueprint_prompt_tokens')}")
     log(f"  ours_vs_blueprint={entry.get('ours_vs_blueprint')} "
         f"ours_vs_gt={entry.get('ours_vs_gt')} blueprint_vs_gt={entry.get('blueprint_vs_gt')}")
+    log(f"  ngram0: vs_blueprint={entry.get('ours_ngram0_vs_blueprint')} "
+        f"vs_gt={entry.get('ours_ngram0_vs_gt')}")
     log(f"  ours[:120]      = {ours[:120]!r}")
     log(f"  blueprint[:120] = {(hf_text or '')[:120]!r}")
     results["fixtures"][name] = entry
@@ -282,10 +307,14 @@ for name in FIXTURES:
 ok = [v for v in results["fixtures"].values() if v.get("ours_vs_blueprint")]
 if ok:
     cers = [v["ours_vs_blueprint"]["cer"] for v in ok]
+    ok0 = [v for v in results["fixtures"].values() if v.get("ours_ngram0_vs_blueprint")]
+    cers0 = [v["ours_ngram0_vs_blueprint"]["cer"] for v in ok0]
     results["summary"] = {
         "n_compared": len(ok),
         "cer_ours_vs_blueprint_mean": round(sum(cers) / len(cers), 4),
         "cer_ours_vs_blueprint_max": round(max(cers), 4),
+        "cer_ngram0_vs_blueprint_mean": round(sum(cers0) / len(cers0), 4) if cers0 else None,
+        "cer_ngram0_vs_blueprint_max": round(max(cers0), 4) if cers0 else None,
         "prompt_tokens_match": all(
             v.get("ours_prompt_tokens") == v.get("blueprint_prompt_tokens") for v in ok),
     }
