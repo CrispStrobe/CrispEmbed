@@ -38,16 +38,16 @@ namespace lfm2_vl_tiling {
 
 // ── processor_config.json ──────────────────────────────────────────────────
 struct config {
-    int   patch_size           = 16;    // encoder_patch_size
-    int   downsample_factor    = 2;     // projector pixel_unshuffle factor
-    int   tile_size            = 512;
-    int   min_tiles            = 1;
-    int   max_tiles            = 10;
-    int   min_image_tokens     = 64;
-    int   max_image_tokens     = 256;
+    int patch_size = 16;       // encoder_patch_size
+    int downsample_factor = 2; // projector pixel_unshuffle factor
+    int tile_size = 512;
+    int min_tiles = 1;
+    int max_tiles = 10;
+    int min_image_tokens = 64;
+    int max_image_tokens = 256;
     float max_pixels_tolerance = 2.0f;
-    bool  use_thumbnail        = true;
-    bool  do_image_splitting   = true;
+    bool use_thumbnail = true;
+    bool do_image_splitting = true;
 
     // OFF = reproduce upstream exactly, including its row/col swap (below).
     // ON = label tiles by their actual geometry. Opt-in, unvalidated; see
@@ -65,12 +65,12 @@ struct config {
 // Implemented explicitly rather than via std::nearbyint so it does not depend
 // on the process's floating-point rounding mode.
 inline int round_half_to_even(double v) {
-    const double f  = std::floor(v);
-    const double d  = v - f;
-    const long long lo = (long long) f;
-    if (d > 0.5) return (int) (lo + 1);
-    if (d < 0.5) return (int) lo;
-    return (int) ((lo % 2 == 0) ? lo : lo + 1);  // exact .5 → the even neighbour
+    const double f = std::floor(v);
+    const double d = v - f;
+    const long long lo = (long long)f;
+    if (d > 0.5) return (int)(lo + 1);
+    if (d < 0.5) return (int)lo;
+    return (int)((lo % 2 == 0) ? lo : lo + 1); // exact .5 → the even neighbour
 }
 
 // round_by_factor(number, factor) — in exact integer arithmetic, so no
@@ -82,7 +82,7 @@ inline int round_by_factor(int value, int factor) {
     const int r = value - q * factor;
     if (2 * r > factor) return (q + 1) * factor;
     if (2 * r < factor) return q * factor;
-    return ((q % 2 == 0) ? q : q + 1) * factor;  // exact half → even quotient
+    return ((q % 2 == 0) ? q : q + 1) * factor; // exact half → even quotient
 }
 
 // ── _target_ratios(min_tiles, max_tiles) ───────────────────────────────────
@@ -97,16 +97,18 @@ inline int round_by_factor(int value, int factor) {
 //
 // Hence: transcribed from the oracle, not recomputed. The table is pinned in
 // tests/test_lfm2_tiling.cpp against the golden header.
-struct ratio { int w, h; };
+struct ratio {
+    int w, h;
+};
 
 inline const ratio * default_target_ratios(int * n_out) {
     // _target_ratios(min_tiles=1, max_tiles=10)
     static const ratio kRatios[] = {
-        {1, 1},  {1, 2}, {2, 1}, {3, 1}, {1, 3}, {2, 2}, {4, 1}, {1, 4}, {5, 1},
-        {1, 5},  {1, 6}, {6, 1}, {3, 2}, {2, 3}, {7, 1}, {1, 7}, {4, 2}, {2, 4},
-        {1, 8},  {8, 1}, {1, 9}, {3, 3}, {9, 1}, {2, 5}, {5, 2}, {10, 1}, {1, 10},
+        { 1, 1 }, { 1, 2 }, { 2, 1 }, { 3, 1 }, { 1, 3 }, { 2, 2 }, { 4, 1 }, { 1, 4 },  { 5, 1 },
+        { 1, 5 }, { 1, 6 }, { 6, 1 }, { 3, 2 }, { 2, 3 }, { 7, 1 }, { 1, 7 }, { 4, 2 },  { 2, 4 },
+        { 1, 8 }, { 8, 1 }, { 1, 9 }, { 3, 3 }, { 9, 1 }, { 2, 5 }, { 5, 2 }, { 10, 1 }, { 1, 10 },
     };
-    if (n_out) *n_out = (int) (sizeof(kRatios) / sizeof(kRatios[0]));
+    if (n_out) *n_out = (int)(sizeof(kRatios) / sizeof(kRatios[0]));
     return kRatios;
 }
 
@@ -114,19 +116,19 @@ inline const ratio * default_target_ratios(int * n_out) {
 inline ratio find_closest_aspect_ratio(double aspect_ratio, const ratio * ratios, int n_ratios, int width, int height,
                                        int image_size) {
     double best_diff = 1e300;
-    ratio  best      = {1, 1};
-    const double area = (double) width * (double) height;
+    ratio best = { 1, 1 };
+    const double area = (double)width * (double)height;
 
     for (int i = 0; i < n_ratios; i++) {
-        const double target = (double) ratios[i].w / (double) ratios[i].h;
-        const double diff   = std::fabs(aspect_ratio - target);
+        const double target = (double)ratios[i].w / (double)ratios[i].h;
+        const double diff = std::fabs(aspect_ratio - target);
         if (diff < best_diff) {
             best_diff = diff;
-            best      = ratios[i];
+            best = ratios[i];
         } else if (diff == best_diff) {
             // Equally close: prefer the ratio that better matches the area.
             // Note this REPLACES the incumbent, so later-in-order wins.
-            const double target_area = (double) image_size * (double) image_size * ratios[i].w * ratios[i].h;
+            const double target_area = (double)image_size * (double)image_size * ratios[i].w * ratios[i].h;
             if (area > 0.5 * target_area) best = ratios[i];
         }
     }
@@ -138,7 +140,7 @@ inline void grid_layout(int height, int width, const config & cfg, int * grid_w,
                         int * target_h) {
     int n = 0;
     const ratio * ratios = default_target_ratios(&n);
-    const ratio  g = find_closest_aspect_ratio((double) width / (double) height, ratios, n, width, height, cfg.tile_size);
+    const ratio g = find_closest_aspect_ratio((double)width / (double)height, ratios, n, width, height, cfg.tile_size);
     if (grid_w) *grid_w = g.w;
     if (grid_h) *grid_h = g.h;
     if (target_w) *target_w = cfg.tile_size * g.w;
@@ -152,22 +154,22 @@ inline void grid_layout(int height, int width, const config & cfg, int * grid_w,
 // alone: other engines' parity is measured against their own references.
 inline void smart_resize(int height, int width, const config & cfg, int * out_w, int * out_h) {
     const int total_factor = cfg.patch_size * cfg.downsample_factor;
-    const double min_px = (double) cfg.min_image_tokens * cfg.patch_size * cfg.patch_size * cfg.downsample_factor *
-                          cfg.downsample_factor;
-    const double max_px = (double) cfg.max_image_tokens * cfg.patch_size * cfg.patch_size * cfg.downsample_factor *
-                          cfg.downsample_factor;
+    const double min_px =
+        (double)cfg.min_image_tokens * cfg.patch_size * cfg.patch_size * cfg.downsample_factor * cfg.downsample_factor;
+    const double max_px =
+        (double)cfg.max_image_tokens * cfg.patch_size * cfg.patch_size * cfg.downsample_factor * cfg.downsample_factor;
 
     int h_bar = std::max(total_factor, round_by_factor(height, total_factor));
     int w_bar = std::max(total_factor, round_by_factor(width, total_factor));
 
-    if ((double) h_bar * (double) w_bar > max_px) {
-        const double beta = std::sqrt(((double) height * (double) width) / max_px);
-        h_bar = std::max(total_factor, (int) std::floor((double) height / beta / total_factor) * total_factor);
-        w_bar = std::max(total_factor, (int) std::floor((double) width / beta / total_factor) * total_factor);
-    } else if ((double) h_bar * (double) w_bar < min_px) {
-        const double beta = std::sqrt(min_px / ((double) height * (double) width));
-        h_bar = (int) std::ceil((double) height * beta / total_factor) * total_factor;
-        w_bar = (int) std::ceil((double) width * beta / total_factor) * total_factor;
+    if ((double)h_bar * (double)w_bar > max_px) {
+        const double beta = std::sqrt(((double)height * (double)width) / max_px);
+        h_bar = std::max(total_factor, (int)std::floor((double)height / beta / total_factor) * total_factor);
+        w_bar = std::max(total_factor, (int)std::floor((double)width / beta / total_factor) * total_factor);
+    } else if ((double)h_bar * (double)w_bar < min_px) {
+        const double beta = std::sqrt(min_px / ((double)height * (double)width));
+        h_bar = (int)std::ceil((double)height * beta / total_factor) * total_factor;
+        w_bar = (int)std::ceil((double)width * beta / total_factor) * total_factor;
     }
 
     if (out_h) *out_h = h_bar;
@@ -183,9 +185,9 @@ inline bool is_image_too_large(int height, int width, const config & cfg) {
     const int total_factor = cfg.patch_size * cfg.downsample_factor;
     const int h_bar = std::max(cfg.patch_size, round_by_factor(height, total_factor));
     const int w_bar = std::max(cfg.patch_size, round_by_factor(width, total_factor));
-    const double bound = (double) cfg.max_image_tokens * cfg.patch_size * cfg.patch_size * cfg.downsample_factor *
-                         cfg.downsample_factor * (double) cfg.max_pixels_tolerance;
-    return (double) h_bar * (double) w_bar > bound;
+    const double bound = (double)cfg.max_image_tokens * cfg.patch_size * cfg.patch_size * cfg.downsample_factor *
+                         cfg.downsample_factor * (double)cfg.max_pixels_tolerance;
+    return (double)h_bar * (double)w_bar > bound;
 }
 
 // ── _get_image_num_tokens ──────────────────────────────────────────────────
@@ -210,21 +212,21 @@ inline int tokens_per_tile(const config & cfg) {
 
 // ── the composite ──────────────────────────────────────────────────────────
 struct layout {
-    bool split      = false;
-    int  grid_w     = 1;  // geometric: tiles across
-    int  grid_h     = 1;  // geometric: tiles down
-    int  rows       = 1;  // LABEL space — see the swap note below
-    int  cols       = 1;
-    int  n_tiles    = 1;
-    int  n_images   = 1;  // tiles + thumbnail; = number of vision-encoder runs
-    bool has_thumb  = false;
-    int  target_w   = 0;  // whole image is resized to this before being cut up
-    int  target_h   = 0;
-    int  resized_w  = 0;  // smart_resize output = the thumbnail's size
-    int  resized_h  = 0;
-    int  tile_tokens  = 0;
-    int  thumb_tokens = 0;
-    int  total_tokens = 0;
+    bool split = false;
+    int grid_w = 1; // geometric: tiles across
+    int grid_h = 1; // geometric: tiles down
+    int rows = 1;   // LABEL space — see the swap note below
+    int cols = 1;
+    int n_tiles = 1;
+    int n_images = 1; // tiles + thumbnail; = number of vision-encoder runs
+    bool has_thumb = false;
+    int target_w = 0; // whole image is resized to this before being cut up
+    int target_h = 0;
+    int resized_w = 0; // smart_resize output = the thumbnail's size
+    int resized_h = 0;
+    int tile_tokens = 0;
+    int thumb_tokens = 0;
+    int total_tokens = 0;
 };
 
 // Mirrors resize_and_split() followed by expand_text_with_placeholders().
@@ -259,31 +261,31 @@ inline layout compute_layout(int width, int height, const config & cfg) {
             L.rows = L.grid_h;
             L.cols = L.grid_w;
         } else {
-            L.rows = L.grid_w;  // the swap
+            L.rows = L.grid_w; // the swap
             L.cols = L.grid_h;
         }
     } else {
         L.grid_w = L.grid_h = 1;
         L.rows = L.cols = 1;
-        L.n_tiles  = 1;
+        L.n_tiles = 1;
         L.target_w = L.resized_w;
         L.target_h = L.resized_h;
     }
 
     L.thumb_tokens = cfg.use_thumbnail ? tokens_for_image(L.resized_h, L.resized_w, cfg) : 0;
-    L.tile_tokens  = tokens_per_tile(cfg);
+    L.tile_tokens = tokens_per_tile(cfg);
 
     if (L.rows > 1 || L.cols > 1) {
-        L.has_thumb    = L.thumb_tokens > 0;
-        L.n_images     = L.n_tiles + (L.has_thumb ? 1 : 0);
+        L.has_thumb = L.thumb_tokens > 0;
+        L.n_images = L.n_tiles + (L.has_thumb ? 1 : 0);
         L.total_tokens = L.n_tiles * L.tile_tokens + L.thumb_tokens;
     } else {
         // Single tile: a bare run of <image>, length = the THUMBNAIL count.
         // (Upstream really does use the thumbnail count here; with
         // use_thumbnail=false it would emit zero image tokens. The shipped
         // config sets it true, so that branch is unreachable in practice.)
-        L.has_thumb    = false;
-        L.n_images     = 1;
+        L.has_thumb = false;
+        L.n_images = 1;
         L.total_tokens = L.thumb_tokens;
     }
     return L;
@@ -295,14 +297,14 @@ inline layout compute_layout(int width, int height, const config & cfg) {
 // <|img_row_R_col_C|> ids are contiguous from 124908 with 0 mismatches, and
 // <|img_thumbnail|> is the next id after them. No converter work is needed.
 struct token_ids {
-    int32_t image        = 124907;  // <image>
-    int32_t row_col_base = 124908;  // <|img_row_1_col_1|>
-    int32_t thumbnail    = 125008;  // <|img_thumbnail|>
-    int32_t image_start  = 125009;  // <|image_start|>
-    int32_t image_end    = 125010;  // <|image_end|>
+    int32_t image = 124907;        // <image>
+    int32_t row_col_base = 124908; // <|img_row_1_col_1|>
+    int32_t thumbnail = 125008;    // <|img_thumbnail|>
+    int32_t image_start = 125009;  // <|image_start|>
+    int32_t image_end = 125010;    // <|image_end|>
 
-    int32_t row_col(int row, int col) const {  // 1-based, as the token names are
-        return row_col_base + (int32_t) ((row - 1) * 10 + (col - 1));
+    int32_t row_col(int row, int col) const { // 1-based, as the token names are
+        return row_col_base + (int32_t)((row - 1) * 10 + (col - 1));
     }
 };
 
@@ -313,7 +315,7 @@ struct token_ids {
 // the same: tiles in pixel reading order, thumbnail last.
 inline void build_image_markup(const layout & L, const token_ids & tok, std::vector<int32_t> & out) {
     out.clear();
-    out.reserve((size_t) L.total_tokens + (size_t) L.n_tiles + 4);
+    out.reserve((size_t)L.total_tokens + (size_t)L.n_tiles + 4);
     out.push_back(tok.image_start);
 
     if (L.rows > 1 || L.cols > 1) {
@@ -334,4 +336,4 @@ inline void build_image_markup(const layout & L, const token_ids & tok, std::vec
     out.push_back(tok.image_end);
 }
 
-}  // namespace lfm2_vl_tiling
+} // namespace lfm2_vl_tiling

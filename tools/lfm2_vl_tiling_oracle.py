@@ -226,6 +226,12 @@ CASES = [
     (80, 4000, "banker's: 80x4000 -> 4000 tall; std::round: 3616 tall"),
     (144, 650, "banker's: 128 wide / 80 tok; std::round: 160 wide / 100 tok"),
     (513, 513, "just over one tile"),
+    # Landscape/portrait pairs: the clearest demonstration of the row/col swap.
+    # 1024x768 is cut into 2 geometric rows of 3 tiles and LABELLED 3 rows of 2.
+    (1024, 768, "landscape 4:3 -- 3x2 grid, labelled rows=3 cols=2"),
+    (768, 1024, "portrait 3:4 -- 2x3 grid, labelled rows=2 cols=3"),
+    (5000, 400, "extreme panorama -- 10x1, the max_tiles ceiling"),
+    (2480, 3508, "A4 @ 300 dpi, exact ISO pixel dims"),
     (1024, 1024, "exactly 2x2 tiles of raw pixels"),
 ]
 
