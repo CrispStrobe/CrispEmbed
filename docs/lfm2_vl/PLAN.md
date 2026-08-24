@@ -179,6 +179,16 @@ split  <=>  h_bar * w_bar > max_image_tokens * P**2 * ds**2 * max_pixels_toleran
 comparison rather than an accident. Any page above ~524k rounded pixels does
 split, and we would silently squash it into one tile instead.
 
+**Full handover with the complete blueprint, golden vectors, verified token IDs
+and a cost model: `/mnt/volume1/naflex-todos.md`.** The oracle that produced the
+golden layouts is `tools/lfm2_vl_tiling_oracle.py` (HF's own functions extracted
+verbatim — pure math, no torch), so the guard test can be written before the
+code per HARD RULE 2c.
+
+All 100 `<|img_row_R_col_C|>` tokens plus `<|img_thumbnail|>` are ALREADY in the
+shipped GGUF vocab at contiguous ids — `124908 + (R-1)*10 + (C-1)`, thumbnail
+125008, verified 0 mismatches over all 100. No converter work is needed.
+
 Implementing it needs `crop_image_to_patches` + `find_closest_aspect_ratio` +
 the thumbnail append, and `Lfm2VlProcessor` (`return_row_col_info=true`) for the
 per-tile token markup. It also needs a reference dump to validate against, and
