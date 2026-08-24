@@ -154,7 +154,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen3vl|"
-                    "unlimited_ocr|olmocr)\n");
+                    "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -1174,6 +1174,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
+            if (n == "lfm2-vl" || n == "lfm2_vl") return 19;
             return 0; // dbnet_trocr
         };
         std::string nafnet, vlm, punct;
@@ -1192,7 +1193,17 @@ static int cli_main(int argc, char ** argv) {
             // Single-model lanes: VLMs plus the metadata-dispatched engines.
             // deepseek-ocr2 / pix2struct / granite-vision do their own
             // preprocessing like the VLMs (cleanup stays off for them).
-            const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18;
+            // Whole-page VLM engines: model_a is the VLM itself, there is no
+            // separate detector, and cleanup/denoise are skipped. Must stay in
+            // step with is_vlm_engine() in ocr_orchestrator.cpp — they are two
+            // hand-maintained lists over the same set, and lfm2_vl was added to
+            // one and not the other: model_a then got resolved down the
+            // DETECTOR branch, so the engine was handed a DBNet path, loaded
+            // something that was not the VL model at all (all-conv layer types,
+            // no tokenizer, null patch embedding) and failed inside the vision
+            // graph rather than at load.
+            const bool is_vlm =
+                (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 19;
             if (eid == 14 && ocr_rec_path.empty()) {
                 fprintf(stderr, "error: --ocr-engine unified dispatches on GGUF metadata; provide the model "
                                 "via --ocr-rec FILE\n");
@@ -1214,6 +1225,7 @@ static int cli_main(int argc, char ** argv) {
                                     : (eid == 12) ? "qwen3vl-2b"
                                     : (eid == 13) ? "unlimited-ocr"
                                     : (eid == 18) ? "olmocr-2-7b"
+                                    : (eid == 19) ? "lfm2-vl"
                                                   : "qwen2vl-ocr";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {

@@ -5368,6 +5368,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::easyocr;
     case 18:
         return E::olmocr;
+    case 19:
+        return E::lfm2_vl;
     default:
         return E::dbnet_trocr;
     }

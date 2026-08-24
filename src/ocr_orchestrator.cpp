@@ -23,6 +23,7 @@
 #include "pix2struct.h"
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
+#include "lfm2_vl_ocr.h"
 #include "unlimited_ocr.h"
 // Tesseract-LSTM line recognizer + DBNet detection (the tesseract engine pairs
 // detection with per-line tesseract recognition).
@@ -342,6 +343,7 @@ struct context {
     pix2struct_context * p2s = nullptr;          // Pix2Struct (doc/chart understanding)
     granite_vision_context * gv = nullptr;       // Granite Vision (LLaVA-Next)
     lightonocr_context * locr = nullptr;         // LightOnOCR (Pixtral ViT + Qwen3)
+    lfm2_vl_ocr_context * lfm2vl = nullptr;      // LFM2.5-VL (SigLIP2 NaFlex multi-tile)
     unlimited_ocr_context * uocr = nullptr;      // Unlimited-OCR (SAM + CLIP + MoE)
     void * unified = nullptr;                    // metadata-dispatched OCR model
     ocr_detect::context * tess_det = nullptr;    // DBNet detection for the tesseract engine
@@ -1591,6 +1593,39 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
+    case engine::lfm2_vl: {
+        if (!ctx->lfm2vl) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: lfm2_vl stage missing model_a\n");
+                return {};
+            }
+            // lfm2_vl_ocr_init finds the companion mmproj by scanning the
+            // model's own directory — a VL model here is two files, and the
+            // registry downloads both.
+            ctx->lfm2vl = lfm2_vl_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->lfm2vl) {
+                fprintf(stderr, "ocr_orchestrator: lfm2_vl load failed\n");
+                return {};
+            }
+        }
+        if (st.params.vlm_max_tokens > 0) lfm2_vl_ocr_set_max_tokens(ctx->lfm2vl, st.params.vlm_max_tokens);
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int c = 0;
+            loaded = stbi_load(path, &w, &h, &c, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int len = 0;
+        const char * t = lfm2_vl_ocr_recognize_raw(ctx->lfm2vl, img, w, h, 3, &len);
+        int nconf = 0;
+        const float * conf = lfm2_vl_ocr_confidences(ctx->lfm2vl, &nconf);
+        auto out = wrap_fulltext(t, w, h, conf, nconf, lfm2_vl_ocr_mean_confidence(ctx->lfm2vl));
+        if (loaded) stbi_image_free(loaded);
+        return out;
+    }
     case engine::unlimited_ocr: {
         if (!ctx->uocr) {
             if (st.model_a.empty()) {
@@ -2018,6 +2053,8 @@ static const char * engine_name(engine e) {
         return "granite_vision";
     case engine::lightonocr:
         return "lightonocr";
+    case engine::lfm2_vl:
+        return "lfm2_vl";
     case engine::unlimited_ocr:
         return "unlimited_ocr";
     case engine::unified:
@@ -2059,6 +2096,7 @@ static bool is_vlm_engine(engine e) {
     case engine::granite_vision:
     case engine::lightonocr:
     case engine::unlimited_ocr:
+    case engine::lfm2_vl:
         return true;
     default:
         return false;
@@ -2335,6 +2373,7 @@ void free(context * ctx) {
     if (ctx->p2s) pix2struct_free(ctx->p2s);
     if (ctx->gv) granite_vision_free(ctx->gv);
     if (ctx->locr) lightonocr_free(ctx->locr);
+    if (ctx->lfm2vl) lfm2_vl_ocr_free(ctx->lfm2vl);
     if (ctx->uocr) unlimited_ocr_free(ctx->uocr);
     if (ctx->unified) crispembed_ocr_model_free(ctx->unified);
     if (ctx->tess_det) ocr_detect::free(ctx->tess_det);
