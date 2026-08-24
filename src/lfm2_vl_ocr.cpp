@@ -66,6 +66,24 @@ static bool dbg() {
     return core_env::on("LFM2_VL_DBG");
 }
 
+// Whether to stamp GGML_PREC_F32 on the LLM's flash-attention ops.
+//
+// This matters far more than "a precision hint" suggests. THIS FORK's Metal
+// backend REFUSES an op carrying PREC_F32 (ggml-metal-device.m, CrispASR patch
+// #83: Apple's FA kernel uses simdgroup_half8x8 tiles regardless of K type and
+// leaks ~1e-4 vs CPU), so ggml_backend_sched routes it to the CPU backend --
+// which means every attention layer copies Q, K and V out of the Metal buffers
+// and the result back, EVERY TOKEN. At a 2400-position KV cache that is
+// 8 layers x 2 tensors x 2400 x 2048 x 4 B = 314 MB of round trip per token,
+// and it is why decode cost grew with context far faster than the arithmetic
+// does.
+//
+// LFM2_VL_ATTN_PREC_F32=1 restores it (bit-identical CPU/GPU attention, much
+// slower on Metal). See docs/lfm2_vl/PLAN.md for the A/B behind the default.
+static bool attn_prec_f32() {
+    return core_env::on("LFM2_VL_ATTN_PREC_F32");
+}
+
 static long long ms_since(steady_clock::time_point t0) {
     return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(steady_clock::now() - t0).count();
 }
@@ -1175,8 +1193,14 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         // Manual attention: QK^T * scale → softmax → V
         // This avoids flash_attn_ext mask issues for bidirectional attention.
         // Gate flash behind LFM2_VL_FLASH_ATTN env var.
+        // Default ON since the A/B (docs/lfm2_vl/PLAN.md §8): median vision
+        // encoder 2237 -> 1747 ms over 5 interleaved reps, with vis_post_ln
+        // cos_global identical to the reference (0.999994) and byte-identical
+        // decoded text over 200 tokens. LFM2_VL_FLASH_ATTN=0 restores the
+        // manual masked attention.
         ggml_tensor * attn_out;
-        if (core_env::on("LFM2_VL_FLASH_ATTN")) {
+        const bool use_flash = !core_env::explicitly_off("LFM2_VL_FLASH_ATTN");
+        if (use_flash) {
             attn_out = ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
         } else {
             // Q, K, V: (head_dim, n_patches, n_heads) after permute
@@ -1195,8 +1219,16 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
             attn_out = ggml_mul_mat(g, Vt, scores);
         }
 
-        // Permute back: (head_dim, n_heads, n_patches)
-        attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
+        // Permute back to (head_dim, n_heads, n_patches) — but ONLY for the
+        // manual path. ggml_flash_attn_ext ALREADY returns [head_dim, n_heads,
+        // n_seq]: it permutes internally. Applying the trailing permute to its
+        // output scrambles heads into positions, which is exactly what
+        // LFM2_VL_FLASH_ATTN=1 used to do — vis_post_ln cos_global 0.563 and a
+        // decode that hallucinated "The image shows a room with a table and
+        // chairs" on a supermarket receipt, while every shape stayed valid.
+        if (!use_flash) {
+            attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
+        }
         attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
 
         // Output projection
@@ -1699,7 +1731,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             }
 
             ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
-            ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
+            if (attn_prec_f32()) ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, n_tokens);
 
             h = ggml_mul_mat(g, l.attn_out_proj_w, attn_out);
@@ -1861,24 +1893,41 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g, int n_kv
             ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
             ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
 
-            // Read full KV cache for this layer (n_kv+1 valid entries)
+            // Read the KV cache for this layer (n_kv+1 valid entries).
+            //
+            // flash_attn_ext wants [head_dim, n_kv, n_kv_heads]; the cache is
+            // [head_dim*n_kv_heads, max_seq, n_attn]. Element (i, s, h) sits at
+            // i*4 + s*nb[1] + h*head_dim*4 + layer*nb[2] — which is exactly a
+            // strided ggml_view_3d, so the old reshape+permute+ggml_cont was
+            // MATERIALISING the entire KV cache, both tensors, every attention
+            // layer, every token: at n_kv=1816 that is 8 x 2 x 1816 x 2048 x 4 B
+            // = 238 MB copied per token for no information gain.
+            // LFM2_VL_KV_VIEW=0 restores the copies.
             int n_kv_total = n_kv + 1;
-            ggml_tensor * k_layer =
-                ggml_view_2d(g, c.kvc.k, kv_dim, n_kv_total, c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
-            ggml_tensor * v_layer =
-                ggml_view_2d(g, c.kvc.v, kv_dim, n_kv_total, c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
-
-            ggml_tensor * K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, n_kv_total);
-            ggml_tensor * V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, n_kv_total);
+            ggml_tensor * K_full;
+            ggml_tensor * V_full;
+            if (!core_env::explicitly_off("LFM2_VL_KV_VIEW")) {
+                K_full = ggml_view_3d(g, c.kvc.k, head_dim, n_kv_total, n_kv_heads, c.kvc.k->nb[1],
+                                      (size_t)head_dim * sizeof(float), (size_t)attn_idx * c.kvc.k->nb[2]);
+                V_full = ggml_view_3d(g, c.kvc.v, head_dim, n_kv_total, n_kv_heads, c.kvc.v->nb[1],
+                                      (size_t)head_dim * sizeof(float), (size_t)attn_idx * c.kvc.v->nb[2]);
+            } else {
+                ggml_tensor * k_layer =
+                    ggml_view_2d(g, c.kvc.k, kv_dim, n_kv_total, c.kvc.k->nb[1], (size_t)attn_idx * c.kvc.k->nb[2]);
+                ggml_tensor * v_layer =
+                    ggml_view_2d(g, c.kvc.v, kv_dim, n_kv_total, c.kvc.v->nb[1], (size_t)attn_idx * c.kvc.v->nb[2]);
+                K_full = ggml_cont(
+                    g, ggml_permute(g, ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, n_kv_total), 0, 2, 1, 3));
+                V_full = ggml_cont(
+                    g, ggml_permute(g, ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, n_kv_total), 0, 2, 1, 3));
+            }
 
             Q = ggml_cont(g, ggml_permute(g, Q, 0, 2, 1, 3));
-            K_full = ggml_cont(g, ggml_permute(g, K_full, 0, 2, 1, 3));
-            V_full = ggml_cont(g, ggml_permute(g, V_full, 0, 2, 1, 3));
 
             // No mask needed: only n_kv+1 valid positions in the view
             const float scale = 1.0f / sqrtf((float)head_dim);
             ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full, nullptr, scale, 0.0f, 0.0f);
-            ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
+            if (attn_prec_f32()) ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
             attn_out = ggml_reshape_2d(g, attn_out, D, 1);
 
             h = ggml_mul_mat(g, l.attn_out_proj_w, attn_out);
