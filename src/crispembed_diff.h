@@ -355,8 +355,13 @@ inline bool Ref::load(const std::string & path) {
             // F32
             td.data.resize(n_elem);
             fread(td.data.data(), sizeof(float), n_elem, f);
-        } else if (ti.type == 5) {
-            // I32 (token IDs) — convert to float for storage
+        } else if (ti.type == 26) {
+            // GGML_TYPE_I32 = 26 (token IDs) — convert to float for storage.
+            // This read 5 until 2026-08-24, which is a QUANTIZED type in every
+            // ggml enum there has ever been, so an I32 tensor was silently
+            // dropped ("skipping ... not F32/I32") and any guard that depended
+            // on it — e.g. the LFM2.5-VL multi-tile prompt_token_ids check —
+            // quietly did nothing instead of failing.
             std::vector<int32_t> ibuf(n_elem);
             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
             td.data.resize(n_elem);
