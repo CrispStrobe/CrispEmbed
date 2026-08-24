@@ -1539,50 +1539,130 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
     const int mid_dim = (int)c.m.php.mid_dim;
     const int out_d = (int)c.m.php.out_dim;
 
-    // fc1
-    auto fc1_w = to_f32(c.m.proj_fc1_w);
-    auto fc1_b = to_f32(c.m.proj_fc1_b);
-    auto fc2_w = to_f32(c.m.proj_fc2_w);
-    auto fc2_b = to_f32(c.m.proj_fc2_b);
+    // ── The MLP runs as a ggml graph, i.e. on whatever backend the rest of the
+    // engine is using. It used to be a hand-rolled scalar CPU loop, and that
+    // was 85% of the entire pipeline on a GPU box: measured on a P100, the
+    // projector took 4.70 s per image while the whole 27-layer vision
+    // transformer took 0.244 s — 19x the cost of the thing it post-processes,
+    // for 7 GFLOP running at 1.48 GFLOP/s on hardware that does ~9000.
+    //
+    // Three things were wrong with it and the graph fixes all three: it was
+    // scalar, single-threaded and BLAS-less; it re-dequantized 55 MB of fc1/fc2
+    // weights on EVERY image (to_f32 per call, 7x per page); and it heap
+    // allocated a 4608-float column buffer per token.
+    //
+    // Same arithmetic either way — mul_mat, GELU, mul_mat — so this is a
+    // placement change, not a numerical one. ggml_gelu is the tanh
+    // approximation, which is what the scalar loop used and what the reference
+    // wants (verified separately: replaying this projector against the
+    // blueprint archive gives cos 1.000000).
+    //
+    // LFM2_VL_CPU_PROJECTOR=1 restores the scalar path.
+    const bool cpu_projector = core_env::on("LFM2_VL_CPU_PROJECTOR");
+    bool projector_is_row_major = false;
 
-    out_embeds.resize((size_t)out_d * n_proj);
-    std::vector<float> mid_buf(mid_dim);
+    out_embeds.assign((size_t)out_d * n_proj, 0.0f);
 
-    for (int p = 0; p < n_proj; p++) {
-        const float * in = us_data.data() + (size_t)p; // column p
+    if (!cpu_projector) {
+        const int pmax_nodes = 32;
+        size_t pmeta = ggml_tensor_overhead() * pmax_nodes + ggml_graph_overhead_custom(pmax_nodes, false);
+        ggml_init_params pip{ pmeta, nullptr, true };
+        ggml_context * pg = ggml_init(pip);
+        if (!pg) {
+            fprintf(stderr, "[lfm2_vl] projector graph ctx alloc failed\n");
+            return false;
+        }
+        ggml_cgraph * pgf = ggml_new_graph_custom(pg, pmax_nodes, false);
 
-        // Gather column p from us_data [C_us, n_proj] layout
+        ggml_tensor * us_in = ggml_new_tensor_2d(pg, GGML_TYPE_F32, C_us, n_proj);
+        ggml_set_name(us_in, "proj_in");
+        ggml_set_input(us_in);
+
+        // ⚠ REPACK. us_data is channel-major — element (chan, tok) lives at
+        // `chan * n_proj + tok`, which is what the scalar loop below indexes and
+        // what projector_unshuffle is diffed in. A ggml tensor with ne0 = C_us
+        // wants the opposite: `chan + tok * C_us`. Uploading the buffer as-is
+        // feeds the matmul a transposed input — it computes happily, at the
+        // right shape, and the receipt decodes as "(   )" instead of
+        // "Jackson-Washington". Caught by the A/B, which is the entire reason
+        // the old path stays reachable.
+        std::vector<float> proj_in((size_t)C_us * n_proj);
+        for (int t = 0; t < n_proj; t++)
+            for (int i = 0; i < C_us; i++) proj_in[(size_t)t * C_us + i] = us_data[(size_t)i * n_proj + t];
+
+        // ggml_mul_mat(A, B) = B x A^T, so [C_us, mid] x [C_us, n_proj] -> [mid, n_proj].
+        ggml_tensor * y = ggml_mul_mat(pg, c.m.proj_fc1_w, us_in);
+        if (c.m.proj_fc1_b) y = ggml_add(pg, y, c.m.proj_fc1_b);
+        y = ggml_gelu(pg, y);
+        y = ggml_mul_mat(pg, c.m.proj_fc2_w, y);
+        if (c.m.proj_fc2_b) y = ggml_add(pg, y, c.m.proj_fc2_b);
+        ggml_set_name(y, "proj_out");
+        ggml_set_output(y);
+        ggml_build_forward_expand(pgf, y);
+
+        ggml_backend_sched_reset(c.sched);
+        if (!ggml_backend_sched_alloc_graph(c.sched, pgf)) {
+            fprintf(stderr, "[lfm2_vl] projector graph alloc failed\n");
+            ggml_free(pg);
+            return false;
+        }
+        ggml_backend_tensor_set(ggml_graph_get_tensor(pgf, "proj_in"), proj_in.data(), 0,
+                                proj_in.size() * sizeof(float));
+        if (ggml_backend_sched_graph_compute(c.sched, pgf) != GGML_STATUS_SUCCESS) {
+            fprintf(stderr, "[lfm2_vl] projector compute failed\n");
+            ggml_free(pg);
+            return false;
+        }
+        // y is [out_d, n_proj] with out_d fastest, i.e. element (tok, d) at
+        // `tok * out_d + d` — already the [n_proj, out_d] row-major layout the
+        // splice wants, so this path skips the transpose the scalar one needs.
+        ggml_backend_tensor_get(y, out_embeds.data(), 0, out_embeds.size() * sizeof(float));
+        ggml_free(pg);
+        projector_is_row_major = true;
+    } else {
+        auto fc1_w = to_f32(c.m.proj_fc1_w);
+        auto fc1_b = to_f32(c.m.proj_fc1_b);
+        auto fc2_w = to_f32(c.m.proj_fc2_w);
+        auto fc2_b = to_f32(c.m.proj_fc2_b);
+
+        std::vector<float> mid_buf(mid_dim);
         std::vector<float> col_in(C_us);
-        for (int i = 0; i < C_us; i++) col_in[i] = us_data[(size_t)i * n_proj + p];
+        for (int p = 0; p < n_proj; p++) {
+            // Gather column p from us_data [C_us, n_proj] layout
+            for (int i = 0; i < C_us; i++) col_in[i] = us_data[(size_t)i * n_proj + p];
 
-        // fc1: [C_us → mid_dim]
-        for (int o = 0; o < mid_dim; o++) {
-            float s = fc1_b.empty() ? 0.0f : fc1_b[o];
-            for (int i = 0; i < C_us; i++) s += col_in[i] * fc1_w[(size_t)o * C_us + i];
-            mid_buf[o] = s;
-        }
-        // GELU (tanh approximation)
-        for (int i = 0; i < mid_dim; i++) {
-            float x = mid_buf[i];
-            float t = std::tanh(0.7978845608f * (x + 0.044715f * x * x * x));
-            mid_buf[i] = 0.5f * x * (1.0f + t);
-        }
-        // fc2: [mid_dim → out_d]
-        for (int o = 0; o < out_d; o++) {
-            float s = fc2_b.empty() ? 0.0f : fc2_b[o];
-            for (int i = 0; i < mid_dim; i++) s += mid_buf[i] * fc2_w[(size_t)o * mid_dim + i];
-            out_embeds[(size_t)o * n_proj + p] = s;
+            // fc1: [C_us → mid_dim]
+            for (int o = 0; o < mid_dim; o++) {
+                float s = fc1_b.empty() ? 0.0f : fc1_b[o];
+                for (int i = 0; i < C_us; i++) s += col_in[i] * fc1_w[(size_t)o * C_us + i];
+                mid_buf[o] = s;
+            }
+            // GELU (tanh approximation)
+            for (int i = 0; i < mid_dim; i++) {
+                float x = mid_buf[i];
+                float t = std::tanh(0.7978845608f * (x + 0.044715f * x * x * x));
+                mid_buf[i] = 0.5f * x * (1.0f + t);
+            }
+            // fc2: [mid_dim → out_d]
+            for (int o = 0; o < out_d; o++) {
+                float s = fc2_b.empty() ? 0.0f : fc2_b[o];
+                for (int i = 0; i < mid_dim; i++) s += mid_buf[i] * fc2_w[(size_t)o * mid_dim + i];
+                out_embeds[(size_t)o * n_proj + p] = s;
+            }
         }
     }
 
-    // Transpose to [n_proj, out_d] row-major for splicing
-    std::vector<float> out_row((size_t)n_proj * out_d);
-    for (int p = 0; p < n_proj; p++) {
-        for (int d = 0; d < out_d; d++) {
-            out_row[(size_t)p * out_d + d] = out_embeds[(size_t)d * n_proj + p];
+    // Transpose to [n_proj, out_d] row-major for splicing. The graph path
+    // already produced that layout; only the scalar path needs this.
+    if (!projector_is_row_major) {
+        std::vector<float> out_row((size_t)n_proj * out_d);
+        for (int p = 0; p < n_proj; p++) {
+            for (int d = 0; d < out_d; d++) {
+                out_row[(size_t)p * out_d + d] = out_embeds[(size_t)d * n_proj + p];
+            }
         }
+        out_embeds = std::move(out_row);
     }
-    out_embeds = std::move(out_row);
     out_n_tokens = n_proj;
     out_dim = out_d;
 
