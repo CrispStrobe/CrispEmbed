@@ -513,19 +513,19 @@ embed_tokens BPETokenizer::encode_pair(const std::string & text_a, const std::st
 
     // Build combined sequence: [CLS] text_a [SEP] text_b [SEP]
     std::vector<int32_t> ids, types;
-    ids.push_back(bos_id_);   // [CLS]
+    ids.push_back(bos_id_); // [CLS]
     types.push_back(0);
     for (int id : ids_a) {
         ids.push_back(id);
         types.push_back(0);
     }
-    ids.push_back(eos_id_);   // [SEP]
+    ids.push_back(eos_id_); // [SEP]
     types.push_back(0);
     for (int id : ids_b) {
         ids.push_back(id);
         types.push_back(1);
     }
-    ids.push_back(eos_id_);   // [SEP]
+    ids.push_back(eos_id_); // [SEP]
     types.push_back(1);
 
     embed_tokens result;

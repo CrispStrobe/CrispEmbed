@@ -219,7 +219,7 @@ struct ModelEntry {
     // or `model_card_url` — value-initialise these to nullptr and need no edit.
     const char * companion_file;
     const char * companion_url;
-    const char * companion_size;  // NULL falls back to approx_size
+    const char * companion_size; // NULL falls back to approx_size
 };
 
 // Prompt prefixes for models that need them for optimal retrieval.
@@ -1549,10 +1549,8 @@ static const ModelEntry k_registry[] = {
     { "lfm2-vl", "LFM2.5-VL-3B-Q4_K_M.gguf",
       "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/LFM2.5-VL-3B-Q4_K_M.gguf",
       "LFM2.5-VL document OCR (SigLIP2 NaFlex + LFM2 hybrid conv/attn, 3.4B, Q4_K_M)", "1.67 GB", "lfm1.0",
-      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B", nullptr,
-      "mmproj-LFM2.5-VL-3B-F16.gguf",
-      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/mmproj-LFM2.5-VL-3B-F16.gguf",
-      "854 MB" },
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B", nullptr, "mmproj-LFM2.5-VL-3B-F16.gguf",
+      "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/main/mmproj-LFM2.5-VL-3B-F16.gguf", "854 MB" },
 
     { "pix2struct-base", "pix2struct-base-q8_0.gguf",
       "https://huggingface.co/cstr/pix2struct-GGUF/resolve/main/pix2struct-base-q8_0.gguf",
