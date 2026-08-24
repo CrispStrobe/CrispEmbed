@@ -826,9 +826,11 @@ static lfm2_vl_tiling::config tiling_config(const vision_hparams & vhp) {
     cfg.tile_size = (int)vhp.tile_size;
     cfg.min_image_tokens = (int)vhp.min_image_tokens;
     cfg.max_image_tokens = (int)vhp.max_image_tokens;
-    // Opt-in: label tiles by their geometry instead of reproducing upstream's
-    // row/col swap. Unvalidated — see the swap note in lfm2_vl_tiling.h.
-    cfg.geometric_labels = core_env::on("LFM2_VL_TILE_LABELS_GEOMETRIC");
+    // Reproduce transformers <= 4.57.x, which transposed the tile row/col
+    // labels. Default off: 5.x is geometric and that is what the shipped model
+    // is prompted with — confirmed by prompt-token parity against a reference
+    // dumped with 5.x. See the swap note in lfm2_vl_tiling.h.
+    cfg.legacy_label_swap = core_env::on("LFM2_VL_TILE_LABELS_LEGACY_SWAP");
     return cfg;
 }
 

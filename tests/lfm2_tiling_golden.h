@@ -37,10 +37,10 @@ static const label kLabels0[1] = { {0, 0} };  // unused
 static const label kLabels1[1] = { {0, 0} };  // unused
 static const label kLabels2[1] = { {0, 0} };  // unused
 static const label kLabels3[1] = { {0, 0} };  // unused
-static const label kLabels4[] = { {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3} };
-static const label kLabels5[] = { {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3} };
+static const label kLabels4[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 1}, {3, 2} };
+static const label kLabels5[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 1}, {3, 2} };
 static const label kLabels6[] = { {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3}, {3, 1}, {3, 2}, {3, 3} };
-static const label kLabels7[] = { {1, 1}, {2, 1}, {3, 1}, {4, 1} };
+static const label kLabels7[] = { {1, 1}, {1, 2}, {1, 3}, {1, 4} };
 static const label kLabels8[1] = { {0, 0} };  // unused
 static const label kLabels9[1] = { {0, 0} };  // unused
 static const label kLabels10[1] = { {0, 0} };  // unused
@@ -48,21 +48,22 @@ static const label kLabels11[1] = { {0, 0} };  // unused
 static const label kLabels12[1] = { {0, 0} };  // unused
 static const label kLabels13[1] = { {0, 0} };  // unused
 static const label kLabels14[1] = { {0, 0} };  // unused
-static const label kLabels15[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 1}, {3, 2} };
-static const label kLabels16[] = { {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3} };
-static const label kLabels17[] = { {1, 1}, {2, 1}, {3, 1}, {4, 1}, {5, 1}, {6, 1}, {7, 1}, {8, 1}, {9, 1}, {10, 1} };
-static const label kLabels18[] = { {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3} };
-static const label kLabels19[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2} };
+static const label kLabels15[] = { {1, 1}, {1, 2}, {1, 3}, {2, 1}, {2, 2}, {2, 3} };
+static const label kLabels16[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 1}, {3, 2} };
+static const label kLabels17[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 1}, {3, 2} };
+static const label kLabels18[] = { {1, 1}, {1, 2}, {1, 3}, {1, 4}, {1, 5}, {1, 6}, {1, 7}, {1, 8}, {1, 9}, {1, 10} };
+static const label kLabels19[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2}, {3, 1}, {3, 2} };
+static const label kLabels20[] = { {1, 1}, {1, 2}, {2, 1}, {2, 2} };
 
 static const layout_case kCases[] = {
     { "the fixture (does not split -- regression canary)", 500, 650, 0, 1, 1, 1, 1, 1, 1, 0, 448, 576, 448, 576, 256, 252, 252, 0, kLabels0 },
     { "small thumbnail (upscaled into the token band)", 150, 200, 0, 1, 1, 1, 1, 1, 1, 0, 224, 320, 224, 320, 256, 70, 70, 0, kLabels1 },
     { "tall strip", 300, 1000, 0, 1, 1, 1, 1, 1, 1, 0, 256, 928, 256, 928, 256, 232, 232, 0, kLabels2 },
     { "wide banner", 1000, 300, 0, 1, 1, 1, 1, 1, 1, 0, 928, 256, 928, 256, 256, 232, 232, 0, kLabels3 },
-    { "A4 scan @ 300 dpi", 3000, 4000, 1, 2, 3, 2, 3, 6, 7, 1, 1024, 1536, 416, 576, 256, 234, 1770, 6, kLabels4 },
-    { "US letter @ 200 dpi", 1700, 2200, 1, 2, 3, 2, 3, 6, 7, 1, 1024, 1536, 448, 576, 256, 252, 1788, 6, kLabels5 },
+    { "A4 scan @ 300 dpi", 3000, 4000, 1, 2, 3, 3, 2, 6, 7, 1, 1024, 1536, 416, 576, 256, 234, 1770, 6, kLabels4 },
+    { "US letter @ 200 dpi", 1700, 2200, 1, 2, 3, 3, 2, 6, 7, 1, 1024, 1536, 448, 576, 256, 252, 1788, 6, kLabels5 },
     { "square", 2048, 2048, 1, 3, 3, 3, 3, 9, 10, 1, 1536, 1536, 512, 512, 256, 256, 2560, 9, kLabels6 },
-    { "panorama", 4000, 1000, 1, 4, 1, 4, 1, 4, 5, 1, 2048, 512, 1024, 256, 256, 256, 1280, 4, kLabels7 },
+    { "panorama", 4000, 1000, 1, 4, 1, 1, 4, 4, 5, 1, 2048, 512, 1024, 256, 256, 256, 1280, 4, kLabels7 },
     { "banker's rounding: 80/32 = 2.5 -> Python 64, C++ std::round 96", 80, 80, 0, 1, 1, 1, 1, 1, 1, 0, 256, 256, 256, 256, 256, 64, 64, 0, kLabels8 },
     { "banker's rounding on one axis only", 1200, 80, 0, 1, 1, 1, 1, 1, 1, 0, 1216, 64, 1216, 64, 256, 76, 76, 0, kLabels9 },
     { "banker's: no split / 252 tok; std::round: 1x10 split / 2812 tok", 144, 4000, 0, 1, 1, 1, 1, 1, 1, 0, 96, 2688, 96, 2688, 256, 252, 252, 0, kLabels10 },
@@ -70,14 +71,15 @@ static const layout_case kCases[] = {
     { "banker's: 80x4000 -> 4000 tall; std::round: 3616 tall", 80, 4000, 0, 1, 1, 1, 1, 1, 1, 0, 64, 4000, 64, 4000, 256, 250, 250, 0, kLabels12 },
     { "banker's: 128 wide / 80 tok; std::round: 160 wide / 100 tok", 144, 650, 0, 1, 1, 1, 1, 1, 1, 0, 128, 640, 128, 640, 256, 80, 80, 0, kLabels13 },
     { "just over one tile", 513, 513, 0, 1, 1, 1, 1, 1, 1, 0, 512, 512, 512, 512, 256, 256, 256, 0, kLabels14 },
-    { "landscape 4:3 -- 3x2 grid, labelled rows=3 cols=2", 1024, 768, 1, 3, 2, 3, 2, 6, 7, 1, 1536, 1024, 576, 416, 256, 234, 1770, 6, kLabels15 },
-    { "portrait 3:4 -- 2x3 grid, labelled rows=2 cols=3", 768, 1024, 1, 2, 3, 2, 3, 6, 7, 1, 1024, 1536, 416, 576, 256, 234, 1770, 6, kLabels16 },
-    { "extreme panorama -- 10x1, the max_tiles ceiling", 5000, 400, 1, 10, 1, 10, 1, 10, 11, 1, 5120, 512, 1792, 128, 256, 224, 2784, 10, kLabels17 },
-    { "A4 @ 300 dpi, exact ISO pixel dims", 2480, 3508, 1, 2, 3, 2, 3, 6, 7, 1, 1024, 1536, 416, 608, 256, 247, 1783, 6, kLabels18 },
-    { "exactly 2x2 tiles of raw pixels", 1024, 1024, 1, 2, 2, 2, 2, 4, 5, 1, 1024, 1024, 512, 512, 256, 256, 1280, 4, kLabels19 },
+    { "landscape 4:3 -- 3 tiles across, 2 down", 1024, 768, 1, 3, 2, 2, 3, 6, 7, 1, 1536, 1024, 576, 416, 256, 234, 1770, 6, kLabels15 },
+    { "portrait 3:4 -- 2 tiles across, 3 down", 768, 1024, 1, 2, 3, 3, 2, 6, 7, 1, 1024, 1536, 416, 576, 256, 234, 1770, 6, kLabels16 },
+    { "commons_test_ocr_document.jpg -- the acceptance fixture", 1920, 2485, 1, 2, 3, 3, 2, 6, 7, 1, 1024, 1536, 448, 576, 256, 252, 1788, 6, kLabels17 },
+    { "extreme panorama -- 10x1, the max_tiles ceiling", 5000, 400, 1, 10, 1, 1, 10, 10, 11, 1, 5120, 512, 1792, 128, 256, 224, 2784, 10, kLabels18 },
+    { "A4 @ 300 dpi, exact ISO pixel dims", 2480, 3508, 1, 2, 3, 3, 2, 6, 7, 1, 1024, 1536, 416, 608, 256, 247, 1783, 6, kLabels19 },
+    { "exactly 2x2 tiles of raw pixels", 1024, 1024, 1, 2, 2, 2, 2, 4, 5, 1, 1024, 1024, 512, 512, 256, 256, 1280, 4, kLabels20 },
 };
 
-static const int kNumCases = 20;
+static const int kNumCases = 21;
 
 // _target_ratios(min_tiles=1, max_tiles=10), in the exact order upstream
 // iterates it. Within one area that order comes from CPython's set
