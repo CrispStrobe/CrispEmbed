@@ -23,6 +23,7 @@
 // License: LFM-1.0 (revenue-capped; requires CRISPEMBED_ACCEPT_LFM_LICENSE=1)
 
 #include "lfm2_vl_ocr.h"
+#include "lfm2_shortconv.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "core/env_gate.h"
@@ -234,6 +235,12 @@ struct ctx {
     // Diff harness: loaded when LFM2_VL_DIFF_REF is set
     crispembed_diff::Ref diff_ref;
     bool has_diff_ref = false;
+
+    // Names of the graph inputs the most recent build_* call declared, so
+    // audit_graph_inputs() can catch one that nobody wrote. An unset ggml
+    // input is NOT zero — it is whatever the allocator last left in that
+    // buffer, which for a causal mask reads as a plausible attention pattern.
+    std::vector<std::string> declared_inputs;
 };
 
 // Compare a tensor against the diff reference and print the result.
@@ -1262,6 +1269,31 @@ static ggml_tensor * lfm2_swiglu(ggml_context * g, ggml_tensor * x,
 // during this pass.
 //
 // Returns the logits tensor for the last token position.
+// Mark a tensor as a graph input and record its name, so audit_graph_inputs()
+// can report any input the caller forgot to write.
+static void declare_input(ctx & c, ggml_tensor * t, const char * name) {
+    ggml_set_name(t, name);
+    ggml_set_input(t);
+    c.declared_inputs.push_back(name);
+}
+
+// Report any declared graph input that was not written before compute.
+// This is the guard for a defect that already shipped once here: the no-KV
+// full-recompute path declared a causal mask per attention layer and never set
+// it, so every token after the first attended through allocator leftovers and
+// the decode drifted into plausible-looking nonsense a few tokens in.
+static void audit_graph_inputs(const ctx & c, const std::vector<std::string> & written,
+                               const char * graph_name) {
+    for (const auto & d : c.declared_inputs) {
+        if (std::find(written.begin(), written.end(), d) == written.end()) {
+            fprintf(stderr,
+                    "[lfm2_vl] BUG: graph '%s' input '%s' declared but never set "
+                    "(reads allocator leftovers, not zeros)\n",
+                    graph_name, d.c_str());
+        }
+    }
+}
+
 static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph * gf,
                                           int n_tokens, int n_image_tokens,
                                           bool populate_kvc) {
@@ -1277,31 +1309,29 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
     const int conv_k     = (int)lhp.conv_kernel;
     const int pad        = conv_k - 1;  // 2
 
+    c.declared_inputs.clear();
+
     // Inputs
     ggml_tensor * tok_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens);
-    ggml_set_name(tok_ids, "tok_ids");
-    ggml_set_input(tok_ids);
+    declare_input(c, tok_ids, "tok_ids");
 
     // Image embeddings input [n_image_tokens, D] row-major → ggml [D, n_image_tokens]
     ggml_tensor * img_emb = nullptr;
     if (n_image_tokens > 0) {
         img_emb = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_image_tokens);
-        ggml_set_name(img_emb, "img_emb");
-        ggml_set_input(img_emb);
+        declare_input(c, img_emb, "img_emb");
     }
 
     // Image token mask: 1 where token is IMAGE, 0 otherwise [n_tokens]
     ggml_tensor * img_mask = nullptr;
     if (n_image_tokens > 0) {
         img_mask = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens);
-        ggml_set_name(img_mask, "img_mask");
-        ggml_set_input(img_mask);
+        declare_input(c, img_mask, "img_mask");
     }
 
     // Position IDs for RoPE
     ggml_tensor * pos = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens);
-    ggml_set_name(pos, "positions");
-    ggml_set_input(pos);
+    declare_input(c, pos, "positions");
 
     // Embedding lookup
     ggml_tensor * x = ggml_get_rows(g, c.m.embed_tokens_w, tok_ids);  // [D, n_tokens]
@@ -1317,8 +1347,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 
     // Alternative: pass pre-spliced embeddings
     ggml_tensor * emb_input = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, n_tokens);
-    ggml_set_name(emb_input, "emb_input");
-    ggml_set_input(emb_input);
+    declare_input(c, emb_input, "emb_input");
     x = emb_input;
 
     // Track attn layer index for KV cache
@@ -1380,8 +1409,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             {
                 char mname[64];
                 snprintf(mname, sizeof(mname), "causal_mask_%d", il);
-                ggml_set_name(mask, mname);
-                ggml_set_input(mask);
+                declare_input(c, mask, mname);
             }
 
             ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask,
@@ -1416,8 +1444,7 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
             // Causal depthwise conv1d: left-pad by (kernel-1)=2
             // Create padded input: [D, pad + n_tokens]
             ggml_tensor * pad_zeros = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, pad);
-            ggml_set_name(pad_zeros, ("conv_pad_" + std::to_string(il)).c_str());
-            ggml_set_input(pad_zeros);
+            declare_input(c, pad_zeros, ("conv_pad_" + std::to_string(il)).c_str());
 
             ggml_tensor * Bx_padded = ggml_concat(g, pad_zeros, Bx, 1);  // [D, pad+T]
 
@@ -1603,31 +1630,21 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
             ggml_tensor * Bx_2d = ggml_reshape_2d(g, Bx, D, 1);
             ggml_tensor * window = ggml_concat(g, state_in, Bx_2d, 1);  // [D, 3]
 
-            // Depthwise conv: element-wise multiply with kernel [3, D] then sum over kernel dim
-            // conv_conv_w is [kernel_size, D] or [kernel_size, 1, D]
-            // We manually implement the pointwise depthwise conv:
-            // output[d] = sum_k(window[d, k] * kernel[k, d])
-            // Transpose window to [3, D] for element-wise
-            ggml_tensor * wt = ggml_cont(g, ggml_transpose(g, window));  // [conv_k, D]
-
-            // Kernel weight: reshape to [conv_k, D] if needed
+            // Depthwise conv over the window: out[d] = sum_k window(d,k) * kern(k,d).
+            // conv_conv_w is [conv_k, D] (or [conv_k, 1, D]). The reduction lives in
+            // lfm2_shortconv::step so tests/test_lfm2_shortconv.cpp can pin the axis
+            // against both a scalar reference and the prefill ggml_conv_1d_dw path —
+            // the two layouts have identical shapes, so nothing else catches a swap.
             ggml_tensor * kern = l.conv_conv_w;
             if (kern->type != GGML_TYPE_F32) kern = ggml_cast(g, kern, GGML_TYPE_F32);
             kern = ggml_reshape_2d(g, kern, kern->ne[0], D);  // [conv_k, D]
 
-            // Element-wise multiply
-            ggml_tensor * prod = ggml_mul(g, wt, kern);  // [conv_k, D]
+            ggml_tensor * conv_out = lfm2_shortconv::step(g, window, kern, D, conv_k);
 
-            // Sum over kernel dimension (dim 0) → [D]
-            // ggml doesn't have a direct reduce_sum, so we sum manually using views
-            // For kernel_size=3, just add the 3 rows
-            ggml_tensor * r0 = ggml_view_1d(g, prod, D, 0);
-            ggml_tensor * r1 = ggml_view_1d(g, prod, D, (size_t)D * sizeof(float));
-            ggml_tensor * r2 = ggml_view_1d(g, prod, D, (size_t)2 * D * sizeof(float));
-            ggml_tensor * conv_out = ggml_add(g, ggml_add(g, r0, r1), r2);
-
-            // Also output Bx so we can update conv state after compute
-            ggml_tensor * bx_out = ggml_reshape_1d(g, Bx, D);
+            // Also output Bx so we can update conv state after compute.
+            // ggml_cont first: a bare reshape view is not safe to read back after
+            // compute — the parent buffer can be handed to a later op as scratch.
+            ggml_tensor * bx_out = ggml_cont(g, ggml_reshape_1d(g, Bx, D));
             ggml_set_name(bx_out, ("bx_out_" + std::to_string(il)).c_str());
             ggml_set_output(bx_out);
             ggml_build_forward_expand(gf, bx_out);
@@ -1661,6 +1678,54 @@ static ggml_cgraph * build_decode_step_graph(ctx & c, ggml_context * g,
 // ============================================================================
 // Generation (prefill + decode loop)
 // ============================================================================
+
+// Set every sequence-length-dependent input build_prefill_graph declares: the
+// zero left-pad for each ShortConv layer and the causal mask for each attention
+// layer. BOTH callers (prefill and the no-KV full-recompute decode) must use
+// this — they previously each had their own copy and the recompute copy was
+// missing the masks entirely, so ggml_flash_attn_ext read allocator leftovers
+// and every token after the first was decoded under a bogus attention pattern.
+// Returns the names written, for audit_graph_inputs().
+static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf,
+                                                       int n_tokens) {
+    const auto & lhp     = c.m.lhp;
+    const int    D       = (int)lhp.hidden_size;
+    const int    pad     = (int)lhp.conv_kernel - 1;
+    const int    n_layers = (int)lhp.n_layers;
+
+    std::vector<std::string> written;
+
+    std::vector<float> zeros((size_t)D * pad, 0.0f);
+
+    // Causal mask: 0 on and below the diagonal, -inf above (F16).
+    std::vector<uint16_t> mask_data((size_t)n_tokens * n_tokens, 0);
+    const uint16_t f16_neg_inf = 0xFC00;
+    for (int r = 0; r < n_tokens; r++) {
+        for (int col = r + 1; col < n_tokens; col++)
+            mask_data[(size_t)r * n_tokens + col] = f16_neg_inf;
+    }
+
+    char name[64];
+    for (int il = 0; il < n_layers; il++) {
+        if (c.m.llm_layers[il].is_attention) {
+            snprintf(name, sizeof(name), "causal_mask_%d", il);
+            ggml_tensor * mt = ggml_graph_get_tensor(gf, name);
+            if (mt) {
+                ggml_backend_tensor_set(mt, mask_data.data(), 0,
+                                        mask_data.size() * sizeof(uint16_t));
+                written.push_back(name);
+            }
+        } else {
+            snprintf(name, sizeof(name), "conv_pad_%d", il);
+            ggml_tensor * pt = ggml_graph_get_tensor(gf, name);
+            if (pt) {
+                ggml_backend_tensor_set(pt, zeros.data(), 0, zeros.size() * sizeof(float));
+                written.push_back(name);
+            }
+        }
+    }
+    return written;
+}
 
 struct generate_result {
     std::vector<int32_t> token_ids;
@@ -1755,34 +1820,15 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
                                 n_prompt_tokens * sizeof(int32_t));
     }
 
-    // Conv layer padding inputs (zeros)
+    // Conv left-pads + causal attention masks
     {
-        const int pad = (int)lhp.conv_kernel - 1;
-        std::vector<float> zeros((size_t)D * pad, 0.0f);
-        for (int il = 0; il < n_layers; il++) {
-            if (c.m.llm_layers[il].is_attention) continue;
-            char name[64];
-            snprintf(name, sizeof(name), "conv_pad_%d", il);
-            ggml_tensor * pt = ggml_graph_get_tensor(gf, name);
-            if (pt) ggml_backend_tensor_set(pt, zeros.data(), 0, zeros.size() * sizeof(float));
-        }
-    }
-
-    // Causal attention masks: -inf above diagonal, 0 on and below (F16)
-    {
-        std::vector<uint16_t> mask_data((size_t)n_prompt_tokens * n_prompt_tokens, 0);
-        uint16_t f16_neg_inf = 0xFC00;  // -inf in F16
-        for (int r = 0; r < n_prompt_tokens; r++)
-            for (int c2 = r + 1; c2 < n_prompt_tokens; c2++)
-                mask_data[(size_t)r * n_prompt_tokens + c2] = f16_neg_inf;
-        for (int il = 0; il < n_layers; il++) {
-            if (!c.m.llm_layers[il].is_attention) continue;
-            char mname[64];
-            snprintf(mname, sizeof(mname), "causal_mask_%d", il);
-            ggml_tensor * mt = ggml_graph_get_tensor(gf, mname);
-            if (mt) ggml_backend_tensor_set(mt, mask_data.data(), 0,
-                                             mask_data.size() * sizeof(uint16_t));
-        }
+        std::vector<std::string> written = set_prefill_seq_inputs(c, gf, n_prompt_tokens);
+        written.push_back("emb_input");
+        written.push_back("positions");
+        written.push_back("tok_ids");  // unused by the graph body (emb_input supersedes it)
+        written.push_back("img_emb");
+        written.push_back("img_mask");
+        audit_graph_inputs(c, written, "prefill");
     }
 
     // Compute prefill
@@ -1941,17 +1987,17 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
                 for (int i = 0; i < total; i++) pd[i] = i;
                 ggml_backend_tensor_set(p2, pd.data(), 0, total * sizeof(int32_t));
             }
-            // Conv pads
+            // Conv left-pads + causal attention masks. The masks are NOT optional:
+            // without them ggml_flash_attn_ext attends over the whole sequence
+            // (dev guide HARD RULE #5) using whatever the allocator left behind.
             {
-                const int pad = (int)lhp.conv_kernel - 1;
-                std::vector<float> zeros((size_t)D * pad, 0.0f);
-                for (int il = 0; il < n_layers; il++) {
-                    if (c.m.llm_layers[il].is_attention) continue;
-                    char name[64];
-                    snprintf(name, sizeof(name), "conv_pad_%d", il);
-                    ggml_tensor * pt = ggml_graph_get_tensor(gf2, name);
-                    if (pt) ggml_backend_tensor_set(pt, zeros.data(), 0, zeros.size() * sizeof(float));
-                }
+                std::vector<std::string> written = set_prefill_seq_inputs(c, gf2, total);
+                written.push_back("emb_input");
+                written.push_back("positions");
+                written.push_back("tok_ids");
+                written.push_back("img_emb");
+                written.push_back("img_mask");
+                audit_graph_inputs(c, written, "recompute");
             }
 
             if (ggml_backend_sched_graph_compute(c.sched, gf2) != GGML_STATUS_SUCCESS) {

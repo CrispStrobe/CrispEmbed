@@ -717,6 +717,9 @@ target_link_libraries(test-core-cpu-ops PRIVATE crispembed)
 add_executable(test-core-vlm-attention tests/test_core_vlm_attention.cpp)
 target_link_libraries(test-core-vlm-attention PRIVATE crispembed)
 
+add_executable(test-lfm2-shortconv tests/test_lfm2_shortconv.cpp)
+target_link_libraries(test-lfm2-shortconv PRIVATE crispembed)
+
 add_executable(test-msac-tiling tests/test_msac_tiling.cpp)
 target_link_libraries(test-msac-tiling PRIVATE crispembed)
 
