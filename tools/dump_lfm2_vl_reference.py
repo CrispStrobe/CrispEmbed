@@ -234,6 +234,17 @@ def main():
         real_patches = None
     print(f"  tiling: {tiling_meta}")
 
+    # The patchified, normalized PIXELS -- the earliest stage there is, before a
+    # single weight is touched. Without it a divergence at the projector is
+    # ambiguous between "the resample differs" and "the tower math differs",
+    # and those need completely different fixes. With it the question is
+    # answered in one line of the diff.
+    pixel_ref = None
+    if "pixel_values" in inputs:
+        pv = inputs["pixel_values"].detach().float().cpu().numpy()
+        pixel_ref = pv  # (n_images, max_num_patches, C*P*P)
+        print(f"  pixel_values captured for the diff: {pv.shape}")
+
     # ── Discover model structure ─────────────────────────────────────
     # LFM2.5-VL: model.vision_tower / model.vision_model for vision encoder
     #            model.multi_modal_projector for projector
@@ -298,11 +309,31 @@ def main():
     captured = {}
     hooks = []
 
+    # ⚠ Descend into the vision WRAPPER before probing for submodules.
+    # LFM2.5-VL's tower is a Siglip2VisionModel, whose only child is
+    # `.vision_model` (a Siglip2VisionTransformer holding .embeddings,
+    # .encoder.layers and .post_layernorm). Probing the wrapper finds none of
+    # them, so every vision hook silently failed to attach and the reference
+    # archive shipped with NO vision stages at all -- which makes it impossible
+    # to debug from the earliest divergence, the one thing the harness exists
+    # for. It failed quietly: the only trace was '(skipped vis_patch_embed: not
+    # captured)' at write time.
+    if vision_enc is not None and hasattr(vision_enc, "vision_model"):
+        vision_enc = vision_enc.vision_model
+        print(f"  descended into .vision_model ({type(vision_enc).__name__})")
+
     # Vision encoder: patch embed output
     vis_embed_module, _ = find_attr(
         vision_enc if vision_enc else model,
         "patch_embedding", "patch_embed", "embeddings",
         "patch_projection", "conv_patch_embedding")
+    # Siglip2 nests it one deeper: embeddings.patch_embedding is the nn.Linear
+    # that actually projects a flattened patch. Hooking `embeddings` gives the
+    # post-position-embedding sum, which is a different (and also useful)
+    # quantity -- take the Linear when it is there, so vis_patch_embed means
+    # the same thing it does in the C++.
+    if vis_embed_module is not None and hasattr(vis_embed_module, "patch_embedding"):
+        vis_embed_module = vis_embed_module.patch_embedding
     if vis_embed_module is not None:
         hooks.append(vis_embed_module.register_forward_hook(
             _capture_output(captured, "vis_patch_embed")))
@@ -314,6 +345,7 @@ def main():
     for candidate_path in [
         "encoder.layers", "layers", "encoder.blocks", "blocks",
         "model.encoder.layers", "model.layers",
+        "vision_model.encoder.layers", "vision_model.layers",
     ]:
         parts = candidate_path.split(".")
         cur = vision_enc
@@ -341,8 +373,9 @@ def main():
     # SigLIP2 typically has a post_layernorm or layernorm at the end
     vis_post_ln, _ = find_attr(
         vision_enc if vision_enc else model,
-        "post_layernorm", "final_layer_norm", "norm", "layernorm",
-        "model.post_layernorm", "encoder.post_layernorm")
+        "post_layernorm", "final_layer_norm", "norm", "layernorm")
+    if vis_post_ln is None and vision_enc is not None:
+        vis_post_ln = getattr(getattr(vision_enc, "vision_model", None), "post_layernorm", None)
     if vis_post_ln is not None:
         hooks.append(vis_post_ln.register_forward_hook(
             _capture_output(captured, "vis_post_ln")))
@@ -431,6 +464,13 @@ def main():
             print(f"  split {key} into {sp.shape[0]} per-image stages "
                   f"(patch counts {real_patches.tolist()})")
 
+    # A reference with no vision stages cannot answer "where does it first
+    # diverge", so say so rather than writing a quietly useless archive.
+    if not any(k.startswith("vis_") for k in captured_numpy):
+        print("\n*** WARNING: NO vision-tower stages were captured. The archive "
+              "cannot localize a divergence earlier than the projector. Check "
+              "the vision module probe above. ***")
+
     print(f"\nCaptured stages: {sorted(captured_numpy.keys())}")
     print(f"Last logits shape: {last_logits.shape}")
 
@@ -481,7 +521,9 @@ def main():
     # Emit tensors in a canonical order
     n_imgs = int(sp.shape[0]) if sp is not None else 1
     stage_order = (
-        ["vis_patch_embed"]
+        ["pixel_values"]
+        + [f"pixel_values_img{i}" for i in range(n_imgs)]
+        + ["vis_patch_embed"]
         + [f"vis_patch_embed_img{i}" for i in range(n_imgs)]
         + [f"vis_layer_{i}" for i in range(args.max_vis_layers)]
         + ["vis_post_ln"]
@@ -509,6 +551,17 @@ def main():
         n_written += 1
         shape_str = "x".join(str(d) for d in arr.shape)
         print(f"  {name}: {shape_str} ({arr.nbytes / 1024:.1f} KB)")
+
+    # Per-image patchified pixels, unpadded to the real patch count. This is
+    # what the C++ hands to its vision graph, so it is directly comparable.
+    if pixel_ref is not None and real_patches is not None:
+        for i in range(pixel_ref.shape[0]):
+            n_real = int(real_patches[i])
+            arr = np.ascontiguousarray(pixel_ref[i, :n_real, :], dtype=np.float32)
+            nm = f"pixel_values_img{i}" if pixel_ref.shape[0] > 1 else "pixel_values"
+            writer.add_tensor(nm, arr, raw_dtype=gguf.GGMLQuantizationType.F32)
+            n_written += 1
+            print(f"  {nm}: {arr.shape[0]}x{arr.shape[1]}")
 
     # The prompt token ids. Cheapest and highest-value check in the archive:
     # it validates the whole tiling + markup path with no GPU and no tensor

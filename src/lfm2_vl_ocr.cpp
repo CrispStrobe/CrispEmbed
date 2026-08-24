@@ -1325,6 +1325,12 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
         return false;
     }
     ggml_backend_tensor_set(pixel_in, patches.data.data(), 0, patches.data.size() * sizeof(float));
+
+    // The patchified, normalized pixels — the earliest comparable stage there
+    // is, before a single weight is touched. A divergence at the projector is
+    // otherwise ambiguous between "the resample differs" and "the tower math
+    // differs", and those want completely different fixes.
+    diff_stage(c, stage_name("pixel_values", stage_buf, sizeof(stage_buf)), patches.data.data(), patches.data.size());
     if (dbg()) {
         fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n", (long long)pixel_in->ne[0],
                 (long long)pixel_in->ne[1], patches.data.size() * sizeof(float));
