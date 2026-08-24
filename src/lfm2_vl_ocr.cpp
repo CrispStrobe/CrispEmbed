@@ -273,8 +273,21 @@ static void diff_stage(ctx & c, const char * name, const float * data, size_t n_
         fprintf(stderr, "  DIFF %-25s (not in ref)\n", name);
         return;
     }
-    fprintf(stderr, "  DIFF %-25s cos_min=%.6f max_abs=%.2e |mine|=%.4f |ref|=%.4f  %s\n", name, r.cos_min, r.max_abs,
-            r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
+    // Print cos_GLOBAL next to cos_min, not just cos_min.
+    //
+    // cos_min is a per-ROW minimum. crispembed_diff.h documents why that is the
+    // right gate for a reference-precision port and the wrong one for a
+    // quantized artifact: one numerically fragile row drags it down while the
+    // tensor as a whole is fine (its own example: h2ovl-2b q8_0 reads cos_min
+    // 0.61 on the logits at cos_global 0.998919, transcribing correctly).
+    // Printing only cos_min cost real time here — a Q4_K-vs-fp32 multi-tile run
+    // showed cos_min 0.34 on a stage and read as a structural failure until
+    // cos_global was consulted. Same reasoning as HARD RULE 2b for the norms:
+    // print enough to interpret, or the number invites the wrong conclusion.
+    fprintf(stderr,
+            "  DIFF %-25s cos_min=%.6f cos_mean=%.6f cos_global=%.6f max_abs=%.2e |mine|=%.4f |ref|=%.4f  %s%s\n", name,
+            r.cos_min, r.cos_mean, r.cos_global, r.max_abs, r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL",
+            (!r.is_pass() && r.is_pass_global()) ? " (global PASS)" : "");
 }
 
 // Exact comparison of the prompt token ids against the reference archive.
