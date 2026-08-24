@@ -42,7 +42,15 @@ EMBED_URL = "https://github.com/CrispStrobe/CrispEmbed.git"
 EMBED_BRANCH = "feat/lfm2vl-multitile"
 EMBED = SCRATCH / "CrispEmbed"
 CRISPASR_URL = "https://github.com/CrispStrobe/CrispASR.git"
-CRISPASR = SCRATCH / "CrispASR"
+# ⚠ NOT a sibling of CrispEmbed. CrispEmbed's CMakeLists probes
+# `${CMAKE_CURRENT_SOURCE_DIR}/../CrispASR/{crisp_audio,crisp_punc,crisp_lid,
+# crisp_truecase}` and builds them when present — the dev-machine layout. On a
+# kernel that clones both repos side by side that fires by accident, and
+# CrispASR's crisp_punc then compiles against CrispEmbed's src/core and dies on
+# a missing `core/ggml_cpu_backend.h`. Cost one run (kernel v1) to learn. We
+# only want the harness from CrispASR, so keep it out of the probe's reach --
+# and pin the four dirs explicitly below so the layout cannot matter either way.
+CRISPASR = Path("/tmp/lfm2vl_harness") / "CrispASR"
 BUILD = EMBED / "build"
 
 PROGRESS = WORK / "progress.txt"
@@ -105,6 +113,7 @@ log("=== LFM2.5-VL multi-tile NaFlex acceptance run ===")
 #
 # resolve_hf_token(require=True) comes FIRST: a missing token then aborts in
 # seconds instead of a finished run losing every artifact to an upload 401.
+CRISPASR.parent.mkdir(parents=True, exist_ok=True)
 if not CRISPASR.exists():
     sh(f"git clone --depth 1 {CRISPASR_URL} {CRISPASR}")
 sys.path.insert(0, str(CRISPASR / "tools" / "kaggle"))
@@ -128,7 +137,18 @@ arch = kh.detect_cuda_arch()
 log(f"CUDA arch: {arch}")
 results["cuda_arch"] = arch
 
-flags = kh.cuda_build_flags(arch) + kh.cache_and_link_flags()
+# Belt and braces on the sibling-probe trap above: point every optional
+# CrispASR subdirectory at a path that cannot exist. Each has a clean
+# "not found" fallback, and none of punctuation / LID / truecasing is on the
+# LFM2-VL OCR path, so this costs nothing and removes a whole class of
+# layout-dependent build failures.
+NO_SIBLING = "/nonexistent/crispasr"
+flags = kh.cuda_build_flags(arch) + kh.cache_and_link_flags() + [
+    f"-DCRISP_AUDIO_DIR={NO_SIBLING}/crisp_audio",
+    f"-DCRISP_PUNC_DIR={NO_SIBLING}/crisp_punc",
+    f"-DCRISP_LID_DIR={NO_SIBLING}/crisp_lid",
+    f"-DCRISP_TRUECASE_DIR={NO_SIBLING}/crisp_truecase",
+]
 BUILD.mkdir(exist_ok=True)
 sh(f"cmake -S {EMBED} -B {BUILD} -G Ninja -DCMAKE_BUILD_TYPE=Release " + " ".join(flags))
 
