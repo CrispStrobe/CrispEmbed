@@ -15,7 +15,10 @@ IMPLEMENTED and gated OFF; the acceptance run has not happened yet.
   parity check. Behind `LFM2_VL_MULTI_TILE=1`, default off.
 - **DONE** — a splitting page decodes correctly end-to-end on the VPS: the
   1024x544 strip gives `Lorem Ipsum / Alice was`, matching its ground truth.
-- **IN FLIGHT** — the scored acceptance A/B. Kernel
+- **DONE** — the decoded-output A/B on a full splitting page, on CUDA (P100).
+  Multi-tile is dramatically better on BOTH quants; see §4 "The A/B".
+- **IN FLIGHT** — a re-run to score it as CER/WER and to test the resample
+  hypothesis (kernel v3). Kernel
   `tools/kaggle/lfm2-vl-multitile/` (chr1s4,
   `chr1s4/lfm2-5-vl-multitile-acceptance`). It builds with CUDA, dumps a
   blueprint reference for a SPLITTING fixture, checks prompt-token parity and
@@ -254,7 +257,9 @@ letting the splice run off the end.
 | 500x650 canary, gate off | **byte-identical** — 1 image, 36x28 patches, 252 image tokens, 273 prompt tokens, `Jackson-Washington\n6640 Ortiz Cove, Markmouth`, 45 chars |
 | multi-tile structural run, 1024x544 | 2x1 grid + thumbnail 672x352, 3 images of 32x32/32x32/42x22 patches → 256 + 256 + 231 = **743 image tokens**, exactly the oracle's number; 767-token prompt, `img_pos used=743`, no warnings |
 | **decoded output on a splitting page** | **CORRECT.** The 1024x544 top strip of `commons_test_ocr_document.jpg` decodes to `Lorem Ipsum\n\nAlice was` in 8 tokens — an exact match for that fixture's ground-truth opening. So the tiling, the per-tile encode, the markup and the splice produce a readable page, not fluent nonsense. |
-| **scored A/B on a full splitting page** | **NOT YET RUN** — CER/WER, both arms, both quants. This is what still gates the default flip. |
+| **decoded A/B on a full splitting page, CUDA** | **multi-tile wins decisively** on Q4_K and F16 — the single-tile arm hallucinates, multi-tile transcribes. See "The A/B" below. |
+| **CER/WER numbers** | re-running: the first attempt's ground-truth lookup keyed on a nonexistent field and scored nothing |
+| per-stage parity vs a CPU-fp32 reference | FAILs that track downscale factor; resample hypothesis under test |
 
 `tools/lfm2_vl_tiling_hf_check.py` is the cross-check against the real
 processor. It needs torch + torchvision, so it is a developer tool, not a build
@@ -269,6 +274,66 @@ that many (`img_pos used=743`). All three orders agree.
 sessions. For the record only, contended: prefill 767 tokens 362 s, decode
 ~63 s/token. The vision encoder was ~230–245 s **per image**, which is the whole
 reason the scored A/B is a GPU job.
+
+### The A/B — measured on Kaggle, CUDA (P100), 2026-08-24
+
+`commons_test_ocr_document.jpg`, 1920x2485 → a 2x3 grid + a 576x448 thumbnail,
+7 encoded images, **1788 image tokens / 1816 prompt tokens** — a figure the HF
+processor produced independently and which the layout code matched exactly.
+
+| arm | transcript (first 80 chars) |
+|---|---|
+| Q4_K, multi-tile **off** | `Lorem Ipsum⏎⏎Aurice volgam et agus non veris tincti dictad sitigis beque nere si` |
+| Q4_K, multi-tile **on** | `Lorem Ipsum⏎⏎Alice was beginning to get very tired of sitting by her sister in t` |
+| F16, multi-tile **off** | `Lorem Ipsum⏎⏎Aurice voluptas ego aut non veris tincti dictad sitest leges ac era` |
+| F16, multi-tile **on** | `Lorem Ipsum⏎⏎Alice was beginning to get very tired of sitting by her sister in t` |
+
+Ground truth opens `Lorem Ipsum / Alice was beginning to get very tired of /
+sitting by her sister in the café`. **The single-tile arm hallucinates fluent
+Latin-looking nonsense; the multi-tile arm transcribes the page.** Both quants,
+same result — this is not a quantization artifact.
+
+That is the acceptance test (HARD RULE 3), and it is the reason to read the
+text rather than a summary metric: a CER number alone would have said "worse"
+without saying that the old path was *inventing* text. CER/WER are being
+measured in the re-run — the first attempt keyed the ground-truth lookup on a
+field name that does not exist and silently scored nothing.
+
+The canary held: `commons_example_receipt.png` gave the same 45 characters with
+the gate on and off, so multi-tile does not touch a page that should not split.
+
+### Per-stage parity, and what it points at
+
+Against a **CPU float32** reference (torch could not use the P100 at all and
+fell back, which makes it the best possible reference precision):
+
+| stage | cos_min | \|mine\| | \|ref\| |
+|---|--:|--:|--:|
+| projector_out_img0..5 (tiles, 1.6x downscale) | 0.57 – 0.87 | ~32–43 | ~32–43 |
+| projector_out_img6 (thumbnail, 4.3x downscale) | **0.344** | 80.79 | 80.37 |
+| llm_embed | 0.302 | 120.13 | 121.13 |
+| llm_logits_last | 0.990 | 692.4 | 681.6 |
+
+The magnitudes agree throughout, so this is not a scale bug (HARD RULE 2b) —
+the values are right-sized and differently distributed. And the cosine degrades
+monotonically with **downscale factor**, worst at the thumbnail. That is the
+bilinear-vs-bicubic signature: the reference resamples with PIL BICUBIC
+(`resample: 3`) with antialiasing, ours is align-corners bilinear with none, and
+at 4.3x reduction bilinear-without-antialias aliases badly. At the canary's ~1.1x
+the two agree, which is exactly why single-tile parity never showed this.
+
+Kernel v3 diffs the same reference with `LFM2_VL_BICUBIC=1` and states the
+per-stage delta. If the cosines climb, the residual gap is the resample and not
+the tiling — and `LFM2_VL_BICUBIC` stops being a speculative gate and becomes a
+measured one.
+
+⚠ Not yet ruled out, in case bicubic does not explain it: the projector token
+ORDER within a tile. A transposition preserves the norm and drops the cosine
+exactly like this. Argued correct from the blueprint (`pixel_unshuffle`'s
+`[B, w//f, h//f, C*f²]` flattened row-major, and the reference tensors are
+shaped `16x16x2048`), and the single-tile path reaching cos 0.958 and a correct
+decode is evidence for it — but it is a hypothesis until the bicubic run
+separates the two.
 
 ### Cost, and why the acceptance run is on Kaggle
 
