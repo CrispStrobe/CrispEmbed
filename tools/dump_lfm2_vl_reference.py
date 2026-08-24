@@ -70,6 +70,25 @@ def _capture_output(store, key):
     return hook
 
 
+def _capture_output_indexed(store, base):
+    """Forward hook for a module called once per image.
+
+    The multi-modal projector is invoked in a Python loop over the batch (see
+    Lfm2VlModel.get_image_features), so a plain _capture_output would keep only
+    the LAST tile and quietly compare the runtime's tile 0 against the
+    reference's tile 6. Store each call under its own key instead.
+    """
+    counter = {"n": 0}
+
+    def hook(module, inp, out):
+        if isinstance(out, tuple):
+            out = out[0]
+        if isinstance(out, torch.Tensor):
+            store[f"{base}_img{counter['n']}"] = out.detach().float().cpu()
+            counter["n"] += 1
+    return hook
+
+
 def _capture_input(store, key):
     """Return a forward hook that stores the first input tensor under store[key]."""
     def hook(module, inp, out):
@@ -169,6 +188,37 @@ def main():
     print(f"  Input IDs shape: {inputs['input_ids'].shape}")
     if "pixel_values" in inputs:
         print(f"  Pixel values shape: {inputs['pixel_values'].shape}")
+
+    # ── The tiling facts, captured before any tensor math ────────────
+    #
+    # These are what src/lfm2_vl_tiling.h has to reproduce, and they sit in
+    # the diff harness's blind zone: a wrong grid or a wrong <image> count
+    # yields perfectly healthy activations from the wrong prompt. Dumping
+    # them makes the FIRST comparison the cheapest one -- prompt-token
+    # parity, no GPU, no tensors.
+    tiling_meta = {}
+    tiling_meta["image_width"], tiling_meta["image_height"] = img.size
+    prompt_ids = inputs["input_ids"][0].detach().cpu().numpy().astype(np.int32)
+    tiling_meta["n_prompt_tokens"] = int(prompt_ids.shape[0])
+    try:
+        img_tok_id = int(processor.image_token_id)
+        tiling_meta["n_image_tokens"] = int((prompt_ids == img_tok_id).sum())
+        tiling_meta["image_token_id"] = img_tok_id
+    except Exception:
+        pass
+    if "spatial_shapes" in inputs:
+        sp = inputs["spatial_shapes"].detach().cpu().numpy().astype(np.int32)
+        tiling_meta["n_encoded_images"] = int(sp.shape[0])
+        print(f"  spatial_shapes (patch grids per encoded image):\n{sp}")
+    else:
+        sp = None
+    if "pixel_attention_mask" in inputs:
+        pam = inputs["pixel_attention_mask"].detach().cpu().numpy()
+        real_patches = pam.sum(axis=1).astype(np.int32)
+        print(f"  real (unpadded) patch counts per image: {real_patches.tolist()}")
+    else:
+        real_patches = None
+    print(f"  tiling: {tiling_meta}")
 
     # ── Discover model structure ─────────────────────────────────────
     # LFM2.5-VL: model.vision_tower / model.vision_model for vision encoder
@@ -284,11 +334,15 @@ def main():
             _capture_output(captured, "vis_post_ln")))
         print(f"  Hook: vis_post_ln on {type(vis_post_ln).__name__}")
 
-    # Projector output
+    # Projector output. Hooked BOTH ways: the plain key keeps the single-image
+    # reference archives working unchanged, the indexed keys are what a
+    # multi-tile page needs (one projector call per tile + thumbnail).
     if projector is not None:
         hooks.append(projector.register_forward_hook(
             _capture_output(captured, "projector_out")))
-        print(f"  Hook: projector_out on {type(projector).__name__}")
+        hooks.append(projector.register_forward_hook(
+            _capture_output_indexed(captured, "projector_out")))
+        print(f"  Hook: projector_out on {type(projector).__name__} (plain + per-image)")
 
     # LLM: embedding output (the spliced embedding after image tokens are inserted)
     # We hook the embed_tokens module to get the raw text embedding,
@@ -346,6 +400,23 @@ def main():
     captured_numpy = {k: v.numpy() if isinstance(v, torch.Tensor) else v
                       for k, v in captured.items()}
 
+    # The vision tower runs ONE batched forward over all tiles, padded to
+    # max_num_patches with an attention mask. The C++ runs each image on its
+    # own at its true patch count, so slice the reference the same way --
+    # otherwise every per-tile comparison is against a padded tensor and the
+    # tail is meaningless zeros.
+    if sp is not None and real_patches is not None and sp.shape[0] > 1:
+        for key in ("vis_post_ln", "vis_patch_embed"):
+            arr = captured_numpy.get(key)
+            if arr is None or arr.ndim != 3 or arr.shape[0] != sp.shape[0]:
+                continue
+            for i in range(sp.shape[0]):
+                n_real = int(real_patches[i])
+                captured_numpy[f"{key}_img{i}"] = arr[i, :n_real, :]
+            captured_numpy.pop(key, None)
+            print(f"  split {key} into {sp.shape[0]} per-image stages "
+                  f"(patch counts {real_patches.tolist()})")
+
     print(f"\nCaptured stages: {sorted(captured_numpy.keys())}")
     print(f"Last logits shape: {last_logits.shape}")
 
@@ -384,12 +455,20 @@ def main():
     writer.add_string("lfm2vl.generated_text", generated_text)
     writer.add_uint32("lfm2vl.max_vis_layers", args.max_vis_layers)
     writer.add_uint32("lfm2vl.max_llm_layers", args.max_llm_layers)
+    for k, v in tiling_meta.items():
+        writer.add_uint32(f"lfm2vl.{k}", int(v))
 
     # Emit tensors in a canonical order
+    n_imgs = int(sp.shape[0]) if sp is not None else 1
     stage_order = (
         ["vis_patch_embed"]
+        + [f"vis_patch_embed_img{i}" for i in range(n_imgs)]
         + [f"vis_layer_{i}" for i in range(args.max_vis_layers)]
-        + ["vis_post_ln", "projector_out", "llm_embed"]
+        + ["vis_post_ln"]
+        + [f"vis_post_ln_img{i}" for i in range(n_imgs)]
+        + ["projector_out"]
+        + [f"projector_out_img{i}" for i in range(n_imgs)]
+        + ["llm_embed"]
         + [f"llm_layer_{i}" for i in range(args.max_llm_layers)]
     )
 
@@ -398,7 +477,8 @@ def main():
     # Write ordered stages first
     for name in stage_order:
         if name not in captured_numpy:
-            print(f"  (skipped {name}: not captured)")
+            if "_img" not in name:
+                print(f"  (skipped {name}: not captured)")
             continue
         arr = captured_numpy[name]
         # Squeeze batch dim if present: (1, T, D) → (T, D)
@@ -409,6 +489,24 @@ def main():
         n_written += 1
         shape_str = "x".join(str(d) for d in arr.shape)
         print(f"  {name}: {shape_str} ({arr.nbytes / 1024:.1f} KB)")
+
+    # The prompt token ids. Cheapest and highest-value check in the archive:
+    # it validates the whole tiling + markup path with no GPU and no tensor
+    # comparison at all, and a mismatch here makes every later cosine
+    # meaningless (the wrong reference would agree with the wrong C++).
+    writer.add_tensor("prompt_token_ids",
+                      np.ascontiguousarray(prompt_ids.reshape(1, -1), dtype=np.int32),
+                      raw_dtype=gguf.GGMLQuantizationType.I32)
+    n_written += 1
+    print(f"  prompt_token_ids: 1x{prompt_ids.shape[0]}")
+
+    # spatial_shapes pins the per-image patch grids, i.e. the tile geometry.
+    if sp is not None:
+        writer.add_tensor("spatial_shapes",
+                          np.ascontiguousarray(sp, dtype=np.int32),
+                          raw_dtype=gguf.GGMLQuantizationType.I32)
+        n_written += 1
+        print(f"  spatial_shapes: {sp.shape[0]}x2")
 
     # llm_logits_last
     arr = np.ascontiguousarray(last_logits, dtype=np.float32)

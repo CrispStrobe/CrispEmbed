@@ -277,6 +277,54 @@ static void diff_stage(ctx & c, const char * name, const float * data, size_t n_
             r.mine_norm, r.ref_norm, r.is_pass() ? "PASS" : "FAIL");
 }
 
+// Exact comparison of the prompt token ids against the reference archive.
+//
+// This is the cheapest and highest-value check the harness can make, and the
+// one that has to come FIRST. Everything the tiling code decides -- the split,
+// the grid, the per-tile <|img_row_R_col_C|> labels, the <image> run lengths --
+// lands here and nowhere else that a cosine can see. If the ids differ, every
+// later per-stage number is comparing the wrong prompt to the wrong prompt and
+// proves nothing (the dev guide's #295 trap, where a wrong reference agreed
+// with a wrong C++).
+//
+// Exact equality, not a tolerance: token ids are not a signal.
+static void diff_prompt_ids(ctx & c, const int32_t * ids, int n_ids) {
+    if (!c.has_diff_ref) return;
+    const char * kName = "prompt_token_ids";
+    if (!c.diff_ref.has(kName)) {
+        fprintf(stderr, "  DIFF %-25s (not in ref -- re-dump with the current tools/dump_lfm2_vl_reference.py)\n",
+                kName);
+        return;
+    }
+    auto ref = c.diff_ref.get_f32(kName);
+    const int n_ref = (int)ref.second;
+    if (n_ref != n_ids) {
+        fprintf(stderr, "  DIFF %-25s FAIL length: mine=%d ref=%d (%+d)\n", kName, n_ids, n_ref, n_ids - n_ref);
+    }
+    int n_bad = 0, first_bad = -1;
+    const int n_cmp = std::min(n_ids, n_ref);
+    for (int i = 0; i < n_cmp; i++) {
+        if ((int32_t)ref.first[i] != ids[i]) {
+            if (first_bad < 0) first_bad = i;
+            n_bad++;
+        }
+    }
+    if (n_bad == 0 && n_ref == n_ids) {
+        fprintf(stderr, "  DIFF %-25s PASS (%d ids byte-identical)\n", kName, n_ids);
+        return;
+    }
+    fprintf(stderr, "  DIFF %-25s FAIL %d/%d ids differ, first at %d: mine=%d ref=%d\n", kName, n_bad, n_cmp, first_bad,
+            first_bad >= 0 ? ids[first_bad] : -1, first_bad >= 0 ? (int32_t)ref.first[first_bad] : -1);
+    // A short window around the divergence localizes it far faster than a count.
+    const int lo = std::max(0, first_bad - 4);
+    const int hi = std::min(n_cmp, first_bad + 8);
+    fprintf(stderr, "       mine[%d..%d]:", lo, hi - 1);
+    for (int i = lo; i < hi; i++) fprintf(stderr, " %d", ids[i]);
+    fprintf(stderr, "\n       ref [%d..%d]:", lo, hi - 1);
+    for (int i = lo; i < hi; i++) fprintf(stderr, " %d", (int32_t)ref.first[i]);
+    fprintf(stderr, "\n");
+}
+
 // ============================================================================
 // KV cache management (attention layers only)
 // ============================================================================
@@ -2055,6 +2103,9 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
     // Set inputs
     ggml_tensor * emb_in = ggml_graph_get_tensor(gf, "emb_input");
     ggml_backend_tensor_set(emb_in, spliced.data(), 0, spliced.size() * sizeof(float));
+
+    // Prompt-token parity FIRST — if the ids differ, nothing below means anything.
+    diff_prompt_ids(c, prompt_ids, n_prompt_tokens);
 
     // Diff: spliced is now in ggml col-major layout [D, n_tokens] = flat[d + t*D]
     diff_stage(c, "llm_embed", spliced.data(), spliced.size());
