@@ -1894,7 +1894,12 @@ struct glm_ocr_context {
     glm_ocr::context ctx;
     std::string last_text;
     std::vector<float> char_confidences;
+    int max_tokens = 0; // 0 = engine default (1024)
 };
+extern "C" void glm_ocr_set_max_tokens(glm_ocr_context * ctx, int max_tokens) {
+    if (ctx) ctx->max_tokens = max_tokens;
+}
+
 
 glm_ocr_context * glm_ocr_init(const char * model_path, int n_threads) {
     // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).
@@ -2033,8 +2038,9 @@ const char * glm_ocr_recognize_raw(glm_ocr_context * ctx, const uint8_t * px, in
 
     // Generate
     glm_ocr::generate_result gen;
+    const int max_new = ctx->max_tokens > 0 ? ctx->max_tokens : 1024;
     bool ok = glm_ocr::generate(ctx->ctx, vr.hidden, n_img_tokens, (int)vr.hidden_dim, prompt.data(),
-                                (int)prompt.size(), 1024, gen);
+                                (int)prompt.size(), max_new, gen);
     free(vr.hidden);
 
     if (!ok) {

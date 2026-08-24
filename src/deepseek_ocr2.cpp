@@ -2697,7 +2697,12 @@ struct deepseek_ocr2_context {
     ds_ocr2_ctx inner;
     std::string result;
     std::vector<float> char_confidences;
+    int max_tokens = 0; // 0 = engine default (1024)
 };
+extern "C" void deepseek_ocr2_set_max_tokens(deepseek_ocr2_context * ctx, int max_tokens) {
+    if (ctx) ctx->max_tokens = max_tokens;
+}
+
 
 deepseek_ocr2_context * deepseek_ocr2_init(const char * model_path, int n_threads) {
     // The engine that froze a 4 GB host 3/3 (SubtitleEdit PR-13238) — refuse
@@ -3178,7 +3183,8 @@ const char * deepseek_ocr2_recognize_raw(deepseek_ocr2_context * ctx, const uint
     // 5. LLM decoder
     std::vector<int32_t> gen_ids;
     std::vector<float> gen_confs;
-    if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, 1024, gen_ids, gen_confs)) {
+    const int max_new = ctx->max_tokens > 0 ? ctx->max_tokens : 1024;
+    if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new, gen_ids, gen_confs)) {
         fprintf(stderr, "deepseek_ocr2: LLM decode failed\n");
         if (out_len) *out_len = 0;
         return "";

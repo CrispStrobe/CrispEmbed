@@ -2796,7 +2796,12 @@ struct unlimited_ocr_context {
     uocr_ctx inner;
     std::string result;
     std::vector<float> char_confidences;
+    int max_tokens = 0; // 0 = engine default (1024, or UOCR_MAX_NEW)
 };
+extern "C" void unlimited_ocr_set_max_tokens(unlimited_ocr_context * ctx, int max_tokens) {
+    if (ctx) ctx->max_tokens = max_tokens;
+}
+
 
 unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_threads) {
     // Same RAM preflight as deepseek_ocr2 (core/ram_guard.h).
@@ -3205,8 +3210,11 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     auto t_llm = std::chrono::steady_clock::now();
     std::vector<int32_t> gen_ids;
     std::vector<float> gen_confs;
+    // Precedence: an explicit API/CLI cap wins over the env knob, which wins
+    // over the built-in default.
     int max_new = 1024;
     if (const char * mn = getenv("UOCR_MAX_NEW")) max_new = atoi(mn);
+    if (ctx->max_tokens > 0) max_new = ctx->max_tokens;
     if (!run_llm_decoder(ctx->inner, prompt_embeds.data(), n_prompt, max_new, gen_ids, gen_confs, prompt_ids)) {
         fprintf(stderr, "unlimited_ocr: LLM decode failed\n");
         if (out_len) *out_len = 0;

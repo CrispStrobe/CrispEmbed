@@ -117,7 +117,8 @@ static void print_usage(const char * prog) {
                     "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
                     "tromr(music)/flova(music)/transcoda(music)/"
                     "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/lfm2-vl/unlimited-ocr)\n");
-    fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines (default: 2048; no-op for formula OCR)\n");
+    fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
+    fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
     fprintf(stderr, "  --bttr FILE      handwritten math OCR → LaTeX (BTTR model)\n");
@@ -1289,7 +1290,11 @@ static int cli_main(int argc, char ** argv) {
             st.det_prob_threshold = 0.3f;
             st.det_box_threshold = 0.5f;
             st.det_target_short = 736;
-            st.vlm_max_tokens = 0;
+            // --ocr-max-tokens, which this builder dropped on the floor until
+            // 2026-08-25: the flag reached the single-model --ocr lane
+            // (crispembed_ocr_model_set_max_tokens below) and silently did
+            // nothing on --ocr-pipeline, for every VLM engine.
+            st.vlm_max_tokens = ocr_max_tokens;
             st.vlm_prompt = nullptr;
             st.page_segmentation = tesseract_pageseg ? 1 : 0;
             st.min_chars = min_chars;

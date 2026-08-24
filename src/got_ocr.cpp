@@ -1603,7 +1603,12 @@ struct got_ocr_context {
     got_ocr::context inner;
     std::string result;
     std::vector<float> char_confidences;
+    int max_tokens = 0; // 0 = engine default (1024)
 };
+extern "C" void got_ocr_set_max_tokens(got_ocr_context * ctx, int max_tokens) {
+    if (ctx) ctx->max_tokens = max_tokens;
+}
+
 
 got_ocr_context * got_ocr_init(const char * model_path, int n_threads) {
     auto * c = new got_ocr_context;
@@ -1706,8 +1711,9 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, in
 
     // Generate
     got_ocr::generate_result gen;
+    const int max_new = ctx->max_tokens > 0 ? ctx->max_tokens : 1024;
     bool ok = got_ocr::generate(ctx->inner, vr.hidden, n_img_tokens, (int)vr.hidden_dim, prompt.data(), prompt_len,
-                                1024, gen);
+                                max_new, gen);
     free(vr.hidden);
 
     if (!ok) {
