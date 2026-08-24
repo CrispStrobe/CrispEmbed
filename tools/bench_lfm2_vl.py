@@ -23,6 +23,16 @@ normalised one hides a real difference in what the engine returns to a caller.
 Timing caveat (dev guide rule 5): a wall-clock column from a single pass on a
 loaded box is not a measurement. For a perf claim, interleave the arms, take a
 median of >= 3, and check `sysctl vm.loadavg` first.
+
+To compare against the reference implementation for this GGUF, run llama.cpp on
+the same pair and diff the transcripts:
+
+    llama-mtmd-cli -m LFM2.5-VL-3B-Q4_K_M.gguf --mmproj mmproj-LFM2.5-VL-3B-F16.gguf \
+        --image PAGE -p "OCR this image. Output the text content." \
+        --temp 0 -n 1024 -ngl 99 -c 8192
+
+Its stdout is the transcript alone; `-v` adds "image slice encoded in N ms" per
+tile. On commons_example_receipt the two are byte-identical (see PLAN.md 9).
 """
 import argparse
 import json

@@ -2231,7 +2231,19 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens, in
     ggml_free(g);
 
     // Greedy argmax
-    int no_repeat_ngram = 5; // default no-repeat n-gram
+    // No-repeat-ngram is OFF by default. It defaulted to 5, and on documents
+    // that is not a degeneration guard, it is damage: a receipt legitimately
+    // repeats 5-grams ("| 1 | $4", " Accessory | ", a column of prices), and
+    // forbidding them forces the decoder off the correct token. Measured
+    // against llama-mtmd-cli on the same GGUF (docs/lfm2_vl/PLAN.md §9):
+    // with n=5 commons_example_receipt reads at format-normalised CER 0.092;
+    // with it off, 0.045 — and the transcript becomes BYTE-IDENTICAL to
+    // llama.cpp's. Over the five CC0 fixtures, mean fmt CER 0.118 -> 0.106 and
+    // fmt WER 0.229 -> 0.204, better on three, unchanged on two, worse on
+    // none, with no degeneration observed. llama.cpp's greedy has no such
+    // constraint either, and that is what the model was released against.
+    // LFM2_VL_NO_REPEAT_NGRAM=5 restores it for a model that does loop.
+    int no_repeat_ngram = 0;
     if (const char * e = getenv("LFM2_VL_NO_REPEAT_NGRAM")) no_repeat_ngram = atoi(e);
 
     int best_id = 0;
