@@ -98,7 +98,14 @@ pub struct CrispembedOcrPipelineParams {
 #[repr(C)]
 pub struct CrispembedOcrStage {
     pub source_type: c_int, // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: c_int,      // 0..13 existing engines, 14=unified metadata-dispatched GGUF
+    // Must match map_engine() in src/crispembed.cpp and the table on
+    // crispembed_ocr_stage in src/crispembed.h — that comment is the contract
+    // (docs/contributing.md 5c). 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl
+    // 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct
+    // 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr
+    // 14=unified 15=tesseract_fraktur 16=ppocrv6 17=easyocr 18=olmocr
+    // 19=lfm2_vl
+    pub engine: c_int,
     pub model_a: *const c_char,
     pub model_b: *const c_char,
     // model_c was missing entirely, and it sits at field 5 — so EVERY field

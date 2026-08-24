@@ -173,6 +173,22 @@ together and verify they agree.
 3. Add a `case engine::yourmodel:` block in `run_engine()` — lazy-load + recognize
 4. Add `case engine::yourmodel: return "yourmodel";` in `engine_name()`
 5. Add `if (ctx.ym) yourmodel_free(ctx.ym);` in `free()`
+6. **If it is a whole-page VLM**: add it to `is_vlm_engine()`, apply
+   `st.params.vlm_max_tokens` in the `run_engine()` block, and add a case to
+   `crispembed_ocr_model_set_max_tokens()` in `src/crispembed.cpp`
+
+> **⚠ `--ocr-max-tokens` is one flag over FOUR hand-maintained lists.**
+> `is_vlm_engine()` (the canonical set), the `run_engine()` block (must read
+> `st.params.vlm_max_tokens`), `crispembed_ocr_model_set_max_tokens()` (the
+> single-model `--ocr` lane), and `is_vlm` in `examples/cli/main.cpp` (which
+> decides whether `model_a` resolves down the VLM or the DETECTOR branch).
+> Miss one and the flag is accepted, printed in `--help`, and does nothing —
+> which reads as "the model rambles", not as a bug. Miss the CLI one and the
+> engine is handed a detector model path and dies inside a vision graph.
+> Four engines were missing from three of those lists until 2026-08-25, and
+> both stage builders (CLI and server) hardcoded `st.vlm_max_tokens = 0`.
+> `tests/test_ocr_max_tokens_surfaces.py` now fails on any of it — run it after
+> adding an engine.
 
 ### 5e. Expose in CrispSorter (`CrispSorter/lib/engine/`)
 

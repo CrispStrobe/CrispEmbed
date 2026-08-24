@@ -4816,8 +4816,26 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
     case OCR_MODEL_LFM2_VL:
         lfm2_vl_ocr_set_max_tokens((lfm2_vl_ocr_context *)u->ctx, max_tokens);
         break;
+    case OCR_MODEL_GOT_OCR:
+        got_ocr_set_max_tokens((got_ocr_context *)u->ctx, max_tokens);
+        break;
+    case OCR_MODEL_GLM_OCR:
+        glm_ocr_set_max_tokens((glm_ocr_context *)u->ctx, max_tokens);
+        break;
+    case OCR_MODEL_DEEPSEEK_OCR2:
+        deepseek_ocr2_set_max_tokens((deepseek_ocr2_context *)u->ctx, max_tokens);
+        break;
+    case OCR_MODEL_UNLIMITED_OCR:
+        unlimited_ocr_set_max_tokens((unlimited_ocr_context *)u->ctx, max_tokens);
+        break;
     default:
-        break; // formula OCR engines: no-op
+        // Formula/line OCR engines (pix2tex, trocr, parseq, tesseract, …) have
+        // no generation budget to cap. Every WHOLE-PAGE VLM engine must appear
+        // above: this switch, ocr_orchestrator::run_engine and the CLI/server
+        // stage builders are three surfaces over the same set, and four engines
+        // were missing from all three until 2026-08-25 — the flag simply did
+        // nothing on them, which reads as "the model rambles", not as a bug.
+        break;
     }
 }
 

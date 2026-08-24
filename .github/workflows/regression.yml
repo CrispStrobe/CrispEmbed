@@ -35,6 +35,7 @@ on:
       - 'tests/test_tesseract_runtime_contract.py'
       - 'tests/test_ppocrv6_pipeline_benchmark.py'
       - 'tests/test_ocr_backend_matrix.py'
+      - 'tests/test_ocr_max_tokens_surfaces.py'
       - 'tests/test_easyocr_interop_contract.py'
       - 'tests/test_biometric_gate.py'
       - 'tests/test_image_root.py'
@@ -63,6 +64,7 @@ on:
       - 'tests/test_tesseract_runtime_contract.py'
       - 'tests/test_ppocrv6_pipeline_benchmark.py'
       - 'tests/test_ocr_backend_matrix.py'
+      - 'tests/test_ocr_max_tokens_surfaces.py'
       - 'tests/test_easyocr_interop_contract.py'
       - 'tests/test_biometric_gate.py'
       - 'tests/test_image_root.py'
@@ -139,6 +141,8 @@ jobs:
         run: python tests/test_ocr_engine_benchmark.py
       - name: OCR backend capability matrix
         run: python tests/test_ocr_backend_matrix.py
+      - name: VLM max-tokens reaches every surface
+        run: python tests/test_ocr_max_tokens_surfaces.py
       - name: EasyOCR/LayoutLM interoperability contract
         run: python tests/test_easyocr_interop_contract.py
       - name: PP-OCRv6 graph gold lane (artifact-equipped runners only)

@@ -194,6 +194,14 @@ extern "C" {
 typedef struct got_ocr_context got_ocr_context;
 got_ocr_context * got_ocr_init(const char * model_path, int n_threads);
 void got_ocr_free(got_ocr_context * ctx);
+
+// Cap on generated tokens; 0 (the default) keeps the engine's own bound.
+// Reached from the CLI as --ocr-max-tokens, from the C ABI as
+// crispembed_ocr_model_set_max_tokens(), and from an orchestrator stage as
+// crispembed_ocr_stage.vlm_max_tokens. All three must reach every whole-page
+// VLM engine or the flag silently no-ops on some of them, which is what it did
+// here until 2026-08-25.
+void got_ocr_set_max_tokens(got_ocr_context * ctx, int max_tokens);
 const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, int w, int h, int ch, int * out_len);
 const char * got_ocr_recognize(got_ocr_context * ctx, const float * px, int w, int h, int * out_len);
 

@@ -257,6 +257,7 @@ int main(int argc, char ** argv) {
     std::string ner_model_path;        // NER model (GLiNER)
     std::string lid_model_path;        // text LID model
     bool enable_ocr_orch = false;      // --ocr-pipeline: enable orchestrator endpoint
+    int ocr_max_tokens = 0;            // --ocr-max-tokens N (0 = engine default)
     std::string vlm_model_path;        // VLM escalation model for orchestrator
     int vlm_engine = 0;                // 0=GOT, 1=GLM, 2=Qwen2-VL(+PaddleOCR-VL), 3=InternVL2
     std::string punct_model_path;      // punct restoration model for orchestrator
@@ -328,6 +329,8 @@ int main(int argc, char ** argv) {
             ner_model_path = argv[++i];
         else if (strcmp(argv[i], "--lid") == 0 && i + 1 < argc)
             lid_model_path = argv[++i];
+        else if (strcmp(argv[i], "--ocr-max-tokens") == 0 && i + 1 < argc)
+            ocr_max_tokens = atoi(argv[++i]);
         else if (strcmp(argv[i], "--ocr-pipeline") == 0)
             enable_ocr_orch = true;
         else if (strcmp(argv[i], "--ocr-engine") == 0 && i + 1 < argc)
@@ -408,6 +411,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --lid MODEL       text LID model GGUF (CLD3 or GlotLID)\n");
         fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
+        fprintf(stderr, "  --ocr-max-tokens N  generation cap for VLM OCR engines (0 = engine default)\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-engine NAME explicit pipeline engine (ppocrv6, tesseract, easyocr, got, glm, ...);\n");
@@ -1086,7 +1090,11 @@ int main(int argc, char ** argv) {
         st.det_prob_threshold = 0.3f;
         st.det_box_threshold = 0.5f;
         st.det_target_short = 736;
-        st.vlm_max_tokens = 0;
+        // --ocr-max-tokens. Set at startup rather than per request because the
+        // orchestrator stage is built once here; /math/ocr takes a per-request
+        // "max_tokens" instead. This was hardcoded to 0 until 2026-08-25, the
+        // same defect the CLI's stage builder had.
+        st.vlm_max_tokens = ocr_max_tokens;
         st.vlm_prompt = nullptr;
         st.page_segmentation = 0;
         st.min_chars = 8;

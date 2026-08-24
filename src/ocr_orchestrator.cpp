@@ -852,6 +852,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        if (st.params.vlm_max_tokens > 0) got_ocr_set_max_tokens(ctx->got, st.params.vlm_max_tokens);
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
         const unsigned char * img = px;
@@ -881,6 +882,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        if (st.params.vlm_max_tokens > 0) glm_ocr_set_max_tokens(ctx->glm, st.params.vlm_max_tokens);
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
         const unsigned char * img = px;
@@ -1007,6 +1009,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        if (st.params.vlm_max_tokens > 0) deepseek_ocr2_set_max_tokens(ctx->dsocr2, st.params.vlm_max_tokens);
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
         const unsigned char * img = px;
@@ -1638,6 +1641,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                 return {};
             }
         }
+        if (st.params.vlm_max_tokens > 0) unlimited_ocr_set_max_tokens(ctx->uocr, st.params.vlm_max_tokens);
         int w = pw, h = ph;
         unsigned char * loaded = nullptr;
         const unsigned char * img = px;
