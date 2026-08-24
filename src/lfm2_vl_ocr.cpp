@@ -1717,6 +1717,10 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 
     c.declared_inputs.clear();
 
+    // See the causal-mask comment in the attention branch below.
+    const bool per_layer_mask = core_env::on("LFM2_VL_PER_LAYER_MASK");
+    ggml_tensor * shared_causal_mask = nullptr;
+
     // Inputs
     ggml_tensor * tok_ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_tokens);
     declare_input(c, tok_ids, "tok_ids");
@@ -1811,11 +1815,30 @@ static ggml_tensor * build_prefill_graph(ctx & c, ggml_context * g, ggml_cgraph 
 
             // Causal mask for flash_attn_ext: [n_kv, n_q] F16
             // n_kv = n_tokens (full sequence), n_q = n_tokens (all queries)
-            ggml_tensor * mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
-            {
+            //
+            // ONE tensor shared by every attention layer. All 8 masks are the
+            // same lower-triangular pattern and were allocated separately, which
+            // is 7 redundant copies of an n_tokens^2 F16 buffer: 1.2 MB at the
+            // 273-token single-tile prompt, but 113 MB at a 2837-token
+            // multi-tile one — and multi-tile is now the default, on a box with
+            // 8 GB. Output-neutral by construction: identical values, and every
+            // layer reads the same tensor instead of its own copy of it.
+            //
+            // LFM2_VL_PER_LAYER_MASK=1 restores one tensor per layer, which is
+            // the A/B counterpart and the fallback if a backend ever objects to
+            // an input feeding several ops.
+            ggml_tensor * mask = nullptr;
+            if (per_layer_mask) {
+                mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
                 char mname[64];
                 snprintf(mname, sizeof(mname), "causal_mask_%d", il);
                 declare_input(c, mask, mname);
+            } else {
+                if (!shared_causal_mask) {
+                    shared_causal_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
+                    declare_input(c, shared_causal_mask, "causal_mask");
+                }
+                mask = shared_causal_mask;
             }
 
             ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, mask, scale, 0.0f, 0.0f);
@@ -2099,6 +2122,15 @@ static std::vector<std::string> set_prefill_seq_inputs(ctx & c, ggml_cgraph * gf
     const uint16_t f16_neg_inf = 0xFC00;
     for (int r = 0; r < n_tokens; r++) {
         for (int col = r + 1; col < n_tokens; col++) mask_data[(size_t)r * n_tokens + col] = f16_neg_inf;
+    }
+
+    // The shared mask, when that is the path in use. Written unconditionally
+    // rather than only when found, because a graph input nobody writes reads
+    // back as allocator leftovers — which is precisely the §2 bug this
+    // codebase already shipped once.
+    if (ggml_tensor * sm = ggml_graph_get_tensor(gf, "causal_mask")) {
+        ggml_backend_tensor_set(sm, mask_data.data(), 0, mask_data.size() * sizeof(uint16_t));
+        written.push_back("causal_mask");
     }
 
     char name[64];

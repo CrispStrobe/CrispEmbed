@@ -123,6 +123,7 @@ dominant cost on this VPS and is the next real perf target.
 | `LFM2_VL_KV_CACHE` | **on** | KV-cached per-token decode; `=0` restores full recompute |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
 | `LFM2_VL_FORCE_CPU` | off | ignore `crispasr_init_gpu_backend()` and run on CPU |
+| `LFM2_VL_PER_LAYER_MASK` | off | one causal-mask tensor per attention layer instead of one shared; all 8 are identical, so sharing saves ~113 MB at a 2837-token prompt |
 | `LFM2_VL_FLASH_ATTN` | off | use `ggml_flash_attn_ext` in the VISION tower instead of manual attention. Off because the tower is bidirectional and passes `mask=nullptr`; per HARD RULE 5 that is full attention, not "masking handled", so the two are only equivalent while every patch is real. They are today — we never pad, unlike HF, which pads to `max_num_patches` and masks — but the gate must stay off if padding is ever introduced. Unmeasured. |
 | `LFM2_VL_MULTI_TILE` | **on** | split a large page into a tile grid + thumbnail (§4); `=0` restores the single squashed tile |
 | `LFM2_VL_TILE_LABELS_LEGACY_SWAP` | off | reproduce transformers <= 4.57.x, which transposed the tile row/col labels; 5.x (the default) does not |
@@ -380,11 +381,13 @@ prefill. The gate needs four arms (off/on x Q4_K/F16, rule 4.2). Kernel:
   quietly feeding the model position embeddings it was not trained on. Deferred
   on purpose: it does not touch the multi-tile parity this branch is gated on,
   and a correct antialiased resample is its own change with its own A/B.
-- **Shared causal mask** — `build_prefill_graph` allocates one `n_tokens²` F16
-  mask PER attention layer, and all 8 are identical. At 273 tokens that is 1.2
-  MB; at a 2837-token multi-tile prompt it is ~129 MB, ~113 MB of it redundant.
-  Output-neutral to share one tensor. Not done: measured need first, and it
-  touches the single-tile path too.
+- **Shared causal mask** — DONE. `build_prefill_graph` allocated one
+  `n_tokens²` F16 mask per attention layer and all 8 held the same
+  lower-triangular pattern: 1.2 MB at the 273-token single-tile prompt, 113 MB
+  of it redundant at a 2837-token multi-tile one. Now one shared tensor;
+  `LFM2_VL_PER_LAYER_MASK=1` restores per-layer. A/B on the canary: both arms
+  `Jackson-Washington / 6640 Ortiz Cove, Markmouth`, byte-identical to the
+  pre-change baseline, `audit_graph_inputs()` clean in both.
 - **Bicubic resample** — DONE, and now the default. It is the dominant term in
   the per-stage gap (thumbnail projector `cos_min` 0.3446 → 0.9847), improves
   F16 decoded CER 0.5129 → 0.4968, costs ~1% wall clock, and leaves the 500x650
