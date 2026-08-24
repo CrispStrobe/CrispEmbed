@@ -5,21 +5,25 @@ Guard: `tests/test_lfm2_shortconv.cpp` (hermetic, weight-free, ~10 ms)
 
 ## NOW — active work
 
-Branch `feat/lfm2vl-kv-decode`, tip `49170ba5`. Nothing in flight.
+Branch `feat/lfm2vl-multitile`, off `main` @ `ebc8bc95`. Multi-tile NaFlex is
+IMPLEMENTED and gated OFF; the acceptance run has not happened yet.
 
-- **DONE** — the "KV-cached decode is broken" bug. It was never the KV cache
-  (§1); the KV cache was correct the whole time.
-- **DONE** — a second bug, in the path that had been made the *default* because
-  it was believed correct (§2).
-- **DONE** — A/B settled, KV decode is now the default (`LFM2_VL_KV_CACHE=0`
-  restores full recompute). Three independent runs on the fixture, all 45 chars,
-  all identical.
-- **DONE** — NaFlex resize parameters matched to the blueprint (§3), registry
-  entry + companion-file support, README + backend matrix, debug prints gated,
-  layer-types diagnostic ordering + fallback string.
-- **NEXT** — multi-tile NaFlex (see below; needs Kaggle, the trigger rule is
-  pinned); bicubic resample; an uncontended timing run. The vision encoder
-  (~300 s) dominates, not the decode — that is where perf work belongs.
+- **DONE** — both decode bugs (§1, §2), KV decode as default, NaFlex
+  single-tile resize (§3), registry + companion download, gated debug prints.
+- **DONE** — §4 multi-tile NaFlex: layout, tiling, per-tile vision encode,
+  per-tile token markup, hermetic guard, reference-dumper support, prompt-token
+  parity check. Behind `LFM2_VL_MULTI_TILE=1`, default off.
+- **IN FLIGHT** — the acceptance run. Kernel
+  `tools/kaggle/lfm2-vl-multitile/` (chr1s4,
+  `chr1s4/lfm2-5-vl-multitile-acceptance`). It builds with CUDA, dumps a
+  blueprint reference for a SPLITTING fixture, checks prompt-token parity and
+  per-stage cosines, then runs the decoded-output A/B (multi-tile off/on x
+  Q4_K/F16) scored as CER/WER against `ground_truth.json`.
+- **NEXT** — flip `LFM2_VL_MULTI_TILE` on by default ONLY with the canary
+  identical across arms and a stated CER improvement (rule 3). Then bicubic
+  resample (`LFM2_VL_BICUBIC`, already wired, needs its own A/B), then an
+  uncontended timing run. The vision encoder (~250 s per 1024-patch image on
+  this VPS) dominates and is where perf work belongs.
 
 ### A/B result — the acceptance gate
 
@@ -120,7 +124,10 @@ dominant cost on this VPS and is the next real perf target.
 | `CRISPEMBED_ACCEPT_LFM_LICENSE` | off | required; LFM-1.0 is revenue-capped |
 | `LFM2_VL_KV_CACHE` | **on** | KV-cached per-token decode; `=0` restores full recompute |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
-| `LFM2_VL_LEGACY_RESIZE` | off | pre-fix NaFlex resize params (factor=P, min=max=tile²) |
+| `LFM2_VL_MULTI_TILE` | **off** | split a large page into a tile grid + thumbnail (§4) |
+| `LFM2_VL_TILE_LABELS_GEOMETRIC` | off | label tiles by geometry instead of reproducing upstream's row/col swap; unvalidated |
+| `LFM2_VL_BICUBIC` | off | PIL-matching Catmull-Rom resample (HF uses `resample: 3`); needs its own A/B |
+| `LFM2_VL_LEGACY_RESIZE` | off | pre-blueprint NaFlex resize: factor=P, min=max=tile², and `std::round` instead of half-to-even |
 | `LFM2_VL_NO_REPEAT_NGRAM` | 5 | greedy no-repeat n-gram size |
 | `LFM2_VL_DBG` | off | diagnostics |
 | `LFM2_VL_DIFF_REF` | unset | per-stage diff archive |
@@ -160,46 +167,113 @@ grid ever comes out indivisible by the downsample factor.
 Still unmatched: HF uses `resample: 3` = **bicubic**; `preprocess_image` does
 bilinear. Untested — it needs a fixture where it changes the decode.
 
-## Multi-tile NaFlex — NOT implemented, and the blueprint rule is now pinned
+## §4 — Multi-tile NaFlex (implemented, gated off pending the acceptance run)
 
-`processor_config.json`: `do_image_splitting=true`, `max_tiles=10`,
-`min_tiles=1`, `use_thumbnail=true`, `tile_size=512`, `max_pixels_tolerance=2.0`.
+A 300 dpi A4 scan was squashed into one 448x576 tile — **252 image tokens for a
+whole page**. With `LFM2_VL_MULTI_TILE=1` it becomes a 2x3 grid of 512x512
+tiles plus a whole-page thumbnail: **1770 image tokens, 7x the visual detail.**
+This was the largest remaining quality gap in the backend.
 
-`Lfm2VlImageProcessor._is_image_too_large` is the exact trigger:
+Layout lives in `src/lfm2_vl_tiling.h`, weight-free and header-only. That is
+deliberate: everything it computes sits downstream of every tensor and is
+therefore invisible to the diff harness (HARD RULE 3b). A wrong grid or a wrong
+token id yields perfectly healthy activations from the wrong prompt, and reads
+as "the model is weak on multi-tile" rather than as a bug. Extracting it makes
+it hermetically testable.
 
+### What reading the blueprint turned up that the handover did not have
+
+**(a) Upstream transposes its own row/col labels.** `resize_and_split` does
+
+```python
+images, num_rows, num_cols = self.crop_image_to_patches(...)
 ```
-h_bar = max(P, round_by_factor(height, P * ds))      # round-half-to-EVEN
-w_bar = max(P, round_by_factor(width,  P * ds))
-split  <=>  h_bar * w_bar > max_image_tokens * P**2 * ds**2 * max_pixels_tolerance
-        i.e. > 256 * 256 * 4 * 2.0 = 524288 px
-```
 
-**The current fixture does NOT split** — 500×650 gives h_bar·w_bar = 640·512 =
-327680 < 524288 — which is what makes the single-tile result above a legitimate
-comparison rather than an accident. Any page above ~524k rounded pixels does
-split, and we would silently squash it into one tile instead.
+and `crop_image_to_patches` returns `(processed_images, grid_width,
+grid_height)`. So `num_rows` is the grid **width**. A portrait A4 is cut into
+3 geometric rows of 2 tiles and labelled `<|img_row_1_col_1..3|>`,
+`<|img_row_2_col_1..3|>` — 2 rows of 3. Confirmed against the real processor:
+1024x768 reports `rows=3, cols=2` while its tiles are 2 rows of 3.
 
-**Full handover with the complete blueprint, golden vectors, verified token IDs
-and a cost model: `/mnt/volume1/naflex-todos.md`.** The oracle that produced the
-golden layouts is `tools/lfm2_vl_tiling_oracle.py` (HF's own functions extracted
-verbatim — pure math, no torch), so the guard test can be written before the
-code per HARD RULE 2c.
+That is what the deployed model is prompted with, so it is the parity target
+and the default. `LFM2_VL_TILE_LABELS_GEOMETRIC=1` restores the intuitive
+mapping; it is opt-in and unvalidated, and the guard pins that the two produce
+DIFFERENT markup on every non-square grid so they cannot silently converge.
 
-All 100 `<|img_row_R_col_C|>` tokens plus `<|img_thumbnail|>` are ALREADY in the
-shipped GGUF vocab at contiguous ids — `124908 + (R-1)*10 + (C-1)`, thumbnail
-125008, verified 0 mismatches over all 100. No converter work is needed.
+**(b) The handover's golden table overcounted.** A4 is 6x256 + a 234-token
+thumbnail = **1770**, not 1792; US letter is 1788. The thumbnail token count is
+`ceil((h/P)/ds) * ceil((w/P)/ds)` on the smart_resize output and is only 256
+when the thumbnail happens to be square. The oracle now emits the table so no
+human transcribes it again.
 
-Implementing it needs `crop_image_to_patches` + `find_closest_aspect_ratio` +
-the thumbnail append, and `Lfm2VlProcessor` (`return_row_col_info=true`) for the
-per-tile token markup. It also needs a reference dump to validate against, and
-the vision encoder costs ~300 s **per tile** on this VPS — a 10-tile page is
-~50 min of encode alone. Per the dev guide's division of labour that belongs on
-Kaggle, not here.
+**(c) The class defaults are not what runs.** `Lfm2VlImageProcessorFast` says
+`min_tiles=2` and BILINEAR; the shipped `processor_config.json` says
+`min_tiles=1` and `resample=3` (bicubic). The config wins.
+
+### The banker's-rounding trap, and why the guard is narrower than it
+
+Python's `round()` is half-to-**even**; C++ `std::round` is half-away-from-zero.
+They disagree whenever `dimension / 32` lands on `k + 0.5` for even `k`. This is
+not a rounding nicety:
+
+| page | Python (correct) | `std::round` |
+|---|---|---|
+| 144x4000 | 1 tile, 252 image tokens | **1x10 split, 2812 tokens** |
+| 272x272 | 256x256, 64 tokens | 288x288, 81 tokens |
+| 80x4000 | 4000 tall | 3616 tall |
+
+Guarded twice: directly against every value in `[0, 4096]` where the two rules
+differ at factor 32 — exact arithmetic, no tolerance, no signal — and
+end-to-end through four layout cases found by sweeping widths against heights
+precisely because the whole pipeline diverges on them. Watched to fail:
+swapping `round_by_factor`'s integer half-to-even for `std::round` reds 64
+rounding cases plus the four end-to-end cases.
+
+`image_preproc::smart_resize` keeps `std::round` and is left alone — other
+engines' parity is measured against their own references, and changing a shared
+helper to fix one engine is how you break three.
+
+### The three orders that must agree
+
+Tile pixel order, projector row order, and `<image>` markup order are all
+"tiles in reading order, thumbnail last". `generate()`'s splice loop needed no
+change — verified rather than assumed: it walks `image_embeds` row by row,
+consuming one per `<image>` token. `encode_vision_tiles` now refuses outright
+when the projector row count and the layout's token count disagree, instead of
+letting the splice run off the end.
+
+### Validation so far
+
+| check | result |
+|---|---|
+| hermetic layout guard (`test-lfm2-tiling`) | **PASS**, 19474 checks, 20 layout cases, 20 markup sequences |
+| oracle vs the REAL `Lfm2VlImageProcessorFast`, 44 image sizes | **PASS**, exact on grid, row/col info, tile and thumbnail patch grids, token counts |
+| token ids vs the shipped GGUF vocab | **0/100 mismatches** on the `124908 + (R-1)*10 + (C-1)` formula |
+| 500x650 canary, gate off | **byte-identical** — 1 image, 36x28 patches, 252 image tokens, 273 prompt tokens, `Jackson-Washington\n6640 Ortiz Cove, Markmouth`, 45 chars |
+| multi-tile structural run, 1024x544 | 2x1 grid + thumbnail 672x352, 743 image tokens, 3 images of 32x32 patches — matches the oracle |
+| **decoded output on a splitting page** | **NOT YET RUN** — this is why the gate is off |
+
+`tools/lfm2_vl_tiling_hf_check.py` is the cross-check against the real
+processor. It needs torch + torchvision, so it is a developer tool, not a build
+step: run it after a transformers upgrade, then regenerate
+`tests/lfm2_tiling_golden.h`. The golden header itself is hermetic.
+
+### Cost, and why the acceptance run is on Kaggle
+
+The vision encoder is ~250 s per 1024-patch image on this VPS, and a split A4
+page is SEVEN images — ~30 minutes of encode for one arm, before the ~1800-token
+prefill. The gate needs four arms (off/on x Q4_K/F16, rule 4.2). Kernel:
+`tools/kaggle/lfm2-vl-multitile/`, account chr1s4.
 
 ## Still open (from the port handover)
 
-- **Multi-tile NaFlex** — see the section above; the trigger rule is pinned, the
-  implementation is not started.
+- **Multi-tile NaFlex** — implemented and gated off (§4). What remains is the
+  acceptance run, not the code.
+- **Shared causal mask** — `build_prefill_graph` allocates one `n_tokens²` F16
+  mask PER attention layer, and all 8 are identical. At 273 tokens that is 1.2
+  MB; at a 2837-token multi-tile prompt it is ~129 MB, ~113 MB of it redundant.
+  Output-neutral to share one tensor. Not done: measured need first, and it
+  touches the single-tile path too.
 - **Bicubic resample** — HF `resample: 3`, ours is bilinear.
 - **README / `docs/ocr_backend_matrix.md`** — DONE (backend-table row + a matrix
   row carrying both decode bugs and the measured output).
