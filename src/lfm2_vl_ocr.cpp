@@ -116,9 +116,20 @@ struct llm_hparams {
     uint32_t pad_id         = 124893;
     uint32_t image_token_id = 124907;
     bool     tie_embeddings = true;
-    // Layer type string: 'c' = conv, 'a' = attention.
-    // Default: ccaccaccccacccaccccacccaccaccacc (22 conv, 8 attn)
-    std::string layer_types = "ccaccaccccacccaccccacccaccaccacc";
+    // Layer type string: 'c' = conv, 'a' = attention. 30 chars for 30 layers,
+    // 22 conv + 8 attention; the 8 'a' positions are 2,5,9,13,17,21,24,27.
+    //
+    // Only a fallback. load_llm_tensors overwrites this from "lfm2.layer_types"
+    // when the GGUF carries it, and otherwise reconstructs it from which
+    // per-layer tensors exist — which is what actually happens with the
+    // official LiquidAI export, and which reproduces the string below exactly.
+    //
+    // It previously read "ccaccaccccacccaccccacccaccaccacc": 32 characters for
+    // a 30-layer model, diverging from the real pattern at index 6. Harmless
+    // while the reconstruction always runs, but it is the value anything
+    // trusting this header would get, and it would mislabel conv layers as
+    // attention from index 6 on.
+    std::string layer_types = "ccaccacccacccacccacccaccaccacc";
 };
 
 // ============================================================================
@@ -2229,7 +2240,11 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
                 vhp.depth, vhp.hidden_size, vhp.num_heads, vhp.patch_size);
         fprintf(stderr, "[lfm2_vl] llm: %u layers, %ud, %u/%u heads, ff=%u\n",
                 lhp.n_layers, lhp.hidden_size, lhp.n_heads, lhp.n_kv_heads, lhp.ff_size);
-        fprintf(stderr, "[lfm2_vl] layer types: %s\n", lhp.layer_types.c_str());
+        // NOT the layer types here — "lfm2.layer_types" is absent from the
+        // official LiquidAI GGUF, so at this point the string is still the
+        // empty kv_str default and load_llm_tensors has not yet rebuilt it from
+        // tensor presence. Printing it here shows an empty hybrid layout for a
+        // model that loads perfectly well; it is reported after the tensor load.
     }
 
     // Init backend
@@ -2258,6 +2273,12 @@ static bool load_model(ctx & c, const char * model_path, const char * mmproj_pat
     if (!load_llm_tensors(c, model_path)) {
         fprintf(stderr, "[lfm2_vl] failed to load LLM tensors\n");
         return false;
+    }
+
+    // Now that layer types are resolved (from the GGUF key when present, else
+    // reconstructed from which per-layer tensors exist).
+    if (c.verbosity >= 1) {
+        fprintf(stderr, "[lfm2_vl] layer types: %s\n", c.m.lhp.layer_types.c_str());
     }
 
     // Load vision tensors (from mmproj or same file)
