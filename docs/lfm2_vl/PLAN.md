@@ -131,7 +131,7 @@ dominant cost on this VPS and is the next real perf target.
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
 | `LFM2_VL_MULTI_TILE` | **off** | split a large page into a tile grid + thumbnail (§4) |
 | `LFM2_VL_TILE_LABELS_LEGACY_SWAP` | off | reproduce transformers <= 4.57.x, which transposed the tile row/col labels; 5.x (the default) does not |
-| `LFM2_VL_BICUBIC` | off | PIL-matching Catmull-Rom resample (HF uses `resample: 3`); needs its own A/B |
+| `LFM2_VL_BICUBIC` | **on** | PIL-matching Catmull-Rom resample, as `processor_config.json` specifies; `=0` restores the align-corners bilinear this port shipped with |
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-blueprint NaFlex resize: factor=P, min=max=tile², and `std::round` instead of half-to-even |
 | `LFM2_VL_NO_REPEAT_NGRAM` | 5 | greedy no-repeat n-gram size |
 | `LFM2_VL_DBG` | off | diagnostics |
@@ -406,7 +406,11 @@ prefill. The gate needs four arms (off/on x Q4_K/F16, rule 4.2). Kernel:
   MB; at a 2837-token multi-tile prompt it is ~129 MB, ~113 MB of it redundant.
   Output-neutral to share one tensor. Not done: measured need first, and it
   touches the single-tile path too.
-- **Bicubic resample** — HF `resample: 3`, ours is bilinear.
+- **Bicubic resample** — DONE, and now the default. It is the dominant term in
+  the per-stage gap (thumbnail projector `cos_min` 0.3446 → 0.9847), improves
+  F16 decoded CER 0.5129 → 0.4968, costs ~1% wall clock, and leaves the 500x650
+  canary byte-identical (`Jackson-Washington / 6640 Ortiz Cove, Markmouth`, 45
+  chars, both ways). `LFM2_VL_BICUBIC=0` restores bilinear.
 - **README / `docs/ocr_backend_matrix.md`** — DONE (backend-table row + a matrix
   row carrying both decode bugs and the measured output).
 - **Registry entry + auto-download** — DONE, as `lfm2-vl`, pointing straight at
