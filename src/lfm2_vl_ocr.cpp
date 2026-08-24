@@ -1699,6 +1699,21 @@ static bool encode_vision_tiles(ctx & c, const image_tiles & tiles, std::vector<
     out_dim = 0;
 
     const bool multi = tiles.images.size() > 1;
+
+    // Multi-tile is a real cost, and on CPU it is a large one. The vision tower
+    // is ~955 GFLOP per 1024-patch image (27 layers x 35.4 GFLOP), so a 7-image
+    // page is ~6.7 TFLOP. This VPS sustains ~16 GFLOP/s across 4 AVX512 cores —
+    // near what the hardware can do, so there is no configuration fix — which
+    // puts a split page at several minutes. Say so once, rather than letting it
+    // look like a hang.
+    if (multi && ggml_backend_is_cpu(c.backend) && c.verbosity >= 1) {
+        fprintf(stderr,
+                "[lfm2_vl] note: multi-tile will run the vision encoder %zu times on CPU; "
+                "expect minutes per page. LFM2_VL_MULTI_TILE=0 falls back to one squashed "
+                "tile (much faster, materially worse text).\n",
+                tiles.images.size());
+    }
+
     for (size_t i = 0; i < tiles.images.size(); i++) {
         std::vector<float> part;
         int n_part = 0, dim_part = 0;
