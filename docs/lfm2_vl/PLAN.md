@@ -13,7 +13,9 @@ IMPLEMENTED and gated OFF; the acceptance run has not happened yet.
 - **DONE** — §4 multi-tile NaFlex: layout, tiling, per-tile vision encode,
   per-tile token markup, hermetic guard, reference-dumper support, prompt-token
   parity check. Behind `LFM2_VL_MULTI_TILE=1`, default off.
-- **IN FLIGHT** — the acceptance run. Kernel
+- **DONE** — a splitting page decodes correctly end-to-end on the VPS: the
+  1024x544 strip gives `Lorem Ipsum / Alice was`, matching its ground truth.
+- **IN FLIGHT** — the scored acceptance A/B. Kernel
   `tools/kaggle/lfm2-vl-multitile/` (chr1s4,
   `chr1s4/lfm2-5-vl-multitile-acceptance`). It builds with CUDA, dumps a
   blueprint reference for a SPLITTING fixture, checks prompt-token parity and
@@ -250,13 +252,23 @@ letting the splice run off the end.
 | oracle vs the REAL `Lfm2VlImageProcessorFast`, 44 image sizes | **PASS**, exact on grid, row/col info, tile and thumbnail patch grids, token counts |
 | token ids vs the shipped GGUF vocab | **0/100 mismatches** on the `124908 + (R-1)*10 + (C-1)` formula |
 | 500x650 canary, gate off | **byte-identical** — 1 image, 36x28 patches, 252 image tokens, 273 prompt tokens, `Jackson-Washington\n6640 Ortiz Cove, Markmouth`, 45 chars |
-| multi-tile structural run, 1024x544 | 2x1 grid + thumbnail 672x352, 743 image tokens, 3 images of 32x32 patches — matches the oracle |
-| **decoded output on a splitting page** | **NOT YET RUN** — this is why the gate is off |
+| multi-tile structural run, 1024x544 | 2x1 grid + thumbnail 672x352, 3 images of 32x32/32x32/42x22 patches → 256 + 256 + 231 = **743 image tokens**, exactly the oracle's number; 767-token prompt, `img_pos used=743`, no warnings |
+| **decoded output on a splitting page** | **CORRECT.** The 1024x544 top strip of `commons_test_ocr_document.jpg` decodes to `Lorem Ipsum\n\nAlice was` in 8 tokens — an exact match for that fixture's ground-truth opening. So the tiling, the per-tile encode, the markup and the splice produce a readable page, not fluent nonsense. |
+| **scored A/B on a full splitting page** | **NOT YET RUN** — CER/WER, both arms, both quants. This is what still gates the default flip. |
 
 `tools/lfm2_vl_tiling_hf_check.py` is the cross-check against the real
 processor. It needs torch + torchvision, so it is a developer tool, not a build
 step: run it after a transformers upgrade, then regenerate
 `tests/lfm2_tiling_golden.h`. The golden header itself is hermetic.
+
+The 743-token count is the load-bearing one: the layout predicted it, the
+projector produced exactly that many rows, and the splice consumed exactly
+that many (`img_pos used=743`). All three orders agree.
+
+⚠ No timing from that run is quotable — the box was at load average 24 with 41
+sessions. For the record only, contended: prefill 767 tokens 362 s, decode
+~63 s/token. The vision encoder was ~230–245 s **per image**, which is the whole
+reason the scored A/B is a GPU job.
 
 ### Cost, and why the acceptance run is on Kaggle
 
