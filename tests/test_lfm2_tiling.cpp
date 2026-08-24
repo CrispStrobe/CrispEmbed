@@ -52,7 +52,7 @@
 namespace {
 
 int g_failures = 0;
-int g_checks   = 0;
+int g_checks = 0;
 
 void check(bool ok, const char * what) {
     g_checks++;
@@ -72,15 +72,15 @@ void check_eq(int got, int want, const char * what, const char * ctx) {
 
 // The naive implementation this guard exists to reject.
 int naive_round_by_factor(int value, int factor) {
-    return (int) std::round((double) value / (double) factor) * factor;
+    return (int)std::round((double)value / (double)factor) * factor;
 }
 
-}  // namespace
+} // namespace
 
 int main() {
     using namespace lfm2_vl_tiling;
 
-    const config cfg;  // the shipped processor_config.json of LFM2.5-VL-3B
+    const config cfg; // the shipped processor_config.json of LFM2.5-VL-3B
 
     printf("LFM2.5-VL multi-tile NaFlex layout guard\n");
 
@@ -167,7 +167,7 @@ int main() {
     printf("  %d layout cases pinned against the transformers oracle\n", lfm2_tiling_golden::kNumCases);
 
     // ── 4-5. token markup ──────────────────────────────────────────────────
-    const token_ids tok;  // the ids shipped in the GGUF vocab
+    const token_ids tok; // the ids shipped in the GGUF vocab
 
     // The contiguity law, stated as arithmetic rather than as a 100-entry table.
     for (int r = 1; r <= 10; r++) {
@@ -191,7 +191,10 @@ int main() {
         bool distinct = true;
         for (size_t a = 0; a < all.size() && distinct; a++)
             for (size_t b = a + 1; b < all.size(); b++)
-                if (all[a] == all[b]) { distinct = false; break; }
+                if (all[a] == all[b]) {
+                    distinct = false;
+                    break;
+                }
         check(distinct, "all image special-token ids are distinct");
     }
 
@@ -210,7 +213,7 @@ int main() {
         for (int32_t id : ids)
             if (id == tok.image) n_image++;
         check_eq(n_image, g.total_tokens, "<image> count", ctx);
-        check_eq((int) ids.size(), g.total_tokens + g.n_labels + (g.has_thumb ? 1 : 0) + 2, "markup length", ctx);
+        check_eq((int)ids.size(), g.total_tokens + g.n_labels + (g.has_thumb ? 1 : 0) + 2, "markup length", ctx);
         check_eq(ids.front(), tok.image_start, "opens with <|image_start|>", ctx);
         check_eq(ids.back(), tok.image_end, "closes with <|image_end|>", ctx);
 
@@ -238,7 +241,7 @@ int main() {
                 p++;
             }
         }
-        check_eq((int) p, (int) ids.size() - 1, "markup fully consumed", ctx);
+        check_eq((int)p, (int)ids.size() - 1, "markup fully consumed", ctx);
     }
     printf("  %d markup sequences pinned\n", lfm2_tiling_golden::kNumCases);
 
@@ -283,9 +286,12 @@ int main() {
         std::vector<int32_t> ids;
         build_image_markup(L, tok, ids);
         // Byte-identical to what the pre-multi-tile build emitted.
-        check_eq((int) ids.size(), 254, "fixture markup is <|image_start|> + 252 + <|image_end|>", "canary");
+        check_eq((int)ids.size(), 254, "fixture markup is <|image_start|> + 252 + <|image_end|>", "canary");
         for (size_t i = 1; i + 1 < ids.size(); i++)
-            if (ids[i] != tok.image) { check(false, "fixture markup carries no tile labels"); break; }
+            if (ids[i] != tok.image) {
+                check(false, "fixture markup carries no tile labels");
+                break;
+            }
     }
 
     printf("%s — %d checks, %d failures\n", g_failures ? "FAIL" : "PASS", g_checks, g_failures);
