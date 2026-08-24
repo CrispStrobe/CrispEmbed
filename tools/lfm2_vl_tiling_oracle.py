@@ -19,13 +19,18 @@ Two upstream behaviours are load-bearing and easy to "fix" by accident:
     k + 0.5 for even k -- e.g. height 80 with factor 32 gives 64 in Python and
     96 in C++. This is the single most likely silent divergence.
 
-  * `resize_and_split` unpacks `crop_image_to_patches`, which returns
-    `(images, grid_width, grid_height)`, into `(images, num_rows, num_cols)`.
-    So num_rows == grid_WIDTH and num_cols == grid_HEIGHT -- the row/col labels
-    the processor emits are TRANSPOSED relative to the pixel tile geometry
-    whenever the grid is not square. That is upstream's behaviour at inference
-    and therefore the parity target; see `tests/test_lfm2_tiling.cpp` and the
-    `LFM2_VL_TILE_LABELS_GEOMETRIC` gate.
+  * `crop_image_to_patches` returns `(images, grid_width, grid_height)` in
+    every version, but `resize_and_split` changed how it unpacks that:
+
+        transformers <= 4.57.x:  images, num_rows, num_cols = ...
+        transformers >= 5.0:     images, num_cols, num_rows = ...
+
+    The old form made num_rows the grid WIDTH, transposing the
+    <|img_row_R_col_C|> labels on any non-square grid. Upstream fixed it. THIS
+    ORACLE EMITS THE 5.x (geometric) MAPPING, because that is what the shipped
+    model is prompted with -- confirmed by prompt-token parity against a
+    reference dumped with 5.x. Set LEGACY_LABEL_SWAP below to reproduce 4.57.x.
+    The C++ mirrors this with `LFM2_VL_TILE_LABELS_LEGACY_SWAP`.
 
 Config is the shipped `processor_config.json` of LiquidAI/LFM2.5-VL-3B, NOT the
 Lfm2VlImageProcessorFast class defaults (which differ: min_tiles=2, BILINEAR).
@@ -49,6 +54,10 @@ MAX_TOKENS = 256  # max_image_tokens
 TOLERANCE = 2.0  # max_pixels_tolerance
 USE_THUMBNAIL = True
 DO_IMAGE_SPLITTING = True
+
+# transformers <= 4.57.x transposed the tile row/col labels; 5.x does not.
+# False = 5.x behaviour = what the shipped model sees = the parity target.
+LEGACY_LABEL_SWAP = False
 
 
 # ── verbatim from image_processing_lfm2_vl_fast.py ──────────────────────────
@@ -160,8 +169,8 @@ def layout(width, height):
     split = bool(too_large and do_split)
     if split:
         gw, gh, target_w, target_h, n_tiles = get_grid_layout(height, width, MIN_TILES, MAX_TILES, TILE)
-        # ⚠ the upstream unpack: num_rows = grid_width, num_cols = grid_height
-        rows, cols = gw, gh
+        # The unpack (see the module docstring). 5.x: num_cols = grid_width.
+        rows, cols = (gw, gh) if LEGACY_LABEL_SWAP else (gh, gw)
     else:
         gw = gh = 1
         target_w, target_h = new_width, new_height
@@ -228,8 +237,11 @@ CASES = [
     (513, 513, "just over one tile"),
     # Landscape/portrait pairs: the clearest demonstration of the row/col swap.
     # 1024x768 is cut into 2 geometric rows of 3 tiles and LABELLED 3 rows of 2.
-    (1024, 768, "landscape 4:3 -- 3x2 grid, labelled rows=3 cols=2"),
-    (768, 1024, "portrait 3:4 -- 2x3 grid, labelled rows=2 cols=3"),
+    (1024, 768, "landscape 4:3 -- 3 tiles across, 2 down"),
+    (768, 1024, "portrait 3:4 -- 2 tiles across, 3 down"),
+    # The fixture the Kaggle acceptance run uses; its prompt ids are pinned
+    # against a transformers 5.x reference.
+    (1920, 2485, "commons_test_ocr_document.jpg -- the acceptance fixture"),
     (5000, 400, "extreme panorama -- 10x1, the max_tiles ceiling"),
     (2480, 3508, "A4 @ 300 dpi, exact ISO pixel dims"),
     (1024, 1024, "exactly 2x2 tiles of raw pixels"),

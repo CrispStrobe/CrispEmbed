@@ -49,10 +49,11 @@ struct config {
     bool use_thumbnail = true;
     bool do_image_splitting = true;
 
-    // OFF = reproduce upstream exactly, including its row/col swap (below).
-    // ON = label tiles by their actual geometry. Opt-in, unvalidated; see
-    // LFM2_VL_TILE_LABELS_GEOMETRIC in docs/lfm2_vl/PLAN.md.
-    bool geometric_labels = false;
+    // Tile row/col labelling. Default is the GEOMETRIC mapping, which is what
+    // current transformers does and what the shipped model is prompted with.
+    // Set legacy_label_swap to reproduce transformers <= 4.57.x, which
+    // transposed them (see the note on compute_layout).
+    bool legacy_label_swap = false;
 };
 
 // ── Python's round(), which is BANKER'S rounding (half to EVEN) ────────────
@@ -231,19 +232,27 @@ struct layout {
 
 // Mirrors resize_and_split() followed by expand_text_with_placeholders().
 //
-// ⚠ THE ROW/COL SWAP. resize_and_split unpacks
+// ⚠ THE ROW/COL SWAP — and which side of it to be on.
 //
-//     images, num_rows, num_cols = self.crop_image_to_patches(...)
+// `crop_image_to_patches` returns `(processed_images, grid_width, grid_height)`
+// in every version. What changed is how `resize_and_split` unpacks it:
 //
-// and crop_image_to_patches returns `(processed_images, grid_width,
-// grid_height)`. So num_rows is the grid WIDTH and num_cols is the grid
-// HEIGHT, and the <|img_row_R_col_C|> labels the processor emits are
-// transposed relative to the pixel tiles on any non-square grid. A portrait A4
-// is cut into 3 rows of 2 tiles and labelled as 2 rows of 3.
+//     transformers <= 4.57.x:  images, num_rows, num_cols = crop_image_to_patches(...)
+//     transformers >= 5.0:     images, num_cols, num_rows = crop_image_to_patches(...)
 //
-// That is what the deployed model is prompted with, so it is the parity target
-// and the default here. `geometric_labels` restores the intuitive mapping and
-// is opt-in and unvalidated.
+// The old form made num_rows the grid WIDTH, so the <|img_row_R_col_C|> labels
+// came out transposed on any non-square grid — a portrait A4 cut into 3 rows of
+// 2 tiles was labelled as 2 rows of 3. Upstream fixed it; 5.x is geometric.
+//
+// This port initially reproduced the 4.57.x behaviour, because 4.57.6 was what
+// happened to be installed on the dev box. It is NOT what the model is deployed
+// against, and the prompt-token parity check caught it against a reference
+// dumped with transformers 5.x: 4 of 1816 ids differed, first at index 519 —
+// <|img_row_1_col_3|> where the reference had <|img_row_2_col_1|>. Exactly the
+// class of defect HARD RULE 3b calls the harness's blind zone: no cosine can
+// see it, and a wrong label reads as the model being weak on multi-tile.
+//
+// Geometric is therefore the default. `legacy_label_swap` reproduces 4.57.x.
 inline layout compute_layout(int width, int height, const config & cfg) {
     layout L;
 
@@ -257,12 +266,12 @@ inline layout compute_layout(int width, int height, const config & cfg) {
     if (L.split) {
         grid_layout(height, width, cfg, &L.grid_w, &L.grid_h, &L.target_w, &L.target_h);
         L.n_tiles = L.grid_w * L.grid_h;
-        if (cfg.geometric_labels) {
-            L.rows = L.grid_h;
-            L.cols = L.grid_w;
-        } else {
-            L.rows = L.grid_w; // the swap
+        if (cfg.legacy_label_swap) {
+            L.rows = L.grid_w; // transformers <= 4.57.x
             L.cols = L.grid_h;
+        } else {
+            L.rows = L.grid_h; // transformers >= 5.0, and the shipped model
+            L.cols = L.grid_w;
         }
     } else {
         L.grid_w = L.grid_h = 1;

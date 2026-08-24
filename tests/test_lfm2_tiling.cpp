@@ -32,13 +32,19 @@
 //     as a bug. Pinned as an arithmetic law (contiguous ids) AND as an exact
 //     emitted sequence.
 //
-//  5. The upstream row/col SWAP. `resize_and_split` unpacks
-//     `crop_image_to_patches`'s (images, grid_width, grid_height) into
-//     (images, num_rows, num_cols), so the labels the processor emits are
-//     transposed relative to the pixel geometry on any non-square grid. That
-//     is what the deployed model is prompted with, so it is the parity target;
-//     the geometric variant is available behind a gate and is pinned here too
-//     so the two cannot silently converge.
+//  5. Which side of the row/col SWAP we are on. `crop_image_to_patches`
+//     returns (images, grid_width, grid_height) in every transformers version,
+//     but `resize_and_split` unpacks it as (images, num_rows, num_cols) up to
+//     4.57.x and (images, num_cols, num_rows) from 5.0 — so the old form
+//     transposed the labels on any non-square grid. 5.x is geometric and is
+//     what the shipped model is prompted with; that is the default and what
+//     these vectors pin. The legacy variant stays behind a gate and is pinned
+//     here too, so the two cannot silently converge.
+//
+//     This is not hypothetical: the port shipped the 4.57.x behaviour first,
+//     because 4.57.6 was what happened to be installed, and prompt-token
+//     parity against a transformers 5.x reference caught it — 4 of 1816 ids,
+//     first at 519.
 
 #include "lfm2_vl_tiling.h"
 
@@ -245,13 +251,13 @@ int main() {
     }
     printf("  %d markup sequences pinned\n", lfm2_tiling_golden::kNumCases);
 
-    // ── 5b. the geometric-label variant is a DIFFERENT sequence ────────────
+    // ── 5b. the legacy-swap variant is a DIFFERENT sequence ────────────────
     //
     // If the two ever agree on a non-square grid, one of them has silently
-    // adopted the other and the A/B gate is measuring nothing.
+    // adopted the other and the gate is measuring nothing.
     {
         config geo = cfg;
-        geo.geometric_labels = true;
+        geo.legacy_label_swap = true;
         int n_nonsquare = 0, n_differ = 0;
         for (int i = 0; i < lfm2_tiling_golden::kNumCases; i++) {
             const auto & g = lfm2_tiling_golden::kCases[i];
@@ -260,17 +266,17 @@ int main() {
             const layout Lu = compute_layout(g.width, g.height, cfg);
             const layout Lg = compute_layout(g.width, g.height, geo);
             // Same pixels, same tiles, same token count — only the labels move.
-            check_eq(Lg.n_tiles, Lu.n_tiles, "geometric keeps n_tiles", "geo");
-            check_eq(Lg.total_tokens, Lu.total_tokens, "geometric keeps token count", "geo");
-            check_eq(Lg.rows, Lu.cols, "geometric rows == upstream cols", "geo");
-            check_eq(Lg.cols, Lu.rows, "geometric cols == upstream rows", "geo");
+            check_eq(Lg.n_tiles, Lu.n_tiles, "legacy keeps n_tiles", "swap");
+            check_eq(Lg.total_tokens, Lu.total_tokens, "legacy keeps token count", "swap");
+            check_eq(Lg.rows, Lu.cols, "legacy rows == geometric cols", "swap");
+            check_eq(Lg.cols, Lu.rows, "legacy cols == geometric rows", "swap");
             std::vector<int32_t> a, b;
             build_image_markup(Lu, tok, a);
             build_image_markup(Lg, tok, b);
             if (a != b) n_differ++;
         }
         check(n_nonsquare > 0, "the golden table contains a non-square grid to test with");
-        check_eq(n_differ, n_nonsquare, "geometric labels differ on every non-square grid", "geo");
+        check_eq(n_differ, n_nonsquare, "legacy labels differ on every non-square grid", "swap");
     }
 
     // ── 6. the regression canary, stated explicitly ────────────────────────
@@ -292,6 +298,34 @@ int main() {
                 check(false, "fixture markup carries no tile labels");
                 break;
             }
+    }
+
+    // ── 7. the acceptance fixture's markup, pinned against a real reference ──
+    //
+    // commons_test_ocr_document.jpg is 1920x2485 → a 2-wide, 3-tall grid. The
+    // transformers 5.x reference dumped on Kaggle put <|img_row_2_col_1|>
+    // (124918) third; the 4.57.x behaviour puts <|img_row_1_col_3|> (124910)
+    // there. That one id is the whole difference, and it is invisible to every
+    // cosine in the harness.
+    {
+        const layout L = compute_layout(1920, 2485, cfg);
+        check_eq(L.grid_w, 2, "acceptance fixture grid_w", "fixture");
+        check_eq(L.grid_h, 3, "acceptance fixture grid_h", "fixture");
+        check_eq(L.rows, 3, "acceptance fixture rows (geometric)", "fixture");
+        check_eq(L.cols, 2, "acceptance fixture cols (geometric)", "fixture");
+        check_eq(L.total_tokens, 1788, "acceptance fixture image tokens", "fixture");
+
+        std::vector<int32_t> ids;
+        build_image_markup(L, tok, ids);
+        // Third element = second tile label = index 1 + 1*(tile_tokens+1).
+        const int third_label_at = 1 + 2 * (L.tile_tokens + 1);
+        check_eq(ids[third_label_at], 124918, "third tile label is <|img_row_2_col_1|>", "fixture");
+
+        config legacy = cfg;
+        legacy.legacy_label_swap = true;
+        std::vector<int32_t> lids;
+        build_image_markup(compute_layout(1920, 2485, legacy), tok, lids);
+        check_eq(lids[third_label_at], 124910, "legacy puts <|img_row_1_col_3|> there", "fixture");
     }
 
     printf("%s — %d checks, %d failures\n", g_failures ? "FAIL" : "PASS", g_checks, g_failures);

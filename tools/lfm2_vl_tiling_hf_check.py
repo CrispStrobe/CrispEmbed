@@ -94,6 +94,29 @@ def main():
     oracle = load_oracle()
     ip, cfg = hf_image_processor(args.model)
 
+    # Which side of the row/col swap is this transformers on? Determined by
+    # INTROSPECTING the code that will actually run, not by parsing a version
+    # string: `resize_and_split` unpacks crop_image_to_patches's
+    # (images, grid_width, grid_height) as (images, num_rows, num_cols) up to
+    # 4.57.x and (images, num_cols, num_rows) from 5.0. The oracle emits the
+    # 5.x mapping because that is what the shipped model is prompted with, so
+    # on an older transformers we expect -- and require -- a transposition.
+    import inspect
+    import transformers
+
+    src = inspect.getsource(ip.resize_and_split)
+    if "num_cols, num_rows = self.crop_image_to_patches" in src:
+        installed_swaps = False
+    elif "num_rows, num_cols = self.crop_image_to_patches" in src:
+        installed_swaps = True
+    else:
+        raise SystemExit("cannot determine the row/col unpack from resize_and_split — read it by hand")
+
+    print(f"transformers {transformers.__version__}: resize_and_split "
+          f"{'TRANSPOSES' if installed_swaps else 'does not transpose'} the tile labels")
+    if installed_swaps:
+        print("  → rows/cols are compared against the oracle TRANSPOSED, on purpose.")
+        print("    The oracle tracks transformers >= 5.0, which is what the model ships against.")
     print(f"transformers image processor: {type(ip).__name__}")
     print("config from the hub:", json.dumps({k: cfg[k] for k in sorted(cfg) if not isinstance(cfg[k], dict)}, indent=None))
     print()
@@ -148,8 +171,11 @@ def main():
                 problems.append(f"{name}: HF {got} != oracle {want}")
 
         cmp("split", bool(split), bool(ref["split"]))
-        cmp("rows", int(rows), ref["rows"])
-        cmp("cols", int(cols), ref["cols"])
+        # On an older transformers the labels come out transposed; the geometry
+        # underneath must still agree, so compare against the flipped pair.
+        exp_rows, exp_cols = (ref["cols"], ref["rows"]) if installed_swaps else (ref["rows"], ref["cols"])
+        cmp("rows", int(rows), exp_rows)
+        cmp("cols", int(cols), exp_cols)
         cmp("n_images", int(n_images), ref["n_images"])
         cmp("resized_w", int(img_w), ref["resized_w"])
         cmp("resized_h", int(img_h), ref["resized_h"])

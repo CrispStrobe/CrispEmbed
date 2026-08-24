@@ -130,7 +130,7 @@ dominant cost on this VPS and is the next real perf target.
 | `LFM2_VL_KV_CACHE` | **on** | KV-cached per-token decode; `=0` restores full recompute |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
 | `LFM2_VL_MULTI_TILE` | **off** | split a large page into a tile grid + thumbnail (§4) |
-| `LFM2_VL_TILE_LABELS_GEOMETRIC` | off | label tiles by geometry instead of reproducing upstream's row/col swap; unvalidated |
+| `LFM2_VL_TILE_LABELS_LEGACY_SWAP` | off | reproduce transformers <= 4.57.x, which transposed the tile row/col labels; 5.x (the default) does not |
 | `LFM2_VL_BICUBIC` | off | PIL-matching Catmull-Rom resample (HF uses `resample: 3`); needs its own A/B |
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-blueprint NaFlex resize: factor=P, min=max=tile², and `std::round` instead of half-to-even |
 | `LFM2_VL_NO_REPEAT_NGRAM` | 5 | greedy no-repeat n-gram size |
@@ -188,22 +188,36 @@ it hermetically testable.
 
 ### What reading the blueprint turned up that the handover did not have
 
-**(a) Upstream transposes its own row/col labels.** `resize_and_split` does
+**(a) The row/col labels depend on the transformers version, and the first
+reading of this was wrong.** `crop_image_to_patches` returns `(images,
+grid_width, grid_height)` in every version, but `resize_and_split` unpacks it
 
 ```python
-images, num_rows, num_cols = self.crop_image_to_patches(...)
+images, num_rows, num_cols = self.crop_image_to_patches(...)   # <= 4.57.x
+images, num_cols, num_rows = self.crop_image_to_patches(...)   # >= 5.0
 ```
 
-and `crop_image_to_patches` returns `(processed_images, grid_width,
-grid_height)`. So `num_rows` is the grid **width**. A portrait A4 is cut into
-3 geometric rows of 2 tiles and labelled `<|img_row_1_col_1..3|>`,
-`<|img_row_2_col_1..3|>` — 2 rows of 3. Confirmed against the real processor:
-1024x768 reports `rows=3, cols=2` while its tiles are 2 rows of 3.
+The old form made `num_rows` the grid WIDTH, transposing the labels on any
+non-square grid. **Upstream fixed it.** This port shipped the 4.57.x behaviour
+first, purely because 4.57.6 was what happened to be installed on the dev box —
+a textbook HARD RULE 13 miss: the blueprint I read was not the code the model
+is deployed against.
 
-That is what the deployed model is prompted with, so it is the parity target
-and the default. `LFM2_VL_TILE_LABELS_GEOMETRIC=1` restores the intuitive
-mapping; it is opt-in and unvalidated, and the guard pins that the two produce
-DIFFERENT markup on every non-square grid so they cannot silently converge.
+**Prompt-token parity caught it**, on its first real run, exactly as intended:
+
+```
+DIFF prompt_token_ids  FAIL 4/1816 ids differ,
+     first at 519: mine=124910 ref=124918
+```
+
+124910 is `<|img_row_1_col_3|>`, 124918 is `<|img_row_2_col_1|>`. Four token ids
+out of 1816 — invisible to every cosine in the harness, and it would have read
+as "the model is weak on multi-tile" (HARD RULE 3b's blind zone, precisely).
+
+Geometric is now the default; `LFM2_VL_TILE_LABELS_LEGACY_SWAP=1` restores
+4.57.x. `tools/lfm2_vl_tiling_hf_check.py` decides which mapping to expect by
+INTROSPECTING `resize_and_split`'s source rather than parsing a version string,
+so it passes on either transformers and says which one it saw.
 
 **(b) The handover's golden table overcounted.** A4 is 6x256 + a 234-token
 thumbnail = **1770**, not 1792; US letter is 1788. The thumbnail token count is
