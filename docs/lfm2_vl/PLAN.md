@@ -5,30 +5,23 @@ Guard: `tests/test_lfm2_shortconv.cpp` (hermetic, weight-free, ~10 ms)
 
 ## NOW — active work
 
-Branch `feat/lfm2vl-multitile`, off `main` @ `ebc8bc95`. Multi-tile NaFlex is
-IMPLEMENTED and gated OFF; the acceptance run has not happened yet.
+Branch `feat/lfm2vl-multitile`, off `main` @ `ebc8bc95`. **Multi-tile NaFlex is
+implemented, validated and ON by default.** Nothing in flight.
 
 - **DONE** — both decode bugs (§1, §2), KV decode as default, NaFlex
-  single-tile resize (§3), registry + companion download, gated debug prints.
-- **DONE** — §4 multi-tile NaFlex: layout, tiling, per-tile vision encode,
-  per-tile token markup, hermetic guard, reference-dumper support, prompt-token
-  parity check. Behind `LFM2_VL_MULTI_TILE=1`, default off.
-- **DONE** — a splitting page decodes correctly end-to-end on the VPS: the
-  1024x544 strip gives `Lorem Ipsum / Alice was`, matching its ground truth.
-- **DONE** — the decoded-output A/B on a full splitting page, on CUDA (P100).
-  Multi-tile is dramatically better on BOTH quants; see §4 "The A/B".
-- **IN FLIGHT** — a re-run to score it as CER/WER and to test the resample
-  hypothesis (kernel v3). Kernel
-  `tools/kaggle/lfm2-vl-multitile/` (chr1s4,
-  `chr1s4/lfm2-5-vl-multitile-acceptance`). It builds with CUDA, dumps a
-  blueprint reference for a SPLITTING fixture, checks prompt-token parity and
-  per-stage cosines, then runs the decoded-output A/B (multi-tile off/on x
-  Q4_K/F16) scored as CER/WER against `ground_truth.json`.
-- **NEXT** — flip `LFM2_VL_MULTI_TILE` on by default ONLY with the canary
-  identical across arms and a stated CER improvement (rule 3). Then bicubic
-  resample (`LFM2_VL_BICUBIC`, already wired, needs its own A/B), then an
-  uncontended timing run. The vision encoder (~250 s per 1024-patch image on
-  this VPS) dominates and is where perf work belongs.
+  single-tile resize (§3).
+- **DONE** — §4 multi-tile NaFlex, default ON. Per-stage parity >0.99 global at
+  every stage (`llm_logits_last` 0.999981 at F16), prompt token ids
+  byte-identical over 1816 tokens, CER 0.0191 → **0.0007** on Q4_K and
+  0.0127 → **0.0007** on F16, and the non-splitting canary byte-identical.
+- **DONE** — bicubic resample, default ON. It was the entire per-stage gap.
+- **DONE** — antialiased position-embedding resample, matching Siglip2's
+  `antialias=True`. A no-op for every grid the tiler currently produces (all
+  upscale from the 16x16 table) and a real fix below that; pinned against
+  torch's own `F.interpolate` to 1.19e-07.
+- **NEXT** — an uncontended timing run; a second splitting fixture in another
+  script; the shared causal mask (memory, below). The vision encoder still
+  dominates on CPU and is where perf work belongs.
 
 ### A/B result — the acceptance gate
 
@@ -131,7 +124,7 @@ dominant cost on this VPS and is the next real perf target.
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
 | `LFM2_VL_FORCE_CPU` | off | ignore `crispasr_init_gpu_backend()` and run on CPU |
 | `LFM2_VL_FLASH_ATTN` | off | use `ggml_flash_attn_ext` in the VISION tower instead of manual attention. Off because the tower is bidirectional and passes `mask=nullptr`; per HARD RULE 5 that is full attention, not "masking handled", so the two are only equivalent while every patch is real. They are today — we never pad, unlike HF, which pads to `max_num_patches` and masks — but the gate must stay off if padding is ever introduced. Unmeasured. |
-| `LFM2_VL_MULTI_TILE` | **off** | split a large page into a tile grid + thumbnail (§4) |
+| `LFM2_VL_MULTI_TILE` | **on** | split a large page into a tile grid + thumbnail (§4); `=0` restores the single squashed tile |
 | `LFM2_VL_TILE_LABELS_LEGACY_SWAP` | off | reproduce transformers <= 4.57.x, which transposed the tile row/col labels; 5.x (the default) does not |
 | `LFM2_VL_BICUBIC` | **on** | PIL-matching Catmull-Rom resample, as `processor_config.json` specifies; `=0` restores the align-corners bilinear this port shipped with |
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-blueprint NaFlex resize: factor=P, min=max=tile², and `std::round` instead of half-to-even |
@@ -318,79 +311,55 @@ field name that does not exist and silently scored nothing.
 The canary held: `commons_example_receipt.png` gave the same 45 characters with
 the gate on and off, so multi-tile does not touch a page that should not split.
 
-### Per-stage parity — and why the first reading of it was wrong
+### Per-stage parity — PASSED, >99% at every stage
 
-Against a **CPU float32** reference (torch could not use the P100 at all and
-fell back, which makes it the best possible reference precision), the Q4_K
-runtime reported:
+Against a **CPU float32** blueprint reference (torch could not use the P100 at
+all and fell back, which makes it the best possible reference precision), on
+the splitting fixture, with the defaults as they now ship:
 
-| stage | cos_min | \|mine\| | \|ref\| |
-|---|--:|--:|--:|
-| projector_out_img0..5 (tiles) | 0.57 – 0.87 | ~32–43 | ~32–43 |
-| projector_out_img6 (thumbnail) | 0.344 | 80.79 | 80.37 |
-| llm_embed | 0.302 | 120.13 | 121.13 |
-| llm_logits_last | 0.990 | 692.4 | 681.6 |
-
-Every one printed FAIL, and the first reading here was that something was
-structurally wrong. **That reading was a mistake, and the harness had already
-written down why.** `cos_min` is a per-ROW minimum, and `crispembed_diff.h`
-says in its own comment that it is the right gate for a reference-precision
-port and the wrong one for a quantized artifact — its example is h2ovl-2b at
-q8_0 reading `cos_min` 0.61 on the logits while `cos_global` is 0.998919 and
-the model transcribes a page correctly. This run is Q4_K against fp32: the same
-regime. One fragile row per tile drags the minimum down.
-
-`diff_stage` printed only `cos_min`, so the figure that would have settled it
-was never on screen. Fixed — it now prints `cos_mean` and `cos_global` too, and
-flags `(global PASS)` when the aggregate passes but the per-row minimum does
-not. Same reasoning as HARD RULE 2b for the norms: print enough to interpret,
-or the number invites the wrong conclusion.
-
-The magnitudes did agree throughout, which was the one part of the first
-reading that held: this is not a scale bug.
-
-### The resample: rejected in pixel space, then measured — and it matters a lot
-
-The first reading proposed bilinear-vs-bicubic as the residual gap. I tried to
-kill that cheaply by comparing the resampled pixels directly:
-
-| image | scale | cos(bilinear, bicubic) |
+| stage | Q4_K cos_global | F16 cos_global |
 |---|--:|--:|
-| tiles img0..5 | 1.88x | 0.99892 – 0.99956 |
-| thumbnail img6 | 4.29x | 0.99218 |
-| the 500x650 canary | 1.12x | 0.99987 |
+| `pixel_values_img0..6` | permutation artifact, see below | — |
+| `vis_post_ln_img0..6` | 0.999964 – 0.999999 | same (tower is F16 in both) |
+| `projector_out_img0..6` | 0.998979 – 0.999968 | same |
+| `llm_embed` | 0.999753 | 0.999753 |
+| `llm_layer_0..3` | 0.999556 – 0.999709 | 0.999759 – 0.999781 |
+| **`llm_logits_last`** | 0.993555 | **0.999981** |
+| **`prompt_token_ids`** | **PASS — 1816 ids byte-identical** | **PASS** |
 
-and concluded a 0.999 input difference could not produce a 0.57 output cosine.
-**That was wrong, and wrong in an instructive way**: it compared a GLOBAL pixel
-cosine against a PER-ROW output minimum. Not the same quantity — the same
-cos_min/cos_global confusion in another guise.
+Every stage clears 0.99 global. The only figure below 0.999 is the Q4_K logits
+at 0.9936, and the F16 arm reading 0.999981 on the same stage is what says that
+is quantization damage and not structure — which is exactly why the dev guide
+asks for both arms.
 
-Running the actual diff with `LFM2_VL_BICUBIC=1` against the same reference
-settles it:
+`cos_min` stays lower (0.79–0.99) because it is a per-ROW minimum on a
+quantized artifact: `crispembed_diff.h` documents that regime, and `cos_mean`
+sitting at 0.998–1.000 is the tell that it is a handful of fragile rows rather
+than a broken tensor.
 
-| stage | bilinear | bicubic | delta |
-|---|--:|--:|--:|
-| projector_out_img6 (thumbnail, 4.29x) | 0.3446 | **0.9847** | +0.640 |
-| projector_out_img0 | 0.5910 | **0.9772** | +0.386 |
-| projector_out_img2 | 0.7124 | 0.9466 | +0.234 |
-| projector_out_img4 | 0.5688 | 0.8389 | +0.270 |
-| projector_out_img1/3 | 0.851 / 0.872 | 0.989 / 0.987 | +0.138 / +0.114 |
-| llm_logits_last | 0.9905 | 0.9934 | +0.003 |
+**The resample was the whole gap.** The same run with `LFM2_VL_BICUBIC=0`:
 
-The resample is the dominant term in the per-stage gap, and the effect scales
-with downscale factor exactly as predicted — largest on the thumbnail. The
-lesson from the failed shortcut is the one the dev guide keeps making: measure
-the thing, and be sure the two numbers you are comparing are the same quantity.
+| stage | bicubic | legacy bilinear |
+|---|--:|--:|
+| `vis_post_ln_img6` | 0.999989 | 0.978098 |
+| `projector_out_img6` | 0.999880 | **0.676896** |
+| `llm_embed` | 0.999753 | **0.851482** |
+| `llm_layer_3` | 0.999556 | **0.806714** |
 
-`llm_embed` is unmoved (0.301927 to six decimals both ways), which says its
-worst row is a TEXT token — untouched by any image change, and a reminder that
-a per-row minimum can be reporting on something other than what you are varying.
+Nothing else needed fixing. The tiling, the tile order, the per-tile encode,
+the projector unshuffle, the markup and the splice were all already right.
 
-**Decoded effect** (CER against the 2981-char ground truth): F16 improves
-0.5129 → 0.4968; Q4_K is unchanged at 0.5129. Cost ~1% wall clock (48.2 s vs
-47.5 s). So bicubic wins on blueprint fidelity, wins slightly or ties on
-decoded quality, and costs nothing — and it is what `processor_config.json`
-actually specifies (`resample: 3`).
+⚠ **`pixel_values` needs permuting before it means anything.** HF flattens a
+patch row as `(py, px, c)`, channel fastest, because its `patch_embedding` is
+an `nn.Linear` over that layout. We flatten `(px, py, c)` to match how the GGUF
+stores the same weight (conv-style `[kW, kH, in_C, out_C]`), and the
+converter's permutation is what reconciles them. Compared raw, the stage reads
+cos 0.63 with `|mine|` 546.96 against `|ref|` 547.03 — norms equal to 0.01%,
+which is the textbook signature of a permutation rather than a difference
+(HARD RULE 2b earning its place again). The runtime now reorders into the
+reference's layout before comparing. Left as it was, it is a permanent false
+FAIL sitting at the earliest stage in the archive — the worst possible place
+for one.
 
 ### Cost, and why the acceptance run is on Kaggle
 
@@ -401,8 +370,7 @@ prefill. The gate needs four arms (off/on x Q4_K/F16, rule 4.2). Kernel:
 
 ## Still open (from the port handover)
 
-- **Multi-tile NaFlex** — implemented and gated off (§4). What remains is the
-  acceptance run, not the code.
+- **Multi-tile NaFlex** — DONE and default ON (§4).
 - **Position-embedding antialias** — `Siglip2VisionEmbeddings.resize_positional_embeddings`
   interpolates with `antialias=True`; we do not. An exact no-op while both patch
   grid dimensions are >= the 16x16 source table, which every shape this engine

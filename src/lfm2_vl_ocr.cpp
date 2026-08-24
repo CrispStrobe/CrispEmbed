@@ -1027,7 +1027,23 @@ static bool preprocess_image_tiled(const uint8_t * rgb, int height, int width, i
     const int ds = (int)vhp.downsample_factor;
 
     lfm2_vl_tiling::config cfg = tiling_config(vhp);
-    cfg.do_image_splitting = core_env::on("LFM2_VL_MULTI_TILE");
+    // Multi-tile is the default. It is what the blueprint does
+    // (processor_config.json ships do_image_splitting: true), and the old
+    // behaviour is not merely lower-detail — squashing a page into one tile
+    // makes the model INVENT text: on commons_test_ocr_document.jpg it emitted
+    // "Aurice volgam et agus non veris tincti dictad" where the page reads
+    // "Alice was beginning to get very tired of sitting by her sister".
+    //
+    // Earned, not asserted (dev-guide rule 3): CER 0.0191 -> 0.0007 on Q4_K and
+    // 0.0127 -> 0.0007 on F16 against a 2981-character transcription, WER
+    // 0.0468 -> 0.0018; per-stage parity >0.99 global at every stage with
+    // llm_logits_last 0.999981 at F16; prompt token ids byte-identical over
+    // 1816 tokens; and the non-splitting 500x650 canary byte-identical with the
+    // gate on and off. It costs ~2x wall clock on a page that splits, which is
+    // the price of reading the page instead of guessing at it.
+    //
+    // LFM2_VL_MULTI_TILE=0 restores the single-tile path.
+    cfg.do_image_splitting = !core_env::explicitly_off("LFM2_VL_MULTI_TILE");
 
     out.layout = lfm2_vl_tiling::compute_layout(width, height, cfg);
     out.images.clear();
@@ -1265,6 +1281,21 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         if (bl.fc2_b) mlp = ggml_add(g, mlp, bl.fc2_b);
 
         x = ggml_add(g, residual, mlp);
+
+        // Per-layer taps, so a divergence at vis_post_ln can be bisected in ONE
+        // run instead of a round trip per guess. Only the first few layers are
+        // marked: the reference dumps vis_layer_0..3 by default, and marking an
+        // intermediate forces the allocator to keep its buffer alive, so doing
+        // it for all 27 would inflate the vision graph's memory for nothing.
+        // Only when a reference is actually loaded — this costs memory, and a
+        // production run should not pay for a debugging affordance.
+        if (c.has_diff_ref && il < 4) {
+            char lname[64];
+            snprintf(lname, sizeof(lname), "vis_layer_%d", il);
+            ggml_set_name(x, lname);
+            ggml_set_output(x);
+            ggml_build_forward_expand(gf, x);
+        }
     }
 
     // Post-encoder LayerNorm
@@ -1330,7 +1361,32 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
     // is, before a single weight is touched. A divergence at the projector is
     // otherwise ambiguous between "the resample differs" and "the tower math
     // differs", and those want completely different fixes.
-    diff_stage(c, stage_name("pixel_values", stage_buf, sizeof(stage_buf)), patches.data.data(), patches.data.size());
+    //
+    // ⚠ It has to be PERMUTED first. HF flattens a patch row as (py, px, c)
+    // with channel fastest, because its patch_embedding is an nn.Linear over
+    // that layout. We flatten (px, py, c) to match how the GGUF stores the same
+    // weight (conv-style [kW, kH, in_C, out_C]), and the converter's own
+    // permutation is what reconciles the two — which is why every downstream
+    // stage agrees to 0.9999+ while the raw buffers do not.
+    //
+    // Compared unpermuted this reads cos 0.63 with |mine| and |ref| matching to
+    // 0.01% — the textbook signature of a permutation (HARD RULE 2b: the norms
+    // are what tell you it is not a scale bug), and a FAIL that would be chased
+    // forever. Reorder into the reference's layout so the number means "do our
+    // pixels match" rather than "are our axes labelled the same way".
+    if (c.has_diff_ref) {
+        const int P = (int)c.m.vhp.patch_size;
+        const int pd = patches.patch_dim; // 3 * P * P
+        std::vector<float> hf_order(patches.data.size());
+        for (int p = 0; p < patches.n_patches; p++) {
+            const float * src = &patches.data[(size_t)p * pd];
+            float * dst = &hf_order[(size_t)p * pd];
+            for (int ch = 0; ch < 3; ch++)
+                for (int py = 0; py < P; py++)
+                    for (int px = 0; px < P; px++) dst[((size_t)py * P + px) * 3 + ch] = src[px + py * P + ch * P * P];
+        }
+        diff_stage(c, stage_name("pixel_values", stage_buf, sizeof(stage_buf)), hf_order.data(), hf_order.size());
+    }
     if (dbg()) {
         fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n", (long long)pixel_in->ne[0],
                 (long long)pixel_in->ne[1], patches.data.size() * sizeof(float));
@@ -1372,6 +1428,23 @@ static bool encode_vision(ctx & c, const image_patches & patches, std::vector<fl
         fprintf(stderr, "[lfm2_vl] vision compute failed\n");
         ggml_free(g);
         return false;
+    }
+
+    // Per-layer vision taps, when a reference is loaded. Read from the
+    // set_output-marked tensors, never from an unmarked intermediate — an
+    // unmarked buffer is reused as scratch and reads back as a later layer's
+    // values, which is how a harness invents its own "first divergence".
+    if (c.has_diff_ref) {
+        for (int il = 0; il < 4; il++) {
+            char lname[64];
+            snprintf(lname, sizeof(lname), "vis_layer_%d", il);
+            ggml_tensor * lt = ggml_graph_get_tensor(gf, lname);
+            if (!lt) continue;
+            std::vector<float> ld((size_t)H * n_patches);
+            ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+            char sbuf[80];
+            diff_stage(c, stage_name(lname, sbuf, sizeof(sbuf)), ld.data(), ld.size());
+        }
     }
 
     // Read vision output: [H, n_patches] — ggml col-major, ne[0]=H
