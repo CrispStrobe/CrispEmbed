@@ -116,7 +116,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr FILE       OCR → text (auto-detect: "
                     "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
                     "tromr(music)/flova(music)/transcoda(music)/"
-                    "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/unlimited-ocr)\n");
+                    "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/lfm2-vl/unlimited-ocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines (default: 2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
     fprintf(stderr, "  --hmer FILE      handwritten math OCR → LaTeX (HMER model)\n");
