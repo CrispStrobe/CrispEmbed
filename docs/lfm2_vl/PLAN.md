@@ -15,65 +15,97 @@ Branch `perf/lfm2vl-mac`. Nothing in flight.
 - **DONE** — §5 the projector moved off a scalar CPU loop onto the sched
   backend: 6581 ms → 8 ms, 31% of the pipeline gone.
 - **DONE** — §6 multi-tile NaFlex, validated against the reference's own
-  golden `prompt_token_ids` (1816/1816 exact).
-- **NEXT** — decode is now the dominant cost by a wide margin (§7). Also open:
-  a second reference fixture that actually exercises bicubic-vs-PIL rounding,
-  and an uncontended timing run.
+  golden `prompt_token_ids` (1816/1816 exact), and on by default.
+- **DONE** — §7 the LLM attention was being routed to the CPU backend by a
+  `GGML_PREC_F32` stamp, with the whole KV cache copied both ways every token;
+  and the decode step materialised the KV cache again on top of that.
+- **DONE** — §8 `LFM2_VL_FLASH_ATTN` in the vision encoder was broken (a
+  spurious permute after `flash_attn_ext`); fixed, and now default on.
+- **NEXT** — §9: decode graph reuse, the ShortConv state round-trip, prefill,
+  and an uncontended timing run. Nothing here is an absolute number.
 
-## Measured — the whole lane, M1 Metal, Q4_K, 512 max tokens
+## Measured — the whole lane, M1 Metal, Q4_K
 
-`tests/regression/images/cc0`, CER/WER against
+`tests/regression/images/cc0`, against
 `tests/regression/images/cc0/ground_truth.json` (manual transcription, no OCR
-consulted). Greedy decode, so the text is deterministic and the CER column is
-exact; the millisecond column is NOT (see the warning below).
+consulted). Harness: `tools/bench_lfm2_vl.py`.
 
-| fixture | CER before | CER after | WER before | WER after | ms before | ms after |
+**Two error rates, and both matter.** `fmt` is CER/WER after stripping markdown
+table scaffolding (pipes, rule rows, `**`) from both sides. The gap is not
+noise — it is the model choosing a different output FORMAT. On
+commons_example_receipt the raw CER is 0.337 and the normalised one 0.092: the
+receipt is read almost correctly and then emitted as a pipe table, which the
+plain-text ground truth does not have. Quoting only the raw number sends you
+hunting a recognition bug that is not there; quoting only the normalised one
+hides a real difference in what the engine hands a caller.
+
+### Quality: baseline vs everything, same 512-token cap
+
+| fixture | CER | | WER | | fmt CER | | fmt WER | |
+|---|--:|--:|--:|--:|--:|--:|--:|--:|
+| | **base** | **now** | **base** | **now** | **base** | **now** | **base** | **now** |
+| commons_example_receipt.png | 0.337 | 0.337 | 0.786 | 0.786 | 0.092 | 0.092 | 0.329 | 0.329 |
+| simple_form.png | 0.372 | 0.417 | 0.444 | 0.556 | 0.364 | 0.413 | 0.444 | 0.556 |
+| receipt_historical.png | 0.098 | **0.040** | 0.319 | **0.062** | 0.087 | **0.014** | 0.319 | **0.062** |
+| german_official_print.jpg | 0.371 | **0.063** | 0.537 | **0.194** | 0.361 | **0.052** | 0.537 | **0.194** |
+| commons_test_ocr_document.jpg | 0.702 | **0.280** | 0.903 | **0.243** | 0.701 | **0.278** | 0.903 | **0.243** |
+| **mean** | 0.376 | **0.228** | 0.598 | **0.368** | 0.321 | **0.170** | 0.507 | **0.277** |
+
+### Final state, all defaults, 1024 tokens (nothing truncates)
+
+| fixture | images | CER | WER | fmt CER | fmt WER | ms |
 |---|--:|--:|--:|--:|--:|--:|
-| commons_example_receipt.png | 0.329 | 0.329 | 0.786 | 0.786 | 63708 | 26887 |
-| simple_form.png | 0.364 | 0.413 | 0.444 | 0.556 | 21533 | 9212 |
-| receipt_historical.png | 0.087 | 0.108 | 0.319 | 0.319 | 94884 | 44317 |
-| german_official_print.jpg | 0.361 | **0.268** | 0.537 | **0.425** | 69098 | 57787 |
-| commons_test_ocr_document.jpg | 0.701 | **0.289** | 0.903 | **0.272** | 89897 | 61140 |
-| **mean** | 0.368 | **0.281** | 0.598 | **0.472** | | |
+| commons_example_receipt.png | 1 | 0.337 | 0.786 | 0.092 | 0.329 | 14229 |
+| simple_form.png | 1 | 0.417 | 0.556 | 0.413 | 0.556 | 4011 |
+| receipt_historical.png | 2x4+thumb | 0.040 | 0.062 | 0.014 | 0.062 | 55510 |
+| german_official_print.jpg | 2x3+thumb | 0.063 | 0.194 | 0.052 | 0.194 | 57715 |
+| commons_test_ocr_document.jpg | 2x3+thumb | 0.024 | **0.002** | 0.021 | **0.002** | 97482 |
+| **mean** | | **0.176** | **0.320** | **0.119** | **0.228** | |
 
-End to end, baseline → §4+§5+§6: mean CER **0.368 → 0.217**, mean WER
-**0.598 → 0.368**.
+WER 0.002 on a two-column book page is one word wrong in 2981 characters.
 
-"after" = §4 + §5, single-tile (the shipped default at the time of that run).
-Adding §6 multi-tile on top, same box, same 512-token cap:
+### Honest notes on these numbers
 
-| fixture | tiles | CER single | CER multi | WER single | WER multi | ms single | ms multi |
-|---|--:|--:|--:|--:|--:|--:|--:|
-| commons_example_receipt.png | 1 | 0.329 | 0.329 | 0.786 | 0.786 | 26887 | 44883 |
-| simple_form.png | 1 | 0.413 | 0.413 | 0.556 | 0.556 | 9212 | 15840 |
-| receipt_historical.png | 2x4 + thumb | 0.108 | **0.014** | 0.319 | **0.062** | 44317 | 145741 |
-| german_official_print.jpg | 2x3 + thumb | 0.268 | **0.052** | 0.425 | **0.194** | 57787 | 128828 |
-| commons_test_ocr_document.jpg | 2x3 + thumb | 0.289 | 0.278 | 0.272 | 0.243 | 61140 | 180487 |
-| **mean** | | 0.281 | **0.217** | 0.472 | **0.368** | | |
+- **simple_form.png got worse** (fmt CER 0.364 → 0.413), the one regression.
+  It is a 452x317 UI screenshot that smart_resize leaves at ~1:1, where the
+  bicubic resampler is nearly an identity and the difference is uint8 rounding.
+  Both arms miss the bottom half of the form; the new one reads `Nombre` for
+  `Number` and `Recharger` for `Rechercher` where the old one got them right,
+  and adds `[ ]` checkbox markers. 247 characters of ground truth at "medium"
+  confidence — this is a small, low-information fixture and the parity evidence
+  (cos_min 0.8159 → 0.999999 against the golden pixels) points the other way.
+  Recorded, not explained away.
+- **The receipt fixtures' raw CER is mostly formatting**, per the note above.
+- **The decode-side changes are not bit-identical over long decodes.** Metal's
+  flash-attention is not the CPU's. Byte-identical text was confirmed at 32 and
+  200 tokens on two fixtures; over ~800 tokens the doc page moves from CER
+  0.021 to 0.024 (WER 0.002 in both) — about 9 characters in 2981. That is the
+  price of §7's 2.6x, and it is stated rather than rounded away.
+- **Q4_K only.** The vision half is effectively validated at reference
+  precision (the mmproj is F16 and `vis_post_ln` sits at cos_global 0.999994),
+  but no F16 LLM arm was run.
 
-commons_test_ocr_document is TRUNCATED at the 512-token cap in both arms (2188
-and 2198 chars against a 2981-char ground truth), so most of its CER is missing
-text, not misread text — do not read that row as "multi-tile barely helped".
-Rerun at 1024 tokens, where neither arm truncates:
+### Speed
 
-| commons_test_ocr_document.jpg | chars | CER | WER | ms |
-|---|--:|--:|--:|--:|
-| single tile | 2962 / 2981 | 0.042 | 0.052 | 74431 |
-| **2x3 + thumbnail** | **2981 / 2981** | **0.021** | **0.002** | 118794 |
+Same fixtures, all defaults, before → after (baseline column at 512 tokens,
+final at 1024; neither truncates except the doc page in the baseline):
 
-WER 0.002 on a two-column book page — one word wrong in the whole page, at
-1.6x the wall clock. That is the row the default rests on.
+| fixture | ms before | ms after |
+|---|--:|--:|
+| commons_example_receipt.png | 63708 | **14229** |
+| simple_form.png | 21533 | **4011** |
+| receipt_historical.png | 94884 | 55510 (and 9 images instead of 1) |
+| german_official_print.jpg | 69098 | 57715 (7 images instead of 1) |
+| commons_test_ocr_document.jpg | 89897 | 97482 (7 images instead of 1) |
 
-The two single-tile fixtures are unchanged to the character, which is the
-correctness check that matters: the tiling path must be a no-op below the
-tolerance. Their millisecond difference is box noise, not the feature.
+The single-tile pages are 4.5x and 5.4x faster. The pages that now split do
+7-9x the vision and prefill work and still come out level or better, which is
+the whole point of §5 and §7.
 
-⚠ **Timings are RATIOS on a contended box.** Two `node --test` processes at
-100% CPU ran through the "before" column and were gone by the "after" column;
-Firefox was busy throughout. Dev-guide rule 5 (identical load, median of ≥3,
-quiet box) is NOT satisfied, so no absolute number here is quotable. The
-stage-level shifts (projector 6581 → 8 ms) are far larger than the noise and
-are safe to read as real; the ±20% differences are not.
+⚠ **Timings are RATIOS on a contended box.** Another agent's Rust build and a
+busy Firefox ran through most of these; dev-guide rule 5 (identical load,
+median of >= 3, quiet box) is satisfied only for the explicitly interleaved
+A/Bs in §7 and §8. No absolute millisecond here is quotable.
 
 ## Env gates
 
@@ -86,10 +118,13 @@ are safe to read as real; the ±20% differences are not.
 | `LFM2_VL_PROJ_GGML` | **on** | projector on the sched backend; `=0` restores the scalar loop |
 | `LFM2_VL_PROJ_GELU_TANH` | off | tanh GELU in the projector instead of erf |
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-§3 NaFlex resize params (factor=P, min=max=tile²) |
-| `LFM2_VL_FLASH_ATTN` | off | `ggml_flash_attn_ext` in the vision encoder |
+| `LFM2_VL_FLASH_ATTN` | **on** | `ggml_flash_attn_ext` in the vision encoder; `=0` restores manual attention |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
 | `LFM2_VL_NO_REPEAT_NGRAM` | 5 | greedy no-repeat n-gram size |
 | `LFM2_VL_DBG` | off | diagnostics |
+| `LFM2_VL_ATTN_PREC_F32` | off | stamp `GGML_PREC_F32` on the LLM attention — forces it onto the CPU on Metal |
+| `LFM2_VL_KV_VIEW` | **on** | read the KV cache as a strided view; `=0` materialises it per token |
+| `LFM2_VL_FORCE_CPU` | off | pin the whole engine to the CPU backend |
 | `LFM2_VL_DIFF_REF` | unset | per-stage diff archive |
 
 ## Reference archives
@@ -284,6 +319,25 @@ kept: `std::round` instead of banker's rounding → 2 failures; dropping the
 equal-ratio tie-break → 10 failures, including 2048×2048 collapsing from a 3×3
 grid to 1×1 (2304 image tokens → 256, silently).
 
+### The A/B
+
+Same build, same box, `LFM2_VL_MULTI_TILE` the only difference. 512-token cap
+except the last row:
+
+| fixture | tiles | fmt CER single | fmt CER multi | fmt WER single | fmt WER multi |
+|---|--:|--:|--:|--:|--:|
+| commons_example_receipt.png | 1 | 0.092 | 0.092 | 0.329 | 0.329 |
+| simple_form.png | 1 | 0.413 | 0.413 | 0.556 | 0.556 |
+| receipt_historical.png | 2x4 + thumb | 0.108 | **0.014** | 0.319 | **0.062** |
+| german_official_print.jpg | 2x3 + thumb | 0.268 | **0.052** | 0.425 | **0.194** |
+| commons_test_ocr_document.jpg @1024 | 2x3 + thumb | 0.042 | **0.021** | 0.052 | **0.002** |
+
+The two sub-tolerance fixtures are unchanged **to the character**, which is the
+correctness check that matters: the tiling path must be a no-op below the
+trigger, and it is. At the 512-token cap commons_test_ocr_document is truncated
+in both arms (2188 and 2198 chars against a 2981-char ground truth), so its CER
+there measures the cap rather than the feature — hence the 1024-token row.
+
 ### Cost, and the default
 
 Multi-tile is 2–3× the wall clock on a page that splits: 7–9 vision encodes
@@ -303,33 +357,98 @@ with the sub-tolerance fixtures unchanged to the character.
 `LFM2_VL_MULTI_TILE=0` keeps the fast single-tile path for anyone who wants the
 2–3× back and can live with the CER.
 
-## §7 — where the time goes now, and what is next
+## §7 — the decode was running on the CPU
 
-M1 Metal, Q4_K, commons_example_receipt (500×650, single tile, 16 tokens):
+`build_prefill_graph` and `build_decode_step_graph` both stamped
+`GGML_PREC_F32` on their `ggml_flash_attn_ext` output. In **this fork** that is
+not a hint: `ggml-metal-device.m` (CrispASR patch #83) returns `false` from
+`supports_op` for any flash-attention op carrying `PREC_F32`, because Apple's FA
+kernel uses `simdgroup_half8x8` tiles regardless of K type and leaks ~1e-4
+against CPU. `ggml_backend_sched` therefore routed **all eight attention layers
+to the CPU backend**, copying Q, K and V out of the Metal buffers and the result
+back — every token.
 
-| stage | ms |
-|---|--:|
-| preprocess | 22 |
-| vision encoder (1008 patches, 27 layers) | ~2700 |
-| projector | 8 |
-| prefill (273 tokens) | ~2500 |
-| decode | ~110–270 ms/token |
+At a 1816-position KV cache that is 8 layers × 2 tensors × 1816 × 2048 × 4 B
+≈ 240 MB of GPU↔CPU round trip per token, which is why decode cost grew with
+context far faster than the arithmetic does.
 
-Decode is now the whole cost of any real page: 512 tokens is 60–140 s. It is
-also the least optimized path — the graph is rebuilt and re-allocated every
-token, the 22 ShortConv state buffers round-trip through the CPU every token,
-and the lm_head is a 2048×128000 Q6_K matvec. A 3B Q4_K model on M1 should be
-bandwidth-bound at roughly 30 ms/token, so there is a ~4× gap to explain
-before optimizing anything.
+| | PREC_F32 (old) | Metal FA (now) |
+|---|--:|--:|
+| receipt, n_kv ≈ 290 | 159 ms/token | **62 ms/token** |
+| doc page, n_kv 1816 | 170 ms/token | **55 ms/token** |
+| `llm_logits_last` cos_global | 0.998088 | 0.998087 |
+| decoded text, 32 and 200 tokens | — | identical |
 
-Also open:
+`LFM2_VL_ATTN_PREC_F32=1` restores the stamp. This is also the
+"lfm2/Metal-only-sched CPU-fallback assert" on the ggml-8be60f infra list: with
+the stamp gone the LLM graph needs no CPU split at all.
 
-- **`to_f32(token_embd)` was 1.05 GB per image.** The whole 128000×2048 Q6_K
-  table was dequantized on every `generate()` to read the ~2 k rows a page uses.
-  Replaced by a row-at-a-time `embed_lookup`.
-- **Bicubic rounding.** Ours resamples in float and rounds once at the end;
-  PIL rounds to uint8 between the horizontal and vertical passes. Worth ≤1/255
-  and currently unmeasured — it needs a fixture where it changes the decode.
-- **Vision encoder `LFM2_VL_FLASH_ATTN`.** The gate exists and has never been
-  A/B'd.
-- **A quiet-box timing run.** Nothing in this document is an absolute number.
+### §7b — and it rebuilt the whole KV cache every layer, every token
+
+The decode step read the cache as `reshape_3d → permute → ggml_cont`, to hand
+`flash_attn_ext` a contiguous `[head_dim, n_kv, n_kv_heads]`. But the cache
+layout already addresses that shape with plain strides — element (i, s, h) sits
+at `i*4 + s*nb[1] + h*head_dim*4` — so a `ggml_view_3d` does it for free. The
+`cont` was copying 238 MB per token at n_kv=1816 for no information gain.
+
+Interleaved ×3 on the doc page, 24 tokens each, decode per token:
+
+| | run 1 | run 2 | run 3 |
+|---|--:|--:|--:|
+| copies (`LFM2_VL_KV_VIEW=0`) | 76 ms | 78 ms | 79 ms |
+| strided view (default) | **55 ms** | **54 ms** | **55 ms** |
+
+1.42×, decoded text identical over 200 tokens on a 9-image page.
+
+## §8 — `LFM2_VL_FLASH_ATTN` in the vision encoder was broken
+
+The gate existed and had never been A/B'd. `ggml_flash_attn_ext` already
+returns `[head_dim, n_heads, n_seq]` — it permutes internally — and the code
+applied the manual path's trailing permute to its output as well, scrambling
+heads into positions. Every shape stayed valid.
+
+With the gate on, before the fix: `vis_post_ln` cos_global **0.563**, |mine|
+1212 against a reference norm of 991, and the model answered a supermarket
+receipt with *"The image shows a room with a table and chairs. There is a sign
+on the wall that reads 'Welcome to our office.'"*
+
+Skipping the trailing permute on the flash path makes it match exactly —
+`vis_post_ln` cos_global 0.999994 and |mine| 991.1918 in **both** arms,
+byte-identical text over 200 tokens — and it is faster: vision encoder median
+**2237 → 1747 ms** over 5 interleaved reps (1.28×). So the gate is now default
+ON; `LFM2_VL_FLASH_ATTN=0` restores the manual masked attention.
+
+Same defect class as the Jun-2026 flash wave in `layout` / `math` / `deepseek`:
+a spurious trailing permute after `flash_attn_ext`.
+
+## §9 — where the time goes now, and what is next
+
+M1 Metal, Q4_K, after §4–§8:
+
+| stage | receipt (1 tile, n_kv 290) | doc page (7 tiles, n_kv 1816) |
+|---|--:|--:|
+| preprocess | ~20 ms | ~230 ms |
+| vision encoder | ~1750 ms | ~1750 ms × 7 |
+| projector | ~8 ms | ~8 ms × 7 |
+| prefill | ~1300 ms | ~8000 ms |
+| decode | ~62 ms/token | ~55 ms/token |
+
+Still open:
+
+- **Graph reuse in decode.** The graph is rebuilt, `sched_reset` and
+  `sched_alloc_graph` run, and ~600 Metal dispatches are re-encoded every
+  token. Building once against the full `max_seq` KV with a mask input would
+  remove all of it.
+- **ShortConv state round-trip.** 22 layers × (one read + one write) of CPU↔GPU
+  state per token. It could live in a backend buffer with the shift in-graph.
+- **Prefill.** ~8 s for 1816 tokens is the other half of a multi-tile page.
+- **Bicubic rounding.** Ours resamples in float and rounds once at the end; PIL
+  rounds to uint8 between the horizontal and vertical passes. Worth ≤1/255 and
+  currently unmeasured — it needs a fixture where it changes the decode.
+- **`to_f32(token_embd)` was 1.05 GB per image** — the whole 128000×2048 Q6_K
+  table dequantized on every `generate()` to read the ~2 k rows a page uses.
+  Replaced by a row-at-a-time `embed_lookup`; `llm_embed` is bit-identical.
+- **A quiet-box timing run.** Nothing in this document is an absolute number:
+  every measurement here was taken beside another agent's Rust build and a busy
+  Firefox. The interleaved medians are trustworthy as ratios; the milliseconds
+  are not.
