@@ -81,6 +81,13 @@ struct vision_hparams {
     uint32_t patch_size    = 16;
     uint32_t image_size    = 256;  // SigLIP2 base grid (16×16 patches)
     uint32_t tile_size     = 512;  // VL tile target for NaFlex resize
+    // NaFlex token band and projector downsample, from the HF processor_config
+    // ("Lfm2VlImageProcessorFast"). The resize targets a RANGE of image tokens,
+    // not one number, and the downsample factor is what makes the grid have to
+    // be divisible by patch_size * downsample_factor.
+    uint32_t min_image_tokens  = 64;
+    uint32_t max_image_tokens  = 256;
+    uint32_t downsample_factor = 2;
     float    norm_eps      = 1e-6f;
     float    image_mean[3] = { 0.5f, 0.5f, 0.5f };
     float    image_std[3]  = { 0.5f, 0.5f, 0.5f };
@@ -725,14 +732,50 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
     const int target = (int)vhp.tile_size;   // 512 (VL tile target)
     const int patch_dim = 3 * P * P;         // 768
 
-    // HF NaFlex processor: aspect-preserving resize to target² total pixels,
-    // with H and W rounded to multiples of P (=16).
+    // HF Lfm2VlImageProcessor.smart_resize, matched on two parameters this
+    // previously got wrong:
+    //
+    // (a) The rounding factor is encoder_patch_size * downsample_factor (32),
+    //     not the patch size alone — its own docstring says this "ensures no
+    //     padding is needed in the downsampling step". With P alone the patch
+    //     grid can come out ODD in a dimension, and the projector's 2x
+    //     pixel_unshuffle integer-divides that away, silently discarding the
+    //     last row or column of patches. Three of four common page shapes hit
+    //     it: a 4000x3000 scan gave a 36x27 grid, a 300x1000 strip 58x17.
+    //
+    // (b) The pixel bound is a token BAND (min_image_tokens..max_image_tokens),
+    //     not one target. Pinning min = max upscaled small images to the full
+    //     budget — a 150x200 thumbnail became 259 image tokens instead of 70.
+    //
+    // Both agree exactly on the validated fixture (500x650 -> 576x448, 36x28
+    // grid, 252 tokens), so this is a no-op there and a fix everywhere else.
+    // LFM2_VL_LEGACY_RESIZE=1 restores the old parameters.
+    const bool legacy_resize = core_env::on("LFM2_VL_LEGACY_RESIZE");
+    const int  ds     = (int)vhp.downsample_factor;
+    const int  factor = legacy_resize ? P : P * ds;
+    const int  min_px = legacy_resize ? target * target
+                                      : (int)vhp.min_image_tokens * P * P * ds * ds;
+    const int  max_px = legacy_resize ? target * target
+                                      : (int)vhp.max_image_tokens * P * P * ds * ds;
+
     int rH, rW;
-    image_preproc::smart_resize(height, width, P, target * target, target * target, &rH, &rW);
+    image_preproc::smart_resize(height, width, factor, min_px, max_px, &rH, &rW);
 
     const int gH = rH / P;
     const int gW = rW / P;
     const int n_patches = gH * gW;
+
+    // The projector's pixel_unshuffle integer-divides the grid by ds, so an odd
+    // dimension drops a whole row or column of patches — a strip of the page,
+    // lost without a word. Must not happen with the blueprint factor; say so
+    // loudly if it ever does.
+    if (gH % ds || gW % ds) {
+        fprintf(stderr,
+                "[lfm2_vl] WARNING: patch grid %dx%d is not divisible by the "
+                "projector downsample %d — the last row/column of patches will "
+                "be dropped by pixel_unshuffle\n",
+                gW, gH, ds);
+    }
 
     // Step 1: bilinear resize to rW × rH
     std::vector<float> resized((size_t)rH * rW * 3);
@@ -792,8 +835,9 @@ static bool preprocess_image(const uint8_t * rgb, int height, int width, int cha
     out.h_patches = gH;
     out.w_patches = gW;
 
-    fprintf(stderr, "[lfm2_vl] preproc: %dx%d → %dx%d, %d patches (%dx%d grid)\n",
-            width, height, rW, rH, n_patches, gW, gH);
+    if (dbg())
+        fprintf(stderr, "[lfm2_vl] preproc: %dx%d → %dx%d, %d patches (%dx%d grid)\n",
+                width, height, rW, rH, n_patches, gW, gH);
     return true;
 }
 
@@ -842,15 +886,17 @@ static ggml_tensor * build_vision_graph(ctx & c, ggml_context * g, ggml_cgraph *
         pe_w->nb[1] = pe_w->nb[0] * pe_w->ne[0];
         pe_w->nb[2] = pe_w->nb[1] * pe_w->ne[1];
         pe_w->nb[3] = pe_w->nb[2];
-        fprintf(stderr, "[lfm2_vl] after reshape: ne=[%lld,%lld,%lld,%lld], nb=[%lld,%lld,%lld,%lld], type=%d\n",
-                (long long)pe_w->ne[0], (long long)pe_w->ne[1],
-                (long long)pe_w->ne[2], (long long)pe_w->ne[3],
-                (long long)pe_w->nb[0], (long long)pe_w->nb[1],
-                (long long)pe_w->nb[2], (long long)pe_w->nb[3],
-                (int)pe_w->type);
-        fprintf(stderr, "[lfm2_vl] pixel_in: ne=[%lld,%lld], type=%d\n",
-                (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
-                (int)pixel_in->type);
+        if (dbg()) {
+            fprintf(stderr, "[lfm2_vl] after reshape: ne=[%lld,%lld,%lld,%lld], nb=[%lld,%lld,%lld,%lld], type=%d\n",
+                    (long long)pe_w->ne[0], (long long)pe_w->ne[1],
+                    (long long)pe_w->ne[2], (long long)pe_w->ne[3],
+                    (long long)pe_w->nb[0], (long long)pe_w->nb[1],
+                    (long long)pe_w->nb[2], (long long)pe_w->nb[3],
+                    (int)pe_w->type);
+            fprintf(stderr, "[lfm2_vl] pixel_in: ne=[%lld,%lld], type=%d\n",
+                    (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
+                    (int)pixel_in->type);
+        }
     }
     ggml_tensor * x = ggml_mul_mat(g, pe_w, pixel_in);
     if (c.m.v_patch_embed_b) x = ggml_add(g, x, c.m.v_patch_embed_b);
@@ -1002,34 +1048,33 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     ggml_context * g = ggml_init(ip);
     if (!g) return false;
 
-    fprintf(stderr, "[lfm2_vl] vision: building graph for %d patches...\n", n_patches);
+    if (dbg()) fprintf(stderr, "[lfm2_vl] vision: building graph for %d patches...\n", n_patches);
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, max_nodes, false);
     ggml_tensor * vis_out = build_vision_graph(c, g, gf, n_patches);
-    fprintf(stderr, "[lfm2_vl] vision: graph built, %d nodes\n", ggml_graph_n_nodes(gf));
+    if (dbg()) fprintf(stderr, "[lfm2_vl] vision: graph built, %d nodes\n", ggml_graph_n_nodes(gf));
 
     ggml_backend_sched_reset(c.sched);
-    fprintf(stderr, "[lfm2_vl] vision: allocating graph...\n");
     if (!ggml_backend_sched_alloc_graph(c.sched, gf)) {
         fprintf(stderr, "[lfm2_vl] vision graph alloc failed\n");
         ggml_free(g);
         return false;
     }
-    fprintf(stderr, "[lfm2_vl] vision: graph allocated, setting inputs...\n");
 
     // Set input: pixel patches
     ggml_tensor * pixel_in = ggml_graph_get_tensor(gf, "pixel_in");
     if (!pixel_in) { fprintf(stderr, "[lfm2_vl] pixel_in tensor not found!\n"); ggml_free(g); return false; }
-    fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n",
-            (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
-            patches.data.size() * sizeof(float));
     ggml_backend_tensor_set(pixel_in, patches.data.data(), 0,
                             patches.data.size() * sizeof(float));
-    // Debug: print first few patch values for parity
-    fprintf(stderr, "[lfm2_vl] input patch 0 first 5: ");
-    for (int i = 0; i < std::min(5, (int)patches.patch_dim); i++)
-        fprintf(stderr, "%.6f ", patches.data[i]);
-    fprintf(stderr, "\n");
+    if (dbg()) {
+        fprintf(stderr, "[lfm2_vl] pixel_in: %lld x %lld, data size %zu\n",
+                (long long)pixel_in->ne[0], (long long)pixel_in->ne[1],
+                patches.data.size() * sizeof(float));
+        fprintf(stderr, "[lfm2_vl] input patch 0 first 5: ");
+        for (int i = 0; i < std::min(5, (int)patches.patch_dim); i++)
+            fprintf(stderr, "%.6f ", patches.data[i]);
+        fprintf(stderr, "\n");
+    }
 
     // Position embeddings: bilinear-interpolate from learned 16×16 grid.
     // v_pos_embed is [H, 256] in ggml (= [256, H] row-major = 16×16 grid of H-dim vectors).
@@ -1089,7 +1134,7 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     ggml_backend_tensor_get(vis_out, vis_data.data(), 0, vis_data.size() * sizeof(float));
 
     // Debug: print first few values and norm for parity checking
-    {
+    if (dbg()) {
         fprintf(stderr, "[lfm2_vl] vision output first 5 (patch 0): ");
         for (int i = 0; i < std::min(5, H); i++)
             fprintf(stderr, "%.6f ", vis_data[i]);  // vis_data[dim + patch*H]
@@ -1164,10 +1209,12 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     }
 
     // Debug: pixel_unshuffle token 0 first 5 values
-    fprintf(stderr, "[lfm2_vl] unshuffle token 0 first 5: ");
-    for (int i = 0; i < std::min(5, C_us); i++)
-        fprintf(stderr, "%.6f ", us_data[(size_t)i * n_proj + 0]);  // column 0
-    fprintf(stderr, "\n");
+    if (dbg()) {
+        fprintf(stderr, "[lfm2_vl] unshuffle token 0 first 5: ");
+        for (int i = 0; i < std::min(5, C_us); i++)
+            fprintf(stderr, "%.6f ", us_data[(size_t)i * n_proj + 0]);  // column 0
+        fprintf(stderr, "\n");
+    }
 
     // Diff: compare pixel_unshuffle output (before MLP)
     diff_stage(c, "projector_unshuffle", us_data.data(), us_data.size());
@@ -1229,10 +1276,12 @@ static bool encode_vision(ctx & c, const image_patches & patches,
     }
 
     // Debug: first 5 values of projector output (token 0)
-    fprintf(stderr, "[lfm2_vl] projector first token first 5: ");
-    for (int i = 0; i < std::min(5, out_d); i++)
-        fprintf(stderr, "%.6f ", out_embeds[i]);  // [p=0, d=0..4]
-    fprintf(stderr, "\n");
+    if (dbg()) {
+        fprintf(stderr, "[lfm2_vl] projector first token first 5: ");
+        for (int i = 0; i < std::min(5, out_d); i++)
+            fprintf(stderr, "%.6f ", out_embeds[i]);  // [p=0, d=0..4]
+        fprintf(stderr, "\n");
+    }
 
     // Diff: compare projector output against reference
     diff_stage(c, "projector_out", out_embeds.data(), out_embeds.size());
@@ -1772,10 +1821,18 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
     }
 
     // ── Step 2: Allocate KV cache ──
-    // KV decode has a structural bug — per-token decode graph diverges from
-    // prefill. Use full recompute by default until the decode graph is fixed.
-    // Gate the KV path behind LFM2_VL_KV_CACHE=1 for debugging.
-    bool use_kv = core_env::on("LFM2_VL_KV_CACHE");
+    // KV-cached decode is the default since 2026-08-24, when the ShortConv
+    // reduction-axis bug that made it emit '差' was fixed (see
+    // lfm2_shortconv::step). A/B on commons_example_receipt.png, Q4_K, 15
+    // tokens: the two paths are BYTE-IDENTICAL ("Jackson-Washington\n6640 Ortiz
+    // Cove, Markmouth", an exact prefix of the fixture's ground truth) and the
+    // KV decode is ~9x faster per token (~19 s vs ~175 s on a contended VPS —
+    // ratio only, the box was not quiet enough for an absolute number).
+    //
+    // LFM2_VL_KV_CACHE=0 restores full recompute, which re-runs the whole
+    // prefill per token. Keep it: it is the independent cross-check that caught
+    // both decode bugs, and it needs no KV cache allocation.
+    bool use_kv = !core_env::explicitly_off("LFM2_VL_KV_CACHE");
     bool kv_ok = use_kv && alloc_kv_cache(c, n_prompt_tokens + max_new_tokens);
 
     // Init conv state
@@ -2019,7 +2076,7 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             }
 
             // Set tok_emb: look up the token embedding for best_id
-            if (gen == 1 && c.verbosity >= 1) {
+            if (gen == 1 && dbg()) {
                 fprintf(stderr, "[lfm2_vl] decode step 0: input token=%d, n_kv=%d, pos=%d\n",
                         best_id, n_kv, n_kv);
                 // Print conv state diagnostics
@@ -2070,13 +2127,10 @@ static bool generate(ctx & c, const float * image_embeds, int n_image_tokens,
             ggml_tensor * lt3 = ggml_graph_get_tensor(gf3, "logits");
             ggml_backend_tensor_get(lt3, logits_data.data(), 0, V * sizeof(float));
 
-            if (gen == 1 && c.verbosity >= 1) {
-                // Print decode step 0 argmax and top-3
+            if (gen == 1 && dbg()) {
                 int am = 0; float amv = -INFINITY;
                 for (int v = 0; v < V; v++) if (logits_data[v] > amv) { amv = logits_data[v]; am = v; }
-                fprintf(stderr, "[lfm2_vl] decode step 0 argmax: %d (%.2f), expected 1870 ('son')\n", am, amv);
-                // Check value at expected token
-                fprintf(stderr, "[lfm2_vl] decode step 0 logit[1870]='son': %.2f\n", logits_data[1870]);
+                fprintf(stderr, "[lfm2_vl] decode step 0 argmax: %d (logit %.2f)\n", am, amv);
             }
 
             // Update conv state from bx_out tensors
@@ -2329,7 +2383,7 @@ static std::vector<int32_t> build_token_ids(lfm2_vl_ocr_context * ctx, int n_ima
     for (auto id : assist_ids) ids.push_back(id);
     if (nl_id >= 0) ids.push_back(nl_id);
 
-    if (c.verbosity >= 1) {
+    if (lfm2_vl::dbg()) {
         fprintf(stderr, "[lfm2_vl] token_ids: %zu total (%d image + %zu text)\n",
                 ids.size(), n_image_tokens, ids.size() - n_image_tokens);
         fprintf(stderr, "[lfm2_vl] first 10 ids: ");

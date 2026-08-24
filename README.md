@@ -309,6 +309,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |
+| **LFM2.5-VL** | SigLIP2 NaFlex 400M + LFM2 hybrid conv/attn 3B | 3.4B | Doc OCR (VLM); needs `CRISPEMBED_ACCEPT_LFM_LICENSE=1` | LFM-1.0 (revenue-capped) |
 
 #### Measured against the engines we port
 
