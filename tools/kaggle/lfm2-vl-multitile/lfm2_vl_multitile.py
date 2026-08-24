@@ -230,27 +230,37 @@ dump_cmd = (
 )
 r = sh(dump_cmd, check=False, capture=True, env={**os.environ, "PYTHONUNBUFFERED": "1"})
 log(r.stdout[-6000:])
-if r.returncode != 0 or not REF.exists():
-    log(f"reference dump FAILED rc={r.returncode}")
-    log(r.stderr[-4000:])
-    results["stages"]["refdump"] = {"rc": r.returncode, "ok": False}
-    results["status"] = "FAIL_REFDUMP"
-    save_results()
-    sys.exit(1)
 
-results["stages"]["refdump"] = {
-    "rc": 0, "ok": True, "size_mb": round(REF.stat().st_size / 1e6, 1),
-}
-log(f"reference: {REF.stat().st_size / 1e6:.1f} MB")
+# A failed reference dump costs the per-stage diff, NOT the acceptance test.
+# The decoded-output A/B is what HARD RULE 3 actually gates on and it needs no
+# reference at all -- so carry on without it rather than throwing away a build
+# and a 9 GB download. The likeliest failure here is bf16 on a pre-sm_80 GPU
+# (Kaggle hands out P100s), which says nothing about the runtime.
+REF_OK = r.returncode == 0 and REF.exists()
+if not REF_OK:
+    log(f"reference dump FAILED rc={r.returncode} — continuing WITHOUT per-stage parity")
+    log(r.stderr[-4000:])
+    results["stages"]["refdump"] = {
+        "rc": r.returncode, "ok": False,
+        "stderr_tail": r.stderr[-3000:],
+        "note": "per-stage diff and prompt-token parity unavailable this run; "
+                "the decoded-output A/B below still ran",
+    }
+else:
+    results["stages"]["refdump"] = {
+        "rc": 0, "ok": True, "size_mb": round(REF.stat().st_size / 1e6, 1),
+    }
+    log(f"reference: {REF.stat().st_size / 1e6:.1f} MB")
 
 # Upload BEFORE the next crash-prone step — the upload is the checkpoint.
-try:
+if REF_OK:
+  try:
     HfApi(token=HF_TOKEN).upload_file(
         path_or_fileobj=str(REF), path_in_repo=HF_REF_PATH,
         repo_id=HF_REF_REPO, repo_type="dataset")
     log(f"reference uploaded to {HF_REF_REPO}/{HF_REF_PATH}")
     results["stages"]["refdump"]["hf_path"] = f"{HF_REF_REPO}/{HF_REF_PATH}"
-except Exception as e:
+  except Exception as e:
     log(f"WARNING: reference upload failed: {e}")
     results["stages"]["refdump"]["upload_error"] = str(e)
 save_results()
@@ -361,15 +371,19 @@ results["stages"]["canary"] = canary
 save_results()
 
 # ── 6. Per-stage parity on the SPLITTING fixture ──────────────────────────
-log("=== per-stage diff vs the blueprint reference (multi-tile ON) ===")
-run = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8)
-diffs = parse_diffs(run["stderr"])
-for name, d in diffs.items():
-    log(f"  {name}: {d}")
-results["stages"]["parity_q4k"] = {
-    "rc": run["rc"], "seconds": run["seconds"], "diffs": diffs,
-    "stderr_tail": run["stderr"][-4000:],
-}
+if REF_OK:
+    log("=== per-stage diff vs the blueprint reference (multi-tile ON) ===")
+    run = run_ocr(Q4, EMBED / FIXTURE, True, diff_ref=REF, max_tokens=8)
+    diffs = parse_diffs(run["stderr"])
+    for name, d in diffs.items():
+        log(f"  {name}: {d}")
+    results["stages"]["parity_q4k"] = {
+        "rc": run["rc"], "seconds": run["seconds"], "diffs": diffs,
+        "stderr_tail": run["stderr"][-4000:],
+    }
+else:
+    log("=== per-stage diff SKIPPED (no reference) ===")
+    results["stages"]["parity_q4k"] = {"skipped": "reference dump failed"}
 save_results()
 
 # ── 7. The acceptance test: decoded output, both arms, both quants ────────
@@ -422,7 +436,7 @@ for quant, _ in arms:
         verdict[quant] = {"error": "one or both arms did not produce a transcript"}
 
 results["verdict"] = verdict
-results["status"] = "DONE"
+results["status"] = "DONE" if REF_OK else "DONE_NO_PARITY"
 save_results()
 
 log("=== verdict ===")
