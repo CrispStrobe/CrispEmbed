@@ -21,8 +21,12 @@ Branch `perf/lfm2vl-mac`. Nothing in flight.
   and the decode step materialised the KV cache again on top of that.
 - **DONE** — §8 `LFM2_VL_FLASH_ATTN` in the vision encoder was broken (a
   spurious permute after `flash_attn_ext`); fixed, and now default on.
-- **NEXT** — §9: decode graph reuse, the ShortConv state round-trip, prefill,
-  and an uncontended timing run. Nothing here is an absolute number.
+- **DONE** — §9 head-to-head vs `llama-mtmd-cli` on the same GGUF: speed is a
+  wash, and the quality gap was our own no-repeat-ngram default, now off. The
+  receipt transcript is byte-identical to llama.cpp's.
+- **NEXT** — §10: decode graph reuse, the ShortConv state round-trip, prefill,
+  and an uncontended timing run. Nothing here is an absolute number. Also the
+  PIL between-pass rounding experiment from §9.
 
 ## Measured — the whole lane, M1 Metal, Q4_K
 
@@ -52,6 +56,10 @@ hides a real difference in what the engine hands a caller.
 | **mean** | 0.376 | **0.228** | 0.598 | **0.368** | 0.321 | **0.170** | 0.507 | **0.277** |
 
 ### Final state, all defaults, 1024 tokens (nothing truncates)
+
+⚠ This table predates the §9 no-repeat-ngram flip. With the current default the
+means are **fmt CER 0.106 / fmt WER 0.204** (receipt 0.092 → 0.045, German
+0.052 → 0.040, historical receipt 0.014 → 0.013); see §9 for the full table.
 
 | fixture | images | CER | WER | fmt CER | fmt WER | ms |
 |---|--:|--:|--:|--:|--:|--:|
@@ -120,7 +128,7 @@ A/Bs in §7 and §8. No absolute millisecond here is quotable.
 | `LFM2_VL_LEGACY_RESIZE` | off | pre-§3 NaFlex resize params (factor=P, min=max=tile²) |
 | `LFM2_VL_FLASH_ATTN` | **on** | `ggml_flash_attn_ext` in the vision encoder; `=0` restores manual attention |
 | `LFM2_VL_ZERO_CONV_STATE` | off | debug: zero the ShortConv state cache |
-| `LFM2_VL_NO_REPEAT_NGRAM` | 5 | greedy no-repeat n-gram size |
+| `LFM2_VL_NO_REPEAT_NGRAM` | **0 (off)** | greedy no-repeat n-gram size; `=5` restores the old default |
 | `LFM2_VL_DBG` | off | diagnostics |
 | `LFM2_VL_ATTN_PREC_F32` | off | stamp `GGML_PREC_F32` on the LLM attention — forces it onto the CPU on Metal |
 | `LFM2_VL_KV_VIEW` | **on** | read the KV cache as a strided view; `=0` materialises it per token |
@@ -421,7 +429,75 @@ ON; `LFM2_VL_FLASH_ATTN=0` restores the manual masked attention.
 Same defect class as the Jun-2026 flash wave in `layout` / `math` / `deepseek`:
 a spurious trailing permute after `flash_attn_ext`.
 
-## §9 — where the time goes now, and what is next
+## §9 — head to head with llama.cpp, and the decode config that was costing us
+
+The GGUF LiquidAI ships is a **llama.cpp** export, so `llama-mtmd-cli` is the
+reference implementation for it. Same model, same mmproj, same prompt
+("OCR this image. Output the text content."), greedy, `-n 1024`, alternating
+runs on the same box. `llama.cpp` b9700 (Homebrew), format-normalised rates:
+
+| fixture | crispembed CER | llama.cpp CER | crispembed WER | llama.cpp WER | crispembed s | llama.cpp s |
+|---|--:|--:|--:|--:|--:|--:|
+| commons_example_receipt.png | 0.092 | **0.045** | 0.329 | **0.257** | 30.0 | 29.8 |
+| simple_form.png | 0.413 | **0.360** | 0.556 | **0.444** | 11.8 | 11.6 |
+| receipt_historical.png | 0.014 | 0.013 | 0.062 | 0.062 | 106.1 | **99.0** |
+| german_official_print.jpg | 0.052 | **0.037** | 0.194 | **0.119** | **63.8** | 66.6 |
+| commons_test_ocr_document.jpg | 0.021 | 0.021 | **0.002** | 0.004 | **101.7** | 120.9 |
+| **mean** | 0.118 | **0.095** | 0.229 | **0.185** | | |
+
+**Speed is a wash.** Per-stage, the vision encoders are the same engine's worth
+of work: 3362 vs 3377 ms on the receipt, 29959 vs 30532 on the 9-image
+historical receipt, 16772 vs 16506 on the German page, 19367 vs 23510 on the
+book page. Wall clock lands within a few percent either way, ours ahead on the
+two largest pages and behind on one. Nothing here says either implementation is
+meaningfully faster than the other on M1 Metal.
+
+**Quality was NOT a wash, and it was our decode config.** Our greedy applied a
+no-repeat-ngram constraint of 5 by default. On documents that is not a
+degeneration guard, it is damage: a receipt legitimately repeats 5-grams
+(`| 1 | $4`, ` Accessory | `, a column of prices), and forbidding them forces
+the decoder off the correct token — which is exactly what produced the missing
+PST amount and the `$48 .04` on the fixture.
+
+Setting `LFM2_VL_NO_REPEAT_NGRAM=0`:
+
+| fixture | fmt CER n=5 | fmt CER n=0 | llama.cpp |
+|---|--:|--:|--:|
+| commons_example_receipt.png | 0.092 | **0.045** | 0.045 |
+| simple_form.png | 0.413 | 0.409 | 0.360 |
+| receipt_historical.png | 0.014 | **0.013** | 0.013 |
+| german_official_print.jpg | 0.052 | **0.040** | 0.037 |
+| commons_test_ocr_document.jpg | 0.021 | 0.021 | 0.021 |
+| **mean fmt CER** | 0.118 | **0.106** | 0.095 |
+| **mean fmt WER** | 0.229 | **0.204** | 0.185 |
+
+Better on three, unchanged on two, worse on none, no degeneration anywhere, and
+**the receipt transcript becomes byte-identical to llama.cpp's** — 493
+characters, same GGUF, same prompt, both greedy. That is the strongest parity
+statement in this document: our preprocessing, SigLIP2 tower, projector, LFM2
+hybrid decode and tokenizer reproduce llama.cpp exactly on a real page. So the
+default is now **off**; `LFM2_VL_NO_REPEAT_NGRAM=5` restores it for a model
+that does loop.
+
+### What is left, honestly
+
+After the flip we sit at mean fmt CER 0.106 against llama.cpp's 0.095. The gap
+is two fixtures:
+
+- **simple_form.png 0.409 vs 0.360.** A 452x317 UI screenshot that smart_resize
+  leaves at ~1:1, so the resampler barely runs and the difference is uint8
+  rounding — the one place where "we resample in float and round once, PIL
+  rounds between the horizontal and vertical passes" can actually bite. This is
+  the fixture that also regressed in §4, and it is the same suspicion.
+- **german_official_print.jpg 0.040 vs 0.037.** Three thousandths of CER over
+  1008 characters, i.e. about three characters, after ~700 greedy steps. Long
+  decodes diverge; see the note under the measured tables.
+
+Neither is a structural difference. The obvious next experiment is emulating
+PIL's between-pass uint8 rounding in `resize_bicubic_u8_hwc` and re-running
+simple_form.
+
+## §10 — where the time goes now, and what is next
 
 M1 Metal, Q4_K, after §4–§8:
 
