@@ -1016,7 +1016,10 @@ static bool preprocess_image_tiled(const uint8_t * rgb, int height, int width, i
     const auto & L = out.layout;
     const int tile = cfg.tile_size;
 
-    {
+    // Gated like every other diagnostic in this engine. The per-image summary
+    // run_pipeline prints at -v already says how many images were encoded and
+    // at what patch grid, so nothing is lost at default verbosity.
+    if (dbg()) {
         fprintf(stderr,
                 "[lfm2_vl] multi-tile: %dx%d → %dx%d, %dx%d grid of %d tiles"
                 " + thumbnail %dx%d = %d image tokens\n",
