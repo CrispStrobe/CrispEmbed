@@ -5,19 +5,40 @@ Guard: `tests/test_lfm2_shortconv.cpp` (hermetic, weight-free, ~10 ms)
 
 ## NOW — active work
 
-Branch `feat/lfm2vl-kv-decode`, tip `eec98fc7`.
+Branch `feat/lfm2vl-kv-decode`, tip `49170ba5`. Nothing in flight.
 
-- **DONE** — the "KV-cached decode is broken" bug is fixed, and it was never the
-  KV cache. See §1 below.
+- **DONE** — the "KV-cached decode is broken" bug. It was never the KV cache
+  (§1); the KV cache was correct the whole time.
 - **DONE** — a second bug, in the path that had been made the *default* because
-  it was believed correct. See §2.
-- **IN FLIGHT** — re-running the full-recompute arm with the §2 fix so the two
-  decode paths can be A/B'd against each other before the default is flipped to
-  the KV path. Until that lands, the default stays full-recompute and the KV
-  path stays behind `LFM2_VL_KV_CACHE=1`.
-- **NEXT** — flip the default (pending the A/B); multi-tile NaFlex; registry
-  entry + auto-download; README/docs; gate the remaining `[lfm2_vl]` prints
-  behind `LFM2_VL_DBG=1`.
+  it was believed correct (§2).
+- **DONE** — A/B settled, KV decode is now the default (`LFM2_VL_KV_CACHE=0`
+  restores full recompute). Three independent runs on the fixture, all 45 chars,
+  all identical.
+- **DONE** — NaFlex resize parameters matched to the blueprint (§3), registry
+  entry + companion-file support, README + backend matrix, debug prints gated,
+  layer-types diagnostic ordering + fallback string.
+- **NEXT** — multi-tile NaFlex (see below; needs Kaggle, the trigger rule is
+  pinned); bicubic resample; an uncontended timing run. The vision encoder
+  (~300 s) dominates, not the decode — that is where perf work belongs.
+
+### A/B result — the acceptance gate
+
+`commons_example_receipt.png`, Q4_K, 15 tokens, both arms with the §2 mask fix:
+
+| arm | output | chars | decode |
+|---|---|--:|--:|
+| KV-cached | `Jackson-Washington⏎6640 Ortiz Cove, Markmouth` | 45 | ~19 s/tok |
+| full recompute | `Jackson-Washington⏎6640 Ortiz Cove, Markmouth` | 45 | ~175 s/tok |
+| **defaults, post-§3** | `Jackson-Washington⏎6640 Ortiz Cove, Markmouth` | 45 | ~19 s/tok |
+
+Byte-identical, and an exact character-for-character prefix of this fixture's
+entry in `tests/regression/images/cc0/ground_truth.json` — a manual
+transcription made without consulting any OCR output. Equal quality and ~9×
+faster is what earns the default flip (dev guide rule 3).
+
+⚠ **The timings are a RATIO only.** Another agent ran a parallel Rust build
+across both arms, so rule 5 (identical load, quiet box, median of ≥3) is not
+satisfied and no absolute number here is quotable.
 
 ## §1 — ShortConv decode reduced over the wrong axis
 
