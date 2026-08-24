@@ -408,9 +408,24 @@ in the same block: a hand-rolled scalar single-threaded BLAS-less matmul; a
 page); and a per-token heap allocation.
 
 It is now a ggml graph — `mul_mat -> GELU -> mul_mat`, the same arithmetic on
-whatever backend the engine is already using. **VPS (CPU): 5596 ms -> 921 ms,
-6.1x**, output byte-identical. The GPU win should be much larger since the
-matmuls move off the CPU entirely; that number is pending.
+whatever backend the engine is already using.
+
+| | before | after | |
+|---|--:|--:|--:|
+| projector, per image (P100) | 4700 ms | **14 ms** | **336x** |
+| projector, 7-image page | 32.9 s | 0.10 s | |
+| **end-to-end pipeline (P100)** | **38.59 s** | **5.79 s** | **6.66x** |
+| VPS (CPU), per image | 5596 ms | 921 ms | 6.1x |
+| multi-tile penalty vs single-tile | 2.1x | **1.32x** | |
+
+Output byte-identical, every parity stage still >0.99 `cos_global`,
+`prompt_token_ids` still PASS, CER unchanged at 0.0007, canary identical across
+arms. The multi-tile penalty falling from 2.1x to 1.32x is the same fact from
+the user's side: most of what looked like "the cost of tiling" was actually the
+scalar projector being run once per tile.
+
+Where the GPU time goes now: decode 57.9%, vision encoder 30.1%, prefill 29.3%,
+projector **1.7%**. The next perf target is the decode, not the vision path.
 
 ⚠ **The first version of this was 15.6x faster and WRONG** — the receipt
 decoded as `(   )`. `us_data` is channel-major (`chan * n_proj + tok`), which is
